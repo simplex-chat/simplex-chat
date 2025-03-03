@@ -26,17 +26,14 @@
 
 module Simplex.Chat.Types where
 
-import Control.Applicative ((<|>))
 import Crypto.Number.Serialize (os2ip)
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
-import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Lazy as LB
-import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.Maybe (isJust)
 import Data.Text (Text)
@@ -673,41 +670,6 @@ data GroupLinkInvitation = GroupLinkInvitation
   }
   deriving (Eq, Show)
 
-data GroupLinkRejection = GroupLinkRejection
-  { fromMember :: MemberIdRole,
-    invitedMember :: MemberIdRole,
-    groupProfile :: GroupProfile,
-    rejectionReason :: GroupRejectionReason
-  }
-  deriving (Eq, Show)
-
-data GroupRejectionReason
-  = GRRLongName
-  | GRRBlockedName
-  | GRRUnknown {text :: Text}
-  deriving (Eq, Show)
-
-instance FromField GroupRejectionReason where fromField = blobFieldDecoder strDecode
-
-instance ToField GroupRejectionReason where toField = toField . strEncode
-
-instance StrEncoding GroupRejectionReason where
-  strEncode = \case
-    GRRLongName -> "long_name"
-    GRRBlockedName -> "blocked_name"
-    GRRUnknown text -> encodeUtf8 text
-  strP =
-    "long_name" $> GRRLongName
-    <|> "blocked_name" $> GRRBlockedName
-    <|> GRRUnknown . safeDecodeUtf8 <$> A.takeByteString
-
-instance FromJSON GroupRejectionReason where
-  parseJSON = strParseJSON "GroupRejectionReason"
-
-instance ToJSON GroupRejectionReason where
-  toJSON = strToJSON
-  toEncoding = strToJEncoding
-
 data MemberIdRole = MemberIdRole
   { memberId :: MemberId,
     memberRole :: GroupMemberRole
@@ -900,9 +862,6 @@ instance ToJSON MemberId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-nameFromMemberId :: MemberId -> ContactName
-nameFromMemberId = T.take 7 . safeDecodeUtf8 . B64.encode . unMemberId
-
 data InvitedBy = IBContact {byContactId :: Int64} | IBUser | IBUnknown
   deriving (Eq, Show)
 
@@ -991,8 +950,7 @@ instance TextEncoding GroupMemberCategory where
     GCPostMember -> "post"
 
 data GroupMemberStatus
-  = GSMemRejected -- joining member who was rejected by the host, or host that rejected the join
-  | GSMemRemoved -- member who was removed from the group
+  = GSMemRemoved -- member who was removed from the group
   | GSMemLeft -- member who left the group
   | GSMemGroupDeleted -- user member of the deleted group
   | GSMemUnknown -- unknown member, whose message was forwarded by an admin (likely member wasn't introduced due to not being a current member, but message was included in history)
@@ -1019,7 +977,6 @@ instance ToJSON GroupMemberStatus where
 
 memberActive :: GroupMember -> Bool
 memberActive m = case memberStatus m of
-  GSMemRejected -> False
   GSMemRemoved -> False
   GSMemLeft -> False
   GSMemGroupDeleted -> False
@@ -1039,7 +996,6 @@ memberCurrent = memberCurrent' . memberStatus
 -- update getGroupSummary if this is changed
 memberCurrent' :: GroupMemberStatus -> Bool
 memberCurrent' = \case
-  GSMemRejected -> False
   GSMemRemoved -> False
   GSMemLeft -> False
   GSMemGroupDeleted -> False
@@ -1055,7 +1011,6 @@ memberCurrent' = \case
 
 memberRemoved :: GroupMember -> Bool
 memberRemoved m = case memberStatus m of
-  GSMemRejected -> True
   GSMemRemoved -> True
   GSMemLeft -> True
   GSMemGroupDeleted -> True
@@ -1071,7 +1026,6 @@ memberRemoved m = case memberStatus m of
 
 instance TextEncoding GroupMemberStatus where
   textDecode = \case
-    "rejected" -> Just GSMemRejected
     "removed" -> Just GSMemRemoved
     "left" -> Just GSMemLeft
     "deleted" -> Just GSMemGroupDeleted
@@ -1086,7 +1040,6 @@ instance TextEncoding GroupMemberStatus where
     "creator" -> Just GSMemCreator
     _ -> Nothing
   textEncode = \case
-    GSMemRejected -> "rejected"
     GSMemRemoved -> "removed"
     GSMemLeft -> "left"
     GSMemGroupDeleted -> "deleted"
@@ -1839,8 +1792,6 @@ $(JQ.deriveJSON defaultJSON ''MemberInfo)
 $(JQ.deriveJSON defaultJSON ''GroupInvitation)
 
 $(JQ.deriveJSON defaultJSON ''GroupLinkInvitation)
-
-$(JQ.deriveJSON defaultJSON ''GroupLinkRejection)
 
 $(JQ.deriveJSON defaultJSON ''IntroInvitation)
 

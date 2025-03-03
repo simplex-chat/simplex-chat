@@ -98,7 +98,6 @@ chatGroupTests = do
     it "group link member role" testGroupLinkMemberRole
     it "host profile received" testGroupLinkHostProfileReceived
     it "existing contact merged" testGroupLinkExistingContactMerged
-    it "reject member joining via group link - blocked name" testGroupLinkRejectBlockedName
   describe "group link connection plan" $ do
     it "ok to connect; known group" testPlanGroupLinkKnown
     it "own group link" testPlanGroupLinkOwn
@@ -2871,35 +2870,6 @@ testGroupLinkExistingContactMerged =
       bob <# "#team alice> hello"
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
-
-testGroupLinkRejectBlockedName :: HasCallStack => TestParams -> IO ()
-testGroupLinkRejectBlockedName =
-  testChatCfg2 cfg aliceProfile bobProfile $
-    \alice bob -> do
-      alice ##> "/g team"
-      alice <## "group #team is created"
-      alice <## "to add members use /a team <name> or /create link #team"
-
-      alice ##> "/create link #team"
-      gLink <- getGroupLink alice "team" GRMember True
-      bob ##> ("/c " <> gLink)
-      bob <## "connection request sent!"
-      alice <## "bob (Bob): rejecting request to join group #team, reason: GRRBlockedName"
-      bob <## "#team: joining the group..."
-      bob <## "#team: join rejected, reason: GRRBlockedName"
-
-      threadDelay 100000
-
-      alice `hasContactProfiles` ["alice"]
-      memCount <- withCCTransaction alice $ \db ->
-        DB.query_ db "SELECT count(1) FROM group_members" :: IO [[Int]]
-      memCount `shouldBe` [[1]]
-
-      bob ##> ("/c " <> gLink)
-      bob <## "group link: known group #team"
-      bob <## "use #team <message> to send messages"
-  where
-    cfg = testCfg {allowedProfileName = Just (const False)}
 
 testPlanGroupLinkKnown :: HasCallStack => TestParams -> IO ()
 testPlanGroupLinkKnown =

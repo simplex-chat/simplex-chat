@@ -218,11 +218,10 @@ prepareGroupMsg db user g@GroupInfo {membership} mc mentions quotedItemId_ itemF
 
 updatedMentionNames :: MsgContent -> Maybe MarkdownList -> Map MemberName CIMention -> (MsgContent, Maybe MarkdownList, Map MemberName CIMention)
 updatedMentionNames mc ft_ mentions = case ft_ of
-  Just ft
-    | not (null ft) && not (null mentions) && not (all sameName $ M.assocs mentions) ->
-        let (mentions', ft') = mapAccumL update M.empty ft
-            text = T.concat $ map markdownText ft'
-         in (mc {text} :: MsgContent, Just ft', mentions')
+  Just ft | not (null ft) && not (null mentions) && not (all sameName $ M.assocs mentions) ->
+    let (mentions', ft') = mapAccumL update M.empty ft
+        text = T.concat $ map markdownText ft'
+     in (mc {text} :: MsgContent, Just ft', mentions')
   _ -> (mc, ft_, mentions)
   where
     sameName (name, CIMention {memberRef}) = case memberRef of
@@ -262,10 +261,9 @@ getCIMentions db user GroupInfo {groupId} ft_ mentions = case ft_ of
 
 getRcvCIMentions :: DB.Connection -> User -> GroupInfo -> Maybe MarkdownList -> Map MemberName MsgMention -> IO (Map MemberName CIMention)
 getRcvCIMentions db user GroupInfo {groupId} ft_ mentions = case ft_ of
-  Just ft
-    | not (null ft) && not (null mentions) ->
-        let mentions' = uniqueMsgMentions maxRcvMentions mentions $ mentionedNames ft
-         in mapM (getMentionedMemberByMemberId db user groupId) mentions'
+  Just ft | not (null ft) && not (null mentions) ->
+    let mentions' = uniqueMsgMentions maxRcvMentions mentions $ mentionedNames ft
+     in mapM (getMentionedMemberByMemberId db user groupId) mentions'
   _ -> pure M.empty
 
 -- prevent "invisible" and repeated-with-different-name mentions
@@ -276,9 +274,8 @@ uniqueMsgMentions maxMentions mentions = go M.empty S.empty 0
     go acc seen n (name : rest)
       | n >= maxMentions = acc
       | otherwise = case M.lookup name mentions of
-          Just mm@MsgMention {memberId}
-            | S.notMember memberId seen ->
-                go (M.insert name mm acc) (S.insert memberId seen) (n + 1) rest
+          Just mm@MsgMention {memberId} | S.notMember memberId seen ->
+            go (M.insert name mm acc) (S.insert memberId seen) (n + 1) rest
           _ -> go acc seen n rest
 
 getMessageMentions :: DB.Connection -> User -> GroupId -> Text -> IO (Map MemberName GroupMemberId)
@@ -830,7 +827,7 @@ acceptGroupJoinRequestAsync
     gVar <- asks random
     (groupMemberId, memberId) <- withStore $ \db -> do
       liftIO $ deleteContactRequestRec db user ucr
-      createJoiningMember db gVar user gInfo ucr gLinkMemRole GSMemAccepted
+      createAcceptedMember db gVar user gInfo ucr gLinkMemRole
     currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
     let Profile {displayName} = profileToSendOnAccept user incognitoProfile True
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
@@ -849,34 +846,7 @@ acceptGroupJoinRequestAsync
     let chatV = vr `peerConnChatVersion` cReqChatVRange
     connIds <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
     withStore $ \db -> do
-      liftIO $ createJoiningMemberConnection db user connIds chatV ucr groupMemberId subMode
-      getGroupMemberById db vr user groupMemberId
-
-acceptGroupJoinSendRejectAsync :: User -> GroupInfo -> UserContactRequest -> GroupRejectionReason -> CM GroupMember
-acceptGroupJoinSendRejectAsync
-  user
-  gInfo@GroupInfo {groupProfile, membership}
-  ucr@UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange}
-  rejectionReason = do
-    gVar <- asks random
-    (groupMemberId, memberId) <- withStore $ \db -> do
-      liftIO $ deleteContactRequestRec db user ucr
-      createJoiningMember db gVar user gInfo ucr GRObserver GSMemRejected
-    let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
-        msg =
-          XGrpLinkReject $
-            GroupLinkRejection
-              { fromMember = MemberIdRole userMemberId userRole,
-                invitedMember = MemberIdRole memberId GRObserver,
-                groupProfile,
-                rejectionReason
-              }
-    subMode <- chatReadVar subscriptionMode
-    vr <- chatVersionRange
-    let chatV = vr `peerConnChatVersion` cReqChatVRange
-    connIds <- agentAcceptContactAsync user False invId msg subMode PQSupportOff chatV
-    withStore $ \db -> do
-      liftIO $ createJoiningMemberConnection db user connIds chatV ucr groupMemberId subMode
+      liftIO $ createAcceptedMemberConnection db user connIds chatV ucr groupMemberId subMode
       getGroupMemberById db vr user groupMemberId
 
 acceptBusinessJoinRequestAsync :: User -> UserContactRequest -> CM GroupInfo
@@ -909,7 +879,7 @@ acceptBusinessJoinRequestAsync
     subMode <- chatReadVar subscriptionMode
     let chatV = vr `peerConnChatVersion` cReqChatVRange
     connIds <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
-    withStore' $ \db -> createJoiningMemberConnection db user connIds chatV ucr groupMemberId subMode
+    withStore' $ \db -> createAcceptedMemberConnection db user connIds chatV ucr groupMemberId subMode
     let cd = CDGroupSnd gInfo
     createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
     createGroupFeatureItems user cd CISndGroupFeature gInfo
@@ -1544,7 +1514,7 @@ sendGroupMessages_ _user gInfo@GroupInfo {groupId} members events = do
               (subtract 1 <$> memIdx_,) $ snd $ foldr' addBody (lastRef, memIdsReqs) mbs
               where
                 addBody :: Either ChatError a -> (Int, ([GroupMemberId], [Either ChatError ChatMsgReq])) -> (Int, ([GroupMemberId], [Either ChatError ChatMsgReq]))
-                addBody mb (i, (memIds, reqs)) =
+                addBody mb (i, (memIds, reqs)) = 
                   let req = (conn,msgFlags,) . mkMb memIdx_ i <$> mb
                    in (i - 1, (groupMemberId : memIds, req : reqs))
         sndMessageMBR :: Maybe Int -> Int -> SndMessage -> (ValueOrRef MsgBody, [MessageId])
@@ -1572,10 +1542,10 @@ sendGroupMessages_ _user gInfo@GroupInfo {groupId} members events = do
 data MemberSendAction = MSASend Connection | MSASendBatched Connection | MSAPending | MSAForwarded
 
 memberSendAction :: GroupInfo -> NonEmpty (ChatMsgEvent e) -> [GroupMember] -> GroupMember -> Maybe MemberSendAction
-memberSendAction gInfo events members m@GroupMember {memberRole, memberStatus} = case memberConn m of
+memberSendAction gInfo events members m@GroupMember {memberRole} = case memberConn m of
   Nothing -> pendingOrForwarded
   Just conn@Connection {connStatus}
-    | connDisabled conn || connStatus == ConnDeleted || memberStatus == GSMemRejected -> Nothing
+    | connDisabled conn || connStatus == ConnDeleted -> Nothing
     | connInactive conn -> Just MSAPending
     | connStatus == ConnSndReady || connStatus == ConnReady -> sendBatchedOrSeparate conn
     | otherwise -> pendingOrForwarded

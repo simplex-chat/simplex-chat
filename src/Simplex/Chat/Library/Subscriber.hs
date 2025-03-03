@@ -22,6 +22,7 @@ import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import qualified Data.Aeson as J
+import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Either (lefts, partitionEithers, rights)
@@ -763,16 +764,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 -- TODO update member profile
                 pure ()
             | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
-          -- sent when connecting via group link
-          XInfo _ ->
-            -- TODO [group rejection] Keep rejected member record and connection for ability to start dialogue.
-            when (memberStatus m == GSMemRejected) $ do
-              deleteMemberConnection' user m True
-              withStore' $ \db -> deleteGroupMember db user m
+          XInfo _ -> pure () -- sent when connecting via group link
           XOk -> pure ()
           _ -> messageError "INFO from member must have x.grp.mem.info, x.info or x.ok"
         pure ()
-      CON _pqEnc -> unless (memberStatus m == GSMemRejected) $ do
+      CON _pqEnc -> do
         withStore' $ \db -> do
           updateGroupMemberStatus db userId m GSMemConnected
           unless (memberActive membership) $
@@ -1295,7 +1291,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       where
         profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> PQSupport -> CM ()
         profileContactRequest invId chatVRange p@Profile {displayName, image} xContactId_ reqPQSup = do
-          withStore (\db -> createOrUpdateContactRequest db vr user userContactLinkId invId chatVRange p xContactId_ reqPQSup) >>= \case
+          cfg <- asks config
+          withAllowedName cfg $ withStore (\db -> createOrUpdateContactRequest db vr user userContactLinkId invId chatVRange p xContactId_ reqPQSup) >>= \case
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted user contact
             CORGroup gInfo -> toView $ CRBusinessRequestAlreadyAccepted user gInfo
             CORRequest cReq -> do
@@ -1321,29 +1318,19 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         toView $ CRAcceptingContactRequest user ct
                       Just groupId -> do
                         gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
-                        cfg <- asks config
-                        case rejectionReason cfg of
-                          Nothing
-                            | v < groupFastLinkJoinVersion ->
-                                messageError "processUserContactRequest: chat version range incompatible for accepting group join request"
-                            | otherwise -> do
-                                let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
-                                    useRole = userMemberRole gLinkMemRole $ acceptAsObserver cfg
-                                mem <- acceptGroupJoinRequestAsync user gInfo cReq useRole profileMode
-                                createInternalChatItem user (CDGroupRcv gInfo mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
-                                toView $ CRAcceptingGroupJoinRequestMember user gInfo mem
-                          Just rjctReason
-                            | v < groupJoinRejectVersion ->
-                                messageWarning $ "processUserContactRequest (group " <> groupName' gInfo <> "): joining of " <> displayName <> " is blocked"
-                            | otherwise -> do
-                                mem <- acceptGroupJoinSendRejectAsync user gInfo cReq rjctReason
-                                toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
+                        let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
+                        if v >= groupFastLinkJoinVersion
+                          then do
+                            let useRole = userMemberRole gLinkMemRole $ acceptAsObserver cfg
+                            mem <- acceptGroupJoinRequestAsync user gInfo cReq useRole profileMode
+                            createInternalChatItem user (CDGroupRcv gInfo mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
+                            toView $ CRAcceptingGroupJoinRequestMember user gInfo mem
+                          else messageError "processUserContactRequest: chat version range incompatible for accepting group join request"
                 _ -> toView $ CRReceivedContactRequest user cReq
           where
-            rejectionReason ChatConfig {profileNameLimit, allowedProfileName}
-              | T.length displayName > profileNameLimit = Just GRRLongName
-              | maybe False (\f -> not $ f displayName) allowedProfileName = Just GRRBlockedName
-              | otherwise = Nothing
+            withAllowedName ChatConfig {profileNameLimit, allowedProfileName} action
+              | T.length displayName <= profileNameLimit && maybe True ($ displayName) allowedProfileName = action
+              | otherwise = liftIO $ putStrLn $ "Joining of " <> T.unpack displayName <> " is blocked" -- TODO send response, maybe event to UI?
             userMemberRole linkRole = \case
               Just AOAll -> GRObserver
               Just AONameOnly | noImage -> GRObserver
@@ -2488,11 +2475,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           (gInfo, host) <- withStore $ \db -> createGroupInvitedViaLink db vr user conn' glInv
           toView $ CRGroupLinkConnecting user gInfo host
           pure (conn', True)
-        XGrpLinkReject glRjct@GroupLinkRejection {rejectionReason} -> do
-          (gInfo, host) <- withStore $ \db -> createGroupRejectedViaLink db vr user conn' glRjct
-          toView $ CRGroupLinkConnecting user gInfo host
-          toViewTE $ TEGroupLinkRejected user gInfo rejectionReason
-          pure (conn', True)
         -- TODO show/log error, other events in SMP confirmation
         _ -> pure (conn', False)
 
@@ -2846,7 +2828,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     createUnknownMember :: GroupInfo -> MemberId -> CM GroupMember
     createUnknownMember gInfo memberId = do
-      let name = nameFromMemberId memberId
+      let name = T.take 7 . safeDecodeUtf8 . B64.encode . unMemberId $ memberId
       withStore $ \db -> createNewUnknownGroupMember db vr user gInfo memberId name
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> CM ()
