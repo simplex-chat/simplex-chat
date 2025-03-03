@@ -78,6 +78,7 @@ module Simplex.Chat.Store.Groups
     createMemberConnectionAsync,
     updateGroupMemberStatus,
     updateGroupMemberStatusById,
+    updateGroupMemberAccepted,
     createNewGroupMember,
     checkGroupMemberHasItems,
     deleteGroupMember,
@@ -520,9 +521,10 @@ deleteContactCardKeepConn db connId Contact {contactId, profile = LocalProfile {
   DB.execute db "DELETE FROM contact_profiles WHERE contact_profile_id = ?" (Only profileId)
 
 createGroupInvitedViaLink :: DB.Connection -> VersionRangeChat -> User -> Connection -> GroupLinkInvitation -> ExceptT StoreError IO (GroupInfo, GroupMember)
-createGroupInvitedViaLink db vr user conn GroupLinkInvitation {fromMember, fromMemberName, invitedMember, groupProfile, business} = do
+createGroupInvitedViaLink db vr user conn GroupLinkInvitation {fromMember, fromMemberName, invitedMember, groupProfile, accepted, business} = do
   let fromMemberProfile = profileFromName fromMemberName
-  createGroupViaLink' db vr user conn fromMember fromMemberProfile invitedMember groupProfile business GSMemAccepted
+      initialStatus = maybe GSMemAccepted acceptanceToStatus accepted
+  createGroupViaLink' db vr user conn fromMember fromMemberProfile invitedMember groupProfile business initialStatus
 
 createGroupRejectedViaLink :: DB.Connection -> VersionRangeChat -> User -> Connection -> GroupLinkRejection -> ExceptT StoreError IO (GroupInfo, GroupMember)
 createGroupRejectedViaLink db vr user conn GroupLinkRejection {fromMember = fromMember@MemberIdRole {memberId}, invitedMember, groupProfile} = do
@@ -1200,6 +1202,19 @@ updateGroupMemberStatusById db userId groupMemberId memStatus = do
       WHERE user_id = ? AND group_member_id = ?
     |]
     (memStatus, currentTs, userId, groupMemberId)
+
+updateGroupMemberAccepted :: DB.Connection -> User -> GroupMember -> GroupMemberRole -> IO GroupMember
+updateGroupMemberAccepted db User {userId} m@GroupMember {groupMemberId} role = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE group_members
+      SET member_status = ?, member_role = ?, updated_at = ?
+      WHERE user_id = ? AND group_member_id = ?
+    |]
+    (GSMemConnected, role, currentTs, userId, groupMemberId)
+  pure m {memberStatus = GSMemConnected, memberRole = role, updatedAt = currentTs}
 
 -- | add new member with profile
 createNewGroupMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberInfo -> GroupMemberCategory -> GroupMemberStatus -> ExceptT StoreError IO GroupMember

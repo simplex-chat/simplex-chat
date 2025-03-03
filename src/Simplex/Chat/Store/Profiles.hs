@@ -18,6 +18,7 @@ module Simplex.Chat.Store.Profiles
   ( AutoAccept (..),
     UserMsgReceiptSettings (..),
     UserContactLink (..),
+    GroupLinkInfo (..),
     createUserRecord,
     createUserRecordAt,
     getUsersInfo,
@@ -47,6 +48,7 @@ module Simplex.Chat.Store.Profiles
     deleteUserAddress,
     getUserAddress,
     getUserContactLinkById,
+    getGroupLinkInfo,
     getUserContactLinkByConnReq,
     getContactWithoutConnViaAddress,
     updateUserAddressAutoAccept,
@@ -453,6 +455,12 @@ data UserContactLink = UserContactLink
   }
   deriving (Show)
 
+data GroupLinkInfo = GroupLinkInfo
+  { groupId :: GroupId,
+    memberRole :: GroupMemberRole
+  }
+  deriving (Show)
+
 data AutoAccept = AutoAccept
   { businessAddress :: Bool, -- possibly, it can be wrapped together with acceptIncognito, or AutoAccept made sum type
     acceptIncognito :: IncognitoEnabled,
@@ -481,18 +489,28 @@ getUserAddress db User {userId} =
       |]
       (Only userId)
 
-getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO (UserContactLink, Maybe GroupId, GroupMemberRole)
+getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO (UserContactLink, Maybe GroupLinkInfo)
 getUserContactLinkById db userId userContactLinkId =
-  ExceptT . firstRow (\(ucl :. (groupId_, mRole_)) -> (toUserContactLink ucl, groupId_, fromMaybe GRMember mRole_)) SEUserContactLinkNotFound $
-    DB.query
-      db
-      [sql|
-        SELECT conn_req_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
-        FROM user_contact_links
-        WHERE user_id = ?
-          AND user_contact_link_id = ?
-      |]
-      (userId, userContactLinkId)
+  ExceptT . firstRow (\(ucl :. gli) -> (toUserContactLink ucl, toGroupLinkInfo gli)) SEUserContactLinkNotFound $
+    DB.query db (groupLinkInfoQuery <> " AND user_contact_link_id = ?") (userId, userContactLinkId)
+
+groupLinkInfoQuery :: Query
+groupLinkInfoQuery =
+  [sql|
+    SELECT conn_req_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
+    FROM user_contact_links
+    WHERE user_id = ?
+  |]
+
+toGroupLinkInfo :: (Maybe GroupId, Maybe GroupMemberRole) -> Maybe GroupLinkInfo
+toGroupLinkInfo (groupId_, mRole_) =
+  (\groupId -> GroupLinkInfo {groupId, memberRole = fromMaybe GRMember mRole_})
+    <$> groupId_
+
+getGroupLinkInfo :: DB.Connection -> UserId -> GroupId -> IO (Maybe GroupLinkInfo)
+getGroupLinkInfo db userId groupId =
+  fmap join $ maybeFirstRow toGroupLinkInfo $ 
+    DB.query db (groupLinkInfoQuery <> " AND group_id = ?") (userId, groupId)
 
 getUserContactLinkByConnReq :: DB.Connection -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe UserContactLink)
 getUserContactLinkByConnReq db User {userId} (cReqSchema1, cReqSchema2) =

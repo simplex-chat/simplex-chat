@@ -154,7 +154,7 @@ struct ChatPreviewView: View {
         }
     }
 
-    @ViewBuilder private func inactiveIcon() -> some View {
+    private func inactiveIcon() -> some View {
         Image(systemName: "multiply.circle.fill")
             .foregroundColor(.secondary.opacity(0.65))
             .background(Circle().foregroundColor(Color(uiColor: .systemBackground)))

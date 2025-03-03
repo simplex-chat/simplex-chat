@@ -668,6 +668,7 @@ data GroupLinkInvitation = GroupLinkInvitation
     fromMemberName :: ContactName,
     invitedMember :: MemberIdRole,
     groupProfile :: GroupProfile,
+    accepted :: Maybe GroupAcceptance,
     business :: Maybe BusinessChatInfo,
     groupSize :: Maybe Int
   }
@@ -997,6 +998,7 @@ data GroupMemberStatus
   | GSMemGroupDeleted -- user member of the deleted group
   | GSMemUnknown -- unknown member, whose message was forwarded by an admin (likely member wasn't introduced due to not being a current member, but message was included in history)
   | GSMemInvited -- member is sent to or received invitation to join the group
+  | GSMemPendingApproval -- member is connected to host but pending host approval before connecting to other members ("knocking")
   | GSMemIntroduced -- user received x.grp.mem.intro for this member (only with GCPreMember)
   | GSMemIntroInvited -- member is sent to or received from intro invitation
   | GSMemAccepted -- member accepted invitation (only User and Invitee)
@@ -1017,6 +1019,11 @@ instance ToJSON GroupMemberStatus where
   toJSON = J.String . textEncode
   toEncoding = JE.text . textEncode
 
+acceptanceToStatus :: GroupAcceptance -> GroupMemberStatus
+acceptanceToStatus = \case
+  GAAccepted -> GSMemAccepted
+  GAPending -> GSMemPendingApproval
+
 memberActive :: GroupMember -> Bool
 memberActive m = case memberStatus m of
   GSMemRejected -> False
@@ -1025,6 +1032,7 @@ memberActive m = case memberStatus m of
   GSMemGroupDeleted -> False
   GSMemUnknown -> False
   GSMemInvited -> False
+  GSMemPendingApproval -> True
   GSMemIntroduced -> False
   GSMemIntroInvited -> False
   GSMemAccepted -> False
@@ -1045,6 +1053,7 @@ memberCurrent' = \case
   GSMemGroupDeleted -> False
   GSMemUnknown -> False
   GSMemInvited -> False
+  GSMemPendingApproval -> False
   GSMemIntroduced -> True
   GSMemIntroInvited -> True
   GSMemAccepted -> True
@@ -1061,6 +1070,7 @@ memberRemoved m = case memberStatus m of
   GSMemGroupDeleted -> True
   GSMemUnknown -> False
   GSMemInvited -> False
+  GSMemPendingApproval -> False
   GSMemIntroduced -> False
   GSMemIntroInvited -> False
   GSMemAccepted -> False
@@ -1077,6 +1087,7 @@ instance TextEncoding GroupMemberStatus where
     "deleted" -> Just GSMemGroupDeleted
     "unknown" -> Just GSMemUnknown
     "invited" -> Just GSMemInvited
+    "pending_approval" -> Just GSMemPendingApproval
     "introduced" -> Just GSMemIntroduced
     "intro-inv" -> Just GSMemIntroInvited
     "accepted" -> Just GSMemAccepted
@@ -1092,6 +1103,7 @@ instance TextEncoding GroupMemberStatus where
     GSMemGroupDeleted -> "deleted"
     GSMemUnknown -> "unknown"
     GSMemInvited -> "invited"
+    GSMemPendingApproval -> "pending_approval"
     GSMemIntroduced -> "introduced"
     GSMemIntroInvited -> "intro-inv"
     GSMemAccepted -> "accepted"

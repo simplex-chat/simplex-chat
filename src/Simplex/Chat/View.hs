@@ -1076,14 +1076,22 @@ viewNetworkStatuses = map viewStatuses . L.groupBy ((==) `on` netStatus) . sortO
     viewStatuses ss@(s :| _) = plain $ show (L.length ss) <> " connections " <> netStatusStr (netStatus s)
 
 viewUserJoinedGroup :: GroupInfo -> [StyledString]
-viewUserJoinedGroup g =
+viewUserJoinedGroup g@GroupInfo {membership} =
   case incognitoMembershipProfile g of
-    Just mp -> [ttyGroup' g <> ": you joined the group incognito as " <> incognitoProfile' (fromLocalProfile mp)]
-    Nothing -> [ttyGroup' g <> ": you joined the group"]
+    Just mp -> [ttyGroup' g <> ": you joined the group incognito as " <> incognitoProfile' (fromLocalProfile mp) <> pendingApproval_]
+    Nothing -> [ttyGroup' g <> ": you joined the group" <> pendingApproval_]
+  where
+    pendingApproval_ = case memberStatus membership of
+      GSMemPendingApproval -> ", pending approval"
+      _ -> ""
 
 viewJoinedGroupMember :: GroupInfo -> GroupMember -> [StyledString]
-viewJoinedGroupMember g m =
-  [ttyGroup' g <> ": " <> ttyMember m <> " joined the group "]
+viewJoinedGroupMember g@GroupInfo {groupId} m@GroupMember {groupMemberId, memberStatus} = case memberStatus of
+  GSMemPendingApproval ->
+    [ (ttyGroup' g <> ": " <> ttyMember m <> " connected and pending approval, ")
+      <> ("use " <> highlight ("/_accept member #" <> show groupId <> " " <> show groupMemberId <> " <role>") <> " to accept member")
+    ]
+  _ -> [ttyGroup' g <> ": " <> ttyMember m <> " joined the group "]
 
 viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> [StyledString]
 viewReceivedGroupInvitation g c role =

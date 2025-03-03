@@ -4870,7 +4870,7 @@ Query:
 Plan:
 SCAN usage_conditions
 
-Query:  SELECT chat_item_id FROM chat_items WHERE  ( user_id = ? AND group_id = ?  AND  item_ts < ? ) OR ( user_id = ? AND group_id = ?  AND  item_ts = ? AND chat_item_id < ? )  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
+Query:  SELECT chat_item_id FROM chat_items WHERE  (( user_id = ? AND group_id = ?  AND  item_ts < ? ) OR ( user_id = ? AND group_id = ?  AND  item_ts = ? AND chat_item_id < ? ))  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
 Plan:
 MULTI-INDEX OR
 INDEX 1
@@ -4879,7 +4879,7 @@ INDEX 2
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=? AND item_ts=? AND rowid<?)
 USE TEMP B-TREE FOR ORDER BY
 
-Query:  SELECT chat_item_id FROM chat_items WHERE  ( user_id = ? AND group_id = ?  AND  item_ts > ? ) OR ( user_id = ? AND group_id = ?  AND  item_ts = ? AND chat_item_id > ? )  ORDER BY item_ts ASC, chat_item_id ASC  LIMIT ?
+Query:  SELECT chat_item_id FROM chat_items WHERE  (( user_id = ? AND group_id = ?  AND  item_ts > ? ) OR ( user_id = ? AND group_id = ?  AND  item_ts = ? AND chat_item_id > ? ))  ORDER BY item_ts ASC, chat_item_id ASC  LIMIT ?
 Plan:
 MULTI-INDEX OR
 INDEX 1

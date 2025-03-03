@@ -162,6 +162,8 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   }
   deriving (Show)
 
+data NotInHistory = NotInHistory
+
 data CIMention = CIMention
   { memberId :: MemberId,
     -- member record can be created later than the mention is received

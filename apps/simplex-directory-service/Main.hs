@@ -5,7 +5,9 @@ module Main where
 import Directory.Options
 import Directory.Service
 import Directory.Store
+import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), defaultChatHooks)
 import Simplex.Chat.Core
+import Simplex.Chat.Terminal (terminalChatConfig)
 
 main :: IO ()
 main = do
@@ -14,5 +16,6 @@ main = do
   if runCLI
     then directoryServiceCLI st opts
     else do
-      cfg <- directoryChatConfig opts
-      simplexChatCore cfg (mkChatOpts opts) $ directoryService st opts
+      env <- newServiceState opts
+      let cfg = terminalChatConfig {chatHooks = defaultChatHooks {acceptMember = Just $ acceptMemberHook opts env}}
+      simplexChatCore cfg (mkChatOpts opts) $ directoryService st opts env
