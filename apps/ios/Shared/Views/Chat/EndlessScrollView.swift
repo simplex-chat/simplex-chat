@@ -476,7 +476,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
         if index >= listState.items.count || listState.isScrolling || listState.isAnimatedScrolling {
             return
         }
-        if bounds.height == 0 {
+        if bounds.height == 0 || contentSize.height == 0 {
             scrollToItemIndexDelayed = index
             return
         }
