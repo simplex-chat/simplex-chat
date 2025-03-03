@@ -2960,7 +2960,7 @@ testGLinkManualAcceptMember =
       cath #> "#team hi group"
       [alice, bob] *<# "#team cath> hi group"
   where
-    cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAManual, GRObserver))}}
+    cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAPending, GRObserver))}}
 
 testGLinkDeletePendingMember :: HasCallStack => TestParams -> IO ()
 testGLinkDeletePendingMember =
@@ -2985,7 +2985,7 @@ testGLinkDeletePendingMember =
       cath <## "#team: alice removed you from the group"
       cath <## "use /d #team to delete the group"
   where
-    cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAManual, GRObserver))}}
+    cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAPending, GRObserver))}}
 
 testPlanGroupLinkKnown :: HasCallStack => TestParams -> IO ()
 testPlanGroupLinkKnown =

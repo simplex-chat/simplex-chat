@@ -164,9 +164,9 @@ acceptMemberHook
     when (useMemberFilter img $ rejectNames a) checkName
     pure $
       if
-        | useMemberFilter img (passCaptcha a) -> (GAManual, GRMember)
-        | useMemberFilter img (makeObserver a) -> (GAAuto, GRObserver)
-        | otherwise -> (GAAuto, memberRole)
+        | useMemberFilter img (passCaptcha a) -> (GAPending, GRMember)
+        | useMemberFilter img (makeObserver a) -> (GAAccepted, GRObserver)
+        | otherwise -> (GAAccepted, memberRole)
     -- TODO [captcha] uncomment for testing
     -- pure (GAManual, GRMember)
     where

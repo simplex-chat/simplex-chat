@@ -668,7 +668,7 @@ data GroupLinkInvitation = GroupLinkInvitation
     fromMemberName :: ContactName,
     invitedMember :: MemberIdRole,
     groupProfile :: GroupProfile,
-    acceptance :: Maybe GroupAcceptance,
+    accepted :: Maybe GroupAcceptance,
     business :: Maybe BusinessChatInfo,
     groupSize :: Maybe Int
   }
@@ -1021,8 +1021,8 @@ instance ToJSON GroupMemberStatus where
 
 acceptanceToStatus :: GroupAcceptance -> GroupMemberStatus
 acceptanceToStatus = \case
-  GAAuto -> GSMemAccepted
-  GAManual -> GSMemPendingApproval
+  GAAccepted -> GSMemAccepted
+  GAPending -> GSMemPendingApproval
 
 memberActive :: GroupMember -> Bool
 memberActive m = case memberStatus m of
