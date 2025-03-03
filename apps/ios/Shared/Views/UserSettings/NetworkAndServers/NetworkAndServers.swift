@@ -245,9 +245,9 @@ struct UsageConditionsView: View {
                     Text("Updated conditions").font(.largeTitle).bold()
                 } else {
                     Text("Conditions of use").font(.largeTitle).bold()
+                    Spacer()
+                    conditionsLinkButton()
                 }
-                Spacer()
-                conditionsLinkButton()
             }
             .padding(.top)
             .padding(.top)
@@ -264,9 +264,6 @@ struct UsageConditionsView: View {
                 ConditionsTextView()
                 VStack(spacing: 8) {
                     acceptConditionsButton(operators.map { $0.operatorId })
-                    if updated {
-                        conditionsDiffButton()
-                    }
                     if let deadline = deadline {
                         Text("Conditions will be automatically accepted for enabled operators on: \(conditionsTimestamp(deadline)).")
                             .foregroundColor(theme.colors.secondary)
@@ -274,6 +271,12 @@ struct UsageConditionsView: View {
                             .multilineTextAlignment(.center)
                             .frame(maxWidth: .infinity, alignment: .center)
                             .padding(.horizontal, 32)
+                        if updated {
+                            conditionsDiffButton(.footnote)
+                        }
+                    } else if updated {
+                        conditionsDiffButton()
+                            .padding(.top)
                     }
                 }
                 .padding(.bottom)
@@ -322,11 +325,15 @@ struct UsageConditionsView: View {
         }
     }
 
-    @ViewBuilder private func conditionsDiffButton() -> some View {
+    @ViewBuilder private func conditionsDiffButton(_ font: Font? = nil) -> some View {
         let commit = ChatModel.shared.conditions.currentConditions.conditionsCommit
         if let commitUrl = URL(string: "https://github.com/simplex-chat/simplex-chat/commit/\(commit)") {
             Link(destination: commitUrl) {
-                Label("Open changes", systemImage: "arrow.up.right.circle")
+                HStack {
+                    Text("Open changes")
+                    Image(systemName: "arrow.up.right.circle")
+                }
+                .font(font)
             }
         }
     }
