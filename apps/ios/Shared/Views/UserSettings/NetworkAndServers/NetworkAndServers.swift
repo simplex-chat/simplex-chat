@@ -172,7 +172,8 @@ struct NetworkAndServers: View {
             case .showConditions:
                 UsageConditionsView(
                     currUserServers: $ss.servers.currUserServers,
-                    userServers: $ss.servers.userServers
+                    userServers: $ss.servers.userServers,
+                    updated: false
                 )
                 .modifier(ThemedBackground(grouped: true))
             }
@@ -235,11 +236,16 @@ struct UsageConditionsView: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var currUserServers: [UserOperatorServers]
     @Binding var userServers: [UserOperatorServers]
+    var updated: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
-                Text("Conditions of use").font(.largeTitle).bold()
+                if updated {
+                    Text("Updated conditions").font(.largeTitle).bold()
+                } else {
+                    Text("Conditions of use").font(.largeTitle).bold()
+                }
                 Spacer()
                 conditionsLinkButton()
             }
@@ -258,6 +264,9 @@ struct UsageConditionsView: View {
                 ConditionsTextView()
                 VStack(spacing: 8) {
                     acceptConditionsButton(operators.map { $0.operatorId })
+                    if updated {
+                        conditionsDiffButton()
+                    }
                     if let deadline = deadline {
                         Text("Conditions will be automatically accepted for enabled operators on: \(conditionsTimestamp(deadline)).")
                             .foregroundColor(theme.colors.secondary)
@@ -309,6 +318,15 @@ struct UsageConditionsView: View {
                         message: responseError(error)
                     )
                 }
+            }
+        }
+    }
+
+    @ViewBuilder private func conditionsDiffButton() -> some View {
+        let commit = ChatModel.shared.conditions.currentConditions.conditionsCommit
+        if let commitUrl = URL(string: "https://github.com/simplex-chat/simplex-chat/commit/\(commit)") {
+            Link(destination: commitUrl) {
+                Label("Open changes", systemImage: "arrow.up.right.circle")
             }
         }
     }
