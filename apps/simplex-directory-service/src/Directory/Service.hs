@@ -717,9 +717,9 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                   "- pass captcha to join: " <> showCondition (passCaptcha a),
                   -- "- make observer: " <> showCondition (makeObserver a) <> (if isJust (makeObserver a) then "" else " (use default set with /role command)"),
                   "",
-                  "Use */filter " <> tshow gId <> " <level>* to change spam filter level: no (disable), basic, moderate, strong.",
+                  -- "Use */filter " <> tshow gId <> " <level>* to change spam filter level: no (disable), basic, moderate, strong.",
                   -- "Or use */filter " <> tshow gId <> " [name[=noimage]] [captcha[=noimage]] [observer[=noimage]]* for advanced filter configuration."
-                  "Or use */filter " <> tshow gId <> " [name[=noimage]] [captcha[=noimage]]* for advanced filter configuration."
+                  "Or use */filter " <> tshow gId <> " [name] [captcha]* to configure filter."
                 ]
           showCondition = \case
             Nothing -> "_disabled_"
