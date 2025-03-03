@@ -2359,6 +2359,8 @@
     <string name="v6_3_better_groups_performance">Prestazioni dei gruppi migliorate</string>
     <string name="v6_3_organize_chat_lists">Organizza le chat in elenchi</string>
     <string name="v6_3_set_message_expiration_in_chats">Imposta la scadenza dei messaggi nelle chat.</string>
-    <string name="v6_3_reports">Invia resoconti privati</string>
+    <string name="v6_3_reports">Invia segnalazioni private</string>
     <string name="v6_3_private_media_file_names">Nomi privati dei file multimediali.</string>
+    <string name="group_member_status_rejected">rifiutato</string>
+    <string name="group_preview_rejected">rifiutato</string>
 </resources>
