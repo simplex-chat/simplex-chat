@@ -167,8 +167,6 @@ acceptMemberHook
         | useMemberFilter img (passCaptcha a) -> (GAPending, GRMember)
         | useMemberFilter img (makeObserver a) -> (GAAccepted, GRObserver)
         | otherwise -> (GAAccepted, memberRole)
-    -- TODO [captcha] uncomment for testing
-    -- pure (GAManual, GRMember)
     where
       checkName :: ExceptT GroupRejectionReason IO ()
       checkName
@@ -520,8 +518,6 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     memberRequiresCaptcha :: DirectoryMemberAcceptance -> GroupMember -> Bool
     memberRequiresCaptcha a GroupMember {memberProfile = LocalProfile {image}} =
       useMemberFilter image $ passCaptcha a
-      -- TODO [captcha] uncomment for testing
-      -- True
 
     sendToApprove :: GroupInfo -> GroupReg -> GroupApprovalId -> IO ()
     sendToApprove GroupInfo {groupProfile = p@GroupProfile {displayName, image = image'}} GroupReg {dbGroupId, dbContactId} gaId = do

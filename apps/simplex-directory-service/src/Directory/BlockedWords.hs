@@ -23,7 +23,7 @@ data BlockedWordsConfig = BlockedWordsConfig
 
 hasBlockedFragments :: BlockedWordsConfig -> Text -> Bool
 hasBlockedFragments BlockedWordsConfig {spelling, blockedFragments} s =
-  not $ any (\w -> any (`T.isInfixOf` w) blockedFragments) ws
+  any (\w -> any (`T.isInfixOf` w) blockedFragments) ws
   where
     ws = S.fromList $ filter (not . T.null) $ normalizeText spelling s
 
