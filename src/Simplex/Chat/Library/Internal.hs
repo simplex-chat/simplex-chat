@@ -1589,6 +1589,7 @@ sendGroupMessage' user gInfo members chatMsgEvent =
 
 sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
 sendGroupMessages user gInfo members events = do
+  -- TODO [knocking] when sending to all, send profile update to pending approval members too, then filter for next step?
   when shouldSendProfileUpdate $
     sendProfileUpdate `catchChatError` (toView . CRChatError (Just user))
   sendGroupMessages_ user gInfo members events
