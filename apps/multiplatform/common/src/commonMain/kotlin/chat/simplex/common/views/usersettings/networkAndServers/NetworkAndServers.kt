@@ -188,7 +188,7 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
         UsageConditionsView(
           currUserServers,
           userServers,
-          updated = false,
+          updated = conditionsAction is UsageConditionsAction.Review,
           close,
           rhId
         )
