@@ -2306,4 +2306,15 @@
     <string name="network_smp_web_port_footer">Gunakan port TCP %1$s jika tidak ada port yang ditentukan.</string>
     <string name="network_smp_web_port_toggle">Gunakan port peramban</string>
     <string name="max_group_mentions_per_message_reached">Anda dapat menyebut hingga %1$s anggota per pesan!</string>
+    <string name="report_archive_alert_desc_all">Semua laporan akan diarsipkan untuk Anda.</string>
+    <string name="report_archive_alert_title_all">Arsipkan semua laporan?</string>
+    <string name="report_archive_for_all_moderators">Untuk semua moderator</string>
+    <string name="report_archive_for_me">Untuk saya</string>
+    <string name="archive_reports">Arsip laporan</string>
+    <string name="notification_group_report">Laporan: %s</string>
+    <string name="enable_sending_member_reports">Izinkan untuk laporkan pesan ke moderator.</string>
+    <string name="group_members_can_send_reports">Anggota dapat melaporkan pesan ke moderator.</string>
+    <string name="member_reports_are_prohibited">Laporkan pesan dilarang di grup ini.</string>
+    <string name="disable_sending_member_reports">Dilarang laporkan pesan ke moderator.</string>
+    <string name="report_archive_alert_title_nth">Arsipkan %d laporan?</string>
 </resources>

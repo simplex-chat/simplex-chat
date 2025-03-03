@@ -97,6 +97,22 @@ class ItemsModel: ObservableObject {
             }
         }
     }
+
+    func loadOpenChatNoWait(_ chatId: ChatId, _ openAroundItemId: ChatItem.ID? = nil) {
+        navigationTimeoutTask?.cancel()
+        loadChatTask?.cancel()
+        loadChatTask = Task {
+            //            try? await Task.sleep(nanoseconds: 1000_000000)
+            await loadChat(chatId: chatId, openAroundItemId: openAroundItemId, clearItems: openAroundItemId == nil)
+            if !Task.isCancelled {
+                await MainActor.run {
+                    if openAroundItemId == nil {
+                        ChatModel.shared.chatId = chatId
+                    }
+                }
+            }
+        }
+    }
 }
 
 class ChatTagsModel: ObservableObject {
@@ -123,11 +139,9 @@ class ChatTagsModel: ObservableObject {
                 }
             }
         }
-        if case let .presetTag(tag) = tm.activeFilter, (newPresetTags[tag] ?? 0) == 0 {
-            activeFilter = nil
-        }
         presetTags = newPresetTags
         unreadTags = newUnreadTags
+        clearActiveChatFilterIfNeeded()
     }
 
     func updateChatFavorite(favorite: Bool, wasFavorite: Bool) {
@@ -136,9 +150,7 @@ class ChatTagsModel: ObservableObject {
             presetTags[.favorites] = (count ?? 0) + 1
         } else if !favorite && wasFavorite, let count {
             presetTags[.favorites] = max(0, count - 1)
-            if case .presetTag(.favorites) = activeFilter, (presetTags[.favorites] ?? 0) == 0 {
-                activeFilter = nil
-            }
+            clearActiveChatFilterIfNeeded()
         }
     }
 
@@ -162,6 +174,7 @@ class ChatTagsModel: ObservableObject {
                 }
             }
         }
+        clearActiveChatFilterIfNeeded()
     }
     
     func markChatTagRead(_ chat: Chat) -> Void {
@@ -192,7 +205,17 @@ class ChatTagsModel: ObservableObject {
 
     func changeGroupReportsTag(_ by: Int = 0) {
         if by == 0 { return }
-        presetTags[.groupReports] = (presetTags[.groupReports] ?? 0) + by
+        presetTags[.groupReports] = max(0, (presetTags[.groupReports] ?? 0) + by)
+        clearActiveChatFilterIfNeeded()
+    }
+
+    func clearActiveChatFilterIfNeeded() {
+        let clear = switch activeFilter {
+        case let .presetTag(tag): (presetTags[tag] ?? 0) == 0
+        case let .userTag(tag): !userTags.contains(tag)
+        case .unread, nil: false
+        }
+        if clear { activeFilter = nil }
     }
 }
 
@@ -252,6 +275,7 @@ final class ChatModel: ObservableObject {
     @Published var deletedChats: Set<String> = []
     // current chat
     @Published var chatId: String?
+    @Published var openAroundItemId: ChatItem.ID? = nil
     var chatItemStatuses: Dictionary<Int64, CIStatus> = [:]
     @Published var chatToTop: String?
     @Published var groupMembers: [GMember] = []

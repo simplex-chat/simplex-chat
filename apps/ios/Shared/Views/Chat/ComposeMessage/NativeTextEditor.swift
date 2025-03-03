@@ -16,6 +16,7 @@ struct NativeTextEditor: UIViewRepresentable {
     @Binding var disableEditing: Bool
     @Binding var height: CGFloat
     @Binding var focused: Bool
+    @Binding var lastUnfocusedDate: Date
     @Binding var placeholder: String?
     @Binding var selectedRange: NSRange
     let onImagesAdded: ([UploadContent]) -> Void
@@ -42,7 +43,12 @@ struct NativeTextEditor: UIViewRepresentable {
                 onImagesAdded(images)
             }
         }
-        field.setOnFocusChangedListener { focused = $0 }
+        field.setOnFocusChangedListener {
+            focused = $0
+            if !focused {
+                lastUnfocusedDate = .now
+            }
+        }
         field.delegate = field
         field.textContainerInset = UIEdgeInsets(top: 8, left: 5, bottom: 6, right: 4)
         field.setPlaceholderView()
@@ -266,6 +272,7 @@ struct NativeTextEditor_Previews: PreviewProvider{
             disableEditing: Binding.constant(false),
             height: Binding.constant(100),
             focused: Binding.constant(false),
+            lastUnfocusedDate: Binding.constant(.now),
             placeholder: Binding.constant("Placeholder"),
             selectedRange: Binding.constant(NSRange(location: 0, length: 0)),
             onImagesAdded: { _ in }

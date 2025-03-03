@@ -338,7 +338,7 @@ func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async {
     await loadChat(chatId: chat.chatInfo.id, search: search, clearItems: clearItems)
 }
 
-func loadChat(chatId: ChatId, search: String = "", clearItems: Bool = true) async {
+func loadChat(chatId: ChatId, search: String = "", openAroundItemId: ChatItem.ID? = nil, clearItems: Bool = true) async {
     let m = ChatModel.shared
     let im = ItemsModel.shared
     m.chatItemStatuses = [:]
@@ -348,7 +348,7 @@ func loadChat(chatId: ChatId, search: String = "", clearItems: Bool = true) asyn
             ItemsModel.shared.chatItemsChangesListener.cleared()
         }
     }
-    await apiLoadMessages(chatId, search == "" ? .initial(count: loadItemsPerPage) : .last(count: loadItemsPerPage), im.chatState, search, { 0...0 })
+    await apiLoadMessages(chatId, openAroundItemId != nil ? .around(chatItemId: openAroundItemId!, count: loadItemsPerPage)  : (search == "" ? .initial(count: loadItemsPerPage) : .last(count: loadItemsPerPage)), im.chatState, search, openAroundItemId, { 0...0 })
 }
 
 func apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64) async throws -> ChatItemInfo {
@@ -1588,21 +1588,21 @@ func apiJoinGroup(_ groupId: Int64) async throws -> JoinGroupResult {
     }
 }
 
-func apiRemoveMember(_ groupId: Int64, _ memberId: Int64) async throws -> GroupMember {
-    let r = await chatSendCmd(.apiRemoveMember(groupId: groupId, memberId: memberId), bgTask: false)
-    if case let .userDeletedMember(_, _, member) = r { return member }
+func apiRemoveMembers(_ groupId: Int64, _ memberIds: [Int64]) async throws -> [GroupMember] {
+    let r = await chatSendCmd(.apiRemoveMembers(groupId: groupId, memberIds: memberIds), bgTask: false)
+    if case let .userDeletedMembers(_, _, members) = r { return members }
     throw r
 }
 
-func apiMemberRole(_ groupId: Int64, _ memberId: Int64, _ memberRole: GroupMemberRole) async throws -> GroupMember {
-    let r = await chatSendCmd(.apiMemberRole(groupId: groupId, memberId: memberId, memberRole: memberRole), bgTask: false)
-    if case let .memberRoleUser(_, _, member, _, _) = r { return member }
+func apiMembersRole(_ groupId: Int64, _ memberIds: [Int64], _ memberRole: GroupMemberRole) async throws -> [GroupMember] {
+    let r = await chatSendCmd(.apiMembersRole(groupId: groupId, memberIds: memberIds, memberRole: memberRole), bgTask: false)
+    if case let .membersRoleUser(_, _, members, _) = r { return members }
     throw r
 }
 
-func apiBlockMemberForAll(_ groupId: Int64, _ memberId: Int64, _ blocked: Bool) async throws -> GroupMember {
-    let r = await chatSendCmd(.apiBlockMemberForAll(groupId: groupId, memberId: memberId, blocked: blocked), bgTask: false)
-    if case let .memberBlockedForAllUser(_, _, member, _) = r { return member }
+func apiBlockMembersForAll(_ groupId: Int64, _ memberIds: [Int64], _ blocked: Bool) async throws -> [GroupMember] {
+    let r = await chatSendCmd(.apiBlockMembersForAll(groupId: groupId, memberIds: memberIds, blocked: blocked), bgTask: false)
+    if case let .membersBlockedForAllUser(_, _, members, _) = r { return members }
     throw r
 }
 

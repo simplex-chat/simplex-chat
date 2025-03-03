@@ -133,9 +133,12 @@ fun ChatView(
 
         SimpleXThemeOverride(overrides ?: CurrentColors.collectAsState().value) {
           val onSearchValueChanged: (String) -> Unit = onSearchValueChanged@{ value ->
-            if (searchText.value == value) return@onSearchValueChanged
-            val c = chatModel.getChat(chatInfo.id) ?: return@onSearchValueChanged
-            if (chatModel.chatId.value != chatInfo.id) return@onSearchValueChanged
+            val sameText = searchText.value == value
+            // showSearch can be false with empty text when it was closed manually after clicking on message from search to load .around it
+            // (required on Android to have this check to prevent call to search with old text)
+            val emptyAndClosedSearch = searchText.value.isEmpty() && !showSearch.value && contentTag == null
+            val c = chatModel.getChat(chatInfo.id)
+            if (sameText || emptyAndClosedSearch || c == null || chatModel.chatId.value != chatInfo.id) return@onSearchValueChanged
             withBGApi {
               apiFindMessages(c, value, contentTag)
               searchText.value = value
@@ -344,7 +347,7 @@ fun ChatView(
               val c = chatModel.getChat(chatId)
               if (chatModel.chatId.value != chatId) return@ChatLayout
               if (c != null) {
-                apiLoadMessages(c.remoteHostId, c.chatInfo.chatType, c.chatInfo.apiId, contentTag, pagination, searchText.value, visibleItemIndexes)
+                apiLoadMessages(c.remoteHostId, c.chatInfo.chatType, c.chatInfo.apiId, contentTag, pagination, searchText.value, null, visibleItemIndexes)
               }
             },
             deleteMessage = { itemId, mode ->
@@ -602,6 +605,10 @@ fun ChatView(
             },
             changeNtfsState = { enabled, currentValue -> toggleNotifications(chatRh, chatInfo, enabled, chatModel, currentValue) },
             onSearchValueChanged = onSearchValueChanged,
+            closeSearch = {
+              showSearch.value = false
+              searchText.value = ""
+            },
             onComposed,
             developerTools = chatModel.controller.appPrefs.developerTools.get(),
             showViaProxy = chatModel.controller.appPrefs.showSentViaProxy.get(),
@@ -699,6 +706,7 @@ fun ChatLayout(
   markChatRead: () -> Unit,
   changeNtfsState: (MsgFilter, currentValue: MutableState<MsgFilter>) -> Unit,
   onSearchValueChanged: (String) -> Unit,
+  closeSearch: () -> Unit,
   onComposed: suspend (chatId: String) -> Unit,
   developerTools: Boolean,
   showViaProxy: Boolean,
@@ -751,7 +759,7 @@ fun ChatLayout(
                   useLinkPreviews, linkMode, scrollToItemId, selectedChatItems, showMemberInfo, showChatInfo = info, loadMessages, deleteMessage, deleteMessages, archiveReports,
                   receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat, forwardItem,
                   updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
-                  setReaction, showItemDetails, markItemsRead, markChatRead, remember { { onComposed(it) } }, developerTools, showViaProxy,
+                  setReaction, showItemDetails, markItemsRead, markChatRead, closeSearch, remember { { onComposed(it) } }, developerTools, showViaProxy,
                 )
               }
               if (chatInfo is ChatInfo.Group && composeState.value.message.text.isNotEmpty()) {
@@ -1160,11 +1168,13 @@ fun BoxScope.ChatItemsList(
   showItemDetails: (ChatInfo, ChatItem) -> Unit,
   markItemsRead: (List<Long>) -> Unit,
   markChatRead: () -> Unit,
+  closeSearch: () -> Unit,
   onComposed: suspend (chatId: String) -> Unit,
   developerTools: Boolean,
   showViaProxy: Boolean
 ) {
   val searchValueIsEmpty = remember { derivedStateOf { searchValue.value.isEmpty() } }
+  val searchValueIsNotBlank = remember { derivedStateOf { searchValue.value.isNotBlank() } }
   val revealedItems = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(setOf<Long>()) }
   val contentTag = LocalContentTag.current
   // not using reversedChatItems inside to prevent possible derivedState bug in Compose when one derived state access can cause crash asking another derived state
@@ -1177,15 +1187,29 @@ fun BoxScope.ChatItemsList(
   val reportsCount = reportsCount(chatInfo.id)
   val topPaddingToContent = topPaddingToContent(chatView = contentTag == null, contentTag == null && reportsCount > 0)
   val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent.roundToPx() })
+  val numberOfBottomAppBars = numberOfBottomAppBars()
   /** determines height based on window info and static height of two AppBars. It's needed because in the first graphic frame height of
    * [composeViewHeight] is unknown, but we need to set scroll position for unread messages already so it will be correct before the first frame appears
    * */
   val maxHeightForList = rememberUpdatedState(
-    with(LocalDensity.current) { LocalWindowHeight().roundToPx() - topPaddingToContentPx.value - (AppBarHeight * fontSizeSqrtMultiplier * 2).roundToPx() }
+    with(LocalDensity.current) { LocalWindowHeight().roundToPx() - topPaddingToContentPx.value - (AppBarHeight * fontSizeSqrtMultiplier * numberOfBottomAppBars).roundToPx() }
   )
-  val listState = rememberUpdatedState(rememberSaveable(chatInfo.id, searchValueIsEmpty.value, saver = LazyListState.Saver) {
-    val index = mergedItems.value.items.indexOfLast { it.hasUnread() }
+  val resetListState = remember { mutableStateOf(false) }
+  remember(chatModel.openAroundItemId.value) {
+    if (chatModel.openAroundItemId.value != null) {
+      closeSearch()
+      resetListState.value = !resetListState.value
+    }
+  }
+  val highlightedItems = remember { mutableStateOf(setOf<Long>()) }
+  val listState = rememberUpdatedState(rememberSaveable(chatInfo.id, searchValueIsEmpty.value, resetListState.value, saver = LazyListState.Saver) {
+    val openAroundItemId = chatModel.openAroundItemId.value
+    val index = mergedItems.value.indexInParentItems[openAroundItemId] ?: mergedItems.value.items.indexOfLast { it.hasUnread() }
     val reportsState = reportsListState
+    if (openAroundItemId != null) {
+      highlightedItems.value += openAroundItemId
+      chatModel.openAroundItemId.value = null
+    }
     if (reportsState != null) {
       reportsListState = null
       reportsState
@@ -1221,7 +1245,6 @@ fun BoxScope.ChatItemsList(
 
   val remoteHostIdUpdated = rememberUpdatedState(remoteHostId)
   val chatInfoUpdated = rememberUpdatedState(chatInfo)
-  val highlightedItems = remember { mutableStateOf(setOf<Long>()) }
   val scope = rememberCoroutineScope()
   val scrollToItem: (Long) -> Unit = remember {
     // In group reports just set the itemId to scroll to so the main ChatView will handle scrolling
@@ -1238,7 +1261,7 @@ fun BoxScope.ChatItemsList(
       scrollToItemId.value = null }
     }
   }
-  LoadLastItems(loadingMoreItems, remoteHostId, chatInfo)
+  LoadLastItems(loadingMoreItems, resetListState, remoteHostId, chatInfo)
   SmallScrollOnNewMessage(listState, reversedChatItems)
   val finishedInitialComposition = remember { mutableStateOf(false) }
   NotifyChatListOnFinishingComposition(finishedInitialComposition, chatInfo, revealedItems, listState, onComposed)
@@ -1296,7 +1319,7 @@ fun BoxScope.ChatItemsList(
                   highlightedItems.value = setOf()
                 }
             }
-            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
+            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
           }
         }
 
@@ -1567,9 +1590,9 @@ fun BoxScope.ChatItemsList(
 }
 
 @Composable
-private fun LoadLastItems(loadingMoreItems: MutableState<Boolean>, remoteHostId: Long?, chatInfo: ChatInfo) {
+private fun LoadLastItems(loadingMoreItems: MutableState<Boolean>, resetListState: State<Boolean>, remoteHostId: Long?, chatInfo: ChatInfo) {
   val contentTag = LocalContentTag.current
-  LaunchedEffect(remoteHostId, chatInfo.id) {
+  LaunchedEffect(remoteHostId, chatInfo.id, resetListState.value) {
     try {
       loadingMoreItems.value = true
       if (chatModel.chatStateForContent(contentTag).totalAfter.value <= 0) return@LaunchedEffect
@@ -1885,6 +1908,17 @@ fun topPaddingToContent(chatView: Boolean, additionalTopBar: Boolean = false): D
     WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + reportsPadding
   } else {
     AppBarHeight * fontSizeSqrtMultiplier + WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + reportsPadding
+  }
+}
+
+@Composable
+private fun numberOfBottomAppBars(): Int {
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val chatBottomBar = remember { appPrefs.chatBottomBar.state }
+  return if (oneHandUI.value && chatBottomBar.value) {
+    2
+  } else {
+    1
   }
 }
 
@@ -2798,6 +2832,7 @@ fun PreviewChatLayout() {
       markChatRead = {},
       changeNtfsState = { _, _ -> },
       onSearchValueChanged = {},
+      closeSearch = {},
       onComposed = {},
       developerTools = false,
       showViaProxy = false,
@@ -2874,6 +2909,7 @@ fun PreviewGroupChatLayout() {
       markChatRead = {},
       changeNtfsState = { _, _ -> },
       onSearchValueChanged = {},
+      closeSearch = {},
       onComposed = {},
       developerTools = false,
       showViaProxy = false,

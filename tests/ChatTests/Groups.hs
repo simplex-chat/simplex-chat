@@ -20,14 +20,14 @@ import qualified Data.ByteString.Char8 as B
 import Data.List (intercalate, isInfixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
-import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), defaultChatHooks)
 import Simplex.Chat.Library.Internal (uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgMention (..), MsgContent (..), msgContentText)
 import Simplex.Chat.Types
-import Simplex.Chat.Types.Shared (GroupMemberRole (..))
+import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -98,6 +98,11 @@ chatGroupTests = do
     it "group link member role" testGroupLinkMemberRole
     it "host profile received" testGroupLinkHostProfileReceived
     it "existing contact merged" testGroupLinkExistingContactMerged
+  describe "group links - join rejection" $ do
+    it "reject member joining via group link - blocked name" testGLinkRejectBlockedName
+  describe "group links - manual acceptance" $ do
+    it "manually accept member joining via group link" testGLinkManualAcceptMember
+    it "delete pending member" testGLinkDeletePendingMember
   describe "group link connection plan" $ do
     it "ok to connect; known group" testPlanGroupLinkKnown
     it "own group link" testPlanGroupLinkOwn
@@ -172,7 +177,8 @@ chatGroupTests = do
     it "messages are fully deleted" testBlockForAllFullDelete
     it "another admin can unblock" testBlockForAllAnotherAdminUnblocks
     it "member was blocked before joining group" testBlockForAllBeforeJoining
-    it "can't repeat block, unblock" testBlockForAllCantRepeat
+    it "repeat block, unblock" testBlockForAllRepeat
+    it "block multiple members" testBlockForAllMultipleMembers
   describe "group member inactivity" $ do
     it "mark member inactive on reaching quota" testGroupMemberInactive
   describe "group member reports" $ do
@@ -183,6 +189,8 @@ chatGroupTests = do
     it "should send updated mentions in history" testGroupHistoryWithMentions
     describe "uniqueMsgMentions" testUniqueMsgMentions
     describe "updatedMentionNames" testUpdatedMentionNames
+  describe "group direct messages" $ do
+    it "should send group direct messages" testGroupDirectMessages
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -264,7 +272,7 @@ testGroupShared alice bob cath checkMessages = do
   -- test observer role
   alice ##> "/mr team bob observer"
   concurrentlyN_
-    [ alice <## "#team: you changed the role of bob from admin to observer",
+    [ alice <## "#team: you changed the role of bob to observer",
       bob <## "#team: alice changed your role from admin to observer",
       cath <## "#team: alice changed the role of bob from admin to observer"
     ]
@@ -279,7 +287,7 @@ testGroupShared alice bob cath checkMessages = do
     ]
   alice ##> "/mr team bob admin"
   concurrentlyN_
-    [ alice <## "#team: you changed the role of bob from observer to admin",
+    [ alice <## "#team: you changed the role of bob to admin",
       bob <## "#team: alice changed your role from observer to admin",
       cath <## "#team: alice changed the role of bob from observer to admin"
     ]
@@ -1459,7 +1467,7 @@ testUpdateMemberRole =
       alice <## "to add members use /a team <name> or /create link #team"
       addMember "team" alice bob GRAdmin
       alice ##> "/mr team bob member"
-      alice <## "#team: you changed the role of bob from admin to member"
+      alice <## "#team: you changed the role of bob to member"
       bob <## "#team: alice invites you to join the group as member"
       bob <## "use /j team to accept"
       bob ##> "/j team"
@@ -1471,7 +1479,7 @@ testUpdateMemberRole =
       bob <## "#team: you have insufficient permissions for this action, the required role is admin"
       alice ##> "/mr team bob admin"
       concurrently_
-        (alice <## "#team: you changed the role of bob from member to admin")
+        (alice <## "#team: you changed the role of bob to admin")
         (bob <## "#team: alice changed your role from member to admin")
       bob ##> "/a team cath owner"
       bob <## "#team: you have insufficient permissions for this action, the required role is owner"
@@ -1487,13 +1495,7 @@ testUpdateMemberRole =
             alice <## "#team: new member cath is connected"
         ]
       alice ##> "/mr team alice admin"
-      concurrentlyN_
-        [ alice <## "#team: you changed your role from owner to admin",
-          bob <## "#team: alice changed the role from owner to admin",
-          cath <## "#team: alice changed the role from owner to admin"
-        ]
-      alice ##> "/d #team"
-      alice <## "#team: you have insufficient permissions for this action, the required role is owner"
+      alice <## "bad chat command: can't change role for self"
 
 testGroupDescription :: HasCallStack => TestParams -> IO ()
 testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
@@ -1578,7 +1580,7 @@ testGroupModerate =
       -- disableFullDeletion3 "team" alice bob cath
       alice ##> "/mr team cath member"
       concurrentlyN_
-        [ alice <## "#team: you changed the role of cath from admin to member",
+        [ alice <## "#team: you changed the role of cath to member",
           bob <## "#team: alice changed the role of cath from admin to member",
           cath <## "#team: alice changed your role from admin to member"
         ]
@@ -1661,7 +1663,7 @@ testGroupModerateFullDelete =
       -- disableFullDeletion3 "team" alice bob cath
       alice ##> "/mr team cath member"
       concurrentlyN_
-        [ alice <## "#team: you changed the role of cath from admin to member",
+        [ alice <## "#team: you changed the role of cath to member",
           bob <## "#team: alice changed the role of cath from admin to member",
           cath <## "#team: alice changed your role from admin to member"
         ]
@@ -2690,7 +2692,7 @@ testGroupLinkMemberRole =
       bob <## "#team: you don't have permission to send messages"
 
       alice ##> "/mr #team bob member"
-      alice <## "#team: you changed the role of bob from observer to member"
+      alice <## "#team: you changed the role of bob to member"
       bob <## "#team: alice changed your role from observer to member"
 
       bob #> "#team hey now"
@@ -2720,7 +2722,7 @@ testGroupLinkMemberRole =
       cath <## "#team: you don't have permission to send messages"
 
       alice ##> "/mr #team cath admin"
-      alice <## "#team: you changed the role of cath from observer to admin"
+      alice <## "#team: you changed the role of cath to admin"
       cath <## "#team: alice changed your role from observer to admin"
       bob <## "#team: alice changed the role of cath from observer to admin"
 
@@ -2729,7 +2731,7 @@ testGroupLinkMemberRole =
       bob <# "#team cath> hey"
 
       cath ##> "/mr #team bob admin"
-      cath <## "#team: you changed the role of bob from member to admin"
+      cath <## "#team: you changed the role of bob to admin"
       bob <## "#team: cath changed your role from member to admin"
       alice <## "#team: cath changed the role of bob from member to admin"
 
@@ -2870,6 +2872,120 @@ testGroupLinkExistingContactMerged =
       bob <# "#team alice> hello"
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
+
+testGLinkRejectBlockedName :: HasCallStack => TestParams -> IO ()
+testGLinkRejectBlockedName =
+  testChatCfg2 cfg aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): rejecting request to join group #team, reason: GRRBlockedName"
+      bob <## "#team: joining the group..."
+      bob <## "#team: join rejected, reason: GRRBlockedName"
+
+      threadDelay 100000
+
+      alice `hasContactProfiles` ["alice"]
+      memCount <- withCCTransaction alice $ \db ->
+        DB.query_ db "SELECT count(1) FROM group_members" :: IO [[Int]]
+      memCount `shouldBe` [[1]]
+
+      bob ##> ("/c " <> gLink)
+      bob <## "group link: known group #team"
+      bob <## "use #team <message> to send messages"
+  where
+    cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Left GRRBlockedName)}}
+
+testGLinkManualAcceptMember :: HasCallStack => TestParams -> IO ()
+testGLinkManualAcceptMember =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      alice <## "cath (Catherine): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: cath connected and pending approval, use /_accept member #1 3 <role> to accept member",
+          do
+            cath <## "#team: joining the group..."
+            cath <## "#team: you joined the group, pending approval"
+        ]
+
+      -- pending approval member doesn't see messages sent in group
+      alice #> "#team hi group"
+      bob <# "#team alice> hi group"
+
+      bob #> "#team hey"
+      alice <# "#team bob> hey"
+
+      -- pending approval member and host can send messages to each other
+      alice ##> "/_send #1 @3 text send me proofs"
+      alice <# "#team send me proofs"
+      cath <# "#team alice> send me proofs"
+
+      cath ##> "/_send #1 @1 text proofs"
+      cath <# "#team proofs"
+      alice <# "#team cath> proofs"
+
+      -- accept member
+      alice ##> "/_accept member #1 3 member"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> hi group [>>]",
+                   WithTime "#team bob> hey [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      alice #> "#team welcome cath"
+      [bob, cath] *<# "#team alice> welcome cath"
+
+      bob #> "#team hi cath"
+      [alice, cath] *<# "#team bob> hi cath"
+
+      cath #> "#team hi group"
+      [alice, bob] *<# "#team cath> hi group"
+  where
+    cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAPending, GRObserver))}}
+
+testGLinkDeletePendingMember :: HasCallStack => TestParams -> IO ()
+testGLinkDeletePendingMember =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      alice <## "cath (Catherine): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: cath connected and pending approval, use /_accept member #1 3 <role> to accept member",
+          do
+            cath <## "#team: joining the group..."
+            cath <## "#team: you joined the group, pending approval"
+        ]
+
+      alice ##> "/rm team cath"
+      alice <## "#team: you removed cath from the group"
+      cath <## "#team: alice removed you from the group"
+      cath <## "use /d #team to delete the group"
+  where
+    cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAPending, GRObserver))}}
 
 testPlanGroupLinkKnown :: HasCallStack => TestParams -> IO ()
 testPlanGroupLinkKnown =
@@ -4102,14 +4218,14 @@ testGroupMsgForwardReport =
 
       alice ##> "/mr team bob moderator"
       concurrentlyN_
-        [ alice <## "#team: you changed the role of bob from admin to moderator",
+        [ alice <## "#team: you changed the role of bob to moderator",
           bob <## "#team: alice changed your role from admin to moderator",
           cath <## "#team: alice changed the role of bob from admin to moderator"
         ]
 
       alice ##> "/mr team cath member"
       concurrentlyN_
-        [ alice <## "#team: you changed the role of cath from admin to member",
+        [ alice <## "#team: you changed the role of cath to member",
           bob <## "#team: alice changed the role of cath from admin to member",
           cath <## "#team: alice changed your role from admin to member"
         ]
@@ -4127,7 +4243,7 @@ testGroupMsgForwardReport =
 
       alice ##> "/mr team bob member"
       concurrentlyN_
-        [ alice <## "#team: you changed the role of bob from moderator to member",
+        [ alice <## "#team: you changed the role of bob to member",
           bob <## "#team: alice changed your role from moderator to member",
           cath <## "#team: alice changed the role of bob from moderator to member"
         ]
@@ -4285,7 +4401,7 @@ testGroupMsgForwardChangeRole =
       setupGroupForwarding3 "team" alice bob cath
 
       cath ##> "/mr #team bob member"
-      cath <## "#team: you changed the role of bob from admin to member"
+      cath <## "#team: you changed the role of bob to member"
       alice <## "#team: cath changed the role of bob from admin to member"
       bob <## "#team: cath changed your role from admin to member" -- TODO show as forwarded
 
@@ -5912,18 +6028,12 @@ testBlockForAllBeforeJoining =
       cc <## "#team: alice added dan (Daniel) to the group (connecting...)"
       cc <## "#team: new member dan is connected"
 
-testBlockForAllCantRepeat :: HasCallStack => TestParams -> IO ()
-testBlockForAllCantRepeat =
+testBlockForAllRepeat :: HasCallStack => TestParams -> IO ()
+testBlockForAllRepeat =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       -- disableFullDeletion3 "team" alice bob cath
-
-      alice ##> "/unblock for all #team bob"
-      alice <## "bad chat command: already unblocked"
-
-      cath ##> "/unblock for all #team bob"
-      cath <## "bad chat command: already unblocked"
 
       bob #> "#team 1"
       [alice, cath] *<# "#team bob> 1"
@@ -5934,10 +6044,10 @@ testBlockForAllCantRepeat =
       bob <// 50000
 
       alice ##> "/block for all #team bob"
-      alice <## "bad chat command: already blocked"
+      alice <## "#team: you blocked bob"
 
       cath ##> "/block for all #team bob"
-      cath <## "bad chat command: already blocked"
+      cath <## "#team: you blocked bob"
 
       bob #> "#team 2"
       alice <# "#team bob> 2 [blocked by admin] <muted>"
@@ -5949,15 +6059,91 @@ testBlockForAllCantRepeat =
       bob <// 50000
 
       alice ##> "/unblock for all #team bob"
-      alice <## "bad chat command: already unblocked"
+      alice <## "#team: you unblocked bob"
 
       cath ##> "/unblock for all #team bob"
-      cath <## "bad chat command: already unblocked"
+      cath <## "#team: you unblocked bob"
 
       bob #> "#team 3"
       [alice, cath] *<# "#team bob> 3"
 
       bob #$> ("/_get chat #1 count=3", chat, [(1, "1"), (1, "2"), (1, "3")])
+
+testBlockForAllMultipleMembers :: HasCallStack => TestParams -> IO ()
+testBlockForAllMultipleMembers =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      createGroup3 "team" alice bob cath
+
+      connectUsers alice dan
+      addMember "team" alice dan GRMember
+      dan ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: dan joined the group",
+          do
+            dan <## "#team: you joined the group"
+            dan
+              <### [ "#team: member bob (Bob) is connected",
+                     "#team: member cath (Catherine) is connected"
+                   ],
+          do
+            bob <## "#team: alice added dan (Daniel) to the group (connecting...)"
+            bob <## "#team: new member dan is connected",
+          do
+            cath <## "#team: alice added dan (Daniel) to the group (connecting...)"
+            cath <## "#team: new member dan is connected"
+        ]
+
+      -- lower roles to for batch block to be allowed (can't batch block if admins are selected)
+      alice ##> "/mr team bob member"
+      concurrentlyN_
+        [ alice <## "#team: you changed the role of bob to member",
+          bob <## "#team: alice changed your role from admin to member",
+          cath <## "#team: alice changed the role of bob from admin to member",
+          dan <## "#team: alice changed the role of bob from admin to member"
+        ]
+      alice ##> "/mr team cath member"
+      concurrentlyN_
+        [ alice <## "#team: you changed the role of cath to member",
+          bob <## "#team: alice changed the role of cath from admin to member",
+          cath <## "#team: alice changed your role from admin to member",
+          dan <## "#team: alice changed the role of cath from admin to member"
+        ]
+
+      bob #> "#team 1"
+      [alice, cath, dan] *<# "#team bob> 1"
+
+      cath #> "#team 2"
+      [alice, bob, dan] *<# "#team cath> 2"
+
+      alice ##> "/_block #1 2,3 blocked=on"
+      alice <## "#team: you blocked 2 members"
+      dan <## "#team: alice blocked bob"
+      dan <## "#team: alice blocked cath"
+      bob <// 50000
+      cath <// 50000
+
+      -- bob and cath don't know they are blocked and receive each other's messages
+      bob #> "#team 3"
+      [alice, dan] *<# "#team bob> 3 [blocked by admin] <muted>"
+      cath <# "#team bob> 3"
+
+      cath #> "#team 4"
+      [alice, dan] *<# "#team cath> 4 [blocked by admin] <muted>"
+      bob <# "#team cath> 4"
+
+      alice ##> "/_block #1 2,3 blocked=off"
+      alice <## "#team: you unblocked 2 members"
+      dan <## "#team: alice unblocked bob"
+      dan <## "#team: alice unblocked cath"
+      bob <// 50000
+      cath <// 50000
+
+      bob #> "#team 5"
+      [alice, cath, dan] *<# "#team bob> 5"
+
+      cath #> "#team 6"
+      [alice, bob, dan] *<# "#team cath> 6"
 
 testGroupMemberInactive :: HasCallStack => TestParams -> IO ()
 testGroupMemberInactive ps = do
@@ -6037,13 +6223,13 @@ testGroupMemberReports =
       -- disableFullDeletion3 "jokes" alice bob cath
       alice ##> "/mr jokes bob moderator"
       concurrentlyN_
-        [ alice <## "#jokes: you changed the role of bob from admin to moderator",
+        [ alice <## "#jokes: you changed the role of bob to moderator",
           bob <## "#jokes: alice changed your role from admin to moderator",
           cath <## "#jokes: alice changed the role of bob from admin to moderator"
         ]
       alice ##> "/mr jokes cath member"
       concurrentlyN_
-        [ alice <## "#jokes: you changed the role of cath from admin to member",
+        [ alice <## "#jokes: you changed the role of cath to member",
           bob <## "#jokes: alice changed the role of cath from admin to member",
           cath <## "#jokes: alice changed your role from admin to member"
         ]
@@ -6362,3 +6548,37 @@ testUpdatedMentionNames = do
     mentionedMember name_ = CIMention {memberId = MemberId "abcd", memberRef = ciMentionMember <$> name_}
       where
         ciMentionMember name = CIMentionMember {groupMemberId = 1, displayName = name, localAlias = Nothing, memberRole = GRMember}
+
+testGroupDirectMessages :: HasCallStack => TestParams -> IO ()
+testGroupDirectMessages =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup3 "team" alice bob cath
+
+    alice #> "#team 1"
+    [bob, cath] *<# "#team alice> 1"
+
+    bob #> "#team 2"
+    [alice, cath] *<# "#team bob> 2"
+
+    void $ withCCTransaction alice $ \db ->
+      DB.execute_ db "UPDATE group_members SET member_status='pending_approval' WHERE group_member_id = 2"
+
+    alice ##> "/_send #1 @2 text 3"
+    alice <# "#team 3"
+    bob <# "#team alice> 3"
+
+    void $ withCCTransaction bob $ \db ->
+      DB.execute_ db "UPDATE group_members SET member_status='pending_approval' WHERE group_member_id = 1"
+
+    bob ##> "/_send #1 @1 text 4"
+    bob <# "#team 4"
+    alice <# "#team bob> 4"
+
+    -- GSMemPendingApproval members don't receive messages sent to group.
+    -- Though in test we got here synthetically, in reality this status
+    -- means they are not yet part of group (not memberCurrent).
+    alice #> "#team 5"
+    cath <# "#team alice> 5"
+
+    bob #> "#team 6"
+    cath <# "#team bob> 6"

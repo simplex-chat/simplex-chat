@@ -65,6 +65,7 @@ object ChatModel {
 
   // current chat
   val chatId = mutableStateOf<String?>(null)
+  val openAroundItemId: MutableState<Long?> = mutableStateOf(null)
   val chatsContext = ChatsContext(null)
   val reportsChatsContext = ChatsContext(MsgContentTag.Report)
   // declaration of chatsContext should be before any other variable that is taken from ChatsContext class and used in the model, otherwise, strange crash with NullPointerException for "this" parameter in random functions
@@ -247,15 +248,12 @@ object ChatModel {
       }
     }
 
-    if (activeChatTagFilter.value is ActiveFilter.PresetTag &&
-      (newPresetTags[(activeChatTagFilter.value as ActiveFilter.PresetTag).tag] ?: 0) == 0) {
-      activeChatTagFilter.value = null
-    }
-
     presetTags.clear()
     presetTags.putAll(newPresetTags)
     unreadTags.clear()
     unreadTags.putAll(newUnreadTags)
+
+    clearActiveChatFilterIfNeeded()
   }
 
   fun updateChatFavorite(favorite: Boolean, wasFavorite: Boolean) {
@@ -265,9 +263,7 @@ object ChatModel {
       presetTags[PresetTagKind.FAVORITES] = (count ?: 0) + 1
     } else if (!favorite && wasFavorite && count != null) {
       presetTags[PresetTagKind.FAVORITES] = maxOf(0, count - 1)
-      if (activeChatTagFilter.value == ActiveFilter.PresetTag(PresetTagKind.FAVORITES) && (presetTags[PresetTagKind.FAVORITES] ?: 0) == 0) {
-        activeChatTagFilter.value = null
-      }
+      clearActiveChatFilterIfNeeded()
     }
   }
 
@@ -288,6 +284,7 @@ object ChatModel {
         }
       }
     }
+    clearActiveChatFilterIfNeeded()
   }
 
   fun moveChatTagUnread(chat: Chat, oldTags: List<Long>?, newTags: List<Long>) {
@@ -875,8 +872,18 @@ object ChatModel {
 
     private fun changeGroupReportsTagNoContentTag(by: Int = 0) {
       if (by == 0 || contentTag != null) return
-      presetTags[PresetTagKind.GROUP_REPORTS] = (presetTags[PresetTagKind.GROUP_REPORTS] ?: 0) + by
+      presetTags[PresetTagKind.GROUP_REPORTS] = kotlin.math.max(0, (presetTags[PresetTagKind.GROUP_REPORTS] ?: 0) + by)
+      clearActiveChatFilterIfNeeded()
     }
+  }
+
+  fun clearActiveChatFilterIfNeeded() {
+    val clear = when(val f = activeChatTagFilter.value) {
+      is ActiveFilter.PresetTag -> (presetTags[f.tag] ?: 0) == 0
+      is ActiveFilter.UserTag -> userTags.value.none { it.chatTagId == f.tag.chatTagId }
+      is ActiveFilter.Unread, null -> false
+    }
+    if (clear) activeChatTagFilter.value = null
   }
 
   fun updateCurrentUser(rhId: Long?, newProfile: Profile, preferences: FullChatPreferences? = null) {
@@ -1233,10 +1240,11 @@ data class Chat(
   @Serializable
   data class ChatStats(
     val unreadCount: Int = 0,
-    // actual only via getChats() and getChat(.initial), otherwise, zero
     val unreadMentions: Int = 0,
+    // actual only via getChats() and getChat(.initial), otherwise, zero
     val reportsCount: Int = 0,
     val minUnreadItemId: Long = 0,
+    // actual only via getChats(), otherwise, false
     val unreadChat: Boolean = false
   )
 
@@ -1903,11 +1911,13 @@ data class GroupMember (
     }
 
   val memberActive: Boolean get() = when (this.memberStatus) {
+    GroupMemberStatus.MemRejected -> false
     GroupMemberStatus.MemRemoved -> false
     GroupMemberStatus.MemLeft -> false
     GroupMemberStatus.MemGroupDeleted -> false
     GroupMemberStatus.MemUnknown -> false
     GroupMemberStatus.MemInvited -> false
+    GroupMemberStatus.MemPendingApproval -> true
     GroupMemberStatus.MemIntroduced -> false
     GroupMemberStatus.MemIntroInvited -> false
     GroupMemberStatus.MemAccepted -> false
@@ -1918,11 +1928,13 @@ data class GroupMember (
   }
 
   val memberCurrent: Boolean get() = when (this.memberStatus) {
+    GroupMemberStatus.MemRejected -> false
     GroupMemberStatus.MemRemoved -> false
     GroupMemberStatus.MemLeft -> false
     GroupMemberStatus.MemGroupDeleted -> false
     GroupMemberStatus.MemUnknown -> false
     GroupMemberStatus.MemInvited -> false
+    GroupMemberStatus.MemPendingApproval -> false
     GroupMemberStatus.MemIntroduced -> true
     GroupMemberStatus.MemIntroInvited -> true
     GroupMemberStatus.MemAccepted -> true
@@ -2021,11 +2033,13 @@ enum class GroupMemberCategory {
 
 @Serializable
 enum class GroupMemberStatus {
+  @SerialName("rejected") MemRejected,
   @SerialName("removed") MemRemoved,
   @SerialName("left") MemLeft,
   @SerialName("deleted") MemGroupDeleted,
   @SerialName("unknown") MemUnknown,
   @SerialName("invited") MemInvited,
+  @SerialName("pending_approval") MemPendingApproval,
   @SerialName("introduced") MemIntroduced,
   @SerialName("intro-inv") MemIntroInvited,
   @SerialName("accepted") MemAccepted,
@@ -2035,11 +2049,13 @@ enum class GroupMemberStatus {
   @SerialName("creator") MemCreator;
 
   val text: String get() = when (this) {
+    MemRejected -> generalGetString(MR.strings.group_member_status_rejected)
     MemRemoved -> generalGetString(MR.strings.group_member_status_removed)
     MemLeft -> generalGetString(MR.strings.group_member_status_left)
     MemGroupDeleted -> generalGetString(MR.strings.group_member_status_group_deleted)
     MemUnknown -> generalGetString(MR.strings.group_member_status_unknown)
     MemInvited -> generalGetString(MR.strings.group_member_status_invited)
+    MemPendingApproval -> generalGetString(MR.strings.group_member_status_pending_approval)
     MemIntroduced -> generalGetString(MR.strings.group_member_status_introduced)
     MemIntroInvited -> generalGetString(MR.strings.group_member_status_intro_invitation)
     MemAccepted -> generalGetString(MR.strings.group_member_status_accepted)
@@ -2050,11 +2066,13 @@ enum class GroupMemberStatus {
   }
 
   val shortText: String get() = when (this) {
+    MemRejected -> generalGetString(MR.strings.group_member_status_rejected)
     MemRemoved -> generalGetString(MR.strings.group_member_status_removed)
     MemLeft -> generalGetString(MR.strings.group_member_status_left)
     MemGroupDeleted -> generalGetString(MR.strings.group_member_status_group_deleted)
     MemUnknown -> generalGetString(MR.strings.group_member_status_unknown_short)
     MemInvited -> generalGetString(MR.strings.group_member_status_invited)
+    MemPendingApproval -> generalGetString(MR.strings.group_member_status_pending_approval_short)
     MemIntroduced -> generalGetString(MR.strings.group_member_status_connecting)
     MemIntroInvited -> generalGetString(MR.strings.group_member_status_connecting)
     MemAccepted -> generalGetString(MR.strings.group_member_status_connecting)
@@ -3098,6 +3116,13 @@ sealed class CIForwardedFrom {
         is Contact -> chatName
         is Group -> chatName
       }
+
+  val chatTypeApiIdMsgId: Triple<ChatType, Long, Long?>?
+    get() = when (this) {
+      Unknown -> null
+      is Contact -> if (contactId != null) Triple(ChatType.Direct, contactId, chatItemId) else null
+      is Group -> if (groupId != null) Triple(ChatType.Group, groupId, chatItemId) else null
+    }
 
   fun text(chatType: ChatType): String =
     if (chatType == ChatType.Local) {

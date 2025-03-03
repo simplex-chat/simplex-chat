@@ -418,6 +418,7 @@
   <string name="member_contact_send_direct_message">send direct message</string>
   <string name="group_preview_you_are_invited">you are invited to group</string>
   <string name="group_preview_join_as">join as %s</string>
+  <string name="group_preview_rejected">rejected</string>
   <string name="group_connection_pending">connecting…</string>
   <string name="tap_to_start_new_chat">Tap to start a new chat</string>
   <string name="chat_with_developers">Chat with the developers</string>
@@ -1470,6 +1471,7 @@
 
   <!-- DatabaseErrorView.kt -->
   <string name="wrong_passphrase">Wrong database passphrase</string>
+  <string name="error_reading_passphrase">Error reading database passphrase</string>
   <string name="encrypted_database">Encrypted database</string>
   <string name="database_error">Database error</string>
   <string name="keychain_error">Keychain error</string>
@@ -1491,7 +1493,9 @@
   <string name="restore_database_alert_desc">Please enter the previous password after restoring database backup. This action can not be undone.</string>
   <string name="restore_database_alert_confirm">Restore</string>
   <string name="database_restore_error">Restore database error</string>
-  <string name="restore_passphrase_not_found_desc">Passphrase not found in Keystore, please enter it manually. This may have happened if you restored the app\'s data using a backup tool. If it\'s not the case, please, contact developers.</string>
+  <string name="restore_passphrase_not_found_desc">Passphrase not found in Keystore, please enter it manually. This may have happened if you restored the app\'s data using a backup tool. If it\'s not the case, please contact developers.</string>
+  <string name="restore_passphrase_can_not_be_read_desc">Passphrase in Keystore can\'t be read. This may have happened after system update incompatible with the app. If it\'s not the case, please contact developers.</string>
+  <string name="restore_passphrase_can_not_be_read_enter_manually_desc">Passphrase in Keystore can\'t be read, please enter it manually. This may have happened after system update incompatible with the app. If it\'s not the case, please contact developers.</string>
   <string name="database_upgrade">Database upgrade</string>
   <string name="database_downgrade">Database downgrade</string>
   <string name="incompatible_database_version">Incompatible database version</string>
@@ -1622,11 +1626,14 @@
   <string name="group_member_role_owner">owner</string>
 
   <!-- GroupMemberStatus -->
+  <string name="group_member_status_rejected">rejected</string>
   <string name="group_member_status_removed">removed</string>
   <string name="group_member_status_left">left</string>
   <string name="group_member_status_group_deleted">group deleted</string>
   <string name="group_member_status_unknown">unknown status</string>
   <string name="group_member_status_invited">invited</string>
+  <string name="group_member_status_pending_approval">pending approval</string>
+  <string name="group_member_status_pending_approval_short">pending</string>
   <string name="group_member_status_introduced">connecting (introduced)</string>
   <string name="group_member_status_intro_invitation">connecting (introduction invitation)</string>
   <string name="group_member_status_accepted">connecting (accepted)</string>
@@ -1854,6 +1861,7 @@
   <string name="view_conditions">View conditions</string>
   <string name="accept_conditions">Accept conditions</string>
   <string name="operator_conditions_of_use">Conditions of use</string>
+  <string name="operator_updated_conditions">Updated conditions</string>
   <string name="operator_in_order_to_use_accept_conditions"><![CDATA[To use the servers of <b>%s</b>, accept conditions of use.]]></string>
   <string name="operator_use_for_messages">Use for messages</string>
   <string name="operator_use_for_messages_receiving">To receive</string>

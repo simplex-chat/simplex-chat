@@ -56,6 +56,12 @@
 "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Daj gwiazdkę na GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
+"@'%@'" = "@'%@'";
+
+/* No comment provided by engineer. */
+"@%@" = "@%@";
+
+/* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Dodaj kontakt**: aby utworzyć nowy link z zaproszeniem lub połączyć się za pomocą otrzymanego linku.";
 
 /* No comment provided by engineer. */
@@ -391,6 +397,9 @@
 /* No comment provided by engineer. */
 "Acknowledgement errors" = "Błędy potwierdzenia";
 
+/* token status text */
+"Active" = "Aktywne";
+
 /* No comment provided by engineer. */
 "Active connections" = "Aktywne połączenia";
 
@@ -503,6 +512,9 @@
 "all members" = "wszyscy członkowie";
 
 /* No comment provided by engineer. */
+"All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages." = "Wszystkie wiadomości i pliki są wysyłane **z szyfrowaniem end-to-end**, z bezpieczeństwem postkwantowym w wiadomościach bezpośrednich.";
+
+/* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone!" = "Wszystkie wiadomości zostaną usunięte – nie można tego cofnąć!";
 
 /* No comment provided by engineer. */
@@ -513,6 +525,9 @@
 
 /* profile dropdown */
 "All profiles" = "Wszystkie profile";
+
+/* No comment provided by engineer. */
+"All reports will be archived for you." = "Wszystkie raporty zostaną dla Ciebie zarchiwizowane.";
 
 /* No comment provided by engineer. */
 "All your contacts will remain connected." = "Wszystkie Twoje kontakty pozostaną połączone.";
@@ -558,6 +573,9 @@
 
 /* No comment provided by engineer. */
 "Allow to irreversibly delete sent messages. (24 hours)" = "Zezwól na nieodwracalne usunięcie wysłanych wiadomości. (24 godziny)";
+
+/* No comment provided by engineer. */
+"Allow to report messsages to moderators." = "Zezwól na zgłaszanie wiadomości moderatorom.";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Pozwól na wysyłanie plików i mediów.";
@@ -613,6 +631,9 @@
 /* No comment provided by engineer. */
 "and %lld other events" = "i %lld innych wydarzeń";
 
+/* report reason */
+"Another reason" = "Inny powód";
+
 /* No comment provided by engineer. */
 "Answer call" = "Odbierz połączenie";
 
@@ -627,6 +648,9 @@
 
 /* No comment provided by engineer. */
 "App encrypts new local files (except videos)." = "Aplikacja szyfruje nowe lokalne pliki (bez filmów).";
+
+/* No comment provided by engineer. */
+"App group:" = "Grupa aplikacji:";
 
 /* No comment provided by engineer. */
 "App icon" = "Ikona aplikacji";
@@ -656,16 +680,37 @@
 "Apply to" = "Zastosuj dla";
 
 /* No comment provided by engineer. */
+"Archive" = "Archiwizuj";
+
+/* No comment provided by engineer. */
+"Archive %lld reports?" = "Archiwizować %lld reports?";
+
+/* No comment provided by engineer. */
+"Archive all reports?" = "Archiwizować wszystkie zgłoszenia?";
+
+/* No comment provided by engineer. */
 "Archive and upload" = "Archiwizuj i prześlij";
 
 /* No comment provided by engineer. */
 "Archive contacts to chat later." = "Archiwizuj kontakty aby porozmawiać później.";
 
 /* No comment provided by engineer. */
+"Archive report" = "Archiwizuj zgłoszenie";
+
+/* No comment provided by engineer. */
+"Archive report?" = "Archiwizować zgłoszenie?";
+
+/* swipe action */
+"Archive reports" = "Archiwizuj zgłoszenia";
+
+/* No comment provided by engineer. */
 "Archived contacts" = "Zarchiwizowane kontakty";
 
 /* No comment provided by engineer. */
 "Archiving database" = "Archiwizowanie bazy danych";
+
+/* No comment provided by engineer. */
+"Ask" = "Zapytaj";
 
 /* No comment provided by engineer. */
 "Attach" = "Dołącz";
@@ -5356,6 +5401,9 @@
 
 /* No comment provided by engineer. */
 "Your server address" = "Twój adres serwera";
+
+/* No comment provided by engineer. */
+"Your servers" = "Twoje serwery";
 
 /* No comment provided by engineer. */
 "Your settings" = "Twoje ustawienia";

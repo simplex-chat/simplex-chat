@@ -58,7 +58,7 @@
     <string name="smp_servers_add">Додати сервер</string>
     <string name="group_member_role_admin">адміністратор</string>
     <string name="button_add_welcome_message">Додати привітання</string>
-    <string name="all_group_members_will_remain_connected">Всі члени групи залишаться підключеними.</string>
+    <string name="all_group_members_will_remain_connected">Всі учасники групи залишаться підключеними.</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Дозвольте вашим контактам надсилати повідомлення, які зникають.</string>
     <string name="clear_chat_warning">Всі повідомлення будуть видалені - цю дію неможливо скасувати! Повідомлення будуть видалені ЛИШЕ для вас.</string>
     <string name="app_version_title">Версія додатку</string>
@@ -1553,7 +1553,7 @@
 \n
 \nРекомендується перезапустити додаток.</string>
     <string name="enable_sending_recent_history">Надсилати до 100 останніх повідомлень новим користувачам.</string>
-    <string name="recent_history_is_sent_to_new_members">До 100 останніх повідомлень надсилаються новим членам.</string>
+    <string name="recent_history_is_sent_to_new_members">До 100 останніх повідомлень надсилаються новим учасникам.</string>
     <string name="remote_host_was_disconnected_title">З\'єднання перервано</string>
     <string name="share_text_created_at">Створено: %s</string>
     <string name="show_internal_errors">Показати внутрішні помилки</string>
@@ -2332,4 +2332,18 @@
     <string name="network_smp_web_port_section_title">TCP-порт для повідомлень</string>
     <string name="network_smp_web_port_footer">Використовувати TCP-порт %1$s, якщо порт не вказано.</string>
     <string name="network_smp_web_port_toggle">Використовувати веб-порт</string>
+    <string name="mute_all_chat">Вимкнути звук</string>
+    <string name="unread_mentions">Непрочитані згадки</string>
+    <string name="max_group_mentions_per_message_reached">Ви можете згадувати до %1$s учасників у кожному повідомленні!</string>
+    <string name="report_archive_alert_desc_all">Усі звіти будуть архівовані для вас.</string>
+    <string name="report_archive_alert_title_all">Архівувати всі звіти?</string>
+    <string name="report_archive_alert_title_nth">Архівувати %d звітів?</string>
+    <string name="archive_reports">Архівувати звіти</string>
+    <string name="report_archive_for_all_moderators">Для всіх модераторів</string>
+    <string name="report_archive_for_me">Для мене</string>
+    <string name="notification_group_report">Звіт: %s</string>
+    <string name="disable_sending_member_reports">Заборонити повідомлення модераторам.</string>
+    <string name="member_reports_are_prohibited">Повідомлення модераторам заборонено в цій групі.</string>
+    <string name="group_members_can_send_reports">Учасники можуть повідомляти повідомлення модераторам.</string>
+    <string name="enable_sending_member_reports">Дозволити повідомляти повідомлення модераторам.</string>
 </resources>

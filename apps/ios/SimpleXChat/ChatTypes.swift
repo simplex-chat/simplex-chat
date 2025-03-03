@@ -1612,6 +1612,7 @@ public struct ChatStats: Decodable, Hashable {
     // actual only via getChats() and getChat(.initial), otherwise, zero
     public var reportsCount: Int = 0
     public var minUnreadItemId: Int64 = 0
+    // actual only via getChats(), otherwise, false
     public var unreadChat: Bool = false
 }
 
@@ -2140,11 +2141,13 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
 
     public var memberActive: Bool {
         switch memberStatus {
+        case .memRejected: return false
         case .memRemoved: return false
         case .memLeft: return false
         case .memGroupDeleted: return false
         case .memUnknown: return false
         case .memInvited: return false
+        case .memPendingApproval: return true
         case .memIntroduced: return false
         case .memIntroInvited: return false
         case .memAccepted: return false
@@ -2157,11 +2160,13 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
 
     public var memberCurrent: Bool {
         switch memberStatus {
+        case .memRejected: return false
         case .memRemoved: return false
         case .memLeft: return false
         case .memGroupDeleted: return false
         case .memUnknown: return false
         case .memInvited: return false
+        case .memPendingApproval: return false
         case .memIntroduced: return true
         case .memIntroInvited: return true
         case .memAccepted: return true
@@ -2287,11 +2292,13 @@ public enum GroupMemberCategory: String, Decodable, Hashable {
 }
 
 public enum GroupMemberStatus: String, Decodable, Hashable {
+    case memRejected = "rejected"
     case memRemoved = "removed"
     case memLeft = "left"
     case memGroupDeleted = "deleted"
     case memUnknown = "unknown"
     case memInvited = "invited"
+    case memPendingApproval = "pending_approval"
     case memIntroduced = "introduced"
     case memIntroInvited = "intro-inv"
     case memAccepted = "accepted"
@@ -2302,11 +2309,13 @@ public enum GroupMemberStatus: String, Decodable, Hashable {
 
     public var text: LocalizedStringKey {
         switch self {
+        case .memRejected: return "rejected"
         case .memRemoved: return "removed"
         case .memLeft: return "left"
         case .memGroupDeleted: return "group deleted"
         case .memUnknown: return "unknown status"
         case .memInvited: return "invited"
+        case .memPendingApproval: return "pending approval"
         case .memIntroduced: return "connecting (introduced)"
         case .memIntroInvited: return "connecting (introduction invitation)"
         case .memAccepted: return "connecting (accepted)"
@@ -2319,11 +2328,13 @@ public enum GroupMemberStatus: String, Decodable, Hashable {
 
     public var shortText: LocalizedStringKey {
         switch self {
+        case .memRejected: return "rejected"
         case .memRemoved: return "removed"
         case .memLeft: return "left"
         case .memGroupDeleted: return "group deleted"
         case .memUnknown: return "unknown"
         case .memInvited: return "invited"
+        case .memPendingApproval: return "pending"
         case .memIntroduced: return "connecting"
         case .memIntroInvited: return "connecting"
         case .memAccepted: return "connecting"
@@ -3252,6 +3263,20 @@ public enum CIForwardedFrom: Decodable, Hashable {
         case .unknown: ""
         case let .contact(chatName, _, _, _): chatName
         case let .group(chatName, _, _, _): chatName
+        }
+    }
+
+    public var chatTypeApiIdMsgId: (ChatType, Int64, ChatItem.ID?)? {
+        switch self {
+        case .unknown: nil
+        case let .contact(_, _, contactId, msgId):
+            if let contactId {
+                (ChatType.direct, contactId, msgId)
+            } else { nil }
+        case let .group(_, _, groupId, msgId):
+            if let groupId {
+                (ChatType.group, groupId, msgId)
+            } else { nil }
         }
     }
 

@@ -16,6 +16,7 @@ func apiLoadMessages(
     _ pagination: ChatPagination,
     _ chatState: ActiveChatState,
     _ search: String = "",
+    _ openAroundItemId: ChatItem.ID? = nil,
     _ visibleItemIndexesNonReversed: @MainActor () -> ClosedRange<Int> = { 0 ... 0 }
 ) async {
     let chat: Chat
@@ -32,7 +33,8 @@ func apiLoadMessages(
     // For .initial allow the chatItems to be empty as well as chatModel.chatId to not match this chat because these values become set after .initial finishes
     let paginationIsInitial = switch pagination { case .initial: true; default: false }
     let paginationIsLast = switch pagination { case .last: true; default: false }
-    if ((chatModel.chatId != chat.id || chat.chatItems.isEmpty) && !paginationIsInitial && !paginationIsLast) || Task.isCancelled {
+    // When openAroundItemId is provided, chatId can be different too
+    if ((chatModel.chatId != chat.id || chat.chatItems.isEmpty) && !paginationIsInitial && !paginationIsLast && openAroundItemId == nil) || Task.isCancelled {
         return
     }
 
@@ -102,8 +104,13 @@ func apiLoadMessages(
             }
         }
     case .around:
-        newItems.append(contentsOf: oldItems)
-        let newSplits = await removeDuplicatesAndUpperSplits(&newItems, chat, chatState.splits, visibleItemIndexesNonReversed)
+        let newSplits: [Int64]
+        if openAroundItemId == nil {
+            newItems.append(contentsOf: oldItems)
+            newSplits = await removeDuplicatesAndUpperSplits(&newItems, chat, chatState.splits, visibleItemIndexesNonReversed)
+        } else {
+            newSplits = []
+        }
         // currently, items will always be added on top, which is index 0
         newItems.insert(contentsOf: chat.chatItems, at: 0)
         let newReversed: [ChatItem] = newItems.reversed()
@@ -114,8 +121,15 @@ func apiLoadMessages(
             chatState.totalAfter = navInfo.afterTotal
             chatState.unreadTotal = chat.chatStats.unreadCount
             chatState.unreadAfter = navInfo.afterUnread
-            // no need to set it, count will be wrong
-            // unreadAfterNewestLoaded.value = navInfo.afterUnread
+
+            if let openAroundItemId {
+                chatState.unreadAfterNewestLoaded = navInfo.afterUnread
+                ChatModel.shared.openAroundItemId = openAroundItemId
+                ChatModel.shared.chatId = chatId
+            } else {
+                // no need to set it, count will be wrong
+                // chatState.unreadAfterNewestLoaded = navInfo.afterUnread
+            }
         }
     case .last:
         newItems.append(contentsOf: oldItems)
