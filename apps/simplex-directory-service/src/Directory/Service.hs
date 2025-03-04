@@ -719,7 +719,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                   "",
                   -- "Use */filter " <> tshow gId <> " <level>* to change spam filter level: no (disable), basic, moderate, strong.",
                   -- "Or use */filter " <> tshow gId <> " [name[=noimage]] [captcha[=noimage]] [observer[=noimage]]* for advanced filter configuration."
-                  "Or use */filter " <> tshow gId <> " [name] [captcha]* to configure filter."
+                  "Use */filter " <> tshow gId <> " [name] [captcha]* to enable and */filter off* to disable filter."
                 ]
           showCondition = \case
             Nothing -> "_disabled_"
