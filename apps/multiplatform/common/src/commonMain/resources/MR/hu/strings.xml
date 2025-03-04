@@ -1287,7 +1287,7 @@
     <string name="description_via_contact_address_link">a kapcsolattartási címhivatkozáson keresztül</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Az adatvédelem növelése érdekében <b> a SimpleX a háttérben fut</b> a push értesítések használata helyett.]]></string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">A partnereinek online kell lennie ahhoz, hogy a kapcsolat létrejöjjön.\nVisszavonhatja ezt a partnerkérelmet és eltávolíthatja a partnert (ezt később ismét megpróbálhatja egy új hivatkozással).</string>
-    <string name="restore_passphrase_not_found_desc">A jelszó nem található a Keystore-ban, ezért kézzel szükséges megadni. Ez akkor történhetett meg, ha visszaállította az alkalmazás adatait egy biztonsági mentési eszközzel. Ha nem így történt, akkor lépjen kapcsolatba a fejlesztőkkel.</string>
+    <string name="restore_passphrase_not_found_desc">A jelmondat nem található a Keystore-ban, ezért kézzel szükséges megadni. Ez akkor történhetett meg, ha visszaállította az alkalmazás adatait egy biztonsági mentési eszközzel. Ha nem így történt, akkor lépjen kapcsolatba a fejlesztőkkel.</string>
     <string name="your_contacts_will_remain_connected">A partnerei továbbra is kapcsolódva maradnak.</string>
     <string name="error_xftp_test_server_auth">A kiszolgálónak hitelesítésre van szüksége a feltöltéshez, ellenőrizze jelszavát</string>
     <string name="database_initialization_error_desc">Az adatbázis nem működik megfelelően. Koppintson ide a további információkért</string>
@@ -2120,9 +2120,9 @@
     <string name="operator_review_conditions">Feltételek felülvizsgálata</string>
     <string name="operator_conditions_accepted">Elfogadott feltételek</string>
     <string name="operator_conditions_accepted_for_enabled_operators_on">A feltételek automatikusan el lesznek fogadva az engedélyezett üzemeltetők számára: %s.</string>
-    <string name="your_servers">Az Ön kiszolgálói</string>
+    <string name="your_servers">Saját kiszolgálók</string>
     <string name="operators_conditions_accepted_for"><![CDATA[A következő üzemeltető(k) számára elfogadott feltételek: <b>%s</b>.]]></string>
-    <string name="operators_conditions_will_be_accepted_for"><![CDATA[A feltételek el lesznek fogadva a következő üzemeltető(k) számára: <b>%s</b>.]]></string>
+    <string name="operators_conditions_will_be_accepted_for"><![CDATA[A feltételek a következő időpontban lesznek elfogadva az üzemeltető(k) számára: <b>%s</b>.]]></string>
     <string name="operator_servers_title">%s kiszolgáló</string>
     <string name="operator_info_title">Hálózati üzemeltető</string>
     <string name="operator_website">Weboldal</string>
@@ -2326,4 +2326,10 @@
     <string name="v6_3_organize_chat_lists">Csevegések listákba szervezése</string>
     <string name="group_preview_rejected">elutasítva</string>
     <string name="group_member_status_rejected">elutasítva</string>
+    <string name="restore_passphrase_can_not_be_read_enter_manually_desc">A jelmondat nem olvasható a Keystore-ban, ezért kézzel szükséges megadni. Ez az alkalmazással nem kompatibilis rendszerfrissítés után történhetett meg. Ha nem így történt, akkor lépjen kapcsolatba a fejlesztőkkel.</string>
+    <string name="group_member_status_pending_approval_short">függőben</string>
+    <string name="group_member_status_pending_approval">jóváhagyásra vár</string>
+    <string name="error_reading_passphrase">Hiba az adatbázis-jelmondat olvasásakor</string>
+    <string name="restore_passphrase_can_not_be_read_desc">A jelmondat nem olvasható a Keystore-ban. Ez az alkalmazással nem kompatibilis rendszerfrissítés után történhetett meg. Ha nem így történt, akkor lépjen kapcsolatba a fejlesztőkkel.</string>
+    <string name="operator_updated_conditions">Frissített feltételek</string>
 </resources>
