@@ -2356,4 +2356,7 @@
     <string name="privacy_media_blur_radius_soft">Jemný</string>
     <string name="error_reading_passphrase">Chyba čtení přístupové fráze databáze</string>
     <string name="restore_passphrase_can_not_be_read_enter_manually_desc">Přístupová fráze v úlozišti klíčů nelze načíst, prosím zadejte ji ručně. To se může stát po aktualizaci systému nekompatibilní s aplikací. Pokud to tak není, kontaktujte prosím vývojáře.</string>
+    <string name="restore_passphrase_can_not_be_read_desc">Přístupovou frázi v ůložišti klíčů nelze načíst. Mohlo se to stát po aktualizaci systému nekompatibilní s aplikací. Pokud to není váš případ, kontaktujte prosím vývojáře.</string>
+    <string name="operator_updated_conditions">Aktualizované podmínky</string>
+    <string name="group_member_status_pending_approval">čekám na schválení</string>
 </resources>
