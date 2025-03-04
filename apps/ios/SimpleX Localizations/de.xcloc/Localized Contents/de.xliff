@@ -8259,8 +8259,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Einstellungen aktualisieren?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Updated conditions" xml:space="preserve">
+      <trans-unit id="Updated conditions" xml:space="preserve" approved="no">
         <source>Updated conditions</source>
+        <target state="translated">Aktualisierte Nutzungsbedingungen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve">
@@ -9840,12 +9841,14 @@ Verbindungsanfrage wiederholen?</target>
         <target>Peer-to-Peer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="pending" xml:space="preserve">
+      <trans-unit id="pending" xml:space="preserve" approved="no">
         <source>pending</source>
+        <target state="translated">ausstehend</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="pending approval" xml:space="preserve">
+      <trans-unit id="pending approval" xml:space="preserve" approved="no">
         <source>pending approval</source>
+        <target state="translated">ausstehende Genehmigung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="quantum resistant e2e encryption" xml:space="preserve">
@@ -9863,8 +9866,9 @@ Verbindungsanfrage wiederholen?</target>
         <target>Bestätigung erhalten…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="rejected" xml:space="preserve">
+      <trans-unit id="rejected" xml:space="preserve" approved="no">
         <source>rejected</source>
+        <target state="translated">abgelehnt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="rejected call" xml:space="preserve">
