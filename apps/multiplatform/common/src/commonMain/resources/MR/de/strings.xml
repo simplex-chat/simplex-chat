@@ -661,7 +661,7 @@
     <string name="restore_database_alert_desc">Bitte geben Sie das vorherige Passwort ein, nachdem Sie die Datenbanksicherung wiederhergestellt haben. Diese Aktion kann nicht rückgängig gemacht werden!</string>
     <string name="restore_database_alert_confirm">Wiederherstellen</string>
     <string name="database_restore_error">Fehler bei der Wiederherstellung der Datenbank</string>
-    <string name="restore_passphrase_not_found_desc">Das Passwort wurde nicht im Schlüsselbund gefunden. Bitte geben Sie es manuell ein. Das kann passieren, wenn Sie die App-Daten mit einem Backup-Programm wieder hergestellt haben. Bitte nehmen Sie Kontakt mit den Entwicklern auf, wenn das nicht der Fall ist.</string>
+    <string name="restore_passphrase_not_found_desc">Das Passwort wurde nicht im Schlüsselbund gefunden. Bitte geben Sie es manuell ein. Dies kann passieren, wenn Sie die App-Daten mit einem Backup-Programm wieder hergestellt haben. Wenden Sie sich bitte an die Entwickler, wenn dies nicht der Fall ist.</string>
     <!-- ChatModel.chatRunning interactions -->
     <string name="chat_is_stopped_indication">Der Chat wurde beendet</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Sie können den Chat über die App-Einstellungen/Datenbank oder durch Neustart der App starten.</string>
@@ -2434,4 +2434,10 @@
     <string name="v6_3_organize_chat_lists_descr">Verpassen Sie keine wichtigen Nachrichten.</string>
     <string name="v6_3_organize_chat_lists">Chats in Listen verwalten</string>
     <string name="group_member_status_rejected">abgelehnt</string>
+    <string name="restore_passphrase_can_not_be_read_desc">Das Passwort kann nicht aus dem Schlüsselbund gelesen werden. Dies kann nach einer Systemaktualisierung passiert sein, die nicht mit der App kompatibel war. Wenden Sie sich bitte an die Entwickler, wenn dies nicht der Fall ist.</string>
+    <string name="group_member_status_pending_approval_short">ausstehend</string>
+    <string name="error_reading_passphrase">Fehler beim Lesen des Datenbank-Passworts</string>
+    <string name="operator_updated_conditions">Aktualisierte Nutzungsbedingungen</string>
+    <string name="group_member_status_pending_approval">ausstehende Genehmigung</string>
+    <string name="restore_passphrase_can_not_be_read_enter_manually_desc">Das Passwort kann nicht aus dem Schlüsselbund gelesen werden. Bitte geben Sie es manuell ein. Dies kann nach einer Systemaktualisierung passiert sein, die nicht mit der App kompatibel war. Wenden Sie sich bitte an die Entwickler, wenn dies nicht der Fall ist.</string>
 </resources>
