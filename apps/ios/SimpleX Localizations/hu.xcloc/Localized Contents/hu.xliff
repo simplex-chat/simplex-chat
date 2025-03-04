@@ -1745,9 +1745,9 @@
         <target>Elkészült</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Conditions accepted on: %@." xml:space="preserve">
+      <trans-unit id="Conditions accepted on: %@." xml:space="preserve" approved="no">
         <source>Conditions accepted on: %@.</source>
-        <target>Feltételek elfogadva: %@.</target>
+        <target state="translated">Feltételek elfogadásának ideje: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Conditions are accepted for the operator(s): **%@**." xml:space="preserve">
@@ -1770,24 +1770,24 @@
         <target>A feltételek 30 nap elteltével lesznek elfogadva az engedélyezett üzemeltetők számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Conditions will be accepted for operator(s): **%@**." xml:space="preserve">
+      <trans-unit id="Conditions will be accepted for operator(s): **%@**." xml:space="preserve" approved="no">
         <source>Conditions will be accepted for operator(s): **%@**.</source>
-        <target>A feltételek el lesznek fogadva a következő üzemeltető(k) számára: **%@**.</target>
+        <target state="translated">A feltételek el lesznek fogadva a következő üzemeltető(k) számára: **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Conditions will be accepted for the operator(s): **%@**." xml:space="preserve" approved="no">
         <source>Conditions will be accepted for the operator(s): **%@**.</source>
-        <target state="translated">A feltételek a következő időpontban lesznek elfogadva az üzemeltető(k) számára: **%@**.</target>
+        <target state="translated">A feltételek el lesznek fogadva a következő üzemeltető(k) számára: **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Conditions will be accepted on: %@." xml:space="preserve">
+      <trans-unit id="Conditions will be accepted on: %@." xml:space="preserve" approved="no">
         <source>Conditions will be accepted on: %@.</source>
-        <target>A feltételek ekkor lesznek elfogadva: %@.</target>
+        <target state="translated">A feltételek el lesznek fogadva a következő időpontban: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Conditions will be automatically accepted for enabled operators on: %@." xml:space="preserve">
+      <trans-unit id="Conditions will be automatically accepted for enabled operators on: %@." xml:space="preserve" approved="no">
         <source>Conditions will be automatically accepted for enabled operators on: %@.</source>
-        <target>A feltételek automatikusan el lesznek fogadva az engedélyezett üzemeltetők számára: %@.</target>
+        <target state="translated">A feltételek automatikusan el lesznek fogadva az engedélyezett üzemeltetők számára a következő időpontban: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Configure ICE servers" xml:space="preserve">
@@ -5146,9 +5146,9 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Hálózatkezelés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Network operator" xml:space="preserve">
+      <trans-unit id="Network operator" xml:space="preserve" approved="no">
         <source>Network operator</source>
-        <target>Hálózati üzemeltető</target>
+        <target state="translated">Hálózatüzemeltető</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network settings" xml:space="preserve">
