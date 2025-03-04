@@ -1947,7 +1947,7 @@ data class GroupMember (
   fun canBeRemoved(groupInfo: GroupInfo): Boolean {
     val userRole = groupInfo.membership.memberRole
     return memberStatus != GroupMemberStatus.MemRemoved && memberStatus != GroupMemberStatus.MemLeft
-        && userRole >= GroupMemberRole.Admin && userRole >= memberRole && groupInfo.membership.memberActive
+        && userRole >= GroupMemberRole.Moderator && userRole >= memberRole && groupInfo.membership.memberActive
   }
 
   fun canChangeRoleTo(groupInfo: GroupInfo): List<GroupMemberRole>? =
@@ -1958,8 +1958,8 @@ data class GroupMember (
 
   fun canBlockForAll(groupInfo: GroupInfo): Boolean {
     val userRole = groupInfo.membership.memberRole
-    return memberStatus != GroupMemberStatus.MemRemoved && memberStatus != GroupMemberStatus.MemLeft && memberRole < GroupMemberRole.Admin
-        && userRole >= GroupMemberRole.Admin && userRole >= memberRole && groupInfo.membership.memberActive
+    return memberStatus != GroupMemberStatus.MemRemoved && memberStatus != GroupMemberStatus.MemLeft && memberRole < GroupMemberRole.Moderator
+        && userRole >= GroupMemberRole.Moderator && userRole >= memberRole && groupInfo.membership.memberActive
   }
 
   val memberIncognito = memberProfile.profileId != memberContactProfileId
@@ -2439,14 +2439,14 @@ data class ChatItem (
   fun memberToModerate(chatInfo: ChatInfo): Pair<GroupInfo, GroupMember?>? {
     return if (chatInfo is ChatInfo.Group && chatDir is CIDirection.GroupRcv) {
       val m = chatInfo.groupInfo.membership
-      if (m.memberRole >= GroupMemberRole.Admin && m.memberRole >= chatDir.groupMember.memberRole && meta.itemDeleted == null) {
+      if (m.memberRole >= GroupMemberRole.Moderator && m.memberRole >= chatDir.groupMember.memberRole && meta.itemDeleted == null) {
         chatInfo.groupInfo to chatDir.groupMember
       } else {
       null
       }
     } else if (chatInfo is ChatInfo.Group && chatDir is CIDirection.GroupSnd) {
       val m = chatInfo.groupInfo.membership
-      if (m.memberRole >= GroupMemberRole.Admin) {
+      if (m.memberRole >= GroupMemberRole.Moderator) {
         chatInfo.groupInfo to null
       } else {
         null
@@ -3259,6 +3259,7 @@ sealed class CIContent: ItemContent {
       when (role) {
         GroupMemberRole.Owner -> generalGetString(MR.strings.feature_roles_owners)
         GroupMemberRole.Admin -> generalGetString(MR.strings.feature_roles_admins)
+        GroupMemberRole.Moderator -> generalGetString(MR.strings.feature_roles_moderators)
         else -> generalGetString(MR.strings.feature_roles_all_members)
       }
 
