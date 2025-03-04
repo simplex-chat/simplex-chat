@@ -8,6 +8,8 @@ import SectionItemViewLongClickable
 import SectionSpacer
 import SectionTextFooter
 import SectionView
+import androidx.compose.animation.*
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -17,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
@@ -37,7 +40,7 @@ import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
-import chat.simplex.common.views.chat.item.ItemAction
+import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.database.TtlOptions
 import chat.simplex.res.MR
@@ -49,7 +52,18 @@ val MEMBER_ROW_AVATAR_SIZE = 42.dp
 val MEMBER_ROW_VERTICAL_PADDING = 8.dp
 
 @Composable
-fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, scrollToItemId: MutableState<Long?>, onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit, close: () -> Unit, onSearchClicked: () -> Unit) {
+fun ModalData.GroupChatInfoView(
+  rhId: Long?,
+  chatId: String,
+  groupLink: String?,
+  groupLinkMemberRole: GroupMemberRole?,
+  selectedItems: MutableState<Set<Long>?>,
+  appBar: MutableState<@Composable (BoxScope.() -> Unit)?>,
+  scrollToItemId: MutableState<Long?>,
+  onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit,
+  close: () -> Unit,
+  onSearchClicked: () -> Unit
+) {
   BackHandler(onBack = close)
   // TODO derivedStateOf?
   val chat = chatModel.chats.value.firstOrNull { ch -> ch.id == chatId && ch.remoteHostId == rhId }
@@ -88,6 +102,8 @@ fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: Strin
       developerTools,
       onLocalAliasChanged = { setGroupAlias(chat, it, chatModel) },
       groupLink,
+      selectedItems,
+      appBar,
       scrollToItemId,
       addMembers = {
         scope.launch(Dispatchers.Default) {
@@ -212,21 +228,23 @@ private fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMembe
     text = generalGetString(messageId),
     confirmText = generalGetString(MR.strings.remove_member_confirmation),
     onConfirm = {
-      withBGApi {
-        val updatedMembers = chatModel.controller.apiRemoveMembers(rhId, groupInfo.groupId, listOf(mem.groupMemberId))
-        if (updatedMembers != null) {
-          withChats {
-            updatedMembers.forEach { updatedMember ->
-              upsertGroupMember(rhId, groupInfo, updatedMember)
-            }
-          }
-          withReportsChatsIfOpen {
-            updatedMembers.forEach { updatedMember ->
-              upsertGroupMember(rhId, groupInfo, updatedMember)
-            }
-          }
-        }
-      }
+      removeMembers(rhId, groupInfo, listOf(mem.groupMemberId))
+    },
+    destructive = true,
+  )
+}
+
+private fun removeMembersAlert(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>) {
+  val messageId = if (groupInfo.businessChat == null)
+    MR.strings.members_will_be_removed_from_group_cannot_be_undone
+  else
+    MR.strings.members_will_be_removed_from_chat_cannot_be_undone
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.button_remove_members_question),
+    text = generalGetString(messageId),
+    confirmText = generalGetString(MR.strings.remove_member_confirmation),
+    onConfirm = {
+      removeMembers(rhId, groupInfo, memberIds)
     },
     destructive = true,
   )
@@ -313,6 +331,8 @@ fun ModalData.GroupChatInfoLayout(
   developerTools: Boolean,
   onLocalAliasChanged: (String) -> Unit,
   groupLink: String?,
+  selectedItems: MutableState<Set<Long>?>,
+  appBar: MutableState<@Composable (BoxScope.() -> Unit)?>,
   scrollToItemId: MutableState<Long?>,
   addMembers: () -> Unit,
   showMemberInfo: (GroupMember) -> Unit,
@@ -341,12 +361,19 @@ fun ModalData.GroupChatInfoLayout(
   }
   Box {
     val oneHandUI = remember { appPrefs.oneHandUI.state }
+    val selectedItemsBarHeight = if (selectedItems.value != null) AppBarHeight * fontSizeSqrtMultiplier else 0.dp
   LazyColumnWithScrollBar(
     state = listState,
     contentPadding = if (oneHandUI.value) {
-      PaddingValues(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + DEFAULT_PADDING + 5.dp, bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
+      PaddingValues(
+        top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + DEFAULT_PADDING + 5.dp,
+        bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + selectedItemsBarHeight + (if (appPlatform.isDesktop) AppBarHeight * fontSizeSqrtMultiplier else 0.dp)
+      )
     } else {
-      PaddingValues(top = topPaddingToContent(false))
+      PaddingValues(
+        top = topPaddingToContent(false),
+        bottom = selectedItemsBarHeight
+      )
     }
   ) {
     item {
@@ -452,12 +479,34 @@ fun ModalData.GroupChatInfoLayout(
         }
       }
     }
-    items(filteredMembers.value) { member ->
+    items(filteredMembers.value, key = { it.groupMemberId }) { member ->
       Divider()
       val showMenu = remember { mutableStateOf(false) }
-      SectionItemViewLongClickable({ showMemberInfo(member) }, { showMenu.value = true }, minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-        DropDownMenuForMember(chat.remoteHostId, member, groupInfo, showMenu)
-        MemberRow(member)
+      val canBeSelected = groupInfo.membership.memberRole >= member.memberRole && member.memberRole < GroupMemberRole.Moderator
+      SectionItemViewLongClickable(
+        click = {
+          if (selectedItems.value != null) {
+            if (canBeSelected) {
+              toggleItemSelection(member.groupMemberId, selectedItems)
+            }
+          } else {
+            showMemberInfo(member)
+          }
+        },
+        longClick = { showMenu.value = true },
+        minHeight = 54.dp,
+        padding = PaddingValues(horizontal = DEFAULT_PADDING)
+      ) {
+        Box(contentAlignment = Alignment.CenterStart) {
+          androidx.compose.animation.AnimatedVisibility(selectedItems.value != null, enter = fadeIn(), exit = fadeOut()) {
+            SelectedListItem(Modifier.alpha(if (canBeSelected) 1f else 0f).padding(start = 2.dp), member.groupMemberId, selectedItems)
+          }
+          val selectionOffset by animateDpAsState(if (selectedItems.value != null) 20.dp + 22.dp * fontSizeMultiplier else 0.dp)
+          DropDownMenuForMember(chat.remoteHostId, member, groupInfo, selectedItems, showMenu)
+          Box(Modifier.offset(x = selectionOffset).padding(end = selectionOffset)) {
+            MemberRow(member)
+          }
+        }
       }
     }
     item {
@@ -487,6 +536,72 @@ fun ModalData.GroupChatInfoLayout(
   }
     if (!oneHandUI.value) {
       NavigationBarBackground(oneHandUI.value, oneHandUI.value)
+    }
+    SelectedItemsButtonsToolbar(chat, groupInfo, selectedItems)
+    SelectedItemsCounterToolbarSetter(groupInfo, selectedItems, filteredMembers, appBar)
+  }
+}
+
+@Composable
+private fun BoxScope.SelectedItemsButtonsToolbar(chat: Chat, groupInfo: GroupInfo, selectedItems: MutableState<Set<Long>?>) {
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  Column(
+    Modifier
+      .align(Alignment.BottomCenter)
+      .navigationBarsPadding()
+      .imePadding()
+  ) {
+    AnimatedVisibility(selectedItems.value != null) {
+      SelectedItemsMembersToolbar(
+        selectedItems = selectedItems,
+        groupInfo = groupInfo,
+        delete = {
+          removeMembersAlert(chat.remoteHostId, groupInfo, selectedItems.value!!.sorted())
+        },
+        blockForAll = { block ->
+          if (block) {
+            blockForAllAlert(chat.remoteHostId, groupInfo, selectedItems.value!!.sorted())
+          } else {
+            unblockForAllAlert(chat.remoteHostId, groupInfo, selectedItems.value!!.sorted())
+          }
+        },
+        changeRole = { toRole ->
+          updateMembersRoleDialog(toRole, groupInfo) {
+            updateMembersRole(toRole, chat.remoteHostId, groupInfo, selectedItems.value!!.sorted())
+          }
+        }
+      )
+    }
+    if (oneHandUI.value) {
+      // That's placeholder to take some space for bottom app bar in oneHandUI
+      Box(Modifier.height(AppBarHeight * fontSizeSqrtMultiplier))
+    }
+  }
+}
+
+@Composable
+private fun SelectedItemsCounterToolbarSetter(
+  groupInfo: GroupInfo,
+  selectedItems: MutableState<Set<Long>?>,
+  filteredMembers: State<List<GroupMember>>,
+  appBar: MutableState<@Composable (BoxScope.() -> Unit)?>
+) {
+  LaunchedEffect(groupInfo, selectedItems.value == null) {
+    if (selectedItems.value != null) {
+      appBar.value = {
+        SelectedItemsCounterToolbar(selectedItems, !remember { appPrefs.oneHandUI.state }.value) {
+          if (!groupInfo.membership.memberActive) return@SelectedItemsCounterToolbar
+          val ids: MutableSet<Long> = mutableSetOf()
+          for (mem in filteredMembers.value) {
+            if (groupInfo.membership.memberActive && groupInfo.membership.memberRole >= mem.memberRole && mem.memberRole < GroupMemberRole.Moderator) {
+              ids.add(mem.groupMemberId)
+            }
+          }
+          selectedItems.value = (selectedItems.value ?: setOf()).union(ids)
+        }
+      }
+    } else {
+      appBar.value = null
     }
   }
 }
@@ -612,7 +727,7 @@ fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = tr
       Text(stringResource(MR.strings.member_info_member_blocked), color = MaterialTheme.colors.secondary)
     } else {
       val role = member.memberRole
-      if (role in listOf(GroupMemberRole.Owner, GroupMemberRole.Admin, GroupMemberRole.Observer)) {
+      if (role in listOf(GroupMemberRole.Owner, GroupMemberRole.Admin, GroupMemberRole.Moderator, GroupMemberRole.Observer)) {
         Text(role.text, color = MaterialTheme.colors.secondary)
       }
     }
@@ -686,8 +801,8 @@ private fun MemberVerifiedShield() {
 }
 
 @Composable
-private fun DropDownMenuForMember(rhId: Long?, member: GroupMember, groupInfo: GroupInfo, showMenu: MutableState<Boolean>) {
-  if (groupInfo.membership.memberRole >= GroupMemberRole.Admin) {
+private fun DropDownMenuForMember(rhId: Long?, member: GroupMember, groupInfo: GroupInfo, selectedItems: MutableState<Set<Long>?>, showMenu: MutableState<Boolean>) {
+  if (groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
     val canBlockForAll = member.canBlockForAll(groupInfo)
     val canRemove = member.canBeRemoved(groupInfo)
     if (canBlockForAll || canRemove) {
@@ -710,6 +825,10 @@ private fun DropDownMenuForMember(rhId: Long?, member: GroupMember, groupInfo: G
             removeMemberAlert(rhId, groupInfo, member)
             showMenu.value = false
           })
+        }
+        if (selectedItems.value == null && member.memberRole < GroupMemberRole.Moderator) {
+          Divider()
+          SelectItemAction(showMenu) { toggleItemSelection(member.groupMemberId, selectedItems) }
         }
       }
     }
@@ -819,6 +938,36 @@ private fun setGroupAlias(chat: Chat, localAlias: String, chatModel: ChatModel) 
   }
 }
 
+fun removeMembers(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>) {
+  withBGApi {
+    val updatedMembers = chatModel.controller.apiRemoveMembers(rhId, groupInfo.groupId, memberIds)
+    if (updatedMembers != null) {
+      withChats {
+        updatedMembers.forEach { updatedMember ->
+          upsertGroupMember(rhId, groupInfo, updatedMember)
+        }
+      }
+      withReportsChatsIfOpen {
+        updatedMembers.forEach { updatedMember ->
+          upsertGroupMember(rhId, groupInfo, updatedMember)
+        }
+      }
+    }
+  }
+}
+
+fun <T> toggleItemSelection(itemId: T, selectedItems: MutableState<Set<T>?>) {
+  val select = selectedItems.value?.contains(itemId) != true
+  if (select) {
+    val sel = selectedItems.value ?: setOf()
+    selectedItems.value = sel + itemId
+  } else {
+    val sel = (selectedItems.value ?: setOf()).toMutableSet()
+    sel.remove(itemId)
+    selectedItems.value = sel
+  }
+}
+
 @Preview
 @Composable
 fun PreviewGroupChatInfoLayout() {
@@ -839,6 +988,8 @@ fun PreviewGroupChatInfoLayout() {
       developerTools = false,
       onLocalAliasChanged = {},
       groupLink = null,
+      selectedItems = remember { mutableStateOf(null) },
+      appBar = remember { mutableStateOf(null) },
       scrollToItemId = remember { mutableStateOf(null) },
       addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, addOrEditWelcomeMessage = {}, openPreferences = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {}, onSearchClicked = {}, deletingItems = remember { mutableStateOf(true) }
     )

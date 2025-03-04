@@ -175,7 +175,7 @@ fun ChatView(
                   )
                 }
               } else {
-                SelectedItemsBottomToolbar(
+                SelectedItemsButtonsToolbar(
                   contentTag = contentTag,
                   selectedChatItems = selectedChatItems,
                   chatInfo = chatInfo,
@@ -274,34 +274,41 @@ fun ChatView(
                 }
                 if (!isActive) return@launch
 
-                ModalManager.end.showModalCloseable(true) { close ->
-                  val chatInfo = remember { activeChatInfo }.value
-                  if (chatInfo is ChatInfo.Direct) {
-                    var contactInfo: Pair<ConnectionStats?, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
-                    var code: String? by remember { mutableStateOf(preloadedCode) }
-                    KeyChangeEffect(chatInfo.id, ChatModel.networkStatuses.toMap()) {
-                      contactInfo = chatModel.controller.apiContactInfo(chatRh, chatInfo.apiId)
-                      preloadedContactInfo = contactInfo
-                      code = chatModel.controller.apiGetContactCode(chatRh, chatInfo.apiId)?.second
-                      preloadedCode = code
-                    }
-                    ChatInfoView(chatModel, chatInfo.contact, contactInfo?.first, contactInfo?.second, chatInfo.localAlias, code, close) {
-                      showSearch.value = true
-                    }
-                  } else if (chatInfo is ChatInfo.Group) {
-                    var link: Pair<String, GroupMemberRole>? by remember(chatInfo.id) { mutableStateOf(preloadedLink) }
-                    KeyChangeEffect(chatInfo.id) {
-                      setGroupMembers(chatRh, chatInfo.groupInfo, chatModel)
-                      link = chatModel.controller.apiGetGroupLink(chatRh, chatInfo.groupInfo.groupId)
-                      preloadedLink = link
-                    }
-                    GroupChatInfoView(chatModel, chatRh, chatInfo.id, link?.first, link?.second, scrollToItemId, {
-                      link = it
-                      preloadedLink = it
-                    }, close, { showSearch.value = true })
-                  } else {
-                    LaunchedEffect(Unit) {
-                      close()
+                val selectedItems: MutableState<Set<Long>?> = mutableStateOf(null)
+                ModalManager.end.showCustomModal { close ->
+                  val appBar = remember { mutableStateOf(null as @Composable (BoxScope.() -> Unit)?) }
+                  ModalView(close, appBar = appBar.value) {
+                    val chatInfo = remember { activeChatInfo }.value
+                    if (chatInfo is ChatInfo.Direct) {
+                      var contactInfo: Pair<ConnectionStats?, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
+                      var code: String? by remember { mutableStateOf(preloadedCode) }
+                      KeyChangeEffect(chatInfo.id, ChatModel.networkStatuses.toMap()) {
+                        contactInfo = chatModel.controller.apiContactInfo(chatRh, chatInfo.apiId)
+                        preloadedContactInfo = contactInfo
+                        code = chatModel.controller.apiGetContactCode(chatRh, chatInfo.apiId)?.second
+                        preloadedCode = code
+                        selectedItems.value = null
+                      }
+                      ChatInfoView(chatModel, chatInfo.contact, contactInfo?.first, contactInfo?.second, chatInfo.localAlias, code, close) {
+                        showSearch.value = true
+                      }
+                    } else if (chatInfo is ChatInfo.Group) {
+                      var link: Pair<String, GroupMemberRole>? by remember(chatInfo.id) { mutableStateOf(preloadedLink) }
+                      KeyChangeEffect(chatInfo.id) {
+                        setGroupMembers(chatRh, chatInfo.groupInfo, chatModel)
+                        link = chatModel.controller.apiGetGroupLink(chatRh, chatInfo.groupInfo.groupId)
+                        preloadedLink = link
+                        selectedItems.value = null
+                      }
+                      GroupChatInfoView(chatRh, chatInfo.id, link?.first, link?.second, selectedItems, appBar, scrollToItemId, {
+                        link = it
+                        preloadedLink = it
+                      }, close, { showSearch.value = true })
+                    } else {
+                      LaunchedEffect(Unit) {
+                        close()
+                        selectedItems.value = null
+                      }
                     }
                   }
                 }
@@ -788,7 +795,7 @@ fun ChatLayout(
             ) {
               AnimatedVisibility(selectedChatItems.value != null) {
                 if (chatInfo != null) {
-                  SelectedItemsBottomToolbar(
+                  SelectedItemsButtonsToolbar(
                     contentTag = contentTag,
                     selectedChatItems = selectedChatItems,
                     chatInfo = chatInfo,
@@ -846,7 +853,7 @@ fun ChatLayout(
               if (selectedChatItems.value == null) {
                 GroupReportsAppBar(contentTag, { ModalManager.end.closeModal() }, onSearchValueChanged)
               } else {
-                SelectedItemsTopToolbar(selectedChatItems, !oneHandUI.value)
+                SelectedItemsCounterToolbar(selectedChatItems, !oneHandUI.value)
               }
             }
           }
@@ -858,7 +865,7 @@ fun ChatLayout(
                   ChatInfoToolbar(chatInfo, contentTag, back, info, startCall, endCall, addMembers, openGroupLink, changeNtfsState, onSearchValueChanged, showSearch)
                 }
               } else {
-                SelectedItemsTopToolbar(selectedChatItems, !oneHandUI.value || !chatBottomBar.value)
+                SelectedItemsCounterToolbar(selectedChatItems, !oneHandUI.value || !chatBottomBar.value)
               }
             }
             if (contentTag == null && reportsCount > 0 && (!oneHandUI.value || !chatBottomBar.value)) {
@@ -1432,7 +1439,7 @@ fun BoxScope.ChatItemsList(
                     fun Item() {
                       ChatItemBox(Modifier.layoutId(CHAT_BUBBLE_LAYOUT_ID)) {
                         androidx.compose.animation.AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
-                          SelectedChatItem(Modifier, cItem.id, selectedChatItems)
+                          SelectedListItem(Modifier, cItem.id, selectedChatItems)
                         }
                         Row(Modifier.graphicsLayer { translationX = selectionOffset.toPx() }) {
                           val member = cItem.chatDir.groupMember
@@ -1457,7 +1464,7 @@ fun BoxScope.ChatItemsList(
                 } else {
                   ChatItemBox {
                     AnimatedVisibility (selectionVisible, enter = fadeIn(), exit = fadeOut()) {
-                      SelectedChatItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
+                      SelectedListItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
                     }
                     Row(
                       Modifier
@@ -1472,7 +1479,7 @@ fun BoxScope.ChatItemsList(
               } else {
                 ChatItemBox {
                   AnimatedVisibility (selectionVisible, enter = fadeIn(), exit = fadeOut()) {
-                    SelectedChatItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
+                    SelectedListItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
                   }
                   Box(
                     Modifier
@@ -1487,7 +1494,7 @@ fun BoxScope.ChatItemsList(
             } else { // direct message
               ChatItemBox {
                 AnimatedVisibility (selectionVisible, enter = fadeIn(), exit = fadeOut()) {
-                  SelectedChatItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
+                  SelectedListItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
                 }
 
                 Box(
@@ -2296,12 +2303,12 @@ private fun BoxScope.BottomEndFloatingButton(
 }
 
 @Composable
-private fun SelectedChatItem(
+fun SelectedListItem(
   modifier: Modifier,
-  ciId: Long,
-  selectedChatItems: State<Set<Long>?>,
+  id: Long,
+  selectedItems: State<Set<Long>?>,
 ) {
-  val checked = remember { derivedStateOf { selectedChatItems.value?.contains(ciId) == true } }
+  val checked = remember { derivedStateOf { selectedItems.value?.contains(id) == true } }
   Icon(
     painterResource(if (checked.value) MR.images.ic_check_circle_filled else MR.images.ic_radio_button_unchecked),
     null,

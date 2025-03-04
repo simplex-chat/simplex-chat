@@ -32,6 +32,7 @@ fun ModalView(
   searchAlwaysVisible: Boolean = false,
   onSearchValueChanged: (String) -> Unit = {},
   endButtons: @Composable RowScope.() -> Unit = {},
+  appBar: @Composable (BoxScope.() -> Unit)? = null,
   content: @Composable BoxScope.() -> Unit,
 ) {
   if (showClose && showAppBar) {
@@ -48,14 +49,20 @@ fun ModalView(
           StatusBarBackground()
         }
         Box(Modifier.align(if (oneHandUI.value) Alignment.BottomStart else Alignment.TopStart)) {
-          DefaultAppBar(
-            navigationButton = if (showClose) {{ NavigationButtonBack(onButtonClicked = if (enableClose) close else null) }} else null,
-            onTop = !oneHandUI.value,
-            showSearch = showSearch,
-            searchAlwaysVisible = searchAlwaysVisible,
-            onSearchValueChanged = onSearchValueChanged,
-            buttons = endButtons
-          )
+          if (appBar != null) {
+            appBar()
+          } else {
+            DefaultAppBar(
+              navigationButton = if (showClose) {
+                { NavigationButtonBack(onButtonClicked = if (enableClose) close else null) }
+              } else null,
+              onTop = !oneHandUI.value,
+              showSearch = showSearch,
+              searchAlwaysVisible = searchAlwaysVisible,
+              onSearchValueChanged = onSearchValueChanged,
+              buttons = endButtons
+            )
+          }
         }
       }
     }
