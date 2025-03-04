@@ -1775,9 +1775,9 @@
         <target>A feltételek el lesznek fogadva a következő üzemeltető(k) számára: **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Conditions will be accepted for the operator(s): **%@**." xml:space="preserve">
+      <trans-unit id="Conditions will be accepted for the operator(s): **%@**." xml:space="preserve" approved="no">
         <source>Conditions will be accepted for the operator(s): **%@**.</source>
-        <target>A feltételek el lesznek fogadva a következő üzemeltető(k) számára: **%@**.</target>
+        <target state="translated">A feltételek a következő időpontban lesznek elfogadva az üzemeltető(k) számára: **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Conditions will be accepted on: %@." xml:space="preserve">
@@ -8259,8 +8259,9 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
         <target>Beállítások frissítése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Updated conditions" xml:space="preserve">
+      <trans-unit id="Updated conditions" xml:space="preserve" approved="no">
         <source>Updated conditions</source>
+        <target state="translated">Frissített feltételek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve">
@@ -9147,9 +9148,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>Saját SMP-kiszolgálójának címe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your servers" xml:space="preserve">
+      <trans-unit id="Your servers" xml:space="preserve" approved="no">
         <source>Your servers</source>
-        <target>Az Ön kiszolgálói</target>
+        <target state="translated">Saját kiszolgálók</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your settings" xml:space="preserve">
@@ -9840,12 +9841,14 @@ Kapcsolatkérés megismétlése?</target>
         <target>egyenrangú</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="pending" xml:space="preserve">
+      <trans-unit id="pending" xml:space="preserve" approved="no">
         <source>pending</source>
+        <target state="translated">függőben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="pending approval" xml:space="preserve">
+      <trans-unit id="pending approval" xml:space="preserve" approved="no">
         <source>pending approval</source>
+        <target state="translated">jóváhagyásra vár</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="quantum resistant e2e encryption" xml:space="preserve">
@@ -9863,8 +9866,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>visszaigazolás fogadása…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="rejected" xml:space="preserve">
+      <trans-unit id="rejected" xml:space="preserve" approved="no">
         <source>rejected</source>
+        <target state="translated">elutasítva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="rejected call" xml:space="preserve">
