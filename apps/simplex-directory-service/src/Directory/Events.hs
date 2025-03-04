@@ -235,7 +235,7 @@ directoryCmdP =
           acceptancePresetsP =
             spacesP
               *> A.choice
-                [ "no" $> noJoinFilter,
+                [ "off" $> noJoinFilter,
                   "basic" $> basicJoinFilter,
                   ("moderate" <|> "mod") $> moderateJoinFilter,
                   "strong" $> strongJoinFilter

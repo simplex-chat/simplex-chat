@@ -38,7 +38,6 @@ import Simplex.Chat.Options.DB
 
 data ChatOpts = ChatOpts
   { coreOptions :: CoreChatOpts,
-    deviceName :: Maybe Text,
     chatCmd :: String,
     chatCmdDelay :: Int,
     chatCmdLog :: ChatCmdLog,
@@ -64,6 +63,7 @@ data CoreChatOpts = CoreChatOpts
     logAgent :: Maybe LogLevel,
     logFile :: Maybe FilePath,
     tbqSize :: Natural,
+    deviceName :: Maybe Text,
     highlyAvailable :: Bool,
     yesToUpMigrations :: Bool
   }
@@ -212,6 +212,13 @@ coreChatOptsP appDir defaultDbName = do
           <> value 1024
           <> showDefault
       )
+  deviceName <-
+    optional $
+      strOption
+        ( long "device-name"
+            <> metavar "DEVICE"
+            <> help "Device name to use in connections with remote hosts and controller"
+        )
   highlyAvailable <-
     switch
       ( long "ha"
@@ -246,6 +253,7 @@ coreChatOptsP appDir defaultDbName = do
         logAgent = if logAgent || logLevel == CLLDebug then Just $ agentLogLevel logLevel else Nothing,
         logFile,
         tbqSize,
+        deviceName,
         highlyAvailable,
         yesToUpMigrations
       }
@@ -260,13 +268,6 @@ defaultHostMode = \case
 chatOptsP :: FilePath -> FilePath -> Parser ChatOpts
 chatOptsP appDir defaultDbName = do
   coreOptions <- coreChatOptsP appDir defaultDbName
-  deviceName <-
-    optional $
-      strOption
-        ( long "device-name"
-            <> metavar "DEVICE"
-            <> help "Device name to use in connections with remote hosts and controller"
-        )
   chatCmd <-
     strOption
       ( long "execute"
@@ -356,7 +357,6 @@ chatOptsP appDir defaultDbName = do
   pure
     ChatOpts
       { coreOptions,
-        deviceName,
         chatCmd,
         chatCmdDelay,
         chatCmdLog,
