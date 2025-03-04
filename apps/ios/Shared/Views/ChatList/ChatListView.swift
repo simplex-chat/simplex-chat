@@ -148,7 +148,10 @@ struct ChatListView: View {
     @State private var userPickerShown: Bool = false
     @State private var sheet: SomeSheet<AnyView>? = nil
     @StateObject private var chatTagsModel = ChatTagsModel.shared
-    
+
+    // iOS 15 is required it to show/hide toolbar while chat is hidden/visible
+    @State private var viewOnScreen = true
+
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @AppStorage(DEFAULT_ONE_HAND_UI_CARD_SHOWN) private var oneHandUICardShown = false
     @AppStorage(DEFAULT_ADDRESS_CREATION_CARD_SHOWN) private var addressCreationCardShown = false
@@ -203,7 +206,17 @@ struct ChatListView: View {
                 .navigationBarHidden(searchMode || oneHandUI)
         }
         .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-        .onDisappear() { activeUserPickerSheet = nil }
+        .onAppear {
+            if #unavailable(iOS 16.0), !viewOnScreen {
+                viewOnScreen = true
+            }
+        }
+        .onDisappear {
+            activeUserPickerSheet = nil
+            if #unavailable(iOS 16.0) {
+                viewOnScreen = false
+            }
+        }
         .refreshable {
             AlertManager.shared.showAlert(Alert(
                 title: Text("Reconnect servers?"),
@@ -258,7 +271,7 @@ struct ChatListView: View {
             }
         } else {
             if oneHandUI {
-                content().toolbar { bottomToolbarGroup }
+                content().toolbar { bottomToolbarGroup() }
             } else {
                 content().toolbar { topToolbar }
             }
@@ -286,9 +299,9 @@ struct ChatListView: View {
         }
     }
     
-    @ToolbarContentBuilder var bottomToolbarGroup: some ToolbarContent {
+    @ToolbarContentBuilder func bottomToolbarGroup() -> some ToolbarContent {
         let padding: Double = Self.hasHomeIndicator ? 0 : 14
-        ToolbarItemGroup(placement: .bottomBar) {
+        ToolbarItemGroup(placement: viewOnScreen ? .bottomBar : .principal) {
             leadingToolbarItem.padding(.bottom, padding)
             Spacer()
             SubsStatusIndicator().padding(.bottom, padding)
