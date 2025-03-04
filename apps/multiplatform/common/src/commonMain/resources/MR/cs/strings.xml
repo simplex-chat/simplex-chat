@@ -2354,4 +2354,6 @@
     <string name="chat_database_exported_migrate">Můžete přenést exportovanou databázi.</string>
     <string name="group_member_status_rejected">zamítnuto</string>
     <string name="privacy_media_blur_radius_soft">Jemný</string>
+    <string name="error_reading_passphrase">Chyba čtení přístupové fráze databáze</string>
+    <string name="restore_passphrase_can_not_be_read_enter_manually_desc">Přístupová fráze v úlozišti klíčů nelze načíst, prosím zadejte ji ručně. To se může stát po aktualizaci systému nekompatibilní s aplikací. Pokud to tak není, kontaktujte prosím vývojáře.</string>
 </resources>
