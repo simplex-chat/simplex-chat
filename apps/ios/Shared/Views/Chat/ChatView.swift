@@ -1317,6 +1317,9 @@ struct ChatView: View {
             var unreadMentions: Int = 0
 
             for i in range {
+                if i < 0 || i >= im.reversedChatItems.count {
+                    break
+                }
                 let ci = im.reversedChatItems[i]
                 if ci.isRcvNew {
                     unreadItems.append(ci.id)
