@@ -591,7 +591,10 @@ private fun SelectedItemsCounterToolbarSetter(
   filteredMembers: State<List<GroupMember>>,
   appBar: MutableState<@Composable (BoxScope.() -> Unit)?>
 ) {
-  LaunchedEffect(groupInfo, selectedItems.value == null) {
+  LaunchedEffect(groupInfo, selectedItems.value == null,
+    /* variable, not value - intentionally - to reduce work but handle variable change because it changes in remember(members) { derivedState {} } */
+    filteredMembers
+  ) {
     if (selectedItems.value != null) {
       appBar.value = {
         SelectedItemsCounterToolbar(selectedItems, !remember { appPrefs.oneHandUI.state }.value) {
