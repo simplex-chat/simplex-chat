@@ -35,17 +35,13 @@ Read more in [this post](../../blog/20230103-simplex-chat-v4.4-disappearing-mess
 
 When installed, the app generates a random passphrase for the chat database and stores it securely in KeyChain (iOS) or using KeyStore (Android, TPM module is used when available). You can set your own passphrase and also remove it from the device, in which case you will need to enter it every time you start the app, and notifications may be limited, in the [Database passphrase & export](./managing-data.md#database-passphrase) settings.
 
-## Incognito mode
-
-This feature generates a random profile name for each new contact. Read more in [Incognito mode](./app-settings.md#incognito).
-
 ## Hidden profiles
 
-This feature allows to hide some of your chat profiles with the password. Read more in [Hiding and muting chat profiles](./chat-profiles.md#hiding-and-muting-chat-profiles).
+This feature allows you to hide some of your chat profiles with the password. Read more in [Hiding and muting chat profiles](./chat-profiles.md#hiding-and-muting-chat-profiles).
 
 ## Network settings
 
-[Transport isolation (BETA)](./app-settings.md#transport-isolation-beta) allows to isolate you traffic with each contact in a different TCP connection (and Tor circuit).
+[Transport isolation (BETA)](./app-settings.md#transport-isolation-beta) allows you to isolate your traffic with each contact in a different TCP connection (and Tor circuit).
 
 ## Using Tor
 
