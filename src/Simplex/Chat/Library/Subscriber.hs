@@ -2579,9 +2579,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- member records are not deleted to keep history
           members <- withStore' $ \db -> getGroupMembers db vr user gInfo
           deleteMembersConnections user members
-          withStore' $ \db -> do
-            updateGroupMemberStatus db userId membership GSMemRemoved
-            when withMessages $ undefined -- TODO delete all member items
+          withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemRemoved
+          when withMessages $ deleteMessages membership SMDSnd
           deleteMemberItem RGEUserDeleted
           toView $ CRDeletedMemberUser user gInfo {membership = membership {memberStatus = GSMemRemoved}} m withMessages
         else
@@ -2593,7 +2592,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 deleteMemberConnection user member
                 -- undeleted "member connected" chat item will prevent deletion of member record
                 deleteOrUpdateMemberRecord user member
-                when withMessages $ undefined -- TODO delete all member items
+                when withMessages $ deleteMessages member SMDRcv
                 deleteMemberItem $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
                 toView $ CRDeletedMember user gInfo m member {memberStatus = GSMemRemoved} withMessages
       where
@@ -2604,6 +2603,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         deleteMemberItem gEvent = do
           ci <- saveRcvChatItemNoParse user (CDGroupRcv gInfo m) msg brokerTs (CIRcvGroupEvent gEvent)
           groupMsgToView gInfo ci
+        deleteMessages :: MsgDirectionI d => GroupMember -> SMsgDirection d -> CM ()
+        deleteMessages delMem msgDir
+          | groupFeatureMemberAllowed SGFFullDelete m gInfo = deleteGroupMemberCIs user gInfo delMem m msgDir
+          | otherwise = markGroupMemberCIsDeleted user gInfo delMem m
 
     xGrpLeave :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> CM ()
     xGrpLeave gInfo m msg brokerTs = do

@@ -21,6 +21,7 @@ module Simplex.Chat.Store.Messages
     -- * Message and chat item functions
     deleteContactCIs,
     getGroupFileInfo,
+    getGroupMemberFileInfo,
     deleteGroupChatItemsMessages,
     createNewSndMessage,
     createSndMsgDelivery,
@@ -57,8 +58,10 @@ module Simplex.Chat.Store.Messages
     updateGroupCIMentions,
     deleteGroupChatItem,
     updateGroupChatItemModerated,
+    updateMemberCIsModerated,
     updateGroupCIBlockedByAdmin,
     markGroupChatItemDeleted,
+    markMemberCIsDeleted,
     markGroupChatItemBlocked,
     markGroupCIBlockedByAdmin,
     markMessageReportsDeleted,
@@ -192,6 +195,11 @@ getGroupFileInfo :: DB.Connection -> User -> GroupInfo -> IO [CIFileInfo]
 getGroupFileInfo db User {userId} GroupInfo {groupId} =
   map toFileInfo
     <$> DB.query db (fileInfoQuery <> " WHERE i.user_id = ? AND i.group_id = ?") (userId, groupId)
+
+getGroupMemberFileInfo :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO [CIFileInfo]
+getGroupMemberFileInfo db User {userId} GroupInfo {groupId} GroupMember {groupMemberId} =
+  map toFileInfo
+    <$> DB.query db (fileInfoQuery <> " WHERE i.user_id = ? AND i.group_id = ? AND i.group_member_id = ?") (userId, groupId, groupMemberId)
 
 deleteGroupChatItemsMessages :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroupChatItemsMessages db User {userId} GroupInfo {groupId} = do
@@ -2359,6 +2367,24 @@ updateGroupChatItemModerated db User {userId} GroupInfo {groupId} ci m@GroupMemb
       (deletedTs, groupMemberId, toContent, toText, currentTs, userId, groupId, itemId)
   pure ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted = Just (CIModerated (Just deletedTs) m), editable = False, deletable = False}, formattedText = Nothing}
 
+updateMemberCIsModerated :: MsgDirectionI d => DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> SMsgDirection d -> UTCTime -> IO ()
+updateMemberCIsModerated db User {userId} GroupInfo {groupId} member byGroupMember md deletedTs = do
+  currentTs <- getCurrentTime
+  deleteMemberCIsMessages_ db member
+  deleteMemberCIsVersions_ db member
+  liftIO $
+    DB.execute
+      db
+      [sql|
+        UPDATE chat_items
+        SET item_deleted = 1, item_deleted_ts = ?, item_deleted_by_group_member_id = ?, item_content = ?, item_text = ?, updated_at = ?
+        WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+      |]
+      (deletedTs, groupMemberId' byGroupMember, msgDirToModeratedContent_ md, ciModeratedText, currentTs, userId, groupId, groupMemberId' member)
+  where
+    deleteMemberCIsMessages_ = undefined
+    deleteMemberCIsVersions_ = undefined
+
 updateGroupCIBlockedByAdmin :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> UTCTime -> IO (ChatItem 'CTGroup d)
 updateGroupCIBlockedByAdmin db User {userId} GroupInfo {groupId} ci deletedTs = do
   currentTs <- getCurrentTime
@@ -2404,6 +2430,18 @@ markGroupChatItemDeleted db User {userId} GroupInfo {groupId} ci@ChatItem {meta}
     |]
     (DBCIDeleted, deletedTs, deletedByGroupMemberId, currentTs, userId, groupId, itemId)
   pure ci {meta = meta {itemDeleted, editable = False, deletable = False}}
+
+markMemberCIsDeleted :: DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> UTCTime -> IO ()
+markMemberCIsDeleted db User {userId} GroupInfo {groupId} member byGroupMember deletedTs = do
+  currentTs <- liftIO getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE chat_items
+      SET item_deleted = ?, item_deleted_ts = ?, item_deleted_by_group_member_id = ?, updated_at = ?
+      WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+    |]
+    (DBCIDeleted, deletedTs, groupMemberId' byGroupMember, currentTs, userId, groupId, groupMemberId' member)
 
 markGroupChatItemBlocked :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup 'MDRcv -> IO (ChatItem 'CTGroup 'MDRcv)
 markGroupChatItemBlocked db User {userId} GroupInfo {groupId} ci@ChatItem {meta} = do

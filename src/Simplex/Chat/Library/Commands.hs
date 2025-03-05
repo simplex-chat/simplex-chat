@@ -1044,8 +1044,7 @@ processChatCommand' vr = \case
       withContactLock "deleteChat direct" chatId . procCmd $
         case cdm of
           CDMFull notify -> do
-            cancelFilesInProgress user filesInfo
-            deleteFilesLocally filesInfo
+            deleteCIFiles user filesInfo
             sendDelDeleteConns ct notify
             -- functions below are called in separate transactions to prevent crashes on android
             -- (possibly, race condition on integrity check?)
@@ -1085,8 +1084,7 @@ processChatCommand' vr = \case
       unless canDelete $ throwChatError $ CEGroupUserRole gInfo GROwner
       filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
       withGroupLock "deleteChat group" chatId . procCmd $ do
-        cancelFilesInProgress user filesInfo
-        deleteFilesLocally filesInfo
+        deleteCIFiles user filesInfo
         let doSendDel = memberActive membership && isOwner
         -- TODO [knocking] send to pending approval members (move `memberCurrent` filter from sendGroupMessages_ to call sites)
         when doSendDel . void $ sendGroupMessage' user gInfo members XGrpDel
@@ -1104,15 +1102,13 @@ processChatCommand' vr = \case
     CTDirect -> do
       ct <- withFastStore $ \db -> getContact db vr user chatId
       filesInfo <- withFastStore' $ \db -> getContactFileInfo db user ct
-      cancelFilesInProgress user filesInfo
-      deleteFilesLocally filesInfo
+      deleteCIFiles user filesInfo
       withFastStore' $ \db -> deleteContactCIs db user ct
       pure $ CRChatCleared user (AChatInfo SCTDirect $ DirectChat ct)
     CTGroup -> do
       gInfo <- withFastStore $ \db -> getGroupInfo db vr user chatId
       filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
-      cancelFilesInProgress user filesInfo
-      deleteFilesLocally filesInfo
+      deleteCIFiles user filesInfo
       withFastStore' $ \db -> deleteGroupChatItemsMessages db user gInfo
       membersToDelete <- withFastStore' $ \db -> getGroupMembersForExpiration db vr user gInfo
       forM_ membersToDelete $ \m -> withFastStore' $ \db -> deleteGroupMember db user m
@@ -2156,34 +2152,35 @@ processChatCommand' vr = \case
   APIRemoveMembers {groupId, groupMemberIds, withMessages} -> withUser $ \user ->
     withGroupLock "removeMembers" groupId . procCmd $ do
       Group gInfo members <- withFastStore $ \db -> getGroup db vr user groupId
-      let (invitedMems, pendingMems, currentMems, maxRole, anyAdmin) = selectMembers members
+      let (count, invitedMems, pendingMems, currentMems, maxRole, anyAdmin) = selectMembers members
           memCount = S.size groupMemberIds
-      when (length invitedMems + length pendingMems + length currentMems /= memCount) $ throwChatError CEGroupMemberNotFound
+      when (count /= memCount) $ throwChatError CEGroupMemberNotFound
       when (memCount > 1 && anyAdmin) $ throwChatError $ CECommandError "can't remove multiple members when admins selected"
       assertUserGroupRole gInfo $ max GRAdmin maxRole
       (errs1, deleted1) <- deleteInvitedMems user invitedMems
       (errs2, deleted2, acis2) <- deleteMemsSend user gInfo members currentMems
-      rs <- forM pendingMems $ \m -> deleteMemsSend user gInfo [m] [m]
+      rs <- forM pendingMems $ \m -> deleteMemsSend user gInfo [m] [m] -- TODO [knocking]
       let (errs3, deleted3, acis3) = concatTuples rs
           acis = acis2 <> acis3
           errs = errs1 <> errs2 <> errs3
       unless (null acis) $ toView $ CRNewChatItems user acis
       unless (null errs) $ toView $ CRChatErrors (Just user) errs
-      when withMessages $ undefined -- TODO delete messages.
+      when withMessages $ deleteMessages user gInfo $ currentMems <> pendingMems
       pure $ CRUserDeletedMembers user gInfo (deleted1 <> deleted2 <> deleted3) withMessages -- same order is not guaranteed
     where
-      selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool)
-      selectMembers = foldr' addMember ([], [], [], GRObserver, False)
+      selectMembers :: [GroupMember] -> (Int, [GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool)
+      selectMembers = foldl' addMember (0, [], [], [], GRObserver, False)
         where
-          addMember m@GroupMember {groupMemberId, memberStatus, memberRole} (invited, pending, current, maxRole, anyAdmin)
+          addMember acc@(n, invited, pending, current, maxRole, anyAdmin) m@GroupMember {groupMemberId, memberStatus, memberRole}
             | groupMemberId `S.member` groupMemberIds =
                 let maxRole' = max maxRole memberRole
                     anyAdmin' = anyAdmin || memberRole >= GRAdmin
+                    n' = n + 1
                  in case memberStatus of
-                      GSMemInvited -> (m : invited, pending, current, maxRole', anyAdmin')
-                      GSMemPendingApproval -> (invited, m : pending, current, maxRole', anyAdmin')
-                      _ -> (invited, pending, m : current, maxRole', anyAdmin')
-            | otherwise = (invited, pending, current, maxRole, anyAdmin)
+                      GSMemInvited -> (n', m : invited, pending, current, maxRole', anyAdmin')
+                      GSMemPendingApproval -> (n', invited, m : pending, current, maxRole', anyAdmin')
+                      _ -> (n', invited, pending, m : current, maxRole', anyAdmin')
+            | otherwise = acc
       deleteInvitedMems :: User -> [GroupMember] -> CM ([ChatError], [GroupMember])
       deleteInvitedMems user memsToDelete = do
         deleteMembersConnections user memsToDelete
@@ -2214,6 +2211,9 @@ processChatCommand' vr = \case
             delMember db m = do
               deleteOrUpdateMemberRecordIO db user m
               pure m {memberStatus = GSMemRemoved}
+      deleteMessages user gInfo@GroupInfo {membership} ms
+        | groupFeatureMemberAllowed SGFFullDelete membership gInfo = deleteGroupMembersCIs user gInfo ms membership
+        | otherwise = markGroupMembersCIsDeleted user gInfo ms membership
       concatTuples :: [([a], [b], [c])] -> ([a], [b], [c])
       concatTuples xs = (concat as, concat bs, concat cs)
         where (as, bs, cs) = unzip3 xs
@@ -2247,7 +2247,7 @@ processChatCommand' vr = \case
       gId <- getGroupIdByName db user gName
       gMemberIds <- S.fromList <$> mapM (getGroupMemberIdByName db user gId) (S.toList gMemberNames)
       pure (gId, gMemberIds)
-    processChatCommand $ APIRemoveMembers gId gMemberIds False
+    processChatCommand $ APIRemoveMembers gId gMemberIds withMessages
   LeaveGroup gName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APILeaveGroup groupId
@@ -3012,8 +3012,7 @@ processChatCommand' vr = \case
     deleteChatUser :: User -> Bool -> CM ChatResponse
     deleteChatUser user delSMPQueues = do
       filesInfo <- withFastStore' (`getUserFileInfo` user)
-      cancelFilesInProgress user filesInfo
-      deleteFilesLocally filesInfo
+      deleteCIFiles user filesInfo
       withAgent (\a -> deleteUser a (aUserId user) delSMPQueues)
         `catchChatError` \case
           e@(ChatErrorAgent NO_USER _) -> toView $ CRChatError (Just user) e
@@ -3785,8 +3784,7 @@ expireContactChatItems user vr globalTTL ctId =
       withExpirationDate globalTTL chatItemTTL $ \expirationDate -> do
         lift waitChatStartedAndActivated
         filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
-        cancelFilesInProgress user filesInfo
-        deleteFilesLocally filesInfo
+        deleteCIFiles user filesInfo
         withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
 
 expireGroupChatItems :: User -> VersionRangeChat -> Int64 -> UTCTime -> GroupId -> CM ()
@@ -3797,8 +3795,7 @@ expireGroupChatItems user vr globalTTL createdAtCutoff groupId =
       withExpirationDate globalTTL chatItemTTL $ \expirationDate -> do
         lift waitChatStartedAndActivated
         filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
-        cancelFilesInProgress user filesInfo
-        deleteFilesLocally filesInfo
+        deleteCIFiles user filesInfo
         withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
         membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db vr user gInfo
         forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
