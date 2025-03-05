@@ -160,7 +160,7 @@
     <string name="both_you_and_your_contact_can_add_message_reactions">Mindkét fél hozzáadhat az üzenetekhez reakciókat.</string>
     <string name="both_you_and_your_contact_can_make_calls">Mindkét fél tud hívásokat kezdeményezni.</string>
     <string name="la_auth_failed">Sikertelen hitelesítés</string>
-    <string name="block_member_desc">Az összes %s által írt új üzenet el lesz rejtve!</string>
+    <string name="block_member_desc">%s összes új üzenete el lesz rejtve!</string>
     <string name="app_version_name">Az alkalmazás verziója: v%s</string>
     <string name="allow_calls_only_if">A hívások kezdeményezése csak abban az esetben van engedélyezve, ha a partnere is engedélyezi.</string>
     <string name="smp_servers_add">Kiszolgáló hozzáadása</string>
@@ -238,7 +238,7 @@
     <string name="group_member_status_intro_invitation">kapcsolódás (bemutatkozó meghívó)</string>
     <string name="create_simplex_address">SimpleX-cím létrehozása</string>
     <string name="rcv_direct_event_contact_deleted">törölt partner</string>
-    <string name="delete_member_message__question">Csoporttag üzenetének törlése?</string>
+    <string name="delete_member_message__question">Törli a tag üzenetét?</string>
     <string name="chat_is_running">A csevegés fut</string>
     <string name="share_one_time_link">Egyszer használható meghívási hivatkozás létrehozása</string>
     <string name="delete_link">Törlés</string>
@@ -318,7 +318,7 @@
     <string name="group_member_status_announced">kapcsolódás (bejelentve)</string>
     <string name="contact_connection_pending">kapcsolódás…</string>
     <string name="chat_database_deleted">Csevegési adatbázis törölve</string>
-    <string name="group_member_status_introduced">kapcsolódás (bejelentve)</string>
+    <string name="group_member_status_introduced">kapcsolódás (bemutatkozva)</string>
     <string name="create_group_link">Csoporthivatkozás létrehozása</string>
     <string name="chat_console">Csevegési konzol</string>
     <string name="delete_files_and_media_for_all_users">Fájlok törlése az összes csevegési profilból</string>
@@ -693,7 +693,7 @@
     <string name="network_settings_title">Speciális beállítások</string>
     <string name="no_info_on_delivery">Nincs kézbesítési információ</string>
     <string name="moderated_description">moderált</string>
-    <string name="member_will_be_removed_from_group_cannot_be_undone">A tag eltávolítása a csoportból – ez a művelet nem vonható vissza!</string>
+    <string name="member_will_be_removed_from_group_cannot_be_undone">A tag el lesz távolítva a csoportból – ez a művelet nem vonható vissza!</string>
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy a megadott XFTP-kiszolgálók címei megfelelő formátumúak, soronként elkülönítettek, és nincsenek duplikálva.</string>
     <string name="no_contacts_selected">Nincs partner kijelölve</string>
     <string name="no_received_app_files">Nincsenek fogadott vagy küldött fájlok</string>
@@ -809,7 +809,7 @@
   <string name="this_device_version"><![CDATA[<i>(ez az eszköz: v%s)</i>]]></string>
     <string name="feature_offered_item">%s ajánlotta</string>
     <string name="button_leave_group">Csoport elhagyása</string>
-    <string name="unblock_member_desc">Az összes %s által írt üzenet meg fog jelenni!</string>
+    <string name="unblock_member_desc">%s összes üzenete meg fog jelenni!</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Ez akkor fordulhat elő, ha:\n1. Az üzenetek 2 nap után, vagy a kiszolgálón 30 nap után lejártak.\n2. Az üzenet visszafejtése sikertelen volt, mert Ön, vagy a partnere régebbi adatbázis biztonsági mentést használt.\n3. A kapcsolat sérült.</string>
     <string name="group_member_role_observer">megfigyelő</string>
     <string name="description_via_group_link_incognito">inkognitó a csoporthivatkozáson keresztül</string>
@@ -1118,7 +1118,7 @@
     <string name="connect_plan_repeat_join_request">Csatlakozáskérés megismétlése?</string>
     <string name="waiting_for_image">Várakozás a képre</string>
     <string name="v4_3_voice_messages">Hangüzenetek</string>
-    <string name="button_remove_member_question">Biztosan eltávolítja?</string>
+    <string name="button_remove_member_question">Tag eltávolítása?</string>
     <string name="verify_security_code">Biztonsági kód hitelesítése</string>
     <string name="rcv_group_event_user_deleted">eltávolította Önt</string>
     <string name="simplex_address">SimpleX-cím</string>
@@ -2332,4 +2332,12 @@
     <string name="error_reading_passphrase">Hiba az adatbázis-jelmondat olvasásakor</string>
     <string name="restore_passphrase_can_not_be_read_desc">A jelmondat nem olvasható a Keystore-ban. Ez az alkalmazással nem kompatibilis rendszerfrissítés után történhetett meg. Ha nem így történt, akkor lépjen kapcsolatba a fejlesztőkkel.</string>
     <string name="operator_updated_conditions">Frissített feltételek</string>
+    <string name="members_will_be_removed_from_group_cannot_be_undone">A tagok el lesznek távolítva a csoportból – ez a művelet nem vonható vissza!</string>
+    <string name="button_remove_members_question">Tagok eltávolítása?</string>
+    <string name="block_members_for_all_question">Az összes tag számára letiltja ezeket a tagokat?</string>
+    <string name="members_will_be_removed_from_chat_cannot_be_undone">A tagok el lesznek távolítva a csevegésből – ez a művelet nem vonható vissza!</string>
+    <string name="unblock_members_for_all_question">Az összes tag számára feloldja a tagok letiltását?</string>
+    <string name="block_members_desc">Ezen tagok összes új üzenete el lesz rejtve!</string>
+    <string name="unblock_members_desc">A tagok összes üzenete meg fog jelenni!</string>
+    <string name="feature_roles_moderators">moderátorok</string>
 </resources>
