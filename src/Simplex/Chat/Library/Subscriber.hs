@@ -867,7 +867,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpMemRole memId memRole -> xGrpMemRole gInfo m' memId memRole msg brokerTs
               XGrpMemRestrict memId memRestrictions -> xGrpMemRestrict gInfo m' memId memRestrictions msg brokerTs
               XGrpMemCon memId -> xGrpMemCon gInfo m' memId
-              XGrpMemDel memId -> xGrpMemDel gInfo m' memId msg brokerTs
+              XGrpMemDel memId withMessages -> xGrpMemDel gInfo m' memId withMessages msg brokerTs
               XGrpLeave -> xGrpLeave gInfo m' msg brokerTs
               XGrpDel -> xGrpDel gInfo m' msg brokerTs
               XGrpInfo p' -> xGrpInfo gInfo m' p' msg brokerTs
@@ -2570,8 +2570,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           _ -> updateStatus introId GMIntroReConnected
         updateStatus introId status = withStore' $ \db -> updateIntroStatus db introId status
 
-    xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> RcvMessage -> UTCTime -> CM ()
-    xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId msg brokerTs = do
+    xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> Bool -> RcvMessage -> UTCTime -> CM ()
+    xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId withMessages msg brokerTs = do
       let GroupMember {memberId = membershipMemId} = membership
       if membershipMemId == memId
         then checkRole membership $ do
@@ -2579,9 +2579,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- member records are not deleted to keep history
           members <- withStore' $ \db -> getGroupMembers db vr user gInfo
           deleteMembersConnections user members
-          withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemRemoved
+          withStore' $ \db -> do
+            updateGroupMemberStatus db userId membership GSMemRemoved
+            when withMessages $ undefined -- TODO delete all member items
           deleteMemberItem RGEUserDeleted
-          toView $ CRDeletedMemberUser user gInfo {membership = membership {memberStatus = GSMemRemoved}} m
+          toView $ CRDeletedMemberUser user gInfo {membership = membership {memberStatus = GSMemRemoved}} m withMessages
         else
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
             Left _ -> messageError "x.grp.mem.del with unknown member ID"
@@ -2591,8 +2593,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 deleteMemberConnection user member
                 -- undeleted "member connected" chat item will prevent deletion of member record
                 deleteOrUpdateMemberRecord user member
+                when withMessages $ undefined -- TODO delete all member items
                 deleteMemberItem $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
-                toView $ CRDeletedMember user gInfo m member {memberStatus = GSMemRemoved}
+                toView $ CRDeletedMember user gInfo m member {memberStatus = GSMemRemoved} withMessages
       where
         checkRole GroupMember {memberRole} a
           | senderRole < GRAdmin || senderRole < memberRole =
@@ -2726,7 +2729,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XInfo p -> xInfoMember gInfo author p msgTs
             XGrpMemNew memInfo -> xGrpMemNew gInfo author memInfo rcvMsg msgTs
             XGrpMemRole memId memRole -> xGrpMemRole gInfo author memId memRole rcvMsg msgTs
-            XGrpMemDel memId -> xGrpMemDel gInfo author memId rcvMsg msgTs
+            XGrpMemDel memId withMessages -> xGrpMemDel gInfo author memId withMessages rcvMsg msgTs
             XGrpLeave -> xGrpLeave gInfo author rcvMsg msgTs
             XGrpDel -> xGrpDel gInfo author rcvMsg msgTs
             XGrpInfo p' -> xGrpInfo gInfo author p' rcvMsg msgTs

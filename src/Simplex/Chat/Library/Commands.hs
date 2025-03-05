@@ -43,6 +43,7 @@ import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
+import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
@@ -2152,12 +2153,13 @@ processChatCommand' vr = \case
             let content = CISndGroupEvent $ SGEMemberBlocked groupMemberId (fromLocalProfile memberProfile) blockFlag
                 ts = ciContentTexts content
              in NewSndChatItemData msg content ts M.empty Nothing Nothing Nothing
-  APIRemoveMembers groupId memberIds -> withUser $ \user ->
+  APIRemoveMembers {groupId, groupMemberIds, withMessages} -> withUser $ \user ->
     withGroupLock "removeMembers" groupId . procCmd $ do
       Group gInfo members <- withFastStore $ \db -> getGroup db vr user groupId
       let (invitedMems, pendingMems, currentMems, maxRole, anyAdmin) = selectMembers members
-      when (length invitedMems + length pendingMems + length currentMems /= length memberIds) $ throwChatError CEGroupMemberNotFound
-      when (length memberIds > 1 && anyAdmin) $ throwChatError $ CECommandError "can't remove multiple members when admins selected"
+          memCount = S.size groupMemberIds
+      when (length invitedMems + length pendingMems + length currentMems /= memCount) $ throwChatError CEGroupMemberNotFound
+      when (memCount > 1 && anyAdmin) $ throwChatError $ CECommandError "can't remove multiple members when admins selected"
       assertUserGroupRole gInfo $ max GRAdmin maxRole
       (errs1, deleted1) <- deleteInvitedMems user invitedMems
       (errs2, deleted2, acis2) <- deleteMemsSend user gInfo members currentMems
@@ -2167,20 +2169,20 @@ processChatCommand' vr = \case
           errs = errs1 <> errs2 <> errs3
       unless (null acis) $ toView $ CRNewChatItems user acis
       unless (null errs) $ toView $ CRChatErrors (Just user) errs
-      pure $ CRUserDeletedMembers user gInfo (deleted1 <> deleted2 <> deleted3) -- same order is not guaranteed
+      when withMessages $ undefined -- TODO delete messages.
+      pure $ CRUserDeletedMembers user gInfo (deleted1 <> deleted2 <> deleted3) withMessages -- same order is not guaranteed
     where
       selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool)
       selectMembers = foldr' addMember ([], [], [], GRObserver, False)
         where
           addMember m@GroupMember {groupMemberId, memberStatus, memberRole} (invited, pending, current, maxRole, anyAdmin)
-            | groupMemberId `elem` memberIds =
+            | groupMemberId `S.member` groupMemberIds =
                 let maxRole' = max maxRole memberRole
                     anyAdmin' = anyAdmin || memberRole >= GRAdmin
-                 in
-                  case memberStatus of
-                    GSMemInvited -> (m : invited, pending, current, maxRole', anyAdmin')
-                    GSMemPendingApproval -> (invited, m : pending, current, maxRole', anyAdmin')
-                    _ -> (invited, pending, m : current, maxRole', anyAdmin')
+                 in case memberStatus of
+                      GSMemInvited -> (m : invited, pending, current, maxRole', anyAdmin')
+                      GSMemPendingApproval -> (invited, m : pending, current, maxRole', anyAdmin')
+                      _ -> (invited, pending, m : current, maxRole', anyAdmin')
             | otherwise = (invited, pending, current, maxRole, anyAdmin)
       deleteInvitedMems :: User -> [GroupMember] -> CM ([ChatError], [GroupMember])
       deleteInvitedMems user memsToDelete = do
@@ -2194,7 +2196,7 @@ processChatCommand' vr = \case
       deleteMemsSend user gInfo sendToMems memsToDelete = case L.nonEmpty memsToDelete of
         Nothing -> pure ([], [], [])
         Just memsToDelete' -> do
-          let events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId) memsToDelete'
+          let events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId withMessages) memsToDelete'
           (msgs_, _gsr) <- sendGroupMessages user gInfo sendToMems events
           let itemsData = zipWith (fmap . sndItemData) memsToDelete (L.toList msgs_)
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo) Nothing itemsData Nothing False
@@ -2240,12 +2242,12 @@ processChatCommand' vr = \case
     processChatCommand $ APIJoinGroup groupId enableNtfs
   MemberRole gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIMembersRole gId [gMemberId] memRole
   BlockForAll gName gMemberName blocked -> withMemberName gName gMemberName $ \gId gMemberId -> APIBlockMembersForAll gId [gMemberId] blocked
-  RemoveMembers gName gMemberNames -> withUser $ \user -> do
+  RemoveMembers gName gMemberNames withMessages -> withUser $ \user -> do
     (gId, gMemberIds) <- withStore $ \db -> do
       gId <- getGroupIdByName db user gName
-      gMemberIds <- forM gMemberNames $ getGroupMemberIdByName db user gId
+      gMemberIds <- S.fromList <$> mapM (getGroupMemberIdByName db user gId) (S.toList gMemberNames)
       pure (gId, gMemberIds)
-    processChatCommand $ APIRemoveMembers gId gMemberIds
+    processChatCommand $ APIRemoveMembers gId gMemberIds False
   LeaveGroup gName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APILeaveGroup groupId
@@ -3939,8 +3941,8 @@ chatCommandP =
       "/_join #" *> (APIJoinGroup <$> A.decimal <*> pure MFAll), -- needs to be changed to support in UI
       "/_accept member #" *> (APIAcceptMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_member role #" *> (APIMembersRole <$> A.decimal <*> _strP <*> memberRole),
-      "/_block #" *> (APIBlockMembersForAll <$> A.decimal <*> _strP <* A.space <* "blocked=" <*> onOffP),
-      "/_remove #" *> (APIRemoveMembers <$> A.decimal <*> _strP),
+      "/_block #" *> (APIBlockMembersForAll <$> A.decimal <*> _strP <* " blocked=" <*> onOffP),
+      "/_remove #" *> (APIRemoveMembers <$> A.decimal <*> _strP <*> (" messages=" *> onOffP <|> pure False)),
       "/_leave #" *> (APILeaveGroup <$> A.decimal),
       "/_members #" *> (APIListMembers <$> A.decimal),
       "/_server test " *> (APITestProtoServer <$> A.decimal <* A.space <*> strP),
@@ -4026,7 +4028,7 @@ chatCommandP =
       ("/member role " <|> "/mr ") *> char_ '#' *> (MemberRole <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> memberRole),
       "/block for all #" *> (BlockForAll <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure True),
       "/unblock for all #" *> (BlockForAll <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure False),
-      ("/remove " <|> "/rm ") *> char_ '#' *> (RemoveMembers <$> displayNameP <* A.space <*> (L.fromList <$> (char_ '@' *> displayNameP) `A.sepBy1'` A.char ',')),
+      ("/remove " <|> "/rm ") *> char_ '#' *> (RemoveMembers <$> displayNameP <* A.space <*> (S.fromList <$> (char_ '@' *> displayNameP) `A.sepBy1'` A.char ',') <*> (" messages=" *> onOffP <|> pure False)),
       ("/leave " <|> "/l ") *> char_ '#' *> (LeaveGroup <$> displayNameP),
       ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayNameP),
       ("/delete " <|> "/d ") *> char_ '@' *> (DeleteContact <$> displayNameP <*> chatDeleteMode),
