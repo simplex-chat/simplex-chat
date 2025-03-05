@@ -9,12 +9,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.BackHandler
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.views.helpers.*
@@ -23,32 +21,44 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 
 @Composable
-fun BoxScope.SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>, onTop: Boolean) {
-  val onBackClicked = { selectedChatItems.value = null }
+fun BoxScope.SelectedItemsCounterToolbar(selectedItems: MutableState<Set<Long>?>, onTop: Boolean, selectAll: (() -> Unit)? = null) {
+  val onBackClicked = { selectedItems.value = null }
   BackHandler(onBack = onBackClicked)
-  val count = selectedChatItems.value?.size ?: 0
-  DefaultAppBar(
-    navigationButton = { NavigationButtonClose(onButtonClicked = onBackClicked) },
-    title = {
-      Text(
-        if (count == 0) {
-          stringResource(MR.strings.selected_chat_items_nothing_selected)
-        } else {
-          stringResource(MR.strings.selected_chat_items_selected_n).format(count)
-        },
-        fontWeight = FontWeight.SemiBold,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis
-      )
-    },
-    onTitleClick = null,
-    onTop = onTop,
-    onSearchValueChanged = {},
-  )
+  val count = selectedItems.value?.size ?: 0
+  Box(if (onTop) Modifier else Modifier.imePadding()) {
+    DefaultAppBar(
+      navigationButton = { NavigationButtonClose(onButtonClicked = onBackClicked) },
+      title = {
+        Text(
+          if (count == 0) {
+            stringResource(MR.strings.selected_chat_items_nothing_selected)
+          } else {
+            stringResource(MR.strings.selected_chat_items_selected_n).format(count)
+          },
+          fontWeight = FontWeight.SemiBold,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis
+        )
+      },
+      onTitleClick = null,
+      onTop = onTop,
+      onSearchValueChanged = {},
+      buttons = if (selectAll != null) { { SelectAllButton(selectAll) } } else {{}}
+    )
+  }
 }
 
 @Composable
-fun SelectedItemsBottomToolbar(
+private fun SelectAllButton(onClick: () -> Unit) {
+  IconButton(onClick) {
+    Icon(
+      painterResource(MR.images.ic_checklist), stringResource(MR.strings.back), Modifier.height(24.dp), tint = MaterialTheme.colors.primary
+    )
+  }
+}
+
+@Composable
+fun SelectedItemsButtonsToolbar(
   chatInfo: ChatInfo,
   contentTag: MsgContentTag?,
   selectedChatItems: MutableState<Set<Long>?>,
@@ -162,4 +172,4 @@ private fun recheckItems(chatInfo: ChatInfo,
 }
 
 private fun possibleToModerate(chatInfo: ChatInfo): Boolean =
-  chatInfo is ChatInfo.Group && chatInfo.groupInfo.membership.memberRole >= GroupMemberRole.Admin
+  chatInfo is ChatInfo.Group && chatInfo.groupInfo.membership.memberRole >= GroupMemberRole.Moderator

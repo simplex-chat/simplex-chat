@@ -865,14 +865,14 @@ fun ModerateItemAction(
 @Composable
 fun SelectItemAction(
   showMenu: MutableState<Boolean>,
-  selectChatItem: () -> Unit,
+  selectItem: () -> Unit,
 ) {
   ItemAction(
     stringResource(MR.strings.select_verb),
     painterResource(MR.images.ic_check_circle),
     onClick = {
       showMenu.value = false
-      selectChatItem()
+      selectItem()
     }
   )
 }

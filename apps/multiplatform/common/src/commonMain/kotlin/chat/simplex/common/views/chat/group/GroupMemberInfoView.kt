@@ -137,26 +137,10 @@ fun GroupMemberInfoView(
         if (it == newRole.value) return@GroupMemberInfoLayout
         val prevValue = newRole.value
         newRole.value = it
-        updateMemberRoleDialog(it, groupInfo, member, onDismiss = {
+        updateMemberRoleDialog(it, groupInfo, member.memberCurrent, onDismiss = {
           newRole.value = prevValue
         }) {
-          withBGApi {
-            kotlin.runCatching {
-              val members = chatModel.controller.apiMembersRole(rhId, groupInfo.groupId, listOf(member.groupMemberId), it)
-              withChats {
-                members.forEach { member ->
-                  upsertGroupMember(rhId, groupInfo, member)
-                }
-              }
-              withReportsChatsIfOpen {
-                members.forEach { member ->
-                  upsertGroupMember(rhId, groupInfo, member)
-                }
-              }
-            }.onFailure {
-              newRole.value = prevValue
-            }
-          }
+          updateMembersRole(newRole.value, rhId, groupInfo, listOf(member.groupMemberId), onFailure = { newRole.value = prevValue })
         }
       },
       switchMemberAddress = {
@@ -317,7 +301,7 @@ fun GroupMemberInfoLayout(
   }
 
   @Composable
-  fun AdminDestructiveSection() {
+  fun ModeratorDestructiveSection() {
     val canBlockForAll = member.canBlockForAll(groupInfo)
     val canRemove = member.canBeRemoved(groupInfo)
     if (canBlockForAll || canRemove) {
@@ -494,8 +478,8 @@ fun GroupMemberInfoLayout(
       }
     }
 
-    if (groupInfo.membership.memberRole >= GroupMemberRole.Admin) {
-      AdminDestructiveSection()
+    if (groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
+      ModeratorDestructiveSection()
     } else {
       NonAdminBlockSection()
     }
@@ -709,16 +693,37 @@ fun MemberProfileImage(
   )
 }
 
-private fun updateMemberRoleDialog(
+fun updateMembersRole(newRole: GroupMemberRole, rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, onFailure: () -> Unit = {}, onSuccess: () -> Unit = {}) {
+  withBGApi {
+    kotlin.runCatching {
+      val members = chatModel.controller.apiMembersRole(rhId, groupInfo.groupId, memberIds, newRole)
+      withChats {
+        members.forEach { member ->
+          upsertGroupMember(rhId, groupInfo, member)
+        }
+      }
+      withReportsChatsIfOpen {
+        members.forEach { member ->
+          upsertGroupMember(rhId, groupInfo, member)
+        }
+      }
+      onSuccess()
+    }.onFailure {
+      onFailure()
+    }
+  }
+}
+
+fun updateMemberRoleDialog(
   newRole: GroupMemberRole,
   groupInfo: GroupInfo,
-  member: GroupMember,
+  memberCurrent: Boolean,
   onDismiss: () -> Unit,
   onConfirm: () -> Unit
 ) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.change_member_role_question),
-    text = if (member.memberCurrent) {
+    text = if (memberCurrent) {
       if (groupInfo.businessChat == null)
         String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification), newRole.text)
       else
@@ -729,6 +734,22 @@ private fun updateMemberRoleDialog(
     onDismiss = onDismiss,
     onConfirm = onConfirm,
     onDismissRequest = onDismiss
+  )
+}
+
+fun updateMembersRoleDialog(
+  newRole: GroupMemberRole,
+  groupInfo: GroupInfo,
+  onConfirm: () -> Unit
+) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.change_member_role_question),
+    text = if (groupInfo.businessChat == null)
+      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification), newRole.text)
+    else
+      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification_chat), newRole.text),
+    confirmText = generalGetString(MR.strings.change_verb),
+    onConfirm = onConfirm,
   )
 }
 
@@ -793,7 +814,19 @@ fun blockForAllAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
     text = generalGetString(MR.strings.block_member_desc).format(mem.chatViewName),
     confirmText = generalGetString(MR.strings.block_for_all),
     onConfirm = {
-      blockMemberForAll(rhId, gInfo, mem, true)
+      blockMemberForAll(rhId, gInfo, listOf(mem.groupMemberId), true)
+    },
+    destructive = true,
+  )
+}
+
+fun blockForAllAlert(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>, onSuccess: () -> Unit = {}) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.block_members_for_all_question),
+    text = generalGetString(MR.strings.block_members_desc),
+    confirmText = generalGetString(MR.strings.block_for_all),
+    onConfirm = {
+      blockMemberForAll(rhId, gInfo, memberIds, true, onSuccess)
     },
     destructive = true,
   )
@@ -805,14 +838,25 @@ fun unblockForAllAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
     text = generalGetString(MR.strings.unblock_member_desc).format(mem.chatViewName),
     confirmText = generalGetString(MR.strings.unblock_for_all),
     onConfirm = {
-      blockMemberForAll(rhId, gInfo, mem, false)
+      blockMemberForAll(rhId, gInfo, listOf(mem.groupMemberId), false)
     },
   )
 }
 
-fun blockMemberForAll(rhId: Long?, gInfo: GroupInfo, member: GroupMember, blocked: Boolean) {
+fun unblockForAllAlert(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>, onSuccess: () -> Unit = {}) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.unblock_members_for_all_question),
+    text = generalGetString(MR.strings.unblock_members_desc),
+    confirmText = generalGetString(MR.strings.unblock_for_all),
+    onConfirm = {
+      blockMemberForAll(rhId, gInfo, memberIds, false, onSuccess)
+    },
+  )
+}
+
+fun blockMemberForAll(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>, blocked: Boolean, onSuccess: () -> Unit = {}) {
   withBGApi {
-    val updatedMembers = ChatController.apiBlockMembersForAll(rhId, gInfo.groupId, listOf(member.groupMemberId), blocked)
+    val updatedMembers = ChatController.apiBlockMembersForAll(rhId, gInfo.groupId, memberIds, blocked)
     withChats {
       updatedMembers.forEach { updatedMember ->
         upsertGroupMember(rhId, gInfo, updatedMember)
@@ -823,6 +867,7 @@ fun blockMemberForAll(rhId: Long?, gInfo: GroupInfo, member: GroupMember, blocke
         upsertGroupMember(rhId, gInfo, updatedMember)
       }
     }
+    onSuccess()
   }
 }
 
