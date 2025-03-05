@@ -188,8 +188,7 @@ struct ContactListNavLink: View {
         Task {
             let ok = await connectContactViaAddress(contact.contactId, incognito, showAlert: { alert = SomeAlert(alert: $0, id: "ContactListNavLink connectContactViaAddress") })
             if ok {
-                ItemsModel.shared.loadOpenChat(contact.id)
-                DispatchQueue.main.async {
+                ItemsModel.shared.loadOpenChat(contact.id) {
                     dismissAllSheets(animated: true) {
                         AlertManager.shared.showAlert(connReqSentAlert(.contact))
                     }
