@@ -693,7 +693,7 @@ fun MemberProfileImage(
   )
 }
 
-fun updateMembersRole(newRole: GroupMemberRole, rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, onFailure: () -> Unit = {}) {
+fun updateMembersRole(newRole: GroupMemberRole, rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, onFailure: () -> Unit = {}, onSuccess: () -> Unit = {}) {
   withBGApi {
     kotlin.runCatching {
       val members = chatModel.controller.apiMembersRole(rhId, groupInfo.groupId, memberIds, newRole)
@@ -707,6 +707,7 @@ fun updateMembersRole(newRole: GroupMemberRole, rhId: Long?, groupInfo: GroupInf
           upsertGroupMember(rhId, groupInfo, member)
         }
       }
+      onSuccess()
     }.onFailure {
       onFailure()
     }
@@ -819,13 +820,13 @@ fun blockForAllAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
   )
 }
 
-fun blockForAllAlert(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>) {
+fun blockForAllAlert(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>, onSuccess: () -> Unit = {}) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.block_members_for_all_question),
     text = generalGetString(MR.strings.block_members_desc),
     confirmText = generalGetString(MR.strings.block_for_all),
     onConfirm = {
-      blockMemberForAll(rhId, gInfo, memberIds, true)
+      blockMemberForAll(rhId, gInfo, memberIds, true, onSuccess)
     },
     destructive = true,
   )
@@ -842,18 +843,18 @@ fun unblockForAllAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
   )
 }
 
-fun unblockForAllAlert(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>) {
+fun unblockForAllAlert(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>, onSuccess: () -> Unit = {}) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.unblock_members_for_all_question),
     text = generalGetString(MR.strings.unblock_members_desc),
     confirmText = generalGetString(MR.strings.unblock_for_all),
     onConfirm = {
-      blockMemberForAll(rhId, gInfo, memberIds, false)
+      blockMemberForAll(rhId, gInfo, memberIds, false, onSuccess)
     },
   )
 }
 
-fun blockMemberForAll(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>, blocked: Boolean) {
+fun blockMemberForAll(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>, blocked: Boolean, onSuccess: () -> Unit = {}) {
   withBGApi {
     val updatedMembers = ChatController.apiBlockMembersForAll(rhId, gInfo.groupId, memberIds, blocked)
     withChats {
@@ -866,6 +867,7 @@ fun blockMemberForAll(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>, bloc
         upsertGroupMember(rhId, gInfo, updatedMember)
       }
     }
+    onSuccess()
   }
 }
 

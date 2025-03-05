@@ -234,7 +234,7 @@ private fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMembe
   )
 }
 
-private fun removeMembersAlert(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>) {
+private fun removeMembersAlert(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, onSuccess: () -> Unit = {}) {
   val messageId = if (groupInfo.businessChat == null)
     MR.strings.members_will_be_removed_from_group_cannot_be_undone
   else
@@ -244,7 +244,7 @@ private fun removeMembersAlert(rhId: Long?, groupInfo: GroupInfo, memberIds: Lis
     text = generalGetString(messageId),
     confirmText = generalGetString(MR.strings.remove_member_confirmation),
     onConfirm = {
-      removeMembers(rhId, groupInfo, memberIds)
+      removeMembers(rhId, groupInfo, memberIds, onSuccess)
     },
     destructive = true,
   )
@@ -561,18 +561,26 @@ private fun BoxScope.SelectedItemsButtonsToolbar(chat: Chat, groupInfo: GroupInf
         activeMembers = activeMembers,
         groupInfo = groupInfo,
         delete = {
-          removeMembersAlert(chat.remoteHostId, groupInfo, selectedItems.value!!.sorted())
+          removeMembersAlert(chat.remoteHostId, groupInfo, selectedItems.value!!.sorted()) {
+            selectedItems.value = null
+          }
         },
         blockForAll = { block ->
           if (block) {
-            blockForAllAlert(chat.remoteHostId, groupInfo, selectedItems.value!!.sorted())
+            blockForAllAlert(chat.remoteHostId, groupInfo, selectedItems.value!!.sorted()) {
+              selectedItems.value = null
+            }
           } else {
-            unblockForAllAlert(chat.remoteHostId, groupInfo, selectedItems.value!!.sorted())
+            unblockForAllAlert(chat.remoteHostId, groupInfo, selectedItems.value!!.sorted()) {
+              selectedItems.value = null
+            }
           }
         },
         changeRole = { toRole ->
           updateMembersRoleDialog(toRole, groupInfo) {
-            updateMembersRole(toRole, chat.remoteHostId, groupInfo, selectedItems.value!!.sorted())
+            updateMembersRole(toRole, chat.remoteHostId, groupInfo, selectedItems.value!!.sorted()) {
+              selectedItems.value = null
+            }
           }
         }
       )
@@ -954,7 +962,7 @@ private fun setGroupAlias(chat: Chat, localAlias: String, chatModel: ChatModel) 
   }
 }
 
-fun removeMembers(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>) {
+fun removeMembers(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, onSuccess: () -> Unit = {}) {
   withBGApi {
     val updatedMembers = chatModel.controller.apiRemoveMembers(rhId, groupInfo.groupId, memberIds)
     if (updatedMembers != null) {
@@ -968,6 +976,7 @@ fun removeMembers(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>) {
           upsertGroupMember(rhId, groupInfo, updatedMember)
         }
       }
+      onSuccess()
     }
   }
 }

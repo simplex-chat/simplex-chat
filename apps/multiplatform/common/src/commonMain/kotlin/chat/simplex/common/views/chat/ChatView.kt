@@ -287,7 +287,6 @@ fun ChatView(
                         preloadedContactInfo = contactInfo
                         code = chatModel.controller.apiGetContactCode(chatRh, chatInfo.apiId)?.second
                         preloadedCode = code
-                        selectedItems.value = null
                       }
                       ChatInfoView(chatModel, chatInfo.contact, contactInfo?.first, contactInfo?.second, chatInfo.localAlias, code, close) {
                         showSearch.value = true
@@ -298,7 +297,6 @@ fun ChatView(
                         setGroupMembers(chatRh, chatInfo.groupInfo, chatModel)
                         link = chatModel.controller.apiGetGroupLink(chatRh, chatInfo.groupInfo.groupId)
                         preloadedLink = link
-                        selectedItems.value = null
                       }
                       GroupChatInfoView(chatRh, chatInfo.id, link?.first, link?.second, selectedItems, appBar, scrollToItemId, {
                         link = it
@@ -307,8 +305,15 @@ fun ChatView(
                     } else {
                       LaunchedEffect(Unit) {
                         close()
-                        selectedItems.value = null
                       }
+                    }
+                    LaunchedEffect(Unit) {
+                      snapshotFlow { activeChatInfo.value?.id }
+                        .drop(1)
+                        .collect {
+                          appBar.value = null
+                          selectedItems.value = null
+                        }
                     }
                   }
                 }
