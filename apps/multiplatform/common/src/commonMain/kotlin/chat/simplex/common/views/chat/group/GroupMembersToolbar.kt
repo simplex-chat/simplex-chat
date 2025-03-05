@@ -103,9 +103,6 @@ private fun recheckItems(
   roleToMemberEnabled: MutableState<Boolean>,
   roleToObserverEnabled: MutableState<Boolean>,
 ) {
-//  val count = selectedItems.value?.size ?: 0
-//  deleteCountProhibited.value = count == 0 || count > 200
-//  forwardCountProhibited.value = count == 0 || count > 20
   val selected = selectedItems.value ?: return
   var rDeleteEnabled = true
   var rBlockForAllEnabled = true
