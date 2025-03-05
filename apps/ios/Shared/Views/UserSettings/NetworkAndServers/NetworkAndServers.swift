@@ -20,11 +20,11 @@ private enum NetworkAlert: Identifiable {
 }
 
 private enum NetworkAndServersSheet: Identifiable {
-    case showConditions(updated: Bool)
+    case showConditions
 
     var id: String {
         switch self {
-        case let .showConditions(updated): return "showConditions \(updated)"
+        case .showConditions: return "showConditions"
         }
     }
 }
@@ -169,11 +169,10 @@ struct NetworkAndServers: View {
         }
         .sheet(item: $sheetItem) { item in
             switch item {
-            case let .showConditions(updated):
+            case .showConditions:
                 UsageConditionsView(
                     currUserServers: $ss.servers.currUserServers,
-                    userServers: $ss.servers.userServers,
-                    updated: updated
+                    userServers: $ss.servers.userServers
                 )
                 .modifier(ThemedBackground(grouped: true))
             }
@@ -219,8 +218,7 @@ struct NetworkAndServers: View {
 
     private func conditionsButton(_ conditionsAction: UsageConditionsAction) -> some View {
         Button {
-            let updated = if case .review = conditionsAction { true } else { false }
-            sheetItem = .showConditions(updated: updated)
+            sheetItem = .showConditions
         } label: {
             switch conditionsAction {
             case .review:
@@ -237,30 +235,26 @@ struct UsageConditionsView: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var currUserServers: [UserOperatorServers]
     @Binding var userServers: [UserOperatorServers]
-    var updated: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            HStack {
-                if updated {
-                    Text("Updated conditions").font(.largeTitle).bold()
-                } else {
-                    Text("Conditions of use").font(.largeTitle).bold()
-                    Spacer()
-                    conditionsLinkButton()
-                }
-            }
-            .padding(.top)
-            .padding(.top)
-
             switch ChatModel.shared.conditions.conditionsAction {
 
             case .none:
+                regularConditionsHeader()
+                    .padding(.top)
+                    .padding(.top)
                 ConditionsTextView()
                     .padding(.bottom)
                     .padding(.bottom)
 
             case let .review(operators, deadline, _):
+                HStack {
+                    Text("Updated conditions").font(.largeTitle).bold()
+                }
+                .padding(.top)
+                .padding(.top)
+
                 Text("Conditions will be accepted for the operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
                 ConditionsTextView()
                 VStack(spacing: 8) {
@@ -272,10 +266,8 @@ struct UsageConditionsView: View {
                             .multilineTextAlignment(.center)
                             .frame(maxWidth: .infinity, alignment: .center)
                             .padding(.horizontal, 32)
-                        if updated {
-                            conditionsDiffButton(.footnote)
-                        }
-                    } else if updated {
+                        conditionsDiffButton(.footnote)
+                    } else {
                         conditionsDiffButton()
                             .padding(.top)
                     }
@@ -285,6 +277,9 @@ struct UsageConditionsView: View {
                 
 
             case let .accepted(operators):
+                regularConditionsHeader()
+                    .padding(.top)
+                    .padding(.top)
                 Text("Conditions are accepted for the operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
                 ConditionsTextView()
                     .padding(.bottom)
@@ -337,6 +332,30 @@ struct UsageConditionsView: View {
                 .font(font)
             }
         }
+    }
+}
+
+private func regularConditionsHeader() -> some View {
+    HStack {
+        Text("Conditions of use").font(.largeTitle).bold()
+        Spacer()
+        conditionsLinkButton()
+    }
+}
+
+struct SimpleConditionsView: View {
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            regularConditionsHeader()
+                .padding(.top)
+                .padding(.top)
+            ConditionsTextView()
+                .padding(.bottom)
+                .padding(.bottom)
+        }
+        .padding(.horizontal, 25)
+        .frame(maxHeight: .infinity)
     }
 }
 
