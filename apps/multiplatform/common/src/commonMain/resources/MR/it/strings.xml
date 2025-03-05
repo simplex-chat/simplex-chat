@@ -2369,4 +2369,12 @@
     <string name="operator_updated_conditions">Condizioni aggiornate</string>
     <string name="restore_passphrase_can_not_be_read_desc">La password nell\'archivio chiavi non può essere letta. Potrebbe essere successo dopo un aggiornamento di sistema incompatibile con l\'app. In caso contrario, contatta gli sviluppatori.</string>
     <string name="restore_passphrase_can_not_be_read_enter_manually_desc">La password nell\'archivio chiavi non può essere letta, inseriscila a mano. Potrebbe essere successo dopo un aggiornamento di sistema incompatibile con l\'app. In caso contrario, contatta gli sviluppatori.</string>
+    <string name="members_will_be_removed_from_chat_cannot_be_undone">I membri verranno rimossi dalla chat, non è reversibile!</string>
+    <string name="members_will_be_removed_from_group_cannot_be_undone">I membri verranno rimossi dal gruppo, non è reversibile!</string>
+    <string name="button_remove_members_question">Rimuovere i membri?</string>
+    <string name="unblock_members_desc">I messaggi di questi membri verranno mostrati!</string>
+    <string name="unblock_members_for_all_question">Sbloccare i membri per tutti?</string>
+    <string name="block_members_for_all_question">Bloccare i membri per tutti?</string>
+    <string name="feature_roles_moderators">moderatori</string>
+    <string name="block_members_desc">Tutti i nuovi messaggi di questi membri verranno nascosti!</string>
 </resources>
