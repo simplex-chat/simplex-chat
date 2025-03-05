@@ -591,30 +591,34 @@ private fun SelectedItemsCounterToolbarSetter(
   filteredMembers: State<List<GroupMember>>,
   appBar: MutableState<@Composable (BoxScope.() -> Unit)?>
 ) {
-  LaunchedEffect(groupInfo, selectedItems.value == null,
+  LaunchedEffect(
+    groupInfo,
     /* variable, not value - intentionally - to reduce work but handle variable change because it changes in remember(members) { derivedState {} } */
     filteredMembers
   ) {
-    if (selectedItems.value != null) {
-      appBar.value = {
-        SelectedItemsCounterToolbar(selectedItems, !remember { appPrefs.oneHandUI.state }.value) {
-          if (!groupInfo.membership.memberActive) return@SelectedItemsCounterToolbar
-          val ids: MutableSet<Long> = mutableSetOf()
-          for (mem in filteredMembers.value) {
-            if (groupInfo.membership.memberActive && groupInfo.membership.memberRole >= mem.memberRole && mem.memberRole < GroupMemberRole.Moderator) {
-              ids.add(mem.groupMemberId)
+    snapshotFlow { selectedItems.value == null }
+      .collect { nullItems ->
+        if (!nullItems) {
+          appBar.value = {
+            SelectedItemsCounterToolbar(selectedItems, !remember { appPrefs.oneHandUI.state }.value) {
+              if (!groupInfo.membership.memberActive) return@SelectedItemsCounterToolbar
+              val ids: MutableSet<Long> = mutableSetOf()
+              for (mem in filteredMembers.value) {
+                if (groupInfo.membership.memberActive && groupInfo.membership.memberRole >= mem.memberRole && mem.memberRole < GroupMemberRole.Moderator) {
+                  ids.add(mem.groupMemberId)
+                }
+              }
+              if (ids.isNotEmpty() && (selectedItems.value ?: setOf()).containsAll(ids)) {
+                selectedItems.value = (selectedItems.value ?: setOf()).minus(ids)
+              } else {
+                selectedItems.value = (selectedItems.value ?: setOf()).union(ids)
+              }
             }
           }
-          if (ids.isNotEmpty() && (selectedItems.value ?: setOf()).containsAll(ids)) {
-            selectedItems.value = (selectedItems.value ?: setOf()).minus(ids)
-          } else {
-            selectedItems.value = (selectedItems.value ?: setOf()).union(ids)
-          }
+        } else {
+          appBar.value = null
         }
       }
-    } else {
-      appBar.value = null
-    }
   }
 }
 
