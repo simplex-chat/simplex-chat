@@ -169,7 +169,6 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
                 UsageConditionsView(
                   userServers = mutableStateOf(emptyList()),
                   currUserServers = mutableStateOf(emptyList()),
-                  updated = true,
                   close = close,
                   rhId = rhId
                 )

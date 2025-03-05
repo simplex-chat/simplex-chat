@@ -303,8 +303,7 @@ struct ContentView: View {
                 case .updatedConditions:
                     UsageConditionsView(
                         currUserServers: Binding.constant([]),
-                        userServers: Binding.constant([]),
-                        updated: true
+                        userServers: Binding.constant([])
                     )
                     .modifier(ThemedBackground(grouped: true))
                     .task { await setConditionsNotified_() }
