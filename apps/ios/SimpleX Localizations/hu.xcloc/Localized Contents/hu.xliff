@@ -833,9 +833,9 @@
         <target>Az összes üzenet törölve lesz – ez a művelet nem vonható vissza! Az üzenetek CSAK az Ön számára törlődnek.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All new messages from %@ will be hidden!" xml:space="preserve">
+      <trans-unit id="All new messages from %@ will be hidden!" xml:space="preserve" approved="no">
         <source>All new messages from %@ will be hidden!</source>
-        <target>Az összes %@ által írt új üzenet el lesz rejtve!</target>
+        <target state="translated">%@ összes új üzenete el lesz rejtve!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All profiles" xml:space="preserve">
@@ -1805,9 +1805,9 @@
         <target>Jelkód megerősítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm contact deletion?" xml:space="preserve">
+      <trans-unit id="Confirm contact deletion?" xml:space="preserve" approved="no">
         <source>Confirm contact deletion?</source>
-        <target>Biztosan törli a partnert?</target>
+        <target state="translated">Biztosan törli a partnert?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm database upgrades" xml:space="preserve">
@@ -2535,9 +2535,9 @@ Ez az Ön egyszer használható meghívási hivatkozása!</target>
         <target>Lista törlése?</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Delete member message?" xml:space="preserve">
+      <trans-unit id="Delete member message?" xml:space="preserve" approved="no">
         <source>Delete member message?</source>
-        <target>Csoporttag üzenetének törlése?</target>
+        <target state="translated">Törli a tag üzenetét?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete message?" xml:space="preserve">
@@ -4806,9 +4806,9 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>A tag el lesz távolítva a csevegésből – ez a művelet nem vonható vissza!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Member will be removed from group - this cannot be undone!</source>
-        <target>A tag eltávolítása a csoportból – ez a művelet nem vonható vissza!</target>
+        <target state="translated">A tag el lesz távolítva a csoportból – ez a művelet nem vonható vissza!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Members can add message reactions." xml:space="preserve">
@@ -4961,9 +4961,9 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Üzenetek és fájlok</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages from %@ will be shown!" xml:space="preserve">
+      <trans-unit id="Messages from %@ will be shown!" xml:space="preserve" approved="no">
         <source>Messages from %@ will be shown!</source>
-        <target>Az összes %@ által írt üzenet meg fog jelenni!</target>
+        <target state="translated">%@ összes üzenete meg fog jelenni!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Messages in this chat will never be deleted." xml:space="preserve">
@@ -6358,9 +6358,9 @@ Engedélyezze a *Hálózat és kiszolgálók* menüben.</target>
         <target>Eltávolítás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Remove member?" xml:space="preserve">
+      <trans-unit id="Remove member?" xml:space="preserve" approved="no">
         <source>Remove member?</source>
-        <target>Biztosan eltávolítja?</target>
+        <target state="translated">Tag eltávolítása?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove passphrase from keychain?" xml:space="preserve">
@@ -9373,9 +9373,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>kapcsolódás (bejelentve)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connecting (introduced)" xml:space="preserve">
+      <trans-unit id="connecting (introduced)" xml:space="preserve" approved="no">
         <source>connecting (introduced)</source>
-        <target>kapcsolódás (bejelentve)</target>
+        <target state="translated">kapcsolódás (bemutatkozva)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting (introduction invitation)" xml:space="preserve">
