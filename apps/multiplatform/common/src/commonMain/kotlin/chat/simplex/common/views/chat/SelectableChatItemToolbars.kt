@@ -25,25 +25,27 @@ fun BoxScope.SelectedItemsCounterToolbar(selectedItems: MutableState<Set<Long>?>
   val onBackClicked = { selectedItems.value = null }
   BackHandler(onBack = onBackClicked)
   val count = selectedItems.value?.size ?: 0
-  DefaultAppBar(
-    navigationButton = { NavigationButtonClose(onButtonClicked = onBackClicked) },
-    title = {
-      Text(
-        if (count == 0) {
-          stringResource(MR.strings.selected_chat_items_nothing_selected)
-        } else {
-          stringResource(MR.strings.selected_chat_items_selected_n).format(count)
-        },
-        fontWeight = FontWeight.SemiBold,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis
-      )
-    },
-    onTitleClick = null,
-    onTop = onTop,
-    onSearchValueChanged = {},
-    buttons = if (selectAll != null) { { SelectAllButton(selectAll) } } else {{}}
-  )
+  Box(if (onTop) Modifier else Modifier.imePadding()) {
+    DefaultAppBar(
+      navigationButton = { NavigationButtonClose(onButtonClicked = onBackClicked) },
+      title = {
+        Text(
+          if (count == 0) {
+            stringResource(MR.strings.selected_chat_items_nothing_selected)
+          } else {
+            stringResource(MR.strings.selected_chat_items_selected_n).format(count)
+          },
+          fontWeight = FontWeight.SemiBold,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis
+        )
+      },
+      onTitleClick = null,
+      onTop = onTop,
+      onSearchValueChanged = {},
+      buttons = if (selectAll != null) { { SelectAllButton(selectAll) } } else {{}}
+    )
+  }
 }
 
 @Composable

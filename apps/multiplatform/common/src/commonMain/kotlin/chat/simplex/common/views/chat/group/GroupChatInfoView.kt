@@ -96,7 +96,7 @@ fun ModalData.GroupChatInfoView(
 
         setChatTTLAlert(chat.remoteHostId, chat.chatInfo, chatItemTTL, previousChatTTL, deletingItems)
       },
-      members = remember { chatModel.groupMembers }.value
+      activeSortedMembers = remember { chatModel.groupMembers }.value
         .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
         .sortedByDescending { it.memberRole },
       developerTools,
@@ -327,7 +327,7 @@ fun ModalData.GroupChatInfoLayout(
   setSendReceipts: (SendReceipts) -> Unit,
   chatItemTTL: MutableState<ChatItemTTL?>,
   setChatItemTTL: (ChatItemTTL?) -> Unit,
-  members: List<GroupMember>,
+  activeSortedMembers: List<GroupMember>,
   developerTools: Boolean,
   onLocalAliasChanged: (String) -> Unit,
   groupLink: String?,
@@ -353,26 +353,36 @@ fun ModalData.GroupChatInfoLayout(
     scope.launch { listState.scrollToItem(0) }
   }
   val searchText = remember { stateGetOrPut("searchText") { TextFieldValue() } }
-  val filteredMembers = remember(members) {
+  val filteredMembers = remember(activeSortedMembers) {
     derivedStateOf {
       val s = searchText.value.text.trim().lowercase()
-      if (s.isEmpty()) members else members.filter { m -> m.anyNameContains(s) }
+      if (s.isEmpty()) activeSortedMembers else activeSortedMembers.filter { m -> m.anyNameContains(s) }
     }
   }
   Box {
     val oneHandUI = remember { appPrefs.oneHandUI.state }
     val selectedItemsBarHeight = if (selectedItems.value != null) AppBarHeight * fontSizeSqrtMultiplier else 0.dp
+    val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val imePadding = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
   LazyColumnWithScrollBar(
     state = listState,
     contentPadding = if (oneHandUI.value) {
       PaddingValues(
         top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + DEFAULT_PADDING + 5.dp,
-        bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + selectedItemsBarHeight + (if (appPlatform.isDesktop) AppBarHeight * fontSizeSqrtMultiplier else 0.dp)
+        bottom = navBarPadding +
+            imePadding +
+            selectedItemsBarHeight +
+            // TODO: that's workaround but works. Actually, something in the codebase doesn't consume padding for AppBar and it produce
+            // different padding when the user has NavigationBar and doesn't have it with ime shown (developer options helps to test it nav bars)
+            (if (navBarPadding > 0.dp && imePadding > 0.dp) 0.dp else AppBarHeight * fontSizeSqrtMultiplier)
       )
     } else {
       PaddingValues(
         top = topPaddingToContent(false),
-        bottom = selectedItemsBarHeight
+        bottom = navBarPadding +
+            imePadding +
+            selectedItemsBarHeight +
+            (if (navBarPadding > 0.dp && imePadding > 0.dp) -AppBarHeight * fontSizeSqrtMultiplier else 0.dp)
       )
     }
   ) {
@@ -428,7 +438,7 @@ fun ModalData.GroupChatInfoLayout(
             }
           }
         }
-        if (members.filter { it.memberCurrent }.size <= SMALL_GROUPS_RCPS_MEM_LIMIT) {
+        if (activeSortedMembers.filter { it.memberCurrent }.size <= SMALL_GROUPS_RCPS_MEM_LIMIT) {
           SendReceiptsOption(currentUser, sendReceipts, setSendReceipts)
         } else {
           SendReceiptsOptionDisabled()
@@ -451,7 +461,7 @@ fun ModalData.GroupChatInfoLayout(
       ChatTTLSection(chatItemTTL, setChatItemTTL, deletingItems)
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = true)
 
-      SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), members.count() + 1)) {
+      SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), activeSortedMembers.count() + 1)) {
         if (groupInfo.canAddMembers) {
           if (groupInfo.businessChat == null) {
             if (groupLink == null) {
@@ -469,7 +479,7 @@ fun ModalData.GroupChatInfoLayout(
           }
           AddMembersButton(addMembersTitleId, tint, onAddMembersClick)
         }
-        if (members.size > 8) {
+        if (activeSortedMembers.size > 8) {
           SectionItemView(padding = PaddingValues(start = 14.dp, end = DEFAULT_PADDING_HALF)) {
             SearchRowView(searchText)
           }
@@ -503,7 +513,7 @@ fun ModalData.GroupChatInfoLayout(
           }
           val selectionOffset by animateDpAsState(if (selectedItems.value != null) 20.dp + 22.dp * fontSizeMultiplier else 0.dp)
           DropDownMenuForMember(chat.remoteHostId, member, groupInfo, selectedItems, showMenu)
-          Box(Modifier.offset(x = selectionOffset).padding(end = selectionOffset)) {
+          Box(Modifier.padding(start = selectionOffset)) {
             MemberRow(member)
           }
         }
@@ -531,29 +541,24 @@ fun ModalData.GroupChatInfoLayout(
         }
       }
       SectionBottomSpacer()
-      Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
     }
   }
     if (!oneHandUI.value) {
       NavigationBarBackground(oneHandUI.value, oneHandUI.value)
     }
-    SelectedItemsButtonsToolbar(chat, groupInfo, selectedItems)
+    SelectedItemsButtonsToolbar(chat, groupInfo, selectedItems, rememberUpdatedState(activeSortedMembers))
     SelectedItemsCounterToolbarSetter(groupInfo, selectedItems, filteredMembers, appBar)
   }
 }
 
 @Composable
-private fun BoxScope.SelectedItemsButtonsToolbar(chat: Chat, groupInfo: GroupInfo, selectedItems: MutableState<Set<Long>?>) {
+private fun BoxScope.SelectedItemsButtonsToolbar(chat: Chat, groupInfo: GroupInfo, selectedItems: MutableState<Set<Long>?>, activeMembers: State<List<GroupMember>>) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
-  Column(
-    Modifier
-      .align(Alignment.BottomCenter)
-      .navigationBarsPadding()
-      .imePadding()
-  ) {
+  Column(Modifier.align(Alignment.BottomCenter)) {
     AnimatedVisibility(selectedItems.value != null) {
       SelectedItemsMembersToolbar(
         selectedItems = selectedItems,
+        activeMembers = activeMembers,
         groupInfo = groupInfo,
         delete = {
           removeMembersAlert(chat.remoteHostId, groupInfo, selectedItems.value!!.sorted())
@@ -597,7 +602,11 @@ private fun SelectedItemsCounterToolbarSetter(
               ids.add(mem.groupMemberId)
             }
           }
-          selectedItems.value = (selectedItems.value ?: setOf()).union(ids)
+          if (ids.isNotEmpty() && (selectedItems.value ?: setOf()).containsAll(ids)) {
+            selectedItems.value = (selectedItems.value ?: setOf()).minus(ids)
+          } else {
+            selectedItems.value = (selectedItems.value ?: setOf()).union(ids)
+          }
         }
       }
     } else {
@@ -984,7 +993,7 @@ fun PreviewGroupChatInfoLayout() {
       setSendReceipts = {},
       chatItemTTL = remember { mutableStateOf(ChatItemTTL.fromSeconds(0)) },
       setChatItemTTL = {},
-      members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
+      activeSortedMembers = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
       developerTools = false,
       onLocalAliasChanged = {},
       groupLink = null,

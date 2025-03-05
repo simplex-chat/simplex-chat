@@ -6,9 +6,11 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.WarningOrange
@@ -20,6 +22,7 @@ import dev.icerock.moko.resources.compose.painterResource
 @Composable
 fun SelectedItemsMembersToolbar(
   selectedItems: MutableState<Set<Long>?>,
+  activeMembers: State<List<GroupMember>>,
   groupInfo: GroupInfo,
   delete: () -> Unit,
   blockForAll: (Boolean) -> Unit, // Boolean - block or unlock
@@ -33,13 +36,19 @@ fun SelectedItemsMembersToolbar(
   val roleToMemberEnabled = remember { mutableStateOf(false) }
   val roleToObserverEnabled = remember { mutableStateOf(false) }
   val roleButtonEnabled = remember { derivedStateOf { (roleToMemberEnabled.value && !roleToObserverEnabled.value) || (!roleToMemberEnabled.value && roleToObserverEnabled.value) } }
-  Box {
+  Box(
+    Modifier
+      .background(MaterialTheme.colors.background)
+      .navigationBarsPadding()
+      .imePadding()
+  ) {
     // It's hard to measure exact height of ComposeView with different fontSizes. Better to depend on actual ComposeView, even empty
-    ComposeView(chatModel = chatModel, Chat.sampleData, remember { mutableStateOf(ComposeState(useLinkPreviews = false)) }, remember { mutableStateOf(null) }, {}, remember { FocusRequester() })
+    Box(Modifier.alpha(0f)) {
+      ComposeView(chatModel = chatModel, Chat.sampleData, remember { mutableStateOf(ComposeState(useLinkPreviews = false)) }, remember { mutableStateOf(null) }, {}, remember { FocusRequester() })
+    }
     Row(
       Modifier
         .matchParentSize()
-        .background(MaterialTheme.colors.background)
         .padding(horizontal = 2.dp)
         .height(AppBarHeight * fontSizeSqrtMultiplier)
         .pointerInput(Unit) {
@@ -79,16 +88,15 @@ fun SelectedItemsMembersToolbar(
     }
     Divider(Modifier.align(Alignment.TopStart))
   }
-  val groupMembers = remember { chatModel.groupMembers }
-  LaunchedEffect(groupInfo, groupMembers.value.toList(), selectedItems.value) {
-    recheckItems(groupInfo, selectedItems, groupMembers.value, deleteEnabled, blockForAllEnabled, unblockForAllEnabled, roleToMemberEnabled, roleToObserverEnabled)
+  LaunchedEffect(groupInfo, activeMembers.value.toList(), selectedItems.value) {
+    recheckItems(groupInfo, selectedItems, activeMembers.value, deleteEnabled, blockForAllEnabled, unblockForAllEnabled, roleToMemberEnabled, roleToObserverEnabled)
   }
 }
 
 private fun recheckItems(
   groupInfo: GroupInfo,
   selectedItems: MutableState<Set<Long>?>,
-  members: List<GroupMember>,
+  activeMembers: List<GroupMember>,
   deleteEnabled: MutableState<Boolean>,
   blockForAllEnabled: MutableState<Boolean>,
   unblockForAllEnabled: MutableState<Boolean>,
@@ -105,7 +113,7 @@ private fun recheckItems(
   var rRoleToMemberEnabled = true
   var rRoleToObserverEnabled = true
   val rSelectedItems = mutableSetOf<Long>()
-  for (mem in members) {
+  for (mem in activeMembers) {
     if (selected.contains(mem.groupMemberId) && groupInfo.membership.memberRole >= mem.memberRole && mem.memberRole < GroupMemberRole.Moderator && groupInfo.membership.memberActive) {
       rDeleteEnabled = rDeleteEnabled && mem.memberStatus != GroupMemberStatus.MemRemoved && mem.memberStatus != GroupMemberStatus.MemLeft
       rBlockForAllEnabled = rBlockForAllEnabled && !mem.blockedByAdmin
