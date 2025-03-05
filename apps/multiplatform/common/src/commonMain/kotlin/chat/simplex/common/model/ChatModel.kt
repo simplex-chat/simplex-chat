@@ -1947,7 +1947,7 @@ data class GroupMember (
   fun canBeRemoved(groupInfo: GroupInfo): Boolean {
     val userRole = groupInfo.membership.memberRole
     return memberStatus != GroupMemberStatus.MemRemoved && memberStatus != GroupMemberStatus.MemLeft
-        && userRole >= GroupMemberRole.Moderator && userRole >= memberRole && groupInfo.membership.memberActive
+        && userRole >= GroupMemberRole.Admin && userRole >= memberRole && groupInfo.membership.memberActive
   }
 
   fun canChangeRoleTo(groupInfo: GroupInfo): List<GroupMemberRole>? =
