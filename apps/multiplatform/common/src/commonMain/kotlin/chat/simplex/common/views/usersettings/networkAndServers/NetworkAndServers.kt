@@ -188,7 +188,6 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
         UsageConditionsView(
           currUserServers,
           userServers,
-          updated = conditionsAction is UsageConditionsAction.Review,
           close,
           rhId
         )
@@ -712,7 +711,6 @@ private fun UnsavedChangesIndicator() {
 fun UsageConditionsView(
   currUserServers: MutableState<List<UserOperatorServers>>,
   userServers: MutableState<List<UserOperatorServers>>,
-  updated: Boolean,
   close: () -> Unit,
   rhId: Long?
 ) {
@@ -773,17 +771,16 @@ fun UsageConditionsView(
   }
 
   ColumnWithScrollBar(modifier = Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
-    val title = if (updated) MR.strings.operator_updated_conditions else MR.strings.operator_conditions_of_use
-    AppBarTitle(stringResource(title), enableAlphaChanges = false, withPadding = false, bottomPadding = DEFAULT_PADDING)
     when (val conditionsAction = chatModel.conditions.value.conditionsAction) {
       is UsageConditionsAction.Review -> {
+        AppBarTitle(stringResource(MR.strings.operator_updated_conditions), enableAlphaChanges = false, withPadding = false, bottomPadding = DEFAULT_PADDING)
         if (conditionsAction.operators.isNotEmpty()) {
           ReadableText(MR.strings.operators_conditions_will_be_accepted_for, args = conditionsAction.operators.joinToString(", ") { it.legalName_ })
         }
         Column(modifier = Modifier.weight(1f).padding(bottom = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF)) {
           ConditionsTextView(rhId)
         }
-        AcceptConditionsButton(conditionsAction.operators.map { it.operatorId }, close, if (conditionsAction.deadline != null || updated) DEFAULT_PADDING_HALF else DEFAULT_PADDING * 2)
+        AcceptConditionsButton(conditionsAction.operators.map { it.operatorId }, close, DEFAULT_PADDING_HALF)
         if (conditionsAction.deadline != null) {
           SectionTextFooter(
             text = AnnotatedString(String.format(generalGetString(MR.strings.operator_conditions_accepted_for_enabled_operators_on), localDate(conditionsAction.deadline))),
@@ -791,13 +788,12 @@ fun UsageConditionsView(
           )
           Spacer(Modifier.fillMaxWidth().height(DEFAULT_PADDING))
         }
-        if (updated) {
-          ConditionsDiffButton()
-          Spacer(Modifier.fillMaxWidth().height(DEFAULT_PADDING))
-        }
+        ConditionsDiffButton()
+        Spacer(Modifier.fillMaxWidth().height(DEFAULT_PADDING))
       }
 
       is UsageConditionsAction.Accepted -> {
+        AppBarTitle(stringResource(MR.strings.operator_conditions_of_use), enableAlphaChanges = false, withPadding = false, bottomPadding = DEFAULT_PADDING)
         if (conditionsAction.operators.isNotEmpty()) {
           ReadableText(MR.strings.operators_conditions_accepted_for, args = conditionsAction.operators.joinToString(", ") { it.legalName_ })
         }
@@ -807,10 +803,23 @@ fun UsageConditionsView(
       }
 
       else -> {
+        AppBarTitle(stringResource(MR.strings.operator_conditions_of_use), enableAlphaChanges = false, withPadding = false, bottomPadding = DEFAULT_PADDING)
         Column(modifier = Modifier.weight(1f).padding(bottom = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF)) {
           ConditionsTextView(rhId)
         }
       }
+    }
+  }
+}
+
+@Composable
+fun SimpleConditionsView(
+  rhId: Long?
+) {
+  ColumnWithScrollBar(modifier = Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
+    AppBarTitle(stringResource(MR.strings.operator_conditions_of_use), enableAlphaChanges = false, withPadding = false, bottomPadding = DEFAULT_PADDING)
+    Column(modifier = Modifier.weight(1f).padding(bottom = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF)) {
+      ConditionsTextView(rhId)
     }
   }
 }
