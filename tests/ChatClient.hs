@@ -94,7 +94,6 @@ testOpts :: ChatOpts
 testOpts =
   ChatOpts
     { coreOptions = testCoreOpts,
-      deviceName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
       chatCmdLog = CCLNone,
@@ -135,6 +134,7 @@ testCoreOpts =
       logAgent = Nothing,
       logFile = Nothing,
       tbqSize = 16,
+      deviceName = Nothing,
       highlyAvailable = False,
       yesToUpMigrations = False
     }
