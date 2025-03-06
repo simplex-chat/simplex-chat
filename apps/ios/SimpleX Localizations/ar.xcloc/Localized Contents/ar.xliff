@@ -1207,40 +1207,49 @@
         <target state="translated">اسم العرض مكرر!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Edit" xml:space="preserve">
+      <trans-unit id="Edit" xml:space="preserve" approved="no">
         <source>Edit</source>
+        <target state="translated">تحرير</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Edit group profile" xml:space="preserve">
+      <trans-unit id="Edit group profile" xml:space="preserve" approved="no">
         <source>Edit group profile</source>
+        <target state="translated">حرّر ملف تعريف المجموعة</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable" xml:space="preserve">
+      <trans-unit id="Enable" xml:space="preserve" approved="no">
         <source>Enable</source>
+        <target state="translated">تفعيل</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
+      <trans-unit id="Enable SimpleX Lock" xml:space="preserve" approved="no">
         <source>Enable SimpleX Lock</source>
+        <target state="translated">تفعيل قفل SimpleX</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Enable TCP keep-alive" xml:space="preserve">
+      <trans-unit id="Enable TCP keep-alive" xml:space="preserve" approved="no">
         <source>Enable TCP keep-alive</source>
+        <target state="translated">تفعيل أبقِ TCP على قيد الحياة</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable automatic message deletion?" xml:space="preserve">
+      <trans-unit id="Enable automatic message deletion?" xml:space="preserve" approved="no">
         <source>Enable automatic message deletion?</source>
+        <target state="translated">تفعيل الحذف التلقائي للرسائل؟</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable instant notifications?" xml:space="preserve">
+      <trans-unit id="Enable instant notifications?" xml:space="preserve" approved="no">
         <source>Enable instant notifications?</source>
+        <target state="translated">تفعيل الإشعارات فورية؟</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable notifications" xml:space="preserve">
+      <trans-unit id="Enable notifications" xml:space="preserve" approved="no">
         <source>Enable notifications</source>
+        <target state="translated">تفعيل الإشعارات</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable periodic notifications?" xml:space="preserve">
+      <trans-unit id="Enable periodic notifications?" xml:space="preserve" approved="no">
         <source>Enable periodic notifications?</source>
+        <target state="translated">تفعيل الإشعارات دورية؟</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Encrypt" xml:space="preserve">
@@ -5347,6 +5356,38 @@ This is your own one-time link!</source>
       <trans-unit id="Confirm password" xml:space="preserve" approved="no">
         <source>Confirm password</source>
         <target state="translated">تأكيد كلمة المرور</target>
+      </trans-unit>
+      <trans-unit id="Enable self-destruct" xml:space="preserve" approved="no">
+        <source>Enable self-destruct</source>
+        <target state="translated">تفعيل التدمير الذاتي</target>
+      </trans-unit>
+      <trans-unit id="Enable (keep overrides)" xml:space="preserve" approved="no">
+        <source>Enable (keep overrides)</source>
+        <target state="translated">تفعيل (الاحتفاظ بالتجاوزات)</target>
+      </trans-unit>
+      <trans-unit id="Enable Flux" xml:space="preserve" approved="no">
+        <source>Enable Flux</source>
+        <target state="translated">فعّل flux</target>
+      </trans-unit>
+      <trans-unit id="Enable in direct chats (BETA)!" xml:space="preserve" approved="no">
+        <source>Enable in direct chats (BETA)!</source>
+        <target state="translated">فعّل في الدردشات المباشرة (تجريبي)!</target>
+      </trans-unit>
+      <trans-unit id="Enable for all" xml:space="preserve" approved="no">
+        <source>Enable for all</source>
+        <target state="translated">تفعيل للجميع</target>
+      </trans-unit>
+      <trans-unit id="Enable lock" xml:space="preserve" approved="no">
+        <source>Enable lock</source>
+        <target state="translated">تفعيل القفل</target>
+      </trans-unit>
+      <trans-unit id="Enable camera access" xml:space="preserve" approved="no">
+        <source>Enable camera access</source>
+        <target state="translated">فعّل الوصول إلى الكاميرا</target>
+      </trans-unit>
+      <trans-unit id="Enable self-destruct passcode" xml:space="preserve" approved="no">
+        <source>Enable self-destruct passcode</source>
+        <target state="translated">تفعيل رمز التدمير الذاتي</target>
       </trans-unit>
     </body>
   </file>
