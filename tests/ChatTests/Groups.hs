@@ -1846,7 +1846,7 @@ testDeleteMemberMarkMessagesDeleted =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      threadDelay 750000
+      threadDelay 1000000
       bob #> "#team hello"
       concurrently_
         (alice <# "#team bob> hello")
