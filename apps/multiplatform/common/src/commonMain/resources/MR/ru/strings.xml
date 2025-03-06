@@ -2389,7 +2389,7 @@
     <string name="v6_3_set_message_expiration_in_chats">Установите время исчезания сообщений в чатах.</string>
     <string name="max_group_mentions_per_message_reached">Вы можете упомянуть до %1$s пользователей в одном сообщении!</string>
     <string name="report_reason_alert_title">Причина жалобы?</string>
-    <string name="report_archive_alert_desc">Эта жалоба будет арчивирована для вас.</string>
+    <string name="report_archive_alert_desc">Эта жалоба будет архивирована для вас.</string>
     <string name="enable_sending_member_reports">Разрешить отправлять жалобы на сообщения модераторам.</string>
     <string name="blocking_reason_content">Содержание нарушает условия использования</string>
     <string name="error_reading_passphrase">Ошибка чтения пароля базы данных</string>
@@ -2437,10 +2437,10 @@
     <string name="privacy_chat_list_open_links">Открыть ссылку из списка чатов</string>
     <string name="privacy_chat_list_open_web_link_question">Открыть веб-ссылку?</string>
     <string name="report_compose_reason_header_profile">Жалоба на профиль участника: его увидят только групповые модераторы.</string>
-    <string name="group_reports_member_reports">Жалоба на участника</string>
-    <string name="report_compose_reason_header_other">другая жалоба: его увидят только модераторы.</string>
+    <string name="group_reports_member_reports">Жалобы на участника</string>
+    <string name="report_compose_reason_header_other">Другая жалоба: её увидят только модераторы.</string>
     <string name="mute_all_chat">Выключить уведомления для всех</string>
-    <string name="network_smp_web_port_footer">Используйте TCP-порт %1$s, когда не указано ни одного порта.</string>
+    <string name="network_smp_web_port_footer">Использовать TCP-порт %1$s, когда не указано ни одного порта.</string>
     <string name="network_smp_web_port_toggle">Использовать веб-порт</string>
     <string name="privacy_chat_list_open_links_no">Нет</string>
     <string name="report_compose_reason_header_illegal">Содержание жалобы: его увидят только групповые модераторы.</string>
@@ -2450,7 +2450,7 @@
     <string name="privacy_chat_list_open_web_link">Открыть ссылку</string>
     <string name="group_member_status_rejected">отклонён</string>
     <string name="report_item_visibility_moderators">Только отправитель и модераторы видят это</string>
-    <string name="report_item_visibility_submitter">Только ты и модераторы видят это</string>
+    <string name="report_item_visibility_submitter">Только вы и модераторы видят это</string>
     <string name="unblock_members_for_all_question">Разблокировать членов для всех?</string>
     <string name="unblock_members_desc">Сообщения от этих членов будут показаны!</string>
     <string name="block_members_desc">Все новые сообщения от этих членов группы будут скрыты!</string>
