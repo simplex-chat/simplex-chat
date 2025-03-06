@@ -238,12 +238,14 @@ fun ChatItemView(
       val buttonHovered = buttonInteractionSource.collectIsHoveredAsState()
       val buttonPressed = buttonInteractionSource.collectIsPressedAsState()
       val buttonActivated = remember { derivedStateOf { buttonHovered.value || buttonPressed.value } }
+
       val fullyVisible = parentActivated.value || buttonActivated.value || hoveredItemId.value == cItem.id
+      val mixAlpha = 0.6f
       val mixedBackgroundColor = if (fullyVisible) {
         if (MaterialTheme.colors.isLight) {
-          MaterialTheme.colors.secondary.mixWith(Color.White, 0.6f)
+          MaterialTheme.colors.secondary.mixWith(Color.White, mixAlpha)
         } else {
-          MaterialTheme.colors.secondary.mixWith(Color.Black, 0.6f)
+          MaterialTheme.colors.secondary.mixWith(Color.Black, mixAlpha)
         }
       } else {
         Color.Unspecified
@@ -252,11 +254,12 @@ fun ChatItemView(
         Color.White
       } else {
         if (MaterialTheme.colors.isLight) {
-          MaterialTheme.colors.secondary.mixWith(Color.White, 0.6f)
+          MaterialTheme.colors.secondary.mixWith(Color.White, mixAlpha)
         } else {
-          MaterialTheme.colors.secondary.mixWith(Color.Black, 0.6f)
+          MaterialTheme.colors.secondary.mixWith(Color.Black, mixAlpha)
         }
       }
+
       IconButton(
         onClick,
         Modifier
