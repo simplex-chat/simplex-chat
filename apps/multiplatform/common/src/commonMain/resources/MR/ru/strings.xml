@@ -2381,8 +2381,8 @@
     <string name="privacy_chat_list_open_links_yes">Да</string>
     <string name="v6_3_mentions">Упоминайте участников 👋</string>
     <string name="v6_3_better_privacy_and_security">Улучшенная приватность и безопасность</string>
-    <string name="v6_3_faster_deletion_of_groups">Ускоренно удаление групп.</string>
-    <string name="v6_3_faster_sending_messages">Ускоренна отправка сообщений.</string>
+    <string name="v6_3_faster_deletion_of_groups">Ускорено удаление групп.</string>
+    <string name="v6_3_faster_sending_messages">Ускорена отправка сообщений.</string>
     <string name="v6_3_reports_descr">Помогайте администраторам модерировать их группы.</string>
     <string name="v6_3_organize_chat_lists">Организуйте чаты в списки</string>
     <string name="v6_3_reports">Отправляйте приватные жалобы</string>
@@ -2395,18 +2395,18 @@
     <string name="error_reading_passphrase">Ошибка чтения пароля базы данных</string>
     <string name="report_item_archived_by">архивная жалоба %s</string>
     <string name="report_reason_community">Нарушение принципов Сообщества</string>
-    <string name="report_reason_illegal">Нежелательных контент</string>
+    <string name="report_reason_illegal">Нежелательный контент</string>
     <string name="report_reason_other">Еще одна причина</string>
-    <string name="report_reason_profile">нежелательных профиль</string>
+    <string name="report_reason_profile">нежелательный профиль</string>
     <string name="group_reports_archived_member_reports">Архивные отчеты участников</string>
     <string name="group_reports_active">%d отчёты</string>
     <string name="error_creating_report">Ошибка создания отчета</string>
-    <string name="connection_error_blocked">Соеденение заблокировано</string>
-    <string name="connection_error_blocked_desc">Соеденение заблокировано сервером опеоатлра:\n%1$s.</string>
+    <string name="connection_error_blocked">Соединение заблокировано</string>
+    <string name="connection_error_blocked_desc">Соединение заблокировано сервером оператора:\n%1$s.</string>
     <string name="privacy_chat_list_open_links_ask">спросить</string>
     <string name="disable_automatic_deletion_question">Отключить автоматическое удаление сообщений?</string>
     <string name="chat_ttl_options_footer">Удалить сообщения с вашего устройства.</string>
-    <string name="disable_automatic_deletion">Отключить удаление сообщения</string>
+    <string name="disable_automatic_deletion">Отключить удаление сообщений</string>
     <string name="chat_item_ttl_default">по умолчанию (%s)</string>
     <string name="report_archive_alert_desc_all">Все отчеты будут заархивированы для вас.</string>
     <string name="report_archive_alert_title_all">Архивировать все отчеты?</string>
@@ -2451,4 +2451,12 @@
     <string name="group_member_status_rejected">отклонён</string>
     <string name="report_item_visibility_moderators">Только отправитель и модераторы видят это</string>
     <string name="report_item_visibility_submitter">Только ты и модераторы видят это</string>
+    <string name="unblock_members_for_all_question">Разблокировать членов для всех?</string>
+    <string name="unblock_members_desc">Сообщения от этих членов будут показаны!</string>
+    <string name="block_members_desc">Все новые сообщения от этих членов группы будут скрыты!</string>
+    <string name="block_members_for_all_question">Заблокировать членов для всех?</string>
+    <string name="members_will_be_removed_from_group_cannot_be_undone">Члены группы будут удалены - это действие нельзя отменить!</string>
+    <string name="members_will_be_removed_from_chat_cannot_be_undone">Члены будут удалены из разговора - это действие нельзя отменить!</string>
+    <string name="feature_roles_moderators">модераторы</string>
+    <string name="button_remove_members_question">Удалить членов группы?</string>
 </resources>
