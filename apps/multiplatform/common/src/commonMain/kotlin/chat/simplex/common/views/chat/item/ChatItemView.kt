@@ -241,9 +241,9 @@ fun ChatItemView(
       val fullyVisible = parentActivated.value || buttonActivated.value || hoveredItemId.value == cItem.id
       val mixedBackgroundColor = if (fullyVisible) {
         if (MaterialTheme.colors.isLight) {
-          MaterialTheme.colors.secondary
+          MaterialTheme.colors.secondary.mixWith(Color.White, 0.6f)
         } else {
-          MaterialTheme.colors.secondary
+          MaterialTheme.colors.secondary.mixWith(Color.Black, 0.6f)
         }
       } else {
         Color.Unspecified
