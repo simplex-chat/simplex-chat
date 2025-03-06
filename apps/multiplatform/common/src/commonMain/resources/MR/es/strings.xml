@@ -72,7 +72,7 @@
     <string name="smp_servers_add_to_another_device">Añadir a otro dispositivo</string>
     <string name="app_version_name">Versión de la aplicación: v%s</string>
     <string name="icon_descr_asked_to_receive">Solicita recibir la imagen</string>
-    <string name="impossible_to_recover_passphrase"><![CDATA[<b>Recuerda</b>: NO podrás recuperar o cambiar la frase de contraseña si la pierdes.]]></string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>Recuerda</b>: Si la pierdes NO podrás recuperar o cambiar la frase de contraseña.]]></string>
     <string name="both_you_and_your_contact_can_send_voice">Tanto tú como tu contacto podéis enviar mensajes de voz.</string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>¡Consume más energía!</b> La aplicación está siempre en segundo plano y las notificaciones se muestran de inmediato.]]></string>
     <string name="both_you_and_your_contacts_can_delete">Tanto tú como tu contacto podéis eliminar los mensajes enviados de forma irreversible. (24 horas)</string>
@@ -129,7 +129,7 @@
     <string name="ttl_week">%d semana</string>
     <string name="ttl_weeks">%d semanas</string>
     <string name="v4_4_disappearing_messages">Mensajes temporales</string>
-    <string name="auth_confirm_credential">Canfirma tus credenciales</string>
+    <string name="auth_confirm_credential">Confirma tus credenciales</string>
     <string name="group_member_status_introduced">conectando (presentado)</string>
     <string name="group_member_status_intro_invitation">conectando (invitación de presentación )</string>
     <string name="group_member_status_accepted">conectando (aceptado)</string>
@@ -680,7 +680,7 @@
     <string name="open_chat">Abrir chat</string>
     <string name="restore_database">Restaurar copia de seguridad de la base de datos</string>
     <string name="save_passphrase_and_open_chat">Guardar contraseña y abrir el chat</string>
-    <string name="restore_passphrase_not_found_desc">La contraseña no se ha encontrado en Keystore, introdúcela manualmente. Esto puede haber ocurrido si has restaurado los datos de la aplicación con una herramienta de copia de seguridad. Si no es así, por favor ponte en contacto con los desarrolladores.</string>
+    <string name="restore_passphrase_not_found_desc">La contraseña no se ha encontrado en Keystore. Por favor, introdúcela manualmente. Puede haber ocurrido si has restaurado los datos de la aplicación con alguna herramienta para copias de seguridad. Si no es así, por favor ponte en contacto con los desarrolladores.</string>
     <string name="remove_member_confirmation">Expulsar</string>
     <string name="button_remove_member">Expulsar miembro</string>
     <string name="button_send_direct_message">Enviar mensaje directo</string>
@@ -2361,4 +2361,15 @@
     <string name="v6_3_set_message_expiration_in_chats">Establece vencimiento de los mensajes en chats.</string>
     <string name="group_preview_rejected">rechazado</string>
     <string name="group_member_status_rejected">rechazado</string>
+    <string name="button_remove_members_question">¿Expulsar miembros?</string>
+    <string name="unblock_members_desc">¡Los mensajes de estos miembros serán mostrados!</string>
+    <string name="unblock_members_for_all_question">¿Desbloquear miembros para todos?</string>
+    <string name="block_members_desc">¡Todos los mensajes nuevos de estos miembros estarán ocultos!</string>
+    <string name="block_members_for_all_question">¿Bloquear miembros para todos?</string>
+    <string name="members_will_be_removed_from_chat_cannot_be_undone">Los miembros serán expulsados del chat. ¡No podrá deshacerse!</string>
+    <string name="operator_updated_conditions">Condiciones actualizadas</string>
+    <string name="feature_roles_moderators">moderadores</string>
+    <string name="members_will_be_removed_from_group_cannot_be_undone">Los miembros serán expulsados del grupo. ¡No podrá deshacerse!</string>
+    <string name="group_member_status_pending_approval">pendiente de aprobación</string>
+    <string name="group_member_status_pending_approval_short">pendiente</string>
 </resources>
