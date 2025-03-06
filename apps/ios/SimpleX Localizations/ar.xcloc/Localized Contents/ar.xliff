@@ -664,8 +664,9 @@
         <target state="translated">الدردشات</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Check server address and try again." xml:space="preserve">
+      <trans-unit id="Check server address and try again." xml:space="preserve" approved="no">
         <source>Check server address and try again.</source>
+        <target state="translated">تحقق من عنوان الخادم وحاول مرة أخرى.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Choose file" xml:space="preserve">
@@ -705,16 +706,19 @@
         <target state="translated">قارن رموز الأمان مع جهات اتصالك.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Configure ICE servers" xml:space="preserve">
+      <trans-unit id="Configure ICE servers" xml:space="preserve" approved="no">
         <source>Configure ICE servers</source>
+        <target state="translated">ضبط خوادم ICE</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm" xml:space="preserve">
+      <trans-unit id="Confirm" xml:space="preserve" approved="no">
         <source>Confirm</source>
+        <target state="translated">تأكيد</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm new passphrase…" xml:space="preserve">
+      <trans-unit id="Confirm new passphrase…" xml:space="preserve" approved="no">
         <source>Confirm new passphrase…</source>
+        <target state="translated">تأكيد عبارة المرور الجديدة…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect" xml:space="preserve" approved="no">
@@ -1198,8 +1202,9 @@
         <source>Do it later</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Duplicate display name!" xml:space="preserve">
+      <trans-unit id="Duplicate display name!" xml:space="preserve" approved="no">
         <source>Duplicate display name!</source>
+        <target state="translated">اسم العرض مكرر!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Edit" xml:space="preserve">
@@ -5242,6 +5247,106 @@ This is your own one-time link!</source>
       <trans-unit id="Customizable message shape." xml:space="preserve" approved="no">
         <source>Customizable message shape.</source>
         <target state="translated">شكل الرسالة قابل للتخصيص.</target>
+      </trans-unit>
+      <trans-unit id="Chunks deleted" xml:space="preserve" approved="no">
+        <source>Chunks deleted</source>
+        <target state="translated">حُذفت القطع</target>
+      </trans-unit>
+      <trans-unit id="Chinese and Spanish interface" xml:space="preserve" approved="no">
+        <source>Chinese and Spanish interface</source>
+        <target state="translated">الواجهة الصينية والاسبانية</target>
+      </trans-unit>
+      <trans-unit id="Download" xml:space="preserve" approved="no">
+        <source>Download</source>
+        <target state="translated">نزّل</target>
+      </trans-unit>
+      <trans-unit id="Downloaded" xml:space="preserve" approved="no">
+        <source>Downloaded</source>
+        <target state="translated">نُزّلت</target>
+      </trans-unit>
+      <trans-unit id="Downloaded files" xml:space="preserve" approved="no">
+        <source>Downloaded files</source>
+        <target state="translated">الملفات التي نُزّلت</target>
+      </trans-unit>
+      <trans-unit id="Don't show again" xml:space="preserve" approved="no">
+        <source>Don't show again</source>
+        <target state="translated">لا تُظهر مرة أخرى</target>
+      </trans-unit>
+      <trans-unit id="Confirm contact deletion?" xml:space="preserve" approved="no">
+        <source>Confirm contact deletion?</source>
+        <target state="translated">تأكيد حذف جهة الاتصال؟</target>
+      </trans-unit>
+      <trans-unit id="Confirm database upgrades" xml:space="preserve" approved="no">
+        <source>Confirm database upgrades</source>
+        <target state="translated">تأكيد ترقيات قاعدة البيانات</target>
+      </trans-unit>
+      <trans-unit id="Download failed" xml:space="preserve" approved="no">
+        <source>Download failed</source>
+        <target state="translated">فشل التنزيل</target>
+      </trans-unit>
+      <trans-unit id="Download file" xml:space="preserve" approved="no">
+        <source>Download file</source>
+        <target state="translated">نزّل الملف</target>
+      </trans-unit>
+      <trans-unit id="Downloading link details" xml:space="preserve" approved="no">
+        <source>Downloading link details</source>
+        <target state="translated">جارِ تنزيل تفاصيل الرابط</target>
+      </trans-unit>
+      <trans-unit id="Downloading archive" xml:space="preserve" approved="no">
+        <source>Downloading archive</source>
+        <target state="translated">جارِ تنزيل الأرشيف</target>
+      </trans-unit>
+      <trans-unit id="Don't enable" xml:space="preserve" approved="no">
+        <source>Don't enable</source>
+        <target state="translated">لا تُفعل</target>
+      </trans-unit>
+      <trans-unit id="Confirm upload" xml:space="preserve" approved="no">
+        <source>Confirm upload</source>
+        <target state="translated">أكّد الرفع</target>
+      </trans-unit>
+      <trans-unit id="Chunks downloaded" xml:space="preserve" approved="no">
+        <source>Chunks downloaded</source>
+        <target state="translated">نُزّلت القطع</target>
+      </trans-unit>
+      <trans-unit id="Confirm Passcode" xml:space="preserve" approved="no">
+        <source>Confirm Passcode</source>
+        <target state="translated">تأكيد رمز المرور</target>
+      </trans-unit>
+      <trans-unit id="Confirm files from unknown servers." xml:space="preserve" approved="no">
+        <source>Confirm files from unknown servers.</source>
+        <target state="translated">تأكيد الملفات من خوادم غير معروفة.</target>
+      </trans-unit>
+      <trans-unit id="Confirm network settings" xml:space="preserve" approved="no">
+        <source>Confirm network settings</source>
+        <target state="translated">أكّد إعدادات الشبكة</target>
+      </trans-unit>
+      <trans-unit id="Confirm that you remember database passphrase to migrate it." xml:space="preserve" approved="no">
+        <source>Confirm that you remember database passphrase to migrate it.</source>
+        <target state="translated">تأكد من أنك تتذكر عبارة مرور قاعدة البيانات لترحيلها.</target>
+      </trans-unit>
+      <trans-unit id="Downgrade and open chat" xml:space="preserve" approved="no">
+        <source>Downgrade and open chat</source>
+        <target state="translated">الرجوع إلى إصدار سابق وفتح الدردشة</target>
+      </trans-unit>
+      <trans-unit id="Don't miss important messages." xml:space="preserve" approved="no">
+        <source>Don't miss important messages.</source>
+        <target state="translated">لا تفوت رسائل مهمة.</target>
+      </trans-unit>
+      <trans-unit id="E2E encrypted notifications." xml:space="preserve" approved="no">
+        <source>E2E encrypted notifications.</source>
+        <target state="translated">إشعارات مُشفرة بين الطرفين E2E</target>
+      </trans-unit>
+      <trans-unit id="Download errors" xml:space="preserve" approved="no">
+        <source>Download errors</source>
+        <target state="translated">أخطاء التنزيل</target>
+      </trans-unit>
+      <trans-unit id="Download files" xml:space="preserve" approved="no">
+        <source>Download files</source>
+        <target state="translated">نزّل الملفات</target>
+      </trans-unit>
+      <trans-unit id="Confirm password" xml:space="preserve" approved="no">
+        <source>Confirm password</source>
+        <target state="translated">تأكيد كلمة المرور</target>
       </trans-unit>
     </body>
   </file>
