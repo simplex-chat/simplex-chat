@@ -377,9 +377,9 @@
         <target>**Recuarda**: usar la misma base de datos en dos dispositivos hará que falle el descifrado de mensajes como protección de seguridad.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve">
+      <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve" approved="no">
         <source>**Please note**: you will NOT be able to recover or change passphrase if you lose it.</source>
-        <target>**Atención**: NO podrás recuperar o cambiar la contraseña si la pierdes.</target>
+        <target state="translated">**Atención**: Si la pierdes NO podrás recuperar o cambiar la contraseña.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from." xml:space="preserve">
