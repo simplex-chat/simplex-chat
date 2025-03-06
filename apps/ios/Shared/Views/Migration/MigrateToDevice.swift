@@ -535,6 +535,7 @@ struct MigrateToDevice: View {
     private func importArchive(_ archivePath: String) {
         Task {
             do {
+                logger.debug("LALAL hasCtrl \(hasChatCtrl()) running \(ChatModel.shared.chatRunning ?? false)")
                 if !hasChatCtrl() {
                     chatInitControllerRemovingDatabases()
                 } else if ChatModel.shared.chatRunning == true {
@@ -581,10 +582,16 @@ struct MigrateToDevice: View {
         }
         storeDBPassphraseGroupDefault.set(useKeychain)
         initialRandomDBPassphraseGroupDefault.set(false)
-        AppChatState.shared.set(.active)
         Task {
             do {
+                logger.debug("LALAL hasCtrl2 \(hasChatCtrl()) running \(ChatModel.shared.chatRunning ?? false)")
+                if ChatModel.shared.chatRunning == true {
+                    // chat should be stopped to stop receiver loop as well to prevent situation when controller is nil
+                    try await stopChatAsync()
+                }
+                AppChatState.shared.set(.active)
                 resetChatCtrl()
+                try? await Task.sleep(nanoseconds: 8000_000000)
                 try initializeChat(start: false, confirmStart: false, dbKey: passphrase, refreshInvitations: true, confirmMigrations: confirmation)
                 var appSettings = try apiGetAppSettings(settings: AppSettings.current.prepareForExport())
                 let hasOnionConfigured = appSettings.networkConfig?.socksProxy != nil || appSettings.networkConfig?.hostMode == .onionHost
