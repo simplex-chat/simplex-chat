@@ -1620,6 +1620,8 @@ private fun LoadLastItems(loadingMoreItems: MutableState<Boolean>, resetListStat
   }
 }
 
+// TODO: in extra rare case when after loading last items only 1 item is loaded, the view will jump like when receiving new message
+// can be reproduced by forwarding a message to notes that is (ChatPagination.INITIAL_COUNT - 1) away from bottom and going to that message
 @Composable
 private fun SmallScrollOnNewMessage(listState: State<LazyListState>, reversedChatItems: State<List<ChatItem>>) {
   val scrollDistance = with(LocalDensity.current) { -39.dp.toPx() }
