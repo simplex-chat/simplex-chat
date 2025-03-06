@@ -188,7 +188,6 @@ struct DatabaseErrorView: View {
 
     private func runChatSync(confirmMigrations: MigrationConfirmation? = nil) {
         do {
-            logger.error("########## DatabaseErrorView runChatSync -> resetChatCtrl")
             resetChatCtrl()
             try initializeChat(start: m.v3DBMigration.startChat, confirmStart: m.v3DBMigration.startChat && AppChatState.shared.value == .stopped, dbKey: useKeychain ? nil : dbKey, confirmMigrations: confirmMigrations)
             if let s = m.chatDbStatus {

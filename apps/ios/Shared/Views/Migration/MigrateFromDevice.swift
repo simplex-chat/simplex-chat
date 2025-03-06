@@ -595,7 +595,6 @@ struct MigrateFromDevice: View {
                 m.chatInitialized = false
                 migrationState = .finished(chatDeletion: true)
                 DispatchQueue.main.asyncAfter(deadline: .now()) {
-                    logger.error("########## MigrateFromDevice deleteChatAndDismiss -> resetChatCtrl")
                     resetChatCtrl()
                     do {
                         try initializeChat(start: false)
@@ -616,9 +615,7 @@ struct MigrateFromDevice: View {
         AppChatState.shared.set(.active)
         do {
             if m.chatDbChanged {
-                logger.error("########## MigrateFromDevice startChatAndDismiss -> resetChatCtrl")
                 resetChatCtrl()
-                logger.error("########## MigrateFromDevice startChatAndDismiss -> initializeChat")
                 try initializeChat(start: true)
                 m.chatDbChanged = false
             } else {
@@ -755,7 +752,6 @@ private class MigrationChatReceiver {
 
     func receiveMsgLoop() async {
         // TODO use function that has timeout
-        logger.error("########## MigrateFromDevice receiveMsgLoop -> chatRecvMsg")
         if let msg = await chatRecvMsg(ctrl) {
             Task {
                 await TerminalItems.shared.add(.resp(.now, msg))

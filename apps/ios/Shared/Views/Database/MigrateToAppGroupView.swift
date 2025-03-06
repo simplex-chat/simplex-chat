@@ -107,7 +107,6 @@ struct MigrateToAppGroupView: View {
                     Spacer()
                     Button {
                         do {
-                            logger.error("########## MigrateToAppGroupView .migrated -> resetChatCtrl")
                             resetChatCtrl()
                             try initializeChat(start: true)
                             onboardingStageDefault.set(.step4_SetNotificationsMode)
@@ -204,7 +203,6 @@ struct MigrateToAppGroupView: View {
             do {
                 await MainActor.run { setV3DBMigration(.migrating) }
                 dbContainerGroupDefault.set(.group)
-                logger.error("########## MigrateToAppGroupView migrateDatabaseToV3 -> resetChatCtrl")
                 resetChatCtrl()
                 try await MainActor.run { try initializeChat(start: false) }
                 let _ = try await apiImportArchive(config: config)

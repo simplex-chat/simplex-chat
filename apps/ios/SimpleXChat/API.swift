@@ -13,8 +13,7 @@ private var chatController: chat_ctrl?
 private var migrationResult: (Bool, DBMigrationResult)?
 
 public func hasChatCtrl() -> Bool {
-    logger.error("########## hasChatCtrl \(chatController != nil)")
-    return chatController != nil
+    chatController != nil
 }
 
 public func getChatCtrl() -> chat_ctrl {
@@ -46,9 +45,7 @@ public func chatMigrateInit(_ useKey: String? = nil, confirmMigrations: Migratio
     var cKey = dbKey.cString(using: .utf8)!
     var cConfirm = confirm.rawValue.cString(using: .utf8)!
     // the last parameter of chat_migrate_init is used to return the pointer to chat controller
-    logger.error("########## chatMigrateInit -> chat_migrate_init_key(... &chatController )")
     let cjson = chat_migrate_init_key(&cPath, &cKey, 1, &cConfirm, backgroundMode ? 1 : 0, &chatController)!
-    logger.error("########## chatMigrateInit: after chat_migrate_init_key chatController nil? \(chatController == nil)")
     let dbRes = dbMigrationResult(fromCString(cjson))
     let encrypted = dbKey != ""
     let keychainErr = dbRes == .ok && useKeychain && encrypted && !kcDatabasePassword.set(dbKey)
@@ -81,7 +78,6 @@ public func chatInitControllerRemovingDatabases() {
     var cPath = dbPath.cString(using: .utf8)!
     var cKey = dbKey.cString(using: .utf8)!
     var cConfirm = MigrationConfirmation.error.rawValue.cString(using: .utf8)!
-    logger.error("########## chatInitControllerRemovingDatabases -> chat_migrate_init_key(... &chatController )")
     chat_migrate_init_key(&cPath, &cKey, 1, &cConfirm, 0, &chatController)
 
     // We need only controller, not databases
@@ -96,7 +92,6 @@ public func chatCloseStore() {
         logger.error("chatCloseStore: already closed, chatCtrl is nil")
         return
     }
-    logger.error("########## chatCloseStore -> getChatCtrl")
     let err = fromCString(chat_close_store(getChatCtrl()))
     if err != "" {
         logger.error("chatCloseStore error: \(err)")
@@ -104,7 +99,6 @@ public func chatCloseStore() {
 }
 
 public func chatReopenStore() {
-    logger.error("########## chatReopenStore -> getChatCtrl")
     let err = fromCString(chat_reopen_store(getChatCtrl()))
     if err != "" {
         logger.error("chatReopenStore error: \(err)")
@@ -112,14 +106,12 @@ public func chatReopenStore() {
 }
 
 public func resetChatCtrl() {
-    logger.error("########## resetChatCtrl -> chatController = nil")
     chatController = nil
     migrationResult = nil
 }
 
 public func sendSimpleXCmd(_ cmd: ChatCommand, _ ctrl: chat_ctrl? = nil) -> ChatResponse {
     var c = cmd.cmdString.cString(using: .utf8)!
-    logger.error("########## sendSimpleXCmd -> getChatCtrl")
     let cjson  = chat_send_cmd(ctrl ?? getChatCtrl(), &c)!
     return chatResponse(fromCString(cjson))
 }
@@ -128,7 +120,6 @@ public func sendSimpleXCmd(_ cmd: ChatCommand, _ ctrl: chat_ctrl? = nil) -> Chat
 public let MESSAGE_TIMEOUT: Int32 = 15_000_000
 
 public func recvSimpleXMsg(_ ctrl: chat_ctrl? = nil, messageTimeout: Int32 = MESSAGE_TIMEOUT) -> ChatResponse? {
-    logger.error("########## recvSimpleXMsg -> getChatCtrl")
     if let cjson = chat_recv_msg_wait(ctrl ?? getChatCtrl(), messageTimeout) {
         let s = fromCString(cjson)
         return s == "" ? nil : chatResponse(s)

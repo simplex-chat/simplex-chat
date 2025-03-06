@@ -408,7 +408,6 @@ struct DatabaseView: View {
         let m = ChatModel.shared
         if m.chatDbChanged {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                logger.error("########## DatabaseView startChat -> resetChatCtrl")
                 resetChatCtrl()
                 do {
                     let hadDatabase = hasDatabase()
@@ -429,7 +428,6 @@ struct DatabaseView: View {
                 _ = try apiStartChat()
                 runChat.wrappedValue = true
                 m.chatRunning = true
-                logger.error("########## DatabaseView startChat -> ChatReceiver start (receiveMsgLoop)")
                 ChatReceiver.shared.start()
                 chatLastStartGroupDefault.set(Date.now)
                 AppChatState.shared.set(.active)

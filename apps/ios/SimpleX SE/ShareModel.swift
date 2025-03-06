@@ -303,7 +303,6 @@ class ShareModel: ObservableObject {
                     }
                 }
             }
-            logger.error("########## ShareModel handleEvents -> recvSimpleXMsg")
             switch recvSimpleXMsg(messageTimeout: 1_000_000) {
             case let .sndFileProgressXFTP(_, ci, _, sentSize, totalSize):
                 guard isMessage(for: ci) else { continue }

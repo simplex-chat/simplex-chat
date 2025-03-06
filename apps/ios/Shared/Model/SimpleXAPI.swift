@@ -115,7 +115,6 @@ func chatSendCmd(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil
 func chatRecvMsg(_ ctrl: chat_ctrl? = nil) async -> ChatResponse? {
     await withCheckedContinuation { cont in
         _  = withBGTask(bgDelay: msgDelay) { () -> ChatResponse? in
-            logger.error("########## SimplexAPI chatRecvMsg -> recvSimpleXMsg")
             let resp = recvSimpleXMsg(ctrl)
             cont.resume(returning: resp)
             return resp
@@ -1722,7 +1721,6 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     let m = ChatModel.shared
     m.ctrlInitInProgress = true
     defer { m.ctrlInitInProgress = false }
-    logger.error("########## initializeChat -> chatMigrateInit")
     (m.chatDbEncrypted, m.chatDbStatus) = chatMigrateInit(dbKey, confirmMigrations: confirmMigrations)
     if  m.chatDbStatus != .ok { return }
     NetworkObserver.shared.restartMonitor()
@@ -1819,7 +1817,6 @@ func startChat(refreshInvitations: Bool = true, onboarding: Bool = false) throws
             }
         }
     }
-    logger.error("########## SimpleXAPI startChat -> ChatReceiver.shared.start (receiveMsgLoop)")
     ChatReceiver.shared.start()
     m.chatRunning = true
     chatLastStartGroupDefault.set(Date.now)
@@ -1931,7 +1928,6 @@ class ChatReceiver {
 
     func receiveMsgLoop() async {
         while self.receiveMessages {
-            logger.error("########## SimplexAPI receiveMsgLoop -> chatRecvMsg")
             if let msg = await chatRecvMsg() {
                 self._lastMsgTime = .now
                 await processReceivedMsg(msg)

@@ -78,7 +78,6 @@ struct LocalAuthView: View {
                     m.chatDbChanged = true
                     m.chatInitialized = false
                 }
-                logger.error("########## LocalAuthView deleteStorageAndRestart -> resetChatCtrl")
                 resetChatCtrl()
                 try initializeChat(start: true)
                 m.chatDbChanged = false

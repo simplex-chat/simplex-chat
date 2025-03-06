@@ -585,9 +585,7 @@ struct MigrateToDevice: View {
         Task {
             do {
                 ChatReceiver.shared.stop()
-                logger.error("########## MigrateToDevice startChat -> resetChatCtrl")
                 resetChatCtrl()
-                logger.error("########## MigrateToDevice startChat -> initializeChat")
                 try initializeChat(start: false, confirmStart: false, dbKey: passphrase, refreshInvitations: true, confirmMigrations: confirmation)
                 var appSettings = try apiGetAppSettings(settings: AppSettings.current.prepareForExport())
                 let hasOnionConfigured = appSettings.networkConfig?.socksProxy != nil || appSettings.networkConfig?.hostMode == .onionHost
@@ -771,7 +769,6 @@ private class MigrationChatReceiver {
 
     func receiveMsgLoop() async {
         // TODO use function that has timeout
-        logger.error("########## MigrateToDevice receiveMsgLoop -> chatRecvMsg")
         if let msg = await chatRecvMsg(ctrl) {
             Task {
                 await TerminalItems.shared.add(.resp(.now, msg))

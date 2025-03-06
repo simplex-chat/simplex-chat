@@ -128,7 +128,6 @@ class BGManager {
             logger.debug("BGManager.receiveMessages: starting chat")
             let cr = ChatReceiver()
             self.chatReceiver = cr
-            logger.error("########## BGManager receiveMessages -> ChatReceiver start (receiveMsgLoop)")
             cr.start()
             RunLoop.current.add(Timer(timeInterval: 2, repeats: true) { timer in
                 logger.debug("BGManager.receiveMessages: timer")
