@@ -2353,4 +2353,12 @@
     <string name="group_member_status_pending_approval_short">待批准</string>
     <string name="group_member_status_pending_approval">待批准</string>
     <string name="operator_updated_conditions">条款已更新</string>
+    <string name="block_members_desc">所有来自这些成员的新消息都将被隐藏！</string>
+    <string name="block_members_for_all_question">为所有其他成员封禁这些成员？</string>
+    <string name="members_will_be_removed_from_group_cannot_be_undone">将从群中移除这些成员 — 此操作无法撤销！</string>
+    <string name="unblock_members_desc">将显示来自这些成员的消息！</string>
+    <string name="button_remove_members_question">删除成员吗？</string>
+    <string name="unblock_members_for_all_question">为所有其他成员解封这些成员吗？</string>
+    <string name="feature_roles_moderators">moderators</string>
+    <string name="members_will_be_removed_from_chat_cannot_be_undone">将从聊天中移除这些成员 — 此操作无法撤销！</string>
 </resources>
