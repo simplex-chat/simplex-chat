@@ -1917,6 +1917,7 @@ data class GroupMember (
     GroupMemberStatus.MemGroupDeleted -> false
     GroupMemberStatus.MemUnknown -> false
     GroupMemberStatus.MemInvited -> false
+    GroupMemberStatus.MemPendingApproval -> true
     GroupMemberStatus.MemIntroduced -> false
     GroupMemberStatus.MemIntroInvited -> false
     GroupMemberStatus.MemAccepted -> false
@@ -1933,6 +1934,7 @@ data class GroupMember (
     GroupMemberStatus.MemGroupDeleted -> false
     GroupMemberStatus.MemUnknown -> false
     GroupMemberStatus.MemInvited -> false
+    GroupMemberStatus.MemPendingApproval -> false
     GroupMemberStatus.MemIntroduced -> true
     GroupMemberStatus.MemIntroInvited -> true
     GroupMemberStatus.MemAccepted -> true
@@ -1956,8 +1958,8 @@ data class GroupMember (
 
   fun canBlockForAll(groupInfo: GroupInfo): Boolean {
     val userRole = groupInfo.membership.memberRole
-    return memberStatus != GroupMemberStatus.MemRemoved && memberStatus != GroupMemberStatus.MemLeft && memberRole < GroupMemberRole.Admin
-        && userRole >= GroupMemberRole.Admin && userRole >= memberRole && groupInfo.membership.memberActive
+    return memberStatus != GroupMemberStatus.MemRemoved && memberStatus != GroupMemberStatus.MemLeft && memberRole < GroupMemberRole.Moderator
+        && userRole >= GroupMemberRole.Moderator && userRole >= memberRole && groupInfo.membership.memberActive
   }
 
   val memberIncognito = memberProfile.profileId != memberContactProfileId
@@ -2037,6 +2039,7 @@ enum class GroupMemberStatus {
   @SerialName("deleted") MemGroupDeleted,
   @SerialName("unknown") MemUnknown,
   @SerialName("invited") MemInvited,
+  @SerialName("pending_approval") MemPendingApproval,
   @SerialName("introduced") MemIntroduced,
   @SerialName("intro-inv") MemIntroInvited,
   @SerialName("accepted") MemAccepted,
@@ -2052,6 +2055,7 @@ enum class GroupMemberStatus {
     MemGroupDeleted -> generalGetString(MR.strings.group_member_status_group_deleted)
     MemUnknown -> generalGetString(MR.strings.group_member_status_unknown)
     MemInvited -> generalGetString(MR.strings.group_member_status_invited)
+    MemPendingApproval -> generalGetString(MR.strings.group_member_status_pending_approval)
     MemIntroduced -> generalGetString(MR.strings.group_member_status_introduced)
     MemIntroInvited -> generalGetString(MR.strings.group_member_status_intro_invitation)
     MemAccepted -> generalGetString(MR.strings.group_member_status_accepted)
@@ -2068,6 +2072,7 @@ enum class GroupMemberStatus {
     MemGroupDeleted -> generalGetString(MR.strings.group_member_status_group_deleted)
     MemUnknown -> generalGetString(MR.strings.group_member_status_unknown_short)
     MemInvited -> generalGetString(MR.strings.group_member_status_invited)
+    MemPendingApproval -> generalGetString(MR.strings.group_member_status_pending_approval_short)
     MemIntroduced -> generalGetString(MR.strings.group_member_status_connecting)
     MemIntroInvited -> generalGetString(MR.strings.group_member_status_connecting)
     MemAccepted -> generalGetString(MR.strings.group_member_status_connecting)
@@ -2434,14 +2439,14 @@ data class ChatItem (
   fun memberToModerate(chatInfo: ChatInfo): Pair<GroupInfo, GroupMember?>? {
     return if (chatInfo is ChatInfo.Group && chatDir is CIDirection.GroupRcv) {
       val m = chatInfo.groupInfo.membership
-      if (m.memberRole >= GroupMemberRole.Admin && m.memberRole >= chatDir.groupMember.memberRole && meta.itemDeleted == null) {
+      if (m.memberRole >= GroupMemberRole.Moderator && m.memberRole >= chatDir.groupMember.memberRole && meta.itemDeleted == null) {
         chatInfo.groupInfo to chatDir.groupMember
       } else {
       null
       }
     } else if (chatInfo is ChatInfo.Group && chatDir is CIDirection.GroupSnd) {
       val m = chatInfo.groupInfo.membership
-      if (m.memberRole >= GroupMemberRole.Admin) {
+      if (m.memberRole >= GroupMemberRole.Moderator) {
         chatInfo.groupInfo to null
       } else {
         null
@@ -3254,6 +3259,7 @@ sealed class CIContent: ItemContent {
       when (role) {
         GroupMemberRole.Owner -> generalGetString(MR.strings.feature_roles_owners)
         GroupMemberRole.Admin -> generalGetString(MR.strings.feature_roles_admins)
+        GroupMemberRole.Moderator -> generalGetString(MR.strings.feature_roles_moderators)
         else -> generalGetString(MR.strings.feature_roles_all_members)
       }
 

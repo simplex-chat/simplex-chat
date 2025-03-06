@@ -14,6 +14,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatController.appPrefs
@@ -160,15 +161,28 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
       }
 
       if (updatedConditions) {
-        Text(
-          stringResource(MR.strings.view_updated_conditions),
-          color = MaterialTheme.colors.primary,
-          modifier = Modifier.clickable {
-            modalManager.showModalCloseable {
-              close -> UsageConditionsView(userServers = mutableStateOf(emptyList()), currUserServers = mutableStateOf(emptyList()), close = close, rhId = rhId)
+        Row(
+          modifier = Modifier
+            .clip(shape = CircleShape)
+            .clickable {
+              modalManager.showModalCloseable { close ->
+                UsageConditionsView(
+                  userServers = mutableStateOf(emptyList()),
+                  currUserServers = mutableStateOf(emptyList()),
+                  close = close,
+                  rhId = rhId
+                )
+              }
             }
-          }
-        )
+            .padding(horizontal = 6.dp, vertical = 4.dp),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.Center
+        ) {
+          Text(
+            stringResource(MR.strings.view_updated_conditions),
+            color = MaterialTheme.colors.primary
+          )
+        }
       }
 
       if (!viaSettings) {

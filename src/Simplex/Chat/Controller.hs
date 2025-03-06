@@ -19,7 +19,8 @@ module Simplex.Chat.Controller where
 
 import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
-import Control.Exception
+import Control.Exception (Exception, SomeException)
+import qualified Control.Exception as E
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
@@ -60,7 +61,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.AppVersion
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Stats (PresentedServersSummary)
-import Simplex.Chat.Store (AutoAccept, ChatLockEntity, StoreError (..), UserContactLink, UserMsgReceiptSettings)
+import Simplex.Chat.Store (AutoAccept, ChatLockEntity, StoreError (..), UserContactLink, GroupLinkInfo, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -93,7 +94,6 @@ import Simplex.RemoteControl.Invitation (RCSignedInvitation, RCVerifiedInvitatio
 import Simplex.RemoteControl.Types
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
-import qualified UnliftIO.Exception as E
 import UnliftIO.STM
 #if !defined(dbPostgres)
 import Database.SQLite.Simple (SQLError)
@@ -137,9 +137,6 @@ data ChatConfig = ChatConfig
     chatVRange :: VersionRangeChat,
     confirmMigrations :: MigrationConfirmation,
     presetServers :: PresetServers,
-    allowedProfileName :: Maybe (ContactName -> Bool),
-    profileNameLimit :: Int,
-    acceptAsObserver :: Maybe AcceptAsObserver,
     tbqSize :: Natural,
     fileChunkSize :: Integer,
     xftpDescrPartSize :: Int,
@@ -161,11 +158,6 @@ data ChatConfig = ChatConfig
     chatHooks :: ChatHooks
   }
 
-data AcceptAsObserver
-  = AOAll -- all members
-  | AONameOnly -- members without image
-  | AOIncognito -- members with incognito-style names and without image
-
 data RandomAgentServers = RandomAgentServers
   { smpServers :: NonEmpty (ServerCfg 'PSMP),
     xftpServers :: NonEmpty (ServerCfg 'PXFTP)
@@ -177,18 +169,16 @@ data ChatHooks = ChatHooks
   { -- preCmdHook can be used to process or modify the commands before they are processed.
     -- This hook should be used to process CustomChatCommand.
     -- if this hook returns ChatResponse, the command processing will be skipped.
-    preCmdHook :: ChatController -> ChatCommand -> IO (Either ChatResponse ChatCommand),
+    preCmdHook :: Maybe (ChatController -> ChatCommand -> IO (Either ChatResponse ChatCommand)),
     -- eventHook can be used to additionally process or modify events,
     -- it is called before the event is sent to the user (or to the UI).
-    eventHook :: ChatController -> ChatResponse -> IO ChatResponse
+    eventHook :: Maybe (ChatController -> ChatResponse -> IO ChatResponse),
+    -- acceptMember hook can be used to accept or reject member connecting via group link without API calls
+    acceptMember :: Maybe (GroupInfo -> GroupLinkInfo -> Profile -> IO (Either GroupRejectionReason (GroupAcceptance, GroupMemberRole)))
   }
 
 defaultChatHooks :: ChatHooks
-defaultChatHooks =
-  ChatHooks
-    { preCmdHook = \_ -> pure . Right,
-      eventHook = \_ -> pure
-    }
+defaultChatHooks = ChatHooks Nothing Nothing Nothing
 
 data PresetServers = PresetServers
   { operators :: NonEmpty PresetOperator,
@@ -313,7 +303,7 @@ data ChatCommand
   | APIGetChat ChatRef (Maybe MsgContentTag) ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
   | APIGetChatItemInfo ChatRef ChatItemId
-  | APISendMessages {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
+  | APISendMessages {sendRef :: SendRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
   | APICreateChatTag ChatTagData
   | APISetChatTags ChatRef (Maybe (NonEmpty ChatTagId))
   | APIDeleteChatTag ChatTagId
@@ -366,6 +356,7 @@ data ChatCommand
   | ApiGetConnNtfMessages {connIds :: NonEmpty AgentConnId}
   | APIAddMember GroupId ContactId GroupMemberRole
   | APIJoinGroup {groupId :: GroupId, enableNtfs :: MsgFilter}
+  | APIAcceptMember GroupId GroupMemberId GroupMemberRole
   | APIMembersRole GroupId (NonEmpty GroupMemberId) GroupMemberRole
   | APIBlockMembersForAll GroupId (NonEmpty GroupMemberId) Bool
   | APIRemoveMembers GroupId (NonEmpty GroupMemberId)
@@ -905,6 +896,17 @@ logResponseToFile = \case
   CRChatError {} -> True
   CRMessageError {} -> True
   _ -> False
+
+-- (Maybe GroupMemberId) can later be changed to GroupSndScope = GSSAll | GSSAdmins | GSSMember GroupMemberId
+data SendRef
+  = SRDirect ContactId
+  | SRGroup GroupId (Maybe GroupMemberId)
+  deriving (Eq, Show)
+
+sendToChatRef :: SendRef -> ChatRef
+sendToChatRef = \case
+  SRDirect cId -> ChatRef CTDirect cId
+  SRGroup gId _ -> ChatRef CTGroup gId
 
 data ChatPagination
   = CPLast Int
@@ -1509,7 +1511,9 @@ toView = lift . toView'
 toView' :: ChatResponse -> CM' ()
 toView' ev = do
   cc@ChatController {outputQ = localQ, remoteCtrlSession = session, config = ChatConfig {chatHooks}} <- ask
-  event <- liftIO $ eventHook chatHooks cc ev
+  event <- case eventHook chatHooks of
+    Just hook -> liftIO $ hook cc ev
+    Nothing -> pure ev
   atomically $
     readTVar session >>= \case
       Just (_, RCSessionConnected {remoteOutputQ})
@@ -1544,7 +1548,7 @@ withStoreBatch actions = do
   liftIO $ withTransaction chatStore $ mapM (`E.catches` handleDBErrors) . actions
 
 -- TODO [postgres] postgres specific error handling
-handleDBErrors :: [E.Handler IO (Either ChatError a)]
+handleDBErrors :: [E.Handler (Either ChatError a)]
 handleDBErrors =
 #if !defined(dbPostgres)
   ( E.Handler $ \(e :: SQLError) ->

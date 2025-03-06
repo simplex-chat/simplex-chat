@@ -422,10 +422,10 @@
 "Add profile" = "Profil hinzufügen";
 
 /* No comment provided by engineer. */
-"Add server" = "Füge Server hinzu";
+"Add server" = "Server hinzufügen";
 
 /* No comment provided by engineer. */
-"Add servers by scanning QR codes." = "Fügen Sie Server durch Scannen der QR Codes hinzu.";
+"Add servers by scanning QR codes." = "Server durch Scannen von QR Codes hinzufügen.";
 
 /* No comment provided by engineer. */
 "Add team members" = "Team-Mitglieder aufnehmen";
@@ -797,6 +797,9 @@
 "Better groups" = "Bessere Gruppen";
 
 /* No comment provided by engineer. */
+"Better groups performance" = "Bessere Leistung von Gruppen";
+
+/* No comment provided by engineer. */
 "Better message dates." = "Verbesserte Nachrichten-Datumsinformation";
 
 /* No comment provided by engineer. */
@@ -807,6 +810,9 @@
 
 /* No comment provided by engineer. */
 "Better notifications" = "Verbesserte Benachrichtigungen";
+
+/* No comment provided by engineer. */
+"Better privacy and security" = "Bessere(r) Security und Datenschutz";
 
 /* No comment provided by engineer. */
 "Better security ✅" = "Verbesserte Sicherheit ✅";
@@ -1893,6 +1899,9 @@
 "Don't enable" = "Nicht aktivieren";
 
 /* No comment provided by engineer. */
+"Don't miss important messages." = "Verpassen Sie keine wichtigen Nachrichten.";
+
+/* No comment provided by engineer. */
 "Don't show again" = "Nicht nochmals anzeigen";
 
 /* No comment provided by engineer. */
@@ -2404,7 +2413,13 @@
 "Fast and no wait until the sender is online!" = "Schnell und ohne warten auf den Absender, bis er online ist!";
 
 /* No comment provided by engineer. */
+"Faster deletion of groups." = "Schnelleres löschen von Gruppen.";
+
+/* No comment provided by engineer. */
 "Faster joining and more reliable messages." = "Schnellerer Gruppenbeitritt und zuverlässigere Nachrichtenzustellung.";
+
+/* No comment provided by engineer. */
+"Faster sending messages." = "Schnelleres versenden von Nachrichten.";
 
 /* swipe action */
 "Favorite" = "Favorit";
@@ -2587,6 +2602,9 @@
 "Further reduced battery usage" = "Weiter reduzierter Batterieverbrauch";
 
 /* No comment provided by engineer. */
+"Get notified when mentioned." = "Bei Erwähnung benachrichtigt werden.";
+
+/* No comment provided by engineer. */
 "GIFs and stickers" = "GIFs und Sticker";
 
 /* message preview */
@@ -2663,6 +2681,9 @@
 
 /* No comment provided by engineer. */
 "Help" = "Hilfe";
+
+/* No comment provided by engineer. */
+"Help admins moderating their groups." = "Helfen Sie Administratoren bei der Moderation ihrer Gruppen.";
 
 /* No comment provided by engineer. */
 "Hidden" = "Verborgen";
@@ -3199,6 +3220,9 @@
 "Members can send voice messages." = "Gruppenmitglieder können Sprachnachrichten versenden.";
 
 /* No comment provided by engineer. */
+"Mention members 👋" = "Erwähnung von Mitgliedern 👋";
+
+/* No comment provided by engineer. */
 "Menus" = "Menüs";
 
 /* No comment provided by engineer. */
@@ -3513,6 +3537,9 @@
 /* servers error */
 "No media & file servers." = "Keine Medien- und Dateiserver.";
 
+/* No comment provided by engineer. */
+"No message" = "Keine Nachricht";
+
 /* servers error */
 "No message servers." = "Keine Nachrichten-Server.";
 
@@ -3744,6 +3771,9 @@
 "Or to share privately" = "Oder zum privaten Teilen";
 
 /* No comment provided by engineer. */
+"Organize chats into lists" = "Chats in Listen verwalten";
+
+/* No comment provided by engineer. */
 "other" = "Andere";
 
 /* No comment provided by engineer. */
@@ -3913,6 +3943,9 @@
 
 /* No comment provided by engineer. */
 "Private filenames" = "Neutrale Dateinamen";
+
+/* No comment provided by engineer. */
+"Private media file names." = "Medien mit anonymisierten Dateinamen.";
 
 /* No comment provided by engineer. */
 "Private message routing" = "Privates Nachrichten-Routing";
@@ -4517,6 +4550,9 @@
 "Send notifications" = "Benachrichtigungen senden";
 
 /* No comment provided by engineer. */
+"Send private reports" = "Private Meldungen senden";
+
+/* No comment provided by engineer. */
 "Send questions and ideas" = "Senden Sie Fragen und Ideen";
 
 /* No comment provided by engineer. */
@@ -4662,6 +4698,9 @@
 
 /* No comment provided by engineer. */
 "Set it instead of system authentication." = "Anstelle der System-Authentifizierung festlegen.";
+
+/* No comment provided by engineer. */
+"Set message expiration in chats." = "Verfallsdatum von Nachrichten in Chats festlegen.";
 
 /* profile update event chat item */
 "set new contact address" = "Es wurde eine neue Kontaktadresse festgelegt";
@@ -5168,6 +5207,9 @@
 
 /* No comment provided by engineer. */
 "This link was used with another mobile device, please create a new link on the desktop." = "Dieser Link wurde schon mit einem anderen Mobiltelefon genutzt. Bitte erstellen sie einen neuen Link in der Desktop-App.";
+
+/* No comment provided by engineer. */
+"This message was deleted or not received yet." = "Diese Nachricht wurde gelöscht oder bisher noch nicht empfangen.";
 
 /* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "Diese Einstellung gilt für Nachrichten in Ihrem aktuellen Chat-Profil **%@**.";

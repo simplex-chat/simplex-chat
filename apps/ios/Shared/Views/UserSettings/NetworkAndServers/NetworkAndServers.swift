@@ -238,22 +238,23 @@ struct UsageConditionsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            HStack {
-                Text("Conditions of use").font(.largeTitle).bold()
-                Spacer()
-                conditionsLinkButton()
-            }
-            .padding(.top)
-            .padding(.top)
-
             switch ChatModel.shared.conditions.conditionsAction {
 
             case .none:
+                regularConditionsHeader()
+                    .padding(.top)
+                    .padding(.top)
                 ConditionsTextView()
                     .padding(.bottom)
                     .padding(.bottom)
 
             case let .review(operators, deadline, _):
+                HStack {
+                    Text("Updated conditions").font(.largeTitle).bold()
+                }
+                .padding(.top)
+                .padding(.top)
+
                 Text("Conditions will be accepted for the operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
                 ConditionsTextView()
                 VStack(spacing: 8) {
@@ -265,6 +266,10 @@ struct UsageConditionsView: View {
                             .multilineTextAlignment(.center)
                             .frame(maxWidth: .infinity, alignment: .center)
                             .padding(.horizontal, 32)
+                        conditionsDiffButton(.footnote)
+                    } else {
+                        conditionsDiffButton()
+                            .padding(.top)
                     }
                 }
                 .padding(.bottom)
@@ -272,6 +277,9 @@ struct UsageConditionsView: View {
                 
 
             case let .accepted(operators):
+                regularConditionsHeader()
+                    .padding(.top)
+                    .padding(.top)
                 Text("Conditions are accepted for the operator(s): **\(operators.map { $0.legalName_ }.joined(separator: ", "))**.")
                 ConditionsTextView()
                     .padding(.bottom)
@@ -311,6 +319,43 @@ struct UsageConditionsView: View {
                 }
             }
         }
+    }
+
+    @ViewBuilder private func conditionsDiffButton(_ font: Font? = nil) -> some View {
+        let commit = ChatModel.shared.conditions.currentConditions.conditionsCommit
+        if let commitUrl = URL(string: "https://github.com/simplex-chat/simplex-chat/commit/\(commit)") {
+            Link(destination: commitUrl) {
+                HStack {
+                    Text("Open changes")
+                    Image(systemName: "arrow.up.right.circle")
+                }
+                .font(font)
+            }
+        }
+    }
+}
+
+private func regularConditionsHeader() -> some View {
+    HStack {
+        Text("Conditions of use").font(.largeTitle).bold()
+        Spacer()
+        conditionsLinkButton()
+    }
+}
+
+struct SimpleConditionsView: View {
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            regularConditionsHeader()
+                .padding(.top)
+                .padding(.top)
+            ConditionsTextView()
+                .padding(.bottom)
+                .padding(.bottom)
+        }
+        .padding(.horizontal, 25)
+        .frame(maxHeight: .infinity)
     }
 }
 

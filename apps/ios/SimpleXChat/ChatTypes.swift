@@ -2147,6 +2147,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         case .memGroupDeleted: return false
         case .memUnknown: return false
         case .memInvited: return false
+        case .memPendingApproval: return true
         case .memIntroduced: return false
         case .memIntroInvited: return false
         case .memAccepted: return false
@@ -2165,6 +2166,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         case .memGroupDeleted: return false
         case .memUnknown: return false
         case .memInvited: return false
+        case .memPendingApproval: return false
         case .memIntroduced: return true
         case .memIntroInvited: return true
         case .memAccepted: return true
@@ -2296,6 +2298,7 @@ public enum GroupMemberStatus: String, Decodable, Hashable {
     case memGroupDeleted = "deleted"
     case memUnknown = "unknown"
     case memInvited = "invited"
+    case memPendingApproval = "pending_approval"
     case memIntroduced = "introduced"
     case memIntroInvited = "intro-inv"
     case memAccepted = "accepted"
@@ -2312,6 +2315,7 @@ public enum GroupMemberStatus: String, Decodable, Hashable {
         case .memGroupDeleted: return "group deleted"
         case .memUnknown: return "unknown status"
         case .memInvited: return "invited"
+        case .memPendingApproval: return "pending approval"
         case .memIntroduced: return "connecting (introduced)"
         case .memIntroInvited: return "connecting (introduction invitation)"
         case .memAccepted: return "connecting (accepted)"
@@ -2330,6 +2334,7 @@ public enum GroupMemberStatus: String, Decodable, Hashable {
         case .memGroupDeleted: return "group deleted"
         case .memUnknown: return "unknown"
         case .memInvited: return "invited"
+        case .memPendingApproval: return "pending"
         case .memIntroduced: return "connecting"
         case .memIntroInvited: return "connecting"
         case .memAccepted: return "connecting"

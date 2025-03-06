@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        6.3.0.6
+version:        6.3.0.7
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -416,13 +416,17 @@ executable simplex-directory-service
       Paths_simplex_chat
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -threaded
   build-depends:
-      async ==2.2.*
+      aeson ==2.2.*
+    , async ==2.2.*
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , composition ==1.0.*
     , containers ==0.6.*
     , directory ==1.3.*
+    , mtl >=2.3.1 && <3.0
     , optparse-applicative >=0.15 && <0.17
+    , process >=1.6 && <1.6.18
+    , random >=1.1 && <1.3
     , simple-logger ==0.1.*
     , simplex-chat
     , simplexmq >=6.3
@@ -470,6 +474,7 @@ test-suite simplex-chat-test
       ViewTests
       Broadcast.Bot
       Broadcast.Options
+      Directory.BlockedWords
       Directory.Events
       Directory.Options
       Directory.Search
@@ -512,6 +517,7 @@ test-suite simplex-chat-test
     , mtl >=2.3.1 && <3.0
     , network ==3.1.*
     , optparse-applicative >=0.15 && <0.17
+    , random >=1.1 && <1.3
     , silently ==1.2.*
     , simple-logger ==0.1.*
     , simplex-chat

@@ -1501,4 +1501,26 @@
     <string name="chat_item_ttl_year">1 년</string>
     <string name="add_to_list">리스트에 추가하기</string>
     <string name="report_item_archived">보관된 보고서</string>
+    <string name="report_item_archived_by">보관된 신고: %s</string>
+    <string name="report_reason_community">커뮤니티 가이드라인 위반</string>
+    <string name="report_archive_alert_title">신고를 보관하시겠습니까?</string>
+    <string name="archive_report">신고 보관</string>
+    <string name="chat_list_contacts">연락처</string>
+    <string name="connection_error_blocked">연결이 차단되었습니다</string>
+    <string name="connection_error_blocked_desc">연결이 서버 운영자에 의해 차단되었습니다:\n%1$s</string>
+    <string name="chat_list_businesses">비즈니스</string>
+    <string name="change_order_chat_list_menu_action">순서 변경</string>
+    <string name="privacy_chat_list_open_links_ask">문의</string>
+    <string name="connection_not_ready">연결이 준비되지 않았습니다.</string>
+    <string name="change_automatic_deletion_question">자동 메시지 삭제를 변경하시겠습니까?</string>
+    <string name="v6_3_better_groups_performance">그룹 성능 향상</string>
+    <string name="report_archive_alert_desc_all">모든 신고가 보관됩니다.</string>
+    <string name="report_archive_alert_title_all">모든 신고를 보관하시겠습니까?</string>
+    <string name="archive_reports">신고 보관</string>
+    <string name="change_list">목록 변경</string>
+    <string name="enable_sending_member_reports">메시지를 운영자에게 신고할 수 있도록 허용합니다.</string>
+    <string name="v6_3_better_privacy_and_security">더 나은 개인정보 보호 및 보안</string>
+    <string name="report_archive_alert_title_nth">신고 %d건을 보관하시겠습니까?</string>
+    <string name="failed_to_create_user_invalid_desc">이 표시 이름은 유효하지 않습니다. 다른 이름을 선택하세요.</string>
+    <string name="remote_ctrl_error_timeout">데스크톱에 연결하는 동안 시간 초과되었습니다</string>
 </resources>

@@ -6,6 +6,7 @@ module Simplex.Chat.Store
     ChatLockEntity (..),
     UserMsgReceiptSettings (..),
     UserContactLink (..),
+    GroupLinkInfo (..),
     AutoAccept (..),
     createChatStore,
     migrations, -- used in tests

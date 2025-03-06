@@ -19,7 +19,7 @@ module Directory.Events
   )
 where
 
-import Control.Applicative ((<|>))
+import Control.Applicative (optional, (<|>))
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
 import Data.Char (isSpace)
@@ -46,6 +46,8 @@ data DirectoryEvent
   | DEGroupInvitation {contact :: Contact, groupInfo :: GroupInfo, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
   | DEServiceJoinedGroup {contactId :: ContactId, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | DEGroupUpdated {contactId :: ContactId, fromGroup :: GroupInfo, toGroup :: GroupInfo}
+  | DEPendingMember GroupInfo GroupMember
+  | DEPendingMemberMsg GroupInfo GroupMember ChatItemId Text
   | DEContactRoleChanged GroupInfo ContactId GroupMemberRole -- contactId here is the contact whose role changed
   | DEServiceRoleChanged GroupInfo GroupMemberRole
   | DEContactRemovedFromGroup ContactId GroupInfo
@@ -65,6 +67,12 @@ crDirectoryEvent = \case
   CRReceivedGroupInvitation {contact, groupInfo, fromMemberRole, memberRole} -> Just $ DEGroupInvitation {contact, groupInfo, fromMemberRole, memberRole}
   CRUserJoinedGroup {groupInfo, hostMember} -> (\contactId -> DEServiceJoinedGroup {contactId, groupInfo, hostMember}) <$> memberContactId hostMember
   CRGroupUpdated {fromGroup, toGroup, member_} -> (\contactId -> DEGroupUpdated {contactId, fromGroup, toGroup}) <$> (memberContactId =<< member_)
+  CRJoinedGroupMember {groupInfo, member = m}
+    | pending m -> Just $ DEPendingMember groupInfo m
+    | otherwise -> Nothing
+  CRNewChatItems {chatItems = AChatItem _ _ (GroupChat g) ci : _} -> case ci of
+    ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent (MCText t)} | pending m -> Just $ DEPendingMemberMsg g m (chatItemId' ci) t
+    _ -> Nothing
   CRMemberRole {groupInfo, member, toRole}
     | groupMemberId' member == groupMemberId' (membership groupInfo) -> Just $ DEServiceRoleChanged groupInfo toRole
     | otherwise -> (\ctId -> DEContactRoleChanged groupInfo ctId toRole) <$> memberContactId member
@@ -89,6 +97,8 @@ crDirectoryEvent = \case
     _ -> Just $ DELogChatResponse $ "chat error: " <> tshow chatError
   CRChatErrors {chatErrors} -> Just $ DELogChatResponse $ "chat errors: " <> T.intercalate ", " (map tshow chatErrors)
   _ -> Nothing
+  where
+    pending m = memberStatus m == GSMemPendingApproval
 
 data DirectoryRole = DRUser | DRAdmin | DRSuperUser
 
@@ -108,7 +118,8 @@ data DirectoryCmdTag (r :: DirectoryRole) where
   DCConfirmDuplicateGroup_ :: DirectoryCmdTag 'DRUser
   DCListUserGroups_ :: DirectoryCmdTag 'DRUser
   DCDeleteGroup_ :: DirectoryCmdTag 'DRUser
-  DCSetRole_ :: DirectoryCmdTag 'DRUser
+  DCMemberRole_ :: DirectoryCmdTag 'DRUser
+  DCGroupFilter_ :: DirectoryCmdTag 'DRUser
   DCApproveGroup_ :: DirectoryCmdTag 'DRAdmin
   DCRejectGroup_ :: DirectoryCmdTag 'DRAdmin
   DCSuspendGroup_ :: DirectoryCmdTag 'DRAdmin
@@ -118,6 +129,8 @@ data DirectoryCmdTag (r :: DirectoryRole) where
   DCShowGroupLink_ :: DirectoryCmdTag 'DRAdmin
   DCSendToGroupOwner_ :: DirectoryCmdTag 'DRAdmin
   DCInviteOwnerToGroup_ :: DirectoryCmdTag 'DRAdmin
+  -- DCAddBlockedWord_ :: DirectoryCmdTag 'DRAdmin
+  -- DCRemoveBlockedWord_ :: DirectoryCmdTag 'DRAdmin
   DCExecuteCommand_ :: DirectoryCmdTag 'DRSuperUser
 
 deriving instance Show (DirectoryCmdTag r)
@@ -134,7 +147,8 @@ data DirectoryCmd (r :: DirectoryRole) where
   DCConfirmDuplicateGroup :: UserGroupRegId -> GroupName -> DirectoryCmd 'DRUser
   DCListUserGroups :: DirectoryCmd 'DRUser
   DCDeleteGroup :: UserGroupRegId -> GroupName -> DirectoryCmd 'DRUser
-  DCSetRole :: GroupId -> GroupName -> GroupMemberRole -> DirectoryCmd 'DRUser
+  DCMemberRole :: UserGroupRegId -> Maybe GroupName -> Maybe GroupMemberRole -> DirectoryCmd 'DRUser
+  DCGroupFilter :: UserGroupRegId -> Maybe GroupName -> Maybe DirectoryMemberAcceptance -> DirectoryCmd 'DRUser
   DCApproveGroup :: {groupId :: GroupId, displayName :: GroupName, groupApprovalId :: GroupApprovalId} -> DirectoryCmd 'DRAdmin
   DCRejectGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
   DCSuspendGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
@@ -144,6 +158,8 @@ data DirectoryCmd (r :: DirectoryRole) where
   DCShowGroupLink :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
   DCSendToGroupOwner :: GroupId -> GroupName -> Text -> DirectoryCmd 'DRAdmin
   DCInviteOwnerToGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
+  -- DCAddBlockedWord :: Text -> DirectoryCmd 'DRAdmin
+  -- DCRemoveBlockedWord :: Text -> DirectoryCmd 'DRAdmin
   DCExecuteCommand :: String -> DirectoryCmd 'DRSuperUser
   DCUnknownCommand :: DirectoryCmd 'DRUser
   DCCommandError :: DirectoryCmdTag r -> DirectoryCmd r
@@ -175,7 +191,8 @@ directoryCmdP =
         "list" -> u DCListUserGroups_
         "ls" -> u DCListUserGroups_
         "delete" -> u DCDeleteGroup_
-        "role" -> u DCSetRole_
+        "role" -> u DCMemberRole_
+        "filter" -> u DCGroupFilter_
         "approve" -> au DCApproveGroup_
         "reject" -> au DCRejectGroup_
         "suspend" -> au DCSuspendGroup_
@@ -185,6 +202,8 @@ directoryCmdP =
         "link" -> au DCShowGroupLink_
         "owner" -> au DCSendToGroupOwner_
         "invite" -> au DCInviteOwnerToGroup_
+        -- "block_word" -> au DCAddBlockedWord_
+        -- "unblock_word" -> au DCRemoveBlockedWord_
         "exec" -> su DCExecuteCommand_
         "x" -> su DCExecuteCommand_
         _ -> fail "bad command tag"
@@ -202,10 +221,36 @@ directoryCmdP =
       DCConfirmDuplicateGroup_ -> gc DCConfirmDuplicateGroup
       DCListUserGroups_ -> pure DCListUserGroups
       DCDeleteGroup_ -> gc DCDeleteGroup
-      DCSetRole_ -> do
-        (groupId, displayName) <- gc (,)
-        memberRole <- A.space *> ("member" $> GRMember <|> "observer" $> GRObserver)
-        pure $ DCSetRole groupId displayName memberRole
+      DCMemberRole_ -> do
+        (groupId, displayName_) <- gc_ (,)
+        memberRole_ <- optional $ spacesP *> ("member" $> GRMember <|> "observer" $> GRObserver)
+        pure $ DCMemberRole groupId displayName_ memberRole_
+      DCGroupFilter_ -> do
+        (groupId, displayName_) <- gc_ (,)
+        acceptance_ <-
+          (A.takeWhile (== ' ') >> A.endOfInput) $> Nothing
+            <|> Just <$> (acceptancePresetsP <|> acceptanceFiltersP)
+        pure $ DCGroupFilter groupId displayName_ acceptance_
+        where
+          acceptancePresetsP =
+            spacesP
+              *> A.choice
+                [ "off" $> noJoinFilter,
+                  "basic" $> basicJoinFilter,
+                  ("moderate" <|> "mod") $> moderateJoinFilter,
+                  "strong" $> strongJoinFilter
+                ]
+          acceptanceFiltersP = do
+            rejectNames <- filterP "name"
+            passCaptcha <- filterP "captcha"
+            makeObserver <- filterP "observer"
+            pure DirectoryMemberAcceptance {rejectNames, passCaptcha, makeObserver}
+          filterP :: Text -> Parser (Maybe ProfileCondition)
+          filterP s = Just <$> (spacesP *> A.string s *> conditionP) <|> pure Nothing
+          conditionP =
+            "=all" $> PCAll
+              <|> ("=noimage" <|> "=no_image" <|> "=no-image") $> PCNoImage
+              <|> pure PCAll
       DCApproveGroup_ -> do
         (groupId, displayName) <- gc (,)
         groupApprovalId <- A.space *> A.decimal
@@ -221,9 +266,14 @@ directoryCmdP =
         msg <- A.space *> A.takeText
         pure $ DCSendToGroupOwner groupId displayName msg
       DCInviteOwnerToGroup_ -> gc DCInviteOwnerToGroup
-      DCExecuteCommand_ -> DCExecuteCommand . T.unpack <$> (A.space *> A.takeText)
+      -- DCAddBlockedWord_ -> DCAddBlockedWord <$> wordP
+      -- DCRemoveBlockedWord_ -> DCRemoveBlockedWord <$> wordP
+      DCExecuteCommand_ -> DCExecuteCommand . T.unpack <$> (spacesP *> A.takeText)
       where
-        gc f = f <$> (A.space *> A.decimal <* A.char ':') <*> displayNameTextP
+        gc f = f <$> (spacesP *> A.decimal) <*> (A.char ':' *> displayNameTextP)
+        gc_ f = f <$> (spacesP *> A.decimal) <*> optional (A.char ':' *> displayNameTextP)
+        -- wordP = spacesP *> A.takeTill (== ' ')
+        spacesP = A.takeWhile1 (== ' ')
 
 viewName :: Text -> Text
 viewName n = if T.any (== ' ') n then "'" <> n <> "'" else n
@@ -240,7 +290,8 @@ directoryCmdTag = \case
   DCListUserGroups -> "list" 
   DCDeleteGroup {} -> "delete"
   DCApproveGroup {} -> "approve"
-  DCSetRole {} -> "role"
+  DCMemberRole {} -> "role"
+  DCGroupFilter {} -> "filter"
   DCRejectGroup {} -> "reject"
   DCSuspendGroup {} -> "suspend"
   DCResumeGroup {} -> "resume"
@@ -249,6 +300,8 @@ directoryCmdTag = \case
   DCShowGroupLink {} -> "link"
   DCSendToGroupOwner {} -> "owner"
   DCInviteOwnerToGroup {} -> "invite"
+  -- DCAddBlockedWord _ -> "block_word"
+  -- DCRemoveBlockedWord _ -> "unblock_word"
   DCExecuteCommand _ -> "exec"
   DCUnknownCommand -> "unknown"
   DCCommandError _ -> "error"

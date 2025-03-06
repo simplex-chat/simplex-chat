@@ -86,12 +86,13 @@ mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup =
       adminUsers = [],
       superUsers,
       ownersGroup,
-      directoryLog = Just $ ps </> "directory_service.log",
+      blockedFragmentsFile = Nothing,
       blockedWordsFile = Nothing,
       blockedExtensionRules = Nothing,
       nameSpellingFile = Nothing,
       profileNameLimit = maxBound,
-      acceptAsObserver = Nothing,
+      captchaGenerator = Nothing,
+      directoryLog = Just $ ps </> "directory_service.log",
       serviceName = "SimpleX-Directory",
       runCLI = False,
       searchResults = 3,
@@ -182,6 +183,8 @@ testDirectoryService ps =
         superUser <## "      Group approved!"
         bob <# "SimpleX-Directory> The group ID 1 (PSA) is approved and listed in directory!"
         bob <## "Please note: if you change the group profile it will be hidden from directory until it is re-approved."
+        bob <## ""
+        bob <## "Use /filter 1 to configure anti-spam filter and /role 1 to set default member role."
         search bob "privacy" welcomeWithLink'
         search bob "security" welcomeWithLink'
         cath `connectVia` dsLink
@@ -1045,6 +1048,8 @@ reapproveGroup count superUser bob = do
   superUser <## "      Group approved!"
   bob <# "SimpleX-Directory> The group ID 1 (privacy) is approved and listed in directory!"
   bob <## "Please note: if you change the group profile it will be hidden from directory until it is re-approved."
+  bob <## ""
+  bob <## "Use /filter 1 to configure anti-spam filter and /role 1 to set default member role."
 
 addCathAsOwner :: HasCallStack => TestCC -> TestCC -> IO ()
 addCathAsOwner bob cath = do
@@ -1114,7 +1119,9 @@ runDirectory cfg opts@DirectoryOpts {directoryLog} action = do
   threadDelay 500000
   action `finally` (mapM_ hClose (directoryLogFile st) >> killThread t)
   where
-    bot st = simplexChatCore cfg (mkChatOpts opts) $ directoryService st opts
+    bot st = do
+      env <- newServiceState opts
+      simplexChatCore cfg (mkChatOpts opts) $ directoryService st opts env
 
 registerGroup :: TestCC -> TestCC -> String -> String -> IO ()
 registerGroup su u n fn = registerGroupId su u n fn 1 1
@@ -1187,6 +1194,8 @@ approveRegistrationId su u n gId ugId = do
   su <## "      Group approved!"
   u <# ("SimpleX-Directory> The group ID " <> show ugId <> " (" <> n <> ") is approved and listed in directory!")
   u <## "Please note: if you change the group profile it will be hidden from directory until it is re-approved."
+  u <## ""
+  u <## ("Use /filter " <> show ugId <> " to configure anti-spam filter and /role " <> show ugId <> " to set default member role.")
 
 connectVia :: TestCC -> String -> IO ()
 u `connectVia` dsLink = do

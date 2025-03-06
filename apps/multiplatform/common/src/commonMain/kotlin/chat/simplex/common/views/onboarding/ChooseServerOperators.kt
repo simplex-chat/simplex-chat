@@ -91,12 +91,7 @@ fun ModalData.ChooseServerOperators(
           if (onboarding && reviewForOperators.isEmpty()) {
               TextButtonBelowOnboardingButton(stringResource(MR.strings.operator_conditions_of_use)) {
                 modalManager.showModalCloseable(endButtons = { ConditionsLinkButton() }) { close ->
-                  UsageConditionsView(
-                    currUserServers = remember { mutableStateOf(emptyList()) },
-                    userServers = remember { mutableStateOf(emptyList()) },
-                    close = close,
-                    rhId = null,
-                  )
+                  SimpleConditionsView(rhId = null)
                 }
               }
           } else if (onboarding || reviewForOperators.isEmpty()) {
