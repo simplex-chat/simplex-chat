@@ -4851,9 +4851,9 @@ This is your link for group %@!</source>
         <target>Los miembros del grupo pueden enviar mensajes de voz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Mention members 👋" xml:space="preserve">
+      <trans-unit id="Mention members 👋" xml:space="preserve" approved="no">
         <source>Mention members 👋</source>
-        <target>Mencionar miembros 👋</target>
+        <target state="translated">Menciona a miembros 👋</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Menus" xml:space="preserve">
@@ -5684,9 +5684,9 @@ Requiere activación de la VPN.</target>
         <target>O para compartir en privado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Organize chats into lists" xml:space="preserve">
+      <trans-unit id="Organize chats into lists" xml:space="preserve" approved="no">
         <source>Organize chats into lists</source>
-        <target>Organiza los chats en listas</target>
+        <target state="translated">Organiza tus chats en listas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Other" xml:space="preserve">
@@ -5955,9 +5955,9 @@ Error: %@</target>
         <target>Nombres de archivos privados</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Private media file names." xml:space="preserve">
+      <trans-unit id="Private media file names." xml:space="preserve" approved="no">
         <source>Private media file names.</source>
-        <target>Nombres privados de archivos de media.</target>
+        <target state="translated">Nombres privados en archivos de media.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private message routing" xml:space="preserve">
@@ -7129,9 +7129,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Úsalo en lugar de la autenticación del sistema.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set message expiration in chats." xml:space="preserve">
+      <trans-unit id="Set message expiration in chats." xml:space="preserve" approved="no">
         <source>Set message expiration in chats.</source>
-        <target>Establece vencimiento de los mensajes en chats.</target>
+        <target state="translated">Establece el vencimiento para los mensajes en los chats.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passcode" xml:space="preserve">
@@ -8259,8 +8259,9 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
         <target>¿Actualizar configuración?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Updated conditions" xml:space="preserve">
+      <trans-unit id="Updated conditions" xml:space="preserve" approved="no">
         <source>Updated conditions</source>
+        <target state="translated">Condiciones actualizadas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve">
@@ -9840,12 +9841,14 @@ Repeat connection request?</source>
         <target>p2p</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="pending" xml:space="preserve">
+      <trans-unit id="pending" xml:space="preserve" approved="no">
         <source>pending</source>
+        <target state="translated">pendiente</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="pending approval" xml:space="preserve">
+      <trans-unit id="pending approval" xml:space="preserve" approved="no">
         <source>pending approval</source>
+        <target state="translated">pendiente de aprobación</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="quantum resistant e2e encryption" xml:space="preserve">
@@ -9863,8 +9866,9 @@ Repeat connection request?</source>
         <target>confirmación recibida…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="rejected" xml:space="preserve">
+      <trans-unit id="rejected" xml:space="preserve" approved="no">
         <source>rejected</source>
+        <target state="translated">rechazado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="rejected call" xml:space="preserve">
