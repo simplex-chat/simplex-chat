@@ -2354,7 +2354,7 @@
     <string name="v6_3_private_media_file_names">Nombres privados en archivos de media.</string>
     <string name="v6_3_faster_deletion_of_groups">Eliminación más rápida de grupos.</string>
     <string name="v6_3_faster_sending_messages">Envío más rápido de mensajes.</string>
-    <string name="v6_3_reports_descr">Ayuda a los admins moderar sus grupos.</string>
+    <string name="v6_3_reports_descr">Ayuda a los admins a moderar sus grupos.</string>
     <string name="v6_3_better_groups_performance">Rendimiento de grupos mejorado</string>
     <string name="v6_3_better_privacy_and_security">Privacidad y seguridad mejoradas</string>
     <string name="v6_3_reports">Envía informes privados</string>
