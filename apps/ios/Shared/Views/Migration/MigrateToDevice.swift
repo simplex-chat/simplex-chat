@@ -539,7 +539,7 @@ struct MigrateToDevice: View {
                     chatInitControllerRemovingDatabases()
                 } else if ChatModel.shared.chatRunning == true {
                     // cannot delete storage if chat is running
-                    try await apiStopChat()
+                    try await stopChatAsync()
                 }
                 try await apiDeleteStorage()
                 try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
@@ -584,7 +584,6 @@ struct MigrateToDevice: View {
         AppChatState.shared.set(.active)
         Task {
             do {
-                ChatReceiver.shared.stop()
                 resetChatCtrl()
                 try initializeChat(start: false, confirmStart: false, dbKey: passphrase, refreshInvitations: true, confirmMigrations: confirmation)
                 var appSettings = try apiGetAppSettings(settings: AppSettings.current.prepareForExport())
