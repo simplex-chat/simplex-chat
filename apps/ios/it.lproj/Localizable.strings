@@ -3831,7 +3831,13 @@
 "peer-to-peer" = "peer-to-peer";
 
 /* No comment provided by engineer. */
+"pending" = "in attesa";
+
+/* No comment provided by engineer. */
 "Pending" = "In attesa";
+
+/* No comment provided by engineer. */
+"pending approval" = "in attesa di approvazione";
 
 /* No comment provided by engineer. */
 "Periodic" = "Periodicamente";
@@ -4175,6 +4181,9 @@
 
 /* No comment provided by engineer. */
 "Reject contact request" = "Rifiuta la richiesta di contatto";
+
+/* No comment provided by engineer. */
+"rejected" = "rifiutato";
 
 /* call status */
 "rejected call" = "chiamata rifiutata";
@@ -5411,6 +5420,9 @@
 
 /* No comment provided by engineer. */
 "Update settings?" = "Aggiornare le impostazioni?";
+
+/* No comment provided by engineer. */
+"Updated conditions" = "Condizioni aggiornate";
 
 /* rcv group event chat item */
 "updated group profile" = "ha aggiornato il profilo del gruppo";
