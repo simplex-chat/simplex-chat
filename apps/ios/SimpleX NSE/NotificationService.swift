@@ -764,6 +764,7 @@ func receiveMessages() async {
 
 func chatRecvMsg() async -> ChatResponse? {
     await withCheckedContinuation { cont in
+        logger.error("########## NotificationService chatRecvMsg -> recvSimpleXMsg")
         let resp = recvSimpleXMsg()
         cont.resume(returning: resp)
     }

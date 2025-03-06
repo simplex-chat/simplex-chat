@@ -96,6 +96,7 @@ func apiSuspendChat(expired: Bool) {
     if case .cmdOk = r, !expired {
         let startTime = CFAbsoluteTimeGetCurrent()
         while CFAbsoluteTimeGetCurrent() - startTime < 3 {
+            logger.error("########## apiSuspendChat -> recvSimpleXMsg")
             switch recvSimpleXMsg(messageTimeout: 3_500000) {
             case .chatSuspended:
                 suspended = false

@@ -584,6 +584,7 @@ struct MigrateToDevice: View {
         AppChatState.shared.set(.active)
         Task {
             do {
+                logger.error("########## MigrateToDevice stopArchiveDownloading -> resetChatCtrl")
                 resetChatCtrl()
                 try initializeChat(start: false, confirmStart: false, dbKey: passphrase, refreshInvitations: true, confirmMigrations: confirmation)
                 var appSettings = try apiGetAppSettings(settings: AppSettings.current.prepareForExport())
@@ -768,6 +769,7 @@ private class MigrationChatReceiver {
 
     func receiveMsgLoop() async {
         // TODO use function that has timeout
+        logger.error("########## MigrateToDevice receiveMsgLoop -> chatRecvMsg")
         if let msg = await chatRecvMsg(ctrl) {
             Task {
                 await TerminalItems.shared.add(.resp(.now, msg))

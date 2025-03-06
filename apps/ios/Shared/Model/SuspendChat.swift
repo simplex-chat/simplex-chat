@@ -141,6 +141,7 @@ func initChatAndMigrate(refreshInvitations: Bool = true) {
 func startChatForCall() {
     logger.debug("DEBUGGING: startChatForCall")
     if ChatModel.shared.chatRunning == true {
+        logger.error("########## SuspendChat startChatForCall -> ChatReceiver.shared.start (receiveMsgLoop)")
         ChatReceiver.shared.start()
         logger.debug("DEBUGGING: startChatForCall: after ChatReceiver.shared.start")
     }
@@ -154,6 +155,7 @@ func startChatForCall() {
 func startChatAndActivate(_ completion: @escaping () -> Void) {
     logger.debug("DEBUGGING: startChatAndActivate")
     if ChatModel.shared.chatRunning == true {
+        logger.error("########## SuspendChat startChatAndActivate -> ChatReceiver.shared.start (receiveMsgLoop)")
         ChatReceiver.shared.start()
         logger.debug("DEBUGGING: startChatAndActivate: after ChatReceiver.shared.start")
     }
