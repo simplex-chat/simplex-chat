@@ -494,7 +494,7 @@ struct ChatView: View {
 
             Button ("Cancel") {
                 closeSearch()
-                Task { await loadChat(chat: chat) }
+                searchTextChanged("")
             }
         }
         .padding(.horizontal)
@@ -585,23 +585,8 @@ struct ChatView: View {
             .padding(.vertical, -100)
             .onTapGesture { hideKeyboard() }
             .onChange(of: searchText) { s in
-                guard showSearch else { return }
-                Task {
-                    await loadChat(chat: chat, search: s)
-                    mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, revealedItems, im.chatState)
-                    await MainActor.run {
-                        scrollView.updateItems(mergedItems.boxedValue.items)
-                    }
-                    if !s.isEmpty {
-                        scrollView.scrollToBottom()
-                    } else if let index = scrollView.listState.items.lastIndex(where: { $0.hasUnread() }) {
-                        // scroll to the top unread item
-                        scrollView.scrollToItem(index)
-                        loadLastItems($loadingMoreItems, loadingBottomItems: $loadingBottomItems, chat)
-                    } else {
-                        scrollView.scrollToBottom()
-                        loadLastItems($loadingMoreItems, loadingBottomItems: $loadingBottomItems, chat)
-                    }
+                if showSearch {
+                    searchTextChanged(s)
                 }
             }
             .onChange(of: im.itemAdded) { added in
@@ -649,6 +634,26 @@ struct ChatView: View {
         loadLastItems($loadingMoreItems, loadingBottomItems: $loadingBottomItems, chat)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             allowLoadMoreItems = true
+        }
+    }
+
+    private func searchTextChanged(_ s: String) {
+        Task {
+            await loadChat(chat: chat, search: s)
+            mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, revealedItems, im.chatState)
+            await MainActor.run {
+                scrollView.updateItems(mergedItems.boxedValue.items)
+            }
+            if !s.isEmpty {
+                scrollView.scrollToBottom()
+            } else if let index = scrollView.listState.items.lastIndex(where: { $0.hasUnread() }) {
+                // scroll to the top unread item
+                scrollView.scrollToItem(index)
+                loadLastItems($loadingMoreItems, loadingBottomItems: $loadingBottomItems, chat)
+            } else {
+                scrollView.scrollToBottom()
+                loadLastItems($loadingMoreItems, loadingBottomItems: $loadingBottomItems, chat)
+            }
         }
     }
 
