@@ -1243,9 +1243,9 @@
         <target>Grupos mejorados</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better groups performance" xml:space="preserve">
+      <trans-unit id="Better groups performance" xml:space="preserve" approved="no">
         <source>Better groups performance</source>
-        <target>Mejor rendimiento de los grupos</target>
+        <target state="translated">Rendimiento de grupos mejorado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better message dates." xml:space="preserve">
@@ -1268,9 +1268,9 @@
         <target>Notificaciones mejoradas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better privacy and security" xml:space="preserve">
+      <trans-unit id="Better privacy and security" xml:space="preserve" approved="no">
         <source>Better privacy and security</source>
-        <target>Mejor privacidad y seguridad</target>
+        <target state="translated">Privacidad y seguridad mejoradas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better security ✅" xml:space="preserve">
@@ -3944,9 +3944,9 @@ Error: %2$@</target>
         <target>GIFs y stickers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Get notified when mentioned." xml:space="preserve">
+      <trans-unit id="Get notified when mentioned." xml:space="preserve" approved="no">
         <source>Get notified when mentioned.</source>
-        <target>Las menciones ahora notifican.</target>
+        <target state="translated">Las menciones ahora se notifican.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Good afternoon!" xml:space="preserve">
@@ -4064,9 +4064,9 @@ Error: %2$@</target>
         <target>Ayuda</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Help admins moderating their groups." xml:space="preserve">
+      <trans-unit id="Help admins moderating their groups." xml:space="preserve" approved="no">
         <source>Help admins moderating their groups.</source>
-        <target>Ayuda a los admins moderar sus grupos.</target>
+        <target state="translated">Ayuda a los admins a moderar sus grupos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Hidden" xml:space="preserve">
