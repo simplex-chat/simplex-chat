@@ -339,7 +339,7 @@
     <string name="smp_server_test_compare_file">Fájl-összehasonlítás</string>
     <string name="your_chats">Csevegések</string>
     <string name="delete_message__question">Törli az üzenetet?</string>
-    <string name="delete_pending_connection__question">Törli a függőben lévő kapcsolódást?</string>
+    <string name="delete_pending_connection__question">Törli a függőben lévő meghívót?</string>
     <string name="database_encrypted">Adatbázis titkosítva!</string>
     <string name="clear_chat_question">Kiüríti a csevegést?</string>
     <string name="database_downgrade">Adatbázis visszafejlesztése</string>
@@ -560,7 +560,7 @@
     <string name="error_updating_link_for_group">Hiba a csoporthivatkozás frissítésekor</string>
     <string name="group_member_status_group_deleted">a csoport törölve</string>
     <string name="snd_group_event_group_profile_updated">csoportprofil frissítve</string>
-    <string name="error_deleting_pending_contact_connection">Hiba a függőben lévő partner kapcsolatának törlésekor</string>
+    <string name="error_deleting_pending_contact_connection">Hiba a függőben lévő meghívó törlésekor</string>
     <string name="error_importing_database">Hiba a csevegési adatbázis importálásakor</string>
     <string name="error_enabling_delivery_receipts">Hiba a kézbesítési jelentések engedélyezésekor!</string>
     <string name="error_saving_xftp_servers">Hiba az XFTP-kiszolgálók mentésekor</string>
@@ -778,7 +778,7 @@
     <string name="loading_remote_file_title">A fájl betöltése…</string>
     <string name="no_contacts_to_add">Nincs hozzáadandó partner</string>
     <string name="v4_5_message_draft">Üzenetvázlat</string>
-    <string name="display_name_invited_to_connect">meghívta, hogy csatlakozzon</string>
+    <string name="display_name_invited_to_connect">meghívta egy partnerét</string>
     <string name="add_contact">Egyszer használható meghívási hivatkozás</string>
     <string name="notifications">Értesítések</string>
     <string name="images_limit_desc">Egyszerre csak 10 kép küldhető el</string>
