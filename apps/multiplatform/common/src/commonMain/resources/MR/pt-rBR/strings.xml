@@ -1062,7 +1062,7 @@
     <string name="you_can_turn_on_lock">Você pode ativar o bloqueio SimpleX via configurações.</string>
     <string name="alert_title_msg_bad_hash">Hash de mensagem incorreta</string>
     <string name="alert_text_msg_bad_hash">O hash da mensagem anterior é diferente.</string>
-    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d descriptografia das mensagens falhou</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d mensagens falharam em serem descriptografadas.</string>
     <string name="alert_title_msg_bad_id">ID de mensagem incorreta</string>
     <string name="alert_text_msg_bad_id">A ID da próxima mensagem está incorreta (menor ou igual à anterior).
 \nIsso pode acontecer por causa de algum bug ou quando a conexão está comprometida.</string>
@@ -2065,15 +2065,15 @@
     <string name="switching_profile_error_message">Sua conexão foi movida para %s, mas um erro inesperado ocorreu ao redirecioná-lo para o seu perfil.</string>
     <string name="n_file_errors">%1$d erro(s) de arquivo(s):
 \n%2$s</string>
-    <string name="n_other_file_errors">%1$d outro erro de arquivo.</string>
+    <string name="n_other_file_errors">%1$d outro(s) erro(s) de arquivo(s).</string>
     <string name="error_forwarding_messages">Erro ao encaminhar mensagens.</string>
     <string name="forward_alert_title_messages_to_forward">Encaminhar %1$s mensagens?</string>
     <string name="forward_alert_forward_messages_without_files">Encaminhar mensagens sem arquivos?</string>
     <string name="forward_files_messages_deleted_after_selection_desc">As mensagens foram excluidas após vocês selecioná-las.</string>
     <string name="forward_alert_title_nothing_to_forward">Nada para encaminhar!</string>
     <string name="forward_files_in_progress_desc">%1$d o(s) arquivo(s) ainda está(ão) sendo baixado(s).</string>
-    <string name="forward_files_missing_desc">%1$d arquivos foram excluidos.</string>
-    <string name="forward_files_not_accepted_desc">%1$d arquivos não foram baixados.</string>
+    <string name="forward_files_missing_desc">%1$d arquivo(s) foi(ram) excluído(s).</string>
+    <string name="forward_files_not_accepted_desc">%1$d arquivo(s) não foi(ram) baixado(s).</string>
     <string name="forward_files_not_accepted_receive_files">Baixar</string>
     <string name="forward_multiple">Emcaminhar mensagens…</string>
     <string name="compose_forward_messages_n">Encaminhando %1$s mensagens.</string>
@@ -2140,7 +2140,7 @@
     <string name="connect_plan_chat_already_exists">Chat já existente!</string>
     <string name="debug_logs">Ativar logs</string>
     <string name="block_members_for_all_question">Bloquear membros para todos?</string>
-    <string name="v6_1_delete_many_messages_descr">Deletar or moderar até 200 mensagens.</string>
+    <string name="v6_1_delete_many_messages_descr">Deletar ou moderar até 200 mensagens.</string>
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[As condições serão aceitas pelo(s) operador(es): <b>%s</b>.]]></string>
     <string name="operators_conditions_will_also_apply"><![CDATA[Essas condições também serão aplicadas para: <b>%s</b>.]]></string>
     <string name="direct_messages_are_prohibited_in_chat">Mensagens diretas entre membros são proibidas neste chat.</string>
@@ -2220,4 +2220,5 @@
     <string name="sync_connection_question">Reparar conexão?</string>
     <string name="error_creating_report">Erro ao criar denúncia</string>
     <string name="info_row_chat">Chat</string>
+    <string name="your_servers">Seus servidores</string>
 </resources>
