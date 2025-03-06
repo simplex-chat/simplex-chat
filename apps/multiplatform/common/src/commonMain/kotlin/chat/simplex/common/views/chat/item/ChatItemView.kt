@@ -238,15 +238,16 @@ fun ChatItemView(
       val buttonHovered = buttonInteractionSource.collectIsHoveredAsState()
       val buttonPressed = buttonInteractionSource.collectIsPressedAsState()
       val buttonActivated = remember { derivedStateOf { buttonHovered.value || buttonPressed.value } }
+      val alpha = if (parentActivated.value || buttonActivated.value || hoveredItemId.value == cItem.id) 1f else 0.4f
       IconButton(
         onClick,
         Modifier
           .padding(start = if (alignStart) 0.dp else DEFAULT_PADDING_HALF + 3.dp, end = if (alignStart) DEFAULT_PADDING_HALF + 3.dp else 0.dp)
-          .size(22.dp)
-          .alpha(if (parentActivated.value || buttonActivated.value || hoveredItemId.value == cItem.id) 1f else 0.4f),
+          .background(MaterialTheme.colors.secondary.copy(alpha), CircleShape)
+          .size(22.dp),
         interactionSource = buttonInteractionSource
       ) {
-        Icon(painterResource(icon), null, Modifier.size(22.dp), tint = MaterialTheme.colors.secondary)
+        Icon(painterResource(icon), null, Modifier.size(22.dp), tint = Color.White.copy(alpha))
       }
     }
 
@@ -294,7 +295,7 @@ fun ChatItemView(
               .combinedClickable(
                 onLongClick = { showMenu.value = true },
                 onClick = {
-                  if (appPlatform.isAndroid) {
+                  if (appPlatform.isAndroid && (searchIsNotBlank.value || cItem.meta.itemForwarded?.chatTypeApiIdMsgId != null)) {
                     hoveredItemId.value = if (hoveredItemId.value == cItem.id) null else cItem.id
                   }
                   onClick()
