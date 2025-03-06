@@ -632,7 +632,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
         }
         (view as? ReusableView)?.prepareForReuse()
         view.isHidden = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             if view.isHidden { view.removeFromSuperview() }
         }
     }

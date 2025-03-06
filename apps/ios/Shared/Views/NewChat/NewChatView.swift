@@ -1205,12 +1205,14 @@ func openKnownContact(_ contact: Contact, dismiss: Bool, showAlreadyExistsAlert:
             DispatchQueue.main.async {
                 if dismiss {
                     dismissAllSheets(animated: true) {
-                        ItemsModel.shared.loadOpenChat(c.id)
-                        showAlreadyExistsAlert?()
+                        ItemsModel.shared.loadOpenChat(c.id) {
+                            showAlreadyExistsAlert?()
+                        }
                     }
                 } else {
-                    ItemsModel.shared.loadOpenChat(c.id)
-                    showAlreadyExistsAlert?()
+                    ItemsModel.shared.loadOpenChat(c.id) {
+                        showAlreadyExistsAlert?()
+                    }
                 }
             }
         }
@@ -1224,12 +1226,14 @@ func openKnownGroup(_ groupInfo: GroupInfo, dismiss: Bool, showAlreadyExistsAler
             DispatchQueue.main.async {
                 if dismiss {
                     dismissAllSheets(animated: true) {
-                        ItemsModel.shared.loadOpenChat(g.id)
-                        showAlreadyExistsAlert?()
+                        ItemsModel.shared.loadOpenChat(g.id) {
+                            showAlreadyExistsAlert?()
+                        }
                     }
                 } else {
-                    ItemsModel.shared.loadOpenChat(g.id)
-                    showAlreadyExistsAlert?()
+                    ItemsModel.shared.loadOpenChat(g.id) {
+                        showAlreadyExistsAlert?()
+                    }
                 }
             }
         }
