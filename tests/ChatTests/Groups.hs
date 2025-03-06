@@ -79,6 +79,8 @@ chatGroupTests = do
     it "moderate message of another group member (full delete)" testGroupModerateFullDelete
     it "moderate message that arrives after the event of moderation" testGroupDelayedModeration
     it "moderate message that arrives after the event of moderation (full delete)" testGroupDelayedModerationFullDelete
+    it "remove member with messages (full deletion is enabled)" testDeleteMemberWithMessages
+    it "remove member with messages mark deleted" testDeleteMemberMarkMessagesDeleted
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
@@ -1800,6 +1802,67 @@ testGroupDelayedModerationFullDelete ps = do
   where
     -- version before forwarding, so cath doesn't expect alice to forward messages (groupForwardVersion = 4)
     cfg = testCfg {chatVRange = mkVersionRange (VersionChat 1) (VersionChat 3)}
+
+testDeleteMemberWithMessages :: HasCallStack => TestParams -> IO ()
+testDeleteMemberWithMessages =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      threadDelay 750000
+      alice ##> "/set delete #team on"
+      alice <## "updated group preferences:"
+      alice <## "Full deletion: on"
+      threadDelay 750000
+      concurrentlyN_
+        [ do
+            bob <## "alice updated group #team:"
+            bob <## "updated group preferences:"
+            bob <## "Full deletion: on",
+          do
+            cath <## "alice updated group #team:"
+            cath <## "updated group preferences:"
+            cath <## "Full deletion: on"            
+        ]
+      threadDelay 750000
+      bob #> "#team hello"
+      concurrently_
+        (alice <# "#team bob> hello")
+        (cath <# "#team bob> hello")
+      alice #$> ("/_get chat #1 count=1", chat, [(0, "hello")])
+      bob #$> ("/_get chat #1 count=1", chat, [(1, "hello")])
+      cath #$> ("/_get chat #1 count=1", chat, [(0, "hello")])
+      threadDelay 1000000
+      alice ##> "/rm #team bob messages=on"
+      alice <## "#team: you removed bob from the group with all messages"
+      bob <## "#team: alice removed you from the group with all messages"
+      bob <## "use /d #team to delete the group"
+      cath <## "#team: alice removed bob from the group with all messages"
+      alice #$> ("/_get chat #1 count=2", chat, [(0, "moderated [deleted by you]"), (1, "removed bob (Bob)")])
+      bob #$> ("/_get chat #1 count=2", chat, [(1, "moderated [deleted by alice]"), (0, "removed you")])
+      cath #$> ("/_get chat #1 count=2", chat, [(0, "moderated [deleted by alice]"), (0, "removed bob (Bob)")])
+
+testDeleteMemberMarkMessagesDeleted :: HasCallStack => TestParams -> IO ()
+testDeleteMemberMarkMessagesDeleted =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      threadDelay 750000
+      bob #> "#team hello"
+      concurrently_
+        (alice <# "#team bob> hello")
+        (cath <# "#team bob> hello")
+      alice #$> ("/_get chat #1 count=1", chat, [(0, "hello")])
+      bob #$> ("/_get chat #1 count=1", chat, [(1, "hello")])
+      cath #$> ("/_get chat #1 count=1", chat, [(0, "hello")])
+      threadDelay 1000000
+      alice ##> "/rm #team bob messages=on"
+      alice <## "#team: you removed bob from the group with all messages"
+      bob <## "#team: alice removed you from the group with all messages"
+      bob <## "use /d #team to delete the group"
+      cath <## "#team: alice removed bob from the group with all messages"
+      alice #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted by you]"), (1, "removed bob (Bob)")])
+      bob #$> ("/_get chat #1 count=2", chat, [(1, "hello [marked deleted by alice]"), (0, "removed you")])
+      cath #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted by alice]"), (0, "removed bob (Bob)")])
 
 testSendMulti :: HasCallStack => TestParams -> IO ()
 testSendMulti =

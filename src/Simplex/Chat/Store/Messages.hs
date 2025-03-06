@@ -2158,18 +2158,18 @@ deleteDirectChatItem db User {userId} Contact {contactId} ci = do
     (userId, contactId, itemId)
 
 deleteChatItemMessages_ :: DB.Connection -> ChatItemId -> IO ()
-deleteChatItemMessages_ db itemId =
-  DB.execute
-    db
-    [sql|
-      DELETE FROM messages
-      WHERE message_id IN (
-        SELECT message_id
-        FROM chat_item_messages
-        WHERE chat_item_id = ?
-      )
-    |]
-    (Only itemId)
+deleteChatItemMessages_ db itemId = DB.execute db deleteChatItemMessagesQuery (Only itemId)
+
+deleteChatItemMessagesQuery :: Query
+deleteChatItemMessagesQuery =
+  [sql|
+    DELETE FROM messages
+    WHERE message_id IN (
+      SELECT message_id
+      FROM chat_item_messages
+      WHERE chat_item_id = ?
+    )
+  |]
 
 deleteChatItemVersions_ :: DB.Connection -> ChatItemId -> IO ()
 deleteChatItemVersions_ db itemId =
@@ -2368,22 +2368,32 @@ updateGroupChatItemModerated db User {userId} GroupInfo {groupId} ci m@GroupMemb
   pure ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted = Just (CIModerated (Just deletedTs) m), editable = False, deletable = False}, formattedText = Nothing}
 
 updateMemberCIsModerated :: MsgDirectionI d => DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> SMsgDirection d -> UTCTime -> IO ()
-updateMemberCIsModerated db User {userId} GroupInfo {groupId} member byGroupMember md deletedTs = do
-  currentTs <- getCurrentTime
-  deleteMemberCIsMessages_ db member
-  deleteMemberCIsVersions_ db member
-  liftIO $
-    DB.execute
-      db
+updateMemberCIsModerated db User {userId} GroupInfo {groupId, membership} member byGroupMember md deletedTs = do
+  itemIds <- updateCIs =<< getCurrentTime
+  DB.executeMany db deleteChatItemMessagesQuery itemIds
+  DB.executeMany db "DELETE FROM chat_item_versions WHERE chat_item_id = ?" itemIds
+  where
+    memId = groupMemberId' member
+    updateQuery =
       [sql|
         UPDATE chat_items
         SET item_deleted = 1, item_deleted_ts = ?, item_deleted_by_group_member_id = ?, item_content = ?, item_text = ?, updated_at = ?
-        WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+        WHERE user_id = ? AND group_id = ?
       |]
-      (deletedTs, groupMemberId' byGroupMember, msgDirToModeratedContent_ md, ciModeratedText, currentTs, userId, groupId, groupMemberId' member)
-  where
-    deleteMemberCIsMessages_ = undefined
-    deleteMemberCIsVersions_ = undefined
+    updateCIs :: UTCTime -> IO [Only Int64]
+    updateCIs currentTs
+      | memId == groupMemberId' membership =
+          DB.query
+            db
+            (updateQuery <> " AND group_member_id IS NULL AND item_sent = 1 RETURNING chat_item_id")
+            (columns :. (userId, groupId))
+      | otherwise =
+          DB.query
+            db
+            (updateQuery <> " AND group_member_id = ? RETURNING chat_item_id")
+            (columns :. (userId, groupId, memId))
+      where
+        columns = (deletedTs, groupMemberId' byGroupMember, msgDirToModeratedContent_ md, ciModeratedText, currentTs)
 
 updateGroupCIBlockedByAdmin :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> UTCTime -> IO (ChatItem 'CTGroup d)
 updateGroupCIBlockedByAdmin db User {userId} GroupInfo {groupId} ci deletedTs = do
@@ -2432,16 +2442,29 @@ markGroupChatItemDeleted db User {userId} GroupInfo {groupId} ci@ChatItem {meta}
   pure ci {meta = meta {itemDeleted, editable = False, deletable = False}}
 
 markMemberCIsDeleted :: DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> UTCTime -> IO ()
-markMemberCIsDeleted db User {userId} GroupInfo {groupId} member byGroupMember deletedTs = do
-  currentTs <- liftIO getCurrentTime
-  DB.execute
-    db
-    [sql|
-      UPDATE chat_items
-      SET item_deleted = ?, item_deleted_ts = ?, item_deleted_by_group_member_id = ?, updated_at = ?
-      WHERE user_id = ? AND group_id = ? AND group_member_id = ?
-    |]
-    (DBCIDeleted, deletedTs, groupMemberId' byGroupMember, currentTs, userId, groupId, groupMemberId' member)
+markMemberCIsDeleted db User {userId} GroupInfo {groupId, membership} member byGroupMember deletedTs =
+  updateCIs =<< getCurrentTime
+  where
+    memId = groupMemberId' member
+    updateQuery =
+      [sql|
+        UPDATE chat_items
+        SET item_deleted = ?, item_deleted_ts = ?, item_deleted_by_group_member_id = ?, updated_at = ?
+        WHERE user_id = ? AND group_id = ?
+      |]
+    updateCIs currentTs
+      | memId == groupMemberId' membership =
+          DB.execute
+            db
+            (updateQuery <> " AND group_member_id IS NULL AND item_sent = 1")
+            (columns :. (userId, groupId))
+      | otherwise =
+          DB.execute
+            db
+            (updateQuery <> " AND group_member_id = ?")
+            (columns :. (userId, groupId, memId))
+      where
+        columns = (DBCIDeleted, deletedTs, groupMemberId' byGroupMember, currentTs)
 
 markGroupChatItemBlocked :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup 'MDRcv -> IO (ChatItem 'CTGroup 'MDRcv)
 markGroupChatItemBlocked db User {userId} GroupInfo {groupId} ci@ChatItem {meta} = do
