@@ -1412,7 +1412,7 @@
     <string name="v4_6_group_welcome_message_descr">Megjelenítendő üzenet beállítása az új tagok számára!</string>
     <string name="whats_new_thanks_to_users_contribute_weblate">Köszönet a felhasználóknak – hozzájárulás a Weblate-en!</string>
     <string name="sending_delivery_receipts_will_be_enabled">A kézbesítési jelentések küldése az összes partnere számára engedélyezve lesz.</string>
-    <string name="network_option_protocol_timeout_per_kb">Protokoll időtúllépése KB-onként</string>
+    <string name="network_option_protocol_timeout_per_kb">Protokoll időtúllépése kB-onként</string>
     <string name="database_backup_can_be_restored">Az adatbázis jelmondatának módosítására tett kísérlet nem fejeződött be.</string>
     <string name="enable_automatic_deletion_message">Ez a művelet nem vonható vissza – a kijelöltnél korábban küldött és fogadott üzenetek törölve lesznek. Ez több percet is igénybe vehet.</string>
     <string name="profile_is_only_shared_with_your_contacts">A profilja csak a partnereivel van megosztva.</string>
