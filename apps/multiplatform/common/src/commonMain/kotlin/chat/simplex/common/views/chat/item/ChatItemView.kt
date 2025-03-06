@@ -233,7 +233,7 @@ fun ChatItemView(
     }
 
     @Composable
-    fun GoToItemInnerButton(alignStart: Boolean, icon: ImageResource, parentActivated: State<Boolean>, onClick: () -> Unit) {
+    fun GoToItemInnerButton(alignStart: Boolean, icon: ImageResource, iconSize: Dp = 22.dp, parentActivated: State<Boolean>, onClick: () -> Unit) {
       val buttonInteractionSource = remember { MutableInteractionSource() }
       val buttonHovered = buttonInteractionSource.collectIsHoveredAsState()
       val buttonPressed = buttonInteractionSource.collectIsPressedAsState()
@@ -247,7 +247,7 @@ fun ChatItemView(
           .size(22.dp),
         interactionSource = buttonInteractionSource
       ) {
-        Icon(painterResource(icon), null, Modifier.size(22.dp), tint = Color.White.copy(alpha))
+        Icon(painterResource(icon), null, Modifier.size(iconSize), tint = Color.White.copy(alpha))
       }
     }
 
@@ -255,14 +255,14 @@ fun ChatItemView(
     fun GoToItemButton(alignStart: Boolean, parentActivated: State<Boolean>) {
       val chatTypeApiIdMsgId = cItem.meta.itemForwarded?.chatTypeApiIdMsgId
       if (searchIsNotBlank.value) {
-        GoToItemInnerButton(alignStart, MR.images.ic_search, parentActivated) {
+        GoToItemInnerButton(alignStart, MR.images.ic_search, 17.dp, parentActivated) {
           withBGApi {
             openChat(rhId, cInfo.chatType, cInfo.apiId, null, cItem.id)
             closeReportsIfNeeded()
           }
         }
       } else if (chatTypeApiIdMsgId != null) {
-        GoToItemInnerButton(alignStart, MR.images.ic_arrow_forward, parentActivated) {
+        GoToItemInnerButton(alignStart, MR.images.ic_arrow_forward, 22.dp, parentActivated) {
           val (chatType, apiId, msgId) = chatTypeApiIdMsgId
           withBGApi {
             openChat(rhId, chatType, apiId, null, msgId)
