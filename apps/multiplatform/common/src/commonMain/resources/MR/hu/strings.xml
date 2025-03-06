@@ -1368,7 +1368,7 @@
     <string name="network_session_mode_transport_isolation">Átvitel-izoláció</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Ettől a csoporttól nem fog értesítéseket kapni. A csevegési előzmények megmaradnak.</string>
     <string name="database_is_not_encrypted">A csevegési adatbázis nem titkosított – állítson be egy jelmondatot annak védelméhez.</string>
-    <string name="network_disable_socks">Közvetlen internet kapcsolat használata?</string>
+    <string name="network_disable_socks">Közvetlen internetkapcsolat használata?</string>
     <string name="you_will_still_receive_calls_and_ntfs">Továbbra is kap hívásokat és értesítéseket a némított profiloktól, ha azok aktívak.</string>
     <string name="group_main_profile_sent">A fő csevegési profilja el lesz küldve a csoporttagok számára</string>
     <string name="you_can_enable_delivery_receipts_later_alert">Később engedélyezheti őket az „Adatvédelem és biztonság” menüben.</string>
@@ -1677,7 +1677,7 @@
     <string name="permissions_required">Engedélyek megadása</string>
     <string name="network_type_ethernet">Vezetékes Ethernet</string>
     <string name="network_type_cellular">Mobilhálózat</string>
-    <string name="settings_section_title_network_connection">Internetkapcsolat</string>
+    <string name="settings_section_title_network_connection">Hálózati kapcsolat</string>
     <string name="network_type_no_network_connection">Nincs hálózati kapcsolat</string>
     <string name="network_type_other">További</string>
     <string name="network_type_network_wifi">Wi-Fi</string>
