@@ -624,12 +624,12 @@
       </trans-unit>
       <trans-unit id="Accept connection request?" xml:space="preserve" approved="no">
         <source>Accept connection request?</source>
-        <target state="translated">Elfogadja a kapcsolódási kérést?</target>
+        <target state="translated">Elfogadja a meghívást?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept contact request from %@?" xml:space="preserve" approved="no">
         <source>Accept contact request from %@?</source>
-        <target state="translated">Elfogadja %@ kapcsolódási kérését?</target>
+        <target state="translated">Elfogadja %@ meghívását?</target>
         <note>notification body</note>
       </trans-unit>
       <trans-unit id="Accept incognito" xml:space="preserve">
@@ -1193,9 +1193,9 @@
         <target>Automatikus elfogadás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Auto-accept contact requests" xml:space="preserve">
+      <trans-unit id="Auto-accept contact requests" xml:space="preserve" approved="no">
         <source>Auto-accept contact requests</source>
-        <target>Kapcsolatkérések automatikus elfogadása</target>
+        <target state="translated">Meghívások automatikus elfogadása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Auto-accept images" xml:space="preserve">
@@ -2001,9 +2001,9 @@ Ez az Ön egyszer használható meghívási hivatkozása!</target>
         <target>Kapcsolódási értesítések</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection request sent!" xml:space="preserve">
+      <trans-unit id="Connection request sent!" xml:space="preserve" approved="no">
         <source>Connection request sent!</source>
-        <target>Kapcsolatkérés elküldve!</target>
+        <target state="translated">Meghívás elküldve!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection requires encryption renegotiation." xml:space="preserve">
@@ -2572,7 +2572,7 @@ Ez az Ön egyszer használható meghívási hivatkozása!</target>
       </trans-unit>
       <trans-unit id="Delete pending connection?" xml:space="preserve" approved="no">
         <source>Delete pending connection?</source>
-        <target state="translated">Törli a függőben lévő kapcsolódást?</target>
+        <target state="translated">Törli a függőben lévő meghívót?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete profile" xml:space="preserve">
@@ -3186,9 +3186,9 @@ Ez az Ön egyszer használható meghívási hivatkozása!</target>
         <target>Hiba a feltételek elfogadásakor</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error accepting contact request" xml:space="preserve">
+      <trans-unit id="Error accepting contact request" xml:space="preserve" approved="no">
         <source>Error accepting contact request</source>
-        <target>Hiba történt a kapcsolatkérés elfogadásakor</target>
+        <target state="translated">Hiba történt a meghívás elfogadásakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
@@ -5191,9 +5191,9 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Új csevegési élmény 🎉</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New contact request" xml:space="preserve">
+      <trans-unit id="New contact request" xml:space="preserve" approved="no">
         <source>New contact request</source>
-        <target>Új kapcsolatkérés</target>
+        <target state="translated">Új meghívás</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="New contact:" xml:space="preserve">
@@ -6323,9 +6323,9 @@ Engedélyezze a *Hálózat és kiszolgálók* menüben.</target>
         <target>Elutasítás (a feladó NEM kap értesítést)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reject contact request" xml:space="preserve">
+      <trans-unit id="Reject contact request" xml:space="preserve" approved="no">
         <source>Reject contact request</source>
-        <target>Kapcsolatkérés elutasítása</target>
+        <target state="translated">Meghívás elutasítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Relay server is only used if necessary. Another party can observe your IP address." xml:space="preserve">
@@ -6385,7 +6385,7 @@ Engedélyezze a *Hálózat és kiszolgálók* menüben.</target>
       </trans-unit>
       <trans-unit id="Repeat connection request?" xml:space="preserve" approved="no">
         <source>Repeat connection request?</source>
-        <target state="translated">Megismétli a kapcsolódási kérést?</target>
+        <target state="translated">Megismétli a meghívást?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Repeat download" xml:space="preserve">
@@ -6400,7 +6400,7 @@ Engedélyezze a *Hálózat és kiszolgálók* menüben.</target>
       </trans-unit>
       <trans-unit id="Repeat join request?" xml:space="preserve" approved="no">
         <source>Repeat join request?</source>
-        <target state="translated">Megismétli a csatlakozási kérést?</target>
+        <target state="translated">Megismétli a meghívást?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Repeat upload" xml:space="preserve">
@@ -6914,9 +6914,9 @@ Engedélyezze a *Hálózat és kiszolgálók* menüben.</target>
         <target>A fájl küldője visszavonta az átvitelt.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve">
+      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve" approved="no">
         <source>Sender may have deleted the connection request.</source>
-        <target>A küldő törölhette a kapcsolatkérést.</target>
+        <target state="translated">A küldő törölhette a meghívást.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending delivery receipts will be enabled for all contacts in all visible chat profiles." xml:space="preserve">
@@ -7720,9 +7720,9 @@ It can happen because of some bug or when the connection is compromised.</source
 Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
+      <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve" approved="no">
         <source>The app can notify you when you receive messages or contact requests - please open settings to enable.</source>
-        <target>Az alkalmazás értesíteni fogja, amikor üzeneteket vagy kapcsolatkéréseket kap – beállítások megnyitása az engedélyezéshez.</target>
+        <target state="translated">Az alkalmazás értesíteni fogja, amikor üzeneteket vagy meghívásokat kap – a beállítások menüben engedélyezheti.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The app protects your privacy by using different operators in each conversation." xml:space="preserve">
@@ -9679,9 +9679,9 @@ Megismétli a kapcsolódási kérést?</target>
         <target>meghívta őt: %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="invited to connect" xml:space="preserve">
+      <trans-unit id="invited to connect" xml:space="preserve" approved="no">
         <source>invited to connect</source>
-        <target>meghívta, hogy csatlakozzon</target>
+        <target state="translated">meghívta egy partnerét</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="invited via your group link" xml:space="preserve">
