@@ -618,6 +618,7 @@ struct MigrateFromDevice: View {
             if m.chatDbChanged {
                 logger.error("########## MigrateFromDevice startChatAndDismiss -> resetChatCtrl")
                 resetChatCtrl()
+                logger.error("########## MigrateFromDevice startChatAndDismiss -> initializeChat")
                 try initializeChat(start: true)
                 m.chatDbChanged = false
             } else {

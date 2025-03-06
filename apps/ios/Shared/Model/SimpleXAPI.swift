@@ -1722,6 +1722,7 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     let m = ChatModel.shared
     m.ctrlInitInProgress = true
     defer { m.ctrlInitInProgress = false }
+    logger.error("########## initializeChat -> chatMigrateInit")
     (m.chatDbEncrypted, m.chatDbStatus) = chatMigrateInit(dbKey, confirmMigrations: confirmMigrations)
     if  m.chatDbStatus != .ok { return }
     NetworkObserver.shared.restartMonitor()

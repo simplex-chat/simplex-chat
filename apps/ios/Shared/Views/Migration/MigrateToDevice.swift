@@ -584,8 +584,10 @@ struct MigrateToDevice: View {
         AppChatState.shared.set(.active)
         Task {
             do {
-                logger.error("########## MigrateToDevice stopArchiveDownloading -> resetChatCtrl")
+                ChatReceiver.shared.stop()
+                logger.error("########## MigrateToDevice startChat -> resetChatCtrl")
                 resetChatCtrl()
+                logger.error("########## MigrateToDevice startChat -> initializeChat")
                 try initializeChat(start: false, confirmStart: false, dbKey: passphrase, refreshInvitations: true, confirmMigrations: confirmation)
                 var appSettings = try apiGetAppSettings(settings: AppSettings.current.prepareForExport())
                 let hasOnionConfigured = appSettings.networkConfig?.socksProxy != nil || appSettings.networkConfig?.hostMode == .onionHost

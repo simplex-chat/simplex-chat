@@ -129,11 +129,6 @@ public let MESSAGE_TIMEOUT: Int32 = 15_000_000
 
 public func recvSimpleXMsg(_ ctrl: chat_ctrl? = nil, messageTimeout: Int32 = MESSAGE_TIMEOUT) -> ChatResponse? {
     logger.error("########## recvSimpleXMsg -> getChatCtrl")
-    if ctrl == nil {
-        while !hasChatCtrl() {
-            RunLoop.current.run(mode: .default, before: Date(timeIntervalSinceNow: 0.1))
-        }
-    }
     if let cjson = chat_recv_msg_wait(ctrl ?? getChatCtrl(), messageTimeout) {
         let s = fromCString(cjson)
         return s == "" ? nil : chatResponse(s)
