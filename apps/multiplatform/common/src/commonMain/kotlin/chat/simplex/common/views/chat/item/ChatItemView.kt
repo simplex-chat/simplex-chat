@@ -238,16 +238,34 @@ fun ChatItemView(
       val buttonHovered = buttonInteractionSource.collectIsHoveredAsState()
       val buttonPressed = buttonInteractionSource.collectIsPressedAsState()
       val buttonActivated = remember { derivedStateOf { buttonHovered.value || buttonPressed.value } }
-      val alpha = if (parentActivated.value || buttonActivated.value || hoveredItemId.value == cItem.id) 1f else 0.4f
+      val fullyVisible = parentActivated.value || buttonActivated.value || hoveredItemId.value == cItem.id
+      val mixedBackgroundColor = if (fullyVisible) {
+        if (MaterialTheme.colors.isLight) {
+          MaterialTheme.colors.secondary
+        } else {
+          MaterialTheme.colors.secondary
+        }
+      } else {
+        Color.Unspecified
+      }
+      val iconTint = if (fullyVisible) {
+        Color.White
+      } else {
+        if (MaterialTheme.colors.isLight) {
+          MaterialTheme.colors.secondary.mixWith(Color.White, 0.6f)
+        } else {
+          MaterialTheme.colors.secondary.mixWith(Color.Black, 0.6f)
+        }
+      }
       IconButton(
         onClick,
         Modifier
           .padding(start = if (alignStart) 0.dp else DEFAULT_PADDING_HALF + 3.dp, end = if (alignStart) DEFAULT_PADDING_HALF + 3.dp else 0.dp)
-          .background(MaterialTheme.colors.secondary.copy(alpha), CircleShape)
+          .then(if (fullyVisible) Modifier.background(mixedBackgroundColor, CircleShape) else Modifier)
           .size(22.dp),
         interactionSource = buttonInteractionSource
       ) {
-        Icon(painterResource(icon), null, Modifier.size(iconSize), tint = Color.White.copy(alpha))
+        Icon(painterResource(icon), null, Modifier.size(iconSize), tint = iconTint)
       }
     }
 
