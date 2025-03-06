@@ -624,6 +624,34 @@ final class ChatModel: ObservableObject {
         VoiceItemState.stopVoiceInChatView(cInfo, cItem)
     }
 
+    func removeMemberItems(_ removedMember: GroupMember, byMember: GroupMember, _ groupInfo: GroupInfo) {
+        let items = if chatId == groupInfo.id {
+            im.reversedChatItems
+        } else {
+            getChat(groupInfo.id)?.chatItems ?? []
+        }
+        let chatInfo = ChatInfo.group(groupInfo: groupInfo)
+        for item in items {
+            if case .groupSnd = item.chatDir, removedMember.groupMemberId == groupInfo.membership.groupMemberId {
+                // deleted user's sent message
+            } else if case let .groupRcv(groupMember) = item.chatDir, groupMember.groupMemberId == removedMember.groupMemberId {
+                // deleted received message
+            } else {
+                continue
+            }
+            if !groupInfo.fullGroupPreferences.fullDelete.on {
+                var updatedItem = item
+                updatedItem.meta.itemDeleted = .moderated(deletedTs: Date.now, byGroupMember: byMember)
+                _ = upsertChatItem(chatInfo, updatedItem)
+            } else {
+                removeChatItem(chatInfo, item)
+            }
+            if item.isActiveReport {
+                decreaseGroupReportsCounter(groupInfo.id)
+            }
+        }
+    }
+
     func nextChatItemData<T>(_ chatItemId: Int64, previous: Bool, map: @escaping (ChatItem) -> T?) -> T? {
         guard var i = im.reversedChatItems.firstIndex(where: { $0.id == chatItemId }) else { return nil }
         if previous {
