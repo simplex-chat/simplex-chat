@@ -4334,7 +4334,7 @@ displayNameP = safeDecodeUtf8 <$> (quoted '\'' <|> takeNameTill (\c -> isSpace c
     refChar c = c > ' ' && c /= '#' && c /= '@' && c /= '\''
 
 mkValidName :: String -> String
-mkValidName = reverse . dropWhile isSpace . fst3 . foldl' addChar ("", '\NUL', 0 :: Int)
+mkValidName = take 50 . reverse . dropWhile isSpace . fst3 . foldl' addChar ("", '\NUL', 0 :: Int)
   where
     fst3 (x, _, _) = x
     addChar (r, prev, punct) c = if validChar then (c' : r, c', punct') else (r, prev, punct)
