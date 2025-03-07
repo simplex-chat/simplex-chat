@@ -626,7 +626,10 @@ final class ChatModel: ObservableObject {
 
     func removeMemberItems(_ removedMember: GroupMember, byMember: GroupMember, _ groupInfo: GroupInfo) {
         // this should not happen, only another member can "remove" user, user can only "leave" (another event).
-        if byMember.groupMemberId == groupInfo.membership.groupMemberId { return }
+        if byMember.groupMemberId == groupInfo.membership.groupMemberId {
+            logger.debug("exiting removeMemberItems")
+            return
+        }
         let items = if chatId == groupInfo.id {
             im.reversedChatItems
         } else {
@@ -636,17 +639,17 @@ final class ChatModel: ObservableObject {
         let ts = Date.now
         for item in items {
             if case .groupSnd = item.chatDir, removedMember.groupMemberId == groupInfo.membership.groupMemberId {
-                removeMemberItem(cInfo, item, ts, .sndModerated)
+                removeMemberItem(item, .sndModerated)
             } else if case let .groupRcv(groupMember) = item.chatDir, groupMember.groupMemberId == removedMember.groupMemberId {
-                removeMemberItem(cInfo, item, ts, .rcvModerated)
+                removeMemberItem(item, .rcvModerated)
             }
         }
 
-        func removeMemberItem(_ cInfo: ChatInfo, _ item: ChatItem, _ ts: Date, _ moreratedContent: CIContent) {
+        func removeMemberItem(_ item: ChatItem, _ moderatedContent: CIContent) {
             var updatedItem = item
-            updatedItem.meta.itemDeleted = .moderated(deletedTs: ts, byGroupMember: byMember)
+            updatedItem.meta.itemDeleted = .moderated(deletedTs: Date.now, byGroupMember: byMember)
             if groupInfo.fullGroupPreferences.fullDelete.on {
-                updatedItem.content = moreratedContent
+                updatedItem.content = moderatedContent
             }
             _ = upsertChatItem(cInfo, updatedItem)
             if item.isActiveReport {
