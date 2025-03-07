@@ -1647,9 +1647,9 @@ struct ChatView: View {
                 }
                 deleteButton(ci, label: "Delete report")
             } else if let mc = ci.content.msgContent, !ci.isReport, ci.meta.itemDeleted == nil || revealed {
-                if chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction,
-                   availableReactions.count > 0 {
-                    reactionsGroup
+                let rs = availableReactions()
+                if chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction && rs.count > 0 {
+                    reactionsGroup(rs)
                 }
                 if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live && !ci.localNote {
                     replyButton
@@ -1762,21 +1762,21 @@ struct ChatView: View {
             }
         }
 
-        private var reactionsGroup: some View {
+        private func reactionsGroup(_ rs: Array<MsgReaction>) -> some View {
             if #available(iOS 16.4, *) {
                 return ControlGroup {
-                    if availableReactions.count > 4 {
-                        reactions(till: 3)
+                    if rs.count > 4 {
+                        reactions(rs, till: 3)
                         Menu {
-                            reactions(from: 3)
+                            reactions(rs, from: 3)
                         } label: {
                             Image(systemName: "ellipsis")
                         }
-                    } else { reactions() }
+                    } else { reactions(rs) }
                 }.controlGroupStyle(.compactMenu)
             } else {
                 return Menu {
-                    reactions()
+                    reactions(rs)
                 } label: {
                     Label(
                         NSLocalizedString("React…", comment: "chat item menu"),
@@ -1786,8 +1786,8 @@ struct ChatView: View {
             }
         }
 
-        func reactions(from: Int? = nil, till: Int? = nil) -> some View {
-            ForEach(availableReactions[(from ?? 0)..<(till ?? availableReactions.count)]) { reaction in
+        func reactions(_ rs: Array<MsgReaction>, from: Int? = nil, till: Int? = nil) -> some View {
+            ForEach(rs[(from ?? 0)..<(till ?? rs.count)]) { reaction in
                 Button(reaction.text) {
                     setReaction(chatItem, add: true, reaction: reaction)
                 }
@@ -1795,7 +1795,7 @@ struct ChatView: View {
         }
 
         /// Reactions, which has not been used yet
-        private var availableReactions: Array<MsgReaction> {
+        private func availableReactions() -> Array<MsgReaction> {
             MsgReaction.values
                 .filter { reaction in
                     !chatItem.reactions.contains {
