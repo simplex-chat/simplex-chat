@@ -533,7 +533,7 @@
 "All profiles" = "Все профили";
 
 /* No comment provided by engineer. */
-"All reports will be archived for you." = "Все отчеты будут заархивированы для вас.";
+"All reports will be archived for you." = "Все сообщения о нарушениях будут заархивированы для вас.";
 
 /* No comment provided by engineer. */
 "All your contacts will remain connected." = "Все контакты, которые соединились через этот адрес, сохранятся.";
@@ -581,7 +581,7 @@
 "Allow to irreversibly delete sent messages. (24 hours)" = "Разрешить необратимо удалять отправленные сообщения. (24 часа)";
 
 /* No comment provided by engineer. */
-"Allow to report messsages to moderators." = "Разрешить отправлять жалобы на сообщения модераторам.";
+"Allow to report messsages to moderators." = "Разрешить отправлять сообщения о нарушениях модераторам.";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Разрешить посылать файлы и медиа.";
@@ -689,10 +689,10 @@
 "Archive" = "Архивировать";
 
 /* No comment provided by engineer. */
-"Archive %lld reports?" = "Архивировать %lld отчёт(ов)?";
+"Archive %lld reports?" = "Архивировать %lld сообщений о нарушениях?";
 
 /* No comment provided by engineer. */
-"Archive all reports?" = "Архивировать все отчеты?";
+"Archive all reports?" = "Архивировать все сообщения о нарушениях?";
 
 /* No comment provided by engineer. */
 "Archive and upload" = "Архивировать и загрузить";
@@ -701,19 +701,19 @@
 "Archive contacts to chat later." = "Архивируйте контакты чтобы продолжить переписку.";
 
 /* No comment provided by engineer. */
-"Archive report" = "Архивировать отчет";
+"Archive report" = "Архивировать сообщение о нарушении";
 
 /* No comment provided by engineer. */
-"Archive report?" = "Архивировать отчет?";
+"Archive report?" = "Архивировать сообщение о нарушении?";
 
 /* swipe action */
-"Archive reports" = "Архивировать отчёты";
+"Archive reports" = "Архивировать сообщения о нарушениях";
 
 /* No comment provided by engineer. */
 "Archived contacts" = "Архивированные контакты";
 
 /* No comment provided by engineer. */
-"archived report" = "архивная жалоба";
+"archived report" = "заархивированное сообщение о нарушении";
 
 /* No comment provided by engineer. */
 "Archiving database" = "Подготовка архива";
@@ -1132,7 +1132,7 @@
 "colored" = "цвет";
 
 /* report reason */
-"Community guidelines violation" = "Нарушение принципов Сообщества";
+"Community guidelines violation" = "Нарушение правил группы";
 
 /* server test step */
 "Compare file" = "Сравнение файла";
@@ -1713,7 +1713,7 @@
 "Delete queue" = "Удаление очереди";
 
 /* No comment provided by engineer. */
-"Delete report" = "удалить отчёт";
+"Delete report" = "Удалить сообщение о нарушении";
 
 /* No comment provided by engineer. */
 "Delete up to 20 messages at once." = "Удаляйте до 20 сообщений за раз.";
@@ -2194,7 +2194,7 @@
 "Error creating profile!" = "Ошибка создания профиля!";
 
 /* No comment provided by engineer. */
-"Error creating report" = "Ошибка создания отчета";
+"Error creating report" = "Ошибка создания сообщения о нарушении";
 
 /* No comment provided by engineer. */
 "Error decrypting file" = "Ошибка расшифровки файла";
@@ -2812,10 +2812,10 @@
 "inactive" = "неактивен";
 
 /* report reason */
-"Inappropriate content" = "Нежелательный контент";
+"Inappropriate content" = "Неприемлемый контент";
 
 /* report reason */
-"Inappropriate profile" = "нежелательный профиль";
+"Inappropriate profile" = "Неприемлемый профиль";
 
 /* No comment provided by engineer. */
 "Incognito" = "Инкогнито";
@@ -3178,7 +3178,7 @@
 "Member inactive" = "Член неактивен";
 
 /* chat feature */
-"Member reports" = "Жалобы на участника";
+"Member reports" = "Сообщения о нарушениях";
 
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". All chat members will be notified." = "Роль участника будет изменена на \"%@\". Все участники разговора получат уведомление.";
@@ -3202,7 +3202,7 @@
 "Members can irreversibly delete sent messages. (24 hours)" = "Члены группы могут необратимо удалять отправленные сообщения. (24 часа)";
 
 /* No comment provided by engineer. */
-"Members can report messsages to moderators." = "Участники могут пожаловаться на сообщения администраторам.";
+"Members can report messsages to moderators." = "Члены группы могут пожаловаться модераторам.";
 
 /* No comment provided by engineer. */
 "Members can send direct messages." = "Члены группы могут посылать прямые сообщения.";
@@ -3999,7 +3999,7 @@
 "Prohibit messages reactions." = "Запретить реакции на сообщения.";
 
 /* No comment provided by engineer. */
-"Prohibit reporting messages to moderators." = "Запретить отправлять жалобы на сообщения модераторам.";
+"Prohibit reporting messages to moderators." = "Запретить жаловаться модераторам группы.";
 
 /* No comment provided by engineer. */
 "Prohibit sending direct messages to members." = "Запретить посылать прямые сообщения членам группы.";
@@ -4258,31 +4258,31 @@
 "Report" = "Пожаловаться";
 
 /* report reason */
-"Report content: only group moderators will see it." = "Содержание жалобы: его увидят только групповые модераторы.";
+"Report content: only group moderators will see it." = "Пожаловаться на сообщение: увидят только модераторы группы.";
 
 /* report reason */
-"Report member profile: only group moderators will see it." = "Жалоба на профиль участника: его увидят только групповые модераторы.";
+"Report member profile: only group moderators will see it." = "Пожаловаться на профиль: увидят только модераторы группы.";
 
 /* report reason */
-"Report other: only group moderators will see it." = "Другая жалоба: её увидят только модераторы.";
+"Report other: only group moderators will see it." = "Пожаловаться: увидят только модераторы группы.";
 
 /* No comment provided by engineer. */
-"Report reason?" = "Причина жалобы?";
+"Report reason?" = "Причина сообщения?";
 
 /* report reason */
-"Report spam: only group moderators will see it." = "Пожаловаться на спам: это увидит только модератор группы.";
+"Report spam: only group moderators will see it." = "Пожаловаться на спам: увидят только модераторы группы.";
 
 /* report reason */
-"Report violation: only group moderators will see it." = "Пожаловаться на нарушение: это увидит только модератор группы.";
+"Report violation: only group moderators will see it." = "Пожаловаться на нарушение: увидят только модераторы группы.";
 
 /* report in notification */
-"Report: %@" = "Жалоба: %@";
+"Report: %@" = "Сообщение о нарушении: %@";
 
 /* No comment provided by engineer. */
-"Reporting messages to moderators is prohibited." = "Жалобы на сообщения запрещены в этой группе.";
+"Reporting messages to moderators is prohibited." = "Сообщения о нарушениях запрещены в этой группе.";
 
 /* No comment provided by engineer. */
-"Reports" = "Жалобы";
+"Reports" = "Сообщения о нарушениях";
 
 /* chat list item title */
 "requested to connect" = "запрошено соединение";
@@ -4559,7 +4559,7 @@
 "Send notifications" = "Отправлять уведомления";
 
 /* No comment provided by engineer. */
-"Send private reports" = "Отправляйте приватные жалобы";
+"Send private reports" = "Вы можете сообщить о нарушениях";
 
 /* No comment provided by engineer. */
 "Send questions and ideas" = "Отправьте вопросы и идеи";
