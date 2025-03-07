@@ -589,6 +589,33 @@ object ChatModel {
       }
     }
 
+    suspend fun removeMemberItems(rhId: Long?, removedMember: GroupMember, byMember: GroupMember, groupInfo: GroupInfo) {
+      val items = if (chatId.value == groupInfo.id) {
+        chatItems.value
+      } else {
+        getChat(groupInfo.id)?.chatItems ?: emptyList()
+      }
+      val chatInfo = ChatInfo.Group(groupInfo)
+      for (item in items) {
+        if (item.chatDir is CIDirection.GroupSnd && removedMember.groupMemberId == groupInfo.membership.groupMemberId) {
+          // deleted user's sent message
+        } else if (item.chatDir is CIDirection.GroupRcv && item.chatDir.groupMember.groupMemberId == removedMember.groupMemberId) {
+          // deleted received message
+        } else {
+          continue
+        }
+        if (!groupInfo.fullGroupPreferences.fullDelete.on) {
+          val updatedItem = item.copy(meta = item.meta.copy(itemDeleted = CIDeleted.Moderated(deletedTs = Clock.System.now(), byGroupMember = byMember)))
+          upsertChatItem(rhId, chatInfo, updatedItem)
+        } else {
+          removeChatItem(rhId, chatInfo, item)
+        }
+        if (item.isActiveReport) {
+          decreaseGroupReportsCounter(rhId, groupInfo.id)
+        }
+      }
+    }
+
     fun clearChat(rhId: Long?, cInfo: ChatInfo) {
       // clear preview
       val i = getChatIndex(rhId, cInfo.id)
