@@ -636,7 +636,6 @@ final class ChatModel: ObservableObject {
             getChat(groupInfo.id)?.chatItems ?? []
         }
         let cInfo = ChatInfo.group(groupInfo: groupInfo)
-        let ts = Date.now
         for item in items {
             if case .groupSnd = item.chatDir, removedMember.groupMemberId == groupInfo.membership.groupMemberId {
                 removeMemberItem(item, .sndModerated)
