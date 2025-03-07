@@ -41,6 +41,7 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
+import Data.Set (Set)
 import Data.String
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
@@ -359,7 +360,7 @@ data ChatCommand
   | APIAcceptMember GroupId GroupMemberId GroupMemberRole
   | APIMembersRole GroupId (NonEmpty GroupMemberId) GroupMemberRole
   | APIBlockMembersForAll GroupId (NonEmpty GroupMemberId) Bool
-  | APIRemoveMembers GroupId (NonEmpty GroupMemberId)
+  | APIRemoveMembers {groupId :: GroupId, groupMemberIds :: Set GroupMemberId, withMessages :: Bool}
   | APILeaveGroup GroupId
   | APIListMembers GroupId
   | APIUpdateGroupProfile GroupId GroupProfile
@@ -480,7 +481,7 @@ data ChatCommand
   | JoinGroup {groupName :: GroupName, enableNtfs :: MsgFilter}
   | MemberRole GroupName ContactName GroupMemberRole
   | BlockForAll GroupName ContactName Bool
-  | RemoveMembers GroupName (NonEmpty ContactName)
+  | RemoveMembers {groupName :: GroupName, members :: Set ContactName, withMessages :: Bool}
   | LeaveGroup GroupName
   | DeleteGroup GroupName
   | ClearGroup GroupName
@@ -664,7 +665,7 @@ data ChatResponse
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRGroupLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | CRBusinessLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, fromContact :: Contact}
-  | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember]}
+  | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool}
   | CRGroupsList {user :: User, groups :: [(GroupInfo, GroupSummary)]}
   | CRSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
   | CRFileTransferStatus User (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
@@ -753,8 +754,8 @@ data ChatResponse
   | CRMemberBlockedForAll {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, blocked :: Bool}
   | CRMembersBlockedForAllUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], blocked :: Bool}
   | CRConnectedToGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember, memberContact :: Maybe Contact}
-  | CRDeletedMember {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, deletedMember :: GroupMember}
-  | CRDeletedMemberUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
+  | CRDeletedMember {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, deletedMember :: GroupMember, withMessages :: Bool}
+  | CRDeletedMemberUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember, withMessages :: Bool}
   | CRLeftMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRUnknownMemberCreated {user :: User, groupInfo :: GroupInfo, forwardedByMember :: GroupMember, member :: GroupMember}
   | CRUnknownMemberBlocked {user :: User, groupInfo :: GroupInfo, blockedByMember :: GroupMember, member :: GroupMember}
