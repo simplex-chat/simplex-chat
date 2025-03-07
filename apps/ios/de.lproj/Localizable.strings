@@ -1,13 +1,4 @@
 /* No comment provided by engineer. */
-"\n" = "\n";
-
-/* No comment provided by engineer. */
-"   " = "   ";
-
-/* No comment provided by engineer. */
-" (" = " (";
-
-/* No comment provided by engineer. */
 " (can be copied)" = " (kann kopiert werden)";
 
 /* No comment provided by engineer. */
@@ -26,28 +17,13 @@
 "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- Bis zu 5 Minuten lange Sprachnachrichten\n- Zeitdauer für verschwindende Nachrichten anpassen\n- Nachrichtenverlauf bearbeiten";
 
 /* No comment provided by engineer. */
-", " = ", ";
-
-/* No comment provided by engineer. */
-": " = ": ";
-
-/* No comment provided by engineer. */
 "!1 colored!" = "!1 farbig!";
-
-/* No comment provided by engineer. */
-"." = ".";
-
-/* No comment provided by engineer. */
-"(" = "(";
 
 /* No comment provided by engineer. */
 "(new)" = "(Neu)";
 
 /* No comment provided by engineer. */
 "(this device v%@)" = "(Dieses Gerät hat v%@)";
-
-/* No comment provided by engineer. */
-")" = ")";
 
 /* No comment provided by engineer. */
 "[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Unterstützen Sie uns](https://github.com/simplex-chat/simplex-chat#contribute)";
@@ -57,12 +33,6 @@
 
 /* No comment provided by engineer. */
 "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Stern auf GitHub vergeben](https://github.com/simplex-chat/simplex-chat)";
-
-/* No comment provided by engineer. */
-"@'%@'" = "@'%@'";
-
-/* No comment provided by engineer. */
-"@%@" = "@%@";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Kontakt hinzufügen**: Um einen neuen Einladungslink zu erstellen.";

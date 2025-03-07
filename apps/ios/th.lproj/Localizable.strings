@@ -1,10 +1,4 @@
 /* No comment provided by engineer. */
-"\n" = "\n";
-
-/* No comment provided by engineer. */
-" (" = " (";
-
-/* No comment provided by engineer. */
 " (can be copied)" = " (สามารถคัดลอกได้)";
 
 /* No comment provided by engineer. */
@@ -17,22 +11,7 @@
 "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- ข้อความเสียงนานสุด 5 นาที\n- เวลาที่กำหนดเองที่จะหายไป\n- ประวัติการแก้ไข";
 
 /* No comment provided by engineer. */
-", " = ", ";
-
-/* No comment provided by engineer. */
-": " = ": ";
-
-/* No comment provided by engineer. */
 "!1 colored!" = "!1 มีสี!";
-
-/* No comment provided by engineer. */
-"." = ".";
-
-/* No comment provided by engineer. */
-"(" = "(";
-
-/* No comment provided by engineer. */
-")" = ")";
 
 /* No comment provided by engineer. */
 "[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[มีส่วนร่วม](https://github.com/simplex-chat/simplex-chat#contribute)";

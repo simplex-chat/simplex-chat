@@ -2,9 +2,6 @@
 "\n" = "\n";
 
 /* No comment provided by engineer. */
-" (" = " (";
-
-/* No comment provided by engineer. */
 " (can be copied)" = " (można skopiować)";
 
 /* No comment provided by engineer. */
@@ -23,28 +20,13 @@
 "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- wiadomości głosowe do 5 minut.\n- niestandardowy czas zniknięcia.\n- historia edycji.";
 
 /* No comment provided by engineer. */
-", " = ", ";
-
-/* No comment provided by engineer. */
-": " = ": ";
-
-/* No comment provided by engineer. */
 "!1 colored!" = "!1 pokolorowany!";
-
-/* No comment provided by engineer. */
-"." = ".";
-
-/* No comment provided by engineer. */
-"(" = "(";
 
 /* No comment provided by engineer. */
 "(new)" = "(nowy)";
 
 /* No comment provided by engineer. */
 "(this device v%@)" = "(to urządzenie v%@)";
-
-/* No comment provided by engineer. */
-")" = ")";
 
 /* No comment provided by engineer. */
 "[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Przyczyń się](https://github.com/simplex-chat/simplex-chat#contribute)";
@@ -54,12 +36,6 @@
 
 /* No comment provided by engineer. */
 "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Daj gwiazdkę na GitHub](https://github.com/simplex-chat/simplex-chat)";
-
-/* No comment provided by engineer. */
-"@'%@'" = "@'%@'";
-
-/* No comment provided by engineer. */
-"@%@" = "@%@";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Dodaj kontakt**: aby utworzyć nowy link z zaproszeniem lub połączyć się za pomocą otrzymanego linku.";

@@ -1,13 +1,4 @@
 /* No comment provided by engineer. */
-"\n" = "\n";
-
-/* No comment provided by engineer. */
-"   " = "   ";
-
-/* No comment provided by engineer. */
-" (" = " (";
-
-/* No comment provided by engineer. */
 " (can be copied)" = " (másolható)";
 
 /* No comment provided by engineer. */
@@ -26,28 +17,13 @@
 "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- legfeljebb 5 perc hosszúságú hangüzenetek.\n- egyéni üzenet-eltűnési időkorlát.\n- előzmények szerkesztése.";
 
 /* No comment provided by engineer. */
-", " = ", ";
-
-/* No comment provided by engineer. */
-": " = ": ";
-
-/* No comment provided by engineer. */
 "!1 colored!" = "!1 színezett!";
-
-/* No comment provided by engineer. */
-"." = ".";
-
-/* No comment provided by engineer. */
-"(" = "(";
 
 /* No comment provided by engineer. */
 "(new)" = "(új)";
 
 /* No comment provided by engineer. */
 "(this device v%@)" = "(ez az eszköz: v%@)";
-
-/* No comment provided by engineer. */
-")" = ")";
 
 /* No comment provided by engineer. */
 "[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Hozzájárulás](https://github.com/simplex-chat/simplex-chat#contribute)";
@@ -57,12 +33,6 @@
 
 /* No comment provided by engineer. */
 "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Csillagozás a GitHubon](https://github.com/simplex-chat/simplex-chat)";
-
-/* No comment provided by engineer. */
-"@'%@'" = "@'%@'";
-
-/* No comment provided by engineer. */
-"@%@" = "@%@";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Partner hozzáadása:** új meghívási hivatkozás létrehozásához, vagy egy kapott hivatkozáson keresztül történő kapcsolódáshoz.";

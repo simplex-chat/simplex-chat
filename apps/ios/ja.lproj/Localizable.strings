@@ -2,9 +2,6 @@
 "\n" = "\n";
 
 /* No comment provided by engineer. */
-" (" = " (";
-
-/* No comment provided by engineer. */
 " (can be copied)" = " (コピー可能)";
 
 /* No comment provided by engineer. */
@@ -23,28 +20,13 @@
 "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- 最長 5 分間の音声メッセージ。\n- 消えるまでのカスタム時間。\n- 編集履歴。";
 
 /* No comment provided by engineer. */
-", " = ", ";
-
-/* No comment provided by engineer. */
-": " = ": ";
-
-/* No comment provided by engineer. */
 "!1 colored!" = "!1 色付き!";
-
-/* No comment provided by engineer. */
-"." = ".";
-
-/* No comment provided by engineer. */
-"(" = "(";
 
 /* No comment provided by engineer. */
 "(new)" = "(新規)";
 
 /* No comment provided by engineer. */
 "(this device v%@)" = "(このデバイス v%@)";
-
-/* No comment provided by engineer. */
-")" = ")";
 
 /* No comment provided by engineer. */
 "[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[貢献する](https://github.com/simplex-chat/simplex-chat#contribute)";

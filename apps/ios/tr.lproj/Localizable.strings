@@ -1,10 +1,4 @@
 /* No comment provided by engineer. */
-"\n" = "\n";
-
-/* No comment provided by engineer. */
-" (" = " (";
-
-/* No comment provided by engineer. */
 " (can be copied)" = " (kopyalanabilir)";
 
 /* No comment provided by engineer. */
@@ -23,28 +17,13 @@
 "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- 5 dakikaya kadar süren sesli mesajlar.\n- mesaj kaybolması için özel zaman.\n- düzenleme geçmişi.";
 
 /* No comment provided by engineer. */
-", " = ", ";
-
-/* No comment provided by engineer. */
-": " = ": ";
-
-/* No comment provided by engineer. */
 "!1 colored!" = "!1 renklendirilmiş!";
-
-/* No comment provided by engineer. */
-"." = ".";
-
-/* No comment provided by engineer. */
-"(" = "(";
 
 /* No comment provided by engineer. */
 "(new)" = "(yeni)";
 
 /* No comment provided by engineer. */
 "(this device v%@)" = "(bu cihaz v%@)";
-
-/* No comment provided by engineer. */
-")" = ")";
 
 /* No comment provided by engineer. */
 "[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Katkıda bulun](https://github.com/simplex-chat/simplex-chat#contribute)";

@@ -2376,7 +2376,7 @@ struct ReactionContextMenu: View {
     @ViewBuilder private func groupMemberReactionList() -> some View {
         if memberReactions.isEmpty {
             ForEach(Array(repeating: 0, count: reactionCount.totalReacted), id: \.self) { _ in
-                Text(verbatim: " ")
+                textSpace
             }
         } else {
             ForEach(memberReactions, id: \.groupMember.groupMemberId) { mr in

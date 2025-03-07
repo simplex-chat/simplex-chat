@@ -161,13 +161,13 @@ struct CIRcvDecryptionError: View {
         let why = Text(decryptErrorReason)
         switch msgDecryptError {
         case .ratchetHeader:
-            message = Text("\(msgCount) messages failed to decrypt.") + Text("\n") + why
+            message = Text("\(msgCount) messages failed to decrypt.") + textNewLine + why
         case .tooManySkipped:
-            message = Text("\(msgCount) messages skipped.") + Text("\n") + why
+            message = Text("\(msgCount) messages skipped.") + textNewLine + why
         case .ratchetEarlier:
-            message = Text("\(msgCount) messages failed to decrypt.") + Text("\n") + why
+            message = Text("\(msgCount) messages failed to decrypt.") + textNewLine + why
         case .other:
-            message = Text("\(msgCount) messages failed to decrypt.") + Text("\n") + why
+            message = Text("\(msgCount) messages failed to decrypt.") + textNewLine + why
         case .ratchetSync:
             message = Text("Encryption re-negotiation failed.")
         }
