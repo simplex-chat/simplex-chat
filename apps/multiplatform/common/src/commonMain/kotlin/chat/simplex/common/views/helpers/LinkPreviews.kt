@@ -21,6 +21,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.chatViewScrollState
 import chat.simplex.common.views.chat.item.CHAT_IMAGE_LAYOUT_ID
+import chat.simplex.common.views.chat.item.imageViewFullWidth
 import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -135,10 +136,15 @@ fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit, cancel
 
 @Composable
 fun ChatItemLinkView(linkPreview: LinkPreview, showMenu: State<Boolean>, onLongClick: () -> Unit) {
-  Column(Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).widthIn(max = DEFAULT_MAX_IMAGE_WIDTH)) {
+  val image = base64ToBitmap(linkPreview.image)
+  Column(
+    Modifier
+    .layoutId(CHAT_IMAGE_LAYOUT_ID)
+    .width(if (image.width * 0.97 <= image.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
+  ) {
     val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
     Image(
-      base64ToBitmap(linkPreview.image),
+      image,
       stringResource(MR.strings.image_descr_link_preview),
       modifier = Modifier
         .fillMaxWidth()
