@@ -789,6 +789,11 @@ object ChatModel {
       }
       // update current chat
       return if (chatId.value == groupInfo.id) {
+        if (groupMembers.value.isNotEmpty() && groupMembers.value.firstOrNull()?.groupId != groupInfo.groupId) {
+          // stale data, should be cleared at that point, otherwise, duplicated items will be here which will produce crashes in LazyColumn
+          groupMembers.value = emptyList()
+          groupMembersIndexes.value = emptyMap()
+        }
         val memberIndex = groupMembersIndexes.value[member.groupMemberId]
         val updated = chatItems.value.map {
           // Take into account only specific changes, not all. Other member updates are not important and can be skipped
