@@ -2305,7 +2305,6 @@
     <string name="delete_report">Rapport verwijderen</string>
     <string name="report_item_archived_by">gearchiveerd rapport door %s</string>
     <string name="group_reports_active_one">1 rapport</string>
-    <string name="group_reports_archived_member_reports">Gearchiveerde ledenrapporten</string>
     <string name="group_reports_active">%d rapporten</string>
     <string name="group_reports_member_reports">Ledenrapporten</string>
     <string name="blocking_reason_content">Inhoud schendt de gebruiksvoorwaarden</string>

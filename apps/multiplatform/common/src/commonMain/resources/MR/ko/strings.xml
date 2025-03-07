@@ -1496,7 +1496,6 @@
     <string name="group_reports_active_one">1 보고서</string>
     <string name="chat_list_add_list">리스트 추가</string>
     <string name="chat_list_all">전부</string>
-    <string name="group_reports_archived_member_reports">보관된 멤버 리포트</string>
     <string name="delete_chat_list_warning">목록 %s의 모든 차트가 제거되었고, 목록도 삭제되었습니다.</string>
     <string name="chat_item_ttl_year">1 년</string>
     <string name="add_to_list">리스트에 추가하기</string>

@@ -2131,7 +2131,6 @@
     <string name="chat_list_all">Wszystkie</string>
     <string name="chat_list_businesses">Biznesy</string>
     <string name="group_reports_active_one">raport</string>
-    <string name="group_reports_archived_member_reports">Zarchiwizowane raporty członków</string>
     <string name="privacy_chat_list_open_links_ask">Zapytaj</string>
     <string name="operator_conditions_accepted_for_some"><![CDATA[Warunki są już akceptowane dla następujących operatorów: <b>%s</b>.]]></string>
     <string name="operator_same_conditions_will_be_applied"><![CDATA[Te same warunki będą miały zastosowanie do operatora <b>%s</b>.]]></string>

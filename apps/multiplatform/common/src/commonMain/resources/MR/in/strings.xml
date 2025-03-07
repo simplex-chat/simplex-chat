@@ -2250,7 +2250,6 @@
     <string name="chat_list_all">Semua</string>
     <string name="group_reports_active_one">1 laporan</string>
     <string name="archive_verb">Arsip</string>
-    <string name="group_reports_archived_member_reports">Laporan anggota arsip</string>
     <string name="report_reason_other">Alasan lain</string>
     <string name="report_item_archived_by">laporan arsip oleh %s</string>
     <string name="archive_report">Arsip laporan</string>

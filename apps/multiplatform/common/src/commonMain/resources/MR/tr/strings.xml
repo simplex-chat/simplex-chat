@@ -2143,7 +2143,6 @@
     <string name="archive_report">Raporu arşivle</string>
     <string name="report_item_archived_by">%s tarafından arşivlenen rapor</string>
     <string name="group_reports_active_one">1 rapor</string>
-    <string name="group_reports_archived_member_reports">Arşivlenmiş üye raporları</string>
     <string name="operators_conditions_will_be_accepted_for"><![CDATA[Operatör(ler) için koşullar kabul edilecektir: <b>%s</b>.]]></string>
     <string name="privacy_chat_list_open_links_ask">Sor</string>
     <string name="chat_item_ttl_year">1 yıl</string>

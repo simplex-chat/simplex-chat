@@ -2175,7 +2175,6 @@
     <string name="error_updating_server_title">Chyba aktualizace serveru</string>
     <string name="operator_server_alert_title">Operátor serveru</string>
     <string name="v6_2_network_decentralization">Decentralizace sítě</string>
-    <string name="group_reports_archived_member_reports">Archivována hlášení členů</string>
     <string name="archive_reports">Archivovat hlášení</string>
     <string name="leave_chat_question">Opustit chat?</string>
     <string name="address_settings">Nastavení adres</string>

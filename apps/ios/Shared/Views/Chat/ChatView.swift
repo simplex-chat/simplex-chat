@@ -570,6 +570,14 @@ struct ChatView: View {
             .onChange(of: im.reversedChatItems) { items in
                 mergedItems.boxedValue = MergedItems.create(items, revealedItems, im.chatState)
                 scrollView.updateItems(mergedItems.boxedValue.items)
+                if im.itemAdded {
+                    im.itemAdded = false
+                    if scrollView.listState.firstVisibleItemIndex < 2 {
+                        scrollView.scrollToBottomAnimated()
+                    } else {
+                        scrollView.scroll(by: 34)
+                    }
+                }
             }
             .onChange(of: revealedItems) { revealed in
                 mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, revealed, im.chatState)
@@ -587,16 +595,6 @@ struct ChatView: View {
             .onChange(of: searchText) { s in
                 if showSearch {
                     searchTextChanged(s)
-                }
-            }
-            .onChange(of: im.itemAdded) { added in
-                if added {
-                    im.itemAdded = false
-                    if scrollView.listState.firstVisibleItemIndex < 2 {
-                        scrollView.scrollToBottomAnimated()
-                    } else {
-                        scrollView.scroll(by: 34)
-                    }
                 }
             }
         }
@@ -2376,7 +2374,7 @@ struct ReactionContextMenu: View {
     @ViewBuilder private func groupMemberReactionList() -> some View {
         if memberReactions.isEmpty {
             ForEach(Array(repeating: 0, count: reactionCount.totalReacted), id: \.self) { _ in
-                Text(verbatim: " ")
+                textSpace
             }
         } else {
             ForEach(memberReactions, id: \.groupMember.groupMemberId) { mr in

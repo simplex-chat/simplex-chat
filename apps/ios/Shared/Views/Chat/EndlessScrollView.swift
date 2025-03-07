@@ -517,7 +517,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
                 let y = if top {
                     min(estimatedContentHeight.bottomOffsetY - bounds.height, item.view.frame.origin.y - insetTop)
                 } else {
-                    max(estimatedContentHeight.topOffsetY - insetTop, item.view.frame.origin.y + item.view.bounds.height - bounds.height + insetBottom)
+                    max(estimatedContentHeight.topOffsetY - insetTop - insetBottom, item.view.frame.origin.y + item.view.bounds.height - bounds.height + insetBottom)
                 }
                 setContentOffset(CGPointMake(contentOffset.x, y), animated: false)
                 scrollBarView.flashScrollIndicators()
@@ -568,7 +568,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
                 let y = if top {
                     min(estimatedContentHeight.bottomOffsetY - bounds.height, item.view.frame.origin.y - insetTop)
                 } else {
-                    max(estimatedContentHeight.topOffsetY - insetTop, item.view.frame.origin.y + item.view.bounds.height - bounds.height + insetBottom)
+                    max(estimatedContentHeight.topOffsetY - insetTop - insetBottom, item.view.frame.origin.y + item.view.bounds.height - bounds.height + insetBottom)
                 }
                 setContentOffset(CGPointMake(contentOffset.x, y), animated: true)
                 scrollBarView.flashScrollIndicators()
