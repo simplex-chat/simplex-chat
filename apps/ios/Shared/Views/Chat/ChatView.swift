@@ -95,14 +95,14 @@ struct ChatView: View {
                 }
                 connectingText()
                 if selectedChatItems == nil {
-                    ComposeView(
-                        chat: chat,
-                        composeState: $composeState,
-                        keyboardVisible: $keyboardVisible,
-                        keyboardHiddenDate: $keyboardHiddenDate,
-                        selectedRange: $selectedRange
-                    )
-                    .disabled(!cInfo.sendMsgEnabled)
+                   ComposeView(
+                       chat: chat,
+                       composeState: $composeState,
+                       keyboardVisible: $keyboardVisible,
+                       keyboardHiddenDate: $keyboardHiddenDate,
+                       selectedRange: $selectedRange
+                   )
+                   .disabled(!cInfo.sendMsgEnabled)
                 } else {
                     SelectedItemsBottomToolbar(
                         chatItems: ItemsModel.shared.reversedChatItems,
@@ -1674,9 +1674,6 @@ struct ChatView: View {
                 } else if let file = ci.file, case .rcvInvitation = file.fileStatus, fileSizeValid(file) {
                     downloadButton(file: file)
                 }
-                
-                
-
                 if ci.meta.editable && !mc.isVoice && !live {
                     editButton(chatItem)
                 }
@@ -1688,20 +1685,17 @@ struct ChatView: View {
                 if !ci.isLiveDummy {
                     viewInfoButton(ci)
                 }
-//                if revealed {
-//                   hideButton()
-//                }
-//                if ci.meta.itemDeleted == nil && !ci.localNote,
-//                   let file = ci.file,
-//                   let cancelAction = file.cancelAction {
-//                    cancelFileButton(file.fileId, cancelAction)
-//                }
-//                if !live || !ci.meta.isLive {
-//                    deleteButton(ci)
-//                }
-
-                
-
+                if revealed {
+                   hideButton()
+                }
+                if ci.meta.itemDeleted == nil && !ci.localNote,
+                   let file = ci.file,
+                   let cancelAction = file.cancelAction {
+                    cancelFileButton(file.fileId, cancelAction)
+                }
+                if !live || !ci.meta.isLive {
+                    deleteButton(ci)
+                }
                 if ci.chatDir != .groupSnd {
                     if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo) {
                         moderateButton(ci, groupInfo)
