@@ -1588,9 +1588,9 @@ func apiJoinGroup(_ groupId: Int64) async throws -> JoinGroupResult {
     }
 }
 
-func apiRemoveMembers(_ groupId: Int64, _ memberIds: [Int64]) async throws -> [GroupMember] {
-    let r = await chatSendCmd(.apiRemoveMembers(groupId: groupId, memberIds: memberIds), bgTask: false)
-    if case let .userDeletedMembers(_, _, members) = r { return members }
+func apiRemoveMembers(_ groupId: Int64, _ memberIds: [Int64], _ withMessages: Bool = false) async throws -> [GroupMember] {
+    let r = await chatSendCmd(.apiRemoveMembers(groupId: groupId, memberIds: memberIds, withMessages: withMessages), bgTask: false)
+    if case let .userDeletedMembers(_, _, members, withMessages) = r { return members }
     throw r
 }
 
@@ -2187,16 +2187,22 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 _ = m.upsertGroupMember(groupInfo, member)
             }
         }
-    case let .deletedMemberUser(user, groupInfo, _): // TODO update user member
+    case let .deletedMemberUser(user, groupInfo, member, withMessages): // TODO update user member
         if active(user) {
             await MainActor.run {
                 m.updateGroup(groupInfo)
+                if withMessages {
+                    m.removeMemberItems(groupInfo.membership, byMember: member, groupInfo)
+                }
             }
         }
-    case let .deletedMember(user, groupInfo, _, deletedMember):
+    case let .deletedMember(user, groupInfo, byMember, deletedMember, withMessages):
         if active(user) {
             await MainActor.run {
                 _ = m.upsertGroupMember(groupInfo, deletedMember)
+                if withMessages {
+                    m.removeMemberItems(deletedMember, byMember: byMember, groupInfo)
+                }
             }
         }
     case let .leftMember(user, groupInfo, member):

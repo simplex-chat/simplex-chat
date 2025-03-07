@@ -549,11 +549,11 @@ object ChatModel {
       }
     }
 
-    suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null) {
+    suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null, atIndex: Int? = null) {
       withContext(Dispatchers.Main) {
         if (chatId.value == cInfo.id) {
           val items = chatItems.value
-          val itemIndex = items.indexOfFirst { it.id == cItem.id }
+          val itemIndex = atIndex ?: items.indexOfFirst { it.id == cItem.id }
           if (itemIndex >= 0) {
             items[itemIndex] = cItem
           }
@@ -585,6 +585,48 @@ object ChatModel {
           val remove = it.id == cItem.id && it.meta.createdAt == cItem.meta.createdAt
           if (remove) { AudioPlayer.stop(it) }
           remove
+        }
+      }
+    }
+
+    suspend fun removeMemberItems(rhId: Long?, removedMember: GroupMember, byMember: GroupMember, groupInfo: GroupInfo) {
+      fun removedUpdatedItem(item: ChatItem): ChatItem? {
+        val newContent = when {
+          item.chatDir is CIDirection.GroupSnd && removedMember.groupMemberId == groupInfo.membership.groupMemberId -> CIContent.SndModerated
+          item.chatDir is CIDirection.GroupRcv && item.chatDir.groupMember.groupMemberId == removedMember.groupMemberId -> CIContent.RcvModerated
+          else -> return null
+        }
+        val updatedItem = item.copy(
+          meta = item.meta.copy(itemDeleted = CIDeleted.Moderated(Clock.System.now(), byGroupMember = byMember)),
+          content = if (groupInfo.fullGroupPreferences.fullDelete.on) newContent else item.content
+        )
+        if (item.isActiveReport) {
+          decreaseGroupReportsCounter(rhId, groupInfo.id)
+        }
+        return updatedItem
+      }
+
+      // this should not happen, only another member can "remove" user, user can only "leave" (another event).
+      if (byMember.groupMemberId == groupInfo.membership.groupMemberId) {
+        Log.d(TAG, "exiting removeMemberItems")
+        return
+      }
+      val cInfo = ChatInfo.Group(groupInfo)
+      if (chatId.value == groupInfo.id) {
+        for (i in 0 until chatItems.value.size) {
+          val updatedItem = removedUpdatedItem(chatItems.value[i])
+          if (updatedItem != null) {
+            updateChatItem(cInfo, updatedItem, atIndex = i)
+          }
+        }
+      } else {
+        val i = getChatIndex(rhId, groupInfo.id)
+        val chat = chats[i]
+        if (chat.chatItems.isNotEmpty()) {
+          val updatedItem = removedUpdatedItem(chat.chatItems[0])
+          if (updatedItem != null) {
+            chats.value[i] = chat.copy(chatItems = listOf(updatedItem))
+          }
         }
       }
     }
