@@ -542,7 +542,7 @@ private let versionDescriptions: [VersionDescription] = [
     ),
     VersionDescription(
         version: "v6.3",
-        // post: URL(string: "https://simplex.chat/blog/20241210-simplex-network-v6-2-servers-by-flux-business-chats.html"),
+        post: URL(string: "https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html"),
         features: [
             .feature(Description(
                 icon: "at",
