@@ -632,32 +632,37 @@ final class ChatModel: ObservableObject {
         }
         if chatId == groupInfo.id {
             for i in 0..<im.reversedChatItems.count {
-                let item = im.reversedChatItems[i]
-                removeItem(i, item)  { i, ci in self._updateChatItem(at: i, with: ci)}
+                if let updatedItem = removedUpdatedItem(im.reversedChatItems[i]) {
+                    _updateChatItem(at: i, with: updatedItem)
+                }
             }
-        } else if let chat = getChat(groupInfo.id), chat.chatItems.count > 0 {
-            removeItem(0, chat.chatItems[0]) { _, ci in chat.chatItems = [ci] }
+        } else if let chat = getChat(groupInfo.id),
+                  chat.chatItems.count > 0,
+                  let updatedItem = removedUpdatedItem(chat.chatItems[0]) {
+                chat.chatItems = [updatedItem]
         }
         
-        func removeItem(_ i: Int, _ item: ChatItem, updateItem: @escaping (Int, ChatItem) -> Void) {
+        func removedUpdatedItem(_ item: ChatItem) -> ChatItem? {
             let newContent: CIContent? =
-            if case .groupSnd = item.chatDir, removedMember.groupMemberId == groupInfo.membership.groupMemberId {
-                .sndModerated
-            } else if case let .groupRcv(groupMember) = item.chatDir, groupMember.groupMemberId == removedMember.groupMemberId {
-                .rcvModerated
-            } else {
-                nil
-            }
+                if case .groupSnd = item.chatDir, removedMember.groupMemberId == groupInfo.membership.groupMemberId {
+                    .sndModerated
+                } else if case let .groupRcv(groupMember) = item.chatDir, groupMember.groupMemberId == removedMember.groupMemberId {
+                    .rcvModerated
+                } else {
+                    nil
+                }
             if let newContent {
                 var updatedItem = item
                 updatedItem.meta.itemDeleted = .moderated(deletedTs: Date.now, byGroupMember: byMember)
                 if groupInfo.fullGroupPreferences.fullDelete.on {
                     updatedItem.content = newContent
                 }
-                updateItem(i, updatedItem)
                 if item.isActiveReport {
                     decreaseGroupReportsCounter(groupInfo.id)
                 }
+                return updatedItem
+            } else {
+                return nil
             }
         }
     }
