@@ -37,7 +37,7 @@ import Data.Either (fromRight, partitionEithers, rights)
 import Data.Foldable (foldr')
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find, foldl', isSuffixOf, partition, sortOn, zipWith4)
+import Data.List (dropWhileEnd, find, foldl', isSuffixOf, partition, sortOn, zipWith4)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -4334,7 +4334,7 @@ displayNameP = safeDecodeUtf8 <$> (quoted '\'' <|> takeNameTill (\c -> isSpace c
     refChar c = c > ' ' && c /= '#' && c /= '@' && c /= '\''
 
 mkValidName :: String -> String
-mkValidName = take 50 . reverse . dropWhile isSpace . fst3 . foldl' addChar ("", '\NUL', 0 :: Int)
+mkValidName = dropWhileEnd isSpace . take 50 . reverse . fst3 . foldl' addChar ("", '\NUL', 0 :: Int)
   where
     fst3 (x, _, _) = x
     addChar (r, prev, punct) c = if validChar then (c' : r, c', punct') else (r, prev, punct)
