@@ -798,9 +798,9 @@
         <target>Es werden alle Chats und Nachrichten gelöscht. Dies kann nicht rückgängig gemacht werden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All chats will be removed from the list (text), and the list deleted." xml:space="preserve">
-        <source>All chats will be removed from the list (text), and the list deleted.</source>
-        <target>Alle Chats werden von der Liste (text) entfernt und danach wird die Liste gelöscht.</target>
+      <trans-unit id="All chats will be removed from the list %@, and the list deleted." xml:space="preserve">
+        <source>All chats will be removed from the list %@, and the list deleted.</source>
+        <target>Alle Chats werden von der Liste %@ entfernt und danach wird die Liste gelöscht.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="All data is erased when it is entered." xml:space="preserve">
@@ -3663,11 +3663,11 @@ Das ist Ihr eigener Einmal-Link!</target>
 %@</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="File is blocked by server operator:&#10;(info.reason.text)." xml:space="preserve">
+      <trans-unit id="File is blocked by server operator:&#10;%@." xml:space="preserve">
         <source>File is blocked by server operator:
-(info.reason.text).</source>
+%@.</source>
         <target>Datei wurde vom Server-Betreiber blockiert:
-(info.reason.text).</target>
+%@.</target>
         <note>file error text</note>
       </trans-unit>
       <trans-unit id="File not found - most likely file was deleted or cancelled." xml:space="preserve">
@@ -6448,9 +6448,9 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
         <target>Verstoß melden: Nur Gruppenmoderatoren werden es sehen.</target>
         <note>report reason</note>
       </trans-unit>
-      <trans-unit id="Report: (text.isEmpty ? reason.text : text)" xml:space="preserve">
-        <source>Report: (text.isEmpty ? reason.text : text)</source>
-        <target>Meldung: (text.isEmpty ? reason.text : text)</target>
+      <trans-unit id="Report: %@" xml:space="preserve">
+        <source>Report: %@</source>
+        <target>Meldung: %@</target>
         <note>report in notification</note>
       </trans-unit>
       <trans-unit id="Reporting messages to moderators is prohibited." xml:space="preserve">

@@ -797,9 +797,9 @@
         <target>Wszystkie czaty i wiadomości zostaną usunięte - nie można tego cofnąć!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All chats will be removed from the list (text), and the list deleted." xml:space="preserve">
-        <source>All chats will be removed from the list (text), and the list deleted.</source>
-        <target>Wszystkie rozmowy zostaną usunięte z listy (text), a lista usunięta.</target>
+      <trans-unit id="All chats will be removed from the list %@, and the list deleted." xml:space="preserve">
+        <source>All chats will be removed from the list %@, and the list deleted.</source>
+        <target>Wszystkie rozmowy zostaną usunięte z listy %@, a lista usunięta.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="All data is erased when it is entered." xml:space="preserve">
@@ -3607,9 +3607,9 @@ To jest twój jednorazowy link!</target>
 %@</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="File is blocked by server operator:&#10;(info.reason.text)." xml:space="preserve">
+      <trans-unit id="File is blocked by server operator:&#10;%@." xml:space="preserve">
         <source>File is blocked by server operator:
-(info.reason.text).</source>
+%@.</source>
         <note>file error text</note>
       </trans-unit>
       <trans-unit id="File not found - most likely file was deleted or cancelled." xml:space="preserve">
@@ -6302,8 +6302,8 @@ Włącz w ustawianiach *Sieć i serwery* .</target>
         <source>Report violation: only group moderators will see it.</source>
         <note>report reason</note>
       </trans-unit>
-      <trans-unit id="Report: (text.isEmpty ? reason.text : text)" xml:space="preserve">
-        <source>Report: (text.isEmpty ? reason.text : text)</source>
+      <trans-unit id="Report: %@" xml:space="preserve">
+        <source>Report: %@</source>
         <note>report in notification</note>
       </trans-unit>
       <trans-unit id="Reporting messages to moderators is prohibited." xml:space="preserve">

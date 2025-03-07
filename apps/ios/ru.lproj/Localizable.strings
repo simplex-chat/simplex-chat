@@ -503,7 +503,7 @@
 "All chats and messages will be deleted - this cannot be undone!" = "Все чаты и сообщения будут удалены - это нельзя отменить!";
 
 /* alert message */
-"All chats will be removed from the list (text), and the list deleted." = "Все чаты будут удалены из списка, а сам список удален.";
+"All chats will be removed from the list %@, and the list deleted." = "Все чаты будут удалены из списка %@, и список удален.";
 
 /* No comment provided by engineer. */
 "All data is erased when it is entered." = "Все данные удаляются при его вводе.";
@@ -2434,7 +2434,7 @@
 "File errors:\n%@" = "Ошибки файлов:\n%@";
 
 /* file error text */
-"File is blocked by server operator:\n(info.reason.text)." = "Файл заблокирован оператором сервера";
+"File is blocked by server operator:\n%@." = "Файл заблокирован оператором сервера:\n%@.";
 
 /* file error text */
 "File not found - most likely file was deleted or cancelled." = "Файл не найден - скорее всего, файл был удален или отменен.";
@@ -4276,7 +4276,7 @@
 "Report violation: only group moderators will see it." = "Пожаловаться на нарушение: это увидит только модератор группы.";
 
 /* report in notification */
-"Report: (text.isEmpty ? reason.text : text)" = "Жалоба";
+"Report: %@" = "Жалоба: %@";
 
 /* No comment provided by engineer. */
 "Reporting messages to moderators is prohibited." = "Жалобы на сообщения запрещены в этой группе.";

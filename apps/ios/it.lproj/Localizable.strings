@@ -503,7 +503,7 @@
 "All chats and messages will be deleted - this cannot be undone!" = "Tutte le chat e i messaggi verranno eliminati. Non è reversibile!";
 
 /* alert message */
-"All chats will be removed from the list (text), and the list deleted." = "Tutte le chat verranno rimosse dall'elenco (testo) e l'elenco eliminato.";
+"All chats will be removed from the list %@, and the list deleted." = "Tutte le chat verranno rimosse dall'elenco %@ e l'elenco eliminato.";
 
 /* No comment provided by engineer. */
 "All data is erased when it is entered." = "Tutti i dati vengono cancellati quando inserito.";
@@ -2434,7 +2434,7 @@
 "File errors:\n%@" = "Errori di file:\n%@";
 
 /* file error text */
-"File is blocked by server operator:\n(info.reason.text)." = "Il file è bloccato dall'operatore del server:\n(info.reason.text).";
+"File is blocked by server operator:\n%@." = "Il file è bloccato dall'operatore del server:\n%@.";
 
 /* file error text */
 "File not found - most likely file was deleted or cancelled." = "File non trovato - probabilmente è stato eliminato o annullato.";
@@ -4276,7 +4276,7 @@
 "Report violation: only group moderators will see it." = "Segnala violazione: solo i moderatori del gruppo lo vedranno.";
 
 /* report in notification */
-"Report: (text.isEmpty ? reason.text : text)" = "Segnalazione: (text.isEmpty ? reason.text : text)";
+"Report: %@" = "Segnalazione: %@";
 
 /* No comment provided by engineer. */
 "Reporting messages to moderators is prohibited." = "È vietato segnalare messaggi ai moderatori.";
