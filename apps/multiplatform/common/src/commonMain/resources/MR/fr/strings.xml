@@ -2124,7 +2124,6 @@
     <string name="display_name_accepted_invitation">invitation acceptée</string>
     <string name="archive_report">Archiver le signalement</string>
     <string name="privacy_chat_list_open_links_ask">Demander</string>
-    <string name="group_reports_archived_member_reports">Rapports du membre archivés</string>
     <string name="add_to_list">Ajouter à la liste</string>
     <string name="delete_chat_list_warning">Toutes les discussions seront supprimées de la liste %s, et la liste sera supprimée</string>
     <string name="button_add_team_members">Ajouter des membres à l\'équipe</string>

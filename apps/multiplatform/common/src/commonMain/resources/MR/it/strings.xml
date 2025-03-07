@@ -2307,7 +2307,6 @@
     <string name="archive_report">Archivia la segnalazione</string>
     <string name="delete_report">Elimina la segnalazione</string>
     <string name="chat_list_group_reports">Segnalazioni</string>
-    <string name="group_reports_archived_member_reports">Segnalazioni dei membri archiviate</string>
     <string name="group_reports_active_one">1 segnalazione</string>
     <string name="report_item_archived_by">segnalazione archiviata da %s</string>
     <string name="group_reports_active">%d segnalazioni</string>

@@ -2269,7 +2269,6 @@
     <string name="file_error_blocked">El fitxer està blocat per l\'operador del servidor:\n%1$s.</string>
     <string name="report_reason_alert_title">Motiu de l\'informe?</string>
     <string name="group_reports_active_one">1 informe</string>
-    <string name="group_reports_archived_member_reports">Informes de membres arxivats</string>
     <string name="group_reports_active">%d informes</string>
     <string name="group_reports_member_reports">Informes de membres</string>
     <string name="chat_list_group_reports">Informes</string>

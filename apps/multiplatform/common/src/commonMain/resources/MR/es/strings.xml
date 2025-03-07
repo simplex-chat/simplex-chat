@@ -2304,7 +2304,6 @@
     <string name="archive_verb">Archivar</string>
     <string name="archive_report">Archivar informe</string>
     <string name="group_reports_member_reports">Informes de miembro</string>
-    <string name="group_reports_archived_member_reports">Informes de miembros archivados</string>
     <string name="group_reports_active">%d informes</string>
     <string name="report_compose_reason_header_profile">Informar del perfil de un miembro: sólo los moderadores del grupo lo verán.</string>
     <string name="report_reason_other">Otro motivo</string>
