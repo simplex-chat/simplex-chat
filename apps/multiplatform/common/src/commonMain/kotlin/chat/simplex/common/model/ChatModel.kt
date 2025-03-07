@@ -789,7 +789,7 @@ object ChatModel {
       }
       // update current chat
       return if (chatId.value == groupInfo.id) {
-        if (groupMembers.value.firstOrNull()?.groupId != groupInfo.groupId) {
+        if (groupMembers.value.isNotEmpty() && groupMembers.value.firstOrNull()?.groupId != groupInfo.groupId) {
           // stale data, should be cleared at that point, otherwise, duplicated items will be here which will produce crashes in LazyColumn
           groupMembers.value = emptyList()
           groupMembersIndexes.value = emptyMap()
