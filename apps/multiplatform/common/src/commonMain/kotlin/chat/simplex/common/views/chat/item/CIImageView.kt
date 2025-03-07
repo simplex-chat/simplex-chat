@@ -93,12 +93,6 @@ fun CIImageView(
   }
 
   @Composable
-  fun imageViewFullWidth(): Dp {
-    val approximatePadding = 100.dp
-    return with(LocalDensity.current) { minOf(DEFAULT_MAX_IMAGE_WIDTH, LocalWindowWidth() - approximatePadding) }
-  }
-
-  @Composable
   fun imageView(imageBitmap: ImageBitmap, onClick: () -> Unit) {
     Image(
       imageBitmap,
@@ -263,6 +257,12 @@ fun CIImageView(
       }
     }
   }
+}
+
+@Composable
+fun imageViewFullWidth(): Dp {
+  val approximatePadding = 100.dp
+  return with(LocalDensity.current) { minOf(DEFAULT_MAX_IMAGE_WIDTH, LocalWindowWidth() - approximatePadding) }
 }
 
 private fun showDownloadButton(status: CIFileStatus?): Boolean =
