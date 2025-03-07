@@ -630,29 +630,34 @@ final class ChatModel: ObservableObject {
             logger.debug("exiting removeMemberItems")
             return
         }
-        let items = if chatId == groupInfo.id {
-            im.reversedChatItems
-        } else {
-            getChat(groupInfo.id)?.chatItems ?? []
+        if chatId == groupInfo.id {
+            for i in 0..<im.reversedChatItems.count {
+                let item = im.reversedChatItems[i]
+                removeItem(i, item)  { i, ci in self._updateChatItem(at: i, with: ci)}
+            }
+        } else if let chat = getChat(groupInfo.id), chat.chatItems.count > 0 {
+            removeItem(0, chat.chatItems[0]) { _, ci in chat.chatItems = [ci] }
         }
-        let cInfo = ChatInfo.group(groupInfo: groupInfo)
-        for item in items {
+        
+        func removeItem(_ i: Int, _ item: ChatItem, updateItem: @escaping (Int, ChatItem) -> Void) {
+            let newContent: CIContent? =
             if case .groupSnd = item.chatDir, removedMember.groupMemberId == groupInfo.membership.groupMemberId {
-                removeMemberItem(item, .sndModerated)
+                .sndModerated
             } else if case let .groupRcv(groupMember) = item.chatDir, groupMember.groupMemberId == removedMember.groupMemberId {
-                removeMemberItem(item, .rcvModerated)
+                .rcvModerated
+            } else {
+                nil
             }
-        }
-
-        func removeMemberItem(_ item: ChatItem, _ moderatedContent: CIContent) {
-            var updatedItem = item
-            updatedItem.meta.itemDeleted = .moderated(deletedTs: Date.now, byGroupMember: byMember)
-            if groupInfo.fullGroupPreferences.fullDelete.on {
-                updatedItem.content = moderatedContent
-            }
-            _ = upsertChatItem(cInfo, updatedItem)
-            if item.isActiveReport {
-                decreaseGroupReportsCounter(groupInfo.id)
+            if let newContent {
+                var updatedItem = item
+                updatedItem.meta.itemDeleted = .moderated(deletedTs: Date.now, byGroupMember: byMember)
+                if groupInfo.fullGroupPreferences.fullDelete.on {
+                    updatedItem.content = newContent
+                }
+                updateItem(i, updatedItem)
+                if item.isActiveReport {
+                    decreaseGroupReportsCounter(groupInfo.id)
+                }
             }
         }
     }
