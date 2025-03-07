@@ -1214,7 +1214,7 @@
     <string name="contact_wants_to_connect_with_you">يريد الاتصال بك!</string>
     <string name="your_ice_servers">خوادم ICE الخاصة بك</string>
     <string name="your_privacy">خصوصيتك</string>
-    <string name="rcv_group_event_updated_group_profile">حدثت ملف تعريف المجموعة</string>
+    <string name="rcv_group_event_updated_group_profile">حُدثت ملف تعريف المجموعة</string>
     <string name="group_info_member_you">أنت: %1$s</string>
     <string name="update_network_settings_confirmation">تحديث</string>
     <string name="update_network_settings_question">تحديث إعدادات الشبكة؟</string>
@@ -2348,4 +2348,18 @@
     <string name="v6_3_faster_sending_messages">إرسال أسرع للرسائل.</string>
     <string name="group_member_status_rejected">رُفض</string>
     <string name="group_preview_rejected">رُفض</string>
+    <string name="error_reading_passphrase">خطأ في قراءة عبارة مرور قاعدة البيانات</string>
+    <string name="group_member_status_pending_approval_short">ينتظر</string>
+    <string name="operator_updated_conditions">حُدثت الشروط</string>
+    <string name="button_remove_members_question">إزالة الأعضاء؟</string>
+    <string name="block_members_desc">سيتم إخفاء جميع الرسائل الجديدة من هؤلاء الأعضاء!</string>
+    <string name="members_will_be_removed_from_chat_cannot_be_undone">سيتم إزالة الأعضاء من الدردشة - لا يمكن التراجع عن هذا!</string>
+    <string name="unblock_members_for_all_question">إلغاء حظر الأعضاء للجميع؟</string>
+    <string name="block_members_for_all_question">حظر الأعضاء للجميع؟</string>
+    <string name="unblock_members_desc">سيتم عرض رسائل من هؤلاء الأعضاء!</string>
+    <string name="restore_passphrase_can_not_be_read_enter_manually_desc">لا يمكن قراءة عبارة المرور في Keystore، يُرجى إدخالها يدويًا. قد يكون هذا قد حدث بعد تحديث النظام غير متوافق مع التطبيق. إذا لم يكن الأمر كذلك، فيُرجى التواصل مع المطورين.</string>
+    <string name="members_will_be_removed_from_group_cannot_be_undone">سيتم إزالة الأعضاء من المجموعة - لا يمكن التراجع عن هذا!</string>
+    <string name="feature_roles_moderators">المشرفين</string>
+    <string name="restore_passphrase_can_not_be_read_desc">لا يمكن قراءة عبارة المرور في Keystore. قد يكون هذا قد حدث بعد تحديث النظام غير متوافق مع التطبيق. إذا لم يكن الأمر كذلك، فيُرجى التواصل مع المطورين.</string>
+    <string name="group_member_status_pending_approval">موافقة الانتظار</string>
 </resources>

@@ -92,7 +92,7 @@
 "Share" = "Megosztás";
 
 /* No comment provided by engineer. */
-"Slow network?" = "Lassú internetkapcsolat?";
+"Slow network?" = "Lassú a hálózata?";
 
 /* No comment provided by engineer. */
 "Unknown database error: %@" = "Ismeretlen adatbázishiba: %@";
