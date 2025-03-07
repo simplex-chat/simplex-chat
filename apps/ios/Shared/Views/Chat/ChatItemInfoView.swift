@@ -354,8 +354,9 @@ struct ChatItemInfoView: View {
             Button {
                 Task {
                     await MainActor.run {
-                        ItemsModel.shared.loadOpenChat(forwardedFromItem.chatInfo.id)
-                        dismiss()
+                        ItemsModel.shared.loadOpenChat(forwardedFromItem.chatInfo.id) {
+                            dismiss()
+                        }
                     }
                 }
             } label: {

@@ -503,8 +503,8 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         rejectPendingMember rjctNotice = do
           let gmId = groupMemberId' m
           sendComposedMessages cc (SRGroup groupId $ Just gmId) [MCText rjctNotice]
-          sendChatCmd cc (APIRemoveMembers groupId [gmId]) >>= \case
-            CRUserDeletedMembers _ _ (_ : _) -> do
+          sendChatCmd cc (APIRemoveMembers groupId [gmId] False) >>= \case
+            CRUserDeletedMembers _ _ (_ : _) _ -> do
               atomically $ TM.delete gmId $ pendingCaptchas env
               logInfo $ "Member " <> viewName displayName <> " rejected, group " <> tshow groupId <> ":" <> viewGroupName g
             r -> logError $ "unexpected remove member response: " <> tshow r
@@ -719,7 +719,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                   "",
                   -- "Use */filter " <> tshow gId <> " <level>* to change spam filter level: no (disable), basic, moderate, strong.",
                   -- "Or use */filter " <> tshow gId <> " [name[=noimage]] [captcha[=noimage]] [observer[=noimage]]* for advanced filter configuration."
-                  "Or use */filter " <> tshow gId <> " [name] [captcha]* to configure filter."
+                  "Use */filter " <> tshow gId <> " [name] [captcha]* to enable and */filter " <> tshow gId <> " off* to disable filter."
                 ]
           showCondition = \case
             Nothing -> "_disabled_"

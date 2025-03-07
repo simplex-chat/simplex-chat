@@ -204,10 +204,10 @@ mobileChatOpts dbOptions =
             logAgent = Nothing,
             logFile = Nothing,
             tbqSize = 4096,
+            deviceName = Nothing,
             highlyAvailable = False,
             yesToUpMigrations = False
           },
-      deviceName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
       chatCmdLog = CCLNone,

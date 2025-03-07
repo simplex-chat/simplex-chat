@@ -148,7 +148,6 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
         UsageConditionsView(
           userServers = mutableStateOf(emptyList()),
           currUserServers = mutableStateOf(emptyList()),
-          updated = true,
           close = close,
           rhId = rhId
         )

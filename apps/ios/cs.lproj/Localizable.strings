@@ -1,10 +1,4 @@
 /* No comment provided by engineer. */
-"\n" = "\n";
-
-/* No comment provided by engineer. */
-" (" = " (";
-
-/* No comment provided by engineer. */
 " (can be copied)" = " (lze kopírovat)";
 
 /* No comment provided by engineer. */
@@ -20,25 +14,10 @@
 "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- 5 minutové hlasové zprávy.\n- vlastní čas mizení.\n- historie úprav.";
 
 /* No comment provided by engineer. */
-", " = ", ";
-
-/* No comment provided by engineer. */
-": " = ": ";
-
-/* No comment provided by engineer. */
 "!1 colored!" = "!1 barevný!";
 
 /* No comment provided by engineer. */
-"." = ".";
-
-/* No comment provided by engineer. */
-"(" = "(";
-
-/* No comment provided by engineer. */
 "(this device v%@)" = "(toto zařízení v%@)";
-
-/* No comment provided by engineer. */
-")" = ")";
 
 /* No comment provided by engineer. */
 "[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Přispějte](https://github.com/simplex-chat/simplex-chat#contribute)";

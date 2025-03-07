@@ -73,6 +73,7 @@ fun ChatItemView(
   linkMode: SimplexLinkMode,
   revealed: State<Boolean>,
   highlighted: State<Boolean>,
+  hoveredItemId: MutableState<Long?>,
   range: State<IntRange?>,
   selectedChatItems: MutableState<Set<Long>?>,
   searchIsNotBlank: State<Boolean>,
@@ -115,16 +116,8 @@ fun ChatItemView(
   val onLinkLongClick = { _: String -> showMenu.value = true }
   val live = remember { derivedStateOf { composeState.value.liveMessage != null } }.value
 
-  val bubbleInteractionSource = remember { MutableInteractionSource() }
-  val lineInteractionSource = remember { MutableInteractionSource() }
-  val bubblePressed = bubbleInteractionSource.collectIsPressedAsState()
-  val linePressed = lineInteractionSource.collectIsPressedAsState()
-  val lineHovered = lineInteractionSource.collectIsHoveredAsState()
-  val lineActivated = remember { derivedStateOf { lineHovered.value || linePressed.value || bubblePressed.value } }
   Box(
-    modifier = (if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier)
-      .hoverable(lineInteractionSource)
-      .clickable(onClick = {}, interactionSource = lineInteractionSource, indication = null),
+    modifier = (if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier),
     contentAlignment = alignment,
   ) {
     val info = cItem.meta.itemStatus.statusInto
@@ -240,20 +233,42 @@ fun ChatItemView(
     }
 
     @Composable
-    fun GoToItemInnerButton(alignStart: Boolean, icon: ImageResource, parentActivated: State<Boolean>, onClick: () -> Unit) {
+    fun GoToItemInnerButton(alignStart: Boolean, icon: ImageResource, iconSize: Dp = 22.dp, parentActivated: State<Boolean>, onClick: () -> Unit) {
       val buttonInteractionSource = remember { MutableInteractionSource() }
       val buttonHovered = buttonInteractionSource.collectIsHoveredAsState()
       val buttonPressed = buttonInteractionSource.collectIsPressedAsState()
       val buttonActivated = remember { derivedStateOf { buttonHovered.value || buttonPressed.value } }
+
+      val fullyVisible = parentActivated.value || buttonActivated.value || hoveredItemId.value == cItem.id
+      val mixAlpha = 0.6f
+      val mixedBackgroundColor = if (fullyVisible) {
+        if (MaterialTheme.colors.isLight) {
+          MaterialTheme.colors.secondary.mixWith(Color.White, mixAlpha)
+        } else {
+          MaterialTheme.colors.secondary.mixWith(Color.Black, mixAlpha)
+        }
+      } else {
+        Color.Unspecified
+      }
+      val iconTint = if (fullyVisible) {
+        Color.White
+      } else {
+        if (MaterialTheme.colors.isLight) {
+          MaterialTheme.colors.secondary.mixWith(Color.White, mixAlpha)
+        } else {
+          MaterialTheme.colors.secondary.mixWith(Color.Black, mixAlpha)
+        }
+      }
+
       IconButton(
         onClick,
         Modifier
           .padding(start = if (alignStart) 0.dp else DEFAULT_PADDING_HALF + 3.dp, end = if (alignStart) DEFAULT_PADDING_HALF + 3.dp else 0.dp)
-          .size(22.dp)
-          .alpha(if (parentActivated.value || buttonActivated.value) 1f else 0.4f),
+          .then(if (fullyVisible) Modifier.background(mixedBackgroundColor, CircleShape) else Modifier)
+          .size(22.dp),
         interactionSource = buttonInteractionSource
       ) {
-        Icon(painterResource(icon), null, Modifier.size(22.dp), tint = MaterialTheme.colors.secondary)
+        Icon(painterResource(icon), null, Modifier.size(iconSize), tint = iconTint)
       }
     }
 
@@ -261,14 +276,14 @@ fun ChatItemView(
     fun GoToItemButton(alignStart: Boolean, parentActivated: State<Boolean>) {
       val chatTypeApiIdMsgId = cItem.meta.itemForwarded?.chatTypeApiIdMsgId
       if (searchIsNotBlank.value) {
-        GoToItemInnerButton(alignStart, MR.images.ic_search, parentActivated) {
+        GoToItemInnerButton(alignStart, MR.images.ic_search, 17.dp, parentActivated) {
           withBGApi {
             openChat(rhId, cInfo.chatType, cInfo.apiId, null, cItem.id)
             closeReportsIfNeeded()
           }
         }
       } else if (chatTypeApiIdMsgId != null) {
-        GoToItemInnerButton(alignStart, MR.images.ic_arrow_forward, parentActivated) {
+        GoToItemInnerButton(alignStart, MR.images.ic_arrow_forward, 22.dp, parentActivated) {
           val (chatType, apiId, msgId) = chatTypeApiIdMsgId
           withBGApi {
             openChat(rhId, chatType, apiId, null, msgId)
@@ -280,13 +295,15 @@ fun ChatItemView(
 
     Column(horizontalAlignment = if (cItem.chatDir.sent) Alignment.End else Alignment.Start) {
       Row(verticalAlignment = Alignment.CenterVertically) {
+        val bubbleInteractionSource = remember { MutableInteractionSource() }
+        val bubbleHovered = bubbleInteractionSource.collectIsHoveredAsState()
         if (cItem.chatDir.sent) {
-          GoToItemButton(true, lineActivated)
+          GoToItemButton(true, bubbleHovered)
         }
         Column(Modifier.weight(1f, fill = false)) {
           val enterInteraction = remember { HoverInteraction.Enter() }
-          KeyChangeEffect(highlighted.value) {
-            if (highlighted.value) {
+          LaunchedEffect(highlighted.value, hoveredItemId.value) {
+            if (highlighted.value || hoveredItemId.value == cItem.id) {
               bubbleInteractionSource.emit(enterInteraction)
             } else {
               bubbleInteractionSource.emit(HoverInteraction.Exit(enterInteraction))
@@ -295,7 +312,15 @@ fun ChatItemView(
           Column(
             Modifier
               .clipChatItem(cItem, itemSeparation.largeGap, revealed.value)
-              .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick, interactionSource = bubbleInteractionSource, indication = LocalIndication.current)
+              .hoverable(bubbleInteractionSource)
+              .combinedClickable(
+                onLongClick = { showMenu.value = true },
+                onClick = {
+                  if (appPlatform.isAndroid && (searchIsNotBlank.value || cItem.meta.itemForwarded?.chatTypeApiIdMsgId != null)) {
+                    hoveredItemId.value = if (hoveredItemId.value == cItem.id) null else cItem.id
+                  }
+                  onClick()
+                }, interactionSource = bubbleInteractionSource, indication = LocalIndication.current)
               .onRightClick { showMenu.value = true },
           ) {
             @Composable
@@ -615,6 +640,13 @@ fun ChatItemView(
             fun DeletedItem() {
               MarkedDeletedItemView(cItem, cInfo, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
               DefaultDropdownMenu(showMenu) {
+                if (revealed.value) {
+                  HideItemAction(revealed, showMenu, reveal)
+                } else if (!cItem.isDeletedContent) {
+                  RevealItemAction(revealed, showMenu, reveal)
+                } else if (range.value != null) {
+                  ExpandItemAction(revealed, showMenu, reveal)
+                }
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
                 DeleteItemAction(cItem, revealed, showMenu, questionText = generalGetString(MR.strings.delete_message_cannot_be_undone_warning), deleteMessage, deleteMessages)
                 if (cItem.canBeDeletedForSelf) {
@@ -744,7 +776,7 @@ fun ChatItemView(
           }
         }
         if (!cItem.chatDir.sent) {
-          GoToItemButton(false, lineActivated)
+          GoToItemButton(false, bubbleHovered)
         }
       }
       if (cItem.content.msgContent != null && (cItem.meta.itemDeleted == null || revealed.value) && cItem.reactions.isNotEmpty()) {
@@ -865,14 +897,14 @@ fun ModerateItemAction(
 @Composable
 fun SelectItemAction(
   showMenu: MutableState<Boolean>,
-  selectChatItem: () -> Unit,
+  selectItem: () -> Unit,
 ) {
   ItemAction(
     stringResource(MR.strings.select_verb),
     painterResource(MR.images.ic_check_circle),
     onClick = {
       showMenu.value = false
-      selectChatItem()
+      selectItem()
     }
   )
 }
@@ -1399,6 +1431,7 @@ fun PreviewChatItemView(
     composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
     revealed = remember { mutableStateOf(false) },
     highlighted = remember { mutableStateOf(false) },
+    hoveredItemId = remember { mutableStateOf(null) },
     range = remember { mutableStateOf(0..1) },
     selectedChatItems = remember { mutableStateOf(setOf()) },
     searchIsNotBlank = remember { mutableStateOf(false) },
@@ -1447,6 +1480,7 @@ fun PreviewChatItemViewDeletedContent() {
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       revealed = remember { mutableStateOf(false) },
       highlighted = remember { mutableStateOf(false) },
+      hoveredItemId = remember { mutableStateOf(null) },
       range = remember { mutableStateOf(0..1) },
       selectedChatItems = remember { mutableStateOf(setOf()) },
       searchIsNotBlank = remember { mutableStateOf(false) },

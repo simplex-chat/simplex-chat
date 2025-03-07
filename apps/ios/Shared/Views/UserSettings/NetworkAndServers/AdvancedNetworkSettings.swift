@@ -368,8 +368,8 @@ struct AdvancedNetworkSettings: View {
         let userMode = Text("A separate TCP connection will be used **for each chat profile you have in the app**.")
         return switch mode {
         case .user: userMode
-        case .session: userMode + Text("\n") + Text("New SOCKS credentials will be used every time you start the app.")
-        case .server: userMode + Text("\n") + Text("New SOCKS credentials will be used for each server.")
+        case .session: userMode + textNewLine + Text("New SOCKS credentials will be used every time you start the app.")
+        case .server: userMode + textNewLine + Text("New SOCKS credentials will be used for each server.")
         case .entity: Text("A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.")
         }
     }

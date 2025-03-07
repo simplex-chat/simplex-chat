@@ -56,7 +56,7 @@
     <string name="allow_to_send_voice">السماح بإرسال رسائل صوتية.</string>
     <string name="settings_section_title_app">تطبيق</string>
     <string name="color_secondary_variant">ثانوي إضافي</string>
-    <string name="allow_your_contacts_adding_message_reactions">السماح لجهات اتصالك بإضافة ردود الفعل الرسالة.</string>
+    <string name="allow_your_contacts_adding_message_reactions">السماح لجهات اتصالك بإضافة ردود الفعل للرسالة.</string>
     <string name="allow_your_contacts_to_call">السماح لجهات اتصالك بالاتصال بك.</string>
     <string name="allow_message_reactions">السماح بردود الفعل على الرسائل.</string>
     <string name="v5_1_self_destruct_passcode_descr">يتم مسح جميع البيانات عند إدخالها.</string>
@@ -68,7 +68,7 @@
     <string name="notifications_mode_off_desc">يمكن للتطبيق استلام الإشعارات فقط عند تشغيله، ولن يتم بدء تشغيل أي خدمة في الخلفية</string>
     <string name="allow_voice_messages_question">السماح بالرسائل الصوتية؟</string>
     <string name="all_your_contacts_will_remain_connected">ستبقى جميع جهات اتصالك متصلة.</string>
-    <string name="always_use_relay">استخدم التتابع دائمًا</string>
+    <string name="always_use_relay">استخدم الموجه دائمًا</string>
     <string name="full_backup">النسخ الاحتياطي لبيانات التطبيق</string>
     <string name="all_app_data_will_be_cleared">حُذفت جميع بيانات التطبيق.</string>
     <string name="allow_to_delete_messages">السماح بحذف الرسائل المرسلة بشكل لا رجعة فيه. (24 ساعة)</string>
@@ -286,7 +286,7 @@
     <string name="connection_local_display_name">الاتصال %1$d</string>
     <string name="display_name_connection_established">انشأت الاتصال</string>
     <string name="callstatus_connecting">مكالمة جارية…</string>
-    <string name="encrypt_database">عَمِّ</string>
+    <string name="encrypt_database">تشفير</string>
     <string name="enter_passphrase">أدخل عبارة المرور…</string>
     <string name="group_member_status_creator">المنشئ</string>
     <string name="error_adding_members">خطأ في إضافة الأعضاء</string>
@@ -1003,7 +1003,7 @@
     <string name="self_destruct_passcode_changed">تغيّرت رمز المرور للتدمير الذاتي!</string>
     <string name="self_destruct_passcode_enabled">فعّلت رمز المرور للتدمير الذاتي!</string>
     <string name="settings_section_title_settings">الإعدادات</string>
-    <string name="simplex_link_invitation">دعوة لمرة واحدة SimpleX</string>
+    <string name="simplex_link_invitation">دعوة SimpleX لمرة واحدة</string>
     <string name="notification_preview_mode_message_desc">عرض جهة الاتصال والرسالة</string>
     <string name="la_notice_title_simplex_lock">قفل SimpleX</string>
     <string name="is_not_verified">لم يتحقق من %s</string>
@@ -1030,7 +1030,7 @@
     <string name="stop_chat_confirmation">إيقاف</string>
     <string name="settings_notification_preview_mode_title">عرض المعاينة</string>
     <string name="icon_descr_speaker_off">السماعة متوقفة</string>
-    <string name="la_lock_mode">وضع قفل SimpleX</string>
+    <string name="la_lock_mode">SimpleX وضع القفل</string>
     <string name="share_link">مشاركة الرابط</string>
     <string name="alert_title_skipped_messages">الرسائل التي تم تخطيها</string>
     <string name="simplex_address">عنوان SimpleX</string>
@@ -1214,7 +1214,7 @@
     <string name="contact_wants_to_connect_with_you">يريد الاتصال بك!</string>
     <string name="your_ice_servers">خوادم ICE الخاصة بك</string>
     <string name="your_privacy">خصوصيتك</string>
-    <string name="rcv_group_event_updated_group_profile">حدثت ملف تعريف المجموعة</string>
+    <string name="rcv_group_event_updated_group_profile">حُدثت ملف تعريف المجموعة</string>
     <string name="group_info_member_you">أنت: %1$s</string>
     <string name="update_network_settings_confirmation">تحديث</string>
     <string name="update_network_settings_question">تحديث إعدادات الشبكة؟</string>
@@ -1612,7 +1612,7 @@
     <string name="v5_6_safer_groups_descr">يمكن للمُدراء حظر عضو للجميع.</string>
     <string name="v5_6_app_data_migration">ترحيل بيانات التطبيق</string>
     <string name="migrate_from_device_archiving_database">جارِ أرشفة قاعدة البيانات</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">سيتم تعمية جميع جهات الاتصال والمحادثات والملفات الخاصة بك بشكل آمن ورفعها في أجزاء إلى مُرحلات XFTP التي ضُبطت.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">جميع جهات الاتصال، المحادثات والملفات الخاصة بك سيتم تشفيرها بأمان ورفعها على شكل أجزاء إلى موجهات XFTP المُعدة.</string>
     <string name="migrate_to_device_apply_onion">طبّق</string>
     <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>يُرجى ملاحظة</b>: استخدام نفس قاعدة البيانات على جهازين سيؤدي إلى كسر فك تعمية الرسائل من اتصالاتك، كحماية أمنية.]]></string>
     <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>تحذير</b>: سيتم حذف الأرشيف.]]></string>
@@ -1735,7 +1735,7 @@
     <string name="v5_7_network">إدارة الشبكة</string>
     <string name="v5_7_network_descr">اتصال شبكة أكثر موثوقية.</string>
     <string name="settings_section_title_profile_images">صور ملف التعريف</string>
-    <string name="v5_7_shape_profile_images">شكل الصور التعريفية</string>
+    <string name="v5_7_shape_profile_images">شكّل الصور التعريفية</string>
     <string name="v5_7_new_interface_languages">واجهة المستخدم الليتوانية</string>
     <string name="v5_7_shape_profile_images_descr">مربع أو دائرة أو أي شيء بينهما.</string>
     <string name="srv_error_host">عنوان الخادم غير متوافق مع إعدادات الشبكة.</string>
@@ -2119,7 +2119,7 @@
     <string name="onboarding_network_operators_conditions_you_can_configure">يمكنك تضبيط المُشغلين في إعدادات الشبكة والخوادم.</string>
     <string name="onboarding_network_operators_update">حدّث</string>
     <string name="onboarding_network_operators_continue">تابع</string>
-    <string name="operator_conditions_accepted">قُبل الشروط</string>
+    <string name="operator_conditions_accepted">الشروط المتفق عليها</string>
     <string name="operator_review_conditions">راجع الشروط</string>
     <string name="network_preset_servers_title">الخوادم المُعدة مسبقًا</string>
     <string name="operator_conditions_accepted_for_enabled_operators_on">سيتم قبول الشروط تلقائيًا للمُشغلين المفعّلين في: %s.</string>
@@ -2282,7 +2282,6 @@
     <string name="report_reason_other">سبب آخر</string>
     <string name="chat_list_group_reports">البلاغات</string>
     <string name="group_reports_active_one">1 بلاغ</string>
-    <string name="group_reports_archived_member_reports">بلاغات الأعضاء المؤرشفة</string>
     <string name="group_reports_active">%d بلاغات</string>
     <string name="group_reports_member_reports">بلاغات الأعضاء</string>
     <string name="report_compose_reason_header_illegal">بلّغ عن المحتوى: سيراه مشرفو المجموعة فقط.</string>
@@ -2346,4 +2345,20 @@
     <string name="v6_3_better_groups_performance">أداء مجموعات أفضل</string>
     <string name="v6_3_better_privacy_and_security">خصوصية وأمان أفضل</string>
     <string name="v6_3_faster_sending_messages">إرسال أسرع للرسائل.</string>
+    <string name="group_member_status_rejected">رُفض</string>
+    <string name="group_preview_rejected">رُفض</string>
+    <string name="error_reading_passphrase">خطأ في قراءة عبارة مرور قاعدة البيانات</string>
+    <string name="group_member_status_pending_approval_short">ينتظر</string>
+    <string name="operator_updated_conditions">حُدثت الشروط</string>
+    <string name="button_remove_members_question">إزالة الأعضاء؟</string>
+    <string name="block_members_desc">سيتم إخفاء جميع الرسائل الجديدة من هؤلاء الأعضاء!</string>
+    <string name="members_will_be_removed_from_chat_cannot_be_undone">سيتم إزالة الأعضاء من الدردشة - لا يمكن التراجع عن هذا!</string>
+    <string name="unblock_members_for_all_question">إلغاء حظر الأعضاء للجميع؟</string>
+    <string name="block_members_for_all_question">حظر الأعضاء للجميع؟</string>
+    <string name="unblock_members_desc">سيتم عرض رسائل من هؤلاء الأعضاء!</string>
+    <string name="restore_passphrase_can_not_be_read_enter_manually_desc">لا يمكن قراءة عبارة المرور في Keystore، يُرجى إدخالها يدويًا. قد يكون هذا قد حدث بعد تحديث النظام غير متوافق مع التطبيق. إذا لم يكن الأمر كذلك، فيُرجى التواصل مع المطورين.</string>
+    <string name="members_will_be_removed_from_group_cannot_be_undone">سيتم إزالة الأعضاء من المجموعة - لا يمكن التراجع عن هذا!</string>
+    <string name="feature_roles_moderators">المشرفين</string>
+    <string name="restore_passphrase_can_not_be_read_desc">لا يمكن قراءة عبارة المرور في Keystore. قد يكون هذا قد حدث بعد تحديث النظام غير متوافق مع التطبيق. إذا لم يكن الأمر كذلك، فيُرجى التواصل مع المطورين.</string>
+    <string name="group_member_status_pending_approval">موافقة الانتظار</string>
 </resources>

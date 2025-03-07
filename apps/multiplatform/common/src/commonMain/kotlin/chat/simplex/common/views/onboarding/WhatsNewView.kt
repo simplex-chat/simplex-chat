@@ -169,7 +169,6 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
                 UsageConditionsView(
                   userServers = mutableStateOf(emptyList()),
                   currUserServers = mutableStateOf(emptyList()),
-                  updated = true,
                   close = close,
                   rhId = rhId
                 )
@@ -780,7 +779,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
   ),
   VersionDescription(
     version = "v6.3",
-    // post = "https://simplex.chat/blog/20241210-simplex-network-v6-2-servers-by-flux-business-chats.html",
+    post = "https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html",
     features = listOf(
       VersionFeature.FeatureDescription(
         icon = MR.images.ic_at,

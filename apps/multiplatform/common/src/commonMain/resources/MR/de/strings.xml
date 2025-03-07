@@ -355,8 +355,8 @@
     <string name="chat_console">Chat-Konsole</string>
     <string name="smp_servers">SMP-Server</string>
     <string name="smp_servers_preset_address">Voreingestellte Serveradresse</string>
-    <string name="smp_servers_preset_add">Füge voreingestellte Server hinzu</string>
-    <string name="smp_servers_add">Füge Server hinzu</string>
+    <string name="smp_servers_preset_add">Voreingestellte Server hinzufügen</string>
+    <string name="smp_servers_add">Server hinzufügen</string>
     <string name="smp_servers_test_server">Teste Server</string>
     <string name="smp_servers_test_servers">Teste alle Server</string>
     <string name="smp_servers_save">Alle Server speichern</string>
@@ -661,7 +661,7 @@
     <string name="restore_database_alert_desc">Bitte geben Sie das vorherige Passwort ein, nachdem Sie die Datenbanksicherung wiederhergestellt haben. Diese Aktion kann nicht rückgängig gemacht werden!</string>
     <string name="restore_database_alert_confirm">Wiederherstellen</string>
     <string name="database_restore_error">Fehler bei der Wiederherstellung der Datenbank</string>
-    <string name="restore_passphrase_not_found_desc">Das Passwort wurde nicht im Schlüsselbund gefunden. Bitte geben Sie es manuell ein. Das kann passieren, wenn Sie die App-Daten mit einem Backup-Programm wieder hergestellt haben. Bitte nehmen Sie Kontakt mit den Entwicklern auf, wenn das nicht der Fall ist.</string>
+    <string name="restore_passphrase_not_found_desc">Das Passwort wurde nicht im Schlüsselbund gefunden. Bitte geben Sie es manuell ein. Dies kann passieren, wenn Sie die App-Daten mit einem Backup-Programm wieder hergestellt haben. Wenden Sie sich bitte an die Entwickler, wenn dies nicht der Fall ist.</string>
     <!-- ChatModel.chatRunning interactions -->
     <string name="chat_is_stopped_indication">Der Chat wurde beendet</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Sie können den Chat über die App-Einstellungen/Datenbank oder durch Neustart der App starten.</string>
@@ -923,7 +923,7 @@
     <string name="prohibit_sending_disappearing_messages">Das Senden von verschwindenden Nachrichten nicht erlauben.</string>
     <string name="disappearing_messages_are_prohibited">Verschwindende Nachrichten sind nicht erlaubt.</string>
     <string name="group_members_can_send_disappearing">Mitglieder können verschwindende Nachrichten versenden.</string>
-    <string name="v4_3_improved_server_configuration_desc">Fügen Sie Server durch Scannen der QR-Codes hinzu.</string>
+    <string name="v4_3_improved_server_configuration_desc">Server durch Scannen von QR-Codes hinzufügen.</string>
     <string name="v4_4_disappearing_messages">Verschwindende Nachrichten</string>
     <string name="accept_feature">Übernehmen</string>
     <string name="accept_feature_set_1_day">Einen Tag festlegen</string>
@@ -1304,7 +1304,7 @@
     <string name="share_text_deleted_at">Gelöscht um: %s</string>
     <string name="info_row_disappears_at">Verschwindet um</string>
     <string name="share_text_disappears_at">Verschwindet um: %s</string>
-    <string name="edit_history">Nachrichtenverlauf bearbeiten</string>
+    <string name="edit_history">Nachrichtenverlauf</string>
     <string name="message_reactions_prohibited_in_this_chat">In diesem Chat sind Reaktionen auf Nachrichten nicht erlaubt.</string>
     <string name="item_info_no_text">Kein Text</string>
     <string name="non_fatal_errors_occured_during_import">Während des Imports sind nicht schwerwiegende Fehler aufgetreten:</string>
@@ -1483,7 +1483,7 @@
     <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Sie sind bereits Mitglied in der Gruppe <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_simplex_address">Das ist Ihre eigene SimpleX-Adresse!</string>
     <string name="correct_name_to">Richtiger Name für %s?</string>
-    <string name="delete_messages__question">%d Nachrichten löschen?</string>
+    <string name="delete_messages__question">Sollen %d Nachrichten gelöscht werden?</string>
     <string name="connect_with_contact_name_question">Mit %1$s verbinden?</string>
     <string name="remove_member_button">Mitglied entfernen</string>
     <string name="block_member_confirmation">Blockieren</string>
@@ -1652,8 +1652,8 @@
     <string name="v5_5_private_notes">Private Notizen</string>
     <string name="clear_note_folder_warning">Es werden alle Nachrichten gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
     <string name="clear_note_folder_question">Private Notizen entfernen?</string>
-    <string name="rcv_group_event_member_blocked">%s wurde blockiert</string>
-    <string name="rcv_group_event_member_unblocked">%s wurde freigegeben</string>
+    <string name="rcv_group_event_member_blocked">es wurde %s blockiert</string>
+    <string name="rcv_group_event_member_unblocked">Es wurden %s freigegeben</string>
     <string name="snd_group_event_member_blocked">Sie haben %s blockiert</string>
     <string name="snd_group_event_member_unblocked">Sie haben %s freigegeben</string>
     <string name="block_for_all_question">Mitglied für Alle blockieren?</string>
@@ -2089,10 +2089,10 @@
     <string name="toolbar_settings">Einstellungen</string>
     <string name="moderate_messages_will_be_deleted_warning">Die Nachrichten werden für alle Gruppenmitglieder gelöscht.</string>
     <string name="moderate_messages_will_be_marked_warning">Die Nachrichten werden für alle Mitglieder als moderiert markiert.</string>
-    <string name="delete_members_messages__question">%d Nachrichten der Mitglieder löschen?</string>
+    <string name="delete_members_messages__question">Sollen %d Nachrichten von Mitgliedern gelöscht werden?</string>
     <string name="compose_message_placeholder">Nachricht</string>
     <string name="delete_messages_mark_deleted_warning">Nachrichten werden zur Löschung markiert. Der/Die Empfänger hat/haben die Möglichkeit, diese Nachrichten aufzudecken.</string>
-    <string name="selected_chat_items_selected_n">%d ausgewählt</string>
+    <string name="selected_chat_items_selected_n">Es wurden %d ausgewählt</string>
     <string name="selected_chat_items_nothing_selected">Es wurde Nichts ausgewählt</string>
     <string name="select_verb">Auswählen</string>
     <string name="invite_friends_short">Einladen</string>
@@ -2154,7 +2154,7 @@
     <string name="forward_files_messages_deleted_after_selection_desc">Die Nachrichten wurden gelöscht, nachdem Sie sie ausgewählt hatten.</string>
     <string name="forward_alert_title_nothing_to_forward">Es gibt nichts zum Weiterleiten!</string>
     <string name="n_other_file_errors">%1$d andere(r) Datei-Fehler.</string>
-    <string name="forward_alert_title_messages_to_forward">%1$s Nachricht(en) weiterleiten?</string>
+    <string name="forward_alert_title_messages_to_forward">Soll(en) %1$s Nachricht(en) weitergeleitet werden?</string>
     <string name="forward_files_missing_desc">%1$d Datei(en) wurde(n) gelöscht.</string>
     <string name="forward_files_not_accepted_desc">%1$d Datei(en) wurde(n) nicht heruntergeladen.</string>
     <string name="forward_alert_forward_messages_without_files">Nachrichten ohne Dateien weiterleiten?</string>
@@ -2382,7 +2382,6 @@
     <string name="group_reports_active">%d Meldungen</string>
     <string name="group_reports_member_reports">Mitglieder-Meldungen</string>
     <string name="chat_list_group_reports">Meldungen</string>
-    <string name="group_reports_archived_member_reports">Archivierte Mitglieder-Meldungen</string>
     <string name="blocking_reason_content">Inhalt verletzt Nutzungsbedingungen</string>
     <string name="blocking_reason_spam">Spam</string>
     <string name="connection_error_blocked">Verbindung blockiert</string>
@@ -2420,4 +2419,32 @@
     <string name="enable_sending_member_reports">Melden von Nachrichten an Moderatoren erlauben.</string>
     <string name="report_archive_alert_desc_all">Alle Meldungen werden für Sie archiviert.</string>
     <string name="notification_group_report">Meldung: %s</string>
+    <string name="v6_3_reports_descr">Helfen Sie Administratoren bei der Moderation ihrer Gruppen.</string>
+    <string name="v6_3_mentions">Erwähnung von Mitgliedern 👋</string>
+    <string name="v6_3_reports">Private Meldungen senden</string>
+    <string name="v6_3_mentions_descr">Bei Erwähnung benachrichtigt werden.</string>
+    <string name="v6_3_private_media_file_names">Medien mit anonymisierten Dateinamen.</string>
+    <string name="v6_3_set_message_expiration_in_chats">Verfallsdatum von Nachrichten in Chats festlegen.</string>
+    <string name="v6_3_better_groups_performance">Bessere Leistung von Gruppen</string>
+    <string name="v6_3_faster_deletion_of_groups">Schnelleres löschen von Gruppen</string>
+    <string name="v6_3_faster_sending_messages">Schnelleres versenden von Nachrichten.</string>
+    <string name="group_preview_rejected">abgelehnt</string>
+    <string name="v6_3_better_privacy_and_security">Bessere(r) Security und Datenschutz</string>
+    <string name="v6_3_organize_chat_lists_descr">Verpassen Sie keine wichtigen Nachrichten.</string>
+    <string name="v6_3_organize_chat_lists">Chats in Listen verwalten</string>
+    <string name="group_member_status_rejected">abgelehnt</string>
+    <string name="restore_passphrase_can_not_be_read_desc">Das Passwort kann nicht aus dem Schlüsselbund gelesen werden. Dies kann nach einer Systemaktualisierung passiert sein, die nicht mit der App kompatibel war. Wenden Sie sich bitte an die Entwickler, wenn dies nicht der Fall ist.</string>
+    <string name="group_member_status_pending_approval_short">ausstehend</string>
+    <string name="error_reading_passphrase">Fehler beim Lesen des Datenbank-Passworts</string>
+    <string name="operator_updated_conditions">Aktualisierte Nutzungsbedingungen</string>
+    <string name="group_member_status_pending_approval">ausstehende Genehmigung</string>
+    <string name="restore_passphrase_can_not_be_read_enter_manually_desc">Das Passwort kann nicht aus dem Schlüsselbund gelesen werden. Bitte geben Sie es manuell ein. Dies kann nach einer Systemaktualisierung passiert sein, die nicht mit der App kompatibel war. Wenden Sie sich bitte an die Entwickler, wenn dies nicht der Fall ist.</string>
+    <string name="button_remove_members_question">Mitglieder entfernen?</string>
+    <string name="members_will_be_removed_from_chat_cannot_be_undone">Mitglieder werden aus dem Chat entfernt. Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="members_will_be_removed_from_group_cannot_be_undone">Mitglieder werden aus der Gruppe entfernt. Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="unblock_members_for_all_question">Mitglieder für Alle freigeben?</string>
+    <string name="unblock_members_desc">Nachrichten dieser Mitglieder werden angezeigt!</string>
+    <string name="feature_roles_moderators">Moderatoren</string>
+    <string name="block_members_for_all_question">Mitglieder für Alle blockieren?</string>
+    <string name="block_members_desc">Alle neuen Nachrichten dieser Mitglieder werden nicht angezeigt!</string>
 </resources>

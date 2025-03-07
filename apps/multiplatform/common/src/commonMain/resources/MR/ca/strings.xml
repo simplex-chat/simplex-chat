@@ -2269,7 +2269,6 @@
     <string name="file_error_blocked">El fitxer està blocat per l\'operador del servidor:\n%1$s.</string>
     <string name="report_reason_alert_title">Motiu de l\'informe?</string>
     <string name="group_reports_active_one">1 informe</string>
-    <string name="group_reports_archived_member_reports">Informes de membres arxivats</string>
     <string name="group_reports_active">%d informes</string>
     <string name="group_reports_member_reports">Informes de membres</string>
     <string name="chat_list_group_reports">Informes</string>
@@ -2323,4 +2322,6 @@
     <string name="v6_3_better_groups_performance">Millor rendiment dels grups</string>
     <string name="v6_3_faster_deletion_of_groups">Supressió més ràpida de grups.</string>
     <string name="v6_3_reports_descr">Ajudar els administradors a moderar els seus grups.</string>
+    <string name="group_preview_rejected">rebutjat</string>
+    <string name="group_member_status_rejected">rebutjat</string>
 </resources>

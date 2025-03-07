@@ -80,7 +80,7 @@
 "Please create a profile in the SimpleX app" = "Hozzon létre egy profilt a SimpleX alkalmazásban";
 
 /* No comment provided by engineer. */
-"Selected chat preferences prohibit this message." = "A kijelölt csevegés-beállítások tiltják ezt az üzenetet.";
+"Selected chat preferences prohibit this message." = "A kijelölt csevegési beállítások tiltják ezt az üzenetet.";
 
 /* No comment provided by engineer. */
 "Sending a message takes longer than expected." = "Az üzenet elküldése a vártnál tovább tart.";
@@ -92,7 +92,7 @@
 "Share" = "Megosztás";
 
 /* No comment provided by engineer. */
-"Slow network?" = "Lassú internetkapcsolat?";
+"Slow network?" = "Lassú a hálózata?";
 
 /* No comment provided by engineer. */
 "Unknown database error: %@" = "Ismeretlen adatbázishiba: %@";

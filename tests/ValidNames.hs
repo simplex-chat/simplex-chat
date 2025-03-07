@@ -38,3 +38,5 @@ testMkValidName = do
   mkValidName "alice@example.com" `shouldBe` "alice@example.com"
   mkValidName "alice <> bob" `shouldBe` "alice <> bob"
   mkValidName "alice -> bob" `shouldBe` "alice -> bob"
+  mkValidName "01234567890123456789012345678901234567890123456789extra" `shouldBe` "01234567890123456789012345678901234567890123456789"
+  mkValidName "0123456789012345678901234567890123456789012345678 extra" `shouldBe` "0123456789012345678901234567890123456789012345678"

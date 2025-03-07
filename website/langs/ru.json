@@ -32,7 +32,7 @@
     "privacy-matters-1-overlay-1-title": "Конфиденциальность экономит ваши деньги",
     "simplex-private-card-5-point-1": "SimpleX использует заполнение содержимого для каждого уровня шифрования, чтобы предотвратить атаки на размер сообщения.",
     "privacy-matters-2-overlay-1-linkText": "Конфиденциальность дает вам власть",
-    "hero-overlay-3-title": "Оценка безопасности",
+    "hero-overlay-3-title": "Оценки безопасности",
     "enter-your-email-address": "Email адрес",
     "simplex-explained-tab-1-text": "1. Как это видят пользователи",
     "tap-to-close": "Нажмите, чтобы закрыть",
@@ -101,7 +101,7 @@
     "docs-dropdown-6": "Сервера WebRTC",
     "newer-version-of-eng-msg": "Существует более новая версия этой страницы на английском языке.",
     "install-simplex-app": "Установите приложение SimpleX",
-    "hero-overlay-3-textlink": "Оценка безопасности",
+    "hero-overlay-3-textlink": "Оценки безопасности",
     "comparison-point-2-text": "Возможность MITM",
     "scan-the-qr-code-with-the-simplex-chat-app-description": "Открытые ключи и адрес очереди сообщений, указанные в этой ссылке, НЕ отправляются по сети при просмотре этой страницы &mdash;<br> они содержатся в хэш-фрагменте URL-адреса ссылки.",
     "guide-dropdown-8": "Настройки приложения",
@@ -255,5 +255,6 @@
     "please-enable-javascript": "Пожалуйста, включите JavaScript, чтобы увидеть QR-код.",
     "docs-dropdown-10": "Прозрачность",
     "docs-dropdown-12": "Безопасность",
-    "docs-dropdown-11": "Часто задаваемые вопросы"
+    "docs-dropdown-11": "Часто задаваемые вопросы",
+    "docs-dropdown-14": "SimpleX для бизнеса"
 }

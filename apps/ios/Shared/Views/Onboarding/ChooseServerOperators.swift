@@ -161,12 +161,8 @@ struct ChooseServerOperators: View {
                 case .showInfo:
                     ChooseServerOperatorsInfoView()
                 case .showConditions:
-                    UsageConditionsView(
-                        currUserServers: Binding.constant([]),
-                        userServers: Binding.constant([]),
-                        updated: false
-                    )
-                    .modifier(ThemedBackground(grouped: true))
+                    SimpleConditionsView()
+                        .modifier(ThemedBackground(grouped: true))
                 }
             }
             .frame(maxHeight: .infinity, alignment: .top)

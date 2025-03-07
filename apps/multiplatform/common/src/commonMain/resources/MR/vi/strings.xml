@@ -1869,7 +1869,6 @@
     <string name="group_reports_active_one">1 báo cáo</string>
     <string name="group_reports_active">%d báo cáo</string>
     <string name="group_reports_member_reports">Các báo cáo của thành viên</string>
-    <string name="group_reports_archived_member_reports">Các báo cáo thành viên đã được lưu trữ</string>
     <string name="subscription_errors">Lỗi đăng ký dài hạn</string>
     <string name="chat_list_group_reports">Các báo cáo</string>
     <string name="servers_info_private_data_disclaimer">Bắt đầu từ %s.\nTất cả dữ liệu được lưu trữ một cách riêng tư trên thiết bị của bạn.</string>
@@ -2320,4 +2319,18 @@
     <string name="enable_sending_member_reports">Cho phép báo cáo tin nhắn tới các kiểm duyệt viên.</string>
     <string name="disable_sending_member_reports">Cấm báo cáo tin nhắn tới các kiểm duyệt viên.</string>
     <string name="member_reports_are_prohibited">Báo cáo tin nhắn bị cấm trong nhóm này.</string>
+    <string name="v6_3_mentions_descr">Nhận thông báo khi được nhắc đến.</string>
+    <string name="v6_3_reports_descr">Giúp các quản trị viên quản lý các nhóm của họ.</string>
+    <string name="v6_3_mentions">Nhắc đến các thành viên 👋</string>
+    <string name="v6_3_organize_chat_lists">Sắp xếp các cuộc trò chuyện thành danh sách</string>
+    <string name="v6_3_faster_deletion_of_groups">Xóa nhóm nhanh hơn.</string>
+    <string name="v6_3_faster_sending_messages">Gửi tin nhắn nhanh hơn.</string>
+    <string name="v6_3_organize_chat_lists_descr">Không còn bỏ lỡ các tin nhắn quan trọng nữa.</string>
+    <string name="v6_3_better_privacy_and_security">Bảo mật và riêng tư hơn</string>
+    <string name="v6_3_better_groups_performance">Nhóm hoạt động hiệu quả hơn</string>
+    <string name="v6_3_reports">Gửi các báo cáo riêng tư</string>
+    <string name="group_preview_rejected">đã từ chối</string>
+    <string name="group_member_status_rejected">đã từ chối</string>
+    <string name="v6_3_set_message_expiration_in_chats">Thiết lập giờ hết hạn cho tin nhắn trong các cuộc trò chuyện.</string>
+    <string name="v6_3_private_media_file_names">Tên các tệp tin đa phương tiện riêng tư.</string>
 </resources>

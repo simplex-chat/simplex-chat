@@ -279,7 +279,7 @@ struct DatabaseView: View {
         case let .archiveExportedWithErrors(archivePath, errs):
             return Alert(
                 title: Text("Chat database exported"),
-                message: Text("You may save the exported archive.") + Text(verbatim: "\n") + Text("Some file(s) were not exported:") + Text(archiveErrorsText(errs)),
+                message: Text("You may save the exported archive.") + textNewLine + Text("Some file(s) were not exported:") + Text(archiveErrorsText(errs)),
                 dismissButton: .default(Text("Continue")) {
                     showShareSheet(items: [archivePath])
                 }

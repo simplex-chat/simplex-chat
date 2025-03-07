@@ -494,7 +494,7 @@ struct ChatView: View {
 
             Button ("Cancel") {
                 closeSearch()
-                Task { await loadChat(chat: chat) }
+                searchTextChanged("")
             }
         }
         .padding(.horizontal)
@@ -570,6 +570,14 @@ struct ChatView: View {
             .onChange(of: im.reversedChatItems) { items in
                 mergedItems.boxedValue = MergedItems.create(items, revealedItems, im.chatState)
                 scrollView.updateItems(mergedItems.boxedValue.items)
+                if im.itemAdded {
+                    im.itemAdded = false
+                    if scrollView.listState.firstVisibleItemIndex < 2 {
+                        scrollView.scrollToBottomAnimated()
+                    } else {
+                        scrollView.scroll(by: 34)
+                    }
+                }
             }
             .onChange(of: revealedItems) { revealed in
                 mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, revealed, im.chatState)
@@ -585,33 +593,8 @@ struct ChatView: View {
             .padding(.vertical, -100)
             .onTapGesture { hideKeyboard() }
             .onChange(of: searchText) { s in
-                guard showSearch else { return }
-                Task {
-                    await loadChat(chat: chat, search: s)
-                    mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, revealedItems, im.chatState)
-                    await MainActor.run {
-                        scrollView.updateItems(mergedItems.boxedValue.items)
-                    }
-                    if !s.isEmpty {
-                        scrollView.scrollToBottom()
-                    } else if let index = scrollView.listState.items.lastIndex(where: { $0.hasUnread() }) {
-                        // scroll to the top unread item
-                        scrollView.scrollToItem(index)
-                        loadLastItems($loadingMoreItems, loadingBottomItems: $loadingBottomItems, chat)
-                    } else {
-                        scrollView.scrollToBottom()
-                        loadLastItems($loadingMoreItems, loadingBottomItems: $loadingBottomItems, chat)
-                    }
-                }
-            }
-            .onChange(of: im.itemAdded) { added in
-                if added {
-                    im.itemAdded = false
-                    if scrollView.listState.firstVisibleItemIndex < 2 {
-                        scrollView.scrollToBottomAnimated()
-                    } else {
-                        scrollView.scroll(by: 34)
-                    }
+                if showSearch {
+                    searchTextChanged(s)
                 }
             }
         }
@@ -649,6 +632,26 @@ struct ChatView: View {
         loadLastItems($loadingMoreItems, loadingBottomItems: $loadingBottomItems, chat)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             allowLoadMoreItems = true
+        }
+    }
+
+    private func searchTextChanged(_ s: String) {
+        Task {
+            await loadChat(chat: chat, search: s)
+            mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, revealedItems, im.chatState)
+            await MainActor.run {
+                scrollView.updateItems(mergedItems.boxedValue.items)
+            }
+            if !s.isEmpty {
+                scrollView.scrollToBottom()
+            } else if let index = scrollView.listState.items.lastIndex(where: { $0.hasUnread() }) {
+                // scroll to the top unread item
+                scrollView.scrollToItem(index)
+                loadLastItems($loadingMoreItems, loadingBottomItems: $loadingBottomItems, chat)
+            } else {
+                scrollView.scrollToBottom()
+                loadLastItems($loadingMoreItems, loadingBottomItems: $loadingBottomItems, chat)
+            }
         }
     }
 
@@ -1317,6 +1320,9 @@ struct ChatView: View {
             var unreadMentions: Int = 0
 
             for i in range {
+                if i < 0 || i >= im.reversedChatItems.count {
+                    break
+                }
                 let ci = im.reversedChatItems[i]
                 if ci.isRcvNew {
                     unreadItems.append(ci.id)
@@ -2368,7 +2374,7 @@ struct ReactionContextMenu: View {
     @ViewBuilder private func groupMemberReactionList() -> some View {
         if memberReactions.isEmpty {
             ForEach(Array(repeating: 0, count: reactionCount.totalReacted), id: \.self) { _ in
-                Text(verbatim: " ")
+                textSpace
             }
         } else {
             ForEach(memberReactions, id: \.groupMember.groupMemberId) { mr in
