@@ -1,13 +1,4 @@
 /* No comment provided by engineer. */
-"\n" = "\n";
-
-/* No comment provided by engineer. */
-"   " = "   ";
-
-/* No comment provided by engineer. */
-" (" = " (";
-
-/* No comment provided by engineer. */
 " (can be copied)" = " (kann kopiert werden)";
 
 /* No comment provided by engineer. */
@@ -26,28 +17,13 @@
 "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- Bis zu 5 Minuten lange Sprachnachrichten\n- Zeitdauer für verschwindende Nachrichten anpassen\n- Nachrichtenverlauf bearbeiten";
 
 /* No comment provided by engineer. */
-", " = ", ";
-
-/* No comment provided by engineer. */
-": " = ": ";
-
-/* No comment provided by engineer. */
 "!1 colored!" = "!1 farbig!";
-
-/* No comment provided by engineer. */
-"." = ".";
-
-/* No comment provided by engineer. */
-"(" = "(";
 
 /* No comment provided by engineer. */
 "(new)" = "(Neu)";
 
 /* No comment provided by engineer. */
 "(this device v%@)" = "(Dieses Gerät hat v%@)";
-
-/* No comment provided by engineer. */
-")" = ")";
 
 /* No comment provided by engineer. */
 "[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Unterstützen Sie uns](https://github.com/simplex-chat/simplex-chat#contribute)";
@@ -57,12 +33,6 @@
 
 /* No comment provided by engineer. */
 "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Stern auf GitHub vergeben](https://github.com/simplex-chat/simplex-chat)";
-
-/* No comment provided by engineer. */
-"@'%@'" = "@'%@'";
-
-/* No comment provided by engineer. */
-"@%@" = "@%@";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Kontakt hinzufügen**: Um einen neuen Einladungslink zu erstellen.";
@@ -503,7 +473,7 @@
 "All chats and messages will be deleted - this cannot be undone!" = "Es werden alle Chats und Nachrichten gelöscht. Dies kann nicht rückgängig gemacht werden!";
 
 /* alert message */
-"All chats will be removed from the list (text), and the list deleted." = "Alle Chats werden von der Liste (text) entfernt und danach wird die Liste gelöscht.";
+"All chats will be removed from the list %@, and the list deleted." = "Alle Chats werden von der Liste %@ entfernt und danach wird die Liste gelöscht.";
 
 /* No comment provided by engineer. */
 "All data is erased when it is entered." = "Alle Daten werden gelöscht, sobald dieser eingegeben wird.";
@@ -2434,7 +2404,7 @@
 "File errors:\n%@" = "Datei-Fehler:\n%@";
 
 /* file error text */
-"File is blocked by server operator:\n(info.reason.text)." = "Datei wurde vom Server-Betreiber blockiert:\n(info.reason.text).";
+"File is blocked by server operator:\n%@." = "Datei wurde vom Server-Betreiber blockiert:\n%@.";
 
 /* file error text */
 "File not found - most likely file was deleted or cancelled." = "Datei nicht gefunden - höchstwahrscheinlich wurde die Datei gelöscht oder der Transfer abgebrochen.";
@@ -4276,7 +4246,7 @@
 "Report violation: only group moderators will see it." = "Verstoß melden: Nur Gruppenmoderatoren werden es sehen.";
 
 /* report in notification */
-"Report: (text.isEmpty ? reason.text : text)" = "Meldung: (text.isEmpty ? reason.text : text)";
+"Report: %@" = "Meldung: %@";
 
 /* No comment provided by engineer. */
 "Reporting messages to moderators is prohibited." = "Melden von Nachrichten an Moderatoren ist nicht erlaubt.";

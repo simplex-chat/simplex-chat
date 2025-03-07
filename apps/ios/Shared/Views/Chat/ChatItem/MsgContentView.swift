@@ -21,7 +21,7 @@ private let typingIndicators: [Text] = [
 ]
 
 private func typing(_ w: Font.Weight = .light) -> Text {
-    Text(".").fontWeight(w)
+    Text(verbatim: ".").fontWeight(w)
 }
 
 struct MsgContentView: View {
@@ -88,7 +88,7 @@ struct MsgContentView: View {
     }
 
     private func reserveSpaceForMeta(_ mt: CIMeta) -> Text {
-        (rightToLeft ? Text("\n") : Text(verbatim: "   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
+        (rightToLeft ? textNewLine : Text(verbatim: "   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
     }
 }
 
@@ -117,7 +117,7 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: St
 
     if let s = sender {
         let t = Text(s)
-        return (preview ? t : t.fontWeight(.medium)) + Text(": ") + res
+        return (preview ? t : t.fontWeight(.medium)) + Text(verbatim: ": ") + res
     } else {
         return res
     }
@@ -170,7 +170,7 @@ private func formatText(_ ft: FormattedText, _ preview: Bool, showSecret: Bool, 
 }
 
 private func mentionText(_ name: String) -> Text {
-    Text(name.contains(" @") ? "@'\(name)'" : "@\(name)").fontWeight(.semibold)
+    Text(verbatim: name.contains(" @") ? "@'\(name)'" : "@\(name)").fontWeight(.semibold)
 }
 
 private func linkText(_ s: String, _ link: String, _ preview: Bool, prefix: String, color: Color = Color(uiColor: uiLinkColor), uiColor: UIColor = uiLinkColor) -> Text {

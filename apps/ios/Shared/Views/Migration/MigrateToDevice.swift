@@ -623,7 +623,7 @@ struct MigrateToDevice: View {
             AlertManager.shared.showAlert(
                 Alert(
                     title: Text("Error migrating settings"),
-                    message: Text ("Some app settings were not migrated.") + Text("\n") + Text(responseError(error)))
+                    message: Text ("Some app settings were not migrated.") + textNewLine + Text(responseError(error)))
             )
         }
         hideView()

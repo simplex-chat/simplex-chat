@@ -2294,7 +2294,6 @@
     <string name="chat_list_group_reports">举报</string>
     <string name="group_reports_active_one">1 个举报</string>
     <string name="group_reports_member_reports">成员举报</string>
-    <string name="group_reports_archived_member_reports">已存档的成员举报</string>
     <string name="group_reports_active">%d 个举报</string>
     <string name="blocking_reason_spam">垃圾信息</string>
     <string name="connection_error_blocked">连接被阻止</string>

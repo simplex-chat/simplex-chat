@@ -1869,7 +1869,6 @@
     <string name="group_reports_active_one">1 báo cáo</string>
     <string name="group_reports_active">%d báo cáo</string>
     <string name="group_reports_member_reports">Các báo cáo của thành viên</string>
-    <string name="group_reports_archived_member_reports">Các báo cáo thành viên đã được lưu trữ</string>
     <string name="subscription_errors">Lỗi đăng ký dài hạn</string>
     <string name="chat_list_group_reports">Các báo cáo</string>
     <string name="servers_info_private_data_disclaimer">Bắt đầu từ %s.\nTất cả dữ liệu được lưu trữ một cách riêng tư trên thiết bị của bạn.</string>

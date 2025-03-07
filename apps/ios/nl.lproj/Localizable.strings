@@ -1,13 +1,4 @@
 /* No comment provided by engineer. */
-"\n" = "\n";
-
-/* No comment provided by engineer. */
-"   " = "   ";
-
-/* No comment provided by engineer. */
-" (" = " (";
-
-/* No comment provided by engineer. */
 " (can be copied)" = " (kan gekopieerd worden)";
 
 /* No comment provided by engineer. */
@@ -26,28 +17,13 @@
 "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- spraakberichten tot 5 minuten.\n- aangepaste tijd om te verdwijnen.\n- bewerkingsgeschiedenis.";
 
 /* No comment provided by engineer. */
-", " = ", ";
-
-/* No comment provided by engineer. */
-": " = ": ";
-
-/* No comment provided by engineer. */
 "!1 colored!" = "!1 gekleurd!";
-
-/* No comment provided by engineer. */
-"." = ".";
-
-/* No comment provided by engineer. */
-"(" = "(";
 
 /* No comment provided by engineer. */
 "(new)" = "(nieuw)";
 
 /* No comment provided by engineer. */
 "(this device v%@)" = "(dit apparaat v%@)";
-
-/* No comment provided by engineer. */
-")" = ")";
 
 /* No comment provided by engineer. */
 "[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Bijdragen](https://github.com/simplex-chat/simplex-chat#contribute)";
@@ -57,12 +33,6 @@
 
 /* No comment provided by engineer. */
 "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)";
-
-/* No comment provided by engineer. */
-"@'%@'" = "@'%@'";
-
-/* No comment provided by engineer. */
-"@%@" = "@%@";
 
 /* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Contact toevoegen**: om een nieuwe uitnodigingslink aan te maken, of verbinding te maken via een link die u heeft ontvangen.";
@@ -503,7 +473,7 @@
 "All chats and messages will be deleted - this cannot be undone!" = "Alle chats en berichten worden verwijderd, dit kan niet ongedaan worden gemaakt!";
 
 /* alert message */
-"All chats will be removed from the list (text), and the list deleted." = "Alle chats worden uit de lijst (tekst) verwijderd en de lijst wordt verwijderd.";
+"All chats will be removed from the list %@, and the list deleted." = "Alle chats worden uit de lijst %@ verwijderd en de lijst wordt verwijderd.";
 
 /* No comment provided by engineer. */
 "All data is erased when it is entered." = "Alle gegevens worden bij het invoeren gewist.";
@@ -2434,7 +2404,7 @@
 "File errors:\n%@" = "Bestandsfouten:\n%@";
 
 /* file error text */
-"File is blocked by server operator:\n(info.reason.text)." = "Bestand is geblokkeerd door serveroperator:\n(info.reason.text).";
+"File is blocked by server operator:\n%@." = "Bestand is geblokkeerd door serveroperator:\n%@.";
 
 /* file error text */
 "File not found - most likely file was deleted or cancelled." = "Bestand niet gevonden - hoogstwaarschijnlijk is het bestand verwijderd of geannuleerd.";
@@ -4267,7 +4237,7 @@
 "Report violation: only group moderators will see it." = "Rapporteer overtreding: alleen groepsmoderators kunnen dit zien.";
 
 /* report in notification */
-"Report: (text.isEmpty ? reason.text : text)" = "Rapport: (text.isEmpty ? reason.text : text)";
+"Report: %@" = "Rapport: %@";
 
 /* No comment provided by engineer. */
 "Reporting messages to moderators is prohibited." = "Het is niet toegestaan om berichten aan moderators te melden.";
