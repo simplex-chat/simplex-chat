@@ -468,6 +468,24 @@ deleteGroupCIs user gInfo items byUser timed byGroupMember_ deletedTs = do
         Nothing -> Nothing <$ deleteGroupChatItem db user gInfo ci
       pure $ groupDeletion md gInfo ci ci'
 
+deleteGroupMemberCIs :: MsgDirectionI d => User -> GroupInfo -> GroupMember -> GroupMember -> SMsgDirection d -> CM ()
+deleteGroupMemberCIs user gInfo member byGroupMember msgDir = do
+  deletedTs <- liftIO getCurrentTime
+  filesInfo <- withStore' $ \db -> deleteGroupMemberCIs_ db user gInfo member byGroupMember msgDir deletedTs
+  deleteCIFiles user filesInfo
+
+deleteGroupMembersCIs :: User -> GroupInfo -> [GroupMember] -> GroupMember -> CM ()
+deleteGroupMembersCIs user gInfo members byGroupMember = do
+  deletedTs <- liftIO getCurrentTime
+  filesInfo <- withStore' $ \db -> fmap concat $ forM members $ \m -> deleteGroupMemberCIs_ db user gInfo m byGroupMember SMDRcv deletedTs
+  deleteCIFiles user filesInfo
+
+deleteGroupMemberCIs_ :: MsgDirectionI d => DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> SMsgDirection d -> UTCTime -> IO [CIFileInfo]
+deleteGroupMemberCIs_ db user gInfo member byGroupMember msgDir deletedTs = do
+  fs <- getGroupMemberFileInfo db user gInfo member
+  updateMemberCIsModerated db user gInfo member byGroupMember msgDir deletedTs
+  pure fs
+
 deleteLocalCIs :: User -> NoteFolder -> [CChatItem 'CTLocal] -> Bool -> Bool -> CM ChatResponse
 deleteLocalCIs user nf items byUser timed = do
   let ciFilesInfo = mapMaybe (\(CChatItem _ ChatItem {file}) -> mkCIFileInfo <$> file) items
@@ -510,6 +528,24 @@ markGroupCIsDeleted user gInfo items byUser byGroupMember_ deletedTs = do
     markDeleted db (CChatItem md ci) = do
       ci' <- markGroupChatItemDeleted db user gInfo ci byGroupMember_ deletedTs
       pure $ groupDeletion md gInfo ci (Just ci')
+
+markGroupMemberCIsDeleted :: User -> GroupInfo -> GroupMember -> GroupMember -> CM ()
+markGroupMemberCIsDeleted user gInfo member byGroupMember = do
+  deletedTs <- liftIO getCurrentTime
+  filesInfo <- withStore' $ \db -> markGroupMemberCIsDeleted_ db user gInfo member byGroupMember deletedTs
+  cancelFilesInProgress user filesInfo
+
+markGroupMembersCIsDeleted :: User -> GroupInfo -> [GroupMember] -> GroupMember -> CM ()
+markGroupMembersCIsDeleted user gInfo members byGroupMember = do
+  deletedTs <- liftIO getCurrentTime
+  filesInfo <- withStore' $ \db -> fmap concat $ forM members $ \m -> markGroupMemberCIsDeleted_ db user gInfo m byGroupMember deletedTs
+  cancelFilesInProgress user filesInfo
+
+markGroupMemberCIsDeleted_ :: DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> UTCTime -> IO [CIFileInfo]
+markGroupMemberCIsDeleted_ db user gInfo member byGroupMember deletedTs = do
+  fs <- getGroupMemberFileInfo db user gInfo member
+  markMemberCIsDeleted db user gInfo member byGroupMember deletedTs
+  pure fs
 
 groupDeletion :: MsgDirectionI d => SMsgDirection d -> GroupInfo -> ChatItem 'CTGroup d -> Maybe (ChatItem 'CTGroup d) -> ChatItemDeletion
 groupDeletion md g ci ci' = ChatItemDeletion (gItem ci) (gItem <$> ci')

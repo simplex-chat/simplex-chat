@@ -1961,7 +1961,7 @@
     <string name="proxy_destination_error_failed_to_connect">转发服务器 %1$s 连接目的地服务器 %2$s 失败。请稍后尝试。</string>
     <string name="smp_proxy_error_broker_host">转发服务器地址不兼容网络设置：%1$s。</string>
     <string name="smp_proxy_error_broker_version">转发服务器版本不兼容网络设置：%1$s。</string>
-    <string name="proxy_destination_error_broker_host">%1$s 的目的地服务器地址不兼容转发服务器 %2$s 的设置</string>
+    <string name="proxy_destination_error_broker_host">%1$s 的目的地服务器地址不兼容转发服务器 %2$s 的设置。</string>
     <string name="smp_proxy_error_connecting">连接转发服务器 %1$s 出错。请稍后尝试。</string>
     <string name="privacy_media_blur_radius">模糊媒体文件</string>
     <string name="privacy_media_blur_radius_medium">中度</string>
@@ -2347,4 +2347,18 @@
     <string name="v6_3_set_message_expiration_in_chats">在聊天中设置消息过期时间。</string>
     <string name="group_preview_rejected">被拒绝</string>
     <string name="group_member_status_rejected">被拒绝</string>
+    <string name="error_reading_passphrase">数据库密码短语读取出错</string>
+    <string name="restore_passphrase_can_not_be_read_desc">无法读取 Keystore 中的密码短语，请手动输入它。这可能在不兼容本应用的系统更新后出现。如果不是这种情况，请联系开发者。</string>
+    <string name="restore_passphrase_can_not_be_read_enter_manually_desc">无法读取 Keystore 中的密码短语，请手动输入它。这可能在不兼容本应用的系统更新后出现。如果不是这种情况，请联系开发者。</string>
+    <string name="group_member_status_pending_approval_short">待批准</string>
+    <string name="group_member_status_pending_approval">待批准</string>
+    <string name="operator_updated_conditions">条款已更新</string>
+    <string name="block_members_desc">所有来自这些成员的新消息都将被隐藏！</string>
+    <string name="block_members_for_all_question">为所有其他成员封禁这些成员？</string>
+    <string name="members_will_be_removed_from_group_cannot_be_undone">将从群中移除这些成员 — 此操作无法撤销！</string>
+    <string name="unblock_members_desc">将显示来自这些成员的消息！</string>
+    <string name="button_remove_members_question">删除成员吗？</string>
+    <string name="unblock_members_for_all_question">为所有其他成员解封这些成员吗？</string>
+    <string name="feature_roles_moderators">moderators</string>
+    <string name="members_will_be_removed_from_chat_cannot_be_undone">将从聊天中移除这些成员 — 此操作无法撤销！</string>
 </resources>

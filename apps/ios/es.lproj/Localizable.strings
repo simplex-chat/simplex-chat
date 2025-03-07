@@ -86,7 +86,7 @@
 "**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." = "**Recuarda**: usar la misma base de datos en dos dispositivos hará que falle el descifrado de mensajes como protección de seguridad.";
 
 /* No comment provided by engineer. */
-"**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Atención**: NO podrás recuperar o cambiar la contraseña si la pierdes.";
+"**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Atención**: Si la pierdes NO podrás recuperar o cambiar la contraseña.";
 
 /* No comment provided by engineer. */
 "**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from." = "**Recomendado**: el token del dispositivo y las notificaciones se envían al servidor de notificaciones de SimpleX Chat, pero no el contenido del mensaje, su tamaño o su procedencia.";
@@ -797,7 +797,7 @@
 "Better groups" = "Grupos mejorados";
 
 /* No comment provided by engineer. */
-"Better groups performance" = "Mejor rendimiento de los grupos";
+"Better groups performance" = "Rendimiento de grupos mejorado";
 
 /* No comment provided by engineer. */
 "Better message dates." = "Sistema de fechas mejorado.";
@@ -812,7 +812,7 @@
 "Better notifications" = "Notificaciones mejoradas";
 
 /* No comment provided by engineer. */
-"Better privacy and security" = "Mejor privacidad y seguridad";
+"Better privacy and security" = "Privacidad y seguridad mejoradas";
 
 /* No comment provided by engineer. */
 "Better security ✅" = "Seguridad mejorada ✅";
@@ -2602,7 +2602,7 @@
 "Further reduced battery usage" = "Reducción consumo de batería";
 
 /* No comment provided by engineer. */
-"Get notified when mentioned." = "Las menciones ahora notifican.";
+"Get notified when mentioned." = "Las menciones ahora se notifican.";
 
 /* No comment provided by engineer. */
 "GIFs and stickers" = "GIFs y stickers";
@@ -2683,7 +2683,7 @@
 "Help" = "Ayuda";
 
 /* No comment provided by engineer. */
-"Help admins moderating their groups." = "Ayuda a los admins moderar sus grupos.";
+"Help admins moderating their groups." = "Ayuda a los admins a moderar sus grupos.";
 
 /* No comment provided by engineer. */
 "Hidden" = "Oculto";
@@ -3220,7 +3220,7 @@
 "Members can send voice messages." = "Los miembros del grupo pueden enviar mensajes de voz.";
 
 /* No comment provided by engineer. */
-"Mention members 👋" = "Mencionar miembros 👋";
+"Mention members 👋" = "Menciona a miembros 👋";
 
 /* No comment provided by engineer. */
 "Menus" = "Menus";
@@ -3771,7 +3771,7 @@
 "Or to share privately" = "O para compartir en privado";
 
 /* No comment provided by engineer. */
-"Organize chats into lists" = "Organiza los chats en listas";
+"Organize chats into lists" = "Organiza tus chats en listas";
 
 /* No comment provided by engineer. */
 "other" = "otros";
@@ -3831,7 +3831,13 @@
 "peer-to-peer" = "p2p";
 
 /* No comment provided by engineer. */
+"pending" = "pendiente";
+
+/* No comment provided by engineer. */
 "Pending" = "Pendientes";
+
+/* No comment provided by engineer. */
+"pending approval" = "pendiente de aprobación";
 
 /* No comment provided by engineer. */
 "Periodic" = "Periódicamente";
@@ -3945,7 +3951,7 @@
 "Private filenames" = "Nombres de archivos privados";
 
 /* No comment provided by engineer. */
-"Private media file names." = "Nombres privados de archivos de media.";
+"Private media file names." = "Nombres privados en archivos de media.";
 
 /* No comment provided by engineer. */
 "Private message routing" = "Enrutamiento privado de mensajes";
@@ -4175,6 +4181,9 @@
 
 /* No comment provided by engineer. */
 "Reject contact request" = "Rechazar solicitud de contacto";
+
+/* No comment provided by engineer. */
+"rejected" = "rechazado";
 
 /* call status */
 "rejected call" = "llamada rechazada";
@@ -4700,7 +4709,7 @@
 "Set it instead of system authentication." = "Úsalo en lugar de la autenticación del sistema.";
 
 /* No comment provided by engineer. */
-"Set message expiration in chats." = "Establece vencimiento de los mensajes en chats.";
+"Set message expiration in chats." = "Establece el vencimiento para los mensajes en los chats.";
 
 /* profile update event chat item */
 "set new contact address" = "nueva dirección de contacto";
@@ -5411,6 +5420,9 @@
 
 /* No comment provided by engineer. */
 "Update settings?" = "¿Actualizar configuración?";
+
+/* No comment provided by engineer. */
+"Updated conditions" = "Condiciones actualizadas";
 
 /* rcv group event chat item */
 "updated group profile" = "ha actualizado el perfil del grupo";

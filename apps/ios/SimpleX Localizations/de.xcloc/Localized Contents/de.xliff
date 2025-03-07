@@ -8261,6 +8261,7 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       </trans-unit>
       <trans-unit id="Updated conditions" xml:space="preserve">
         <source>Updated conditions</source>
+        <target>Aktualisierte Nutzungsbedingungen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve">
@@ -9842,10 +9843,12 @@ Verbindungsanfrage wiederholen?</target>
       </trans-unit>
       <trans-unit id="pending" xml:space="preserve">
         <source>pending</source>
+        <target>ausstehend</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="pending approval" xml:space="preserve">
         <source>pending approval</source>
+        <target>ausstehende Genehmigung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="quantum resistant e2e encryption" xml:space="preserve">
@@ -9865,6 +9868,7 @@ Verbindungsanfrage wiederholen?</target>
       </trans-unit>
       <trans-unit id="rejected" xml:space="preserve">
         <source>rejected</source>
+        <target>abgelehnt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="rejected call" xml:space="preserve">

@@ -539,7 +539,7 @@ struct MigrateToDevice: View {
                     chatInitControllerRemovingDatabases()
                 } else if ChatModel.shared.chatRunning == true {
                     // cannot delete storage if chat is running
-                    try await apiStopChat()
+                    try await stopChatAsync()
                 }
                 try await apiDeleteStorage()
                 try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
@@ -632,6 +632,8 @@ struct MigrateToDevice: View {
     private func hideView() {
         onboardingStageDefault.set(.onboardingComplete)
         m.onboardingStage = .onboardingComplete
+        m.migrationState = nil
+        MigrationToDeviceState.save(nil)
         dismiss()
     }
 
