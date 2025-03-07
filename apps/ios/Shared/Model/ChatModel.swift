@@ -643,27 +643,23 @@ final class ChatModel: ObservableObject {
         }
         
         func removedUpdatedItem(_ item: ChatItem) -> ChatItem? {
-            let newContent: CIContent? =
-                if case .groupSnd = item.chatDir, removedMember.groupMemberId == groupInfo.membership.groupMemberId {
-                    .sndModerated
-                } else if case let .groupRcv(groupMember) = item.chatDir, groupMember.groupMemberId == removedMember.groupMemberId {
-                    .rcvModerated
-                } else {
-                    nil
-                }
-            if let newContent {
-                var updatedItem = item
-                updatedItem.meta.itemDeleted = .moderated(deletedTs: Date.now, byGroupMember: byMember)
-                if groupInfo.fullGroupPreferences.fullDelete.on {
-                    updatedItem.content = newContent
-                }
-                if item.isActiveReport {
-                    decreaseGroupReportsCounter(groupInfo.id)
-                }
-                return updatedItem
+            let newContent: CIContent
+            if case .groupSnd = item.chatDir, removedMember.groupMemberId == groupInfo.membership.groupMemberId {
+                newContent = .sndModerated
+            } else if case let .groupRcv(groupMember) = item.chatDir, groupMember.groupMemberId == removedMember.groupMemberId {
+                newContent = .rcvModerated
             } else {
                 return nil
             }
+            var updatedItem = item
+            updatedItem.meta.itemDeleted = .moderated(deletedTs: Date.now, byGroupMember: byMember)
+            if groupInfo.fullGroupPreferences.fullDelete.on {
+                updatedItem.content = newContent
+            }
+            if item.isActiveReport {
+                decreaseGroupReportsCounter(groupInfo.id)
+            }
+            return updatedItem
         }
     }
 
