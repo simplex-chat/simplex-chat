@@ -692,7 +692,7 @@
 "Archiving database" = "Подготовка архива";
 
 /* No comment provided by engineer. */
-"Ask" = "спросить";
+"Ask" = "Спросить";
 
 /* No comment provided by engineer. */
 "Attach" = "Прикрепить";
@@ -785,7 +785,7 @@
 "Better notifications" = "Улучшенные уведомления";
 
 /* No comment provided by engineer. */
-"Better privacy and security" = "Улучшенная приватность и безопасность";
+"Better privacy and security" = "Улучшенная конфиденциальность и безопасность";
 
 /* No comment provided by engineer. */
 "Better security ✅" = "Улучшенная безопасность ✅";
@@ -860,7 +860,7 @@
 "Business chats" = "Бизнес разговоры";
 
 /* No comment provided by engineer. */
-"Businesses" = "Предприятия";
+"Businesses" = "Бизнесы";
 
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "По профилю чата или [по соединению](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (БЕТА).";
@@ -2242,7 +2242,7 @@
 "Error removing member" = "Ошибка при удалении члена группы";
 
 /* alert title */
-"Error reordering lists" = "Ошибка переупорядочивания списков";
+"Error reordering lists" = "Ошибка сортировки списков";
 
 /* No comment provided by engineer. */
 "Error resetting statistics" = "Ошибка сброса статистики";
@@ -2575,7 +2575,7 @@
 "Further reduced battery usage" = "Уменьшенное потребление батареи";
 
 /* No comment provided by engineer. */
-"Get notified when mentioned." = "Получайте уведомления от упоминаний.";
+"Get notified when mentioned." = "Уведомления, когда Вас упомянули.";
 
 /* No comment provided by engineer. */
 "GIFs and stickers" = "ГИФ файлы и стикеры";
@@ -3193,7 +3193,7 @@
 "Members can send voice messages." = "Члены группы могут отправлять голосовые сообщения.";
 
 /* No comment provided by engineer. */
-"Mention members 👋" = "Упоминайте участников 👋";
+"Mention members 👋" = "Упоминайте членов группы 👋";
 
 /* No comment provided by engineer. */
 "Menus" = "Меню";
@@ -3370,7 +3370,7 @@
 "Mute" = "Без звука";
 
 /* notification label action */
-"Mute all" = "Выключить уведомления для всех";
+"Mute all" = "Все без звука";
 
 /* No comment provided by engineer. */
 "Muted when inactive!" = "Без звука, когда не активный!";
@@ -3469,13 +3469,13 @@
 "No app password" = "Нет кода доступа";
 
 /* No comment provided by engineer. */
-"No chats" = "Никаких чатов";
+"No chats" = "Нет чатов";
 
 /* No comment provided by engineer. */
 "No chats found" = "Чаты не найдены";
 
 /* No comment provided by engineer. */
-"No chats in list %@" = "Никаких чатов в списке %@";
+"No chats in list %@" = "Нет чатов в списке %@";
 
 /* No comment provided by engineer. */
 "No contacts selected" = "Контакты не выбраны";
@@ -3553,7 +3553,7 @@
 "No token!" = "Нет токена!";
 
 /* No comment provided by engineer. */
-"No unread chats" = "Без непрочитанных чатов";
+"No unread chats" = "Нет непрочитанных чатов";
 
 /* No comment provided by engineer. */
 "No user identifiers." = "Без идентификаторов пользователей.";
@@ -3562,7 +3562,7 @@
 "Not compatible!" = "Несовместимая версия!";
 
 /* No comment provided by engineer. */
-"Notes" = "Примечания";
+"Notes" = "Заметки";
 
 /* No comment provided by engineer. */
 "Nothing selected" = "Ничего не выбрано";
@@ -3804,10 +3804,10 @@
 "peer-to-peer" = "peer-to-peer";
 
 /* No comment provided by engineer. */
-"pending" = "на рассмотрении";
+"pending" = "ожидает";
 
 /* No comment provided by engineer. */
-"Pending" = "В ожидании";
+"Pending" = "Ожидает";
 
 /* No comment provided by engineer. */
 "pending approval" = "ожидает утверждения";
@@ -3879,7 +3879,7 @@
 "Please store passphrase securely, you will NOT be able to change it if you lose it." = "Пожалуйста, надежно сохраните пароль, Вы НЕ сможете его поменять, если потеряете.";
 
 /* token info */
-"Please try to disable and re-enable notfications." = "Попробуйте отключить и снова включить уведомления.";
+"Please try to disable and re-enable notfications." = "Попробуйте выключить и снова включить уведомления.";
 
 /* token info */
 "Please wait for token activation to complete." = "Пожалуйста, дождитесь завершения активации токена.";
@@ -3924,7 +3924,7 @@
 "Private filenames" = "Защищенные имена файлов";
 
 /* No comment provided by engineer. */
-"Private media file names." = "Приватные названия медиафайлов.";
+"Private media file names." = "Конфиденциальные названия медиафайлов.";
 
 /* No comment provided by engineer. */
 "Private message routing" = "Конфиденциальная доставка сообщений";
@@ -4667,7 +4667,7 @@
 "Set 1 day" = "Установить 1 день";
 
 /* No comment provided by engineer. */
-"Set chat name…" = "Установить имя чата…";
+"Set chat name…" = "Имя чата…";
 
 /* No comment provided by engineer. */
 "Set contact name…" = "Имя контакта…";
@@ -4682,7 +4682,7 @@
 "Set it instead of system authentication." = "Установите код вместо системной аутентификации.";
 
 /* No comment provided by engineer. */
-"Set message expiration in chats." = "Установите время исчезания сообщений в чатах.";
+"Set message expiration in chats." = "Установите срок хранения сообщений в чатах.";
 
 /* profile update event chat item */
 "set new contact address" = "установлен новый адрес контакта";
@@ -5014,7 +5014,7 @@
 "TCP connection timeout" = "Таймаут TCP соединения";
 
 /* No comment provided by engineer. */
-"TCP port for messaging" = "TCP-порт для обмена сообщениями";
+"TCP port for messaging" = "TCP-порт для отправки сообщений";
 
 /* No comment provided by engineer. */
 "TCP_KEEPCNT" = "TCP_KEEPCNT";
@@ -5155,7 +5155,7 @@
 "This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." = "Это действие нельзя отменить — все сообщения, отправленные или полученные раньше чем выбрано, будут удалены. Это может занять несколько минут.";
 
 /* alert message */
-"This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." = "Это действие не может быть отмененено - сообщения, отправленные и полученные в этом чате ранее чем выбранное, будут удалены.";
+"This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." = "Это действие нельзя отменить - сообщения в этом чате, отправленные или полученные раньше чем выбрано, будут удалены.";
 
 /* No comment provided by engineer. */
 "This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Это действие нельзя отменить — Ваш профиль, контакты, сообщения и файлы будут безвозвратно утеряны.";
@@ -5479,7 +5479,7 @@
 "Use SOCKS proxy" = "Использовать SOCKS прокси";
 
 /* No comment provided by engineer. */
-"Use TCP port %@ when no port is specified." = "Использовать TCP-порт %@, когда не указано ни одного порта.";
+"Use TCP port %@ when no port is specified." = "Использовать TCP-порт %@, когда порт не указан.";
 
 /* No comment provided by engineer. */
 "Use the app while in the call." = "Используйте приложение во время звонка.";

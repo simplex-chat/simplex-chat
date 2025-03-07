@@ -1088,7 +1088,7 @@
       </trans-unit>
       <trans-unit id="Ask" xml:space="preserve">
         <source>Ask</source>
-        <target>спросить</target>
+        <target>Спросить</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Attach" xml:space="preserve">
@@ -1218,7 +1218,7 @@
       </trans-unit>
       <trans-unit id="Better privacy and security" xml:space="preserve">
         <source>Better privacy and security</source>
-        <target>Улучшенная приватность и безопасность</target>
+        <target>Улучшенная конфиденциальность и безопасность</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better security ✅" xml:space="preserve">
@@ -1323,7 +1323,7 @@
       </trans-unit>
       <trans-unit id="Businesses" xml:space="preserve">
         <source>Businesses</source>
-        <target>Предприятия</target>
+        <target>Бизнесы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
@@ -3346,7 +3346,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Error reordering lists" xml:space="preserve">
         <source>Error reordering lists</source>
-        <target>Ошибка переупорядочивания списков</target>
+        <target>Ошибка сортировки списков</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error resetting statistics" xml:space="preserve">
@@ -3894,7 +3894,7 @@ Error: %2$@</source>
       </trans-unit>
       <trans-unit id="Get notified when mentioned." xml:space="preserve">
         <source>Get notified when mentioned.</source>
-        <target>Получайте уведомления от упоминаний.</target>
+        <target>Уведомления, когда Вас упомянули.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Good afternoon!" xml:space="preserve">
@@ -4800,7 +4800,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Mention members 👋" xml:space="preserve">
         <source>Mention members 👋</source>
-        <target>Упоминайте участников 👋</target>
+        <target>Упоминайте членов группы 👋</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Menus" xml:space="preserve">
@@ -5055,7 +5055,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Mute all" xml:space="preserve">
         <source>Mute all</source>
-        <target>Выключить уведомления для всех</target>
+        <target>Все без звука</target>
         <note>notification label action</note>
       </trans-unit>
       <trans-unit id="Muted when inactive!" xml:space="preserve">
@@ -5205,7 +5205,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="No chats" xml:space="preserve">
         <source>No chats</source>
-        <target>Никаких чатов</target>
+        <target>Нет чатов</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No chats found" xml:space="preserve">
@@ -5215,7 +5215,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="No chats in list %@" xml:space="preserve">
         <source>No chats in list %@</source>
-        <target>Никаких чатов в списке %@</target>
+        <target>Нет чатов в списке %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No contacts selected" xml:space="preserve">
@@ -5335,7 +5335,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="No unread chats" xml:space="preserve">
         <source>No unread chats</source>
-        <target>Без непрочитанных чатов</target>
+        <target>Нет непрочитанных чатов</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No user identifiers." xml:space="preserve">
@@ -5350,7 +5350,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Notes" xml:space="preserve">
         <source>Notes</source>
-        <target>Примечания</target>
+        <target>Заметки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Nothing selected" xml:space="preserve">
@@ -5720,7 +5720,7 @@ Requires compatible VPN.</source>
       </trans-unit>
       <trans-unit id="Pending" xml:space="preserve">
         <source>Pending</source>
-        <target>В ожидании</target>
+        <target>Ожидает</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Periodic" xml:space="preserve">
@@ -5829,7 +5829,7 @@ Error: %@</source>
       </trans-unit>
       <trans-unit id="Please try to disable and re-enable notfications." xml:space="preserve">
         <source>Please try to disable and re-enable notfications.</source>
-        <target>Попробуйте отключить и снова включить уведомления.</target>
+        <target>Попробуйте выключить и снова включить уведомления.</target>
         <note>token info</note>
       </trans-unit>
       <trans-unit id="Please wait for token activation to complete." xml:space="preserve">
@@ -5904,7 +5904,7 @@ Error: %@</source>
       </trans-unit>
       <trans-unit id="Private media file names." xml:space="preserve">
         <source>Private media file names.</source>
-        <target>Приватные названия медиафайлов.</target>
+        <target>Конфиденциальные названия медиафайлов.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private message routing" xml:space="preserve">
@@ -7053,7 +7053,7 @@ Enable in *Network &amp; servers* settings.</source>
       </trans-unit>
       <trans-unit id="Set chat name…" xml:space="preserve">
         <source>Set chat name…</source>
-        <target>Установить имя чата…</target>
+        <target>Имя чата…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set contact name…" xml:space="preserve">
@@ -7078,7 +7078,7 @@ Enable in *Network &amp; servers* settings.</source>
       </trans-unit>
       <trans-unit id="Set message expiration in chats." xml:space="preserve">
         <source>Set message expiration in chats.</source>
-        <target>Установите время исчезания сообщений в чатах.</target>
+        <target>Установите срок хранения сообщений в чатах.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passcode" xml:space="preserve">
@@ -7547,7 +7547,7 @@ Enable in *Network &amp; servers* settings.</source>
       </trans-unit>
       <trans-unit id="TCP port for messaging" xml:space="preserve">
         <source>TCP port for messaging</source>
-        <target>TCP-порт для обмена сообщениями</target>
+        <target>TCP-порт для отправки сообщений</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="TCP_KEEPCNT" xml:space="preserve">
@@ -7834,7 +7834,7 @@ It can happen because of some bug or when the connection is compromised.</source
       </trans-unit>
       <trans-unit id="This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." xml:space="preserve">
         <source>This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted.</source>
-        <target>Это действие не может быть отмененено - сообщения, отправленные и полученные в этом чате ранее чем выбранное, будут удалены.</target>
+        <target>Это действие нельзя отменить - сообщения в этом чате, отправленные или полученные раньше чем выбрано, будут удалены.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">
@@ -8273,7 +8273,7 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="Use TCP port %@ when no port is specified." xml:space="preserve">
         <source>Use TCP port %@ when no port is specified.</source>
-        <target>Использовать TCP-порт %@, когда не указано ни одного порта.</target>
+        <target>Использовать TCP-порт %@, когда порт не указан.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use chat" xml:space="preserve">
@@ -9790,7 +9790,7 @@ Repeat connection request?</source>
       </trans-unit>
       <trans-unit id="pending" xml:space="preserve">
         <source>pending</source>
-        <target>на рассмотрении</target>
+        <target>ожидает</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="pending approval" xml:space="preserve">
