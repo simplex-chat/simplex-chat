@@ -625,33 +625,32 @@ final class ChatModel: ObservableObject {
     }
 
     func removeMemberItems(_ removedMember: GroupMember, byMember: GroupMember, _ groupInfo: GroupInfo) {
+        // this should not happen, only another member can "remove" user, user can only "leave" (another event).
+        if byMember.groupMemberId == groupInfo.membership.groupMemberId { return }
         let items = if chatId == groupInfo.id {
             im.reversedChatItems
         } else {
             getChat(groupInfo.id)?.chatItems ?? []
         }
-        let chatInfo = ChatInfo.group(groupInfo: groupInfo)
+        let cInfo = ChatInfo.group(groupInfo: groupInfo)
+        let ts = Date.now
         for item in items {
-            let itemWasDeleted = if case .groupSnd = item.chatDir, removedMember.groupMemberId == groupInfo.membership.groupMemberId {
-                // deleted user's sent message
-                true
+            if case .groupSnd = item.chatDir, removedMember.groupMemberId == groupInfo.membership.groupMemberId {
+                removeMemberItem(cInfo, item, ts, .sndModerated)
             } else if case let .groupRcv(groupMember) = item.chatDir, groupMember.groupMemberId == removedMember.groupMemberId {
-                // deleted received message
-                true
-            } else {
-                false
+                removeMemberItem(cInfo, item, ts, .rcvModerated)
             }
-            if itemWasDeleted {
-                if !groupInfo.fullGroupPreferences.fullDelete.on || byMember.groupMemberId != groupInfo.membership.groupMemberId {
-                    var updatedItem = item
-                    updatedItem.meta.itemDeleted = .moderated(deletedTs: Date.now, byGroupMember: byMember)
-                    _ = upsertChatItem(chatInfo, updatedItem)
-                } else {
-                    removeChatItem(chatInfo, item)
-                }
-                if item.isActiveReport {
-                    decreaseGroupReportsCounter(groupInfo.id)
-                }
+        }
+
+        func removeMemberItem(_ cInfo: ChatInfo, _ item: ChatItem, _ ts: Date, _ moreratedContent: CIContent) {
+            var updatedItem = item
+            updatedItem.meta.itemDeleted = .moderated(deletedTs: ts, byGroupMember: byMember)
+            if groupInfo.fullGroupPreferences.fullDelete.on {
+                updatedItem.content = moreratedContent
+            }
+            _ = upsertChatItem(cInfo, updatedItem)
+            if item.isActiveReport {
+                decreaseGroupReportsCounter(groupInfo.id)
             }
         }
     }
