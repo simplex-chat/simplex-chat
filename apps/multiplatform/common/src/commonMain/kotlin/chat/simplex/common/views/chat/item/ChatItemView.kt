@@ -640,6 +640,13 @@ fun ChatItemView(
             fun DeletedItem() {
               MarkedDeletedItemView(cItem, cInfo, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
               DefaultDropdownMenu(showMenu) {
+                if (revealed.value) {
+                  HideItemAction(revealed, showMenu, reveal)
+                } else if (!cItem.isDeletedContent) {
+                  RevealItemAction(revealed, showMenu, reveal)
+                } else if (range.value != null) {
+                  ExpandItemAction(revealed, showMenu, reveal)
+                }
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
                 DeleteItemAction(cItem, revealed, showMenu, questionText = generalGetString(MR.strings.delete_message_cannot_be_undone_warning), deleteMessage, deleteMessages)
                 if (cItem.canBeDeletedForSelf) {
