@@ -604,7 +604,7 @@ object ChatModel {
         } else {
           continue
         }
-        if (!groupInfo.fullGroupPreferences.fullDelete.on) {
+        if (!groupInfo.fullGroupPreferences.fullDelete.on || byMember.groupMemberId != groupInfo.membership.groupMemberId) {
           val updatedItem = item.copy(meta = item.meta.copy(itemDeleted = CIDeleted.Moderated(deletedTs = Clock.System.now(), byGroupMember = byMember)))
           upsertChatItem(rhId, chatInfo, updatedItem)
         } else {
