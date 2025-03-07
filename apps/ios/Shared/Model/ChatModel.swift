@@ -632,22 +632,26 @@ final class ChatModel: ObservableObject {
         }
         let chatInfo = ChatInfo.group(groupInfo: groupInfo)
         for item in items {
-            if case .groupSnd = item.chatDir, removedMember.groupMemberId == groupInfo.membership.groupMemberId {
+            let itemWasDeleted = if case .groupSnd = item.chatDir, removedMember.groupMemberId == groupInfo.membership.groupMemberId {
                 // deleted user's sent message
+                true
             } else if case let .groupRcv(groupMember) = item.chatDir, groupMember.groupMemberId == removedMember.groupMemberId {
                 // deleted received message
+                true
             } else {
-                continue
+                false
             }
-            if !groupInfo.fullGroupPreferences.fullDelete.on {
-                var updatedItem = item
-                updatedItem.meta.itemDeleted = .moderated(deletedTs: Date.now, byGroupMember: byMember)
-                _ = upsertChatItem(chatInfo, updatedItem)
-            } else {
-                removeChatItem(chatInfo, item)
-            }
-            if item.isActiveReport {
-                decreaseGroupReportsCounter(groupInfo.id)
+            if itemWasDeleted {
+                if !groupInfo.fullGroupPreferences.fullDelete.on || byMember.groupMemberId != groupInfo.membership.groupMemberId {
+                    var updatedItem = item
+                    updatedItem.meta.itemDeleted = .moderated(deletedTs: Date.now, byGroupMember: byMember)
+                    _ = upsertChatItem(chatInfo, updatedItem)
+                } else {
+                    removeChatItem(chatInfo, item)
+                }
+                if item.isActiveReport {
+                    decreaseGroupReportsCounter(groupInfo.id)
+                }
             }
         }
     }
