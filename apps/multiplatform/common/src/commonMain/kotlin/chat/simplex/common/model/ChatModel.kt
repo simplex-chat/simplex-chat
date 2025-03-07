@@ -590,30 +590,34 @@ object ChatModel {
     }
 
     suspend fun removeMemberItems(rhId: Long?, removedMember: GroupMember, byMember: GroupMember, groupInfo: GroupInfo) {
+      val cInfo = ChatInfo.Group(groupInfo)
+
+      suspend fun removeMemberItem(item: ChatItem, moderatedContent: CIContent) {
+        val updatedItem = item.copy(
+          meta = item.meta.copy(itemDeleted = CIDeleted.Moderated(Clock.System.now(), byGroupMember = byMember)),
+          content = if (groupInfo.fullGroupPreferences.fullDelete.on) moderatedContent else item.content
+        )
+        upsertChatItem(rhId, cInfo, updatedItem)
+        if (item.isActiveReport) {
+          decreaseGroupReportsCounter(rhId, groupInfo.id)
+        }
+      }
+
+      // this should not happen, only another member can "remove" user, user can only "leave" (another event).
+      if (byMember.groupMemberId == groupInfo.membership.groupMemberId) {
+        Log.d(TAG, "exiting removeMemberItems")
+        return
+      }
       val items = if (chatId.value == groupInfo.id) {
         chatItems.value
       } else {
         getChat(groupInfo.id)?.chatItems ?: emptyList()
       }
-      val chatInfo = ChatInfo.Group(groupInfo)
       for (item in items) {
-        val itemWasDeleted = when {
-          // deleted user's sent message
-          item.chatDir is CIDirection.GroupSnd && removedMember.groupMemberId == groupInfo.membership.groupMemberId -> true
-          // deleted received message
-          item.chatDir is CIDirection.GroupRcv && item.chatDir.groupMember.groupMemberId == removedMember.groupMemberId -> true
-          else -> false
-        }
-        if (itemWasDeleted) {
-          if (!groupInfo.fullGroupPreferences.fullDelete.on || byMember.groupMemberId != groupInfo.membership.groupMemberId) {
-            val updatedItem = item.copy(meta = item.meta.copy(itemDeleted = CIDeleted.Moderated(deletedTs = Clock.System.now(), byGroupMember = byMember)))
-            upsertChatItem(rhId, chatInfo, updatedItem)
-          } else {
-            removeChatItem(rhId, chatInfo, item)
-          }
-          if (item.isActiveReport) {
-            decreaseGroupReportsCounter(rhId, groupInfo.id)
-          }
+        if (item.chatDir is CIDirection.GroupSnd && removedMember.groupMemberId == groupInfo.membership.groupMemberId) {
+          removeMemberItem(item, CIContent.SndModerated)
+        } else if (item.chatDir is CIDirection.GroupRcv && item.chatDir.groupMember.groupMemberId == removedMember.groupMemberId) {
+          removeMemberItem(item, CIContent.RcvModerated)
         }
       }
     }
