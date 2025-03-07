@@ -597,21 +597,23 @@ object ChatModel {
       }
       val chatInfo = ChatInfo.Group(groupInfo)
       for (item in items) {
-        if (item.chatDir is CIDirection.GroupSnd && removedMember.groupMemberId == groupInfo.membership.groupMemberId) {
+        val itemWasDeleted = when {
           // deleted user's sent message
-        } else if (item.chatDir is CIDirection.GroupRcv && item.chatDir.groupMember.groupMemberId == removedMember.groupMemberId) {
+          item.chatDir is CIDirection.GroupSnd && removedMember.groupMemberId == groupInfo.membership.groupMemberId -> true
           // deleted received message
-        } else {
-          continue
+          item.chatDir is CIDirection.GroupRcv && item.chatDir.groupMember.groupMemberId == removedMember.groupMemberId -> true
+          else -> false
         }
-        if (!groupInfo.fullGroupPreferences.fullDelete.on || byMember.groupMemberId != groupInfo.membership.groupMemberId) {
-          val updatedItem = item.copy(meta = item.meta.copy(itemDeleted = CIDeleted.Moderated(deletedTs = Clock.System.now(), byGroupMember = byMember)))
-          upsertChatItem(rhId, chatInfo, updatedItem)
-        } else {
-          removeChatItem(rhId, chatInfo, item)
-        }
-        if (item.isActiveReport) {
-          decreaseGroupReportsCounter(rhId, groupInfo.id)
+        if (itemWasDeleted) {
+          if (!groupInfo.fullGroupPreferences.fullDelete.on || byMember.groupMemberId != groupInfo.membership.groupMemberId) {
+            val updatedItem = item.copy(meta = item.meta.copy(itemDeleted = CIDeleted.Moderated(deletedTs = Clock.System.now(), byGroupMember = byMember)))
+            upsertChatItem(rhId, chatInfo, updatedItem)
+          } else {
+            removeChatItem(rhId, chatInfo, item)
+          }
+          if (item.isActiveReport) {
+            decreaseGroupReportsCounter(rhId, groupInfo.id)
+          }
         }
       }
     }
