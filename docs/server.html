@@ -2656,6 +2656,65 @@ sudo -E simplex-servers-update
 </ol>
 </li>
 </ul>
+<h2 id="reproduce-builds" tabindex="-1">Reproduce builds</h2>
+<p>You can locally reproduce server binaries, following these instructions.</p>
+<p>You must have:</p>
+<ul>
+<li>Linux machine</li>
+<li><code>x86-64</code> architecture</li>
+<li>Installed <code>docker</code>, <code>curl</code> and <code>git</code></li>
+</ul>
+<ol>
+<li>
+<p>Download script:</p>
+<pre><code class="language-sh">curl -LO 'https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/master/scripts/reproduce-builds.sh'
+</code></pre>
+</li>
+<li>
+<p>Make it executable:</p>
+<pre><code class="language-sh">chmod +x reproduce-builds.sh
+</code></pre>
+</li>
+<li>
+<p>Execute the script with the required tag:</p>
+<pre><code class="language-sh">./reproduce-builds.sh 'v6.3.0'
+</code></pre>
+<p>This will take a while.</p>
+</li>
+<li>
+<p>After compilation, you should see the following folders:</p>
+<pre><code class="language-sh">ls out*
+</code></pre>
+<pre><code class="language-sh">out-20.04:
+ntf-server  smp-server  xftp  xftp-server
+
+out-20.04-github:
+ntf-server  smp-server  xftp  xftp-server
+
+out-22.04:
+ntf-server  smp-server  xftp  xftp-server
+
+out-22.04-github:
+ntf-server  smp-server  xftp  xftp-server
+
+out-24.04:
+ntf-server  smp-server  xftp  xftp-server
+
+out-24.04-github:
+ntf-server  smp-server  xftp  xftp-server
+</code></pre>
+</li>
+<li>
+<p>Compare the hashes from github release with locally build binaries:</p>
+<pre><code class="language-sh">sha256sum out*-github/*
+</code></pre>
+<pre><code class="language-sh">sha256sum out*[0-9]/*
+</code></pre>
+<p>You can safely delete cloned repository:</p>
+<pre><code class="language-sh">cd ../ &amp;&amp; rm -rf simplexmq
+</code></pre>
+</li>
+</ol>
 <h2 id="configuring-the-app-to-use-the-server" tabindex="-1">Configuring the app to use the server</h2>
 <p>To configure the app to use your messaging server copy it's full address, including password, and add it to the app. You have an option to use your server together with preset servers or without them - you can remove or disable them.</p>
 <p>It is also possible to share the address of your server with your friends by letting them scan QR code from server settings - it will include server password, so they will be able to receive messages via your server as well.</p>
