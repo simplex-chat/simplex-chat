@@ -1564,6 +1564,78 @@ To update your smp-server to latest version, choose your installation method and
         docker image prune
         ```
 
+## Reproduce builds
+
+You can locally reproduce server binaries, following these instructions.
+
+You must have:
+
+- Linux machine
+- `x86-64` architecture
+- Installed `docker`, `curl` and `git`
+
+1. Download script:
+
+   ```sh
+   curl -LO 'https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/master/scripts/reproduce-builds.sh'
+   ```
+
+2. Make it executable:
+
+   ```sh
+   chmod +x reproduce-builds.sh
+   ```
+
+3. Execute the script with the required tag:
+
+   ```sh
+   ./reproduce-builds.sh 'v6.3.0'
+   ```
+
+   This will take a while.
+
+4. After compilation, you should see the following folders:
+
+   ```sh
+   ls out*
+   ```
+
+   ```sh
+   out-20.04:
+   ntf-server  smp-server  xftp  xftp-server
+
+   out-20.04-github:
+   ntf-server  smp-server  xftp  xftp-server
+
+   out-22.04:
+   ntf-server  smp-server  xftp  xftp-server
+
+   out-22.04-github:
+   ntf-server  smp-server  xftp  xftp-server
+
+   out-24.04:
+   ntf-server  smp-server  xftp  xftp-server
+
+   out-24.04-github:
+   ntf-server  smp-server  xftp  xftp-server
+   ```
+
+5. Compare the hashes from github release with locally build binaries:
+
+   ```sh
+   sha256sum out*-github/*
+   ```
+
+   ```sh
+   sha256sum out*[0-9]/*
+   ```
+
+   You can safely delete cloned repository:
+
+   ```sh
+   cd ../ && rm -rf simplexmq
+   ```
+
 ## Configuring the app to use the server
 
 To configure the app to use your messaging server copy it's full address, including password, and add it to the app. You have an option to use your server together with preset servers or without them - you can remove or disable them.
