@@ -18,13 +18,13 @@ If you installed TestFlight release and it crashes for you, please install the c
 
 This post will be updated once iOS v6.3 is released.
 
-What's new in v6.3:
+**What's new in v6.3**:
 - [preventing spam and abuse in public groups](#preventing-spam-and-abuse-in-public-groups).
 - [group improvements](#group-improvements): [mention other members](#mention-other-members-and-get-notified-when-mentioned), [improved performance](#better-group-performance).
 - [better-chat-navigation](#better-chat-navigation): [organize chats into lists](#organize-chats-into-lists) and [jump to found and forwarded messages](#jump-to-found-and-forwarded-messages).
 - [privacy and security improvements](#pri): 
 
-The last but not the least - from v6.3 server builds are now reproducible.
+The last but not the least - from v6.3 [server builds are now reproducible](#reproducible-server-builds).
 
 ## What's new in v6.3
 
