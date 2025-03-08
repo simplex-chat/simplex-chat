@@ -527,17 +527,17 @@ To verify server binaries after you downloaded them:
 
 1. Download `_sha256sums` (hashes of all server binaries) and `_sha256sums.asc` (signature).
 
-2. Download our key FB44AF81A45BDE327319797C85107E357D4A17FC from [openpgp.org](https://keys.openpgp.org/search?q=chat%40simplex.chat), and import it with `gpg --import FB44AF81A45BDE327319797C85107E357D4A17FC`. Key filename should be the same as its fingerprint, but please change it if necessary.
+2. Download our key FB44AF81A45BDE327319797C85107E357D4A17FC from [openpgp.org](https://keys.openpgp.org/search?q=chat%40simplex.chat)
 
-3. Run `gpg --verify _sha256sums.asc _sha256sums`. It should print:
+3. Import the key with `gpg --import FB44AF81A45BDE327319797C85107E357D4A17FC`. Key filename should be the same as its fingerprint, but please change it if necessary.
+
+4. Run `gpg --verify --trusted-key  _sha256sums.asc _sha256sums`. It should print:
 
 > Good signature from "SimpleX Chat <chat@simplex.chat>"
 
-4. Compute the hashes of the binaries you plan to use with `shu256sum <file>` or with `openssl sha256 <file>` and compare them with the hashes in the file `_sha256sums` - they must be the same.
+5. Compute the hashes of the binaries you plan to use with `shu256sum <file>` or with `openssl sha256 <file>` and compare them with the hashes in the file `_sha256sums` - they must be the same.
 
-5. You may additionally "trust" our key to avoid warning about untrusted key. Please refer to GPG manual on how to set trust level for public keys.
-
-That is it - you now verified authenticity of our GitHub server build.
+That is it - you now verified authenticity of our GitHub server binaries.
 
 ## Configuration
 

@@ -149,7 +149,9 @@ You can reproduce our builds on Linux with x86 CPU in docker container - please 
 
 We are looking for support from open-source contributors or security researchers who would agree to publish their signature of our releases, having reproduced the builds.
 
-**How to 
+**How to verify release signature**
+
+Please see the instructions [here](../docs/SERVER.md#verifying-server-binaries).
 
 ## SimpleX network
 
