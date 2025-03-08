@@ -110,7 +110,7 @@ class CustomUITextField: UITextView, UITextViewDelegate {
     }
 
     func updateHeight(updateBindingNow: Bool = true) {
-        let maxHeight = min(360, font!.lineHeight * 12)
+        let maxHeight = min(360, (font ?? UIFont.preferredFont(forTextStyle: .body)).lineHeight * 12)
         let newHeight = min(max(sizeThatFits(CGSizeMake(frame.size.width, CGFloat.greatestFiniteMagnitude)).height, NativeTextEditor.minHeight), maxHeight).rounded(.down)
 
         if self.newHeight != newHeight {

@@ -74,9 +74,9 @@ struct ScrollRepresentable<Content: View, ScrollItem>: UIViewControllerRepresent
                     fatalError("Unexpected Cell Type for: \(item)")
                 }
             }
-            let size = cell.systemLayoutSizeFitting(CGSizeMake(scrollView.bounds.width, CGFloat.greatestFiniteMagnitude))
+//            let size = cell.systemLayoutSizeFitting(CGSizeMake(scrollView.bounds.width, CGFloat.greatestFiniteMagnitude))
             cell.frame.size.width = scrollView.bounds.width
-            cell.frame.size.height = size.height
+            cell.frame.size.height = 50 // size.height
             cell.setNeedsLayout()
         }
     }
@@ -298,6 +298,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
     /// [forceReloadVisible]: reloads every item that was visible regardless of hashValue changes
     private func adaptItems(_ items: [ScrollItem], _ forceReloadVisible: Bool, overridenOffset: CGFloat? = nil) {
         let start = Date.now
+        logger.debug("RENDER adaptItems \(items.count) \(start)")
         // special case when everything was removed
         if items.isEmpty {
             listState.visibleItems.forEach { item in item.view.removeFromSuperview() }
@@ -313,6 +314,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
             prevProcessedOffset = contentOffset.y
             // this check is just to prevent didSet listener from firing on the same empty array, no use for this
             if !self.listState.items.isEmpty {
+                logger.debug("RENDER adaptItems self.listState.items = items \(start)")
                 self.listState.items = items
             }
             return
@@ -450,6 +452,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
         prevProcessedOffset = contentOffsetY
 
         listState.visibleItems = newVisible
+        logger.debug("RENDER adaptItems listState.items = items \(start)")
         listState.items = items
 
         listState.firstVisibleItemId = listState.visibleItems.first?.item.id ?? EndlessScrollView<ScrollItem>.DEFAULT_ITEM_ID

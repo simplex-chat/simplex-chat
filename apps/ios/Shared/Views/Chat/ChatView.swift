@@ -1178,6 +1178,7 @@ struct ChatView: View {
         @State private var chatItemInfo: ChatItemInfo?
         @State private var msgWidth: CGFloat = 0
         @State private var touchInProgress: Bool = false
+        @State private var showMenu = false
 
         @Binding var selectedChatItems: Set<Int64>?
         @Binding var forwardedChatItems: [ChatItem]
@@ -1295,6 +1296,7 @@ struct ChatView: View {
                         await apiMarkChatItemsRead(chat.chatInfo, [chatItem.id], mentionsRead: chatItem.meta.userMention ? 1 : 0)
                     }
                 }
+                showMenu = true
             }
             .onDisappear {
                 markReadTask?.cancel()
@@ -1535,7 +1537,14 @@ struct ChatView: View {
                     .environment(\.revealed, revealed)
                     .environment(\.showTimestamp, itemSeparation.timestamp)
                     .modifier(ChatItemClipped(ci, tailVisible: itemSeparation.largeGap && (ci.meta.itemDeleted == nil || revealed)))
-                    .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }
+                    .if(showMenu) { v in
+                        v.contextMenu {
+                            logger.debug("RENDER menu start \(Date.now)")
+                            let v = menu(ci, range, live: composeState.liveMessage != nil)
+                            logger.debug("RENDER menu end \(Date.now)")
+                            return v
+                        }
+                    }
                     .accessibilityLabel("")
                     if !ci.chatDir.sent {
                         goToItemButton(false)
