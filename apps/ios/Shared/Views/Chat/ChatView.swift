@@ -1535,7 +1535,31 @@ struct ChatView: View {
                     .environment(\.revealed, revealed)
                     .environment(\.showTimestamp, itemSeparation.timestamp)
                     .modifier(ChatItemClipped(ci, tailVisible: itemSeparation.largeGap && (ci.meta.itemDeleted == nil || revealed)))
-                    .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }
+                    .contextMenu {
+                        if case let .group(gInfo) = chat.chatInfo, ci.isReport, ci.meta.itemDeleted == nil {
+                            menuReport(ci, gInfo)
+                        } else if let mc = ci.content.msgContent, !ci.isReport, ci.meta.itemDeleted == nil || revealed {
+                            menuContent1(ci, mc, composeState.liveMessage != nil)
+                            menuContent2(ci, composeState.liveMessage != nil)
+                            menuContentModerate(ci, composeState.liveMessage != nil)
+                        } else if ci.meta.itemDeleted != nil {
+                            menuDeleted(ci, range)
+                        } else if ci.isDeletedContent {
+                            viewInfoButton(ci)
+                            deleteButton(ci)
+                        } else if ci.mergeCategory != nil && ((range?.count ?? 0) > 1 || revealed) {
+                            if revealed { shrinkButton() } else { expandButton() }
+                            deleteButton(ci)
+                        } else if ci.showLocalDelete {
+                            deleteButton(ci)
+                        } else {
+                            EmptyView()
+                        }
+                        if selectedChatItems == nil && ci.canBeDeletedForSelf {
+                            Divider()
+                            selectButton(ci)
+                        }
+                    }
                     .accessibilityLabel("")
                     if !ci.chatDir.sent {
                         goToItemButton(false)
@@ -1635,33 +1659,6 @@ struct ChatView: View {
                         v
                     }
                 }
-            }
-        }
-
-        @ViewBuilder
-        private func menu(_ ci: ChatItem, _ range: ClosedRange<Int>?, live: Bool) -> some View {
-            if case let .group(gInfo) = chat.chatInfo, ci.isReport, ci.meta.itemDeleted == nil {
-                menuReport(ci, gInfo)
-            } else if let mc = ci.content.msgContent, !ci.isReport, ci.meta.itemDeleted == nil || revealed {
-                menuContent1(ci, mc, live)
-                menuContent2(ci, live)
-                menuContentModerate(ci, live)
-            } else if ci.meta.itemDeleted != nil {
-                menuDeleted(ci, range)
-            } else if ci.isDeletedContent {
-                viewInfoButton(ci)
-                deleteButton(ci)
-            } else if ci.mergeCategory != nil && ((range?.count ?? 0) > 1 || revealed) {
-                if revealed { shrinkButton() } else { expandButton() }
-                deleteButton(ci)
-            } else if ci.showLocalDelete {
-                deleteButton(ci)
-            } else {
-                EmptyView()
-            }
-            if selectedChatItems == nil && ci.canBeDeletedForSelf {
-                Divider()
-                selectButton(ci)
             }
         }
 
