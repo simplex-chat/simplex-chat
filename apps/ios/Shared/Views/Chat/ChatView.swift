@@ -1538,96 +1538,586 @@ struct ChatView: View {
                     .contextMenu {
                         if case let .group(gInfo) = chat.chatInfo, ci.isReport, ci.meta.itemDeleted == nil {
                             if ci.chatDir != .groupSnd, gInfo.membership.memberRole >= .moderator {
-                                archiveReportButton(ci)
+                                //archiveReportButton(ci)
+                                Button {
+                                    archivingReports = [ci.id]
+                                    showArchivingReports = true
+                                } label: {
+                                    Label("Archive report", systemImage: "archivebox")
+                                }
                             }
-                            deleteButton(ci, label: "Delete report")
+                            //deleteButton(ci, label: "Delete report")
+                            Button(role: .destructive) {
+                                if !revealed,
+                                   let currIndex = m.getChatItemIndex(ci),
+                                   let ciCategory = ci.mergeCategory {
+                                    let (prevHidden, _) = m.getPrevShownChatItem(currIndex, ciCategory)
+                                    if let range = itemsRange(currIndex, prevHidden) {
+                                        var itemIds: [Int64] = []
+                                        for i in range {
+                                            itemIds.append(ItemsModel.shared.reversedChatItems[i].id)
+                                        }
+                                        showDeleteMessages = true
+                                        deletingItems = itemIds
+                                    } else {
+                                        showDeleteMessage = true
+                                        deletingItem = ci
+                                    }
+                                } else {
+                                    showDeleteMessage = true
+                                    deletingItem = ci
+                                }
+                            } label: {
+                                Label("Delete report", systemImage: "trash")
+                            }
                         } else if let mc = ci.content.msgContent, !ci.isReport, ci.meta.itemDeleted == nil || revealed {
-                            let rs = availableReactions()
+                            //let rs = availableReactions()
+                            let rs = MsgReaction.values
+                                .filter { reaction in
+                                    !chatItem.reactions.contains {
+                                        $0.userReacted && $0.reaction == reaction
+                                    }
+                                }
                             if chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction,
                                rs.count > 0 {
-                                reactionsGroup(rs)
+                                //reactionsGroup(rs)
+                                if #available(iOS 16.4, *) {
+                                    ControlGroup {
+                                        if rs.count > 4 {
+                                            ForEach(rs[0..<3]) { reaction in
+                                                Button(reaction.text) {
+                                                    setReaction(chatItem, add: true, reaction: reaction)
+                                                }
+                                            }
+                                            Menu {
+                                                ForEach(rs[3..<rs.count]) { reaction in
+                                                    Button(reaction.text) {
+                                                        setReaction(chatItem, add: true, reaction: reaction)
+                                                    }
+                                                }
+                                            } label: {
+                                                Image(systemName: "ellipsis")
+                                            }
+                                        } else {
+                                            ForEach(rs[0..<rs.count]) { reaction in
+                                                Button(reaction.text) {
+                                                    setReaction(chatItem, add: true, reaction: reaction)
+                                                }
+                                            }
+                                        }
+                                    }.controlGroupStyle(.compactMenu)
+                                } else {
+                                    Menu {
+                                        ForEach(rs[0..<rs.count]) { reaction in
+                                            Button(reaction.text) {
+                                                setReaction(chatItem, add: true, reaction: reaction)
+                                            }
+                                        }
+                                    } label: {
+                                        Label(
+                                            NSLocalizedString("React…", comment: "chat item menu"),
+                                            systemImage: "face.smiling"
+                                        )
+                                    }
+                                }
                             }
                             if ci.meta.itemDeleted == nil && !ci.isLiveDummy && composeState.liveMessage == nil && !ci.localNote {
-                                replyButton
+                                //replyButton
+                                Button {
+                                    withAnimation {
+                                        if composeState.editing {
+                                            composeState = ComposeState(contextItem: .quotedItem(chatItem: chatItem))
+                                        } else {
+                                            composeState = composeState.copy(contextItem: .quotedItem(chatItem: chatItem))
+                                        }
+                                    }
+                                } label: {
+                                    Label(
+                                        NSLocalizedString("Reply", comment: "chat item action"),
+                                        systemImage: "arrowshape.turn.up.left"
+                                    )
+                                }
                             }
                             let fileSource = getLoadedFileSource(ci.file)
                             let fileExists = if let fs = fileSource, FileManager.default.fileExists(atPath: getAppFilePath(fs.filePath).path) { true } else { false }
                             let copyAndShareAllowed = !ci.content.text.isEmpty || (ci.content.msgContent?.isImage == true && fileExists)
                             if copyAndShareAllowed {
-                                shareButton(ci)
-                                copyButton(ci)
+                                //shareButton(ci)
+                                Button {
+                                    var shareItems: [Any] = [ci.content.text]
+                                    if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
+                                        shareItems.append(image)
+                                    }
+                                    showShareSheet(items: shareItems)
+                                } label: {
+                                    Label(
+                                        NSLocalizedString("Share", comment: "chat item action"),
+                                        systemImage: "square.and.arrow.up"
+                                    )
+                                }
+                                //copyButton(ci)
+                                Button {
+                                    if case let .image(text, _) = ci.content.msgContent,
+                                       text == "",
+                                       let image = getLoadedImage(ci.file) {
+                                        UIPasteboard.general.image = image
+                                    } else {
+                                        UIPasteboard.general.string = ci.content.text
+                                    }
+                                } label: {
+                                    Label("Copy", systemImage: "doc.on.doc")
+                                }
                             }
                             if let fileSource = fileSource, fileExists {
                                 if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
                                     if image.imageData != nil {
-                                        saveButton(file: fileSource)
+                                        //saveButton(file: fileSource)
+                                        Button {
+                                            saveCryptoFile(fileSource)
+                                        } label: {
+                                            Label(
+                                                NSLocalizedString("Save", comment: "chat item action"),
+                                                systemImage: fileSource.cryptoArgs == nil ? "square.and.arrow.down" : "lock.open"
+                                            )
+                                        }
                                     } else {
-                                        saveButton(image: image)
+                                        //saveButton(image: image)
+                                        Button {
+                                            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+                                        } label: {
+                                            Label(
+                                                NSLocalizedString("Save", comment: "chat item action"),
+                                                systemImage: "square.and.arrow.down"
+                                            )
+                                        }
                                     }
                                 } else {
-                                    saveButton(file: fileSource)
+                                    //saveButton(file: fileSource)
+                                    Button {
+                                        saveCryptoFile(fileSource)
+                                    } label: {
+                                        Label(
+                                            NSLocalizedString("Save", comment: "chat item action"),
+                                            systemImage: fileSource.cryptoArgs == nil ? "square.and.arrow.down" : "lock.open"
+                                        )
+                                    }
                                 }
                             } else if let file = ci.file, case .rcvInvitation = file.fileStatus, fileSizeValid(file) {
-                                downloadButton(file: file)
+                                //downloadButton(file: file)
+                                Button {
+                                    Task {
+                                        logger.debug("ChatView downloadFileAction, in Task")
+                                        if let user = m.currentUser {
+                                            await receiveFile(user: user, fileId: file.fileId)
+                                        }
+                                    }
+                                } label: {
+                                    Label(
+                                        NSLocalizedString("Download", comment: "chat item action"),
+                                        systemImage: "arrow.down.doc"
+                                    )
+                                }
                             }
                             if ci.meta.editable && !mc.isVoice && composeState.liveMessage == nil {
-                                editButton(chatItem)
+                                //editButton(chatItem)
+                                Button {
+                                    withAnimation {
+                                        composeState = ComposeState(editingItem: ci) // HERE IS CI, not CHATITEM
+                                    }
+                                } label: {
+                                    Label(
+                                        NSLocalizedString("Edit", comment: "chat item action"),
+                                        systemImage: "square.and.pencil"
+                                    )
+                                }
                             }
                             if ci.meta.itemDeleted == nil
                                 && (ci.file == nil || (fileSource != nil && fileExists))
                                 && !ci.isLiveDummy && composeState.liveMessage == nil {
-                                forwardButton
+                                //forwardButton
+                                Button {
+                                    forwardedChatItems = [chatItem]
+                                } label: {
+                                    Label(
+                                        NSLocalizedString("Forward", comment: "chat item action"),
+                                        systemImage: "arrowshape.turn.up.forward"
+                                    )
+                                }
                             }
 
                             if !ci.isLiveDummy {
-                                viewInfoButton(ci)
+                                //viewInfoButton(ci)
+                                Button {
+                                    Task {
+                                        do {
+                                            let cInfo = chat.chatInfo
+                                            let ciInfo = try await apiGetChatItemInfo(type: cInfo.chatType, id: cInfo.apiId, itemId: ci.id)
+                                            await MainActor.run {
+                                                chatItemInfo = ciInfo
+                                            }
+                                            if case let .group(gInfo) = chat.chatInfo {
+                                                await m.loadGroupMembers(gInfo)
+                                            }
+                                        } catch let error {
+                                            logger.error("apiGetChatItemInfo error: \(responseError(error))")
+                                        }
+                                        await MainActor.run { showChatItemInfoSheet = true }
+                                    }
+                                } label: {
+                                    Label(
+                                        NSLocalizedString("Info", comment: "chat item action"),
+                                        systemImage: "info.circle"
+                                    )
+                                }
                             }
                             if revealed {
-                                hideButton()
+                                //hideButton()
+                                Button {
+                                    withConditionalAnimation {
+                                        reveal(false)
+                                    }
+                                } label: {
+                                    Label(
+                                        NSLocalizedString("Hide", comment: "chat item action"),
+                                        systemImage: "eye.slash"
+                                    )
+                                }
                             }
                             if ci.meta.itemDeleted == nil && !ci.localNote,
                                let file = ci.file,
                                let cancelAction = file.cancelAction {
-                                cancelFileButton(file.fileId, cancelAction)
+                                //cancelFileButton(file.fileId, cancelAction)
+                                Button {
+                                    AlertManager.shared.showAlert(Alert(
+                                        title: Text(cancelAction.alert.title),
+                                        message: Text(cancelAction.alert.message),
+                                        primaryButton: .destructive(Text(cancelAction.alert.confirm)) {
+                                            Task {
+                                                if let user = m.currentUser {
+                                                    await cancelFile(user: user, fileId: file.fileId)
+                                                }
+                                            }
+                                        },
+                                        secondaryButton: .cancel()
+                                    ))
+                                } label: {
+                                    Label(
+                                        cancelAction.uiAction,
+                                        systemImage: "xmark"
+                                    )
+                                }
                             }
                             if composeState.liveMessage == nil || !ci.meta.isLive {
-                                deleteButton(ci)
+                                //deleteButton(ci)
+                                Button(role: .destructive) {
+                                    if !revealed,
+                                       let currIndex = m.getChatItemIndex(ci),
+                                       let ciCategory = ci.mergeCategory {
+                                        let (prevHidden, _) = m.getPrevShownChatItem(currIndex, ciCategory)
+                                        if let range = itemsRange(currIndex, prevHidden) {
+                                            var itemIds: [Int64] = []
+                                            for i in range {
+                                                itemIds.append(ItemsModel.shared.reversedChatItems[i].id)
+                                            }
+                                            showDeleteMessages = true
+                                            deletingItems = itemIds
+                                        } else {
+                                            showDeleteMessage = true
+                                            deletingItem = ci
+                                        }
+                                    } else {
+                                        showDeleteMessage = true
+                                        deletingItem = ci
+                                    }
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
                             }
                             if ci.chatDir != .groupSnd {
                                 if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo) {
-                                    moderateButton(ci, groupInfo)
+                                    //moderateButton(ci, groupInfo)
+                                    Button(role: .destructive) {
+                                        AlertManager.shared.showAlert(Alert(
+                                            title: Text("Delete member message?"),
+                                            message: Text(
+                                                groupInfo.fullGroupPreferences.fullDelete.on
+                                                ? "The message will be deleted for all members."
+                                                : "The message will be marked as moderated for all members."
+                                            ),
+                                            primaryButton: .destructive(Text("Delete")) {
+                                                deletingItem = ci
+                                                deleteMessage(.cidmBroadcast, moderate: true)
+                                            },
+                                            secondaryButton: .cancel()
+                                        ))
+                                    } label: {
+                                        Label(
+                                            NSLocalizedString("Moderate", comment: "chat item action"),
+                                            systemImage: "flag"
+                                        )
+                                    }
                                 } else if ci.meta.itemDeleted == nil && chat.groupFeatureEnabled(.reports),
                                           case let .group(gInfo) = chat.chatInfo,
                                           gInfo.membership.memberRole == .member
                                             && composeState.liveMessage == nil
                                             && composeState.voiceMessageRecordingState == .noRecording {
-                                    reportButton(ci)
+                                    //reportButton(ci)
+                                    Button(role: .destructive) {
+                                        var buttons: [ActionSheet.Button] = ReportReason.supportedReasons.map { reason in
+                                                .default(Text(reason.text)) {
+                                                    withAnimation {
+                                                        if composeState.editing {
+                                                            composeState = ComposeState(preview: .noPreview, contextItem: .reportedItem(chatItem: chatItem, reason: reason))
+                                                        } else {
+                                                            composeState = composeState.copy(preview: .noPreview, contextItem: .reportedItem(chatItem: chatItem, reason: reason))
+                                                        }
+                                                    }
+                                                }
+                                        }
+
+                                        buttons.append(.cancel())
+
+                                        actionSheet = SomeActionSheet(
+                                            actionSheet: ActionSheet(
+                                                title: Text("Report reason?"),
+                                                buttons: buttons
+                                            ),
+                                            id: "reportChatMessage"
+                                        )
+                                    } label: {
+                                        Label (
+                                            NSLocalizedString("Report", comment: "chat item action"),
+                                            systemImage: "flag"
+                                        )
+                                    }
                                 }
                             }
                         } else if ci.meta.itemDeleted != nil {
                             if revealed {
-                                hideButton()
+                                //hideButton()
+                                Button {
+                                    withConditionalAnimation {
+                                        reveal(false)
+                                    }
+                                } label: {
+                                    Label(
+                                        NSLocalizedString("Hide", comment: "chat item action"),
+                                        systemImage: "eye.slash"
+                                    )
+                                }
                             } else if !ci.isDeletedContent {
-                                revealButton(ci)
+                                //revealButton(ci)
+                                Button {
+                                    withConditionalAnimation {
+                                        reveal(true)
+                                    }
+                                } label: {
+                                    Label(
+                                        NSLocalizedString("Reveal", comment: "chat item action"),
+                                        systemImage: "eye"
+                                    )
+                                }
                             } else if range != nil {
-                                expandButton()
+                                //expandButton()
+                                Button {
+                                    withConditionalAnimation {
+                                        reveal(true)
+                                    }
+                                } label: {
+                                    Label(
+                                        NSLocalizedString("Expand", comment: "chat item action"),
+                                        systemImage: "arrow.up.and.line.horizontal.and.arrow.down"
+                                    )
+                                }
                             }
-                            viewInfoButton(ci)
-                            deleteButton(ci)
+                            //viewInfoButton(ci)
+                            Button {
+                                Task {
+                                    do {
+                                        let cInfo = chat.chatInfo
+                                        let ciInfo = try await apiGetChatItemInfo(type: cInfo.chatType, id: cInfo.apiId, itemId: ci.id)
+                                        await MainActor.run {
+                                            chatItemInfo = ciInfo
+                                        }
+                                        if case let .group(gInfo) = chat.chatInfo {
+                                            await m.loadGroupMembers(gInfo)
+                                        }
+                                    } catch let error {
+                                        logger.error("apiGetChatItemInfo error: \(responseError(error))")
+                                    }
+                                    await MainActor.run { showChatItemInfoSheet = true }
+                                }
+                            } label: {
+                                Label(
+                                    NSLocalizedString("Info", comment: "chat item action"),
+                                    systemImage: "info.circle"
+                                )
+                            }
+                            //deleteButton(ci)
+                            Button(role: .destructive) {
+                                if !revealed,
+                                   let currIndex = m.getChatItemIndex(ci),
+                                   let ciCategory = ci.mergeCategory {
+                                    let (prevHidden, _) = m.getPrevShownChatItem(currIndex, ciCategory)
+                                    if let range = itemsRange(currIndex, prevHidden) {
+                                        var itemIds: [Int64] = []
+                                        for i in range {
+                                            itemIds.append(ItemsModel.shared.reversedChatItems[i].id)
+                                        }
+                                        showDeleteMessages = true
+                                        deletingItems = itemIds
+                                    } else {
+                                        showDeleteMessage = true
+                                        deletingItem = ci
+                                    }
+                                } else {
+                                    showDeleteMessage = true
+                                    deletingItem = ci
+                                }
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
                         } else if ci.isDeletedContent {
-                            viewInfoButton(ci)
-                            deleteButton(ci)
+                            //viewInfoButton(ci)
+                            Button {
+                                Task {
+                                    do {
+                                        let cInfo = chat.chatInfo
+                                        let ciInfo = try await apiGetChatItemInfo(type: cInfo.chatType, id: cInfo.apiId, itemId: ci.id)
+                                        await MainActor.run {
+                                            chatItemInfo = ciInfo
+                                        }
+                                        if case let .group(gInfo) = chat.chatInfo {
+                                            await m.loadGroupMembers(gInfo)
+                                        }
+                                    } catch let error {
+                                        logger.error("apiGetChatItemInfo error: \(responseError(error))")
+                                    }
+                                    await MainActor.run { showChatItemInfoSheet = true }
+                                }
+                            } label: {
+                                Label(
+                                    NSLocalizedString("Info", comment: "chat item action"),
+                                    systemImage: "info.circle"
+                                )
+                            }
+                            //deleteButton(ci)
+                            Button(role: .destructive) {
+                                if !revealed,
+                                   let currIndex = m.getChatItemIndex(ci),
+                                   let ciCategory = ci.mergeCategory {
+                                    let (prevHidden, _) = m.getPrevShownChatItem(currIndex, ciCategory)
+                                    if let range = itemsRange(currIndex, prevHidden) {
+                                        var itemIds: [Int64] = []
+                                        for i in range {
+                                            itemIds.append(ItemsModel.shared.reversedChatItems[i].id)
+                                        }
+                                        showDeleteMessages = true
+                                        deletingItems = itemIds
+                                    } else {
+                                        showDeleteMessage = true
+                                        deletingItem = ci
+                                    }
+                                } else {
+                                    showDeleteMessage = true
+                                    deletingItem = ci
+                                }
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
                         } else if ci.mergeCategory != nil && ((range?.count ?? 0) > 1 || revealed) {
-                            if revealed { shrinkButton() } else { expandButton() }
-                            deleteButton(ci)
+                            if revealed {
+                                //shrinkButton()
+                                Button {
+                                    withConditionalAnimation {
+                                        reveal(false)
+                                    }
+                                } label: {
+                                    Label (
+                                        NSLocalizedString("Hide", comment: "chat item action"),
+                                        systemImage: "arrow.down.and.line.horizontal.and.arrow.up"
+                                    )
+                                }
+                            } else {
+                                //expandButton()
+                                Button {
+                                    withConditionalAnimation {
+                                        reveal(true)
+                                    }
+                                } label: {
+                                    Label(
+                                        NSLocalizedString("Expand", comment: "chat item action"),
+                                        systemImage: "arrow.up.and.line.horizontal.and.arrow.down"
+                                    )
+                                }
+                            }
+                            //deleteButton(ci)
+                            Button(role: .destructive) {
+                                if !revealed,
+                                   let currIndex = m.getChatItemIndex(ci),
+                                   let ciCategory = ci.mergeCategory {
+                                    let (prevHidden, _) = m.getPrevShownChatItem(currIndex, ciCategory)
+                                    if let range = itemsRange(currIndex, prevHidden) {
+                                        var itemIds: [Int64] = []
+                                        for i in range {
+                                            itemIds.append(ItemsModel.shared.reversedChatItems[i].id)
+                                        }
+                                        showDeleteMessages = true
+                                        deletingItems = itemIds
+                                    } else {
+                                        showDeleteMessage = true
+                                        deletingItem = ci
+                                    }
+                                } else {
+                                    showDeleteMessage = true
+                                    deletingItem = ci
+                                }
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
                         } else if ci.showLocalDelete {
-                            deleteButton(ci)
+                            //deleteButton(ci)
+                            Button(role: .destructive) {
+                                if !revealed,
+                                   let currIndex = m.getChatItemIndex(ci),
+                                   let ciCategory = ci.mergeCategory {
+                                    let (prevHidden, _) = m.getPrevShownChatItem(currIndex, ciCategory)
+                                    if let range = itemsRange(currIndex, prevHidden) {
+                                        var itemIds: [Int64] = []
+                                        for i in range {
+                                            itemIds.append(ItemsModel.shared.reversedChatItems[i].id)
+                                        }
+                                        showDeleteMessages = true
+                                        deletingItems = itemIds
+                                    } else {
+                                        showDeleteMessage = true
+                                        deletingItem = ci
+                                    }
+                                } else {
+                                    showDeleteMessage = true
+                                    deletingItem = ci
+                                }
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
                         } else {
                             EmptyView()
                         }
                         if selectedChatItems == nil && ci.canBeDeletedForSelf {
                             Divider()
-                            selectButton(ci)
+                            //selectButton(ci)
+                            Button {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    withAnimation {
+                                        selectUnselectChatItem(select: true, ci)
+                                    }
+                                }
+                            } label: {
+                                Label(
+                                    NSLocalizedString("Select", comment: "chat item action"),
+                                    systemImage: "checkmark.circle"
+                                )
+                            }
                         }
                     }
                     .accessibilityLabel("")
