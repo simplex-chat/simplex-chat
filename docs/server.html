@@ -881,6 +881,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <li><a href="#linode-marketplace">Linode marketplace</a></li>
 </ul>
 </li>
+<li>[Verifying server binaries]</li>
 <li><a href="#configuration">Configuration</a>
 <ul>
 <li><a href="#interactively">Interactively</a></li>
@@ -910,6 +911,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <li><a href="#daily-statistics">Daily statistics</a></li>
 </ul>
 </li>
+<li><a href="#reproduce-builds">Reproduce builds</a></li>
 <li><a href="#updating-your-smp-server">Updating your SMP server</a></li>
 <li><a href="#configuring-the-app-to-use-the-server">Configuring the app to use the server</a></li>
 </ul>
@@ -1318,6 +1320,31 @@ WEB_MANUAL=1
 </code></pre>
 <h3 id="linode-marketplace" tabindex="-1">Linode marketplace</h3>
 <p>You can deploy smp-server upon creating new Linode VM. Please refer to: <a href="https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/">Linode Marketplace</a></p>
+<h2 id="verifying-server-binaries" tabindex="-1">Verifying server binaries</h2>
+<p>Starting from v6.3 server builds are <a href="#reproduce-builds">reproducible</a>.</p>
+<p>That also allows us to sign server releases, confirming the integrity of GitHub builds.</p>
+<p>To verify server binaries after you downloaded them:</p>
+<ol>
+<li>
+<p>Download <code>_sha256sums</code> (hashes of all server binaries) and <code>_sha256sums.asc</code> (signature).</p>
+</li>
+<li>
+<p>Download our key FB44AF81A45BDE327319797C85107E357D4A17FC from <a href="https://keys.openpgp.org/search?q=chat%40simplex.chat">openpgp.org</a></p>
+</li>
+<li>
+<p>Import the key with <code>gpg --import FB44AF81A45BDE327319797C85107E357D4A17FC</code>. Key filename should be the same as its fingerprint, but please change it if necessary.</p>
+</li>
+<li>
+<p>Run <code>gpg --verify --trusted-key  _sha256sums.asc _sha256sums</code>. It should print:</p>
+</li>
+</ol>
+<blockquote>
+<p>Good signature from &quot;SimpleX Chat <a href="mailto:chat@simplex.chat">chat@simplex.chat</a>&quot;</p>
+</blockquote>
+<ol start="5">
+<li>Compute the hashes of the binaries you plan to use with <code>shu256sum &lt;file&gt;</code> or with <code>openssl sha256 &lt;file&gt;</code> and compare them with the hashes in the file <code>_sha256sums</code> - they must be the same.</li>
+</ol>
+<p>That is it - you now verified authenticity of our GitHub server binaries.</p>
 <h2 id="configuration" tabindex="-1">Configuration</h2>
 <p>To see which options are available, execute <code>smp-server</code> without flags:</p>
 <pre><code class="language-sh">sudo su smp -c smp-server
