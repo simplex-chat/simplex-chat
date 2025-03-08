@@ -107,13 +107,13 @@ func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? =
 }
 
 func chatSendCmd(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, _ ctrl: chat_ctrl? = nil, log: Bool = true) async -> ChatResponse {
-    await withCheckedContinuation { cont in
+    await withUnsafeContinuation { cont in
         cont.resume(returning: chatSendCmdSync(cmd, bgTask: bgTask, bgDelay: bgDelay, ctrl, log: log))
     }
 }
 
 func chatRecvMsg(_ ctrl: chat_ctrl? = nil) async -> ChatResponse? {
-    await withCheckedContinuation { cont in
+    await withUnsafeContinuation { cont in
         _  = withBGTask(bgDelay: msgDelay) { () -> ChatResponse? in
             let resp = recvSimpleXMsg(ctrl)
             cont.resume(returning: resp)
