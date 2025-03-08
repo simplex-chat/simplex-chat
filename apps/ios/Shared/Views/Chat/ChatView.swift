@@ -1537,13 +1537,83 @@ struct ChatView: View {
                     .modifier(ChatItemClipped(ci, tailVisible: itemSeparation.largeGap && (ci.meta.itemDeleted == nil || revealed)))
                     .contextMenu {
                         if case let .group(gInfo) = chat.chatInfo, ci.isReport, ci.meta.itemDeleted == nil {
-                            menuReport(ci, gInfo)
+                            if ci.chatDir != .groupSnd, gInfo.membership.memberRole >= .moderator {
+                                archiveReportButton(ci)
+                            }
+                            deleteButton(ci, label: "Delete report")
                         } else if let mc = ci.content.msgContent, !ci.isReport, ci.meta.itemDeleted == nil || revealed {
-                            menuContent1(ci, mc, composeState.liveMessage != nil)
-                            menuContent2(ci, composeState.liveMessage != nil)
-                            menuContentModerate(ci, composeState.liveMessage != nil)
+                            let rs = availableReactions()
+                            if chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction,
+                               rs.count > 0 {
+                                reactionsGroup(rs)
+                            }
+                            if ci.meta.itemDeleted == nil && !ci.isLiveDummy && composeState.liveMessage == nil && !ci.localNote {
+                                replyButton
+                            }
+                            let fileSource = getLoadedFileSource(ci.file)
+                            let fileExists = if let fs = fileSource, FileManager.default.fileExists(atPath: getAppFilePath(fs.filePath).path) { true } else { false }
+                            let copyAndShareAllowed = !ci.content.text.isEmpty || (ci.content.msgContent?.isImage == true && fileExists)
+                            if copyAndShareAllowed {
+                                shareButton(ci)
+                                copyButton(ci)
+                            }
+                            if let fileSource = fileSource, fileExists {
+                                if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
+                                    if image.imageData != nil {
+                                        saveButton(file: fileSource)
+                                    } else {
+                                        saveButton(image: image)
+                                    }
+                                } else {
+                                    saveButton(file: fileSource)
+                                }
+                            } else if let file = ci.file, case .rcvInvitation = file.fileStatus, fileSizeValid(file) {
+                                downloadButton(file: file)
+                            }
+                            if ci.meta.editable && !mc.isVoice && composeState.liveMessage == nil {
+                                editButton(chatItem)
+                            }
+                            if ci.meta.itemDeleted == nil
+                                && (ci.file == nil || (fileSource != nil && fileExists))
+                                && !ci.isLiveDummy && composeState.liveMessage == nil {
+                                forwardButton
+                            }
+
+                            if !ci.isLiveDummy {
+                                viewInfoButton(ci)
+                            }
+                            if revealed {
+                                hideButton()
+                            }
+                            if ci.meta.itemDeleted == nil && !ci.localNote,
+                               let file = ci.file,
+                               let cancelAction = file.cancelAction {
+                                cancelFileButton(file.fileId, cancelAction)
+                            }
+                            if composeState.liveMessage == nil || !ci.meta.isLive {
+                                deleteButton(ci)
+                            }
+                            if ci.chatDir != .groupSnd {
+                                if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo) {
+                                    moderateButton(ci, groupInfo)
+                                } else if ci.meta.itemDeleted == nil && chat.groupFeatureEnabled(.reports),
+                                          case let .group(gInfo) = chat.chatInfo,
+                                          gInfo.membership.memberRole == .member
+                                            && composeState.liveMessage == nil
+                                            && composeState.voiceMessageRecordingState == .noRecording {
+                                    reportButton(ci)
+                                }
+                            }
                         } else if ci.meta.itemDeleted != nil {
-                            menuDeleted(ci, range)
+                            if revealed {
+                                hideButton()
+                            } else if !ci.isDeletedContent {
+                                revealButton(ci)
+                            } else if range != nil {
+                                expandButton()
+                            }
+                            viewInfoButton(ci)
+                            deleteButton(ci)
                         } else if ci.isDeletedContent {
                             viewInfoButton(ci)
                             deleteButton(ci)
@@ -1660,95 +1730,6 @@ struct ChatView: View {
                     }
                 }
             }
-        }
-
-        @ViewBuilder func menuReport(_ ci: ChatItem, _ gInfo: GroupInfo) -> some View {
-            if ci.chatDir != .groupSnd, gInfo.membership.memberRole >= .moderator {
-                archiveReportButton(ci)
-            }
-            deleteButton(ci, label: "Delete report")
-        }
-        
-        @ViewBuilder func menuContent1(_ ci: ChatItem, _ mc: MsgContent, _ live: Bool) -> some View {
-            let rs = availableReactions()
-            if chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction,
-               rs.count > 0 {
-                reactionsGroup(rs)
-            }
-            if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live && !ci.localNote {
-                replyButton
-            }
-            let fileSource = getLoadedFileSource(ci.file)
-            let fileExists = if let fs = fileSource, FileManager.default.fileExists(atPath: getAppFilePath(fs.filePath).path) { true } else { false }
-            let copyAndShareAllowed = !ci.content.text.isEmpty || (ci.content.msgContent?.isImage == true && fileExists)
-            if copyAndShareAllowed {
-                shareButton(ci)
-                copyButton(ci)
-            }
-            if let fileSource = fileSource, fileExists {
-                if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
-                    if image.imageData != nil {
-                        saveButton(file: fileSource)
-                    } else {
-                        saveButton(image: image)
-                    }
-                } else {
-                    saveButton(file: fileSource)
-                }
-            } else if let file = ci.file, case .rcvInvitation = file.fileStatus, fileSizeValid(file) {
-                downloadButton(file: file)
-            }
-            if ci.meta.editable && !mc.isVoice && !live {
-                editButton(chatItem)
-            }
-            if ci.meta.itemDeleted == nil
-                && (ci.file == nil || (fileSource != nil && fileExists))
-                && !ci.isLiveDummy && !live {
-                forwardButton
-            }
-        }
-        
-        @ViewBuilder func menuContent2(_ ci: ChatItem, _ live: Bool) -> some View {
-            if !ci.isLiveDummy {
-                viewInfoButton(ci)
-            }
-            if revealed {
-                hideButton()
-            }
-            if ci.meta.itemDeleted == nil && !ci.localNote,
-               let file = ci.file,
-               let cancelAction = file.cancelAction {
-                cancelFileButton(file.fileId, cancelAction)
-            }
-            if !live || !ci.meta.isLive {
-                deleteButton(ci)
-            }
-        }
-        
-        @ViewBuilder func menuContentModerate(_ ci: ChatItem, _ live: Bool) -> some View {
-            if ci.chatDir != .groupSnd {
-                if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo) {
-                    moderateButton(ci, groupInfo)
-                } else if ci.meta.itemDeleted == nil && chat.groupFeatureEnabled(.reports),
-                          case let .group(gInfo) = chat.chatInfo,
-                          gInfo.membership.memberRole == .member
-                            && !live
-                            && composeState.voiceMessageRecordingState == .noRecording {
-                    reportButton(ci)
-                }
-            }
-        }
-        
-        @ViewBuilder func menuDeleted(_ ci: ChatItem, _ range: ClosedRange<Int>?) -> some View {
-            if revealed {
-                hideButton()
-            } else if !ci.isDeletedContent {
-                revealButton(ci)
-            } else if range != nil {
-                expandButton()
-            }
-            viewInfoButton(ci)
-            deleteButton(ci)
         }
         
         var replyButton: Button<some View> {
