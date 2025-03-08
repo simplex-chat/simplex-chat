@@ -16,7 +16,7 @@ private let memberImageSize: CGFloat = 34
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var im = ItemsModel.shared
-    @State var mergedItems: BoxedValue<MergedItems> = BoxedValue(MergedItems.create(ItemsModel.shared.reversedChatItems, [], ItemsModel.shared.chatState))
+    @State var mergedItems: MergedItems = MergedItems.create(ItemsModel.shared.reversedChatItems, [], ItemsModel.shared.chatState)
     @State var revealedItems: Set<Int64> = Set()
     @State var theme: AppTheme = buildTheme()
     @Environment(\.dismiss) var dismiss
@@ -232,12 +232,12 @@ struct ChatView: View {
                 initChatView()
                 theme = buildTheme()
                 closeSearch()
-                mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, revealedItems, im.chatState)
-                scrollView.updateItems(mergedItems.boxedValue.items)
+                mergedItems = MergedItems.create(im.reversedChatItems, revealedItems, im.chatState)
+                scrollView.updateItems(mergedItems.items)
 
-                if let openAround = chatModel.openAroundItemId, let index = mergedItems.boxedValue.indexInParentItems[openAround] {
+                if let openAround = chatModel.openAroundItemId, let index = mergedItems.indexInParentItems[openAround] {
                     scrollView.scrollToItem(index)
-                } else if let unreadIndex = mergedItems.boxedValue.items.lastIndex(where: { $0.hasUnread() }) {
+                } else if let unreadIndex = mergedItems.items.lastIndex(where: { $0.hasUnread() }) {
                     scrollView.scrollToItem(unreadIndex)
                 } else {
                     scrollView.scrollToBottom()
@@ -252,11 +252,11 @@ struct ChatView: View {
         .onChange(of: chatModel.openAroundItemId) { openAround in
             if let openAround {
                 closeSearch()
-                mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, revealedItems, im.chatState)
-                scrollView.updateItems(mergedItems.boxedValue.items)
+                mergedItems = MergedItems.create(im.reversedChatItems, revealedItems, im.chatState)
+                scrollView.updateItems(mergedItems.items)
                 chatModel.openAroundItemId = nil
 
-                if let index = mergedItems.boxedValue.indexInParentItems[openAround] {
+                if let index = mergedItems.indexInParentItems[openAround] {
                     scrollView.scrollToItem(index)
                 }
 
@@ -442,7 +442,7 @@ struct ChatView: View {
     private func scrollToItemId(_ itemId: ChatItem.ID) {
         Task {
             do {
-                var index = mergedItems.boxedValue.indexInParentItems[itemId]
+                var index = mergedItems.indexInParentItems[itemId]
                 if index == nil {
                     let pagination = ChatPagination.around(chatItemId: itemId, count: ChatPagination.PRELOAD_COUNT * 2)
                     let oldSize = ItemsModel.shared.reversedChatItems.count
@@ -455,7 +455,7 @@ struct ChatView: View {
                         try await Task.sleep(nanoseconds: 20_000000)
                         repeatsLeft -= 1
                     }
-                    index = mergedItems.boxedValue.indexInParentItems[itemId]
+                    index = mergedItems.indexInParentItems[itemId]
                 }
                 if let index {
                     closeKeyboardAndRun {
@@ -538,7 +538,7 @@ struct ChatView: View {
                 return ChatItemWithMenu(
                     chat: $chat,
                     index: index,
-                    isLastItem: index == mergedItems.boxedValue.items.count - 1,
+                    isLastItem: index == mergedItems.items.count - 1,
                     chatItem: ci,
                     scrollToItemId: scrollToItemId,
                     merged: mergedItem,
@@ -568,8 +568,8 @@ struct ChatView: View {
                 }
             }
             .onChange(of: im.reversedChatItems) { items in
-                mergedItems.boxedValue = MergedItems.create(items, revealedItems, im.chatState)
-                scrollView.updateItems(mergedItems.boxedValue.items)
+                mergedItems = MergedItems.create(items, revealedItems, im.chatState)
+                scrollView.updateItems(mergedItems.items)
                 if im.itemAdded {
                     im.itemAdded = false
                     if scrollView.listState.firstVisibleItemIndex < 2 {
@@ -580,8 +580,8 @@ struct ChatView: View {
                 }
             }
             .onChange(of: revealedItems) { revealed in
-                mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, revealed, im.chatState)
-                scrollView.updateItems(mergedItems.boxedValue.items)
+                mergedItems = MergedItems.create(im.reversedChatItems, revealed, im.chatState)
+                scrollView.updateItems(mergedItems.items)
             }
             .onChange(of: chat.id) { _ in
                 loadLastItems($loadingMoreItems, loadingBottomItems: $loadingBottomItems, chat)
@@ -615,17 +615,17 @@ struct ChatView: View {
     }
 
     private func updateWithInitiallyLoadedItems() {
-        if mergedItems.boxedValue.items.isEmpty {
-            mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, revealedItems, ItemsModel.shared.chatState)
+        if mergedItems.items.isEmpty {
+            mergedItems = MergedItems.create(im.reversedChatItems, revealedItems, ItemsModel.shared.chatState)
         }
-        let unreadIndex = mergedItems.boxedValue.items.lastIndex(where: { $0.hasUnread() })
-        let unreadItemId: Int64? = if let unreadIndex { mergedItems.boxedValue.items[unreadIndex].newest().item.id } else { nil }
+        let unreadIndex = mergedItems.items.lastIndex(where: { $0.hasUnread() })
+        let unreadItemId: Int64? = if let unreadIndex { mergedItems.items[unreadIndex].newest().item.id } else { nil }
         // this helps to speed up initial process of setting scroll position and reduce time needed
         // to layout items on screen
         if let unreadIndex, let unreadItemId {
             scrollView.setScrollPosition(unreadIndex, unreadItemId)
         }
-        scrollView.updateItems(mergedItems.boxedValue.items)
+        scrollView.updateItems(mergedItems.items)
         if let unreadIndex {
             scrollView.scrollToItem(unreadIndex)
         }
@@ -638,9 +638,9 @@ struct ChatView: View {
     private func searchTextChanged(_ s: String) {
         Task {
             await loadChat(chat: chat, search: s)
-            mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, revealedItems, im.chatState)
+            mergedItems = MergedItems.create(im.reversedChatItems, revealedItems, im.chatState)
             await MainActor.run {
-                scrollView.updateItems(mergedItems.boxedValue.items)
+                scrollView.updateItems(mergedItems.items)
             }
             if !s.isEmpty {
                 scrollView.scrollToBottom()
@@ -1120,7 +1120,7 @@ struct ChatView: View {
             im.chatState,
             searchText,
             nil,
-            { visibleItemIndexesNonReversed(scrollView.listState, mergedItems.boxedValue) }
+            { visibleItemIndexesNonReversed(scrollView.listState, mergedItems) }
         )
         return true
     }
@@ -1131,7 +1131,7 @@ struct ChatView: View {
     }
 
     func onChatItemsUpdated() {
-        if !mergedItems.boxedValue.isActualState() {
+        if !mergedItems.isActualState() {
             //logger.debug("Items are not actual, waiting for the next update: \(String(describing: mergedItems.boxedValue.splits))  \(ItemsModel.shared.chatState.splits), \(mergedItems.boxedValue.indexInParentItems.count) vs \(ItemsModel.shared.reversedChatItems.count)")
             return
         }

@@ -42,26 +42,26 @@ func preloadIfNeeded(
     _ allowLoadMoreItems: Binding<Bool>,
     _ ignoreLoadingRequests: Binding<Int64?>,
     _ listState: EndlessScrollView<MergedItem>.ListState,
-    _ mergedItems: BoxedValue<MergedItems>,
+    _ mergedItems: MergedItems,
     loadItems: @escaping (Bool, ChatPagination) async -> Bool
 ) {
     let state = PreloadState.shared
     guard !listState.isScrolling && !listState.isAnimatedScrolling,
-          state.prevFirstVisible != listState.firstVisibleItemIndex || state.prevItemsCount != mergedItems.boxedValue.indexInParentItems.count,
+          state.prevFirstVisible != listState.firstVisibleItemIndex || state.prevItemsCount != mergedItems.indexInParentItems.count,
           !state.preloading,
           listState.totalItemsCount > 0
     else {
         return
     }
     state.prevFirstVisible = listState.firstVisibleItemId as! Int64
-    state.prevItemsCount = mergedItems.boxedValue.indexInParentItems.count
+    state.prevItemsCount = mergedItems.indexInParentItems.count
     state.preloading = true
     let allowLoadMore = allowLoadMoreItems.wrappedValue
     Task {
         defer {
             state.preloading = false
         }
-        await preloadItems(mergedItems.boxedValue, allowLoadMore, listState, ignoreLoadingRequests) { pagination in
+        await preloadItems(mergedItems, allowLoadMore, listState, ignoreLoadingRequests) { pagination in
             await loadItems(false, pagination)
         }
     }
