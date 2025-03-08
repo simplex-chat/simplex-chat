@@ -10,9 +10,13 @@ permalink: "/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-publi
 
 # SimpleX Chat v6.3: new user experience and safety in public groups
 
-**Will be published:** Mar 8, 2025
+**Published:** Mar 8, 2025
 
-This is a permalink for release announcement.
+**Please note**: v6.3 release for iOS is delayed, we are currently fixing the crashes on iOS 18 reported by the users - thank you!
+
+If you installed TestFlight release and it crashes for you, please install the current latest beta build 6.3 (265) - it is more stable than the removed builds 266-268.
+
+This post will be updated once iOS v6.3 is released.
 
 What's new in v6.3:
 - [preventing spam and abuse in public groups](#preventing-spam-and-abuse-in-public-groups).
@@ -26,7 +30,7 @@ The last but not the least - from v6.3 server builds are now reproducible.
 
 ## Preventing spam and abuse in public groups
 
-[We wrote before](): as the network grows, it becomes more attractive to attackers. This release adds several features that reduce the possibility of attacks and abuse.
+[We wrote before](./20250114-simplex-network-large-groups-privacy-preserving-content-moderation.md): as the network grows, it becomes more attractive to attackers. This release adds several features that reduce the possibility of attacks and abuse.
 
 ### Spam in groups that are listed in our group directory
 
@@ -42,9 +46,9 @@ Group owners can enable the requirement to pass captcha challenge before joining
 
 While group settings support giving all joining member an "observer" role - that is, without the right to send messages - the attackers tried spaming groups by joining and leaving. We added an optional filter for member names that group owners can enable for groups listed in directory - if a member name contains profanity, they will be rejected. Further improvements will be released in March as well.
 
-The current chat bot acting as a group directory is a hybrid of [future chat relays]() (aka superpeers) we are now developing to support large groups, and of a directory service that will be embedded in the app UI later this year, allowing to search and discover public groups. Anybody is able to run their own directory bot now, and there will be possibility to use third party directories via the app UI in the future.
+The current SimpleX directory chatbot is a hybrid of [future chat relays](./20250114-simplex-network-large-groups-privacy-preserving-content-moderation.md#can-large-groups-scale) (a.k.a. super-peers) we are now developing to support large groups, and of a directory service that will be embedded in the app UI later this year, allowing to search and to discover public groups. Anybody is able to run their own directory bots now, and there will be possibility to use third party directories via the app UI in the future too.
 
-Read more about [SimpleX group directory](), how to include your groups, and which groups we now accept. This is a limited list of subjects that will be expanded once we have better moderation functionality for the groups.
+Read more about [SimpleX group directory](../docs/DIRECTORY.md), how to submit your groups, and which groups we now accept. Currently we accept groups related to a limited list of topics that will be expanded once we have better moderation functionality for the groups.
 
 ### More power to group owners and moderators
 
@@ -128,6 +132,24 @@ Please also note:
 - other file types are sent as is, and their names are left unchanged - we believe that for ordinary files their name is part of their content.
 
 We plan further improvements to reduce metadata in files in the near future – please let us know what you believe is the most important to reduce first.
+
+## Reproducible server builds
+
+Starting from v6.3 server releases are reproducible!
+
+**Why it is important**
+
+With reproducible builds anybody can build servers from our code following the same process, and the build would produce identical binaries.
+
+This also allows us to sign releases, as we reproduce GitHub builds ourselves and by signing them we attest that our builds resulted in identical binaries.
+
+**How to reproduce builds**
+
+You can reproduce our builds on Linux with x86 CPU in docker container - please follow the instructions [here](../docs/SERVER.md#reproduce-builds).
+
+We are looking for support from open-source contributors or security researchers who would agree to publish their signature of our releases, having reproduced the builds.
+
+**How to 
 
 ## SimpleX network
 
