@@ -196,7 +196,7 @@ fun GroupMentions(
           MaxMentionsReached()
         }
       }
-      itemsIndexed(filteredMembers.value, key = { _, item -> item.memberId }) { i, member ->
+      itemsIndexed(filteredMembers.value, key = { _, item -> item.groupMemberId }) { i, member ->
         if (i != 0 || !showMaxReachedBox) {
           Divider()
         }

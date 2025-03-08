@@ -1995,8 +1995,8 @@ object ChatController {
     }
   }
 
-  suspend fun apiRemoveMembers(rh: Long?, groupId: Long, memberIds: List<Long>): List<GroupMember>? =
-    when (val r = sendCmd(rh, CC.ApiRemoveMembers(groupId, memberIds))) {
+  suspend fun apiRemoveMembers(rh: Long?, groupId: Long, memberIds: List<Long>, withMessages: Boolean = false): List<GroupMember>? =
+    when (val r = sendCmd(rh, CC.ApiRemoveMembers(groupId, memberIds, withMessages))) {
       is CR.UserDeletedMembers -> r.members
       else -> {
         if (!(networkErrorAlert(r))) {
@@ -2694,15 +2694,29 @@ object ChatController {
         if (active(r.user)) {
           withChats {
             updateGroup(rhId, r.groupInfo)
+            if (r.withMessages) {
+              removeMemberItems(rhId, r.groupInfo.membership, byMember = r.member, r.groupInfo)
+            }
+          }
+          withReportsChatsIfOpen {
+            if (r.withMessages) {
+              removeMemberItems(rhId, r.groupInfo.membership, byMember = r.member, r.groupInfo)
+            }
           }
         }
       is CR.DeletedMember ->
         if (active(r.user)) {
           withChats {
             upsertGroupMember(rhId, r.groupInfo, r.deletedMember)
+            if (r.withMessages) {
+              removeMemberItems(rhId, r.deletedMember, byMember = r.byMember, r.groupInfo)
+            }
           }
           withReportsChatsIfOpen {
             upsertGroupMember(rhId, r.groupInfo, r.deletedMember)
+            if (r.withMessages) {
+              removeMemberItems(rhId, r.deletedMember, byMember = r.byMember, r.groupInfo)
+            }
           }
         }
       is CR.LeftMember ->
@@ -3412,7 +3426,7 @@ sealed class CC {
   class ApiJoinGroup(val groupId: Long): CC()
   class ApiMembersRole(val groupId: Long, val memberIds: List<Long>, val memberRole: GroupMemberRole): CC()
   class ApiBlockMembersForAll(val groupId: Long, val memberIds: List<Long>, val blocked: Boolean): CC()
-  class ApiRemoveMembers(val groupId: Long, val memberIds: List<Long>): CC()
+  class ApiRemoveMembers(val groupId: Long, val memberIds: List<Long>, val withMessages: Boolean): CC()
   class ApiLeaveGroup(val groupId: Long): CC()
   class ApiListMembers(val groupId: Long): CC()
   class ApiUpdateGroupProfile(val groupId: Long, val groupProfile: GroupProfile): CC()
@@ -3597,7 +3611,7 @@ sealed class CC {
     is ApiJoinGroup -> "/_join #$groupId"
     is ApiMembersRole -> "/_member role #$groupId ${memberIds.joinToString(",")} ${memberRole.memberRole}"
     is ApiBlockMembersForAll -> "/_block #$groupId ${memberIds.joinToString(",")} blocked=${onOff(blocked)}"
-    is ApiRemoveMembers -> "/_remove #$groupId ${memberIds.joinToString(",")}"
+    is ApiRemoveMembers -> "/_remove #$groupId ${memberIds.joinToString(",")} messages=${onOff(withMessages)}"
     is ApiLeaveGroup -> "/_leave #$groupId"
     is ApiListMembers -> "/_members #$groupId"
     is ApiUpdateGroupProfile -> "/_group_profile #$groupId ${json.encodeToString(groupProfile)}"
@@ -5805,7 +5819,7 @@ sealed class CR {
   @Serializable @SerialName("userAcceptedGroupSent") class UserAcceptedGroupSent (val user: UserRef, val groupInfo: GroupInfo, val hostContact: Contact? = null): CR()
   @Serializable @SerialName("groupLinkConnecting") class GroupLinkConnecting (val user: UserRef, val groupInfo: GroupInfo, val hostMember: GroupMember): CR()
   @Serializable @SerialName("businessLinkConnecting") class BusinessLinkConnecting (val user: UserRef, val groupInfo: GroupInfo, val hostMember: GroupMember, val fromContact: Contact): CR()
-  @Serializable @SerialName("userDeletedMembers") class UserDeletedMembers(val user: UserRef, val groupInfo: GroupInfo, val members: List<GroupMember>): CR()
+  @Serializable @SerialName("userDeletedMembers") class UserDeletedMembers(val user: UserRef, val groupInfo: GroupInfo, val members: List<GroupMember>, val withMessages: Boolean): CR()
   @Serializable @SerialName("leftMemberUser") class LeftMemberUser(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("groupMembers") class GroupMembers(val user: UserRef, val group: Group): CR()
   @Serializable @SerialName("receivedGroupInvitation") class ReceivedGroupInvitation(val user: UserRef, val groupInfo: GroupInfo, val contact: Contact, val memberRole: GroupMemberRole): CR()
@@ -5815,8 +5829,8 @@ sealed class CR {
   @Serializable @SerialName("membersRoleUser") class MembersRoleUser(val user: UserRef, val groupInfo: GroupInfo, val members: List<GroupMember>, val toRole: GroupMemberRole): CR()
   @Serializable @SerialName("memberBlockedForAll") class MemberBlockedForAll(val user: UserRef, val groupInfo: GroupInfo, val byMember: GroupMember, val member: GroupMember, val blocked: Boolean): CR()
   @Serializable @SerialName("membersBlockedForAllUser") class MembersBlockedForAllUser(val user: UserRef, val groupInfo: GroupInfo, val members: List<GroupMember>, val blocked: Boolean): CR()
-  @Serializable @SerialName("deletedMemberUser") class DeletedMemberUser(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
-  @Serializable @SerialName("deletedMember") class DeletedMember(val user: UserRef, val groupInfo: GroupInfo, val byMember: GroupMember, val deletedMember: GroupMember): CR()
+  @Serializable @SerialName("deletedMemberUser") class DeletedMemberUser(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val withMessages: Boolean): CR()
+  @Serializable @SerialName("deletedMember") class DeletedMember(val user: UserRef, val groupInfo: GroupInfo, val byMember: GroupMember, val deletedMember: GroupMember, val withMessages: Boolean): CR()
   @Serializable @SerialName("leftMember") class LeftMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("groupDeleted") class GroupDeleted(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("contactsMerged") class ContactsMerged(val user: UserRef, val intoContact: Contact, val mergedContact: Contact): CR()
@@ -6168,7 +6182,7 @@ sealed class CR {
     is UserAcceptedGroupSent -> json.encodeToString(groupInfo)
     is GroupLinkConnecting -> withUser(user, "groupInfo: $groupInfo\nhostMember: $hostMember")
     is BusinessLinkConnecting -> withUser(user, "groupInfo: $groupInfo\nhostMember: $hostMember\nfromContact: $fromContact")
-    is UserDeletedMembers -> withUser(user, "groupInfo: $groupInfo\nmembers: $members")
+    is UserDeletedMembers -> withUser(user, "groupInfo: $groupInfo\nmembers: $members\nwithMessages: $withMessages")
     is LeftMemberUser -> withUser(user, json.encodeToString(groupInfo))
     is GroupMembers -> withUser(user, json.encodeToString(group))
     is ReceivedGroupInvitation -> withUser(user, "groupInfo: $groupInfo\ncontact: $contact\nmemberRole: $memberRole")
@@ -6178,8 +6192,8 @@ sealed class CR {
     is MembersRoleUser -> withUser(user, "groupInfo: $groupInfo\nmembers: $members\ntoRole: $toRole")
     is MemberBlockedForAll -> withUser(user, "groupInfo: $groupInfo\nbyMember: $byMember\nmember: $member\nblocked: $blocked")
     is MembersBlockedForAllUser -> withUser(user, "groupInfo: $groupInfo\nmembers: $members\nblocked: $blocked")
-    is DeletedMemberUser -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
-    is DeletedMember -> withUser(user, "groupInfo: $groupInfo\nbyMember: $byMember\ndeletedMember: $deletedMember")
+    is DeletedMemberUser -> withUser(user, "groupInfo: $groupInfo\nmember: $member\nwithMessages: ${withMessages}")
+    is DeletedMember -> withUser(user, "groupInfo: $groupInfo\nbyMember: $byMember\ndeletedMember: $deletedMember\nwithMessages: ${withMessages}")
     is LeftMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
     is GroupDeleted -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
     is ContactsMerged -> withUser(user, "intoContact: $intoContact\nmergedContact: $mergedContact")
