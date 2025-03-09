@@ -2,9 +2,9 @@
 layout: layouts/article.html
 title: "SimpleX Chat v6.3: new user experience and safety in public groups"
 date: 2025-03-08
-# previewBody: blog_previews/20241210.html
-# image: images/20241210-operators-1.png
-draft: true
+previewBody: blog_previews/20250308.html
+image: images/20250308-captcha.png
+imageBottom: true
 permalink: "/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html"
 ---
 
@@ -12,19 +12,15 @@ permalink: "/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-publi
 
 **Published:** Mar 8, 2025
 
-**Please note**: v6.3 release for iOS is delayed, we are currently fixing the crashes on iOS 18 reported by the users - thank you!
-
-If you installed TestFlight release and it crashes for you, please install the current latest beta build 6.3 (265) - it is more stable than the removed builds 266-268.
-
-This post will be updated once iOS v6.3 is released.
-
 **What's new in v6.3**:
 - [preventing spam and abuse in public groups](#preventing-spam-and-abuse-in-public-groups).
 - [group improvements](#group-improvements): [mention other members](#mention-other-members-and-get-notified-when-mentioned), [improved performance](#better-group-performance).
-- [better-chat-navigation](#better-chat-navigation): [organize chats into lists](#organize-chats-into-lists) and [jump to found and forwarded messages](#jump-to-found-and-forwarded-messages).
-- [privacy and security improvements](#pri): 
+- [better chat navigation](#better-chat-navigation): [organize chats into lists](#organize-chats-into-lists) and [jump to found and forwarded messages](#jump-to-found-and-forwarded-messages).
+- [privacy and security improvements](#privacy-and-security-improvements): [chat retention period](#set-message-retention-period-in-chats) and [private media file names](#private-media-file-names).
 
-The last but not the least - from v6.3 [server builds are now reproducible](#reproducible-server-builds).
+Also, we added Catalan interface language to Android and desktop apps, thanks to [our users and Weblate](https://github.com/simplex-chat/simplex-chat#help-translating-simplex-chat).
+
+The last but not the least - [server builds are now reproducible](#reproducible-server-builds).
 
 ## What's new in v6.3
 
@@ -36,9 +32,11 @@ The last but not the least - from v6.3 [server builds are now reproducible](#rep
 
 There is no built-in group discovery in SimpleX Chat apps. Instead, we offer an experimental chat bot that allows to submit and to discover public groups. Not so long ago, spammers started sending messages via bots attempting to disrupt these groups.
 
-We released several changes to the groups directory to protect from spam attacks:
+We released several changes to the groups directory to protect from spam attacks.
 
 **Optional captcha verification**
+
+<img src="./images/20250308-captcha.png" width="288" class="float-to-right">
 
 Group owners can enable the requirement to pass captcha challenge before joining the group. Captcha is generated in the directory bot itself, without any 3rd party servers, and is sent to the joining member. The new member must reply with the text in the image to be accepted to the group. While not a perfect protection, this basic measure complicates programming automatic bots to join public groups. It also provides a foundation to implement "knocking" - a conversation with dedicated group admins prior to joining the group. We plan to release support for knocking in March.
 
@@ -54,13 +52,15 @@ Read more about [SimpleX group directory](../docs/DIRECTORY.md), how to submit y
 
 This release includes two new features to help group moderators.
 
+<img src="./images/20250308-reports.png" width="288" class="float-to-right">
+
 **Private reports**
 
-Members in groups can bring specific messages and members to group moderators privately, even if the group does not allow direct messages. The simply need to choose report button on the message and choose the report reason. This report will be visible to all group owners and moderators, but not to other members.
+Group members can privately bring to group moderators attention specific messages and members, even if the group does not allow direct messages. The simply need to choose report in the message context menu and choose the report reason. This report will be visible to all group owners and moderators, but not to other members.
 
-Group moderators can see all member reports in a separate view, and quickly find the problematic messages, making moderation much easier in public groups. These reports are private to group, they are not sent to server operators.
+Group moderators can see all member reports in a separate view, and quickly find the problematic messages, making moderation much easier in public groups. These reports are private to groups, they are not sent to server operators.
 
-Please note, that for group listed in our group directory, the directory bot acts as admin, so it will receive all reports as well.
+Please note: in the groups listed in our directory, the directory bot acts as admin, so it will receive all reports as well.
 
 **Acting on multiple members at once**
 
@@ -73,37 +73,37 @@ The next version will also allow to remove members together with all messages th
 
 ## Group improvements
 
-Abuse and attacks were not the only focus of this release – there are several features that increase value of the groups for the "good" users.
-
 ### Mention other members and get notified when mentioned
 
-This feature allows you to mention other members in the group in the usual way - type @ character, and choose the member you want to mention from the menu. Even that there is no user accounts and persistent identities we made it work by referencing members in additional message data by their random group ID that is also used for replies and all other interactions in the group.
+<img src="./images/20250308-mentions.png" width="288" class="float-to-right">
 
-You can also now switch message notifications in the group to "mentions only" mode. You will be notified only when you are mentioned in a message or when somebody replies to your message (by including your message as a quote). Simply choose "Mute" in the context menu of the group in the list of chats to switch group notifications to "mentions only" mode. After that you can choose "Mute all" to disable all notifications, including mentions.
+This feature allows you to mention other members in the group in the usual way - type `@` character, and choose the member you want to mention from the menu. Even that there is no user accounts and persistent identities we made it work by referencing members by their random group ID that is also used for replies and all other interactions in the group.
+
+You can also now switch message notifications in the group to "mentions only" mode. You will be notified only when you are mentioned in a message, or when somebody replies to your message. Simply choose "Mute" in the context menu of the group in the list of chats to switch group notifications to "mentions only" mode. After that you can choose "Mute all" to disable all notifications, including mentions.
 
 ### Better group performance
 
 **Send messages faster**
 
-While we didn't reduce the required network traffic to send messages to large groups - your client still has to send message to each member individually - we fully redesigned the process of preparing the message to send, by reducing both storage and time required to put the message in the queue.
-
-Previously, while preparing to send a message the device had to store a fully encrypted message block to a database for each member, using ~17-20kb of storage for each member, which means that to send 1 message to a group with 1000 active members you devise was temporarily reserving 17-20 Mb (!) of storage. With this release the original message is stored only once, consuming exactly as much (or as little) space as its content, and the actual encryption happens right before sending. While preparing to send a message only headers and keys are prepared and stored, consuming ~200 bytes per message, or about 200kb for 1000 active members - reducing temporary storage required to send the message ~100x, and also reducing the time to prepare it.
+We didn't reduce the required network traffic to send messages to large groups yet - your client still has to send message to each member individually. But we redesigned the process of sending a message, reducing temporary storage required to schedule the message for delivery by about 100x. This creates a significant storage saving - e.g, to send one message to a group of 1,000 members previously required ~20Mb, and now it is reduced to ~200kb. It also reduces the time and battery used to send a message.
 
 **Faster group deletion**
 
-When you leave the group, the app preserves a copy of all your communications in the group. You can choose to keep it or to delete it completely. This final group deletion was very slow prior to this release - depending on the number of groups on your device it could sometimes take many minutes.
+When you leave the group, the app preserves a copy of all your communications in the group. You can choose to keep it or to delete it completely. This final group deletion was very slow prior to this release - depending on the number of groups on your device it could sometimes take several minutes.
 
-This release solved this problem reducing the time it takes to delete the group to seconds, and even in cases when the app is terminated half way - it is either rolled back or completes, but it cannot leave the group in a partially deleted state. It improves both user experience and privacy, as gives you better control over your data.
+This release solved this problem – the time it takes to delete the group is reduced to seconds, and even in cases when the app is terminated half-way, it either rolls back or completes, but it cannot leave the group in a partially deleted state. It improves both user experience and privacy, as gives you better control over your data.
 
 ## Better chat navigation
 
 ### Organize chats into lists
 
+<img src="./images/20250308-lists.png" width="288" class="float-to-right">
+
 It is a common feature in many messengers – it helps organizing your conversations.
 
-The lists also show when any chat in the list has messages.
+The lists also show a blue mark when any chat in the list has new messages.
 
-There are several preset lists: contacts, groups, private notes, favourite chats and also groups with member reports - the last list is automatically shown if members of any groups where you are the moderator or the owner sent private reports, until these reports are acted on or archived.
+There are several preset lists: contacts, groups, private notes, business chats, favourite chats and also groups with member reports - the last list is automatically shown if members of any groups where you are the moderator or the owner sent private reports, until these reports are acted on or archived.
 
 ### Jump to found and forwarded messages
 
@@ -115,20 +115,20 @@ You can also navigate from the forwarded message (or from the message saved to p
 
 ### Set message retention period in chats
 
-Before this version, you could enable message retention period for all chats in your profile. While helpful in some cases, many of us have conversations that we want to keep for a long time, and some other conversations that are pure entertainment and you want to remove them quicker.
+Before this version, you could enable message retention period for all chats in your profile. While helpful in some cases, many of us have conversations that we want to keep for a long time, and some other conversations that we want to remove quicker.
 
-This version allows it - you can set different retention periods in different conversations. It can be 1 day, 1 week, 1 month or 1 year. We can add more or allow custom retention time in the future too, if users need it.
+This version allows it - you can set different retention periods in different conversations. It can be 1 day, 1 week, 1 month or 1 year. We may allow custom retention time in the future.
 
 ### Private media file names
 
-Previously there were scenarios, when original file names were preserved - specifically, when sending a video or when forwarding any media file. The latter was even worse, as media file usually is generated automatically, to include timestamp, and using the same name could have been used to correlate files between conversations, as one of our users pointed out.
+Previously there were scenarios when original media file names were preserved - e.g., when sending a video file or when forwarding any media file. The latter problem was worse, as media file name is generated automatically, and includes timestamp. So the same name could have been used to correlate files between conversations, as one of our users pointed out.
 
-This version fixes this problem - media file name is now changed when forwarding it to reflect the sending time, so no additional metadata is revealed.
+This version fixes this problem - media file name is now changed when forwarding it to match the time of forwarding, so no additional metadata is revealed.
 
 Please also note:
 - the apps remove metadata from all static images,
-- only iOS app removes metadata from videos, but android and desktop apps do not do it yet,
-- animated images are sent as is, please pre-process them if you need to reduce metadata,
+- iOS app removes metadata from videos, but android and desktop apps do not do it yet,
+- animated images are sent as is,
 - other file types are sent as is, and their names are left unchanged - we believe that for ordinary files their name is part of their content.
 
 We plan further improvements to reduce metadata in files in the near future – please let us know what you believe is the most important to reduce first.
@@ -147,7 +147,7 @@ This also allows us to sign releases, as we reproduce GitHub builds ourselves an
 
 You can reproduce our builds on Linux with x86 CPU in docker container - please follow the instructions [here](../docs/SERVER.md#reproduce-builds).
 
-We are looking for support from open-source contributors or security researchers who would agree to publish their signature of our releases, having reproduced the builds.
+We are looking for support from open-source contributors or security researchers who would also reproduce and sign our releases.
 
 **How to verify release signature**
 
