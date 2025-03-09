@@ -1379,7 +1379,7 @@ const processCommand = (function () {
   async function getLocalMediaStream(mic: boolean, camera: boolean, facingMode: VideoCamera): Promise<MediaStream> {
     if (!mic && !camera) return new MediaStream()
     const constraints = callMediaConstraints(mic, camera, facingMode)
-    return await navigator.mediaDevices.getUserMedia(constraints)
+    return await navigator.mediaDevices.getDisplayMedia(constraints)
   }
 
   function getLocalScreenCaptureStream(): Promise<MediaStream> {
