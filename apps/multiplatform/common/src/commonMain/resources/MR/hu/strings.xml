@@ -1479,8 +1479,8 @@
     <string name="receipts_section_description">Ezek a beállítások csak a jelenlegi csevegési profiljára vonatkoznak</string>
     <string name="loading_remote_file_desc">Várjon, amíg a fájl betöltődik a társított hordozható eszközről</string>
     <string name="read_more_in_github_with_link"><![CDATA[További információ a <font color="#0088ff">GitHub tárolónkban</font>.]]></string>
-    <string name="error_showing_content">hiba történt a tartalom megjelenítésekor</string>
-    <string name="error_showing_message">hiba történt az üzenet megjelenítésekor</string>
+    <string name="error_showing_content">Hiba történt a tartalom megjelenítésekor</string>
+    <string name="error_showing_message">Hiba történt az üzenet megjelenítésekor</string>
     <string name="you_can_make_address_visible_via_settings">Láthatóvá teheti a SimpleXbeli partnerei számára a „Beállításokban”.</string>
     <string name="recent_history_is_sent_to_new_members">Legfeljebb az utolsó 100 üzenet lesz elküldve az új tagok számára.</string>
     <string name="code_you_scanned_is_not_simplex_link_qr_code">A beolvasott QR-kód nem egy SimpleX-QR-kód-hivatkozás.</string>
