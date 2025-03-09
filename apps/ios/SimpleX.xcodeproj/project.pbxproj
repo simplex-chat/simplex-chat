@@ -1989,6 +1989,7 @@
 				);
 				LLVM_LTO = YES_THIN;
 				MARKETING_VERSION = 6.3;
+				OTHER_LDFLAGS = "-Wl,-stack_size,0x1000000";
 				PRODUCT_BUNDLE_IDENTIFIER = chat.simplex.app;
 				PRODUCT_NAME = SimpleX;
 				SDKROOT = iphoneos;
@@ -2038,6 +2039,7 @@
 				);
 				LLVM_LTO = YES;
 				MARKETING_VERSION = 6.3;
+				OTHER_LDFLAGS = "-Wl,-stack_size,0x1000000";
 				PRODUCT_BUNDLE_IDENTIFIER = chat.simplex.app;
 				PRODUCT_NAME = SimpleX;
 				SDKROOT = iphoneos;
