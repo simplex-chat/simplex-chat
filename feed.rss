@@ -7,6 +7,117 @@
         <description>It allows you to stay up to date with the latest Blogs from SimpleX Chat.</description>
         <language>en</language>
             <item>
+                <title>SimpleX Chat v6.3: new user experience and safety in public groups</title>
+                <link>https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html</link>
+                <description>&lt;h1 id=&quot;simplex-chat-v63-new-user-experience-and-safety-in-public-groups&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v6.3: new user experience and safety in public groups&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Mar 8, 2025&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;What&#39;s new in v6.3&lt;/strong&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html#preventing-spam-and-abuse-in-public-groups&quot;&gt;preventing spam and abuse in public groups&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html#group-improvements&quot;&gt;group improvements&lt;/a&gt;: &lt;a href=&quot;https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html#mention-other-members-and-get-notified-when-mentioned&quot;&gt;mention other members&lt;/a&gt;, &lt;a href=&quot;https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html#better-group-performance&quot;&gt;improved performance&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html#better-chat-navigation&quot;&gt;better chat navigation&lt;/a&gt;: &lt;a href=&quot;https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html#organize-chats-into-lists&quot;&gt;organize chats into lists&lt;/a&gt; and &lt;a href=&quot;https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html#jump-to-found-and-forwarded-messages&quot;&gt;jump to found and forwarded messages&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html#privacy-and-security-improvements&quot;&gt;privacy and security improvements&lt;/a&gt;: &lt;a href=&quot;https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html#set-message-retention-period-in-chats&quot;&gt;chat retention period&lt;/a&gt; and &lt;a href=&quot;https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html#private-media-file-names&quot;&gt;private media file names&lt;/a&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Also, we added Catalan interface language to Android and desktop apps, thanks to &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat#help-translating-simplex-chat&quot;&gt;our users and Weblate&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;The last but not the least - &lt;a href=&quot;https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html#reproducible-server-builds&quot;&gt;server builds are now reproducible&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;whats-new-in-v63&quot; tabindex=&quot;-1&quot;&gt;What&#39;s new in v6.3&lt;/h2&gt;
+&lt;h2 id=&quot;preventing-spam-and-abuse-in-public-groups&quot; tabindex=&quot;-1&quot;&gt;Preventing spam and abuse in public groups&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.html&quot;&gt;We wrote before&lt;/a&gt;: as the network grows, it becomes more attractive to attackers. This release adds several features that reduce the possibility of attacks and abuse.&lt;/p&gt;
+&lt;h3 id=&quot;spam-in-groups-that-are-listed-in-our-group-directory&quot; tabindex=&quot;-1&quot;&gt;Spam in groups that are listed in our group directory&lt;/h3&gt;
+&lt;p&gt;There is no built-in group discovery in SimpleX Chat apps. Instead, we offer an experimental chat bot that allows to submit and to discover public groups. Not so long ago, spammers started sending messages via bots attempting to disrupt these groups.&lt;/p&gt;
+&lt;p&gt;We released several changes to the groups directory to protect from spam attacks.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Optional captcha verification&lt;/strong&gt;&lt;/p&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20250308-captcha.png&quot; width=&quot;288&quot; class=&quot;float-to-right&quot; /&gt;
+&lt;p&gt;Group owners can enable the requirement to pass captcha challenge before joining the group. Captcha is generated in the directory bot itself, without any 3rd party servers, and is sent to the joining member. The new member must reply with the text in the image to be accepted to the group. While not a perfect protection, this basic measure complicates programming automatic bots to join public groups. It also provides a foundation to implement &amp;quot;knocking&amp;quot; - a conversation with dedicated group admins prior to joining the group. We plan to release support for knocking in March.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Profanity filter for member names&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;While group settings support giving all joining member an &amp;quot;observer&amp;quot; role - that is, without the right to send messages - the attackers tried spaming groups by joining and leaving. We added an optional filter for member names that group owners can enable for groups listed in directory - if a member name contains profanity, they will be rejected. Further improvements will be released in March as well.&lt;/p&gt;
+&lt;p&gt;The current SimpleX directory chatbot is a hybrid of &lt;a href=&quot;https://simplex.chat/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.html#can-large-groups-scale&quot;&gt;future chat relays&lt;/a&gt; (a.k.a. super-peers) we are now developing to support large groups, and of a directory service that will be embedded in the app UI later this year, allowing to search and to discover public groups. Anybody is able to run their own directory bots now, and there will be possibility to use third party directories via the app UI in the future too.&lt;/p&gt;
+&lt;p&gt;Read more about &lt;a href=&quot;https://simplex.chat/docs/directory.html&quot;&gt;SimpleX group directory&lt;/a&gt;, how to submit your groups, and which groups we now accept. Currently we accept groups related to a limited list of topics that will be expanded once we have better moderation functionality for the groups.&lt;/p&gt;
+&lt;h3 id=&quot;more-power-to-group-owners-and-moderators&quot; tabindex=&quot;-1&quot;&gt;More power to group owners and moderators&lt;/h3&gt;
+&lt;p&gt;This release includes two new features to help group moderators.&lt;/p&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20250308-reports.png&quot; width=&quot;288&quot; class=&quot;float-to-right&quot; /&gt;
+&lt;p&gt;&lt;strong&gt;Private reports&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Group members can privately bring to group moderators attention specific messages and members, even if the group does not allow direct messages. The simply need to choose report in the message context menu and choose the report reason. This report will be visible to all group owners and moderators, but not to other members.&lt;/p&gt;
+&lt;p&gt;Group moderators can see all member reports in a separate view, and quickly find the problematic messages, making moderation much easier in public groups. These reports are private to groups, they are not sent to server operators.&lt;/p&gt;
+&lt;p&gt;Please note: in the groups listed in our directory, the directory bot acts as admin, so it will receive all reports as well.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Acting on multiple members at once&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;When attackers come, they often use multiple profiles. This version allows selecting multiple members at once and perform these actions on all selected members:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;switch members role between &amp;quot;observer&amp;quot; and &amp;quot;member&amp;quot;.&lt;/li&gt;
+&lt;li&gt;block and unblock members - this is a &amp;quot;shadow&amp;quot; block, so when you block multiple members who you believe are attackers, their messages will be blocked for all other members but not for them.&lt;/li&gt;
+&lt;li&gt;remove members from the group.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The next version will also allow to remove members together with all messages they sent - for example, if a spam bot joined and sent a lot of spam, but nothing of value.&lt;/p&gt;
+&lt;h2 id=&quot;group-improvements&quot; tabindex=&quot;-1&quot;&gt;Group improvements&lt;/h2&gt;
+&lt;h3 id=&quot;mention-other-members-and-get-notified-when-mentioned&quot; tabindex=&quot;-1&quot;&gt;Mention other members and get notified when mentioned&lt;/h3&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20250308-mentions.png&quot; width=&quot;288&quot; class=&quot;float-to-right&quot; /&gt;
+&lt;p&gt;This feature allows you to mention other members in the group in the usual way - type &lt;code&gt;@&lt;/code&gt; character, and choose the member you want to mention from the menu. Even that there is no user accounts and persistent identities we made it work by referencing members by their random group ID that is also used for replies and all other interactions in the group.&lt;/p&gt;
+&lt;p&gt;You can also now switch message notifications in the group to &amp;quot;mentions only&amp;quot; mode. You will be notified only when you are mentioned in a message, or when somebody replies to your message. Simply choose &amp;quot;Mute&amp;quot; in the context menu of the group in the list of chats to switch group notifications to &amp;quot;mentions only&amp;quot; mode. After that you can choose &amp;quot;Mute all&amp;quot; to disable all notifications, including mentions.&lt;/p&gt;
+&lt;h3 id=&quot;better-group-performance&quot; tabindex=&quot;-1&quot;&gt;Better group performance&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;Send messages faster&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;We didn&#39;t reduce the required network traffic to send messages to large groups yet - your client still has to send message to each member individually. But we redesigned the process of sending a message, reducing temporary storage required to schedule the message for delivery by about 100x. This creates a significant storage saving - e.g, to send one message to a group of 1,000 members previously required ~20Mb, and now it is reduced to ~200kb. It also reduces the time and battery used to send a message.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Faster group deletion&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;When you leave the group, the app preserves a copy of all your communications in the group. You can choose to keep it or to delete it completely. This final group deletion was very slow prior to this release - depending on the number of groups on your device it could sometimes take several minutes.&lt;/p&gt;
+&lt;p&gt;This release solved this problem – the time it takes to delete the group is reduced to seconds, and even in cases when the app is terminated half-way, it either rolls back or completes, but it cannot leave the group in a partially deleted state. It improves both user experience and privacy, as gives you better control over your data.&lt;/p&gt;
+&lt;h2 id=&quot;better-chat-navigation&quot; tabindex=&quot;-1&quot;&gt;Better chat navigation&lt;/h2&gt;
+&lt;h3 id=&quot;organize-chats-into-lists&quot; tabindex=&quot;-1&quot;&gt;Organize chats into lists&lt;/h3&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20250308-lists.png&quot; width=&quot;288&quot; class=&quot;float-to-right&quot; /&gt;
+&lt;p&gt;It is a common feature in many messengers – it helps organizing your conversations.&lt;/p&gt;
+&lt;p&gt;The lists also show a blue mark when any chat in the list has new messages.&lt;/p&gt;
+&lt;p&gt;There are several preset lists: contacts, groups, private notes, business chats, favourite chats and also groups with member reports - the last list is automatically shown if members of any groups where you are the moderator or the owner sent private reports, until these reports are acted on or archived.&lt;/p&gt;
+&lt;h3 id=&quot;jump-to-found-and-forwarded-messages&quot; tabindex=&quot;-1&quot;&gt;Jump to found and forwarded messages&lt;/h3&gt;
+&lt;p&gt;This version allows to quickly navigate from message in the search results to the point in the conversation when it was sent.&lt;/p&gt;
+&lt;p&gt;You can also navigate from the forwarded message (or from the message saved to private notes) to the original message in the chat where it was forwarded or saved from.&lt;/p&gt;
+&lt;h2 id=&quot;privacy-and-security-improvements&quot; tabindex=&quot;-1&quot;&gt;Privacy and security improvements&lt;/h2&gt;
+&lt;h3 id=&quot;set-message-retention-period-in-chats&quot; tabindex=&quot;-1&quot;&gt;Set message retention period in chats&lt;/h3&gt;
+&lt;p&gt;Before this version, you could enable message retention period for all chats in your profile. While helpful in some cases, many of us have conversations that we want to keep for a long time, and some other conversations that we want to remove quicker.&lt;/p&gt;
+&lt;p&gt;This version allows it - you can set different retention periods in different conversations. It can be 1 day, 1 week, 1 month or 1 year. We may allow custom retention time in the future.&lt;/p&gt;
+&lt;h3 id=&quot;private-media-file-names&quot; tabindex=&quot;-1&quot;&gt;Private media file names&lt;/h3&gt;
+&lt;p&gt;Previously there were scenarios when original media file names were preserved - e.g., when sending a video file or when forwarding any media file. The latter problem was worse, as media file name is generated automatically, and includes timestamp. So the same name could have been used to correlate files between conversations, as one of our users pointed out.&lt;/p&gt;
+&lt;p&gt;This version fixes this problem - media file name is now changed when forwarding it to match the time of forwarding, so no additional metadata is revealed.&lt;/p&gt;
+&lt;p&gt;Please also note:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;the apps remove metadata from all static images,&lt;/li&gt;
+&lt;li&gt;iOS app removes metadata from videos, but android and desktop apps do not do it yet,&lt;/li&gt;
+&lt;li&gt;animated images are sent as is,&lt;/li&gt;
+&lt;li&gt;other file types are sent as is, and their names are left unchanged - we believe that for ordinary files their name is part of their content.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;We plan further improvements to reduce metadata in files in the near future – please let us know what you believe is the most important to reduce first.&lt;/p&gt;
+&lt;h2 id=&quot;reproducible-server-builds&quot; tabindex=&quot;-1&quot;&gt;Reproducible server builds&lt;/h2&gt;
+&lt;p&gt;Starting from v6.3 server releases are reproducible!&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Why it is important&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;With reproducible builds anybody can build servers from our code following the same process, and the build would produce identical binaries.&lt;/p&gt;
+&lt;p&gt;This also allows us to sign releases, as we reproduce GitHub builds ourselves and by signing them we attest that our builds resulted in identical binaries.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;How to reproduce builds&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;You can reproduce our builds on Linux with x86 CPU in docker container - please follow the instructions &lt;a href=&quot;https://simplex.chat/docs/server.html#reproduce-builds&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;We are looking for support from open-source contributors or security researchers who would also reproduce and sign our releases.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;How to verify release signature&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Please see the instructions &lt;a href=&quot;https://simplex.chat/docs/server.html#verifying-server-binaries&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;simplex-network&quot; tabindex=&quot;-1&quot;&gt;SimpleX network&lt;/h2&gt;
+&lt;p&gt;Some links to answer the most common questions:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20220511-simplex-chat-v2-images-files.html#the-first-messaging-platform-without-user-identifiers&quot;&gt;How can SimpleX deliver messages without user identifiers&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html#why-having-users-identifiers-is-bad-for-the-users&quot;&gt;What are the risks to have identifiers assigned to the users&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/simplex-chat/simplex-chat#privacy-and-security-technical-details-and-limitations&quot;&gt;Technical details and limitations&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/faq/index.html&quot;&gt;Frequently asked questions&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Please also see our &lt;a href=&quot;https://simplex.chat/&quot;&gt;website&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;please-support-us-with-your-donations&quot; tabindex=&quot;-1&quot;&gt;Please support us with your donations&lt;/h2&gt;
+&lt;p&gt;Huge &lt;em&gt;thank you&lt;/em&gt; to everybody who donated to SimpleX Chat!&lt;/p&gt;
+&lt;p&gt;Prioritizing users privacy and security, and also raising the investment, would have been impossible without your support and donations.&lt;/p&gt;
+&lt;p&gt;Also, funding the work to transition the protocols to non-profit governance model would not have been possible without the donations we received from the users.&lt;/p&gt;
+&lt;p&gt;Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.&lt;/p&gt;
+&lt;p&gt;Your donations help us raise more funds — any amount, even the price of the cup of coffee, makes a big difference for us.&lt;/p&gt;
+&lt;p&gt;See &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/#please-support-us-with-your-donations&quot;&gt;this section&lt;/a&gt; for the ways to donate.&lt;/p&gt;
+&lt;p&gt;Thank you,&lt;/p&gt;
+&lt;p&gt;Evgeny&lt;/p&gt;
+&lt;p&gt;SimpleX Chat founder&lt;/p&gt;
+</description>
+                
+                <pubDate>Sat, 08 Mar 2025 00:00:00 +0000</pubDate>
+                
+                <dc:creator>SimpleX Chat</dc:creator>
+                <guid>https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html</guid>
+            </item>
+            <item>
                 <title>SimpleX network: large groups and privacy-preserving content moderation</title>
                 <link>https://simplex.chat/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.html</link>
                 <description>&lt;h1 id=&quot;simplex-network-large-groups-and-privacy-preserving-content-moderation&quot; tabindex=&quot;-1&quot;&gt;SimpleX network: large groups and privacy-preserving content moderation&lt;/h1&gt;
