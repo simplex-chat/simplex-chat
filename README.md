@@ -234,6 +234,10 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent and important updates:
 
+[Mar 8, 2025. SimpleX Chat v6.3: new user experience and safety in public groups](./blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.md)
+
+[Jan 14, 2025. SimpleX network: large groups and privacy-preserving content moderation](./blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.md)
+
 [Dec 10, 2024. SimpleX network: preset servers operated by Flux, business chats and more with v6.2 of the apps](./20241210-simplex-network-v6-2-servers-by-flux-business-chats.md)
 
 [Oct 14, 2024. SimpleX network: security review of protocols design by Trail of Bits, v6.1 released with better calls and user experience.](./blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md)
