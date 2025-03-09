@@ -2324,4 +2324,18 @@
     <string name="v6_3_reports_descr">Ajudar els administradors a moderar els seus grups.</string>
     <string name="group_preview_rejected">rebutjat</string>
     <string name="group_member_status_rejected">rebutjat</string>
+    <string name="group_member_status_pending_approval_short">pendent</string>
+    <string name="group_member_status_pending_approval">pendent d\'aprovació</string>
+    <string name="block_members_desc">Tots els missatges nous d\'aquests/es membres s\'amagaran!</string>
+    <string name="block_members_for_all_question">Blocar membres per a tots/es?</string>
+    <string name="operator_updated_conditions">Condicions actualitzades</string>
+    <string name="error_reading_passphrase">Error en llegir la contrasenya de la base de dades</string>
+    <string name="members_will_be_removed_from_chat_cannot_be_undone">Els/les membres s\'eliminaran del xat; això no es pot desfer!</string>
+    <string name="unblock_members_desc">Els missatges d\'aquests/es membres es mostraran!</string>
+    <string name="unblock_members_for_all_question">Desblocar membres per a tots/es?</string>
+    <string name="feature_roles_moderators">moderació</string>
+    <string name="restore_passphrase_can_not_be_read_desc">La frase de contrasenya a Keystore no es pot llegir. Això pot haver passat després que l\'actualització del sistema sigui incompatible amb l\'aplicació. Si no és el cas, poseu-vos en contacte amb els desenvolupadors.</string>
+    <string name="members_will_be_removed_from_group_cannot_be_undone">Els/les membres s\'eliminaran del grup; això no es pot desfer!</string>
+    <string name="restore_passphrase_can_not_be_read_enter_manually_desc">La frase de contrasenya a Keystore no es pot llegir, introduïu-la manualment. Això pot haver passat després que l\'actualització del sistema sigui incompatible amb l\'aplicació. Si no és el cas, poseu-vos en contacte amb els desenvolupadors.</string>
+    <string name="button_remove_members_question">Expulsar membres?</string>
 </resources>
