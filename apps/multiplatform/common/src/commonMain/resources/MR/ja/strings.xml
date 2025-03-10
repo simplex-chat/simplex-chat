@@ -1993,4 +1993,7 @@
     <string name="accept_conditions">利用条件の承諾</string>
     <string name="operator_conditions_accepted_for_some"><![CDATA[Conditions are already accepted for following operator(s):既にオペレータ <b>%s</b> の利用条件に承諾しています。]]></string>
     <string name="address_creation_instruction">後で作成する場合はメニューから「SimpleXのアドレスを作成」を選択してください。</string>
+    <string name="onboarding_network_about_operators">運営者について</string>
+    <string name="chat_item_ttl_year">1年</string>
+    <string name="group_reports_active_one">1 件のレポート</string>
 </resources>
