@@ -2359,4 +2359,18 @@
     <string name="v6_3_faster_sending_messages">Sneller verzenden van berichten.</string>
     <string name="group_preview_rejected">afgewezen</string>
     <string name="group_member_status_rejected">afgewezen</string>
+    <string name="error_reading_passphrase">Fout bij het lezen van database wachtwoord</string>
+    <string name="block_members_desc">Alle nieuwe berichten van deze leden worden verborgen!</string>
+    <string name="block_members_for_all_question">Leden voor iedereen blokkeren?</string>
+    <string name="members_will_be_removed_from_chat_cannot_be_undone">Leden worden uit de chat verwijderd. Dit kan niet ongedaan worden gemaakt!</string>
+    <string name="members_will_be_removed_from_group_cannot_be_undone">Leden worden uit de groep verwijderd. Dit kan niet ongedaan worden gemaakt!</string>
+    <string name="unblock_members_for_all_question">Leden voor iedereen deblokkeren?</string>
+    <string name="unblock_members_desc">Berichten van deze leden worden getoond!</string>
+    <string name="feature_roles_moderators">moderatoren</string>
+    <string name="restore_passphrase_can_not_be_read_enter_manually_desc">Wachtwoord in Keystore kan niet worden gelezen, voer deze handmatig in. Dit kan zijn gebeurd na een systeemupdate die niet compatibel is met de app. Als dit niet het geval is, neem dan contact op met de ontwikkelaars.</string>
+    <string name="group_member_status_pending_approval">in afwachting van goedkeuring</string>
+    <string name="button_remove_members_question">Leden verwijderen?</string>
+    <string name="operator_updated_conditions">Bijgewerkte voorwaarden</string>
+    <string name="restore_passphrase_can_not_be_read_desc">Wachtwoord in Keystore kan niet worden gelezen. Dit kan zijn gebeurd na een systeemupdate die niet compatibel is met de app. Als dit niet het geval is, neem dan contact op met de ontwikkelaars.</string>
+    <string name="group_member_status_pending_approval_short">in behandeling</string>
 </resources>
