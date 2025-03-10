@@ -2281,7 +2281,7 @@
     <string name="change_list">Lijst wijzigen</string>
     <string name="change_order_chat_list_menu_action">Wijzig volgorde</string>
     <string name="prefs_error_saving_settings">‐Fout bij het opslaan van instellingen</string>
-    <string name="error_creating_report">Fout bij maken van rapport</string>
+    <string name="error_creating_report">Fout bij het rapporteren</string>
     <string name="archive_verb">Archief</string>
     <string name="report_reason_community">Schending van de communityrichtlijnen</string>
     <string name="report_reason_other">Een andere reden</string>
@@ -2295,7 +2295,7 @@
     <string name="report_item_visibility_submitter">Alleen jij en moderators zien het</string>
     <string name="report_reason_spam">Spam</string>
     <string name="report_archive_alert_title">Rapport archiveren?</string>
-    <string name="report_verb">Rapport</string>
+    <string name="report_verb">rapporteren</string>
     <string name="report_reason_alert_title">Reden melding?</string>
     <string name="report_archive_alert_desc">Het rapport wordt voor u gearchiveerd.</string>
     <string name="report_compose_reason_header_other">Anders melden: alleen groepsmoderators kunnen het zien.</string>
@@ -2341,7 +2341,7 @@
     <string name="report_archive_for_me">Voor mij</string>
     <string name="group_members_can_send_reports">Leden kunnen berichten melden bij moderators.</string>
     <string name="member_reports_are_prohibited">Het melden van berichten in deze groep is niet toegestaan</string>
-    <string name="notification_group_report">Rapport: %s</string>
+    <string name="notification_group_report">Rapporteer: %s</string>
     <string name="disable_sending_member_reports">Het melden van berichten aan moderators is niet toegestaan.</string>
     <string name="report_archive_for_all_moderators">Voor alle moderators</string>
     <string name="archive_reports">Rapporten archiveren</string>
@@ -2355,7 +2355,7 @@
     <string name="v6_3_mentions">Vermeld leden 👋</string>
     <string name="v6_3_organize_chat_lists">Organiseer chats in lijsten</string>
     <string name="v6_3_private_media_file_names">Namen van persoonlijke mediabestanden.</string>
-    <string name="v6_3_reports">Verstuur rapporten privé</string>
+    <string name="v6_3_reports">Rapporteer privé</string>
     <string name="v6_3_faster_sending_messages">Sneller verzenden van berichten.</string>
     <string name="group_preview_rejected">afgewezen</string>
     <string name="group_member_status_rejected">afgewezen</string>
