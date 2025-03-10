@@ -2055,7 +2055,7 @@
     <string name="app_check_for_updates_installed_successfully_desc">Por favor reinicie o aplicativo.</string>
     <string name="app_check_for_updates_button_remind_later">Me lembre mais tarde</string>
     <string name="app_check_for_updates_notice_desc">Para ser notificado sobre os novos lançamentos, habilite a checagem periódica de versões Estáveis e Beta.</string>
-    <string name="one_hand_ui">Barra de ferramentas de conversa acessível</string>
+    <string name="one_hand_ui">Barras de ferramentas de aplicativos acessível</string>
     <string name="forward_files_failed_to_receive_desc">Falha no baixar de %1$d arquivo(s).</string>
     <string name="forward_files_messages_deleted_after_selection_title">%1$s mensagens não encaminhadas.</string>
     <string name="settings_section_title_chat_database">DADOS DO BATE-PAPO</string>
@@ -2295,4 +2295,17 @@
     <string name="no_chats_in_list">Nenhum chat na lista %s.</string>
     <string name="report_item_visibility_moderators">Somente o remetente e os moderadores podem vê-lo.</string>
     <string name="report_item_visibility_submitter">Somente você e os moderadores podem ver isso</string>
+    <string name="group_member_status_rejected">rejeitado</string>
+    <string name="report_verb">Denunciar</string>
+    <string name="disable_sending_member_reports">Proibir a denúncia de mensagens aos moderadores.</string>
+    <string name="report_compose_reason_header_illegal">Denunciar conteúdo: somente os moderadores do grupo poderão ver.</string>
+    <string name="report_compose_reason_header_profile">Denunciar perfil de membro: somente moderadores do grupo poderão ver.</string>
+    <string name="remote_hosts_section">Dispositivos móveis remotos</string>
+    <string name="button_remove_members_question">Remover membros?</string>
+    <string name="report_compose_reason_header_other">Denunciar outro: somente os moderadores do grupo poderão ver.</string>
+    <string name="report_reason_alert_title">Qual é a razão da denúncia?</string>
+    <string name="notification_group_report">Denúncia: %s</string>
+    <string name="group_preview_rejected">rejeitado</string>
+    <string name="member_reports_are_prohibited">É proibido denunciar mensagens neste grupo.</string>
+    <string name="chat_bottom_bar">Barra de ferramentas de chat acessível</string>
 </resources>
