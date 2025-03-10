@@ -243,13 +243,22 @@ instance ToJSON SharedMsgId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+data MsgScope
+  = MSGroup
+  | MSAdmins {memberId :: MemberId} -- Admins can use any member id; members can use only their own id
+  -- \| MSDirect -- directly between members
+  deriving (Eq, Show)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "MS") ''MsgScope)
+
 $(JQ.deriveJSON defaultJSON ''AppMessageJson)
 
 data MsgRef = MsgRef
   { msgId :: Maybe SharedMsgId,
     sentAt :: UTCTime,
     sent :: Bool,
-    memberId :: Maybe MemberId -- must be present in all group message references, both referencing sent and received
+    memberId :: Maybe MemberId, -- must be present in all group message references, both referencing sent and received
+    scope :: Maybe MsgScope
   }
   deriving (Eq, Show)
 
@@ -640,7 +649,8 @@ data ExtMsgContent = ExtMsgContent
     mentions :: Map MemberName MsgMention,
     file :: Maybe FileInvitation,
     ttl :: Maybe Int,
-    live :: Maybe Bool
+    live :: Maybe Bool,
+    scope :: Maybe MsgScope
   }
   deriving (Eq, Show)
 
@@ -720,10 +730,11 @@ parseMsgContainer v =
       ttl <- v .:? "ttl"
       live <- v .:? "live"
       mentions <- fromMaybe M.empty <$> (v .:? "mentions")
-      pure ExtMsgContent {content, mentions, file, ttl, live}
+      scope <- v .:? "scope"
+      pure ExtMsgContent {content, mentions, file, ttl, live, scope}
 
 extMsgContent :: MsgContent -> Maybe FileInvitation -> ExtMsgContent
-extMsgContent mc file = ExtMsgContent mc M.empty file Nothing Nothing
+extMsgContent mc file = ExtMsgContent mc M.empty file Nothing Nothing Nothing
 
 justTrue :: Bool -> Maybe Bool
 justTrue True = Just True
@@ -772,8 +783,8 @@ msgContainerJSON = \case
   MCSimple mc -> o $ msgContent mc
   where
     o = JM.fromList
-    msgContent ExtMsgContent {content, mentions, file, ttl, live} =
-      ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("mentions" .=? nonEmptyMap mentions) ["content" .= content]
+    msgContent ExtMsgContent {content, mentions, file, ttl, live, scope} =
+      ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("mentions" .=? nonEmptyMap mentions) $ ("scope" .=? scope) ["content" .= content]
 
 nonEmptyMap :: Map k v -> Maybe (Map k v)
 nonEmptyMap m = if M.null m then Nothing else Just m
