@@ -79,7 +79,11 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     }
     if (rerunMigration) {
       chatModel.dbMigrationInProgress.value = true
-      migrated = chatMigrateInit(dbAbsolutePrefixPath, dbKey, confirm.value)
+      migrated = if (databaseBackend == "postgres") {
+        chatMigrateInit("simplex_v1", "postgresql://simplex@/simplex_v1", confirm.value)
+      } else {
+        chatMigrateInit(dbAbsolutePrefixPath, dbKey, confirm.value)
+      }
       res = runCatching {
         json.decodeFromString<DBMigrationResult>(migrated[0] as String)
       }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
