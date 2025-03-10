@@ -13,7 +13,7 @@
     <string name="abort_switch_receiving_address_question">Megszakítja a cím módosítását?</string>
     <string name="abort_switch_receiving_address_confirm">Megszakítás</string>
     <string name="send_disappearing_message_30_seconds">30 másodperc</string>
-    <string name="one_time_link_short">Egyszer használható meghívási hivatkozás</string>
+    <string name="one_time_link_short">Egyszer használható meghívó</string>
     <string name="contact_wants_to_connect_via_call">%1$s szeretne kapcsolatba lépni Önnel a következőn keresztül:</string>
     <string name="about_simplex_chat">A SimpleX Chat névjegye</string>
     <string name="chat_item_ttl_day">1 nap</string>
@@ -199,7 +199,7 @@
     <string name="v5_4_incognito_groups_descr">Csoport létrehozása véletlenszerű profillal.</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">A partner és az összes üzenet törölve lesz – ez a művelet nem vonható vissza!</string>
     <string name="contacts_can_mark_messages_for_deletion">A partnerei törlésre jelölhetnek üzeneteket; Ön majd meg tudja nézni azokat.</string>
-    <string name="connect_via_invitation_link">Kapcsolódik az egyszer használható meghívási hivatkozással?</string>
+    <string name="connect_via_invitation_link">Kapcsolódik az egyszer használható meghívóval?</string>
     <string name="connect_via_link_or_qr">Kapcsolódás egy hivatkozáson vagy QR-kódon keresztül</string>
     <string name="connection_error_auth">Kapcsolódási hiba (AUTH)</string>
     <string name="notification_preview_mode_contact">Csak név</string>
@@ -240,7 +240,7 @@
     <string name="rcv_direct_event_contact_deleted">törölt partner</string>
     <string name="delete_member_message__question">Törli a tag üzenetét?</string>
     <string name="chat_is_running">A csevegés fut</string>
-    <string name="share_one_time_link">Egyszer használható meghívási hivatkozás létrehozása</string>
+    <string name="share_one_time_link">Egyszer használható meghívó létrehozása</string>
     <string name="delete_link">Törlés</string>
     <string name="notifications_mode_periodic_desc">Új üzenetek ellenőrzése 10 percenként, legfeljebb 1 percen keresztül</string>
     <string name="delete_database">Adatbázis törlése</string>
@@ -779,7 +779,7 @@
     <string name="no_contacts_to_add">Nincs hozzáadandó partner</string>
     <string name="v4_5_message_draft">Üzenetvázlat</string>
     <string name="display_name_invited_to_connect">Függőben lévő meghívó</string>
-    <string name="add_contact">Egyszer használható meghívási hivatkozás</string>
+    <string name="add_contact">Egyszer használható meghívó</string>
     <string name="notifications">Értesítések</string>
     <string name="images_limit_desc">Egyszerre csak 10 kép küldhető el</string>
     <string name="feature_offered_item_with_param">ajánlotta: %s, ekkor: %2s</string>
@@ -820,9 +820,9 @@
     <string name="group_preview_join_as">csatlakozás mint %s</string>
     <string name="no_selected_chat">Nincs csevegés kijelölve</string>
     <string name="users_delete_data_only">Csak helyi profiladatok</string>
-    <string name="description_via_one_time_link_incognito">inkognitó egy egyszer használható meghívási hivatkozáson keresztül</string>
+    <string name="description_via_one_time_link_incognito">inkognitó egy egyszer használható meghívón keresztül</string>
     <string name="share_text_moderated_at">Moderálva: %s</string>
-    <string name="one_time_link">Egyszer használható meghívási hivatkozás</string>
+    <string name="one_time_link">Egyszer használható meghívó</string>
     <string name="invalid_name">Érvénytelen név!</string>
     <string name="email_invite_subject">Beszélgessünk a SimpleX Chatben</string>
     <string name="info_row_moderated_at">Moderálva</string>
@@ -906,7 +906,7 @@
     <string name="only_you_can_make_calls">Csak Ön tud hívásokat indítani.</string>
     <string name="smp_server_test_secure_queue">Biztonságos sorba állítás</string>
     <string name="rate_the_app">Értékelje az alkalmazást</string>
-    <string name="share_invitation_link">Egyszer használható meghívási hivatkozás megosztása</string>
+    <string name="share_invitation_link">Egyszer használható meghívó megosztása</string>
     <string name="database_restore_error">Hiba történt az adatbázis visszaállításakor</string>
     <string name="group_members_2">%s és %s</string>
     <string name="chat_preferences_you_allow">Ön engedélyezi</string>
@@ -926,7 +926,7 @@
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(beolvasás, vagy beillesztés a vágólapról)</string>
     <string name="waiting_for_video">Várakozás a videóra</string>
     <string name="reply_verb">Válasz</string>
-    <string name="connect_plan_this_is_your_own_one_time_link">Ez az Ön egyszer használható meghívási hivatkozása!</string>
+    <string name="connect_plan_this_is_your_own_one_time_link">Ez az Ön egyszer használható meghívója!</string>
     <string name="ntf_channel_calls">SimpleX Chat hívások</string>
     <string name="connect_use_new_incognito_profile">Új inkognitóprofil használata</string>
     <string name="contact_developers">Frissítse az alkalmazást, és lépjen kapcsolatba a fejlesztőkkel.</string>
@@ -958,7 +958,7 @@
     <string name="restore_database">Adatbázismentés visszaállítása</string>
     <string name="revoke_file__confirm">Visszavonás</string>
     <string name="ask_your_contact_to_enable_voice">Kérje meg a partnerét, hogy engedélyezze a hangüzenetek küldését.</string>
-    <string name="description_you_shared_one_time_link">Ön egy egyszer használható meghívási hivatkozást osztott meg</string>
+    <string name="description_you_shared_one_time_link">Ön egy egyszer használható meghívót osztott meg</string>
     <string name="simplex_link_mode_browser_warning">A hivatkozás megnyitása a böngészőben gyengítheti az adatvédelmet és a biztonságot. A megbízhatatlan SimpleX-hivatkozások pirossal vannak kiemelve.</string>
     <string name="your_ice_servers">Saját ICE-kiszolgálók</string>
     <string name="you_accepted_connection">Kapcsolat létrehozása</string>
@@ -1070,7 +1070,7 @@
     <string name="group_member_role_owner">tulajdonos</string>
     <string name="la_notice_turn_on">Bekapcsolás</string>
     <string name="rcv_group_event_3_members_connected">%s, %s és %s kapcsolódott</string>
-    <string name="simplex_link_invitation">Egyszer használható SimpleX-meghívási hivatkozás</string>
+    <string name="simplex_link_invitation">Egyszer használható SimpleX-meghívó</string>
     <string name="your_calls">Hívások</string>
     <string name="icon_descr_sent_msg_status_send_failed">nem sikerült elküldeni</string>
     <string name="theme_colors_section_title">KEZELŐFELÜLET SZÍNEI</string>
@@ -1101,7 +1101,7 @@
     <string name="your_SMP_servers">Saját SMP-kiszolgálók</string>
     <string name="send_receipts_disabled_alert_title">A kézbesítési jelentések le vannak tiltva</string>
     <string name="open_database_folder">Adatbázismappa megnyitása</string>
-    <string name="description_via_one_time_link">egy egyszer használható meghívási hivatkozáson keresztül</string>
+    <string name="description_via_one_time_link">egy egyszer használható meghívón keresztül</string>
     <string name="set_group_preferences">Csoportbeállítások megadása</string>
     <string name="simplex_link_connection">a következőn keresztül: %1$s</string>
     <string name="chat_preferences_yes">igen</string>
@@ -1321,7 +1321,7 @@
     <string name="stop_rcv_file__message">A fájl fogadása le fog állni.</string>
     <string name="la_please_remember_to_store_password">Ne felejtse el, vagy tárolja biztonságosan – az elveszett jelszót nem lehet visszaállítani!</string>
     <string name="video_will_be_received_when_contact_completes_uploading">A videó akkor érkezik meg, amikor a küldője befejezte annak feltöltését.</string>
-    <string name="description_you_shared_one_time_link_incognito">Ön egy egyszer használható meghívási hivatkozást osztott meg inkognitóban</string>
+    <string name="description_you_shared_one_time_link_incognito">Ön egy egyszer használható meghívót osztott meg inkognitóban</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Ön már kapcsolódott ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál.</string>
     <string name="you_can_enable_delivery_receipts_later">Később engedélyezheti a „Beállításokban”</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Akkor lesz kapcsolódva a csoporthoz, amikor a csoport tulajdonosának eszköze online lesz, várjon, vagy ellenőrizze később!</string>
@@ -1384,7 +1384,7 @@
     <string name="system_restricted_background_warn"><![CDATA[Az értesítések engedélyezéséhez válassza ki az <b>Alkalmazás akkumulátor-használata</b> / <b>Korlátlan</b> módot az alkalmazás beállításaiban.]]></string>
     <string name="this_string_is_not_a_connection_link">Ez a karakterlánc nem egy meghívási hivatkozás!</string>
     <string name="to_start_a_new_chat_help_header">Új csevegés indításához</string>
-    <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">A kapcsolódás már folyamatban van ezen az egyszer használható meghívási hivatkozáson keresztül!</string>
+    <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">A kapcsolódás már folyamatban van ezen az egyszer használható meghívón keresztül!</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Nem veszíti el a partnereit, ha később törli a címét.</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">A beállítások frissítése a kiszolgálókhoz való újra kapcsolódással jár.</string>
     <string name="contact_wants_to_connect_with_you">kapcsolatba akar lépni Önnel!</string>
@@ -1503,7 +1503,7 @@
     <string name="or_show_this_qr_code">Vagy mutassa meg ezt a kódot</string>
     <string name="enable_camera_access">Kamera hozzáférés engedélyezése</string>
     <string name="keep_unused_invitation_question">Megtartja a fel nem használt meghívót?</string>
-    <string name="share_this_1_time_link">Ennek az egyszer használható meghívási hivatkozásnak a megosztása</string>
+    <string name="share_this_1_time_link">Ennek az egyszer használható meghívónak a megosztása</string>
     <string name="new_chat">Új csevegés</string>
     <string name="loading_chats">A csevegések betöltése…</string>
     <string name="creating_link">Hivatkozás létrehozása…</string>
@@ -2070,7 +2070,7 @@
     <string name="v6_1_delete_many_messages_descr">Legfeljebb 200 üzenet egyszerre való törlése, vagy moderálása.</string>
     <string name="v6_1_forward_many_messages_descr">Legfeljebb 20 üzenet egyszerre való továbbítása.</string>
     <string name="v6_1_better_calls_descr">Hang/Videó váltása hívás közben.</string>
-    <string name="v6_1_switch_chat_profile_descr">Csevegési profilváltás az egyszer használható meghívási hivatkozásokhoz.</string>
+    <string name="v6_1_switch_chat_profile_descr">Csevegési profilváltás az egyszer használható meghívókhoz.</string>
     <string name="v6_1_better_security">Továbbfejlesztett biztonság ✅</string>
     <string name="v6_1_better_security_descr">A SimpleX Chat biztonsága a Trail of Bits által lett felülvizsgálva.</string>
     <string name="failed_to_save_servers">Hiba történt a kiszolgálók mentésekor</string>
@@ -2078,7 +2078,7 @@
     <string name="no_message_servers_configured_for_receiving">Nincsenek üzenetfogadási kiszolgálók.</string>
     <string name="no_media_servers_configured">Nincsenek média- és fájlkiszolgálók.</string>
     <string name="for_chat_profile">A(z) %s nevű csevegési profilhoz:</string>
-    <string name="address_or_1_time_link">Cím vagy egyszer használható meghívási hivatkozás?</string>
+    <string name="address_or_1_time_link">Cím vagy egyszer használható meghívó?</string>
     <string name="smp_servers_new_server">Új kiszolgáló</string>
     <string name="address_settings">Címbeállítások</string>
     <string name="network_preset_servers_title">Előre beállított kiszolgálók</string>
@@ -2096,16 +2096,16 @@
     <string name="address_creation_instruction">Koppintson a SimpleX-cím létrehozása menüpontra a későbbi létrehozáshoz.</string>
     <string name="share_address_publicly">Cím nyilvános megosztása</string>
     <string name="share_simplex_address_on_social_media">SimpleX-cím megosztása a közösségi médiában.</string>
-    <string name="share_1_time_link_with_a_friend">Egyszer használható meghívási hivatkozás megosztása egy baráttal</string>
-    <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[Az egyszer használható meghívási hivatkozás csak <i>egyetlen partnerrel használható</i> – személyesen vagy bármilyen üzenetváltón keresztül megosztható.]]></string>
+    <string name="share_1_time_link_with_a_friend">Egyszer használható meghívó megosztása egy baráttal</string>
+    <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[Az egyszer használható meghívó csak <i>egyetlen partnerrel használható</i> – személyesen vagy bármilyen üzenetváltó-alkalmazáson keresztül megosztható.]]></string>
     <string name="you_can_set_connection_name_to_remember">Beállíthatja a partner nevét, hogy emlékezzen arra, hogy kivel osztotta meg a hivatkozást.</string>
     <string name="connection_security">Kapcsolatbiztonság</string>
-    <string name="simplex_address_and_1_time_links_are_safe_to_share">A SimpleX-cím és az egyszer használható meghívási hivatkozás biztonságosan megosztható bármilyen üzenetváltón keresztül.</string>
+    <string name="simplex_address_and_1_time_links_are_safe_to_share">A SimpleX-cím és az egyszer használható meghívó biztonságosan megosztható bármilyen üzenetváltó-alkalmazáson keresztül.</string>
     <string name="to_protect_against_your_link_replaced_compare_codes">A hivatkozás cseréje elleni védelem érdekében összehasonlíthatja a biztonsági kódokat a partnerével.</string>
     <string name="for_social_media">A közösségi médiához</string>
     <string name="or_to_share_privately">Vagy a privát megosztáshoz</string>
-    <string name="simplex_address_or_1_time_link">SimpleX-cím vagy egyszer használható meghívási hivatkozás?</string>
-    <string name="create_1_time_link">Egyszer használható meghívási hivatkozás létrehozása</string>
+    <string name="simplex_address_or_1_time_link">SimpleX-cím vagy egyszer használható meghívó?</string>
+    <string name="create_1_time_link">Egyszer használható meghívó létrehozása</string>
     <string name="onboarding_choose_server_operators">Kiszolgáló-üzemeltetők</string>
     <string name="onboarding_network_operators">Hálózatüzemeltetők</string>
     <string name="onboarding_network_operators_app_will_use_different_operators">Az alkalmazás úgy védi az adatait, hogy minden egyes beszélgetéshez más-más üzemeltetőt használ.</string>
