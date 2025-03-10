@@ -469,14 +469,14 @@
         <target>1 év</target>
         <note>delete after time</note>
       </trans-unit>
-      <trans-unit id="1-time link" xml:space="preserve">
+      <trans-unit id="1-time link" xml:space="preserve" approved="no">
         <source>1-time link</source>
-        <target>Egyszer használható meghívási hivatkozás</target>
+        <target state="translated">Egyszer használható meghívó</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="1-time link can be used *with one contact only* - share in person or via any messenger." xml:space="preserve">
+      <trans-unit id="1-time link can be used *with one contact only* - share in person or via any messenger." xml:space="preserve" approved="no">
         <source>1-time link can be used *with one contact only* - share in person or via any messenger.</source>
-        <target>Az egyszer használható meghívási hivatkozás csak *egyetlen partnerrel használható* – személyesen vagy bármilyen üzenetváltón keresztül megosztható.</target>
+        <target state="translated">Az egyszer használható meghívó csak *egyetlen partnerrel használható* – személyesen vagy bármilyen üzenetváltó-alkalmazáson keresztül megosztható.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="5 minutes" xml:space="preserve">
@@ -701,9 +701,9 @@
         <target>A cím módosítása meg fog szakadni. A régi fogadási cím lesz használva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Address or 1-time link?" xml:space="preserve">
+      <trans-unit id="Address or 1-time link?" xml:space="preserve" approved="no">
         <source>Address or 1-time link?</source>
-        <target>Cím vagy egyszer használható meghívási hivatkozás?</target>
+        <target state="translated">Cím vagy egyszer használható meghívó?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Address settings" xml:space="preserve">
@@ -1835,11 +1835,11 @@ This is your own SimpleX address!</source>
 Ez az Ön SimpleX-címe!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect to yourself?&#10;This is your own one-time link!" xml:space="preserve">
+      <trans-unit id="Connect to yourself?&#10;This is your own one-time link!" xml:space="preserve" approved="no">
         <source>Connect to yourself?
 This is your own one-time link!</source>
-        <target>Kapcsolódik saját magához?
-Ez az Ön egyszer használható meghívási hivatkozása!</target>
+        <target state="translated">Kapcsolódik saját magához?
+Ez az Ön egyszer használható meghívója!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect via contact address" xml:space="preserve">
@@ -1852,9 +1852,9 @@ Ez az Ön egyszer használható meghívási hivatkozása!</target>
         <target>Kapcsolódás egy hivatkozáson keresztül</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect via one-time link" xml:space="preserve">
+      <trans-unit id="Connect via one-time link" xml:space="preserve" approved="no">
         <source>Connect via one-time link</source>
-        <target>Kapcsolódás egyszer használható meghívási hivatkozáson keresztül</target>
+        <target state="translated">Kapcsolódás egyszer használható meghívón keresztül</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect with %@" xml:space="preserve">
@@ -2084,9 +2084,9 @@ Ez az Ön egyszer használható meghívási hivatkozása!</target>
         <target>Létrehozás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create 1-time link" xml:space="preserve">
+      <trans-unit id="Create 1-time link" xml:space="preserve" approved="no">
         <source>Create 1-time link</source>
-        <target>Egyszer használható meghívási hivatkozás létrehozása</target>
+        <target state="translated">Egyszer használható meghívó létrehozása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create SimpleX address" xml:space="preserve">
@@ -5418,9 +5418,9 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Régi adatbázis</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="One-time invitation link" xml:space="preserve">
+      <trans-unit id="One-time invitation link" xml:space="preserve" approved="no">
         <source>One-time invitation link</source>
-        <target>Egyszer használható meghívási hivatkozás</target>
+        <target state="translated">Egyszer használható meghívó</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Onion hosts will be **required** for connection.&#10;Requires compatible VPN." xml:space="preserve">
@@ -7128,14 +7128,14 @@ Engedélyezze a *Hálózat és kiszolgálók* menüben.</target>
         <note>alert action
    chat item action</note>
       </trans-unit>
-      <trans-unit id="Share 1-time link" xml:space="preserve">
+      <trans-unit id="Share 1-time link" xml:space="preserve" approved="no">
         <source>Share 1-time link</source>
-        <target>Egyszer használható meghívási hivatkozás megosztása</target>
+        <target state="translated">Egyszer használható meghívó megosztása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share 1-time link with a friend" xml:space="preserve">
+      <trans-unit id="Share 1-time link with a friend" xml:space="preserve" approved="no">
         <source>Share 1-time link with a friend</source>
-        <target>Egyszer használható meghívási hivatkozás megosztása egy baráttal</target>
+        <target state="translated">Egyszer használható meghívó megosztása egy baráttal</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share SimpleX address on social media." xml:space="preserve">
@@ -7173,9 +7173,9 @@ Engedélyezze a *Hálózat és kiszolgálók* menüben.</target>
         <target>Profil megosztása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share this 1-time invite link" xml:space="preserve">
+      <trans-unit id="Share this 1-time invite link" xml:space="preserve" approved="no">
         <source>Share this 1-time invite link</source>
-        <target>Ennek az egyszer használható meghívási hivatkozásnak a megosztása</target>
+        <target state="translated">Ennek az egyszer használható meghívónak a megosztása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share to SimpleX" xml:space="preserve">
@@ -7278,14 +7278,14 @@ Engedélyezze a *Hálózat és kiszolgálók* menüben.</target>
         <target>SimpleX-cím</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX address and 1-time links are safe to share via any messenger." xml:space="preserve">
+      <trans-unit id="SimpleX address and 1-time links are safe to share via any messenger." xml:space="preserve" approved="no">
         <source>SimpleX address and 1-time links are safe to share via any messenger.</source>
-        <target>A SimpleX-cím és az egyszer használható meghívási hivatkozás biztonságosan megosztható bármilyen üzenetváltón keresztül.</target>
+        <target state="translated">A SimpleX-cím és az egyszer használható meghívó biztonságosan megosztható bármilyen üzenetváltó-alkalmazáson keresztül.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX address or 1-time link?" xml:space="preserve">
+      <trans-unit id="SimpleX address or 1-time link?" xml:space="preserve" approved="no">
         <source>SimpleX address or 1-time link?</source>
-        <target>SimpleX-cím vagy egyszer használható meghívási hivatkozás?</target>
+        <target state="translated">SimpleX-cím vagy egyszer használható meghívó?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX contact address" xml:space="preserve">
@@ -7318,9 +7318,9 @@ Engedélyezze a *Hálózat és kiszolgálók* menüben.</target>
         <target>A SimpleX-hivatkozások küldése le van tiltva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
+      <trans-unit id="SimpleX one-time invitation" xml:space="preserve" approved="no">
         <source>SimpleX one-time invitation</source>
-        <target>Egyszer használható SimpleX-meghívási hivatkozás</target>
+        <target state="translated">Egyszer használható SimpleX-meghívó</target>
         <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="SimpleX protocols reviewed by Trail of Bits." xml:space="preserve">
@@ -7521,9 +7521,9 @@ Engedélyezze a *Hálózat és kiszolgálók* menüben.</target>
         <target>Hang/Videó váltása hívás közben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Switch chat profile for 1-time invitations." xml:space="preserve">
+      <trans-unit id="Switch chat profile for 1-time invitations." xml:space="preserve" approved="no">
         <source>Switch chat profile for 1-time invitations.</source>
-        <target>Csevegési profilváltás az egyszer használható meghívási hivatkozásokhoz.</target>
+        <target state="translated">Csevegési profilváltás az egyszer használható meghívókhoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="System" xml:space="preserve">
@@ -7878,9 +7878,9 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>Ez az Ön SimpleX-címe!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This is your own one-time link!" xml:space="preserve">
+      <trans-unit id="This is your own one-time link!" xml:space="preserve" approved="no">
         <source>This is your own one-time link!</source>
-        <target>Ez az Ön egyszer használható meghívási hivatkozása!</target>
+        <target state="translated">Ez az Ön egyszer használható meghívója!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This link was used with another mobile device, please create a new link on the desktop." xml:space="preserve">
@@ -8677,9 +8677,9 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
         <target>A kapcsolódás már folyamatban van a következőhöz: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You are already connecting via this one-time link!" xml:space="preserve">
+      <trans-unit id="You are already connecting via this one-time link!" xml:space="preserve" approved="no">
         <source>You are already connecting via this one-time link!</source>
-        <target>A kapcsolódás már folyamatban van ezen az egyszer használható meghívási hivatkozáson keresztül!</target>
+        <target state="translated">A kapcsolódás már folyamatban van ezen az egyszer használható meghívón keresztül!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already in group %@." xml:space="preserve">
@@ -9582,9 +9582,9 @@ Megismétli a meghívási kérést?</target>
         <target>inkognitó a csoporthivatkozáson keresztül</target>
         <note>chat list item description</note>
       </trans-unit>
-      <trans-unit id="incognito via one-time link" xml:space="preserve">
+      <trans-unit id="incognito via one-time link" xml:space="preserve" approved="no">
         <source>incognito via one-time link</source>
-        <target>inkognitó egy egyszer használható meghívási hivatkozáson keresztül</target>
+        <target state="translated">inkognitó egy egyszer használható meghívón keresztül</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="indirect (%d)" xml:space="preserve">
@@ -9988,9 +9988,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>a csoporthivatkozáson keresztül</target>
         <note>chat list item description</note>
       </trans-unit>
-      <trans-unit id="via one-time link" xml:space="preserve">
+      <trans-unit id="via one-time link" xml:space="preserve" approved="no">
         <source>via one-time link</source>
-        <target>egy egyszer használható meghívási hivatkozáson keresztül</target>
+        <target state="translated">egy egyszer használható meghívón keresztül</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="via relay" xml:space="preserve">
@@ -10088,14 +10088,14 @@ utoljára fogadott üzenet: %2$@</target>
         <target>Ön eltávolította őt: %@</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you shared one-time link" xml:space="preserve">
+      <trans-unit id="you shared one-time link" xml:space="preserve" approved="no">
         <source>you shared one-time link</source>
-        <target>Ön egy egyszer használható meghívási hivatkozást osztott meg</target>
+        <target state="translated">Ön egy egyszer használható meghívót osztott meg</target>
         <note>chat list item description</note>
       </trans-unit>
-      <trans-unit id="you shared one-time link incognito" xml:space="preserve">
+      <trans-unit id="you shared one-time link incognito" xml:space="preserve" approved="no">
         <source>you shared one-time link incognito</source>
-        <target>Ön egy egyszer használható meghívási hivatkozást osztott meg inkognitóban</target>
+        <target state="translated">Ön egy egyszer használható meghívót osztott meg inkognitóban</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="you unblocked %@" xml:space="preserve">
