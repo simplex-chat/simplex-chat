@@ -3219,9 +3219,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Fout bij aanmaken van profiel!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error creating report" xml:space="preserve">
+      <trans-unit id="Error creating report" xml:space="preserve" approved="no">
         <source>Error creating report</source>
-        <target>Fout bij maken van rapport</target>
+        <target state="translated">Fout bij het rapporteren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error decrypting file" xml:space="preserve">
@@ -6361,9 +6361,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Antwoord</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Report" xml:space="preserve">
+      <trans-unit id="Report" xml:space="preserve" approved="no">
         <source>Report</source>
-        <target>Rapport</target>
+        <target state="translated">rapporteren</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Report content: only group moderators will see it." xml:space="preserve">
@@ -6396,9 +6396,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Rapporteer overtreding: alleen groepsmoderators kunnen dit zien.</target>
         <note>report reason</note>
       </trans-unit>
-      <trans-unit id="Report: %@" xml:space="preserve">
+      <trans-unit id="Report: %@" xml:space="preserve" approved="no">
         <source>Report: %@</source>
-        <target>Rapport: %@</target>
+        <target state="translated">rapporteer: %@</target>
         <note>report in notification</note>
       </trans-unit>
       <trans-unit id="Reporting messages to moderators is prohibited." xml:space="preserve">
@@ -6832,9 +6832,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Meldingen verzenden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send private reports" xml:space="preserve">
+      <trans-unit id="Send private reports" xml:space="preserve" approved="no">
         <source>Send private reports</source>
-        <target>Verstuur rapporten privé</target>
+        <target state="translated">Rapporteer privé</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send questions and ideas" xml:space="preserve">
