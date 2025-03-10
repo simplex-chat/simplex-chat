@@ -1996,4 +1996,15 @@
     <string name="onboarding_network_about_operators">運営者について</string>
     <string name="chat_item_ttl_year">1年</string>
     <string name="group_reports_active_one">1 件のレポート</string>
+    <string name="enable_sending_member_reports">モデレーターにメッセージを報告することを許可する</string>
+    <string name="block_members_desc">これらのメンバーからの新しいメッセージはすべて非表示になります!</string>
+    <string name="add_to_list">リストに追加</string>
+    <string name="address_settings">アドレス設定</string>
+    <string name="add_your_team_members_to_conversations">チームのメンバーを会話に追加する</string>
+    <string name="operator_added_message_servers">追加されたメッセージサーバー</string>
+    <string name="address_or_1_time_link">アドレスか使い捨てのリンク?</string>
+    <string name="button_add_friends">友達を追加</string>
+    <string name="button_add_team_members">チームメンバーを追加</string>
+    <string name="chat_list_add_list">リストを追加</string>
+    <string name="chat_list_all">すべて</string>
 </resources>
