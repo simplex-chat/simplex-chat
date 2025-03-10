@@ -2308,4 +2308,5 @@
     <string name="group_preview_rejected">rejeitado</string>
     <string name="member_reports_are_prohibited">É proibido denunciar mensagens neste grupo.</string>
     <string name="chat_bottom_bar">Barra de ferramentas de chat acessível</string>
+    <string name="chat_list_group_reports">Denúncias</string>
 </resources>
