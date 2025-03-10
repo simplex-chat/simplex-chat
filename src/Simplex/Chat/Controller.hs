@@ -898,10 +898,9 @@ logResponseToFile = \case
   CRMessageError {} -> True
   _ -> False
 
--- (Maybe GroupMemberId) can later be changed to GroupSndScope = GSSAll | GSSAdmins | GSSMember GroupMemberId
 data SendRef
   = SRDirect ContactId
-  | SRGroup GroupId (Maybe GroupMemberId)
+  | SRGroup GroupId GroupConversationScope
   deriving (Eq, Show)
 
 sendToChatRef :: SendRef -> ChatRef
