@@ -982,11 +982,13 @@ testCaptcha _ps = do
   let captcha = "23456789ABCDEFGHIJKLMNOPQRSTUVWXYZabdefghijkmnpqrty"
   matchCaptchaStr captcha captcha `shouldBe` True
   matchCaptchaStr captcha "23456789ABcDEFGH1JKLMNoPQRsTuvwxYzabdefghijkmnpqrty" `shouldBe` True
-  matchCaptchaStr "OOIICSUVWXZ" "OOIICSUVWXZ" `shouldBe` True
-  matchCaptchaStr "OOIICSUVWXZ" "0o1lcsuvwxz" `shouldBe` True
-  matchCaptchaStr "OOIICSUVWXZ" "" `shouldBe` False
-  matchCaptchaStr "OOIICSUVWXZ" "0o1lcsuvwx" `shouldBe` False
-  matchCaptchaStr "OOIICSUVWXZ" "0o1lcsuvwxzz" `shouldBe` False
+  matchCaptchaStr "23456789ABcDEFGH1JKLMNoPQRsTuvwxYzabdefghijkmnpqrty" captcha `shouldBe` True
+  matchCaptchaStr "OOIICPSUVWXZ" "OOIICPSUVWXZ" `shouldBe` True
+  matchCaptchaStr "OOIICPSUVWXZ" "0o1lcpsuvwxz" `shouldBe` True
+  matchCaptchaStr "0o1lcpsuvwxz" "OOIICPSUVWXZ" `shouldBe` True
+  matchCaptchaStr "OOIICPSUVWXZ" "" `shouldBe` False
+  matchCaptchaStr "OOIICPSUVWXZ" "0o1lcpsuvwx" `shouldBe` False
+  matchCaptchaStr "OOIICPSUVWXZ" "0o1lcpsuvwxzz" `shouldBe` False
 
 listGroups :: HasCallStack => TestCC -> TestCC -> TestCC -> IO ()
 listGroups superUser bob cath = do
