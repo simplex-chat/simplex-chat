@@ -13,6 +13,7 @@ import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception (finally)
 import Control.Monad (forM_, when)
 import qualified Data.Text as T
+import Directory.Captcha
 import qualified Directory.Events as DE
 import Directory.Options
 import Directory.Service
@@ -65,6 +66,8 @@ directoryServiceTests = do
     it "should list user's groups" testListUserGroups
   describe "store log" $ do
     it "should restore directory service state" testRestoreDirectory
+  describe "captcha" $ do
+    it "should accept some incorrect spellings" testCaptcha
 
 directoryProfile :: Profile
 directoryProfile = Profile {displayName = "SimpleX-Directory", fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing}
@@ -973,6 +976,17 @@ testRestoreDirectory ps = do
         groupFoundN 3 cath "privacy"
         cath #> "@SimpleX-Directory security"
         groupFoundN' 2 cath "security"
+
+testCaptcha :: HasCallStack => TestParams -> IO ()
+testCaptcha _ps = do
+  let captcha = "23456789ABCDEFGHIJKLMNOPQRSTUVWXYZabdefghijkmnpqrty"
+  matchCaptchaStr captcha captcha `shouldBe` True
+  matchCaptchaStr captcha "23456789ABcDEFGH1JKLMNoPQRsTuvwxYzabdefghijkmnpqrty" `shouldBe` True
+  matchCaptchaStr "OOIICSUVWXZ" "OOIICSUVWXZ" `shouldBe` True
+  matchCaptchaStr "OOIICSUVWXZ" "0o1lcsuvwxz" `shouldBe` True
+  matchCaptchaStr "OOIICSUVWXZ" "" `shouldBe` False
+  matchCaptchaStr "OOIICSUVWXZ" "0o1lcsuvwx" `shouldBe` False
+  matchCaptchaStr "OOIICSUVWXZ" "0o1lcsuvwxzz" `shouldBe` False
 
 listGroups :: HasCallStack => TestCC -> TestCC -> TestCC -> IO ()
 listGroups superUser bob cath = do
