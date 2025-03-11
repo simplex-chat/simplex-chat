@@ -2031,6 +2031,9 @@ processChatCommand' vr = \case
     when (memberStatus m /= GSMemPendingApproval) $ throwChatError $ CECommandError "member is not pending approval"
     case memberConn m of
       Just mConn -> do
+        -- TODO [knocking] admin to send XGrpLinkAcpt to host, host to forward to invitee and introduceToGroup
+        -- TODO            - additionally archive conversation with member
+        -- TODO            - also archive on rejection (removing member)
         let msg = XGrpLinkAcpt role
         void $ sendDirectMemberMessage mConn msg groupId
         m' <- withFastStore' $ \db -> updateGroupMemberAccepted db user m role
@@ -2234,6 +2237,14 @@ processChatCommand' vr = \case
       pure $ CRLeftMemberUser user gInfo {membership = membership {memberStatus = GSMemLeft}}
   APIListMembers groupId -> withUser $ \user ->
     CRGroupMembers user <$> withFastStore (\db -> getGroup db vr user groupId)
+  APIListGroupConversations groupId -> withUser $ \user -> do
+    gInfo <- withFastStore $ \db -> getGroup db vr user groupId
+    -- TODO [knocking] get based on chat_items? group_members? new entity?
+    pure $ CRGroupConversations user gInfo []
+  APIArchiveGroupConversation groupId gmId -> withUser $ \user -> do
+    (gInfo, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user gmId
+    -- TODO [knocking] where to save this state: group_members? new entity?
+    ok_
   AddMember gName cName memRole -> withUser $ \user -> do
     (groupId, contactId) <- withFastStore $ \db -> (,) <$> getGroupIdByName db user gName <*> getContactIdByName db user cName
     processChatCommand $ APIAddMember groupId contactId memRole

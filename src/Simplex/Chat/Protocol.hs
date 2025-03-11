@@ -344,7 +344,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpLinkInv :: GroupLinkInvitation -> ChatMsgEvent 'Json
   XGrpLinkReject :: GroupLinkRejection -> ChatMsgEvent 'Json
   XGrpLinkMem :: Profile -> ChatMsgEvent 'Json
-  XGrpLinkAcpt :: GroupMemberRole -> ChatMsgEvent 'Json
+  XGrpLinkAcpt :: GroupMemberRole -> Maybe MemberId -> ChatMsgEvent 'Json -- Maybe MemberId for compatibility
   XGrpMemNew :: MemberInfo -> ChatMsgEvent 'Json
   XGrpMemIntro :: MemberInfo -> Maybe MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemInv :: MemberId -> IntroInvitation -> ChatMsgEvent 'Json
@@ -994,7 +994,7 @@ toCMEventTag msg = case msg of
   XGrpLinkInv _ -> XGrpLinkInv_
   XGrpLinkReject _ -> XGrpLinkReject_
   XGrpLinkMem _ -> XGrpLinkMem_
-  XGrpLinkAcpt _ -> XGrpLinkAcpt_
+  XGrpLinkAcpt {} -> XGrpLinkAcpt_
   XGrpMemNew _ -> XGrpMemNew_
   XGrpMemIntro _ _ -> XGrpMemIntro_
   XGrpMemInv _ _ -> XGrpMemInv_
@@ -1097,7 +1097,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpLinkInv_ -> XGrpLinkInv <$> p "groupLinkInvitation"
       XGrpLinkReject_ -> XGrpLinkReject <$> p "groupLinkRejection"
       XGrpLinkMem_ -> XGrpLinkMem <$> p "profile"
-      XGrpLinkAcpt_ -> XGrpLinkAcpt <$> p "role"
+      XGrpLinkAcpt_ -> XGrpLinkAcpt <$> p "role" <*> opt "memberId"
       XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo"
       XGrpMemIntro_ -> XGrpMemIntro <$> p "memberInfo" <*> opt "memberRestrictions"
       XGrpMemInv_ -> XGrpMemInv <$> p "memberId" <*> p "memberIntro"
@@ -1161,7 +1161,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XGrpLinkInv groupLinkInv -> o ["groupLinkInvitation" .= groupLinkInv]
       XGrpLinkReject groupLinkRjct -> o ["groupLinkRejection" .= groupLinkRjct]
       XGrpLinkMem profile -> o ["profile" .= profile]
-      XGrpLinkAcpt role -> o ["role" .= role]
+      XGrpLinkAcpt role memberId -> o $ ("memberId" .=? memberId) ["memberId" .= role]
       XGrpMemNew memInfo -> o ["memberInfo" .= memInfo]
       XGrpMemIntro memInfo memRestrictions -> o $ ("memberRestrictions" .=? memRestrictions) ["memberInfo" .= memInfo]
       XGrpMemInv memId memIntro -> o ["memberId" .= memId, "memberIntro" .= memIntro]

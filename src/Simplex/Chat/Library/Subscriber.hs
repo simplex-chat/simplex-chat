@@ -791,6 +791,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             let Connection {viaUserContactLink} = conn
             when (isJust viaUserContactLink && isNothing (memberContactId m)) sendXGrpLinkMem
             when (connChatVersion < batchSend2Version) sendGroupAutoReply
+            -- TODO [knocking] introduce only to admins
+            -- TODO            - based on group settings (ALTER TABLE group_profiles ADD COLUMN approval TEXT - see rfc)?
+            -- TODO            - based on hook?
             unless (status' == GSMemPendingApproval) $ introduceToGroup vr user gInfo m
             where
               sendXGrpLinkMem = do
@@ -859,7 +862,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XFileAcptInv sharedMsgId fileConnReq_ fName -> xFileAcptInvGroup gInfo m' sharedMsgId fileConnReq_ fName
               XInfo p -> xInfoMember gInfo m' p brokerTs
               XGrpLinkMem p -> xGrpLinkMem gInfo m' conn' p
-              XGrpLinkAcpt role -> xGrpLinkAcpt gInfo m' role
+              XGrpLinkAcpt role memberId_ -> xGrpLinkAcpt gInfo m' role memberId_
               XGrpMemNew memInfo -> xGrpMemNew gInfo m' memInfo msg brokerTs
               XGrpMemIntro memInfo memRestrictions_ -> xGrpMemIntro gInfo m' memInfo memRestrictions_
               XGrpMemInv memId introInv -> xGrpMemInv gInfo m' memId introInv
@@ -2064,8 +2067,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             probeMatchingMemberContact m' connectedIncognito
         else messageError "x.grp.link.mem error: invalid group link host profile update"
 
-    xGrpLinkAcpt :: GroupInfo -> GroupMember -> GroupMemberRole -> CM ()
-    xGrpLinkAcpt gInfo@GroupInfo {membership} m role = do
+    xGrpLinkAcpt :: GroupInfo -> GroupMember -> GroupMemberRole -> Maybe MemberId -> CM ()
+    xGrpLinkAcpt gInfo@GroupInfo {membership} m role memberId_ = do
+      -- TODO [knocking] if memberId refers to invitee, send XGrpLinkAcpt to invitee and introduceToGroup
       membership' <- withStore' $ \db -> do
         updateGroupMemberStatus db userId m GSMemConnected
         updateGroupMemberAccepted db user membership role

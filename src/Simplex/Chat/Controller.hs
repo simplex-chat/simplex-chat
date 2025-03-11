@@ -363,6 +363,8 @@ data ChatCommand
   | APIRemoveMembers {groupId :: GroupId, groupMemberIds :: Set GroupMemberId, withMessages :: Bool}
   | APILeaveGroup GroupId
   | APIListMembers GroupId
+  | APIListGroupConversations GroupId
+  | APIArchiveGroupConversation GroupId GroupMemberId -- TODO [knocking] conversation with admins?
   | APIUpdateGroupProfile GroupId GroupProfile
   | APICreateGroupLink GroupId GroupMemberRole
   | APIGroupLinkMemberRole GroupId GroupMemberRole
@@ -658,6 +660,8 @@ data ChatResponse
   | CRWelcome {user :: User}
   | CRGroupCreated {user :: User, groupInfo :: GroupInfo}
   | CRGroupMembers {user :: User, group :: Group}
+  -- TODO [knocking] special type? how to include conversation with admins?
+  | CRGroupConversations {user :: User, groupInfo :: GroupInfo, memberConversations :: [GroupMember]}
   | CRContactsList {user :: User, contacts :: [Contact]}
   | CRUserContactLink {user :: User, contactLink :: UserContactLink}
   | CRUserContactLinkUpdated {user :: User, contactLink :: UserContactLink}
