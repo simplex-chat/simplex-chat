@@ -188,23 +188,23 @@ isUserMention ChatItem {meta = CIMeta {userMention}} = userMention
 -- other members, if one was promoted to admin.
 data GroupConversationScope
   = GCSGroup
-  | GCSMemberToAdmins
-  | GCSAdminsToMember {groupMemberId :: GroupMemberId}
+  | GCSMemberToSupport
+  | GCSMemberSupport {groupMemberId :: GroupMemberId}
   -- \| GCSDirect -- directly between members
   deriving (Eq, Show)
 
 fromRcvMsgScope :: GroupInfo -> MsgScope -> GroupConversationScope
 fromRcvMsgScope GroupInfo {membership} = \case
   MSGroup -> GCSGroup
-  MSAdmins mId
-    | sameMemberId mId membership -> GCSMemberToAdmins
-    | otherwise -> GCSAdminsToMember 1 -- TODO [knocking] pass Group with members and find? use MemberId in GCS?
+  MSMember mId
+    | sameMemberId mId membership -> GCSMemberToSupport
+    | otherwise -> GCSMemberSupport 1 -- TODO [knocking] pass Group with members and find? use MemberId in GCS?
 
 toSndMsgScope :: GroupInfo -> GroupConversationScope -> MsgScope
 toSndMsgScope GroupInfo {membership = GroupMember {memberId}} = \case
   GCSGroup -> MSGroup
-  GCSMemberToAdmins -> MSAdmins memberId
-  GCSAdminsToMember gmId -> MSAdmins (MemberId "") -- TODO [knocking] pass Group with members and find? pass MemberId from API?
+  GCSMemberToSupport -> MSMember memberId
+  GCSMemberSupport gmId -> MSMember (MemberId "") -- TODO [knocking] pass Group with members and find? pass MemberId from API?
 
 data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectSnd :: CIDirection 'CTDirect 'MDSnd
