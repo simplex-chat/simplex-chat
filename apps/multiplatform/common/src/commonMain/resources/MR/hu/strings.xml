@@ -2097,7 +2097,7 @@
     <string name="share_address_publicly">Cím nyilvános megosztása</string>
     <string name="share_simplex_address_on_social_media">SimpleX-cím megosztása a közösségi médiában.</string>
     <string name="share_1_time_link_with_a_friend">Egyszer használható meghívó megosztása egy baráttal</string>
-    <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[Az egyszer használható meghívó csak <i>egyetlen partnerrel használható</i> – személyesen vagy bármilyen üzenetváltó-alkalmazáson keresztül megosztható.]]></string>
+    <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[Az egyszer használható meghívó egy hivatkozás és <i>csak egyetlen partnerrel használható</i> – személyesen vagy bármilyen üzenetváltó-alkalmazáson keresztül megosztható.]]></string>
     <string name="you_can_set_connection_name_to_remember">Beállíthatja a partner nevét, hogy emlékezzen arra, hogy kivel osztotta meg a hivatkozást.</string>
     <string name="connection_security">Kapcsolatbiztonság</string>
     <string name="simplex_address_and_1_time_links_are_safe_to_share">A SimpleX-cím és az egyszer használható meghívó biztonságosan megosztható bármilyen üzenetváltó-alkalmazáson keresztül.</string>
