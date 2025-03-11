@@ -476,7 +476,7 @@
       </trans-unit>
       <trans-unit id="1-time link can be used *with one contact only* - share in person or via any messenger." xml:space="preserve" approved="no">
         <source>1-time link can be used *with one contact only* - share in person or via any messenger.</source>
-        <target state="translated">Az egyszer használható meghívó csak *egyetlen partnerrel használható* – személyesen vagy bármilyen üzenetváltó-alkalmazáson keresztül megosztható.</target>
+        <target state="translated">Az egyszer használható meghívó egy hivatkozás és *csak egyetlen partnerrel használható* – személyesen vagy bármilyen üzenetváltó-alkalmazáson keresztül megosztható.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="5 minutes" xml:space="preserve">
