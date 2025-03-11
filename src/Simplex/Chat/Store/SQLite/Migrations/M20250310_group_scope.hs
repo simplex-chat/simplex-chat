@@ -8,6 +8,8 @@ import Database.SQLite.Simple.QQ (sql)
 -- TODO [knocking] TBC schema
 -- TODO            - group_scope to include only "tag" or also group_member_id?
 -- TODO            - group_scope_group_member_id ON DELETE SET NULL?
+-- TODO            - ALTER TABLE group_members ADD COLUMN conversation_exists INTEGER; ? -- or only base on chat_items?
+-- TODO            - ALTER TABLE group ADD COLUMN admins_conversation_exists INTEGER; ? -- same
 m20250310_group_scope :: Query
 m20250310_group_scope =
   [sql|
