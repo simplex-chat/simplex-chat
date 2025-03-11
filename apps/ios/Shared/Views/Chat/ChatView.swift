@@ -91,7 +91,13 @@ struct ChatView: View {
                     if let groupInfo = chat.chatInfo.groupInfo, !composeState.message.isEmpty {
                         GroupMentionsView(groupInfo: groupInfo, composeState: $composeState, selectedRange: $selectedRange, keyboardVisible: $keyboardVisible)
                     }
-                    FloatingButtons(theme: theme, scrollView: scrollView, chat: chat, loadingTopItems: $loadingTopItems, requestedTopScroll: $requestedTopScroll, loadingBottomItems: $loadingBottomItems, requestedBottomScroll: $requestedBottomScroll, animatedScrollingInProgress: $animatedScrollingInProgress, listState: scrollView.listState, model: floatingButtonModel)
+                    FloatingButtons(theme: theme, scrollView: scrollView, chat: chat, loadingMoreItems: $loadingMoreItems, loadingTopItems: $loadingTopItems, requestedTopScroll: $requestedTopScroll, loadingBottomItems: $loadingBottomItems, requestedBottomScroll: $requestedBottomScroll, animatedScrollingInProgress: $animatedScrollingInProgress, listState: scrollView.listState, model: floatingButtonModel, reloadItems: {
+                            mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, revealedItems, im.chatState)
+                            scrollView.updateItems(mergedItems.boxedValue.items)
+                        }, loadLastItems: {
+                            loadLastItems($loadingMoreItems, loadingBottomItems: $loadingBottomItems, chat)
+                        }
+                    )
                 }
                 connectingText()
                 if selectedChatItems == nil {
@@ -731,6 +737,7 @@ struct ChatView: View {
         let theme: AppTheme
         let scrollView: EndlessScrollView<MergedItem>
         let chat: Chat
+        @Binding var loadingMoreItems: Bool
         @Binding var loadingTopItems: Bool
         @Binding var requestedTopScroll: Bool
         @Binding var loadingBottomItems: Bool
@@ -738,6 +745,8 @@ struct ChatView: View {
         @Binding var animatedScrollingInProgress: Bool
         let listState: EndlessScrollView<MergedItem>.ListState
         @ObservedObject var model: FloatingButtonModel
+        let reloadItems: () -> Void
+        let loadLastItems: () -> Void
 
         var body: some View {
             ZStack(alignment: .top) {
@@ -824,15 +833,26 @@ struct ChatView: View {
         }
 
         private func scrollToTopUnread() {
-            if let index = listState.items.lastIndex(where: { $0.hasUnread() }) {
-                animatedScrollingInProgress = true
-                // scroll to the top unread item
-                Task {
+            Task {
+                if !ItemsModel.shared.chatState.splits.isEmpty {
+                    await MainActor.run { loadingMoreItems = true }
+                    await loadChat(chatId: chat.id, openAroundItemId: nil, clearItems: false)
+                    await MainActor.run { reloadItems() }
+                    if let index = listState.items.lastIndex(where: { $0.hasUnread() }) {
+                        await MainActor.run { animatedScrollingInProgress = true }
+                        await scrollView.scrollToItemAnimated(index)
+                        await MainActor.run { animatedScrollingInProgress = false }
+                    }
+                    await MainActor.run { loadingMoreItems = false }
+                    loadLastItems()
+                } else if let index = listState.items.lastIndex(where: { $0.hasUnread() }) {
+                    await MainActor.run { animatedScrollingInProgress = true }
+                    // scroll to the top unread item
                     await scrollView.scrollToItemAnimated(index)
                     await MainActor.run { animatedScrollingInProgress = false }
+                } else {
+                    logger.debug("No more unread items, total: \(listState.items.count)")
                 }
-            } else {
-                logger.debug("No more unread items, total: \(listState.items.count)")
             }
         }
 

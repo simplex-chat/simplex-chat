@@ -111,8 +111,9 @@ func apiLoadMessages(
         } else {
             newSplits = []
         }
-        // currently, items will always be added on top, which is index 0
-        newItems.insert(contentsOf: chat.chatItems, at: 0)
+        let index = indexToInsertAround(chat.chatInfo.chatType, chat.chatItems, to: newItems)
+        //indexToInsertAroundTest()
+        newItems.insert(contentsOf: chat.chatItems, at: index)
         let newReversed: [ChatItem] = newItems.reversed()
         await MainActor.run {
             ItemsModel.shared.reversedChatItems = newReversed
@@ -339,4 +340,123 @@ private func mapItemsToIds(_ items: [ChatItem]) -> (Set<Int64>, Int) {
 private func removeDuplicates(_ newItems: inout [ChatItem], _ chat: Chat) {
     let (newIds, _) = mapItemsToIds(chat.chatItems)
     newItems.removeAll { newIds.contains($0.id) }
+}
+
+private func indexToInsertAround(_ chatType: ChatType, _ itemsToInsert: [ChatItem], to: [ChatItem]) -> Int {
+    guard to.count > 0, let lastNew = itemsToInsert.last else { return 0 }
+    // group sorting: item_ts, item_id
+    // everything else: created_at, item_id
+    let compareByTimeTs = chatType == .group
+    // in case several items have the same time as another item in the `to` array
+    // [(index in array, item)]
+    var sameTime: [(Int, ChatItem)] = []
+
+    for i in 0 ..< to.count {
+        let item = to[i]
+
+        if (compareByTimeTs ? item.meta.itemTs > lastNew.meta.itemTs : item.meta.createdAt > lastNew.meta.createdAt) || i + 1 == to.count {
+            if (compareByTimeTs ? lastNew.meta.itemTs == item.meta.itemTs : lastNew.meta.createdAt == item.meta.createdAt) {
+                sameTime.append((i, item))
+            }
+            // time to stop the loop. Item is newer or the last in `to`, taking previous items and checking position inside them
+            if sameTime.count > 1, let first = sameTime.sorted(by: { prev, next in prev.1.meta.itemId < next.1.id }).first(where: { same in same.1.id > lastNew.id }) {
+                return first.0
+            } else if sameTime.count == 1 {
+                return sameTime[0].1.id > lastNew.id ? sameTime[0].0 : sameTime[0].0 + 1
+            } else {
+                return item.id > lastNew.id ? i : i + 1
+            }
+        }
+
+        if (compareByTimeTs ? lastNew.meta.itemTs == item.meta.itemTs : lastNew.meta.createdAt == item.meta.createdAt) {
+            sameTime.append((i, item))
+        } else {
+            sameTime = []
+        }
+    }
+    // shouldn't be here
+    return to.count
+}
+
+func indexToInsertAroundTest() {
+    func assert(_ one: Int, _ two: Int) {
+        if one != two {
+            logger.debug("\(one) != \(two)")
+            fatalError()
+        }
+    }
+
+    let itemsToInsert = [ChatItem.getSample(3, .groupSnd, Date.init(timeIntervalSince1970: 3), "")]
+    let items1 = [
+        ChatItem.getSample(0, .groupSnd, Date.init(timeIntervalSince1970: 0), ""),
+        ChatItem.getSample(1, .groupSnd, Date.init(timeIntervalSince1970: 1), ""),
+        ChatItem.getSample(2, .groupSnd, Date.init(timeIntervalSince1970: 2), "")
+    ]
+    assert(indexToInsertAround(.group, itemsToInsert, to: items1), 3)
+
+    let items2 = [
+        ChatItem.getSample(0, .groupSnd, Date.init(timeIntervalSince1970: 0), ""),
+        ChatItem.getSample(1, .groupSnd, Date.init(timeIntervalSince1970: 1), ""),
+        ChatItem.getSample(2, .groupSnd, Date.init(timeIntervalSince1970: 3), "")
+    ]
+    assert(indexToInsertAround(.group, itemsToInsert, to: items2), 3)
+
+    let items3 = [
+        ChatItem.getSample(0, .groupSnd, Date.init(timeIntervalSince1970: 0), ""),
+        ChatItem.getSample(1, .groupSnd, Date.init(timeIntervalSince1970: 3), ""),
+        ChatItem.getSample(2, .groupSnd, Date.init(timeIntervalSince1970: 3), "")
+    ]
+    assert(indexToInsertAround(.group, itemsToInsert, to: items3), 3)
+
+    let items4 = [
+        ChatItem.getSample(0, .groupSnd, Date.init(timeIntervalSince1970: 0), ""),
+        ChatItem.getSample(4, .groupSnd, Date.init(timeIntervalSince1970: 3), ""),
+        ChatItem.getSample(5, .groupSnd, Date.init(timeIntervalSince1970: 3), "")
+    ]
+    assert(indexToInsertAround(.group, itemsToInsert, to: items4), 1)
+
+    let items5 = [
+        ChatItem.getSample(0, .groupSnd, Date.init(timeIntervalSince1970: 0), ""),
+        ChatItem.getSample(2, .groupSnd, Date.init(timeIntervalSince1970: 3), ""),
+        ChatItem.getSample(4, .groupSnd, Date.init(timeIntervalSince1970: 3), "")
+    ]
+    assert(indexToInsertAround(.group, itemsToInsert, to: items5), 2)
+
+    let items6 = [
+        ChatItem.getSample(4, .groupSnd, Date.init(timeIntervalSince1970: 4), ""),
+        ChatItem.getSample(5, .groupSnd, Date.init(timeIntervalSince1970: 4), ""),
+        ChatItem.getSample(6, .groupSnd, Date.init(timeIntervalSince1970: 4), "")
+    ]
+    assert(indexToInsertAround(.group, itemsToInsert, to: items6), 0)
+
+    let items7 = [
+        ChatItem.getSample(4, .groupSnd, Date.init(timeIntervalSince1970: 4), ""),
+        ChatItem.getSample(5, .groupSnd, Date.init(timeIntervalSince1970: 4), ""),
+        ChatItem.getSample(6, .groupSnd, Date.init(timeIntervalSince1970: 4), "")
+    ]
+    assert(indexToInsertAround(.group, [], to: items7), 0)
+
+    let items8 = [
+        ChatItem.getSample(2, .groupSnd, Date.init(timeIntervalSince1970: 4), ""),
+        ChatItem.getSample(4, .groupSnd, Date.init(timeIntervalSince1970: 3), ""),
+        ChatItem.getSample(5, .groupSnd, Date.init(timeIntervalSince1970: 4), "")
+    ]
+    assert(indexToInsertAround(.group, itemsToInsert, to: items8), 1)
+
+    let items9 = [
+        ChatItem.getSample(2, .groupSnd, Date.init(timeIntervalSince1970: 3), ""),
+        ChatItem.getSample(4, .groupSnd, Date.init(timeIntervalSince1970: 3), ""),
+        ChatItem.getSample(5, .groupSnd, Date.init(timeIntervalSince1970: 4), "")
+    ]
+    assert(indexToInsertAround(.group, itemsToInsert, to: items9), 1)
+
+    let items10 = [
+        ChatItem.getSample(4, .groupSnd, Date.init(timeIntervalSince1970: 3), ""),
+        ChatItem.getSample(5, .groupSnd, Date.init(timeIntervalSince1970: 3), ""),
+        ChatItem.getSample(6, .groupSnd, Date.init(timeIntervalSince1970: 4), "")
+    ]
+    assert(indexToInsertAround(.group, itemsToInsert, to: items10), 0)
+
+    let items11: [ChatItem] = []
+    assert(indexToInsertAround(.group, itemsToInsert, to: items11), 0)
 }
