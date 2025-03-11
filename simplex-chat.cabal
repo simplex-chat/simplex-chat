@@ -408,6 +408,7 @@ executable simplex-directory-service
       StrictData
   other-modules:
       Directory.BlockedWords
+      Directory.Captcha
       Directory.Events
       Directory.Options
       Directory.Search
