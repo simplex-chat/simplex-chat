@@ -904,7 +904,7 @@ logResponseToFile = \case
 
 data SendRef
   = SRDirect ContactId
-  | SRGroup GroupId GroupConversationScope
+  | SRGroup GroupId GroupChatScope
   deriving (Eq, Show)
 
 sendToChatRef :: SendRef -> ChatRef
