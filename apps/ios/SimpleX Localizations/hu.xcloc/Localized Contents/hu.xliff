@@ -9851,7 +9851,7 @@ Megismétli a meghívási kérést?</target>
       </trans-unit>
       <trans-unit id="requested to connect" xml:space="preserve" approved="no">
         <source>requested to connect</source>
-        <target state="translated">Függőben lévő meghívó</target>
+        <target state="translated">Függőben lévő meghívási kérelem</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="saved" xml:space="preserve">
