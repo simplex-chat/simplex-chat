@@ -2205,7 +2205,7 @@
     <string name="direct_messages_are_prohibited_in_chat">A tagok közötti közvetlen üzenetek le vannak tiltva ebben a csevegésben.</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Amikor egynél több üzemeltető van engedélyezve, akkor egyik sem rendelkezik olyan metaadatokkal, amelyekből megtudható, hogy ki kivel kommunikál.</string>
     <string name="display_name_accepted_invitation">elfogadott meghívó</string>
-    <string name="display_name_requested_to_connect">Függőben lévő meghívó</string>
+    <string name="display_name_requested_to_connect">Függőben lévő meghívási kérelem</string>
     <string name="onboarding_network_about_operators">Az üzemeltetőkről</string>
     <string name="onboarding_network_operators_simplex_flux_agreement">A SimpleX Chat és a Flux megállapodást kötött arról, hogy a Flux által üzemeltetett kiszolgálókat beépítik az alkalmazásba.</string>
     <string name="encryption_renegotiation_in_progress">A titkosítás újraegyeztetése folyamatban van.</string>
