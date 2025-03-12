@@ -60,6 +60,8 @@ func apiLoadMessages(
             chatState.unreadTotal = chat.chatStats.unreadCount
             chatState.unreadAfter = navInfo.afterUnread
             chatState.unreadAfterNewestLoaded = navInfo.afterUnread
+
+            PreloadState.shared.clear()
         }
     case let .before(paginationChatItemId, _):
         newItems.append(contentsOf: oldItems)
@@ -117,6 +119,7 @@ func apiLoadMessages(
         let newReversed: [ChatItem] = newItems.reversed()
         await MainActor.run {
             ItemsModel.shared.reversedChatItems = newReversed
+            // TODO: split position is not taken into account but splits should be ordered the same way as items are in array. For now to skip loop here, reordering them in MergedItems.create()
             chatState.splits = [chat.chatItems.last!.id] + newSplits
             chatState.unreadAfterItemId = chat.chatItems.last!.id
             chatState.totalAfter = navInfo.afterTotal
@@ -131,14 +134,16 @@ func apiLoadMessages(
                 // no need to set it, count will be wrong
                 // chatState.unreadAfterNewestLoaded = navInfo.afterUnread
             }
+            PreloadState.shared.clear()
         }
     case .last:
         newItems.append(contentsOf: oldItems)
-        removeDuplicates(&newItems, chat)
+        let newSplits = await removeDuplicatesAndUnusedSplits(&newItems, chat, chatState.splits)
         newItems.append(contentsOf: chat.chatItems)
         let items = newItems
         await MainActor.run {
             ItemsModel.shared.reversedChatItems = items.reversed()
+            chatState.splits = newSplits
             chatModel.updateChatInfo(chat.chatInfo)
             chatState.unreadAfterNewestLoaded = 0
         }
@@ -318,6 +323,28 @@ private func removeDuplicatesAndUpperSplits(
     if !allItemsToDelete.isEmpty {
         newItems.removeAll(where: { allItemsToDelete.contains($0.id) })
     }
+    return newSplits
+}
+
+private func removeDuplicatesAndUnusedSplits(
+    _ newItems: inout [ChatItem],
+    _ chat: Chat,
+    _ splits: [Int64]
+) async -> [Int64] {
+    if splits.isEmpty {
+        removeDuplicates(&newItems, chat)
+        return splits
+    }
+
+    var newSplits = splits
+    let (newIds, _) = mapItemsToIds(chat.chatItems)
+    newItems.removeAll(where: {
+        let duplicate = newIds.contains($0.id)
+        if duplicate, let firstIndex = newSplits.firstIndex(of: $0.id) {
+            newSplits.remove(at: firstIndex)
+        }
+        return duplicate
+    })
     return newSplits
 }
 
