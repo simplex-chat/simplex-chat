@@ -2333,4 +2333,11 @@
     <string name="group_member_status_rejected">đã từ chối</string>
     <string name="v6_3_set_message_expiration_in_chats">Thiết lập giờ hết hạn cho tin nhắn trong các cuộc trò chuyện.</string>
     <string name="v6_3_private_media_file_names">Tên các tệp tin đa phương tiện riêng tư.</string>
+    <string name="error_reading_passphrase">Lỗi đọc mật khẩu cơ sở dữ liệu</string>
+    <string name="block_members_desc">Tất cả các tin nhắn mới từ những thành viên này sẽ bị ẩn!</string>
+    <string name="block_members_for_all_question">Chặn các thành viên cho tất cả?</string>
+    <string name="feature_roles_moderators">các kiểm duyệt viên</string>
+    <string name="unblock_members_desc">Các tin nhắn từ những thành viên này sẽ được hiển thị!</string>
+    <string name="members_will_be_removed_from_group_cannot_be_undone">Các thành viên sẽ bị xóa khỏi nhóm - việc này không thể được hoàn tác!</string>
+    <string name="members_will_be_removed_from_chat_cannot_be_undone">Các thành viên sẽ bị xóa khỏi cuộc trò chuyện - việc này không thể được hoàn tác!</string>
 </resources>
