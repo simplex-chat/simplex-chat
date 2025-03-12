@@ -39,6 +39,7 @@ import qualified Data.Text.IO as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, diffUTCTime, getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import Directory.BlockedWords
+import Directory.Captcha
 import Directory.Events
 import Directory.Options
 import Directory.Search
@@ -67,7 +68,6 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow, ($>>=), (<$$>))
 import System.Directory (getAppUserDataDirectory)
 import System.Process (readProcess)
-import System.Random (randomRIO)
 
 data GroupProfileUpdate = GPNoServiceLink | GPServiceLinkAdded | GPServiceLinkRemoved | GPHasServiceLink | GPServiceLinkError
 
@@ -455,12 +455,6 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       atomically $ TM.insert gmId captcha $ pendingCaptchas env
       sendCaptcha mc
       where
-        getCaptchaStr 0 s = pure s
-        getCaptchaStr n s = do
-          i <- randomRIO (0, length chars - 1)
-          let c = chars !! i
-          getCaptchaStr (n - 1) (c : s)
-        chars = "23456789ABCDEFGHIJKLMNOPQRSTUVWXYZabdefghijkmnpqrsty"
         getCaptcha s = case captchaGenerator opts of
           Nothing -> pure textMsg
           Just script -> content <$> readProcess script [s] ""
@@ -491,7 +485,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           atomically (TM.lookup (groupMemberId' m) $ pendingCaptchas env) >>= \case
             Just PendingCaptcha {captchaText, sentAt, attempts}
               | ts `diffUTCTime` sentAt > captchaTTL -> sendMemberCaptcha g m (Just ciId) captchaExpired $ attempts - 1
-              | captchaText == msgText -> do
+              | matchCaptchaStr captchaText msgText -> do
                   sendComposedMessages_ cc (SRGroup groupId (GCSDirect $ groupMemberId' m)) [(Just ciId, MCText $ "Correct, you joined the group " <> n)]
                   approvePendingMember a g m
               | attempts >= maxCaptchaAttempts -> rejectPendingMember tooManyAttempts
