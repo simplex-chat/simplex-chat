@@ -202,14 +202,6 @@ fromRcvMsgScope GroupInfo {membership} = \case
     | otherwise -> GCSAdmins (Just 1) -- TODO [knocking] pass Group with members and find? use MemberId in GCS?
   MSDirect -> GCSDirect 1 -- TODO [knocking] here we should know which member we've received message from
 
-toSndMsgScope :: GroupInfo -> GroupChatScope -> MsgScope
-toSndMsgScope GroupInfo {membership = GroupMember {memberId}} = \case
-  GCSGroup -> MSGroup
-  GCSReports -> MSReports
-  GCSAdmins Nothing -> MSAdmins memberId
-  GCSAdmins (Just gmId) -> MSAdmins (MemberId "") -- TODO [knocking] pass Group with members and find? pass MemberId from API?
-  GCSDirect _ -> MSDirect
-
 gsScopeNotInHistory :: GroupChatScope -> Maybe NotInHistory
 gsScopeNotInHistory = \case
   GCSGroup -> Nothing

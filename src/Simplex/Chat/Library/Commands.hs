@@ -3194,15 +3194,15 @@ processChatCommand' vr = \case
     sendGroupContentMessages :: User -> GroupInfo -> GroupChatScope -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
     sendGroupContentMessages user gInfo@GroupInfo {membership} gcScope live itemTTL cmrs = do
       assertMultiSendable live cmrs
-      (ms, numFileInvs) <- case gcScope of
+      (msgScope, ms, numFileInvs) <- case gcScope of
         GCSGroup -> do
           ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
-          pure (ms, length $ filter memberCurrent ms)
+          pure (MSGroup, ms, length $ filter memberCurrent ms)
         GCSReports -> do
           ms <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
           let ms' = filter compatibleModerator ms
           when (null ms') $ throwChatError $ CECommandError "no moderators support receiving reports"
-          pure (ms', length $ filter memberCurrent ms')
+          pure (MSReports, ms', length $ filter memberCurrent ms')
           where
             compatibleModerator GroupMember {activeConn, memberChatVRange} =
               maxVersion (maybe memberChatVRange peerChatVRange activeConn) >= contentReportsVersion
@@ -3210,14 +3210,14 @@ processChatCommand' vr = \case
           ms <- withFastStore' $ \db -> getGroupAdmins db vr user gInfo
           let ms' = filter compatible ms
           when (null ms') $ throwChatError $ CECommandError "no admins support message scopes"
-          m_ <- case gmId_ of
-            Nothing -> pure []
+          (msgScope, m_) <- case gmId_ of
+            Nothing -> pure (MSAdmins (memberId' membership), [])
             Just gmId -> do
               -- Unlike admins, we don't filter out non-current members here to allow sending to pending members
               m <- withFastStore $ \db -> getGroupMemberById db vr user gmId
               unless (compatible m) $ throwChatError $ CECommandError "member does not support message scope"
-              pure [m]
-          pure (ms' <> m_, length (filter memberCurrent ms') + length m_)
+              pure (MSAdmins (memberId' m), [m])
+          pure (msgScope, ms' <> m_, length (filter memberCurrent ms') + length m_)
           where
             compatible GroupMember {activeConn, memberChatVRange} =
               maxVersion (maybe memberChatVRange peerChatVRange activeConn) >= groupKnockingVersion
@@ -3225,10 +3225,10 @@ processChatCommand' vr = \case
           when (dmId == groupMemberId' membership) $ throwChatError $ CECommandError "cannot send to self"
           dm <- withFastStore $ \db -> getGroupMemberById db vr user dmId
           unless (memberStatus dm == GSMemPendingApproval) $ throwChatError $ CECommandError "cannot send directly to member not pending approval"
-          pure ([dm], 1)
-      sendGroupContentMessages_ user gInfo gcScope ms numFileInvs live itemTTL cmrs
-    sendGroupContentMessages_ :: User -> GroupInfo -> GroupChatScope -> [GroupMember] -> Int -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
-    sendGroupContentMessages_ user gInfo@GroupInfo {groupId, membership} gcScope ms numFileInvs live itemTTL cmrs = do
+          pure (MSDirect, [dm], 1)
+      sendGroupContentMessages_ user gInfo gcScope msgScope ms numFileInvs live itemTTL cmrs
+    sendGroupContentMessages_ :: User -> GroupInfo -> GroupChatScope -> MsgScope -> [GroupMember] -> Int -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
+    sendGroupContentMessages_ user gInfo@GroupInfo {groupId, membership} gcScope msgScope ms numFileInvs live itemTTL cmrs = do
       forM_ allowedRole $ assertUserGroupRole gInfo
       assertGroupContentAllowed
       processComposedMessages
@@ -3284,7 +3284,7 @@ processChatCommand' vr = \case
             prepareMsgs cmsFileInvs timed_ = withFastStore $ \db ->
               forM cmsFileInvs $ \((ComposedMessage {quotedItemId, msgContent = mc}, itemForwarded, _, ciMentions), fInv_) ->
                 let mentions = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
-                 in prepareGroupMsg db user gInfo gcScope mc mentions quotedItemId itemForwarded fInv_ timed_ live
+                 in prepareGroupMsg db user gInfo msgScope mc mentions quotedItemId itemForwarded fInv_ timed_ live
             createMemberSndStatuses ::
               [Either ChatError (ChatItem 'CTGroup 'MDSnd)] ->
               NonEmpty (Either ChatError SndMessage) ->

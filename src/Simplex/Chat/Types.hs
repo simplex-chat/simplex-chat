@@ -856,6 +856,9 @@ supportsVersion m v = maxVersion (memberChatVRange' m) >= v
 groupMemberId' :: GroupMember -> GroupMemberId
 groupMemberId' GroupMember {groupMemberId} = groupMemberId
 
+memberId' :: GroupMember -> MemberId
+memberId' GroupMember {memberId} = memberId
+
 memberIncognito :: GroupMember -> IncognitoEnabled
 memberIncognito GroupMember {memberProfile, memberContactProfileId} = localProfileId memberProfile /= memberContactProfileId
 
