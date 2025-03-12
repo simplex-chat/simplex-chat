@@ -2340,4 +2340,11 @@
     <string name="unblock_members_desc">Các tin nhắn từ những thành viên này sẽ được hiển thị!</string>
     <string name="members_will_be_removed_from_group_cannot_be_undone">Các thành viên sẽ bị xóa khỏi nhóm - việc này không thể được hoàn tác!</string>
     <string name="members_will_be_removed_from_chat_cannot_be_undone">Các thành viên sẽ bị xóa khỏi cuộc trò chuyện - việc này không thể được hoàn tác!</string>
+    <string name="restore_passphrase_can_not_be_read_desc">Không thể đọc mật khẩu trong Keystore. Điều này có thể xảy ra sau bản cập nhật hệ thống không tương thích với ứng dụng. Nếu không phải như vậy, xin vui lòng liên hệ với các nhà phát triển.</string>
+    <string name="group_member_status_pending_approval_short">đang chờ xử lý</string>
+    <string name="operator_updated_conditions">Các điều kiện đã được cập nhật</string>
+    <string name="restore_passphrase_can_not_be_read_enter_manually_desc">Không thể đọc mật khẩu trong Keystore, xin vui lòng nhập thủ công. Điều này có thể xảy ra sau khi bản cập nhật hệ thống không tương thích với ứng dụng. Nếu không phải như vậy, vui lòng liên hệ với các nhà phát triển.</string>
+    <string name="group_member_status_pending_approval">đang chờ phê duyệt</string>
+    <string name="unblock_members_for_all_question">Bỏ chặn các thành viên cho tất cả?</string>
+    <string name="button_remove_members_question">Xóa các thành viên?</string>
 </resources>
