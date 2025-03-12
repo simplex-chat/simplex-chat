@@ -54,6 +54,7 @@ module Simplex.Chat.Store.Groups
     getGroupMemberByMemberId,
     getGroupMembers,
     getGroupModerators,
+    getGroupAdmins,
     getGroupMembersForExpiration,
     getGroupCurrentMembersCount,
     deleteGroupChatItems,
@@ -916,6 +917,14 @@ getGroupModerators db vr user@User {userId, userContactId} GroupInfo {groupId} =
       db
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)")
       (userId, userId, groupId, userContactId, GRModerator, GRAdmin, GROwner)
+
+getGroupAdmins :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
+getGroupAdmins db vr user@User {userId, userContactId} GroupInfo {groupId} = do
+  map (toContactMember vr user)
+    <$> DB.query
+      db
+      (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?)")
+      (userId, userId, groupId, userContactId, GRAdmin, GROwner)
 
 getGroupMembersForExpiration :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
 getGroupMembersForExpiration db vr user@User {userId, userContactId} GroupInfo {groupId} = do

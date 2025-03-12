@@ -188,28 +188,40 @@ isUserMention ChatItem {meta = CIMeta {userMention}} = userMention
 -- other members, if one was promoted to admin.
 data GroupChatScope
   = GCSGroup
-  | GCSMember {groupMemberId :: Maybe GroupMemberId}
-  -- \| GCSDirect -- directly between members
+  | GCSReports -- TODO [knocking] currently only member can send in this scope; for moderators it would require groupMemberId
+  | GCSAdmins {groupMemberId_ :: Maybe GroupMemberId}
+  | GCSDirect {groupMemberId :: GroupMemberId} -- directly between members
   deriving (Eq, Show)
 
 fromRcvMsgScope :: GroupInfo -> MsgScope -> GroupChatScope
 fromRcvMsgScope GroupInfo {membership} = \case
   MSGroup -> GCSGroup
-  MSMember mId
-    | sameMemberId mId membership -> GCSMember Nothing
-    | otherwise -> GCSMember (Just 1) -- TODO [knocking] pass Group with members and find? use MemberId in GCS?
+  MSReports -> GCSReports
+  MSAdmins mId
+    | sameMemberId mId membership -> GCSAdmins Nothing
+    | otherwise -> GCSAdmins (Just 1) -- TODO [knocking] pass Group with members and find? use MemberId in GCS?
+  MSDirect -> GCSDirect 1 -- TODO [knocking] here we should know which member we've received message from
 
 toSndMsgScope :: GroupInfo -> GroupChatScope -> MsgScope
 toSndMsgScope GroupInfo {membership = GroupMember {memberId}} = \case
   GCSGroup -> MSGroup
-  GCSMember Nothing -> MSMember memberId
-  GCSMember (Just gmId) -> MSMember (MemberId "") -- TODO [knocking] pass Group with members and find? pass MemberId from API?
+  GCSReports -> MSReports
+  GCSAdmins Nothing -> MSAdmins memberId
+  GCSAdmins (Just gmId) -> MSAdmins (MemberId "") -- TODO [knocking] pass Group with members and find? pass MemberId from API?
+  GCSDirect _ -> MSDirect
+
+gsScopeNotInHistory :: GroupChatScope -> Maybe NotInHistory
+gsScopeNotInHistory = \case
+  GCSGroup -> Nothing
+  GCSReports -> Just NotInHistory
+  GCSAdmins _ -> Just NotInHistory
+  GCSDirect _ -> Just NotInHistory
 
 data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectSnd :: CIDirection 'CTDirect 'MDSnd
   CIDirectRcv :: CIDirection 'CTDirect 'MDRcv
-  CIGroupSnd :: GroupChatScope -> CIDirection 'CTGroup 'MDSnd
-  CIGroupRcv :: GroupMember -> GroupChatScope -> CIDirection 'CTGroup 'MDRcv
+  CIGroupSnd :: CIDirection 'CTGroup 'MDSnd
+  CIGroupRcv :: GroupMember -> CIDirection 'CTGroup 'MDRcv
   CILocalSnd :: CIDirection 'CTLocal 'MDSnd
   CILocalRcv :: CIDirection 'CTLocal 'MDRcv
 
@@ -222,8 +234,8 @@ data ACIDirection = forall c d. (ChatTypeI c, MsgDirectionI d) => ACID (SChatTyp
 data JSONCIDirection
   = JCIDirectSnd
   | JCIDirectRcv
-  | JCIGroupSnd {conversationScope :: GroupChatScope}
-  | JCIGroupRcv {groupMember :: GroupMember, conversationScope :: GroupChatScope}
+  | JCIGroupSnd
+  | JCIGroupRcv {groupMember :: GroupMember}
   | JCILocalSnd
   | JCILocalRcv
   deriving (Show)
@@ -232,8 +244,8 @@ jsonCIDirection :: CIDirection c d -> JSONCIDirection
 jsonCIDirection = \case
   CIDirectSnd -> JCIDirectSnd
   CIDirectRcv -> JCIDirectRcv
-  CIGroupSnd s-> JCIGroupSnd s
-  CIGroupRcv m s -> JCIGroupRcv m s
+  CIGroupSnd -> JCIGroupSnd
+  CIGroupRcv m -> JCIGroupRcv m
   CILocalSnd -> JCILocalSnd
   CILocalRcv -> JCILocalRcv
 
@@ -241,8 +253,8 @@ jsonACIDirection :: JSONCIDirection -> ACIDirection
 jsonACIDirection = \case
   JCIDirectSnd -> ACID SCTDirect SMDSnd CIDirectSnd
   JCIDirectRcv -> ACID SCTDirect SMDRcv CIDirectRcv
-  JCIGroupSnd s -> ACID SCTGroup SMDSnd $ CIGroupSnd s
-  JCIGroupRcv m s -> ACID SCTGroup SMDRcv $ CIGroupRcv m s
+  JCIGroupSnd -> ACID SCTGroup SMDSnd CIGroupSnd
+  JCIGroupRcv m -> ACID SCTGroup SMDRcv $ CIGroupRcv m
   JCILocalSnd -> ACID SCTLocal SMDSnd CILocalSnd
   JCILocalRcv -> ACID SCTLocal SMDRcv CILocalRcv
 
@@ -279,8 +291,8 @@ timedDeleteAt' CITimed {deleteAt} = deleteAt
 
 chatItemMember :: GroupInfo -> ChatItem 'CTGroup d -> GroupMember
 chatItemMember GroupInfo {membership} ChatItem {chatDir} = case chatDir of
-  CIGroupSnd _s -> membership
-  CIGroupRcv m _s -> m
+  CIGroupSnd -> membership
+  CIGroupRcv m -> m
 
 ciReactionAllowed :: ChatItem c d -> Bool
 ciReactionAllowed ChatItem {meta = CIMeta {itemDeleted = Just _}} = False
@@ -289,8 +301,8 @@ ciReactionAllowed ChatItem {content} = isJust $ ciMsgContent content
 data ChatDirection (c :: ChatType) (d :: MsgDirection) where
   CDDirectSnd :: Contact -> ChatDirection 'CTDirect 'MDSnd
   CDDirectRcv :: Contact -> ChatDirection 'CTDirect 'MDRcv
-  CDGroupSnd :: GroupInfo -> GroupChatScope -> ChatDirection 'CTGroup 'MDSnd
-  CDGroupRcv :: GroupInfo -> GroupMember -> GroupChatScope -> ChatDirection 'CTGroup 'MDRcv
+  CDGroupSnd :: GroupInfo -> ChatDirection 'CTGroup 'MDSnd
+  CDGroupRcv :: GroupInfo -> GroupMember -> ChatDirection 'CTGroup 'MDRcv
   CDLocalSnd :: NoteFolder -> ChatDirection 'CTLocal 'MDSnd
   CDLocalRcv :: NoteFolder -> ChatDirection 'CTLocal 'MDRcv
 
@@ -298,8 +310,8 @@ toCIDirection :: ChatDirection c d -> CIDirection c d
 toCIDirection = \case
   CDDirectSnd _ -> CIDirectSnd
   CDDirectRcv _ -> CIDirectRcv
-  CDGroupSnd _ s -> CIGroupSnd s
-  CDGroupRcv _ m s -> CIGroupRcv m s
+  CDGroupSnd _ -> CIGroupSnd
+  CDGroupRcv _ m -> CIGroupRcv m
   CDLocalSnd _ -> CILocalSnd
   CDLocalRcv _ -> CILocalRcv
 
@@ -307,8 +319,8 @@ toChatInfo :: ChatDirection c d -> ChatInfo c
 toChatInfo = \case
   CDDirectSnd c -> DirectChat c
   CDDirectRcv c -> DirectChat c
-  CDGroupSnd g _s -> GroupChat g
-  CDGroupRcv g _ _s -> GroupChat g
+  CDGroupSnd g -> GroupChat g
+  CDGroupRcv g _ -> GroupChat g
   CDLocalSnd l -> LocalChat l
   CDLocalRcv l -> LocalChat l
 
@@ -522,8 +534,8 @@ type family ChatTypeQuotable (a :: ChatType) :: Constraint where
 data CIQDirection (c :: ChatType) where
   CIQDirectSnd :: CIQDirection 'CTDirect
   CIQDirectRcv :: CIQDirection 'CTDirect
-  CIQGroupSnd :: GroupChatScope -> CIQDirection 'CTGroup
-  CIQGroupRcv :: Maybe GroupMember -> GroupChatScope -> CIQDirection 'CTGroup -- member can be Nothing in case MsgRef has memberId that the user is not notified about yet
+  CIQGroupSnd :: CIQDirection 'CTGroup
+  CIQGroupRcv :: Maybe GroupMember -> CIQDirection 'CTGroup -- member can be Nothing in case MsgRef has memberId that the user is not notified about yet
 
 deriving instance Show (CIQDirection c)
 
@@ -533,17 +545,17 @@ jsonCIQDirection :: CIQDirection c -> Maybe JSONCIDirection
 jsonCIQDirection = \case
   CIQDirectSnd -> Just JCIDirectSnd
   CIQDirectRcv -> Just JCIDirectRcv
-  CIQGroupSnd s -> Just $ JCIGroupSnd s
-  CIQGroupRcv (Just m) s -> Just $ JCIGroupRcv m s
-  CIQGroupRcv Nothing _s -> Nothing
+  CIQGroupSnd -> Just JCIGroupSnd
+  CIQGroupRcv (Just m) -> Just $ JCIGroupRcv m
+  CIQGroupRcv Nothing -> Nothing
 
 jsonACIQDirection :: Maybe JSONCIDirection -> Either String ACIQDirection
 jsonACIQDirection = \case
   Just JCIDirectSnd -> Right $ ACIQDirection SCTDirect CIQDirectSnd
   Just JCIDirectRcv -> Right $ ACIQDirection SCTDirect CIQDirectRcv
-  Just (JCIGroupSnd s) -> Right $ ACIQDirection SCTGroup $ CIQGroupSnd s
-  Just (JCIGroupRcv m s) -> Right $ ACIQDirection SCTGroup $ CIQGroupRcv (Just m) s
-  Nothing -> Right $ ACIQDirection SCTGroup $ CIQGroupRcv Nothing GCSGroup
+  Just JCIGroupSnd -> Right $ ACIQDirection SCTGroup CIQGroupSnd
+  Just (JCIGroupRcv m) -> Right $ ACIQDirection SCTGroup $ CIQGroupRcv (Just m)
+  Nothing -> Right $ ACIQDirection SCTGroup $ CIQGroupRcv Nothing
   Just JCILocalSnd -> Left "unquotable"
   Just JCILocalRcv -> Left "unquotable"
 
@@ -551,8 +563,8 @@ quoteMsgDirection :: CIQDirection c -> MsgDirection
 quoteMsgDirection = \case
   CIQDirectSnd -> MDSnd
   CIQDirectRcv -> MDRcv
-  CIQGroupSnd _s -> MDSnd
-  CIQGroupRcv _ _s -> MDRcv
+  CIQGroupSnd -> MDSnd
+  CIQGroupRcv _ -> MDRcv
 
 data CIFile (d :: MsgDirection) = CIFile
   { fileId :: Int64,

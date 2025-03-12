@@ -407,7 +407,9 @@ CREATE TABLE chat_items(
   via_proxy INTEGER,
   msg_content_tag TEXT,
   include_in_history INTEGER NOT NULL DEFAULT 0,
-  user_mention INTEGER NOT NULL DEFAULT 0
+  user_mention INTEGER NOT NULL DEFAULT 0,
+  group_scope TEXT,
+  group_scope_group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE
 );
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(
@@ -1017,4 +1019,7 @@ CREATE INDEX idx_connections_group_member_id ON connections(group_member_id);
 CREATE INDEX idx_chat_items_group_id_shared_msg_id ON chat_items(
   group_id,
   shared_msg_id
+);
+CREATE INDEX idx_chat_items_group_scope_group_member_id ON chat_items(
+  group_scope_group_member_id
 );

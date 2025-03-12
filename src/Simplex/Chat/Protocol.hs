@@ -77,12 +77,13 @@ import Simplex.Messaging.Version hiding (version)
 -- 11 - fix profile update in business chats (2024-12-05)
 -- 12 - support sending and receiving content reports (2025-01-03)
 -- 14 - support sending and receiving group join rejection (2025-02-24)
+-- 15 - support specifying message scopes for group messages (2025-03-12)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 14
+currentChatVersion = VersionChat 15
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -136,6 +137,10 @@ contentReportsVersion = VersionChat 12
 -- support sending and receiving group join rejection (XGrpLinkReject)
 groupJoinRejectVersion :: VersionChat
 groupJoinRejectVersion = VersionChat 14
+
+-- support group knocking (MsgScope)
+groupKnockingVersion :: VersionChat
+groupKnockingVersion = VersionChat 15
 
 agentToChatVersion :: VersionSMPA -> VersionChat
 agentToChatVersion v
@@ -245,8 +250,9 @@ instance ToJSON SharedMsgId where
 
 data MsgScope
   = MSGroup
-  | MSMember {memberId :: MemberId} -- Admins can use any member id; members can use only their own id
-  -- \| MSDirect -- directly between members
+  | MSReports -- TODO [knocking] add memberId, same as admins scope?
+  | MSAdmins {memberId :: MemberId} -- Admins can use any member id; members can use only their own id
+  | MSDirect -- directly between members
   deriving (Eq, Show)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "MS") ''MsgScope)
@@ -257,8 +263,7 @@ data MsgRef = MsgRef
   { msgId :: Maybe SharedMsgId,
     sentAt :: UTCTime,
     sent :: Bool,
-    memberId :: Maybe MemberId, -- must be present in all group message references, both referencing sent and received
-    scope :: Maybe MsgScope
+    memberId :: Maybe MemberId -- must be present in all group message references, both referencing sent and received
   }
   deriving (Eq, Show)
 
