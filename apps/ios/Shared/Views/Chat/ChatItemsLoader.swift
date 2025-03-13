@@ -427,7 +427,7 @@ private func indexToInsertAround(_ chatType: ChatType, _ lastNew: ChatItem?, to:
     return (to.count, splits.count)
 }
 
-func indexToInsertAroundTest() {
+private func indexToInsertAroundTest() {
     func assert(_ one: (Int, Int), _ two: (Int, Int)) {
         if one != two {
             logger.debug("\(String(describing: one)) != \(String(describing: two))")
