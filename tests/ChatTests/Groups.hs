@@ -103,7 +103,7 @@ chatGroupTests = do
   describe "group links - join rejection" $ do
     it "reject member joining via group link - blocked name" testGLinkRejectBlockedName
   describe "group links - manual acceptance" $ do
-    fit "manually accept member joining via group link" testGLinkManualAcceptMember
+    it "manually accept member joining via group link" testGLinkManualAcceptMember
     it "delete pending member" testGLinkDeletePendingMember
   describe "group link connection plan" $ do
     it "ok to connect; known group" testPlanGroupLinkKnown
