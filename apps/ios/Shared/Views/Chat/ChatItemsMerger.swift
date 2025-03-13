@@ -32,7 +32,6 @@ struct MergedItems: Hashable, Equatable {
 
         let unreadAfterItemId = chatState.unreadAfterItemId
         let itemSplits = chatState.splits
-        var orderedSplits: [Int64] = []
         var mergedItems: [MergedItem] = []
         // Indexes of splits here will be related to reversedChatItems, not chatModel.chatItems
         var splitRanges: [SplitRange] = []
@@ -51,10 +50,6 @@ struct MergedItems: Hashable, Equatable {
             let next = index + 1 < items.count ? items[index + 1] : nil
             let category = item.mergeCategory
             let itemIsSplit = itemSplits.contains(item.id)
-
-            if itemIsSplit {
-                orderedSplits.insert(item.id, at: 0)
-            }
 
             if item.id == unreadAfterItemId {
                 unreadBefore = unreadCount - chatState.unreadAfter
@@ -121,10 +116,6 @@ struct MergedItems: Hashable, Equatable {
             }
             indexInParentItems[item.id] = visibleItemIndexInParent
             index += 1
-        }
-        if itemSplits != orderedSplits {
-            logger.warning("Splits were unordered, manually ordered them, was \(String(describing: itemSplits)), now \(String(describing: orderedSplits))")
-            chatState.splits = orderedSplits
         }
         return MergedItems(
             items: mergedItems,

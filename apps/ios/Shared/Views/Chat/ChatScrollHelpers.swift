@@ -57,15 +57,19 @@ func preloadIfNeeded(
     else {
         return
     }
-    state.preloading = true
     if state.prevFirstVisible != listState.firstVisibleItemId as! Int64 || state.prevItemsCount != mergedItems.boxedValue.indexInParentItems.count {
-        state.prevFirstVisible = listState.firstVisibleItemId as! Int64
-        state.prevItemsCount = mergedItems.boxedValue.indexInParentItems.count
+        state.preloading = true
         let allowLoadMore = allowLoadMoreItems.wrappedValue
         Task {
             defer { state.preloading = false }
+            var triedToLoad = true
             await preloadItems(mergedItems.boxedValue, allowLoadMore, listState, ignoreLoadingRequests) { pagination in
-                await loadItems(false, pagination)
+                triedToLoad = await loadItems(false, pagination)
+                return triedToLoad
+            }
+            if triedToLoad {
+                state.prevFirstVisible = listState.firstVisibleItemId as! Int64
+                state.prevItemsCount = mergedItems.boxedValue.indexInParentItems.count
             }
             // it's important to ask last items when the view is fully covered with items. Otherwise, visible items from one
             // split will be merged with last items and position of scroll will change unexpectedly.
@@ -74,6 +78,7 @@ func preloadIfNeeded(
             }
         }
     } else if listState.itemsCanCoverScreen && !ItemsModel.shared.lastItemsLoaded {
+        state.preloading = true
         Task {
             defer { state.preloading = false }
             await loadLastItems()
@@ -119,6 +124,7 @@ async {
         let triedToLoad = await loadItems(ChatPagination.before(chatItemId: loadFromItemId, count: ChatPagination.PRELOAD_COUNT))
         if triedToLoad && sizeWas == ItemsModel.shared.reversedChatItems.count && firstItemIdWas == ItemsModel.shared.reversedChatItems.last?.id {
             ignoreLoadingRequests.wrappedValue = loadFromItemId
+            return false
         }
         return triedToLoad
     }
