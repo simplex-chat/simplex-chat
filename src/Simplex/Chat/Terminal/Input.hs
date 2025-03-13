@@ -32,6 +32,7 @@ import Simplex.Chat.Library.Commands
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Styled
+import Simplex.Chat.Terminal.Commands
 import Simplex.Chat.Terminal.Output
 import Simplex.Chat.Types (User (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
@@ -56,17 +57,19 @@ getKey =
     _ -> getKey
 
 runInputLoop :: ChatTerminal -> ChatController -> IO ()
-runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
+runInputLoop ct@ChatTerminal {termState, liveMessageState} cc@ChatController {currentUser} = forever $ do
   s <- atomically . readTBQueue $ inputQ cc
   rh <- readTVarIO $ currentRemoteHost cc
   let bs = encodeUtf8 $ T.pack s
-      cmd = parseChatCommand bs
-      rh' = if either (const False) allowRemoteCommand cmd then rh else Nothing
-  unless (isMessage cmd) $ echo s
-  r <- runReaderT (execChatCommand rh' bs) cc
-  processResp s cmd rh r
-  printRespToTerminal ct cc False rh r
-  startLiveMessage cmd r
+  case parseTtyCommand bs of
+    Left e -> (`chatCmdError` e) <$> readTVarIO currentUser
+    Right cmd -> do
+      unless (isMessage cmd) $ echo s
+      let rh' = if allowRemoteCommand cmd then rh else Nothing
+      r <- runReaderT (execTtyCommand rh' cmd bs) cc
+      processResp s cmd rh r
+      printRespToTerminal ct cc False rh r
+      startLiveMessage cmd r
   where
     echo s = printToTerminal ct [plain s]
     processResp s cmd rh = \case
@@ -83,22 +86,22 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
       CRChatCmdError _ _ -> when (isMessage cmd) $ echo s
       CRChatError _ _ -> when (isMessage cmd) $ echo s
       CRCmdOk _ -> case cmd of
-        Right APIDeleteUser {} -> setActive ct ""
+        APIDeleteUser {} -> setActive ct ""
         _ -> pure ()
       _ -> pure ()
     isMessage = \case
-      Right SendMessage {} -> True
-      Right SendLiveMessage {} -> True
-      Right SendFile {} -> True
-      Right SendMessageQuote {} -> True
-      Right ForwardMessage {} -> True
-      Right ForwardLocalMessage {} -> True
-      Right SendGroupMessageQuote {} -> True
-      Right ForwardGroupMessage {} -> True
-      Right SendMessageBroadcast {} -> True
+      TtyChatCommand SendMessage {} -> True
+      TtyChatCommand SendLiveMessage {} -> True
+      TtyChatCommand SendFile {} -> True
+      TtyChatCommand SendMessageQuote {} -> True
+      TtyChatCommand ForwardMessage {} -> True
+      TtyChatCommand ForwardLocalMessage {} -> True
+      TtyChatCommand SendGroupMessageQuote {} -> True
+      TtyChatCommand ForwardGroupMessage {} -> True
+      TtyChatCommand SendMessageBroadcast {} -> True
       _ -> False
-    startLiveMessage :: Either a ChatCommand -> ChatResponse -> IO ()
-    startLiveMessage (Right (SendLiveMessage chatName msg)) (CRNewChatItems {chatItems = [AChatItem cType SMDSnd _ ChatItem {meta = CIMeta {itemId}}]}) = do
+    startLiveMessage :: TerminalCommand -> ChatResponse -> IO ()
+    startLiveMessage (TtyChatCommand (SendLiveMessage chatName msg)) (CRNewChatItems {chatItems = [AChatItem cType SMDSnd _ ChatItem {meta = CIMeta {itemId}}]}) = do
       whenM (isNothing <$> readTVarIO liveMessageState) $ do
         let s = T.unpack msg
             int = case cType of SCTGroup -> 5000000; _ -> 3000000 :: Int

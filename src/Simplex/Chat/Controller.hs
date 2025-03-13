@@ -258,7 +258,7 @@ data ChatCommand
   | CreateActiveUser NewUser
   | ListUsers
   | APISetActiveUser UserId (Maybe UserPwd)
-  | SetActiveUser UserName (Maybe UserPwd)
+  -- | SetActiveUser UserName (Maybe UserPwd)
   | SetAllContactReceipts Bool
   | APISetUserContactReceipts UserId UserMsgReceiptSettings
   | SetUserContactReceipts UserMsgReceiptSettings

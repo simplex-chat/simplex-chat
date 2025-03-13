@@ -54,6 +54,7 @@ import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Call
+import Simplex.Chat.Library.Commands.Parsers
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
 import Simplex.Chat.Markdown
@@ -363,10 +364,10 @@ processChatCommand' vr = \case
     user'' <- withFastStore' (`setActiveUser` user')
     chatWriteVar currentUser $ Just user''
     pure $ CRActiveUser user''
-  SetActiveUser uName viewPwd_ -> do
-    tryChatError (withFastStore (`getUserIdByName` uName)) >>= \case
-      Left _ -> throwChatError CEUserUnknown
-      Right userId -> processChatCommand $ APISetActiveUser userId viewPwd_
+  -- SetActiveUser uName viewPwd_ -> do
+  --   tryChatError (withFastStore (`getUserIdByName` uName)) >>= \case
+  --     Left _ -> throwChatError CEUserUnknown
+  --     Right userId -> processChatCommand $ APISetActiveUser userId viewPwd_
   SetAllContactReceipts onOff -> withUser $ \_ -> withFastStore' (`updateAllContactReceipts` onOff) >> ok_
   APISetUserContactReceipts userId' settings -> withUser $ \user -> do
     user' <- privateGetUser userId'
@@ -3808,7 +3809,7 @@ withExpirationDate globalTTL chatItemTTL action = do
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
-  choice
+  cmdChoice
     [ "/mute " *> ((`SetShowMessages` MFNone) <$> chatNameP),
       "/unmute " *> ((`SetShowMessages` MFAll) <$> chatNameP),
       "/unmute mentions " *> ((`SetShowMessages` MFMentions) <$> chatNameP),
@@ -3819,8 +3820,8 @@ chatCommandP =
       "/create user " *> (CreateActiveUser <$> newUserP),
       "/users" $> ListUsers,
       "/_user " *> (APISetActiveUser <$> A.decimal <*> optional (A.space *> jsonP)),
-      ("/user " <|> "/u ") *> (SetActiveUser <$> displayNameP <*> optional (A.space *> pwdP)),
-      "/set receipts all " *> (SetAllContactReceipts <$> onOffP),
+      -- ("/user " <|> "/u ") *> (SetActiveUser <$> displayNameP <*> optional (A.space *> pwdP)),
+      -- "/set receipts all " *> (SetAllContactReceipts <$> onOffP),
       "/_set receipts contacts " *> (APISetUserContactReceipts <$> A.decimal <* A.space <*> receiptSettings),
       "/set receipts contacts " *> (SetUserContactReceipts <$> receiptSettings),
       "/_set receipts groups " *> (APISetUserGroupReceipts <$> A.decimal <* A.space <*> receiptSettings),
@@ -4166,7 +4167,6 @@ chatCommandP =
       "//" *> (CustomChatCommand <$> A.takeByteString)
     ]
   where
-    choice = A.choice . map (\p -> p <* A.takeWhile (== ' ') <* A.endOfInput)
     incognitoP = (A.space *> ("incognito" <|> "i")) $> True <|> pure False
     incognitoOnOffP = (A.space *> "incognito=" *> onOffP) <|> pure False
     imagePrefix = (<>) <$> "data:" <*> ("image/png;base64," <|> "image/jpg;base64,")
@@ -4215,14 +4215,11 @@ chatCommandP =
       enable <- onOffP
       clearOverrides <- (" clear_overrides=" *> onOffP) <|> pure False
       pure UserMsgReceiptSettings {enable, clearOverrides}
-    onOffP = ("on" $> True) <|> ("off" $> False)
     profileNames = (,) <$> displayNameP <*> fullNameP
     newUserP = do
       (cName, fullName) <- profileNames
       let profile = Just Profile {displayName = cName, fullName, image = Nothing, contactLink = Nothing, preferences = Nothing}
       pure NewUser {profile, pastTimestamp = False}
-    jsonP :: J.FromJSON a => Parser a
-    jsonP = J.eitherDecodeStrict' <$?> A.takeByteString
     groupProfile = do
       (gName, fullName) <- profileNames
       let groupPreferences =
@@ -4234,7 +4231,6 @@ chatCommandP =
       pure GroupProfile {displayName = gName, fullName, description = Nothing, image = Nothing, groupPreferences}
     fullNameP = A.space *> textP <|> pure ""
     textP = safeDecodeUtf8 <$> A.takeByteString
-    pwdP = jsonP <|> (UserPwd . safeDecodeUtf8 <$> A.takeTill (== ' '))
     verifyCodeP = safeDecodeUtf8 <$> A.takeWhile (\c -> isDigit c || c == ' ')
     msgTextP = jsonP <|> textP
     stringP = T.unpack . safeDecodeUtf8 <$> A.takeByteString

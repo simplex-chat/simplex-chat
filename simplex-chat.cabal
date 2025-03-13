@@ -41,6 +41,7 @@ library
       Simplex.Chat.Files
       Simplex.Chat.Help
       Simplex.Chat.Library.Commands
+      Simplex.Chat.Library.Commands.Parsers
       Simplex.Chat.Library.Internal
       Simplex.Chat.Library.Subscriber
       Simplex.Chat.Markdown
@@ -79,6 +80,7 @@ library
       Simplex.Chat.Store.Shared
       Simplex.Chat.Styled
       Simplex.Chat.Terminal
+      Simplex.Chat.Terminal.Commands
       Simplex.Chat.Terminal.Input
       Simplex.Chat.Terminal.Main
       Simplex.Chat.Terminal.Notification
