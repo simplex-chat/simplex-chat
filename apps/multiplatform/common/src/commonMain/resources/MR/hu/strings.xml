@@ -2066,7 +2066,7 @@
     <string name="v6_1_better_calls">Továbbfejlesztett hívásélmény</string>
     <string name="v6_1_message_dates_descr">Továbbfejlesztett üzenetdátumok.</string>
     <string name="v6_1_better_user_experience">Továbbfejlesztett felhasználói élmény</string>
-    <string name="v6_1_customizable_message_descr">Testre szabható üzenetbuborékok.</string>
+    <string name="v6_1_customizable_message_descr">Személyre szabható üzenetbuborékok.</string>
     <string name="v6_1_delete_many_messages_descr">Legfeljebb 200 üzenet egyszerre való törlése, vagy moderálása.</string>
     <string name="v6_1_forward_many_messages_descr">Legfeljebb 20 üzenet egyszerre való továbbítása.</string>
     <string name="v6_1_better_calls_descr">Hang/Videó váltása hívás közben.</string>
