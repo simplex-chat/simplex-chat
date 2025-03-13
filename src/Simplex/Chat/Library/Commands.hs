@@ -544,7 +544,6 @@ processChatCommand' vr = \case
       mapM_ assertNoMentions cms
       withContactLock "sendMessage" chatId $
         sendContactContentMessages user chatId live itemTTL (L.map composedMessageReq cms)
-    -- TODO [knocking] pending member should pass GCSDirect scope when sending to host
     SRGroup chatId gsScope ->
       withGroupLock "sendMessage" chatId $ do
         (gInfo, cmrs) <- withFastStore $ \db -> do
@@ -579,7 +578,7 @@ processChatCommand' vr = \case
       gInfo <- withFastStore $ \db -> getGroupInfo db vr user gId
       let mc = MCReport reportText reportReason
           cm = ComposedMessage {fileSource = Nothing, quotedItemId = Just reportedItemId, msgContent = mc, mentions = M.empty}
-      sendGroupContentMessages user gInfo GCSReports False Nothing [composedMessageReq cm]
+      sendGroupContentMessages user gInfo (GCSMemberSupport Nothing) False Nothing [composedMessageReq cm]
   ReportMessage {groupName, contactName_, reportReason, reportedMessage} -> withUser $ \user -> do
     gId <- withFastStore $ \db -> getGroupIdByName db user groupName
     reportedItemId <- withFastStore $ \db -> getGroupChatItemIdByText db user gId contactName_ reportedMessage
@@ -626,8 +625,9 @@ processChatCommand' vr = \case
                     then do
                       ciMentions <- withFastStore $ \db -> getCIMentions db user gInfo ft_ mentions
                       let mentions' = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
-                      -- TODO [knocking] send separately to pending approval member
-                      SndMessage {msgId} <- sendGroupMessage user gInfo ms (XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
+                      -- TODO [knocking] use GroupChatScope from chat item
+                      let recipientMs = filter memberCurrent ms
+                      SndMessage {msgId} <- sendGroupMessage user gInfo GCSGroup recipientMs (XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
                       ci' <- withFastStore' $ \db -> do
                         currentTs <- liftIO getCurrentTime
                         when changed $
@@ -681,8 +681,9 @@ processChatCommand' vr = \case
           assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
           let msgIds = itemsMsgIds items
               events = L.nonEmpty $ map (`XMsgDel` Nothing) msgIds
-          -- TODO [knocking] validate: only current members or only single pending approval member
-          mapM_ (sendGroupMessages user gInfo ms) events
+          -- TODO [knocking] use GroupChatScope of deleted items
+          let recipientMs = filter memberCurrent ms
+          mapM_ (sendGroupMessages user gInfo GCSGroup recipientMs) events
           delGroupChatItems user gInfo items False
     CTLocal -> do
       (nf, items) <- getCommandLocalChatItems user chatId itemIds
@@ -706,7 +707,8 @@ processChatCommand' vr = \case
   APIDeleteMemberChatItem gId itemIds -> withUser $ \user -> withGroupLock "deleteChatItem" gId $ do
     (gInfo, items) <- getCommandGroupChatItems user gId itemIds
     ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
-    delGroupChatItemsForMembers user gInfo ms items
+    let recipientMs = filter memberCurrent ms
+    delGroupChatItemsForMembers user gInfo recipientMs items
   APIArchiveReceivedReports gId -> withUser $ \user -> withFastStore $ \db -> do
     g <- getGroupInfo db vr user gId
     deleteTs <- liftIO getCurrentTime
@@ -720,7 +722,8 @@ processChatCommand' vr = \case
       CIDMInternalMark -> markGroupCIsDeleted user gInfo items True Nothing =<< liftIO getCurrentTime
       CIDMBroadcast -> do
         ms <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
-        delGroupChatItemsForMembers user gInfo ms items
+        let recipientMs = filter memberCurrent ms
+        delGroupChatItemsForMembers user gInfo recipientMs items
     where
       isRcvReport = \case
         CChatItem _ ChatItem {content = CIRcvMsgContent (MCReport {})} -> True
@@ -759,8 +762,9 @@ processChatCommand' vr = \case
             let GroupMember {memberId = itemMemberId} = chatItemMember g ci
             rs <- withFastStore' $ \db -> getGroupReactions db g membership itemMemberId itemSharedMId True
             checkReactionAllowed rs
-            -- TODO [knocking] send separately to pending approval member
-            SndMessage {msgId} <- sendGroupMessage user g ms (XMsgReact itemSharedMId (Just itemMemberId) reaction add)
+            -- TODO [knocking] use GroupChatScope from chat item
+            let recipientMs = filter memberCurrent ms
+            SndMessage {msgId} <- sendGroupMessage user g GCSGroup recipientMs (XMsgReact itemSharedMId (Just itemMemberId) reaction add)
             createdAt <- liftIO getCurrentTime
             reactions <- withFastStore' $ \db -> do
               setGroupReaction db g membership itemMemberId itemSharedMId True reaction add msgId createdAt
@@ -1079,8 +1083,8 @@ processChatCommand' vr = \case
       withGroupLock "deleteChat group" chatId . procCmd $ do
         deleteCIFiles user filesInfo
         let doSendDel = memberActive membership && isOwner
-        -- TODO [knocking] send to pending approval members (move `memberCurrent` filter from sendGroupMessages_ to call sites)
-        when doSendDel . void $ sendGroupMessage' user gInfo members XGrpDel
+            recipientMs = filter memberCurrentOrPending members
+        when doSendDel . void $ sendGroupMessage' user gInfo recipientMs XGrpDel
         deleteGroupLinkIfExists user gInfo
         deleteMembersConnections' user members doSendDel
         updateCIGroupInvitationStatus user gInfo CIGISRejected `catchChatError` \_ -> pure ()
@@ -2085,7 +2089,8 @@ processChatCommand' vr = \case
         Nothing -> pure ([], [], [])
         Just memsToChange' -> do
           let events = L.map (\GroupMember {memberId} -> XGrpMemRole memberId newRole) memsToChange'
-          (msgs_, _gsr) <- sendGroupMessages user gInfo members events
+              recipientMs = filter memberCurrent members
+          (msgs_, _gsr) <- sendGroupMessages user gInfo GCSGroup recipientMs events
           let itemsData = zipWith (fmap . sndItemData) memsToChange (L.toList msgs_)
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo) Nothing itemsData Nothing False
           when (length cis_ /= length memsToChange) $ logError "changeRoleCurrentMems: memsToChange and cis_ length mismatch"
@@ -2129,7 +2134,8 @@ processChatCommand' vr = \case
         Just blockMems' -> do
           let mrs = if blockFlag then MRSBlocked else MRSUnrestricted
               events = L.map (\GroupMember {memberId} -> XGrpMemRestrict memberId MemberRestrictions {restriction = mrs}) blockMems'
-          (msgs_, _gsr) <- sendGroupMessages user gInfo remainingMems events
+              recipientMs = filter memberCurrent remainingMems
+          (msgs_, _gsr) <- sendGroupMessages_ user gInfo recipientMs events
           let itemsData = zipWith (fmap . sndItemData) blockMems (L.toList msgs_)
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo) Nothing itemsData Nothing False
           when (length cis_ /= length blockMems) $ logError "blockMembers: blockMems and cis_ length mismatch"
@@ -2155,8 +2161,10 @@ processChatCommand' vr = \case
       when (memCount > 1 && anyAdmin) $ throwChatError $ CECommandError "can't remove multiple members when admins selected"
       assertUserGroupRole gInfo $ max GRAdmin maxRole
       (errs1, deleted1) <- deleteInvitedMems user invitedMems
-      (errs2, deleted2, acis2) <- deleteMemsSend user gInfo members currentMems
-      rs <- forM pendingMems $ \m -> deleteMemsSend user gInfo [m] [m] -- TODO [knocking]
+      let recipientMs = filter memberCurrent members
+      (errs2, deleted2, acis2) <- deleteMemsSend user gInfo GCSGroup recipientMs currentMems
+      -- TODO [knocking] list of recipients should include other admins
+      rs <- forM pendingMems $ \m -> deleteMemsSend user gInfo (GCSMemberSupport (Just $ groupMemberId' m)) [m] [m]
       let (errs3, deleted3, acis3) = concatTuples rs
           acis = acis2 <> acis3
           errs = errs1 <> errs2 <> errs3
@@ -2186,12 +2194,12 @@ processChatCommand' vr = \case
           delMember db m = do
             deleteGroupMember db user m
             pure m {memberStatus = GSMemRemoved}
-      deleteMemsSend :: User -> GroupInfo -> [GroupMember] -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem])
-      deleteMemsSend user gInfo sendToMems memsToDelete = case L.nonEmpty memsToDelete of
+      deleteMemsSend :: User -> GroupInfo -> GroupChatScope -> [GroupMember] -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem])
+      deleteMemsSend user gInfo gcScope sendToMems memsToDelete = case L.nonEmpty memsToDelete of
         Nothing -> pure ([], [], [])
         Just memsToDelete' -> do
           let events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId withMessages) memsToDelete'
-          (msgs_, _gsr) <- sendGroupMessages user gInfo sendToMems events
+          (msgs_, _gsr) <- sendGroupMessages user gInfo gcScope sendToMems events
           let itemsData = zipWith (fmap . sndItemData) memsToDelete (L.toList msgs_)
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo) Nothing itemsData Nothing False
           when (length cis_ /= length memsToDelete) $ logError "deleteCurrentMems: memsToDelete and cis_ length mismatch"
@@ -2219,8 +2227,8 @@ processChatCommand' vr = \case
     filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
     withGroupLock "leaveGroup" groupId . procCmd $ do
       cancelFilesInProgress user filesInfo
-      -- TODO [knocking] send to pending approval members (move `memberCurrent` filter from sendGroupMessages_ to call sites)
-      msg <- sendGroupMessage' user gInfo members XGrpLeave
+      let recipientMs = filter memberCurrentOrPending members
+      msg <- sendGroupMessage' user gInfo recipientMs XGrpLeave
       ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent SGEUserLeft)
       toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci]
       -- TODO delete direct connections that were unused
@@ -2440,8 +2448,9 @@ processChatCommand' vr = \case
                   void . sendDirectContactMessage user contact $ XFileCancel sharedMsgId
                 Just (ChatRef CTGroup groupId) -> do
                   (Group gInfo ms, sharedMsgId) <- withFastStore $ \db -> (,) <$> getGroup db vr user groupId <*> getSharedMsgIdByFileId db userId fileId
-                  -- TODO [knocking] send separately to pending approval member
-                  void . sendGroupMessage user gInfo ms $ XFileCancel sharedMsgId
+                  -- TODO [knocking] use GroupChatScope from chat item
+                  let recepientMs = filter memberCurrent ms
+                  void . sendGroupMessage user gInfo GCSGroup recepientMs $ XFileCancel sharedMsgId
                 Just _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
               ci <- withFastStore $ \db -> lookupChatItemByFileId db vr user fileId
               pure $ CRSndFileCancelled user ci ftm fts
@@ -2833,11 +2842,14 @@ processChatCommand' vr = \case
             GroupMember {memberProfile = LocalProfile {displayName, fullName, image}} <-
               withStore $ \db -> getGroupMemberByMemberId db vr user g businessId
             let p'' = p' {displayName, fullName, image} :: GroupProfile
-            -- TODO [knocking] send to pending approval members (move `memberCurrent` filter from sendGroupMessages_ to call sites)
-            void $ sendGroupMessage user g' oldMs (XGrpInfo p'')
+                recepientMs = filter memberCurrentOrPending oldMs
+            void $ sendGroupMessage user g' GCSGroup recepientMs (XGrpInfo p'')
           let ps' = fromMaybe defaultBusinessGroupPrefs $ groupPreferences p'
-          sendGroupMessage user g' newMs $ XGrpPrefs ps'
-        Nothing -> sendGroupMessage user g' ms (XGrpInfo p')
+              recepientMs = filter memberCurrentOrPending newMs
+          sendGroupMessage user g' GCSGroup recepientMs $ XGrpPrefs ps'
+        Nothing -> do
+          let recepientMs = filter memberCurrentOrPending ms
+          sendGroupMessage user g' GCSGroup recepientMs (XGrpInfo p')
       let cd = CDGroupSnd g'
       unless (sameGroupProfileInfo p p') $ do
         ci <- saveSndChatItem user cd msg (CISndGroupEvent $ SGEGroupUpdated p')
@@ -2862,9 +2874,7 @@ processChatCommand' vr = \case
       assertUserGroupRole gInfo GRAdmin -- TODO GRModerator when most users migrate
       let msgMemIds = itemsMsgMemIds gInfo items
           events = L.nonEmpty $ map (\(msgId, memId) -> XMsgDel msgId (Just memId)) msgMemIds
-      -- TODO [knocking] validate: only current members or only single pending approval member,
-      -- TODO            or prohibit pending approval members (only moderation and reports use this)
-      mapM_ (sendGroupMessages user gInfo ms) events
+      mapM_ (sendGroupMessages_ user gInfo ms) events
       delGroupChatItems user gInfo items True
       where
         assertDeletable :: GroupInfo -> [CChatItem 'CTGroup] -> CM ()
@@ -3192,35 +3202,29 @@ processChatCommand' vr = \case
                 quoteData ChatItem {content = CIRcvMsgContent qmc} = pure (qmc, CIQDirectRcv, False)
                 quoteData _ = throwError SEInvalidQuote
     sendGroupContentMessages :: User -> GroupInfo -> GroupChatScope -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
-    sendGroupContentMessages user gInfo@GroupInfo {membership} gcScope live itemTTL cmrs = do
+    sendGroupContentMessages user gInfo@GroupInfo {groupId, membership} gcScope live itemTTL cmrs = do
       assertMultiSendable live cmrs
       (msgScope, ms, numFileInvs) <- case gcScope of
         GCSGroup -> do
           ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
           pure (MSGroup, ms, length $ filter memberCurrent ms)
-        GCSReports -> do
+        GCSMemberSupport gmId_ -> do
           ms <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
-          let ms' = filter compatibleModerator ms
-          when (null ms') $ throwChatError $ CECommandError "no moderators support receiving reports"
-          pure (MSReports, ms', length $ filter memberCurrent ms')
-          where
-            compatibleModerator GroupMember {activeConn, memberChatVRange} =
-              maxVersion (maybe memberChatVRange peerChatVRange activeConn) >= contentReportsVersion
-        GCSAdmins gmId_ -> do
-          ms <- withFastStore' $ \db -> getGroupAdmins db vr user gInfo
           let ms' = filter compatible ms
-          when (null ms') $ throwChatError $ CECommandError "no admins support message scopes"
+          when (null ms') $ throwChatError $ CECommandError "no admins support this message"
           (msgScope, m_) <- case gmId_ of
-            Nothing -> pure (MSAdmins (memberId' membership), [])
+            Nothing -> pure (MSMember (memberId' membership), [])
             Just gmId -> do
               -- Unlike admins, we don't filter out non-current members here to allow sending to pending members
               m <- withFastStore $ \db -> getGroupMemberById db vr user gmId
-              unless (compatible m) $ throwChatError $ CECommandError "member does not support message scope"
-              pure (MSAdmins (memberId' m), [m])
+              unless (compatible m) $ throwChatError $ CECommandError "member does not support this message"
+              pure (MSMember (memberId' m), [m])
           pure (msgScope, ms' <> m_, length (filter memberCurrent ms') + length m_)
           where
-            compatible GroupMember {activeConn, memberChatVRange} =
-              maxVersion (maybe memberChatVRange peerChatVRange activeConn) >= groupKnockingVersion
+            hasReport = any (\(ComposedMessage {msgContent}, _, _, _) -> isReport msgContent) cmrs
+            compatible GroupMember {activeConn, memberChatVRange}
+              | hasReport = maxVersion (maybe memberChatVRange peerChatVRange activeConn) >= contentReportsVersion
+              | otherwise = maxVersion (maybe memberChatVRange peerChatVRange activeConn) >= groupKnockingVersion
         GCSDirect dmId -> do
           when (dmId == groupMemberId' membership) $ throwChatError $ CECommandError "cannot send to self"
           dm <- withFastStore $ \db -> getGroupMemberById db vr user dmId
@@ -3236,9 +3240,8 @@ processChatCommand' vr = \case
         allowedRole :: Maybe GroupMemberRole
         allowedRole = case gcScope of
           GCSGroup -> Just GRAuthor
-          GCSReports -> Just GRAuthor
-          GCSAdmins Nothing -> Nothing
-          GCSAdmins (Just _gmId) -> Just GRAdmin
+          GCSMemberSupport Nothing -> Nothing
+          GCSMemberSupport (Just _gmId) -> Just GRAdmin
           GCSDirect _
             | memberStatus membership == GSMemPendingApproval -> Nothing
             | otherwise -> Just GRAuthor
@@ -3253,12 +3256,13 @@ processChatCommand' vr = \case
               foldr'
                 (\(ComposedMessage {fileSource, msgContent = mc}, _, (_, ft), _) acc -> prohibitedGroupContent gInfo membership mc ft fileSource True <|> acc)
                 Nothing
-        processComposedMessages :: CM ChatResponse
+        processComposedMessages ::  CM ChatResponse
         processComposedMessages = do
           (fInvs_, ciFiles_) <- L.unzip <$> setupSndFileTransfers numFileInvs
           timed_ <- sndGroupCITimed live gInfo itemTTL
           (chatMsgEvents, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
-          (msgs_, gsr) <- sendGroupMessages user gInfo ms chatMsgEvents
+          let receipientMs = filter memberCurrent ms
+          (msgs_, gsr) <- sendGroupMessages user gInfo GCSGroup receipientMs chatMsgEvents
           let itemsData = prepareSndItemsData (L.toList cmrs) (L.toList ciFiles_) (L.toList quotedItems_) (L.toList msgs_)
               notInHistory_ = gsScopeNotInHistory gcScope
           -- TODO [knocking] pass scope? or include in chat direction?

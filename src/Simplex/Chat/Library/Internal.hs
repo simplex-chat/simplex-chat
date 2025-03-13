@@ -970,8 +970,9 @@ introduceToGroup :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM (
 introduceToGroup _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
 introduceToGroup vr user gInfo@GroupInfo {groupId, membership} m@GroupMember {activeConn = Just conn} = do
   members <- withStore' $ \db -> getGroupMembers db vr user gInfo
-  void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
-  sendIntroductions members
+  let recipientMs = filter memberCurrent members
+  void . sendGroupMessage user gInfo GCSGroup recipientMs . XGrpMemNew $ memberInfo m
+  sendIntroductions recipientMs
   when (groupFeatureAllowed SGFHistory gInfo) sendHistory
   where
     sendIntroductions members = do
@@ -1612,9 +1613,9 @@ deliverMessagesB msgReqs = do
       where
         updatePQ = updateConnPQSndEnabled db connId pqSndEnabled'
 
-sendGroupMessage :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM SndMessage
-sendGroupMessage user gInfo members chatMsgEvent = do
-  sendGroupMessages user gInfo members (chatMsgEvent :| []) >>= \case
+sendGroupMessage :: MsgEncodingI e => User -> GroupInfo -> GroupChatScope -> [GroupMember] -> ChatMsgEvent e -> CM SndMessage
+sendGroupMessage user gInfo gcScope members chatMsgEvent = do
+  sendGroupMessages user gInfo gcScope members (chatMsgEvent :| []) >>= \case
     ((Right msg) :| [], _) -> pure msg
     _ -> throwChatError $ CEInternalError "sendGroupMessage: expected 1 message"
 
@@ -1624,9 +1625,9 @@ sendGroupMessage' user gInfo members chatMsgEvent =
     ((Right msg) :| [], _) -> pure msg
     _ -> throwChatError $ CEInternalError "sendGroupMessage': expected 1 message"
 
-sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
-sendGroupMessages user gInfo members events = do
-  -- TODO [knocking] when sending to all, send profile update to pending approval members too, then filter for next step?
+sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> GroupChatScope -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
+sendGroupMessages user gInfo gcScope members events = do
+  -- TODO [knocking] send current profile to pending member after approval?
   when shouldSendProfileUpdate $
     sendProfileUpdate `catchChatError` (toView . CRChatError (Just user))
   sendGroupMessages_ user gInfo members events
@@ -1634,6 +1635,7 @@ sendGroupMessages user gInfo members events = do
     User {profile = p, userMemberProfileUpdatedAt} = user
     GroupInfo {userMemberProfileSentAt} = gInfo
     shouldSendProfileUpdate
+      | gcScope /= GCSGroup = False
       | incognitoMembership gInfo = False
       | otherwise =
           case (userMemberProfileSentAt, userMemberProfileUpdatedAt) of
@@ -1654,16 +1656,13 @@ data GroupSndResult = GroupSndResult
   }
 
 sendGroupMessages_ :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
-sendGroupMessages_ _user gInfo@GroupInfo {groupId} members events = do
+sendGroupMessages_ _user gInfo@GroupInfo {groupId} recipientMembers events = do
   let idsEvts = L.map (GroupId groupId,) events
   sndMsgs_ <- lift $ createSndMessages idsEvts
-  -- TODO [knocking] Possibly we need to pass GroupSndScope through all functions to here to avoid ad-hoc filtering.
-  recipientMembers <- case members of
-    [m] | memberStatus m == GSMemPendingApproval -> pure [m]
-    _ -> liftIO $ shuffleMembers (filter memberCurrent members)
+  recipientMembers' <- liftIO $ shuffleMembers recipientMembers
   let msgFlags = MsgFlags {notification = any (hasNotification . toCMEventTag) events}
       (toSendSeparate, toSendBatched, toPending, forwarded, _, dups) =
-        foldr' addMember ([], [], [], [], S.empty, 0 :: Int) recipientMembers
+        foldr' (addMember recipientMembers') ([], [], [], [], S.empty, 0 :: Int) recipientMembers'
   when (dups /= 0) $ logError $ "sendGroupMessages_: " <> tshow dups <> " duplicate members"
   -- TODO PQ either somehow ensure that group members connections cannot have pqSupport/pqEncryption or pass Off's here
   -- Deliver to toSend members
@@ -1685,7 +1684,7 @@ sendGroupMessages_ _user gInfo@GroupInfo {groupId} members events = do
       liftM2 (<>) (shuffle adminMs) (shuffle otherMs)
       where
         isAdmin GroupMember {memberRole} = memberRole >= GRAdmin
-    addMember m acc@(toSendSeparate, toSendBatched, pending, forwarded, !mIds, !dups) =
+    addMember members m acc@(toSendSeparate, toSendBatched, pending, forwarded, !mIds, !dups) =
       case memberSendAction gInfo events members m of
         Just a
           | mId `S.member` mIds -> (toSendSeparate, toSendBatched, pending, forwarded, mIds, dups + 1)

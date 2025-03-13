@@ -1047,6 +1047,9 @@ memberActive m = case memberStatus m of
 memberCurrent :: GroupMember -> Bool
 memberCurrent = memberCurrent' . memberStatus
 
+memberCurrentOrPending :: GroupMember -> Bool
+memberCurrentOrPending m = memberCurrent m || memberStatus m == GSMemPendingApproval
+
 -- update getGroupSummary if this is changed
 memberCurrent' :: GroupMemberStatus -> Bool
 memberCurrent' = \case

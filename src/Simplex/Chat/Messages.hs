@@ -188,25 +188,22 @@ isUserMention ChatItem {meta = CIMeta {userMention}} = userMention
 -- other members, if one was promoted to admin.
 data GroupChatScope
   = GCSGroup
-  | GCSReports -- TODO [knocking] currently only member can send in this scope; for moderators it would require groupMemberId
-  | GCSAdmins {groupMemberId_ :: Maybe GroupMemberId}
-  | GCSDirect {groupMemberId :: GroupMemberId} -- directly between members
+  | GCSMemberSupport {groupMemberId_ :: Maybe GroupMemberId} -- Nothing means own conversation with admins
+  | GCSDirect {groupMemberId :: GroupMemberId} -- Directly between members
   deriving (Eq, Show)
 
 fromRcvMsgScope :: GroupInfo -> MsgScope -> GroupChatScope
 fromRcvMsgScope GroupInfo {membership} = \case
   MSGroup -> GCSGroup
-  MSReports -> GCSReports
-  MSAdmins mId
-    | sameMemberId mId membership -> GCSAdmins Nothing
-    | otherwise -> GCSAdmins (Just 1) -- TODO [knocking] pass Group with members and find? use MemberId in GCS?
+  MSMember mId
+    | sameMemberId mId membership -> GCSMemberSupport Nothing
+    | otherwise -> GCSMemberSupport (Just 1) -- TODO [knocking] pass Group with members and find? use MemberId in GCS?
   MSDirect -> GCSDirect 1 -- TODO [knocking] here we should know which member we've received message from
 
 gsScopeNotInHistory :: GroupChatScope -> Maybe NotInHistory
 gsScopeNotInHistory = \case
   GCSGroup -> Nothing
-  GCSReports -> Just NotInHistory
-  GCSAdmins _ -> Just NotInHistory
+  GCSMemberSupport _ -> Just NotInHistory
   GCSDirect _ -> Just NotInHistory
 
 data CIDirection (c :: ChatType) (d :: MsgDirection) where

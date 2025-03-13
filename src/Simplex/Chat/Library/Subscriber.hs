@@ -910,7 +910,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 let GroupMember {memberId} = m
                     ms = forwardedToGroupMembers (introducedMembers <> invitedMembers) forwardedMsgs'
                     events = L.map (\cm -> XGrpMsgForward memberId cm brokerTs) forwardedMsgs'
-                unless (null ms) $ void $ sendGroupMessages user gInfo ms events
+                unless (null ms) $ void $ sendGroupMessages_ user gInfo ms events
       RCVD msgMeta msgRcpt ->
         withAckMessage' "group rcvd" agentConnId msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt

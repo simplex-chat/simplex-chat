@@ -250,8 +250,7 @@ instance ToJSON SharedMsgId where
 
 data MsgScope
   = MSGroup
-  | MSReports -- TODO [knocking] add memberId, same as admins scope?
-  | MSAdmins {memberId :: MemberId} -- Admins can use any member id; members can use only their own id
+  | MSMember {memberId :: MemberId} -- Admins can use any member id; members can use only their own id
   | MSDirect -- directly between members
   deriving (Eq, Show)
 
