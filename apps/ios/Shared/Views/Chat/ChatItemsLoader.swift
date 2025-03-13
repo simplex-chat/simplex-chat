@@ -241,10 +241,14 @@ private func removeDuplicatesAndModifySplitsOnAfterPagination(
     let indexInSplitRanges = splits.firstIndex(of: paginationChatItemId)
     // Currently, it should always load from split range
     let loadingFromSplitRange = indexInSplitRanges != nil
-    var splitsToMerge: [Int64] = if let indexInSplitRanges, loadingFromSplitRange && indexInSplitRanges + 1 <= splits.count {
-        Array(splits[indexInSplitRanges + 1 ..< splits.count])
+    let topSplits: [Int64]
+    var splitsToMerge: [Int64]
+    if let indexInSplitRanges, loadingFromSplitRange && indexInSplitRanges + 1 <= splits.count {
+        splitsToMerge = Array(splits[indexInSplitRanges + 1 ..< splits.count])
+        topSplits = Array(splits[0 ..< indexInSplitRanges + 1])
     } else {
-        []
+        splitsToMerge = []
+        topSplits = []
     }
     newItems.removeAll(where: { new in
         let duplicate = newIds.contains(new.id)
@@ -264,8 +268,8 @@ private func removeDuplicatesAndModifySplitsOnAfterPagination(
     })
     var newSplits: [Int64] = []
     if firstItemIdBelowAllSplits != nil {
-        // no splits anymore, all were merged with bottom items
-        newSplits = []
+        // no splits below anymore, all were merged with bottom items
+        newSplits = topSplits
     } else {
         if !splitsToRemove.isEmpty {
             var new = splits
