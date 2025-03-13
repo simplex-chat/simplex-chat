@@ -11,30 +11,27 @@ getCaptchaStr n s = do
   i <- randomRIO (0, length captchaChars - 1)
   let c = captchaChars !! i
   getCaptchaStr (n - 1) (c : s)
+  where
+    captchaChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
 matchCaptchaStr :: T.Text -> T.Text -> Bool
 matchCaptchaStr captcha guess = T.length captcha == T.length guess && matchChars (T.zip captcha guess)
   where
     matchChars [] = True
-    matchChars ((c, g) : cs) =
-      let g' = fromMaybe g $ M.lookup g captchaMatches
-       in c == g' && matchChars cs
-
-captchaChars :: String
-captchaChars = "23456789ABCDEFGHIJKLMNOPQRSTUVWXYZabdefghijkmnpqrty"
-
-captchaMatches :: M.Map Char Char
-captchaMatches =
-  M.fromList
-    [ ('0', 'O'),
-      ('1', 'I'),
-      ('c', 'C'),
-      ('l', 'I'),
-      ('o', 'O'),
-      ('s', 'S'),
-      ('u', 'U'),
-      ('v', 'V'),
-      ('w', 'W'),
-      ('x', 'X'),
-      ('z', 'Z')
-    ]
+    matchChars ((c, g) : cs) = matchChar c == matchChar g && matchChars cs
+    matchChar c = fromMaybe c $ M.lookup c captchaMatches
+    captchaMatches =
+      M.fromList
+        [ ('0', 'O'),
+          ('1', 'I'),
+          ('c', 'C'),
+          ('l', 'I'),
+          ('o', 'O'),
+          ('p', 'P'),
+          ('s', 'S'),
+          ('u', 'U'),
+          ('v', 'V'),
+          ('w', 'W'),
+          ('x', 'X'),
+          ('z', 'Z')
+        ]
