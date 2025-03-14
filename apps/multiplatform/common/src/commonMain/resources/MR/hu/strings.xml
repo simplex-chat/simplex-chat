@@ -2321,7 +2321,7 @@
     <string name="v6_3_set_message_expiration_in_chats">Üzenetek eltűnési idejének módosítása a csevegésekben.</string>
     <string name="v6_3_better_groups_performance">Továbbfejlesztett, gyorsabb csoportok</string>
     <string name="v6_3_better_privacy_and_security">Továbbfejlesztett adatvédelem és biztonság</string>
-    <string name="v6_3_mentions_descr">Értesítések említéskor.</string>
+    <string name="v6_3_mentions_descr">Értesítések az említésekről.</string>
     <string name="v6_3_organize_chat_lists">Csevegések listákba szervezése</string>
     <string name="group_preview_rejected">elutasítva</string>
     <string name="group_member_status_rejected">elutasítva</string>
