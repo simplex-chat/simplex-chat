@@ -795,6 +795,35 @@ data ReceivedGroupInvitation = ReceivedGroupInvitation
   }
   deriving (Eq, Show)
 
+type GroupConversationId = Int64
+
+data GroupConversation = GroupConversation
+  { groupConversationId :: GroupConversationId,
+    groupId :: GroupId,
+    conversationType :: GroupConversationType,
+    chatTs :: UTCTime,
+    unread :: Bool,
+    archived :: Bool,
+    createdAt :: UTCTime,
+    updatedAt :: UTCTime
+  }
+  deriving (Show)
+
+data GroupConversationType
+  = GCTMemberSupport {member_ :: Maybe GroupMember}
+  -- \| GCTDirect {member :: GroupMember}
+  deriving (Show)
+
+-- TODO [knocking] From/ToField instances
+data GroupConversationTypeTag
+  = GCTMemberSupport_
+  -- \| GCTDirect_
+
+toGroupConversationTypeTag :: GroupConversationType -> GroupConversationTypeTag
+toGroupConversationTypeTag = \case
+  GCTMemberSupport {} -> GCTMemberSupport_
+  -- GCTDirect {} -> GCTDirect_
+
 type GroupMemberId = Int64
 
 -- memberProfile's profileId is COALESCE(member_profile_id, contact_profile_id), member_profile_id is non null
@@ -1829,6 +1858,10 @@ $(JQ.deriveJSON defaultJSON ''Connection)
 $(JQ.deriveJSON defaultJSON ''PendingContactConnection)
 
 $(JQ.deriveJSON defaultJSON ''GroupMember)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GCT") ''GroupConversationType)
+
+$(JQ.deriveJSON defaultJSON ''GroupConversation)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "MF") ''MsgFilter)
 

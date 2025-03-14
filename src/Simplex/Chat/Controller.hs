@@ -301,7 +301,7 @@ data ChatCommand
   | APIGetAppSettings (Maybe AppSettings)
   | APIGetChatTags UserId
   | APIGetChats {userId :: UserId, pendingConnections :: Bool, pagination :: PaginationByTime, query :: ChatListQuery}
-  | APIGetChat ChatRef (Maybe MsgContentTag) ChatPagination (Maybe String)
+  | APIGetChat ChatRef (Maybe GroupChatFilter) ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
   | APIGetChatItemInfo ChatRef ChatItemId
   | APISendMessages {sendRef :: SendRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
@@ -364,7 +364,8 @@ data ChatCommand
   | APILeaveGroup GroupId
   | APIListMembers GroupId
   | APIListGroupConversations GroupId
-  | APIArchiveGroupConversation GroupId GroupMemberId -- TODO [knocking] conversation with admins?
+  | APIDeleteGroupConversations GroupId (NonEmpty GroupConversationId)
+  | APIArchiveGroupConversations GroupId (NonEmpty GroupConversationId)
   | APIUpdateGroupProfile GroupId GroupProfile
   | APICreateGroupLink GroupId GroupMemberRole
   | APIGroupLinkMemberRole GroupId GroupMemberRole
@@ -660,8 +661,9 @@ data ChatResponse
   | CRWelcome {user :: User}
   | CRGroupCreated {user :: User, groupInfo :: GroupInfo}
   | CRGroupMembers {user :: User, group :: Group}
-  -- TODO [knocking] special type? how to include conversation with admins?
-  | CRGroupConversations {user :: User, groupInfo :: GroupInfo, memberConversations :: [GroupMember]}
+  | CRGroupConversations {user :: User, groupInfo :: GroupInfo, groupConversations :: [GroupConversation]}
+  | CRGroupConversationsArchived {user :: User, groupInfo :: GroupInfo, archivedGroupConversations :: [GroupConversation]}
+  | CRGroupConversationsDeleted {user :: User, groupInfo :: GroupInfo, deletedGroupConversations :: [GroupConversation]}
   | CRContactsList {user :: User, contacts :: [Contact]}
   | CRUserContactLink {user :: User, contactLink :: UserContactLink}
   | CRUserContactLinkUpdated {user :: User, contactLink :: UserContactLink}
@@ -911,6 +913,11 @@ sendToChatRef :: SendRef -> ChatRef
 sendToChatRef = \case
   SRDirect cId -> ChatRef CTDirect cId
   SRGroup gId _ -> ChatRef CTGroup gId
+
+data GroupChatFilter
+  = GCFMsgContentTag MsgContentTag
+  | GCFConversationId GroupConversationId
+  deriving (Show)
 
 data ChatPagination
   = CPLast Int

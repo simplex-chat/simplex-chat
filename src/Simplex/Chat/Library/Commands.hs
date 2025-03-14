@@ -504,17 +504,17 @@ processChatCommand' vr = \case
     (errs, previews) <- partitionEithers <$> withFastStore' (\db -> getChatPreviews db vr user pendingConnections pagination query)
     unless (null errs) $ toView $ CRChatErrors (Just user) (map ChatErrorStore errs)
     pure $ CRApiChats user previews
-  APIGetChat (ChatRef cType cId) contentFilter pagination search -> withUser $ \user -> case cType of
+  APIGetChat (ChatRef cType cId) groupChatFilter pagination search -> withUser $ \user -> case cType of
     -- TODO optimize queries calculating ChatStats, currently they're disabled
     CTDirect -> do
-      when (isJust contentFilter) $ throwChatError $ CECommandError "content filter not supported"
+      when (isJust groupChatFilter) $ throwChatError $ CECommandError "group chat filter not supported"
       (directChat, navInfo) <- withFastStore (\db -> getDirectChat db vr user cId pagination search)
       pure $ CRApiChat user (AChat SCTDirect directChat) navInfo
     CTGroup -> do
-      (groupChat, navInfo) <- withFastStore (\db -> getGroupChat db vr user cId contentFilter pagination search)
+      (groupChat, navInfo) <- withFastStore (\db -> getGroupChat db vr user cId groupChatFilter pagination search)
       pure $ CRApiChat user (AChat SCTGroup groupChat) navInfo
     CTLocal -> do
-      when (isJust contentFilter) $ throwChatError $ CECommandError "content filter not supported"
+      when (isJust groupChatFilter) $ throwChatError $ CECommandError "group chat filter not supported"
       (localChat, navInfo) <- withFastStore (\db -> getLocalChat db user cId pagination search)
       pure $ CRApiChat user (AChat SCTLocal localChat) navInfo
     CTContactRequest -> pure $ chatCmdError (Just user) "not implemented"
@@ -2032,6 +2032,7 @@ processChatCommand' vr = \case
         -- TODO            - additionally archive conversation with member
         -- TODO            - also archive on rejection (removing member)
         -- TODO [knocking] in captcha phase, introduce only to admins (same as on CON in Subscriber)
+        -- TODO            - add field (and special message) to protocol for admins to create group_conversation
         let msg = XGrpLinkAcpt role Nothing
         void $ sendDirectMemberMessage mConn msg groupId
         m' <- withFastStore' $ \db -> updateGroupMemberAccepted db user m role
@@ -2240,13 +2241,19 @@ processChatCommand' vr = \case
   APIListMembers groupId -> withUser $ \user ->
     CRGroupMembers user <$> withFastStore (\db -> getGroup db vr user groupId)
   APIListGroupConversations groupId -> withUser $ \user -> do
+    -- TODO [knocking] get from group_conversations
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
-    -- TODO [knocking] get based on chat_items? group_members? new entity?
     pure $ CRGroupConversations user gInfo []
-  APIArchiveGroupConversation groupId gmId -> withUser $ \user -> do
-    (_gInfo, _m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user gmId
-    -- TODO [knocking] where to save this state: group_members? new entity?
-    ok_
+  APIDeleteGroupConversations groupId _gcId -> withUser $ \user -> do
+    -- TODO [knocking] update in group_conversations, return updated state;
+    -- TODO            validate: prohibit to archive if member is pending (has to communicate approval or rejection)
+    _gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
+    ok_ -- CRGroupConversationsArchived
+  APIArchiveGroupConversations groupId _gcId -> withUser $ \user -> do
+    -- TODO [knocking] delete from group_conversations;
+    -- TODO            validate: prohibit to delete if member is pending (has to communicate approval or rejection)
+    _gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
+    ok_ -- CRGroupConversationsDeleted
   AddMember gName cName memRole -> withUser $ \user -> do
     (groupId, contactId) <- withFastStore $ \db -> (,) <$> getGroupIdByName db user gName <*> getContactIdByName db user cName
     processChatCommand $ APIAddMember groupId contactId memRole
@@ -3919,7 +3926,7 @@ chatCommandP =
               <*> (A.space *> paginationByTimeP <|> pure (PTLast 5000))
               <*> (A.space *> jsonP <|> pure clqNoFilters)
            ),
-      "/_get chat " *> (APIGetChat <$> chatRefP <*> optional (" content=" *> strP) <* A.space <*> chatPaginationP <*> optional (" search=" *> stringP)),
+      "/_get chat " *> (APIGetChat <$> chatRefP <*> optional (A.space *> groupChatFilterP) <* A.space <*> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get item info " *> (APIGetChatItemInfo <$> chatRefP <* A.space <*> A.decimal),
       "/_send " *> (APISendMessages <$> sendRefP <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
@@ -3981,6 +3988,9 @@ chatCommandP =
       "/_remove #" *> (APIRemoveMembers <$> A.decimal <*> _strP <*> (" messages=" *> onOffP <|> pure False)),
       "/_leave #" *> (APILeaveGroup <$> A.decimal),
       "/_members #" *> (APIListMembers <$> A.decimal),
+      "/_conversations #" *> (APIListGroupConversations <$> A.decimal),
+      "/_archive conversations #" *> (APIArchiveGroupConversations <$> A.decimal <*> _strP),
+      "/_delete conversations #" *> (APIDeleteGroupConversations <$> A.decimal <*> _strP),
       "/_server test " *> (APITestProtoServer <$> A.decimal <* A.space <*> strP),
       "/smp test " *> (TestProtoServer . AProtoServerWithAuth SPSMP <$> strP),
       "/xftp test " *> (TestProtoServer . AProtoServerWithAuth SPXFTP <$> strP),
@@ -4211,6 +4221,9 @@ chatCommandP =
     imagePrefix = (<>) <$> "data:" <*> ("image/png;base64," <|> "image/jpg;base64,")
     imageP = safeDecodeUtf8 <$> ((<>) <$> imagePrefix <*> (B64.encode <$> base64P))
     chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup <|> A.char '*' $> CTLocal <|> A.char ':' $> CTContactConnection
+    groupChatFilterP =
+      (GCFMsgContentTag <$ "content=" <*> strP)
+        <|> (GCFConversationId <$ "conversation_id=" <*> A.decimal)
     chatPaginationP =
       (CPLast <$ "count=" <*> A.decimal)
         <|> (CPAfter <$ "after=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
