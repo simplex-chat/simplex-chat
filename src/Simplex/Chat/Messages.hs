@@ -182,6 +182,30 @@ data CIMentionMember = CIMentionMember
 isUserMention :: ChatItem c d -> Bool
 isUserMention ChatItem {meta = CIMeta {userMention}} = userMention
 
+-- The reason for GroupChatScope to be separate type from MsgScope is that it is used in
+-- contexts local to client (api, storage), while MsgScope is used in protocol.
+-- For example, it allows differentiating own conversation with admins from conversations as admin with
+-- other members, if one was promoted to admin.
+data GroupChatScope
+  = GCSGroup
+  | GCSMemberSupport {groupMemberId_ :: Maybe GroupMemberId} -- Nothing means own conversation with admins
+  | GCSDirect {groupMemberId :: GroupMemberId} -- Directly between members
+  deriving (Eq, Show)
+
+fromRcvMsgScope :: GroupInfo -> MsgScope -> GroupChatScope
+fromRcvMsgScope GroupInfo {membership} = \case
+  MSGroup -> GCSGroup
+  MSMember mId
+    | sameMemberId mId membership -> GCSMemberSupport Nothing
+    | otherwise -> GCSMemberSupport (Just 1) -- TODO [knocking] pass Group with members and find? use MemberId in GCS?
+  MSDirect -> GCSDirect 1 -- TODO [knocking] here we should know which member we've received message from
+
+gsScopeNotInHistory :: GroupChatScope -> Maybe NotInHistory
+gsScopeNotInHistory = \case
+  GCSGroup -> Nothing
+  GCSMemberSupport _ -> Just NotInHistory
+  GCSDirect _ -> Just NotInHistory
+
 data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectSnd :: CIDirection 'CTDirect 'MDSnd
   CIDirectRcv :: CIDirection 'CTDirect 'MDRcv
@@ -1372,6 +1396,8 @@ instance MsgDirectionI d => FromJSON (CIFile d) where
 instance MsgDirectionI d => ToJSON (CIFile d) where
   toJSON = $(JQ.mkToJSON defaultJSON ''CIFile)
   toEncoding = $(JQ.mkToEncoding defaultJSON ''CIFile)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GCS") ''GroupChatScope)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "JCI") ''JSONCIDirection)
 

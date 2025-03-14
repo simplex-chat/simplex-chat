@@ -791,6 +791,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             let Connection {viaUserContactLink} = conn
             when (isJust viaUserContactLink && isNothing (memberContactId m)) sendXGrpLinkMem
             when (connChatVersion < batchSend2Version) sendGroupAutoReply
+            -- TODO [knocking] introduce only to admins
+            -- TODO            - based on group settings (ALTER TABLE group_profiles ADD COLUMN approval TEXT - see rfc)?
+            -- TODO            - based on hook?
             unless (status' == GSMemPendingApproval) $ introduceToGroup vr user gInfo m
             where
               sendXGrpLinkMem = do
@@ -859,7 +862,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XFileAcptInv sharedMsgId fileConnReq_ fName -> xFileAcptInvGroup gInfo m' sharedMsgId fileConnReq_ fName
               XInfo p -> xInfoMember gInfo m' p brokerTs
               XGrpLinkMem p -> xGrpLinkMem gInfo m' conn' p
-              XGrpLinkAcpt role -> xGrpLinkAcpt gInfo m' role
+              XGrpLinkAcpt role memberId_ -> xGrpLinkAcpt gInfo m' role memberId_
               XGrpMemNew memInfo -> xGrpMemNew gInfo m' memInfo msg brokerTs
               XGrpMemIntro memInfo memRestrictions_ -> xGrpMemIntro gInfo m' memInfo memRestrictions_
               XGrpMemInv memId introInv -> xGrpMemInv gInfo m' memId introInv
@@ -907,7 +910,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 let GroupMember {memberId} = m
                     ms = forwardedToGroupMembers (introducedMembers <> invitedMembers) forwardedMsgs'
                     events = L.map (\cm -> XGrpMsgForward memberId cm brokerTs) forwardedMsgs'
-                unless (null ms) $ void $ sendGroupMessages user gInfo ms events
+                unless (null ms) $ void $ sendGroupMessages_ user gInfo ms events
       RCVD msgMeta msgRcpt ->
         withAckMessage' "group rcvd" agentConnId msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
@@ -1430,7 +1433,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     newContentMessage :: Contact -> MsgContainer -> RcvMessage -> MsgMeta -> CM ()
     newContentMessage ct mc msg@RcvMessage {sharedMsgId_} msgMeta = do
-      let ExtMsgContent content _ fInv_ _ _ = mcExtMsgContent mc
+      let ExtMsgContent content _ fInv_ _ _ _ = mcExtMsgContent mc
       -- Uncomment to test stuck delivery on errors - see test testDirectMessageDelete
       -- case content of
       --   MCText "hello 111" ->
@@ -1441,7 +1444,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         then do
           void $ newChatItem (ciContentNoParse $ CIRcvChatFeatureRejected CFVoice) Nothing Nothing False
         else do
-          let ExtMsgContent _ _ _ itemTTL live_ = mcExtMsgContent mc
+          let ExtMsgContent _ _ _ itemTTL live_ _ = mcExtMsgContent mc
               timed_ = rcvContactCITimed ct itemTTL
               live = fromMaybe False live_
           file_ <- processFileInvitation fInv_ content $ \db -> createRcvFileTransfer db userId ct
@@ -1632,7 +1635,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         rejected f = newChatItem (ciContentNoParse $ CIRcvGroupFeatureRejected f) Nothing Nothing False
         timed' = if forwarded then rcvCITimed_ (Just Nothing) itemTTL else rcvGroupCITimed gInfo itemTTL
         live' = fromMaybe False live_
-        ExtMsgContent content mentions fInv_ itemTTL live_ = mcExtMsgContent mc
+        -- TODO [knocking] save scope on chat item, using fromRcvMsgScope
+        ExtMsgContent content mentions fInv_ itemTTL live_ _scope = mcExtMsgContent mc
         ts@(_, ft_) = msgContentTexts content
         saveRcvCI = saveRcvChatItem' user (CDGroupRcv gInfo m) (memberNotInHistory m) msg sharedMsgId_ brokerTs
         createBlockedByAdmin
@@ -2064,8 +2068,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             probeMatchingMemberContact m' connectedIncognito
         else messageError "x.grp.link.mem error: invalid group link host profile update"
 
-    xGrpLinkAcpt :: GroupInfo -> GroupMember -> GroupMemberRole -> CM ()
-    xGrpLinkAcpt gInfo@GroupInfo {membership} m role = do
+    xGrpLinkAcpt :: GroupInfo -> GroupMember -> GroupMemberRole -> Maybe MemberId -> CM ()
+    xGrpLinkAcpt gInfo@GroupInfo {membership} m role memberId_ = do
+      -- TODO [knocking] if memberId refers to invitee, send XGrpLinkAcpt to invitee and introduceToGroup
       membership' <- withStore' $ \db -> do
         updateGroupMemberStatus db userId m GSMemConnected
         updateGroupMemberAccepted db user membership role

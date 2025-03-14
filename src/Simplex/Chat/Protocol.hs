@@ -77,12 +77,13 @@ import Simplex.Messaging.Version hiding (version)
 -- 11 - fix profile update in business chats (2024-12-05)
 -- 12 - support sending and receiving content reports (2025-01-03)
 -- 14 - support sending and receiving group join rejection (2025-02-24)
+-- 15 - support specifying message scopes for group messages (2025-03-12)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 14
+currentChatVersion = VersionChat 15
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -136,6 +137,10 @@ contentReportsVersion = VersionChat 12
 -- support sending and receiving group join rejection (XGrpLinkReject)
 groupJoinRejectVersion :: VersionChat
 groupJoinRejectVersion = VersionChat 14
+
+-- support group knocking (MsgScope)
+groupKnockingVersion :: VersionChat
+groupKnockingVersion = VersionChat 15
 
 agentToChatVersion :: VersionSMPA -> VersionChat
 agentToChatVersion v
@@ -243,6 +248,14 @@ instance ToJSON SharedMsgId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+data MsgScope
+  = MSGroup
+  | MSMember {memberId :: MemberId} -- Admins can use any member id; members can use only their own id
+  | MSDirect -- directly between members
+  deriving (Eq, Show)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "MS") ''MsgScope)
+
 $(JQ.deriveJSON defaultJSON ''AppMessageJson)
 
 data MsgRef = MsgRef
@@ -335,7 +348,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpLinkInv :: GroupLinkInvitation -> ChatMsgEvent 'Json
   XGrpLinkReject :: GroupLinkRejection -> ChatMsgEvent 'Json
   XGrpLinkMem :: Profile -> ChatMsgEvent 'Json
-  XGrpLinkAcpt :: GroupMemberRole -> ChatMsgEvent 'Json
+  XGrpLinkAcpt :: GroupMemberRole -> Maybe MemberId -> ChatMsgEvent 'Json -- Maybe MemberId for compatibility
   XGrpMemNew :: MemberInfo -> ChatMsgEvent 'Json
   XGrpMemIntro :: MemberInfo -> Maybe MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemInv :: MemberId -> IntroInvitation -> ChatMsgEvent 'Json
@@ -640,7 +653,8 @@ data ExtMsgContent = ExtMsgContent
     mentions :: Map MemberName MsgMention,
     file :: Maybe FileInvitation,
     ttl :: Maybe Int,
-    live :: Maybe Bool
+    live :: Maybe Bool,
+    scope :: Maybe MsgScope
   }
   deriving (Eq, Show)
 
@@ -720,10 +734,11 @@ parseMsgContainer v =
       ttl <- v .:? "ttl"
       live <- v .:? "live"
       mentions <- fromMaybe M.empty <$> (v .:? "mentions")
-      pure ExtMsgContent {content, mentions, file, ttl, live}
+      scope <- v .:? "scope"
+      pure ExtMsgContent {content, mentions, file, ttl, live, scope}
 
 extMsgContent :: MsgContent -> Maybe FileInvitation -> ExtMsgContent
-extMsgContent mc file = ExtMsgContent mc M.empty file Nothing Nothing
+extMsgContent mc file = ExtMsgContent mc M.empty file Nothing Nothing Nothing
 
 justTrue :: Bool -> Maybe Bool
 justTrue True = Just True
@@ -772,8 +787,8 @@ msgContainerJSON = \case
   MCSimple mc -> o $ msgContent mc
   where
     o = JM.fromList
-    msgContent ExtMsgContent {content, mentions, file, ttl, live} =
-      ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("mentions" .=? nonEmptyMap mentions) ["content" .= content]
+    msgContent ExtMsgContent {content, mentions, file, ttl, live, scope} =
+      ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("mentions" .=? nonEmptyMap mentions) $ ("scope" .=? scope) ["content" .= content]
 
 nonEmptyMap :: Map k v -> Maybe (Map k v)
 nonEmptyMap m = if M.null m then Nothing else Just m
@@ -983,7 +998,7 @@ toCMEventTag msg = case msg of
   XGrpLinkInv _ -> XGrpLinkInv_
   XGrpLinkReject _ -> XGrpLinkReject_
   XGrpLinkMem _ -> XGrpLinkMem_
-  XGrpLinkAcpt _ -> XGrpLinkAcpt_
+  XGrpLinkAcpt {} -> XGrpLinkAcpt_
   XGrpMemNew _ -> XGrpMemNew_
   XGrpMemIntro _ _ -> XGrpMemIntro_
   XGrpMemInv _ _ -> XGrpMemInv_
@@ -1086,7 +1101,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpLinkInv_ -> XGrpLinkInv <$> p "groupLinkInvitation"
       XGrpLinkReject_ -> XGrpLinkReject <$> p "groupLinkRejection"
       XGrpLinkMem_ -> XGrpLinkMem <$> p "profile"
-      XGrpLinkAcpt_ -> XGrpLinkAcpt <$> p "role"
+      XGrpLinkAcpt_ -> XGrpLinkAcpt <$> p "role" <*> opt "memberId"
       XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo"
       XGrpMemIntro_ -> XGrpMemIntro <$> p "memberInfo" <*> opt "memberRestrictions"
       XGrpMemInv_ -> XGrpMemInv <$> p "memberId" <*> p "memberIntro"
@@ -1150,7 +1165,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XGrpLinkInv groupLinkInv -> o ["groupLinkInvitation" .= groupLinkInv]
       XGrpLinkReject groupLinkRjct -> o ["groupLinkRejection" .= groupLinkRjct]
       XGrpLinkMem profile -> o ["profile" .= profile]
-      XGrpLinkAcpt role -> o ["role" .= role]
+      XGrpLinkAcpt role memberId -> o $ ("memberId" .=? memberId) ["role" .= role]
       XGrpMemNew memInfo -> o ["memberInfo" .= memInfo]
       XGrpMemIntro memInfo memRestrictions -> o $ ("memberRestrictions" .=? memRestrictions) ["memberInfo" .= memInfo]
       XGrpMemInv memId memIntro -> o ["memberId" .= memId, "memberIntro" .= memIntro]
