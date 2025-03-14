@@ -379,10 +379,11 @@ fun ModalData.GroupChatInfoLayout(
     } else {
       PaddingValues(
         top = topPaddingToContent(false),
-        bottom = navBarPadding +
-            imePadding +
-            selectedItemsBarHeight +
-            (if (navBarPadding > 0.dp && imePadding > 0.dp) -AppBarHeight * fontSizeSqrtMultiplier else 0.dp)
+        bottom = if (imePadding > 0.dp) {
+          imePadding + selectedItemsBarHeight
+        } else {
+          navBarPadding + selectedItemsBarHeight
+        }
       )
     }
   ) {
