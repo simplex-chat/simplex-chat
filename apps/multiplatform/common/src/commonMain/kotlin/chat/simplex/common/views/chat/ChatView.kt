@@ -1243,7 +1243,7 @@ fun BoxScope.ChatItemsList(
       ignoreLoadingRequests.add(reversedChatItems.value.lastOrNull()?.id ?: return@LaunchedEffect)
   }
   if (!loadingMoreItems.value) {
-    PreloadItems(chatInfo.id, if (searchValueIsEmpty.value) ignoreLoadingRequests else mutableSetOf(), contentTag, mergedItems, listState, ChatPagination.UNTIL_PRELOAD_COUNT) { chatId, pagination ->
+    PreloadItems(chatInfo.id, if (searchValueIsEmpty.value) ignoreLoadingRequests else mutableSetOf(), resetListState, contentTag, mergedItems, listState, ChatPagination.UNTIL_PRELOAD_COUNT) { chatId, pagination ->
       if (loadingMoreItems.value) return@PreloadItems false
       try {
         loadingMoreItems.value = true
@@ -1275,7 +1275,6 @@ fun BoxScope.ChatItemsList(
       scrollToItemId.value = null }
     }
   }
-  LoadLastItems(loadingMoreItems, resetListState, remoteHostId, chatInfo)
   SmallScrollOnNewMessage(listState, reversedChatItems)
   val finishedInitialComposition = remember { mutableStateOf(false) }
   NotifyChatListOnFinishingComposition(finishedInitialComposition, chatInfo, revealedItems, listState, onComposed)
@@ -1604,18 +1603,18 @@ fun BoxScope.ChatItemsList(
 }
 
 @Composable
-private fun LoadLastItems(loadingMoreItems: MutableState<Boolean>, resetListState: State<Boolean>, remoteHostId: Long?, chatInfo: ChatInfo) {
+private fun LoadLastItems(chatId: State<ChatId>, resetListState: State<Boolean>, listState: State<LazyListState>, loadItems: State<suspend (ChatId, ChatPagination) -> Boolean>) {
   val contentTag = LocalContentTag.current
-  LaunchedEffect(remoteHostId, chatInfo.id, resetListState.value) {
-    try {
-      loadingMoreItems.value = true
-      if (chatModel.chatStateForContent(contentTag).totalAfter.value <= 0) return@LaunchedEffect
+  LaunchedEffect(chatId.value, resetListState.value) {
+    val lastVisible = listState.value.layoutInfo.visibleItemsInfo.lastOrNull()
+    val itemsCanCoverScreen = lastVisible != null && listState.value.layoutInfo.viewportEndOffset - listState.value.layoutInfo.afterContentPadding <= lastVisible.offset + lastVisible.size
+    val chatState = chatModel.chatStateForContent(contentTag)
+    val lastItemsLoaded = chatState.splits.value.isEmpty() || chatState.splits.value.firstOrNull() != chatModel.chatItemsForContent(contentTag).value.lastOrNull()?.id
+    if (itemsCanCoverScreen && !lastItemsLoaded) {
       delay(500)
-      withContext(Dispatchers.Default) {
-        apiLoadMessages(remoteHostId, chatInfo.chatType, chatInfo.apiId, contentTag, ChatPagination.Last(ChatPagination.INITIAL_COUNT))
+      withBGApi {
+        loadItems.value(chatId.value, ChatPagination.Last(ChatPagination.INITIAL_COUNT))
       }
-    } finally {
-      loadingMoreItems.value = false
     }
   }
 }
@@ -1777,6 +1776,7 @@ fun BoxScope.FloatingButtons(
 fun PreloadItems(
   chatId: String,
   ignoreLoadingRequests: MutableSet<Long>,
+  resetListState: State<Boolean>,
   contentTag: MsgContentTag?,
   mergedItems: State<MergedItems>,
   listState: State<LazyListState>,
@@ -1790,6 +1790,7 @@ fun PreloadItems(
   val ignoreLoadingRequests = rememberUpdatedState(ignoreLoadingRequests)
   PreloadItemsBefore(allowLoad, chatId, ignoreLoadingRequests, contentTag, mergedItems, listState, remaining, loadItems)
   PreloadItemsAfter(allowLoad, chatId, contentTag, mergedItems, listState, remaining, loadItems)
+  LoadLastItems(chatId, resetListState, listState, loadItems)
 }
 
 @Composable
