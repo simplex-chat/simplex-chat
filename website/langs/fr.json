@@ -245,15 +245,17 @@
     "f-droid-org-repo": "Dépot F-Droid.org",
     "stable-versions-built-by-f-droid-org": "Versions stables créées par F-Droid.org",
     "comparison-section-list-point-4a": "Les relais SimpleX ne peuvent pas compromettre le chiffrement e2e. Vérifier le code de sécurité pour limiter les attaques sur le canal hors bande",
-    "hero-overlay-3-title": "Évaluation de sécurité",
+    "hero-overlay-3-title": "Évaluation de la sécurité",
     "hero-overlay-card-3-p-2": "Trail of Bits a examiné les composants cryptographiques et réseau de la plateforme SimpleX en novembre 2022. <a href=\"/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html\">En savoir plus</a>.",
     "jobs": "Rejoignez notre équipe",
-    "hero-overlay-3-textlink": "Évaluation de sécurité",
+    "hero-overlay-3-textlink": "Évaluations de la sécurité",
     "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a> est un cabinet leader dans le secteur de la sécurité et des technologies qui compte parmi ses clients des grandes entreprises de la tech, des agences gouvernementales et d'importants projets de blockchain.",
     "docs-dropdown-9": "Téléchargements",
     "please-enable-javascript": "Veuillez activer JavaScript pour voir le code QR.",
     "please-use-link-in-mobile-app": "Veuillez utiliser le lien dans l'application mobile",
     "docs-dropdown-10": "Transparence",
     "docs-dropdown-12": "Sécurité",
-    "docs-dropdown-11": "FAQ"
+    "docs-dropdown-11": "FAQ",
+    "hero-overlay-card-3-p-3": "Trail of Bits a examiné la conception cryptographique des protocoles réseau SimpleX en juillet 2024.",
+    "docs-dropdown-14": "SimpleX pour les entreprises"
 }
