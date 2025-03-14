@@ -4300,14 +4300,6 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE group_members
-      SET member_status = ?, member_role = ?, updated_at = ?
-      WHERE user_id = ? AND group_member_id = ?
-    
-Plan:
-SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-      UPDATE group_members
       SET member_status = ?, updated_at = ?
       WHERE user_id = ? AND group_member_id = ?
     
@@ -5828,10 +5820,6 @@ Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE group_members SET member_role = ? WHERE user_id = ? AND group_member_id = ?
-Plan:
-SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: UPDATE group_members SET member_status='pending_approval' WHERE group_member_id = 1
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 

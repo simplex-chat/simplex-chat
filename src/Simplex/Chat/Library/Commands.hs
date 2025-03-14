@@ -3207,11 +3207,12 @@ processChatCommand' vr = \case
       (msgScope, ms, numFileInvs) <- case gcScope of
         GCSGroup -> do
           ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
-          pure (MSGroup, ms, length $ filter memberCurrent ms)
+          let recepientMs = filter memberCurrent ms
+          pure (MSGroup, recepientMs, length recepientMs)
         GCSMemberSupport gmId_ -> do
-          ms <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
-          let ms' = filter compatible ms
-          when (null ms') $ throwChatError $ CECommandError "no admins support this message"
+          adminsMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
+          let rcpAdminsMs' = filter (\m -> compatible m && memberCurrent m) adminsMs
+          when (null rcpAdminsMs') $ throwChatError $ CECommandError "no admins support this message"
           (msgScope, m_) <- case gmId_ of
             Nothing -> pure (MSMember (memberId' membership), [])
             Just gmId -> do
@@ -3219,7 +3220,7 @@ processChatCommand' vr = \case
               m <- withFastStore $ \db -> getGroupMemberById db vr user gmId
               unless (compatible m) $ throwChatError $ CECommandError "member does not support this message"
               pure (MSMember (memberId' m), [m])
-          pure (msgScope, ms' <> m_, length (filter memberCurrent ms') + length m_)
+          pure (msgScope, rcpAdminsMs' <> m_, length rcpAdminsMs' + length m_)
           where
             hasReport = any (\(ComposedMessage {msgContent}, _, _, _) -> isReport msgContent) cmrs
             compatible GroupMember {activeConn, memberChatVRange}
@@ -3232,7 +3233,7 @@ processChatCommand' vr = \case
           pure (MSDirect, [dm], 1)
       sendGroupContentMessages_ user gInfo gcScope msgScope ms numFileInvs live itemTTL cmrs
     sendGroupContentMessages_ :: User -> GroupInfo -> GroupChatScope -> MsgScope -> [GroupMember] -> Int -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
-    sendGroupContentMessages_ user gInfo@GroupInfo {groupId, membership} gcScope msgScope ms numFileInvs live itemTTL cmrs = do
+    sendGroupContentMessages_ user gInfo@GroupInfo {groupId, membership} gcScope msgScope receipientMs numFileInvs live itemTTL cmrs = do
       forM_ allowedRole $ assertUserGroupRole gInfo
       assertGroupContentAllowed
       processComposedMessages
@@ -3261,7 +3262,6 @@ processChatCommand' vr = \case
           (fInvs_, ciFiles_) <- L.unzip <$> setupSndFileTransfers numFileInvs
           timed_ <- sndGroupCITimed live gInfo itemTTL
           (chatMsgEvents, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
-          let receipientMs = filter memberCurrent ms
           (msgs_, gsr) <- sendGroupMessages user gInfo GCSGroup receipientMs chatMsgEvents
           let itemsData = prepareSndItemsData (L.toList cmrs) (L.toList ciFiles_) (L.toList quotedItems_) (L.toList msgs_)
               notInHistory_ = gsScopeNotInHistory gcScope
@@ -3281,7 +3281,7 @@ processChatCommand' vr = \case
               forM cmrs $ \(ComposedMessage {fileSource = file_}, _, _, _) -> case file_ of
                 Just file -> do
                   fileSize <- checkSndFile file
-                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n $ CGGroup gInfo ms
+                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n $ CGGroup gInfo receipientMs
                   pure (Just fInv, Just ciFile)
                 Nothing -> pure (Nothing, Nothing)
             prepareMsgs :: NonEmpty (ComposedMessageReq, Maybe FileInvitation) -> Maybe CITimed -> CM (NonEmpty (ChatMsgEvent 'Json, Maybe (CIQuote 'CTGroup)))
