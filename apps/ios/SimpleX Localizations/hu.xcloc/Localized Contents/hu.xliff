@@ -3892,9 +3892,9 @@ Hiba: %2$@</target>
         <target>GIF-ek és matricák</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Get notified when mentioned." xml:space="preserve">
+      <trans-unit id="Get notified when mentioned." xml:space="preserve" approved="no">
         <source>Get notified when mentioned.</source>
-        <target>Kapjon értesítést, ha megemlítik.</target>
+        <target state="translated">Értesítések említéskor.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Good afternoon!" xml:space="preserve">
