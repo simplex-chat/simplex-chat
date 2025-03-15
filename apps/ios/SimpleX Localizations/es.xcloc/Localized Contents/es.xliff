@@ -741,14 +741,14 @@
         <target>Todos los datos de la aplicación se eliminarán.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
         <source>All chats and messages will be deleted - this cannot be undone!</source>
-        <target>Se eliminarán todos los chats y mensajes. ¡No podrá deshacerse!</target>
+        <target state="translated">Se eliminarán todos los chats y mensajes. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All chats will be removed from the list %@, and the list deleted." xml:space="preserve">
+      <trans-unit id="All chats will be removed from the list %@, and the list deleted." xml:space="preserve" approved="no">
         <source>All chats will be removed from the list %@, and the list deleted.</source>
-        <target>Todos los chats serán quitados de la lista %@ y esta será eliminada.</target>
+        <target state="translated">Todos los chats se quitarán de la lista %@ y esta será eliminada.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="All data is erased when it is entered." xml:space="preserve">
@@ -771,14 +771,14 @@
         <target>Todos los mensajes y archivos son enviados **cifrados de extremo a extremo** y con seguridad de cifrado postcuántico en mensajes directos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All messages will be deleted - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="All messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
         <source>All messages will be deleted - this cannot be undone!</source>
-        <target>Todos los mensajes serán borrados. ¡No podrá deshacerse!</target>
+        <target state="translated">Todos los mensajes serán eliminados. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve">
+      <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve" approved="no">
         <source>All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you.</source>
-        <target>Se eliminarán todos los mensajes SOLO para tí. ¡No podrá deshacerse!</target>
+        <target state="translated">Se eliminarán todos los mensajes SOLO para tí. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All new messages from %@ will be hidden!" xml:space="preserve">
@@ -1563,14 +1563,14 @@
         <target>Tema de chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat will be deleted for all members - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Chat will be deleted for all members - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Chat will be deleted for all members - this cannot be undone!</source>
-        <target>El chat será eliminado para todos los miembros. ¡No podrá deshacerse!</target>
+        <target state="translated">El chat será eliminado para todos los miembros. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat will be deleted for you - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Chat will be deleted for you - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Chat will be deleted for you - this cannot be undone!</source>
-        <target>El chat será eliminado para tí. ¡No podrá deshacerse!</target>
+        <target state="translated">El chat será eliminado para tí. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
@@ -2024,9 +2024,9 @@ This is your own one-time link!</source>
         <target>Preferencias de contacto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact will be deleted - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Contact will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Contact will be deleted - this cannot be undone!</source>
-        <target>El contacto será eliminado. ¡No podrá deshacerse!</target>
+        <target state="translated">El contacto será eliminado. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contacts" xml:space="preserve">
@@ -2513,9 +2513,9 @@ This is your own one-time link!</source>
         <target>¿Eliminar base de datos antigua?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete or moderate up to 200 messages." xml:space="preserve">
+      <trans-unit id="Delete or moderate up to 200 messages." xml:space="preserve" approved="no">
         <source>Delete or moderate up to 200 messages.</source>
-        <target>Borra o modera hasta 200 mensajes a la vez.</target>
+        <target state="translated">Elimina o modera hasta 200 mensajes a la vez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete pending connection?" xml:space="preserve">
@@ -2533,9 +2533,9 @@ This is your own one-time link!</source>
         <target>Eliminar cola</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Delete report" xml:space="preserve">
+      <trans-unit id="Delete report" xml:space="preserve" approved="no">
         <source>Delete report</source>
-        <target>Borrar informe</target>
+        <target state="translated">Eliminar informe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete up to 20 messages at once." xml:space="preserve">
@@ -3618,9 +3618,9 @@ This is your own one-time link!</source>
 %@.</target>
         <note>file error text</note>
       </trans-unit>
-      <trans-unit id="File not found - most likely file was deleted or cancelled." xml:space="preserve">
+      <trans-unit id="File not found - most likely file was deleted or cancelled." xml:space="preserve" approved="no">
         <source>File not found - most likely file was deleted or cancelled.</source>
-        <target>Archivo no encontrado, probablemente haya sido borrado o cancelado.</target>
+        <target state="translated">Archivo no encontrado, probablemente haya sido eliminado o cancelado.</target>
         <note>file error text</note>
       </trans-unit>
       <trans-unit id="File server error: %@" xml:space="preserve">
@@ -3992,14 +3992,14 @@ Error: %2$@</target>
         <target>Mensaje de bienvenida en grupos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group will be deleted for all members - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Group will be deleted for all members - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Group will be deleted for all members - this cannot be undone!</source>
-        <target>El grupo será eliminado para todos los miembros. ¡No podrá deshacerse!</target>
+        <target state="translated">El grupo será eliminado para todos los miembros. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group will be deleted for you - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Group will be deleted for you - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Group will be deleted for you - this cannot be undone!</source>
-        <target>El grupo será eliminado para tí. ¡No podrá deshacerse!</target>
+        <target state="translated">El grupo será eliminado para tí. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Groups" xml:space="preserve">
@@ -4729,9 +4729,9 @@ This is your link for group %@!</source>
         <target>Miembro inactivo</target>
         <note>item status text</note>
       </trans-unit>
-      <trans-unit id="Member reports" xml:space="preserve">
+      <trans-unit id="Member reports" xml:space="preserve" approved="no">
         <source>Member reports</source>
-        <target>Informes de miembro</target>
+        <target state="translated">Informes de miembros</target>
         <note>chat feature</note>
       </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve">
@@ -4749,14 +4749,14 @@ This is your link for group %@!</source>
         <target>El rol del miembro cambiará a "%@" y recibirá una invitación nueva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member will be removed from chat - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Member will be removed from chat - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Member will be removed from chat - this cannot be undone!</source>
-        <target>El miembro será eliminado del chat. ¡No podrá deshacerse!</target>
+        <target state="translated">El miembro será eliminado del chat. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Member will be removed from group - this cannot be undone!</source>
-        <target>El miembro será expulsado del grupo. ¡No podrá deshacerse!</target>
+        <target state="translated">El miembro será expulsado del grupo. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Members can add message reactions." xml:space="preserve">
@@ -4914,9 +4914,9 @@ This is your link for group %@!</source>
         <target>¡Los mensajes de %@ serán mostrados!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages in this chat will never be deleted." xml:space="preserve">
+      <trans-unit id="Messages in this chat will never be deleted." xml:space="preserve" approved="no">
         <source>Messages in this chat will never be deleted.</source>
-        <target>Los mensajes de esta conversación nunca se borran.</target>
+        <target state="translated">Los mensajes de esta conversación nunca se eliminan.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Messages received" xml:space="preserve">
@@ -4929,9 +4929,9 @@ This is your link for group %@!</source>
         <target>Mensajes enviados</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages were deleted after you selected them." xml:space="preserve">
+      <trans-unit id="Messages were deleted after you selected them." xml:space="preserve" approved="no">
         <source>Messages were deleted after you selected them.</source>
-        <target>Los mensajes han sido borrados después de seleccionarlos.</target>
+        <target state="translated">Los mensajes han sido eliminados después de seleccionarlos.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve">
@@ -7037,9 +7037,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Info servidores</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Servers statistics will be reset - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Servers statistics will be reset - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Servers statistics will be reset - this cannot be undone!</source>
-        <target>Las estadísticas de los servidores serán restablecidas. ¡No podrá deshacerse!</target>
+        <target state="translated">Las estadísticas de los servidores serán restablecidas. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Session code" xml:space="preserve">
@@ -7833,9 +7833,9 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <target>Esta acción es irreversible. Se eliminarán los mensajes enviados y recibidos anteriores a la selección. Podría tardar varios minutos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." xml:space="preserve" approved="no">
         <source>This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted.</source>
-        <target>Todos los mensajes previos al período seleccionado serán eliminados del chat. ¡No podrá deshacerse!</target>
+        <target state="translated">Todos los mensajes previos al período seleccionado serán eliminados del chat. ¡No puede deshacerse!</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">
@@ -7888,9 +7888,9 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <target>Este enlace ha sido usado en otro dispositivo móvil, por favor crea un enlace nuevo en el ordenador.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This message was deleted or not received yet." xml:space="preserve">
+      <trans-unit id="This message was deleted or not received yet." xml:space="preserve" approved="no">
         <source>This message was deleted or not received yet.</source>
-        <target>El mensaje ha sido borrado o aún no se ha recibido.</target>
+        <target state="translated">El mensaje ha sido eliminado o aún no se ha recibido.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve">
