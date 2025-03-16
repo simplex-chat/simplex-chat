@@ -1788,7 +1788,7 @@
     <string name="keychain_error">Kesalahan Keychain</string>
     <string name="save_passphrase_and_open_chat">Simpan frasa sandi dan buka obrolan</string>
     <string name="open_chat">Buka obrolan</string>
-    <string name="restore_passphrase_not_found_desc">Frasa sandi tidak ditemukan di Keystore, silakan masukkan secara manual. Hal ini mungkin terjadi jika Anda pulihkan data aplikasi menggunakan alat cadangan. Jika tidak, silakan hubungi pengembang.</string>
+    <string name="restore_passphrase_not_found_desc">Frasa sandi tidak ditemukan di Keystore, silakan masukkan secara manual. Hal ini mungkin terjadi jika Anda memulihkan data aplikasi menggunakan alat cadangan. Jika tidak demikian, silakan hubungi pengembang.</string>
     <string name="one_hand_ui">Toolbar aplikasi yang dijangkau</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">Anggota akan dihapus dari grup - ini tidak dapat dibatalkan!</string>
     <string name="network_option_protocol_timeout_per_kb">Batas waktu protokol per KB</string>
@@ -2325,4 +2325,16 @@
     <string name="v6_3_organize_chat_lists_descr">Jangan lewatkan pesan penting.</string>
     <string name="v6_3_better_groups_performance">Kinerja grup yang lebih baik</string>
     <string name="v6_3_faster_deletion_of_groups">Hapus grup lebih cepat.</string>
+    <string name="operator_updated_conditions">Syarat diperbarui</string>
+    <string name="members_will_be_removed_from_chat_cannot_be_undone">Anggota akan dihapus dari obrolan - hal ini tidak dapat dibatalkan!</string>
+    <string name="button_remove_members_question">Hapus anggota?</string>
+    <string name="group_member_status_rejected">ditolak</string>
+    <string name="group_member_status_pending_approval_short">tertunda</string>
+    <string name="group_member_status_pending_approval">menunggu persetujuan</string>
+    <string name="unblock_members_for_all_question">Buka blokir anggota untuk semua?</string>
+    <string name="v6_3_reports">Kirim laporan pribadi</string>
+    <string name="v6_3_reports_descr">Bantu admin memoderasi grup.</string>
+    <string name="v6_3_set_message_expiration_in_chats">Atur pesan kedaluwarsa obrolan.</string>
+    <string name="v6_3_private_media_file_names">Nama berkas media pribadi.</string>
+    <string name="group_preview_rejected">ditolak</string>
 </resources>
