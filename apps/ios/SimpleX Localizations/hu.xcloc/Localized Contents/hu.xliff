@@ -3894,7 +3894,7 @@ Hiba: %2$@</target>
       </trans-unit>
       <trans-unit id="Get notified when mentioned." xml:space="preserve" approved="no">
         <source>Get notified when mentioned.</source>
-        <target state="translated">Értesítések az említésekről.</target>
+        <target state="translated">Kapjon értesítést, ha megemlítik.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Good afternoon!" xml:space="preserve">
