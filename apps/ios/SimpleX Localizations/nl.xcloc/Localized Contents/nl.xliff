@@ -2813,9 +2813,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Niet inschakelen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Don't miss important messages." xml:space="preserve">
+      <trans-unit id="Don't miss important messages." xml:space="preserve" approved="no">
         <source>Don't miss important messages.</source>
-        <target>‐Mis geen belangrijke berichten.</target>
+        <target state="translated">Mis geen belangrijke berichten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Don't show again" xml:space="preserve">
