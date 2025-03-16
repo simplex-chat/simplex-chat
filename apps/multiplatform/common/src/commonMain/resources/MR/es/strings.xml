@@ -578,7 +578,7 @@
     <string name="database_restore_error">Error al restaurar base de datos</string>
     <string name="select_contacts">Seleccionar contactos</string>
     <string name="save_group_profile">Guardar perfil de grupo</string>
-    <string name="reset_color">Restablecer colores</string>
+    <string name="reset_color">Reiniciar colores</string>
     <string name="only_you_can_send_disappearing">Sólo tú puedes enviar mensajes temporales.</string>
     <string name="only_your_contact_can_send_disappearing">Sólo tu contacto puede enviar mensajes temporales.</string>
     <string name="prohibit_sending_voice">No se permiten mensajes de voz.</string>
@@ -596,7 +596,7 @@
     <string name="callstatus_rejected">llamada rechazada</string>
     <string name="secret_text">secreto</string>
     <string name="open_simplex_chat_to_accept_call">Abrir SimpleX Chat para aceptar llamada</string>
-    <string name="network_options_reset_to_defaults">Restablecer valores predetarminados</string>
+    <string name="network_options_reset_to_defaults">Reiniciar a valores predetarminados</string>
     <string name="icon_descr_server_status_pending">Pendiente</string>
     <string name="periodic_notifications">Notificaciones periódicas</string>
     <string name="store_passphrase_securely">Guarda la contraseña de forma segura, NO podrás cambiarla si la pierdes.</string>
@@ -684,7 +684,7 @@
     <string name="remove_member_confirmation">Expulsar</string>
     <string name="button_remove_member">Expulsar miembro</string>
     <string name="button_send_direct_message">Enviar mensaje directo</string>
-    <string name="reset_verb">Restablecer</string>
+    <string name="reset_verb">Reiniciar</string>
     <string name="paste_button">Pegar</string>
     <string name="security_code">Código de seguridad</string>
     <string name="scan_code_from_contacts_app">Escanea el código de seguridad desde la aplicación de tu contacto.</string>
@@ -1808,7 +1808,7 @@
     <string name="color_received_quote">Respuesta recibida</string>
     <string name="wallpaper_scale_repeat">Mosaico</string>
     <string name="theme_remove_image">Quitar imagen</string>
-    <string name="reset_single_color">Restablecer color</string>
+    <string name="reset_single_color">Reiniciar color</string>
     <string name="wallpaper_scale">Escala</string>
     <string name="color_sent_quote">Respuesta enviada</string>
     <string name="chat_theme_set_default_theme">Establecer tema predefinido</string>
@@ -1823,7 +1823,7 @@
     <string name="message_queue_info_server_info">información cola del servidor: %1$s
 \n
 \núltimo mensaje recibido: %2$s</string>
-    <string name="chat_theme_reset_to_app_theme">Restablecer al tema de la aplicación</string>
+    <string name="chat_theme_reset_to_app_theme">Reiniciar al tema de la aplicación</string>
     <string name="v5_8_private_routing">Enrutamiento privado de mensajes 🚀</string>
     <string name="v5_8_safe_files">Recibe archivos de forma segura</string>
     <string name="v5_8_message_delivery">Mejora del envío de mensajes</string>
@@ -1837,7 +1837,7 @@
     <string name="message_queue_info_none">ninguno</string>
     <string name="v5_8_private_routing_descr">Protege tu dirección IP de los servidores de retransmisión elegidos por tus contactos.
 \nActívalo en ajustes de *Servidores y Redes*.</string>
-    <string name="chat_theme_reset_to_user_theme">Restablecer al tema del usuario</string>
+    <string name="chat_theme_reset_to_user_theme">Reiniciar al tema del usuario</string>
     <string name="error_initializing_web_view">Error al inicializar WebView. Actualiza tu sistema a la última versión. Por favor, ponte en contacto con los desarrolladores.
 \nError: %s</string>
     <string name="v5_8_persian_ui">Interfaz en persa</string>
@@ -1903,8 +1903,8 @@
     <string name="network_error_broker_host_desc">La dirección del servidor es incompatible con la configuración de red: %1$s.</string>
     <string name="network_error_broker_version_desc">La versión del servidor es incompatible con tu aplicación: %1$s.</string>
     <string name="appearance_font_size">Tamaño de la fuente</string>
-    <string name="servers_info_reset_stats_alert_error_title">Error al restablecer las estadísticas</string>
-    <string name="servers_info_reset_stats_alert_confirm">Restablecer</string>
+    <string name="servers_info_reset_stats_alert_error_title">Error al reiniciar las estadísticas</string>
+    <string name="servers_info_reset_stats_alert_confirm">Reiniciar</string>
     <string name="servers_info_reset_stats_alert_message">Las estadísticas de los servidores serán restablecidas. ¡No puede deshacerse!</string>
     <string name="servers_info_downloaded">Descargado</string>
     <string name="smp_server">Servidor SMP</string>
@@ -1944,8 +1944,8 @@
     <string name="servers_info_reconnect_servers_title">¿Reconectar servidores?</string>
     <string name="servers_info_reconnect_server_message">Reconectar con el servidor para forzar la entrega de mensajes. Se usa tráfico adicional.</string>
     <string name="servers_info_reconnect_servers_message">Reconectar todos los servidores para forzar la entrega de mensajes. Usa tráfico adicional.</string>
-    <string name="servers_info_reset_stats">Restablecer todas las estadísticas</string>
-    <string name="servers_info_reset_stats_alert_title">¿Restablecer todas las estadísticas?</string>
+    <string name="servers_info_reset_stats">Reiniciar estadísticas</string>
+    <string name="servers_info_reset_stats_alert_title">¿Reiniciar todas las estadísticas?</string>
     <string name="servers_info_detailed_statistics_sent_messages_header">Mensajes enviados</string>
     <string name="servers_info_detailed_statistics_sent_messages_total">Total enviados</string>
     <string name="downloaded_files">Archivos descargados</string>
