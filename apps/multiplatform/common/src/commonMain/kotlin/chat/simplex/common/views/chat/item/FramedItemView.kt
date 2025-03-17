@@ -66,7 +66,11 @@ fun FramedItemView(
   @Composable
   fun ciQuotedMsgView(qi: CIQuote) {
     Box(
-      Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
+      Modifier
+        // this width limitation prevents crash on calculating constraints that may happen if you post veeeery long message and then quote it.
+        // Top level layout wants `IntrinsicWidth.Max` and very long layout makes the crash in this case
+        .widthIn(max = 50000.dp)
+        .padding(vertical = 6.dp, horizontal = 12.dp),
       contentAlignment = Alignment.TopStart
     ) {
       val sender = qi.sender(membership())
