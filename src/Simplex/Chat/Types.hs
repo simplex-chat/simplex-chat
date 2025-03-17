@@ -811,18 +811,18 @@ data GroupConversation = GroupConversation
 
 data GroupConversationType
   = GCTMemberSupport {member_ :: Maybe GroupMember}
-  -- \| GCTDirect {member :: GroupMember}
+  | GCTDirect {member :: GroupMember}
   deriving (Show)
 
 -- TODO [knocking] From/ToField instances
 data GroupConversationTypeTag
   = GCTMemberSupport_
-  -- \| GCTDirect_
+  | GCTDirect_
 
 toGroupConversationTypeTag :: GroupConversationType -> GroupConversationTypeTag
 toGroupConversationTypeTag = \case
   GCTMemberSupport {} -> GCTMemberSupport_
-  -- GCTDirect {} -> GCTDirect_
+  GCTDirect {} -> GCTDirect_
 
 type GroupMemberId = Int64
 

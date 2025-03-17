@@ -2032,7 +2032,7 @@ processChatCommand' vr = \case
         -- TODO            - additionally archive conversation with member
         -- TODO            - also archive on rejection (removing member)
         -- TODO [knocking] in captcha phase, introduce only to admins (same as on CON in Subscriber)
-        -- TODO            - add field (and special message) to protocol for admins to create group_conversation
+        -- TODO            - add field to protocol for admins to create group_conversation (XGrpMemNew)
         let msg = XGrpLinkAcpt role Nothing
         void $ sendDirectMemberMessage mConn msg groupId
         m' <- withFastStore' $ \db -> updateGroupMemberAccepted db user m role

@@ -863,7 +863,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XInfo p -> xInfoMember gInfo m' p brokerTs
               XGrpLinkMem p -> xGrpLinkMem gInfo m' conn' p
               XGrpLinkAcpt role memberId_ -> xGrpLinkAcpt gInfo m' role memberId_
-              XGrpMemNew memInfo -> xGrpMemNew gInfo m' memInfo msg brokerTs
+              XGrpMemNew memInfo knocking -> xGrpMemNew gInfo m' memInfo knocking msg brokerTs
               XGrpMemIntro memInfo memRestrictions_ -> xGrpMemIntro gInfo m' memInfo memRestrictions_
               XGrpMemInv memId introInv -> xGrpMemInv gInfo m' memId introInv
               XGrpMemFwd memInfo introInv -> xGrpMemFwd gInfo m' memInfo introInv
@@ -2392,8 +2392,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- TODO show/log error, other events in SMP confirmation
         _ -> pure (conn', False)
 
-    xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> RcvMessage -> UTCTime -> CM ()
-    xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ _) msg brokerTs = do
+    -- TODO [knocking] as admin, create group conversation for joining member
+    xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> Bool -> RcvMessage -> UTCTime -> CM ()
+    xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ _) _knocking msg brokerTs = do
       checkHostRole m memRole
       unless (sameMemberId memId $ membership gInfo) $
         withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
@@ -2735,7 +2736,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XMsgReact sharedMsgId (Just memId) reaction add -> groupMsgReaction gInfo author sharedMsgId memId reaction add rcvMsg msgTs
             XFileCancel sharedMsgId -> xFileCancelGroup gInfo author sharedMsgId
             XInfo p -> xInfoMember gInfo author p msgTs
-            XGrpMemNew memInfo -> xGrpMemNew gInfo author memInfo rcvMsg msgTs
+            XGrpMemNew memInfo knocking -> xGrpMemNew gInfo author memInfo knocking rcvMsg msgTs
             XGrpMemRole memId memRole -> xGrpMemRole gInfo author memId memRole rcvMsg msgTs
             XGrpMemDel memId withMessages -> xGrpMemDel gInfo author memId withMessages rcvMsg msgTs
             XGrpLeave -> xGrpLeave gInfo author rcvMsg msgTs

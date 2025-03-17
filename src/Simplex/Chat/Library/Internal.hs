@@ -966,12 +966,14 @@ profileToSendOnAccept user ip = userProfileToSend user (getIncognitoProfile <$> 
       NewIncognito p -> p
       ExistingIncognito lp -> fromLocalProfile lp
 
+-- TODO [knocking] pass member list to differentiate introcuding all / admins / remaning members?
+-- TODO            also param for XGrpMemNew
 introduceToGroup :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceToGroup _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
 introduceToGroup vr user gInfo@GroupInfo {groupId, membership} m@GroupMember {activeConn = Just conn} = do
   members <- withStore' $ \db -> getGroupMembers db vr user gInfo
   let recipientMs = filter memberCurrent members
-  void . sendGroupMessage user gInfo GCSGroup recipientMs . XGrpMemNew $ memberInfo m
+  void . sendGroupMessage user gInfo GCSGroup recipientMs $ XGrpMemNew (memberInfo m) False
   sendIntroductions recipientMs
   when (groupFeatureAllowed SGFHistory gInfo) sendHistory
   where

@@ -5125,13 +5125,13 @@ SEARCH files USING COVERING INDEX idx_files_redirect_file_id (redirect_file_id=?
 Query: DELETE FROM group_members WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH group_members USING COVERING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH group_conversations USING COVERING INDEX idx_group_conversations_group_member_id (group_member_id=?)
 SEARCH received_probes USING COVERING INDEX idx_received_probes_group_member_id (group_member_id=?)
 SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_group_member_id (group_member_id=?)
 SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_member_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_group_member_id (group_member_id=?)
 SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_moderator_member_id (moderator_member_id=?)
 SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_member_id (group_member_id=?)
-SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_group_member_id (group_scope_group_member_id=?)
 SEARCH chat_items USING COVERING INDEX idx_chat_items_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
 SEARCH chat_items USING COVERING INDEX idx_chat_items_item_deleted_by_group_member_id (item_deleted_by_group_member_id=?)
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_member_id (group_member_id=?)
@@ -5149,13 +5149,13 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (conta
 Query: DELETE FROM group_members WHERE user_id = ? AND group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH group_conversations USING COVERING INDEX idx_group_conversations_group_member_id (group_member_id=?)
 SEARCH received_probes USING COVERING INDEX idx_received_probes_group_member_id (group_member_id=?)
 SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_group_member_id (group_member_id=?)
 SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_member_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_group_member_id (group_member_id=?)
 SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_moderator_member_id (moderator_member_id=?)
 SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_member_id (group_member_id=?)
-SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_group_member_id (group_scope_group_member_id=?)
 SEARCH chat_items USING COVERING INDEX idx_chat_items_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
 SEARCH chat_items USING COVERING INDEX idx_chat_items_item_deleted_by_group_member_id (item_deleted_by_group_member_id=?)
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_member_id (group_member_id=?)
@@ -5173,6 +5173,7 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (conta
 Query: DELETE FROM groups WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH group_conversations USING COVERING INDEX idx_group_conversations_group_id (group_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_group_id (group_id=?)
 SEARCH chat_tags_chats USING COVERING INDEX idx_chat_tags_chats_chat_tag_id_group_id (group_id=?)
 SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_group_id (group_id=?)
@@ -5279,6 +5280,7 @@ SEARCH connections USING COVERING INDEX idx_connections_user_contact_link_id (us
 Query: DELETE FROM users WHERE user_id = ?
 Plan:
 SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH group_conversations USING COVERING INDEX idx_group_conversations_user_id (user_id=?)
 SEARCH chat_tags USING COVERING INDEX idx_chat_tags_user_id (user_id=?)
 SEARCH note_folders USING COVERING INDEX note_folders_user_id (user_id=?)
 SEARCH received_probes USING COVERING INDEX idx_received_probes_user_id (user_id=?)

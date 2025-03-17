@@ -349,7 +349,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpLinkReject :: GroupLinkRejection -> ChatMsgEvent 'Json
   XGrpLinkMem :: Profile -> ChatMsgEvent 'Json
   XGrpLinkAcpt :: GroupMemberRole -> Maybe MemberId -> ChatMsgEvent 'Json -- Maybe MemberId for compatibility
-  XGrpMemNew :: MemberInfo -> ChatMsgEvent 'Json
+  XGrpMemNew :: MemberInfo -> Bool -> ChatMsgEvent 'Json
   XGrpMemIntro :: MemberInfo -> Maybe MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemInv :: MemberId -> IntroInvitation -> ChatMsgEvent 'Json
   XGrpMemFwd :: MemberInfo -> IntroInvitation -> ChatMsgEvent 'Json
@@ -396,7 +396,7 @@ isForwardedGroupMsg ev = case ev of
   XMsgReact {} -> True
   XFileCancel _ -> True
   XInfo _ -> True
-  XGrpMemNew _ -> True
+  XGrpMemNew {} -> True
   XGrpMemRole {} -> True
   XGrpMemRestrict {} -> True
   XGrpMemDel {} -> True -- TODO there should be a special logic when deleting host member (e.g., host forwards it before deleting connections)
@@ -999,7 +999,7 @@ toCMEventTag msg = case msg of
   XGrpLinkReject _ -> XGrpLinkReject_
   XGrpLinkMem _ -> XGrpLinkMem_
   XGrpLinkAcpt {} -> XGrpLinkAcpt_
-  XGrpMemNew _ -> XGrpMemNew_
+  XGrpMemNew {} -> XGrpMemNew_
   XGrpMemIntro _ _ -> XGrpMemIntro_
   XGrpMemInv _ _ -> XGrpMemInv_
   XGrpMemFwd _ _ -> XGrpMemFwd_
@@ -1102,7 +1102,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpLinkReject_ -> XGrpLinkReject <$> p "groupLinkRejection"
       XGrpLinkMem_ -> XGrpLinkMem <$> p "profile"
       XGrpLinkAcpt_ -> XGrpLinkAcpt <$> p "role" <*> opt "memberId"
-      XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo"
+      XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo" <*> p "knocking"
       XGrpMemIntro_ -> XGrpMemIntro <$> p "memberInfo" <*> opt "memberRestrictions"
       XGrpMemInv_ -> XGrpMemInv <$> p "memberId" <*> p "memberIntro"
       XGrpMemFwd_ -> XGrpMemFwd <$> p "memberInfo" <*> p "memberIntro"
@@ -1166,7 +1166,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XGrpLinkReject groupLinkRjct -> o ["groupLinkRejection" .= groupLinkRjct]
       XGrpLinkMem profile -> o ["profile" .= profile]
       XGrpLinkAcpt role memberId -> o $ ("memberId" .=? memberId) ["role" .= role]
-      XGrpMemNew memInfo -> o ["memberInfo" .= memInfo]
+      XGrpMemNew memInfo knocking -> o ["memberInfo" .= memInfo, "knocking" .= knocking]
       XGrpMemIntro memInfo memRestrictions -> o $ ("memberRestrictions" .=? memRestrictions) ["memberInfo" .= memInfo]
       XGrpMemInv memId memIntro -> o ["memberId" .= memId, "memberIntro" .= memIntro]
       XGrpMemFwd memInfo memIntro -> o ["memberInfo" .= memInfo, "memberIntro" .= memIntro]

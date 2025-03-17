@@ -247,10 +247,10 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       #==# XGrpAcpt (MemberId "\1\2\3\4")
   it "x.grp.mem.new" $
     "{\"v\":\"1\",\"event\":\"x.grp.mem.new\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
-      #==# XGrpMemNew MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile}
+      #==# XGrpMemNew MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile} False
   it "x.grp.mem.new with member chat version range" $
     "{\"v\":\"1\",\"event\":\"x.grp.mem.new\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"v\":\"1-15\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
-      #==# XGrpMemNew MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Just $ ChatVersionRange supportedChatVRange, profile = testProfile}
+      #==# XGrpMemNew MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Just $ ChatVersionRange supportedChatVRange, profile = testProfile} False
   it "x.grp.mem.intro" $
     "{\"v\":\"1\",\"event\":\"x.grp.mem.intro\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemIntro MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile} Nothing
