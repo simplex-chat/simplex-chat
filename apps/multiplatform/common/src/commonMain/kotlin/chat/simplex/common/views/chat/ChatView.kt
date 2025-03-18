@@ -2446,7 +2446,7 @@ private fun LoadingProgressIndicator() {
     contentAlignment = Alignment.Center
   ) {
     CircularProgressIndicator(
-      Modifier.size(28.dp),
+      Modifier.size(30.dp),
       color = MaterialTheme.colors.secondary,
       strokeWidth = 2.dp
     )
