@@ -795,34 +795,12 @@ data ReceivedGroupInvitation = ReceivedGroupInvitation
   }
   deriving (Eq, Show)
 
-type GroupConversationId = Int64
-
-data GroupConversation = GroupConversation
-  { groupConversationId :: GroupConversationId,
-    groupId :: GroupId,
-    conversationType :: GroupConversationType,
+data MemberSupportChatInfo = MemberSupportChatInfo
+  { groupMember_ :: Maybe GroupMember,
     chatTs :: UTCTime,
-    unread :: Bool,
-    archived :: Bool,
-    createdAt :: UTCTime,
-    updatedAt :: UTCTime
+    unanswered :: Bool
   }
   deriving (Show)
-
-data GroupConversationType
-  = GCTMemberSupport {member_ :: Maybe GroupMember}
-  | GCTDirect {member :: GroupMember}
-  deriving (Show)
-
--- TODO [knocking] From/ToField instances
-data GroupConversationTypeTag
-  = GCTMemberSupport_
-  | GCTDirect_
-
-toGroupConversationTypeTag :: GroupConversationType -> GroupConversationTypeTag
-toGroupConversationTypeTag = \case
-  GCTMemberSupport {} -> GCTMemberSupport_
-  GCTDirect {} -> GCTDirect_
 
 type GroupMemberId = Int64
 
@@ -1031,6 +1009,7 @@ data GroupMemberStatus
   | GSMemUnknown -- unknown member, whose message was forwarded by an admin (likely member wasn't introduced due to not being a current member, but message was included in history)
   | GSMemInvited -- member is sent to or received invitation to join the group
   | GSMemPendingApproval -- member is connected to host but pending host approval before connecting to other members ("knocking")
+  | GSMemPendingReview -- member is introduced to admins but pending admin review before connecting to other members ("knocking")
   | GSMemIntroduced -- user received x.grp.mem.intro for this member (only with GCPreMember)
   | GSMemIntroInvited -- member is sent to or received from intro invitation
   | GSMemAccepted -- member accepted invitation (only User and Invitee)
@@ -1065,6 +1044,7 @@ memberActive m = case memberStatus m of
   GSMemUnknown -> False
   GSMemInvited -> False
   GSMemPendingApproval -> True
+  GSMemPendingReview -> True
   GSMemIntroduced -> False
   GSMemIntroInvited -> False
   GSMemAccepted -> False
@@ -1076,8 +1056,14 @@ memberActive m = case memberStatus m of
 memberCurrent :: GroupMember -> Bool
 memberCurrent = memberCurrent' . memberStatus
 
+memberPending :: GroupMember -> Bool
+memberPending m = case memberStatus m of
+  GSMemPendingApproval -> True
+  GSMemPendingReview -> True
+  _ -> False
+
 memberCurrentOrPending :: GroupMember -> Bool
-memberCurrentOrPending m = memberCurrent m || memberStatus m == GSMemPendingApproval
+memberCurrentOrPending m = memberCurrent m || memberPending m
 
 -- update getGroupSummary if this is changed
 memberCurrent' :: GroupMemberStatus -> Bool
@@ -1089,6 +1075,7 @@ memberCurrent' = \case
   GSMemUnknown -> False
   GSMemInvited -> False
   GSMemPendingApproval -> False
+  GSMemPendingReview -> False
   GSMemIntroduced -> True
   GSMemIntroInvited -> True
   GSMemAccepted -> True
@@ -1106,6 +1093,7 @@ memberRemoved m = case memberStatus m of
   GSMemUnknown -> False
   GSMemInvited -> False
   GSMemPendingApproval -> False
+  GSMemPendingReview -> False
   GSMemIntroduced -> False
   GSMemIntroInvited -> False
   GSMemAccepted -> False
@@ -1123,6 +1111,7 @@ instance TextEncoding GroupMemberStatus where
     "unknown" -> Just GSMemUnknown
     "invited" -> Just GSMemInvited
     "pending_approval" -> Just GSMemPendingApproval
+    "pending_review" -> Just GSMemPendingReview
     "introduced" -> Just GSMemIntroduced
     "intro-inv" -> Just GSMemIntroInvited
     "accepted" -> Just GSMemAccepted
@@ -1139,6 +1128,7 @@ instance TextEncoding GroupMemberStatus where
     GSMemUnknown -> "unknown"
     GSMemInvited -> "invited"
     GSMemPendingApproval -> "pending_approval"
+    GSMemPendingReview -> "pending_review"
     GSMemIntroduced -> "introduced"
     GSMemIntroInvited -> "intro-inv"
     GSMemAccepted -> "accepted"
@@ -1859,9 +1849,7 @@ $(JQ.deriveJSON defaultJSON ''PendingContactConnection)
 
 $(JQ.deriveJSON defaultJSON ''GroupMember)
 
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GCT") ''GroupConversationType)
-
-$(JQ.deriveJSON defaultJSON ''GroupConversation)
+$(JQ.deriveJSON defaultJSON ''MemberSupportChatInfo)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "MF") ''MsgFilter)
 

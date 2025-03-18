@@ -57,7 +57,7 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextFie
 import Simplex.Messaging.Protocol (BlockingInfo, MsgBody)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 
-data ChatType = CTDirect | CTGroup | CTLocal | CTContactRequest | CTContactConnection
+data ChatType = CTDirect | CTGroup | CTLocal | CTContactRequest | CTContactConnection -- | CTMemberSupportChat 
   deriving (Eq, Show, Ord)
 
 data ChatName = ChatName {chatType :: ChatType, chatName :: Text}
@@ -80,6 +80,7 @@ data ChatRef = ChatRef ChatType Int64
 data ChatInfo (c :: ChatType) where
   DirectChat :: Contact -> ChatInfo 'CTDirect
   GroupChat :: GroupInfo -> ChatInfo 'CTGroup
+  -- MemberSupportChat :: GroupInfo -> MemberSupportChatInfo -> ChatInfo 'CTMemberSupportChat
   LocalChat :: NoteFolder -> ChatInfo 'CTLocal
   ContactRequest :: UserContactRequest -> ChatInfo 'CTContactRequest
   ContactConnection :: PendingContactConnection -> ChatInfo 'CTContactConnection
@@ -189,7 +190,6 @@ isUserMention ChatItem {meta = CIMeta {userMention}} = userMention
 data GroupChatScope
   = GCSGroup
   | GCSMemberSupport {groupMemberId_ :: Maybe GroupMemberId} -- Nothing means own conversation with admins
-  | GCSDirect {groupMemberId :: GroupMemberId} -- Directly between members
   deriving (Eq, Show)
 
 fromRcvMsgScope :: GroupInfo -> MsgScope -> GroupChatScope
@@ -198,13 +198,11 @@ fromRcvMsgScope GroupInfo {membership} = \case
   MSMember mId
     | sameMemberId mId membership -> GCSMemberSupport Nothing
     | otherwise -> GCSMemberSupport (Just 1) -- TODO [knocking] pass Group with members and find? use MemberId in GCS?
-  MSDirect -> GCSDirect 1 -- TODO [knocking] here we should know which member we've received message from
 
 gsScopeNotInHistory :: GroupChatScope -> Maybe NotInHistory
 gsScopeNotInHistory = \case
   GCSGroup -> Nothing
   GCSMemberSupport _ -> Just NotInHistory
-  GCSDirect _ -> Just NotInHistory
 
 data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectSnd :: CIDirection 'CTDirect 'MDSnd

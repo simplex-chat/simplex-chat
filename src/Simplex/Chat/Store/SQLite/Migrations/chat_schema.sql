@@ -166,6 +166,9 @@ CREATE TABLE group_members(
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   member_restriction TEXT,
+  support_chat_exists INTEGER,
+  support_chat_ts TEXT,
+  support_chat_unanswered INTEGER,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -408,8 +411,7 @@ CREATE TABLE chat_items(
   msg_content_tag TEXT,
   include_in_history INTEGER NOT NULL DEFAULT 0,
   user_mention INTEGER NOT NULL DEFAULT 0,
-  group_scope TEXT,
-  group_conversation_id INTEGER REFERENCES group_conversations ON DELETE CASCADE
+  support_chat_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE
 );
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(
@@ -650,18 +652,6 @@ CREATE TABLE chat_item_mentions(
   member_id BLOB NOT NULL,
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
   display_name TEXT NOT NULL
-);
-CREATE TABLE group_conversations(
-  group_conversation_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
-  conversation_tag TEXT NOT NULL,
-  group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
-  chat_ts TEXT NOT NULL DEFAULT(datetime('now')),
-  unread INTEGER NOT NULL DEFAULT 0,
-  archived INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL DEFAULT(datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -1032,11 +1022,6 @@ CREATE INDEX idx_chat_items_group_id_shared_msg_id ON chat_items(
   group_id,
   shared_msg_id
 );
-CREATE INDEX idx_group_conversations_user_id ON group_conversations(user_id);
-CREATE INDEX idx_group_conversations_group_id ON group_conversations(group_id);
-CREATE INDEX idx_group_conversations_group_member_id ON group_conversations(
-  group_member_id
-);
-CREATE INDEX idx_chat_items_group_conversation_id ON chat_items(
-  group_conversation_id
+CREATE INDEX idx_chat_items_support_chat_group_member_id ON chat_items(
+  support_chat_group_member_id
 );

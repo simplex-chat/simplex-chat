@@ -363,9 +363,9 @@ data ChatCommand
   | APIRemoveMembers {groupId :: GroupId, groupMemberIds :: Set GroupMemberId, withMessages :: Bool}
   | APILeaveGroup GroupId
   | APIListMembers GroupId
-  | APIListGroupConversations GroupId
-  | APIDeleteGroupConversations GroupId (NonEmpty GroupConversationId)
-  | APIArchiveGroupConversations GroupId (NonEmpty GroupConversationId)
+  | APIMemberSupportChats GroupId
+  -- | APIDeleteGroupConversations GroupId (NonEmpty GroupConversationId)
+  -- | APIArchiveGroupConversations GroupId (NonEmpty GroupConversationId)
   | APIUpdateGroupProfile GroupId GroupProfile
   | APICreateGroupLink GroupId GroupMemberRole
   | APIGroupLinkMemberRole GroupId GroupMemberRole
@@ -661,9 +661,9 @@ data ChatResponse
   | CRWelcome {user :: User}
   | CRGroupCreated {user :: User, groupInfo :: GroupInfo}
   | CRGroupMembers {user :: User, group :: Group}
-  | CRGroupConversations {user :: User, groupInfo :: GroupInfo, groupConversations :: [GroupConversation]}
-  | CRGroupConversationsArchived {user :: User, groupInfo :: GroupInfo, archivedGroupConversations :: [GroupConversation]}
-  | CRGroupConversationsDeleted {user :: User, groupInfo :: GroupInfo, deletedGroupConversations :: [GroupConversation]}
+  | CRMemberSupportChats {user :: User, groupInfo :: GroupInfo, chats :: [AChat]}
+  -- | CRGroupConversationsArchived {user :: User, groupInfo :: GroupInfo, archivedGroupConversations :: [GroupConversation]}
+  -- | CRGroupConversationsDeleted {user :: User, groupInfo :: GroupInfo, deletedGroupConversations :: [GroupConversation]}
   | CRContactsList {user :: User, contacts :: [Contact]}
   | CRUserContactLink {user :: User, contactLink :: UserContactLink}
   | CRUserContactLinkUpdated {user :: User, contactLink :: UserContactLink}
@@ -916,7 +916,7 @@ sendToChatRef = \case
 
 data GroupChatFilter
   = GCFMsgContentTag MsgContentTag
-  | GCFConversationId GroupConversationId
+  | GCFChatScope GroupChatScope
   deriving (Show)
 
 data ChatPagination

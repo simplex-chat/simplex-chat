@@ -763,16 +763,17 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           _ -> messageError "INFO from member must have x.grp.mem.info, x.info or x.ok"
         pure ()
       CON _pqEnc -> unless (memberStatus m == GSMemRejected) $ do
-        status' <- case memberStatus m of
-          GSMemPendingApproval -> pure GSMemPendingApproval
-          _ -> do
-            withStore' $ \db -> do
-              updateGroupMemberStatus db userId m GSMemConnected
-              unless (memberActive membership) $
-                updateGroupMemberStatus db userId membership GSMemConnected
-            -- possible improvement: check for each pending message, requires keeping track of connection state
-            unless (connDisabled conn) $ sendPendingGroupMessages user m conn
-            pure GSMemConnected
+        status' <-
+          if memberPending m
+            then pure (memberStatus m)
+            else do
+              withStore' $ \db -> do
+                updateGroupMemberStatus db userId m GSMemConnected
+                unless (memberActive membership) $
+                  updateGroupMemberStatus db userId membership GSMemConnected
+              -- possible improvement: check for each pending message, requires keeping track of connection state
+              unless (connDisabled conn) $ sendPendingGroupMessages user m conn
+              pure GSMemConnected
         withAgent $ \a -> toggleConnectionNtfs a (aConnId conn) $ chatHasNtfs chatSettings
         case memberCategory m of
           GCHostMember -> do
@@ -1228,10 +1229,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                                 toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
                 _ -> toView $ CRReceivedContactRequest user cReq
 
-    -- TODO [knocking] review
     memberCanSend :: GroupMember -> CM () -> CM ()
-    memberCanSend GroupMember {memberRole, memberStatus} a
-      | memberRole > GRObserver || memberStatus == GSMemPendingApproval = a
+    memberCanSend m@GroupMember {memberRole} a
+      | memberRole > GRObserver || memberPending m = a
       | otherwise = messageError "member is not allowed to send messages"
 
     processConnMERR :: ConnectionEntity -> Connection -> AgentErrorType -> CM ()
@@ -1721,9 +1721,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             _ -> messageError "x.msg.update: group member attempted invalid message update"
 
     memberNotInHistory :: GroupMember -> Maybe NotInHistory
-    memberNotInHistory = \case
-      GroupMember {memberStatus = GSMemPendingApproval} -> Just NotInHistory
-      _ -> Nothing
+    memberNotInHistory m
+      | memberPending m = Just NotInHistory
+      | otherwise = Nothing
 
     groupMessageDelete :: GroupInfo -> GroupMember -> SharedMsgId -> Maybe MemberId -> RcvMessage -> UTCTime -> CM ()
     groupMessageDelete gInfo@GroupInfo {membership} m@GroupMember {memberId, memberRole = senderRole} sharedMsgId sndMemberId_ RcvMessage {msgId} brokerTs = do
@@ -2392,8 +2392,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- TODO show/log error, other events in SMP confirmation
         _ -> pure (conn', False)
 
-    -- TODO [knocking] as admin, create group conversation for joining member
-    xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> Bool -> RcvMessage -> UTCTime -> CM ()
+    -- TODO [knocking] as admin, create group chat for joining member
+    xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> Maybe Bool -> RcvMessage -> UTCTime -> CM ()
     xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ _) _knocking msg brokerTs = do
       checkHostRole m memRole
       unless (sameMemberId memId $ membership gInfo) $

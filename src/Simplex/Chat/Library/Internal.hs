@@ -973,7 +973,7 @@ introduceToGroup _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEI
 introduceToGroup vr user gInfo@GroupInfo {groupId, membership} m@GroupMember {activeConn = Just conn} = do
   members <- withStore' $ \db -> getGroupMembers db vr user gInfo
   let recipientMs = filter memberCurrent members
-  void . sendGroupMessage user gInfo GCSGroup recipientMs $ XGrpMemNew (memberInfo m) False
+  void . sendGroupMessage user gInfo GCSGroup recipientMs $ XGrpMemNew (memberInfo m) (Just False)
   sendIntroductions recipientMs
   when (groupFeatureAllowed SGFHistory gInfo) sendHistory
   where

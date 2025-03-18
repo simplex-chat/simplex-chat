@@ -442,7 +442,7 @@ createNewChatItem_ db User {userId} chatDirection notInHistory_ msgId_ sharedMsg
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db ciId msgId createdAt
   pure ciId
   where
-    -- TODO [knocking] insert group_conversation_id
+    -- TODO [knocking] insert support_chat_group_member_id
     itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, Text, CIStatus d, Maybe MsgContentTag, Maybe SharedMsgId, Maybe GroupMemberId, BoolInt) :. (UTCTime, UTCTime, Maybe BoolInt, BoolInt) :. (Maybe Int, Maybe UTCTime)
     itemRow = (msgDirection @d, itemTs, ciContent, toCIContentTag ciContent, ciContentToText ciContent, ciCreateStatus ciContent, msgContentTag <$> ciMsgContent ciContent, sharedMsgId, forwardedByMember, BI includeInHistory) :. (createdAt, createdAt, BI <$> (justTrue live), BI userMention) :. ciTimedRow timed
     quoteRow' = let (a, b, c, d, e) = quoteRow in (a, b, c, BI <$> d, e)
@@ -1251,7 +1251,7 @@ data GroupItemIDsRange = GRLast | GRAfter UTCTime ChatItemId | GRBefore UTCTime 
 getGroupChatItemIDs :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatFilter -> GroupItemIDsRange -> Int -> String -> IO [ChatItemId]
 getGroupChatItemIDs db User {userId} GroupInfo {groupId} groupChatFilter range count search = case groupChatFilter of
   Just (GCFMsgContentTag mcTag) -> idsQuery (baseCond <> " AND msg_content_tag = ? ") (userId, groupId, mcTag)
-  Just (GCFConversationId gcId) -> error "not implemented" -- TODO [knocking] getGroupChatItemIDs conversation filter
+  Just (GCFChatScope _gcScope) -> error "not implemented" -- TODO [knocking] getGroupChatItemIDs conversation filter
   Nothing -> idsQuery baseCond (userId, groupId)
   where
     baseQuery = " SELECT chat_item_id FROM chat_items WHERE "
@@ -1416,7 +1416,7 @@ queryUnreadGroupItems db User {userId} GroupInfo {groupId} groupChatFilter baseQ
         db
         (baseQuery <> " AND msg_content_tag = ? AND item_status = ? " <> orderLimit)
         (userId, groupId, mcTag, CISRcvNew)
-    Just (GCFConversationId mcTag) ->
+    Just (GCFChatScope _gcScope) ->
       error "not implemented" -- TODO [knocking] queryUnreadGroupItems conversation filter
     Nothing ->
       DB.query

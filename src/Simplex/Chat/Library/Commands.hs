@@ -2025,7 +2025,8 @@ processChatCommand' vr = \case
   APIAcceptMember groupId gmId role -> withUser $ \user -> do
     (gInfo, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user gmId
     assertUserGroupRole gInfo GRAdmin
-    when (memberStatus m /= GSMemPendingApproval) $ throwChatError $ CECommandError "member is not pending approval"
+    -- TODO [knocking] smarter check - differentiate whether group requires admin review or not
+    unless (memberPending m) $ throwChatError $ CECommandError "member is not pending approval or review"
     case memberConn m of
       Just mConn -> do
         -- TODO [knocking] admin to send XGrpLinkAcpt with memberId to host, host to forward to invitee and introduceToGroup
@@ -2064,7 +2065,7 @@ processChatCommand' vr = \case
             | groupMemberId `elem` memberIds =
                 let maxRole' = max maxRole memberRole
                     anyAdmin' = anyAdmin || memberRole >= GRAdmin
-                    anyPending' = anyPending || memberStatus == GSMemPendingApproval
+                    anyPending' = anyPending || memberPending m
                  in
                   if
                     | memberRole == newRole -> (invited, current, m : unchanged, maxRole', anyAdmin', anyPending')
@@ -2122,11 +2123,11 @@ processChatCommand' vr = \case
       selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], GroupMemberRole, Bool, Bool)
       selectMembers = foldr' addMember ([], [], GRObserver, False, False)
         where
-          addMember m@GroupMember {groupMemberId, memberRole, memberStatus} (block, remaining, maxRole, anyAdmin, anyPending)
+          addMember m@GroupMember {groupMemberId, memberRole} (block, remaining, maxRole, anyAdmin, anyPending)
             | groupMemberId `elem` memberIds =
                 let maxRole' = max maxRole memberRole
                     anyAdmin' = anyAdmin || memberRole >= GRAdmin
-                    anyPending' = anyPending || memberStatus == GSMemPendingApproval
+                    anyPending' = anyPending || memberPending m
                  in (m : block, remaining, maxRole', anyAdmin', anyPending')
             | otherwise = (block, m : remaining, maxRole, anyAdmin, anyPending)
       blockMembers :: User -> GroupInfo -> [GroupMember] -> [GroupMember] -> CM ChatResponse
@@ -2164,7 +2165,6 @@ processChatCommand' vr = \case
       (errs1, deleted1) <- deleteInvitedMems user invitedMems
       let recipientMs = filter memberCurrent members
       (errs2, deleted2, acis2) <- deleteMemsSend user gInfo GCSGroup recipientMs currentMems
-      -- TODO [knocking] list of recipients should include other admins
       rs <- forM pendingMems $ \m -> deleteMemsSend user gInfo (GCSMemberSupport (Just $ groupMemberId' m)) [m] [m]
       let (errs3, deleted3, acis3) = concatTuples rs
           acis = acis2 <> acis3
@@ -2184,6 +2184,7 @@ processChatCommand' vr = \case
                     n' = n + 1
                  in case memberStatus of
                       GSMemInvited -> (n', m : invited, pending, current, maxRole', anyAdmin')
+                      -- TODO [knocking] separately collect GSMemPendingReview members, send to all admins and each of these members
                       GSMemPendingApproval -> (n', invited, m : pending, current, maxRole', anyAdmin')
                       _ -> (n', invited, pending, m : current, maxRole', anyAdmin')
             | otherwise = acc
@@ -2240,20 +2241,20 @@ processChatCommand' vr = \case
       pure $ CRLeftMemberUser user gInfo {membership = membership {memberStatus = GSMemLeft}}
   APIListMembers groupId -> withUser $ \user ->
     CRGroupMembers user <$> withFastStore (\db -> getGroup db vr user groupId)
-  APIListGroupConversations groupId -> withUser $ \user -> do
-    -- TODO [knocking] get from group_conversations
+  APIMemberSupportChats groupId -> withUser $ \user -> do
+    -- TODO [knocking] get from group_members
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
-    pure $ CRGroupConversations user gInfo []
-  APIDeleteGroupConversations groupId _gcId -> withUser $ \user -> do
-    -- TODO [knocking] update in group_conversations, return updated state;
-    -- TODO            validate: prohibit to archive if member is pending (has to communicate approval or rejection)
-    _gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
-    ok_ -- CRGroupConversationsArchived
-  APIArchiveGroupConversations groupId _gcId -> withUser $ \user -> do
-    -- TODO [knocking] delete from group_conversations;
-    -- TODO            validate: prohibit to delete if member is pending (has to communicate approval or rejection)
-    _gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
-    ok_ -- CRGroupConversationsDeleted
+    pure $ CRMemberSupportChats user gInfo []
+  -- APIDeleteGroupConversations groupId _gcId -> withUser $ \user -> do
+  --   -- TODO [knocking] update in group_conversations, return updated state;
+  --   -- TODO            validate: prohibit to archive if member is pending (has to communicate approval or rejection)
+  --   _gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
+  --   ok_ -- CRGroupConversationsArchived
+  -- APIArchiveGroupConversations groupId _gcId -> withUser $ \user -> do
+  --   -- TODO [knocking] delete from group_conversations;
+  --   -- TODO            validate: prohibit to delete if member is pending (has to communicate approval or rejection)
+  --   _gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
+  --   ok_ -- CRGroupConversationsDeleted
   AddMember gName cName memRole -> withUser $ \user -> do
     (groupId, contactId) <- withFastStore $ \db -> (,) <$> getGroupIdByName db user gName <*> getContactIdByName db user cName
     processChatCommand $ APIAddMember groupId contactId memRole
@@ -3209,35 +3210,35 @@ processChatCommand' vr = \case
                 quoteData ChatItem {content = CIRcvMsgContent qmc} = pure (qmc, CIQDirectRcv, False)
                 quoteData _ = throwError SEInvalidQuote
     sendGroupContentMessages :: User -> GroupInfo -> GroupChatScope -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
-    sendGroupContentMessages user gInfo@GroupInfo {groupId, membership} gcScope live itemTTL cmrs = do
+    sendGroupContentMessages user gInfo@GroupInfo {membership} gcScope live itemTTL cmrs = do
       assertMultiSendable live cmrs
       (msgScope, ms, numFileInvs) <- case gcScope of
         GCSGroup -> do
           ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
           let recepientMs = filter memberCurrent ms
           pure (MSGroup, recepientMs, length recepientMs)
-        GCSMemberSupport gmId_ -> do
-          adminsMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
-          let rcpAdminsMs' = filter (\m -> compatible m && memberCurrent m) adminsMs
-          when (null rcpAdminsMs') $ throwChatError $ CECommandError "no admins support this message"
-          (msgScope, m_) <- case gmId_ of
-            Nothing -> pure (MSMember (memberId' membership), [])
-            Just gmId -> do
-              -- Unlike admins, we don't filter out non-current members here to allow sending to pending members
-              m <- withFastStore $ \db -> getGroupMemberById db vr user gmId
-              unless (compatible m) $ throwChatError $ CECommandError "member does not support this message"
-              pure (MSMember (memberId' m), [m])
-          pure (msgScope, rcpAdminsMs' <> m_, length rcpAdminsMs' + length m_)
+        GCSMemberSupport gmId_ -> case gmId_ of
+          Nothing -> do
+            adminsMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
+            let rcpAdminsMs' = filter (\m -> compatible m && memberCurrent m) adminsMs
+            when (null rcpAdminsMs') $ throwChatError $ CECommandError "no admins support this message"
+            pure (MSMember (memberId' membership), rcpAdminsMs', length rcpAdminsMs')
+          Just gmId -> do
+            -- Unlike admins, we don't filter out non-current members here to allow sending to pending members
+            supportMem <- withFastStore $ \db -> getGroupMemberById db vr user gmId
+            unless (compatible supportMem) $ throwChatError $ CECommandError "member does not support this message"
+            if memberStatus supportMem == GSMemPendingApproval
+              then pure (MSMember (memberId' supportMem), [supportMem], 1)
+              else do
+                adminsMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
+                let rcpAdminsMs' = filter (\m -> compatible m && memberCurrent m) adminsMs
+                when (null rcpAdminsMs') $ throwChatError $ CECommandError "no admins support this message"
+                pure (MSMember (memberId' supportMem), [supportMem] <> rcpAdminsMs', length rcpAdminsMs' + 1)
           where
             hasReport = any (\(ComposedMessage {msgContent}, _, _, _) -> isReport msgContent) cmrs
             compatible GroupMember {activeConn, memberChatVRange}
               | hasReport = maxVersion (maybe memberChatVRange peerChatVRange activeConn) >= contentReportsVersion
               | otherwise = maxVersion (maybe memberChatVRange peerChatVRange activeConn) >= groupKnockingVersion
-        GCSDirect dmId -> do
-          when (dmId == groupMemberId' membership) $ throwChatError $ CECommandError "cannot send to self"
-          dm <- withFastStore $ \db -> getGroupMemberById db vr user dmId
-          unless (memberStatus dm == GSMemPendingApproval) $ throwChatError $ CECommandError "cannot send directly to member not pending approval"
-          pure (MSDirect, [dm], 1)
       sendGroupContentMessages_ user gInfo gcScope msgScope ms numFileInvs live itemTTL cmrs
     sendGroupContentMessages_ :: User -> GroupInfo -> GroupChatScope -> MsgScope -> [GroupMember] -> Int -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
     sendGroupContentMessages_ user gInfo@GroupInfo {groupId, membership} gcScope msgScope receipientMs numFileInvs live itemTTL cmrs = do
@@ -3248,11 +3249,10 @@ processChatCommand' vr = \case
         allowedRole :: Maybe GroupMemberRole
         allowedRole = case gcScope of
           GCSGroup -> Just GRAuthor
-          GCSMemberSupport Nothing -> Nothing
-          GCSMemberSupport (Just _gmId) -> Just GRAdmin
-          GCSDirect _
-            | memberStatus membership == GSMemPendingApproval -> Nothing
+          GCSMemberSupport Nothing
+            | memberPending membership -> Nothing
             | otherwise -> Just GRAuthor
+          GCSMemberSupport (Just _gmId) -> Just GRAdmin
         assertGroupContentAllowed :: CM ()
         assertGroupContentAllowed =
           case findProhibited (L.toList cmrs) of
@@ -3988,9 +3988,9 @@ chatCommandP =
       "/_remove #" *> (APIRemoveMembers <$> A.decimal <*> _strP <*> (" messages=" *> onOffP <|> pure False)),
       "/_leave #" *> (APILeaveGroup <$> A.decimal),
       "/_members #" *> (APIListMembers <$> A.decimal),
-      "/_conversations #" *> (APIListGroupConversations <$> A.decimal),
-      "/_archive conversations #" *> (APIArchiveGroupConversations <$> A.decimal <*> _strP),
-      "/_delete conversations #" *> (APIDeleteGroupConversations <$> A.decimal <*> _strP),
+      "/_member support chats #" *> (APIMemberSupportChats <$> A.decimal),
+      -- "/_archive conversations #" *> (APIArchiveGroupConversations <$> A.decimal <*> _strP),
+      -- "/_delete conversations #" *> (APIDeleteGroupConversations <$> A.decimal <*> _strP),
       "/_server test " *> (APITestProtoServer <$> A.decimal <* A.space <*> strP),
       "/smp test " *> (TestProtoServer . AProtoServerWithAuth SPSMP <$> strP),
       "/xftp test " *> (TestProtoServer . AProtoServerWithAuth SPXFTP <$> strP),
@@ -4223,7 +4223,8 @@ chatCommandP =
     chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup <|> A.char '*' $> CTLocal <|> A.char ':' $> CTContactConnection
     groupChatFilterP =
       (GCFMsgContentTag <$ "content=" <*> strP)
-        <|> (GCFConversationId <$ "conversation_id=" <*> A.decimal)
+        <|> (GCFChatScope <$ "group_chat_scope=" <*> groupChatScopeP)
+    groupChatScopeP = undefined -- TODO [knocking]
     chatPaginationP =
       (CPLast <$ "count=" <*> A.decimal)
         <|> (CPAfter <$ "after=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
@@ -4312,7 +4313,7 @@ chatCommandP =
     sendRefP =
       (A.char '@' $> SRDirect <*> A.decimal)
         <|> (A.char '#' $> SRGroup <*> A.decimal <*> (gcScopeP <|> pure GCSGroup))
-    gcScopeP = A.space *> ("@" $> GCSDirect <*> A.decimal) -- TODO [knocking] parse other scopes
+    gcScopeP = A.space *> ("@" $> GCSMemberSupport . Just <*> A.decimal) -- TODO [knocking] parse other scopes
     msgCountP = A.space *> A.decimal <|> pure 10
     ciTTLDecimal = ("default" $> Nothing) <|> (Just <$> A.decimal)
     ciTTL =
