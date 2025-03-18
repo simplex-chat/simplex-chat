@@ -1227,7 +1227,7 @@ fun BoxScope.ChatItemsList(
     if (reportsState != null) {
       reportsListState = null
       reportsState
-    } else if (index <= 0) {
+    } else if (index <= 0 || !searchValueIsEmpty.value) {
       LazyListState(0, 0)
     } else {
       LazyListState(index + 1, -maxHeightForList.value)
