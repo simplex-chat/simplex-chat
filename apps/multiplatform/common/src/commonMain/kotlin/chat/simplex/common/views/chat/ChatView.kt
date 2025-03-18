@@ -1243,7 +1243,7 @@ fun BoxScope.ChatItemsList(
       ignoreLoadingRequests.add(reversedChatItems.value.lastOrNull()?.id ?: return@LaunchedEffect)
   }
   PreloadItems(chatInfo.id, if (searchValueIsEmpty.value) ignoreLoadingRequests else mutableSetOf(), loadingMoreItems, resetListState, contentTag, mergedItems, listState, ChatPagination.UNTIL_PRELOAD_COUNT) { chatId, pagination ->
-    if (loadingMoreItems.value) return@PreloadItems false
+    if (loadingMoreItems.value || chatId != chatModel.chatId.value) return@PreloadItems false
     loadingMoreItems.value = true
     withContext(NonCancellable) {
       try {
