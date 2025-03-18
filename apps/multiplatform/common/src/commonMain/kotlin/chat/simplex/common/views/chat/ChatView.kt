@@ -1582,7 +1582,7 @@ fun BoxScope.ChatItemsList(
       }
     }
   }
-  FloatingButtons(reversedChatItems, remoteHostIdUpdated, chatInfoUpdated, topPaddingToContent, topPaddingToContentPx, contentTag, loadingMoreItems, animatedScrollingInProgress, mergedItems, unreadCount, maxHeight, composeViewHeight, searchValue, markChatRead, listState, loadMessages)
+  FloatingButtons(reversedChatItems, chatInfoUpdated, topPaddingToContent, topPaddingToContentPx, contentTag, loadingMoreItems, animatedScrollingInProgress, mergedItems, unreadCount, maxHeight, composeViewHeight, searchValue, markChatRead, listState, loadMessages)
   FloatingDate(Modifier.padding(top = 10.dp + topPaddingToContent).align(Alignment.TopCenter), topPaddingToContentPx, mergedItems, listState)
 
   LaunchedEffect(Unit) {
@@ -1676,7 +1676,6 @@ private fun NotifyChatListOnFinishingComposition(
 @Composable
 fun BoxScope.FloatingButtons(
   reversedChatItems: State<List<ChatItem>>,
-  remoteHostId: State<Long?>,
   chatInfo: State<ChatInfo>,
   topPaddingToContent: Dp,
   topPaddingToContentPx: State<Int>,
@@ -1734,7 +1733,9 @@ fun BoxScope.FloatingButtons(
   // Don't show top FAB if is in search
   if (searchValue.value.isNotEmpty()) return
   val fabSize = 56.dp
-  val topUnreadCount = remember { derivedStateOf { if (bottomUnreadCount.value >= 0) (unreadCount.value - bottomUnreadCount.value).coerceAtLeast(0) else 0 } }
+  val topUnreadCount = remember { derivedStateOf {
+    if (bottomUnreadCount.value >= 0) (unreadCount.value - bottomUnreadCount.value).coerceAtLeast(0) else 0 }
+  }
   val showDropDown = remember { mutableStateOf(false) }
 
   TopEndFloatingButton(
@@ -2117,7 +2118,7 @@ private fun DateSeparator(date: Instant) {
 
 @Composable
 private fun MarkItemsReadAfterDelay(
-  itemKey: String,
+  itemKey: ChatViewItemKey,
   itemIds: List<Long>,
   finishedInitialComposition: State<Boolean>,
   chatId: ChatId,
@@ -2155,18 +2156,20 @@ private fun reversedChatItemsStatic(contentTag: MsgContentTag?): List<ChatItem> 
 
 private fun oldestPartiallyVisibleListItemInListStateOrNull(topPaddingToContentPx: State<Int>, mergedItems: State<MergedItems>, listState: State<LazyListState>): ListItem? {
   val lastFullyVisibleOffset = listState.value.layoutInfo.viewportEndOffset - topPaddingToContentPx.value
-  return mergedItems.value.items.getOrNull((listState.value.layoutInfo.visibleItemsInfo.lastOrNull { item ->
+  val visibleKey: ChatViewItemKey? = listState.value.layoutInfo.visibleItemsInfo.lastOrNull { item ->
     item.offset <= lastFullyVisibleOffset
-  }?.index ?: listState.value.layoutInfo.visibleItemsInfo.lastOrNull()?.index) ?: -1)?.oldest()
+  }?.key as? ChatViewItemKey
+  return mergedItems.value.items.getOrNull((mergedItems.value.indexInParentItems[visibleKey?.first] ?: listState.value.layoutInfo.visibleItemsInfo.lastOrNull()?.index) ?: -1)?.oldest()
 }
 
 private fun lastFullyVisibleIemInListState(topPaddingToContentPx: State<Int>, density: Float, fontSizeSqrtMultiplier: Float, mergedItems: State<MergedItems>, listState: State<LazyListState>): ChatItem? {
   val lastFullyVisibleOffsetMinusFloatingHeight = listState.value.layoutInfo.viewportEndOffset - topPaddingToContentPx.value - 50 * density * fontSizeSqrtMultiplier
+  val visibleKey: ChatViewItemKey? = listState.value.layoutInfo.visibleItemsInfo.lastOrNull { item ->
+    item.offset <= lastFullyVisibleOffsetMinusFloatingHeight && item.size > 0
+  }?.key as? ChatViewItemKey
+
   return mergedItems.value.items.getOrNull(
-    (listState.value.layoutInfo.visibleItemsInfo.lastOrNull { item ->
-      item.offset <= lastFullyVisibleOffsetMinusFloatingHeight && item.size > 0
-    }
-      ?.index
+    (mergedItems.value.indexInParentItems[visibleKey?.first]
       ?: listState.value.layoutInfo.visibleItemsInfo.lastOrNull()?.index)
       ?: -1)?.newest()?.item
 }
@@ -2654,7 +2657,9 @@ fun providerForGallery(
   }
 }
 
-private fun keyForItem(item: ChatItem): String = (item.id to item.meta.createdAt.toEpochMilliseconds()).toString()
+typealias ChatViewItemKey = Pair<Long, Long>
+
+private fun keyForItem(item: ChatItem): ChatViewItemKey = ChatViewItemKey(item.id, item.meta.createdAt.toEpochMilliseconds())
 
 private fun ViewConfiguration.bigTouchSlop(slop: Float = 50f) = object: ViewConfiguration {
   override val longPressTimeoutMillis
