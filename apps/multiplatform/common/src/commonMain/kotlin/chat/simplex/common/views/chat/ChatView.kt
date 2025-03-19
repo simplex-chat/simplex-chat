@@ -1185,6 +1185,22 @@ fun BoxScope.ChatItemsList(
   developerTools: Boolean,
   showViaProxy: Boolean
 ) {
+  val loadingTopItems = remember { mutableStateOf(false) }
+  val loadingBottomItems = remember { mutableStateOf(false) }
+  // just for changing local var here based on request
+  val loadMessages: suspend (ChatId, ChatPagination, visibleItemIndexesNonReversed: () -> IntRange) -> Unit = { chatId, pagination, visibleItemIndexesNonReversed ->
+    val loadingSide = when (pagination) {
+      is ChatPagination.Before -> loadingTopItems
+      is ChatPagination.Last -> loadingBottomItems
+      is ChatPagination.After, is ChatPagination.Around, is ChatPagination.Initial -> null
+    }
+    loadingSide?.value = true
+    try {
+      loadMessages(chatId, pagination, visibleItemIndexesNonReversed)
+    } finally {
+      loadingSide?.value = false
+    }
+  }
   val searchValueIsEmpty = remember { derivedStateOf { searchValue.value.isEmpty() } }
   val searchValueIsNotBlank = remember { derivedStateOf { searchValue.value.isNotBlank() } }
   val revealedItems = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(setOf<Long>()) }
@@ -1582,7 +1598,25 @@ fun BoxScope.ChatItemsList(
       }
     }
   }
-  FloatingButtons(reversedChatItems, chatInfoUpdated, topPaddingToContent, topPaddingToContentPx, contentTag, loadingMoreItems, animatedScrollingInProgress, mergedItems, unreadCount, maxHeight, composeViewHeight, searchValue, markChatRead, listState, loadMessages)
+  FloatingButtons(
+    reversedChatItems,
+    chatInfoUpdated,
+    topPaddingToContent,
+    topPaddingToContentPx,
+    contentTag,
+    loadingMoreItems,
+    loadingTopItems,
+    loadingBottomItems,
+    animatedScrollingInProgress,
+    mergedItems,
+    unreadCount,
+    maxHeight,
+    composeViewHeight,
+    searchValue,
+    markChatRead,
+    listState,
+    loadMessages
+  )
   FloatingDate(Modifier.padding(top = 10.dp + topPaddingToContent).align(Alignment.TopCenter), topPaddingToContentPx, mergedItems, listState)
 
   LaunchedEffect(Unit) {
@@ -1607,12 +1641,15 @@ private suspend fun loadLastItems(chatId: State<ChatId>, contentTag: MsgContentT
   val itemsCanCoverScreen = lastVisible != null && listState.value.layoutInfo.viewportEndOffset - listState.value.layoutInfo.afterContentPadding <= lastVisible.offset + lastVisible.size
   if (!itemsCanCoverScreen) return
 
-  val chatState = chatModel.chatStateForContent(contentTag)
-  val lastItemsLoaded = chatState.splits.value.isEmpty() || chatState.splits.value.firstOrNull() != chatModel.chatItemsForContent(contentTag).value.lastOrNull()?.id
-  if (lastItemsLoaded) return
+  if (lastItemsLoaded(contentTag)) return
 
   delay(500)
   loadItems.value(chatId.value, ChatPagination.Last(ChatPagination.INITIAL_COUNT))
+}
+
+private fun lastItemsLoaded(contentTag: MsgContentTag?): Boolean {
+  val chatState = chatModel.chatStateForContent(contentTag)
+  return chatState.splits.value.isEmpty() || chatState.splits.value.firstOrNull() != chatModel.chatItemsForContent(contentTag).value.lastOrNull()?.id
 }
 
 // TODO: in extra rare case when after loading last items only 1 item is loaded, the view will jump like when receiving new message
@@ -1681,6 +1718,8 @@ fun BoxScope.FloatingButtons(
   topPaddingToContentPx: State<Int>,
   contentTag: MsgContentTag?,
   loadingMoreItems: MutableState<Boolean>,
+  loadingTopItems: MutableState<Boolean>,
+  loadingBottomItems: MutableState<Boolean>,
   animatedScrollingInProgress: MutableState<Boolean>,
   mergedItems: State<MergedItems>,
   unreadCount: State<Int>,
@@ -1692,6 +1731,40 @@ fun BoxScope.FloatingButtons(
   loadMessages: suspend (ChatId, ChatPagination, visibleItemIndexesNonReversed: () -> IntRange) -> Unit
 ) {
   val scope = rememberCoroutineScope()
+  fun scrollToBottom() {
+    scope.launch {
+      animatedScrollingInProgress.value = true
+      tryBlockAndSetLoadingMore(loadingMoreItems) { listState.value.animateScrollToItem(0) }
+    }
+  }
+  fun scrollToTopUnread() {
+    scope.launch {
+      tryBlockAndSetLoadingMore(loadingMoreItems) {
+        if (chatModel.chatStateForContent(contentTag).splits.value.isNotEmpty()) {
+          val pagination = ChatPagination.Initial(ChatPagination.INITIAL_COUNT)
+          val oldSize = reversedChatItems.value.size
+          loadMessages(chatInfo.value.id, pagination) {
+            visibleItemIndexesNonReversed(mergedItems, reversedChatItems.value.size, listState.value)
+          }
+          var repeatsLeft = 100
+          while (oldSize == reversedChatItems.value.size && repeatsLeft > 0) {
+            delay(10)
+            repeatsLeft--
+          }
+          if (oldSize == reversedChatItems.value.size) {
+            return@tryBlockAndSetLoadingMore
+          }
+        }
+        val index = mergedItems.value.items.indexOfLast { it.hasUnread() }
+        if (index != -1) {
+          // scroll to the top unread item
+          animatedScrollingInProgress.value = true
+          listState.value.animateScrollToItem(index + 1, -maxHeight.value)
+        }
+      }
+    }
+  }
+
   val bottomUnreadCount = remember {
     derivedStateOf {
       if (unreadCount.value == 0) return@derivedStateOf 0
@@ -1717,19 +1790,48 @@ fun BoxScope.FloatingButtons(
     allowToShowBottomWithArrow.value = shouldShow
     shouldShow && allow
   } }
+
+  val requestedTopScroll = remember { mutableStateOf(false) }
+  val requestedBottomScroll = remember { mutableStateOf(false) }
+
   BottomEndFloatingButton(
     bottomUnreadCount,
     showBottomButtonWithCounter,
     showBottomButtonWithArrow,
+    requestedBottomScroll,
     animatedScrollingInProgress,
     composeViewHeight,
     onClick = {
-      scope.launch {
-        animatedScrollingInProgress.value = true
-        tryBlockAndSetLoadingMore(loadingMoreItems) { listState.value.animateScrollToItem(0) }
+      if (loadingBottomItems.value || !lastItemsLoaded(contentTag)) {
+        requestedTopScroll.value = false
+        requestedBottomScroll.value = true
+      } else {
+        scrollToBottom()
       }
     }
   )
+  LaunchedEffect(Unit) {
+    launch {
+      snapshotFlow { loadingTopItems.value }
+        .drop(1)
+        .collect { top ->
+          if (!top && requestedTopScroll.value) {
+            requestedTopScroll.value = false
+            scrollToTopUnread()
+          }
+        }
+    }
+    launch {
+      snapshotFlow { loadingBottomItems.value }
+        .drop(1)
+        .collect { bottom ->
+          if (!bottom && requestedBottomScroll.value) {
+            requestedBottomScroll.value = false
+            scrollToBottom()
+          }
+        }
+    }
+  }
   // Don't show top FAB if is in search
   if (searchValue.value.isNotEmpty()) return
   val fabSize = 56.dp
@@ -1741,33 +1843,15 @@ fun BoxScope.FloatingButtons(
   TopEndFloatingButton(
     Modifier.padding(end = DEFAULT_PADDING, top = 24.dp + topPaddingToContent).align(Alignment.TopEnd),
     topUnreadCount,
+    requestedTopScroll,
     animatedScrollingInProgress,
     onClick = {
-        scope.launch {
-            tryBlockAndSetLoadingMore(loadingMoreItems) {
-              if (chatModel.chatStateForContent(contentTag).splits.value.isNotEmpty()) {
-                val pagination = ChatPagination.Initial(ChatPagination.INITIAL_COUNT)
-                val oldSize = reversedChatItems.value.size
-                loadMessages(chatInfo.value.id, pagination) {
-                  visibleItemIndexesNonReversed(mergedItems, reversedChatItems.value.size, listState.value)
-                }
-                var repeatsLeft = 100
-                while (oldSize == reversedChatItems.value.size && repeatsLeft > 0) {
-                  delay(10)
-                  repeatsLeft--
-                }
-                if (oldSize == reversedChatItems.value.size) {
-                  return@tryBlockAndSetLoadingMore
-                }
-              }
-              val index = mergedItems.value.items.indexOfLast { it.hasUnread() }
-              if (index != -1) {
-                // scroll to the top unread item
-                animatedScrollingInProgress.value = true
-                listState.value.animateScrollToItem(index + 1, -maxHeight.value)
-              }
-            }
-        }
+      if (loadingTopItems.value) {
+        requestedBottomScroll.value = false
+        requestedTopScroll.value = true
+      } else {
+        scrollToTopUnread()
+      }
     },
     onLongClick = { showDropDown.value = true }
   )
@@ -1896,6 +1980,7 @@ fun MemberImage(member: GroupMember) {
 private fun TopEndFloatingButton(
   modifier: Modifier = Modifier,
   unreadCount: State<Int>,
+  requestedTopScroll: State<Boolean>,
   animatedScrollingInProgress: State<Boolean>,
   onClick: () -> Unit,
   onLongClick: () -> Unit
@@ -1909,11 +1994,15 @@ private fun TopEndFloatingButton(
       elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp),
       interactionSource = interactionSource,
     ) {
-      Text(
-        unreadCountStr(unreadCount.value),
-        color = MaterialTheme.colors.primary,
-        fontSize = 14.sp,
-      )
+      if (requestedTopScroll.value) {
+        LoadingProgressIndicator()
+      } else {
+        Text(
+          unreadCountStr(unreadCount.value),
+          color = MaterialTheme.colors.primary,
+          fontSize = 14.sp,
+        )
+      }
     }
   }
 }
@@ -2281,39 +2370,50 @@ private fun BoxScope.BottomEndFloatingButton(
   unreadCount: State<Int>,
   showButtonWithCounter: State<Boolean>,
   showButtonWithArrow: State<Boolean>,
+  requestedBottomScroll: State<Boolean>,
   animatedScrollingInProgress: State<Boolean>,
   composeViewHeight: State<Dp>,
   onClick: () -> Unit
-) = when {
-  showButtonWithCounter.value && !animatedScrollingInProgress.value -> {
-    FloatingActionButton(
-      onClick = onClick,
-      elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-      modifier = Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING + composeViewHeight.value).align(Alignment.BottomEnd).size(48.dp),
-      backgroundColor = MaterialTheme.colors.secondaryVariant,
-    ) {
-      Text(
-        unreadCountStr(unreadCount.value),
-        color = MaterialTheme.colors.primary,
-        fontSize = 14.sp,
-      )
+) {
+  when {
+    showButtonWithCounter.value && !animatedScrollingInProgress.value -> {
+      FloatingActionButton(
+        onClick = onClick,
+        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
+        modifier = Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING + composeViewHeight.value).align(Alignment.BottomEnd).size(48.dp),
+        backgroundColor = MaterialTheme.colors.secondaryVariant,
+      ) {
+        if (requestedBottomScroll.value) {
+          LoadingProgressIndicator()
+        } else {
+          Text(
+            unreadCountStr(unreadCount.value),
+            color = MaterialTheme.colors.primary,
+            fontSize = 14.sp,
+          )
+        }
+      }
     }
-  }
-  showButtonWithArrow.value && !animatedScrollingInProgress.value -> {
-    FloatingActionButton(
-      onClick = onClick,
-      elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-      modifier = Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING + composeViewHeight.value).align(Alignment.BottomEnd).size(48.dp),
-      backgroundColor = MaterialTheme.colors.secondaryVariant,
-    ) {
-      Icon(
-        painter = painterResource(MR.images.ic_keyboard_arrow_down),
-        contentDescription = null,
-        tint = MaterialTheme.colors.primary
-      )
+    showButtonWithArrow.value && !animatedScrollingInProgress.value -> {
+      FloatingActionButton(
+        onClick = onClick,
+        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
+        modifier = Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING + composeViewHeight.value).align(Alignment.BottomEnd).size(48.dp),
+        backgroundColor = MaterialTheme.colors.secondaryVariant,
+      ) {
+        if (requestedBottomScroll.value) {
+          LoadingProgressIndicator()
+        } else {
+          Icon(
+            painter = painterResource(MR.images.ic_keyboard_arrow_down),
+            contentDescription = null,
+            tint = MaterialTheme.colors.primary
+          )
+        }
+      }
     }
+    else -> {}
   }
-  else -> {}
 }
 
 @Composable
@@ -2337,6 +2437,20 @@ fun SelectedListItem(
       Color(red = 60f / 255f, 60f / 255f, 67f / 255f, 76f / 255f)
     }
   )
+}
+
+@Composable
+private fun LoadingProgressIndicator() {
+  Box(
+    Modifier.fillMaxSize(),
+    contentAlignment = Alignment.Center
+  ) {
+    CircularProgressIndicator(
+      Modifier.size(30.dp),
+      color = MaterialTheme.colors.secondary,
+      strokeWidth = 2.dp
+    )
+  }
 }
 
 private fun selectUnselectChatItem(
