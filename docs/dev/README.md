@@ -1,5 +1,5 @@
 ---
-title: Developer Quick start
+title: Developer quick start
 ---
 # SimpleX Chat Developer Guide
 
