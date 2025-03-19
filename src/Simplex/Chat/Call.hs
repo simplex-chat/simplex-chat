@@ -23,10 +23,10 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types (Contact, ContactId, User)
-import Simplex.Messaging.Agent.Store.DB (Binary (..))
+import Simplex.Messaging.Agent.Store.DB (Binary (..), fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, fstToLower, singleFieldJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, singleFieldJSON)
 import Simplex.Messaging.Util (decodeJSON, encodeJSON)
 
 data Call = Call
