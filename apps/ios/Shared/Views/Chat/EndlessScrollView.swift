@@ -345,7 +345,11 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
             if let visibleIndex {
                 let v = oldVisible.remove(at: visibleIndex)
                 if forceReloadVisible || v.view.bounds.width != bounds.width || v.item.hashValue != item.hashValue {
+                    let wasHeight = v.view.bounds.height
                     updateCell(v.view, i, items)
+                    if wasHeight < v.view.bounds.height && i == 0 && shouldBeFirstVisible == i {
+                        v.view.frame.origin.y -= v.view.bounds.height - wasHeight
+                    }
                 }
                 visible = v
             } else {
