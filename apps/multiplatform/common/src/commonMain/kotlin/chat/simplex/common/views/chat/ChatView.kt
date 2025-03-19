@@ -1754,7 +1754,7 @@ fun BoxScope.FloatingButtons(
     onLongClick = { showDropDown.value = true }
   )
 
-  Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd)) {
+  Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd).align(Alignment.TopEnd)) {
     val density = LocalDensity.current
     val width = remember { mutableStateOf(250.dp) }
     DefaultDropdownMenu(
