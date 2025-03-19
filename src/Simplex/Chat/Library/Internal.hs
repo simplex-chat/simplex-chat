@@ -212,8 +212,9 @@ prepareGroupMsg db user g@GroupInfo {membership} msgScope mc mentions quotedItem
   where
     quoteData :: ChatItem c d -> GroupMember -> ExceptT StoreError IO (MsgContent, CIQDirection 'CTGroup, Bool, GroupMember)
     quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} _ = throwError SEInvalidQuote
-    quoteData ChatItem {chatDir = CIGroupSnd, content = CISndMsgContent qmc} membership' = pure (qmc, CIQGroupSnd, True, membership')
-    quoteData ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv $ Just m, False, m)
+    -- TODO [knocking] scope for quotes? see Messages.hs
+    quoteData ChatItem {chatDir = CIGroupSnd GCSGroup, content = CISndMsgContent qmc} membership' = pure (qmc, CIQGroupSnd, True, membership')
+    quoteData ChatItem {chatDir = CIGroupRcv GCSGroup m, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv $ Just m, False, m)
     quoteData _ _ = throwError SEInvalidQuote
 
 updatedMentionNames :: MsgContent -> Maybe MarkdownList -> Map MemberName CIMention -> (MsgContent, Maybe MarkdownList, Map MemberName CIMention)
@@ -950,7 +951,7 @@ acceptBusinessJoinRequestAsync
     let chatV = vr `peerConnChatVersion` cReqChatVRange
     connIds <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
     withStore' $ \db -> createJoiningMemberConnection db user connIds chatV ucr groupMemberId subMode
-    let cd = CDGroupSnd gInfo
+    let cd = CDGroupSnd gInfo GCSIGroup
     createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
     createGroupFeatureItems user cd CISndGroupFeature gInfo
     pure gInfo
@@ -973,7 +974,7 @@ introduceToGroup _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEI
 introduceToGroup vr user gInfo@GroupInfo {groupId, membership} m@GroupMember {activeConn = Just conn} = do
   members <- withStore' $ \db -> getGroupMembers db vr user gInfo
   let recipientMs = filter memberCurrent members
-  void . sendGroupMessage user gInfo GCSGroup recipientMs $ XGrpMemNew (memberInfo m) (Just False)
+  void . sendGroupMessage user gInfo GCSGroup recipientMs $ XGrpMemNew (memberInfo m) (Just MSGroup)
   sendIntroductions recipientMs
   when (groupFeatureAllowed SGFHistory gInfo) sendHistory
   where
@@ -1021,7 +1022,7 @@ introduceToGroup vr user gInfo@GroupInfo {groupId, membership} m@GroupMember {ac
       | otherwise = Nothing
     itemForwardEvents :: CChatItem 'CTGroup -> CM [ChatMsgEvent 'Json]
     itemForwardEvents cci = case cci of
-      (CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv sender, content = CIRcvMsgContent mc, file})
+      (CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv _scope sender, content = CIRcvMsgContent mc, file})
         | not (blockedByAdmin sender) -> do
             fInvDescr_ <- join <$> forM file getRcvFileInvDescr
             processContentItem sender ci mc fInvDescr_
@@ -1899,7 +1900,7 @@ saveSndChatItems user cd notInHistory_ itemsData itemTimed live = do
       forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
       let ci = mkChatItem_ cd ciId content itemTexts ciFile quotedItem (Just sharedMsgId) itemForwarded itemTimed live False createdAt Nothing createdAt
       Right <$> case cd of
-        CDGroupSnd g | not (null itemMentions) -> createGroupCIMentions db g ci itemMentions
+        CDGroupSnd g _scope | not (null itemMentions) -> createGroupCIMentions db g ci itemMentions
         _ -> pure ci
 
 saveRcvChatItemNoParse :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c 'MDRcv -> RcvMessage -> UTCTime -> CIContent 'MDRcv -> CM (ChatItem c 'MDRcv)
@@ -1918,7 +1919,7 @@ saveRcvChatItem' user cd notInHistory_ msg@RcvMessage {chatMsgEvent, forwardedBy
   withStore' $ \db -> do
     when (ciRequiresAttention content || contactChatDeleted cd) $ updateChatTs db user cd createdAt
     (mentions' :: Map MemberName CIMention, userMention) <- case cd of
-      CDGroupRcv g@GroupInfo {membership} _ -> do
+      CDGroupRcv g@GroupInfo {membership} _scope _m -> do
         mentions' <- getRcvCIMentions db user g ft_ mentions
         let userReply = case cmToQuotedMsg chatMsgEvent of
               Just QuotedMsg {msgRef = MsgRef {memberId = Just mId}} -> sameMemberId mId membership
@@ -1930,7 +1931,7 @@ saveRcvChatItem' user cd notInHistory_ msg@RcvMessage {chatMsgEvent, forwardedBy
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
     let ci = mkChatItem_ cd ciId content (t, ft_) ciFile quotedItem sharedMsgId_ itemForwarded itemTimed live userMention brokerTs forwardedByMember createdAt
     case cd of
-      CDGroupRcv g _ | not (null mentions') -> createGroupCIMentions db g ci mentions'
+      CDGroupRcv g _scope _m | not (null mentions') -> createGroupCIMentions db g ci mentions'
       _ -> pure ci
 
 -- TODO [mentions] optimize by avoiding unnecessary parsing

@@ -2892,16 +2892,16 @@ processChatCommand' vr = \case
             itemDeletable :: CChatItem 'CTGroup -> Bool
             itemDeletable (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) =
               case chatDir of
-                CIGroupRcv GroupMember {memberRole} -> membershipMemRole >= memberRole && isJust itemSharedMsgId
-                CIGroupSnd -> isJust itemSharedMsgId
+                CIGroupRcv _scope GroupMember {memberRole} -> membershipMemRole >= memberRole && isJust itemSharedMsgId
+                CIGroupSnd _scope -> isJust itemSharedMsgId
         itemsMsgMemIds :: GroupInfo -> [CChatItem 'CTGroup] -> [(SharedMsgId, MemberId)]
         itemsMsgMemIds GroupInfo {membership = GroupMember {memberId = membershipMemId}} = mapMaybe itemMsgMemIds
           where
             itemMsgMemIds :: CChatItem 'CTGroup -> Maybe (SharedMsgId, MemberId)
             itemMsgMemIds (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) =
               join <$> forM itemSharedMsgId $ \msgId -> Just $ case chatDir of
-                CIGroupRcv GroupMember {memberId} -> (msgId, memberId)
-                CIGroupSnd -> (msgId, membershipMemId)
+                CIGroupRcv _scope GroupMember {memberId} -> (msgId, memberId)
+                CIGroupSnd _scope -> (msgId, membershipMemId)
 
     delGroupChatItems :: User -> GroupInfo -> [CChatItem 'CTGroup] -> Bool -> CM ChatResponse
     delGroupChatItems user gInfo@GroupInfo {membership} items moderation = do

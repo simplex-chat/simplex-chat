@@ -423,6 +423,15 @@ data GroupInfo = GroupInfo
   }
   deriving (Eq, Show)
 
+data GroupChatScopeInfo
+  = GCSIGroup
+  | GCSIMemberSupport
+      { groupMember_ :: Maybe GroupMember,
+        chatTs :: UTCTime,
+        unanswered :: Bool
+      }
+  deriving (Show)
+
 data BusinessChatType
   = BCBusiness -- used on the customer side
   | BCCustomer -- used on the business side
@@ -794,13 +803,6 @@ data ReceivedGroupInvitation = ReceivedGroupInvitation
     groupInfo :: GroupInfo
   }
   deriving (Eq, Show)
-
-data MemberSupportChatInfo = MemberSupportChatInfo
-  { groupMember_ :: Maybe GroupMember,
-    chatTs :: UTCTime,
-    unanswered :: Bool
-  }
-  deriving (Show)
 
 type GroupMemberId = Int64
 
@@ -1849,7 +1851,7 @@ $(JQ.deriveJSON defaultJSON ''PendingContactConnection)
 
 $(JQ.deriveJSON defaultJSON ''GroupMember)
 
-$(JQ.deriveJSON defaultJSON ''MemberSupportChatInfo)
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GCSI") ''GroupChatScopeInfo)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "MF") ''MsgFilter)
 
