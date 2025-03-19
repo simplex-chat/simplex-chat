@@ -2,8 +2,7 @@ package chat.simplex.common.platform
 
 import android.annotation.SuppressLint
 import android.os.Build
-import android.security.keystore.KeyGenParameterSpec
-import android.security.keystore.KeyProperties
+import android.security.keystore.*
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
@@ -81,7 +80,7 @@ internal class Cryptor: CryptorInterface {
         val key = keyGenerator.generateKey()
         Log.w(TAG, "StrongBox support is present")
         key
-      } catch (e: Exception) {
+      } catch (e: StrongBoxUnavailableException) {
         Log.w(TAG, "No StrongBox support")
         keyGenerator.init(builder.setIsStrongBoxBacked(false).build())
         keyGenerator.generateKey()
