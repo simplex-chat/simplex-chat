@@ -6,6 +6,7 @@ import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.chatModel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.datetime.Instant
 import kotlin.math.min
 
 const val TRIM_KEEP_COUNT = 200
@@ -122,18 +123,20 @@ suspend fun processLoadedChat(
       }
     }
     is ChatPagination.Around -> {
-      val newSplits = if (openAroundItemId == null) {
+      val newSplits: ArrayList<Long> = if (openAroundItemId == null) {
         newItems.addAll(oldItems)
-        removeDuplicatesAndUpperSplits(newItems, chat, splits, visibleItemIndexesNonReversed)
+        ArrayList(removeDuplicatesAndUpperSplits(newItems, chat, splits, visibleItemIndexesNonReversed))
       } else {
-        emptyList()
+        arrayListOf()
       }
-      // currently, items will always be added on top, which is index 0
-      newItems.addAll(0, chat.chatItems)
+      val (itemIndex, splitIndex) = indexToInsertAround(chat.chatInfo.chatType, chat.chatItems.lastOrNull(), to = newItems, newSplits.toSet())
+      //indexToInsertAroundTest()
+      newItems.addAll(itemIndex, chat.chatItems)
+      newSplits.add(splitIndex, chat.chatItems.last().id)
 
       withChats(contentTag) {
         chatItems.replaceAll(newItems)
-        splits.value = listOf(chat.chatItems.last().id) + newSplits
+        splits.value = newSplits
         unreadAfterItemId.value = chat.chatItems.last().id
         totalAfter.value = navInfo.afterTotal
         unreadTotal.value = chat.chatStats.unreadCount
@@ -151,10 +154,12 @@ suspend fun processLoadedChat(
     }
     is ChatPagination.Last -> {
       newItems.addAll(oldItems)
+      val newSplits = removeDuplicatesAndUnusedSplits(newItems, chat, chatState.splits.value)
       removeDuplicates(newItems, chat)
       newItems.addAll(chat.chatItems)
       withChats(contentTag) {
         chatItems.replaceAll(newItems)
+        chatState.splits.value = newSplits
         unreadAfterNewestLoaded.value = 0
       }
     }
@@ -240,7 +245,15 @@ private fun removeDuplicatesAndModifySplitsOnAfterPagination(
   val indexInSplitRanges = splits.value.indexOf(paginationChatItemId)
   // Currently, it should always load from split range
   val loadingFromSplitRange = indexInSplitRanges != -1
-  val splitsToMerge = if (loadingFromSplitRange && indexInSplitRanges + 1 <= splits.value.size) ArrayList(splits.value.subList(indexInSplitRanges + 1, splits.value.size)) else ArrayList()
+  val topSplits: List<Long>
+  val splitsToMerge: ArrayList<Long>
+  if (loadingFromSplitRange && indexInSplitRanges + 1 <= splits.value.size) {
+    splitsToMerge = ArrayList(splits.value.subList(indexInSplitRanges + 1, splits.value.size))
+    topSplits = splits.value.take(indexInSplitRanges + 1)
+  } else {
+    splitsToMerge = ArrayList()
+    topSplits = emptyList()
+  }
   newItems.removeAll {
     val duplicate = newIds.contains(it.id)
     if (loadingFromSplitRange && duplicate) {
@@ -259,8 +272,8 @@ private fun removeDuplicatesAndModifySplitsOnAfterPagination(
   }
   var newSplits: List<Long> = emptyList()
   if (firstItemIdBelowAllSplits != null) {
-    // no splits anymore, all were merged with bottom items
-    newSplits = emptyList()
+    // no splits below anymore, all were merged with bottom items
+    newSplits = topSplits
   } else {
     if (splitsToRemove.isNotEmpty()) {
       val new = ArrayList(splits.value)
@@ -323,6 +336,31 @@ private fun removeDuplicatesAndUpperSplits(
   return newSplits
 }
 
+private fun removeDuplicatesAndUnusedSplits(
+  newItems: SnapshotStateList<ChatItem>,
+  chat: Chat,
+  splits: List<Long>
+): List<Long> {
+  if (splits.isEmpty()) {
+    removeDuplicates(newItems, chat)
+    return splits
+  }
+
+  val newSplits = splits.toMutableList()
+  val (newIds, _) = mapItemsToIds(chat.chatItems)
+  newItems.removeAll {
+    val duplicate = newIds.contains(it.id)
+    if (duplicate) {
+      val firstIndex = newSplits.indexOf(it.id)
+      if (firstIndex != -1) {
+        newSplits.removeAt(firstIndex)
+      }
+    }
+    duplicate
+  }
+  return newSplits
+}
+
 // ids, number of unread items
 private fun mapItemsToIds(items: List<ChatItem>): Pair<Set<Long>, Int> {
   var unreadInLoaded = 0
@@ -342,4 +380,142 @@ private fun mapItemsToIds(items: List<ChatItem>): Pair<Set<Long>, Int> {
 private fun removeDuplicates(newItems: SnapshotStateList<ChatItem>, chat: Chat) {
   val (newIds, _) = mapItemsToIds(chat.chatItems)
   newItems.removeAll { newIds.contains(it.id) }
+}
+
+private data class SameTimeItem(val index: Int, val item: ChatItem)
+
+// return (item index, split index)
+private fun indexToInsertAround(chatType: ChatType, lastNew: ChatItem?, to: List<ChatItem>, splits: Set<Long>): Pair<Int, Int> {
+  if (to.size <= 0 || lastNew == null) {
+    return 0 to 0
+  }
+  // group sorting: item_ts, item_id
+  // everything else: created_at, item_id
+  val compareByTimeTs = chatType == ChatType.Group
+  // in case several items have the same time as another item in the `to` array
+  var sameTime: ArrayList<SameTimeItem> = arrayListOf()
+
+  // trying to find new split index for item looks difficult but allows to not use one more loop.
+  // The idea is to memorize how many splits were till any index (map number of splits until index)
+  // and use resulting itemIndex to decide new split index position.
+  // Because of the possibility to have many items with the same timestamp, it's possible to see `itemIndex < || == || > i`.
+  val splitsTillIndex: ArrayList<Int> = arrayListOf()
+  var splitsPerPrevIndex = 0
+
+  for (i in to.indices) {
+    val item = to[i]
+
+    splitsPerPrevIndex = if (splits.contains(item.id)) splitsPerPrevIndex + 1 else splitsPerPrevIndex
+    splitsTillIndex.add(splitsPerPrevIndex)
+    val itemIsNewer = (if (compareByTimeTs) item.meta.itemTs > lastNew.meta.itemTs else item.meta.createdAt > lastNew.meta.createdAt)
+    if (itemIsNewer || i + 1 == to.size) {
+      val same = if (compareByTimeTs) lastNew.meta.itemTs == item.meta.itemTs else lastNew.meta.createdAt == item.meta.createdAt
+      if (same) {
+        sameTime.add(SameTimeItem(i, item))
+      }
+      // time to stop the loop. Item is newer, or it's the last item in `to` array, taking previous items and checking position inside them
+      val itemIndex: Int
+      val first = if (sameTime.size > 1) sameTime.sortedWith { prev, next -> prev.item.meta.itemId.compareTo(next.item.id) }.firstOrNull { same -> same.item.id > lastNew.id } else null
+      if (sameTime.size > 1 && first != null) {
+        itemIndex = first.index
+      } else if (sameTime.size == 1) {
+        itemIndex = if (sameTime[0].item.id > lastNew.id) sameTime[0].index else sameTime[0].index + 1
+      } else {
+        itemIndex = if (itemIsNewer) i else i + 1
+      }
+      val splitIndex = splitsTillIndex[min(itemIndex, splitsTillIndex.size - 1)]
+      val prevItemSplitIndex = if (itemIndex == 0) 0 else splitsTillIndex[min(itemIndex - 1, splitsTillIndex.size - 1)]
+      return Pair(itemIndex, if (splitIndex == prevItemSplitIndex) splitIndex else prevItemSplitIndex)
+    }
+    val same = if (compareByTimeTs) lastNew.meta.itemTs == item.meta.itemTs else lastNew.meta.createdAt == item.meta.createdAt
+    if (same) {
+      sameTime.add(SameTimeItem(index = i, item = item))
+    } else {
+      sameTime = arrayListOf()
+    }
+  }
+  // shouldn't be here
+  return Pair(to.size, splits.size)
+}
+
+private fun indexToInsertAroundTest() {
+  fun assert(one: Pair<Int, Int>, two: Pair<Int, Int>) {
+    if (one != two) {
+      throw Exception("$one != $two")
+    }
+  }
+
+  val itemsToInsert = listOf(ChatItem.getSampleData(3, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds( 3), ""))
+  val items1 = listOf(
+    ChatItem.getSampleData(0, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds( 0), ""),
+  ChatItem.getSampleData(1, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds( 1), ""),
+  ChatItem.getSampleData(2, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds( 2), "")
+  )
+  assert(indexToInsertAround(ChatType.Group, itemsToInsert.lastOrNull(), to = items1, setOf(1)), Pair(3, 1))
+
+  val items2 = listOf(
+    ChatItem.getSampleData(0, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(0), ""),
+  ChatItem.getSampleData(1, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(1), ""),
+  ChatItem.getSampleData(2, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(3), "")
+  )
+  assert(indexToInsertAround(ChatType.Group, itemsToInsert.lastOrNull(), to = items2, setOf(2)), Pair(3, 1))
+
+  val items3 = listOf(
+    ChatItem.getSampleData(0, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(0), ""),
+  ChatItem.getSampleData(1, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(3), ""),
+  ChatItem.getSampleData(2, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(3), "")
+  )
+  assert(indexToInsertAround(ChatType.Group, itemsToInsert.lastOrNull(), to = items3, setOf(1)), Pair(3, 1))
+
+  val items4 = listOf(
+    ChatItem.getSampleData(0, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(0), ""),
+  ChatItem.getSampleData(4, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(3), ""),
+  ChatItem.getSampleData(5, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(3), "")
+  )
+  assert(indexToInsertAround(ChatType.Group, itemsToInsert.lastOrNull(), to = items4, setOf(4)), Pair(1, 0))
+
+  val items5 = listOf(
+    ChatItem.getSampleData(0, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(0), ""),
+  ChatItem.getSampleData(2, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(3), ""),
+  ChatItem.getSampleData(4, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(3), "")
+  )
+  assert(indexToInsertAround(ChatType.Group, itemsToInsert.lastOrNull(), to = items5, setOf(2)), Pair(2, 1))
+
+  val items6 = listOf(
+    ChatItem.getSampleData(4, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(4), ""),
+  ChatItem.getSampleData(5, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(4), ""),
+  ChatItem.getSampleData(6, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(4), "")
+  )
+  assert(indexToInsertAround(ChatType.Group, itemsToInsert.lastOrNull(), to = items6, setOf(5)), Pair(0, 0))
+
+  val items7 = listOf(
+    ChatItem.getSampleData(4, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(4), ""),
+  ChatItem.getSampleData(5, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(4), ""),
+  ChatItem.getSampleData(6, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(4), "")
+  )
+  assert(indexToInsertAround(ChatType.Group, null, to = items7, setOf(6)), Pair(0, 0))
+
+  val items8 = listOf(
+    ChatItem.getSampleData(2, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(4), ""),
+  ChatItem.getSampleData(4, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(3), ""),
+  ChatItem.getSampleData(5, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(4), "")
+  )
+  assert(indexToInsertAround(ChatType.Group, itemsToInsert.lastOrNull(), to = items8, setOf(2)), Pair(0, 0))
+
+  val items9 = listOf(
+    ChatItem.getSampleData(2, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(3), ""),
+  ChatItem.getSampleData(4, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(3), ""),
+  ChatItem.getSampleData(5, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(4), "")
+  )
+  assert(indexToInsertAround(ChatType.Group, itemsToInsert.lastOrNull(), to = items9, setOf(5)), Pair(1, 0))
+
+  val items10 = listOf(
+    ChatItem.getSampleData(4, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(3), ""),
+  ChatItem.getSampleData(5, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(3), ""),
+  ChatItem.getSampleData(6, CIDirection.GroupSnd(), Instant.fromEpochMilliseconds(4), "")
+  )
+  assert(indexToInsertAround(ChatType.Group, itemsToInsert.lastOrNull(), to = items10, setOf(4)), Pair(0, 0))
+
+  val items11: List<ChatItem> = listOf()
+  assert(indexToInsertAround(ChatType.Group, itemsToInsert.lastOrNull(), to = items11, emptySet()), Pair(0, 0))
 }

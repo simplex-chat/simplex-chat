@@ -245,7 +245,7 @@ suspend fun apiFindMessages(ch: Chat, search: String, contentTag: MsgContentTag?
   withChats(contentTag) {
     chatItems.clearAndNotify()
   }
-  apiLoadMessages(ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, contentTag, pagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT), search = search)
+  apiLoadMessages(ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, contentTag, pagination = if (search.isNotEmpty()) ChatPagination.Last(ChatPagination.INITIAL_COUNT) else ChatPagination.Initial(ChatPagination.INITIAL_COUNT), search = search)
 }
 
 suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) = coroutineScope {
