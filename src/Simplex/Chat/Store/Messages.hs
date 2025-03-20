@@ -542,7 +542,7 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
               m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
               m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
               p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
-              m.created_at, m.updated_at
+              m.created_at, m.updated_at, m.support_chat_ts, m.support_chat_unanswered
             FROM group_members m
             JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
             LEFT JOIN contacts c ON m.contact_id = c.contact_id
@@ -1266,21 +1266,16 @@ getGroupChatScopeInfo' db vr user g = \case
 getGroupChatScopeInfo_ :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupChatScope -> ExceptT StoreError IO GroupChatScopeInfo
 getGroupChatScopeInfo_ db vr user GroupInfo {membership} = \case
   GCSGroup -> pure GCSIGroup
-  GCSMemberSupport gmId_ -> do
-    (chatTs, unanswered) <- getMemberSupportChatData (fromMaybe (groupMemberId' membership) gmId_)
-    m <- forM gmId_ $ \gmId -> getGroupMemberById db vr user gmId
-    pure GCSIMemberSupport {groupMember_ = m, chatTs, unanswered}
-    where
-      getMemberSupportChatData :: GroupMemberId -> ExceptT StoreError IO (UTCTime, Bool)
-      getMemberSupportChatData gmId = do
-        ExceptT . firstRow toMemberSupportChatData (SEGroupMemberNotFound gmId) $
-          DB.query
-            db
-            "SELECT support_chat_ts, support_chat_unanswered FROM group_members WHERE group_member_id = ?"
-            (Only gmId)
-        where
-          toMemberSupportChatData :: (UTCTime, BoolInt) -> (UTCTime, Bool)
-          toMemberSupportChatData (ts, BI unanswered) = (ts, unanswered)
+  GCSMemberSupport Nothing -> case supportChat membership of
+    Nothing -> throwError $ SEInternalError "no support chat"
+    Just GroupMemberSupportChat {chatTs, unanswered} ->
+      pure $ GCSIMemberSupport {groupMember_ = Nothing, chatTs, unanswered}
+  GCSMemberSupport (Just gmId) -> do
+    m <- getGroupMemberById db vr user gmId
+    case supportChat m of
+      Nothing -> throwError $ SEInternalError "no support chat"
+      Just GroupMemberSupportChat {chatTs, unanswered} ->
+        pure GCSIMemberSupport {groupMember_ = Just m, chatTs, unanswered}
 
 getGroupChatLast_ :: DB.Connection -> User -> GroupInfo -> GroupChatScopeInfo -> Maybe GroupChatFilter -> Int -> String -> ChatStats -> IO (Chat 'CTGroup)
 getGroupChatLast_ db user g gcsi groupChatFilter count search stats = do
@@ -1344,7 +1339,7 @@ safeToGroupItem gcsi currentTs itemId = \case
        in CChatItem
             SMDSnd
             ChatItem
-              { chatDir = CIGroupSnd (toGroupChatScope gcsi),
+              { chatDir = CIGroupSnd gcsi,
                 meta = dummyMeta itemId ts errorText,
                 content = CIInvalidJSON errorText,
                 mentions = M.empty,
@@ -1976,7 +1971,7 @@ toGroupChatItem ::
   UTCTime ->
   Int64 ->
   ChatItemRow
-    :. (Maybe Int64, Maybe GroupChatScopeTag)
+    :. MaybeGroupMemberRow
     :. Only (Maybe GroupMemberId)
     :. MaybeGroupMemberRow
     :. GroupQuoteRow
@@ -1991,7 +1986,7 @@ toGroupChatItem
         :. (timedTTL, timedDeleteAt, itemLive, BI userMention)
         :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_)
       )
-      :. (gsGroupMemberId_, gsTag_)
+      :. gcsiMemberRow_
       :. Only forwardedByMember
       :. memberRow_
       :. (quoteRow :. quotedMemberRow_)
@@ -1999,25 +1994,27 @@ toGroupChatItem
     ) = do
     chatItem $ fromRight invalid $ dbParseACIContent itemContentText
     where
+      gcsiMember_ = toMaybeGroupMember userContactId gcsiMemberRow_
       member_ = toMaybeGroupMember userContactId memberRow_
       quotedMember_ = toMaybeGroupMember userContactId quotedMemberRow_
       deletedByGroupMember_ = toMaybeGroupMember userContactId deletedByGroupMemberRow_
       invalid = ACIContent msgDir $ CIInvalidJSON itemContentText
-      gcs_ = case (gsGroupMemberId_, gsTag_) of
-        (Nothing, _) -> Right GCSGroup
-        (Just gmId, Just GCSTMemberSupportAsAdmin_) -> Right $ GCSMemberSupport (Just gmId)
-        (Just _, Just GCSTMemberSupportAsMember_) -> Right $ GCSMemberSupport Nothing
-        (Just _, Nothing) -> Left ()
-        (Just _, Just GCSTGroup_) -> Left ()
-      chatItem itemContent = case (itemContent, itemStatus, member_, fileStatus_, gcs_) of
-        (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, _, Just (AFS SMDSnd fileStatus), Right gcs) ->
-          Right $ cItem SMDSnd (CIGroupSnd gcs) ciStatus ciContent (maybeCIFile fileStatus)
-        (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, _, Nothing, Right gcs) ->
-          Right $ cItem SMDSnd (CIGroupSnd gcs) ciStatus ciContent Nothing
-        (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Just member, Just (AFS SMDRcv fileStatus), Right gcs) ->
-          Right $ cItem SMDRcv (CIGroupRcv gcs member) ciStatus ciContent (maybeCIFile fileStatus)
-        (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Just member, Nothing, Right gcs) ->
-          Right $ cItem SMDRcv (CIGroupRcv gcs member) ciStatus ciContent Nothing
+      gcsi_ = case gcsiMember_ of
+        Nothing -> Right GCSIGroup
+        Just GroupMember {memberCategory = GCUserMember, supportChat = Just GroupMemberSupportChat {chatTs, unanswered}} ->
+          Right $ GCSIMemberSupport {groupMember_ = Nothing, chatTs, unanswered}
+        Just m@GroupMember {supportChat = Just GroupMemberSupportChat {chatTs, unanswered}} ->
+          Right $ GCSIMemberSupport {groupMember_ = Just m, chatTs, unanswered}
+        _ -> Left ()
+      chatItem itemContent = case (itemContent, itemStatus, member_, fileStatus_, gcsi_) of
+        (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, _, Just (AFS SMDSnd fileStatus), Right gcsi) ->
+          Right $ cItem SMDSnd (CIGroupSnd gcsi) ciStatus ciContent (maybeCIFile fileStatus)
+        (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, _, Nothing, Right gcsi) ->
+          Right $ cItem SMDSnd (CIGroupSnd gcsi) ciStatus ciContent Nothing
+        (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Just member, Just (AFS SMDRcv fileStatus), Right gcsi) ->
+          Right $ cItem SMDRcv (CIGroupRcv gcsi member) ciStatus ciContent (maybeCIFile fileStatus)
+        (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Just member, Nothing, Right gcsi) ->
+          Right $ cItem SMDRcv (CIGroupRcv gcsi member) ciStatus ciContent Nothing
         _ -> badItem
       maybeCIFile :: CIFileStatus d -> Maybe (CIFile d)
       maybeCIFile fileStatus =
@@ -2663,29 +2660,34 @@ getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do
             i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention,
             -- CIFile
             f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol,
-            -- GroupChatScope
-            i.group_scope_group_member_id, i.group_scope_tag,
+            -- GroupChatScopeInfo member
+            gsm.group_member_id, gsm.group_id, gsm.member_id, gsm.peer_chat_min_version, gsm.peer_chat_max_version, gsm.member_role, gsm.member_category,
+            gsm.member_status, gsm.show_messages, gsm.member_restriction, gsm.invited_by, gsm.invited_by_group_member_id, gsm.local_display_name, gsm.contact_id, gsm.contact_profile_id, gsp.contact_profile_id,
+            gsp.display_name, gsp.full_name, gsp.image, gsp.contact_link, gsp.local_alias, gsp.preferences,
+            gsm.created_at, gsm.updated_at, gsm.support_chat_ts, gsm.support_chat_unanswered,
             -- CIMeta forwardedByMember
             i.forwarded_by_group_member_id,
             -- GroupMember
             m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
             m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
             p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
-            m.created_at, m.updated_at,
+            m.created_at, m.updated_at, m.support_chat_ts, m.support_chat_unanswered,
             -- quoted ChatItem
             ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent,
             -- quoted GroupMember
             rm.group_member_id, rm.group_id, rm.member_id, rm.peer_chat_min_version, rm.peer_chat_max_version, rm.member_role, rm.member_category,
             rm.member_status, rm.show_messages, rm.member_restriction, rm.invited_by, rm.invited_by_group_member_id, rm.local_display_name, rm.contact_id, rm.contact_profile_id, rp.contact_profile_id,
             rp.display_name, rp.full_name, rp.image, rp.contact_link, rp.local_alias, rp.preferences,
-            rm.created_at, rm.updated_at,
+            rm.created_at, rm.updated_at, rm.support_chat_ts, rm.support_chat_unanswered,
             -- deleted by GroupMember
             dbm.group_member_id, dbm.group_id, dbm.member_id, dbm.peer_chat_min_version, dbm.peer_chat_max_version, dbm.member_role, dbm.member_category,
             dbm.member_status, dbm.show_messages, dbm.member_restriction, dbm.invited_by, dbm.invited_by_group_member_id, dbm.local_display_name, dbm.contact_id, dbm.contact_profile_id, dbp.contact_profile_id,
             dbp.display_name, dbp.full_name, dbp.image, dbp.contact_link, dbp.local_alias, dbp.preferences,
-            dbm.created_at, dbm.updated_at
+            dbm.created_at, dbm.updated_at, dbm.support_chat_ts, dbm.support_chat_unanswered
           FROM chat_items i
           LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
+          LEFT JOIN group_members gsm ON gsm.group_member_id = i.group_scope_group_member_id
+          LEFT JOIN contact_profiles gsp ON gsp.contact_profile_id = COALESCE(gsm.member_profile_id, gsm.contact_profile_id)
           LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
           LEFT JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
           LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.group_id = i.group_id
@@ -2898,8 +2900,7 @@ getAChatItem db vr user chatRef itemId = do
     ChatRef CTGroup groupId -> do
       gInfo <- getGroupInfo db vr user groupId
       (CChatItem msgDir ci) <- getGroupChatItem db user groupId itemId
-      let gcs = groupCIDirectionScope ci
-      gcsi <- getGroupChatScopeInfo_ db vr user gInfo gcs
+      let gcsi = groupCIDirectionScopeInfo ci
       pure $ AChatItem SCTGroup msgDir (GroupChat gInfo gcsi) ci
     ChatRef CTLocal folderId -> do
       nf <- getNoteFolder db user folderId
@@ -2908,15 +2909,14 @@ getAChatItem db vr user chatRef itemId = do
     _ -> throwError $ SEChatItemNotFound itemId
   liftIO $ getACIReactions db aci
 
-getAChatItemBySharedMsgId :: ChatTypeQuotable c => DB.Connection -> VersionRangeChat -> User -> ChatDirection c 'MDRcv -> SharedMsgId -> ExceptT StoreError IO AChatItem
-getAChatItemBySharedMsgId db vr user cd sharedMsgId = case cd of
+getAChatItemBySharedMsgId :: ChatTypeQuotable c => DB.Connection -> User -> ChatDirection c 'MDRcv -> SharedMsgId -> ExceptT StoreError IO AChatItem
+getAChatItemBySharedMsgId db user cd sharedMsgId = case cd of
   CDDirectRcv ct@Contact {contactId} -> do
     (CChatItem msgDir ci) <- getDirectChatItemBySharedMsgId db user contactId sharedMsgId
     pure $ AChatItem SCTDirect msgDir (DirectChat ct) ci
   CDGroupRcv g _s GroupMember {groupMemberId} -> do
     (CChatItem msgDir ci) <- getGroupChatItemBySharedMsgId db user g groupMemberId sharedMsgId
-    let gcs = groupCIDirectionScope ci
-    gcsi <- getGroupChatScopeInfo_ db vr user g gcs
+    let gcsi = groupCIDirectionScopeInfo ci
     pure $ AChatItem SCTGroup msgDir (GroupChat g gcsi) ci
 
 getChatItemVersions :: DB.Connection -> ChatItemId -> IO [ChatItemVersion]

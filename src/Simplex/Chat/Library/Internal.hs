@@ -213,8 +213,8 @@ prepareGroupMsg db user g@GroupInfo {membership} msgScope mc mentions quotedItem
     quoteData :: ChatItem c d -> GroupMember -> ExceptT StoreError IO (MsgContent, CIQDirection 'CTGroup, Bool, GroupMember)
     quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} _ = throwError SEInvalidQuote
     -- TODO [knocking] scope for quotes? see Messages.hs
-    quoteData ChatItem {chatDir = CIGroupSnd GCSGroup, content = CISndMsgContent qmc} membership' = pure (qmc, CIQGroupSnd, True, membership')
-    quoteData ChatItem {chatDir = CIGroupRcv GCSGroup m, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv $ Just m, False, m)
+    quoteData ChatItem {chatDir = CIGroupSnd GCSIGroup, content = CISndMsgContent qmc} membership' = pure (qmc, CIQGroupSnd, True, membership')
+    quoteData ChatItem {chatDir = CIGroupRcv GCSIGroup m, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv $ Just m, False, m)
     quoteData _ _ = throwError SEInvalidQuote
 
 updatedMentionNames :: MsgContent -> Maybe MarkdownList -> Map MemberName CIMention -> (MsgContent, Maybe MarkdownList, Map MemberName CIMention)
@@ -551,7 +551,8 @@ markGroupMemberCIsDeleted_ db user gInfo member byGroupMember deletedTs = do
 groupDeletion :: MsgDirectionI d => SMsgDirection d -> GroupInfo -> ChatItem 'CTGroup d -> Maybe (ChatItem 'CTGroup d) -> ChatItemDeletion
 groupDeletion md g ci ci' = ChatItemDeletion (gItem ci) (gItem <$> ci')
   where
-    gItem = AChatItem SCTGroup md (GroupChat g)
+    gcsi = groupCIDirectionScopeInfo ci
+    gItem = AChatItem SCTGroup md (GroupChat g gcsi)
 
 contactDeletion :: MsgDirectionI d => SMsgDirection d -> Contact -> ChatItem 'CTDirect d -> Maybe (ChatItem 'CTDirect d) -> ChatItemDeletion
 contactDeletion md ct ci ci' = ChatItemDeletion (ctItem ci) (ctItem <$> ci')

@@ -834,7 +834,14 @@ data GroupMember = GroupMember
     -- but it's correctly set on read (see toGroupInfo)
     memberChatVRange :: VersionRangeChat,
     createdAt :: UTCTime,
-    updatedAt :: UTCTime
+    updatedAt :: UTCTime,
+    supportChat :: Maybe GroupMemberSupportChat
+  }
+  deriving (Eq, Show)
+
+data GroupMemberSupportChat = GroupMemberSupportChat
+  { chatTs :: UTCTime,
+    unanswered :: Bool
   }
   deriving (Eq, Show)
 
@@ -1848,6 +1855,8 @@ $(JQ.deriveJSON defaultJSON ''ConnNetworkStatus)
 $(JQ.deriveJSON defaultJSON ''Connection)
 
 $(JQ.deriveJSON defaultJSON ''PendingContactConnection)
+
+$(JQ.deriveJSON defaultJSON ''GroupMemberSupportChat)
 
 $(JQ.deriveJSON defaultJSON ''GroupMember)
 
