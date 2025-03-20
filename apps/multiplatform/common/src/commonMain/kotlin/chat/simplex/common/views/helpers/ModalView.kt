@@ -2,18 +2,19 @@ package chat.simplex.common.views.helpers
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chatlist.StatusBarBackground
+import chat.simplex.common.views.onboarding.OnboardingStage
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
@@ -23,23 +24,46 @@ import kotlin.math.sqrt
 fun ModalView(
   close: () -> Unit,
   showClose: Boolean = true,
+  showAppBar: Boolean = true,
   enableClose: Boolean = true,
-  background: Color = MaterialTheme.colors.background,
+  background: Color = Color.Unspecified,
   modifier: Modifier = Modifier,
-  closeOnTop: Boolean = true,
+  showSearch: Boolean = false,
+  searchAlwaysVisible: Boolean = false,
+  onSearchValueChanged: (String) -> Unit = {},
   endButtons: @Composable RowScope.() -> Unit = {},
-  content: @Composable () -> Unit,
+  appBar: @Composable (BoxScope.() -> Unit)? = null,
+  content: @Composable BoxScope.() -> Unit,
 ) {
-  if (showClose) {
+  if (showClose && showAppBar) {
     BackHandler(enabled = enableClose, onBack = close)
   }
+  val oneHandUI = remember { derivedStateOf { if (appPrefs.onboardingStage.state.value == OnboardingStage.OnboardingComplete) appPrefs.oneHandUI.state.value else false } }
   Surface(Modifier.fillMaxSize(), contentColor = LocalContentColor.current) {
-    Column(if (background != MaterialTheme.colors.background) Modifier.background(background) else Modifier.themedBackground()) {
-      if (closeOnTop) {
-        CloseSheetBar(if (enableClose) close else null, showClose, endButtons = endButtons)
-      }
+    Box(if (background != Color.Unspecified) Modifier.background(background) else Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)) {
       Box(modifier = modifier) {
         content()
+      }
+      if (showAppBar) {
+        if (oneHandUI.value) {
+          StatusBarBackground()
+        }
+        Box(Modifier.align(if (oneHandUI.value) Alignment.BottomStart else Alignment.TopStart)) {
+          if (appBar != null) {
+            appBar()
+          } else {
+            DefaultAppBar(
+              navigationButton = if (showClose) {
+                { NavigationButtonBack(onButtonClicked = if (enableClose) close else null) }
+              } else null,
+              onTop = !oneHandUI.value,
+              showSearch = showSearch,
+              searchAlwaysVisible = searchAlwaysVisible,
+              onSearchValueChanged = onSearchValueChanged,
+              buttons = endButtons
+            )
+          }
+        }
       }
     }
   }
@@ -49,7 +73,7 @@ enum class ModalPlacement {
   START, CENTER, END, FULLSCREEN
 }
 
-class ModalData() {
+class ModalData(val keyboardCoversBar: Boolean = true) {
   private val state = mutableMapOf<String, MutableState<Any?>>()
   fun <T> stateGetOrPut (key: String, default: () -> T): MutableState<T> =
     state.getOrPut(key) { mutableStateOf(default() as Any) } as MutableState<T>
@@ -57,11 +81,22 @@ class ModalData() {
   fun <T> stateGetOrPutNullable (key: String, default: () -> T?): MutableState<T?> =
     state.getOrPut(key) { mutableStateOf(default() as Any?) } as MutableState<T?>
 
-  val appBarHandler = AppBarHandler()
+  val appBarHandler = AppBarHandler(null, null, keyboardCoversBar = keyboardCoversBar)
+}
+
+enum class ModalViewId {
+  GROUP_REPORTS
 }
 
 class ModalManager(private val placement: ModalPlacement? = null) {
-  private val modalViews = arrayListOf<Triple<Boolean, ModalData, (@Composable ModalData.(close: () -> Unit) -> Unit)>>()
+  data class ModalViewHolder(
+    val id: ModalViewId?,
+    val animated: Boolean,
+    val data: ModalData,
+    val modal: @Composable ModalData.(close: () -> Unit) -> Unit
+  )
+
+  private val modalViews = arrayListOf<ModalViewHolder>()
   private val _modalCount = mutableStateOf(0)
   val modalCount: State<Int> = _modalCount
   private val toRemove = mutableSetOf<Int>()
@@ -71,23 +106,25 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   private var passcodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
   private var onTimePasscodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
 
-  fun showModal(settings: Boolean = false, showClose: Boolean = true, closeOnTop: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
-    val data = ModalData()
-    showCustomModal { close ->
-      ModalView(close, showClose = showClose, closeOnTop = closeOnTop, endButtons = endButtons, content = { data.content() })
+  fun hasModalOpen(id: ModalViewId): Boolean = modalViews.any { it.id == id }
+
+  fun isLastModalOpen(id: ModalViewId): Boolean = modalViews.lastOrNull()?.id == id
+
+  fun showModal(settings: Boolean = false, showClose: Boolean = true, id: ModalViewId? = null, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
+    showCustomModal(id = id) { close ->
+      ModalView(close, showClose = showClose, endButtons = endButtons, content = { content() })
     }
   }
 
-  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, closeOnTop: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
-    val data = ModalData()
-    showCustomModal { close ->
-      ModalView(close, showClose = showClose, endButtons = endButtons, closeOnTop = closeOnTop, content = { data.content(close) })
+  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, id: ModalViewId? = null, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
+    showCustomModal(id = id) { close ->
+      ModalView(close, showClose = showClose, endButtons = endButtons, content = { content(close) })
     }
   }
 
-  fun showCustomModal(animated: Boolean = true, modal: @Composable ModalData.(close: () -> Unit) -> Unit) {
+  fun showCustomModal(animated: Boolean = true, keyboardCoversBar: Boolean = true, id: ModalViewId? = null, modal: @Composable ModalData.(close: () -> Unit) -> Unit) {
     Log.d(TAG, "ModalManager.showCustomModal")
-    val data = ModalData()
+    val data = ModalData(keyboardCoversBar = keyboardCoversBar)
     // Means, animation is in progress or not started yet. Do not wait until animation finishes, just remove all from screen.
     // This is useful when invoking close() and ShowCustomModal one after another without delay. Otherwise, screen will hold prev view
     if (toRemove.isNotEmpty()) {
@@ -96,7 +133,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     // Make animated appearance only on Android (everytime) and on Desktop (when it's on the start part of the screen or modals > 0)
     // to prevent unneeded animation on different situations
     val anim = if (appPlatform.isAndroid) animated else animated && (modalCount.value > 0 || placement == ModalPlacement.START)
-    modalViews.add(Triple(anim, data, modal))
+    modalViews.add(ModalViewHolder(id, anim, data, modal))
     _modalCount.value = modalViews.size - toRemove.size
 
     if (placement == ModalPlacement.CENTER) {
@@ -124,7 +161,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
 
   fun closeModal() {
     if (modalViews.isNotEmpty()) {
-      if (modalViews.lastOrNull()?.first == false) modalViews.removeAt(modalViews.lastIndex)
+      if (modalViews.lastOrNull()?.animated == false) modalViews.removeAt(modalViews.lastIndex)
       else runAtomically { toRemove.add(modalViews.lastIndex - min(toRemove.size, modalViews.lastIndex)) }
     }
     _modalCount.value = modalViews.size - toRemove.size
@@ -146,12 +183,10 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   @Composable
   fun showInView() {
     // Without animation
-    if (modalCount.value > 0 && modalViews.lastOrNull()?.first == false) {
+    if (modalCount.value > 0 && modalViews.lastOrNull()?.animated == false) {
       modalViews.lastOrNull()?.let {
-        CompositionLocalProvider(
-          LocalAppBarHandler provides it.second.appBarHandler
-        ) {
-          it.third(it.second, ::closeModal)
+        CompositionLocalProvider(LocalAppBarHandler provides adjustAppBarHandler(it.data.appBarHandler)) {
+          it.modal(it.data, ::closeModal)
         }
       }
       return
@@ -166,10 +201,8 @@ class ModalManager(private val placement: ModalPlacement? = null) {
       }
     ) {
       modalViews.getOrNull(it - 1)?.let {
-        CompositionLocalProvider(
-          LocalAppBarHandler provides it.second.appBarHandler
-        ) {
-          it.third(it.second, ::closeModal)
+        CompositionLocalProvider(LocalAppBarHandler provides adjustAppBarHandler(it.data.appBarHandler)) {
+          it.modal(it.data, ::closeModal)
         }
       }
       // This is needed because if we delete from modalViews immediately on request, animation will be bad
@@ -209,11 +242,14 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     val end = if (appPlatform.isAndroid) shared else ModalManager(ModalPlacement.END)
     val fullscreen = if (appPlatform.isAndroid) shared else ModalManager(ModalPlacement.FULLSCREEN)
 
+    val floatingTerminal = if (appPlatform.isAndroid) shared else ModalManager(ModalPlacement.START)
+
     fun closeAllModalsEverywhere() {
       start.closeModals()
       center.closeModals()
       end.closeModals()
       fullscreen.closeModals()
+      floatingTerminal.closeModals()
     }
 
     @OptIn(ExperimentalAnimationApi::class)

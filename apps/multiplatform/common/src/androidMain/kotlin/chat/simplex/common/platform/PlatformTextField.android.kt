@@ -6,8 +6,7 @@ import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.text.InputType
 import android.util.Log
-import android.view.OnReceiveContentListener
-import android.view.ViewGroup
+import android.view.*
 import android.view.inputmethod.*
 import android.widget.EditText
 import android.widget.TextView
@@ -16,16 +15,19 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.drawable.DrawableCompat
+import androidx.core.view.children
 import androidx.core.view.inputmethod.EditorInfoCompat
 import androidx.core.view.inputmethod.InputConnectionCompat
 import androidx.core.widget.doAfterTextChanged
@@ -55,9 +57,10 @@ actual fun PlatformTextField(
   userIsObserver: Boolean,
   placeholder: String,
   showVoiceButton: Boolean,
-  onMessageChange: (String) -> Unit,
+  onMessageChange: (ComposeMessage) -> Unit,
   onUpArrow: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
+  focusRequester: FocusRequester?,
   onDone: () -> Unit,
 ) {
   val cs = composeState.value
@@ -94,8 +97,8 @@ actual fun PlatformTextField(
   }
 
   val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-  AndroidView(modifier = Modifier, factory = {
-    val editText = @SuppressLint("AppCompatCustomView") object: EditText(it) {
+  AndroidView(modifier = Modifier, factory = { context ->
+    val editText = @SuppressLint("AppCompatCustomView") object: EditText(context) {
       override fun setOnReceiveContentListener(
         mimeTypes: Array<out String>?,
         listener: OnReceiveContentListener?
@@ -117,6 +120,13 @@ actual fun PlatformTextField(
         }
         return InputConnectionCompat.createWrapper(connection, editorInfo, onCommit)
       }
+
+      override fun onSelectionChanged(selStart: Int, selEnd: Int) {
+        val start = minOf(text.length, minOf(selStart, selEnd))
+        val end = minOf(text.length, maxOf(selStart, selEnd))
+        onMessageChange(ComposeMessage(text.toString(), TextRange(start, end)))
+        super.onSelectionChanged(start, end)
+      }
     }
     editText.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
     editText.maxLines = 16
@@ -126,7 +136,8 @@ actual fun PlatformTextField(
     editText.background = ColorDrawable(Color.Transparent.toArgb())
     editText.textDirection = if (isRtl) EditText.TEXT_DIRECTION_LOCALE else EditText.TEXT_DIRECTION_ANY_RTL
     editText.setPaddingRelative(paddingStart, paddingTop, paddingEnd, paddingBottom)
-    editText.setText(cs.message)
+    editText.setText(cs.message.text)
+    editText.setSelection(cs.message.selection.start, cs.message.selection.end)
     editText.hint = placeholder
     editText.setHintTextColor(hintColor.toArgb())
     if (Build.VERSION.SDK_INT >= 29) {
@@ -140,26 +151,37 @@ actual fun PlatformTextField(
         Log.e(TAG, e.stackTraceToString())
       }
     }
+    editText.onFocusChangeListener = View.OnFocusChangeListener { _, hasFocus ->
+      // shows keyboard when user had search field on ChatView focused before clicking on this text field
+      // it still produce weird animation of closing/opening keyboard but the solution is to replace this Android EditText with Compose BasicTextField
+      if (hasFocus) {
+        showKeyboard = true
+      }
+    }
     editText.doOnTextChanged { text, _, _, _ ->
       if (!composeState.value.inProgress) {
-        onMessageChange(text.toString())
-      } else if (text.toString() != composeState.value.message) {
-        editText.setText(composeState.value.message)
+        onMessageChange(ComposeMessage(text.toString(), TextRange(minOf(editText.selectionStart, editText.selectionEnd), maxOf(editText.selectionStart, editText.selectionEnd))))
+      } else if (text.toString() != composeState.value.message.text) {
+        editText.setText(composeState.value.message.text)
+        editText.setSelection(composeState.value.message.selection.start, composeState.value.message.selection.end)
       }
     }
     editText.doAfterTextChanged { text -> if (composeState.value.preview is ComposePreview.VoicePreview && text.toString() != "") editText.setText("") }
-    editText
+    val workaround = WorkaroundFocusSearchLayout(context)
+    workaround.addView(editText)
+    workaround.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+    workaround
   }) {
+    val it = it.children.first() as EditText
     it.setTextColor(textColor.toArgb())
     it.setHintTextColor(hintColor.toArgb())
     it.hint = placeholder
     it.textSize = textStyle.value.fontSize.value * appPrefs.fontScale.get()
     it.isFocusable = composeState.value.preview !is ComposePreview.VoicePreview
     it.isFocusableInTouchMode = it.isFocusable
-    if (cs.message != it.text.toString()) {
-      it.setText(cs.message)
-      // Set cursor to the end of the text
-      it.setSelection(it.text.length)
+    if (cs.message.text != it.text.toString() || cs.message.selection.start != it.selectionStart || cs.message.selection.end != it.selectionEnd) {
+      it.setText(cs.message.text)
+      it.setSelection(cs.message.selection.start, cs.message.selection.end)
     }
     if (showKeyboard) {
       it.requestFocus()

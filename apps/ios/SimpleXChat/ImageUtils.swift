@@ -100,7 +100,7 @@ public func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int64, hasAlpha
     return data
 }
 
-public func resizeImageToStrSize(_ image: UIImage, maxDataSize: Int64) -> String? {
+public func resizeImageToStrSizeSync(_ image: UIImage, maxDataSize: Int64) -> String? {
     var img = image
     let hasAlpha = imageHasAlpha(image)
     var str = compressImageStr(img, hasAlpha: hasAlpha)
@@ -116,7 +116,15 @@ public func resizeImageToStrSize(_ image: UIImage, maxDataSize: Int64) -> String
     return str
 }
 
+public func resizeImageToStrSize(_ image: UIImage, maxDataSize: Int64) async -> String? {
+    resizeImageToStrSizeSync(image, maxDataSize: maxDataSize)
+}
+
 public func compressImageStr(_ image: UIImage, _ compressionQuality: CGFloat = 0.85, hasAlpha: Bool) -> String? {
+//    // Heavy workload to verify if UI gets blocked by the call
+//    for i in 0..<100 {
+//        print(image.jpegData(compressionQuality: Double(i) / 100)?.count ?? 0, terminator: ", ")
+//    }
     let ext = hasAlpha ? "png" : "jpg"
     if let data = hasAlpha ? image.pngData() : image.jpegData(compressionQuality: compressionQuality) {
         return "data:image/\(ext);base64,\(data.base64EncodedString())"
@@ -130,7 +138,7 @@ private func reduceSize(_ image: UIImage, ratio: CGFloat, hasAlpha: Bool) -> UII
     return resizeImage(image, newBounds: bounds, drawIn: bounds, hasAlpha: hasAlpha)
 }
 
-private func resizeImage(_ image: UIImage, newBounds: CGRect, drawIn: CGRect, hasAlpha: Bool) -> UIImage {
+public func resizeImage(_ image: UIImage, newBounds: CGRect, drawIn: CGRect, hasAlpha: Bool) -> UIImage {
     let format = UIGraphicsImageRendererFormat()
     format.scale = 1.0
     format.opaque = !hasAlpha
@@ -259,14 +267,23 @@ public func saveWallpaperFile(image: UIImage) -> String? {
 
 public func removeWallpaperFile(fileName: String? = nil) {
     do {
-        try FileManager.default.contentsOfDirectory(atPath: getWallpaperDirectory().path).forEach {
-            if URL(fileURLWithPath: $0).lastPathComponent == fileName { try FileManager.default.removeItem(atPath: $0) }
+        try FileManager.default.contentsOfDirectory(at: URL(fileURLWithPath: getWallpaperDirectory().path), includingPropertiesForKeys: nil, options: []).forEach { url in
+            if url.lastPathComponent == fileName {
+                try FileManager.default.removeItem(at: url)
+            }
         }
     } catch {
-        logger.error("FileUtils.removeWallpaperFile error: \(error.localizedDescription)")
+        logger.error("FileUtils.removeWallpaperFile error: \(error)")
     }
     if let fileName {
         WallpaperType.cachedImages.removeValue(forKey: fileName)
+    }
+}
+
+public func removeWallpaperFilesFromTheme(_ theme: ThemeModeOverrides?) {
+    if let theme {
+        removeWallpaperFile(fileName: theme.light?.wallpaper?.imageFile)
+        removeWallpaperFile(fileName: theme.dark?.wallpaper?.imageFile)
     }
 }
 
@@ -383,15 +400,33 @@ extension UIImage {
         }
         return self
     }
+}
 
-    public convenience init?(base64Encoded: String?) {
-        if let base64Encoded, let data = Data(base64Encoded: dropImagePrefix(base64Encoded)) {
-            self.init(data: data)
+public func imageFromBase64(_ base64Encoded: String?) -> UIImage? {
+    if let base64Encoded {
+        if let img = imageCache.object(forKey: base64Encoded as NSString) {
+            return img
+        } else if let data = Data(base64Encoded: dropImagePrefix(base64Encoded)),
+            let img = UIImage(data: data) {
+            imageCacheQueue.async {
+                imageCache.setObject(img, forKey: base64Encoded as NSString)
+            }
+            return img
         } else {
             return nil
         }
+    } else {
+        return nil
     }
 }
+
+private let imageCacheQueue = DispatchQueue.global(qos: .background)
+
+private var imageCache: NSCache<NSString, UIImage> = {
+    var cache = NSCache<NSString, UIImage>()
+    cache.countLimit = 1000
+    return cache
+}()
 
 public func getLinkPreview(url: URL, cb: @escaping (LinkPreview?) -> Void) {
     logger.debug("getLinkMetadata: fetching URL preview")
@@ -408,7 +443,7 @@ public func getLinkPreview(url: URL, cb: @escaping (LinkPreview?) -> Void) {
                     logger.error("Couldn't load image preview from link metadata with error: \(error.localizedDescription)")
                 } else {
                     if let image = object as? UIImage,
-                       let resized = resizeImageToStrSize(image, maxDataSize: 14000),
+                       let resized = resizeImageToStrSizeSync(image, maxDataSize: 14000),
                        let title = metadata.title,
                        let uri = metadata.originalURL {
                         linkPreview = LinkPreview(uri: uri, title: title, image: resized)

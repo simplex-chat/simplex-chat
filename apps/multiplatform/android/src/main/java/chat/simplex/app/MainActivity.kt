@@ -4,8 +4,10 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.*
+import android.view.View
 import android.view.WindowManager
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.model.NtfManager
@@ -13,7 +15,6 @@ import chat.simplex.app.model.NtfManager.getUserIdFromIntent
 import chat.simplex.common.*
 import chat.simplex.common.helpers.*
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
@@ -24,13 +25,21 @@ import kotlinx.coroutines.*
 import java.lang.ref.WeakReference
 
 class MainActivity: FragmentActivity() {
+  companion object {
+    const val OLD_ANDROID_UI_FLAGS = View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+  }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     mainActivity = WeakReference(this)
     platform.androidSetNightModeIfSupported()
     val c = CurrentColors.value.colors
-    platform.androidSetStatusAndNavBarColors(c.isLight, c.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
+    platform.androidSetStatusAndNavigationBarAppearance(c.isLight, c.isLight)
     applyAppLocale(ChatModel.controller.appPrefs.appLanguage)
+    // This flag makes status bar and navigation bar fully transparent. But on API level < 30 it breaks insets entirely
+    // https://issuetracker.google.com/issues/236862874
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      window.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
+    }
     super.onCreate(savedInstanceState)
     // testJson()
     // When call ended and orientation changes, it re-process old intent, it's unneeded.
@@ -47,6 +56,7 @@ class MainActivity: FragmentActivity() {
         WindowManager.LayoutParams.FLAG_SECURE
       )
     }
+    enableEdgeToEdge()
     setContent {
       AppScreen()
     }
@@ -54,7 +64,7 @@ class MainActivity: FragmentActivity() {
     SimplexApp.context.schedulePeriodicWakeUp()
   }
 
-  override fun onNewIntent(intent: Intent?) {
+  override fun onNewIntent(intent: Intent) {
     super.onNewIntent(intent)
     processIntent(intent)
     processExternalIntent(intent)
@@ -150,12 +160,9 @@ fun processIntent(intent: Intent?) {
     "android.intent.action.VIEW" -> {
       val uri = intent.data
       if (uri != null) {
-        val transformedUri = uri.toURIOrNull()
-        if (transformedUri != null) {
-          chatModel.appOpenUrl.value = null to transformedUri
-        } else {
-          AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_parsing_uri_title), generalGetString(MR.strings.error_parsing_uri_desc))
-        }
+        chatModel.appOpenUrl.value = null to uri.toString()
+      } else {
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_parsing_uri_title), generalGetString(MR.strings.error_parsing_uri_desc))
       }
     }
   }

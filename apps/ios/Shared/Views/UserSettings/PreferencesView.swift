@@ -32,6 +32,17 @@ struct PreferencesView: View {
                 .disabled(currentPreferences == preferences)
             }
         }
+        .onDisappear {
+            if currentPreferences != preferences {
+                showAlert(
+                    title: NSLocalizedString("Your chat preferences", comment: "alert title"),
+                    message: NSLocalizedString("Chat preferences were changed.", comment: "alert message"),
+                    buttonTitle: NSLocalizedString("Save", comment: "alert button"),
+                    buttonAction: savePreferences,
+                    cancelButton: true
+                )
+            }
+        }
     }
 
     private func featureSection(_ feature: ChatFeature, _ allowFeature: Binding<FeatureAllowed>) -> some View {

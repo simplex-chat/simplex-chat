@@ -1,8 +1,58 @@
 # Blog
 
+Mar 3, 2025 [SimpleX Chat v6.3: new user experience and safety in public groups](./20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md)
+
+What's new in v6.3:
+- preventing spam and abuse in public groups.
+- group improvements: mention other members and improved performance.
+- better chat navigation: organize chats into lists and jump to found and forwarded messages.
+- privacy and security improvements: chat retention period and private media file names.
+
+Also, we added Catalan interface language to Android and desktop apps, thanks to our users and Weblate.
+
+The last but not the least - server builds are now reproducible!
+
+--
+
+Jan 14, 2025 [SimpleX network: large groups and privacy-preserving content moderation](./20250114-simplex-network-large-groups-privacy-preserving-content-moderation.md)
+
+This post explains how server operators can moderate end-to-end encrypted conversations without compromising user privacy or end-to-end encryption.
+
+--
+
+Dec 10, 2024 [SimpleX network: preset servers operated by Flux, business chats and more with v6.2 of the apps](./20241210-simplex-network-v6-2-servers-by-flux-business-chats.md)
+
+- SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app to improve metadata privacy in SimpleX network.
+- Business chats for better privacy and support of your customers.
+- Better user experience: open on the first unread, jump to quoted messages, see who reacted.
+- Improving notifications in iOS app.
+
+--
+
+Nov 25, 2024 [Servers operated by Flux - true privacy and decentralization for all users](./20241125-servers-operated-by-flux-true-privacy-and-decentralization-for-all-users.md)
+
+- Welcome, Flux - the new servers in v6.2-beta.1!
+- What's the problem?
+- Using two operators improves connection privacy.
+- SimpleX decentralization compared with Matrix, Session and Tor.
+- What is next for SimpleX decentralization?
+
+---
+
+Oct 14, 2024 [SimpleX network: security review of protocols design by Trail of Bits, v6.1 released with better calls and user experience](./20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md)
+
+New security audit: Trail of Bits reviewed the cryptographic design of protocols used in SimpleX network and apps.
+
+What's new in v6.1:
+- Better calls: switch audio and video during the call.
+- Better iOS notifications: improved delivery, reduced traffic usage.
+- Better user experience: switch chat profiles, customizable message shapes, forward up to 20 messages.
+
+---
+
 Aug 14, 2024 [SimpleX network: the investment from Jack Dorsey and Asymmetric, v6.0 released with the new user experience and private message routing](./20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.md)
 
-[SimpleX Chat: vision and funding 2.0](#simplex-chat-vision-and-funding-20): past, present, future.
+SimpleX Chat: vision and funding 2.0: past, present, future.
 
 Announcing the investment from Jack Dorsey and Asymmetric.
 

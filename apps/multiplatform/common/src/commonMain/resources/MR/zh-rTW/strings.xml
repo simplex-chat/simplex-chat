@@ -119,7 +119,6 @@
     <string name="chat_is_stopped">聊天室已停止運作</string>
     <string name="stop_chat_confirmation">停止</string>
     <string name="chat_database_deleted">已刪除數據庫的對話內容</string>
-    <string name="stop_chat_to_enable_database_actions">停止聊天室以啟用數據庫功能。</string>
     <string name="change_database_passphrase_question">修改數據庫密碼？</string>
     <string name="leave_group_question">確定要退出群組？</string>
     <string name="leave_group_button">退出</string>
@@ -143,8 +142,7 @@
     <string name="icon_descr_cancel_file_preview">取消檔案預覽</string>
     <string name="cannot_receive_file">無法接收檔案</string>
     <string name="failed_to_create_user_duplicate_title">重複的顯示名稱！</string>
-    <string name="network_session_mode_entity_description">一個單獨的 TCP 連接（和 SOCKS 憑證）將用於<b>每個聯絡人和群組內的成員</b>。
-\n<b>請注意</b>：如果你有很多連接，你的電話電量和數據流量的消耗率會大大增加，一些連接有機會會連接失敗。</string>
+    <string name="network_session_mode_entity_description"><![CDATA[一個單獨的 TCP 連接（和 SOCKS 憑證）將用於<b>每個聯絡人和群組內的成員</b>。 \n<b>請注意</b>：如果你有很多連接，你的電話電量和數據流量的消耗率會大大增加，一些連接有機會會連接失敗。]]></string>
     <string name="network_session_mode_user_description"><![CDATA[一個單獨的 TCP 連接（和 SOCKS 憑證）將用於 <b>每個聊天室的設定</b>。]]></string>
     <string name="back">返回</string>
     <string name="turning_off_service_and_periodic">省電模式運行中，關閉了背景通知服務和定期更新接收訊息。你可以在通知設定內重新啟用。</string>
@@ -554,7 +552,6 @@
     <string name="description_via_group_link_incognito">透過群組連結使用匿名聊天模式</string>
     <string name="description_via_contact_address_link_incognito">一個使用了匿名聊天模式的人透過連結加入了群組</string>
     <string name="description_via_one_time_link_incognito">透過使用一次性連結匿名聊天模式連接</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[有很多人問：<i>如果 SimpleX 沒有任何的用戶標識符，它如何傳送訊息？</i>]]></string>
     <string name="onboarding_notifications_mode_service">即時</string>
     <string name="onboarding_notifications_mode_periodic">定期的</string>
     <string name="no_call_on_lock_screen">關閉</string>
@@ -632,7 +629,6 @@
     <string name="chat_item_ttl_seconds">%s 秒(s)</string>
     <string name="error_encrypting_database">加密數據庫時出錯</string>
     <string name="save_passphrase_in_keychain">在金鑰庫儲存密碼</string>
-    <string name="archive_created_on_ts">建立於 %1$s</string>
     <string name="restore_database">還原數據庫的備份</string>
     <string name="icon_descr_group_inactive">群組為不活躍狀態</string>
     <string name="alert_title_group_invitation_expired">邀請連結過時！</string>
@@ -700,8 +696,6 @@
     <string name="restore_database_alert_confirm">還原</string>
     <string name="restore_database_alert_title">還原數據庫的備份？</string>
     <string name="database_restore_error">還原數據庫時出錯</string>
-    <string name="save_archive">儲存存檔</string>
-    <string name="delete_archive">刪除存檔</string>
     <string name="join_group_button">加入</string>
     <string name="join_group_question">確定要加入群組？</string>
     <string name="join_group_incognito_button">加入匿名聊天模式</string>
@@ -757,7 +751,7 @@
     <string name="disappearing_prohibited_in_this_chat">自動銷毀訊息於這個聊天室內是禁用的。</string>
     <string name="message_deletion_prohibited">不可逆地刪除訊息於這個聊天室內是禁用的。</string>
     <string name="only_you_can_send_voice">只有你可以傳送語音訊息。</string>
-    <string name="direct_messages_are_prohibited_in_chat">私訊群組內的成員於這個群組內是禁用的。</string>
+    <string name="direct_messages_are_prohibited_in_group">私訊群組內的成員於這個群組內是禁用的。</string>
     <string name="group_members_can_delete">群組內的成員可以不可逆地刪除訊息。（24小時）</string>
     <string name="v4_3_voice_messages">語音訊息</string>
     <string name="v4_3_improved_server_configuration">改善伺服器配置</string>
@@ -777,7 +771,6 @@
     <string name="error_exporting_chat_database">匯出數據庫時出錯</string>
     <string name="error_importing_database">匯入數據庫時出錯</string>
     <string name="database_passphrase_will_be_updated">受加密的數據庫密碼會再次更新。</string>
-    <string name="delete_chat_archive_question">刪除封存對話？</string>
     <string name="encrypt_database_question">加密數據庫？</string>
     <string name="group_invitation_item_description">邀請至群組 %1$s</string>
     <string name="icon_descr_add_members">邀請成員</string>
@@ -791,7 +784,6 @@
     <string name="ttl_s">%ds</string>
     <string name="onboarding_notifications_mode_title">私人通知</string>
     <string name="read_more_in_github_with_link"><![CDATA[可在 <font color="#0088ff">GitHub</font>內查看更多。]]></string>
-    <string name="read_more_in_github">於 GitHub 儲存庫內查看更多。</string>
     <string name="incoming_video_call">視訊通話來電</string>
     <string name="icon_descr_hang_up">掛斷電話來電</string>
     <string name="call_connection_peer_to_peer">點對點</string>
@@ -799,13 +791,11 @@
     <string name="status_contact_has_no_e2e_encryption">對話沒有經過端對端加密</string>
     <string name="database_encrypted">數據庫已加密！</string>
     <string name="encrypted_database">已加密數據庫</string>
-    <string name="chat_archive_section">封存對話</string>
     <string name="snd_group_event_group_profile_updated">群組資料已經更新</string>
     <string name="group_member_role_member">成員</string>
     <string name="group_info_member_you">你：%1$s</string>
     <string name="button_delete_group">刪除群組</string>
     <string name="v4_4_live_messages">即時訊息</string>
-    <string name="chat_archive_header">封存對話</string>
     <string name="error_removing_member">移除成員時出錯</string>
     <string name="error_changing_role">修改身份時出錯</string>
     <string name="info_row_group">群組</string>
@@ -880,7 +870,6 @@
     <string name="update_network_session_mode_question">更新傳輸隔離模式？</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">為了保護隱私，而不像是其他平台般需要提取和存儲用戶的 IDs 資料， SimpleX 平台有自家佇列的標識符，這對於你的每個聯絡人也是獨一無二的。</string>
     <string name="onboarding_notifications_mode_off">當應用程式是運行中</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[你可以控制通過哪一個伺服器 <b>來接收</b> 你的聯絡人訊息 – 這些伺服器用來接收他們傳送給你的訊息。]]></string>
     <string name="allow_accepting_calls_from_lock_screen">透過設定啟用於上鎖畫面顯示來電通知。</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">這操作不能還原 - 你目前的個人檔案，聯絡人，訊息和檔案將不可逆地遺失。</string>
     <string name="you_must_use_the_most_recent_version_of_database">你必須在裝置上使用最新版本的對話數據庫，否則你可能會停止接收某些聯絡人的訊息。</string>

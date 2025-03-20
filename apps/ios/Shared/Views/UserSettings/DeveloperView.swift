@@ -45,7 +45,7 @@ struct DeveloperView: View {
                 } header: {
                     Text("")
                 } footer: {
-                    ((developerTools ? Text("Show:") : Text("Hide:")) + Text(" ") + Text("Database IDs and Transport isolation option."))
+                    ((developerTools ? Text("Show:") : Text("Hide:")) + textSpace + Text("Database IDs and Transport isolation option."))
                         .foregroundColor(theme.colors.secondary)
                 }
                 
@@ -53,6 +53,13 @@ struct DeveloperView: View {
                     Section {
                         settingsRow("internaldrive", color: theme.colors.secondary) {
                             Toggle("Confirm database upgrades", isOn: $confirmDatabaseUpgrades)
+                        }
+                        NavigationLink {
+                            StorageView()
+                                .navigationTitle("Storage")
+                                .navigationBarTitleDisplayMode(.large)
+                        } label: {
+                            settingsRow("internaldrive", color: theme.colors.secondary) { Text("Storage") }
                         }
                     } header: {
                         Text("Developer options")

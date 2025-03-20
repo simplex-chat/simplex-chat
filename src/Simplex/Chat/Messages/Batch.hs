@@ -17,16 +17,18 @@ import Simplex.Chat.Messages
 
 data MsgBatch = MsgBatch ByteString [SndMessage]
 
--- | Batches [SndMessage] into batches of ByteStrings in form of JSON arrays.
+-- | Batches SndMessages in [Either ChatError SndMessage] into batches of ByteStrings in form of JSON arrays.
+-- Preserves original errors in the list.
 -- Does not check if the resulting batch is a valid JSON.
 -- If a single element is passed, it is returned as is (a JSON string).
 -- If an element exceeds maxLen, it is returned as ChatError.
-batchMessages :: Int -> [SndMessage] -> [Either ChatError MsgBatch]
+batchMessages :: Int -> [Either ChatError SndMessage] -> [Either ChatError MsgBatch]
 batchMessages maxLen = addBatch . foldr addToBatch ([], [], 0, 0)
   where
     msgBatch batch = Right (MsgBatch (encodeMessages batch) batch)
-    addToBatch :: SndMessage -> ([Either ChatError MsgBatch], [SndMessage], Int, Int) -> ([Either ChatError MsgBatch], [SndMessage], Int, Int)
-    addToBatch msg@SndMessage {msgBody} acc@(batches, batch, len, n)
+    addToBatch :: Either ChatError SndMessage -> ([Either ChatError MsgBatch], [SndMessage], Int, Int) -> ([Either ChatError MsgBatch], [SndMessage], Int, Int)
+    addToBatch (Left err) acc = (Left err : addBatch acc, [], 0, 0) -- step over original error
+    addToBatch (Right msg@SndMessage {msgBody}) acc@(batches, batch, len, n)
       | batchLen <= maxLen = (batches, msg : batch, len', n + 1)
       | msgLen <= maxLen = (addBatch acc, [msg], msgLen, 1)
       | otherwise = (errLarge msg : addBatch acc, [], 0, 0)

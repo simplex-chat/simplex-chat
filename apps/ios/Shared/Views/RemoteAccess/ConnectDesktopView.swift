@@ -14,7 +14,6 @@ struct ConnectDesktopView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
-    var viaSettings = false
     @AppStorage(DEFAULT_DEVICE_NAME_FOR_REMOTE_ACCESS) private var deviceName = UIDevice.current.name
     @AppStorage(DEFAULT_CONFIRM_REMOTE_SESSIONS) private var confirmRemoteSessions = false
     @AppStorage(DEFAULT_CONNECT_REMOTE_VIA_MULTICAST) private var connectRemoteViaMulticast = true
@@ -57,23 +56,6 @@ struct ConnectDesktopView: View {
     }
 
     var body: some View {
-        if viaSettings {
-            viewBody
-                .modifier(BackButton(label: "Back", disabled: Binding.constant(false)) {
-                    if m.activeRemoteCtrl {
-                        alert = .disconnectDesktop(action: .back)
-                    } else {
-                        dismiss()
-                    }
-                })
-        } else {
-            NavigationView {
-                viewBody
-            }
-        }
-    }
-
-    var viewBody: some View {
         Group {
             let discovery = m.remoteCtrlSession?.discovery
             if discovery == true || (discovery == nil && !showConnectScreen) {
@@ -286,7 +268,7 @@ struct ConnectDesktopView: View {
     private func ctrlDeviceNameText(_ session: RemoteCtrlSession, _ rc: RemoteCtrlInfo?) -> Text {
         var t = Text(rc?.deviceViewName ?? session.ctrlAppInfo?.deviceName ?? "")
         if (rc == nil) {
-            t = t + Text(" ") + Text("(new)").italic()
+            t = t + textSpace + Text("(new)").italic()
         }
         return t
     }
@@ -295,7 +277,7 @@ struct ConnectDesktopView: View {
         let v = session.ctrlAppInfo?.appVersionRange.maxVersion
         var t = Text("v\(v ?? "")")
         if v != session.appVersion {
-            t = t + Text(" ") + Text("(this device v\(session.appVersion))").italic()
+            t = t + textSpace + Text("(this device v\(session.appVersion))").italic()
         }
         return t
     }

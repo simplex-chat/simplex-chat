@@ -5,8 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
@@ -14,7 +13,9 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun DefaultDropdownMenu(
   showMenu: MutableState<Boolean>,
+  modifier: Modifier = Modifier,
   offset: DpOffset = DpOffset(0.dp, 0.dp),
+  onClosed: State<() -> Unit> = remember { mutableStateOf({}) },
   dropdownMenuItems: (@Composable () -> Unit)?
 ) {
   MaterialTheme(
@@ -23,13 +24,18 @@ fun DefaultDropdownMenu(
     DropdownMenu(
       expanded = showMenu.value,
       onDismissRequest = { showMenu.value = false },
-      modifier = Modifier
+      modifier = modifier
         .widthIn(min = 250.dp)
         .background(MaterialTheme.colors.surface)
         .padding(vertical = 4.dp),
       offset = offset,
     ) {
       dropdownMenuItems?.invoke()
+        DisposableEffect(Unit) {
+          onDispose {
+            onClosed.value()
+          }
+      }
     }
   }
 }

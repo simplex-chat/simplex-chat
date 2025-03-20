@@ -54,32 +54,30 @@ func apiGetChats(userId: User.ID) throws -> Array<ChatData> {
     throw r
 }
 
-func apiSendMessage(
+func apiSendMessages(
     chatInfo: ChatInfo,
-    cryptoFile: CryptoFile?,
-    msgContent: MsgContent
-) throws -> AChatItem {
+    composedMessages: [ComposedMessage]
+) throws -> [AChatItem] {
     let r = sendSimpleXCmd(
         chatInfo.chatType == .local
-        ? .apiCreateChatItem(
+        ? .apiCreateChatItems(
             noteFolderId: chatInfo.apiId,
-            file: cryptoFile,
-            msg: msgContent
+            composedMessages: composedMessages
         )
-        : .apiSendMessage(
+        : .apiSendMessages(
             type: chatInfo.chatType,
             id: chatInfo.apiId,
-            file: cryptoFile,
-            quotedItemId: nil,
-            msg: msgContent,
             live: false,
-            ttl: nil
+            ttl: nil,
+            composedMessages: composedMessages
         )
     )
-    if case let .newChatItem(_, chatItem) = r {
-        return chatItem
+    if case let .newChatItems(_, chatItems) = r {
+        return chatItems
     } else {
-        if let filePath = cryptoFile?.filePath { removeFile(filePath) }
+        for composedMessage in composedMessages {
+            if let filePath = composedMessage.fileSource?.filePath { removeFile(filePath) }
+        }
         throw r
     }
 }

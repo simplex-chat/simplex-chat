@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -20,8 +21,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
-import Simplex.Chat (execChatCommand, processChatCommand)
 import Simplex.Chat.Controller
+import Simplex.Chat.Library.Commands (execChatCommand, processChatCommand)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent (CIContent (..), SMsgDirection (..))
@@ -147,7 +148,7 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} Cha
   forever $ do
     (_, outputRH, r) <- atomically $ readTBQueue outputQ
     case r of
-      CRNewChatItem u ci -> when markRead $ markChatItemRead u ci
+      CRNewChatItems u (ci : _) -> when markRead $ markChatItemRead u ci -- At the moment of writing received items are created one at a time
       CRChatItemUpdated u ci -> when markRead $ markChatItemRead u ci
       CRRemoteHostConnected {remoteHost = RemoteHostInfo {remoteHostId}} -> getRemoteUser remoteHostId
       CRRemoteHostStopped {remoteHostId_} -> mapM_ removeRemoteUser remoteHostId_
@@ -160,11 +161,11 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} Cha
     responseNotification ct cc r
   where
     markChatItemRead u (AChatItem _ _ chat ci@ChatItem {chatDir, meta = CIMeta {itemStatus}}) =
-      case (chatDirNtf u chat chatDir (isMention ci), itemStatus) of
+      case (chatDirNtf u chat chatDir (isUserMention ci), itemStatus) of
         (True, CISRcvNew) -> do
           let itemId = chatItemId' ci
               chatRef = chatInfoToRef chat
-          void $ runReaderT (runExceptT $ processChatCommand (APIChatRead chatRef (Just (itemId, itemId)))) cc
+          void $ runReaderT (runExceptT $ processChatCommand (APIChatItemsRead chatRef [itemId])) cc
         _ -> pure ()
     logResponse path s = withFile path AppendMode $ \h -> mapM_ (hPutStrLn h . unStyle) s
     getRemoteUser rhId =
@@ -175,8 +176,9 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} Cha
 
 responseNotification :: ChatTerminal -> ChatController -> ChatResponse -> IO ()
 responseNotification t@ChatTerminal {sendNotification} cc = \case
-  CRNewChatItem u (AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText}) ->
-    when (chatDirNtf u cInfo chatDir $ isMention ci) $ do
+  -- At the moment of writing received items are created one at a time
+  CRNewChatItems u ((AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText}) : _) ->
+    when (chatDirNtf u cInfo chatDir $ isUserMention ci) $ do
       whenCurrUser cc u $ setActiveChat t cInfo
       case (cInfo, chatDir) of
         (DirectChat ct, _) -> sendNtf (viewContactName ct <> "> ", text)
@@ -185,7 +187,7 @@ responseNotification t@ChatTerminal {sendNotification} cc = \case
     where
       text = msgText mc formattedText
   CRChatItemUpdated u (AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent _}) ->
-    whenCurrUser cc u $ when (chatDirNtf u cInfo chatDir $ isMention ci) $ setActiveChat t cInfo
+    whenCurrUser cc u $ when (chatDirNtf u cInfo chatDir $ isUserMention ci) $ setActiveChat t cInfo
   CRContactConnected u ct _ -> when (contactNtf u ct False) $ do
     whenCurrUser cc u $ setActiveContact t ct
     sendNtf (viewContactName ct <> "> ", "connected")

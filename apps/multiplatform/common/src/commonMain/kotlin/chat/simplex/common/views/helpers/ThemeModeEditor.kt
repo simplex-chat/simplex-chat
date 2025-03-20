@@ -32,10 +32,7 @@ fun ModalData.UserWallpaperEditor(
   globalThemeUsed: MutableState<Boolean>,
   save: suspend (applyToMode: DefaultThemeMode?, ThemeModeOverride?) -> Unit
 ) {
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxSize()
-  ) {
+  ColumnWithScrollBar {
     val applyToMode = remember { stateGetOrPutNullable("applyToMode") { applyToMode } }
     var showMore by remember { stateGetOrPut("showMore") { false } }
     val themeModeOverride = remember { stateGetOrPut("themeModeOverride") { theme } }
@@ -231,10 +228,7 @@ fun ModalData.ChatWallpaperEditor(
   globalThemeUsed: MutableState<Boolean>,
   save: suspend (applyToMode: DefaultThemeMode?, ThemeModeOverride?) -> Unit
 ) {
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxSize()
-  ) {
+  ColumnWithScrollBar {
     val applyToMode = remember { stateGetOrPutNullable("applyToMode") { applyToMode } }
     var showMore by remember { stateGetOrPut("showMore") { false } }
     val themeModeOverride = remember { stateGetOrPut("themeModeOverride") { theme } }

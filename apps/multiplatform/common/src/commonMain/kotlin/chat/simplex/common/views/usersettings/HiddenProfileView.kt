@@ -56,10 +56,7 @@ private fun HiddenProfileLayout(
   user: User,
   saveProfilePassword: (String) -> Unit
 ) {
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxWidth(),
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.hide_profile))
     SectionView(contentPadding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
       UserProfileRow(user)

@@ -32,7 +32,7 @@
 "Database passphrase is different from saved in the keychain." = "Het wachtwoord van de database verschilt van het wachtwoord die in de keychain is opgeslagen.";
 
 /* No comment provided by engineer. */
-"Database passphrase is required to open chat." = "Database wachtwoord is vereist om je gesprekken te openen.";
+"Database passphrase is required to open chat." = "Database wachtwoord is vereist om je chats te openen.";
 
 /* No comment provided by engineer. */
 "Database upgrade required" = "Database upgrade vereist";

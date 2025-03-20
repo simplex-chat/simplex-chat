@@ -120,7 +120,7 @@ git checkout stable
 # git checkout v5.3.0-beta.8
 ```
 
-`master` is a development branch, it may containt unstable code.
+`master` is a development branch, it may contain unstable code.
 
 3. Prepare the system:
 
@@ -134,7 +134,7 @@ cp scripts/cabal.project.local.linux cabal.project.local
 On Mac:
 
 ```
-brew install openssl@1.1
+brew install openssl@3.0
 cp scripts/cabal.project.local.mac cabal.project.local
 ```
 

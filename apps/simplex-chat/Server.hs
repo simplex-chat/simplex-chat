@@ -19,9 +19,9 @@ import GHC.Generics (Generic)
 import Network.Socket
 import qualified Network.WebSockets as WS
 import Numeric.Natural (Natural)
-import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
+import Simplex.Chat.Library.Commands
 import Simplex.Chat.Options
 import Simplex.Messaging.Transport.Server (runLocalTCPServer)
 import Simplex.Messaging.Util (raceAny_)

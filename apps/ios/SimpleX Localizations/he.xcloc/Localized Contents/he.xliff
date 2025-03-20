@@ -217,23 +217,18 @@ Available in v5.1</source>
         <target state="translated">)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve" approved="no">
-        <source>**Add new contact**: to create your one-time QR Code or link for your contact.</source>
-        <target state="translated">**הוסיפו איש קשר חדש**: ליצירת קוד QR או קישור חד־פעמיים עבור איש הקשר שלכם.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="**Create link / QR code** for your contact to use." xml:space="preserve" approved="no">
         <source>**Create link / QR code** for your contact to use.</source>
         <target state="translated">**צור קישור / קוד QR** לשימוש איש הקשר שלך.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." xml:space="preserve" approved="no">
-        <source>**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have.</source>
+      <trans-unit id="**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata." xml:space="preserve" approved="no">
+        <source>**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata.</source>
         <target state="translated">**יותר פרטי**: בדוק הודעות חדשות כל 20 דקות. אסימון המכשיר משותף עם שרת SimpleX Chat, אך לא כמה אנשי קשר או הודעות יש לך.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." xml:space="preserve" approved="no">
-        <source>**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app).</source>
+      <trans-unit id="**Most private**: do not use SimpleX Chat push server. The app will check messages in background, when the system allows it, depending on how often you use the app." xml:space="preserve" approved="no">
+        <source>**Most private**: do not use SimpleX Chat push server. The app will check messages in background, when the system allows it, depending on how often you use the app.</source>
         <target state="translated">**הכי פרטי**: אל תשתמש בשרת ההתראות של SimpleX Chat, בדוק הודעות מעת לעת ברקע (תלוי בתדירות השימוש באפליקציה).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -247,8 +242,8 @@ Available in v5.1</source>
         <target state="translated">**שימו לב**: לא ניתן יהיה לשחזר או לשנות את הסיסמה אם תאבדו אותה.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." xml:space="preserve" approved="no">
-        <source>**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from.</source>
+      <trans-unit id="**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from." xml:space="preserve" approved="no">
+        <source>**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from.</source>
         <target state="translated">**מומלץ**: אסימון מכשיר והתראות נשלחים לשרת ההתראות של SimpleX Chat, אך לא תוכן ההודעה, גודלה או ממי היא.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -1391,8 +1386,8 @@ Available in v5.1</source>
         <target state="translated">הודעות ישירות</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Direct messages between members are prohibited in this group." xml:space="preserve" approved="no">
-        <source>Direct messages between members are prohibited in this group.</source>
+      <trans-unit id="Direct messages between members are prohibited." xml:space="preserve" approved="no">
+        <source>Direct messages between members are prohibited.</source>
         <target state="translated">הודעות ישירות בין חברי קבוצה אסורות בקבוצה זו.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -1411,8 +1406,8 @@ Available in v5.1</source>
         <target state="translated">הודעות נעלמות אסורות בצ׳אט זה.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappearing messages are prohibited in this group." xml:space="preserve" approved="no">
-        <source>Disappearing messages are prohibited in this group.</source>
+      <trans-unit id="Disappearing messages are prohibited." xml:space="preserve" approved="no">
+        <source>Disappearing messages are prohibited.</source>
         <target state="translated">הודעות נעלמות אסורות בקבוצה זו.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -1956,18 +1951,18 @@ Available in v5.1</source>
         <target state="translated">חברי הקבוצה יכולים למחוק באופן בלתי הפיך הודעות שנשלחו.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send direct messages." xml:space="preserve" approved="no">
-        <source>Group members can send direct messages.</source>
+      <trans-unit id="Members can send direct messages." xml:space="preserve" approved="no">
+        <source>Members can send direct messages.</source>
         <target state="translated">חברי הקבוצה יכולים לשלוח הודעות ישירות.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send disappearing messages." xml:space="preserve" approved="no">
-        <source>Group members can send disappearing messages.</source>
+      <trans-unit id="Members can send disappearing messages." xml:space="preserve" approved="no">
+        <source>Members can send disappearing messages.</source>
         <target state="translated">חברי הקבוצה יכולים לשלוח הודעות נעלמות.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send voice messages." xml:space="preserve" approved="no">
-        <source>Group members can send voice messages.</source>
+      <trans-unit id="Members can send voice messages." xml:space="preserve" approved="no">
+        <source>Members can send voice messages.</source>
         <target state="translated">חברי הקבוצה יכולים לשלוח הודעות קוליות.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -2115,8 +2110,8 @@ Available in v5.1</source>
         <target state="translated">מיד</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Immune to spam and abuse" xml:space="preserve" approved="no">
-        <source>Immune to spam and abuse</source>
+      <trans-unit id="Immune to spam" xml:space="preserve" approved="no">
+        <source>Immune to spam</source>
         <target state="translated">חסין מפני ספאם ושימוש לרעה</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -2257,8 +2252,8 @@ Available in v5.1</source>
         <target state="translated">מחיקה בלתי הפיכה של הודעות אסורה בצ׳אט זה.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Irreversible message deletion is prohibited in this group." xml:space="preserve" approved="no">
-        <source>Irreversible message deletion is prohibited in this group.</source>
+      <trans-unit id="Irreversible message deletion is prohibited." xml:space="preserve" approved="no">
+        <source>Irreversible message deletion is prohibited.</source>
         <target state="translated">מחיקה בלתי הפיכה של הודעות אסורה בקבוצה זו.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -2502,9 +2497,9 @@ Available in v5.1</source>
         <target state="translated">ההעברה הושלמה</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrations: %@" xml:space="preserve" approved="no">
-        <source>Migrations: %@</source>
-        <target state="translated">העברות: %@</target>
+      <trans-unit id="Migrations:" xml:space="preserve" approved="no">
+        <source>Migrations:</source>
+        <target state="translated">העברות:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Moderate" xml:space="preserve" approved="no">
@@ -2701,8 +2696,8 @@ Available in v5.1</source>
         <target state="translated">לא ייעשה שימוש במארחי Onion.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." xml:space="preserve">
-        <source>Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**.</source>
+      <trans-unit id="Only client devices store user profiles, contacts, groups, and messages." xml:space="preserve">
+        <source>Only client devices store user profiles, contacts, groups, and messages.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only group owners can change group preferences." xml:space="preserve">
@@ -2761,8 +2756,8 @@ Available in v5.1</source>
         <source>Open user profiles</source>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve">
-        <source>Open-source protocol and code – anybody can run the servers.</source>
+      <trans-unit id="Anybody can host servers." xml:space="preserve">
+        <source>Anybody can host servers.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." xml:space="preserve">
@@ -2817,8 +2812,8 @@ Available in v5.1</source>
         <source>Paste the link you received into the box below to connect with your contact.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="People can connect to you only via the links you share." xml:space="preserve">
-        <source>People can connect to you only via the links you share.</source>
+      <trans-unit id="You decide who can connect." xml:space="preserve">
+        <source>You decide who can connect.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Periodically" xml:space="preserve">
@@ -3521,8 +3516,8 @@ Available in v5.1</source>
         <source>Thanks to the users – contribute via Weblate!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The 1st platform without any user identifiers – private by design." xml:space="preserve">
-        <source>The 1st platform without any user identifiers – private by design.</source>
+      <trans-unit id="No user identifiers." xml:space="preserve">
+        <source>No user identifiers.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The ID of the next message is incorrect (less or equal to the previous).&#10;It can happen because of some bug or when the connection is compromised." xml:space="preserve">
@@ -3566,8 +3561,8 @@ It can happen because of some bug or when the connection is compromised.</source
         <source>The message will be marked as moderated for all members.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The next generation of private messaging" xml:space="preserve">
-        <source>The next generation of private messaging</source>
+      <trans-unit id="The future of messaging" xml:space="preserve">
+        <source>The future of messaging</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The old database was not removed during the migration, it can be deleted." xml:space="preserve">
@@ -3638,8 +3633,8 @@ It can happen because of some bug or when the connection is compromised.</source
         <source>To make a new connection</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." xml:space="preserve">
-        <source>To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts.</source>
+      <trans-unit id="To protect your privacy, SimpleX uses separate IDs for each of your contacts." xml:space="preserve">
+        <source>To protect your privacy, SimpleX uses separate IDs for each of your contacts.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To protect timezone, image/voice files use UTC." xml:space="preserve">
@@ -3864,8 +3859,8 @@ To connect, please ask your contact to create another connection link and check 
         <source>Voice messages are prohibited in this chat.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Voice messages are prohibited in this group." xml:space="preserve">
-        <source>Voice messages are prohibited in this group.</source>
+      <trans-unit id="Voice messages are prohibited." xml:space="preserve">
+        <source>Voice messages are prohibited.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Voice messages prohibited!" xml:space="preserve">
@@ -4003,10 +3998,6 @@ SimpleX Lock must be enabled.</source>
       </trans-unit>
       <trans-unit id="You can't send messages!" xml:space="preserve">
         <source>You can't send messages!</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." xml:space="preserve">
-        <source>You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You could not be verified; please try again." xml:space="preserve">
@@ -4967,8 +4958,8 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">נמחק</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Files and media are prohibited in this group." xml:space="preserve" approved="no">
-        <source>Files and media are prohibited in this group.</source>
+      <trans-unit id="Files and media are prohibited." xml:space="preserve" approved="no">
+        <source>Files and media are prohibited.</source>
         <target state="translated">קבצים ומדיה אסורים בקבוצה זו.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -5027,13 +5018,13 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">הזמן חברים</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can add message reactions." xml:space="preserve" approved="no">
-        <source>Group members can add message reactions.</source>
+      <trans-unit id="Members can add message reactions." xml:space="preserve" approved="no">
+        <source>Members can add message reactions.</source>
         <target state="translated">חברי הקבוצה יכולים להוסיף תגובות אמוג׳י להודעות.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send files and media." xml:space="preserve" approved="no">
-        <source>Group members can send files and media.</source>
+      <trans-unit id="Members can send files and media." xml:space="preserve" approved="no">
+        <source>Members can send files and media.</source>
         <target state="translated">חברי הקבוצה יכולים לשלוח קבצים ומדיה.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -5231,8 +5222,8 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">תגובות אמוג׳י להודעות אסורות בצ׳אט זה.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message reactions are prohibited in this group." xml:space="preserve" approved="no">
-        <source>Message reactions are prohibited in this group.</source>
+      <trans-unit id="Message reactions are prohibited." xml:space="preserve" approved="no">
+        <source>Message reactions are prohibited.</source>
         <target state="translated">תגובות אמוג׳י להודעות אסורות בקבוצה זו.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

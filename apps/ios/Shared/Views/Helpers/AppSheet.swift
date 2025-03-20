@@ -11,6 +11,12 @@ import SwiftUI
 class AppSheetState: ObservableObject {
     static let shared = AppSheetState()
     @Published var scenePhaseActive: Bool = false
+
+    func redactionReasons(_ protectScreen: Bool) -> RedactionReasons {
+        !protectScreen || scenePhaseActive
+        ? RedactionReasons()
+        : RedactionReasons.placeholder
+    }
 }
 
 private struct PrivacySensitive: ViewModifier {
@@ -19,11 +25,7 @@ private struct PrivacySensitive: ViewModifier {
     @ObservedObject var appSheetState: AppSheetState = AppSheetState.shared
 
     func body(content: Content) -> some View {
-        if !protectScreen {
-            content
-        } else {
-            content.privacySensitive(!appSheetState.scenePhaseActive).redacted(reason: .privacy)
-        }
+        content.redacted(reason: appSheetState.redactionReasons(protectScreen))
     }
 }
 

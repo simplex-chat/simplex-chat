@@ -17,6 +17,8 @@ actual val wallpapersDir: File = File(dataDir.absolutePath + File.separator + "s
 actual val coreTmpDir: File = File(dataDir.absolutePath + File.separator + "tmp")
 actual val dbAbsolutePrefixPath: String = dataDir.absolutePath + File.separator + "simplex_v1"
 actual val preferencesDir = File(desktopPlatform.configPath).also { it.parentFile.mkdirs() }
+actual val preferencesTmpDir = File(desktopPlatform.configPath, "tmp")
+  .also { it.deleteRecursively() }
 
 actual val chatDatabaseFileName: String = "simplex_v1_chat.db"
 actual val agentDatabaseFileName: String = "simplex_v1_agent.db"

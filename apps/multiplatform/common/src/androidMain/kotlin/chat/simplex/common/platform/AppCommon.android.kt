@@ -31,22 +31,19 @@ lateinit var androidAppContext: Context
 var mainActivity: WeakReference<FragmentActivity> = WeakReference(null)
 var callActivity: WeakReference<ComponentActivity> = WeakReference(null)
 
-fun initHaskell() {
-  val socketName = "chat.simplex.app.local.socket.address.listen.native.cmd2" + Random.nextLong(100000)
+fun initHaskell(packageName: String) {
   val s = Semaphore(0)
   thread(name="stdout/stderr pipe") {
     Log.d(TAG, "starting server")
-    var server: LocalServerSocket? = null
-    for (i in 0..100) {
-      try {
-        server = LocalServerSocket(socketName + i)
-        break
-      } catch (e: IOException) {
-        Log.e(TAG, e.stackTraceToString())
-      }
-    }
-    if (server == null) {
-      throw Error("Unable to setup local server socket. Contact developers")
+    val server: LocalServerSocket
+    try {
+      server = LocalServerSocket(packageName)
+    } catch (e: IOException) {
+      Log.e(TAG, e.stackTraceToString())
+      Log.e(TAG, "Unable to setup local server socket. Contact developers")
+      s.release()
+      // Will not have logs from backend
+      return@thread
     }
     Log.d(TAG, "started server")
     s.release()
@@ -60,7 +57,7 @@ fun initHaskell() {
       Log.d(TAG, "starting receiver loop")
       while (true) {
         val line = input.readLine() ?: break
-        Log.w("$TAG (stdout/stderr)", line)
+        Log.w(TAG, "(stdout/stderr) $line")
         logbuffer.add(line)
       }
       Log.w(TAG, "exited receiver loop")
@@ -70,7 +67,7 @@ fun initHaskell() {
   System.loadLibrary("app-lib")
 
   s.acquire()
-  pipeStdOutToSocket(socketName)
+  pipeStdOutToSocket(packageName)
 
   initHS()
 }

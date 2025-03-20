@@ -29,7 +29,7 @@
 "Database error" = "Error en base de datos";
 
 /* No comment provided by engineer. */
-"Database passphrase is different from saved in the keychain." = "La contraseña de la base de datos es distinta a la almacenada en keychain.";
+"Database passphrase is different from saved in the keychain." = "La contraseña de la base de datos es diferente a la almacenada en keychain.";
 
 /* No comment provided by engineer. */
 "Database passphrase is required to open chat." = "Se requiere la contraseña de la base de datos para abrir la aplicación.";

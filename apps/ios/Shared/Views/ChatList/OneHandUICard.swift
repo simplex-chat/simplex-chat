@@ -32,7 +32,6 @@ struct OneHandUICard: View {
         .background(theme.appColors.sentMessage)
         .cornerRadius(12)
         .frame(height: dynamicSize(userFont).rowHeight)
-        .padding(.vertical, 12)
         .alert(isPresented: $showOneHandUIAlert) {
             Alert(
                 title: Text("Reachable chat toolbar"),

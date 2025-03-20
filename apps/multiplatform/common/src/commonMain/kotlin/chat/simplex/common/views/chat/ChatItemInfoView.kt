@@ -23,12 +23,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.chat.item.ItemAction
-import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.group.MemberProfileImage
+import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
@@ -42,18 +42,20 @@ sealed class CIInfoTab {
 }
 
 @Composable
-fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
+fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean, chatInfo: ChatInfo?) {
   val sent = ci.chatDir.sent
   val appColors = MaterialTheme.appColors
   val uriHandler = LocalUriHandler.current
   val selection = remember { mutableStateOf<CIInfoTab>(CIInfoTab.History) }
 
   @Composable
-  fun TextBubble(text: String, formattedText: List<FormattedText>?, sender: String?, showMenu: MutableState<Boolean>) {
+  fun TextBubble(text: String, formattedText: List<FormattedText>?, sender: String?, showMenu: MutableState<Boolean>, mentions: Map<String, CIMention>? = null, userMemberId: String? = null, ) {
     if (text != "") {
       MarkdownText(
         text, if (text.isEmpty()) emptyList() else formattedText,
         sender = sender,
+        mentions = mentions,
+        userMemberId = userMemberId,
         senderBold = true,
         toggleSecrets = true,
         linkMode = SimplexLinkMode.DESCRIPTION, uriHandler = uriHandler,
@@ -75,12 +77,17 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
     Column {
       Box(
-        Modifier.clip(RoundedCornerShape(18.dp)).background(itemColor).padding(bottom = 3.dp)
+        Modifier.clipChatItem().background(itemColor).padding(bottom = 3.dp)
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
           .onRightClick { showMenu.value = true }
       ) {
         Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
-          TextBubble(text, ciVersion.formattedText, sender = null, showMenu)
+          TextBubble(text, ciVersion.formattedText, sender = null, showMenu = showMenu, mentions = ci.mentions,
+            userMemberId = when {
+              chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
+              else -> null
+            }
+          )
         }
       }
       Row(Modifier.padding(start = 12.dp, top = 3.dp, bottom = 16.dp)) {
@@ -122,7 +129,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
     Column {
       Box(
-        Modifier.clip(RoundedCornerShape(18.dp)).background(quoteColor).padding(bottom = 3.dp)
+        Modifier.clipChatItem().background(quoteColor).padding(bottom = 3.dp)
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
           .onRightClick { showMenu.value = true }
       ) {
@@ -202,7 +209,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       SectionItemView(
         click = {
           withBGApi {
-            openChat(chatRh, forwardedFromItem.chatInfo, chatModel)
+            openChat(chatRh, forwardedFromItem.chatInfo)
             ModalManager.end.closeModals()
           }
         },
@@ -277,7 +284,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun HistoryTab() {
-    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+    ColumnWithScrollBar {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       val versions = ciInfo.itemVersions
@@ -296,12 +303,13 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
         }
       }
       SectionBottomSpacer()
+      SectionBottomSpacer()
     }
   }
 
   @Composable
   fun QuoteTab(qi: CIQuote) {
-    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+    ColumnWithScrollBar {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
@@ -309,12 +317,13 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
         QuotedMsgView(qi)
       }
       SectionBottomSpacer()
+      SectionBottomSpacer()
     }
   }
 
   @Composable
   fun ForwardedFromTab(forwardedFromItem: AChatItem) {
-    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+    ColumnWithScrollBar {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       SectionView {
@@ -323,6 +332,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
           modifier = Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING))
         ForwardedFromView(forwardedFromItem)
       }
+      SectionBottomSpacer()
       SectionBottomSpacer()
     }
   }
@@ -376,7 +386,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun DeliveryTab(memberDeliveryStatuses: List<MemberDeliveryStatus>) {
-    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+    ColumnWithScrollBar {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       val mss = membersStatuses(chatModel, memberDeliveryStatuses)
@@ -394,6 +404,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
           }
         }
       }
+      SectionBottomSpacer()
       SectionBottomSpacer()
     }
   }
@@ -433,12 +444,11 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   Column {
     if (numTabs() > 1) {
-      Column(
+      Box(
         Modifier
-          .fillMaxHeight(),
-        verticalArrangement = Arrangement.SpaceBetween
+          .fillMaxHeight()
       ) {
-        Column(Modifier.weight(1f)) {
+        Column {
           when (val sel = selection.value) {
             is CIInfoTab.Delivery -> {
               DeliveryTab(sel.memberDeliveryStatuses)
@@ -478,28 +488,33 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
             selection.value = CIInfoTab.Delivery(ciInfo.memberDeliveryStatuses)
           }
         }
-        TabRow(
-          selectedTabIndex = availableTabs.indexOfFirst { it::class == selection.value::class },
-          backgroundColor = Color.Transparent,
-          contentColor = MaterialTheme.colors.primary,
-        ) {
-          availableTabs.forEach { ciInfoTab ->
-            Tab(
-              selected = selection.value::class == ciInfoTab::class,
-              onClick = {
-                selection.value = ciInfoTab
-              },
-              text = { Text(tabTitle(ciInfoTab), fontSize = 13.sp) },
-              icon = {
-                Icon(
-                  painterResource(tabIcon(ciInfoTab)),
-                  tabTitle(ciInfoTab)
-                )
-              },
-              selectedContentColor = MaterialTheme.colors.primary,
-              unselectedContentColor = MaterialTheme.colors.secondary,
-            )
+        val oneHandUI = remember { appPrefs.oneHandUI.state }
+        Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().offset(x = 0.dp, y = if (oneHandUI.value) -AppBarHeight * fontSizeSqrtMultiplier else 0.dp)) {
+          TabRow(
+            selectedTabIndex = availableTabs.indexOfFirst { it::class == selection.value::class },
+            Modifier.height(AppBarHeight * fontSizeSqrtMultiplier),
+            backgroundColor = MaterialTheme.colors.background,
+            contentColor = MaterialTheme.colors.primary,
+          ) {
+            availableTabs.forEach { ciInfoTab ->
+              LeadingIconTab(
+                selected = selection.value::class == ciInfoTab::class,
+                onClick = {
+                  selection.value = ciInfoTab
+                },
+                text = { Text(tabTitle(ciInfoTab), fontSize = 13.sp) },
+                icon = {
+                  Icon(
+                    painterResource(tabIcon(ciInfoTab)),
+                    tabTitle(ciInfoTab)
+                  )
+                },
+                selectedContentColor = MaterialTheme.colors.primary,
+                unselectedContentColor = MaterialTheme.colors.secondary,
+              )
+            }
           }
+          Divider()
         }
       }
     } else {

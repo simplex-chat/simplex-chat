@@ -4,26 +4,25 @@ import SectionDivider
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Divider
-import androidx.compose.material.MaterialTheme
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
+import androidx.compose.ui.node.DelegatableNode
+import androidx.compose.ui.node.DrawModifierNode
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.onRightClick
 import chat.simplex.common.views.helpers.*
 
-object NoIndication : Indication {
-  private object NoIndicationInstance : IndicationInstance {
-    override fun ContentDrawScope.drawIndication() {
-      drawContent()
-    }
+object NoIndication : IndicationNodeFactory {
+  // Should be as a class, not an object. Otherwise, crash
+  private class NoIndicationInstance : Modifier.Node(), DrawModifierNode {
+    override fun ContentDrawScope.draw() { drawContent() }
   }
-  @Composable
-  override fun rememberUpdatedInstance(interactionSource: InteractionSource): IndicationInstance {
-    return NoIndicationInstance
-  }
+  override fun create(interactionSource: InteractionSource): DelegatableNode = NoIndicationInstance()
+  override fun hashCode(): Int = -1
+  override fun equals(other: Any?) = other === this
 }
 
 @Composable

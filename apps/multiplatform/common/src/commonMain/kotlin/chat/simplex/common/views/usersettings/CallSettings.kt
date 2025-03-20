@@ -36,7 +36,7 @@ fun CallSettingsLayout(
   callOnLockScreen: SharedPreference<CallOnLockScreen>,
   editIceServers: () -> Unit,
 ) {
-  ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.your_calls))
     val lockCallState = remember { mutableStateOf(callOnLockScreen.get()) }
     SectionView(stringResource(MR.strings.settings_section_title_settings)) {

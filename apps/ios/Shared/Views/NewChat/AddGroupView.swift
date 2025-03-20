@@ -137,10 +137,13 @@ struct AddGroupView: View {
             createInvalidNameAlert(mkValidName(profile.displayName), $profile.displayName)
         }
         .onChange(of: chosenImage) { image in
-            if let image = image {
-                profile.image = resizeImageToStrSize(cropToSquare(image), maxDataSize: 12500)
-            } else {
-                profile.image = nil
+            Task {
+                let resized: String? = if let image {
+                    await resizeImageToStrSize(cropToSquare(image), maxDataSize: 12500)
+                } else {
+                    nil
+                }
+                await MainActor.run { profile.image = resized }
             }
         }
         .modifier(ThemedBackground(grouped: true))
@@ -188,11 +191,7 @@ struct AddGroupView: View {
             profile.groupPreferences = GroupPreferences(history: GroupPreference(enable: .on))
             let gInfo = try apiNewGroup(incognito: incognitoDefault, groupProfile: profile)
             Task {
-                let groupMembers = await apiListMembers(gInfo.groupId)
-                await MainActor.run {
-                    m.groupMembers = groupMembers.map { GMember.init($0) }
-                    m.populateGroupMembersIndexes()
-                }
+                await m.loadGroupMembers(gInfo)
             }
             let c = Chat(chatInfo: .group(groupInfo: gInfo), chatItems: [])
             m.addChat(c)

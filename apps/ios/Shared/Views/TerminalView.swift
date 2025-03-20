@@ -18,7 +18,9 @@ struct TerminalView: View {
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State var composeState: ComposeState = ComposeState()
+    @State var selectedRange = NSRange()
     @State private var keyboardVisible = false
+    @State private var keyboardHiddenDate = Date.now
     @State var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
     @State private var terminalItem: TerminalItem?
     @State private var scrolled = false
@@ -96,16 +98,23 @@ struct TerminalView: View {
 
                 SendMessageView(
                     composeState: $composeState,
+                    selectedRange: $selectedRange,
                     sendMessage: { _ in consoleSendMessage() },
                     showVoiceMessageButton: false,
                     onMediaAdded: { _ in },
-                    keyboardVisible: $keyboardVisible
+                    keyboardVisible: $keyboardVisible,
+                    keyboardHiddenDate: $keyboardHiddenDate
                 )
                 .padding(.horizontal, 12)
             }
         }
         .navigationViewStyle(.stack)
-        .navigationTitle("Chat console")
+        .toolbar {
+            // Redaction broken for `.navigationTitle` - using a toolbar item instead.
+            ToolbarItem(placement: .principal) {
+                Text("Chat console").font(.headline)
+            }
+        }
         .modifier(ThemedBackground())
     }
 
@@ -160,7 +169,7 @@ struct TerminalView_Previews: PreviewProvider {
         let chatModel = ChatModel()
         chatModel.terminalItems = [
             .resp(.now, ChatResponse.response(type: "contactSubscribed", json: "{}")),
-            .resp(.now, ChatResponse.response(type: "newChatItem", json: "{}"))
+            .resp(.now, ChatResponse.response(type: "newChatItems", json: "{}"))
         ]
         return NavigationView {
             TerminalView()

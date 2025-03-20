@@ -21,25 +21,28 @@ import Data.Time.Clock (getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import Simplex.Chat
 import Simplex.Chat.Controller
+import Simplex.Chat.Library.Commands
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
 import Simplex.Chat.View (serializeChatResponse)
-import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore, withTransaction)
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..))
+import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import System.Exit (exitFailure)
 import System.IO (hFlush, stdout)
 import Text.Read (readMaybe)
 import UnliftIO.Async
 
 simplexChatCore :: ChatConfig -> ChatOpts -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, dbKey, logAgent}} chat =
+simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = CoreChatOpts {dbOptions, logAgent, yesToUpMigrations}} chat =
   case logAgent of
     Just level -> do
       setLogLevel level
       withGlobalLogging logCfg initRun
     _ -> initRun
   where
-    initRun = createChatDatabase dbFilePrefix dbKey False confirmMigrations >>= either exit run
+    initRun = createChatDatabase dbOptions confirm' >>= either exit run
+    confirm' = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations
     exit e = do
       putStrLn $ "Error opening database: " <> show e
       exitFailure
@@ -64,7 +67,7 @@ sendChatCmdStr cc s = runReaderT (execChatCommand Nothing . encodeUtf8 $ T.pack 
 sendChatCmd :: ChatController -> ChatCommand -> IO ChatResponse
 sendChatCmd cc cmd = runReaderT (execChatCommand' cmd) cc
 
-getSelectActiveUser :: SQLiteStore -> IO (Maybe User)
+getSelectActiveUser :: DBStore -> IO (Maybe User)
 getSelectActiveUser st = do
   users <- withTransaction st getUsers
   case find activeUser users of
@@ -74,9 +77,7 @@ getSelectActiveUser st = do
     selectUser :: [User] -> IO (Maybe User)
     selectUser = \case
       [] -> pure Nothing
-      [user@User {userId}] -> do
-        withTransaction st (`setActiveUser` userId)
-        pure $ Just user
+      [user] -> Just <$> withTransaction st (`setActiveUser` user)
       users -> do
         putStrLn "Select user profile:"
         forM_ (zip [1 :: Int ..] users) $ \(n, user) -> putStrLn $ show n <> ": " <> userStr user
@@ -88,10 +89,9 @@ getSelectActiveUser st = do
               Nothing -> putStrLn "not a number" >> loop
               Just n
                 | n <= 0 || n > length users -> putStrLn "invalid user number" >> loop
-                | otherwise -> do
-                    let user@User {userId} = users !! (n - 1)
-                    withTransaction st (`setActiveUser` userId)
-                    pure $ Just user
+                | otherwise ->
+                    let user = users !! (n - 1)
+                     in Just <$> withTransaction st (`setActiveUser` user)
 
 createActiveUser :: ChatController -> IO User
 createActiveUser cc = do

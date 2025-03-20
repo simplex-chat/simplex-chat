@@ -164,7 +164,7 @@ The main objective here is to establish the framework for comparing the security
 <sup>2</sup> Post-quantum cryptography is available in beta version, as opt-in only for direct conversations. See below how it will be rolled-out further.
 
 Some columns are marked with a yellow checkmark:
-- when messages are padded, but not to a fixed size.
+- when messages are padded, but not to a fixed size (Briar pads messages to the size rounded up to 1024 bytes, Signal - to 160 bytes).
 - when repudiation does not include client-server connection. In case of Cwtch it appears that the presence of cryptographic signatures compromises repudiation (deniability), but it needs to be clarified.
 - when 2-factor key exchange is optional (via security code verification).
 - when post-quantum cryptography is only added to the initial key agreement and does not protect break-in recovery.
@@ -235,7 +235,7 @@ Some links to answer the most common questions:
 
 [What are the risks to have identifiers assigned to the users](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#why-having-users-identifiers-is-bad-for-the-users).
 
-[Technical details and limitations](https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations).
+[Technical details and limitations](https://github.com/simplex-chat/simplex-chat#privacy-and-security-technical-details-and-limitations).
 
 [How SimpleX is different from Session, Matrix, Signal, etc.](https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions).
 

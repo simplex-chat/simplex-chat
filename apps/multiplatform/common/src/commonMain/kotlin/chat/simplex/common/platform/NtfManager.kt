@@ -36,9 +36,17 @@ abstract class NtfManager {
     )
   )
 
-  fun notifyMessageReceived(user: UserLike, cInfo: ChatInfo, cItem: ChatItem) {
-    if (!cInfo.ntfsEnabled) return
-    displayNotification(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem))
+  fun notifyMessageReceived(rhId: Long?, user: UserLike, cInfo: ChatInfo, cItem: ChatItem) {
+    if (
+      cItem.showNotification &&
+      cInfo.ntfsEnabled(cItem) &&
+      (
+          allowedToShowNotification() ||
+              chatModel.chatId.value != cInfo.id ||
+              chatModel.remoteHostId() != rhId)
+    ) {
+      displayNotification(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem))
+    }
   }
 
   fun acceptContactRequestAction(userId: Long?, incognito: Boolean, chatId: ChatId) {
@@ -65,7 +73,7 @@ abstract class NtfManager {
       }
       val cInfo = chatModel.getChat(chatId)?.chatInfo
       chatModel.clearOverlays.value = true
-      if (cInfo != null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group)) openChat(null, cInfo, chatModel)
+      if (cInfo != null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group)) openChat(null, cInfo)
     }
   }
 
@@ -126,7 +134,12 @@ abstract class NtfManager {
       }
       res
     } else {
-      cItem.text
+      val mc = cItem.content.msgContent
+      if (mc is MsgContent.MCReport) {
+        generalGetString(MR.strings.notification_group_report).format(cItem.text.ifEmpty { mc.reason.text })
+      } else {
+        cItem.text
+      }
     }
   }
 }

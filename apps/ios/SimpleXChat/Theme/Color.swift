@@ -63,6 +63,23 @@ extension Color {
         )
     }
 
+    public func toHTMLHex() -> String {
+        let uiColor: UIColor = .init(self)
+        var (r, g, b, a): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
+        uiColor.getRed(&r, green: &g, blue: &b, alpha: &a)
+        // Can be negative values and more than 1. Extended color range, making it normal
+        r = min(1, max(0, r))
+        g = min(1, max(0, g))
+        b = min(1, max(0, b))
+        a = min(1, max(0, a))
+        return String(format: "#%02x%02x%02x%02x",
+                      Int((r * 255).rounded()),
+                      Int((g * 255).rounded()),
+                      Int((b * 255).rounded()),
+                      Int((a * 255).rounded())
+        )
+    }
+
     public func darker(_ factor: CGFloat = 0.1) -> Color {
         var (r, g, b, a): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
         UIColor(self).getRed(&r, green: &g, blue: &b, alpha: &a)

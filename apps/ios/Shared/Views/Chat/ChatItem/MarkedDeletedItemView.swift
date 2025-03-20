@@ -12,17 +12,17 @@ import SimpleXChat
 struct MarkedDeletedItemView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.revealed) var revealed: Bool
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
-    @Binding var revealed: Bool
 
     var body: some View {
-        (Text(mergedMarkedDeletedText).italic() + Text(" ") + chatItem.timestampText)
+        (Text(mergedMarkedDeletedText).italic() + textSpace + chatItem.timestampText)
         .font(.caption)
         .foregroundColor(theme.colors.secondary)
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(chatItemFrameColor(chatItem, theme))
+        .background { chatItemFrameColor(chatItem, theme).modifier(ChatTailPadding()) }
         .textSelection(.disabled)
     }
 
@@ -67,11 +67,15 @@ struct MarkedDeletedItemView: View {
     // same texts are in markedDeletedText in ChatPreviewView, but it returns String;
     // can be refactored into a single function if functions calling these are changed to return same type
     var markedDeletedText: LocalizedStringKey {
-        switch chatItem.meta.itemDeleted {
-        case let .moderated(_, byGroupMember): "moderated by \(byGroupMember.displayName)"
-        case .blocked: "blocked"
-        case .blockedByAdmin: "blocked by admin"
-        case .deleted, nil: "marked deleted"
+        if chatItem.meta.itemDeleted != nil, chatItem.isReport {
+            "archived report"
+        } else {
+            switch chatItem.meta.itemDeleted {
+            case let .moderated(_, byGroupMember): "moderated by \(byGroupMember.displayName)"
+            case .blocked: "blocked"
+            case .blockedByAdmin: "blocked by admin"
+            case .deleted, nil: "marked deleted"
+            }
         }
     }
 }
@@ -79,7 +83,10 @@ struct MarkedDeletedItemView: View {
 struct MarkedDeletedItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            MarkedDeletedItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now)), revealed: Binding.constant(true))
+            MarkedDeletedItemView(
+                chat: Chat.sampleData,
+                chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now))
+            ).environment(\.revealed, true)
         }
         .previewLayout(.fixed(width: 360, height: 200))
     }

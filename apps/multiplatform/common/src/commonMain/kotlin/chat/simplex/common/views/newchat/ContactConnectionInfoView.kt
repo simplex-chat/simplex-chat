@@ -39,7 +39,7 @@ fun ContactConnectionInfoView(
 ) {
   LaunchedEffect(connReqInvitation) {
     if (connReqInvitation != null) {
-      chatModel.showingInvitation.value = ShowingInvitation(contactConnection.id, connReqInvitation, false)
+      chatModel.showingInvitation.value = ShowingInvitation(contactConnection.id, connReqInvitation, false, conn = contactConnection)
     }
   }
   /** When [AddContactLearnMore] is open, we don't need to drop [ChatModel.showingInvitation].
@@ -89,7 +89,7 @@ private fun ContactConnectionInfoLayout(
       SettingsActionItemWithContent(
         icon = painterResource(MR.images.ic_theater_comedy_filled),
         text = null,
-        click = { ModalManager.start.showModal { IncognitoView() } },
+        click = { ModalManager.end.showModal { IncognitoView() } },
         iconColor = Indigo,
         extraPadding = false
       ) {
@@ -105,9 +105,7 @@ private fun ContactConnectionInfoLayout(
     }
   }
 
-  ColumnWithScrollBar(
-    Modifier,
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(
       stringResource(
         if (contactConnection.initiated) MR.strings.you_invited_a_contact

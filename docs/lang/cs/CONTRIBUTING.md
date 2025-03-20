@@ -20,6 +20,6 @@ cp scripts/cabal.project.local.mac cabal.project.local
 
 Systém MacOS je standardně dodáván s LibreSSL, pro kompilaci SimpleX ze zdrojových kódů je nutné nainstalovat OpenSSL.
 
-OpenSSL lze nainstalovat pomocí `brew install openssl@1.1`.
+OpenSSL lze nainstalovat pomocí `brew install openssl@3.0`.
 
-Aby vše fungovalo správně, musíte do své cesty PATH přidat `/opt/homebrew/opt/openssl@1.1/bin`.
+Aby vše fungovalo správně, musíte do své cesty PATH přidat `/opt/homebrew/opt/openssl@3.0/bin`.

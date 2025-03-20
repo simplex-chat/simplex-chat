@@ -21,9 +21,8 @@ struct CIMemberCreatedContactView: View {
                 if let contactId = groupMember.memberContactId {
                     memberCreatedContactView(openText: "Open")
                         .onTapGesture {
-                            dismissAllSheets(animated: true)
-                            DispatchQueue.main.async {
-                                m.chatId = "@\(contactId)"
+                            ItemsModel.shared.loadOpenChat("@\(contactId)") {
+                                dismissAllSheets(animated: true)
                             }
                         }
                 } else {
@@ -45,7 +44,7 @@ struct CIMemberCreatedContactView: View {
             + Text(openText)
                 .fontWeight(.medium)
                 .foregroundColor(theme.colors.primary)
-            + Text("  ")
+            + Text(verbatim: "  ")
         }
         r = r + chatItem.timestampText
             .fontWeight(.light)

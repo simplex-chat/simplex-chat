@@ -12,11 +12,13 @@ import SimpleXChat
 struct CIMetaView: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.showTimestamp) var showTimestamp: Bool
     var chatItem: ChatItem
     var metaColor: Color
     var paleMetaColor = Color(UIColor.tertiaryLabel)
     var showStatus = true
     var showEdited = true
+    var invertedMaterial = false
 
     @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
 
@@ -24,93 +26,143 @@ struct CIMetaView: View {
         if chatItem.isDeletedContent {
             chatItem.timestampText.font(.caption).foregroundColor(metaColor)
         } else {
-            let meta = chatItem.meta
-            let ttl = chat.chatInfo.timedMessagesTTL
-            let encrypted = chatItem.encryptedFile
-            switch meta.itemStatus {
-            case let .sndSent(sndProgress):
-                switch sndProgress {
-                case .complete: ciMetaText(meta, chatTTL: ttl, encrypted: encrypted,  color: metaColor, sent: .sent, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy)
-                case .partial: ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .sent, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy)
+            ZStack {
+                ciMetaText(
+                    chatItem.meta,
+                    chatTTL: chat.chatInfo.timedMessagesTTL,
+                    encrypted: chatItem.encryptedFile,
+                    color: metaColor,
+                    paleColor: paleMetaColor,
+                    colorMode: invertedMaterial
+                        ? .invertedMaterial
+                        : .normal,
+                    showStatus: showStatus,
+                    showEdited: showEdited,
+                    showViaProxy: showSentViaProxy,
+                    showTimesamp: showTimestamp
+                ).invertedForegroundStyle(enabled: invertedMaterial)
+                if invertedMaterial {
+                    ciMetaText(
+                        chatItem.meta,
+                        chatTTL: chat.chatInfo.timedMessagesTTL,
+                        encrypted: chatItem.encryptedFile,
+                        colorMode: .normal,
+                        onlyOverrides: true,
+                        showStatus: showStatus,
+                        showEdited: showEdited,
+                        showViaProxy: showSentViaProxy,
+                        showTimesamp: showTimestamp
+                    )
                 }
-            case let .sndRcvd(_, sndProgress):
-                switch sndProgress {
-                case .complete:
-                    ZStack {
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd1, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy)
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, sent: .rcvd2, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy)
-                    }
-                case .partial:
-                    ZStack {
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd1, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy)
-                        ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: paleMetaColor, sent: .rcvd2, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy)
-                    }
-                }
-            default:
-                ciMetaText(meta, chatTTL: ttl, encrypted: encrypted, color: metaColor, showStatus: showStatus, showEdited: showEdited, showViaProxy: showSentViaProxy)
             }
         }
     }
 }
 
-enum SentCheckmark {
-    case sent
-    case rcvd1
-    case rcvd2
+enum MetaColorMode {
+    // Renders provided colours
+    case normal
+    // Fully transparent meta - used for reserving space
+    case transparent
+    // Renders white on dark backgrounds and black on light ones
+    case invertedMaterial
+
+    func resolve(_ c: Color?) -> Color? {
+        switch self {
+        case .normal: c
+        case .transparent: .clear
+        case .invertedMaterial: nil
+        }
+    }
+
+    func statusSpacer(_ sent: Bool) -> Text {
+        switch self {
+        case .normal, .transparent:
+            Text(
+                sent
+                ? Image("checkmark.wide")
+                : Image(systemName: "circlebadge.fill")
+            ).foregroundColor(.clear)
+        case .invertedMaterial: textSpace.kerning(13)
+        }
+    }
 }
 
 func ciMetaText(
     _ meta: CIMeta,
     chatTTL: Int?,
     encrypted: Bool?,
-    color: Color = .clear,
+    color: Color = .clear, // we use this function to reserve space without rendering meta
+    paleColor: Color? = nil,
     primaryColor: Color = .accentColor,
-    transparent: Bool = false,
-    sent: SentCheckmark? = nil,
+    colorMode: MetaColorMode = .normal,
+    onlyOverrides: Bool = false, // only render colors that differ from base
     showStatus: Bool = true,
     showEdited: Bool = true,
-    showViaProxy: Bool
+    showViaProxy: Bool,
+    showTimesamp: Bool
 ) -> Text {
     var r = Text("")
+    var space: Text? = nil
+    let appendSpace = {
+        if let sp = space {
+            r = r + sp
+            space = nil
+        }
+    }
+    let resolved = colorMode.resolve(color)
     if showEdited, meta.itemEdited {
-        r = r + statusIconText("pencil", color)
+        r = r + statusIconText("pencil", resolved)
     }
     if meta.disappearing {
-        r = r + statusIconText("timer", color).font(.caption2)
+        r = r + statusIconText("timer", resolved).font(.caption2)
         let ttl = meta.itemTimed?.ttl
         if ttl != chatTTL {
-            r = r + Text(shortTimeText(ttl)).foregroundColor(color)
+            r = r + colored(Text(shortTimeText(ttl)), resolved)
         }
-        r = r + Text(" ")
+        space = textSpace
     }
     if showViaProxy, meta.sentViaProxy == true {
-        r = r + statusIconText("arrow.forward", color.opacity(0.67)).font(.caption2)
+        appendSpace()
+        r = r + statusIconText("arrow.forward", resolved?.opacity(0.67)).font(.caption2)
     }
     if showStatus {
-        if let (icon, statusColor) = meta.statusIcon(color, primaryColor) {
-            let t = Text(Image(systemName: icon)).font(.caption2)
-            let gap = Text("  ").kerning(-1.25)
-            let t1 = t.foregroundColor(transparent ? .clear : statusColor.opacity(0.67))
-            switch sent {
-            case nil: r = r + t1
-            case .sent: r = r + t1 + gap
-            case .rcvd1: r = r + t.foregroundColor(transparent ? .clear : statusColor.opacity(0.67)) + gap
-            case .rcvd2: r = r + gap + t1
+        appendSpace()
+        if let (image, statusColor) = meta.itemStatus.statusIcon(color, paleColor ?? color, primaryColor) {
+            let metaColor = if onlyOverrides && statusColor == color {
+                Color.clear
+            } else {
+                colorMode.resolve(statusColor)
             }
-            r = r + Text(" ")
+            r = r + colored(Text(image), metaColor)
         } else if !meta.disappearing {
-            r = r + statusIconText("circlebadge.fill", .clear) + Text(" ")
+            r = r + colorMode.statusSpacer(meta.itemStatus.sent)
         }
+        space = textSpace
     }
     if let enc = encrypted {
-        r = r + statusIconText(enc ? "lock" : "lock.open", color) + Text(" ")
+        appendSpace()
+        r = r + statusIconText(enc ? "lock" : "lock.open", resolved)
+        space = textSpace
     }
-    r = r + meta.timestampText.foregroundColor(color)
+    if showTimesamp {
+        appendSpace()
+        r = r + colored(meta.timestampText, resolved)
+    }
     return r.font(.caption)
 }
 
-private func statusIconText(_ icon: String, _ color: Color) -> Text {
-    Text(Image(systemName: icon)).foregroundColor(color)
+private func statusIconText(_ icon: String, _ color: Color?) -> Text {
+    colored(Text(Image(systemName: icon)), color)
+}
+
+// Applying `foregroundColor(nil)` breaks `.invertedForegroundStyle` modifier
+private func colored(_ t: Text, _ color: Color?) -> Text {
+    if let color {
+        t.foregroundColor(color)
+    } else {
+        t
+    }
 }
 
 struct CIMetaView_Previews: PreviewProvider {

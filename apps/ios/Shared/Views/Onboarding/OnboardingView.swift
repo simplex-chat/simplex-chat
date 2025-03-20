@@ -12,20 +12,39 @@ struct OnboardingView: View {
     var onboarding: OnboardingStage
 
     var body: some View {
-        switch onboarding {
-        case .step1_SimpleXInfo: SimpleXInfo(onboarding: true)
-        case .step2_CreateProfile: CreateFirstProfile()
-        case .step3_CreateSimpleXAddress: CreateSimpleXAddress()
-        case .step4_SetNotificationsMode: SetNotificationsMode()
-        case .onboardingComplete: EmptyView()
+        NavigationView {
+            switch onboarding {
+            case .step1_SimpleXInfo:
+                SimpleXInfo(onboarding: true)
+                    .modifier(ThemedBackground())
+            case .step2_CreateProfile: // deprecated
+                CreateFirstProfile()
+                    .modifier(ThemedBackground())
+            case .step3_CreateSimpleXAddress: // deprecated
+                CreateSimpleXAddress()
+            case .step3_ChooseServerOperators:
+                ChooseServerOperators(onboarding: true)
+                    .navigationBarBackButtonHidden(true)
+                    .modifier(ThemedBackground())
+            case .step4_SetNotificationsMode:
+                SetNotificationsMode()
+                    .navigationBarBackButtonHidden(true)
+                    .modifier(ThemedBackground())
+            case .onboardingComplete: EmptyView()
+            }
         }
     }
 }
 
+func onboardingButtonPlaceholder() -> some View {
+    Spacer().frame(height: 40)
+}
+
 enum OnboardingStage: String, Identifiable {
     case step1_SimpleXInfo
-    case step2_CreateProfile
-    case step3_CreateSimpleXAddress
+    case step2_CreateProfile // deprecated
+    case step3_CreateSimpleXAddress // deprecated
+    case step3_ChooseServerOperators
     case step4_SetNotificationsMode
     case onboardingComplete
 

@@ -96,12 +96,16 @@ struct MigrateToDevice: View {
     @Binding var migrationState: MigrationToState?
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var alert: MigrateToDeviceViewAlert?
+    @State private var databaseAlert: DatabaseAlert? = nil
     private let tempDatabaseUrl = urlForTemporaryDatabase()
     @State private var chatReceiver: MigrationChatReceiver? = nil
     // Prevent from hiding the view until migration is finished or app deleted
     @State private var backDisabled: Bool = false
     @State private var showQRCodeScanner: Bool = true
     @State private var pasteboardHasStrings = UIPasteboard.general.hasStrings
+
+    @State private var importingArchiveFromFileProgressIndicator = false
+    @State private var showFileImporter = false
 
     var body: some View {
         VStack {
@@ -175,6 +179,20 @@ struct MigrateToDevice: View {
                 return Alert(title: Text(title), message: Text(error))
             }
         }
+        .alert(item: $databaseAlert) { item in
+            switch item {
+            case .archiveImported:
+                let (title, message) = archiveImportedAlertText()
+                return Alert(title: Text(title), message: Text(message))
+            case let .archiveImportedWithErrors(errs):
+                let (title, message) = archiveImportedWithErrorsAlertText(errs: errs)
+                return Alert(title: Text(title), message: Text(message))
+            case let .error(title, error):
+                return Alert(title: Text(title), message: Text(error))
+            default: // not expected this branch to be called because this alert is used only for importArchive purpose
+                return Alert(title: Text("Error"))
+            }
+        }
         .interactiveDismissDisabled(backDisabled)
     }
 
@@ -200,6 +218,12 @@ struct MigrateToDevice: View {
                 Section(header: Text("Or paste archive link").foregroundColor(theme.colors.secondary)) {
                     pasteLinkView()
                 }
+                Section(header: Text("Or import archive file").foregroundColor(theme.colors.secondary)) {
+                    archiveImportFromFileView()
+                }
+            }
+            if importingArchiveFromFileProgressIndicator {
+                progressView()
             }
         }
     }
@@ -219,6 +243,34 @@ struct MigrateToDevice: View {
         .disabled(!pasteboardHasStrings)
         .frame(maxWidth: .infinity, alignment: .center)
     }
+
+    private func archiveImportFromFileView() -> some View {
+        Button {
+            showFileImporter = true
+        } label: {
+            Label("Import database", systemImage: "square.and.arrow.down")
+        }
+        .disabled(importingArchiveFromFileProgressIndicator)
+        .fileImporter(
+            isPresented: $showFileImporter,
+            allowedContentTypes: [.zip],
+            allowsMultipleSelection: false
+        ) { result in
+            if case let .success(files) = result, let fileURL = files.first {
+                Task {
+                    let success = await DatabaseView.importArchive(fileURL, $importingArchiveFromFileProgressIndicator, $databaseAlert, true)
+                    if success {
+                        DatabaseView.startChat(
+                            Binding.constant(false),
+                            $importingArchiveFromFileProgressIndicator
+                        )
+                        hideView()
+                    }
+                }
+            }
+        }
+    }
+
 
     private func linkDownloadingView(_ link: String) -> some View {
         ZStack {
@@ -487,7 +539,7 @@ struct MigrateToDevice: View {
                     chatInitControllerRemovingDatabases()
                 } else if ChatModel.shared.chatRunning == true {
                     // cannot delete storage if chat is running
-                    try await apiStopChat()
+                    try await stopChatAsync()
                 }
                 try await apiDeleteStorage()
                 try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
@@ -571,7 +623,7 @@ struct MigrateToDevice: View {
             AlertManager.shared.showAlert(
                 Alert(
                     title: Text("Error migrating settings"),
-                    message: Text ("Not all settings were migrated. Repeat migration if you need them.") + Text("\n\n") + Text(responseError(error)))
+                    message: Text ("Some app settings were not migrated.") + textNewLine + Text(responseError(error)))
             )
         }
         hideView()
@@ -580,6 +632,8 @@ struct MigrateToDevice: View {
     private func hideView() {
         onboardingStageDefault.set(.onboardingComplete)
         m.onboardingStage = .onboardingComplete
+        m.migrationState = nil
+        MigrationToDeviceState.save(nil)
         dismiss()
     }
 

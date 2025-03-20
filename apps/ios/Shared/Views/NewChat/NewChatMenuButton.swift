@@ -14,9 +14,10 @@ enum ContactType: Int {
 }
 
 struct NewChatMenuButton: View {
+    // do not use chatModel here because it prevents showing AddGroupMembersView after group creation and QR code after link creation on iOS 16
+//    @EnvironmentObject var chatModel: ChatModel
     @State private var showNewChatSheet = false
     @State private var alert: SomeAlert? = nil
-    @State private var globalAlert: SomeAlert? = nil
 
     var body: some View {
             Button {
@@ -28,22 +29,10 @@ struct NewChatMenuButton: View {
                 .frame(width: 24, height: 24)
         }
         .appSheet(isPresented: $showNewChatSheet) {
-            NewChatSheet(alert: $alert)
+            NewChatSheet()
                 .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
-                .alert(item: $alert) { a in
-                    return a.alert
-                }
         }
-        // This is a workaround to show "Keep unused invitation" alert in both following cases:
-        // - on going back from NewChatView to NewChatSheet,
-        // - on dismissing NewChatMenuButton sheet while on NewChatView (skipping NewChatSheet)
-        .onChange(of: alert?.id) { a in
-            if !showNewChatSheet && alert != nil {
-                globalAlert = alert
-                alert = nil
-            }
-        }
-        .alert(item: $globalAlert) { a in
+        .alert(item: $alert) { a in
             return a.alert
         }
     }
@@ -60,7 +49,7 @@ struct NewChatSheet: View {
     @State private var searchText = ""
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
-    @Binding var alert: SomeAlert?
+    @State private var alert: SomeAlert?
 
     // Sheet height management
     @State private var isAddContactActive = false
@@ -78,6 +67,9 @@ struct NewChatSheet: View {
                 .navigationBarTitleDisplayMode(.large)
                 .navigationBarHidden(searchMode)
                 .modifier(ThemedBackground(grouped: true))
+                .alert(item: $alert) { a in
+                    return a.alert
+                }
         }
         if #available(iOS 16.0, *), oneHandUI {
             let sheetHeight: CGFloat = showArchive ? 575 : 500
@@ -112,17 +104,17 @@ struct NewChatSheet: View {
             if (searchText.isEmpty) {
                 Section {
                     NavigationLink(isActive: $isAddContactActive) {
-                        NewChatView(selection: .invite, parentAlert: $alert)
+                        NewChatView(selection: .invite)
                             .navigationTitle("New chat")
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
-                        navigateOnTap(Label("Add contact", systemImage: "link.badge.plus")) {
+                        navigateOnTap(Label("Create 1-time link", systemImage: "link.badge.plus")) {
                             isAddContactActive = true
                         }
                     }
                     NavigationLink(isActive: $isScanPasteLinkActive) {
-                        NewChatView(selection: .connect, showQRCodeScanner: true, parentAlert: $alert)
+                        NewChatView(selection: .connect, showQRCodeScanner: true)
                             .navigationTitle("New chat")
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
@@ -194,7 +186,7 @@ struct NewChatSheet: View {
     }
 }
 
-func chatContactType(chat: Chat) -> ContactType {
+func chatContactType(_ chat: Chat) -> ContactType {
     switch chat.chatInfo {
     case .contactRequest:
         return .request
@@ -215,7 +207,7 @@ func chatContactType(chat: Chat) -> ContactType {
 
 private func filterContactTypes(chats: [Chat], contactTypes: [ContactType]) -> [Chat] {
     return chats.filter { chat in
-        contactTypes.contains(chatContactType(chat: chat))
+        contactTypes.contains(chatContactType(chat))
     }
 }
 
@@ -287,8 +279,8 @@ struct ContactsList: View {
     }
     
     private func chatsByTypeComparator(chat1: Chat, chat2: Chat) -> Bool {
-        let chat1Type = chatContactType(chat: chat1)
-        let chat2Type = chatContactType(chat: chat2)
+        let chat1Type = chatContactType(chat1)
+        let chat2Type = chatContactType(chat2)
 
         if chat1Type.rawValue < chat2Type.rawValue {
             return true

@@ -6,11 +6,11 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.text.BidiFormatter
+import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -50,7 +50,11 @@ actual fun windowOrientation(): WindowOrientation = when (mainActivity.get()?.re
 }
 
 @Composable
-actual fun windowWidth(): Dp = LocalConfiguration.current.screenWidthDp.dp
+actual fun windowWidth(): Dp {
+  val direction = LocalLayoutDirection.current
+  val cutout = WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal).asPaddingValues()
+  return LocalConfiguration.current.screenWidthDp.dp - cutout.calculateStartPadding(direction) - cutout.calculateEndPadding(direction)
+}
 
 @Composable
 actual fun windowHeight(): Dp = LocalConfiguration.current.screenHeightDp.dp

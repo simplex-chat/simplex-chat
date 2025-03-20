@@ -29,7 +29,6 @@ export type ChatCommand =
   | APIRejectContact
   | APIUpdateProfile
   | APISetContactAlias
-  | APIParseMarkdown
   | NewGroup
   | APIAddMember
   | APIJoinGroup
@@ -128,7 +127,6 @@ type ChatCommandTag =
   | "apiRejectContact"
   | "apiUpdateProfile"
   | "apiSetContactAlias"
-  | "apiParseMarkdown"
   | "newGroup"
   | "apiAddMember"
   | "apiJoinGroup"
@@ -277,7 +275,7 @@ export interface APISendMessage extends IChatCommand {
   type: "apiSendMessage"
   chatType: ChatType
   chatId: number
-  message: ComposedMessage
+  messages: ComposedMessage[]
 }
 
 export interface ComposedMessage {
@@ -353,11 +351,6 @@ export interface APISetContactAlias extends IChatCommand {
   type: "apiSetContactAlias"
   contactId: number
   localAlias: string
-}
-
-export interface APIParseMarkdown extends IChatCommand {
-  type: "apiParseMarkdown"
-  text: string
 }
 
 export interface NewGroup extends IChatCommand {
@@ -709,7 +702,7 @@ export function cmdString(cmd: ChatCommand): string {
     case "apiGetChat":
       return `/_get chat ${cmd.chatType}${cmd.chatId}${paginationStr(cmd.pagination)}`
     case "apiSendMessage":
-      return `/_send ${cmd.chatType}${cmd.chatId} json ${JSON.stringify(cmd.message)}`
+      return `/_send ${cmd.chatType}${cmd.chatId} json ${JSON.stringify(cmd.messages)}`
     case "apiUpdateChatItem":
       return `/_update item ${cmd.chatType}${cmd.chatId} ${cmd.chatItemId} json ${JSON.stringify(cmd.msgContent)}`
     case "apiDeleteChatItem":
@@ -732,8 +725,6 @@ export function cmdString(cmd: ChatCommand): string {
       return `/_profile ${cmd.userId} ${JSON.stringify(cmd.profile)}`
     case "apiSetContactAlias":
       return `/_set alias @${cmd.contactId} ${cmd.localAlias.trim()}`
-    case "apiParseMarkdown":
-      return `/_parse ${cmd.text}`
     case "newGroup":
       return `/_group ${JSON.stringify(cmd.groupProfile)}`
     case "apiAddMember":

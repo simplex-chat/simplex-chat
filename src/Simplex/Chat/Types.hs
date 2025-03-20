@@ -1,17 +1,21 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
@@ -22,13 +26,17 @@
 
 module Simplex.Chat.Types where
 
+import Control.Applicative ((<|>))
 import Crypto.Number.Serialize (os2ip)
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString, pack, unpack)
+import qualified Data.ByteString.Lazy as LB
+import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.Maybe (isJust)
 import Data.Text (Text)
@@ -37,11 +45,6 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Typeable (Typeable)
 import Data.Word (Word16)
-import Database.SQLite.Simple (ResultError (..), SQLData (..))
-import Database.SQLite.Simple.FromField (FromField (..), returnError)
-import Database.SQLite.Simple.Internal (Field (..))
-import Database.SQLite.Simple.Ok
-import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
@@ -49,13 +52,23 @@ import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
 import Simplex.Messaging.Agent.Protocol (ACorrId, AEventTag (..), AEvtTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
+import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (ResultError (..))
+import Database.PostgreSQL.Simple.FromField (FromField(..), FieldParser, returnError)
+import Database.PostgreSQL.Simple.ToField (ToField (..))
+#else
+import Database.SQLite.Simple (ResultError (..))
+import Database.SQLite.Simple.FromField (FromField (..), FieldParser, returnError)
+import Database.SQLite.Simple.ToField (ToField (..))
+#endif
 
 class IsContact a where
   contactId' :: a -> ContactId
@@ -98,7 +111,7 @@ instance ToJSON AgentUserId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-instance FromField AgentUserId where fromField f = AgentUserId <$> fromField f
+deriving newtype instance FromField AgentUserId
 
 instance ToField AgentUserId where toField (AgentUserId uId) = toField uId
 
@@ -113,6 +126,7 @@ data User = User
     profile :: LocalProfile,
     fullPreferences :: FullPreferences,
     activeUser :: Bool,
+    activeOrder :: Int64,
     viewPwdHash :: Maybe UserPwdHash,
     showNtfs :: Bool,
     sendRcptsContacts :: Bool,
@@ -130,10 +144,9 @@ data NewUser = NewUser
 
 newtype B64UrlByteString = B64UrlByteString ByteString
   deriving (Eq, Show)
+  deriving newtype (FromField)
 
-instance FromField B64UrlByteString where fromField f = B64UrlByteString <$> fromField f
-
-instance ToField B64UrlByteString where toField (B64UrlByteString m) = toField m
+instance ToField B64UrlByteString where toField (B64UrlByteString m) = toField $ Binary m
 
 instance StrEncoding B64UrlByteString where
   strEncode (B64UrlByteString m) = strEncode m
@@ -159,6 +172,8 @@ type ContactId = Int64
 
 type ProfileId = Int64
 
+type ChatTagId = Int64
+
 data Contact = Contact
   { contactId :: ContactId,
     localDisplayName :: ContactName,
@@ -175,6 +190,8 @@ data Contact = Contact
     chatTs :: Maybe UTCTime,
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
+    chatTags :: [ChatTagId],
+    chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
     chatDeleted :: Bool,
     customData :: Maybe CustomData
@@ -191,9 +208,9 @@ instance ToJSON CustomData where
 instance FromJSON CustomData where
   parseJSON = J.withObject "CustomData" (pure . CustomData)
 
-instance ToField CustomData where toField (CustomData v) = toField $ J.encode v
+instance ToField CustomData where toField (CustomData v) = toField . Binary . LB.toStrict $ J.encode v
 
-instance FromField CustomData where fromField = fromBlobField_ J.eitherDecodeStrict
+instance FromField CustomData where fromField = blobFieldDecoder J.eitherDecodeStrict
 
 contactConn :: Contact -> Maybe Connection
 contactConn Contact {activeConn} = activeConn
@@ -296,6 +313,7 @@ userContactGroupId UserContact {groupId} = groupId
 data UserContactRequest = UserContactRequest
   { contactRequestId :: Int64,
     agentInvitationId :: AgentInvId,
+    contactId_ :: Maybe ContactId,
     userContactLinkId :: Int64,
     agentContactConnId :: AgentConnId, -- connection id of user contact
     cReqChatVRange :: VersionRangeChat,
@@ -311,10 +329,9 @@ data UserContactRequest = UserContactRequest
 
 newtype XContactId = XContactId ByteString
   deriving (Eq, Show)
+  deriving newtype (FromField)
 
-instance FromField XContactId where fromField f = XContactId <$> fromField f
-
-instance ToField XContactId where toField (XContactId m) = toField m
+instance ToField XContactId where toField (XContactId m) = toField $ Binary m
 
 instance StrEncoding XContactId where
   strEncode (XContactId m) = strEncode m
@@ -330,10 +347,9 @@ instance ToJSON XContactId where
 
 newtype ConnReqUriHash = ConnReqUriHash {unConnReqUriHash :: ByteString}
   deriving (Eq, Show)
+  deriving newtype (FromField)
 
-instance FromField ConnReqUriHash where fromField f = ConnReqUriHash <$> fromField f
-
-instance ToField ConnReqUriHash where toField (ConnReqUriHash m) = toField m
+instance ToField ConnReqUriHash where toField (ConnReqUriHash m) = toField $ Binary m
 
 instance StrEncoding ConnReqUriHash where
   strEncode (ConnReqUriHash m) = strEncode m
@@ -347,11 +363,13 @@ instance ToJSON ConnReqUriHash where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-data ContactOrRequest = CORContact Contact | CORRequest UserContactRequest
+data ChatOrRequest = CORContact Contact | CORGroup GroupInfo | CORRequest UserContactRequest
 
 type UserName = Text
 
 type ContactName = Text
+
+type MemberName = Text
 
 type GroupName = Text
 
@@ -359,6 +377,26 @@ optionalFullName :: ContactName -> Text -> Text
 optionalFullName displayName fullName
   | T.null fullName || displayName == fullName = ""
   | otherwise = " (" <> fullName <> ")"
+
+data ShortGroup = ShortGroup
+  { shortInfo :: ShortGroupInfo,
+    members :: [ShortGroupMember]
+  }
+
+data ShortGroupInfo = ShortGroupInfo
+  { groupId :: GroupId,
+    groupName :: GroupName,
+    membershipStatus :: GroupMemberStatus
+  }
+  deriving (Eq, Show)
+
+data ShortGroupMember = ShortGroupMember
+  { groupMemberId :: GroupMemberId,
+    groupId :: GroupId,
+    memberName :: ContactName,
+    connId :: AgentConnId
+  }
+  deriving (Show)
 
 data Group = Group {groupInfo :: GroupInfo, members :: [GroupMember]}
   deriving (Eq, Show)
@@ -369,18 +407,39 @@ data GroupInfo = GroupInfo
   { groupId :: GroupId,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
+    localAlias :: Text,
+    businessChat :: Maybe BusinessChatInfo,
     fullGroupPreferences :: FullGroupPreferences,
     membership :: GroupMember,
-    hostConnCustomUserProfileId :: Maybe ProfileId,
     chatSettings :: ChatSettings,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
     userMemberProfileSentAt :: Maybe UTCTime,
+    chatTags :: [ChatTagId],
+    chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
     customData :: Maybe CustomData
   }
   deriving (Eq, Show)
+
+data BusinessChatType
+  = BCBusiness -- used on the customer side
+  | BCCustomer -- used on the business side
+  deriving (Eq, Show)
+
+instance TextEncoding BusinessChatType where
+  textEncode = \case
+    BCBusiness -> "business"
+    BCCustomer -> "customer"
+  textDecode = \case
+    "business" -> Just BCBusiness
+    "customer" -> Just BCCustomer
+    _ -> Nothing
+
+instance FromField BusinessChatType where fromField = fromTextField_ textDecode
+
+instance ToField BusinessChatType where toField = toField . textEncode
 
 groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
@@ -390,12 +449,12 @@ data GroupSummary = GroupSummary
   }
   deriving (Show)
 
-data ContactOrGroup = CGContact Contact | CGGroup Group
+data ContactOrGroup = CGContact Contact | CGGroup GroupInfo [GroupMember]
 
 contactAndGroupIds :: ContactOrGroup -> (Maybe ContactId, Maybe GroupId)
 contactAndGroupIds = \case
   CGContact Contact {contactId} -> (Just contactId, Nothing)
-  CGGroup (Group GroupInfo {groupId} _) -> (Nothing, Just groupId)
+  CGGroup GroupInfo {groupId} _ -> (Nothing, Just groupId)
 
 -- TODO when more settings are added we should create another type to allow partial setting updates (with all Maybe properties)
 data ChatSettings = ChatSettings
@@ -432,13 +491,16 @@ msgFilterIntP = \case
   2 -> Just MFMentions
   _ -> Just MFAll
 
-fromIntField_ :: Typeable a => (Int64 -> Maybe a) -> Field -> Ok a
-fromIntField_ fromInt = \case
-  f@(Field (SQLInteger i) _) ->
-    case fromInt i of
-      Just x -> Ok x
-      _ -> returnError ConversionFailed f ("invalid integer: " <> show i)
-  f -> returnError ConversionFailed f "expecting SQLInteger column type"
+fromIntField_ :: Typeable a => (Int64 -> Maybe a) -> FieldParser a
+#if defined(dbPostgres)
+fromIntField_ fromInt f val = fromField f val >>= parseInt
+#else
+fromIntField_ fromInt f = fromField f >>= parseInt
+#endif
+  where
+    parseInt i = case fromInt i of
+      Just x -> pure x
+      _ -> returnError ConversionFailed f $ "invalid integer: " <> show i
 
 featureAllowed :: SChatFeature f -> (PrefEnabled -> Bool) -> Contact -> Bool
 featureAllowed feature forWhom Contact {mergedPreferences} =
@@ -568,16 +630,15 @@ instance ToJSON ImageData where
 
 instance ToField ImageData where toField (ImageData t) = toField t
 
-instance FromField ImageData where fromField = fmap ImageData . fromField
+deriving newtype instance FromField ImageData
 
 data CReqClientData = CRDataGroup {groupLinkId :: GroupLinkId}
 
 newtype GroupLinkId = GroupLinkId {unGroupLinkId :: ByteString} -- used to identify invitation via group link
   deriving (Eq, Show)
+  deriving newtype (FromField)
 
-instance FromField GroupLinkId where fromField f = GroupLinkId <$> fromField f
-
-instance ToField GroupLinkId where toField (GroupLinkId g) = toField g
+instance ToField GroupLinkId where toField (GroupLinkId g) = toField $ Binary g
 
 instance StrEncoding GroupLinkId where
   strEncode (GroupLinkId g) = strEncode g
@@ -596,6 +657,7 @@ data GroupInvitation = GroupInvitation
     invitedMember :: MemberIdRole,
     connRequest :: ConnReqInvitation,
     groupProfile :: GroupProfile,
+    business :: Maybe BusinessChatInfo,
     groupLinkId :: Maybe GroupLinkId,
     groupSize :: Maybe Int
   }
@@ -606,9 +668,46 @@ data GroupLinkInvitation = GroupLinkInvitation
     fromMemberName :: ContactName,
     invitedMember :: MemberIdRole,
     groupProfile :: GroupProfile,
+    accepted :: Maybe GroupAcceptance,
+    business :: Maybe BusinessChatInfo,
     groupSize :: Maybe Int
   }
   deriving (Eq, Show)
+
+data GroupLinkRejection = GroupLinkRejection
+  { fromMember :: MemberIdRole,
+    invitedMember :: MemberIdRole,
+    groupProfile :: GroupProfile,
+    rejectionReason :: GroupRejectionReason
+  }
+  deriving (Eq, Show)
+
+data GroupRejectionReason
+  = GRRLongName
+  | GRRBlockedName
+  | GRRUnknown {text :: Text}
+  deriving (Eq, Show)
+
+instance FromField GroupRejectionReason where fromField = blobFieldDecoder strDecode
+
+instance ToField GroupRejectionReason where toField = toField . strEncode
+
+instance StrEncoding GroupRejectionReason where
+  strEncode = \case
+    GRRLongName -> "long_name"
+    GRRBlockedName -> "blocked_name"
+    GRRUnknown text -> encodeUtf8 text
+  strP =
+    "long_name" $> GRRLongName
+    <|> "blocked_name" $> GRRBlockedName
+    <|> GRRUnknown . safeDecodeUtf8 <$> A.takeByteString
+
+instance FromJSON GroupRejectionReason where
+  parseJSON = strParseJSON "GroupRejectionReason"
+
+instance ToJSON GroupRejectionReason where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
 
 data MemberIdRole = MemberIdRole
   { memberId :: MemberId,
@@ -630,6 +729,13 @@ data MemberInfo = MemberInfo
   }
   deriving (Eq, Show)
 
+data BusinessChatInfo = BusinessChatInfo
+  { chatType :: BusinessChatType,
+    businessId :: MemberId,
+    customerId :: MemberId
+  }
+  deriving (Eq, Show)
+
 memberInfo :: GroupMember -> MemberInfo
 memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
   MemberInfo
@@ -645,7 +751,7 @@ data MemberRestrictionStatus
   | MRSUnknown Text
   deriving (Eq, Show)
 
-instance FromField MemberRestrictionStatus where fromField = fromBlobField_ strDecode
+instance FromField MemberRestrictionStatus where fromField = blobFieldDecoder strDecode
 
 instance ToField MemberRestrictionStatus where toField = toField . strEncode
 
@@ -717,7 +823,9 @@ data GroupMember = GroupMember
     -- member chat protocol version range; if member has active connection, its version range is preferred;
     -- for membership current supportedChatVRange is set, it's not updated on protocol version increase in database,
     -- but it's correctly set on read (see toGroupInfo)
-    memberChatVRange :: VersionRangeChat
+    memberChatVRange :: VersionRangeChat,
+    createdAt :: UTCTime,
+    updatedAt :: UTCTime
   }
   deriving (Eq, Show)
 
@@ -733,6 +841,9 @@ memberConn GroupMember {activeConn} = activeConn
 
 memberConnId :: GroupMember -> Maybe ConnId
 memberConnId GroupMember {activeConn} = aConnId <$> activeConn
+
+sameMemberId :: MemberId -> GroupMember -> Bool
+sameMemberId memId GroupMember {memberId} = memId == memberId
 
 memberChatVRange' :: GroupMember -> VersionRangeChat
 memberChatVRange' GroupMember {activeConn, memberChatVRange} = case activeConn of
@@ -773,11 +884,10 @@ data NewGroupMember = NewGroupMember
   }
 
 newtype MemberId = MemberId {unMemberId :: ByteString}
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
+  deriving newtype (FromField)
 
-instance FromField MemberId where fromField f = MemberId <$> fromField f
-
-instance ToField MemberId where toField (MemberId m) = toField m
+instance ToField MemberId where toField (MemberId m) = toField $ Binary m
 
 instance StrEncoding MemberId where
   strEncode (MemberId m) = strEncode m
@@ -790,6 +900,9 @@ instance FromJSON MemberId where
 instance ToJSON MemberId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
+
+nameFromMemberId :: MemberId -> ContactName
+nameFromMemberId = T.take 7 . safeDecodeUtf8 . B64.encode . unMemberId
 
 data InvitedBy = IBContact {byContactId :: Int64} | IBUser | IBUnknown
   deriving (Eq, Show)
@@ -879,11 +992,13 @@ instance TextEncoding GroupMemberCategory where
     GCPostMember -> "post"
 
 data GroupMemberStatus
-  = GSMemRemoved -- member who was removed from the group
+  = GSMemRejected -- joining member who was rejected by the host, or host that rejected the join
+  | GSMemRemoved -- member who was removed from the group
   | GSMemLeft -- member who left the group
   | GSMemGroupDeleted -- user member of the deleted group
   | GSMemUnknown -- unknown member, whose message was forwarded by an admin (likely member wasn't introduced due to not being a current member, but message was included in history)
   | GSMemInvited -- member is sent to or received invitation to join the group
+  | GSMemPendingApproval -- member is connected to host but pending host approval before connecting to other members ("knocking")
   | GSMemIntroduced -- user received x.grp.mem.intro for this member (only with GCPreMember)
   | GSMemIntroInvited -- member is sent to or received from intro invitation
   | GSMemAccepted -- member accepted invitation (only User and Invitee)
@@ -904,13 +1019,20 @@ instance ToJSON GroupMemberStatus where
   toJSON = J.String . textEncode
   toEncoding = JE.text . textEncode
 
+acceptanceToStatus :: GroupAcceptance -> GroupMemberStatus
+acceptanceToStatus = \case
+  GAAccepted -> GSMemAccepted
+  GAPending -> GSMemPendingApproval
+
 memberActive :: GroupMember -> Bool
 memberActive m = case memberStatus m of
+  GSMemRejected -> False
   GSMemRemoved -> False
   GSMemLeft -> False
   GSMemGroupDeleted -> False
   GSMemUnknown -> False
   GSMemInvited -> False
+  GSMemPendingApproval -> True
   GSMemIntroduced -> False
   GSMemIntroInvited -> False
   GSMemAccepted -> False
@@ -925,11 +1047,13 @@ memberCurrent = memberCurrent' . memberStatus
 -- update getGroupSummary if this is changed
 memberCurrent' :: GroupMemberStatus -> Bool
 memberCurrent' = \case
+  GSMemRejected -> False
   GSMemRemoved -> False
   GSMemLeft -> False
   GSMemGroupDeleted -> False
   GSMemUnknown -> False
   GSMemInvited -> False
+  GSMemPendingApproval -> False
   GSMemIntroduced -> True
   GSMemIntroInvited -> True
   GSMemAccepted -> True
@@ -940,11 +1064,13 @@ memberCurrent' = \case
 
 memberRemoved :: GroupMember -> Bool
 memberRemoved m = case memberStatus m of
+  GSMemRejected -> True
   GSMemRemoved -> True
   GSMemLeft -> True
   GSMemGroupDeleted -> True
   GSMemUnknown -> False
   GSMemInvited -> False
+  GSMemPendingApproval -> False
   GSMemIntroduced -> False
   GSMemIntroInvited -> False
   GSMemAccepted -> False
@@ -955,11 +1081,13 @@ memberRemoved m = case memberStatus m of
 
 instance TextEncoding GroupMemberStatus where
   textDecode = \case
+    "rejected" -> Just GSMemRejected
     "removed" -> Just GSMemRemoved
     "left" -> Just GSMemLeft
     "deleted" -> Just GSMemGroupDeleted
     "unknown" -> Just GSMemUnknown
     "invited" -> Just GSMemInvited
+    "pending_approval" -> Just GSMemPendingApproval
     "introduced" -> Just GSMemIntroduced
     "intro-inv" -> Just GSMemIntroInvited
     "accepted" -> Just GSMemAccepted
@@ -969,11 +1097,13 @@ instance TextEncoding GroupMemberStatus where
     "creator" -> Just GSMemCreator
     _ -> Nothing
   textEncode = \case
+    GSMemRejected -> "rejected"
     GSMemRemoved -> "removed"
     GSMemLeft -> "left"
     GSMemGroupDeleted -> "deleted"
     GSMemUnknown -> "unknown"
     GSMemInvited -> "invited"
+    GSMemPendingApproval -> "pending_approval"
     GSMemIntroduced -> "introduced"
     GSMemIntroInvited -> "intro-inv"
     GSMemAccepted -> "accepted"
@@ -1128,6 +1258,9 @@ liveRcvFileTransferPath ft = fp <$> liveRcvFileTransferInfo ft
 
 newtype AgentConnId = AgentConnId ConnId
   deriving (Eq, Ord, Show)
+  deriving newtype (FromField)
+
+instance ToField AgentConnId where toField (AgentConnId m) = toField $ Binary m
 
 instance StrEncoding AgentConnId where
   strEncode (AgentConnId connId) = strEncode connId
@@ -1141,12 +1274,11 @@ instance ToJSON AgentConnId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-instance FromField AgentConnId where fromField f = AgentConnId <$> fromField f
-
-instance ToField AgentConnId where toField (AgentConnId m) = toField m
-
 newtype AgentSndFileId = AgentSndFileId SndFileId
   deriving (Eq, Show)
+  deriving newtype (FromField)
+
+instance ToField AgentSndFileId where toField (AgentSndFileId m) = toField $ Binary m
 
 instance StrEncoding AgentSndFileId where
   strEncode (AgentSndFileId connId) = strEncode connId
@@ -1160,12 +1292,11 @@ instance ToJSON AgentSndFileId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-instance FromField AgentSndFileId where fromField f = AgentSndFileId <$> fromField f
-
-instance ToField AgentSndFileId where toField (AgentSndFileId m) = toField m
-
 newtype AgentRcvFileId = AgentRcvFileId RcvFileId
   deriving (Eq, Show)
+  deriving newtype (FromField)
+
+instance ToField AgentRcvFileId where toField (AgentRcvFileId m) = toField $ Binary m
 
 instance StrEncoding AgentRcvFileId where
   strEncode (AgentRcvFileId connId) = strEncode connId
@@ -1178,10 +1309,6 @@ instance FromJSON AgentRcvFileId where
 instance ToJSON AgentRcvFileId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
-
-instance FromField AgentRcvFileId where fromField f = AgentRcvFileId <$> fromField f
-
-instance ToField AgentRcvFileId where toField (AgentRcvFileId m) = toField m
 
 newtype AgentInvId = AgentInvId InvitationId
   deriving (Eq, Show)
@@ -1198,7 +1325,7 @@ instance ToJSON AgentInvId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-instance FromField AgentInvId where fromField f = AgentInvId <$> fromField f
+deriving newtype instance FromField AgentInvId
 
 instance ToField AgentInvId where toField (AgentInvId m) = toField m
 
@@ -1370,6 +1497,8 @@ aConnId' PendingContactConnection {pccAgentConnId = AgentConnId cId} = cId
 data ConnStatus
   = -- | connection is created by initiating party with agent NEW command (createConnection)
     ConnNew
+  | -- | connection is prepared, to avoid changing keys on invitation links when retrying.
+    ConnPrepared
   | -- | connection is joined by joining party with agent JOIN command (joinConnection)
     ConnJoined
   | -- | initiating party received CONF notification (to be renamed to REQ)
@@ -1398,6 +1527,7 @@ instance ToJSON ConnStatus where
 instance TextEncoding ConnStatus where
   textDecode = \case
     "new" -> Just ConnNew
+    "prepared" -> Just ConnPrepared
     "joined" -> Just ConnJoined
     "requested" -> Just ConnRequested
     "accepted" -> Just ConnAccepted
@@ -1407,6 +1537,7 @@ instance TextEncoding ConnStatus where
     _ -> Nothing
   textEncode = \case
     ConnNew -> "new"
+    ConnPrepared -> "prepared"
     ConnJoined -> "joined"
     ConnRequested -> "requested"
     ConnAccepted -> "accepted"
@@ -1603,6 +1734,13 @@ data CommandData = CommandData
   }
   deriving (Show)
 
+data ChatTag = ChatTag
+  { chatTagId :: Int64,
+    chatTagText :: Text,
+    chatTagEmoji :: Maybe Text
+  }
+  deriving (Show)
+
 -- ad-hoc type for data required for XGrpMemIntro continuation
 data XGrpMemIntroCont = XGrpMemIntroCont
   { groupId :: GroupId,
@@ -1690,6 +1828,10 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "MF") ''MsgFilter)
 
 $(JQ.deriveJSON defaultJSON ''ChatSettings)
 
+$(JQ.deriveJSON (enumJSON $ dropPrefix "BC") ''BusinessChatType)
+
+$(JQ.deriveJSON defaultJSON ''BusinessChatInfo)
+
 $(JQ.deriveJSON defaultJSON ''GroupInfo)
 
 $(JQ.deriveJSON defaultJSON ''Group)
@@ -1700,17 +1842,19 @@ instance FromField MsgFilter where fromField = fromIntField_ msgFilterIntP
 
 instance ToField MsgFilter where toField = toField . msgFilterInt
 
-$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "CRData") ''CReqClientData)
+$(JQ.deriveJSON defaultJSON ''CReqClientData)
 
 $(JQ.deriveJSON defaultJSON ''MemberIdRole)
+
+$(JQ.deriveJSON defaultJSON ''MemberInfo)
 
 $(JQ.deriveJSON defaultJSON ''GroupInvitation)
 
 $(JQ.deriveJSON defaultJSON ''GroupLinkInvitation)
 
-$(JQ.deriveJSON defaultJSON ''IntroInvitation)
+$(JQ.deriveJSON defaultJSON ''GroupLinkRejection)
 
-$(JQ.deriveJSON defaultJSON ''MemberInfo)
+$(JQ.deriveJSON defaultJSON ''IntroInvitation)
 
 $(JQ.deriveJSON defaultJSON ''MemberRestrictions)
 
@@ -1753,3 +1897,9 @@ $(JQ.deriveJSON defaultJSON ''Contact)
 $(JQ.deriveJSON defaultJSON ''ContactRef)
 
 $(JQ.deriveJSON defaultJSON ''NoteFolder)
+
+$(JQ.deriveJSON defaultJSON ''ChatTag)
+
+$(JQ.deriveJSON defaultJSON ''ShortGroupInfo)
+
+$(JQ.deriveJSON defaultJSON ''ShortGroupMember)

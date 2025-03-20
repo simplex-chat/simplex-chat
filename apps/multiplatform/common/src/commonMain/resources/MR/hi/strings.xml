@@ -117,7 +117,6 @@
     <string name="network_status">नेटवर्क की स्थिति</string>
     <string name="notification_new_contact_request">नया संपर्क अनुरोध</string>
     <string name="delete_files_and_media_all">सभी फाइलों को मिटा दें</string>
-    <string name="delete_archive">संग्रह हटा देना</string>
     <string name="new_database_archive">नया डेटाबेस संग्रह</string>
     <string name="new_member_role">नए सदस्य की भूमिका</string>
     <string name="settings_notifications_mode_title">अधिसूचना सेवा</string>
@@ -129,7 +128,6 @@
     <string name="settings_notification_preview_title">अधिसूचना पूर्वावलोकन</string>
     <string name="notifications">सूचनाएं</string>
     <string name="full_deletion">सभी के लिए हटाएं</string>
-    <string name="delete_chat_archive_question">लिखचीत संग्रह हटा दे\?</string>
     <string name="delete_chat_profile_question">चैट प्रोफ़ाइल हटाएं\?</string>
     <string name="users_delete_question">चैट प्रोफ़ाइल हटाएं\?</string>
     <string name="users_delete_profile_for">के लिए चैट प्रोफ़ाइल हटाएं</string>
@@ -218,9 +216,7 @@
     <string name="icon_descr_call_ended">कॉल समाप्त</string>
     <string name="icon_descr_call_progress">कॉल चल रहा है</string>
     <string name="auto_accept_images">छवियों को स्वत: स्वीकार करें</string>
-    <string name="chat_archive_header">चैट संग्रह</string>
     <string name="chat_is_stopped_indication">चैट रोक दी गई है</string>
-    <string name="chat_archive_section">चैट संग्रह</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">आप इस समूह से संदेश प्राप्त करना बंद कर देंगे। चैट इतिहास संरक्षित किया जाएगा।</string>
     <string name="rcv_group_event_changed_member_role">%s की भूमिका को %s में बदला</string>
     <string name="group_member_status_complete">पूर्ण</string>

@@ -63,7 +63,11 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     }
     val dbKey = useKey ?: DatabaseUtils.useDatabaseKey()
     val confirm = confirmMigrations ?: if (appPreferences.developerTools.get() && appPreferences.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
-    var migrated: Array<Any> = chatMigrateInit(dbAbsolutePrefixPath, dbKey, MigrationConfirmation.Error.value)
+    var migrated: Array<Any> = if (databaseBackend == "postgres") {
+      chatMigrateInit("simplex_v1", "postgresql://simplex@/simplex_v1", MigrationConfirmation.Error.value)
+    } else {
+      chatMigrateInit(dbAbsolutePrefixPath, dbKey, MigrationConfirmation.Error.value)
+    }
     var res: DBMigrationResult = runCatching {
       json.decodeFromString<DBMigrationResult>(migrated[0] as String)
     }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
@@ -75,7 +79,11 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     }
     if (rerunMigration) {
       chatModel.dbMigrationInProgress.value = true
-      migrated = chatMigrateInit(dbAbsolutePrefixPath, dbKey, confirm.value)
+      migrated = if (databaseBackend == "postgres") {
+        chatMigrateInit("simplex_v1", "postgresql://simplex@/simplex_v1", confirm.value)
+      } else {
+        chatMigrateInit(dbAbsolutePrefixPath, dbKey, confirm.value)
+      }
       res = runCatching {
         json.decodeFromString<DBMigrationResult>(migrated[0] as String)
       }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
@@ -118,6 +126,16 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     if (appPreferences.encryptionStartedAt.get() != null) appPreferences.encryptionStartedAt.set(null)
     val user = chatController.apiGetActiveUser(null)
     chatModel.currentUser.value = user
+    chatModel.conditions.value = chatController.getServerOperators(null) ?: ServerOperatorConditionsDetail.empty
+    if (appPrefs.shouldImportAppSettings.get()) {
+      try {
+        val appSettings = controller.apiGetAppSettings(AppSettings.current.prepareForExport())
+        appSettings.importIntoApp()
+        appPrefs.shouldImportAppSettings.set(false)
+      } catch (e: Exception) {
+        Log.e(TAG, "Error while importing app settings: " + e.stackTraceToString())
+      }
+    }
     if (user == null) {
       chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
       chatModel.currentUser.value = null
@@ -138,7 +156,11 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     } else if (startChat().await()) {
       val savedOnboardingStage = appPreferences.onboardingStage.get()
       val newStage = if (listOf(OnboardingStage.Step1_SimpleXInfo, OnboardingStage.Step2_CreateProfile).contains(savedOnboardingStage) && chatModel.users.size == 1) {
-        OnboardingStage.Step3_CreateSimpleXAddress
+        if (appPlatform.isAndroid) {
+          OnboardingStage.Step4_SetNotificationsMode
+        } else {
+          OnboardingStage.OnboardingComplete
+        }
       } else {
         savedOnboardingStage
       }

@@ -12,6 +12,7 @@ import SimpleXChat
 struct CIImageView: View {
     @EnvironmentObject var m: ChatModel
     let chatItem: ChatItem
+    var scrollToItemId: ((ChatItem.ID) -> Void)? = nil
     var preview: UIImage?
     let maxWidth: CGFloat
     var imgWidth: CGFloat?
@@ -25,7 +26,7 @@ struct CIImageView: View {
             if let uiImage = getLoadedImage(file) {
                 Group { if smallView { smallViewImageView(uiImage) } else { imageView(uiImage) } }
                 .fullScreenCover(isPresented: $showFullScreenImage) {
-                    FullScreenMediaView(chatItem: chatItem, image: uiImage, showView: $showFullScreenImage)
+                    FullScreenMediaView(chatItem: chatItem, scrollToItemId: scrollToItemId, image: uiImage, showView: $showFullScreenImage)
                 }
                 .if(!smallView) { view in
                     view.modifier(PrivacyBlur(blurred: $blurred))
@@ -69,25 +70,13 @@ struct CIImageView: View {
                             case .rcvComplete: () // ?
                             case .rcvCancelled: () // TODO
                             case let .rcvError(rcvFileError):
-                                AlertManager.shared.showAlert(Alert(
-                                    title: Text("File error"),
-                                    message: Text(rcvFileError.errorInfo)
-                                ))
+                                showFileErrorAlert(rcvFileError)
                             case let .rcvWarning(rcvFileError):
-                                AlertManager.shared.showAlert(Alert(
-                                    title: Text("Temporary file error"),
-                                    message: Text(rcvFileError.errorInfo)
-                                ))
+                                showFileErrorAlert(rcvFileError, temporary: true)
                             case let .sndError(sndFileError):
-                                AlertManager.shared.showAlert(Alert(
-                                    title: Text("File error"),
-                                    message: Text(sndFileError.errorInfo)
-                                ))
+                                showFileErrorAlert(sndFileError)
                             case let .sndWarning(sndFileError):
-                                AlertManager.shared.showAlert(Alert(
-                                    title: Text("Temporary file error"),
-                                    message: Text(sndFileError.errorInfo)
-                                ))
+                                showFileErrorAlert(sndFileError, temporary: true)
                             default: ()
                             }
                         }
@@ -165,9 +154,9 @@ struct CIImageView: View {
     private func fileIcon(_ icon: String, _ size: CGFloat, _ padding: CGFloat) -> some View {
         Image(systemName: icon)
             .resizable()
+            .invertedForegroundStyle()
             .aspectRatio(contentMode: .fit)
             .frame(width: size, height: size)
-            .foregroundColor(.white)
             .padding(padding)
     }
 

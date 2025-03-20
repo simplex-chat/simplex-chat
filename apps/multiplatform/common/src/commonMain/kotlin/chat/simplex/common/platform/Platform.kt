@@ -1,7 +1,6 @@
 package chat.simplex.common.platform
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationVector1D
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.*
@@ -9,7 +8,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import chat.simplex.common.model.ChatId
 import chat.simplex.common.model.NotificationsMode
+import chat.simplex.common.ui.theme.CurrentColors
 import kotlinx.coroutines.Job
+import java.io.Closeable
 
 interface PlatformInterface {
   suspend fun androidServiceStart() {}
@@ -21,11 +22,14 @@ interface PlatformInterface {
   fun androidChatInitializedAndStarted() {}
   fun androidIsBackgroundCallAllowed(): Boolean = true
   fun androidSetNightModeIfSupported() {}
-  fun androidSetStatusAndNavBarColors(isLight: Boolean, backgroundColor: Color, hasTop: Boolean, hasBottom: Boolean) {}
+  fun androidSetStatusAndNavigationBarAppearance(isLightStatusBar: Boolean, isLightNavBar: Boolean, blackNavBar: Boolean = false, themeBackgroundColor: Color = CurrentColors.value.colors.background) {}
   fun androidStartCallActivity(acceptCall: Boolean, remoteHostId: Long? = null, chatId: ChatId? = null) {}
   fun androidPictureInPictureAllowed(): Boolean = true
   fun androidCallEnded() {}
   fun androidRestartNetworkObserver() {}
+  fun androidCreateActiveCallState(): Closeable = Closeable { }
+  fun androidIsXiaomiDevice(): Boolean = false
+  val androidApiLevel: Int? get() = null
   @Composable fun androidLockPortraitOrientation() {}
   suspend fun androidAskToAllowBackgroundCalls(): Boolean = true
   @Composable fun desktopShowAppUpdateNotice() {}

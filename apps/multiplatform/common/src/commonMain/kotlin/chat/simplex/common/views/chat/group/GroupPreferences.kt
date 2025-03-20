@@ -6,12 +6,10 @@ import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
 import SectionView
-import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Modifier
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -20,10 +18,10 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.res.MR
-import dev.icerock.moko.resources.compose.painterResource
 
 private val featureRoles: List<Pair<GroupMemberRole?, String>> = listOf(
   null to generalGetString(MR.strings.feature_roles_all_members),
+  GroupMemberRole.Moderator to generalGetString(MR.strings.feature_roles_moderators),
   GroupMemberRole.Admin to generalGetString(MR.strings.feature_roles_admins),
   GroupMemberRole.Owner to generalGetString(MR.strings.feature_roles_owners)
 )
@@ -47,6 +45,9 @@ fun GroupPreferencesView(m: ChatModel, rhId: Long?, chatId: String, close: () ->
         withChats {
           updateGroup(rhId, g)
           currentPreferences = preferences
+        }
+        withChats {
+          updateGroup(rhId, g)
         }
       }
       afterSave()
@@ -82,10 +83,9 @@ private fun GroupPreferencesLayout(
   reset: () -> Unit,
   savePrefs: () -> Unit,
 ) {
-  ColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-  ) {
-    AppBarTitle(stringResource(MR.strings.group_preferences))
+  ColumnWithScrollBar {
+    val titleId = if (groupInfo.businessChat == null) MR.strings.group_preferences else MR.strings.chat_preferences
+    AppBarTitle(stringResource(titleId))
     val timedMessages = remember(preferences) { mutableStateOf(preferences.timedMessages.enable) }
     val onTTLUpdated = { ttl: Int? ->
       applyPrefs(preferences.copy(timedMessages = preferences.timedMessages.copy(ttl = ttl)))
@@ -134,11 +134,16 @@ private fun GroupPreferencesLayout(
     }
 
     SectionDividerSpaced(true, maxBottomPadding = false)
+    val enableReports = remember(preferences) { mutableStateOf(preferences.reports.enable) }
+    FeatureSection(GroupFeature.Reports, enableReports, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
+      applyPrefs(preferences.copy(reports = GroupPreference(enable = enable)))
+    }
+    SectionDividerSpaced(true, maxBottomPadding = false)
     val enableHistory = remember(preferences) { mutableStateOf(preferences.history.enable) }
     FeatureSection(GroupFeature.History, enableHistory, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
       applyPrefs(preferences.copy(history = GroupPreference(enable = enable)))
     }
-    if (groupInfo.canEdit) {
+    if (groupInfo.isOwner) {
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
       ResetSaveButtons(
         reset = reset,
@@ -165,12 +170,13 @@ private fun FeatureSection(
     val icon = if (on) feature.iconFilled() else feature.icon
     val iconTint = if (on) SimplexGreen else MaterialTheme.colors.secondary
     val timedOn = feature == GroupFeature.TimedMessages && enableFeature.value == GroupFeatureEnabled.ON
-    if (groupInfo.canEdit) {
+    if (groupInfo.isOwner) {
       PreferenceToggleWithIcon(
         feature.text,
         icon,
         iconTint,
-        enableFeature.value == GroupFeatureEnabled.ON,
+        disabled = feature == GroupFeature.Reports, // remove in 6.4
+        checked = enableFeature.value == GroupFeatureEnabled.ON,
       ) { checked ->
         onSelected(if (checked) GroupFeatureEnabled.ON else GroupFeatureEnabled.OFF, enableForRole?.value)
       }
@@ -216,7 +222,7 @@ private fun FeatureSection(
       onSelected(enableFeature.value, null)
     }
   }
-  SectionTextFooter(feature.enableDescription(enableFeature.value, groupInfo.canEdit))
+  SectionTextFooter(feature.enableDescription(enableFeature.value, groupInfo.isOwner))
 }
 
 @Composable

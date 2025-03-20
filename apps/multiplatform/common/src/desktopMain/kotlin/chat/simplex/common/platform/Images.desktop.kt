@@ -1,6 +1,8 @@
 package chat.simplex.common.platform
 
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import boofcv.io.image.ConvertBufferedImage
 import boofcv.struct.image.GrayU8
 import chat.simplex.res.MR
@@ -67,8 +69,16 @@ actual fun cropToSquare(image: ImageBitmap): ImageBitmap {
   } else {
     yOffset = (image.height - side) / 2
   }
-  // LALAL MAKE REAL CROP
-  return image
+  val croppedImage = ImageBitmap(side, side)
+  val canvas = Canvas(croppedImage)
+  canvas.drawImageRect(
+    image,
+    srcOffset = IntOffset(xOffset, yOffset),
+    srcSize = IntSize(side, side),
+    dstSize = IntSize(side, side),
+    paint = Paint()
+  )
+  return croppedImage
 }
 
 actual fun compressImageStr(bitmap: ImageBitmap): String {
@@ -205,4 +215,36 @@ fun BufferedImage.flip(vertically: Boolean, horizontally: Boolean): BufferedImag
     tx.translate(-width.toDouble(), 0.0)
   }
   return AffineTransformOp(tx, AffineTransformOp.TYPE_NEAREST_NEIGHBOR).filter(this, null)
+}
+
+fun BufferedImage.saveInTmpFile(): File? {
+  val formats = arrayOf("jpg", "png")
+  for (format in formats) {
+    val tmpFile = File.createTempFile("image", ".$format", tmpDir)
+    try {
+      // May fail on JPG, using PNG as an alternative
+      val success = ImageIO.write(this, format, tmpFile)
+      if (success) {
+        tmpFile.deleteOnExit()
+        chatModel.filesToDelete.add(tmpFile)
+        return tmpFile
+      } else {
+        tmpFile.delete()
+      }
+    } catch (e: Exception) {
+      Log.e(TAG, e.stackTraceToString())
+      tmpFile.delete()
+      return null
+    }
+  }
+  return null
+}
+
+fun BufferedImage.hasAlpha(): Boolean {
+  for (x in 0 until width) {
+    for (y in 0 until height) {
+      if (getRGB(x, y) == 0) return true
+    }
+  }
+  return false
 }

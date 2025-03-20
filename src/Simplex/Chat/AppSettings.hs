@@ -25,13 +25,17 @@ data NotificationPreviewMode = NPMHidden | NPMContact | NPMMessage deriving (Sho
 
 data LockScreenCalls = LSCDisable | LSCShow | LSCAccept deriving (Show)
 
+data OpenLinksSetting = OLSYes | OLSNo | OLSAsk deriving (Show)
+
 data AppSettings = AppSettings
   { appPlatform :: Maybe AppPlatform,
     networkConfig :: Maybe NetworkConfig,
+    networkProxy :: Maybe NetworkProxy,
     privacyEncryptLocalFiles :: Maybe Bool,
     privacyAskToApproveRelays :: Maybe Bool,
     privacyAcceptImages :: Maybe Bool,
     privacyLinkPreviews :: Maybe Bool,
+    privacyChatListOpenLinks :: Maybe OpenLinksSetting,
     privacyShowChatPreviews :: Maybe Bool,
     privacySaveLastDraft :: Maybe Bool,
     privacyProtectScreen :: Maybe Bool,
@@ -49,12 +53,27 @@ data AppSettings = AppSettings
     iosCallKitEnabled :: Maybe Bool,
     iosCallKitCallsInRecents :: Maybe Bool,
     uiProfileImageCornerRadius :: Maybe Double,
+    uiChatItemRoundness :: Maybe Double,
+    uiChatItemTail :: Maybe Bool,
     uiColorScheme :: Maybe UIColorScheme,
     uiDarkColorScheme :: Maybe DarkColorScheme,
     uiCurrentThemeIds :: Maybe (Map ThemeColorScheme Text),
     uiThemes :: Maybe [UITheme],
-    oneHandUI :: Maybe Bool
+    oneHandUI :: Maybe Bool,
+    chatBottomBar :: Maybe Bool
   }
+  deriving (Show)
+
+data NetworkProxy = NetworkProxy
+  { host :: Text,
+    port :: Int,
+    auth :: NetworkProxyAuth,
+    username :: Text,
+    password :: Text
+  }
+  deriving (Show)
+
+data NetworkProxyAuth = NPAUsername | NPAIsolate
   deriving (Show)
 
 defaultAppSettings :: AppSettings
@@ -62,10 +81,12 @@ defaultAppSettings =
   AppSettings
     { appPlatform = Nothing,
       networkConfig = Just defaultNetworkConfig,
+      networkProxy = Nothing,
       privacyEncryptLocalFiles = Just True,
       privacyAskToApproveRelays = Just True,
       privacyAcceptImages = Just True,
       privacyLinkPreviews = Just True,
+      privacyChatListOpenLinks = Just OLSAsk,
       privacyShowChatPreviews = Just True,
       privacySaveLastDraft = Just True,
       privacyProtectScreen = Just False,
@@ -83,11 +104,14 @@ defaultAppSettings =
       iosCallKitEnabled = Just True,
       iosCallKitCallsInRecents = Just False,
       uiProfileImageCornerRadius = Just 22.5,
+      uiChatItemRoundness = Just 0.75,
+      uiChatItemTail = Just True,
       uiColorScheme = Just UCSSystem,
       uiDarkColorScheme = Just DCSSimplex,
       uiCurrentThemeIds = Nothing,
       uiThemes = Nothing,
-      oneHandUI = Just True
+      oneHandUI = Just True,
+      chatBottomBar = Just True
     }
 
 defaultParseAppSettings :: AppSettings
@@ -95,10 +119,12 @@ defaultParseAppSettings =
   AppSettings
     { appPlatform = Nothing,
       networkConfig = Nothing,
+      networkProxy = Nothing,
       privacyEncryptLocalFiles = Nothing,
       privacyAskToApproveRelays = Nothing,
       privacyAcceptImages = Nothing,
       privacyLinkPreviews = Nothing,
+      privacyChatListOpenLinks = Nothing,
       privacyShowChatPreviews = Nothing,
       privacySaveLastDraft = Nothing,
       privacyProtectScreen = Nothing,
@@ -116,11 +142,14 @@ defaultParseAppSettings =
       iosCallKitEnabled = Nothing,
       iosCallKitCallsInRecents = Nothing,
       uiProfileImageCornerRadius = Nothing,
+      uiChatItemRoundness = Nothing,
+      uiChatItemTail = Nothing,
       uiColorScheme = Nothing,
       uiDarkColorScheme = Nothing,
       uiCurrentThemeIds = Nothing,
       uiThemes = Nothing,
-      oneHandUI = Nothing
+      oneHandUI = Nothing,
+      chatBottomBar = Nothing
     }
 
 combineAppSettings :: AppSettings -> AppSettings -> AppSettings
@@ -128,10 +157,12 @@ combineAppSettings platformDefaults storedSettings =
   AppSettings
     { appPlatform = p appPlatform,
       networkConfig = p networkConfig,
+      networkProxy = p networkProxy,
       privacyEncryptLocalFiles = p privacyEncryptLocalFiles,
       privacyAskToApproveRelays = p privacyAskToApproveRelays,
       privacyAcceptImages = p privacyAcceptImages,
       privacyLinkPreviews = p privacyLinkPreviews,
+      privacyChatListOpenLinks = p privacyChatListOpenLinks,
       privacyShowChatPreviews = p privacyShowChatPreviews,
       privacySaveLastDraft = p privacySaveLastDraft,
       privacyProtectScreen = p privacyProtectScreen,
@@ -149,11 +180,14 @@ combineAppSettings platformDefaults storedSettings =
       iosCallKitCallsInRecents = p iosCallKitCallsInRecents,
       androidCallOnLockScreen = p androidCallOnLockScreen,
       uiProfileImageCornerRadius = p uiProfileImageCornerRadius,
+      uiChatItemRoundness = p uiChatItemRoundness,
+      uiChatItemTail = p uiChatItemTail,
       uiColorScheme = p uiColorScheme,
       uiDarkColorScheme = p uiDarkColorScheme,
       uiCurrentThemeIds = p uiCurrentThemeIds,
       uiThemes = p uiThemes,
-      oneHandUI = p oneHandUI
+      oneHandUI = p oneHandUI,
+      chatBottomBar = p chatBottomBar
     }
   where
     p :: (AppSettings -> Maybe a) -> Maybe a
@@ -167,16 +201,24 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "NPM") ''NotificationPreviewMode)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "LSC") ''LockScreenCalls)
 
+$(JQ.deriveJSON (enumJSON $ dropPrefix "NPA") ''NetworkProxyAuth)
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "OLS") ''OpenLinksSetting)
+
+$(JQ.deriveJSON defaultJSON ''NetworkProxy)
+
 $(JQ.deriveToJSON defaultJSON ''AppSettings)
 
 instance FromJSON AppSettings where
   parseJSON (J.Object v) = do
     appPlatform <- p "appPlatform"
     networkConfig <- p "networkConfig"
+    networkProxy <- p "networkProxy"
     privacyEncryptLocalFiles <- p "privacyEncryptLocalFiles"
     privacyAskToApproveRelays <- p "privacyAskToApproveRelays"
     privacyAcceptImages <- p "privacyAcceptImages"
     privacyLinkPreviews <- p "privacyLinkPreviews"
+    privacyChatListOpenLinks <- p "privacyChatListOpenLinks"
     privacyShowChatPreviews <- p "privacyShowChatPreviews"
     privacySaveLastDraft <- p "privacySaveLastDraft"
     privacyProtectScreen <- p "privacyProtectScreen"
@@ -194,19 +236,24 @@ instance FromJSON AppSettings where
     iosCallKitCallsInRecents <- p "iosCallKitCallsInRecents"
     androidCallOnLockScreen <- p "androidCallOnLockScreen"
     uiProfileImageCornerRadius <- p "uiProfileImageCornerRadius"
+    uiChatItemRoundness <- p "uiChatItemRoundness"
+    uiChatItemTail <- p "uiChatItemTail"
     uiColorScheme <- p "uiColorScheme"
     uiDarkColorScheme <- p "uiDarkColorScheme"
     uiCurrentThemeIds <- p "uiCurrentThemeIds"
     uiThemes <- p "uiThemes"
     oneHandUI <- p "oneHandUI"
+    chatBottomBar <- p "chatBottomBar"
     pure
       AppSettings
         { appPlatform,
           networkConfig,
+          networkProxy,
           privacyEncryptLocalFiles,
           privacyAskToApproveRelays,
           privacyAcceptImages,
           privacyLinkPreviews,
+          privacyChatListOpenLinks,
           privacyShowChatPreviews,
           privacySaveLastDraft,
           privacyProtectScreen,
@@ -224,11 +271,14 @@ instance FromJSON AppSettings where
           iosCallKitCallsInRecents,
           androidCallOnLockScreen,
           uiProfileImageCornerRadius,
+          uiChatItemRoundness,
+          uiChatItemTail,
           uiColorScheme,
           uiDarkColorScheme,
           uiCurrentThemeIds,
           uiThemes,
-          oneHandUI
+          oneHandUI,
+          chatBottomBar
         }
     where
       p key = v .:? key <|> pure Nothing

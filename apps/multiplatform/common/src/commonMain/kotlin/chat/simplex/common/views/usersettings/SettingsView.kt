@@ -25,23 +25,19 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.CreateProfile
 import chat.simplex.common.views.database.DatabaseView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.migration.MigrateFromDeviceView
 import chat.simplex.common.views.onboarding.SimpleXInfo
 import chat.simplex.common.views.onboarding.WhatsNewView
-import chat.simplex.common.views.remote.ConnectDesktopView
-import chat.simplex.common.views.remote.ConnectMobileView
+import chat.simplex.common.views.usersettings.networkAndServers.NetworkAndServersView
 import chat.simplex.res.MR
-import kotlinx.coroutines.*
 
 @Composable
-fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, drawerState: DrawerState) {
+fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, close: () -> Unit) {
   val user = chatModel.currentUser.value
   val stopped = chatModel.chatRunning.value == false
   SettingsLayout(
-    profile = user?.profile,
     stopped,
     chatModel.chatDbEncrypted.value == true,
     remember { chatModel.controller.appPrefs.storeDBPassphrase.state }.value,
@@ -55,9 +51,9 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, drawerSt
         val search = rememberSaveable { mutableStateOf("") }
         ModalView(
           { close() },
-          endButtons = {
-            SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
-          },
+          showSearch = true,
+          searchAlwaysVisible = true,
+          onSearchValueChanged = { search.value = it },
           content = { modalView(chatModel, search) })
       }
     },
@@ -71,10 +67,9 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, drawerSt
       }
     },
     withAuth = ::doWithAuth,
-    drawerState = drawerState,
   )
   KeyChangeEffect(chatModel.updatingProgress.value != null) {
-    drawerState.close()
+    close()
   }
 }
 
@@ -83,7 +78,6 @@ val simplexTeamUri =
 
 @Composable
 fun SettingsLayout(
-  profile: LocalProfile?,
   stopped: Boolean,
   encrypted: Boolean,
   passphraseSaved: Boolean,
@@ -96,71 +90,34 @@ fun SettingsLayout(
   showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showVersion: () -> Unit,
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit,
-  drawerState: DrawerState,
 ) {
-  val scope = rememberCoroutineScope()
-  val closeSettings: () -> Unit = { scope.launch { drawerState.close() } }
   val view = LocalMultiplatformView()
-  if (drawerState.isOpen) {
-    BackHandler {
-      closeSettings()
-    }
-    LaunchedEffect(Unit) {
-      hideKeyboard(view)
-    }
+  LaunchedEffect(Unit) {
+    hideKeyboard(view)
   }
-  val theme = CurrentColors.collectAsState()
   val uriHandler = LocalUriHandler.current
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxSize()
-      .themedBackground(theme.value.base)
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.your_settings))
-
-    SectionView(stringResource(MR.strings.settings_section_title_you)) {
-      val profileHidden = rememberSaveable { mutableStateOf(false) }
-      if (profile != null) {
-        SectionItemView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
-          ProfilePreview(profile, stopped = stopped)
-        }
-        SettingsActionItem(painterResource(MR.images.ic_manage_accounts), stringResource(MR.strings.your_chat_profiles), { withAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) { showSettingsModalWithSearch { it, search -> UserProfilesView(it, search, profileHidden, drawerState) } } }, disabled = stopped)
-        SettingsActionItem(painterResource(MR.images.ic_qr_code), stringResource(MR.strings.your_simplex_contact_address), showCustomModal { it, close -> UserAddressView(it, shareViaProfile = it.currentUser.value!!.addressShared, close = close) }, disabled = stopped)
-        ChatPreferencesItem(showCustomModal, stopped = stopped)
-      } else if (chatModel.localUserCreated.value == false) {
-        SettingsActionItem(painterResource(MR.images.ic_manage_accounts), stringResource(MR.strings.create_chat_profile), {
-          withAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) {
-            ModalManager.center.showModalCloseable { close ->
-              LaunchedEffect(Unit) {
-                closeSettings()
-              }
-              CreateProfile(chatModel, close)
-            }
-          }
-        }, disabled = stopped)
-      }
-      if (appPlatform.isDesktop) {
-        SettingsActionItem(painterResource(MR.images.ic_smartphone), stringResource(if (remember { chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles), showModal { ConnectMobileView() }, disabled = stopped)
-      } else {
-        SettingsActionItem(painterResource(MR.images.ic_desktop), stringResource(MR.strings.settings_section_title_use_from_desktop), showCustomModal { it, close -> ConnectDesktopView(close) }, disabled = stopped)
-      }
-      SettingsActionItem(painterResource(MR.images.ic_ios_share), stringResource(MR.strings.migrate_from_device_to_another_device), { withAuth(generalGetString(MR.strings.auth_open_migration_to_another_device), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.fullscreen.showCustomModal { close -> MigrateFromDeviceView(close) } } }, disabled = stopped)
-    }
-    SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_settings)) {
       SettingsActionItem(painterResource(if (notificationsMode.value == NotificationsMode.OFF) MR.images.ic_bolt_off else MR.images.ic_bolt), stringResource(MR.strings.notifications), showSettingsModal { NotificationsSettingsView(it) }, disabled = stopped)
-      SettingsActionItem(painterResource(MR.images.ic_wifi_tethering), stringResource(MR.strings.network_and_servers), showSettingsModal { NetworkAndServersView() }, disabled = stopped)
+      SettingsActionItem(painterResource(MR.images.ic_wifi_tethering), stringResource(MR.strings.network_and_servers), showCustomModal { _, close -> NetworkAndServersView(close) }, disabled = stopped)
       SettingsActionItem(painterResource(MR.images.ic_videocam), stringResource(MR.strings.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped)
       SettingsActionItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.privacy_and_security), showSettingsModal { PrivacySettingsView(it, showSettingsModal, setPerformLA) }, disabled = stopped)
       SettingsActionItem(painterResource(MR.images.ic_light_mode), stringResource(MR.strings.appearance_settings), showSettingsModal { AppearanceView(it) })
-      DatabaseItem(encrypted, passphraseSaved, showSettingsModal { DatabaseView(it, showSettingsModal) }, stopped)
     }
+    SectionDividerSpaced()
+
+    SectionView(stringResource(MR.strings.settings_section_title_chat_database)) {
+      DatabaseItem(encrypted, passphraseSaved, showSettingsModal { DatabaseView() }, stopped)
+      SettingsActionItem(painterResource(MR.images.ic_ios_share), stringResource(MR.strings.migrate_from_device_to_another_device), { withAuth(generalGetString(MR.strings.auth_open_migration_to_another_device), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.fullscreen.showCustomModal { close -> MigrateFromDeviceView(close) } } }, disabled = stopped)
+    }
+
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_help)) {
       SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.how_to_use_simplex_chat), showModal { HelpView(userDisplayName ?: "") }, disabled = stopped)
-      SettingsActionItem(painterResource(MR.images.ic_add), stringResource(MR.strings.whats_new), showCustomModal { _, close -> WhatsNewView(viaSettings = true, close) }, disabled = stopped)
+      SettingsActionItem(painterResource(MR.images.ic_add), stringResource(MR.strings.whats_new), showCustomModal { _, close -> WhatsNewView(viaSettings = true, close = close) }, disabled = stopped)
       SettingsActionItem(painterResource(MR.images.ic_info), stringResource(MR.strings.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) })
       if (!chatModel.desktopNoUserNoRemote) {
         SettingsActionItem(painterResource(MR.images.ic_tag), stringResource(MR.strings.chat_with_the_founder), { uriHandler.openVerifiedSimplexUri(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped)
@@ -176,7 +133,7 @@ fun SettingsLayout(
     }
     SectionDividerSpaced()
 
-    SettingsSectionApp(showSettingsModal, showCustomModal, showVersion, withAuth)
+    SettingsSectionApp(showSettingsModal, showVersion, withAuth)
     SectionBottomSpacer()
   }
 }
@@ -184,7 +141,6 @@ fun SettingsLayout(
 @Composable
 expect fun SettingsSectionApp(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showVersion: () -> Unit,
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
 )
@@ -452,6 +408,7 @@ fun PreferenceToggleWithIcon(
   text: String,
   icon: Painter? = null,
   iconColor: Color? = MaterialTheme.colors.secondary,
+  disabled: Boolean = false,
   checked: Boolean,
   extraPadding: Boolean = false,
   onChange: (Boolean) -> Unit = {},
@@ -462,6 +419,7 @@ fun PreferenceToggleWithIcon(
       onCheckedChange = {
         onChange(it)
       },
+      enabled = !disabled
     )
   }
 }
@@ -486,17 +444,19 @@ fun doWithAuth(title: String, desc: String, block: () -> Unit) {
           runAuth(title, desc, onFinishAuth)
         }
       }
-      Box(
-        Modifier.fillMaxSize().background(MaterialTheme.colors.background),
-        contentAlignment = Alignment.Center
-      ) {
-        SimpleButton(
-          stringResource(MR.strings.auth_unlock),
-          icon = painterResource(MR.images.ic_lock),
-          click = {
-            runAuth(title, desc, onFinishAuth)
-          }
-        )
+      Surface(color = MaterialTheme.colors.background.copy(1f), contentColor = LocalContentColor.current) {
+        Box(
+          Modifier.fillMaxSize(),
+          contentAlignment = Alignment.Center
+        ) {
+          SimpleButton(
+            stringResource(MR.strings.auth_unlock),
+            icon = painterResource(MR.images.ic_lock),
+            click = {
+              runAuth(title, desc, onFinishAuth)
+            }
+          )
+        }
       }
     }
   }
@@ -522,7 +482,6 @@ private fun runAuth(title: String, desc: String, onFinish: (success: Boolean) ->
 fun PreviewSettingsLayout() {
   SimpleXTheme {
     SettingsLayout(
-      profile = LocalProfile.sampleData,
       stopped = false,
       encrypted = false,
       passphraseSaved = false,
@@ -535,7 +494,6 @@ fun PreviewSettingsLayout() {
       showCustomModal = { {} },
       showVersion = {},
       withAuth = { _, _, _ -> },
-      drawerState = DrawerState(DrawerValue.Closed),
     )
   }
 }

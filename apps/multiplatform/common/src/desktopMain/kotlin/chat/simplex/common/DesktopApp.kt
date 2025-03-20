@@ -14,6 +14,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.withChats
+import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
 import chat.simplex.common.ui.theme.SimpleXTheme
@@ -55,8 +57,15 @@ fun showApp() {
               // Better to not close fullscreen since it can contain passcode
             } else {
               // The last possible cause that can be closed
-              chatModel.chatId.value = null
-              chatModel.chatItems.clear()
+              withApi {
+                withChats {
+                  chatModel.chatId.value = null
+                  chatItems.clearAndNotify()
+                }
+                withReportsChatsIfOpen {
+                  chatItems.clearAndNotify()
+                }
+              }
             }
             chatModel.activeCall.value?.let {
               withBGApi {
@@ -198,8 +207,19 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
       val cWindowState = rememberWindowState(placement = WindowPlacement.Floating, width = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier, height =
       768.dp)
       Window(state = cWindowState, onCloseRequest = { hiddenUntilRestart = true }, title = stringResource(MR.strings.chat_console)) {
+        val data = remember { ModalData() }
         SimpleXTheme {
-          TerminalView(ChatModel) { hiddenUntilRestart = true }
+          CompositionLocalProvider(LocalAppBarHandler provides data.appBarHandler) {
+            ModalView({ hiddenUntilRestart = true }) {
+              TerminalView(true)
+            }
+            ModalManager.floatingTerminal.showInView()
+            DisposableEffect(Unit) {
+              onDispose {
+                ModalManager.floatingTerminal.closeModals()
+              }
+            }
+          }
         }
       }
     }

@@ -1,10 +1,14 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
+{-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module ChatTests.Profiles where
 
 import ChatClient
+import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
@@ -13,16 +17,23 @@ import Control.Monad.Except
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
+import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Options
+import Simplex.Chat.Protocol (currentChatVersion)
 import Simplex.Chat.Store.Shared (createContact)
 import Simplex.Chat.Types (ConnStatus (..), Profile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Types.UITheme
+import Simplex.Messaging.Agent.Env.SQLite
+import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
+import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
+import Simplex.Messaging.Transport
 import Simplex.Messaging.Util (encodeJSON)
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec hiding (it)
 
-chatProfileTests :: SpecWith FilePath
+chatProfileTests :: SpecWith TestParams
 chatProfileTests = do
   describe "user profiles" $ do
     it "update user profile and notify contacts" testUpdateProfile
@@ -30,6 +41,7 @@ chatProfileTests = do
     it "use multiword profile names" testMultiWordProfileNames
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
+    it "retry accepting connection via contact link" testRetryAcceptingViaContactLink
     it "add contact link to profile" testProfileLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
     it "deduplicate contact requests" testDeduplicateContactRequests
@@ -38,6 +50,9 @@ chatProfileTests = do
     it "delete connection requests when contact link deleted" testDeleteConnectionRequests
     it "auto-reply message" testAutoReplyMessage
     it "auto-reply message in incognito" testAutoReplyMessageInIncognito
+    describe "business address" $ do
+      it "create and connect via business address" testBusinessAddress
+      it "update profiles with business address" testBusinessUpdateProfiles
   describe "contact address connection plan" $ do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
@@ -63,6 +78,8 @@ chatProfileTests = do
   describe "contact aliases" $ do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
+  describe "group aliases" $ do
+    it "set group alias" testSetGroupAlias
   describe "pending connection users" $ do
     it "change user for pending connection" testChangePCCUser
     it "change from incognito profile connects as new user" testChangePCCUserFromIncognito
@@ -85,11 +102,13 @@ chatProfileTests = do
       it "SimpleX links" testGroupPrefsSimplexLinksForRole
     it "set user, contact and group UI theme" testSetUITheme
 
-testUpdateProfile :: HasCallStack => FilePath -> IO ()
+testUpdateProfile :: HasCallStack => TestParams -> IO ()
 testUpdateProfile =
-  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
+  testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      createGroup3 "team" alice bob cath
+      connectUsers alice bob
+      connectUsers alice cath
+      connectUsers bob cath
       alice ##> "/p"
       alice <## "user profile: alice (Alice)"
       alice <## "use /p <display name> to change it"
@@ -127,7 +146,7 @@ testUpdateProfile =
             bob <## "use @cat <message> to send messages"
         ]
 
-testUpdateProfileImage :: HasCallStack => FilePath -> IO ()
+testUpdateProfileImage :: HasCallStack => TestParams -> IO ()
 testUpdateProfileImage =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -147,7 +166,7 @@ testUpdateProfileImage =
       bob <## "use @alice2 <message> to send messages"
       (bob </)
 
-testMultiWordProfileNames :: HasCallStack => FilePath -> IO ()
+testMultiWordProfileNames :: HasCallStack => TestParams -> IO ()
 testMultiWordProfileNames =
   testChat3 aliceProfile' bobProfile' cathProfile' $
     \alice bob cath -> do
@@ -220,7 +239,7 @@ testMultiWordProfileNames =
     cathProfile' = baseProfile {displayName = "Cath Johnson"}
     baseProfile = Profile {displayName = "", fullName = "", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
 
-testUserContactLink :: HasCallStack => FilePath -> IO ()
+testUserContactLink :: HasCallStack => TestParams -> IO ()
 testUserContactLink =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -250,7 +269,68 @@ testUserContactLink =
       alice @@@ [("@cath", lastChatFeature), ("@bob", "hey")]
       alice <##> cath
 
-testProfileLink :: HasCallStack => FilePath -> IO ()
+testRetryAcceptingViaContactLink :: HasCallStack => TestParams -> IO ()
+testRetryAcceptingViaContactLink ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile test ps
+  where
+    tmp = tmpPath ps
+    test alice bob = do
+      cLink <- withSmpServer' serverCfg' $ do
+        alice ##> "/ad"
+        getContactLink alice True
+      alice <## "server disconnected localhost ()"
+      bob ##> ("/_connect plan 1 " <> cLink)
+      bob <## "contact address: ok to connect"
+      bob ##> ("/_connect 1 " <> cLink)
+      bob <##. "smp agent error: BROKER"
+      withSmpServer' serverCfg' $ do
+        alice <## "server connected localhost ()"
+        threadDelay 250000
+        bob ##> ("/_connect plan 1 " <> cLink)
+        bob <## "contact address: ok to connect"
+        bob ##> ("/_connect 1 " <> cLink)
+        alice <#? bob
+      alice <## "server disconnected localhost ()"
+      bob <## "server disconnected localhost ()"
+      alice ##> "/ac bob"
+      alice <##. "smp agent error: BROKER"
+      withSmpServer' serverCfg' $ do
+        alice <## "server connected localhost ()"
+        bob <## "server connected localhost ()"
+        alice ##> "/ac bob"
+        alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+        concurrently_
+          (bob <## "alice (Alice): contact is connected")
+          (alice <## "bob (Bob): contact is connected")
+        alice #> "@bob message 1"
+        bob <# "alice> message 1"
+        bob #> "@alice message 2"
+        alice <# "bob> message 2"
+      alice <## "server disconnected localhost (@bob)"
+      bob <## "server disconnected localhost (@alice)"
+    serverCfg' =
+      smpServerCfg
+        { transports = [("7003", transport @TLS, False)],
+          msgQueueQuota = 2,
+          serverStoreCfg = persistentServerStoreCfg tmp
+        }
+    fastRetryInterval = defaultReconnectInterval {initialInterval = 50000} -- same as in agent tests
+    cfg' =
+      testCfg
+        { agentConfig =
+            testAgentCfg
+              { quotaExceededTimeout = 1,
+                messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
+              }
+        }
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
+              }
+        }
+
+testProfileLink :: HasCallStack => TestParams -> IO ()
 testProfileLink =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -331,7 +411,7 @@ testProfileLink =
       cc <## "quantum resistant end-to-end encryption"
       cc <## currentChatVRangeInfo
 
-testUserContactLinkAutoAccept :: HasCallStack => FilePath -> IO ()
+testUserContactLinkAutoAccept :: HasCallStack => TestParams -> IO ()
 testUserContactLinkAutoAccept =
   testChat4 aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
@@ -379,7 +459,7 @@ testUserContactLinkAutoAccept =
       alice @@@ [("@dan", lastChatFeature), ("@cath", "hey"), ("@bob", "hey")]
       alice <##> dan
 
-testDeduplicateContactRequests :: HasCallStack => FilePath -> IO ()
+testDeduplicateContactRequests :: HasCallStack => TestParams -> IO ()
 testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
     alice ##> "/ad"
@@ -438,7 +518,7 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
     alice @@@ [("@cath", lastChatFeature), ("@bob", "hey")]
     alice <##> cath
 
-testDeduplicateContactRequestsProfileChange :: HasCallStack => FilePath -> IO ()
+testDeduplicateContactRequestsProfileChange :: HasCallStack => TestParams -> IO ()
 testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
     alice ##> "/ad"
@@ -515,7 +595,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     alice @@@ [("@cath", lastChatFeature), ("@robert", "hey")]
     alice <##> cath
 
-testRejectContactAndDeleteUserContact :: HasCallStack => FilePath -> IO ()
+testRejectContactAndDeleteUserContact :: HasCallStack => TestParams -> IO ()
 testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
     alice ##> "/_address 1"
@@ -538,7 +618,7 @@ testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathPr
     cath ##> ("/c " <> cLink)
     cath <## "error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
 
-testDeleteConnectionRequests :: HasCallStack => FilePath -> IO ()
+testDeleteConnectionRequests :: HasCallStack => TestParams -> IO ()
 testDeleteConnectionRequests = testChat3 aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
     alice ##> "/ad"
@@ -560,7 +640,7 @@ testDeleteConnectionRequests = testChat3 aliceProfile bobProfile cathProfile $
     cath ##> ("/c " <> cLink')
     alice <#? cath
 
-testAutoReplyMessage :: HasCallStack => FilePath -> IO ()
+testAutoReplyMessage :: HasCallStack => TestParams -> IO ()
 testAutoReplyMessage = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/ad"
@@ -582,7 +662,7 @@ testAutoReplyMessage = testChat2 aliceProfile bobProfile $
         alice <## "bob (Bob): contact is connected"
       ]
 
-testAutoReplyMessageInIncognito :: HasCallStack => FilePath -> IO ()
+testAutoReplyMessageInIncognito :: HasCallStack => TestParams -> IO ()
 testAutoReplyMessageInIncognito = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/ad"
@@ -607,7 +687,192 @@ testAutoReplyMessageInIncognito = testChat2 aliceProfile bobProfile $
           alice <## "use /i bob to print out this incognito profile again"
       ]
 
-testPlanAddressOkKnown :: HasCallStack => FilePath -> IO ()
+testBusinessAddress :: HasCallStack => TestParams -> IO ()
+testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice @ Biz"} bobProfile $
+  \biz alice bob -> do
+    biz ##> "/ad"
+    cLink <- getContactLink biz True
+    biz ##> "/auto_accept on business"
+    biz <## "auto_accept on, business"
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "contact address: ok to connect"
+    bob ##> ("/c " <> cLink)
+    bob <## "connection request sent!"
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "contact address: connecting, allowed to reconnect"
+    biz <## "#bob (Bob): accepting business address request..."
+    bob <## "#biz: joining the group..."
+    -- the next command can be prone to race conditions
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "business link: connecting to business #biz"
+    biz <## "#bob: bob_1 joined the group"
+    bob <## "#biz: you joined the group"
+    biz #> "#bob hi"
+    bob <# "#biz biz_1> hi"
+    bob #> "#biz hello"
+    biz <# "#bob bob_1> hello"
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "business link: known business #biz"
+    bob <## "use #biz <message> to send messages"
+    connectUsers biz alice
+    biz <##> alice
+    biz ##> "/a #bob alice"
+    biz <## "invitation to join the group #bob sent to alice"
+    alice <## "#bob (Bob): biz invites you to join the group as member"
+    alice <## "use /j bob to accept"
+    alice ##> "/j bob"
+    concurrentlyN_
+      [ do
+          alice <## "#bob: you joined the group"
+          alice <### [WithTime "#bob biz> hi [>>]", WithTime "#bob bob_1> hello [>>]"]
+          alice <## "#bob: member bob_1 (Bob) is connected",
+        biz <## "#bob: alice joined the group",
+        do
+          bob <## "#biz: biz_1 added alice (Alice @ Biz) to the group (connecting...)"
+          bob <## "#biz: new member alice is connected"
+      ]
+    alice #> "#bob hey"
+    concurrently_
+      (bob <# "#biz alice> hey")
+      (biz <# "#bob alice> hey")
+    bob #> "#biz hey there"
+    concurrently_
+      (alice <# "#bob bob_1> hey there")
+      (biz <# "#bob bob_1> hey there")
+
+testBusinessUpdateProfiles :: HasCallStack => TestParams -> IO ()
+testBusinessUpdateProfiles = withTestOutput $ testChat4 businessProfile aliceProfile bobProfile cathProfile $
+  \biz alice bob cath -> do
+    biz ##> "/ad"
+    cLink <- getContactLink biz True
+    biz ##> "/auto_accept on business text Welcome"
+    biz <## "auto_accept on, business"
+    biz <## "auto reply:"
+    biz <## "Welcome"
+    alice ##> ("/c " <> cLink)
+    alice <## "connection request sent!"
+    biz <## "#alice (Alice): accepting business address request..."
+    alice <## "#biz: joining the group..."
+    biz <# "#alice Welcome" -- auto reply
+    biz <## "#alice: alice_1 joined the group"
+    alice
+      <###
+        [ WithTime "#biz biz_1> Welcome",
+          "#biz: you joined the group"
+        ]
+    biz #> "#alice hi"
+    alice <# "#biz biz_1> hi"
+    alice #> "#biz hello"
+    biz <# "#alice alice_1> hello"
+    alice ##> "/p alisa"
+    alice <## "user profile is changed to alisa (your 0 contacts are notified)"
+    alice #> "#biz hello again" -- profile update is sent with message
+    biz <## "alice_1 updated group #alice:"
+    biz <## "changed to #alisa"
+    biz <# "#alisa alisa_1> hello again"
+    -- customer can invite members too, if business allows
+    biz ##> "/mr alisa alisa_1 admin"
+    biz <## "#alisa: you changed the role of alisa_1 to admin"
+    alice <## "#biz: biz_1 changed your role from member to admin"
+    connectUsers alice bob
+    alice ##> "/a #biz bob"
+    alice <## "invitation to join the group #biz sent to bob"
+    bob <## "#biz (Biz Inc): alisa invites you to join the group as member"
+    bob <## "use /j biz to accept"
+    bob ##> "/j biz"
+    concurrentlyN_
+      [ do
+          bob <## "#biz: you joined the group"
+          bob
+            <###
+              [ WithTime "#biz biz_1> Welcome [>>]",
+                WithTime "#biz biz_1> hi [>>]",
+                WithTime "#biz alisa> hello [>>]",
+                WithTime "#biz alisa> hello again [>>]"
+              ]
+          bob <## "#biz: member biz_1 (Biz Inc) is connected",
+        alice <## "#biz: bob joined the group",
+        do
+          biz <## "#alisa: alisa_1 added bob (Bob) to the group (connecting...)"
+          biz <## "#alisa: new member bob is connected"
+      ]
+    -- changing other member profiles does not change group profile
+    bob ##> "/p robert"
+    bob <## "user profile is changed to robert (your 1 contacts are notified)"
+    alice <## "contact bob changed to robert" -- only alice receives profile update
+    alice <## "use @robert <message> to send messages"
+    bob #> "#biz hi there" -- profile update is sent to group with message
+    alice <# "#biz robert> hi there"
+    biz <# "#alisa robert> hi there"
+    -- add business team member
+    connectUsers biz cath
+    biz ##> "/a #alisa cath"
+    biz <## "invitation to join the group #alisa sent to cath"
+    cath <## "#alisa: biz invites you to join the group as member"
+    cath <## "use /j alisa to accept"
+    cath ##> "/j alisa"
+    concurrentlyN_
+      [ do
+          cath <## "#alisa: you joined the group"
+          cath
+            <###
+              [ WithTime "#alisa biz> Welcome [>>]",
+                WithTime "#alisa biz> hi [>>]",
+                WithTime "#alisa alisa_1> hello [>>]",
+                WithTime "#alisa alisa_1> hello again [>>]",
+                WithTime "#alisa robert> hi there [>>]"
+              ]
+          cath <## "#alisa: member alisa_1 is connected"
+          cath <## "#alisa: member robert is connected",
+        biz <## "#alisa: cath joined the group",
+        do
+          alice <## "#biz: biz_1 added cath (Catherine) to the group (connecting...)"
+          alice <## "#biz: new member cath is connected",
+        do
+          bob <## "#biz: biz_1 added cath (Catherine) to the group (connecting...)"
+          bob <## "#biz: new member cath is connected"
+      ]
+    -- both customers receive business profile change
+    biz ##> "/p business"
+    biz <## "user profile is changed to business (your 1 contacts are notified)"
+    biz #> "#alisa hey"
+    concurrentlyN_
+      [ do
+          alice <## "biz_1 updated group #biz:"
+          alice <## "changed to #business"
+          alice <# "#business business_1> hey",
+        do
+          bob <## "biz_1 updated group #biz:"
+          bob <## "changed to #business"
+          bob <# "#business business_1> hey",
+        do
+          cath <## "contact biz changed to business"
+          cath <## "use @business <message> to send messages"
+          cath <# "#alisa business> hey"
+      ]
+    biz ##> "/set voice #alisa on"
+    biz <## "updated group preferences:"
+    biz <## "Voice messages: on"
+    concurrentlyN_
+      [ do
+          alice <## "business_1 updated group #business:"
+          alice <## "updated group preferences:"
+          alice <## "Voice messages: on",
+        do
+          bob <## "business_1 updated group #business:"
+          bob <## "updated group preferences:"
+          bob <## "Voice messages: on",
+        do
+          cath <## "business updated group #alisa:"
+          cath <## "updated group preferences:"
+          cath <## "Voice messages: on"
+      ]
+    biz #$> ("/_get chat #1 count=1", chat, [(1, "Voice messages: on")])
+    alice #$> ("/_get chat #1 count=1", chat, [(0, "Voice messages: on")])
+    bob #$> ("/_get chat #1 count=1", chat, [(0, "Voice messages: on")])
+    cath #$> ("/_get chat #1 count=1", chat, [(0, "Voice messages: on")])
+
+testPlanAddressOkKnown :: HasCallStack => TestParams -> IO ()
 testPlanAddressOkKnown =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -640,9 +905,9 @@ testPlanAddressOkKnown =
       bob <## "contact address: known contact alice"
       bob <## "use @alice <message> to send messages"
 
-testPlanAddressOwn :: HasCallStack => FilePath -> IO ()
-testPlanAddressOwn tmp =
-  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+testPlanAddressOwn :: HasCallStack => TestParams -> IO ()
+testPlanAddressOwn ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
     alice ##> "/ad"
     cLink <- getContactLink alice True
 
@@ -686,12 +951,12 @@ testPlanAddressOwn tmp =
     alice ##> ("/c " <> cLink)
     alice <## "alice_2 (Alice): contact already exists"
 
-testPlanAddressConnecting :: HasCallStack => FilePath -> IO ()
-testPlanAddressConnecting tmp = do
-  cLink <- withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+testPlanAddressConnecting :: HasCallStack => TestParams -> IO ()
+testPlanAddressConnecting ps = do
+  cLink <- withNewTestChat ps "alice" aliceProfile $ \alice -> do
     alice ##> "/ad"
     getContactLink alice True
-  withNewTestChat tmp "bob" bobProfile $ \bob -> do
+  withNewTestChat ps "bob" bobProfile $ \bob -> do
     threadDelay 100000
 
     bob ##> ("/c " <> cLink)
@@ -705,14 +970,14 @@ testPlanAddressConnecting tmp = do
     bob <## "contact address: connecting, allowed to reconnect"
 
     threadDelay 100000
-  withTestChat tmp "alice" $ \alice -> do
+  withTestChat ps "alice" $ \alice -> do
     alice <## "Your address is active! To show: /sa"
     alice <## "bob (Bob) wants to connect to you!"
     alice <## "to accept: /ac bob"
     alice <## "to reject: /rc bob (the sender will NOT be notified)"
     alice ##> "/ac bob"
     alice <## "bob (Bob): accepting contact request, you can send messages to contact"
-  withTestChat tmp "bob" $ \bob -> do
+  withTestChat ps "bob" $ \bob -> do
     threadDelay 500000
     bob <## "alice (Alice): contact is connected"
     bob @@@ [("@alice", "Audio/video calls: enabled")]
@@ -729,12 +994,12 @@ testPlanAddressConnecting tmp = do
     bob <## "contact address: known contact alice"
     bob <## "use @alice <message> to send messages"
 
-testPlanAddressConnectingSlow :: HasCallStack => FilePath -> IO ()
-testPlanAddressConnectingSlow tmp = do
-  cLink <- withNewTestChatCfg tmp testCfgSlow "alice" aliceProfile $ \alice -> do
+testPlanAddressConnectingSlow :: HasCallStack => TestParams -> IO ()
+testPlanAddressConnectingSlow ps = do
+  cLink <- withNewTestChatCfg ps testCfgSlow "alice" aliceProfile $ \alice -> do
     alice ##> "/ad"
     getContactLink alice True
-  withNewTestChatCfg tmp testCfgSlow "bob" bobProfile $ \bob -> do
+  withNewTestChatCfg ps testCfgSlow "bob" bobProfile $ \bob -> do
     threadDelay 100000
 
     bob ##> ("/c " <> cLink)
@@ -748,14 +1013,14 @@ testPlanAddressConnectingSlow tmp = do
     bob <## "contact address: connecting, allowed to reconnect"
 
     threadDelay 100000
-  withTestChatCfg tmp testCfgSlow "alice" $ \alice -> do
+  withTestChatCfg ps testCfgSlow "alice" $ \alice -> do
     alice <## "Your address is active! To show: /sa"
     alice <## "bob (Bob) wants to connect to you!"
     alice <## "to accept: /ac bob"
     alice <## "to reject: /rc bob (the sender will NOT be notified)"
     alice ##> "/ac bob"
     alice <## "bob (Bob): accepting contact request..."
-  withTestChatCfg tmp testCfgSlow "bob" $ \bob -> do
+  withTestChatCfg ps testCfgSlow "bob" $ \bob -> do
     threadDelay 500000
     bob @@@ [("@alice", "")]
     bob ##> ("/_connect plan 1 " <> cLink)
@@ -768,7 +1033,7 @@ testPlanAddressConnectingSlow tmp = do
     bob ##> ("/c " <> cLink)
     bob <## "contact address: connecting to contact alice"
 
-testPlanAddressContactDeletedReconnected :: HasCallStack => FilePath -> IO ()
+testPlanAddressContactDeletedReconnected :: HasCallStack => TestParams -> IO ()
 testPlanAddressContactDeletedReconnected =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -831,7 +1096,7 @@ testPlanAddressContactDeletedReconnected =
       bob <## "contact address: known contact alice_1"
       bob <## "use @alice_1 <message> to send messages"
 
-testPlanAddressContactViaAddress :: HasCallStack => FilePath -> IO ()
+testPlanAddressContactViaAddress :: HasCallStack => TestParams -> IO ()
 testPlanAddressContactViaAddress =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -865,16 +1130,20 @@ testPlanAddressContactViaAddress =
           bob ##> ("/c " <> cLink)
           connecting alice bob
 
-          bob ##> "/_delete @2 notify=off"
+          bob ##> "/delete @alice"
           bob <## "alice: contact is deleted"
-          alice ##> "/_delete @2 notify=off"
+          alice ##> "/delete @bob"
           alice <## "bob: contact is deleted"
 
           void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db user profile
           bob @@@ [("@alice", "")]
 
           -- GUI api
+#if defined(dbPostgres)
+          bob ##> "/_connect contact 1 4"
+#else
           bob ##> "/_connect contact 1 2"
+#endif
           connecting alice bob
   where
     connecting alice bob = do
@@ -891,7 +1160,7 @@ testPlanAddressContactViaAddress =
       alice <##> bob
       bob @@@ [("@alice", "hey")]
 
-testConnectIncognitoInvitationLink :: HasCallStack => FilePath -> IO ()
+testConnectIncognitoInvitationLink :: HasCallStack => TestParams -> IO ()
 testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
     alice ##> "/connect incognito"
@@ -965,7 +1234,7 @@ testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfi
     (bob </)
     bob `hasContactProfiles` ["bob"]
 
-testConnectIncognitoContactAddress :: HasCallStack => FilePath -> IO ()
+testConnectIncognitoContactAddress :: HasCallStack => TestParams -> IO ()
 testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/ad"
@@ -1003,14 +1272,15 @@ testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
     (bob </)
     bob `hasContactProfiles` ["bob"]
 
-testAcceptContactRequestIncognito :: HasCallStack => FilePath -> IO ()
+testAcceptContactRequestIncognito :: HasCallStack => TestParams -> IO ()
 testAcceptContactRequestIncognito = testChat3 aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
     alice ##> "/ad"
     cLink <- getContactLink alice True
+    -- GUI /_accept api
     bob ##> ("/c " <> cLink)
     alice <#? bob
-    alice ##> "/accept incognito bob"
+    alice ##> "/_accept incognito=on 1"
     alice <## "bob (Bob): accepting contact request, you can send messages to contact"
     aliceIncognitoBob <- getTermLine alice
     concurrentlyN_
@@ -1035,10 +1305,10 @@ testAcceptContactRequestIncognito = testChat3 aliceProfile bobProfile cathProfil
     alice ##> "/contacts"
     (alice </)
     alice `hasContactProfiles` ["alice"]
-    -- /_accept api
+    -- terminal /accept api
     cath ##> ("/c " <> cLink)
     alice <#? cath
-    alice ##> "/_accept incognito=on 1"
+    alice ##> "/accept incognito cath"
     alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
     aliceIncognitoCath <- getTermLine alice
     concurrentlyN_
@@ -1050,7 +1320,7 @@ testAcceptContactRequestIncognito = testChat3 aliceProfile bobProfile cathProfil
     alice `hasContactProfiles` ["alice", "cath", T.pack aliceIncognitoCath]
     cath `hasContactProfiles` ["cath", T.pack aliceIncognitoCath]
 
-testSetConnectionIncognito :: HasCallStack => FilePath -> IO ()
+testSetConnectionIncognito :: HasCallStack => TestParams -> IO ()
 testSetConnectionIncognito = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/connect"
@@ -1073,7 +1343,7 @@ testSetConnectionIncognito = testChat2 aliceProfile bobProfile $
     alice `hasContactProfiles` ["alice", "bob", T.pack aliceIncognito]
     bob `hasContactProfiles` ["bob", T.pack aliceIncognito]
 
-testResetConnectionIncognito :: HasCallStack => FilePath -> IO ()
+testResetConnectionIncognito :: HasCallStack => TestParams -> IO ()
 testResetConnectionIncognito = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/_connect 1 incognito=on"
@@ -1089,42 +1359,42 @@ testResetConnectionIncognito = testChat2 aliceProfile bobProfile $
     alice `hasContactProfiles` ["alice", "bob"]
     bob `hasContactProfiles` ["alice", "bob"]
 
-testSetConnectionIncognitoProhibitedDuringNegotiation :: HasCallStack => FilePath -> IO ()
-testSetConnectionIncognitoProhibitedDuringNegotiation tmp = do
-  inv <- withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+testSetConnectionIncognitoProhibitedDuringNegotiation :: HasCallStack => TestParams -> IO ()
+testSetConnectionIncognitoProhibitedDuringNegotiation ps = do
+  inv <- withNewTestChat ps "alice" aliceProfile $ \alice -> do
     threadDelay 250000
     alice ##> "/connect"
     getInvitation alice
-  withNewTestChat tmp "bob" bobProfile $ \bob -> do
+  withNewTestChat ps "bob" bobProfile $ \bob -> do
     threadDelay 250000
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
-  withTestChat tmp "alice" $ \alice -> do
+  withTestChat ps "alice" $ \alice -> do
     threadDelay 250000
     alice <## "bob (Bob): contact is connected"
     alice ##> "/_set incognito :1 on"
     alice <## "chat db error: SEPendingConnectionNotFound {connId = 1}"
-    withTestChat tmp "bob" $ \bob -> do
+    withTestChat ps "bob" $ \bob -> do
       bob <## "alice (Alice): contact is connected"
       alice <##> bob
       alice `hasContactProfiles` ["alice", "bob"]
       bob `hasContactProfiles` ["alice", "bob"]
 
-testSetConnectionIncognitoProhibitedDuringNegotiationSlow :: HasCallStack => FilePath -> IO ()
-testSetConnectionIncognitoProhibitedDuringNegotiationSlow tmp = do
-  inv <- withNewTestChatCfg tmp testCfgSlow "alice" aliceProfile $ \alice -> do
+testSetConnectionIncognitoProhibitedDuringNegotiationSlow :: HasCallStack => TestParams -> IO ()
+testSetConnectionIncognitoProhibitedDuringNegotiationSlow ps = do
+  inv <- withNewTestChatCfg ps testCfgSlow "alice" aliceProfile $ \alice -> do
     threadDelay 250000
     alice ##> "/connect"
     getInvitation alice
-  withNewTestChatCfg tmp testCfgSlow "bob" bobProfile $ \bob -> do
+  withNewTestChatCfg ps testCfgSlow "bob" bobProfile $ \bob -> do
     threadDelay 250000
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
-  withTestChatCfg tmp testCfgSlow "alice" $ \alice -> do
+  withTestChatCfg ps testCfgSlow "alice" $ \alice -> do
     threadDelay 250000
     alice ##> "/_set incognito :1 on"
     alice <## "chat db error: SEPendingConnectionNotFound {connId = 1}"
-    withTestChatCfg tmp testCfgSlow "bob" $ \bob -> do
+    withTestChatCfg ps testCfgSlow "bob" $ \bob -> do
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -1132,7 +1402,7 @@ testSetConnectionIncognitoProhibitedDuringNegotiationSlow tmp = do
       alice `hasContactProfiles` ["alice", "bob"]
       bob `hasContactProfiles` ["alice", "bob"]
 
-testConnectionIncognitoUnchangedErrors :: HasCallStack => FilePath -> IO ()
+testConnectionIncognitoUnchangedErrors :: HasCallStack => TestParams -> IO ()
 testConnectionIncognitoUnchangedErrors = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/connect"
@@ -1156,7 +1426,7 @@ testConnectionIncognitoUnchangedErrors = testChat2 aliceProfile bobProfile $
     alice `hasContactProfiles` ["alice", "bob"]
     bob `hasContactProfiles` ["alice", "bob"]
 
-testSetResetSetConnectionIncognito :: HasCallStack => FilePath -> IO ()
+testSetResetSetConnectionIncognito :: HasCallStack => TestParams -> IO ()
 testSetResetSetConnectionIncognito = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/_connect 1 incognito=off"
@@ -1183,9 +1453,9 @@ testSetResetSetConnectionIncognito = testChat2 aliceProfile bobProfile $
     alice `hasContactProfiles` ["alice", "bob", T.pack aliceIncognito]
     bob `hasContactProfiles` ["bob", T.pack aliceIncognito]
 
-testJoinGroupIncognito :: HasCallStack => FilePath -> IO ()
+testJoinGroupIncognito :: HasCallStack => TestParams -> IO ()
 testJoinGroupIncognito =
-  testChatCfg4 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile danProfile $
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
       -- non incognito connections
       connectUsers alice bob
@@ -1260,13 +1530,13 @@ testJoinGroupIncognito =
             dan
               <### [ ConsoleString $ "#secret_club: member " <> cathIncognito <> " is connected",
                      "#secret_club: member bob_1 (Bob) is connected",
-                     "contact bob_1 is merged into bob",
+                     "contact and member are merged: bob, #secret_club bob_1",
                      "use @bob <message> to send messages"
                    ],
           do
             bob <## "#secret_club: alice added dan_1 (Daniel) to the group (connecting...)"
             bob <## "#secret_club: new member dan_1 is connected"
-            bob <## "contact dan_1 is merged into dan"
+            bob <## "contact and member are merged: dan, #secret_club dan_1"
             bob <## "use @dan <message> to send messages",
           do
             cath <## "#secret_club: alice added dan_1 (Daniel) to the group (connecting...)"
@@ -1297,17 +1567,7 @@ testJoinGroupIncognito =
           bob <# "#secret_club dan> how is it going?",
           cath ?<# "#secret_club dan_1> how is it going?"
         ]
-      -- cath and bob can send messages via new direct connection, cath is incognito
-      bob #> ("@" <> cathIncognito <> " hi, I'm bob")
-      cath ?<# "bob_1> hi, I'm bob"
-      cath ?#> "@bob_1 hey, I'm incognito"
-      bob <# (cathIncognito <> "> hey, I'm incognito")
-      -- cath and dan can send messages via new direct connection, cath is incognito
-      dan #> ("@" <> cathIncognito <> " hi, I'm dan")
-      cath ?<# "dan_1> hi, I'm dan"
-      cath ?#> "@dan_1 hey, I'm incognito"
-      dan <# (cathIncognito <> "> hey, I'm incognito")
-      -- non incognito connections are separate
+      -- non incognito direct connections are separate
       bob <##> cath
       dan <##> cath
       -- list groups
@@ -1366,13 +1626,8 @@ testJoinGroupIncognito =
         ]
       cath ##> "#secret_club hello"
       cath <## "you are no longer a member of the group"
-      -- cath can still message members directly
-      bob #> ("@" <> cathIncognito <> " I removed you from group")
-      cath ?<# "bob_1> I removed you from group"
-      cath ?#> "@bob_1 ok"
-      bob <# (cathIncognito <> "> ok")
 
-testCantInviteContactIncognito :: HasCallStack => FilePath -> IO ()
+testCantInviteContactIncognito :: HasCallStack => TestParams -> IO ()
 testCantInviteContactIncognito = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     -- alice connected incognito to bob
@@ -1396,7 +1651,7 @@ testCantInviteContactIncognito = testChat2 aliceProfile bobProfile $
     -- bob doesn't receive invitation
     (bob </)
 
-testCantSeeGlobalPrefsUpdateIncognito :: HasCallStack => FilePath -> IO ()
+testCantSeeGlobalPrefsUpdateIncognito :: HasCallStack => TestParams -> IO ()
 testCantSeeGlobalPrefsUpdateIncognito = testChat3 aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
     alice ##> "/c i"
@@ -1447,7 +1702,7 @@ testCantSeeGlobalPrefsUpdateIncognito = testChat3 aliceProfile bobProfile cathPr
     cath <## "alice updated preferences for you:"
     cath <## "Full deletion: off (you allow: default (no), contact allows: yes)"
 
-testDeleteContactThenGroupDeletesIncognitoProfile :: HasCallStack => FilePath -> IO ()
+testDeleteContactThenGroupDeletesIncognitoProfile :: HasCallStack => TestParams -> IO ()
 testDeleteContactThenGroupDeletesIncognitoProfile = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     -- bob connects incognito to alice
@@ -1499,7 +1754,7 @@ testDeleteContactThenGroupDeletesIncognitoProfile = testChat2 aliceProfile bobPr
     bob <## "#team: you deleted the group"
     bob `hasContactProfiles` ["bob"]
 
-testDeleteGroupThenContactDeletesIncognitoProfile :: HasCallStack => FilePath -> IO ()
+testDeleteGroupThenContactDeletesIncognitoProfile :: HasCallStack => TestParams -> IO ()
 testDeleteGroupThenContactDeletesIncognitoProfile = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     -- bob connects incognito to alice
@@ -1551,7 +1806,7 @@ testDeleteGroupThenContactDeletesIncognitoProfile = testChat2 aliceProfile bobPr
     (bob </)
     bob `hasContactProfiles` ["bob"]
 
-testSetAlias :: HasCallStack => FilePath -> IO ()
+testSetAlias :: HasCallStack => TestParams -> IO ()
 testSetAlias = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     connectUsers alice bob
@@ -1562,7 +1817,7 @@ testSetAlias = testChat2 aliceProfile bobProfile $
     alice ##> "/contacts"
     alice <## "bob (Bob)"
 
-testChangePCCUser :: HasCallStack => FilePath -> IO ()
+testChangePCCUser :: HasCallStack => TestParams -> IO ()
 testChangePCCUser = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     -- Create a new invite
@@ -1592,7 +1847,7 @@ testChangePCCUser = testChat2 aliceProfile bobProfile $
       (alice <## "bob (Bob): contact is connected")
       (bob <## "alisa2: contact is connected")
 
-testChangePCCUserFromIncognito :: HasCallStack => FilePath -> IO ()
+testChangePCCUserFromIncognito :: HasCallStack => TestParams -> IO ()
 testChangePCCUserFromIncognito = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     -- Create a new invite and set as incognito
@@ -1623,7 +1878,7 @@ testChangePCCUserFromIncognito = testChat2 aliceProfile bobProfile $
       (alice <## "bob (Bob): contact is connected")
       (bob <## "alice (Alice): contact is connected")
 
-testChangePCCUserAndThenIncognito :: HasCallStack => FilePath -> IO ()
+testChangePCCUserAndThenIncognito :: HasCallStack => TestParams -> IO ()
 testChangePCCUserAndThenIncognito = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     -- Create a new invite and set as incognito
@@ -1652,37 +1907,53 @@ testChangePCCUserAndThenIncognito = testChat2 aliceProfile bobProfile $
           alice <## ("use /i bob to print out this incognito profile again")
       ]
 
-testChangePCCUserDiffSrv :: HasCallStack => FilePath -> IO ()
-testChangePCCUserDiffSrv = testChat2 aliceProfile bobProfile $
-  \alice bob -> do
-    -- Create a new invite
-    alice ##> "/connect"
-    _ <- getInvitation alice
-    alice ##> "/_set incognito :1 on"
-    alice <## "connection 1 changed to incognito"
-    -- Create new user with different servers
-    alice ##> "/create user alisa"
-    showActiveUser alice "alisa"
-    alice #$> ("/smp smp://2345-w==@smp2.example.im smp://3456-w==@smp3.example.im:5224", id, "ok")
-    alice ##> "/user alice"
-    showActiveUser alice "alice (Alice)"
-    -- Change connection to newly created user and use the newly created connection
-    alice ##> "/_set conn user :1 2"
-    alice <## "connection 1 changed from user alice to user alisa, new link:"
-    alice <## ""
-    inv <- getTermLine alice
-    alice <## ""
-    alice `hasContactProfiles` ["alice"]
-    alice ##> "/user alisa"
-    showActiveUser alice "alisa"
-    -- Connect
-    bob ##> ("/connect " <> inv)
-    bob <## "confirmation sent!"
-    concurrently_
-      (alice <## "bob (Bob): contact is connected")
-      (bob <## "alisa: contact is connected")
+testChangePCCUserDiffSrv :: HasCallStack => TestParams -> IO ()
+testChangePCCUserDiffSrv ps = do
+  withSmpServer' serverCfg' $ do
+    withNewTestChatCfgOpts ps testCfg testOpts "alice" aliceProfile $ \alice -> do
+      withNewTestChatCfgOpts ps testCfg testOpts "bob" bobProfile $ \bob -> do
+        -- Create a new invite
+        alice ##> "/connect"
+        _ <- getInvitation alice
+        alice ##> "/_set incognito :1 on"
+        alice <## "connection 1 changed to incognito"
+        -- Create new user with different servers
+        alice ##> "/create user alisa"
+        showActiveUser alice "alisa"
+        alice ##> "/smp"
+        alice <## "Your servers"
+        alice <## "  SMP servers"
+        alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
+        alice #$> ("/smp smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@127.0.0.1:7003", id, "ok")
+        alice ##> "/smp"
+        alice <## "Your servers"
+        alice <## "  SMP servers"
+        alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@127.0.0.1:7003"
+        alice ##> "/user alice"
+        showActiveUser alice "alice (Alice)"
+        -- Change connection to newly created user and use the newly created connection
+        alice ##> "/_set conn user :1 2"
+        alice <## "connection 1 changed from user alice to user alisa, new link:"
+        alice <## ""
+        inv <- getTermLine alice
+        alice <## ""
+        alice `hasContactProfiles` ["alice"]
+        alice ##> "/user alisa"
+        showActiveUser alice "alisa"
+        -- Connect
+        bob ##> ("/connect " <> inv)
+        bob <## "confirmation sent!"
+        concurrently_
+          (alice <## "bob (Bob): contact is connected")
+          (bob <## "alisa: contact is connected")
+  where
+    serverCfg' =
+      smpServerCfg
+        { transports = [("7003", transport @TLS, False), ("7002", transport @TLS, False)],
+          msgQueueQuota = 2
+        }
 
-testSetConnectionAlias :: HasCallStack => FilePath -> IO ()
+testSetConnectionAlias :: HasCallStack => TestParams -> IO ()
 testSetConnectionAlias = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/c"
@@ -1700,7 +1971,21 @@ testSetConnectionAlias = testChat2 aliceProfile bobProfile $
     alice ##> "/contacts"
     alice <## "bob (Bob) (alias: friend)"
 
-testSetContactPrefs :: HasCallStack => FilePath -> IO ()
+testSetGroupAlias :: HasCallStack => TestParams -> IO ()
+testSetGroupAlias = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    createGroup2 "team" alice bob
+    threadDelay 1500000
+    alice ##> "/_set alias #1 friends"
+    alice <## "group #team alias updated: friends"
+    alice ##> "/groups"
+    alice <## "#team (2 members) (alias: friends)"
+    alice ##> "/_set alias #1"
+    alice <## "group #team alias removed"
+    alice ##> "/groups"
+    alice <## "#team (2 members)"
+
+testSetContactPrefs :: HasCallStack => TestParams -> IO ()
 testSetContactPrefs = testChat2 aliceProfile bobProfile $
   \alice bob -> withXFTPServer $ do
     alice #$> ("/_files_folder ./tests/tmp/alice", id, "ok")
@@ -1721,7 +2006,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     let startFeatures = [(0, e2eeInfoPQStr), (0, "Disappearing messages: allowed"), (0, "Full deletion: off"), (0, "Message reactions: enabled"), (0, "Voice messages: off"), (0, "Audio/video calls: enabled")]
     alice #$> ("/_get chat @2 count=100", chat, startFeatures)
     bob #$> ("/_get chat @2 count=100", chat, startFeatures)
-    let sendVoice = "/_send @2 json {\"filePath\": \"test.txt\", \"msgContent\": {\"type\": \"voice\", \"text\": \"\", \"duration\": 10}}"
+    let sendVoice = "/_send @2 json [{\"filePath\": \"test.txt\", \"msgContent\": {\"type\": \"voice\", \"text\": \"\", \"duration\": 10}}]"
         voiceNotAllowed = "bad chat command: feature not allowed Voice messages"
     alice ##> sendVoice
     alice <## voiceNotAllowed
@@ -1793,7 +2078,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     bob <## "Voice messages: off (you allow: default (yes), contact allows: no)"
     bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "Voice messages: off"), (1, "Voice messages: enabled"), (0, "Voice messages: off")])
 
-testFeatureOffers :: HasCallStack => FilePath -> IO ()
+testFeatureOffers :: HasCallStack => TestParams -> IO ()
 testFeatureOffers = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     connectUsers alice bob
@@ -1812,18 +2097,18 @@ testFeatureOffers = testChat2 aliceProfile bobProfile $
     bob <## "Full deletion: off (you allow: default (no), contact allows: no)"
     bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "offered Full deletion"), (0, "cancelled Full deletion")])
 
-testUpdateGroupPrefs :: HasCallStack => FilePath -> IO ()
+testUpdateGroupPrefs :: HasCallStack => TestParams -> IO ()
 testUpdateGroupPrefs =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       createGroup2 "team" alice bob
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected")])
       threadDelay 500000
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected")])
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"on\"}, \"directMessages\": {\"enable\": \"on\"}, \"history\": {\"enable\": \"on\"}}}"
       alice <## "updated group preferences:"
       alice <## "Full deletion: on"
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Full deletion: on")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "Full deletion: on")])
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "Full deletion: on"
@@ -1833,7 +2118,7 @@ testUpdateGroupPrefs =
       alice <## "updated group preferences:"
       alice <## "Full deletion: off"
       alice <## "Voice messages: off"
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off")])
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "Full deletion: off"
@@ -1843,7 +2128,7 @@ testUpdateGroupPrefs =
       alice ##> "/set voice #team on"
       alice <## "updated group preferences:"
       alice <## "Voice messages: on"
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "Voice messages: on"
@@ -1853,17 +2138,17 @@ testUpdateGroupPrefs =
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}, \"directMessages\": {\"enable\": \"on\"}, \"history\": {\"enable\": \"on\"}}}"
       -- no update
       threadDelay 500000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
       alice #> "#team hey"
       bob <# "#team alice> hey"
       threadDelay 1000000
       bob #> "#team hi"
       alice <# "#team bob> hi"
       threadDelay 500000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on"), (1, "hey"), (0, "hi")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on"), (1, "hey"), (0, "hi")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off"), (0, "Voice messages: on"), (0, "hey"), (1, "hi")])
 
-testAllowFullDeletionContact :: HasCallStack => FilePath -> IO ()
+testAllowFullDeletionContact :: HasCallStack => TestParams -> IO ()
 testAllowFullDeletionContact =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -1881,7 +2166,7 @@ testAllowFullDeletionContact =
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hi"), (1, "Full deletion: enabled for contact")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hi"), (0, "Full deletion: enabled for you")])
 
-testAllowFullDeletionGroup :: HasCallStack => FilePath -> IO ()
+testAllowFullDeletionGroup :: HasCallStack => TestParams -> IO ()
 testAllowFullDeletionGroup =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -1900,16 +2185,16 @@ testAllowFullDeletionGroup =
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "Full deletion: on"
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "hi"), (0, "hey"), (1, "Full deletion: on")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "hi"), (0, "hey"), (1, "Full deletion: on")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "hi"), (1, "hey"), (0, "Full deletion: on")])
       bob #$> ("/_delete item #1 " <> msgItemId <> " broadcast", id, "message deleted")
       alice <# "#team bob> [deleted] hey"
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "hi"), (1, "Full deletion: on")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "hi"), (1, "Full deletion: on")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "hi"), (0, "Full deletion: on")])
 
-testProhibitDirectMessages :: HasCallStack => FilePath -> IO ()
+testProhibitDirectMessages :: HasCallStack => TestParams -> IO ()
 testProhibitDirectMessages =
-  testChatCfg4 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile danProfile $
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
       createGroup3 "team" alice bob cath
       threadDelay 1000000
@@ -1925,7 +2210,7 @@ testProhibitDirectMessages =
       alice #> "@cath hello again"
       cath <# "alice> hello again"
       bob ##> "@cath hello again"
-      bob <## "direct messages to indirect contact cath are prohibited"
+      bob <## "bad chat command: direct messages not allowed"
       (cath </)
       connectUsers cath dan
       addMember "team" cath dan GRMember
@@ -1946,14 +2231,14 @@ testProhibitDirectMessages =
             bob <## "#team: new member dan is connected"
         ]
       alice ##> "@dan hi"
-      alice <## "direct messages to indirect contact dan are prohibited"
+      alice <## "bad chat command: direct messages not allowed"
       bob ##> "@dan hi"
-      bob <## "direct messages to indirect contact dan are prohibited"
+      bob <## "bad chat command: direct messages not allowed"
       (dan </)
       dan ##> "@alice hi"
-      dan <## "direct messages to indirect contact alice are prohibited"
+      dan <## "bad chat command: direct messages not allowed"
       dan ##> "@bob hi"
-      dan <## "direct messages to indirect contact bob are prohibited"
+      dan <## "bad chat command: direct messages not allowed"
       dan #> "@cath hi"
       cath <# "dan> hi"
       cath #> "@dan hi"
@@ -1965,7 +2250,7 @@ testProhibitDirectMessages =
       cc <## "updated group preferences:"
       cc <## "Direct messages: off"
 
-testEnableTimedMessagesContact :: HasCallStack => FilePath -> IO ()
+testEnableTimedMessagesContact :: HasCallStack => TestParams -> IO ()
 testEnableTimedMessagesContact =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -2010,7 +2295,7 @@ testEnableTimedMessagesContact =
       alice <## "bob updated preferences for you:"
       alice <## "Disappearing messages: enabled (you allow: yes (1 week), contact allows: yes (1 week))"
 
-testEnableTimedMessagesGroup :: HasCallStack => FilePath -> IO ()
+testEnableTimedMessagesGroup :: HasCallStack => TestParams -> IO ()
 testEnableTimedMessagesGroup =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -2026,12 +2311,12 @@ testEnableTimedMessagesGroup =
       alice #> "#team hi"
       bob <# "#team alice> hi"
       threadDelay 500000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Disappearing messages: on (1 sec)"), (1, "hi")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "Disappearing messages: on (1 sec)"), (1, "hi")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on (1 sec)"), (0, "hi")])
       threadDelay 1000000
       alice <## "timed message deleted: hi"
       bob <## "timed message deleted: hi"
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Disappearing messages: on (1 sec)")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "Disappearing messages: on (1 sec)")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on (1 sec)")])
       -- turn off, messages are not disappearing
       alice ##> "/set disappear #team off"
@@ -2044,7 +2329,7 @@ testEnableTimedMessagesGroup =
       alice #> "#team hey"
       bob <# "#team alice> hey"
       threadDelay 1500000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Disappearing messages: on (1 sec)"), (1, "Disappearing messages: off"), (1, "hey")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "Disappearing messages: on (1 sec)"), (1, "Disappearing messages: off"), (1, "hey")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on (1 sec)"), (0, "Disappearing messages: off"), (0, "hey")])
       -- test api
       alice ##> "/set disappear #team on 30s"
@@ -2060,7 +2345,7 @@ testEnableTimedMessagesGroup =
       bob <## "updated group preferences:"
       bob <## "Disappearing messages: on (1 week)"
 
-testTimedMessagesEnabledGlobally :: HasCallStack => FilePath -> IO ()
+testTimedMessagesEnabledGlobally :: HasCallStack => TestParams -> IO ()
 testTimedMessagesEnabledGlobally =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -2084,7 +2369,7 @@ testTimedMessagesEnabledGlobally =
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)")])
 
-testUpdateMultipleUserPrefs :: HasCallStack => FilePath -> IO ()
+testUpdateMultipleUserPrefs :: HasCallStack => TestParams -> IO ()
 testUpdateMultipleUserPrefs = testChat3 aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
     connectUsers alice bob
@@ -2111,7 +2396,7 @@ testUpdateMultipleUserPrefs = testChat3 aliceProfile bobProfile cathProfile $
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hi bob"), (1, "Full deletion: enabled for contact"), (1, "Message reactions: off")])
     alice #$> ("/_get chat @3 count=100", chat, chatFeatures <> [(1, "hi cath"), (1, "Full deletion: enabled for contact"), (1, "Message reactions: off")])
 
-testGroupPrefsDirectForRole :: HasCallStack => FilePath -> IO ()
+testGroupPrefsDirectForRole :: HasCallStack => TestParams -> IO ()
 testGroupPrefsDirectForRole = testChat4 aliceProfile bobProfile cathProfile danProfile $
   \alice bob cath dan -> do
     createGroup3 "team" alice bob cath
@@ -2177,7 +2462,7 @@ testGroupPrefsDirectForRole = testChat4 aliceProfile bobProfile cathProfile danP
       cc <## "updated group preferences:"
       cc <## "Direct messages: on for owners"
 
-testGroupPrefsFilesForRole :: HasCallStack => FilePath -> IO ()
+testGroupPrefsFilesForRole :: HasCallStack => TestParams -> IO ()
 testGroupPrefsFilesForRole = testChat3 aliceProfile bobProfile cathProfile $
   \alice bob cath -> withXFTPServer $ do
     alice #$> ("/_files_folder ./tests/tmp/alice", id, "ok")
@@ -2212,7 +2497,7 @@ testGroupPrefsFilesForRole = testChat3 aliceProfile bobProfile cathProfile $
       cc <## "updated group preferences:"
       cc <## "Files and media: on for owners"
 
-testGroupPrefsSimplexLinksForRole :: HasCallStack => FilePath -> IO ()
+testGroupPrefsSimplexLinksForRole :: HasCallStack => TestParams -> IO ()
 testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfile $
   \alice bob cath -> withXFTPServer $ do
     createGroup3 "team" alice bob cath
@@ -2227,7 +2512,7 @@ testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfil
     inv <- getInvitation bob
     bob ##> ("#team \"" <> inv <> "\\ntest\"")
     bob <## "bad chat command: feature not allowed SimpleX links"
-    bob ##> ("/_send #1 json {\"msgContent\": {\"type\": \"text\", \"text\": \"" <> inv <> "\\ntest\"}}")
+    bob ##> ("/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"" <> inv <> "\\ntest\"}}]")
     bob <## "bad chat command: feature not allowed SimpleX links"
     (alice </)
     (cath </)
@@ -2248,7 +2533,7 @@ testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfil
       cc <## "updated group preferences:"
       cc <## "SimpleX links: on for owners"
 
-testSetUITheme :: HasCallStack => FilePath -> IO ()
+testSetUITheme :: HasCallStack => TestParams -> IO ()
 testSetUITheme =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
@@ -2294,7 +2579,7 @@ testSetUITheme =
       a <## "you've shared main profile with this contact"
       a <## "connection not verified, use /code command to see security code"
       a <## "quantum resistant end-to-end encryption"
-      a <## "peer chat protocol version range: (Version 1, Version 9)"
+      a <## ("peer chat protocol version range: (Version 1, " <> show currentChatVersion <> ")")
     groupInfo a = do
       a <## "group ID: 1"
       a <## "current members: 1"

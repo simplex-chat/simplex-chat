@@ -160,7 +160,6 @@
     <string name="connection_timeout">หมดเวลาการเชื่อมต่อ</string>
     <string name="connect_via_group_link">เชื่อมต่อผ่านลิงค์กลุ่ม\?</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">ผู้ติดต่อและข้อความทั้งหมดจะถูกลบ - ไม่สามารถยกเลิกได้!</string>
-    <string name="archive_created_on_ts">สร้างเมื่อ %1$s</string>
     <string name="maximum_supported_file_size">ขนาดไฟล์สูงสุดที่รองรับในปัจจุบันคือ %1$s</string>
     <string name="v5_1_custom_themes">ธีมที่กำหนดเอง</string>
     <string name="developer_options">ID ฐานข้อมูลและตัวเลือกการแยกการส่งผ่าน</string>
@@ -239,8 +238,6 @@
     <string name="database_error">ความผิดพลาดในฐานข้อมูล</string>
     <string name="confirm_database_upgrades">ยืนยันการอัพเกรดฐานข้อมูล</string>
     <string name="database_downgrade">ดาวน์เกรดฐานข้อมูล</string>
-    <string name="chat_archive_header">ที่เก็บแชทถาวร</string>
-    <string name="chat_archive_section">ที่เก็บแชทถาวร</string>
     <string name="chat_is_stopped_indication">การแชทหยุดทํางานแล้ว</string>
     <string name="rcv_group_event_member_connected">เชื่อมต่อสำเร็จ</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">กำลังเปลี่ยนที่อยู่…</string>
@@ -432,8 +429,6 @@
     <string name="mtr_error_no_down_migration">เวอร์ชันฐานข้อมูลใหม่กว่าแอป แต่ไม่มีการย้ายข้อมูลลงสำหรับ: %s</string>
     <string name="mtr_error_different">การย้ายข้อมูลที่แตกต่างกันในแอป/ฐานข้อมูล: %s / %s</string>
     <string name="downgrade_and_open_chat">ปรับลดรุ่นและเปิดแชท</string>
-    <string name="delete_archive">ลบที่เก็บถาวร</string>
-    <string name="delete_chat_archive_question">ลบที่เก็บแชทถาวร\?</string>
     <string name="icon_descr_group_inactive">กลุ่มที่ไม่ได้ใช้งาน</string>
     <string name="alert_title_no_group">ไม่พบกลุ่ม!</string>
     <string name="group_invitation_expired">คำเชิญเข้าร่วมกลุ่มหมดอายุแล้ว</string>
@@ -485,7 +480,7 @@
     <string name="group_members_can_send_disappearing">สมาชิกกลุ่มสามารถส่งข้อความที่จะหายไปหลังจากเวลาที่กำหนดหลังการอ่าน (disappearing messages) ได้</string>
     <string name="group_members_can_send_dms">สมาชิกกลุ่มสามารถส่งข้อความโดยตรงได้</string>
     <string name="group_members_can_send_voice">สมาชิกกลุ่มสามารถส่งข้อความเสียง</string>
-    <string name="direct_messages_are_prohibited_in_chat">ข้อความโดยตรงระหว่างสมาชิกเป็นสิ่งต้องห้ามในกลุ่มนี้</string>
+    <string name="direct_messages_are_prohibited_in_group">ข้อความโดยตรงระหว่างสมาชิกเป็นสิ่งต้องห้ามในกลุ่มนี้</string>
     <string name="disappearing_messages_are_prohibited">ข้อความที่จะหายไปหลังจากเวลาที่กำหนดหลังการอ่าน (disappearing messages) เป็นสิ่งต้องห้ามในกลุ่มนี้</string>
     <string name="group_members_can_add_message_reactions">สมาชิกกลุ่มสามารถเพิ่มการแสดงปฏิกิริยาต่อข้อความได้</string>
     <string name="delete_after">ลบหลังจาก</string>
@@ -751,7 +746,6 @@
     <string name="message_delivery_error_desc">เป็นไปได้มากว่าผู้ติดต่อนี้ได้ลบการเชื่อมต่อกับคุณ</string>
     <string name="message_delivery_error_title">ข้อผิดพลาดในการส่งข้อความ</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">ตรวจสอบให้แน่ใจว่าที่อยู่เซิร์ฟเวอร์ SMP อยู่ในรูปแบบที่ถูกต้อง แยกบรรทัดและไม่ซ้ำกัน</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[หลายคนถามว่า: <i>ถ้า SimpleX ไม่มีตัวระบุผู้ใช้ จะส่งข้อความได้อย่างไร\?</i>]]></string>
     <string name="network_use_onion_hosts_prefer_desc">โฮสต์หัวหอมจะถูกใช้เมื่อมี</string>
     <string name="only_your_contact_can_send_voice">ผู้ติดต่อของคุณเท่านั้นที่สามารถส่งข้อความเสียงได้</string>
     <string name="simplex_link_mode_browser_warning">การเปิดลิงก์ในเบราว์เซอร์อาจลดความเป็นส่วนตัวและความปลอดภัยของการเชื่อมต่อ ลิงก์ SimpleX ที่ไม่น่าเชื่อถือจะเป็นสีแดง</string>
@@ -773,7 +767,6 @@
     <string name="callstate_received_confirmation">ได้รับการยืนยัน…</string>
     <string name="privacy_redefined">นิยามความเป็นส่วนตัวใหม่</string>
     <string name="read_more_in_github_with_link"><![CDATA[อ่านเพิ่มเติมใน <font color="#0088ff"> GitHub repository </font> ของเรา]]></string>
-    <string name="read_more_in_github">อ่านเพิ่มเติมใน GitHub repository ของเรา</string>
     <string name="onboarding_notifications_mode_title">การแจ้งเตือนส่วนตัว</string>
     <string name="alert_text_fragment_please_report_to_developers">โปรดรายงานไปยังผู้พัฒนาแอป</string>
     <string name="privacy_and_security">ความเป็นส่วนตัวและความปลอดภัย</string>
@@ -837,7 +830,6 @@
     <string name="restore_database_alert_confirm">คืนค่า</string>
     <string name="restore_database_alert_title">คืนค่าฐานข้อมูลสำรองไหม\?</string>
     <string name="database_restore_error">กู้คืนข้อผิดพลาดของฐานข้อมูล</string>
-    <string name="save_archive">บันทึกไฟล์เก็บถาวร</string>
     <string name="rcv_group_event_member_deleted">ลบแล้ว %1$s</string>
     <string name="rcv_group_event_user_deleted">ลบคุณออกแล้ว</string>
     <string name="group_member_status_removed">ถูกลบแล้ว</string>
@@ -945,7 +937,6 @@
     <string name="star_on_github">ติดดาวบน GitHub</string>
     <string name="switch_verb">เปลี่ยน</string>
     <string name="callstate_starting">กำลังเริ่มต้น…</string>
-    <string name="stop_chat_to_enable_database_actions">หยุดการแชทเพื่อเปิดใช้งานการดำเนินการกับฐานข้อมูล</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">หยุดแชทเพื่อส่งออก นำเข้า หรือลบฐานข้อมูลแชท คุณจะไม่สามารถรับและส่งข้อความได้ในขณะที่การแชทหยุดลง</string>
     <string name="v4_6_audio_video_calls_descr">รองรับบลูทูธและการปรับปรุงอื่นๆ</string>
     <string name="stop_sharing_address">หยุดแชร์ที่อยู่ไหม\?</string>
@@ -1155,7 +1146,6 @@
     <string name="your_profile_is_stored_on_your_device">โปรไฟล์ รายชื่อผู้ติดต่อ และข้อความที่ส่งของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณ</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">คุณสามารถใช้มาร์กดาวน์เพื่อจัดรูปแบบข้อความ:</string>
     <string name="callstate_waiting_for_answer">รอคำตอบ…</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[คุณควบคุมผ่านเซิร์ฟเวอร์ที่จะ<b>รับ</b>ข้อความและผู้ติดต่อของคุณ – เซิร์ฟเวอร์ที่คุณใช้เพื่อส่งข้อความถึงพวกเขา]]></string>
     <string name="use_chat">ใช้แชท</string>
     <string name="icon_descr_video_call">การสนทนาทางวิดีโอ</string>
     <string name="your_calls">การโทรของคุณ</string>

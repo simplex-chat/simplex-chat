@@ -114,12 +114,12 @@
       </trans-unit>
       <trans-unit id="%lld" xml:space="preserve">
         <source>%lld</source>
-        <target></target>
+        <target/>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld %@" xml:space="preserve">
         <source>%lld %@</source>
-        <target></target>
+        <target/>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld contact(s) selected" xml:space="preserve" approved="no">
@@ -144,12 +144,12 @@
       </trans-unit>
       <trans-unit id="%lldd" xml:space="preserve">
         <source>%lldd</source>
-        <target></target>
+        <target/>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldh" xml:space="preserve">
         <source>%lldh</source>
-        <target></target>
+        <target/>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldk" xml:space="preserve">
@@ -158,7 +158,7 @@
       </trans-unit>
       <trans-unit id="%lldm" xml:space="preserve">
         <source>%lldm</source>
-        <target></target>
+        <target/>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldmth" xml:space="preserve">
@@ -173,17 +173,14 @@
         <source>%lldw</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="(" xml:space="preserve">
+      <trans-unit id="(" xml:space="preserve" approved="no">
         <source>(</source>
+        <target state="translated">(</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=")" xml:space="preserve">
+      <trans-unit id=")" xml:space="preserve" approved="no">
         <source>)</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve" approved="no">
-        <source>**Add new contact**: to create your one-time QR Code or link for your contact.</source>
-        <target state="needs-translation">**Dodajte novi kontakt**: da biste stvorili svoj jednokratni QR kôd ili vezu za svoj kontakt.</target>
+        <target state="translated">)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Create link / QR code** for your contact to use." xml:space="preserve" approved="no">
@@ -191,13 +188,13 @@
         <target state="needs-translation">**Stvorite vezu / QR kôd** za vaš kontakt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." xml:space="preserve" approved="no">
-        <source>**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have.</source>
+      <trans-unit id="**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata." xml:space="preserve" approved="no">
+        <source>**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata.</source>
         <target state="needs-translation">**Privatnije**: provjeravajte nove poruke svakih 20 minuta. Token uređaja dijeli se s SimpleX Chat poslužiteljem, ali ne i s brojem kontakata ili poruka koje imate.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." xml:space="preserve" approved="no">
-        <source>**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app).</source>
+      <trans-unit id="**Most private**: do not use SimpleX Chat push server. The app will check messages in background, when the system allows it, depending on how often you use the app." xml:space="preserve" approved="no">
+        <source>**Most private**: do not use SimpleX Chat push server. The app will check messages in background, when the system allows it, depending on how often you use the app.</source>
         <target state="needs-translation">**Najprivatniji**: nemojte koristiti SimpleX Chat poslužitelj obavijesti, povremeno provjeravajte poruke u pozadini (ovisi o tome koliko često koristite aplikaciju).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -211,8 +208,8 @@
         <target state="needs-translation">**Imajte na umu**: NEĆETE moći oporaviti ili promijeniti pristupni izraz ako ga izgubite.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." xml:space="preserve" approved="no">
-        <source>**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from.</source>
+      <trans-unit id="**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from." xml:space="preserve" approved="no">
+        <source>**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from.</source>
         <target state="needs-translation">**Preporučeno**: token uređaja i obavijesti šalju se na poslužitelj obavijesti SimpleX Chata, ali ne i sadržaj poruke, veličinu ili od koga je.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -253,22 +250,22 @@
       </trans-unit>
       <trans-unit id="1 day" xml:space="preserve" approved="no">
         <source>1 day</source>
-        <target state="needs-translation">1 dan</target>
+        <target state="translated">1 dan</target>
         <note>message ttl</note>
       </trans-unit>
       <trans-unit id="1 hour" xml:space="preserve" approved="no">
         <source>1 hour</source>
-        <target state="needs-translation">1 sat</target>
+        <target state="translated">1 sat</target>
         <note>message ttl</note>
       </trans-unit>
       <trans-unit id="1 month" xml:space="preserve" approved="no">
         <source>1 month</source>
-        <target state="needs-translation">1 mjesec</target>
+        <target state="translated">1 mesec</target>
         <note>message ttl</note>
       </trans-unit>
       <trans-unit id="1 week" xml:space="preserve" approved="no">
         <source>1 week</source>
-        <target state="needs-translation">1 tjedan</target>
+        <target state="translated">1 nedelja</target>
         <note>message ttl</note>
       </trans-unit>
       <trans-unit id="2 weeks" xml:space="preserve" approved="no">
@@ -1039,8 +1036,8 @@
         <source>Direct messages</source>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Direct messages between members are prohibited in this group." xml:space="preserve">
-        <source>Direct messages between members are prohibited in this group.</source>
+      <trans-unit id="Direct messages between members are prohibited." xml:space="preserve">
+        <source>Direct messages between members are prohibited.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
@@ -1055,8 +1052,8 @@
         <source>Disappearing messages are prohibited in this chat.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappearing messages are prohibited in this group." xml:space="preserve">
-        <source>Disappearing messages are prohibited in this group.</source>
+      <trans-unit id="Disappearing messages are prohibited." xml:space="preserve">
+        <source>Disappearing messages are prohibited.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disconnect" xml:space="preserve">
@@ -1419,16 +1416,16 @@
         <source>Group members can irreversibly delete sent messages.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send direct messages." xml:space="preserve">
-        <source>Group members can send direct messages.</source>
+      <trans-unit id="Members can send direct messages." xml:space="preserve">
+        <source>Members can send direct messages.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send disappearing messages." xml:space="preserve">
-        <source>Group members can send disappearing messages.</source>
+      <trans-unit id="Members can send disappearing messages." xml:space="preserve">
+        <source>Members can send disappearing messages.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send voice messages." xml:space="preserve">
-        <source>Group members can send voice messages.</source>
+      <trans-unit id="Members can send voice messages." xml:space="preserve">
+        <source>Members can send voice messages.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group message:" xml:space="preserve">
@@ -1519,20 +1516,23 @@
         <source>Image will be received when your contact is online, please wait or check later!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Immune to spam and abuse" xml:space="preserve">
-        <source>Immune to spam and abuse</source>
+      <trans-unit id="Immune to spam" xml:space="preserve">
+        <source>Immune to spam</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Import" xml:space="preserve">
+      <trans-unit id="Import" xml:space="preserve" approved="no">
         <source>Import</source>
+        <target state="translated">Uvesti</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Import chat database?" xml:space="preserve">
+      <trans-unit id="Import chat database?" xml:space="preserve" approved="no">
         <source>Import chat database?</source>
+        <target state="translated">Uvesti data bazu razgovora?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Import database" xml:space="preserve">
+      <trans-unit id="Import database" xml:space="preserve" approved="no">
         <source>Import database</source>
+        <target state="translated">Uvesti data bazu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Improved privacy and security" xml:space="preserve">
@@ -1616,8 +1616,8 @@
         <source>Irreversible message deletion is prohibited in this chat.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Irreversible message deletion is prohibited in this group." xml:space="preserve">
-        <source>Irreversible message deletion is prohibited in this group.</source>
+      <trans-unit id="Irreversible message deletion is prohibited." xml:space="preserve">
+        <source>Irreversible message deletion is prohibited.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It allows having many anonymous connections without any shared data between them in a single chat profile." xml:space="preserve">
@@ -1693,12 +1693,14 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Live message!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Live messages" xml:space="preserve">
+      <trans-unit id="Live messages" xml:space="preserve" approved="no">
         <source>Live messages</source>
+        <target state="translated">Žive poruke</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Local name" xml:space="preserve">
+      <trans-unit id="Local name" xml:space="preserve" approved="no">
         <source>Local name</source>
+        <target state="translated">Lokalno ime</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Local profile data only" xml:space="preserve">
@@ -1917,8 +1919,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Onion hosts will not be used.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." xml:space="preserve">
-        <source>Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**.</source>
+      <trans-unit id="Only client devices store user profiles, contacts, groups, and messages." xml:space="preserve">
+        <source>Only client devices store user profiles, contacts, groups, and messages.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only group owners can change group preferences." xml:space="preserve">
@@ -1965,8 +1967,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Open chat console</source>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve">
-        <source>Open-source protocol and code – anybody can run the servers.</source>
+      <trans-unit id="Anybody can host servers." xml:space="preserve">
+        <source>Anybody can host servers.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." xml:space="preserve">
@@ -1997,8 +1999,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Paste the link you received into the box below to connect with your contact.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="People can connect to you only via the links you share." xml:space="preserve">
-        <source>People can connect to you only via the links you share.</source>
+      <trans-unit id="You decide who can connect." xml:space="preserve">
+        <source>You decide who can connect.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Periodically" xml:space="preserve">
@@ -2577,8 +2579,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Thanks to the users – contribute via Weblate!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The 1st platform without any user identifiers – private by design." xml:space="preserve">
-        <source>The 1st platform without any user identifiers – private by design.</source>
+      <trans-unit id="No user identifiers." xml:space="preserve">
+        <source>No user identifiers.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
@@ -2609,8 +2611,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>The microphone does not work when the app is in the background.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The next generation of private messaging" xml:space="preserve">
-        <source>The next generation of private messaging</source>
+      <trans-unit id="The future of messaging" xml:space="preserve">
+        <source>The future of messaging</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The old database was not removed during the migration, it can be deleted." xml:space="preserve">
@@ -2673,8 +2675,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>To prevent the call interruption, enable Do Not Disturb mode.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." xml:space="preserve">
-        <source>To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts.</source>
+      <trans-unit id="To protect your privacy, SimpleX uses separate IDs for each of your contacts." xml:space="preserve">
+        <source>To protect your privacy, SimpleX uses separate IDs for each of your contacts.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To protect timezone, image/voice files use UTC." xml:space="preserve">
@@ -2847,8 +2849,8 @@ To connect, please ask your contact to create another connection link and check 
         <source>Voice messages are prohibited in this chat.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Voice messages are prohibited in this group." xml:space="preserve">
-        <source>Voice messages are prohibited in this group.</source>
+      <trans-unit id="Voice messages are prohibited." xml:space="preserve">
+        <source>Voice messages are prohibited.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Voice messages prohibited!" xml:space="preserve">
@@ -2957,10 +2959,6 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="You can use markdown to format messages:" xml:space="preserve">
         <source>You can use markdown to format messages:</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." xml:space="preserve">
-        <source>You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You could not be verified; please try again." xml:space="preserve">
@@ -3161,8 +3159,9 @@ SimpleX servers cannot see your profile.</source>
         <source>\_italic_</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="`a + b`" xml:space="preserve">
+      <trans-unit id="`a + b`" xml:space="preserve" approved="no">
         <source>\`a + b`</source>
+        <target state="translated">\`a + b`</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="above, then choose:" xml:space="preserve">
@@ -3621,6 +3620,110 @@ SimpleX servers cannot see your profile.</source>
       <trans-unit id="~strike~" xml:space="preserve">
         <source>\~strike~</source>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="# %@" xml:space="preserve" approved="no">
+        <source># %@</source>
+        <target state="translated"># %@</target>
+      </trans-unit>
+      <trans-unit id="%@ server" xml:space="preserve" approved="no">
+        <source>%@ server</source>
+        <target state="translated">%@ server</target>
+      </trans-unit>
+      <trans-unit id="%@ servers" xml:space="preserve" approved="no">
+        <source>%@ servers</source>
+        <target state="translated">%@ serveri</target>
+      </trans-unit>
+      <trans-unit id="Import failed" xml:space="preserve" approved="no">
+        <source>Import failed</source>
+        <target state="translated">Uvoz neuspešan</target>
+      </trans-unit>
+      <trans-unit id="%@ downloaded" xml:space="preserve" approved="no">
+        <source>%@ downloaded</source>
+        <target state="translated">%@ preuzeto</target>
+      </trans-unit>
+      <trans-unit id="%@ uploaded" xml:space="preserve" approved="no">
+        <source>%@ uploaded</source>
+        <target state="translated">%@ otpremljeno</target>
+      </trans-unit>
+      <trans-unit id="1 minute" xml:space="preserve" approved="no">
+        <source>1 minute</source>
+        <target state="translated">1 minut</target>
+      </trans-unit>
+      <trans-unit id="Password" xml:space="preserve" approved="no">
+        <source>Password</source>
+        <target state="translated">Šifra</target>
+      </trans-unit>
+      <trans-unit id="## History" xml:space="preserve" approved="no">
+        <source>## History</source>
+        <target state="translated">## Istorija</target>
+      </trans-unit>
+      <trans-unit id="%@ (current)" xml:space="preserve" approved="no">
+        <source>%@ (current)</source>
+        <target state="translated">%@ (trenutan)</target>
+      </trans-unit>
+      <trans-unit id="%@ and %@" xml:space="preserve" approved="no">
+        <source>%@ and %@</source>
+        <target state="translated">%@ i %@</target>
+      </trans-unit>
+      <trans-unit id="%@ connected" xml:space="preserve" approved="no">
+        <source>%@ connected</source>
+        <target state="translated">%@ povezan</target>
+      </trans-unit>
+      <trans-unit id="0 sec" xml:space="preserve" approved="no">
+        <source>0 sec</source>
+        <target state="translated">0 sek</target>
+      </trans-unit>
+      <trans-unit id="5 minutes" xml:space="preserve" approved="no">
+        <source>5 minutes</source>
+        <target state="translated">5 minuta</target>
+      </trans-unit>
+      <trans-unit id="%@ (current):" xml:space="preserve" approved="no">
+        <source>%@ (current):</source>
+        <target state="translated">%@ (trenutan):</target>
+      </trans-unit>
+      <trans-unit id="%@ and %@ connected" xml:space="preserve" approved="no">
+        <source>%@ and %@ connected</source>
+        <target state="translated">%@ i %@ su povezani</target>
+      </trans-unit>
+      <trans-unit id="%@:" xml:space="preserve" approved="no">
+        <source>%@:</source>
+        <target state="translated">%@:</target>
+      </trans-unit>
+      <trans-unit id="%@ at %@:" xml:space="preserve" approved="no">
+        <source>%1$@ at %2$@:</source>
+        <target state="translated">%1$@ u %2$@:</target>
+      </trans-unit>
+      <trans-unit id="30 seconds" xml:space="preserve" approved="no">
+        <source>30 seconds</source>
+        <target state="translated">30 sekundi</target>
+      </trans-unit>
+      <trans-unit id="Password to show" xml:space="preserve" approved="no">
+        <source>Password to show</source>
+        <target state="translated">Prikazati šifru</target>
+      </trans-unit>
+      <trans-unit id="%@, %@" xml:space="preserve" approved="no">
+        <source>%1$@, %2$@</source>
+        <target state="translated">%1$@, %2$@</target>
+      </trans-unit>
+      <trans-unit id="0s" xml:space="preserve" approved="no">
+        <source>0s</source>
+        <target state="translated">0s</target>
+      </trans-unit>
+      <trans-unit id="Import theme" xml:space="preserve" approved="no">
+        <source>Import theme</source>
+        <target state="translated">Uvesti temu</target>
+      </trans-unit>
+      <trans-unit id="Immediately" xml:space="preserve" approved="no">
+        <source>Immediately</source>
+        <target state="translated">Odmah</target>
+      </trans-unit>
+      <trans-unit id="Address settings" xml:space="preserve" approved="no">
+        <source>Address settings</source>
+        <target state="translated">Podešavanje adrese</target>
+      </trans-unit>
+      <trans-unit id="Admins can block a member for all." xml:space="preserve" approved="no">
+        <source>Admins can block a member for all.</source>
+        <target state="needs-translation">Administratori mogu da blokiraju</target>
       </trans-unit>
     </body>
   </file>

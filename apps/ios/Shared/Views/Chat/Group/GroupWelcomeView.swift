@@ -23,7 +23,7 @@ struct GroupWelcomeView: View {
 
     var body: some View {
         VStack {
-            if groupInfo.canEdit {
+            if groupInfo.isOwner && groupInfo.businessChat == nil {
                 editorView()
                     .modifier(BackButton(disabled: Binding.constant(false)) {
                         if welcomeTextUnchanged() {
@@ -58,7 +58,7 @@ struct GroupWelcomeView: View {
     }
 
     private func textPreview() -> some View {
-        messageText(welcomeText, parseSimpleXMarkdown(welcomeText), nil, showSecrets: false, secondaryColor: theme.colors.secondary)
+        messageText(welcomeText, parseSimpleXMarkdown(welcomeText), nil, mentions: nil, userMemberId: nil, showSecrets: false, secondaryColor: theme.colors.secondary)
             .frame(minHeight: 130, alignment: .topLeading)
             .frame(maxWidth: .infinity, alignment: .leading)
     }

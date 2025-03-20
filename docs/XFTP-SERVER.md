@@ -4,6 +4,23 @@ revision: 31.07.2023
 ---
 # Hosting your own XFTP Server
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Installation options](#installation-options)
+   - [systemd service](#systemd-service) with [installation script](#installation-script) or [manually](#manual-deployment)
+   - [docker container](#docker-сontainer)
+   - [Linode marketplace](#linode-marketplace)
+- [Tor installation](#tor-installation)
+- [Configuration](#configuration)
+- [Documentation](#documentation)
+   - [XFTP server address](#xftp-server-address)
+   - [Systemd commands](#systemd-commands)
+   - [Control port](#control-port)
+   - [Daily statistics](#daily-statistics)
+- [Updating your XFTP server](#updating-your-xftp-server)
+- [Configuring the app to use the server](#configuring-the-app-to-use-the-server)
+
 ## Overview
 
 XFTP is a new file transfer protocol focussed on meta-data protection - it is based on the same principles as SimpleX Messaging Protocol used in SimpleX Chat messenger:
@@ -15,20 +32,45 @@ XFTP is a new file transfer protocol focussed on meta-data protection - it is ba
    - no identifiers or ciphertext in common between sent and received relay traffic, same as for messages delivered by SMP relays.
    - protection of sender IP address from the recipients.
 
-## Installation
+## Installation options
 
-0. First, install `xftp-server`:
+You can install XFTP server in one of the following ways:
 
-   - Manual deployment (see below)
+- [systemd service](#systemd-service)
+   - using [installation script](#installation-script) - **recommended**
+   - or [manually](#manual-deployment)
+- [Docker container](#docker-container) from DockerHub
+- [Linode marketplace](#linode-marketplace)
 
-   - Semi-automatic deployment:
-     - [Offical installation script](https://github.com/simplex-chat/simplexmq#using-installation-script)
-     - [Docker container](https://github.com/simplex-chat/simplexmq#using-docker)
-     - [Linode Marketplace](https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/)
+### systemd service
 
-Manual installation requires some preliminary actions:
+#### Installation script
 
-0. Install binary:
+This installation script will automatically install binaries, systemd services and additional scripts that will manage backups, updates and uninstallation. This is the recommended option due to its flexibility, easy updating, and being battle tested on our servers.
+
+**Please note** that currently only Ubuntu distribution is supported.
+
+Run the following script on the server:
+
+```sh
+curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/install.sh -o simplex-server-install.sh &&\
+if echo '53fcdb4ceab324316e2c4cda7e84dbbb344f32550a65975a7895425e5a1be757 simplex-server-install.sh' | sha256sum -c; then
+  chmod +x ./simplex-server-install.sh
+  ./simplex-server-install.sh
+  rm ./simplex-server-install.sh
+else
+  echo "SHA-256 checksum is incorrect!"
+  rm ./simplex-server-install.sh
+fi
+```
+
+Type `2` and hit enter to install `xftp-server`.
+
+#### Manual deployment
+
+Manual installation is the most advanced deployment that provides the most flexibility. Generally recommended only for advanced users.
+
+1. Install binary:
 
    - Using offical binaries:
 
@@ -41,20 +83,20 @@ Manual installation requires some preliminary actions:
      Please refer to [Build from source: Using your distribution](https://github.com/simplex-chat/simplexmq#using-your-distribution)
 
 
-1. Create user and group for `xftp-server`:
+2. Create user and group for `xftp-server`:
 
    ```sh
    sudo useradd -m xftp
    ```
 
-2. Create necessary directories and assign permissions:
+3. Create necessary directories and assign permissions:
 
    ```sh
    sudo mkdir -p /var/opt/simplex-xftp /etc/opt/simplex-xftp /srv/xftp
    sudo chown xftp:xftp /var/opt/simplex-xftp /etc/opt/simplex-xftp /srv/xftp
    ```
 
-3. Allow xftp-server port in firewall:
+4. Allow xftp-server port in firewall:
 
    ```sh
    # For Ubuntu
@@ -64,7 +106,7 @@ Manual installation requires some preliminary actions:
    sudo firewall-cmd --reload
    ```
 
-4. **Optional** — If you're using distribution with `systemd`, create `/etc/systemd/system/xftp-server.service` file with the following content:
+5. **Optional** — If you're using distribution with `systemd`, create `/etc/systemd/system/xftp-server.service` file with the following content:
 
    ```sh
    [Unit]
@@ -86,6 +128,68 @@ Manual installation requires some preliminary actions:
    ```
 
    And execute `sudo systemctl daemon-reload`.
+
+### Docker сontainer
+
+You can deploy smp-server using Docker Compose. This is second recommended option due to its popularity and relatively easy deployment.
+
+This deployment provides two Docker Compose files: the **automatic** one and **manual**. If you're not sure, choose **automatic**.
+
+This will download images from [Docker Hub](https://hub.docker.com/r/simplexchat).
+
+1. Create `xftp-server` directory and switch to it:
+
+  ```sh
+  mkdir xftp-server && cd xftp-server
+  ```
+
+2. Create `docker-compose.yml` file with the following content:
+
+  You can also grab it from here - [docker-compose-xftp.yml](https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-xftp.yml). Don't forget to rename it to `docker-compose.yml`.
+
+  ```yaml
+  name: SimpleX Chat - xftp-server
+
+  services:
+    xftp-server:
+      image: ${SIMPLEX_XFTP_IMAGE:-simplexchat/xftp-server:latest}
+      environment:
+        ADDR: ${ADDR?"Please specify the domain."}
+        QUOTA: ${QUOTA?"Please specify disk quota."}
+        PASS: ${PASS:-}
+      volumes:
+        - ./xftp_configs:/etc/opt/simplex-xftp
+        - ./xftp_state:/var/opt/simplex-xftp
+        - ./xftp_files:/srv/xftp
+      ports:
+        - 443:443
+      restart: unless-stopped
+  ```
+
+3. In the same directory, create `.env` file with the following content:
+
+  You can also grab it from here - [docker-compose-xftp.env](https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-xftp.yml). Don't forget to rename it to `.env`.
+
+  Change variables according to your preferences.
+
+  ```env
+  # Mandatory
+  ADDR=your_ip_or_addr
+  QUOTA=120gb
+
+  # Optional
+  #PASS='123123'
+  ```
+
+4. Start your containers:
+
+  ```sh
+  docker compose up
+  ```
+
+### Linode marketplace
+
+You can deploy xftp-server upon creating new Linode VM. Please refer to: [Linode Marketplace](https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/)
 
 ## Tor installation
 
@@ -359,9 +463,76 @@ Feb 27 19:21:11 localhost xftp-server[2350]: Store log: /var/opt/simplex-xftp/fi
 Feb 27 19:21:11 localhost xftp-server[2350]: Uploading new files allowed.
 Feb 27 19:21:11 localhost xftp-server[2350]: Listening on port 443...
 Feb 27 19:21:11 localhost xftp-server[2350]: [INFO 2023-02-27 19:21:11 +0000 src/Simplex/FileTransfer/Server/Env.hs:85] Total / available storage: 64424509440 / 64424509440
-````
+```
 
-### Monitoring
+### Control port
+
+Enabling control port in the configuration allows administrator to see information about the xftp-server in real-time. Additionally, it allows to delete file chunks for content moderation and see the debug info about the clients, sockets, etc. Enabling the control port requires setting the `admin` and `user` passwords.
+
+1. Generate two passwords for each user:
+
+   ```sh
+   tr -dc A-Za-z0-9 </dev/urandom | head -c 20; echo
+   ```
+
+2. Open the configuration file:
+
+   ```sh
+   vim /etc/opt/simplex-xftp/file-server.ini
+   ```
+
+2. Configure the control port and replace the passwords:
+
+   ```ini
+   [AUTH]
+   control_port_admin_password: <your_randomly_generated_admin_password>
+   control_port_user_password: <your_randomly_generated_user_password>
+
+   [TRANSPORT]
+   control_port: 5224
+   ```
+
+3. Restart the server:
+
+   ```sh
+   systemctl restart xftp-server
+   ```
+
+To access the control port, use:
+
+```sh
+nc 127.0.0.1 5224
+```
+
+or:
+
+```sh
+telnet 127.0.0.1 5224
+```
+
+Upon connecting, the control port should print:
+
+```sh
+XFTP server control port
+'help' for supported commands
+```
+
+To authenticate, type the following and hit enter. Change the `my_generated_password` with the `user` or `admin` password from the configuration:
+
+```sh
+auth my_generated_password
+```
+
+Here's the full list of commands, their descriptions and who can access them.
+
+| Command          | Description                                                                     | Requires `admin` role      |
+| ---------------- | ------------------------------------------------------------------------------- | -------------------------- |
+| `stats-rts`      | GHC/Haskell statistics. Can be enabled with `+RTS -T -RTS` option               | -                          |
+| `delete`         | Delete known file chunk. Useful for content moderation.                         | -                          |
+| `help`           | Help menu.                                                                      | -                          |
+| `quit`           | Exit the control port.                                                          | -                          |
+
+### Daily statistics
 
 You can enable `xftp-server` statistics for `Grafana` dashboard by setting value `on` in `/etc/opt/simplex-xftp/file-server.ini`, under `[STORE_LOG]` section in `log_stats:` field.
 
@@ -420,7 +591,7 @@ To import `csv` to `Grafana` one should:
 For further documentation, see: [CSV Data Source for Grafana - Documentation](https://grafana.github.io/grafana-csv-datasource/)
 
 
-# Updating your XFTP server
+## Updating your XFTP server
 
 To update your XFTP server to latest version, choose your installation method and follow the steps:
 
@@ -478,6 +649,6 @@ To update your XFTP server to latest version, choose your installation method an
         docker image prune
         ```
 
-### Configuring the app to use the server
+## Configuring the app to use the server
 
 Please see: [SMP Server: Configuring the app to use the server](./SERVER.md#configuring-the-app-to-use-the-server).

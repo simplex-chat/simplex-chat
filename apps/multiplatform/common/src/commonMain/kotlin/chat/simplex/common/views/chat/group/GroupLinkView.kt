@@ -1,9 +1,8 @@
 package chat.simplex.common.views.chat.group
 
 import SectionBottomSpacer
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -119,9 +118,7 @@ fun GroupLinkLayout(
     )
   }
 
-  ColumnWithScrollBar(
-    Modifier,
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.group_link))
     Text(
       stringResource(MR.strings.you_can_share_group_link_anybody_will_be_able_to_connect),

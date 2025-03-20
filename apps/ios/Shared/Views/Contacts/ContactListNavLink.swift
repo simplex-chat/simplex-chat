@@ -20,7 +20,7 @@ struct ContactListNavLink: View {
     @State private var showContactRequestDialog = false
 
     var body: some View {
-        let contactType = chatContactType(chat: chat)
+        let contactType = chatContactType(chat)
 
         Group {
             switch (chat.chatInfo) {
@@ -151,7 +151,7 @@ struct ContactListNavLink: View {
     }
 
     private var verifiedIcon: Text {
-        (Text(Image(systemName: "checkmark.shield")) + Text(" "))
+        (Text(Image(systemName: "checkmark.shield")) + textSpace)
             .foregroundColor(.secondary)
             .baselineOffset(1)
             .kerning(-2)
@@ -188,8 +188,7 @@ struct ContactListNavLink: View {
         Task {
             let ok = await connectContactViaAddress(contact.contactId, incognito, showAlert: { alert = SomeAlert(alert: $0, id: "ContactListNavLink connectContactViaAddress") })
             if ok {
-                ItemsModel.shared.loadOpenChat(contact.id)
-                DispatchQueue.main.async {
+                ItemsModel.shared.loadOpenChat(contact.id) {
                     dismissAllSheets(animated: true) {
                         AlertManager.shared.showAlert(connReqSentAlert(.contact))
                     }

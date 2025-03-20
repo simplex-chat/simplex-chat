@@ -16,7 +16,7 @@ struct CILinkView: View {
 
     var body: some View {
         VStack(alignment: .center, spacing: 6) {
-            if let uiImage = UIImage(base64Encoded: linkPreview.image) {
+            if let uiImage = imageFromBase64(linkPreview.image) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFit()

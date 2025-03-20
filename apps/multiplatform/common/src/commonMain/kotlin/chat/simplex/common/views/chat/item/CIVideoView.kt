@@ -432,6 +432,9 @@ fun VideoPreviewImageViewFullScreen(preview: ImageBitmap, onClick: () -> Unit, o
 expect fun LocalWindowWidth(): Dp
 
 @Composable
+expect fun LocalWindowHeight(): Dp
+
+@Composable
 private fun progressIndicator() {
   CircularProgressIndicator(
     Modifier.size(16.dp),
@@ -496,10 +499,7 @@ private fun fileStatusIcon(file: CIFile?, smallView: Boolean) {
             painterResource(MR.images.ic_close),
             MR.strings.icon_descr_file,
             onClick = {
-              AlertManager.shared.showAlertMsg(
-                generalGetString(MR.strings.file_error),
-                file.fileStatus.sndFileError.errorInfo
-              )
+              showFileErrorAlert(file.fileStatus.sndFileError)
             }
           )
         is CIFileStatus.SndWarning ->
@@ -507,10 +507,7 @@ private fun fileStatusIcon(file: CIFile?, smallView: Boolean) {
             painterResource(MR.images.ic_warning_filled),
             MR.strings.icon_descr_file,
             onClick = {
-              AlertManager.shared.showAlertMsg(
-                generalGetString(MR.strings.temporary_file_error),
-                file.fileStatus.sndFileError.errorInfo
-              )
+              showFileErrorAlert(file.fileStatus.sndFileError, temporary = true)
             }
           )
         is CIFileStatus.RcvInvitation -> fileIcon(painterResource(MR.images.ic_arrow_downward), MR.strings.icon_descr_video_asked_to_receive)
@@ -529,10 +526,7 @@ private fun fileStatusIcon(file: CIFile?, smallView: Boolean) {
             painterResource(MR.images.ic_close),
             MR.strings.icon_descr_file,
             onClick = {
-              AlertManager.shared.showAlertMsg(
-                generalGetString(MR.strings.file_error),
-                file.fileStatus.rcvFileError.errorInfo
-              )
+              showFileErrorAlert(file.fileStatus.rcvFileError)
             }
           )
         is CIFileStatus.RcvWarning ->
@@ -540,10 +534,7 @@ private fun fileStatusIcon(file: CIFile?, smallView: Boolean) {
             painterResource(MR.images.ic_warning_filled),
             MR.strings.icon_descr_file,
             onClick = {
-              AlertManager.shared.showAlertMsg(
-                generalGetString(MR.strings.temporary_file_error),
-                file.fileStatus.rcvFileError.errorInfo
-              )
+              showFileErrorAlert(file.fileStatus.rcvFileError, temporary = true)
             }
           )
         is CIFileStatus.Invalid -> fileIcon(painterResource(MR.images.ic_question_mark), MR.strings.icon_descr_file)

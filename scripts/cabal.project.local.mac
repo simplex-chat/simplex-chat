@@ -3,12 +3,12 @@ ignore-project: False
 -- amend to point to the actual openssl location
 
 package simplexmq
-    extra-include-dirs: /opt/homebrew/opt/openssl@1.1/include
-    extra-lib-dirs: /opt/homebrew/opt/openssl@1.1/lib
+    extra-include-dirs: /opt/homebrew/opt/openssl@3.0/include
+    extra-lib-dirs: /opt/homebrew/opt/openssl@3.0/lib
 
 package direct-sqlcipher
-    extra-include-dirs: /opt/homebrew/opt/openssl@1.1/include
-    extra-lib-dirs: /opt/homebrew/opt/openssl@1.1/lib
+    extra-include-dirs: /opt/homebrew/opt/openssl@3.0/include
+    extra-lib-dirs: /opt/homebrew/opt/openssl@3.0/lib
     flags: +openssl
 
 test-show-details: direct

@@ -18,6 +18,7 @@ revision: 23.04.2024
 - [I want to see when my contacts read my messages](#i-want-to-see-when-my-contacts-read-my-messages)
 - [Can I use the same profile on desktop? Do messages sync cross-platform?](#can-i-use-the-same-profile-on-desktop-do-messages-sync-cross-platform)
 - [Why cannot I delete messages I sent from my contact's device?](#why-cannot-i-delete-messages-i-sent-from-my-contacts-device)
+- [Why invitation links use simplex.chat domain?](#why-invitation-links-use-simplex.chat-domain)
 
 [Troubleshooting](#troubleshooting)
 - [I do not receive messages or message notifications](#i-do-not-receive-messages-or-message-notifications)
@@ -27,6 +28,7 @@ revision: 23.04.2024
 - [Audio or video calls do not connect](#audio-or-video-calls-do-not-connect)
 - [Audio or video calls without e2e encryption](#audio-or-video-calls-without-e2e-encryption)
 - [I clicked the link to connect, but could not connect](#i-clicked-the-link-to-connect-but-could-not-connect)
+- [I do not know my database passphrase](#i-do-not-know-my-database-passphrase)
 
 [Privacy and security](#privacy-and-security)
 - [Does SimpleX support post quantum cryptography?](#does-simplex-support-post-quantum-cryptography)
@@ -120,6 +122,14 @@ It is also important to remember, that even if your contact enabled "Delete for 
 
 When "Delete for everyone" is not enabled, you can still mark the sent message as deleted within 24 hours of sending it. In this case the recipient will see it as "deleted message", and will be able to reveal the original message.
 
+### Why invitation links use simplex.chat domain?
+
+You can replace `https://simplex.chat/` with `simplex:/` or with any other domain - the app never connect with it, ignoring it completely. It is only used to make it easier to connect for the new users who did not install the app yet.
+
+The invitation links will soon move to servers' domains. The servers already can host the pages that will be used to show QR codes.
+
+The link itself and the key exchange are not hosted anywhere, and the server that hosts the page to show QR code does not observe the actual connection link, because it is in the hash part of the link. The part after hash character (`#`) is not sent over the internet - the server can only see `https://simplex.chat/contact/` and the rest is processed on user's device in the browser, if you open it as a page.
+
 ## Troubleshooting
 
 ### I do not receive messages or message notifications
@@ -148,13 +158,19 @@ Check battery settings for the app - it should be set to Unrestricted.
 
 For some devices, there may be additional options to prevent the app from being killed - e.g., on Xiaomi you need to enable Auto Start setting for the app. Please consult https://dontkillmyapp.com site for any additional settings for your device.
 
-**iOS notifications failed to initialize correctly**
+**Why my notifications aren't working on iOS**
 
 Check the color of the bolt icon next to Notifications in app settings - it should be green.
 
 If it's not, please open notifications, disable them (choose Off / Local), and then enable again - you should do it when you have Internet connection.
 
+Check if your push server has been restarted at time of the issue (Notifications -> Push server) at https://status.simplex.chat if it has been restarted, you may not receive notifications from that time.
+
+If device was offline, you may need to open the app to start receiving notifications.
+
 If the above didn't help, the reason could be that iOS failed to issue notification token - we have seen this issue several times. In this case, restarting the whole device should help.
+
+In some cases notifications may still not work, iOS notifications are hard to do right in a decentralized app, we will be improving them soon to be more reliable.
 
 **Messaging server or notification server is under maintenance**
 
@@ -219,6 +235,20 @@ If you confirmed the connection in the app, pending connection will be shown in 
 For connection to complete, your contact has to be online and have the app running - please ask them to open the app, and try to have the app open at the same time - it will help to complete the connection faster.
 
 Once the connection is established you don't need to be online at the same time to send messages.
+
+### I do not know my database passphrase
+
+If you are prompted to enter database passphrase and you do not know it, this could have happened due to:
+- You may have forgotten the passphrase. (There is no other way to access your data).
+- Migration of app data from one device to another while using unsupported migration process, e.g. via iCloud backup. Use SimpleX Chat's own migration process in the app Settings.
+
+In the previous desktop app versions it could also happen in case of error during SimpleX Chat installation.
+
+You can resolve it by deleting the app's database: (WARNING: this results in deletion of all profiles, contacts and messages)
+- on Android/iOS, uninstall the app and install it again.
+- on Windows, delete folder `C:\AppData\Roaming\SimpleX`, you can find it by pressing Windows key + R and entering `%appdata%`.
+- on Linux/Mac, delete directories `~/.local/share/simplex` and `~/.config/simplex`, where `~` represents your home directory (/home/user)
+- on Flatpak, delete directory `~/.var/app/chat.simplex.simplex`.
 
 ## Privacy and security
 

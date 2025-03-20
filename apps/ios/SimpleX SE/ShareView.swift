@@ -147,8 +147,8 @@ struct ShareView: View {
         }
     }
 
-    @ViewBuilder private func imagePreview(_ img: String) -> some View {
-        if let img = UIImage(base64Encoded: img) {
+    @ViewBuilder private func imagePreview(_ imgStr: String) -> some View {
+        if let img = imageFromBase64(imgStr) {
             previewArea {
                 Image(uiImage: img)
                     .resizable()
@@ -163,7 +163,7 @@ struct ShareView: View {
     @ViewBuilder private func linkPreview(_ linkPreview: LinkPreview) -> some View {
         previewArea {
             HStack(alignment: .center, spacing: 8) {
-                if let uiImage = UIImage(base64Encoded: linkPreview.image) {
+                if let uiImage = imageFromBase64(linkPreview.image) {
                     Image(uiImage: uiImage)
                         .resizable()
                         .aspectRatio(contentMode: .fit)

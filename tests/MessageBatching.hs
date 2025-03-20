@@ -112,7 +112,7 @@ runBatcherTest maxLen msgs expectedErrors expectedBatches =
 
 runBatcherTest' :: Int -> [SndMessage] -> [ChatError] -> [ByteString] -> IO ()
 runBatcherTest' maxLen msgs expectedErrors expectedBatches = do
-  let (errors, batches) = partitionEithers $ batchMessages maxLen msgs
+  let (errors, batches) = partitionEithers $ batchMessages maxLen (map Right msgs)
       batchedStrs = map (\(MsgBatch batchBody _) -> batchBody) batches
   testErrors errors `shouldBe` testErrors expectedErrors
   batchedStrs `shouldBe` expectedBatches
