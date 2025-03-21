@@ -4337,12 +4337,15 @@ chatCommandP =
         CTLocal -> pure $ ChatName CTLocal ""
         ct -> ChatName ct <$> displayNameP
     chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayNameP
-    chatRefTypeP =
-      (A.char '@' $> CRTDirect <* A.decimal)
-        <|> (A.char '#' $> CRTGroup <* A.decimal <*> (A.space *> gcScopeP <|> pure GCSGroup))
-        <|> (A.char '*' $> CRTLocal <* A.decimal)
-        <|> (A.char ':' $> CRTContactConnection <* A.decimal)
-    chatRefP = ChatRef <$> chatRefTypeP <*> A.decimal
+    chatRefP =
+      (A.char '@' $> ChatRef CRTDirect <*> A.decimal)
+        <|> groupChatRefP
+        <|> (A.char '*' $> ChatRef CRTLocal <*> A.decimal)
+        <|> (A.char ':' $> ChatRef CRTContactConnection <*> A.decimal)
+    groupChatRefP = do
+      gId <- A.char '#' *> A.decimal
+      gcs <- A.space *> gcScopeP <|> pure GCSGroup
+      pure $ ChatRef (CRTGroup gcs) gId
     sendRefP =
       (A.char '@' $> SRDirect <*> A.decimal)
         <|> (A.char '#' $> SRGroup <*> A.decimal <*> (A.space *> gcScopeP <|> pure GCSGroup))
