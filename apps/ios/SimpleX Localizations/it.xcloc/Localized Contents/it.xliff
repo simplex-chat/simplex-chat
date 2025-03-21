@@ -9662,9 +9662,9 @@ Ripetere la richiesta di connessione?</target>
         <target>membro</target>
         <note>member role</note>
       </trans-unit>
-      <trans-unit id="member %@ changed to %@" xml:space="preserve">
+      <trans-unit id="member %@ changed to %@" xml:space="preserve" approved="no">
         <source>member %1$@ changed to %2$@</source>
-        <target>membro %1$@ cambiato in %2$@</target>
+        <target state="translated">il membro %1$@ è diventato %2$@</target>
         <note>profile update event chat item</note>
       </trans-unit>
       <trans-unit id="member connected" xml:space="preserve">
