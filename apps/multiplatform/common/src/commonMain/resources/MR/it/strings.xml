@@ -1586,7 +1586,7 @@
     <string name="error_deleting_note_folder">Errore di eliminazione delle note private</string>
     <string name="v5_5_message_delivery">Consegna dei messaggi migliorata</string>
     <string name="v5_5_join_group_conversation">Entra in conversazioni di gruppo</string>
-    <string name="profile_update_event_member_name_changed">membro %1$s cambiato in %2$s</string>
+    <string name="profile_update_event_member_name_changed">il membro %1$s è diventato %2$s</string>
     <string name="v5_5_simpler_connect_ui">Incolla un link per connettere!</string>
     <string name="profile_update_event_removed_address">indirizzo di contatto rimosso</string>
     <string name="profile_update_event_contact_name_changed">contatto %1$s cambiato in %2$s</string>
