@@ -476,7 +476,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
       where
         toChatView :: AChat -> (Text, Text, Maybe ConnStatus)
         toChatView (AChat _ (Chat (DirectChat Contact {localDisplayName, activeConn}) items _)) = ("@" <> localDisplayName, toCIPreview items Nothing, connStatus <$> activeConn)
-        toChatView (AChat _ (Chat (GroupChat GroupInfo {membership, localDisplayName}) items _)) = ("#" <> localDisplayName, toCIPreview items (Just membership), Nothing)
+        toChatView (AChat _ (Chat (GroupChat GroupInfo {membership, localDisplayName} _gcsi) items _)) = ("#" <> localDisplayName, toCIPreview items (Just membership), Nothing)
         toChatView (AChat _ (Chat (LocalChat _) items _)) = ("*", toCIPreview items Nothing, Nothing)
         toChatView (AChat _ (Chat (ContactRequest UserContactRequest {localDisplayName}) items _)) = ("<@" <> localDisplayName, toCIPreview items Nothing, Nothing)
         toChatView (AChat _ (Chat (ContactConnection PendingContactConnection {pccConnId, pccConnStatus}) items _)) = (":" <> T.pack (show pccConnId), toCIPreview items Nothing, Just pccConnStatus)
@@ -522,7 +522,7 @@ userNtf User {showNtfs, activeUser} = showNtfs || activeUser
 chatDirNtf :: User -> ChatInfo c -> CIDirection c d -> Bool -> Bool
 chatDirNtf user cInfo chatDir mention = case (cInfo, chatDir) of
   (DirectChat ct, CIDirectRcv) -> contactNtf user ct mention
-  (GroupChat g, CIGroupRcv m) -> groupNtf user g mention && not (blockedByAdmin m) && showMessages (memberSettings m)
+  (GroupChat g _gcsi, CIGroupRcv _gcsi' m) -> groupNtf user g mention && not (blockedByAdmin m) && showMessages (memberSettings m)
   _ -> True
 
 contactNtf :: User -> Contact -> Bool -> Bool
@@ -592,7 +592,7 @@ viewChats ts tz = concatMap chatPreview . reverse
       where
         chatName = case chat of
           DirectChat ct -> ["      " <> ttyToContact' ct]
-          GroupChat g -> ["      " <> ttyToGroup g]
+          GroupChat g _gcsi -> ["      " <> ttyToGroup g]
           _ -> []
 
 viewChatItem :: forall c d. MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
@@ -620,14 +620,14 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
               (maybe [] forwardedFrom itemForwarded)
               (directQuote chatDir)
               quotedItem
-      GroupChat g -> case chatDir of
-        CIGroupSnd -> case content of
+      GroupChat g _gcsi -> case chatDir of
+        CIGroupSnd _gcsi -> case content of
           CISndMsgContent mc -> hideLive meta $ withSndFile to $ sndMsg to context mc
           CISndGroupInvitation {} -> showSndItemProhibited to
           _ -> showSndItem to
           where
             to = ttyToGroup g
-        CIGroupRcv m -> case content of
+        CIGroupRcv _gcsi m -> case content of
           CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from context mc
           CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
           CIRcvGroupInvitation {} -> showRcvItemProhibited from
@@ -713,8 +713,8 @@ viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTime
             fwdDir_ = case (fwdMsgDir, fwdChatInfo) of
               (SMDSnd, DirectChat ct) -> Just $ "you @" <> viewContactName ct
               (SMDRcv, DirectChat ct) -> Just $ "@" <> viewContactName ct
-              (SMDSnd, GroupChat gInfo) -> Just $ "you #" <> viewGroupName gInfo
-              (SMDRcv, GroupChat gInfo) -> Just $ "#" <> viewGroupName gInfo
+              (SMDSnd, GroupChat gInfo _gcsi) -> Just $ "you #" <> viewGroupName gInfo
+              (SMDRcv, GroupChat gInfo _gcsi) -> Just $ "#" <> viewGroupName gInfo
               _ -> Nothing
             fwdItemId = "chat item id: " <> (T.pack . show $ aChatItemId fwdACI)
         _ -> []
@@ -769,15 +769,15 @@ viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, itemEd
           (maybe [] forwardedFrom itemForwarded)
           (directQuote chatDir)
           quotedItem
-  GroupChat g -> case chatDir of
-    CIGroupRcv m -> case content of
+  GroupChat g _gcsi -> case chatDir of
+    CIGroupRcv _gcsi m -> case content of
       CIRcvMsgContent mc
         | itemLive == Just True && not liveItems -> []
         | otherwise -> viewReceivedUpdatedMessage from context mc ts tz meta
       _ -> []
       where
         from = if itemEdited then ttyFromGroupEdited g m else ttyFromGroup g m
-    CIGroupSnd -> case content of
+    CIGroupSnd _gcsi -> case content of
       CISndMsgContent mc -> hideLive meta $ viewSentMessage to context mc ts tz meta
       _ -> []
       where
@@ -807,7 +807,7 @@ viewItemDelete chat ci@ChatItem {chatDir, meta, content = deletedContent} toItem
       DirectChat c -> case (chatDir, deletedContent) of
         (CIDirectRcv, CIRcvMsgContent mc) -> viewReceivedMessage (ttyFromContactDeleted c deletedText_) [] mc ts tz meta
         _ -> prohibited
-      GroupChat g -> case ciMsgContent deletedContent of
+      GroupChat g _gcsi -> case ciMsgContent deletedContent of
         Just mc ->
           let m = chatItemMember g ci
            in viewReceivedMessage (ttyFromGroupDeleted g m deletedText_) [] mc ts tz meta
@@ -829,7 +829,7 @@ viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md
       where
         from = ttyFromContact c
         reactionMsg mc = quoteText mc $ if toMsgDirection md == MDSnd then ">>" else ">"
-    (GroupChat g, CIGroupRcv m) -> case ciMsgContent content of
+    (GroupChat g _gcsi, CIGroupRcv _gcsi' m) -> case ciMsgContent content of
       Just mc -> view from $ reactionMsg mc
       _ -> []
       where
@@ -842,7 +842,7 @@ viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md
         from = "* "
         reactionMsg mc = quoteText mc $ if toMsgDirection md == MDSnd then ">>" else ">"
     (_, CIDirectSnd) -> [sentText]
-    (_, CIGroupSnd) -> [sentText]
+    (_, CIGroupSnd _gcsi) -> [sentText]
     (_, CILocalSnd) -> [sentText]
   where
     view from msg
@@ -887,8 +887,8 @@ sentByMember GroupInfo {membership} = \case
 
 sentByMember' :: GroupInfo -> CIDirection 'CTGroup d -> GroupMember
 sentByMember' GroupInfo {membership} = \case
-  CIGroupSnd -> membership
-  CIGroupRcv m -> m
+  CIGroupSnd _gcsi -> membership
+  CIGroupRcv _gcsi m -> m
 
 quoteText :: MsgContent -> StyledString -> [StyledString]
 quoteText qmc sentBy = prependFirst (sentBy <> " ") $ msgPreview qmc
@@ -937,7 +937,7 @@ viewContactNotFound cName suspectedMember =
 viewChatCleared :: AChatInfo -> [StyledString]
 viewChatCleared (AChatInfo _ chatInfo) = case chatInfo of
   DirectChat ct -> [ttyContact' ct <> ": all messages are removed locally ONLY"]
-  GroupChat gi -> [ttyGroup' gi <> ": all messages are removed locally ONLY"]
+  GroupChat gi _gcsi -> [ttyGroup' gi <> ": all messages are removed locally ONLY"]
   LocalChat _ -> ["notes: all messages are removed"]
   ContactRequest _ -> []
   ContactConnection _ -> []
@@ -1841,7 +1841,7 @@ uploadingFile :: StyledString -> AChatItem -> [StyledString]
 uploadingFile status = \case
   AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectSnd} ->
     [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyContact c]
-  AChatItem _ _ (GroupChat g) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd} ->
+  AChatItem _ _ (GroupChat g _gcsi) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd _gcsi'} ->
     [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g]
   _ -> [status <> " uploading file"]
 
@@ -1921,7 +1921,7 @@ cryptoFileArgsStr testView cfArgs@(CFArgs key nonce)
 
 fileFrom :: ChatInfo c -> CIDirection c d -> StyledString
 fileFrom (DirectChat ct) CIDirectRcv = " from " <> ttyContact' ct
-fileFrom _ (CIGroupRcv m) = " from " <> ttyMember m
+fileFrom _ (CIGroupRcv _gcsi m) = " from " <> ttyMember m
 fileFrom _ _ = ""
 
 receivingFile_ :: StyledString -> RcvFileTransfer -> [StyledString]

@@ -182,7 +182,7 @@ responseNotification t@ChatTerminal {sendNotification} cc = \case
       whenCurrUser cc u $ setActiveChat t cInfo
       case (cInfo, chatDir) of
         (DirectChat ct, _) -> sendNtf (viewContactName ct <> "> ", text)
-        (GroupChat g, CIGroupRcv m) -> sendNtf (fromGroup_ g m, text)
+        (GroupChat g _gcsi, CIGroupRcv _gcsi' m) -> sendNtf (fromGroup_ g m, text)
         _ -> pure ()
     where
       text = msgText mc formattedText
@@ -232,7 +232,7 @@ chatActiveTo (ChatName cType name) = case cType of
 chatInfoActiveTo :: ChatInfo c -> String
 chatInfoActiveTo = \case
   DirectChat c -> contactActiveTo c
-  GroupChat g -> groupActiveTo g
+  GroupChat g _gcsi -> groupActiveTo g
   _ -> ""
 
 contactActiveTo :: Contact -> String

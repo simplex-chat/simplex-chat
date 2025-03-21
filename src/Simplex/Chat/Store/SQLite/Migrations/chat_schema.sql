@@ -166,7 +166,6 @@ CREATE TABLE group_members(
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   member_restriction TEXT,
-  support_chat_exists INTEGER,
   support_chat_ts TEXT,
   support_chat_unanswered INTEGER,
   FOREIGN KEY(user_id, local_display_name)
@@ -1024,4 +1023,10 @@ CREATE INDEX idx_chat_items_group_id_shared_msg_id ON chat_items(
 );
 CREATE INDEX idx_chat_items_group_scope_group_member_id ON chat_items(
   group_scope_group_member_id
+);
+CREATE INDEX idx_chat_items_groups_group_scope_group_member_id_item_ts ON chat_items(
+  user_id,
+  group_id,
+  group_scope_group_member_id,
+  item_ts
 );

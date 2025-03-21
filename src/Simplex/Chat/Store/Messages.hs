@@ -41,6 +41,7 @@ module Simplex.Chat.Store.Messages
     getChatPreviews,
     getDirectChat,
     getGroupChat,
+    getGroupChatScopeInfo_,
     getLocalChat,
     getDirectChatItemLast,
     getAllChatItems,
@@ -442,7 +443,7 @@ createNewChatItem_ db User {userId} chatDirection notInHistory_ msgId_ sharedMsg
         quoted_shared_msg_id, quoted_sent_at, quoted_content, quoted_sent, quoted_member_id,
         -- forwarded from
         fwd_from_tag, fwd_from_chat_name, fwd_from_msg_dir, fwd_from_contact_id, fwd_from_group_id, fwd_from_chat_item_id
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
     ((userId, msgId_) :. idsRow :. itemRow :. quoteRow' :. forwardedFromRow)
   ciId <- insertedRowId db
@@ -1741,9 +1742,11 @@ getLocalNavInfo_ db User {userId} NoteFolder {noteFolderId} afterCI = do
 
 toChatItemRef :: (ChatItemId, Maybe Int64, Maybe Int64, Maybe Int64) -> Either StoreError (ChatRef, ChatItemId)
 toChatItemRef = \case
-  (itemId, Just contactId, Nothing, Nothing) -> Right (ChatRef CTDirect contactId, itemId)
-  (itemId, Nothing, Just groupId, Nothing) -> Right (ChatRef CTGroup groupId, itemId)
-  (itemId, Nothing, Nothing, Just folderId) -> Right (ChatRef CTLocal folderId, itemId)
+  (itemId, Just contactId, Nothing, Nothing) -> Right (ChatRef CRTDirect contactId, itemId)
+  -- For "chat item refs" we don't care about scope, as they are only used for getting item by id (via getAChatItem).
+  -- To get the scope without joining group_members, we could additionally store group scope "tag" to differentiate member support chats.
+  (itemId, Nothing, Just groupId, Nothing) -> Right (ChatRef (CRTGroup GCSGroup) groupId, itemId)
+  (itemId, Nothing, Nothing, Just folderId) -> Right (ChatRef CRTLocal folderId, itemId)
   (itemId, _, _, _) -> Left $ SEBadChatItem itemId Nothing
 
 updateDirectChatItemsRead :: DB.Connection -> User -> ContactId -> IO ()
@@ -2882,23 +2885,24 @@ getChatRefViaItemId db User {userId} itemId = do
     DB.query db "SELECT contact_id, group_id FROM chat_items WHERE user_id = ? AND chat_item_id = ?" (userId, itemId)
   where
     toChatRef = \case
-      (Just contactId, Nothing) -> Right $ ChatRef CTDirect contactId
-      (Nothing, Just groupId) -> Right $ ChatRef CTGroup groupId
+      (Just contactId, Nothing) -> Right $ ChatRef CRTDirect contactId
+      -- Only used in CLI and unused APIs
+      (Nothing, Just groupId) -> Right $ ChatRef (CRTGroup GCSGroup) groupId
       (_, _) -> Left $ SEBadChatItem itemId Nothing
 
 getAChatItem :: DB.Connection -> VersionRangeChat -> User -> ChatRef -> ChatItemId -> ExceptT StoreError IO AChatItem
 getAChatItem db vr user chatRef itemId = do
   aci <- case chatRef of
-    ChatRef CTDirect contactId -> do
+    ChatRef CRTDirect contactId -> do
       ct <- getContact db vr user contactId
       (CChatItem msgDir ci) <- getDirectChatItem db user contactId itemId
       pure $ AChatItem SCTDirect msgDir (DirectChat ct) ci
-    ChatRef CTGroup groupId -> do
+    ChatRef (CRTGroup _gcs) groupId -> do
       gInfo <- getGroupInfo db vr user groupId
       (CChatItem msgDir ci) <- getGroupChatItem db user groupId itemId
       let gcsi = groupCIDirectionScopeInfo ci
       pure $ AChatItem SCTGroup msgDir (GroupChat gInfo gcsi) ci
-    ChatRef CTLocal folderId -> do
+    ChatRef CRTLocal folderId -> do
       nf <- getNoteFolder db user folderId
       CChatItem msgDir ci <- getLocalChatItem db user folderId itemId
       pure $ AChatItem SCTLocal msgDir (LocalChat nf) ci
@@ -3114,8 +3118,9 @@ getTimedItems db User {userId} startTimedThreadCutoff =
   where
     toCIRefDeleteAt :: (ChatItemId, Maybe ContactId, Maybe GroupId, UTCTime) -> Maybe ((ChatRef, ChatItemId), UTCTime)
     toCIRefDeleteAt = \case
-      (itemId, Just contactId, Nothing, deleteAt) -> Just ((ChatRef CTDirect contactId, itemId), deleteAt)
-      (itemId, Nothing, Just groupId, deleteAt) -> Just ((ChatRef CTGroup groupId, itemId), deleteAt)
+      (itemId, Just contactId, Nothing, deleteAt) -> Just ((ChatRef CRTDirect contactId, itemId), deleteAt)
+      -- Scope isn't required in time items deletion; for response scope is present in chat items themselves
+      (itemId, Nothing, Just groupId, deleteAt) -> Just ((ChatRef (CRTGroup GCSGroup) groupId, itemId), deleteAt)
       _ -> Nothing
 
 getChatItemTTL :: DB.Connection -> User -> IO Int64

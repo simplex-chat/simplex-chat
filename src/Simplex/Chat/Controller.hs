@@ -911,8 +911,8 @@ data SendRef
 
 sendToChatRef :: SendRef -> ChatRef
 sendToChatRef = \case
-  SRDirect cId -> ChatRef CTDirect cId
-  SRGroup gId _ -> ChatRef CTGroup gId
+  SRDirect cId -> ChatRef CRTDirect cId
+  SRGroup gId gcs -> ChatRef (CRTGroup gcs) gId
 
 data GroupChatFilter
   = GCFMsgContentTag MsgContentTag

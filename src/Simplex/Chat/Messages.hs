@@ -60,6 +60,21 @@ import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 data ChatType = CTDirect | CTGroup | CTLocal | CTContactRequest | CTContactConnection
   deriving (Eq, Show, Ord)
 
+data NotInHistory = NotInHistory
+
+data GroupChatScope
+  = GCSGroup
+  | GCSMemberSupport {groupMemberId_ :: Maybe GroupMemberId} -- Nothing means own conversation with admins
+  deriving (Eq, Show, Ord)
+
+gsScopeNotInHistory :: GroupChatScope -> Maybe NotInHistory
+gsScopeNotInHistory = \case
+  GCSGroup -> Nothing
+  GCSMemberSupport _ -> Just NotInHistory
+
+data ChatRefType = CRTDirect | CRTGroup GroupChatScope | CRTLocal | CRTContactRequest | CRTContactConnection
+  deriving (Eq, Show, Ord)
+
 data ChatName = ChatName {chatType :: ChatType, chatName :: Text}
   deriving (Show)
 
@@ -74,8 +89,16 @@ chatTypeStr = \case
 chatNameStr :: ChatName -> String
 chatNameStr (ChatName cType name) = T.unpack $ chatTypeStr cType <> if T.any isSpace name then "'" <> name <> "'" else name
 
-data ChatRef = ChatRef ChatType Int64
+data ChatRef = ChatRef ChatRefType Int64
   deriving (Eq, Show, Ord)
+
+toChatRefType :: ChatType -> ChatRefType
+toChatRefType = \case
+  CTDirect -> CRTDirect
+  CTGroup -> CRTGroup GCSGroup
+  CTLocal -> CRTLocal
+  CTContactRequest -> CRTContactRequest
+  CTContactConnection -> CRTContactConnection
 
 data ChatInfo (c :: ChatType) where
   DirectChat :: Contact -> ChatInfo 'CTDirect
@@ -86,13 +109,33 @@ data ChatInfo (c :: ChatType) where
 
 deriving instance Show (ChatInfo c)
 
+data GroupChatScopeInfo
+  = GCSIGroup
+  | GCSIMemberSupport
+      { groupMember_ :: Maybe GroupMember,
+        chatTs :: UTCTime,
+        unanswered :: Bool
+      }
+  deriving (Show)
+
+toGCS :: GroupChatScopeInfo -> GroupChatScope
+toGCS = \case
+  GCSIGroup -> GCSGroup
+  GCSIMemberSupport {groupMember_} -> GCSMemberSupport $ groupMemberId' <$> groupMember_
+
+toMsgScope :: GroupInfo -> GroupChatScopeInfo -> MsgScope
+toMsgScope GroupInfo {membership} = \case
+  GCSIGroup -> MSGroup
+  GCSIMemberSupport {groupMember_ = Nothing} -> MSMember $ memberId' membership
+  GCSIMemberSupport {groupMember_ = Just m} -> MSMember $ memberId' m
+
 chatInfoToRef :: ChatInfo c -> ChatRef
 chatInfoToRef = \case
-  DirectChat Contact {contactId} -> ChatRef CTDirect contactId
-  GroupChat GroupInfo {groupId} scopeInfo -> ChatRef CTGroup groupId
-  LocalChat NoteFolder {noteFolderId} -> ChatRef CTLocal noteFolderId
-  ContactRequest UserContactRequest {contactRequestId} -> ChatRef CTContactRequest contactRequestId
-  ContactConnection PendingContactConnection {pccConnId} -> ChatRef CTContactConnection pccConnId
+  DirectChat Contact {contactId} -> ChatRef CRTDirect contactId
+  GroupChat GroupInfo {groupId} scopeInfo -> ChatRef (CRTGroup $ toGCS scopeInfo) groupId
+  LocalChat NoteFolder {noteFolderId} -> ChatRef CRTLocal noteFolderId
+  ContactRequest UserContactRequest {contactRequestId} -> ChatRef CRTContactRequest contactRequestId
+  ContactConnection PendingContactConnection {pccConnId} -> ChatRef CRTContactConnection pccConnId
 
 chatInfoMembership :: ChatInfo c -> Maybe GroupMember
 chatInfoMembership = \case
@@ -105,6 +148,8 @@ data JSONChatInfo
   | JCInfoLocal {noteFolder :: NoteFolder}
   | JCInfoContactRequest {contactRequest :: UserContactRequest}
   | JCInfoContactConnection {contactConnection :: PendingContactConnection}
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GCSI") ''GroupChatScopeInfo)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "JCInfo") ''JSONChatInfo)
 
@@ -156,8 +201,6 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   }
   deriving (Show)
 
-data NotInHistory = NotInHistory
-
 data CIMention = CIMention
   { memberId :: MemberId,
     -- member record can be created later than the mention is received
@@ -175,20 +218,6 @@ data CIMentionMember = CIMentionMember
 
 isUserMention :: ChatItem c d -> Bool
 isUserMention ChatItem {meta = CIMeta {userMention}} = userMention
-
--- The reason for GroupChatScope to be separate type from MsgScope is that it is used in
--- contexts local to client (api, storage), while MsgScope is used in protocol.
--- For example, it allows differentiating own conversation with admins from conversations as admin with
--- other members, if one was promoted to admin.
-data GroupChatScope
-  = GCSGroup
-  | GCSMemberSupport {groupMemberId_ :: Maybe GroupMemberId} -- Nothing means own conversation with admins
-  deriving (Eq, Show)
-
-gsScopeNotInHistory :: GroupChatScope -> Maybe NotInHistory
-gsScopeNotInHistory = \case
-  GCSGroup -> Nothing
-  GCSMemberSupport _ -> Just NotInHistory
 
 data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectSnd :: CIDirection 'CTDirect 'MDSnd
@@ -531,8 +560,8 @@ jsonACIQDirection :: Maybe JSONCIDirection -> Either String ACIQDirection
 jsonACIQDirection = \case
   Just JCIDirectSnd -> Right $ ACIQDirection SCTDirect CIQDirectSnd
   Just JCIDirectRcv -> Right $ ACIQDirection SCTDirect CIQDirectRcv
-  Just (JCIGroupSnd s) -> Right $ ACIQDirection SCTGroup CIQGroupSnd
-  Just (JCIGroupRcv s m) -> Right $ ACIQDirection SCTGroup $ CIQGroupRcv (Just m)
+  Just (JCIGroupSnd _scope) -> Right $ ACIQDirection SCTGroup CIQGroupSnd
+  Just (JCIGroupRcv _scope m) -> Right $ ACIQDirection SCTGroup $ CIQGroupRcv (Just m)
   Nothing -> Right $ ACIQDirection SCTGroup $ CIQGroupRcv Nothing
   Just JCILocalSnd -> Left "unquotable"
   Just JCILocalRcv -> Left "unquotable"

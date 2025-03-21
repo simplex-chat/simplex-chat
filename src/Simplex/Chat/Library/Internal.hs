@@ -566,7 +566,7 @@ updateCallItemStatus user ct@Contact {contactId} Call {chatItemId} receivedStatu
     timed_ <- callTimed ct aciContent
     updateDirectChatItemView user ct chatItemId aciContent False False timed_ msgId_
     forM_ (timed_ >>= timedDeleteAt') $
-      startProximateTimedItemThread user (ChatRef CTDirect contactId, chatItemId)
+      startProximateTimedItemThread user (ChatRef CRTDirect contactId, chatItemId)
 
 updateDirectChatItemView :: User -> Contact -> ChatItemId -> ACIContent -> Bool -> Bool -> Maybe CITimed -> Maybe MessageId -> CM ()
 updateDirectChatItemView user ct chatItemId (ACIContent msgDir ciContent) edited live timed_ msgId_ = do
@@ -655,10 +655,10 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
     _ -> do
       chatRef <- withStore $ \db -> getChatRefByFileId db user fileId
       case (chatRef, grpMemberId) of
-        (ChatRef CTDirect contactId, Nothing) -> do
+        (ChatRef CRTDirect contactId, Nothing) -> do
           ct <- withStore $ \db -> getContact db vr user contactId
           acceptFile CFCreateConnFileInvDirect $ \msg -> void $ sendDirectContactMessage user ct msg
-        (ChatRef CTGroup groupId, Just memId) -> do
+        (ChatRef (CRTGroup _gcs) groupId, Just memId) -> do
           GroupMember {activeConn} <- withStore $ \db -> getGroupMember db vr user groupId memId
           case activeConn of
             Just conn -> do
@@ -1144,10 +1144,10 @@ deleteTimedItem user (ChatRef cType chatId, itemId) deleteAt = do
   lift waitChatStartedAndActivated
   vr <- chatVersionRange
   case cType of
-    CTDirect -> do
+    CRTDirect -> do
       (ct, ci) <- withStore $ \db -> (,) <$> getContact db vr user chatId <*> getDirectChatItem db user chatId itemId
       deleteDirectCIs user ct [ci] True True >>= toView
-    CTGroup -> do
+    CRTGroup _gcs -> do
       (gInfo, ci) <- withStore $ \db -> (,) <$> getGroupInfo db vr user chatId <*> getGroupChatItem db user chatId itemId
       deletedTs <- liftIO getCurrentTime
       deleteGroupCIs user gInfo [ci] True True Nothing deletedTs >>= toView
@@ -1264,6 +1264,27 @@ parseChatMessage conn s = do
   where
     errType = CEInvalidChatMessage conn Nothing (safeDecodeUtf8 s)
 {-# INLINE parseChatMessage #-}
+
+getLocalGCSI :: GroupInfo -> IO GroupChatScopeInfo
+getLocalGCSI GroupInfo {membership}
+  | memberPending membership = memberSupportGCSI membership Nothing
+  | otherwise = pure GCSIGroup
+
+getNonMsgGCSI :: GroupInfo -> GroupMember -> IO GroupChatScopeInfo
+getNonMsgGCSI GroupInfo {membership} m
+  | memberPending membership = memberSupportGCSI membership Nothing
+  | memberPending m = memberSupportGCSI m (Just m)
+  | otherwise = pure GCSIGroup
+
+-- convenience function to correct GCSIMemberSupport scope state (to be passed to UI)
+-- in case "member support chat" is new and wasn't present in member/membership state
+memberSupportGCSI :: GroupMember -> Maybe GroupMember -> IO GroupChatScopeInfo
+memberSupportGCSI GroupMember {supportChat} gcsiGroupMember_ = case supportChat of
+  Just GroupMemberSupportChat {chatTs, unanswered} ->
+    pure GCSIMemberSupport {groupMember_ = gcsiGroupMember_, chatTs, unanswered}
+  Nothing -> do
+    chatTs <- getCurrentTime
+    pure GCSIMemberSupport {groupMember_ = gcsiGroupMember_, chatTs, unanswered = True}
 
 sendFileChunk :: User -> SndFileTransfer -> CM ()
 sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentConnId acId} =
@@ -1630,7 +1651,7 @@ sendGroupMessage' user gInfo members chatMsgEvent =
     _ -> throwChatError $ CEInternalError "sendGroupMessage': expected 1 message"
 
 sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> GroupChatScope -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
-sendGroupMessages user gInfo gcScope members events = do
+sendGroupMessages user gInfo gcs members events = do
   -- TODO [knocking] send current profile to pending member after approval?
   when shouldSendProfileUpdate $
     sendProfileUpdate `catchChatError` (toView . CRChatError (Just user))
@@ -1639,7 +1660,7 @@ sendGroupMessages user gInfo gcScope members events = do
     User {profile = p, userMemberProfileUpdatedAt} = user
     GroupInfo {userMemberProfileSentAt} = gInfo
     shouldSendProfileUpdate
-      | gcScope /= GCSGroup = False
+      | gcs /= GCSGroup = False
       | incognitoMembership gInfo = False
       | otherwise =
           case (userMemberProfileSentAt, userMemberProfileUpdatedAt) of
