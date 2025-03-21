@@ -26,6 +26,8 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlin.collections.removeAll as remAll
 import kotlinx.datetime.*
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.*
@@ -2798,7 +2800,8 @@ fun MutableState<SnapshotStateList<ChatItem>>.removeLastAndNotify(contentTag: Ms
   value = SnapshotStateList<ChatItem>().apply {
     addAll(value)
     val remIndex = lastIndex
-    val rem = removeLast()
+    // note: removeLast() produce NoSuchMethodError on Android but removeLastOrNull() works
+    val rem = removeLastOrNull() ?: return
     removed = Triple(rem.id, remIndex, rem.isRcvNew)
   }
   chatModel.chatItemsChangesListenerForContent(contentTag)?.removed(listOf(removed), value)

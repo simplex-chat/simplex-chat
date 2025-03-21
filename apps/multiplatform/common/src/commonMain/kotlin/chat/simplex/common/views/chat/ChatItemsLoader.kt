@@ -327,7 +327,8 @@ private fun removeDuplicatesAndUpperSplits(
   if (idsToTrim.last().isNotEmpty()) {
     // it has some elements to trim from currently visible range which means the items shouldn't be trimmed
     // Otherwise, the last set would be empty
-    idsToTrim.removeLast()
+    // note: removeLast() produce NoSuchMethodError on Android but removeLastOrNull() works
+    idsToTrim.removeLastOrNull()
   }
   val allItemsToDelete = idsToTrim.flatten()
   if (allItemsToDelete.isNotEmpty()) {

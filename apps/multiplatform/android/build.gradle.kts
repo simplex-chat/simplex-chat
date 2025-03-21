@@ -5,10 +5,11 @@ plugins {
     id("org.jetbrains.compose")
     kotlin("android")
     id("org.jetbrains.kotlin.plugin.serialization")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "chat.simplex.app"
