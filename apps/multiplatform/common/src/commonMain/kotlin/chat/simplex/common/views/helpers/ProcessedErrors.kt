@@ -58,6 +58,7 @@ class ProcessedErrors <T: AgentErrorType>(val interval: Long) {
           text = generalGetString(MR.strings.agent_internal_error_desc).format(error.internalErr),
         )
       }
+      else -> {}
     }
   }
 }
