@@ -190,33 +190,6 @@ gsScopeNotInHistory = \case
   GCSGroup -> Nothing
   GCSMemberSupport _ -> Just NotInHistory
 
-data GroupChatScopeTag
-  = GCSTGroup_
-  | GCSTMemberSupportAsAdmin_
-  | GCSTMemberSupportAsMember_
-  deriving (Eq, Show)
-
-toGroupChatScopeTag :: GroupChatScope -> GroupChatScopeTag
-toGroupChatScopeTag = \case
-  GCSGroup -> GCSTGroup_
-  GCSMemberSupport (Just _) -> GCSTMemberSupportAsMember_
-  GCSMemberSupport Nothing -> GCSTMemberSupportAsAdmin_
-
-instance FromField GroupChatScopeTag where fromField = fromTextField_ textDecode
-
-instance ToField GroupChatScopeTag where toField = toField . textEncode
-
-instance TextEncoding GroupChatScopeTag where
-  textDecode = \case
-    "group" -> Just GCSTGroup_
-    "member_support_as_admin" -> Just GCSTMemberSupportAsAdmin_
-    "member_support_as_member" -> Just GCSTMemberSupportAsMember_
-    _ -> Nothing
-  textEncode = \case
-    GCSTGroup_ -> "group"
-    GCSTMemberSupportAsAdmin_ -> "member_support_as_admin"
-    GCSTMemberSupportAsMember_ -> "member_support_as_member"
-
 data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectSnd :: CIDirection 'CTDirect 'MDSnd
   CIDirectRcv :: CIDirection 'CTDirect 'MDRcv
