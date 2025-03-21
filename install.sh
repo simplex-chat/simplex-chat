@@ -18,43 +18,46 @@ else
 fi
 
 PLATFORM=""
-if [ $PLATFORM_RAW == "Darwin" ]; then
+if [[ $PLATFORM_RAW == "Darwin" ]]; then
   PLATFORM="macos-x86-64"
-elif [ $PLATFORM_RAW == "Linux" ]; then
+elif [[ $PLATFORM_RAW == "Linux" ]]; then
   OS_FAMILY=""
   VERSION=""
   ARCHITECTURE=""
   os_release_file="/etc/os-release"
-  if [ -f "$os_release_file" ]; then
+  if [[ -f "$os_release_file" ]]; then
     os_release_file=$(cat "$os_release_file")
   else
     os_release_file=""
   fi
-  if [ grep "^ID_LIKE=" <<< $os_release_file | grep -q "ubuntu" ]
+  if grep "^ID_LIKE=" <<< $os_release_file | grep -i -q "ubuntu" ; then
     supported_ubuntus=("20_04" "22_04")
-    os_version=$(grep "^VERSION_ID=" <<< $os_release_file | sed 's/^[^=]*=//;s/^"//;s/"$//')
+    os_version=$(grep "^VERSION_ID=" <<< $os_release_file | sed 's/^[^=]*=//;s/^"//;s/"$//;s/[^a-zA-Z0-9]/_/g')
     for v in ${supported_ubuntus[@]}; do
-      if [ $v == $os_version ]; then
+      if [[ $v == $os_version ]]; then
         VERSION=$v
 	OS_FAMILY="ubuntu"
       fi
     done
   fi
-  architecture="$(uname -m)"
+  architecture="$(uname -m | sed s/[^a-zA-Z0-9]/-/g)"
   supported_architectures=("x86-64")
   for a in ${supported_architectures[@]}; do
-    if [ $a == $architecture ]; then
+    if [[ $a == $architecture ]]; then
       ARCHITECTURE=$a
     fi
   done
 
-  if [ -n $OS_FAMILY && -n $VERSION && -n $ARCHITECTURE ]; do
+  if [[ -n $OS_FAMILY && -n $VERSION && -n $ARCHITECTURE ]]; then
     PLATFORM="${OS_FAMILY}-${VERSION}-${ARCHITECTURE}"
   fi
 fi
-if [ -z $PLATFORM ]; do
+if [[ -z $PLATFORM ]]; then
   echo "Scripted installation on your platform is not supported."
   echo "See compiled binaries in the ${1:-latest} release: https://github.com/$APP_NAME/$APP_NAME/releases/$RELEASE"
+  for var in "APP_NAME" "RELEASE" "PLATFORM_RAW" "PLATFORM" "OS_FAMILY" "os_version" "VERSION" "architecture" "ARCHITECTURE"; do
+    #echo "$var = ${!var}"
+  done
   exit 1
 fi
 
