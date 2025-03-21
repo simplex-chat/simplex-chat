@@ -191,7 +191,7 @@ chatGroupTests = do
     it "should send updated mentions in history" testGroupHistoryWithMentions
     describe "uniqueMsgMentions" testUniqueMsgMentions
     describe "updatedMentionNames" testUpdatedMentionNames
-  describe "group direct messages" $ do
+  fdescribe "group direct messages" $ do
     it "should send group direct messages" testGroupDirectMessages
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()

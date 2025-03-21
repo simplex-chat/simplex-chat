@@ -379,7 +379,7 @@ updateChatTs db User {userId} chatDirection chatTs = case toChatInfo chatDirecti
     DB.execute
       db
       "UPDATE group_members SET support_chat_ts = ? WHERE group_member_id = ?"
-      (Only gmId)
+      (chatTs, gmId)
   LocalChat NoteFolder {noteFolderId} ->
     DB.execute
       db
