@@ -234,6 +234,10 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent and important updates:
 
+[Mar 8, 2025. SimpleX Chat v6.3: new user experience and safety in public groups](./blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.md)
+
+[Jan 14, 2025. SimpleX network: large groups and privacy-preserving content moderation](./blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.md)
+
 [Dec 10, 2024. SimpleX network: preset servers operated by Flux, business chats and more with v6.2 of the apps](./20241210-simplex-network-v6-2-servers-by-flux-business-chats.md)
 
 [Oct 14, 2024. SimpleX network: security review of protocols design by Trail of Bits, v6.1 released with better calls and user experience.](./blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md)
@@ -305,12 +309,13 @@ What is already implemented:
 15. Manual messaging queue rotations to move conversation to another SMP relay.
 16. Sending end-to-end encrypted files using [XFTP protocol](https://simplex.chat/blog/20230301-simplex-file-transfer-protocol.html).
 17. Local files encryption.
+18. [Reproducible server builds](./docs/SERVER.md#reproduce-builds).
 
 We plan to add:
 
 1. Automatic message queue rotation and redundancy. Currently the queues created between two users are used until the queue is manually changed by the user or contact is deleted. We are planning to add automatic queue rotation to make these identifiers temporary and rotate based on some schedule TBC (e.g., every X messages, or every X hours/days).
 2. Message "mixing" - adding latency to message delivery, to protect against traffic correlation by message time.
-3. Reproducible builds – this is the limitation of the development stack, but we will be investing into solving this problem. Users can still build all applications and services from the source code.
+3. Reproducible clients builds – this is a complex problem, but we are aiming to have it in 2025 at least partially.
 4. Recipients' XFTP relays to reduce traffic and conceal IP addresses from the relays chosen, and potentially controlled, by another party.
 
 ## For developers

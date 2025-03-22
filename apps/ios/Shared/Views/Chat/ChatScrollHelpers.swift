@@ -9,25 +9,23 @@
 import SwiftUI
 import SimpleXChat
 
-func loadLastItems(_ loadingMoreItems: Binding<Bool>, loadingBottomItems: Binding<Bool>, _ chat: Chat) {
-    if ItemsModel.shared.chatState.totalAfter == 0 {
-        return
+func loadLastItems(_ loadingMoreItems: Binding<Bool>, loadingBottomItems: Binding<Bool>, _ chat: Chat) async {
+    await MainActor.run {
+        loadingMoreItems.wrappedValue = true
+        loadingBottomItems.wrappedValue = true
     }
-    loadingMoreItems.wrappedValue = true
-    loadingBottomItems.wrappedValue = true
-    Task {
-        try? await Task.sleep(nanoseconds: 500_000000)
-        if ChatModel.shared.chatId != chat.chatInfo.id {
-            await MainActor.run {
-                loadingMoreItems.wrappedValue = false
-            }
-            return
-        }
-        await apiLoadMessages(chat.chatInfo.id, ChatPagination.last(count: 50), ItemsModel.shared.chatState)
+    try? await Task.sleep(nanoseconds: 500_000000)
+    if ChatModel.shared.chatId != chat.chatInfo.id {
         await MainActor.run {
             loadingMoreItems.wrappedValue = false
             loadingBottomItems.wrappedValue = false
         }
+        return
+    }
+    await apiLoadMessages(chat.chatInfo.id, ChatPagination.last(count: 50), ItemsModel.shared.chatState)
+    await MainActor.run {
+        loadingMoreItems.wrappedValue = false
+        loadingBottomItems.wrappedValue = false
     }
 }
 
@@ -36,6 +34,12 @@ class PreloadState {
     var prevFirstVisible: Int64 = Int64.min
     var prevItemsCount: Int = 0
     var preloading: Bool = false
+
+    func clear() {
+        prevFirstVisible = Int64.min
+        prevItemsCount = 0
+        preloading = false
+    }
 }
 
 func preloadIfNeeded(
@@ -43,26 +47,41 @@ func preloadIfNeeded(
     _ ignoreLoadingRequests: Binding<Int64?>,
     _ listState: EndlessScrollView<MergedItem>.ListState,
     _ mergedItems: BoxedValue<MergedItems>,
-    loadItems: @escaping (Bool, ChatPagination) async -> Bool
+    loadItems: @escaping (Bool, ChatPagination) async -> Bool,
+    loadLastItems: @escaping () async -> Void
 ) {
     let state = PreloadState.shared
     guard !listState.isScrolling && !listState.isAnimatedScrolling,
-          state.prevFirstVisible != listState.firstVisibleItemIndex || state.prevItemsCount != mergedItems.boxedValue.indexInParentItems.count,
           !state.preloading,
           listState.totalItemsCount > 0
     else {
         return
     }
-    state.prevFirstVisible = listState.firstVisibleItemId as! Int64
-    state.prevItemsCount = mergedItems.boxedValue.indexInParentItems.count
-    state.preloading = true
-    let allowLoadMore = allowLoadMoreItems.wrappedValue
-    Task {
-        defer {
-            state.preloading = false
+    if state.prevFirstVisible != listState.firstVisibleItemId as! Int64 || state.prevItemsCount != mergedItems.boxedValue.indexInParentItems.count {
+        state.preloading = true
+        let allowLoadMore = allowLoadMoreItems.wrappedValue
+        Task {
+            defer { state.preloading = false }
+            var triedToLoad = true
+            await preloadItems(mergedItems.boxedValue, allowLoadMore, listState, ignoreLoadingRequests) { pagination in
+                triedToLoad = await loadItems(false, pagination)
+                return triedToLoad
+            }
+            if triedToLoad {
+                state.prevFirstVisible = listState.firstVisibleItemId as! Int64
+                state.prevItemsCount = mergedItems.boxedValue.indexInParentItems.count
+            }
+            // it's important to ask last items when the view is fully covered with items. Otherwise, visible items from one
+            // split will be merged with last items and position of scroll will change unexpectedly.
+            if listState.itemsCanCoverScreen && !ItemsModel.shared.lastItemsLoaded {
+                await loadLastItems()
+            }
         }
-        await preloadItems(mergedItems.boxedValue, allowLoadMore, listState, ignoreLoadingRequests) { pagination in
-            await loadItems(false, pagination)
+    } else if listState.itemsCanCoverScreen && !ItemsModel.shared.lastItemsLoaded {
+        state.preloading = true
+        Task {
+            defer { state.preloading = false }
+            await loadLastItems()
         }
     }
 }
@@ -105,6 +124,7 @@ async {
         let triedToLoad = await loadItems(ChatPagination.before(chatItemId: loadFromItemId, count: ChatPagination.PRELOAD_COUNT))
         if triedToLoad && sizeWas == ItemsModel.shared.reversedChatItems.count && firstItemIdWas == ItemsModel.shared.reversedChatItems.last?.id {
             ignoreLoadingRequests.wrappedValue = loadFromItemId
+            return false
         }
         return triedToLoad
     }

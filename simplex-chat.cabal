@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        6.3.0.8
+version:        6.3.1.0
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -24,6 +24,11 @@ flag swift
   manual: True
   default: False
 
+flag client_library
+  description: Don't build server- and CLI-related code.
+  manual: True
+  default: False
+
 flag client_postgres
   description: Build with PostgreSQL instead of SQLite.
   manual: True
@@ -33,13 +38,9 @@ library
   exposed-modules:
       Simplex.Chat
       Simplex.Chat.AppSettings
-      Simplex.Chat.Bot
-      Simplex.Chat.Bot.KnownContacts
       Simplex.Chat.Call
       Simplex.Chat.Controller
-      Simplex.Chat.Core
       Simplex.Chat.Files
-      Simplex.Chat.Help
       Simplex.Chat.Library.Commands
       Simplex.Chat.Library.Internal
       Simplex.Chat.Library.Subscriber
@@ -78,18 +79,24 @@ library
       Simplex.Chat.Store.Remote
       Simplex.Chat.Store.Shared
       Simplex.Chat.Styled
-      Simplex.Chat.Terminal
-      Simplex.Chat.Terminal.Input
-      Simplex.Chat.Terminal.Main
-      Simplex.Chat.Terminal.Notification
-      Simplex.Chat.Terminal.Output
       Simplex.Chat.Types
       Simplex.Chat.Types.Preferences
       Simplex.Chat.Types.Shared
       Simplex.Chat.Types.UITheme
       Simplex.Chat.Types.Util
       Simplex.Chat.Util
-      Simplex.Chat.View
+  if !flag(client_library)
+      exposed-modules:
+          Simplex.Chat.Bot
+          Simplex.Chat.Bot.KnownContacts
+          Simplex.Chat.Core
+          Simplex.Chat.Help
+          Simplex.Chat.Terminal
+          Simplex.Chat.Terminal.Input
+          Simplex.Chat.Terminal.Main
+          Simplex.Chat.Terminal.Notification
+          Simplex.Chat.Terminal.Output
+          Simplex.Chat.View
   if flag(client_postgres)
       exposed-modules:
           Simplex.Chat.Options.Postgres
@@ -296,6 +303,8 @@ library
       , text >=1.2.4.0 && <1.3
 
 executable simplex-bot
+  if flag(client_library)
+      buildable: False
   main-is: Main.hs
   other-modules:
       Paths_simplex_chat
@@ -313,6 +322,8 @@ executable simplex-bot
     cpp-options: -DdbPostgres
 
 executable simplex-bot-advanced
+  if flag(client_library)
+      buildable: False
   main-is: Main.hs
   other-modules:
       Paths_simplex_chat
@@ -339,6 +350,8 @@ executable simplex-bot-advanced
         text >=1.2.4.0 && <1.3
 
 executable simplex-broadcast-bot
+  if flag(client_library)
+      buildable: False
   main-is: Main.hs
   hs-source-dirs:
       apps/simplex-broadcast-bot
@@ -369,6 +382,8 @@ executable simplex-broadcast-bot
         text >=1.2.4.0 && <1.3
 
 executable simplex-chat
+  if flag(client_library)
+      buildable: False
   main-is: Main.hs
   other-modules:
       Server
@@ -400,6 +415,8 @@ executable simplex-chat
         text >=1.2.4.0 && <1.3
 
 executable simplex-directory-service
+  if flag(client_library)
+      buildable: False
   main-is: Main.hs
   hs-source-dirs:
       apps/simplex-directory-service
@@ -408,6 +425,7 @@ executable simplex-directory-service
       StrictData
   other-modules:
       Directory.BlockedWords
+      Directory.Captcha
       Directory.Events
       Directory.Options
       Directory.Search
@@ -446,6 +464,8 @@ executable simplex-directory-service
       , text >=1.2.4.0 && <1.3
 
 test-suite simplex-chat-test
+  if flag(client_library)
+      buildable: False
   type: exitcode-stdio-1.0
   main-is: Test.hs
   other-modules:
@@ -475,6 +495,7 @@ test-suite simplex-chat-test
       Broadcast.Bot
       Broadcast.Options
       Directory.BlockedWords
+      Directory.Captcha
       Directory.Events
       Directory.Options
       Directory.Search
