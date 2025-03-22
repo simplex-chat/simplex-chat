@@ -371,9 +371,9 @@ getXFTPRcvFileDBIds db aRcvFileId =
 
 toFileRef :: (FileTransferId, Maybe Int64, Maybe Int64, Maybe Int64) -> Either StoreError (Maybe ChatRef, FileTransferId)
 toFileRef = \case
-  (fileId, Just contactId, Nothing, Nothing) -> Right (Just $ ChatRef CTDirect contactId, fileId)
-  (fileId, Nothing, Just groupId, Nothing) -> Right (Just $ ChatRef CTGroup groupId, fileId)
-  (fileId, Nothing, Nothing, Just folderId) -> Right (Just $ ChatRef CTLocal folderId, fileId)
+  (fileId, Just contactId, Nothing, Nothing) -> Right (Just $ ChatRef CRTDirect contactId, fileId)
+  (fileId, Nothing, Just groupId, Nothing) -> Right (Just $ ChatRef (CRTGroup GCSGroup) groupId, fileId)
+  (fileId, Nothing, Nothing, Just folderId) -> Right (Just $ ChatRef CRTLocal folderId, fileId)
   (fileId, _, _, _) -> Right (Nothing, fileId)
 
 updateFileCancelled :: MsgDirectionI d => DB.Connection -> User -> Int64 -> CIFileStatus d -> IO ()
@@ -444,8 +444,8 @@ getChatRefByFileId db user fileId = liftIO (lookupChatRefByFileId db user fileId
 lookupChatRefByFileId :: DB.Connection -> User -> Int64 -> IO (Maybe ChatRef)
 lookupChatRefByFileId db User {userId} fileId =
   getChatRef <&> \case
-    [(Just contactId, Nothing)] -> Just $ ChatRef CTDirect contactId
-    [(Nothing, Just groupId)] -> Just $ ChatRef CTGroup groupId
+    [(Just contactId, Nothing)] -> Just $ ChatRef CRTDirect contactId
+    [(Nothing, Just groupId)] -> Just $ ChatRef (CRTGroup GCSGroup) groupId
     _ -> Nothing
   where
     getChatRef =

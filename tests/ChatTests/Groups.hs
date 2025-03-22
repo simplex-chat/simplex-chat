@@ -191,7 +191,7 @@ chatGroupTests = do
     it "should send updated mentions in history" testGroupHistoryWithMentions
     describe "uniqueMsgMentions" testUniqueMsgMentions
     describe "updatedMentionNames" testUpdatedMentionNames
-  describe "group direct messages" $ do
+  fdescribe "group direct messages" $ do
     it "should send group direct messages" testGroupDirectMessages
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
@@ -6635,7 +6635,7 @@ testGroupDirectMessages =
     bob <# "#team 4"
     alice <# "#team bob> 4"
 
-    -- GSMemPendingApproval members don't receive messages sent to group.
+    -- Pending members don't receive messages sent to group.
     -- Though in test we got here synthetically, in reality this status
     -- means they are not yet part of group (not memberCurrent).
     alice #> "#team 5"

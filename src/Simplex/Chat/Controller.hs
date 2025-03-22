@@ -301,7 +301,7 @@ data ChatCommand
   | APIGetAppSettings (Maybe AppSettings)
   | APIGetChatTags UserId
   | APIGetChats {userId :: UserId, pendingConnections :: Bool, pagination :: PaginationByTime, query :: ChatListQuery}
-  | APIGetChat ChatRef (Maybe MsgContentTag) ChatPagination (Maybe String)
+  | APIGetChat ChatRef (Maybe GroupChatFilter) ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
   | APIGetChatItemInfo ChatRef ChatItemId
   | APISendMessages {sendRef :: SendRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
@@ -363,6 +363,9 @@ data ChatCommand
   | APIRemoveMembers {groupId :: GroupId, groupMemberIds :: Set GroupMemberId, withMessages :: Bool}
   | APILeaveGroup GroupId
   | APIListMembers GroupId
+  | APIMemberSupportChats GroupId
+  -- | APIDeleteGroupConversations GroupId (NonEmpty GroupConversationId)
+  -- | APIArchiveGroupConversations GroupId (NonEmpty GroupConversationId)
   | APIUpdateGroupProfile GroupId GroupProfile
   | APICreateGroupLink GroupId GroupMemberRole
   | APIGroupLinkMemberRole GroupId GroupMemberRole
@@ -658,6 +661,9 @@ data ChatResponse
   | CRWelcome {user :: User}
   | CRGroupCreated {user :: User, groupInfo :: GroupInfo}
   | CRGroupMembers {user :: User, group :: Group}
+  | CRMemberSupportChats {user :: User, groupInfo :: GroupInfo, chats :: [AChat]}
+  -- | CRGroupConversationsArchived {user :: User, groupInfo :: GroupInfo, archivedGroupConversations :: [GroupConversation]}
+  -- | CRGroupConversationsDeleted {user :: User, groupInfo :: GroupInfo, deletedGroupConversations :: [GroupConversation]}
   | CRContactsList {user :: User, contacts :: [Contact]}
   | CRUserContactLink {user :: User, contactLink :: UserContactLink}
   | CRUserContactLinkUpdated {user :: User, contactLink :: UserContactLink}
@@ -898,16 +904,20 @@ logResponseToFile = \case
   CRMessageError {} -> True
   _ -> False
 
--- (Maybe GroupMemberId) can later be changed to GroupSndScope = GSSAll | GSSAdmins | GSSMember GroupMemberId
 data SendRef
   = SRDirect ContactId
-  | SRGroup GroupId (Maybe GroupMemberId)
+  | SRGroup GroupId GroupChatScope
   deriving (Eq, Show)
 
 sendToChatRef :: SendRef -> ChatRef
 sendToChatRef = \case
-  SRDirect cId -> ChatRef CTDirect cId
-  SRGroup gId _ -> ChatRef CTGroup gId
+  SRDirect cId -> ChatRef CRTDirect cId
+  SRGroup gId gcs -> ChatRef (CRTGroup gcs) gId
+
+data GroupChatFilter
+  = GCFMsgContentTag MsgContentTag
+  | GCFChatScope GroupChatScope
+  deriving (Show)
 
 data ChatPagination
   = CPLast Int
