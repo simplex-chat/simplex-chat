@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d üzenet visszafejtése sikertelen.</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">Nem sikerült visszafejteni %1$d üzenetet.</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d üzenet kihagyva.</string>
     <string name="integrity_msg_skipped">%1$d üzenet kihagyva</string>
     <string name="group_info_section_title_num_members">%1$s TAG</string>
@@ -407,7 +407,7 @@
     <string name="receipts_groups_title_disable">Letiltja a kézbesítési jelentéseket a csoportok számára?</string>
     <string name="custom_time_unit_days">nap</string>
     <string name="ttl_day">%d nap</string>
-    <string name="failed_to_create_user_duplicate_title">Duplikált megjelenített név!</string>
+    <string name="failed_to_create_user_duplicate_title">Duplikált megjelenítendő név!</string>
     <string name="receipts_contacts_disable_keep_overrides">Letiltás (felülírások megtartásával)</string>
     <string name="database_upgrade">Adatbázis fejlesztése</string>
     <string name="blocked_items_description">%d üzenet letiltva</string>
@@ -486,7 +486,7 @@
     <string name="conn_event_ratchet_sync_allowed">a titkosítás újraegyeztetése engedélyezve van</string>
     <string name="enable_self_destruct">Önmegsemmisítés engedélyezése</string>
     <string name="v5_2_favourites_filter_descr">Olvasatlan és kedvenc csevegésekre való szűrés.</string>
-    <string name="failed_to_parse_chats_title">A csevegések betöltése sikertelen</string>
+    <string name="failed_to_parse_chats_title">Nem sikerült betölteni a csevegéseket</string>
     <string name="connect_plan_group_already_exists">A csoport már létezik!</string>
     <string name="v4_4_french_interface">Francia kezelőfelület</string>
     <string name="v4_2_group_links">Csoporthivatkozások</string>
@@ -539,7 +539,7 @@
     <string name="enter_password_to_show">Adja meg a jelszót a keresőben</string>
     <string name="file_will_be_received_when_contact_completes_uploading">A fájl akkor érkezik meg, amikor a küldője befejezte annak feltöltését.</string>
     <string name="smp_server_test_download_file">Fájl letöltése</string>
-    <string name="failed_to_parse_chat_title">A csevegés betöltése sikertelen</string>
+    <string name="failed_to_parse_chat_title">Nem sikerült betölteni a csevegést</string>
     <string name="smp_servers_enter_manually">Adja meg a kiszolgálót kézzel</string>
     <string name="file_will_be_received_when_contact_is_online">A fájl akkor érkezik meg, amikor a küldője elérhető lesz, várjon, vagy ellenőrizze később!</string>
     <string name="error_creating_link_for_group">Hiba történt a csoporthivatkozás létrehozásakor</string>
@@ -810,7 +810,7 @@
     <string name="feature_offered_item">%s ajánlotta</string>
     <string name="button_leave_group">Csoport elhagyása</string>
     <string name="unblock_member_desc">%s összes üzenete meg fog jelenni!</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Ez akkor fordulhat elő, ha:\n1. Az üzenetek 2 nap után, vagy a kiszolgálón 30 nap után lejártak.\n2. Az üzenet visszafejtése sikertelen volt, mert Ön, vagy a partnere régebbi adatbázis biztonsági mentést használt.\n3. A kapcsolat sérült.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Ez akkor fordulhat elő, ha:\n1. Az üzenetek 2 nap után, vagy a kiszolgálón 30 nap után lejártak.\n2. Nem sikerült visszafejteni az üzenetet, mert Ön, vagy a partnere régebbi adatbázis biztonsági mentést használt.\n3. A kapcsolat sérült.</string>
     <string name="group_member_role_observer">megfigyelő</string>
     <string name="description_via_group_link_incognito">inkognitó a csoporthivatkozáson keresztül</string>
     <string name="network_use_onion_hosts_prefer_desc">Onion-kiszolgálók használata, ha azok rendelkezésre állnak.</string>
@@ -1316,7 +1316,7 @@
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Ellenőrizze, hogy a megfelelő hivatkozást használta-e, vagy kérje meg a partnerét, hogy küldjön egy másikat.</string>
     <string name="image_decoding_exception_desc">A kép nem dekódolható. Próbálja meg egy másik képpel, vagy lépjen kapcsolatba a fejlesztőkkel.</string>
     <string name="non_content_uri_alert_text">Érvénytelen fájlelérési útvonalat osztott meg. Jelentse a problémát az alkalmazás fejlesztőinek.</string>
-    <string name="failed_to_create_user_duplicate_desc">Már van egy csevegési profil ugyanezzel a megjelenített névvel. Válasszon egy másik nevet.</string>
+    <string name="failed_to_create_user_duplicate_desc">Már van egy csevegési profil ugyanezzel a megjelenítendő névvel. Válasszon egy másik nevet.</string>
     <string name="trying_to_connect_to_server_to_receive_messages_with_error">Kapcsolódási kísérlet ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál (hiba: %1$s).</string>
     <string name="stop_rcv_file__message">A fájl fogadása le fog állni.</string>
     <string name="la_please_remember_to_store_password">Ne felejtse el, vagy tárolja biztonságosan – az elveszett jelszót nem lehet visszaállítani!</string>
@@ -1628,7 +1628,7 @@
     <string name="or_paste_archive_link">Vagy az archívum hivatkozásának beillesztése</string>
     <string name="paste_archive_link">Archívum hivatkozásának beillesztése</string>
     <string name="migrate_to_device_repeat_download">Letöltés ismét</string>
-    <string name="migrate_to_device_import_failed">Sikertelen importálás</string>
+    <string name="migrate_to_device_import_failed">Nem sikerült az importálás</string>
     <string name="migrate_to_device_confirm_network_settings_footer">Ellenőrizze, hogy a hálózati beállítások megfelelők-e ehhez az eszközhöz.</string>
     <string name="migrate_from_device_chat_should_be_stopped">A folytatáshoz a csevegést meg kell szakítani.</string>
     <string name="migrate_from_device_stopping_chat">Csevegés megállítása folyamatban</string>
@@ -1934,7 +1934,7 @@
     <string name="app_check_for_updates_stable">Stabil</string>
     <string name="smp_proxy_error_connecting">Hiba történt a(z) %1$s továbbítókiszolgálóhoz való kapcsolódáskor. Próbálja meg később.</string>
     <string name="proxy_destination_error_broker_version">A(z) %1$s célkiszolgáló verziója nem kompatibilis a(z) %2$s továbbítókiszolgálóval.</string>
-    <string name="proxy_destination_error_failed_to_connect">A(z) %1$s továbbítókiszolgáló nem tudott csatlakozni a(z) %2$s célkiszolgálóhoz. Próbálja meg később.</string>
+    <string name="proxy_destination_error_failed_to_connect">A(z) %1$s továbbítókiszolgáló nem tudott kapcsolódni a(z) %2$s célkiszolgálóhoz. Próbálja meg később.</string>
     <string name="proxy_destination_error_broker_host">A(z) %1$s célkiszolgáló címe nem kompatibilis a(z) %2$s továbbítókiszolgáló beállításaival.</string>
     <string name="privacy_media_blur_radius">Médiatartalom elhomályosítása</string>
     <string name="privacy_media_blur_radius_medium">Közepes</string>
@@ -2038,7 +2038,7 @@
     <string name="n_other_file_errors">%1$d egyéb fájlhiba.</string>
     <string name="forward_alert_title_nothing_to_forward">Nincs mit továbbítani!</string>
     <string name="forward_files_in_progress_desc">%1$d fájl letöltése még folyamatban van.</string>
-    <string name="forward_files_failed_to_receive_desc">%1$d fájlt nem sikerült letölteni.</string>
+    <string name="forward_files_failed_to_receive_desc">Nem sikerült letölteni %1$d fájlt.</string>
     <string name="forward_files_not_accepted_desc">%1$d fájl nem lett letöltve.</string>
     <string name="forward_files_not_accepted_receive_files">Letöltés</string>
     <string name="forward_files_missing_desc">%1$d fájl törölve lett.</string>
@@ -2130,7 +2130,7 @@
     <string name="operator_conditions_will_be_accepted_on">A feltételek el lesznek elfogadva a következő időpontban: %s.</string>
     <string name="operator_use_operator_toggle_description">Kiszolgálók használata</string>
     <string name="use_servers_of_operator_x">%s használata</string>
-    <string name="operator_conditions_failed_to_load">A jelenlegi feltételek szövegét nem lehetett betölteni, a feltételeket a következő hivatkozáson keresztül vizsgálhatja felül:</string>
+    <string name="operator_conditions_failed_to_load">A jelenlegi feltételek szövegét nem sikerült betölteni, a feltételeket a következő hivatkozáson keresztül vizsgálhatja felül:</string>
     <string name="operator_conditions_accepted_for_some"><![CDATA[A feltételek már el lettek fogadva a következő üzemeltető(k) számára: <b>%s</b>.]]></string>
     <string name="operator_same_conditions_will_be_applied"><![CDATA[Ugyanezek a feltételek lesznek elfogadva a következő üzemeltető számára is: <b>%s</b>.]]></string>
     <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[Ugyanezek a feltételek lesznek elfogadva a következő üzemeltető(k) számára is: <b>%s</b>.]]></string>
