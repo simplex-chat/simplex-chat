@@ -2354,7 +2354,7 @@
     <string name="open_with_app">Открыто с %s</string>
     <string name="create_list">Создать список</string>
     <string name="add_to_list">Добавить в список</string>
-    <string name="change_list">Список изменений</string>
+    <string name="change_list">Изменить список</string>
     <string name="save_list">Сохранить список</string>
     <string name="list_name_field_placeholder">Имя списка...</string>
     <string name="sync_connection_question">Исправить соединение?</string>
