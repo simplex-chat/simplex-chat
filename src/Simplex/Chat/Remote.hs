@@ -509,7 +509,7 @@ handleRemoteCommand execChatCommand encryption remoteOutputQ HTTP2Request {reque
     parseRequest :: ExceptT RemoteProtocolError IO (C.SbKeyNonce, GetChunk, RemoteCommand)
     parseRequest = do
       (rfKN, header, getNext) <- parseDecryptHTTP2Body encryption request reqBody
-      (rfKN,getNext,) <$> liftEitherWith RPEInvalidJSON (J.eitherDecode header)
+      (rfKN,getNext,) <$> liftEitherWith RPEInvalidJSON (J.eitherDecodeStrict header)
     replyError = reply . RRChatResponse . CRChatCmdError Nothing
     processCommand :: User -> C.SbKeyNonce -> GetChunk -> RemoteCommand -> CM ()
     processCommand user rfKN getNext = \case
