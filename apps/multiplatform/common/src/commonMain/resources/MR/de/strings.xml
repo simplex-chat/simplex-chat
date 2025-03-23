@@ -20,7 +20,7 @@
     <string name="deleted_description">Gelöscht</string>
     <string name="marked_deleted_description">als gelöscht markiert</string>
     <string name="sending_files_not_yet_supported">Das Senden von Dateien wird noch nicht unterstützt</string>
-    <string name="receiving_files_not_yet_supported">Der Empfang von Dateien wird noch nicht unterstützt</string>
+    <string name="receiving_files_not_yet_supported">Das Herunterladen von Dateien wird noch nicht unterstützt</string>
     <string name="sender_you_pronoun">Profil</string>
     <string name="unknown_message_format">Unbekanntes Nachrichtenformat</string>
     <string name="invalid_message_format">Ungültiges Nachrichtenformat</string>
@@ -58,9 +58,9 @@
     <string name="error_sending_message">Fehler beim Senden der Nachricht</string>
     <string name="error_adding_members">Fehler beim Hinzufügen von Mitgliedern</string>
     <string name="error_joining_group">Fehler beim Beitritt zur Gruppe</string>
-    <string name="cannot_receive_file">Datei kann nicht empfangen werden</string>
+    <string name="cannot_receive_file">Datei kann nicht heruntergeladen werden</string>
     <string name="sender_cancelled_file_transfer">Der Absender hat die Dateiübertragung abgebrochen.</string>
-    <string name="error_receiving_file">Fehler beim Empfangen der Datei</string>
+    <string name="error_receiving_file">Fehler beim Herunterladen der Datei</string>
     <string name="error_creating_address">Fehler beim Erstellen der Adresse</string>
     <string name="contact_already_exists">Kontakt besteht bereits</string>
     <string name="you_are_already_connected_to_vName_via_this_link">Sie sind bereits mit %1$s verbunden.</string>
@@ -195,10 +195,10 @@
     <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
     <string name="image_descr">Bild</string>
     <string name="icon_descr_waiting_for_image">Warten auf ein Bild</string>
-    <string name="icon_descr_asked_to_receive">Es wird um den Empfang eines Bildes gebeten</string>
+    <string name="icon_descr_asked_to_receive">Es wird um das Herunterladen eines Bildes gebeten</string>
     <string name="icon_descr_image_snd_complete">Bild gesendet</string>
     <string name="waiting_for_image">Warten auf ein Bild</string>
-    <string name="image_will_be_received_when_contact_is_online">Das Bild wird empfangen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später nochmal nach!</string>
+    <string name="image_will_be_received_when_contact_is_online">Das Bild wird heruntergeladen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später nochmal nach!</string>
     <string name="image_saved">Bild wurde im Fotoalbum gespeichert</string>
     <!-- Files - CIFileView.kt -->
     <string name="icon_descr_file">Datei</string>
@@ -206,7 +206,7 @@
     <string name="contact_sent_large_file">Ihr Kontakt hat eine Datei gesendet, die größer ist als die derzeit unterstützte maximale Größe (%1$s).</string>
     <string name="maximum_supported_file_size">Die derzeit maximal unterstützte Dateigröße beträgt %1$s.</string>
     <string name="waiting_for_file">Warte auf Datei</string>
-    <string name="file_will_be_received_when_contact_is_online">Die Datei wird empfangen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später noch mal nach!</string>
+    <string name="file_will_be_received_when_contact_is_online">Die Datei wird heruntergeladen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später noch mal nach!</string>
     <string name="file_saved">Datei gespeichert</string>
     <string name="file_not_found">Datei nicht gefunden</string>
     <string name="error_saving_file">Fehler beim Speichern der Datei</string>
@@ -597,8 +597,8 @@
     <string name="restart_the_app_to_create_a_new_chat_profile">Starten Sie die App neu, um ein neues Chat-Profil zu erstellen.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Sie dürfen die neueste Version Ihrer Chat-Datenbank NUR auf einem Gerät verwenden, andernfalls erhalten Sie möglicherweise keine Nachrichten mehr von einigen Ihrer Kontakte.</string>
     <string name="delete_files_and_media_question">Dateien und Medien löschen?</string>
-    <string name="delete_files_and_media_desc">Es werden alle empfangenen und gesendeten Dateien und Medien gelöscht. Bilder mit niedriger Auflösung bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden!</string>
-    <string name="no_received_app_files">Keine empfangenen oder gesendeten Dateien</string>
+    <string name="delete_files_and_media_desc">Es werden alle herunter- und hochgeladene Dateien und Medien gelöscht. Bilder mit niedriger Auflösung bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden!</string>
+    <string name="no_received_app_files">Keine herunter- oder hochgeladene Dateien</string>
     <string name="total_files_count_and_size">%d Datei(en) mit einem Gesamtspeicherverbrauch von %s</string>
     <string name="chat_item_ttl_none">nie</string>
     <string name="chat_item_ttl_day">Älter als ein Tag</string>
@@ -1077,22 +1077,22 @@
     <string name="mtr_error_no_down_migration">Die Datenbank-Version ist neuer als die App, keine Abwärts-Migration für: %s</string>
     <string name="hide_dev_options">Verberge:</string>
     <string name="database_migrations">Migrationen: %s</string>
-    <string name="image_will_be_received_when_contact_completes_uploading">Das Bild wird empfangen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.</string>
-    <string name="file_will_be_received_when_contact_completes_uploading">Die Datei wird empfangen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.</string>
+    <string name="image_will_be_received_when_contact_completes_uploading">Das Bild wird heruntergeladen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.</string>
+    <string name="file_will_be_received_when_contact_completes_uploading">Die Datei wird heruntergeladen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.</string>
     <string name="delete_chat_profile">Chat-Profil löschen</string>
     <string name="delete_profile">Profil löschen</string>
     <string name="unhide_profile">Verbergen des Profils aufheben</string>
     <string name="profile_password">Passwort für Profil</string>
     <string name="unhide_chat_profile">Verbergen des Chat-Profils aufheben</string>
-    <string name="icon_descr_video_asked_to_receive">Aufforderung zum Empfang des Videos</string>
+    <string name="icon_descr_video_asked_to_receive">Aufforderung zum Herunterladen des Videos</string>
     <string name="videos_limit_desc">Es können nur 10 Videos zur gleichen Zeit versendet werden</string>
     <string name="videos_limit_title">Zu viele Videos auf einmal!</string>
     <string name="video_descr">Video</string>
     <string name="icon_descr_video_snd_complete">Video gesendet</string>
-    <string name="video_will_be_received_when_contact_completes_uploading">Das Video wird empfangen, sobald Ihr Kontakt das Hochladen beendet hat.</string>
+    <string name="video_will_be_received_when_contact_completes_uploading">Das Video wird heruntergeladen, sobald Ihr Kontakt das Hochladen beendet hat.</string>
     <string name="icon_descr_waiting_for_video">Auf das Video warten</string>
     <string name="waiting_for_video">Auf das Video warten</string>
-    <string name="video_will_be_received_when_contact_is_online">Das Video wird empfangen, wenn Ihr Kontakt online ist. Bitte warten oder überprüfen Sie es später!</string>
+    <string name="video_will_be_received_when_contact_is_online">Das Video wird heruntergeladen, wenn Ihr Kontakt online ist. Bitte warten oder überprüfen Sie es später!</string>
     <string name="your_XFTP_servers">Ihre XFTP-Server</string>
     <string name="host_verb">Host</string>
     <string name="error_saving_xftp_servers">Fehler beim Speichern der XFTP-Server</string>
@@ -1159,11 +1159,11 @@
     <string name="both_you_and_your_contact_can_make_calls">Sowohl Sie als auch Ihr Kontakt können Anrufe tätigen.</string>
     <string name="only_you_can_make_calls">Nur Sie können Anrufe tätigen.</string>
     <string name="prohibit_calls">Audio-/Video-Anrufe nicht erlauben.</string>
-    <string name="stop_rcv_file__title">Den Empfang der Datei beenden\?</string>
-    <string name="stop_snd_file__title">Das Senden der Datei beenden\?</string>
-    <string name="stop_rcv_file__message">Der Empfang der Datei wird beendet.</string>
+    <string name="stop_rcv_file__title">Herunterladen der Datei beenden?</string>
+    <string name="stop_snd_file__title">Das Hochladen der Datei beenden?</string>
+    <string name="stop_rcv_file__message">Das Herunterladen der Datei wird beendet.</string>
     <string name="stop_snd_file__message">Das Senden der Datei wird beendet.</string>
-    <string name="stop_file__action">Datei beenden</string>
+    <string name="stop_file__action">Download beenden</string>
     <string name="revoke_file__message">Die Datei wird von den Servern gelöscht.</string>
     <string name="revoke_file__confirm">Widerrufen</string>
     <string name="revoke_file__action">Datei widerrufen</string>
@@ -1906,7 +1906,7 @@
     <string name="v5_8_private_routing">Privates Nachrichten-Routing 🚀</string>
     <string name="v5_8_private_routing_descr">Schützen Sie Ihre IP-Adresse vor den Nachrichten-Relais , die Ihr Kontakt ausgewählt hat.
 \nAktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</string>
-    <string name="v5_8_safe_files">Dateien sicher empfangen</string>
+    <string name="v5_8_safe_files">Dateien sicher herunterladen</string>
     <string name="v5_8_message_delivery_descr">Mit reduziertem Akkuverbrauch.</string>
     <string name="message_queue_info_none">Keine Information</string>
     <string name="info_row_debug_delivery">Debugging-Zustellung</string>
@@ -2191,7 +2191,7 @@
     <string name="errors_in_servers_configuration">Fehler in der Server-Konfiguration.</string>
     <string name="for_chat_profile">Für das Chat-Profil %s:</string>
     <string name="no_media_servers_configured">Keine Medien- und Dateiserver.</string>
-    <string name="no_media_servers_configured_for_private_routing">Keine Server für den Empfang von Dateien.</string>
+    <string name="no_media_servers_configured_for_private_routing">Keine Server für das Herunterladen von Dateien.</string>
     <string name="no_media_servers_configured_for_sending">Keine Server für das Versenden von Dateien.</string>
     <string name="connection_error_quota">Nicht ausgelieferte Nachrichten</string>
     <string name="share_simplex_address_on_social_media">Die SimpleX-Adresse auf sozialen Medien teilen.</string>
