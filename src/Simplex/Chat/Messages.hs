@@ -234,6 +234,12 @@ groupCIDirectionScopeInfo ChatItem {chatDir} = case chatDir of
   CIGroupSnd s -> s
   CIGroupRcv s _ -> s
 
+groupCIDirectionScope :: ChatItem 'CTGroup d -> GroupChatScope
+groupCIDirectionScope = toGCS . groupCIDirectionScopeInfo
+
+groupCCIDirectionScope :: CChatItem 'CTGroup -> GroupChatScope
+groupCCIDirectionScope (CChatItem _ ci) = groupCIDirectionScope ci
+
 data CCIDirection c = forall d. MsgDirectionI d => CCID (SMsgDirection d) (CIDirection c d)
 
 data ACIDirection = forall c d. (ChatTypeI c, MsgDirectionI d) => ACID (SChatType c) (SMsgDirection d) (CIDirection c d)

@@ -661,7 +661,7 @@ data ChatResponse
   | CRWelcome {user :: User}
   | CRGroupCreated {user :: User, groupInfo :: GroupInfo}
   | CRGroupMembers {user :: User, group :: Group}
-  | CRMemberSupportChats {user :: User, groupInfo :: GroupInfo, chats :: [AChat]}
+  | CRMemberSupportChats {user :: User, groupInfo :: GroupInfo, members :: [GroupMember]}
   -- | CRGroupConversationsArchived {user :: User, groupInfo :: GroupInfo, archivedGroupConversations :: [GroupConversation]}
   -- | CRGroupConversationsDeleted {user :: User, groupInfo :: GroupInfo, deletedGroupConversations :: [GroupConversation]}
   | CRContactsList {user :: User, contacts :: [Contact]}
