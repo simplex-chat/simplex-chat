@@ -2038,10 +2038,10 @@ processChatCommand' vr = \case
     unless (memberPending m) $ throwChatError $ CECommandError "member is not pending approval or review"
     case memberConn m of
       Just mConn -> do
-        -- TODO [knocking] admin to send XGrpLinkAcpt with memberId to host, host to forward to invitee and introduceToGroup
+        -- TODO [knocking] accept: admin to send XGrpLinkAcpt with memberId to host, host to forward to invitee and introduceToGroup
         -- TODO            - additionally archive conversation with member
         -- TODO            - also archive on rejection (removing member)
-        -- TODO [knocking] in captcha phase, introduce only to admins (same as on CON in Subscriber)
+        -- TODO            in captcha phase: introduce only to admins (same as on CON in Subscriber)
         -- TODO            - add field to protocol for admins to create group_conversation (XGrpMemNew)
         let msg = XGrpLinkAcpt role Nothing
         void $ sendDirectMemberMessage mConn msg groupId
@@ -2268,14 +2268,11 @@ processChatCommand' vr = \case
     -- TODO [knocking] get from group_members
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
     pure $ CRMemberSupportChats user gInfo []
+  -- -- validate: prohibit to delete/archive if member is pending (has to communicate approval or rejection)
   -- APIDeleteGroupConversations groupId _gcId -> withUser $ \user -> do
-  --   -- TODO [knocking] update in group_conversations, return updated state;
-  --   -- TODO            validate: prohibit to archive if member is pending (has to communicate approval or rejection)
   --   _gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
   --   ok_ -- CRGroupConversationsArchived
   -- APIArchiveGroupConversations groupId _gcId -> withUser $ \user -> do
-  --   -- TODO [knocking] delete from group_conversations;
-  --   -- TODO            validate: prohibit to delete if member is pending (has to communicate approval or rejection)
   --   _gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
   --   ok_ -- CRGroupConversationsDeleted
   AddMember gName cName memRole -> withUser $ \user -> do

@@ -187,8 +187,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRGroupMembers u g -> ttyUser u $ viewGroupMembers g
   CRMemberSupportChats u _g _cs -> ttyUser u [] -- TODO [knocking] view
-  -- CRGroupConversationsArchived u _g _gcs -> ttyUser u [] -- TODO [knocking] view
-  -- CRGroupConversationsDeleted u _g _gcs -> ttyUser u [] -- TODO [knocking] view
+  -- CRGroupConversationsArchived u _g _gcs -> ttyUser u []
+  -- CRGroupConversationsDeleted u _g _gcs -> ttyUser u []
   CRGroupsList u gs -> ttyUser u $ viewGroupsList gs
   CRSentGroupInvitation u g c _ ->
     ttyUser u $

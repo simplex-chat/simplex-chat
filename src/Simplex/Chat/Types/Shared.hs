@@ -51,11 +51,6 @@ instance ToJSON GroupMemberRole where
 
 data GroupAcceptance = GAAccepted | GAPending deriving (Eq, Show)
 
--- TODO [knocking] remove From and ToField instances
-instance FromField GroupAcceptance where fromField = blobFieldDecoder strDecode
-
-instance ToField GroupAcceptance where toField = toField . strEncode
-
 instance StrEncoding GroupAcceptance where
   strEncode = \case
     GAAccepted -> "accepted"
