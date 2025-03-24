@@ -12,6 +12,7 @@ import Database.SQLite.Simple.QQ (sql)
 --   is decided based on whether member is of user member category (membership -> chat with admins), or not.
 -- TODO [knocking] TBC schema
 -- TODO            - group_members.support_chat_unanswered - don't persist, calculate on the fly?
+-- TODO            - review indexes
 m20250310_group_scope :: Query
 m20250310_group_scope =
   [sql|

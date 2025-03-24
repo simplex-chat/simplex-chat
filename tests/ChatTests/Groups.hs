@@ -191,8 +191,9 @@ chatGroupTests = do
     it "should send updated mentions in history" testGroupHistoryWithMentions
     describe "uniqueMsgMentions" testUniqueMsgMentions
     describe "updatedMentionNames" testUpdatedMentionNames
-  fdescribe "group direct messages" $ do
-    it "should send group direct messages" testGroupDirectMessages
+  describe "group scoped messages" $ do
+    it "should send scoped messages to support (single admin)" testScopedSupportSingleAdmin
+    it "should send scoped messages to support (many admins)" testScopedSupportManyAdmins
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -2991,11 +2992,11 @@ testGLinkManualAcceptMember =
       alice <# "#team bob> hey"
 
       -- pending approval member and host can send messages to each other
-      alice ##> "/_send #1 @3 text send me proofs"
+      alice ##> "/_send #1 @support@3 text send me proofs"
       alice <# "#team send me proofs"
       cath <# "#team alice> send me proofs"
 
-      cath ##> "/_send #1 @1 text proofs"
+      cath ##> "/_send #1 @support text proofs"
       cath <# "#team proofs"
       alice <# "#team cath> proofs"
 
@@ -4173,8 +4174,8 @@ testRecreateMemberContactManyGroups =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
-      createGroup2' "team" alice bob False
-      createGroup2' "club" alice bob False
+      createGroup2' "team" alice (bob, GRAdmin) False
+      createGroup2' "club" alice (bob, GRAdmin) False
 
       -- alice can message bob via team and via club
       alice ##> "@#team bob 1"
@@ -5485,7 +5486,7 @@ testMembershipProfileUpdateSameMember =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       createGroup2 "team" alice bob
-      createGroup2' "club" alice bob False
+      createGroup2' "club" alice (bob, GRAdmin) False
 
       alice ##> "/d bob"
       alice <## "bob: contact is deleted"
@@ -6612,10 +6613,10 @@ testUpdatedMentionNames = do
       where
         ciMentionMember name = CIMentionMember {groupMemberId = 1, displayName = name, localAlias = Nothing, memberRole = GRMember}
 
-testGroupDirectMessages :: HasCallStack => TestParams -> IO ()
-testGroupDirectMessages =
+testScopedSupportSingleAdmin :: HasCallStack => TestParams -> IO ()
+testScopedSupportSingleAdmin =
   testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
-    createGroup3 "team" alice bob cath
+    createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
 
     alice #> "#team 1"
     [bob, cath] *<# "#team alice> 1"
@@ -6623,25 +6624,56 @@ testGroupDirectMessages =
     bob #> "#team 2"
     [alice, cath] *<# "#team bob> 2"
 
-    void $ withCCTransaction alice $ \db ->
-      DB.execute_ db "UPDATE group_members SET member_status='pending_approval' WHERE group_member_id = 2"
-
-    alice ##> "/_send #1 @2 text 3"
+    alice ##> "/_send #1 @support@2 text 3"
     alice <# "#team 3"
     bob <# "#team alice> 3"
 
-    void $ withCCTransaction bob $ \db ->
-      DB.execute_ db "UPDATE group_members SET member_status='pending_approval' WHERE group_member_id = 1"
-
-    bob ##> "/_send #1 @1 text 4"
+    bob ##> "/_send #1 @support text 4"
     bob <# "#team 4"
     alice <# "#team bob> 4"
 
-    -- Pending members don't receive messages sent to group.
-    -- Though in test we got here synthetically, in reality this status
-    -- means they are not yet part of group (not memberCurrent).
-    alice #> "#team 5"
-    cath <# "#team alice> 5"
+    cath ##> "/_send #1 @support@3 text 5"
+    cath <## "#team: you have insufficient permissions for this action, the required role is moderator"
 
-    bob #> "#team 6"
-    cath <# "#team bob> 6"
+testScopedSupportManyAdmins :: HasCallStack => TestParams -> IO ()
+testScopedSupportManyAdmins =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
+    createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRModerator)
+
+    threadDelay 1000000
+
+    alice #> "#team 1"
+    [bob, cath, dan] *<# "#team alice> 1"
+
+    threadDelay 1000000
+
+    bob #> "#team 2"
+    [alice, cath, dan] *<# "#team bob> 2"
+
+    threadDelay 1000000
+
+    alice ##> "/_send #1 @support@2 text 3"
+    alice <# "#team 3"
+    [bob, dan] *<# "#team alice> 3"
+
+    threadDelay 1000000
+
+    bob ##> "/_send #1 @support text 4"
+    bob <# "#team 4"
+    [alice, dan] *<# "#team bob> 4"
+
+    threadDelay 1000000
+
+    dan ##> "/_send #1 @support@3 text 5"
+    dan <# "#team 5"
+    [alice, bob] *<# "#team dan> 5"
+
+    alice #$> ("/_get chat #1 count=3", chat, [(0, "connected"), (1, "1"), (0, "2")])
+    alice #$> ("/_get chat #1 group_chat_scope=@support@2 count=100", chat, [(1, "3"), (0, "4"), (0, "5")])
+    bob #$> ("/_get chat #1 count=3", chat, [(0, "connected"), (0, "1"), (1, "2")])
+    bob #$> ("/_get chat #1 group_chat_scope=@support count=100", chat, [(0, "3"), (1, "4"), (0, "5")])
+    dan #$> ("/_get chat #1 count=3", chat, [(0, "connected"), (0, "1"), (0, "2")])
+    dan #$> ("/_get chat #1 group_chat_scope=@support@3 count=100", chat, [(0, "3"), (0, "4"), (1, "5")])
+    cath #$> ("/_get chat #1 count=3", chat, [(0, "connected"), (0, "1"), (0, "2")])
+    cath ##> "/_get chat #1 group_chat_scope=@support@3 count=100"
+    cath <## "chat db error: SEInternalError {message = \"no support chat\"}"

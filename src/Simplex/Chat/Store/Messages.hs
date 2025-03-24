@@ -41,7 +41,6 @@ module Simplex.Chat.Store.Messages
     getChatPreviews,
     getDirectChat,
     getGroupChat,
-    getGroupChatScopeInfo_,
     getLocalChat,
     getDirectChatItemLast,
     getAllChatItems,
@@ -1285,8 +1284,8 @@ data GroupItemIDsRange = GRLast | GRAfter UTCTime ChatItemId | GRBefore UTCTime 
 
 getGroupChatItemIDs :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatFilter -> GroupItemIDsRange -> Int -> String -> IO [ChatItemId]
 getGroupChatItemIDs db User {userId} GroupInfo {groupId, membership} groupChatFilter range count search = case groupChatFilter of
-  Nothing -> idsQuery baseCond (userId, groupId)
-  Just (GCFChatScope GCSGroup) -> idsQuery baseCond (userId, groupId)
+  Nothing -> idsQuery (baseCond <> " AND group_scope_group_member_id IS NULL ") (userId, groupId)
+  Just (GCFChatScope GCSGroup) -> idsQuery (baseCond <> " AND group_scope_group_member_id IS NULL ") (userId, groupId)
   Just (GCFChatScope (GCSMemberSupport gmId_)) ->
     let gmId = fromMaybe (groupMemberId' membership) gmId_
      in idsQuery (baseCond <> " AND group_scope_group_member_id = ? ") (userId, groupId, gmId)

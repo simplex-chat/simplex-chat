@@ -1276,7 +1276,7 @@ getNonMsgGCSI GroupInfo {membership} m
   | memberPending m = memberSupportGCSI m (Just m)
   | otherwise = pure GCSIGroup
 
--- convenience function to correct GCSIMemberSupport scope state (to be passed to UI)
+-- convenience function to correct GCSIMemberSupport `scope` state (to be passed to UI)
 -- in case "member support chat" is new and wasn't present in member/membership state
 memberSupportGCSI :: GroupMember -> Maybe GroupMember -> IO GroupChatScopeInfo
 memberSupportGCSI GroupMember {supportChat} gcsiGroupMember_ = case supportChat of

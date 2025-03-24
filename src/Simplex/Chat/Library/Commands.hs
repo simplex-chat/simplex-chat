@@ -3240,35 +3240,40 @@ processChatCommand' vr = \case
     sendGroupContentMessages :: User -> GroupInfo -> GroupChatScope -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
     sendGroupContentMessages user gInfo@GroupInfo {membership} gcs live itemTTL cmrs = do
       assertMultiSendable live cmrs
-      (msgScope, ms, numFileInvs) <- case gcs of
+      (gcsi, msgScope, ms, numFileInvs) <- case gcs of
         GCSGroup -> do
           ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
           let recepientMs = filter memberCurrent ms
-          pure (MSGroup, recepientMs, length recepientMs)
+          pure (GCSIGroup, MSGroup, recepientMs, length recepientMs)
         GCSMemberSupport gmId_ -> case gmId_ of
           Nothing -> do
-            adminsMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
-            let rcpAdminsMs' = filter (\m -> compatible m && memberCurrent m) adminsMs
-            when (null rcpAdminsMs') $ throwChatError $ CECommandError "no admins support this message"
-            pure (MSMember (memberId' membership), rcpAdminsMs', length rcpAdminsMs')
+            gcsi <- liftIO $ memberSupportGCSI membership Nothing
+            modMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
+            let rcpModMs' = filterMods modMs
+            when (null rcpModMs') $ throwChatError $ CECommandError "no admins support this message"
+            pure (gcsi, MSMember (memberId' membership), rcpModMs', length rcpModMs')
+            where
+              filterMods modMs
+                | memberStatus membership == GSMemPendingApproval = modMs
+                | otherwise = filter (\m -> compatible m && memberCurrent m) modMs
           Just gmId -> do
-            -- Unlike admins, we don't filter out non-current members here to allow sending to pending members
+            -- Here we don't filter out non-current members to allow sending to pending members
             supportMem <- withFastStore $ \db -> getGroupMemberById db vr user gmId
+            gcsi <- liftIO $ memberSupportGCSI supportMem (Just supportMem)
             if memberStatus supportMem == GSMemPendingApproval
-              then pure (MSMember (memberId' supportMem), [supportMem], 1)
+              then pure (gcsi, MSMember (memberId' supportMem), [supportMem], 1)
               else do
-                adminsMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
-                let rcpAdminsMs' = filter (\m -> compatible m && memberCurrent m) adminsMs
-                when (null rcpAdminsMs') $ throwChatError $ CECommandError "no admins support this message"
-                pure (MSMember (memberId' supportMem), [supportMem] <> rcpAdminsMs', length rcpAdminsMs' + 1)
+                modMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
+                let rcpModMs' = filter (\m -> compatible m && memberCurrent m) modMs
+                pure (gcsi, MSMember (memberId' supportMem), [supportMem] <> rcpModMs', length rcpModMs' + 1)
           where
             hasReport = any (\(ComposedMessage {msgContent}, _, _, _) -> isReport msgContent) cmrs
             compatible GroupMember {activeConn, memberChatVRange}
               | hasReport = maxVersion (maybe memberChatVRange peerChatVRange activeConn) >= contentReportsVersion
               | otherwise = maxVersion (maybe memberChatVRange peerChatVRange activeConn) >= groupKnockingVersion
-      sendGroupContentMessages_ user gInfo gcs msgScope ms numFileInvs live itemTTL cmrs
-    sendGroupContentMessages_ :: User -> GroupInfo -> GroupChatScope -> MsgScope -> [GroupMember] -> Int -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
-    sendGroupContentMessages_ user gInfo@GroupInfo {groupId, membership} gcs msgScope receipientMs numFileInvs live itemTTL cmrs = do
+      sendGroupContentMessages_ user gInfo gcs gcsi msgScope ms numFileInvs live itemTTL cmrs
+    sendGroupContentMessages_ :: User -> GroupInfo -> GroupChatScope -> GroupChatScopeInfo -> MsgScope -> [GroupMember] -> Int -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
+    sendGroupContentMessages_ user gInfo@GroupInfo {groupId, membership} gcs gcsi msgScope receipientMs numFileInvs live itemTTL cmrs = do
       forM_ allowedRole $ assertUserGroupRole gInfo
       assertGroupContentAllowed
       processComposedMessages
@@ -3279,7 +3284,7 @@ processChatCommand' vr = \case
           GCSMemberSupport Nothing
             | memberPending membership -> Nothing
             | otherwise -> Just GRAuthor
-          GCSMemberSupport (Just _gmId) -> Just GRAdmin
+          GCSMemberSupport (Just _gmId) -> Just GRModerator
         assertGroupContentAllowed :: CM ()
         assertGroupContentAllowed =
           case findProhibited (L.toList cmrs) of
@@ -3299,8 +3304,6 @@ processChatCommand' vr = \case
           (msgs_, gsr) <- sendGroupMessages user gInfo GCSGroup receipientMs chatMsgEvents
           let itemsData = prepareSndItemsData (L.toList cmrs) (L.toList ciFiles_) (L.toList quotedItems_) (L.toList msgs_)
               notInHistory_ = gsScopeNotInHistory gcs
-          -- TODO [knocking] pass scope info?
-          gcsi <- withFastStore $ \db -> getGroupChatScopeInfo_ db vr user gInfo gcs
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo gcsi) notInHistory_ itemsData timed_ live
           when (length cis_ /= length cmrs) $ logError "sendGroupContentMessages: cmrs and cis_ length mismatch"
           createMemberSndStatuses cis_ msgs_ gsr
@@ -4251,8 +4254,7 @@ chatCommandP =
     chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup <|> A.char '*' $> CTLocal <|> A.char ':' $> CTContactConnection
     groupChatFilterP =
       (GCFMsgContentTag <$ "content=" <*> strP)
-        <|> (GCFChatScope <$ "group_chat_scope=" <*> groupChatScopeP)
-    groupChatScopeP = undefined -- TODO [knocking]
+        <|> (GCFChatScope <$ "group_chat_scope=" <*> gcScopeP)
     chatPaginationP =
       (CPLast <$ "count=" <*> A.decimal)
         <|> (CPAfter <$ "after=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
@@ -4351,8 +4353,8 @@ chatCommandP =
         <|> (A.char '#' $> SRGroup <*> A.decimal <*> (A.space *> gcScopeP <|> pure GCSGroup))
     gcScopeP =
       ("@group" $> GCSGroup)
+        <|> ("@support@" $> GCSMemberSupport . Just <*> A.decimal)
         <|> ("@support" $> GCSMemberSupport Nothing)
-        <|> ("@" $> GCSMemberSupport . Just <*> A.decimal)
     msgCountP = A.space *> A.decimal <|> pure 10
     ciTTLDecimal = ("default" $> Nothing) <|> (Just <$> A.decimal)
     ciTTL =

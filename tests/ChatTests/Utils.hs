@@ -630,16 +630,16 @@ showName (TestCC ChatController {currentUser} _ _ _ _ _) = do
   pure . T.unpack $ localDisplayName <> optionalFullName localDisplayName fullName
 
 createGroup2 :: HasCallStack => String -> TestCC -> TestCC -> IO ()
-createGroup2 gName cc1 cc2 = createGroup2' gName cc1 cc2 True
+createGroup2 gName cc1 cc2 = createGroup2' gName cc1 (cc2, GRAdmin) True
 
-createGroup2' :: HasCallStack => String -> TestCC -> TestCC -> Bool -> IO ()
-createGroup2' gName cc1 cc2 doConnectUsers = do
+createGroup2' :: HasCallStack => String -> TestCC -> (TestCC, GroupMemberRole) -> Bool -> IO ()
+createGroup2' gName cc1 (cc2, role2) doConnectUsers = do
   when doConnectUsers $ connectUsers cc1 cc2
   name2 <- userName cc2
   cc1 ##> ("/g " <> gName)
   cc1 <## ("group #" <> gName <> " is created")
   cc1 <## ("to add members use /a " <> gName <> " <name> or /create link #" <> gName)
-  addMember gName cc1 cc2 GRAdmin
+  addMember gName cc1 cc2 role2
   cc2 ##> ("/j " <> gName)
   concurrently_
     (cc1 <## ("#" <> gName <> ": " <> name2 <> " joined the group"))
@@ -657,13 +657,17 @@ disableFullDeletion2 gName cc1 cc2 = do
 
 createGroup3 :: HasCallStack => String -> TestCC -> TestCC -> TestCC -> IO ()
 createGroup3 gName cc1 cc2 cc3 = do
-  createGroup2 gName cc1 cc2
+  createGroup3' gName cc1 (cc2, GRAdmin) (cc3, GRAdmin)
+
+createGroup3' :: HasCallStack => String -> TestCC -> (TestCC, GroupMemberRole) -> (TestCC, GroupMemberRole) -> IO ()
+createGroup3' gName cc1 (cc2, role2) (cc3, role3) = do
+  createGroup2' gName cc1 (cc2, role2) True
   connectUsers cc1 cc3
   name1 <- userName cc1
   name3 <- userName cc3
   sName2 <- showName cc2
   sName3 <- showName cc3
-  addMember gName cc1 cc3 GRAdmin
+  addMember gName cc1 cc3 role3
   cc3 ##> ("/j " <> gName)
   concurrentlyN_
     [ cc1 <## ("#" <> gName <> ": " <> name3 <> " joined the group"),
@@ -673,6 +677,31 @@ createGroup3 gName cc1 cc2 cc3 = do
       do
         cc2 <## ("#" <> gName <> ": " <> name1 <> " added " <> sName3 <> " to the group (connecting...)")
         cc2 <## ("#" <> gName <> ": new member " <> name3 <> " is connected")
+    ]
+
+createGroup4 :: HasCallStack => String -> TestCC -> (TestCC, GroupMemberRole) -> (TestCC, GroupMemberRole) -> (TestCC, GroupMemberRole) -> IO ()
+createGroup4 gName cc1 (cc2, role2) (cc3, role3) (cc4, role4) = do
+  createGroup3' gName cc1 (cc2, role2) (cc3, role3)
+  connectUsers cc1 cc4
+  name1 <- userName cc1
+  name4 <- userName cc4
+  sName2 <- showName cc2
+  sName3 <- showName cc3
+  sName4 <- showName cc4
+  addMember gName cc1 cc4 role4
+  cc4 ##> ("/j " <> gName)
+  concurrentlyN_
+    [ cc1 <## "#team: dan joined the group",
+      do
+        cc4 <## ("#" <> gName <> ": you joined the group")
+        cc4 <## ("#" <> gName <> ": member " <> sName2 <> " is connected")
+        cc4 <## ("#" <> gName <> ": member " <> sName3 <> " is connected"),
+      do
+        cc2 <## ("#" <> gName <> ": " <> name1 <> " added " <> sName4 <> " to the group (connecting...)")
+        cc2 <## ("#" <> gName <> ": new member " <> name4 <> " is connected"),
+      do
+        cc3 <## ("#" <> gName <> ": " <> name1 <> " added " <> sName4 <> " to the group (connecting...)")
+        cc3 <## ("#" <> gName <> ": new member " <> name4 <> " is connected")
     ]
 
 disableFullDeletion3 :: HasCallStack => String -> TestCC -> TestCC -> TestCC -> IO ()
@@ -686,7 +715,7 @@ disableFullDeletion3 gName cc1 cc2 cc3 = do
 create2Groups3 :: HasCallStack => String -> String -> TestCC -> TestCC -> TestCC -> IO ()
 create2Groups3 gName1 gName2 cc1 cc2 cc3 = do
   createGroup3 gName1 cc1 cc2 cc3
-  createGroup2' gName2 cc1 cc2 False
+  createGroup2' gName2 cc1 (cc2, GRAdmin) False
   name1 <- userName cc1
   name3 <- userName cc3
   addMember gName2 cc1 cc3 GRAdmin
