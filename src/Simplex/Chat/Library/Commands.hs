@@ -2262,9 +2262,11 @@ processChatCommand' vr = \case
   APIListMembers groupId -> withUser $ \user ->
     CRGroupMembers user <$> withFastStore (\db -> getGroup db vr user groupId)
   APIMemberSupportChats groupId -> withUser $ \user -> do
-    -- TODO [knocking] get from group_members
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
-    pure $ CRMemberSupportChats user gInfo []
+    -- TODO [knocking] delete all support chats (chat items) if role is lowered?
+    assertUserGroupRole gInfo GRModerator
+    supportMems <- withFastStore' $ \db -> getSupportMembers db vr user gInfo
+    pure $ CRMemberSupportChats user gInfo supportMems
   -- -- validate: prohibit to delete/archive if member is pending (has to communicate approval or rejection)
   -- APIDeleteGroupConversations groupId _gcId -> withUser $ \user -> do
   --   _gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId

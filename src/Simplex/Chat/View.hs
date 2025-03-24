@@ -186,7 +186,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRGroupMembers u g -> ttyUser u $ viewGroupMembers g
-  CRMemberSupportChats u _g _cs -> ttyUser u [] -- TODO [knocking] view
+  CRMemberSupportChats u _g ms -> ttyUser u $ viewSupportMembers ms
   -- CRGroupConversationsArchived u _g _gcs -> ttyUser u []
   -- CRGroupConversationsDeleted u _g _gcs -> ttyUser u []
   CRGroupsList u gs -> ttyUser u $ viewGroupsList gs
@@ -1166,6 +1166,11 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
       | blockedByAdmin m = ["blocked by admin"]
       | not (showMessages $ memberSettings m) = ["blocked"]
       | otherwise = []
+
+viewSupportMembers :: [GroupMember] -> [StyledString]
+viewSupportMembers = map groupMember
+  where
+    groupMember m = memIncognito m <> ttyFullMember m <> ", id: " <> sShow (groupMemberId' m)
 
 viewContactConnected :: Contact -> Maybe Profile -> Bool -> [StyledString]
 viewContactConnected ct userIncognitoProfile testView =

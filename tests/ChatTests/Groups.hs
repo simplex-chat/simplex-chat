@@ -6677,3 +6677,12 @@ testScopedSupportManyAdmins =
     cath #$> ("/_get chat #1 count=3", chat, [(0, "connected"), (0, "1"), (0, "2")])
     cath ##> "/_get chat #1 group_chat_scope=@support@3 count=100"
     cath <## "chat db error: SEInternalError {message = \"no support chat\"}"
+
+    alice ##> "/_member support chats #1"
+    alice <## "bob (Bob), id: 2"
+    dan ##> "/_member support chats #1"
+    dan <## "bob (Bob), id: 3"
+    bob ##> "/_member support chats #1"
+    bob <## "#team: you have insufficient permissions for this action, the required role is moderator"
+    cath ##> "/_member support chats #1"
+    cath <## "#team: you have insufficient permissions for this action, the required role is moderator"

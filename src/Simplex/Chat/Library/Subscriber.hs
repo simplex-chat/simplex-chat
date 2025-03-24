@@ -900,6 +900,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 hasDeliveryReceipt (toCMEventTag chatMsgEvent)
           forwardMsgs :: [AChatMessage] -> CM ()
           forwardMsgs aMsgs = do
+            -- TODO [knocking] forward to/from GSMemPendingReview members
             let GroupMember {memberRole = membershipMemRole} = membership
             when (membershipMemRole >= GRAdmin && not (blockedByAdmin m)) $ do
               let forwardedMsgs = mapMaybe (\(ACMsg _ chatMsg) -> forwardedGroupMsg chatMsg) aMsgs
