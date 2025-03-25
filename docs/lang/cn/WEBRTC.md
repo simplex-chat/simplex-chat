@@ -138,7 +138,7 @@ turn:username:password@turn.example.com:5349
 
   2. 在 **Build up ICE Server List** 选项中，添加这个：
 
-     <img src="./stun_1.png">
+     <img src="../../images/stun_1.png">
 
      - `STUN: stun:<your_ip_or_domain>:<port>` 然后点击 `Add STUN`
      - `TURN: turn:<your_ip_or_domain>:<port>`, `Username: <your_login>`, `Credential: <your_pass>` 然后点击 `Add TURN`
@@ -147,11 +147,11 @@ turn:username:password@turn.example.com:5349
 
   3. 你应该看到你的服务器在 **ICE server list** 中。 如果万事大吉，点击 `Start test`：
 
-     <img src="./stun_2.png">
+     <img src="../../images/stun_2.png">
 
   4. 在 **Results** 中, 你应该看到类似这样的内容：
 
-     <img src="./stun_3.png">
+     <img src="../../images/stun_3.png">
 
      如果结果显示 `srflx` 和 `relay` 候选词，则一切正常！
 

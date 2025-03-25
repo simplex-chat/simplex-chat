@@ -39,7 +39,7 @@ revision: 19.03.2023
 
 2. 某些字符串不需要翻译，但仍需要复制——Weblate 界面中有一个按钮可以完成此操作：
 
-<img src="./images/weblate_1.png" alt="weblate: 复制源到翻译" width="100%">
+<img src="../../images/weblate_1.png" alt="weblate: 复制源到翻译" width="100%">
 
 3. Weblate 还提供自动建议，可以加快翻译过程。有时可以直接使用，有时需要稍作编辑——点击即可在翻译中使用它们。
 
@@ -69,7 +69,7 @@ revision: 19.03.2023
 
 非常感谢！这是一项巨大的努力，对 SimpleX 网络的成长帮助很大。
 
-<img src="./images/weblate_2.png" alt="weblate: 自动建议" width="100%">
+<img src="../../images/weblate_2.png" alt="weblate: 自动建议" width="100%">
 
 ## 常见翻译错误
 

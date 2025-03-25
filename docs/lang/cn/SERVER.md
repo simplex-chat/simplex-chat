@@ -49,7 +49,7 @@ SimpleX客户端仅决定用于接收消息的服务器，每个联系人（或�
 2. 指向服务器的域名（例如`smp.example.com`）。
 3. 基本的Linux知识。
 
-_请注意_：当您在应用配置中更改服务器时，它仅影响新联系人的服务器使用，现有联系人不会自动迁移到新服务器，但您可以通过联系人/成员信息页面中的["更改接收地址"](../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#change-your-delivery-address-beta)按钮手动迁移——未来将实现自动化。
+_请注意_：当您在应用配置中更改服务器时，它仅影响新联系人的服务器使用，现有联系人不会自动迁移到新服务器，但您可以通过联系人/成员信息页面中的["更改接收地址"](../../../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#change-your-delivery-address-beta)按钮手动迁移——未来将实现自动化。
 
 ## 快速开始
 
@@ -579,7 +579,7 @@ sudo su smp -c "smp-server init"
 
   输入`y`以启用以CSV格式记录统计信息，例如，它们可以用于在`Grafana`中显示汇总使用图表。
 
-这些统计信息包括创建、保护和删除队列的每日计数，发送和接收的消息，以及每日、每周和每月的活动队列计数（即，使用任何消息的队列）。我们相信这些信息不包括任何允许将不同队列关联为同一用户的信息，但如果您认为这可能被利用，请[告知我们](./SECURITY.md)，我们会保密处理。
+这些统计信息包括创建、保护和删除队列的每日计数，发送和接收的消息，以及每日、每周和每月的活动队列计数（即，使用任何消息的队列）。我们相信这些信息不包括任何允许将不同队列关联为同一用户的信息，但如果您认为这可能被利用，请[告知我们](../../SECURITY.md)，我们会保密处理。
 
 - `需要密码才能创建新的消息队列？`
 
@@ -1662,4 +1662,4 @@ fromTime,qCreated,qSecured,qDeleted,msgSent,msgRecv,dayMsgQueues,weekMsgQueues,m
 
 _请注意_：您需要SMP服务器版本4.0才能支持密码。如果您已经部署了服务器，可以通过将密码添加到服务器INI文件中来添加密码。
 
-<img src="./server_config_1.png" width="288"> &nbsp;&nbsp; <img src="./server_config_2.png" width="288"> &nbsp;&nbsp; <img src="./server_config_3.png" width="288">
+<img src="../../server_config_1.png" width="288"> &nbsp;&nbsp; <img src="../../server_config_2.png" width="288"> &nbsp;&nbsp; <img src="../../server_config_3.png" width="288">
