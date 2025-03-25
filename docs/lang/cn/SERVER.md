@@ -1,69 +1,69 @@
 ---
-title: Hosting your own SMP Server
+title: 托管您自己的SMP服务器
 revision: 12.10.2024
 ---
 
-# Hosting your own SMP Server
+# 托管您自己的SMP服务器
 
-| Updated 12.10.2024 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md), [PL](/docs/lang/pl/SERVER.md) |
+| 更新于 12.10.2024 | 语言：ZH_CN, EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md), [PL](/docs/lang/pl/SERVER.md) |
 
-## Table of Contents
+## 目录
 
-- [Overview](#overview)
-- [Quick start](#quick-start) with systemd service
-- [Installation options](#installation-options)
-   - [systemd service](#systemd-service) with [installation script](#installation-script) or [manually](#manual-deployment)
-   - [docker container](#docker-container)
-   - [Linode marketplace](#linode-marketplace)
-- [Verifying server binaries]
-- [Configuration](#configuration)
-   - [Interactively](#interactively)
-   - [Via command line options](#via-command-line-options)
-- [Further configuration](#further-configuration)
-- [Server security](#server-security)
-   - [Initialization](#initialization)
-   - [Private keys](#private-keys)
-   - [Online certificate rotation](#online-certificate-rotation)
-- [Tor: installation and configuration](#tor-installation-and-configuration)
-   - [Installation for onion address](#installation-for-onion-address)
-   - [SOCKS port for SMP PROXY](#socks-port-for-smp-proxy)
-- [Server information page](#server-information-page)
-- [Documentation](#documentation)
-   - [SMP server address](#smp-server-address)
-   - [Systemd commands](#systemd-commands)
-   - [Control port](#control-port)
-   - [Daily statistics](#daily-statistics)
-- [Reproduce builds](#reproduce-builds)
-- [Updating your SMP server](#updating-your-smp-server)
-- [Configuring the app to use the server](#configuring-the-app-to-use-the-server)
+- [概述](#overview)
+- [快速开始](#quick-start) 使用 systemd 服务
+- [安装选项](#installation-options)
+   - [systemd 服务](#systemd-service) 使用 [安装脚本](#installation-script) 或 [手动部署](#manual-deployment)
+   - [Docker 容器](#docker-container)
+   - [Linode 市场](#linode-marketplace)
+- [验证服务器二进制文件](#verifying-server-binaries)
+- [配置](#configuration)
+   - [交互式配置](#interactively)
+   - [通过命令行选项配置](#via-command-line-options)
+- [进一步配置](#further-configuration)
+- [服务器安全](#server-security)
+   - [初始化](#initialization)
+   - [私钥](#private-keys)
+   - [在线证书轮换](#online-certificate-rotation)
+- [Tor：安装与配置](#tor-installation-and-configuration)
+   - [为洋葱地址安装](#installation-for-onion-address)
+   - [SMP代理的SOCKS端口](#socks-port-for-smp-proxy)
+- [服务器信息页面](#server-information-page)
+- [文档](#documentation)
+   - [SMP服务器地址](#smp-server-address)
+   - [Systemd命令](#systemd-commands)
+   - [控制端口](#control-port)
+   - [每日统计](#daily-statistics)
+- [重现构建](#reproduce-builds)
+- [更新您的SMP服务器](#updating-your-smp-server)
+- [配置应用以使用服务器](#configuring-the-app-to-use-the-server)
 
-## Overview
+## 概述
 
-SMP server is the relay server used to pass messages in SimpleX network. SimpleX Chat apps have preset servers (for mobile apps these are smp11, smp12 and smp14.simplex.im), but you can easily change app configuration to use other servers.
+SMP服务器是SimpleX网络中用于传递消息的中继服务器。SimpleX Chat应用程序预设了服务器（对于移动应用程序，这些是smp11、smp12和smp14.simplex.im），但您可以轻松更改应用配置以使用其他服务器。
 
-SimpleX clients only determine which server is used to receive the messages, separately for each contact (or group connection with a group member), and these servers are only temporary, as the delivery address can change.
+SimpleX客户端仅决定用于接收消息的服务器，每个联系人（或与组成员的组连接）分别设置，这些服务器只是临时的，因为传递地址可以更改。
 
-To create SMP server, you'll need:
+要创建SMP服务器，您需要：
 
-1. VPS or any other server.
-2. Your own domain, pointed at the server (`smp.example.com`)
-3. A basic Linux knowledge.
+1. VPS或其他服务器。
+2. 指向服务器的域名（例如`smp.example.com`）。
+3. 基本的Linux知识。
 
-_Please note_: when you change the servers in the app configuration, it only affects which servers will be used for the new contacts, the existing contacts will not automatically move to the new servers, but you can move them manually using ["Change receiving address"](../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#change-your-delivery-address-beta) button in contact/member information pages – it will be automated in the future.
+_请注意_：当您在应用配置中更改服务器时，它仅影响新联系人的服务器使用，现有联系人不会自动迁移到新服务器，但您可以通过联系人/成员信息页面中的["更改接收地址"](../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#change-your-delivery-address-beta)按钮手动迁移——未来将实现自动化。
 
-## Quick start
+## 快速开始
 
-To create SMP server as a systemd service, you'll need:
+要将SMP服务器创建为systemd服务，您需要：
 
-- VPS or any other server.
-- Your server domain, with A and AAAA records specifying server IPv4 and IPv6 addresses (`smp1.example.com`)
-- A basic Linux knowledge.
+- VPS或其他服务器。
+- 您的服务器域名，具有指定IPv4和IPv6地址的A和AAAA记录（例如`smp1.example.com`）。
+- 基本的Linux知识。
 
-*Please note*: while you can run an SMP server without a domain name, in the near future client applications will start using server domain name in the invitation links (instead of `simplex.chat` domain they use now). In case a server does not have domain name and server pages (see below), the clients will be generaing the links with `simplex:` scheme that cannot be opened in the browsers.
+*请注意*：虽然您可以在没有域名的情况下运行SMP服务器，但在不久的将来，客户端应用程序将在邀请链接中使用服务器域名（而不是当前使用的`simplex.chat`域名）。如果服务器没有域名和服务器页面（见下文），客户端将生成无法在浏览器中打开的`simplex:`协议链接。
 
-1. Install server with [Installation script](https://github.com/simplex-chat/simplexmq#using-installation-script).
+1. 使用[安装脚本](https://github.com/simplex-chat/simplexmq#using-installation-script)安装服务器。
 
-2. Adjust firewall:
+2. 调整防火墙：
 
    ```sh
    ufw allow 80/tcp &&\
@@ -71,9 +71,9 @@ To create SMP server as a systemd service, you'll need:
    ufw allow 5223/tcp
    ```
 
-3. Init server:
+3. 初始化服务器：
 
-   Replace `smp1.example.com` with your actual server domain.
+   将`smp1.example.com`替换为您的实际服务器域名。
 
    ```sh
    su smp -c 'smp-server init --yes \
@@ -85,7 +85,7 @@ To create SMP server as a systemd service, you'll need:
                            --fqdn=smp1.example.com
    ```
 
-4. Install tor:
+4. 安装Tor：
 
    ```sh
    CODENAME="$(lsb_release -c | awk '{print $2}')"
@@ -96,7 +96,7 @@ To create SMP server as a systemd service, you'll need:
    apt update && apt install -y tor deb.torproject.org-keyring
    ```
 
-5. Configure tor:
+5. 配置Tor：
 
    ```sh
    tor-instance-create tor2 &&\
@@ -109,16 +109,16 @@ To create SMP server as a systemd service, you'll need:
    vim /etc/tor/torrc
    ```
 
-   Paste the following:
+   粘贴以下内容：
 
    ```sh
-   # Enable log (otherwise, tor doesn't seem to deploy onion address)
+   # 启用日志（否则，Tor似乎不会部署洋葱地址）
    Log notice file /var/log/tor/notices.log
-   # Enable single hop routing (2 options below are dependencies of the third) - It will reduce the latency at the cost of lower anonimity of the server - as SMP-server onion address is used in the clients together with public address, this is ok. If you deploy SMP-server with onion-only address, keep standard configuration.
+   # 启用单跳路由（以下两个选项是第三个选项的依赖项） - 它将以较低的匿名性为代价减少延迟 - 由于SMP服务器洋葱地址与公共地址一起在客户端中使用，这没问题。如果您仅部署洋葱地址的SMP服务器，请保持标准配置。
    SOCKSPort 0
    HiddenServiceNonAnonymousMode 1
    HiddenServiceSingleHopMode 1
-   # smp-server hidden service host directory and port mappings
+   # SMP服务器隐藏服务主机目录和端口映射
    HiddenServiceDir /var/lib/tor/simplex-smp/
    HiddenServicePort 5223 localhost:5223
    HiddenServicePort 443 localhost:443
@@ -128,16 +128,16 @@ To create SMP server as a systemd service, you'll need:
    vim /etc/tor/instances/tor2/torrc
    ```
 
-   Paste the following:
+   粘贴以下内容：
 
    ```sh
-   # Log tor to systemd daemon
+   # 将Tor日志记录到systemd守护进程
    Log notice syslog
-   # Listen to local 9050 port for socks proxy
+   # 监听本地9050端口以用于SOCKS代理
    SocksPort 9050
    ```
 
-6. Start tor:
+6. 启动Tor：
 
    ```sh
    systemctl enable tor &&\
@@ -146,7 +146,7 @@ To create SMP server as a systemd service, you'll need:
    systemctl enable --now tor@tor2
    ```
 
-7. Install Caddy:
+7. 安装Caddy：
 
    ```sh
    sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl &&\
@@ -155,13 +155,13 @@ To create SMP server as a systemd service, you'll need:
    sudo apt update && sudo apt install caddy
    ```
 
-8. Configure Caddy:
+8. 配置Caddy：
 
    ```sh
    vim /etc/caddy/Caddyfile
    ```
 
-   Replace `smp1.example.com` with your actual server domain. Paste the following:
+   将`smp1.example.com`替换为您的实际服务器域名。粘贴以下内容：
 
    ```
    http://smp1.example.com {
@@ -179,7 +179,7 @@ To create SMP server as a systemd service, you'll need:
    vim /usr/local/bin/simplex-servers-certs
    ```
 
-   Replace `smp1.example.com` with your actual server domain. Paste the following:
+   将`smp1.example.com`替换为您的实际服务器域名。粘贴以下内容：
 
    ```sh
    #!/usr/bin/env sh
@@ -194,14 +194,14 @@ To create SMP server as a systemd service, you'll need:
    key_name='web.key'
    cert_name='web.crt'
 
-   # Copy certifiacte from Caddy directory to smp-server directory
+   # 从Caddy目录复制证书到SMP服务器目录
    cp "${folder_in}/${domain}.crt" "${folder_out}/${cert_name}"
-   # Assign correct permissions
+   # 分配正确的权限
    chown "$user":"$group" "${folder_out}/${cert_name}"
 
-   # Copy certifiacte key from Caddy directory to smp-server directory
+   # 从Caddy目录复制证书密钥到SMP服务器目录
    cp "${folder_in}/${domain}.key" "${folder_out}/${key_name}"
-   # Assign correct permissions
+   # 分配正确的权限
    chown "$user":"$group" "${folder_out}/${key_name}"
    ```
 
@@ -213,16 +213,16 @@ To create SMP server as a systemd service, you'll need:
    sudo crontab -e
    ```
 
-   Paste the following:
+   粘贴以下内容：
 
    ```sh
-   # Every week on 00:20 sunday
+   # 每周日00:20
    20 0 * * 0 /usr/local/bin/simplex-servers-certs
    ```
 
-9. Enable and start Caddy service:
+9. 启用并启动Caddy服务：
 
-   Wait until "good to go" has been printed.
+   等待打印“good to go”。
 
    ```sh
    systemctl enable --now caddy &&\
@@ -231,13 +231,13 @@ To create SMP server as a systemd service, you'll need:
    echo 'good to go'
    ```
 
-10. Enable and start smp-server:
+10. 启用并启动SMP服务器：
 
     ```sh
     systemctl enable --now smp-server.service
     ```
 
-11. Print your address:
+11. 打印您的地址：
 
     ```sh
     smp="$(journalctl --output cat -q _SYSTEMD_INVOCATION_ID="$(systemctl show -p InvocationID --value smp-server)" | grep -m1 'Server address:' | awk '{print $NF}' | sed 's/:443.*//')"
@@ -246,25 +246,25 @@ To create SMP server as a systemd service, you'll need:
     echo "$smp,$tor"
     ```
 
-## Installation options
+## 安装选项
 
-You can install SMP server in one of the following ways:
+您可以通过以下方式之一安装SMP服务器：
 
-- [systemd service](#systemd-service)
-   - using [installation script](#installation-script) - **recommended**
-   - or [manually](#manual-deployment)
-- [Docker container](#docker-container) from DockerHub
-- [Linode marketplace](#linode-marketplace)
+- [systemd 服务](#systemd-service)
+   - 使用 [安装脚本](#installation-script) - **推荐**
+   - 或 [手动部署](#manual-deployment)
+- [Docker 容器](#docker-container) 从 DockerHub
+- [Linode 市场](#linode-marketplace)
 
-### systemd service
+### systemd 服务
 
-#### Installation script
+#### 安装脚本
 
-This installation script will automatically install binaries, systemd services and additional scripts that will manage backups, updates and uninstallation. This is the recommended option due to its flexibility, easy updating, and being battle tested on our servers.
+此安装脚本将自动安装二进制文件、systemd服务和其他脚本，这些脚本将管理备份、更新和卸载。这是推荐的选项，因为它具有灵活性、易于更新，并且在我们的服务器上经过了实战测试。
 
-**Please note** that currently only Ubuntu distribution is supported.
+**请注意**，目前仅支持Ubuntu发行版。
 
-Run the following script on the server:
+在服务器上运行以下脚本：
 
 ```sh
 curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/install.sh -o simplex-server-install.sh &&\
@@ -278,50 +278,50 @@ else
 fi
 ```
 
-Type `1` and hit enter to install `smp-server`.
+输入`1`并按回车键安装`smp-server`。
 
-#### Manual deployment
+#### 手动部署
 
-Manual installation is the most advanced deployment that provides the most flexibility. Generally recommended only for advanced users.
+手动安装是最先进的部署方式，提供了最大的灵活性。通常仅推荐给高级用户。
 
-1. Install binary:
+1. 安装二进制文件：
 
-   - Using pre-compiled binaries:
+   - 使用预编译的二进制文件：
 
      ```sh
      curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/smp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/smp-server && chmod +x /usr/local/bin/smp-server
      ```
 
-   - Compiling from source:
+   - 从源代码编译：
 
-     Please refer to [Build from source: Using your distribution](https://github.com/simplex-chat/simplexmq#using-your-distribution)
+     请参考[从源代码构建：使用您的发行版](https://github.com/simplex-chat/simplexmq#using-your-distribution)
 
-2. Create user and group for `smp-server`:
+2. 为`smp-server`创建用户和组：
 
    ```sh
    sudo useradd -m smp
    ```
 
-3. Create necessary directories and assign permissions:
+3. 创建必要的目录并分配权限：
 
    ```sh
    sudo mkdir -p /var/opt/simplex /etc/opt/simplex
    sudo chown smp:smp /var/opt/simplex /etc/opt/simplex
    ```
 
-4. Allow `smp-server` port in firewall:
+4. 在防火墙中允许`smp-server`端口：
 
    ```sh
-   # For Ubuntu
+   # 对于Ubuntu
    sudo ufw allow 5223/tcp
    sudo ufw allow 443/tcp
    sudo ufw allow 80/tcp
-   # For Fedora
+   # 对于Fedora
    sudo firewall-cmd --permanent --add-port=5223/tcp --add-port=443/tcp --add-port=80/tcp && \
    sudo firewall-cmd --reload
    ```
 
-5. **Optional** — If you're using distribution with `systemd`, create `/etc/systemd/system/smp-server.service` file with the following content:
+5. **可选** - 如果您使用的是带有`systemd`的发行版，请创建`/etc/systemd/system/smp-server.service`文件，内容如下：
 
    ```sh
    [Unit]
@@ -342,31 +342,31 @@ Manual installation is the most advanced deployment that provides the most flexi
    WantedBy=multi-user.target
    ```
 
-   And execute `sudo systemctl daemon-reload`.
+   并执行`sudo systemctl daemon-reload`。
 
-### Docker container
+### Docker 容器
 
-You can deploy smp-server using Docker Compose. This is second recommended option due to its popularity and relatively easy deployment.
+您可以使用Docker Compose部署smp-server。这是第二推荐的选项，因为它的流行和相对容易的部署。
 
-This deployment provides two Docker Compose files: the **automatic** one and **manual**. If you're not sure, choose **automatic**.
+此部署提供了两个Docker Compose文件：**自动**和**手动**。如果您不确定，请选择**自动**。
 
-This will download images from [Docker Hub](https://hub.docker.com/r/simplexchat).
+这将从[Docker Hub](https://hub.docker.com/r/simplexchat)下载镜像。
 
-#### Docker: Automatic setup
+#### Docker：自动设置
 
-This configuration provides quick and easy way to setup your SMP server: Caddy will automatically manage Let's Encrypt certificates and redirect HTTP to HTTPS, while smp-server will serve both [server information page](#server-information-page) and SMP Protocol by 443 port. 5223 port is used as fallback.
+此配置提供了快速简便的方式来设置您的SMP服务器：Caddy将自动管理Let's Encrypt证书并将HTTP重定向到HTTPS，而smp-server将通过443端口同时提供[服务器信息页面](#server-information-page)和SMP协议。5223端口用作备用。
 
-**Please note** that you _must_ have `80` and `443` ports unallocated by other servers.
+**请注意**，您必须有`80`和`443`端口未被其他服务器占用。
 
-1. Create `smp-server` directory and switch to it:
+1. 创建`smp-server`目录并切换到该目录：
 
   ```sh
   mkdir smp-server && cd smp-server
   ```
 
-2. Create `docker-compose.yml` file with the following content:
+2. 创建`docker-compose.yml`文件，内容如下：
 
-  You can also grab it from here - [docker-compose-smp-complete.yml](https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-smp-complete.yml). Don't forget to rename it to `docker-compose.yml`.
+  您也可以从这里获取 - [docker-compose-smp-complete.yml](https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-smp-complete.yml)。不要忘记将其重命名为`docker-compose.yml`。
 
   ```yaml
   name: SimpleX Chat - smp-server
@@ -438,41 +438,41 @@ This configuration provides quick and easy way to setup your SMP server: Caddy w
     caddy_config:
   ```
 
-3. In the same directory, create `.env` file with the following content:
+3. 在同一目录中，创建`.env`文件，内容如下：
 
-  You can also grab it from here - [docker-compose-smp-complete.env](https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-smp-complete.env). Don't forget to rename it to `.env`.
+  您也可以从这里获取 - [docker-compose-smp-complete.env](https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-smp-complete.env)。不要忘记将其重命名为`.env`。
 
-  Change variables according to your preferences.
+  根据您的偏好更改变量。
 
   ```env
-  # Mandatory
+  # 强制
   ADDR=your_ip_or_addr
 
-  # Optional
+  # 可选
   #PASS='123123'
   ```
 
-4. Start your containers:
+4. 启动您的容器：
 
   ```sh
   docker compose up
   ```
 
-#### Docker: Manual setup
+#### Docker：手动设置
 
-If you know what you are doing, this configuration provides bare SMP server setup without automatically managed Let's Encrypt certificates by Caddy to serve [server information page](#server-information-page) with 5223 port set as primary.
+如果您知道自己在做什么，此配置提供了裸SMP服务器设置，而无需Caddy自动管理Let's Encrypt证书以通过5223端口提供[服务器信息页面](#server-information-page)。
 
-This configuration allows you to retain the ability to manage 80 and 443 ports yourself. As a downside, SMP server **can not* be served to 443 port.
+此配置允许您保留自己管理80和443端口的能力。缺点是SMP服务器**不能**通过443端口提供服务。
 
-1. Create `smp-server` directory and switch to it:
+1. 创建`smp-server`目录并切换到该目录：
 
   ```sh
   mkdir smp-server && cd smp-server
   ```
 
-2. Create `docker-compose.yml` file with the following content:
+2. 创建`docker-compose.yml`文件，内容如下：
 
-  You can also grab it from here - [docker-compose-smp-manual.yml](https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-smp-manual.yml). Don't forget to rename it to `docker-compose.yml`.
+  您也可以从这里获取 - [docker-compose-smp-manual.yml](https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-smp-manual.yml)。不要忘记将其重命名为`docker-compose.yml`。
 
   ```yaml
   name: SimpleX Chat - smp-server
@@ -492,149 +492,146 @@ This configuration allows you to retain the ability to manage 80 and 443 ports y
       restart: unless-stopped
   ```
 
-3. In the same directory, create `.env` file with the following content:
+3. 在同一目录中，创建`.env`文件，内容如下：
 
-  You can also grab it from here - [docker-compose-smp-manual.env](https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-smp-manual.env). Don't forget to rename it to `.env`.
+  您也可以从这里获取 - [docker-compose-smp-manual.env](https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-smp-manual.env)。不要忘记将其重命名为`.env`。
 
-  Change variables according to your preferences.
+  根据您的偏好更改变量。
 
   ```env
-  # Mandatory
+  # 强制
   ADDR=your_ip_or_addr
 
-  # Optional
+  # 可选
   #PASS='123123'
   WEB_MANUAL=1
   ```
 
-4. Start your containers:
+4. 启动您的容器：
 
   ```sh
   docker compose up
   ```
 
-### Linode marketplace
+### Linode 市场
 
-You can deploy smp-server upon creating new Linode VM. Please refer to: [Linode Marketplace](https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/)
+您可以在创建新的Linode虚拟机时部署smp-server。请参考：[Linode Marketplace](https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/)
 
-## Verifying server binaries
+## 验证服务器二进制文件
 
-Starting from v6.3 server builds are [reproducible](#reproduce-builds).
+从v6.3版本开始，服务器构建是[可重现的](#reproduce-builds)。
 
-That also allows us to sign server releases, confirming the integrity of GitHub builds.
+这也使我们能够签署服务器发布，确认GitHub构建的完整性。
 
-To verify server binaries after you downloaded them:
+要在下载服务器二进制文件后验证它们：
 
-1. Download `_sha256sums` (hashes of all server binaries) and `_sha256sums.asc` (signature).
+1. 下载`_sha256sums`（所有服务器二进制文件的哈希值）和`_sha256sums.asc`（签名）。
 
-2. Download our key FB44AF81A45BDE327319797C85107E357D4A17FC from [openpgp.org](https://keys.openpgp.org/search?q=chat%40simplex.chat)
+2. 从[openpgp.org](https://keys.openpgp.org/search?q=chat%40simplex.chat)下载我们的密钥FB44AF81A45BDE327319797C85107E357D4A17FC。
 
-3. Import the key with `gpg --import FB44AF81A45BDE327319797C85107E357D4A17FC`. Key filename should be the same as its fingerprint, but please change it if necessary.
+3. 使用`gpg --import FB44AF81A45BDE327319797C85107E357D4A17FC`导入密钥。密钥文件名应与其指纹相同，但请根据需要更改。
 
-4. Run `gpg --verify --trusted-key  _sha256sums.asc _sha256sums`. It should print:
+4. 运行`gpg --verify --trusted-key  _sha256sums.asc _sha256sums`。它应打印：
 
 > Good signature from "SimpleX Chat <chat@simplex.chat>"
 
-5. Compute the hashes of the binaries you plan to use with `shu256sum <file>` or with `openssl sha256 <file>` and compare them with the hashes in the file `_sha256sums` - they must be the same.
+5. 使用`sha256sum <file>`或`openssl sha256 <file>`计算您计划使用的二进制文件的哈希值，并将它们与文件`_sha256sums`中的哈希值进行比较 - 它们必须相同。
 
-That is it - you now verified authenticity of our GitHub server binaries.
+就是这样 - 您现在已经验证了我们的GitHub服务器二进制文件的真实性。
 
-## Configuration
+## 配置
 
-To see which options are available, execute `smp-server` without flags:
+要查看可用的选项，请执行不带标志的`smp-server`：
 
 ```sh
 sudo su smp -c smp-server
 
 ...
-Available commands:
-  init                     Initialize server - creates /etc/opt/simplex and
-                           /var/opt/simplex directories and configuration files
-  start                    Start server (configuration:
-                           /etc/opt/simplex/smp-server.ini)
-  delete                   Delete configuration and log files
+可用命令：
+  init                     初始化服务器 - 创建 /etc/opt/simplex 和
+                           /var/opt/simplex 目录和配置文件
+  start                    启动服务器（配置：
+                           /etc/opt/simplex/smp-server.ini）
+  delete                   删除配置和日志文件
 ```
 
-You can get further help by executing `sudo su smp -c "smp-server <command> -h"`
+您可以通过执行`sudo su smp -c "smp-server <command> -h"`获取更多帮助。
 
-After that, we need to configure `smp-server`:
+之后，我们需要配置`smp-server`：
 
-### Interactively
+### 交互式配置
 
-Execute the following command:
+执行以下命令：
 
 ```sh
 sudo su smp -c "smp-server init"
 ```
 
-There are several options to consider:
+有几个选项需要考虑：
 
-- `Enable store log to restore queues and messages on server restart (Yn):`
+- `启用存储日志以在服务器重启时恢复队列和消息（Yn）：`
 
-  Enter `y` to enable saving and restoring connections and messages when the server is restarted.
+  输入`y`以启用在服务器重启时保存和恢复连接和消息。
 
-  _Please note_: it is important to use SIGINT to restart the server, as otherwise the undelivered messages will not be restored. The connections will be restored irrespective of how the server is restarted, as unlike messages they are added to append-only log on every change.
+  _请注意_：重要的是使用SIGINT重启服务器，否则未发送的消息将不会恢复。无论服务器如何重启，连接都会恢复，因为与消息不同，它们在每次更改时都会添加到追加日志中。
 
-- `Enable logging daily statistics (yN):`
+- `启用日志记录每日统计信息（yN）：`
 
-  Enter `y` to enable logging statistics in CSV format, e.g. they can be used to show aggregate usage charts in `Grafana`.
+  输入`y`以启用以CSV格式记录统计信息，例如，它们可以用于在`Grafana`中显示汇总使用图表。
 
-These statistics include daily counts of created, secured and deleted queues, sent and received messages, and also daily, weekly, and monthly counts of active queues (that is, the queues that were used for any messages). We believe that this information does not include anything that would allow correlating different queues as belonging to the same users, but please [let us know](./SECURITY.md), confidentially, if you believe that this can be exploited in any way.
+这些统计信息包括创建、保护和删除队列的每日计数，发送和接收的消息，以及每日、每周和每月的活动队列计数（即，使用任何消息的队列）。我们相信这些信息不包括任何允许将不同队列关联为同一用户的信息，但如果您认为这可能被利用，请[告知我们](./SECURITY.md)，我们会保密处理。
 
-- `Require a password to create new messaging queues?`
+- `需要密码才能创建新的消息队列？`
 
-  Press `Enter` or enter your arbitrary password to password-protect `smp-server`, or `n` to disable password protection.
+  按回车键或输入任意密码以密码保护`smp-server`，或输入`n`以禁用密码保护。
 
-- `Enter server FQDN or IP address for certificate (127.0.0.1):`
+- `输入服务器FQDN或IP地址以获取证书（127.0.0.1）：`
 
-  Enter your domain or ip address that your smp-server is running on - it will be included in server certificates and also printed as part of server address.
+  输入您的域名或运行smp-server的IP地址 - 它将包含在服务器证书中，并作为服务器地址的一部分打印。
 
-### Via command line options
+### 通过命令行选项配置
 
-Execute the following command:
+执行以下命令：
 
 ```sh
 sudo su smp -c "smp-server init -h"
 
 ...
-Available options:
-  -l,--store-log           Enable store log for persistence
-  -s,--daily-stats         Enable logging daily server statistics
-  -a,--sign-algorithm ALG  Signature algorithm used for TLS certificates:
-                           ED25519, ED448 (default: ED448)
-  --ip IP                  Server IP address, used as Common Name for TLS online
-                           certificate if FQDN is not supplied
-                           (default: "127.0.0.1")
-  -n,--fqdn FQDN           Server FQDN used as Common Name for TLS online
-                           certificate
-  --no-password            Allow creating new queues without password
-  --password PASSWORD      Set password to create new messaging queues
-  -y,--yes                 Non-interactive initialization using command-line
-                           options
-  -h,--help                Show this help text
+可用选项：
+  -l,--store-log           启用存储日志以实现持久性
+  -s,--daily-stats         启用日志记录每日服务器统计信息
+  -a,--sign-algorithm ALG  用于TLS证书的签名算法：
+                           ED25519, ED448（默认：ED448）
+  --ip IP                  服务器IP地址，用于TLS在线证书的通用名称
+                           如果未提供FQDN（默认："127.0.0.1"）
+  -n,--fqdn FQDN           用于TLS在线证书的服务器FQDN
+  --no-password            允许在没有密码的情况下创建新队列
+  --password PASSWORD      设置密码以创建新的消息队列
+  -y,--yes                 使用命令行选项进行非交互式初始化
+  -h,--help                显示此帮助文本
 ```
 
-You should determine which flags are needed for your use-case and then execute `smp-server init` with `-y` flag for non-interactive initialization:
+您应确定哪些标志适合您的用例，然后使用`-y`标志执行`smp-server init`进行非交互式初始化：
 
 ```sh
 sudo su smp -c "smp-server init -y -<your flag> <your option>"
 ```
 
-For example, run:
+例如，运行：
 
 ```sh
 sudo su smp -c "smp-server init -y -l --ip 192.168.1.5 --password test"
 ```
 
-to initialize your `smp-server` configuration with:
+以初始化您的`smp-server`配置：
 
-- restoring connections and messages when the server is restarted (`-l` flag),
-- IP address `192.168.1.5`,
-- protect `smp-server` with a password `test`.
+- 在服务器重启时恢复连接和消息（`-l`标志），
+- IP地址`192.168.1.5`，
+- 使用密码`test`保护`smp-server`。
 
 ---
 
-After that, your installation is complete and you should see in your teminal output something like this:
+之后，您的安装完成，您应该在终端输出中看到类似以下内容：
 
 ```sh
 Certificate request self-signature ok
@@ -651,227 +648,225 @@ Fingerprint: d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=
 Server address: smp://d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=:V8ONoJ6ICwnrZnTC_QuSHfCEYq53uLaJKQ_oIC6-ve8=@<hostnames>
 ```
 
-The server address above should be used in your client configuration, and if you added server password it should only be shared with the other people who you want to allow using your server to receive the messages (all your contacts will be able to send messages - it does not require a password). If you passed IP address or hostnames during the initialisation, they will be printed as part of server address, otherwise replace `<hostnames>` with the actual server hostnames.
+上面的服务器地址应在您的客户端配置中使用，如果您添加了服务器密码，则应仅与您希望允许使用您的服务器接收消息的其他人共享（所有联系人都可以发送消息 - 这不需要密码）。如果在初始化期间传递了IP地址或主机名，它们将作为服务器地址的一部分打印，否则请将`<hostnames>`替换为实际的服务器主机名。
 
-## Further configuration
+## 进一步配置
 
-All generated configuration, along with a description for each parameter, is available inside configuration file in `/etc/opt/simplex/smp-server.ini` for further customization. Depending on the smp-server version, the configuration file looks something like this:
+所有生成的配置以及每个参数的描述都在`/etc/opt/simplex/smp-server.ini`中的配置文件中可用，以供进一步自定义。根据smp-server版本，配置文件看起来如下：
 
 ```ini
 [INFORMATION]
-# AGPLv3 license requires that you make any source code modifications
-# available to the end users of the server.
-# LICENSE: https://github.com/simplex-chat/simplexmq/blob/stable/LICENSE
-# Include correct source code URI in case the server source code is modified in any way.
-# If any other information fields are present, source code property also MUST be present.
+# AGPLv3许可证要求您向服务器的最终用户提供任何源代码修改。
+# 许可证：https://github.com/simplex-chat/simplexmq/blob/stable/LICENSE
+# 如果服务器源代码以任何方式修改，请包含正确的源代码URI。
+# 如果存在任何其他信息字段，源代码属性也必须存在。
 
 source_code: https://github.com/simplex-chat/simplexmq
 
-# Declaring all below information is optional, any of these fields can be omitted.
+# 声明以下所有信息是可选的，可以省略任何这些字段。
 
-# Server usage conditions and amendments.
-# It is recommended to use standard conditions with any amendments in a separate document.
+# 服务器使用条件和修正。
+# 建议使用标准条件，并在单独的文档中包含任何修正。
 # usage_conditions: https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md
 # condition_amendments: link
 
-# Server location and operator.
+# 服务器位置和运营商。
 # server_country: ISO-3166 2-letter code
 # operator: entity (organization or person name)
 # operator_country: ISO-3166 2-letter code
 # website:
 
-# Administrative contacts.
+# 管理联系人。
 # admin_simplex: SimpleX address
 # admin_email:
 # admin_pgp:
 # admin_pgp_fingerprint:
 
-# Contacts for complaints and feedback.
+# 投诉和反馈联系人。
 # complaints_simplex: SimpleX address
 # complaints_email:
 # complaints_pgp:
 # complaints_pgp_fingerprint:
 
-# Hosting provider.
+# 托管提供商。
 # hosting: entity (organization or person name)
 # hosting_country: ISO-3166 2-letter code
 
 [STORE_LOG]
-# The server uses STM memory for persistence,
-# that will be lost on restart (e.g., as with redis).
-# This option enables saving memory to append only log,
-# and restoring it when the server is started.
-# Log is compacted on start (deleted objects are removed).
+# 服务器使用STM内存进行持久化，
+# 在重启时将丢失（例如，与redis一样）。
+# 此选项启用将内存保存到追加日志，
+# 并在服务器启动时恢复它。
+# 日志在启动时压缩（删除的对象被移除）。
 enable: on
 
-# Undelivered messages are optionally saved and restored when the server restarts,
-# they are preserved in the .bak file until the next restart.
+# 未发送的消息可以选择保存并在服务器重启时恢复，
+# 它们在下次重启之前保存在.bak文件中。
 restore_messages: on
 expire_messages_days: 21
 expire_ntfs_hours: 24
 
-# Log daily server statistics to CSV file
+# 记录每日服务器统计信息到CSV文件
 log_stats: on
 
 [AUTH]
-# Set new_queues option to off to completely prohibit creating new messaging queues.
-# This can be useful when you want to decommission the server, but not all connections are switched yet.
+# 将new_queues选项设置为off以完全禁止创建新的消息队列。
+# 这在您想要停用服务器但尚未切换所有连接时非常有用。
 new_queues: on
 
-# Use create_password option to enable basic auth to create new messaging queues.
-# The password should be used as part of server address in client configuration:
+# 使用create_password选项启用基本身份验证以创建新的消息队列。
+# 密码应作为服务器地址的一部分在客户端配置中使用：
 # smp://fingerprint:password@host1,host2
-# The password will not be shared with the connecting contacts, you must share it only
-# with the users who you want to allow creating messaging queues on your server.
+# 密码不会与连接的联系人共享，您必须仅与希望允许在您的服务器上创建消息队列的用户共享。
 # create_password: password to create new queues (any printable ASCII characters without whitespace, '@', ':' and '/')
 
 # control_port_admin_password:
 # control_port_user_password:
 
 [TRANSPORT]
-# Host is only used to print server address on start.
-# You can specify multiple server ports.
+# host仅用于在启动时打印服务器地址。
+# 您可以指定多个服务器端口。
 host: <domain/ip>
 port: 5223,443
 log_tls_errors: off
 
-# Use `websockets: 443` to run websockets server in addition to plain TLS.
+# 使用`websockets: 443`在纯TLS之外运行websockets服务器。
 websockets: off
 # control_port: 5224
 
 [PROXY]
-# Network configuration for SMP proxy client.
-# `host_mode` can be 'public' (default) or 'onion'.
-# It defines prefferred hostname for destination servers with multiple hostnames.
+# SMP代理客户端的网络配置。
+# `host_mode`可以是'public'（默认）或'onion'。
+# 它定义了具有多个主机名的目标服务器的首选主机名。
 # host_mode: public
 # required_host_mode: off
 
-# The domain suffixes of the relays you operate (space-separated) to count as separate proxy statistics.
+# 您操作的中继的域名后缀（空格分隔）以计为单独的代理统计信息。
 # own_server_domains: 
 
-# SOCKS proxy port for forwarding messages to destination servers.
-# You may need a separate instance of SOCKS proxy for incoming single-hop requests.
+# 用于将消息转发到目标服务器的SOCKS代理端口。
+# 您可能需要单独的SOCKS代理实例以处理传入的单跳请求。
 # socks_proxy: localhost:9050
 
-# `socks_mode` can be 'onion' for SOCKS proxy to be used for .onion destination hosts only (default)
-# or 'always' to be used for all destination hosts (can be used if it is an .onion server).
+# `socks_mode`可以是'onion'，用于仅用于.onion目标主机的SOCKS代理（默认）
+# 或'always'，用于所有目标主机（可以用于.onion服务器）。
 # socks_mode: onion
 
-# Limit number of threads a client can spawn to process proxy commands in parrallel.
+# 限制客户端可以生成的线程数以并行处理代理命令。
 # client_concurrency: 32
 
 [INACTIVE_CLIENTS]
-# TTL and interval to check inactive clients
+# TTL和检查不活动客户端的间隔
 disconnect: off
 # ttl: 21600
 # check_interval: 3600
 
 [WEB]
-# Set path to generate static mini-site for server information and qr codes/links
+# 设置路径以生成服务器信息和二维码/链接的静态迷你站点
 static_path: /var/opt/simplex/www
 
-# Run an embedded server on this port
-# Onion sites can use any port and register it in the hidden service config.
-# Running on a port 80 may require setting process capabilities.
+# 在此端口上运行嵌入式服务器
+# 洋葱站点可以使用任何端口并在隐藏服务配置中注册它。
+# 在端口80上运行可能需要设置进程能力。
 #http: 8000
 
-# You can run an embedded TLS web server too if you provide port and cert and key files.
-# Not required for running relay on onion address.
+# 如果您提供端口和证书和密钥文件，您也可以运行嵌入式TLS Web服务器。
+# 不需要运行中继在洋葱地址。
 https: 443
 cert: /etc/opt/simplex/web.crt
 key: /etc/opt/simplex/web.key
 ```
 
-## Server security
+## 服务器安全
 
-### Initialization
+### 初始化
 
-Although it's convenient to initialize smp-server configuration directly on the server, operators **ARE ADVISED** to initialize smp-server fully offline to protect your SMP server CA private key.
+虽然在服务器上直接初始化smp-server配置很方便，但建议操作员**离线**初始化smp-server以保护您的SMP服务器CA私钥。
 
-Follow the steps to quickly initialize the server offline:
+按照以下步骤快速离线初始化服务器：
 
-1. Install Docker on your system.
+1. 在您的系统上安装Docker。
 
-2. Deploy [smp-server](https://github.com/simplex-chat/simplexmq#using-docker) locally.
+2. 本地部署[smp-server](https://github.com/simplex-chat/simplexmq#using-docker)。
 
-3. Destroy the container. All relevant configuration files and keys will be available at `$HOME/simplex/smp/config`.
+3. 销毁容器。所有相关的配置文件和密钥将位于`$HOME/simplex/smp/config`。
 
-4. Move your `CA` private key (`ca.key`) to the safe place. For further explanation, see the next section: [Server security: Private keys](#private-keys).
+4. 将您的`CA`私钥（`ca.key`）移动到安全的地方。有关进一步说明，请参阅下一节：[服务器安全：私钥](#private-keys)。
 
-5. Copy all other configuration files **except** the CA key to the server:
+5. 将所有其他配置文件**除**CA密钥外复制到服务器：
 
    ```sh
    rsync -hzasP $HOME/simplex/smp/config/ <server_user>@<server_address>:/etc/opt/simplex/
    ```
 
-### Private keys
+### 私钥
 
-Connection to the smp server occurs via a TLS connection. During the TLS handshake, the client verifies smp-server CA and server certificates by comparing its fingerprint with the one included in server address. If server TLS credential is compromised, this key can be used to sign a new one, keeping the same server identity and established connections. In order to protect your smp-server from bad actors, operators **ARE ADVISED** to move CA private key to a safe place. That could be:
+连接到smp服务器是通过TLS连接进行的。在TLS握手期间，客户端通过将其指纹与服务器地址中包含的指纹进行比较来验证smp-server CA和服务器证书。如果服务器TLS凭证被泄露，此密钥可以用于签署新的凭证，保持相同的服务器身份和已建立的连接。为了保护您的smp-server免受恶意行为者的攻击，建议操作员**将CA私钥移动到安全的地方**。这可以是：
 
-- [Tails](https://tails.net/) live usb drive with [persistent and encrypted storage](https://tails.net/doc/persistent_storage/create/index.en.html).
-- Offline Linux laptop.
-- Bitwarden.
-- Any other safe storage that satisfy your security requirements.
+- 带有[持久和加密存储](https://tails.net/doc/persistent_storage/create/index.en.html)的[Tails](https://tails.net/) live USB驱动器。
+- 离线Linux笔记本电脑。
+- Bitwarden。
+- 满足您的安全要求的任何其他安全存储。
 
-Follow the steps to secure your CA keys:
+按照以下步骤保护您的CA密钥：
 
-1. Login to your server via SSH.
+1. 通过SSH登录到您的服务器。
 
-2. Copy the CA key to a safe place from this file:
+2. 将CA密钥从以下文件复制到安全的地方：
 
    ```sh
    /etc/opt/simplex/ca.key
    ```
 
-3. Delete the CA key from the server. **Please make sure you've saved you CA key somewhere safe. Otherwise, you would lose the ability to [rotate the online certificate](#online-certificate-rotation)**:
+3. 从服务器删除CA密钥。**请确保您已将CA密钥安全保存。否则，您将失去[轮换在线证书](#online-certificate-rotation)的能力**：
 
    ```sh
    rm /etc/opt/simplex/ca.key
    ```
 
-### Online certificate rotation
+### 在线证书轮换
 
-Operators of smp servers **ARE ADVISED** to rotate online certificate regularly (e.g., every 3 months). In order to do this, follow the steps:
+建议smp服务器的操作员定期轮换在线证书（例如，每3个月）。为此，请按照以下步骤操作：
 
-1. Create relevant folders:
+1. 创建相关文件夹：
 
    ```sh
    mkdir -p $HOME/simplex/smp/config
    ```
 
-1. Copy the configuration files from the server to the local machine (if not yet):
+1. 将配置文件从服务器复制到本地计算机（如果尚未复制）：
 
    ```sh
    rsync -hzasP <server_user>@<server_address>:/etc/opt/simplex/ $HOME/simplex/smp/config/
    ```
 
-2. **Copy** your CA private key from a safe place to the local machine and name it `ca.key`.
+2. **复制**您的CA私钥从安全的地方到本地计算机，并将其命名为`ca.key`。
 
-3. Download latest `smp-server` binary [from Github releases](https://github.com/simplex-chat/simplexmq/releases):
+3. 从Github发布下载最新的`smp-server`二进制文件：
 
    ```sh
    curl -L 'https://github.com/simplex-chat/simplexmq/releases/latest/download/smp-server-ubuntu-20_04-x86-64' -o smp-server
    ```
 
-4. Put the `smp-server` binary to your `$PATH` and make it executable:
+4. 将`smp-server`二进制文件放入您的`$PATH`并使其可执行：
 
    ```sh
    sudo mv smp-server /usr/local/bin/ && chmod +x /usr/local/bin/smp-server
    ```
 
-5. Export a variable to configure your path to smp-server configuration:
+5. 导出变量以配置您的smp-server配置路径：
 
    ```sh
    export SMP_SERVER_CFG_PATH=$HOME/simplex/smp/config
    ```
 
-6. Execute the following command:
+6. 执行以下命令：
 
    ```sh
    smp-server cert
    ```
 
-   This command should print:
+   此命令应打印：
 
    ```sh
    Certificate request self-signature ok
@@ -885,37 +880,37 @@ Operators of smp servers **ARE ADVISED** to rotate online certificate regularly 
    ----------
    ```
 
-7. Remove the CA key from the config folder (make sure you have a backup!):
+7. 从配置文件夹中删除CA密钥（确保您有备份！）：
 
    ```sh
    rm $HOME/simplex/smp/config/ca.key
    ```
 
-8. Upload new certificates to the server:
+8. 将新证书上传到服务器：
 
    ```sh
    rsync -hzasP $HOME/simplex/smp/config/ <server_user>@<server_address>:/etc/opt/simplex/
    ```
 
-9. Connect to the server via SSH and restart the service:
+9. 通过SSH连接到服务器并重启服务：
 
    ```sh
    ssh <server_user>@<server_address> "systemctl restart smp-server"
    ```
 
-10. Done!
+10. 完成！
 
-## Tor: installation and configuration
+## Tor：安装与配置
 
-### Installation for onion address
+### 为洋葱地址安装
 
-SMP-server can also be deployed to be available via [Tor](https://www.torproject.org) network. Run the following commands as `root` user.
+SMP服务器也可以部署为通过[Tor](https://www.torproject.org)网络可用。以`root`用户身份运行以下命令。
 
-1. Install tor:
+1. 安装Tor：
 
-   We're assuming you're using Ubuntu/Debian based distributions. If not, please refer to [offical tor documentation](https://community.torproject.org/onion-services/setup/install/) or your distribution guide.
+   我们假设您使用的是基于Ubuntu/Debian的发行版。如果不是，请参考[官方Tor文档](https://community.torproject.org/onion-services/setup/install/)或您的发行版指南。
 
-   - Configure offical Tor PPA repository:
+   - 配置官方Tor PPA存储库：
 
      ```sh
      CODENAME="$(lsb_release -c | awk '{print $2}')"
@@ -923,109 +918,109 @@ SMP-server can also be deployed to be available via [Tor](https://www.torproject
      deb-src [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main" > /etc/apt/sources.list.d/tor.list
      ```
 
-   - Import repository key:
+   - 导入存储库密钥：
 
      ```sh
      curl --proto '=https' --tlsv1.2 -sSf https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --dearmor | tee /usr/share/keyrings/tor-archive-keyring.gpg >/dev/null
      ```
 
-   - Update repository index:
+   - 更新存储库索引：
 
      ```sh
      apt update
      ```
 
-   - Install `tor` package:
+   - 安装`tor`包：
 
      ```sh
      apt install -y tor deb.torproject.org-keyring
      ```
 
-2. Configure tor:
+2. 配置Tor：
 
-   - File configuration:
+   - 文件配置：
   
-     Open tor configuration with your editor of choice (`nano`,`vim`,`emacs`,etc.):
+     使用您选择的编辑器（`nano`，`vim`，`emacs`等）打开Tor配置：
 
      ```sh
      vim /etc/tor/torrc
      ```
 
-     And insert the following lines to the bottom of configuration. Please note lines starting with `#`: this is comments about each individual options.
+     并将以下行插入配置底部。请注意以`#`开头的行：这是关于每个选项的注释。
 
      ```sh
-     # Enable log (otherwise, tor doesn't seem to deploy onion address)
+     # 启用日志（否则，Tor似乎不会部署洋葱地址）
      Log notice file /var/log/tor/notices.log
-     # Enable single hop routing (2 options below are dependencies of the third) - It will reduce the latency at the cost of lower anonimity of the server - as SMP-server onion address is used in the clients together with public address, this is ok. If you deploy SMP-server with onion-only address, you may want to keep standard configuration instead.
+     # 启用单跳路由（以下两个选项是第三个选项的依赖项） - 它将以较低的匿名性为代价减少延迟 - 由于SMP服务器洋葱地址与公共地址一起在客户端中使用，这没问题。如果您仅部署洋葱地址的SMP服务器，请保持标准配置。
      SOCKSPort 0
      HiddenServiceNonAnonymousMode 1
      HiddenServiceSingleHopMode 1
-     # smp-server hidden service host directory and port mappings
+     # SMP服务器隐藏服务主机目录和端口映射
      HiddenServiceDir /var/lib/tor/simplex-smp/
      HiddenServicePort 5223 localhost:5223
      HiddenServicePort 443 localhost:443
      ```
 
-   - Create directories:
+   - 创建目录：
 
      ```sh
      mkdir /var/lib/tor/simplex-smp/ && chown debian-tor:debian-tor /var/lib/tor/simplex-smp/ && chmod 700 /var/lib/tor/simplex-smp/
      ```
 
-3. Start tor:
+3. 启动Tor：
 
-   Enable `systemd` service and start tor. Offical `tor` is a bit flaky on the first start and may not create onion host address, so we're restarting it just in case.
+   启用`systemd`服务并启动Tor。官方`tor`在首次启动时有点不稳定，可能不会创建洋葱主机地址，因此我们重新启动它以防万一。
 
    ```sh
    systemctl enable --now tor && systemctl restart tor
    ```
 
-4. Display onion host:
+4. 显示洋葱主机：
 
-   Execute the following command to display your onion host address:
+   执行以下命令以显示您的洋葱主机地址：
 
    ```sh
    cat /var/lib/tor/simplex-smp/hostname
    ```
 
-### SOCKS port for SMP PROXY
+### SMP代理的SOCKS端口
 
-SMP-server versions starting from `v5.8.0-beta.0` can be configured to PROXY smp servers available exclusively through [Tor](https://www.torproject.org) network to be accessible to the clients that do not use Tor. Run the following commands as `root` user.
+从`smp-server`版本`v5.8.0-beta.0`开始，可以配置SMP代理以通过[Tor](https://www.torproject.org)网络访问仅通过Tor网络可用的smp服务器，以便不使用Tor的客户端可以访问。以`root`用户身份运行以下命令。
 
-1. Install tor as described in the [previous section](#installation-for-onion-address).
+1. 按照[上一节](#installation-for-onion-address)中的说明安装Tor。
 
-2. Execute the following command to creatae a new Tor daemon instance:
+2. 执行以下命令以创建新的Tor守护进程实例：
 
    ```sh
    tor-instance-create tor2
    ```
 
-3. Open the `tor2` configuration and replace its content with the following lines:
+3. 打开`tor2`配置并将其内容替换为以下行：
 
    ```sh
    vim /etc/tor/instances/tor2/torrc
    ```
 
    ```sh
-   # Log tor to systemd daemon
+   # 将Tor日志记录到systemd守护进程
    Log notice syslog
-   # Listen to local 9050 port for socks proxy
+   # 监听本地9050端口以用于SOCKS代理
    SocksPort 9050
    ```
 
-3. Enable service at startup and start the daemon:
+3. 启用服务并启动守护进程：
 
    ```sh
    systemctl enable --now tor@tor2
    ```
 
-   You can check `tor2` logs with the following command:
+   您可以使用以下命令检查`tor2`日志：
 
    ```sh
    journalctl -u tor@tor2
    ```
 
-4. After [server initialization](#configuration), configure the `PROXY` section like so:
+4. 在[服务器初始化](#configuration)后，配置`PROXY`部分如下：
 
    ```ini
    ...
@@ -1035,13 +1030,13 @@ SMP-server versions starting from `v5.8.0-beta.0` can be configured to PROXY smp
    ...
    ```
 
-## Server information page
+## 服务器信息页面
 
-SMP server **SHOULD** be configured to serve Web page with server information that can include admin info, server info, provider info, etc. It will also serve connection links, generated using the mobile/desktop apps. Run the following commands as `root` user.
+SMP服务器**应**配置为提供包含管理员信息、服务器信息、提供商信息等的网页。它还将提供使用移动/桌面应用程序生成的连接链接。以`root`用户身份运行以下命令。
 
-_Please note:_ this configuration is supported since `v6.1.0-beta.2`.
+_请注意_：此配置从`v6.1.0-beta.2`开始支持。
 
-1. Add the following to your smp-server configuration (please modify fields in [INFORMATION] section to include relevant information):
+1. 将以下内容添加到您的smp-server配置中（请修改[INFORMATION]部分中的字段以包含相关信息）：
 
    ```sh
    vim /etc/opt/simplex/smp-server.ini
@@ -1049,7 +1044,7 @@ _Please note:_ this configuration is supported since `v6.1.0-beta.2`.
 
    ```ini
    [TRANSPORT]
-   # host is only used to print server address on start
+   # host仅用于在启动时打印服务器地址
    host: <domain/ip>
    port: 443,5223
    websockets: off
@@ -1063,75 +1058,74 @@ _Please note:_ this configuration is supported since `v6.1.0-beta.2`.
    key: /etc/opt/simplex/web.key
 
    [INFORMATION]
-   # AGPLv3 license requires that you make any source code modifications
-   # available to the end users of the server.
-   # LICENSE: https://github.com/simplex-chat/simplexmq/blob/stable/LICENSE
-   # Include correct source code URI in case the server source code is modified in any way.
-   # If any other information fields are present, source code property also MUST be present.
+   # AGPLv3许可证要求您向服务器的最终用户提供任何源代码修改。
+   # 许可证：https://github.com/simplex-chat/simplexmq/blob/stable/LICENSE
+   # 如果服务器源代码以任何方式修改，请包含正确的源代码URI。
+   # 如果存在任何其他信息字段，源代码属性也必须存在。
 
    source_code: https://github.com/simplex-chat/simplexmq
 
-   # Declaring all below information is optional, any of these fields can be omitted.
+   # 声明以下所有信息是可选的，可以省略任何这些字段。
 
-   # Server usage conditions and amendments.
-   # It is recommended to use standard conditions with any amendments in a separate document.
+   # 服务器使用条件和修正。
+   # 建议使用标准条件，并在单独的文档中包含任何修正。
    # usage_conditions: https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md
    # condition_amendments: link
 
-   # Server location and operator.
+   # 服务器位置和运营商。
    server_country: <YOUR_SERVER_LOCATION>
    operator: <YOUR_NAME>
    operator_country: <YOUR_LOCATION>
    website: <WEBSITE_IF_AVAILABLE>
   
-   # Administrative contacts.
+   # 管理联系人。
    #admin_simplex: SimpleX address
    admin_email: <EMAIL>
    # admin_pgp:
    # admin_pgp_fingerprint:
 
-   # Contacts for complaints and feedback.
+   # 投诉和反馈联系人。
    # complaints_simplex: SimpleX address
    complaints_email: <COMPLAINTS_EMAIL>
    # complaints_pgp:
    # complaints_pgp_fingerprint:
 
-   # Hosting provider.
+   # 托管提供商。
    hosting: <HOSTING_PROVIDER_NAME>
    hosting_country: <HOSTING_PROVIDER_LOCATION> 
    ```
 
-2. Install the webserver. For easy deployment we'll describe the installtion process of [Caddy](https://caddyserver.com) webserver on Ubuntu server:
+2. 安装Web服务器。为了便于部署，我们将描述在Ubuntu服务器上安装[Caddy](https://caddyserver.com) Web服务器的过程：
 
-   1. Install the packages:
+   1. 安装软件包：
 
       ```sh
       sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
       ```
 
-   2. Install caddy gpg key for repository:
+   2. 为存储库安装Caddy gpg密钥：
 
       ```sh
       curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
       ```
 
-   3. Install Caddy repository:
+   3. 安装Caddy存储库：
 
       ```sh
       curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
       ```
 
-   4. Install Caddy:
+   4. 安装Caddy：
 
       ```sh
       sudo apt update && sudo apt install caddy
       ```
 
-   [Full Caddy instllation instructions](https://caddyserver.com/docs/install)
+   [完整的Caddy安装说明](https://caddyserver.com/docs/install)
 
-3. Replace Caddy configuration with the following:
+3. 将Caddy配置替换为以下内容：
 
-   Please replace `YOUR_DOMAIN` with your actual domain (smp.example.com).
+   请将`YOUR_DOMAIN`替换为您的实际域名（例如smp.example.com）。
 
    ```sh
    vim /etc/caddy/Caddyfile
@@ -1149,15 +1143,15 @@ _Please note:_ this configuration is supported since `v6.1.0-beta.2`.
    }
    ```
 
-4. Enable and start Caddy service:
+4. 启用并启动Caddy服务：
 
    ```sh
    systemctl enable --now caddy
    ```
 
-5. Create script to copy certificates to your smp directory:
+5. 创建脚本以将证书复制到您的smp目录：
 
-   Please replace `YOUR_DOMAIN` with your actual domain (smp.example.com).
+   请将`YOUR_DOMAIN`替换为您的实际域名（例如smp.example.com）。
 
    ```sh
    vim /usr/local/bin/simplex-servers-certs
@@ -1176,56 +1170,56 @@ _Please note:_ this configuration is supported since `v6.1.0-beta.2`.
    key_name='web.key'
    cert_name='web.crt'
 
-   # Copy certifiacte from Caddy directory to smp-server directory
+   # 从Caddy目录复制证书到SMP服务器目录
    cp "${folder_in}/${domain}.crt" "${folder_out}/${cert_name}"
-   # Assign correct permissions
+   # 分配正确的权限
    chown "$user":"$group" "${folder_out}/${cert_name}"
 
-   # Copy certifiacte key from Caddy directory to smp-server directory
+   # 从Caddy目录复制证书密钥到SMP服务器目录
    cp "${folder_in}/${domain}.key" "${folder_out}/${key_name}"
-   # Assign correct permissions
+   # 分配正确的权限
    chown "$user":"$group" "${folder_out}/${key_name}"
    ```
 
-6. Make the script executable and execute it:
+6. 使脚本可执行并执行它：
 
    ```sh
    chmod +x /usr/local/bin/simplex-servers-certs && /usr/local/bin/simplex-servers-certs
    ```
 
-7. Check if certificates were copied:
+7. 检查证书是否已复制：
 
    ```sh
    ls -haltr /etc/opt/simplex/web*
    ```
 
-8. Create cronjob to copy certificates to smp directory in timely manner:
+8. 创建cron作业以定期将证书复制到smp目录：
 
    ```sh
    sudo crontab -e
    ```
 
    ```sh
-   # Every week on 00:20 sunday
+   # 每周日00:20
    20 0 * * 0 /usr/local/bin/simplex-servers-certs
    ```
 
-9. Then:
+9. 然后：
 
-   - If you're running at least `v6.1.0-beta.2`, [restart the server](#systemd-commands).
-   - If you're running below `v6.1.0-beta.2`, [upgrade the server](#updating-your-smp-server).
+   - 如果您运行的是至少`v6.1.0-beta.2`，请[重启服务器](#systemd-commands)。
+   - 如果您运行的是低于`v6.1.0-beta.2`，请[升级服务器](#updating-your-smp-server)。
 
-10. Access the webpage you've deployed from your browser (`https://smp.example.org`). You should see the smp-server information that you've provided in your ini file.
+10. 从浏览器访问您部署的网页（例如`https://smp.example.org`）。您应该会看到在ini文件中提供的smp-server信息。
 
-## Documentation
+## 文档
 
-All necessary files for `smp-server` are located in `/etc/opt/simplex/` folder.
+所有必要的`smp-server`文件都位于`/etc/opt/simplex/`文件夹中。
 
-Stored messages, connections, statistics and server log are located in `/var/opt/simplex/` folder.
+存储的消息、连接、统计信息和服务器日志位于`/var/opt/simplex/`文件夹中。
 
-### SMP server address
+### SMP服务器地址
 
-SMP server address has the following format:
+SMP服务器地址具有以下格式：
 
 ```
 smp://<fingerprint>[:<password>]@<public_hostname>[,<onion_hostname>]
@@ -1233,19 +1227,19 @@ smp://<fingerprint>[:<password>]@<public_hostname>[,<onion_hostname>]
 
 - `<fingerprint>`
 
-  Your `smp-server` fingerprint of certificate. You can check your certificate fingerprint in `/etc/opt/simplex/fingerprint`.
+  您的`smp-server`证书指纹。您可以在`/etc/opt/simplex/fingerprint`中检查您的证书指纹。
 
-- **optional** `<password>`
+- **可选** `<password>`
 
-  Your configured password of `smp-server`. You can check your configured pasword in `/etc/opt/simplex/smp-server.ini`, under `[AUTH]` section in `create_password:` field.
+  您配置的`smp-server`密码。您可以在`/etc/opt/simplex/smp-server.ini`中的`[AUTH]`部分的`create_password:`字段中检查您的配置密码。
 
-- `<public_hostname>`, **optional** `<onion_hostname>`
+- `<public_hostname>`，**可选** `<onion_hostname>`
 
-  Your configured hostname(s) of `smp-server`. You can check your configured hosts in `/etc/opt/simplex/smp-server.ini`, under `[TRANSPORT]` section in `host:` field.
+  您配置的`smp-server`主机名。您可以在`/etc/opt/simplex/smp-server.ini`中的`[TRANSPORT]`部分的`host:`字段中检查您的配置主机名。
 
-### Systemd commands
+### Systemd命令
 
-To start `smp-server` on host boot, run:
+要在主机启动时启动`smp-server`，请运行：
 
 ```sh
 sudo systemctl enable smp-server.service
@@ -1253,13 +1247,13 @@ sudo systemctl enable smp-server.service
 Created symlink /etc/systemd/system/multi-user.target.wants/smp-server.service → /etc/systemd/system/smp-server.service.
 ```
 
-To start `smp-server`, run:
+要启动`smp-server`，请运行：
 
 ```sh
 sudo systemctl start smp-server.service
 ```
 
-To check status of `smp-server`, run:
+要检查`smp-server`的状态，请运行：
 
 ```sh
 sudo systemctl status smp-server.service
@@ -1281,13 +1275,13 @@ Nov 23 19:23:21 5588ab759e80 smp-server[30878]: not expiring inactive clients
 Nov 23 19:23:21 5588ab759e80 smp-server[30878]: creating new queues requires password
 ```
 
-To stop `smp-server`, run:
+要停止`smp-server`，请运行：
 
 ```sh
 sudo systemctl stop smp-server.service
 ```
 
-To check tail of `smp-server` log, run:
+要检查`smp-server`日志的尾部，请运行：
 
 ```sh
 sudo journalctl -fu smp-server.service
@@ -1302,23 +1296,23 @@ Nov 23 19:23:21 5588ab759e80 smp-server[30878]: not expiring inactive clients
 Nov 23 19:23:21 5588ab759e80 smp-server[30878]: creating new queues requires password
 ```
 
-### Control port
+### 控制端口
 
-Enabling control port in the configuration allows administrator to see information about the smp-server in real-time. Additionally, it allows to delete queues for content moderation and see the debug info about the clients, sockets, etc. Enabling the control port requires setting the `admin` and `user` passwords.
+在配置中启用控制端口允许管理员实时查看smp-server的信息。此外，它允许删除队列以进行内容审核，并查看有关客户端、套接字等的调试信息。启用控制端口需要设置`admin`和`user`密码。
 
-1. Generate two passwords for each user:
+1. 为每个用户生成两个密码：
 
    ```sh
    tr -dc A-Za-z0-9 </dev/urandom | head -c 20; echo
    ```
 
-2. Open the configuration file:
+2. 打开配置文件：
 
    ```sh
    vim /etc/opt/simplex/smp-server.ini
    ```
 
-2. Configure the control port and replace the passwords:
+2. 配置控制端口并替换密码：
 
    ```ini
    [AUTH]
@@ -1329,138 +1323,138 @@ Enabling control port in the configuration allows administrator to see informati
    control_port: 5224
    ```
 
-3. Restart the server:
+3. 重启服务器：
 
    ```sh
    systemctl restart smp-server
    ```
 
-To access the control port, use:
+要访问控制端口，请使用：
 
 ```sh
 nc 127.0.0.1 5224
 ```
 
-or:
+或：
 
 ```sh
 telnet 127.0.0.1 5224
 ```
 
-Upon connecting, the control port should print:
+连接后，控制端口应打印：
 
 ```sh
 SMP server control port
 'help' for supported commands
 ```
 
-To authenticate, type the following and hit enter. Change the `my_generated_password` with the `user` or `admin` password from the configuration:
+要进行身份验证，请键入以下内容并按回车键。将`my_generated_password`更改为配置中的`user`或`admin`密码：
 
 ```sh
 auth my_generated_password
 ```
 
-Here's the full list of commands, their descriptions and who can access them.
+以下是命令的完整列表、其描述以及谁可以访问它们。
 
-| Command          | Description                                                                     | Requires `admin` role      |
+| 命令          | 描述                                                                     | 需要`admin`角色      |
 | ---------------- | ------------------------------------------------------------------------------- | -------------------------- |
-| `stats`          | Real-time statistics. Fields described in [Daily statistics](#daily-statistics) | -                          |
-| `stats-rts`      | GHC/Haskell statistics. Can be enabled with `+RTS -T -RTS` option               | -                          |
-| `clients`        | Clients information. Useful for debugging.                                      | yes                        |
-| `sockets`        | General sockets information.                                                    | -                          |
-| `socket-threads` | Thread infomation per socket. Useful for debugging.                             | yes                        |
-| `threads`        | Threads information. Useful for debugging.                                      | yes                        |
-| `server-info`    | Aggregated server infomation.                                                   | -                          |
-| `delete`         | Delete known queue. Useful for content moderation.                              | -                          |
-| `save`           | Save queues/messages from memory.                                               | yes                        |
-| `help`           | Help menu.                                                                      | -                          |
-| `quit`           | Exit the control port.                                                          | -                          |
+| `stats`          | 实时统计信息。字段在[每日统计](#daily-statistics)中描述 | -                          |
+| `stats-rts`      | GHC/Haskell统计信息。可以使用`+RTS -T -RTS`选项启用               | -                          |
+| `clients`        | 客户端信息。用于调试。                                      | yes                        |
+| `sockets`        | 常规套接字信息。                                                    | -                          |
+| `socket-threads` | 每个套接字的线程信息。用于调试。                             | yes                        |
+| `threads`        | 线程信息。用于调试。                                      | yes                        |
+| `server-info`    | 聚合的服务器信息。                                                   | -                          |
+| `delete`         | 删除已知队列。用于内容审核。                              | -                          |
+| `save`           | 从内存中保存队列/消息。                                               | yes                        |
+| `help`           | 帮助菜单。                                                                      | -                          |
+| `quit`           | 退出控制端口。                                                          | -                          |
 
-### Daily statistics
+### 每日统计
 
-You can enable `smp-server` statistics for `Grafana` dashboard by setting value `on` in `/etc/opt/simplex/smp-server.ini`, under `[STORE_LOG]` section in `log_stats:` field.
+您可以通过在`/etc/opt/simplex/smp-server.ini`中的`[STORE_LOG]`部分的`log_stats:`字段中设置值`on`来启用`smp-server`统计信息以用于`Grafana`仪表板。
 
-Logs will be stored as `csv` file in `/var/opt/simplex/smp-server-stats.daily.log`. Fields for the `csv` file are:
+日志将以`csv`文件的形式存储在`/var/opt/simplex/smp-server-stats.daily.log`中。`csv`文件的字段如下：
 
 ```sh
 fromTime,qCreated,qSecured,qDeleted,msgSent,msgRecv,dayMsgQueues,weekMsgQueues,monthMsgQueues,msgSentNtf,msgRecvNtf,dayCountNtf,weekCountNtf,monthCountNtf,qCount,msgCount,msgExpired,qDeletedNew,qDeletedSecured,pRelays_pRequests,pRelays_pSuccesses,pRelays_pErrorsConnect,pRelays_pErrorsCompat,pRelays_pErrorsOther,pRelaysOwn_pRequests,pRelaysOwn_pSuccesses,pRelaysOwn_pErrorsConnect,pRelaysOwn_pErrorsCompat,pRelaysOwn_pErrorsOther,pMsgFwds_pRequests,pMsgFwds_pSuccesses,pMsgFwds_pErrorsConnect,pMsgFwds_pErrorsCompat,pMsgFwds_pErrorsOther,pMsgFwdsOwn_pRequests,pMsgFwdsOwn_pSuccesses,pMsgFwdsOwn_pErrorsConnect,pMsgFwdsOwn_pErrorsCompat,pMsgFwdsOwn_pErrorsOther,pMsgFwdsRecv,qSub,qSubAuth,qSubDuplicate,qSubProhibited,msgSentAuth,msgSentQuota,msgSentLarge,msgNtfs,msgNtfNoSub,msgNtfLost,qSubNoMsg,msgRecvGet,msgGet,msgGetNoMsg,msgGetAuth,msgGetDuplicate,msgGetProhibited,psSubDaily,psSubWeekly,psSubMonthly,qCount2,ntfCreated,ntfDeleted,ntfSub,ntfSubAuth,ntfSubDuplicate,ntfCount,qDeletedAllB,qSubAllB,qSubEnd,qSubEndB,ntfDeletedB,ntfSubB,msgNtfsB,msgNtfExpired
 ```
 
-**Fields description**
+**字段描述**
 
-| Field number  | Field name                   | Field Description          |
+| 字段编号  | 字段名称                   | 字段描述          |
 | ------------- | ---------------------------- | -------------------------- |
-| 1             | `fromTime`                   | Date of statistics         |
-| Messaging queue:                                                          |
-| 2             | `qCreated`                   | Created                    |
-| 3             | `qSecured`                   | Established                |
-| 4             | `qDeleted`                   | Deleted                    |
-| Messages:                                                                 |
-| 5             | `msgSent`                    | Sent                       |
-| 6             | `msgRecv`                    | Received                   |
-| 7             | `dayMsgQueues`               | Active queues in a day     |
-| 8             | `weekMsgQueues`              | Active queues in a week    |
-| 9             | `monthMsgQueues`             | Active queues in a month   |
-| Messages with "notification" flag                                         |
-| 10            | `msgSentNtf`                 | Sent                       |
-| 11            | `msgRecvNtf`                 | Received                   |
-| 12            | `dayCountNtf`                | Active queues in a day     |
-| 13            | `weekCountNtf`               | Active queues in a week    |
-| 14            | `monthCountNtf`              | Active queues in a month   |
-| Additional statistics:                                                    |
-| 15            | `qCount`                     | Stored queues              |
-| 16            | `msgCount`                   | Stored messages            |
-| 17            | `msgExpired`                 | Expired messages           |
-| 18            | `qDeletedNew`                | New deleted queues         |
-| 19            | `qDeletedSecured`            | Secured deleted queues     |
-| Requested sessions with all relays:                                       |
-| 20            | `pRelays_pRequests`          | - requests                 |
-| 21            | `pRelays_pSuccesses`         | - successes                |
-| 22            | `pRelays_pErrorsConnect`     | - connection errors        |
-| 23            | `pRelays_pErrorsCompat`      | - compatability errors     |
-| 24            | `pRelays_pErrorsOther`       | - other errors             |
-| Requested sessions with own relays:                                       |
-| 25            | `pRelaysOwn_pRequests`       | - requests                 |
-| 26            | `pRelaysOwn_pSuccesses`      | - successes                |
-| 27            | `pRelaysOwn_pErrorsConnect`  | - connection errors        |
-| 28            | `pRelaysOwn_pErrorsCompat`   | - compatability errors     |
-| 29            | `pRelaysOwn_pErrorsOther`    | - other errors             |
-| Message forwards to all relays:                                           |
-| 30            | `pMsgFwds_pRequests`         | - requests                 |
-| 31            | `pMsgFwds_pSuccesses`        | - successes                |
-| 32            | `pMsgFwds_pErrorsConnect`    | - connection errors        |
-| 33            | `pMsgFwds_pErrorsCompat`     | - compatability errors     |
-| 34            | `pMsgFwds_pErrorsOther`      | - other errors             |
-| Message forward to own relays:                                            |
-| 35            | `pMsgFwdsOwn_pRequests`      | - requests                 |
-| 36            | `pMsgFwdsOwn_pSuccesses`     | - successes                |
-| 37            | `pMsgFwdsOwn_pErrorsConnect` | - connection errors        |
-| 38            | `pMsgFwdsOwn_pErrorsCompat`  | - compatability errors     |
-| 39            | `pMsgFwdsOwn_pErrorsOther`   | - other errors             |
-| Received message forwards:                                                |
+| 1             | `fromTime`                   | 统计日期         |
+| 消息队列:                                                          |
+| 2             | `qCreated`                   | 创建                    |
+| 3             | `qSecured`                   | 建立                |
+| 4             | `qDeleted`                   | 删除                    |
+| 消息:                                                                 |
+| 5             | `msgSent`                    | 发送                       |
+| 6             | `msgRecv`                    | 接收                   |
+| 7             | `dayMsgQueues`               | 一天内的活动队列     |
+| 8             | `weekMsgQueues`              | 一周内的活动队列    |
+| 9             | `monthMsgQueues`             | 一个月内的活动队列   |
+| 带有“通知”标志的消息                                         |
+| 10            | `msgSentNtf`                 | 发送                       |
+| 11            | `msgRecvNtf`                 | 接收                   |
+| 12            | `dayCountNtf`                | 一天内的活动队列     |
+| 13            | `weekCountNtf`               | 一周内的活动队列    |
+| 14            | `monthCountNtf`              | 一个月内的活动队列   |
+| 其他统计信息:                                                    |
+| 15            | `qCount`                     | 存储的队列              |
+| 16            | `msgCount`                   | 存储的消息            |
+| 17            | `msgExpired`                 | 过期的消息           |
+| 18            | `qDeletedNew`                | 新删除的队列         |
+| 19            | `qDeletedSecured`            | 已建立的删除队列     |
+| 请求与所有中继的会话:                                       |
+| 20            | `pRelays_pRequests`          | - 请求                 |
+| 21            | `pRelays_pSuccesses`         | - 成功                |
+| 22            | `pRelays_pErrorsConnect`     | - 连接错误        |
+| 23            | `pRelays_pErrorsCompat`      | - 兼容性错误     |
+| 24            | `pRelays_pErrorsOther`       | - 其他错误             |
+| 请求与自己的中继的会话:                                       |
+| 25            | `pRelaysOwn_pRequests`       | - 请求                 |
+| 26            | `pRelaysOwn_pSuccesses`      | - 成功                |
+| 27            | `pRelaysOwn_pErrorsConnect`  | - 连接错误        |
+| 28            | `pRelaysOwn_pErrorsCompat`   | - 兼容性错误     |
+| 29            | `pRelaysOwn_pErrorsOther`    | - 其他错误             |
+| 消息转发到所有中继:                                           |
+| 30            | `pMsgFwds_pRequests`         | - 请求                 |
+| 31            | `pMsgFwds_pSuccesses`        | - 成功                |
+| 32            | `pMsgFwds_pErrorsConnect`    | - 连接错误        |
+| 33            | `pMsgFwds_pErrorsCompat`     | - 兼容性错误     |
+| 34            | `pMsgFwds_pErrorsOther`      | - 其他错误             |
+| 消息转发到自己的中继:                                            |
+| 35            | `pMsgFwdsOwn_pRequests`      | - 请求                 |
+| 36            | `pMsgFwdsOwn_pSuccesses`     | - 成功                |
+| 37            | `pMsgFwdsOwn_pErrorsConnect` | - 连接错误        |
+| 38            | `pMsgFwdsOwn_pErrorsCompat`  | - 兼容性错误     |
+| 39            | `pMsgFwdsOwn_pErrorsOther`   | - 其他错误             |
+| 接收的消息转发:                                                |
 | 40            | `pMsgFwdsRecv`               |                            |
-| Message queue subscribtion errors:                                        |
-| 41            | `qSub`                       | All                        |
-| 42            | `qSubAuth`                   | Authentication erorrs      |
-| 43            | `qSubDuplicate`              | Duplicate SUB errors       |
-| 44            | `qSubProhibited`             | Prohibited SUB errors      |
-| Message errors:                                                           |
-| 45            | `msgSentAuth`                | Authentication errors      |
-| 46            | `msgSentQuota`               | Quota errors               |
-| 47            | `msgSentLarge`               | Large message errors       |
+| 消息队列订阅错误:                                        |
+| 41            | `qSub`                       | 全部                        |
+| 42            | `qSubAuth`                   | 身份验证错误      |
+| 43            | `qSubDuplicate`              | 重复订阅错误       |
+| 44            | `qSubProhibited`             | 禁止订阅错误      |
+| 消息错误:                                                           |
+| 45            | `msgSentAuth`                | 身份验证错误      |
+| 46            | `msgSentQuota`               | 配额错误               |
+| 47            | `msgSentLarge`               | 大消息错误       |
 | 48            | `msgNtfs`                    | XXXXXXXXXXXXXXXXXXXX       |
 | 49            | `msgNtfNoSub`                | XXXXXXXXXXXXXXXXXXXX       |
 | 50            | `msgNtfLost`                 | XXXXXXXXXXXXXXXXXXXX       |
-| 51            | `qSubNoMsg`                  | Removed, always 0          |
+| 51            | `qSubNoMsg`                  | 已删除，总是0          |
 | 52            | `msgRecvGet`                 | XXXXXXXXXXXXXXXXX          |
 | 53            | `msgGet`                     | XXXXXXXXXXXXXXXXX          |
 | 54            | `msgGetNoMsg`                | XXXXXXXXXXXXXXXXX          |
 | 55            | `msgGetAuth`                 | XXXXXXXXXXXXXXXXX          |
 | 56            | `msgGetDuplicate`            | XXXXXXXXXXXXXXXXX          |
 | 57            | `msgGetProhibited`           | XXXXXXXXXXXXXXXXX          |
-| 58            | `psSub_dayCount`             | Removed, always 0          |
-| 59            | `psSub_weekCount`            | Removed, always 0          |
-| 60            | `psSub_monthCount`           | Removed, always 0          |
+| 58            | `psSub_dayCount`             | 已删除，总是0          |
+| 59            | `psSub_weekCount`            | 已删除，总是0          |
+| 60            | `psSub_monthCount`           | 已删除，总是0          |
 | 61            | `qCount`                     | XXXXXXXXXXXXXXXXX          |
 | 62            | `ntfCreated`                 | XXXXXXXXXXXXXXXXX          |
 | 63            | `ntfDeleted`                 | XXXXXXXXXXXXXXXXX          |
@@ -1477,87 +1471,87 @@ fromTime,qCreated,qSecured,qDeleted,msgSent,msgRecv,dayMsgQueues,weekMsgQueues,m
 | 74            | `msgNtfsB`                   | XXXXXXXXXXXXXXXXX          |
 | 75            | `msgNtfExpired`              | XXXXXXXXXXXXXXXXX          |
 
-To import `csv` to `Grafana` one should:
+要将`csv`导入`Grafana`，应：
 
-1. Install Grafana plugin: [Grafana - CSV datasource](https://grafana.com/grafana/plugins/marcusolsson-csv-datasource/)
+1. 安装Grafana插件：[Grafana - CSV数据源](https://grafana.com/grafana/plugins/marcusolsson-csv-datasource/)
 
-2. Allow local mode by appending following:
+2. 通过在以下位置附加以下内容来允许本地模式：
 
    ```sh
    [plugin.marcusolsson-csv-datasource]
    allow_local_mode = true
    ```
 
-   ... to `/etc/grafana/grafana.ini`
+   ...到`/etc/grafana/grafana.ini`
 
-3. Add a CSV data source:
+3. 添加CSV数据源：
 
-   - In the side menu, click the Configuration tab (cog icon)
-   - Click Add data source in the top-right corner of the Data Sources tab
-   - Enter "CSV" in the search box to find the CSV data source
-   - Click the search result that says "CSV"
-   - In URL, enter a file that points to CSV content
+   - 在侧边菜单中，单击配置选项卡（齿轮图标）
+   - 单击数据源选项卡右上角的添加数据源
+   - 在搜索框中输入“CSV”以找到CSV数据源
+   - 单击显示“CSV”的搜索结果
+   - 在URL中，输入指向CSV内容的文件
 
-4. You're done! You should be able to create your own dashboard with statistics.
+4. 完成！您应该能够创建自己的统计信息仪表板。
 
-For further documentation, see: [CSV Data Source for Grafana - Documentation](https://grafana.github.io/grafana-csv-datasource/)
+有关更多文档，请参阅：[CSV数据源的Grafana - 文档](https://grafana.github.io/grafana-csv-datasource/)
 
-## Updating your SMP server
+## 更新您的SMP服务器
 
-To update your smp-server to latest version, choose your installation method and follow the steps:
+要将您的smp-server更新到最新版本，请选择您的安装方法并按照以下步骤操作：
 
-   - Manual deployment
+   - 手动部署
 
-     1. Stop the server:
+     1. 停止服务器：
 
         ```sh
         sudo systemctl stop smp-server
         ```
 
-     2. Update the binary:
+     2. 更新二进制文件：
 
         ```sh
          curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/smp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/smp-server && chmod +x /usr/local/bin/smp-server
         ```
 
-     3. Start the server:
+     3. 启动服务器：
 
         ```sh
         sudo systemctl start smp-server
         ```
 
-   - [Offical installation script](https://github.com/simplex-chat/simplexmq#using-installation-script)
+   - [官方安装脚本](https://github.com/simplex-chat/simplexmq#using-installation-script)
 
-     1. Execute the followin command:
+     1. 执行以下命令：
 
         ```sh
         sudo simplex-servers-update
         ```
 
-        To install specific version, run:
+        要安装特定版本，请运行：
 
         ```sh
         export VER=<version_from_github_releases> &&\
         sudo -E simplex-servers-update
         ```
 
-     2. Done!
+     2. 完成！
 
-   - [Docker container](https://github.com/simplex-chat/simplexmq#using-docker)
+   - [Docker容器](https://github.com/simplex-chat/simplexmq#using-docker)
 
-     1. Stop and remove the container:
+     1. 停止并删除容器：
 
         ```sh
         docker rm $(docker stop $(docker ps -a -q --filter ancestor=simplexchat/smp-server --format="\{\{.ID\}\}"))
         ```
 
-     2. Pull latest image:
+     2. 拉取最新镜像：
 
         ```sh
         docker pull simplexchat/smp-server:latest
         ```
 
-     3. Start new container:
+     3. 启动新容器：
 
         ```sh
         docker run -d \
@@ -1570,55 +1564,55 @@ To update your smp-server to latest version, choose your installation method and
 
    - [Linode Marketplace](https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/)
 
-     1. Pull latest images:
+     1. 拉取最新镜像：
 
         ```sh
         docker-compose --project-directory /etc/docker/compose/simplex pull
         ```
 
-     2. Restart the containers:
+     2. 重启容器：
 
         ```sh
         docker-compose --project-directory /etc/docker/compose/simplex up -d --remove-orphans
         ```
 
-     3. Remove obsolete images:
+     3. 删除过时的镜像：
 
         ```sh
         docker image prune
         ```
 
-## Reproduce builds
+## 重现构建
 
-You can locally reproduce server binaries, following these instructions.
+您可以按照以下说明在本地重现服务器二进制文件。
 
-You must have:
+您必须具备：
 
-- Linux machine
-- `x86-64` architecture
-- Installed `docker`, `curl` and `git`
+- Linux机器
+- `x86-64`架构
+- 安装了`docker`，`curl`和`git`
 
-1. Download script:
+1. 下载脚本：
 
    ```sh
    curl -LO 'https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/master/scripts/reproduce-builds.sh'
    ```
 
-2. Make it executable:
+2. 使其可执行：
 
    ```sh
    chmod +x reproduce-builds.sh
    ```
 
-3. Execute the script with the required tag:
+3. 使用所需标签执行脚本：
 
    ```sh
    ./reproduce-builds.sh 'v6.3.0'
    ```
 
-   This will take a while.
+   这将需要一段时间。
 
-4. After compilation, you should see the following folders:
+4. 编译后，您应该会看到以下文件夹：
 
    ```sh
    ls out*
@@ -1644,7 +1638,7 @@ You must have:
    ntf-server  smp-server  xftp  xftp-server
    ```
 
-5. Compare the hashes from github release with locally build binaries:
+5. 将github发布的哈希值与本地构建的二进制文件进行比较：
 
    ```sh
    sha256sum out*-github/*
@@ -1654,18 +1648,18 @@ You must have:
    sha256sum out*[0-9]/*
    ```
 
-   You can safely delete cloned repository:
+   您可以安全地删除克隆的存储库：
 
    ```sh
    cd ../ && rm -rf simplexmq
    ```
 
-## Configuring the app to use the server
+## 配置应用以使用服务器
 
-To configure the app to use your messaging server copy it's full address, including password, and add it to the app. You have an option to use your server together with preset servers or without them - you can remove or disable them.
+要配置应用以使用您的消息服务器，请复制其完整地址（包括密码），并将其添加到应用中。您可以选择与预设服务器一起使用您的服务器或不使用它们 - 您可以删除或禁用它们。
 
-It is also possible to share the address of your server with your friends by letting them scan QR code from server settings - it will include server password, so they will be able to receive messages via your server as well.
+您还可以通过让朋友扫描服务器设置中的二维码来共享您的服务器地址 - 它将包含服务器密码，因此他们也可以通过您的服务器接收消息。
 
-_Please note_: you need SMP server version 4.0 to have password support. If you already have a deployed server, you can add password by adding it to server INI file.
+_请注意_：您需要SMP服务器版本4.0才能支持密码。如果您已经部署了服务器，可以通过将密码添加到服务器INI文件中来添加密码。
 
 <img src="./server_config_1.png" width="288"> &nbsp;&nbsp; <img src="./server_config_2.png" width="288"> &nbsp;&nbsp; <img src="./server_config_3.png" width="288">

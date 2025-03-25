@@ -1,95 +1,95 @@
 ---
-title: SimpleX platform
+title: SimpleX 平台
 revision: 07.02.2023
 ---
 
-| Updated 07.02.2023 | Languages: EN, [FR](/docs/lang/fr/SIMPLEX.md), [CZ](/docs/lang/cs/SIMPLEX.md), [PL](/docs/lang/pl/SIMPLEX.md) |
-# SimpleX platform - motivation and comparison
+| 更新于 07.02.2023 | 语言: ZH_CN, EN, [FR](/docs/lang/fr/SIMPLEX.md), [CZ](/docs/lang/cs/SIMPLEX.md), [PL](/docs/lang/pl/SIMPLEX.md) |
+# SimpleX 平台 - 动机与比较
 
-## Problems
+## 问题
 
-Existing chat platforms and protocols have some or all of the following problems:
+现有的聊天平台和协议存在以下部分或全部问题：
 
-- Lack of privacy of the user profile and contacts (meta-data privacy).
-- No protection (or only optional protection) of [E2EE][1] implementations from MITM attacks via provider.
-- Unsolicited messages (spam and abuse).
-- Lack of data ownership and protection.
-- Complexity of usage for all non-centralized protocols to non-technical users.
+- 用户资料和联系人缺乏隐私保护（元数据隐私）。
+- [E2EE][1] 实现缺乏防止通过提供商进行 MITM 攻击的保护（或仅提供可选保护）。
+- 未经请求的消息（垃圾信息和滥用）。
+- 数据所有权和保护的缺失。
+- 对非技术用户而言，所有非中心化协议的使用复杂性。
 
-The concentration of the communication in a small number of centralized platforms makes resolving these problems quite difficult.
+通信集中在少数几个中心化平台上，使得解决这些问题变得非常困难。
 
-## Proposed solution
+## 提议的解决方案
 
-Proposed stack of protocols solves these problems by making both messages and contacts stored only on client devices, reducing the role of the servers to simple message relays that only require authorization of messages sent to the queues, but do NOT require user authentication - not only the messages but also the metadata is protected because users do not have any identifiers assigned to them - unlike with any other platforms.
+提议的协议栈通过仅将消息和联系人存储在客户端设备上解决了这些问题，将服务器的角色简化为仅需授权发送到队列的消息的中继，而不需要用户身份验证——不仅消息，元数据也受到保护，因为用户没有被分配任何标识符——这与任何其他平台不同。
 
-See [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for more information on platform objectives and technical design.
+有关平台目标和技术设计的更多信息，请参阅 [SimpleX 白皮书](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md)。
 
-## Why use SimpleX
+## 为什么选择 SimpleX
 
-## SimpleX unique approach to privacy and security
+## SimpleX 独特的隐私和安全方法
 
-Everyone should care about privacy and security of their communications - even ordinary conversations can put you in danger.
+每个人都应该关心通信的隐私和安全——即使是普通的对话也可能让你陷入危险。
 
-### Full privacy of your identity, profile, contacts and metadata
+### 完全保护您的身份、资料、联系人和元数据的隐私
 
-**Unlike any other existing messaging platform, SimpleX has no identifiers assigned to the users** - it does not use phone numbers (like Signal or WhatsApp), domain-based addresses (like email, XMPP or Matrix), usernames (like Telegram), public keys or even random numbers (like all other messengers) to identify its users - we do not even know how many people use SimpleX.
+**与任何其他现有的消息平台不同，SimpleX 没有为用户分配标识符**——它不使用电话号码（如 Signal 或 WhatsApp）、基于域的地址（如电子邮件、XMPP 或 Matrix）、用户名（如 Telegram）、公钥甚至随机数（如所有其他消息平台）来标识其用户——我们甚至不知道有多少人使用 SimpleX。
 
-To deliver the messages instead of user identifiers that all other platforms use, SimpleX uses the addresses of unidirectional (simplex) message queues. Using SimpleX is like having a different email address or a phone number for each contact you have, but without the hassle of managing all these addresses. In the near future SimpleX apps will also change the message queues automatically, moving the conversations from one server to another, to provide even better privacy to the users.
+为了传递消息，SimpleX 使用单向（simplex）消息队列的地址，而不是所有其他平台使用的用户标识符。使用 SimpleX 就像为每个联系人拥有一个不同的电子邮件地址或电话号码，但没有管理这些地址的麻烦。在不久的将来，SimpleX 应用程序还将自动更改消息队列，将对话从一个服务器移动到另一个服务器，为用户提供更好的隐私。
 
-This approach protects the privacy of who are you communicating with, hiding it from SimpleX platform servers and from any observers. You can further improve your privacy by configuring your network access to connect to SimpleX servers via some overlay transport network, e.g. Tor.
+这种方法保护了您与谁通信的隐私，使其对 SimpleX 平台服务器和任何观察者隐藏。您还可以通过配置网络访问，通过某些覆盖传输网络（例如 Tor）连接到 SimpleX 服务器，进一步提高您的隐私。
 
-### The best protection against spam and abuse
+### 针对垃圾信息和滥用的最佳保护
 
-As you have no identifier on SimpleX platform, you cannot be contacted unless you share a one-time invitation link or an optional temporary user address. Even with the optional user addresses, while they can be used to send spam contact requests, you can change or completely delete it without losing any of your connections.
+由于您在 SimpleX 平台上没有标识符，除非您共享一次性邀请链接或可选的临时用户地址，否则无法联系到您。即使使用可选的用户地址，虽然它们可以用于发送垃圾联系人请求，但您可以更改或完全删除它，而不会丢失任何连接。
 
-### Complete ownership, control and security of your data
+### 数据的完全所有权、控制和安全性
 
-SimpleX stores all user data on client devices, the messages are only held temporarily on SimpleX relay servers until they are received.
+SimpleX 将所有用户数据存储在客户端设备上，消息仅在 SimpleX 中继服务器上临时保存，直到它们被接收。
 
-We use portable database format that can be used on all supported devices - we will soon add the ability to export the chat database from the mobile app so it can be used on another device.
+我们使用可移植的数据库格式，可在所有支持的设备上使用——我们很快将添加从移动应用程序导出聊天数据库的功能，以便可以在其他设备上使用。
 
-Unlike servers of federated networks (email, XMPP or Matrix), SimpleX servers do not store user accounts, they simply relay messages to the recipients, protecting the privacy of both parties. There are no identifiers or encrypted messages in common between sent and received traffic of the server, thanks to the additional encryption layer for delivered messages. So if anybody is observing server traffic, they cannot easily determine who is communicating with whom (see [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for the known traffic correlation attacks).
+与联合网络（电子邮件、XMPP 或 Matrix）的服务器不同，SimpleX 服务器不存储用户帐户，它们只是将消息中继到接收方，保护双方的隐私。由于已传递消息的额外加密层，发送和接收流量中没有共同的标识符或加密消息。因此，如果有人观察服务器流量，他们无法轻易确定谁在与谁通信（有关已知的流量关联攻击，请参阅 [SimpleX 白皮书](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md)）。
 
-### Users own SimpleX network
+### 用户拥有 SimpleX 网络
 
-You can use SimpleX with your own servers and still communicate with people using the servers that are pre-configured in the apps or any other SimpleX servers.
+您可以使用自己的服务器运行 SimpleX，同时仍然与使用应用程序中预配置服务器或任何其他 SimpleX 服务器的人通信。
 
-SimpleX platform uses an open protocol and provides SDK to create chat bots, allowing implementation of services that users can interact with via SimpleX Chat apps – we are really looking forward to see what SimpleX services can be built.
+SimpleX 平台使用开放协议并提供 SDK 来创建聊天机器人，允许实现用户可以通过 SimpleX 聊天应用程序交互的服务——我们非常期待看到可以构建哪些 SimpleX 服务。
 
-If you are considering developing with the SimpleX platform, whether for chat bot services for SimpleX app users or to integrate the SimpleX Chat library into your mobile apps, please get in touch for any advice and support.
+如果您正在考虑使用 SimpleX 平台进行开发，无论是为 SimpleX 应用程序用户提供聊天机器人服务，还是将 SimpleX 聊天库集成到您的移动应用程序中，请随时联系我们以获取建议和支持。
 
-## Comparison with other protocols
+## 与其他协议的比较
 
-|                                                |    SimpleX chat    | Signal, big platforms |  XMPP, Matrix   |  P2P protocols  |
-| :--------------------------------------------- | :----------------: | :-------------------: | :-------------: | :-------------: |
-| Requires user identifiers                      |    No = private    |    Yes<sup>1</sup>    | Yes<sup>2</sup> | Yes<sup>3</sup> |
-| Possibility of MITM                            |    No = secure     |    Yes<sup>4</sup>    |       Yes       |       Yes       |
-| Dependence on DNS                              |   No = resilient   |          Yes          |       Yes       |       No        |
-| Single operator or network                     | No = decentralized |          Yes          |       No        | Yes<sup>5</sup> |
-| Central component or other network-wide attack |   No = resilient   |          Yes          | Yes<sup>2</sup> | Yes<sup>6</sup> |
+|                                                |    SimpleX 聊天    | Signal、大型平台 |  XMPP、Matrix   |  P2P 协议  |
+| :--------------------------------------------- | :----------------: | :--------------: | :-------------: | :--------: |
+| 是否需要用户标识符                             |    否 = 私密      |    是<sup>1</sup> | 是<sup>2</sup> | 是<sup>3</sup> |
+| 是否可能发生 MITM                              |    否 = 安全      |    是<sup>4</sup> |       是       |       是       |
+| 是否依赖 DNS                                   |   否 = 有弹性     |        是        |       是       |       否       |
+| 单一运营商或网络                               | 否 = 去中心化     |        是        |       否       | 是<sup>5</sup> |
+| 中央组件或其他网络范围攻击                     |   否 = 有弹性     |        是        | 是<sup>2</sup> | 是<sup>6</sup> |
 
-1. Usually based on a phone number, in some cases on usernames.
-2. DNS based.
-3. Public key or some other globally unique ID.
-4. If operator’s servers are compromised.
-5. While P2P networks and cryptocurrency-based networks are distributed, they are not decentralized - they operate as a single network, with a single namespace of user addresses.
-6. P2P networks either have a central authority or the whole network can be compromised - see the next section.
+1. 通常基于电话号码，在某些情况下基于用户名。
+2. 基于 DNS。
+3. 公钥或其他全局唯一 ID。
+4. 如果运营商的服务器被攻破。
+5. 虽然 P2P 网络和基于加密货币的网络是分布式的，但它们不是去中心化的——它们作为单一网络运行，具有单一的用户地址命名空间。
+6. P2P 网络要么有一个中央权威，要么整个网络可能被攻破——见下一节。
 
-## Comparison with [P2P][9] messaging protocols
+## 与 [P2P][9] 消息协议的比较
 
-There are several P2P chat/messaging protocols and implementations that aim to solve privacy and centralisation problem, but they have their own set of problems that makes them less reliable than the proposed design, more complex to implement and analyse and more vulnerable to attacks.
+有几个 P2P 聊天/消息协议和实现旨在解决隐私和中心化问题，但它们有自己的问题，使其比提议的设计更不可靠、更复杂且更容易受到攻击。
 
-1. [P2P][9] networks use some variant of [DHT][10] to route messages/requests through the network. DHT implementations have complex designs that have to balance reliability, delivery guarantee and latency. The proposed design has both better delivery guarantees and lower latency (the message is passed multiple times in parallel, through one node each time, using servers chosen by the recipient, while in P2P networks the message is passed through `O(log N)` nodes sequentially, using nodes chosen by the algorithm).
+1. [P2P][9] 网络使用某种 [DHT][10] 变体通过网络路由消息/请求。DHT 实现具有复杂的设计，必须在可靠性、交付保证和延迟之间取得平衡。提议的设计在交付保证和延迟方面都更优（消息以并行方式多次传递，每次通过一个节点，使用接收方选择的服务器，而在 P2P 网络中，消息通过 `O(log N)` 个节点顺序传递，使用算法选择的节点）。
 
-2. The proposed design, unlike most P2P networks, has no global user identifiers of any kind, even temporary.
+2. 提议的设计与大多数 P2P 网络不同，没有任何形式的全局用户标识符，即使是临时的。
 
-3. P2P itself does not solve [MITM attack][2] problem, and most existing solutions do not use out-of-band messages for the initial key exchange. The proposed design uses out-of-band messages or, in some cases, pre-existing secure and trusted connections for the initial key exchange.
+3. P2P 本身无法解决 [MITM 攻击][2] 问题，大多数现有解决方案在初始密钥交换中不使用带外消息。提议的设计使用带外消息，或在某些情况下使用预先存在的安全和可信连接进行初始密钥交换。
 
-4. P2P implementations can be blocked by some Internet providers (like [BitTorrent][11]). The proposed design is transport agnostic - it can work over standard web protocols, and the servers can be deployed on the same domains as the websites.
+4. P2P 实现可能会被某些互联网提供商阻止（如 [BitTorrent][11]）。提议的设计与传输无关——它可以通过标准 Web 协议工作，服务器可以部署在与网站相同的域上。
 
-5. All known P2P networks are likely to be vulnerable to [Sybil attack][12], because each node is discoverable, and the network operates as a whole. Known measures to reduce the probability of the Sybil attack either require a centralized component or expensive [proof of work][13]. The proposed design, on the opposite, has no server discoverability - servers are not connected, not known to each other and to all clients. The SimpleX network is fragmented and operates as multiple isolated connections. It makes network-wide attacks on SimpleX network impossible - even if some servers are compromised, other parts of the network can operate normally, and affected clients can switch to using other servers without losing contacts or messages.
+5. 所有已知的 P2P 网络可能容易受到 [Sybil 攻击][12]，因为每个节点都是可发现的，网络作为一个整体运行。已知减少 Sybil 攻击概率的措施要么需要一个集中组件，要么需要昂贵的 [工作量证明][13]。相反，提议的设计没有服务器可发现性——服务器之间不连接，彼此和所有客户端都不知道。SimpleX 网络是分片的，作为多个孤立的连接运行。这使得对 SimpleX 网络的网络范围攻击成为不可能——即使某些服务器被攻破，网络的其他部分仍然可以正常运行，受影响的客户端可以切换到使用其他服务器而不会丢失联系人或消息。
 
-6. P2P networks are likely to be [vulnerable][14] to [DRDoS attack][15]. In the proposed design clients only relay traffic from known trusted connection and cannot be used to reflect and amplify the traffic in the whole network.
+6. P2P 网络可能容易受到 [DRDoS 攻击][15]。在提议的设计中，客户端仅中继来自已知可信连接的流量，不能用于反射和放大整个网络中的流量。
 
 [1]: https://en.wikipedia.org/wiki/End-to-end_encryption
 [2]: https://en.wikipedia.org/wiki/Man-in-the-middle_attack

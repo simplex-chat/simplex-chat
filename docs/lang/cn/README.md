@@ -12,17 +12,17 @@
 
 [<img src="./images/trail-of-bits.jpg" height="100">](http://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html) &nbsp;&nbsp;&nbsp; [<img src="./images/privacy-guides.jpg" height="80">](https://www.privacyguides.org/en/real-time-communication/#simplex-chat) &nbsp;&nbsp;&nbsp; [<img src="./images/kuketz-blog.jpg" height="80">](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/)
 
-## Welcome to SimpleX Chat!
+## 欢迎使用 SimpleX Chat！
 
-1. 📲 [Install the app](#install-the-app).
-2. ↔️ [Connect to the team](#connect-to-the-team), [join user groups](#join-user-groups) and [follow our updates](#follow-our-updates).
-3. 🤝 [Make a private connection](#make-a-private-connection) with a friend.
-4. 🔤 [Help translating SimpleX Chat](#help-translating-simplex-chat).
-5. ⚡️ [Contribute](#contribute) and [support us with donations](#please-support-us-with-your-donations).
+1. 📲 [安装应用](#install-the-app)。
+2. ↔️ [连接团队](#connect-to-the-team)，[加入用户组](#join-user-groups)并[关注我们的更新](#follow-our-updates)。
+3. 🤝 [与朋友建立私人连接](#make-a-private-connection)。
+4. 🔤 [帮助翻译 SimpleX Chat](#help-translating-simplex-chat)。
+5. ⚡️ [贡献](#contribute)并[通过捐赠支持我们](#please-support-us-with-your-donations)。
 
-[Learn more about SimpleX Chat](#contents).
+[了解更多关于 SimpleX Chat 的信息](#contents)。
 
-## Install the app
+## 安装应用
 
 [<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apple_store.svg" alt="iOS app" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
 &nbsp;
@@ -34,89 +34,89 @@
 &nbsp;
 [<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)
 
-- 🖲 Protects your messages and metadata - who you talk to and when.
-- 🔐 Double ratchet end-to-end encryption, with additional encryption layer.
-- 📱 Mobile apps for Android ([Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app), [APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)) and [iOS](https://apps.apple.com/us/app/simplex-chat/id1605771084).
-- 🚀 [TestFlight preview for iOS](https://testflight.apple.com/join/DWuT2LQu) with the new features 1-2 weeks earlier - **limited to 10,000 users**!
-- 🖥 Available as a terminal (console) [app / CLI](#zap-quick-installation-of-a-terminal-app) on Linux, MacOS, Windows.
+- 🖲 保护您的消息和元数据 - 您与谁交谈以及何时交谈。
+- 🔐 双棘轮端到端加密，具有额外的加密层。
+- 📱 适用于 Android（[Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app)，[APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)）和 [iOS](https://apps.apple.com/us/app/simplex-chat/id1605771084) 的移动应用。
+- 🚀 [iOS 的 TestFlight 预览](https://testflight.apple.com/join/DWuT2LQu)，新功能提前 1-2 周发布 - **限 10,000 用户**！
+- 🖥 适用于 Linux、MacOS、Windows 的终端（控制台）[应用 / CLI](#zap-quick-installation-of-a-terminal-app)。
 
-## Connect to the team
+## 连接团队
 
-You can connect to the team via the app using "chat with the developers button" available when you have no conversations in the profile, "Send questions and ideas" in the app settings or via our [SimpleX address](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion). Please connect to:
+您可以通过应用中的“与开发人员聊天”按钮（在配置文件中没有对话时可用）或应用设置中的“发送问题和想法”按钮，或通过我们的 [SimpleX 地址](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion) 连接团队。请连接以：
 
-- to ask any questions
-- to suggest any improvements
-- to share anything relevant
+- 提出任何问题
+- 提出任何改进建议
+- 分享任何相关内容
 
-We are replying the questions manually, so it is not instant – it can take up to 24 hours.
+我们手动回复问题，因此不是即时的 - 可能需要长达 24 小时。
 
-If you are interested in helping us to integrate open-source language models, and in [joining our team](./docs/JOIN_TEAM.md), please get in touch.
+如果您有兴趣帮助我们集成开源语言模型，并[加入我们的团队](./docs/JOIN_TEAM.md)，请联系我们。
 
-## Join user groups
+## 加入用户组
 
-You can join the groups created by other users via the new [directory service](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion). We are not responsible for the content shared in these groups.
+您可以通过新的[目录服务](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) 加入其他用户创建的组。我们不对这些组中共享的内容负责。
 
-**Please note**: The groups below are created for the users to be able to ask questions, make suggestions and ask questions about SimpleX Chat only.
+**请注意**：以下组是为用户能够提问、提出建议和询问有关 SimpleX Chat 的问题而创建的。
 
-You also can:
-- criticize the app, and make comparisons with other messengers.
-- share new messengers you think could be interesting for privacy, as long as you don't spam.
-- share some privacy related publications, infrequently.
-- having preliminary approved with the admin in direct message, share the link to a group you created, but only once. Once the group has more than 10 members it can be submitted to [SimpleX Directory Service](./docs/DIRECTORY.md) where the new users will be able to discover it.
+您还可以：
+- 批评应用，并与其他信使进行比较。
+- 分享您认为对隐私有趣的新信使，只要您不发送垃圾邮件。
+- 不频繁地分享一些与隐私相关的出版物。
+- 在与管理员直接消息中初步批准后，分享您创建的组的链接，但只能分享一次。一旦组成员超过 10 人，可以提交到 [SimpleX 目录服务](./docs/DIRECTORY.md)，新用户将能够发现它。
 
-You must:
-- be polite to other users
-- avoid spam (too frequent messages, even if they are relevant)
-- avoid any personal attacks or hostility.
-- avoid sharing any content that is not relevant to the above (that includes, but is not limited to, discussing politics or any aspects of society other than privacy, security, technology and communications, sharing any content that may be found offensive by other users, etc.).
+您必须：
+- 对其他用户保持礼貌
+- 避免垃圾邮件（即使是相关的消息，发送频率过高也会被视为垃圾邮件）
+- 避免任何人身攻击或敌意。
+- 避免分享与上述内容无关的任何内容（包括但不限于讨论政治或社会的任何方面，除了隐私、安全、技术和通信，分享可能被其他用户认为冒犯的任何内容等）。
 
-Messages not following these rules will be deleted, the right to send messages may be revoked, and the access to the new members to the group may be temporarily restricted, to prevent re-joining under a different name - our imperfect group moderation does not have a better solution at the moment.
+不遵守这些规则的消息将被删除，发送消息的权利可能会被撤销，并且可能会暂时限制新成员加入组，以防止以不同名称重新加入 - 我们不完善的组管理目前没有更好的解决方案。
 
-You can join an English-speaking users group if you want to ask any questions: [#SimpleX users group](https://simplex.chat/contact#/?v=2-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2Fos8FftfoV8zjb2T89fUEjJtF7y64p5av%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAQqMgh0fw2lPhjn3PDIEfAKA_E0-gf8Hr8zzhYnDivRs%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22lBPiveK2mjfUH43SN77R0w%3D%3D%22%7D)
+如果您有任何问题，可以加入一个英语用户组：[#SimpleX 用户组](https://simplex.chat/contact#/?v=2-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2Fos8FftfoV8zjb2T89fUEjJtF7y64p5av%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAQqMgh0fw2lPhjn3PDIEfAKA_E0-gf8Hr8zzhYnDivRs%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22lBPiveK2mjfUH43SN77R0w%3D%3D%22%7D)
 
-There is also a group [#simplex-devs](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FvYCRjIflKNMGYlfTkuHe4B40qSlQ0439%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAHNdcqNbzXZhyMoSBjT2R0-Eb1EPaLyUg3KZjn-kmM1w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22PD20tcXjw7IpkkMCfR6HLA%3D%3D%22%7D) for developers who build on SimpleX platform:
+还有一个开发人员组 [#simplex-devs](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FvYCRjIflKNMGYlfTkuHe4B40qSlQ0439%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAHNdcqNbzXZhyMoSBjT2R0-Eb1EPaLyUg3KZjn-kmM1w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22PD20tcXjw7IpkkMCfR6HLA%3D%3D%22%7D) 供在 SimpleX 平台上构建的开发人员使用：
 
-- chat bots and automations
-- integrations with other apps
-- social apps and services
-- etc.
+- 聊天机器人和自动化
+- 与其他应用的集成
+- 社交应用和服务
+- 等等
 
-There are groups in other languages, that we have the apps interface translated into. These groups are for testing, and asking questions to other SimpleX Chat users:
+还有其他语言的组，我们已经将应用界面翻译成这些语言。这些组用于测试，并向其他 SimpleX Chat 用户提问：
 
-[\#SimpleX-DE](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FmfiivxDKWFuowXrQOp11jsY8TuP__rBL%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAiz3pKNwvKudckFYMUfgoT0s96B0jfZ7ALHAu7rtE9HQ%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22jZeJpXGrRXQJU_-MSJ_v2A%3D%3D%22%7D) (German-speaking), [\#SimpleX-ES](https://simplex.chat/contact#/?v=2-4&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FJ5ES83pJimY2BRklS8fvy_iQwIU37xra%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA0F0STP6UqN_12_k2cjjTrIjFgBGeWhOAmbY1qlk3pnM%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22VmUU0fqmYdCRmVCyvStvHA%3D%3D%22%7D) (Spanish-speaking), [\#SimpleX-FR](https://simplex.chat/contact#/?v=2-7&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FxCHBE_6PBRMqNEpm4UQDHXb9cz-mN7dd%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEAetqlcM7zTCRw-iatnwCrvpJSto7lq5Yv6AsBMWv7GSM%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22foO5Xw4hhjOa_x7zET7otw%3D%3D%22%7D) (French-speaking), [\#SimpleX-RU](https://simplex.chat/contact#/?v=2-4&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FVXQTB0J2lLjYkgjWByhl6-1qmb5fgZHh%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAI6JaEWezfSwvcoTEkk6au-gkjrXR2ew2OqZYMYBvayk%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22ORH9OEe8Duissh-hslfeVg%3D%3D%22%7D) (Russian-speaking), [\#SimpleX-IT](https://simplex.chat/contact#/?v=2-7&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FqpHu0psOUdYfc11yQCzSyq5JhijrBzZT%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEACZ_7fbwlM45wl6cGif8cY47oPQ_AMdP0ATqOYLA6zHY%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%229uRQRTir3ealdcSfB0zsrw%3D%3D%22%7D) (Italian-speaking).
+[\#SimpleX-DE](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FmfiivxDKWFuowXrQOp11jsY8TuP__rBL%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAiz3pKNwvKudckFYMUfgoT0s96B0jfZ7ALHAu7rtE9HQ%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22jZeJpXGrRXQJU_-MSJ_v2A%3D%3D%22%7D)（德语），[\#SimpleX-ES](https://simplex.chat/contact#/?v=2-4&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FJ5ES83pJimY2BRklS8fvy_iQwIU37xra%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA0F0STP6UqN_12_k2cjjTrIjFgBGeWhOAmbY1qlk3pnM%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22VmUU0fqmYdCRmVCyvStvHA%3D%3D%22%7D)（西班牙语），[\#SimpleX-FR](https://simplex.chat/contact#/?v=2-7&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FxCHBE_6PBRMqNEpm4UQDHXb9cz-mN7dd%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEAetqlcM7zTCRw-iatnwCrvpJSto7lq5Yv6AsBMWv7GSM%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22foO5Xw4hhjOa_x7zET7otw%3D%3D%22%7D)（法语），[\#SimpleX-RU](https://simplex.chat/contact#/?v=2-4&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FVXQTB0J2lLjYkgjWByhl6-1qmb5fgZHh%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAI6JaEWezfSwvcoTEkk6au-gkjrXR2ew2OqZYMYBvayk%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22ORH9OEe8Duissh-hslfeVg%3D%3D%22%7D)（俄语），[\#SimpleX-IT](https://simplex.chat/contact#/?v=2-7&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FqpHu0psOUdYfc11yQCzSyq5JhijrBzZT%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEACZ_7fbwlM45wl6cGif8cY47oPQ_AMdP0ATqOYLA6zHY%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%229uRQRTir3ealdcSfB0zsrw%3D%3D%22%7D)（意大利语）。
 
-You can join either by opening these links in the app or by opening them in a desktop browser and scanning the QR code.
+您可以通过在应用中打开这些链接或在桌面浏览器中打开它们并扫描二维码来加入。
 
-## Follow our updates
+## 关注我们的更新
 
-We publish our updates and releases via:
+我们通过以下方式发布我们的更新和版本：
 
-- [Reddit](https://www.reddit.com/r/SimpleXChat/), [Twitter](https://twitter.com/SimpleXChat), [Lemmy](https://lemmy.ml/c/simplex), [Mastodon](https://mastodon.social/@simplex) and [Nostr](https://snort.social/p/npub1exv22uulqnmlluszc4yk92jhs2e5ajcs6mu3t00a6avzjcalj9csm7d828).
-- SimpleX Chat [team profile](#connect-to-the-team).
-- [blog](https://simplex.chat/blog/) and [RSS feed](https://simplex.chat/feed.rss).
-- [mailing list](https://simplex.chat/#join-simplex), very rarely.
+- [Reddit](https://www.reddit.com/r/SimpleXChat/)，[Twitter](https://twitter.com/SimpleXChat)，[Lemmy](https://lemmy.ml/c/simplex)，[Mastodon](https://mastodon.social/@simplex) 和 [Nostr](https://snort.social/p/npub1exv22uulqnmlluszc4yk92jhs2e5ajcs6mu3t00a6avzjcalj9csm7d828)。
+- SimpleX Chat [团队简介](#connect-to-the-team)。
+- [博客](https://simplex.chat/blog/) 和 [RSS 订阅](https://simplex.chat/feed.rss)。
+- [邮件列表](https://simplex.chat/#join-simplex)，非常少。
 
-## Make a private connection
+## 建立私人连接
 
-You need to share a link with your friend or scan a QR code from their phone, in person or during a video call, to make a connection and start messaging.
+您需要与朋友分享链接或扫描他们手机上的二维码，亲自或在视频通话期间进行连接并开始消息传递。
 
-The channel through which you share the link does not have to be secure - it is enough that you can confirm who sent you the message and that your SimpleX connection is established.
+通过您分享链接的渠道不必是安全的 - 只要您可以确认是谁发送了消息并且您的 SimpleX 连接已建立即可。
 
 <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app1.png" alt="Make a private connection" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/arrow.png" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app2.png" alt="Conversation" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/arrow.png" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app3.png" alt="Video call" height="360">
 
-After you connect, you can [verify connection security code](./blog/20230103-simplex-chat-v4.4-disappearing-messages.md#connection-security-verification).
+连接后，您可以[验证连接安全代码](./blog/20230103-simplex-chat-v4.4-disappearing-messages.md#connection-security-verification)。
 
-## User guide (NEW)
+## 用户指南（新）
 
-Read about the app features and settings in the new [User guide](./docs/guide/README.md).
+在新的[用户指南](./docs/guide/README.md)中阅读有关应用功能和设置的信息。
 
-## Help translating SimpleX Chat
+## 帮助翻译 SimpleX Chat
 
-Thanks to our users and [Weblate](https://hosted.weblate.org/engage/simplex-chat/), SimpleX Chat apps, website and documents are translated to many other languages.
+感谢我们的用户和 [Weblate](https://hosted.weblate.org/engage/simplex-chat/)，SimpleX Chat 应用、网站和文档已被翻译成多种语言。
 
-Join our translators to help SimpleX grow!
+加入我们的翻译团队，帮助 SimpleX 成长！
 
-|locale|language |contributor|[Android](https://play.google.com/store/apps/details?id=chat.simplex.app) and [iOS](https://apps.apple.com/us/app/simplex-chat/id1605771084)|[website](https://simplex.chat)|Github docs|
+|locale|language |contributor|[Android](https://play.google.com/store/apps/details?id=chat.simplex.app) 和 [iOS](https://apps.apple.com/us/app/simplex-chat/id1605771084)|[website](https://simplex.chat)|Github docs|
 |:----:|:-------:|:---------:|:---------:|:---------:|:---------:|
 |🇬🇧 en|English   | |✓|✓|✓|✓|
 |ar|العربية   |[jermanuts](https://github.com/jermanuts)|[![android app](https://hosted.weblate.org/widgets/simplex-chat/ar/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/ar/)<br>-|[![website](https://hosted.weblate.org/widgets/simplex-chat/ar/website/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/website/ar/)||
@@ -139,295 +139,295 @@ Join our translators to help SimpleX grow!
 |🇺🇦 uk|Українська| |[![android app](https://hosted.weblate.org/widgets/simplex-chat/uk/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/uk/)<br>[![ios app](https://hosted.weblate.org/widgets/simplex-chat/uk/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/uk/)|[![website](https://hosted.weblate.org/widgets/simplex-chat/uk/website/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/website/uk/)||
 |🇨🇳 zh-CHS|简体中文|[sith-on-mars](https://github.com/sith-on-mars)<br><br>[Float-hu](https://github.com/Float-hu)|[![android app](https://hosted.weblate.org/widgets/simplex-chat/zh_Hans/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/zh_Hans/)<br>[![ios app](https://hosted.weblate.org/widgets/simplex-chat/zh_Hans/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/zh_Hans/)<br>&nbsp;|<br><br>[![website](https://hosted.weblate.org/widgets/simplex-chat/zh_Hans/website/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/website/zh_Hans/)||
 
-Languages in progress: Arabic, Japanese, Korean, Portuguese and [others](https://hosted.weblate.org/projects/simplex-chat/#languages). We will be adding more languages as some of the already added are completed – please suggest new languages, review the [translation guide](./docs/TRANSLATIONS.md) and get in touch with us!
+正在进行的语言：阿拉伯语、日语、韩语、葡萄牙语和[其他语言](https://hosted.weblate.org/projects/simplex-chat/#languages)。我们将在一些已经添加的语言完成后添加更多语言 - 请建议新语言，查看[翻译指南](./docs/TRANSLATIONS.md)并与我们联系！
 
-## Contribute
+## 贡献
 
-We would love to have you join the development! You can help us with:
+我们很高兴您加入开发！您可以帮助我们：
 
-- [share the color theme](./docs/THEMES.md) you use in Android app!
-- writing a tutorial or recipes about hosting servers, chat bot automations, etc.
-- contributing to SimpleX Chat knowledge-base.
-- developing features - please connect to us via chat so we can help you get started.
+- [分享您在 Android 应用中使用的配色主题](./docs/THEMES.md)！
+- 编写有关托管服务器、聊天机器人自动化等的教程或配方。
+- 为 SimpleX Chat 知识库做出贡献。
+- 开发功能 - 请通过聊天与我们联系，我们可以帮助您入门。
 
-## Please support us with your donations
+## 请通过捐赠支持我们
 
-Huge thank you to everybody who donated to SimpleX Chat!
+非常感谢所有捐赠给 SimpleX Chat 的人！
 
-We are prioritizing users privacy and security - it would be impossible without your support.
+我们优先考虑用户的隐私和安全 - 没有您的支持，这是不可能的。
 
-Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.
+我们对用户的承诺是 SimpleX 协议是并将继续保持开放，并且在公共领域 - 因此任何人都可以构建未来的客户端和服务器实现。我们正在基于与电子邮件和网络相同的原则构建 SimpleX 平台，但更加私密和安全。
 
-Your donations help us raise more funds - any amount, even the price of the cup of coffee, would make a big difference for us.
+您的捐赠帮助我们筹集更多资金 - 任何金额，即使是一杯咖啡的价格，对我们来说也会有很大不同。
 
-It is possible to donate via:
+可以通过以下方式捐赠：
 
-- [GitHub](https://github.com/sponsors/simplex-chat) (commission-free) or [OpenCollective](https://opencollective.com/simplex-chat) (~10% commission).
+- [GitHub](https://github.com/sponsors/simplex-chat)（免佣金）或 [OpenCollective](https://opencollective.com/simplex-chat)（约 10% 佣金）。
 - BTC: bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u
 - XMR: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
 - BCH: bitcoincash:qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg
 - ETH: 0xD9ee7Db0AD0dc1Dfa7eD53290199ED06beA04692
-- USDT (Ethereum): 0xD9ee7Db0AD0dc1Dfa7eD53290199ED06beA04692
+- USDT（以太坊）：0xD9ee7Db0AD0dc1Dfa7eD53290199ED06beA04692
 - ZEC: t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg
 - DOGE: D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf
 - SOL: 7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu
-- please ask if you want to donate any other coins.
+- 如果您想捐赠其他硬币，请询问。
 
-Thank you,
+谢谢，
 
 Evgeny
 
-SimpleX Chat founder
+SimpleX Chat 创始人
 
-## Contents
+## 目录
 
-- [Why privacy matters](#why-privacy-matters)
-- [SimpleX approach to privacy and security](#simplex-approach-to-privacy-and-security)
-  - [Complete privacy](#complete-privacy-of-your-identity-profile-contacts-and-metadata)
-  - [Protection against spam and abuse](#the-best-protection-against-spam-and-abuse)
-  - [Ownership and security of your data](#complete-ownership-control-and-security-of-your-data)
-  - [Users own SimpleX network](#users-own-simplex-network)
-- [Frequently asked questions](#frequently-asked-questions)
-- [News and updates](#news-and-updates)
-- [Quick installation of a terminal app](#zap-quick-installation-of-a-terminal-app)
-- [SimpleX Platform design](#simplex-platform-design)
-- [Privacy and security: technical details and limitations](#privacy-and-security-technical-details-and-limitations)
-- [For developers](#for-developers)
-- [Roadmap](#roadmap)
-- [Disclaimers, Security contact, License](#disclaimers)
+- [为什么隐私很重要](#why-privacy-matters)
+- [SimpleX 的隐私和安全方法](#simplex-approach-to-privacy-and-security)
+  - [完整的隐私](#complete-privacy-of-your-identity-profile-contacts-and-metadata)
+  - [防止垃圾邮件和滥用的最佳保护](#the-best-protection-against-spam-and-abuse)
+  - [数据的所有权和安全性](#complete-ownership-control-and-security-of-your-data)
+  - [用户拥有 SimpleX 网络](#users-own-simplex-network)
+- [常见问题](#frequently-asked-questions)
+- [新闻和更新](#news-and-updates)
+- [终端应用的快速安装](#zap-quick-installation-of-a-terminal-app)
+- [SimpleX 平台设计](#simplex-platform-design)
+- [隐私和安全：技术细节和限制](#privacy-and-security-technical-details-and-limitations)
+- [开发人员](#for-developers)
+- [路线图](#roadmap)
+- [免责声明、安全联系人、许可证](#disclaimers)
 
-## Why privacy matters
+## 为什么隐私很重要
 
-Everyone should care about privacy and security of their communications - innocuous conversations can put you in danger even if there is nothing to hide.
+每个人都应该关心他们通信的隐私和安全 - 即使是无害的对话也可能会让您陷入危险，即使没有什么可隐藏的。
 
-One of the most shocking stories is the experience of [Mohamedou Ould Salahi](https://en.wikipedia.org/wiki/Mohamedou_Ould_Slahi) that he wrote about in his memoir and that is shown in The Mauritanian movie. He was put into Guantanamo camp, without trial, and was tortured there for 15 years after a phone call to his relative in Afghanistan, under suspicion of being involved in 9/11 attacks, even though he lived in Germany for the 10 years prior to the attacks.
+最令人震惊的故事之一是 [Mohamedou Ould Salahi](https://en.wikipedia.org/wiki/Mohamedou_Ould_Slahi) 的经历，他在回忆录中写到了这一点，并在《毛里塔尼亚人》电影中展示了这一点。在与他在阿富汗的亲戚通电话后，他被关进了关塔那摩营地，没有审判，并在那里被折磨了 15 年，怀疑他参与了 9/11 袭击，尽管在袭击发生前的 10 年里他一直住在德国。
 
-It is not enough to use an end-to-end encrypted messenger, we all should use the messengers that protect the privacy of our personal networks - who we are connected with.
+使用端到端加密的信使是不够的，我们都应该使用保护我们个人网络隐私的信使 - 我们与谁联系。
 
-## SimpleX approach to privacy and security
+## SimpleX 的隐私和安全方法
 
-### Complete privacy of your identity, profile, contacts and metadata
+### 您的身份、个人资料、联系人和元数据的完整隐私
 
-**Unlike any other existing messaging platform, SimpleX has no identifiers assigned to the users** - not even random numbers. This protects the privacy of who are you communicating with, hiding it from SimpleX platform servers and from any observers. [Read more](./docs/SIMPLEX.md#full-privacy-of-your-identity-profile-contacts-and-metadata).
+**与任何其他现有的消息传递平台不同，SimpleX 没有分配给用户的标识符** - 甚至没有随机数。这可以保护您与谁通信的隐私，隐藏它不被 SimpleX 平台服务器和任何观察者看到。[了解更多](./docs/SIMPLEX.md#full-privacy-of-your-identity-profile-contacts-and-metadata)。
 
-### The best protection against spam and abuse
+### 防止垃圾邮件和滥用的最佳保护
 
-As you have no identifier on SimpleX platform, you cannot be contacted unless you share a one-time invitation link or an optional temporary user address. [Read more](./docs/SIMPLEX.md#the-best-protection-against-spam-and-abuse).
+由于您在 SimpleX 平台上没有标识符，除非您分享一次性邀请链接或可选的临时用户地址，否则无法联系到您。[了解更多](./docs/SIMPLEX.md#the-best-protection-against-spam-and-abuse)。
 
-### Complete ownership, control and security of your data
+### 数据的所有权、控制和安全性
 
-SimpleX stores all user data on client devices, the messages are only held temporarily on SimpleX relay servers until they are received. [Read more](./docs/SIMPLEX.md#complete-ownership-control-and-security-of-your-data).
+SimpleX 将所有用户数据存储在客户端设备上，消息仅在 SimpleX 中继服务器上临时保存，直到它们被接收。[了解更多](./docs/SIMPLEX.md#complete-ownership-control-and-security-of-your-data)。
 
-### Users own SimpleX network
+### 用户拥有 SimpleX 网络
 
-You can use SimpleX with your own servers and still communicate with people using the servers that are pre-configured in the apps or any other SimpleX servers. [Read more](./docs/SIMPLEX.md#users-own-simplex-network).
+您可以使用自己的服务器使用 SimpleX，并且仍然可以与使用应用中预配置的服务器或任何其他 SimpleX 服务器的人通信。[了解更多](./docs/SIMPLEX.md#users-own-simplex-network)。
 
-## Frequently asked questions
+## 常见问题
 
-1. _How SimpleX can deliver messages without any user identifiers?_ See [v2 release announcement](./blog/20220511-simplex-chat-v2-images-files.md#the-first-messaging-platform-without-user-identifiers) explaining how SimpleX works.
+1. _SimpleX 如何在没有任何用户标识符的情况下传递消息？_ 请参阅 [v2 版本公告](./blog/20220511-simplex-chat-v2-images-files.md#the-first-messaging-platform-without-user-identifiers) 了解 SimpleX 的工作原理。
 
-2. _Why should I not just use Signal?_ Signal is a centralized platform that uses phone numbers to identify its users and their contacts. It means that while the content of your messages on Signal is protected with robust end-to-end encryption, there is a large amount of meta-data visible to Signal - who you talk with and when.
+2. _为什么我不直接使用 Signal？_ Signal 是一个集中式平台，使用电话号码来识别其用户及其联系人。这意味着虽然您的 Signal 消息内容受到强大的端到端加密保护，但 Signal 可以看到大量的元数据 - 您与谁交谈以及何时交谈。
 
-3. _How is it different from Matrix, Session, Ricochet, Cwtch, etc., that also don't require user identities?_ Although these platforms do not require a _real identity_, they do rely on anonymous user identities to deliver messages – it can be, for example, an identity key or a random number. Using a persistent user identity, even anonymous, creates a risk that user's connection graph becomes known to the observers and/or service providers, and it can lead to de-anonymizing some users. If the same user profile is used to connect to two different people via any messenger other than SimpleX, these two people can confirm if they are connected to the same person - they would use the same user identifier in the messages. With SimpleX there is no meta-data in common between your conversations with different contacts - the quality that no other messaging platform has.
+3. _它与 Matrix、Session、Ricochet、Cwtch 等平台有何不同，这些平台也不需要用户身份？_ 尽管这些平台不需要 _真实身份_，但它们确实依赖于匿名用户身份来传递消息 - 例如，它可以是身份密钥或随机数。使用持久的用户身份，即使是匿名的，也会产生用户连接图被观察者和/或服务提供商知道的风险，并且可能导致某些用户的去匿名化。如果在 SimpleX 之外的任何信使中使用相同的用户配置文件连接到两个人，这两个人可以确认他们是否连接到同一个人 - 他们在消息中使用相同的用户标识符。使用 SimpleX，您与不同联系人之间的对话没有共同的元数据 - 这是其他任何消息传递平台都没有的质量。
 
-## News and updates
+## 新闻和更新
 
-Recent and important updates:
+最近和重要的更新：
 
-[Mar 8, 2025. SimpleX Chat v6.3: new user experience and safety in public groups](./blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.md)
+[2025 年 3 月 8 日。SimpleX Chat v6.3：新的用户体验和公共组的安全性](./blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.md)
 
-[Jan 14, 2025. SimpleX network: large groups and privacy-preserving content moderation](./blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.md)
+[2025 年 1 月 14 日。SimpleX 网络：大型组和隐私保护内容审核](./blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.md)
 
-[Dec 10, 2024. SimpleX network: preset servers operated by Flux, business chats and more with v6.2 of the apps](./20241210-simplex-network-v6-2-servers-by-flux-business-chats.md)
+[2024 年 12 月 10 日。SimpleX 网络：由 Flux 运营的预设服务器，v6.2 版本的应用程序提供商业聊天和更多功能](./20241210-simplex-network-v6-2-servers-by-flux-business-chats.md)
 
-[Oct 14, 2024. SimpleX network: security review of protocols design by Trail of Bits, v6.1 released with better calls and user experience.](./blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md)
+[2024 年 10 月 14 日。SimpleX 网络：Trail of Bits 对协议设计的安全性审查，v6.1 版本发布，提供更好的通话和用户体验。](./blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md)
 
-[Aug 14, 2024. SimpleX network: the investment from Jack Dorsey and Asymmetric, v6.0 released with the new user experience and private message routing](./blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.md)
+[2024 年 8 月 14 日。SimpleX 网络：Jack Dorsey 和 Asymmetric 的投资，v6.0 版本发布，提供新的用户体验和私人消息路由](./blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.md)
 
-[Jun 4, 2024. SimpleX network: private message routing, v5.8 released with IP address protection and chat themes](./blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.md)
+[2024 年 6 月 4 日。SimpleX 网络：私人消息路由，v5.8 版本发布，提供 IP 地址保护和聊天主题](./blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.md)
 
-[Mar 14, 2024. SimpleX Chat v5.6 beta: adding quantum resistance to Signal double ratchet algorithm.](./blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md)
+[2024 年 3 月 14 日。SimpleX Chat v5.6 测试版：为 Signal 双棘轮算法添加量子抗性。](./blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md)
 
-[Nov 25, 2023. SimpleX Chat v5.4 released: link mobile and desktop apps via quantum resistant protocol, and much better groups](./blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.md).
+[2023 年 11 月 25 日。SimpleX Chat v5.4 版本发布：通过量子抗性协议链接移动和桌面应用，并提供更好的组](./blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.md)。
 
-[Apr 22, 2023. SimpleX Chat: vision and funding, v5.0 released with videos and files up to 1gb](./blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md).
+[2023 年 4 月 22 日。SimpleX Chat：愿景和资金，v5.0 版本发布，支持视频和高达 1GB 的文件](./blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md)。
 
-[Mar 1, 2023. SimpleX File Transfer Protocol – send large files efficiently, privately and securely, soon to be integrated into SimpleX Chat apps.](./blog/20230301-simplex-file-transfer-protocol.md).
+[2023 年 3 月 1 日。SimpleX 文件传输协议 - 高效、私密和安全地发送大文件，即将集成到 SimpleX Chat 应用中。](./blog/20230301-simplex-file-transfer-protocol.md)。
 
-[Nov 8, 2022. Security audit by Trail of Bits, the new website and v4.2 released](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
+[2022 年 11 月 8 日。Trail of Bits 的安全审计，新网站和 v4.2 版本发布](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md)。
 
-[All updates](./blog)
+[所有更新](./blog)
 
-## :zap: Quick installation of a terminal app
+## :zap: 终端应用的快速安装
 
 ```sh
 curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/install.sh | bash
 ```
 
-Once the chat client is installed, simply run `simplex-chat` from your terminal.
+安装聊天客户端后，只需在终端中运行 `simplex-chat`。
 
 ![simplex-chat](./images/connection.gif)
 
-Read more about [installing and using the terminal app](./docs/CLI.md).
+阅读更多关于[安装和使用终端应用](./docs/CLI.md)的信息。
 
-## SimpleX Platform design
+## SimpleX 平台设计
 
-SimpleX is a client-server network with a unique network topology that uses redundant, disposable message relay nodes to asynchronously pass messages via unidirectional (simplex) message queues, providing recipient and sender anonymity.
+SimpleX 是一个客户端-服务器网络，具有独特的网络拓扑结构，使用冗余、一次性消息中继节点通过单向（simplex）消息队列异步传递消息，提供接收者和发送者匿名性。
 
-Unlike P2P networks, all messages are passed through one or several server nodes, that do not even need to have persistence. In fact, the current [SMP server implementation](https://github.com/simplex-chat/simplexmq#smp-server) uses in-memory message storage, persisting only the queue records. SimpleX provides better metadata protection than P2P designs, as no global participant identifiers are used to deliver messages, and avoids [the problems of P2P networks](./docs/SIMPLEX.md#comparison-with-p2p-messaging-protocols).
+与 P2P 网络不同，所有消息都通过一个或多个服务器节点传递，这些节点甚至不需要持久性。实际上，当前的 [SMP 服务器实现](https://github.com/simplex-chat/simplexmq#smp-server) 使用内存消息存储，仅持久化队列记录。SimpleX 提供比 P2P 设计更好的元数据保护，因为没有使用全局参与者标识符来传递消息，并且避免了 [P2P 网络的问题](./docs/SIMPLEX.md#comparison-with-p2p-messaging-protocols)。
 
-Unlike federated networks, the server nodes **do not have records of the users**, **do not communicate with each other** and **do not store messages** after they are delivered to the recipients. There is no way to discover the full list of servers participating in SimpleX network. This design avoids the problem of metadata visibility that all federated networks have and better protects from the network-wide attacks.
+与联邦网络不同，服务器节点**没有用户记录**，**不相互通信**，并且**在消息传递给接收者后不存储消息**。无法发现参与 SimpleX 网络的服务器的完整列表。此设计避免了所有联邦网络都存在的元数据可见性问题，并且更好地防止了网络范围的攻击。
 
-Only the client devices have information about users, their contacts and groups.
+只有客户端设备拥有用户、联系人和组的信息。
 
-See [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md) for more information on platform objectives and technical design.
+有关平台目标和技术设计的更多信息，请参阅 [SimpleX 白皮书](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md)。
 
-See [SimpleX Chat Protocol](./docs/protocol/simplex-chat.md) for the format of messages sent between chat clients over [SimpleX Messaging Protocol](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md).
+有关通过 [SimpleX 消息传递协议](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md) 在聊天客户端之间发送消息的格式，请参阅 [SimpleX 聊天协议](./docs/protocol/simplex-chat.md)。
 
-## Privacy and security: technical details and limitations
+## 隐私和安全：技术细节和限制
 
-SimpleX Chat is a work in progress – we are releasing improvements as they are ready. You have to decide if the current state is good enough for your usage scenario.
+SimpleX Chat 是一个正在进行的工作 - 我们会在改进准备就绪时发布。您必须决定当前状态是否适合您的使用场景。
 
-We compiled a [glossary of terms](./docs/GLOSSARY.md) used to describe communication systems to help understand some terms below and to help compare advantages and disadvantages of various communication systems.
+我们编制了一个[术语表](./docs/GLOSSARY.md)，用于描述通信系统，以帮助理解以下某些术语，并帮助比较各种通信系统的优缺点。
 
-What is already implemented:
+已经实现的功能：
 
-1. Instead of user profile identifiers used by all other platforms, even the most private ones, SimpleX uses [pairwise per-queue identifiers](./docs/GLOSSARY.md#pairwise-pseudonymous-identifier) (2 addresses for each unidirectional message queue, with an optional 3rd address for push notifications on iOS, 2 queues in each connection between the users). It makes observing the network graph on the application level more difficult, as for `n` users there can be up to `n * (n-1)` message queues.
-2. [End-to-end encryption](./docs/GLOSSARY.md#end-to-end-encryption) in each message queue using [NaCl cryptobox](https://nacl.cr.yp.to/box.html). This is added to allow redundancy in the future (passing each message via several servers), to avoid having the same ciphertext in different queues (that would only be visible to the attacker if TLS is compromised). The encryption keys used for this encryption are not rotated, instead we are planning to rotate the queues. Curve25519 keys are used for key negotiation.
-3. [Double ratchet](./docs/GLOSSARY.md#double-ratchet-algorithm) end-to-end encryption in each conversation between two users (or group members). This is the same algorithm that is used in Signal and many other messaging apps; it provides OTR messaging with [forward secrecy](./docs/GLOSSARY.md#forward-secrecy) (each message is encrypted by its own ephemeral key) and [break-in recovery](./docs/GLOSSARY.md#post-compromise-security) (the keys are frequently re-negotiated as part of the message exchange). Two pairs of Curve448 keys are used for the initial [key agreement](./docs/GLOSSARY.md#key-agreement-protocol), initiating party passes these keys via the connection link, accepting side - in the header of the confirmation message.
-4. [Post-quantum resistant key exchange](./docs/GLOSSARY.md#post-quantum-cryptography) in double ratchet protocol *on every ratchet step*. Read more in [this post](./blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md) and also see this [publication by Apple]( https://security.apple.com/blog/imessage-pq3/) explaining the need for post-quantum key rotation.
-5. Additional layer of encryption using NaCL cryptobox for the messages delivered from the server to the recipient. This layer avoids having any ciphertext in common between sent and received traffic of the server inside TLS (and there are no identifiers in common as well).
-6. Several levels of [content padding](./docs/GLOSSARY.md#message-padding) to frustrate message size attacks.
-7. All message metadata, including the time when the message was received by the server (rounded to a second) is sent to the recipients inside an encrypted envelope, so even if TLS is compromised it cannot be observed.
-8. Only TLS 1.2/1.3 are allowed for client-server connections, limited to cryptographic algorithms: CHACHA20POLY1305_SHA256, Ed25519/Ed448, Curve25519/Curve448.
-9. To protect against replay attacks SimpleX servers require [tlsunique channel binding](https://www.rfc-editor.org/rfc/rfc5929.html) as session ID in each client command signed with per-queue ephemeral key.
-10. To protect your IP address from unknown messaging relays, and for per-message transport anonymity (compared with Tor/VPN per-connection anonymity), from v6.0 all SimpleX Chat clients use private message routing by default. Read more in [this post](./blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.md#private-message-routing).
-11. To protect your IP address from unknown file relays, when SOCKS proxy is not enabled SimpleX Chat clients ask for a confirmation before downloading the files from unknown servers.
-12. To protect your IP address from known servers all SimpleX Chat clients support accessing messaging servers via Tor - see [v3.1 release announcement](./blog/20220808-simplex-chat-v3.1-chat-groups.md) for more details.
-13. Local database encryption with passphrase - your contacts, groups and all sent and received messages are stored encrypted. If you used SimpleX Chat before v4.0 you need to enable the encryption via the app settings.
-14. Transport isolation - different TCP connections and Tor circuits are used for traffic of different user profiles, optionally - for different contacts and group member connections.
-15. Manual messaging queue rotations to move conversation to another SMP relay.
-16. Sending end-to-end encrypted files using [XFTP protocol](https://simplex.chat/blog/20230301-simplex-file-transfer-protocol.html).
-17. Local files encryption.
-18. [Reproducible server builds](./docs/SERVER.md#reproduce-builds).
+1. SimpleX 使用 [配对的每队列标识符](./docs/GLOSSARY.md#pairwise-pseudonymous-identifier)（每个单向消息队列 2 个地址，iOS 上的推送通知可选第 3 个地址，每个用户之间的连接有 2 个队列），而不是所有其他平台使用的用户配置文件标识符。它使在应用程序级别观察网络图变得更加困难，因为对于 `n` 个用户，最多可以有 `n * (n-1)` 个消息队列。
+2. 使用 [NaCl cryptobox](https://nacl.cr.yp.to/box.html) 在每个消息队列中进行 [端到端加密](./docs/GLOSSARY.md#end-to-end-encryption)。这是为了在未来允许冗余（通过多个服务器传递每条消息），以避免在不同队列中具有相同的密文（只有在 TLS 被破坏时才会被攻击者看到）。用于此加密的加密密钥不会轮换，而是计划轮换队列。Curve25519 密钥用于密钥协商。
+3. 在两个用户（或组成员）之间的每个对话中使用 [双棘轮](./docs/GLOSSARY.md#double-ratchet-algorithm) 端到端加密。这是 Signal 和许多其他消息应用中使用的相同算法；它提供具有 [前向安全性](./docs/GLOSSARY.md#forward-secrecy)（每条消息由其自己的临时密钥加密）和 [破损恢复](./docs/GLOSSARY.md#post-compromise-security)（密钥在消息交换过程中频繁重新协商）的 OTR 消息。两对 Curve448 密钥用于初始 [密钥协商](./docs/GLOSSARY.md#key-agreement-protocol)，发起方通过连接链接传递这些密钥，接受方在确认消息的头部传递这些密钥。
+4. 在每个棘轮步骤中使用 [抗量子密钥交换](./docs/GLOSSARY.md#post-quantum-cryptography) 的双棘轮协议。请阅读[这篇文章](./blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md)和 [Apple 的这篇文章](https://security.apple.com/blog/imessage-pq3/) 了解量子密钥轮换的必要性。
+5. 使用 NaCL cryptobox 进行额外的加密层，以便从服务器传递到接收者的消息。此层避免在 TLS 内部的服务器发送和接收流量中具有任何共同的密文（并且没有共同的标识符）。
+6. 多级 [内容填充](./docs/GLOSSARY.md#message-padding) 以挫败消息大小攻击。
+7. 所有消息元数据，包括服务器接收消息的时间（四舍五入到秒），都在加密信封内发送给接收者，因此即使 TLS 被破坏也无法观察到。
+8. 仅允许 TLS 1.2/1.3 用于客户端-服务器连接，限制为加密算法：CHACHA20POLY1305_SHA256，Ed25519/Ed448，Curve25519/Curve448。
+9. 为了防止重放攻击，SimpleX 服务器要求 [tlsunique 通道绑定](https://www.rfc-editor.org/rfc/rfc5929.html) 作为每个客户端命令中的会话 ID，使用每队列临时密钥签名。
+10. 为了保护您的 IP 地址不被未知的消息中继服务器看到，并提供每条消息的传输匿名性（与 Tor/VPN 的每连接匿名性相比），从 v6.0 开始，所有 SimpleX Chat 客户端默认使用私人消息路由。请阅读[这篇文章](./blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.md#private-message-routing)了解更多信息。
+11. 为了保护您的 IP 地址不被未知的文件中继服务器看到，当 SOCKS 代理未启用时，SimpleX Chat 客户端在从未知服务器下载文件之前会请求确认。
+12. 为了保护您的 IP 地址不被已知服务器看到，所有 SimpleX Chat 客户端支持通过 Tor 访问消息服务器 - 请参阅 [v3.1 版本公告](./blog/20220808-simplex-chat-v3.1-chat-groups.md) 了解更多详细信息。
+13. 使用密码短语进行本地数据库加密 - 您的联系人、组以及所有已发送和接收的消息都存储为加密的。如果您在 v4.0 之前使用 SimpleX Chat，您需要通过应用设置启用加密。
+14. 传输隔离 - 不同的 TCP 连接和 Tor 电路用于不同用户配置文件的流量，可选 - 用于不同联系人和组成员连接。
+15. 手动消息队列轮换以将对话移动到另一个 SMP 中继。
+16. 使用 [XFTP 协议](https://simplex.chat/blog/20230301-simplex-file-transfer-protocol.html) 发送端到端加密文件。
+17. 本地文件加密。
+18. [可重现的服务器构建](./docs/SERVER.md#reproduce-builds)。
 
-We plan to add:
+我们计划添加：
 
-1. Automatic message queue rotation and redundancy. Currently the queues created between two users are used until the queue is manually changed by the user or contact is deleted. We are planning to add automatic queue rotation to make these identifiers temporary and rotate based on some schedule TBC (e.g., every X messages, or every X hours/days).
-2. Message "mixing" - adding latency to message delivery, to protect against traffic correlation by message time.
-3. Reproducible clients builds – this is a complex problem, but we are aiming to have it in 2025 at least partially.
-4. Recipients' XFTP relays to reduce traffic and conceal IP addresses from the relays chosen, and potentially controlled, by another party.
+1. 自动消息队列轮换和冗余。目前，在两个用户之间创建的队列在用户手动更改队列或删除联系人之前使用。我们计划添加自动队列轮换，使这些标识符成为临时的，并根据待定的某个计划进行轮换（例如，每 X 条消息，或每 X 小时/天）。
+2. 消息“混合” - 添加消息传递的延迟，以防止通过消息时间进行流量关联。
+3. 可重现的客户端构建 - 这是一个复杂的问题，但我们计划在 2025 年至少部分实现。
+4. 接收者的 XFTP 中继，以减少流量并隐藏 IP 地址不被由另一方选择并可能控制的中继看到。
 
-## For developers
+## 开发人员
 
-You can:
+您可以：
 
-- use SimpleX Chat library to integrate chat functionality into your mobile apps.
-- create chat bots and services in Haskell - see [simple](./apps/simplex-bot/) and more [advanced chat bot example](./apps/simplex-bot-advanced/).
-- create chat bots and services in any language running SimpleX Chat terminal CLI as a local WebSocket server. See [TypeScript SimpleX Chat client](./packages/simplex-chat-client/) and [JavaScript chat bot example](./packages/simplex-chat-client/typescript/examples/squaring-bot.js).
-- run [simplex-chat terminal CLI](./docs/CLI.md) to execute individual chat commands, e.g. to send messages as part of shell script execution.
+- 使用 SimpleX Chat 库将聊天功能集成到您的移动应用中。
+- 使用 Haskell 创建聊天机器人和服务 - 请参阅[简单](./apps/simplex-bot/)和更[高级的聊天机器人示例](./apps/simplex-bot-advanced/)。
+- 使用任何语言创建聊天机器人和服务，运行 SimpleX Chat 终端 CLI 作为本地 WebSocket 服务器。请参阅 [TypeScript SimpleX Chat 客户端](./packages/simplex-chat-client/)和 [JavaScript 聊天机器人示例](./packages/simplex-chat-client/typescript/examples/squaring-bot.js)。
+- 运行 [simplex-chat 终端 CLI](./docs/CLI.md) 执行单个聊天命令，例如作为 shell 脚本执行的一部分发送消息。
 
-If you are considering developing with SimpleX platform please get in touch for any advice and support.
+如果您正在考虑使用 SimpleX 平台进行开发，请联系我们以获取任何建议和支持。
 
-Please also join [#simplex-devs](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2F6eHqy7uAbZPOcA6qBtrQgQquVlt4Ll91%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAqV_pg3FF00L98aCXp4D3bOs4Sxv_UmSd-gb0juVoQVs%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22XonlixcHBIb2ijCehbZoiw%3D%3D%22%7D) group to ask any questions and share your success stories.
+请加入 [#simplex-devs](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2F6eHqy7uAbZPOcA6qBtrQgQquVlt4Ll91%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAqV_pg3FF00L98aCXp4D3bOs4Sxv_UmSd-gb0juVoQVs%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22XonlixcHBIb2ijCehbZoiw%3D%3D%22%7D) 组以提出任何问题并分享您的成功故事。
 
-## Roadmap
+## 路线图
 
-- ✅ Easy to deploy SimpleX server with in-memory message storage, without any dependencies.
-- ✅ Terminal (console) client with groups and files support.
-- ✅ One-click SimpleX server deployment on Linode.
-- ✅ End-to-end encryption using double-ratchet protocol with additional encryption layer.
-- ✅ Mobile apps v1 for Android and iOS.
-- ✅ Private instant notifications for Android using background service.
-- ✅ Haskell chat bot templates.
-- ✅ v2.0 - supporting images and files in mobile apps.
-- ✅ Manual chat history deletion.
-- ✅ End-to-end encrypted WebRTC audio and video calls via the mobile apps.
-- ✅ Privacy preserving instant notifications for iOS using Apple Push Notification service.
-- ✅ Chat database export and import.
-- ✅ Chat groups in mobile apps.
-- ✅ Connecting to messaging servers via Tor.
-- ✅ Dual server addresses to access messaging servers as v3 hidden services.
-- ✅ Chat server and TypeScript client SDK to develop chat interfaces, integrations and chat bots (ready for announcement).
-- ✅ Incognito mode to share a new random name with each contact.
-- ✅ Chat database encryption.
-- ✅ Automatic chat history deletion.
-- ✅ Links to join groups and improve groups stability.
-- ✅ Voice messages (with recipient opt-out per contact).
-- ✅ Basic authentication for SMP servers (to authorize creating new queues).
-- ✅ View deleted messages, full message deletion by sender (with recipient opt-in per contact).
-- ✅ Block screenshots and view in recent apps.
-- ✅ Advanced server configuration.
-- ✅ Disappearing messages (with recipient opt-in per-contact).
-- ✅ "Live" messages.
-- ✅ Contact verification via a separate out-of-band channel.
-- ✅ Multiple user profiles in the same chat database.
-- ✅ Optionally avoid re-using the same TCP session for multiple connections.
-- ✅ Preserve message drafts.
-- ✅ File server to optimize for efficient and private sending of large files.
-- ✅ Improved audio & video calls.
-- ✅ Support older Android OS and 32-bit CPUs.
-- ✅ Hidden chat profiles.
-- ✅ Sending and receiving large files via [XFTP protocol](./blog/20230301-simplex-file-transfer-protocol.md).
-- ✅ Video messages.
-- ✅ App access passcode.
-- ✅ Improved Android app UI design.
-- ✅ Optional alternative access password.
-- ✅ Message reactions
-- ✅ Message editing history
-- ✅ Reduced battery and traffic usage in large groups.
-- ✅ Message delivery confirmation (with sender opt-out per contact).
-- ✅ Desktop client.
-- ✅ Encryption of local files stored in the app.
-- ✅ Using mobile profiles from the desktop app.
-- ✅ Private notes.
-- ✅ Improve sending videos (including encryption of locally stored videos).
-- ✅ Post-quantum resistant key exchange in double ratchet protocol.
-- ✅ Message delivery relay for senders (to conceal IP address from the recipients' servers and to reduce the traffic).
-- ✅ Support multiple network operators in the app.
-- 🏗 Large groups, communities and public channels.
-- 🏗 Short links to connect and join groups.
-- 🏗 Improve stability and reduce battery usage.
-- 🏗 Improve experience for the new users.
-- Privacy & security slider - a simple way to set all settings at once.
-- SMP queue redundancy and rotation (manual is supported).
-- Include optional message into connection request sent via contact address.
-- Improved navigation and search in the conversation (expand and scroll to quoted message, scroll to search results, etc.).
-- Feeds/broadcasts.
-- Ephemeral/disappearing/OTR conversations with the existing contacts.
-- Privately share your location.
-- Web widgets for custom interactivity in the chats.
-- Programmable chat automations / rules (automatic replies/forward/deletion/sending, reminders, etc.).
-- Privacy-preserving identity server for optional DNS-based contact/group addresses to simplify connection and discovery, but not used to deliver messages:
-  - keep all your contacts and groups even if you lose the domain.
-  - the server doesn't have information about your contacts and groups.
-- High capacity multi-node SMP relays.
+- ✅ 易于部署的 SimpleX 服务器，具有内存消息存储，无需任何依赖项。
+- ✅ 具有组和文件支持的终端（控制台）客户端。
+- ✅ 在 Linode 上一键部署 SimpleX 服务器。
+- ✅ 使用双棘轮协议进行端到端加密，具有额外的加密层。
+- ✅ Android 和 iOS 的移动应用 v1。
+- ✅ 使用后台服务的 Android 私人即时通知。
+- ✅ Haskell 聊天机器人模板。
+- ✅ v2.0 - 支持移动应用中的图像和文件。
+- ✅ 手动删除聊天记录。
+- ✅ 通过移动应用进行端到端加密的 WebRTC 音频和视频通话。
+- ✅ 使用 Apple 推送通知服务的 iOS 私人即时通知。
+- ✅ 聊天数据库导出和导入。
+- ✅ 移动应用中的聊天组。
+- ✅ 通过 Tor 连接到消息服务器。
+- ✅ 双服务器地址以访问 v3 隐藏服务的消息服务器。
+- ✅ 聊天服务器和 TypeScript 客户端 SDK，用于开发聊天界面、集成和聊天机器人（准备公告）。
+- ✅ 隐身模式，以与每个联系人共享一个新的随机名称。
+- ✅ 聊天数据库加密。
+- ✅ 自动删除聊天记录。
+- ✅ 链接加入组并提高组的稳定性。
+- ✅ 语音消息（接收者每个联系人选择退出）。
+- ✅ SMP 服务器的基本身份验证（授权创建新队列）。
+- ✅ 查看已删除的消息，发送者完全删除消息（接收者每个联系人选择加入）。
+- ✅ 阻止截图和在最近的应用中查看。
+- ✅ 高级服务器配置。
+- ✅ 消失的消息（接收者每个联系人选择加入）。
+- ✅ “实时”消息。
+- ✅ 通过单独的带外通道验证联系人。
+- ✅ 同一聊天数据库中的多个用户配置文件。
+- ✅ 可选地避免为多个连接重复使用相同的 TCP 会话。
+- ✅ 保留消息草稿。
+- ✅ 文件服务器，以优化高效和私密地发送大文件。
+- ✅ 改进的音频和视频通话。
+- ✅ 支持旧版 Android 操作系统和 32 位 CPU。
+- ✅ 隐藏的聊天配置文件。
+- ✅ 通过 [XFTP 协议](./blog/20230301-simplex-file-transfer-protocol.md) 发送和接收大文件。
+- ✅ 视频消息。
+- ✅ 应用访问密码。
+- ✅ 改进的 Android 应用 UI 设计。
+- ✅ 可选的备用访问密码。
+- ✅ 消息反应
+- ✅ 消息编辑历史
+- ✅ 减少大组中的电池和流量使用。
+- ✅ 消息传递确认（发送者每个联系人选择退出）。
+- ✅ 桌面客户端。
+- ✅ 加密存储在应用中的本地文件。
+- ✅ 使用桌面应用中的移动配置文件。
+- ✅ 私人笔记。
+- ✅ 改进发送视频（包括加密本地存储的视频）。
+- ✅ 双棘轮协议中的抗量子密钥交换。
+- ✅ 发送者的消息传递中继（隐藏 IP 地址不被接收者的服务器看到并减少流量）。
+- ✅ 支持应用中的多个网络运营商。
+- 🏗 大型组、社区和公共频道。
+- 🏗 短链接连接和加入组。
+- 🏗 改善稳定性并减少电池使用。
+- 🏗 改善新用户体验。
+- 隐私和安全滑块 - 一种简单的方法来一次设置所有设置。
+- SMP 队列冗余和轮换（支持手动）。
+- 在通过联系人地址发送的连接请求中包含可选消息。
+- 改进对话中的导航和搜索（展开并滚动到引用的消息，滚动到搜索结果等）。
+- 提要/广播。
+- 与现有联系人进行临时/消失/OTR 对话。
+- 私下分享您的位置。
+- 聊天中的 Web 小部件，用于自定义交互。
+- 可编程的聊天自动化/规则（自动回复/转发/删除/发送、提醒等）。
+- 隐私保护的身份服务器，用于可选的基于 DNS 的联系人/组地址，以简化连接和发现，但不用于传递消息：
+  - 即使您丢失了域名，也可以保留所有联系人和组。
+  - 服务器没有关于您的联系人和组的信息。
+- 高容量多节点 SMP 中继。
 
-## Disclaimers
+## 免责声明
 
-[SimpleX protocols and security model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) was reviewed, and had many breaking changes and improvements in v1.0.0.
+[SimpleX 协议和安全模型](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) 已经过审查，并在 v1.0.0 中进行了许多重大更改和改进。
 
-The implementation security assessment of SimpleX cryptography and networking was done in October 2022 by [Trail of Bits](https://www.trailofbits.com/about) – see [the announcement](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
+SimpleX 加密和网络的实现安全评估于 2022 年 10 月由 [Trail of Bits](https://www.trailofbits.com/about) 完成 - 请参阅[公告](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md)。
 
-The cryptographic review of SimpleX protocols was done in July 2024 by Trail of Bits – see [the announcement](./blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md).
+SimpleX 协议的加密审查于 2024 年 7 月由 Trail of Bits 完成 - 请参阅[公告](./blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md)。
 
-SimpleX Chat is still a relatively early stage platform (the mobile apps were released in March 2022), so you may discover some bugs and missing features. We would really appreciate if you let us know anything that needs to be fixed or improved.
+SimpleX Chat 仍然是一个相对早期的平台（移动应用于 2022 年 3 月发布），因此您可能会发现一些错误和缺失的功能。如果您发现需要修复或改进的任何内容，我们将非常感谢您告知我们。
 
-The default servers configured in the app are provided on the best effort basis. We are currently not guaranteeing any SLAs, although historically our servers had over 99.9% uptime each.
+应用中配置的默认服务器是基于最佳努力提供的。我们目前不保证任何 SLA，尽管历史上我们的服务器每个都有超过 99.9% 的正常运行时间。
 
-We have never provided or have been requested access to our servers or any information from our servers by any third parties. If we are ever requested to provide such access or information, we will be following due legal process.
+我们从未提供或被任何第三方要求访问我们的服务器或从我们的服务器获取任何信息。如果我们被要求提供此类访问或信息，我们将遵循合法程序。
 
-We do not log IP addresses of the users and we do not perform any traffic correlation on our servers. If transport level security is critical you must use Tor or some other similar network to access messaging servers. We will be improving the client applications to reduce the opportunities for traffic correlation.
+我们不记录用户的 IP 地址，也不在我们的服务器上执行任何流量关联。如果传输级别的安全性至关重要，您必须使用 Tor 或其他类似网络访问消息服务器。我们将改进客户端应用程序，以减少流量关联的机会。
 
-Please read more in [Privacy Policy](./PRIVACY.md).
+请阅读更多内容在[隐私政策](./PRIVACY.md)。
 
-## Security contact
+## 安全联系人
 
-Please see our [Security Policy](./docs/SECURITY.md) on how to report security vulnerabilities to us. We will coordinate the fix and disclosure.
+请参阅我们的[安全政策](./docs/SECURITY.md)，了解如何向我们报告安全漏洞。我们将协调修复和披露。
 
-Please do NOT report security vulnerabilities via GitHub issues.
+请不要通过 GitHub 问题报告安全漏洞。
 
-## License
+## 许可证
 
 [AGPL v3](./LICENSE)
 

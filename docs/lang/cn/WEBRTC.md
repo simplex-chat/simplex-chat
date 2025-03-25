@@ -3,7 +3,7 @@ title: 在 SimpleX 中使用定制 WebRTC ICE 服务器
 revision: 31.01.2023
 ---
 
-| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/WEBRTC.md), [CZ](/docs/lang/cs/WEBRTC.md), [PL](/docs/lang/pl/WEBRTC.md), [ZH_CN](/docs/lang/cn/WEBRTC.md) |
+| 更新日期: 31.01.2023 | 语言: ZH_CN, EN, [FR](/docs/lang/fr/WEBRTC.md), [CZ](/docs/lang/cs/WEBRTC.md), [波兰文](/docs/lang/pl/WEBRTC.md) |
 
 # 在 SimpleX 中使用定制 WebRTC ICE 服务器
 ## 部署 STUN/TURN 服务器

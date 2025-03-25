@@ -3,7 +3,7 @@ title: 访问Android应用程序中的文件
 revision: 07.02.2023
 ---
 
-| 07.02.2023 | EN, [CZ](/docs/lang/cs/ANDROID.md), [FR](/docs/lang/fr/ANDROID.md), [PL](/docs/lang/pl/ANDROID.md), [ZH_CN](/docs/lang/cn/ANDROID.md) |
+| 07.02.2023 | ZH_CN, EN, [CZ](/docs/lang/cs/ANDROID.md), [FR](/docs/lang/fr/ANDROID.md), [波兰文](/docs/lang/pl/ANDROID.md) |
 
 # 访问Android应用程序中的文件
 

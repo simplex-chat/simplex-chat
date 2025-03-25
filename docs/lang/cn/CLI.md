@@ -3,7 +3,7 @@ title: 终端 CLI
 revision: 31.01.2023
 ---
 
-| 更新于 31.01.2023 | 语言: EN, [FR](/docs/lang/fr/CLI.md), [CZ](/docs/lang/cs/CLI.md), [PL](/docs/lang/pl/CLI.md) |
+| 更新于 31.01.2023 | 语言: 简体中文, [英语](/docs/lang/en/CLI.md), [法语](/docs/lang/fr/CLI.md), [捷克语](/docs/lang/cs/CLI.md), [波兰语](/docs/lang/pl/CLI.md) |
 
 # 适用于 Linux/MacOS/Windows 的 SimpleX Chat 终端（控制台）应用程序
 

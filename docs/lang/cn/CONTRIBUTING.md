@@ -3,7 +3,7 @@ title: 贡献指南
 revision: 31.01.2023
 ---
 
-| 更新于 31.01.2023 | 语言: EN, [FR](/docs/lang/fr/CONTRIBUTING.md), [CZ](/docs/lang/cs/CONTRIBUTING.md), [PL](/docs/lang/pl/CONTRIBUTING.md) |
+| 更新于 31.01.2023 | 语言: ZH_CN, EN, [FR](/docs/lang/fr/CONTRIBUTING.md), [CZ](/docs/lang/cs/CONTRIBUTING.md), [PL](/docs/lang/pl/CONTRIBUTING.md) |
 
 # 贡献指南
 
