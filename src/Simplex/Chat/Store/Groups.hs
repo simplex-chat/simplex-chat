@@ -545,13 +545,13 @@ createGroupViaLink'
   invitedMember
   groupProfile
   business
-  memStatus = do
+  membershipStatus = do
     currentTs <- liftIO getCurrentTime
     groupId <- insertGroup_ currentTs
     hostMemberId <- insertHost_ currentTs groupId
     liftIO $ DB.execute db "UPDATE connections SET conn_type = ?, group_member_id = ?, updated_at = ? WHERE connection_id = ?" (ConnMember, hostMemberId, currentTs, connId)
     -- using IBUnknown since host is created without contact
-    void $ createContactMemberInv_ db user groupId (Just hostMemberId) user invitedMember GCUserMember memStatus IBUnknown customUserProfileId currentTs vr
+    void $ createContactMemberInv_ db user groupId (Just hostMemberId) user invitedMember GCUserMember membershipStatus IBUnknown customUserProfileId currentTs vr
     liftIO $ setViaGroupLinkHash db groupId connId
     (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user hostMemberId
     where
@@ -586,7 +586,7 @@ createGroupViaLink'
                   user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
             |]
-            ( (groupId, memberId, memberRole, GCHostMember, memStatus, fromInvitedBy userContactId IBUnknown)
+            ( (groupId, memberId, memberRole, GCHostMember, GSMemAccepted, fromInvitedBy userContactId IBUnknown)
                 :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
             )
           insertedRowId db
@@ -1215,8 +1215,8 @@ updateGroupMemberStatusById db userId groupMemberId memStatus = do
     |]
     (memStatus, currentTs, userId, groupMemberId)
 
-updateGroupMemberAccepted :: DB.Connection -> User -> GroupMember -> GroupMemberRole -> IO GroupMember
-updateGroupMemberAccepted db User {userId} m@GroupMember {groupMemberId} role = do
+updateGroupMemberAccepted :: DB.Connection -> User -> GroupMember -> GroupMemberStatus -> GroupMemberRole -> IO GroupMember
+updateGroupMemberAccepted db User {userId} m@GroupMember {groupMemberId} status role = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -1225,8 +1225,8 @@ updateGroupMemberAccepted db User {userId} m@GroupMember {groupMemberId} role = 
       SET member_status = ?, member_role = ?, updated_at = ?
       WHERE user_id = ? AND group_member_id = ?
     |]
-    (GSMemConnected, role, currentTs, userId, groupMemberId)
-  pure m {memberStatus = GSMemConnected, memberRole = role, updatedAt = currentTs}
+    (status, role, currentTs, userId, groupMemberId)
+  pure m {memberStatus = status, memberRole = role, updatedAt = currentTs}
 
 -- | add new member with profile
 createNewGroupMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberInfo -> GroupMemberCategory -> GroupMemberStatus -> ExceptT StoreError IO GroupMember

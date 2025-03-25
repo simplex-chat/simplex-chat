@@ -2029,32 +2029,36 @@ processChatCommand' vr = \case
         Nothing -> throwChatError $ CEContactNotActive ct
   APIAcceptMember groupId gmId role -> withUser $ \user@User {userId} -> do
     (gInfo, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user gmId
-    assertUserGroupRole gInfo GRAdmin -- GRModerator?
+    assertUserGroupRole gInfo GRModerator
     case memberStatus m of
       GSMemPendingApproval | memberCategory m == GCInviteeMember -> do -- only host can approve
         case memberConn m of
           Just mConn
             | groupFeatureAllowed SGFNewMemberReview gInfo -> do
+                introduceToModerators vr user gInfo m
                 withFastStore' $ \db -> updateGroupMemberStatus db userId m GSMemPendingReview
                 let m' = m {memberStatus = GSMemPendingReview}
-                introduceToModerators vr user gInfo m'
-                pure $ CRJoinedGroupMember user gInfo m'
+                pure $ CRMemberAccepted user gInfo m'
             | otherwise -> do
                 let msg = XGrpLinkAcpt role (Just $ memberId' m)
                 void $ sendDirectMemberMessage mConn msg groupId
-                m' <- withFastStore' $ \db -> updateGroupMemberAccepted db user m role
-                members <- withStore' $ \db -> getGroupMembers db vr user gInfo
-                let recipients = filter memberCurrent members
-                introduceMember vr user gInfo m' recipients MSGroup
-                sendHistory user gInfo m'
-                pure $ CRJoinedGroupMember user gInfo m'
+                -- TODO [knocking] introduce to remaining members (reuse with Subscriber)
+                introduceToGroup vr user gInfo m
+                m' <- withFastStore' $ \db -> updateGroupMemberAccepted db user m GSMemConnected role
+                pure $ CRMemberAccepted user gInfo m'
           Nothing -> throwChatError CEGroupMemberNotActive
-      -- TODO [knocking] admin to send XGrpLinkAcpt with memberId to host, host to forward to invitee and introduceToGroup
-      -- TODO - additionally archive conversation with member
-      -- TODO - also archive on rejection (removing member)
-      -- TODO - or just correctly maintain `unanswered`?
       GSMemPendingReview | memberCategory m /= GCInviteeMember -> do -- only other admins can review
-        ok_
+        let gcs = GCSMemberSupport $ Just (groupMemberId' m)
+        modMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
+        let rcpModMs' = filter memberCurrent modMs
+            msg = XGrpLinkAcpt role (Just $ memberId' m)
+        void $ sendGroupMessage user gInfo gcs rcpModMs' msg
+        m' <- withFastStore' $ \db -> updateGroupMemberAccepted db user m newMemberStatus role
+        pure $ CRMemberAccepted user gInfo m'
+        where
+          newMemberStatus = case memberConn m of
+            Just c | connReady c -> GSMemConnected
+            _ -> GSMemAnnounced
       _ -> throwChatError $ CECommandError "member should be pending approval and invitee, or pending review and not invitee"
   APIMembersRole groupId memberIds newRole -> withUser $ \user ->
     withGroupLock "memberRole" groupId . procCmd $ do

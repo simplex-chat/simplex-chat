@@ -301,10 +301,12 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
   CRUserJoinedGroup u g _ -> ttyUser u $ viewUserJoinedGroup g
   CRJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
+  CRMemberAccepted u g m -> ttyUser u $ viewMemberAccepted g m
+  CRMemberAcceptedByOther u g acceptingMember m -> ttyUser u $ viewMemberAcceptedByOther g acceptingMember m
   CRHostConnected p h -> [plain $ "connected to " <> viewHostEvent p h]
   CRHostDisconnected p h -> [plain $ "disconnected from " <> viewHostEvent p h]
   CRJoinedGroupMemberConnecting u g host m -> ttyUser u $ viewJoinedGroupMemberConnecting g host m
-  CRConnectedToGroupMember u g m _ -> ttyUser u [ttyGroup' g <> ": " <> connectedMember m <> " is connected"]
+  CRConnectedToGroupMember u g m _ -> ttyUser u $ viewConnectedToGroupMember g m
   CRMemberRole u g by m r r' -> ttyUser u $ viewMemberRoleChanged g by m r r'
   CRMembersRoleUser u g members r' -> ttyUser u $ viewMemberRoleUserChanged g members r'
   CRMemberBlockedForAll u g by m blocked -> ttyUser u $ viewMemberBlockedForAll g by m blocked
@@ -1087,6 +1089,7 @@ viewUserJoinedGroup g@GroupInfo {membership} =
   where
     pendingApproval_ = case memberStatus membership of
       GSMemPendingApproval -> ", pending approval"
+      GSMemPendingReview -> ", pending review"
       _ -> ""
 
 viewJoinedGroupMember :: GroupInfo -> GroupMember -> [StyledString]
@@ -1096,7 +1099,17 @@ viewJoinedGroupMember g@GroupInfo {groupId} m@GroupMember {groupMemberId, member
       <> ("use " <> highlight ("/_accept member #" <> show groupId <> " " <> show groupMemberId <> " <role>") <> " to accept member")
     ]
   GSMemPendingReview -> [ttyGroup' g <> ": " <> ttyMember m <> " connected and pending review"]
-  _ -> [ttyGroup' g <> ": " <> ttyMember m <> " joined the group "]
+  _ -> [ttyGroup' g <> ": " <> ttyMember m <> " joined the group"]
+
+viewMemberAccepted :: GroupInfo -> GroupMember -> [StyledString]
+viewMemberAccepted g m@GroupMember {memberStatus} = case memberStatus of
+  GSMemPendingReview -> [ttyGroup' g <> ": " <> ttyMember m <> " accepted and pending review"]
+  _ -> [ttyGroup' g <> ": " <> ttyMember m <> " accepted"]
+
+viewMemberAcceptedByOther :: GroupInfo -> GroupMember -> GroupMember -> [StyledString]
+viewMemberAcceptedByOther g acceptingMember m@GroupMember {memberCategory} = case memberCategory of
+  GCInviteeMember -> [ttyGroup' g <> ": " <> ttyMember acceptingMember <> " accepted " <> ttyMember m <> " to the group (will introduce remaining members)"]
+  _ -> [ttyGroup' g <> ": " <> ttyMember acceptingMember <> " accepted " <> ttyMember m <> " to the group"]
 
 viewJoinedGroupMemberConnecting :: GroupInfo -> GroupMember -> GroupMember -> [StyledString]
 viewJoinedGroupMemberConnecting g@GroupInfo {groupId} host m@GroupMember {groupMemberId, memberStatus} = case memberStatus of
@@ -1105,6 +1118,14 @@ viewJoinedGroupMemberConnecting g@GroupInfo {groupId} host m@GroupMember {groupM
       <> ("use " <> highlight ("/_accept member #" <> show groupId <> " " <> show groupMemberId <> " <role>") <> " to accept member")
     ]
   _ -> [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
+
+viewConnectedToGroupMember :: GroupInfo -> GroupMember -> [StyledString]
+viewConnectedToGroupMember g@GroupInfo {groupId} m@GroupMember {groupMemberId, memberStatus} = case memberStatus of
+  GSMemPendingReview ->
+    [ (ttyGroup' g <> ": " <> connectedMember m <> " is connected and pending review")
+      <> ("use " <> highlight ("/_accept member #" <> show groupId <> " " <> show groupMemberId <> " <role>") <> " to accept member")
+    ]
+  _ -> [ttyGroup' g <> ": " <> connectedMember m <> " is connected"]
 
 viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> [StyledString]
 viewReceivedGroupInvitation g c role =
