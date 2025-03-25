@@ -881,7 +881,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <li><a href="#linode-marketplace">Linode marketplace</a></li>
 </ul>
 </li>
-<li>[Verifying server binaries]</li>
+<li><a href="#verifying-server-binaries">Verifying server binaries</a></li>
 <li><a href="#configuration">Configuration</a>
 <ul>
 <li><a href="#interactively">Interactively</a></li>
@@ -2685,7 +2685,8 @@ sudo -E simplex-servers-update
 </ul>
 <h2 id="reproduce-builds" tabindex="-1">Reproduce builds</h2>
 <p>You can locally reproduce server binaries, following these instructions.</p>
-<p>You must have:</p>
+<p>If you are a security expert or researcher, you can help SimpleX network and users community by signing the release checksums – we will <a href="https://github.com/simplex-chat/simplexmq/releases/tag/v6.3.1">publish your signature</a>. Please reach out to us!</p>
+<p>To reproduce the build you must have:</p>
 <ul>
 <li>Linux machine</li>
 <li><code>x86-64</code> architecture</li>
@@ -2704,42 +2705,23 @@ sudo -E simplex-servers-update
 </li>
 <li>
 <p>Execute the script with the required tag:</p>
-<pre><code class="language-sh">./reproduce-builds.sh 'v6.3.0'
+<pre><code class="language-sh">./reproduce-builds.sh 'v6.3.1'
 </code></pre>
+<p>The script executes these steps (please review the script to confirm):</p>
+<ol>
+<li>builds all server binaries for the release in docker container.</li>
+<li>downloads binaries from the same GitHub release and compares them with the built binaries.</li>
+<li>if they all match, generates _sha256sums file with their checksums.</li>
+</ol>
 <p>This will take a while.</p>
 </li>
 <li>
-<p>After compilation, you should see the following folders:</p>
-<pre><code class="language-sh">ls out*
+<p>After compilation, you should see the folder named as the tag (e.g., <code>v6.3.1</code>) with two subfolders:</p>
+<pre><code class="language-sh">ls v6.3.1
 </code></pre>
-<pre><code class="language-sh">out-20.04:
-ntf-server  smp-server  xftp  xftp-server
-
-out-20.04-github:
-ntf-server  smp-server  xftp  xftp-server
-
-out-22.04:
-ntf-server  smp-server  xftp  xftp-server
-
-out-22.04-github:
-ntf-server  smp-server  xftp  xftp-server
-
-out-24.04:
-ntf-server  smp-server  xftp  xftp-server
-
-out-24.04-github:
-ntf-server  smp-server  xftp  xftp-server
+<pre><code class="language-sh">from-source  prebuilt  _sha256sums
 </code></pre>
-</li>
-<li>
-<p>Compare the hashes from github release with locally build binaries:</p>
-<pre><code class="language-sh">sha256sum out*-github/*
-</code></pre>
-<pre><code class="language-sh">sha256sum out*[0-9]/*
-</code></pre>
-<p>You can safely delete cloned repository:</p>
-<pre><code class="language-sh">cd ../ &amp;&amp; rm -rf simplexmq
-</code></pre>
+<p>The file _sha256sums contains the hashes of all builds - you can compare it with the same file in GitHub release.</p>
 </li>
 </ol>
 <h2 id="configuring-the-app-to-use-the-server" tabindex="-1">Configuring the app to use the server</h2>
