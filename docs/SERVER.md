@@ -15,7 +15,7 @@ revision: 12.10.2024
    - [systemd service](#systemd-service) with [installation script](#installation-script) or [manually](#manual-deployment)
    - [docker container](#docker-container)
    - [Linode marketplace](#linode-marketplace)
-- [Verifying server binaries]
+- [Verifying server binaries](#verifying-server-binaries)
 - [Configuration](#configuration)
    - [Interactively](#interactively)
    - [Via command line options](#via-command-line-options)
@@ -1592,7 +1592,9 @@ To update your smp-server to latest version, choose your installation method and
 
 You can locally reproduce server binaries, following these instructions.
 
-You must have:
+If you are a security expert or researcher, you can help SimpleX network and users community by signing the release checksums – we will [publish your signature](https://github.com/simplex-chat/simplexmq/releases/tag/v6.3.1). Please reach out to us!
+
+To reproduce the build you must have:
 
 - Linux machine
 - `x86-64` architecture
@@ -1613,52 +1615,28 @@ You must have:
 3. Execute the script with the required tag:
 
    ```sh
-   ./reproduce-builds.sh 'v6.3.0'
+   ./reproduce-builds.sh 'v6.3.1'
    ```
+
+   The script executes these steps (please review the script to confirm):
+
+   1) builds all server binaries for the release in docker container.
+   2) downloads binaries from the same GitHub release and compares them with the built binaries.
+   3) if they all match, generates _sha256sums file with their checksums.
 
    This will take a while.
 
-4. After compilation, you should see the following folders:
+4. After compilation, you should see the folder named as the tag (e.g., `v6.3.1`) with two subfolders:
 
    ```sh
-   ls out*
+   ls v6.3.1
    ```
 
    ```sh
-   out-20.04:
-   ntf-server  smp-server  xftp  xftp-server
-
-   out-20.04-github:
-   ntf-server  smp-server  xftp  xftp-server
-
-   out-22.04:
-   ntf-server  smp-server  xftp  xftp-server
-
-   out-22.04-github:
-   ntf-server  smp-server  xftp  xftp-server
-
-   out-24.04:
-   ntf-server  smp-server  xftp  xftp-server
-
-   out-24.04-github:
-   ntf-server  smp-server  xftp  xftp-server
+   from-source  prebuilt  _sha256sums
    ```
 
-5. Compare the hashes from github release with locally build binaries:
-
-   ```sh
-   sha256sum out*-github/*
-   ```
-
-   ```sh
-   sha256sum out*[0-9]/*
-   ```
-
-   You can safely delete cloned repository:
-
-   ```sh
-   cd ../ && rm -rf simplexmq
-   ```
+   The file _sha256sums contains the hashes of all builds - you can compare it with the same file in GitHub release.
 
 ## Configuring the app to use the server
 
