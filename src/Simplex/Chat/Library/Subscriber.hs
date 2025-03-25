@@ -2132,7 +2132,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               members <- withStore' $ \db -> getGroupMembers db vr user gInfo
               let recipients = filter memberCurrent members
               introduceMember vr user gInfo acceptedMember recipients MSGroup
-              sendHistory user gInfo acceptedMember
+              when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo acceptedMember
             Nothing -> messageError "x.grp.link.acpt error: no active accepted member connection"
 
     maybeCreateGroupDescrLocal :: GroupInfo -> GroupMember -> CM ()

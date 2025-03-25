@@ -979,7 +979,7 @@ introduceToGroup vr user gInfo m = do
   members <- withStore' $ \db -> getGroupMembers db vr user gInfo
   let recipients = filter memberCurrent members
   introduceMember vr user gInfo m recipients MSGroup
-  sendHistory user gInfo m
+  when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo m
 
 introduceMember :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> [GroupMember] -> MsgScope -> CM ()
 introduceMember _ _ _ GroupMember {activeConn = Nothing} _ _ = throwChatError $ CEInternalError "member connection not active"
