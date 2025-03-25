@@ -303,7 +303,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
   CRHostConnected p h -> [plain $ "connected to " <> viewHostEvent p h]
   CRHostDisconnected p h -> [plain $ "disconnected from " <> viewHostEvent p h]
-  CRJoinedGroupMemberConnecting u g host m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
+  CRJoinedGroupMemberConnecting u g host m -> ttyUser u $ viewJoinedGroupMemberConnecting g host m
   CRConnectedToGroupMember u g m _ -> ttyUser u [ttyGroup' g <> ": " <> connectedMember m <> " is connected"]
   CRMemberRole u g by m r r' -> ttyUser u $ viewMemberRoleChanged g by m r r'
   CRMembersRoleUser u g members r' -> ttyUser u $ viewMemberRoleUserChanged g members r'
@@ -1095,7 +1095,16 @@ viewJoinedGroupMember g@GroupInfo {groupId} m@GroupMember {groupMemberId, member
     [ (ttyGroup' g <> ": " <> ttyMember m <> " connected and pending approval, ")
       <> ("use " <> highlight ("/_accept member #" <> show groupId <> " " <> show groupMemberId <> " <role>") <> " to accept member")
     ]
+  GSMemPendingReview -> [ttyGroup' g <> ": " <> ttyMember m <> " connected and pending review"]
   _ -> [ttyGroup' g <> ": " <> ttyMember m <> " joined the group "]
+
+viewJoinedGroupMemberConnecting :: GroupInfo -> GroupMember -> GroupMember -> [StyledString]
+viewJoinedGroupMemberConnecting g@GroupInfo {groupId} host m@GroupMember {groupMemberId, memberStatus} = case memberStatus of
+  GSMemPendingReview ->
+    [ (ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting and pending review...)")
+      <> ("use " <> highlight ("/_accept member #" <> show groupId <> " " <> show groupMemberId <> " <role>") <> " to accept member")
+    ]
+  _ -> [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
 
 viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> [StyledString]
 viewReceivedGroupInvitation g c role =

@@ -473,9 +473,11 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       let role = if useMemberFilter image (makeObserver a) then GRObserver else maybe GRMember (\GroupLinkInfo {memberRole} -> memberRole) gli_
           gmId = groupMemberId' m
       sendChatCmd cc (APIAcceptMember groupId gmId role) >>= \case
-        CRJoinedGroupMember {} -> do
+        CRJoinedGroupMember {member} -> do
           atomically $ TM.delete gmId $ pendingCaptchas env
-          logInfo $ "Member " <> viewName displayName <> " accepted, group " <> tshow groupId <> ":" <> viewGroupName g
+          if memberStatus member == GSMemPendingReview
+            then logInfo $ "Member " <> viewName displayName <> " accepted and pending review, group " <> tshow groupId <> ":" <> viewGroupName g
+            else logInfo $ "Member " <> viewName displayName <> " accepted, group " <> tshow groupId <> ":" <> viewGroupName g
         r -> logError $ "unexpected accept member response: " <> tshow r
 
     dePendingMemberMsg :: GroupInfo -> GroupMember -> ChatItemId -> Text -> IO ()

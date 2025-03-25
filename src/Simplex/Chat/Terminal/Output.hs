@@ -206,6 +206,8 @@ responseNotification t@ChatTerminal {sendNotification} cc = \case
     sendNtf ("#" <> viewGroupName g, "you are connected to group")
   CRJoinedGroupMember u g m ->
     when (groupNtf u g False) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
+  CRJoinedGroupMemberConnecting u g _ m | memberStatus m == GSMemPendingReview ->
+    when (groupNtf u g False) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is pending review")
   CRConnectedToGroupMember u g m _ ->
     when (groupNtf u g False) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
   CRReceivedContactRequest u UserContactRequest {localDisplayName = n} ->

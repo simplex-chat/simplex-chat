@@ -525,7 +525,8 @@ deleteContactCardKeepConn db connId Contact {contactId, profile = LocalProfile {
 createGroupInvitedViaLink :: DB.Connection -> VersionRangeChat -> User -> Connection -> GroupLinkInvitation -> ExceptT StoreError IO (GroupInfo, GroupMember)
 createGroupInvitedViaLink db vr user conn GroupLinkInvitation {fromMember, fromMemberName, invitedMember, groupProfile, accepted, business} = do
   let fromMemberProfile = profileFromName fromMemberName
-      initialStatus = maybe GSMemAccepted acceptanceToStatus accepted
+      fullGroupPreferences = mergeGroupPreferences $ groupPreferences groupProfile
+      initialStatus = maybe GSMemAccepted (acceptanceToStatus fullGroupPreferences) accepted
   createGroupViaLink' db vr user conn fromMember fromMemberProfile invitedMember groupProfile business initialStatus
 
 createGroupRejectedViaLink :: DB.Connection -> VersionRangeChat -> User -> Connection -> GroupLinkRejection -> ExceptT StoreError IO (GroupInfo, GroupMember)
@@ -2414,8 +2415,8 @@ createNewUnknownGroupMember db vr user@User {userId, userContactId} GroupInfo {g
   where
     VersionRange minV maxV = vr
 
-updateUnknownMemberAnnounced :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> GroupMember -> MemberInfo -> ExceptT StoreError IO GroupMember
-updateUnknownMemberAnnounced db vr user@User {userId} invitingMember unknownMember@GroupMember {groupMemberId, memberChatVRange} MemberInfo {memberRole, v, profile} = do
+updateUnknownMemberAnnounced :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> GroupMember -> MemberInfo -> GroupMemberStatus -> ExceptT StoreError IO GroupMember
+updateUnknownMemberAnnounced db vr user@User {userId} invitingMember unknownMember@GroupMember {groupMemberId, memberChatVRange} MemberInfo {memberRole, v, profile} status = do
   _ <- updateMemberProfile db user unknownMember profile
   currentTs <- liftIO getCurrentTime
   liftIO $
@@ -2432,7 +2433,7 @@ updateUnknownMemberAnnounced db vr user@User {userId} invitingMember unknownMemb
             updated_at = ?
         WHERE user_id = ? AND group_member_id = ?
       |]
-      ( (memberRole, GCPostMember, GSMemAnnounced, groupMemberId' invitingMember)
+      ( (memberRole, GCPostMember, status, groupMemberId' invitingMember)
           :. (minV, maxV, currentTs, userId, groupMemberId)
       )
   getGroupMemberById db vr user groupMemberId

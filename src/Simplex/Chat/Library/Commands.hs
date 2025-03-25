@@ -2027,25 +2027,35 @@ processChatCommand' vr = \case
           updateCIGroupInvitationStatus user g CIGISAccepted `catchChatError` (toView . CRChatError (Just user))
           pure $ CRUserAcceptedGroupSent user g {membership = membership {memberStatus = GSMemAccepted}} Nothing
         Nothing -> throwChatError $ CEContactNotActive ct
-  APIAcceptMember groupId gmId role -> withUser $ \user -> do
+  APIAcceptMember groupId gmId role -> withUser $ \user@User {userId} -> do
     (gInfo, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user gmId
-    assertUserGroupRole gInfo GRAdmin
-    -- TODO [knocking] smarter check - differentiate whether group requires admin review or not
-    unless (memberPending m) $ throwChatError $ CECommandError "member is not pending approval or review"
-    case memberConn m of
-      Just mConn -> do
-        -- TODO accept: admin to send XGrpLinkAcpt with memberId to host, host to forward to invitee and introduceToGroup
-        -- TODO - additionally archive conversation with member
-        -- TODO - also archive on rejection (removing member)
-        -- TODO - or just correctly maintain `unanswered`?
-        -- TODO in captcha phase: introduce only to admins (same as on CON in Subscriber)
-        -- TODO - add field to protocol for admins to create group_conversation (XGrpMemNew)
-        let msg = XGrpLinkAcpt role Nothing
-        void $ sendDirectMemberMessage mConn msg groupId
-        m' <- withFastStore' $ \db -> updateGroupMemberAccepted db user m role
-        introduceToGroup vr user gInfo m'
-        pure $ CRJoinedGroupMember user gInfo m'
-      _ -> throwChatError CEGroupMemberNotActive
+    assertUserGroupRole gInfo GRAdmin -- GRModerator?
+    case memberStatus m of
+      GSMemPendingApproval | memberCategory m == GCInviteeMember -> do -- only host can approve
+        case memberConn m of
+          Just mConn
+            | groupFeatureAllowed SGFNewMemberReview gInfo -> do
+                withFastStore' $ \db -> updateGroupMemberStatus db userId m GSMemPendingReview
+                let m' = m {memberStatus = GSMemPendingReview}
+                introduceToModerators vr user gInfo m'
+                pure $ CRJoinedGroupMember user gInfo m'
+            | otherwise -> do
+                let msg = XGrpLinkAcpt role (Just $ memberId' m)
+                void $ sendDirectMemberMessage mConn msg groupId
+                m' <- withFastStore' $ \db -> updateGroupMemberAccepted db user m role
+                members <- withStore' $ \db -> getGroupMembers db vr user gInfo
+                let recipients = filter memberCurrent members
+                introduceMember vr user gInfo m' recipients MSGroup
+                sendHistory user gInfo m'
+                pure $ CRJoinedGroupMember user gInfo m'
+          Nothing -> throwChatError CEGroupMemberNotActive
+      -- TODO [knocking] admin to send XGrpLinkAcpt with memberId to host, host to forward to invitee and introduceToGroup
+      -- TODO - additionally archive conversation with member
+      -- TODO - also archive on rejection (removing member)
+      -- TODO - or just correctly maintain `unanswered`?
+      GSMemPendingReview | memberCategory m /= GCInviteeMember -> do -- only other admins can review
+        ok_
+      _ -> throwChatError $ CECommandError "member should be pending approval and invitee, or pending review and not invitee"
   APIMembersRole groupId memberIds newRole -> withUser $ \user ->
     withGroupLock "memberRole" groupId . procCmd $ do
       g@(Group gInfo members) <- withFastStore $ \db -> getGroup db vr user groupId

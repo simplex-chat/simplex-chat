@@ -151,6 +151,7 @@ data GroupFeature
   | GFSimplexLinks
   | GFReports
   | GFHistory
+  | GFNewMemberReview
   deriving (Show)
 
 data SGroupFeature (f :: GroupFeature) where
@@ -163,6 +164,7 @@ data SGroupFeature (f :: GroupFeature) where
   SGFSimplexLinks :: SGroupFeature 'GFSimplexLinks
   SGFReports :: SGroupFeature 'GFReports
   SGFHistory :: SGroupFeature 'GFHistory
+  SGFNewMemberReview :: SGroupFeature 'GFNewMemberReview
 
 deriving instance Show (SGroupFeature f)
 
@@ -189,6 +191,7 @@ groupFeatureNameText = \case
   GFSimplexLinks -> "SimpleX links"
   GFReports -> "Member reports"
   GFHistory -> "Recent history"
+  GFNewMemberReview -> "New member review"
 
 groupFeatureNameText' :: SGroupFeature f -> Text
 groupFeatureNameText' = groupFeatureNameText . toGroupFeature
@@ -212,11 +215,12 @@ allGroupFeatures =
     AGF SGFFiles,
     AGF SGFSimplexLinks,
     AGF SGFReports,
-    AGF SGFHistory
+    AGF SGFHistory,
+    AGF SGFNewMemberReview
   ]
 
 groupPrefSel :: SGroupFeature f -> GroupPreferences -> Maybe (GroupFeaturePreference f)
-groupPrefSel f GroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, reports, history} = case f of
+groupPrefSel f GroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, reports, history, newMemberReview} = case f of
   SGFTimedMessages -> timedMessages
   SGFDirectMessages -> directMessages
   SGFFullDelete -> fullDelete
@@ -226,6 +230,7 @@ groupPrefSel f GroupPreferences {timedMessages, directMessages, fullDelete, reac
   SGFSimplexLinks -> simplexLinks
   SGFReports -> reports
   SGFHistory -> history
+  SGFNewMemberReview -> newMemberReview
 
 toGroupFeature :: SGroupFeature f -> GroupFeature
 toGroupFeature = \case
@@ -238,6 +243,7 @@ toGroupFeature = \case
   SGFSimplexLinks -> GFSimplexLinks
   SGFReports -> GFReports
   SGFHistory -> GFHistory
+  SGFNewMemberReview -> GFNewMemberReview
 
 class GroupPreferenceI p where
   getGroupPreference :: SGroupFeature f -> p -> GroupFeaturePreference f
@@ -249,7 +255,7 @@ instance GroupPreferenceI (Maybe GroupPreferences) where
   getGroupPreference pt prefs = fromMaybe (getGroupPreference pt defaultGroupPrefs) (groupPrefSel pt =<< prefs)
 
 instance GroupPreferenceI FullGroupPreferences where
-  getGroupPreference f FullGroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, reports, history} = case f of
+  getGroupPreference f FullGroupPreferences {timedMessages, directMessages, fullDelete, reactions, voice, files, simplexLinks, reports, history, newMemberReview} = case f of
     SGFTimedMessages -> timedMessages
     SGFDirectMessages -> directMessages
     SGFFullDelete -> fullDelete
@@ -259,6 +265,7 @@ instance GroupPreferenceI FullGroupPreferences where
     SGFSimplexLinks -> simplexLinks
     SGFReports -> reports
     SGFHistory -> history
+    SGFNewMemberReview -> newMemberReview
   {-# INLINE getGroupPreference #-}
 
 -- collection of optional group preferences
@@ -271,7 +278,8 @@ data GroupPreferences = GroupPreferences
     files :: Maybe FilesGroupPreference,
     simplexLinks :: Maybe SimplexLinksGroupPreference,
     reports :: Maybe ReportsGroupPreference,
-    history :: Maybe HistoryGroupPreference
+    history :: Maybe HistoryGroupPreference,
+    newMemberReview :: Maybe NewMemberReviewGroupPreference
   }
   deriving (Eq, Show)
 
@@ -306,6 +314,7 @@ setGroupPreference_ f pref prefs =
     SGFSimplexLinks -> prefs {simplexLinks = pref}
     SGFReports -> prefs {reports = pref}
     SGFHistory -> prefs {history = pref}
+    SGFNewMemberReview -> prefs {newMemberReview = pref}
 
 setGroupTimedMessagesPreference :: TimedMessagesGroupPreference -> Maybe GroupPreferences -> GroupPreferences
 setGroupTimedMessagesPreference pref prefs_ =
@@ -335,7 +344,8 @@ data FullGroupPreferences = FullGroupPreferences
     files :: FilesGroupPreference,
     simplexLinks :: SimplexLinksGroupPreference,
     reports :: ReportsGroupPreference,
-    history :: HistoryGroupPreference
+    history :: HistoryGroupPreference,
+    newMemberReview :: NewMemberReviewGroupPreference
   }
   deriving (Eq, Show)
 
@@ -393,11 +403,12 @@ defaultGroupPrefs =
       files = FilesGroupPreference {enable = FEOn, role = Nothing},
       simplexLinks = SimplexLinksGroupPreference {enable = FEOn, role = Nothing},
       reports = ReportsGroupPreference {enable = FEOn},
-      history = HistoryGroupPreference {enable = FEOff}
+      history = HistoryGroupPreference {enable = FEOff},
+      newMemberReview = NewMemberReviewGroupPreference {enable = FEOff}
     }
 
 emptyGroupPrefs :: GroupPreferences
-emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 businessGroupPrefs :: Preferences -> GroupPreferences
 businessGroupPrefs Preferences {timedMessages, fullDelete, reactions, voice} =
@@ -424,7 +435,8 @@ defaultBusinessGroupPrefs =
       files = Just $ FilesGroupPreference FEOn Nothing,
       simplexLinks = Just $ SimplexLinksGroupPreference FEOn Nothing,
       reports = Just $ ReportsGroupPreference FEOff,
-      history = Just $ HistoryGroupPreference FEOn
+      history = Just $ HistoryGroupPreference FEOn,
+      newMemberReview = Just $ NewMemberReviewGroupPreference FEOff
     }
 
 data TimedMessagesPreference = TimedMessagesPreference
@@ -532,6 +544,10 @@ data HistoryGroupPreference = HistoryGroupPreference
   {enable :: GroupFeatureEnabled}
   deriving (Eq, Show)
 
+data NewMemberReviewGroupPreference = NewMemberReviewGroupPreference
+  {enable :: GroupFeatureEnabled}
+  deriving (Eq, Show)
+
 class (Eq (GroupFeaturePreference f), HasField "enable" (GroupFeaturePreference f) GroupFeatureEnabled) => GroupFeatureI f where
   type GroupFeaturePreference (f :: GroupFeature) = p | p -> f
   sGroupFeature :: SGroupFeature f
@@ -571,6 +587,9 @@ instance HasField "enable" ReportsGroupPreference GroupFeatureEnabled where
 
 instance HasField "enable" HistoryGroupPreference GroupFeatureEnabled where
   hasField p@HistoryGroupPreference {enable} = (\e -> p {enable = e}, enable)
+
+instance HasField "enable" NewMemberReviewGroupPreference GroupFeatureEnabled where
+  hasField p@NewMemberReviewGroupPreference {enable} = (\e -> p {enable = e}, enable)
 
 instance GroupFeatureI 'GFTimedMessages where
   type GroupFeaturePreference 'GFTimedMessages = TimedMessagesGroupPreference
@@ -626,6 +645,12 @@ instance GroupFeatureI 'GFHistory where
   groupPrefParam _ = Nothing
   groupPrefRole _ = Nothing
 
+instance GroupFeatureI 'GFNewMemberReview where
+  type GroupFeaturePreference 'GFNewMemberReview = NewMemberReviewGroupPreference
+  sGroupFeature = SGFNewMemberReview
+  groupPrefParam _ = Nothing
+  groupPrefRole _ = Nothing
+
 instance GroupFeatureNoRoleI 'GFTimedMessages
 
 instance GroupFeatureNoRoleI 'GFFullDelete
@@ -635,6 +660,8 @@ instance GroupFeatureNoRoleI 'GFReactions
 instance GroupFeatureNoRoleI 'GFReports
 
 instance GroupFeatureNoRoleI 'GFHistory
+
+instance GroupFeatureNoRoleI 'GFNewMemberReview
 
 instance HasField "role" DirectMessagesGroupPreference (Maybe GroupMemberRole) where
   hasField p@DirectMessagesGroupPreference {role} = (\r -> p {role = r}, role)
@@ -789,7 +816,8 @@ mergeGroupPreferences groupPreferences =
       files = pref SGFFiles,
       simplexLinks = pref SGFSimplexLinks,
       reports = pref SGFReports,
-      history = pref SGFHistory
+      history = pref SGFHistory,
+      newMemberReview = pref SGFNewMemberReview
     }
   where
     pref :: SGroupFeature f -> GroupFeaturePreference f
@@ -806,7 +834,8 @@ toGroupPreferences groupPreferences =
       files = pref SGFFiles,
       simplexLinks = pref SGFSimplexLinks,
       reports = pref SGFReports,
-      history = pref SGFHistory
+      history = pref SGFHistory,
+      newMemberReview = pref SGFNewMemberReview
     }
   where
     pref :: SGroupFeature f -> Maybe (GroupFeaturePreference f)
@@ -917,6 +946,8 @@ $(J.deriveJSON defaultJSON ''SimplexLinksGroupPreference)
 $(J.deriveJSON defaultJSON ''ReportsGroupPreference)
 
 $(J.deriveJSON defaultJSON ''HistoryGroupPreference)
+
+$(J.deriveJSON defaultJSON ''NewMemberReviewGroupPreference)
 
 $(J.deriveJSON defaultJSON ''GroupPreferences)
 

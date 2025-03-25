@@ -861,13 +861,13 @@ acceptContactRequestAsync user cReq@UserContactRequest {agentInvitationId = Agen
 acceptGroupJoinRequestAsync :: User -> GroupInfo -> UserContactRequest -> GroupAcceptance -> GroupMemberRole -> Maybe IncognitoProfile -> CM GroupMember
 acceptGroupJoinRequestAsync
   user
-  gInfo@GroupInfo {groupProfile, membership, businessChat}
+  gInfo@GroupInfo {groupProfile, fullGroupPreferences, membership, businessChat}
   ucr@UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange}
   gAccepted
   gLinkMemRole
   incognitoProfile = do
     gVar <- asks random
-    let initialStatus = acceptanceToStatus gAccepted
+    let initialStatus = acceptanceToStatus fullGroupPreferences gAccepted
     (groupMemberId, memberId) <- withStore $ \db -> do
       liftIO $ deleteContactRequestRec db user ucr
       createJoiningMember db gVar user gInfo ucr gLinkMemRole initialStatus
@@ -968,16 +968,24 @@ profileToSendOnAccept user ip = userProfileToSend user (getIncognitoProfile <$> 
       NewIncognito p -> p
       ExistingIncognito lp -> fromLocalProfile lp
 
--- TODO [knocking] pass member list to differentiate introcuding all / admins / remaning members?
--- TODO            also param for XGrpMemNew
+introduceToModerators :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
+introduceToModerators vr user gInfo m = do
+  modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
+  let rcpModMs = filter memberCurrent modMs
+  introduceMember vr user gInfo m rcpModMs (MSMember $ memberId' m)
+
 introduceToGroup :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
-introduceToGroup _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
-introduceToGroup vr user gInfo@GroupInfo {groupId, membership} m@GroupMember {activeConn = Just conn} = do
+introduceToGroup vr user gInfo m = do
   members <- withStore' $ \db -> getGroupMembers db vr user gInfo
-  let recipientMs = filter memberCurrent members
-  void . sendGroupMessage user gInfo GCSGroup recipientMs $ XGrpMemNew (memberInfo m) (Just MSGroup)
-  sendIntroductions recipientMs
-  when (groupFeatureAllowed SGFHistory gInfo) sendHistory
+  let recipients = filter memberCurrent members
+  introduceMember vr user gInfo m recipients MSGroup
+  sendHistory user gInfo m
+
+introduceMember :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> [GroupMember] -> MsgScope -> CM ()
+introduceMember _ _ _ GroupMember {activeConn = Nothing} _ _ = throwChatError $ CEInternalError "member connection not active"
+introduceMember vr user gInfo@GroupInfo {groupId} m@GroupMember {activeConn = Just conn} introduceToMembers msgScope = do
+  void . sendGroupMessage user gInfo GCSGroup introduceToMembers $ XGrpMemNew (memberInfo m) (Just msgScope)
+  sendIntroductions introduceToMembers
   where
     sendIntroductions members = do
       intros <- withStore' $ \db -> createIntroductions db (maxVersion vr) members m
@@ -993,7 +1001,7 @@ introduceToGroup vr user gInfo@GroupInfo {groupId, membership} m@GroupMember {ac
     memberIntro reMember =
       let mInfo = memberInfo reMember
           mRestrictions = memberRestrictions reMember
-      in XGrpMemIntro mInfo mRestrictions
+       in XGrpMemIntro mInfo mRestrictions
     shuffleIntros :: [GroupMemberIntro] -> IO [GroupMemberIntro]
     shuffleIntros intros = do
       let (admins, others) = partition isAdmin intros
@@ -1006,15 +1014,19 @@ introduceToGroup vr user gInfo@GroupInfo {groupId, membership} m@GroupMember {ac
     processIntro intro@GroupMemberIntro {introId} = do
       void $ sendDirectMemberMessage conn (memberIntro $ reMember intro) groupId
       withStore' $ \db -> updateIntroStatus db introId GMIntroSent
-    sendHistory =
-      when (m `supportsVersion` batchSendVersion) $ do
-        (errs, items) <- partitionEithers <$> withStore' (\db -> getGroupHistoryItems db user gInfo m 100)
-        (errs', events) <- partitionEithers <$> mapM (tryChatError . itemForwardEvents) items
-        let errors = map ChatErrorStore errs <> errs'
-        unless (null errors) $ toView $ CRChatErrors (Just user) errors
-        let events' = maybe (concat events) (\x -> concat events <> [x]) descrEvent_
-        forM_ (L.nonEmpty events') $ \events'' ->
-          sendGroupMemberMessages user conn events'' groupId
+
+sendHistory :: User -> GroupInfo -> GroupMember -> CM ()
+sendHistory _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
+sendHistory user gInfo@GroupInfo {groupId, membership} m@GroupMember {activeConn = Just conn} =
+  when (m `supportsVersion` batchSendVersion) $ do
+    (errs, items) <- partitionEithers <$> withStore' (\db -> getGroupHistoryItems db user gInfo m 100)
+    (errs', events) <- partitionEithers <$> mapM (tryChatError . itemForwardEvents) items
+    let errors = map ChatErrorStore errs <> errs'
+    unless (null errors) $ toView $ CRChatErrors (Just user) errors
+    let events' = maybe (concat events) (\x -> concat events <> [x]) descrEvent_
+    forM_ (L.nonEmpty events') $ \events'' ->
+      sendGroupMemberMessages user conn events'' groupId
+  where
     descrEvent_ :: Maybe (ChatMsgEvent 'Json)
     descrEvent_
       | m `supportsVersion` groupHistoryIncludeWelcomeVersion = do
@@ -1060,7 +1072,7 @@ introduceToGroup vr user gInfo@GroupInfo {groupId, membership} m@GroupMember {ac
           | fileDescrComplete =
               let fInvDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
                   fInv = xftpFileInvitation fileName fileSize fInvDescr
-              in Just (fInv, fileDescrText)
+               in Just (fInv, fileDescrText)
           | otherwise = Nothing
         processContentItem :: GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe (FileInvitation, RcvFileDescrText) -> CM [ChatMsgEvent 'Json]
         processContentItem sender ChatItem {formattedText, meta, quotedItem, mentions} mc fInvDescr_ =

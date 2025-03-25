@@ -386,7 +386,7 @@ testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice 
   forM_ ([1 .. 10] :: [Int]) $ \n -> bob <# ("#team alice> " <> show n)
 
   -- All messages are unread for bob, should return area around unread
-  bob #$> ("/_get chat #1 initial=2", chat, [(0, "Recent history: on"), (0, "connected"), (0, "1"), (0, "2"), (0, "3")])
+  bob #$> ("/_get chat #1 initial=2", chat, [(0, "New member review: off"), (0, "connected"), (0, "1"), (0, "2"), (0, "3")])
 
   -- Read next 2 items
   let itemIds = intercalate "," $ map groupItemId [1 .. 2]
@@ -572,7 +572,7 @@ testGroup2 =
         ]
       dan <##> alice
       -- show last messages
-      alice ##> "/t #club 18"
+      alice ##> "/t #club 19"
       alice -- these strings are expected in any order because of sorting by time and rounding of time for sent
         <##?
           ( map (ConsoleString . ("#club " <> )) groupFeatureStrs
@@ -1570,6 +1570,7 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
       alice <## "SimpleX links: on"
       alice <## "Member reports: on"
       alice <## "Recent history: on"
+      alice <## "New member review: off"
     bobAddedDan :: HasCallStack => TestCC -> IO ()
     bobAddedDan cc = do
       cc <## "#team: bob added dan (Daniel) to the group (connecting...)"
@@ -1609,7 +1610,7 @@ testGroupModerate =
 
 testGroupModerateOwn :: HasCallStack => TestParams -> IO ()
 testGroupModerateOwn =
-  withTestOutput $ testChat2 aliceProfile bobProfile $
+  testChat2 aliceProfile bobProfile $
     \alice bob -> do
       createGroup2 "team" alice bob
       -- disableFullDeletion2 "team" alice bob

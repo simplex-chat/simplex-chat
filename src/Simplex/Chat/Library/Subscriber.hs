@@ -771,6 +771,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 updateGroupMemberStatus db userId m GSMemConnected
                 unless (memberActive membership) $
                   updateGroupMemberStatus db userId membership GSMemConnected
+              -- TODO [knocking] send pending messages after accepting
               -- possible improvement: check for each pending message, requires keeping track of connection state
               unless (connDisabled conn) $ sendPendingGroupMessages user m conn
               pure GSMemConnected
@@ -794,10 +795,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             let Connection {viaUserContactLink} = conn
             when (isJust viaUserContactLink && isNothing (memberContactId m)) sendXGrpLinkMem
             when (connChatVersion < batchSend2Version) sendGroupAutoReply
-            -- TODO [knocking] introduce only to admins
-            -- TODO            - based on group settings (ALTER TABLE group_profiles ADD COLUMN approval TEXT - see rfc)?
-            -- TODO            - based on hook?
-            unless (status' == GSMemPendingApproval) $ introduceToGroup vr user gInfo m
+            case status' of
+              GSMemPendingApproval -> pure ()
+              -- edge case: reviews were turned off mid connection;
+              -- options: proceed to review (as now) or introduce to group and send XGrpLinkAcpt;
+              -- choosing option 1 for simplicity, same edge case for approval is also not considered
+              GSMemPendingReview -> introduceToModerators vr user gInfo m
+              _ -> introduceToGroup vr user gInfo m
             where
               sendXGrpLinkMem = do
                 let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
@@ -2421,21 +2425,23 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- TODO show/log error, other events in SMP confirmation
         _ -> pure (conn', False)
 
-    -- TODO [knocking] as admin, create group chat for joining member
     xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> Maybe MsgScope -> RcvMessage -> UTCTime -> CM ()
     xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ _) msgScope_ msg brokerTs = do
       checkHostRole m memRole
       unless (sameMemberId memId $ membership gInfo) $
         withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
           Right unknownMember@GroupMember {memberStatus = GSMemUnknown} -> do
-            updatedMember <- withStore $ \db -> updateUnknownMemberAnnounced db vr user m unknownMember memInfo
+            updatedMember <- withStore $ \db -> updateUnknownMemberAnnounced db vr user m unknownMember memInfo initialStatus
             toView $ CRUnknownMemberAnnounced user gInfo m unknownMember updatedMember
             memberAnnouncedToView updatedMember
           Right _ -> messageError "x.grp.mem.new error: member already exists"
           Left _ -> do
-            newMember <- withStore $ \db -> createNewGroupMember db user gInfo m memInfo GCPostMember GSMemAnnounced
+            newMember <- withStore $ \db -> createNewGroupMember db user gInfo m memInfo GCPostMember initialStatus
             memberAnnouncedToView newMember
       where
+        initialStatus = case msgScope_ of
+          Just (MSMember _) -> GSMemPendingReview
+          _ -> GSMemAnnounced
         memberAnnouncedToView announcedMember@GroupMember {groupMemberId, memberProfile} = do
           gcsi <- liftIO $ getMemNewGCSI announcedMember
           let event = RGEMemberAdded groupMemberId (fromLocalProfile memberProfile)
