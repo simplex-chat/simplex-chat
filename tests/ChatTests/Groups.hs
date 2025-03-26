@@ -100,7 +100,7 @@ chatGroupTests = do
     it "group link member role" testGroupLinkMemberRole
     it "host profile received" testGroupLinkHostProfileReceived
     it "existing contact merged" testGroupLinkExistingContactMerged
-  fdescribe "group links - member screening" $ do
+  describe "group links - member screening" $ do
     it "reject member - blocked name" testGLinkRejectBlockedName
     it "accept member - only host approval" testGLinkApproveMember
     it "accept member - only moderators review" testGLinkReviewMember
@@ -3001,12 +3001,12 @@ testGLinkApproveMember =
 
       -- pending member and host can send messages to each other
       alice ##> "/_send #1 @support-3 text send me proofs"
-      alice <# "#team send me proofs"
-      cath <# "#team alice> send me proofs"
+      alice <# "#team <<support: cath>> send me proofs"
+      cath <# "#team alice> <<support>> send me proofs"
 
       cath ##> "/_send #1 @support text proofs"
-      cath <# "#team proofs"
-      alice <# "#team cath> proofs"
+      cath <# "#team <<support>> proofs"
+      alice <# "#team cath> <<support: cath>> proofs"
 
       -- accept member
       alice ##> "/_accept member #1 3 member"
@@ -3100,20 +3100,23 @@ testGLinkReviewMember =
 
       -- pending member and moderators can send messages to each other
       alice ##> "/_send #1 @support-5 text 5"
-      alice <# "#team 5"
-      [cath, dan, eve] *<# "#team alice> 5"
+      alice <# "#team <<support: eve>> 5"
+      [cath, dan] *<# "#team alice> <<support: eve>> 5"
+      eve <# "#team alice> <<support>> 5"
 
       cath ##> "/_send #1 @support-5 text 6"
-      cath <# "#team 6"
-      [alice, dan, eve] *<# "#team cath> 6"
+      cath <# "#team <<support: eve>> 6"
+      [alice, dan] *<# "#team cath> <<support: eve>> 6"
+      eve <# "#team cath> <<support>> 6"
 
       dan ##> "/_send #1 @support-5 text 7"
-      dan <# "#team 7"
-      [alice, cath, eve] *<# "#team dan> 7"
+      dan <# "#team <<support: eve>> 7"
+      [alice, cath] *<# "#team dan> <<support: eve>> 7"
+      eve <# "#team dan> <<support>> 7"
 
       eve ##> "/_send #1 @support text 8"
-      eve <# "#team 8"
-      [alice, cath, dan] *<# "#team eve> 8"
+      eve <# "#team <<support>> 8"
+      [alice, cath, dan] *<# "#team eve> <<support: eve>> 8"
 
       (bob </)
 
@@ -3212,12 +3215,12 @@ testGLinkApproveThenReviewMember =
 
       -- pending member and host can send messages to each other
       alice ##> "/_send #1 @support-5 text 5"
-      alice <# "#team 5"
-      eve <# "#team alice> 5"
+      alice <# "#team <<support: eve>> 5"
+      eve <# "#team alice> <<support>> 5"
 
       eve ##> "/_send #1 @support text 6"
-      eve <# "#team 6"
-      alice <# "#team eve> 6"
+      eve <# "#team <<support>> 6"
+      alice <# "#team eve> <<support: eve>> 6"
 
       (bob </)
       (cath </)
@@ -3260,20 +3263,23 @@ testGLinkApproveThenReviewMember =
 
       -- pending member and moderators can send messages to each other
       alice ##> "/_send #1 @support-5 text 11"
-      alice <# "#team 11"
-      [cath, dan, eve] *<# "#team alice> 11"
+      alice <# "#team <<support: eve>> 11"
+      [cath, dan] *<# "#team alice> <<support: eve>> 11"
+      eve <# "#team alice> <<support>> 11"
 
       cath ##> "/_send #1 @support-5 text 12"
-      cath <# "#team 12"
-      [alice, dan, eve] *<# "#team cath> 12"
+      cath <# "#team <<support: eve>> 12"
+      [alice, dan] *<# "#team cath> <<support: eve>> 12"
+      eve <# "#team cath> <<support>> 12"
 
       dan ##> "/_send #1 @support-5 text 13"
-      dan <# "#team 13"
-      [alice, cath, eve] *<# "#team dan> 13"
+      dan <# "#team <<support: eve>> 13"
+      [alice, cath] *<# "#team dan> <<support: eve>> 13"
+      eve <# "#team dan> <<support>> 13"
 
       eve ##> "/_send #1 @support text 14"
-      eve <# "#team 14"
-      [alice, cath, dan] *<# "#team eve> 14"
+      eve <# "#team <<support>> 14"
+      [alice, cath, dan] *<# "#team eve> <<support: eve>> 14"
 
       (bob </)
 
@@ -6920,12 +6926,12 @@ testScopedSupportSingleAdmin =
     [alice, cath] *<# "#team bob> 2"
 
     alice ##> "/_send #1 @support-2 text 3"
-    alice <# "#team 3"
-    bob <# "#team alice> 3"
+    alice <# "#team <<support: bob>> 3"
+    bob <# "#team alice> <<support>> 3"
 
     bob ##> "/_send #1 @support text 4"
-    bob <# "#team 4"
-    alice <# "#team bob> 4"
+    bob <# "#team <<support>> 4"
+    alice <# "#team bob> <<support: bob>> 4"
 
     cath ##> "/_send #1 @support-3 text 5"
     cath <## "#team: you have insufficient permissions for this action, the required role is moderator"
@@ -6948,20 +6954,22 @@ testScopedSupportManyAdmins =
     threadDelay 1000000
 
     alice ##> "/_send #1 @support-2 text 3"
-    alice <# "#team 3"
-    [bob, dan] *<# "#team alice> 3"
+    alice <# "#team <<support: bob>> 3"
+    bob <# "#team alice> <<support>> 3"
+    dan <# "#team alice> <<support: bob>> 3"
 
     threadDelay 1000000
 
     bob ##> "/_send #1 @support text 4"
-    bob <# "#team 4"
-    [alice, dan] *<# "#team bob> 4"
+    bob <# "#team <<support>> 4"
+    [alice, dan] *<# "#team bob> <<support: bob>> 4"
 
     threadDelay 1000000
 
     dan ##> "/_send #1 @support-3 text 5"
-    dan <# "#team 5"
-    [alice, bob] *<# "#team dan> 5"
+    dan <# "#team <<support: bob>> 5"
+    alice <# "#team dan> <<support: bob>> 5"
+    bob <# "#team dan> <<support>> 5"
 
     alice #$> ("/_get chat #1 count=3", chat, [(0, "connected"), (1, "1"), (0, "2")])
     alice #$> ("/_get chat #1 group_chat_scope=@support-2 count=100", chat, [(1, "3"), (0, "4"), (0, "5")])

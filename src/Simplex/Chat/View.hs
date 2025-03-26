@@ -622,13 +622,14 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
               (maybe [] forwardedFrom itemForwarded)
               (directQuote chatDir)
               quotedItem
-      GroupChat g _gcsi -> case chatDir of
+      GroupChat g gcsi -> case chatDir of
         CIGroupSnd _gcsi -> case content of
           CISndMsgContent mc -> hideLive meta $ withSndFile to $ sndMsg to context mc
           CISndGroupInvitation {} -> showSndItemProhibited to
           _ -> showSndItem to
           where
-            to = ttyToGroup g
+            to = ttyToGroup g <> gcsiTo
+            gcsiTo = ttyTo $ gcsiDescr gcsi
         CIGroupRcv _gcsi m -> case content of
           CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from context mc
           CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
@@ -637,7 +638,8 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
           CIRcvBlocked {} -> receivedWithTime_ ts tz (ttyFromGroup g m) context meta [plainContent content] False
           _ -> showRcvItem from
           where
-            from = ttyFromGroupAttention g m userMention
+            from = ttyFromGroupAttention g m userMention <> gcsiFrom
+            gcsiFrom = ttyFrom $ gcsiDescr gcsi
         where
           context =
             maybe
@@ -685,6 +687,12 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
     showItem ss = if doShow then ss else []
     plainContent = plain . ciContentToText
     prohibited = styled (colored Red) ("[unexpected chat item created, please report to developers]" :: String)
+
+gcsiDescr :: GroupChatScopeInfo -> Text
+gcsiDescr = \case
+  GCSIGroup -> ""
+  GCSIMemberSupport {groupMember_ = Nothing} -> "<<support>> "
+  GCSIMemberSupport {groupMember_ = Just m} -> "<<support: " <> viewMemberName m <> ">> "
 
 viewChatItemInfo :: AChatItem -> ChatItemInfo -> TimeZone -> [StyledString]
 viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTimed, createdAt}}) ChatItemInfo {itemVersions, forwardedFromChatItem} tz =
