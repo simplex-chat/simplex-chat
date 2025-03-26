@@ -66,6 +66,10 @@ class ItemsModel: ObservableObject {
     private var navigationTimeoutTask: Task<Void, Never>? = nil
     private var loadChatTask: Task<Void, Never>? = nil
 
+    var lastItemsLoaded: Bool {
+        chatState.splits.isEmpty || chatState.splits.first != reversedChatItems.first?.id
+    }
+
     init() {
         publisher
             .throttle(for: 0.2, scheduler: DispatchQueue.main, latest: true)

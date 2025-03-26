@@ -7,8 +7,8 @@ import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
+import Simplex.Messaging.Agent.Store.DB (blobFieldDecoder)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (blobFieldDecoder)
 import Simplex.Messaging.Util ((<$?>))
 
 data GroupMemberRole

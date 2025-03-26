@@ -50,10 +50,11 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.Util (textParseJSON)
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..), MsgReceiptStatus (..))
+import Simplex.Messaging.Agent.Store.DB (fromTextField_)
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, parseAll, sumTypeJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, sumTypeJSON)
 import Simplex.Messaging.Protocol (BlockingInfo, MsgBody)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 

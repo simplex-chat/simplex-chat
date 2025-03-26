@@ -52,11 +52,11 @@ import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
 import Simplex.Messaging.Agent.Protocol (ACorrId, AEventTag (..), AEvtTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
-import Simplex.Messaging.Agent.Store.DB (Binary (..))
+import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (blobFieldDecoder, defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
