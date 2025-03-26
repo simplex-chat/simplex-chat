@@ -2042,8 +2042,7 @@ processChatCommand' vr = \case
             | otherwise -> do
                 let msg = XGrpLinkAcpt role (Just $ memberId' m)
                 void $ sendDirectMemberMessage mConn msg groupId
-                -- TODO [knocking] introduce to remaining members (reuse with Subscriber)
-                introduceToGroup vr user gInfo m
+                introduceToRemaining vr user gInfo m {memberRole = role}
                 m' <- withFastStore' $ \db -> updateGroupMemberAccepted db user m GSMemConnected role
                 pure $ CRMemberAccepted user gInfo m'
           Nothing -> throwChatError CEGroupMemberNotActive
@@ -3472,13 +3471,9 @@ getGCSDependencies vr user gInfo@GroupInfo {membership} gcs modsCompatVersion = 
     Nothing -> do
       gcsi <- liftIO $ memberSupportGCSI membership Nothing
       modMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
-      let rcpModMs' = filterMods modMs
+      let rcpModMs' = filter (\m -> compatible m && memberCurrent m) modMs
       when (null rcpModMs') $ throwChatError $ CECommandError "no admins support this message"
       pure (gcsi, MSMember (memberId' membership), rcpModMs', length rcpModMs')
-      where
-        filterMods modMs
-          | memberStatus membership == GSMemPendingApproval = modMs
-          | otherwise = filter (\m -> compatible m && memberCurrent m) modMs
     Just gmId -> do
       supportMem <- withFastStore $ \db -> getGroupMemberById db vr user gmId
       unless (memberCurrentOrPending supportMem) $ throwChatError $ CECommandError "support member not current or pending"

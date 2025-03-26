@@ -1031,11 +1031,10 @@ instance ToJSON GroupMemberStatus where
   toEncoding = JE.text . textEncode
 
 acceptanceToStatus :: FullGroupPreferences -> GroupAcceptance -> GroupMemberStatus
-acceptanceToStatus prefs = \case
-  GAPending -> GSMemPendingApproval
-  GAAccepted
-    | groupFeatureAllowed' SGFNewMemberReview prefs -> GSMemPendingReview
-    | otherwise -> GSMemAccepted
+acceptanceToStatus prefs groupAcceptance
+  | groupAcceptance == GAPending = GSMemPendingApproval
+  | groupFeatureAllowed' SGFNewMemberReview prefs = GSMemPendingReview
+  | otherwise = GSMemAccepted
 
 memberActive :: GroupMember -> Bool
 memberActive m = case memberStatus m of

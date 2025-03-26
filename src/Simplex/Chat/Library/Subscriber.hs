@@ -762,23 +762,21 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           XOk -> pure ()
           _ -> messageError "INFO from member must have x.grp.mem.info, x.info or x.ok"
         pure ()
-      CON _pqEnc -> unless (memberStatus m == GSMemRejected) $ do
-        status' <-
-          if memberPending m
-            then pure (memberStatus m)
-            else do
-              withStore' $ \db -> do
-                updateGroupMemberStatus db userId m GSMemConnected
-                unless (memberActive membership) $
-                  updateGroupMemberStatus db userId membership GSMemConnected
-              -- TODO [knocking] send pending messages after accepting?
-              -- possible improvement: check for each pending message, requires keeping track of connection state
-              unless (connDisabled conn) $ sendPendingGroupMessages user m conn
-              pure GSMemConnected
+      CON _pqEnc -> unless (memberStatus m == GSMemRejected || memberStatus membership == GSMemRejected) $ do
+        -- TODO [knocking] send pending messages after accepting?
+        -- possible improvement: check for each pending message, requires keeping track of connection state
+        unless (connDisabled conn) $ sendPendingGroupMessages user m conn
         withAgent $ \a -> toggleConnectionNtfs a (aConnId conn) $ chatHasNtfs chatSettings
         case memberCategory m of
           GCHostMember -> do
-            toView $ CRUserJoinedGroup user gInfo {membership = membership {memberStatus = status'}} m {memberStatus = status'}
+            (mStatus, membershipStatus) <- withStore' $ \db -> do
+              updateGroupMemberStatus db userId m GSMemConnected
+              membershipStatus <-
+                if not (memberPending membership)
+                  then updateGroupMemberStatus db userId membership GSMemConnected $> GSMemConnected
+                  else pure $ memberStatus membership
+              pure (GSMemConnected, membershipStatus)
+            toView $ CRUserJoinedGroup user gInfo {membership = membership {memberStatus = membershipStatus}} m {memberStatus = mStatus}
             gcsi <- liftIO $ getNonMsgGCSI gInfo m
             let cd = CDGroupRcv gInfo gcsi m
             createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
@@ -786,25 +784,30 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             memberConnectedChatItem gInfo gcsi m
             unless (memberPending membership) $ maybeCreateGroupDescrLocal gInfo m
           GCInviteeMember -> do
+            mStatus <-
+              if not (memberPending m)
+                then withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected $> GSMemConnected
+                else pure $ memberStatus m
             gcsi <- liftIO $ getNonMsgGCSI gInfo m
             memberConnectedChatItem gInfo gcsi m
-            toView $ CRJoinedGroupMember user gInfo m {memberStatus = status'}
+            toView $ CRJoinedGroupMember user gInfo m {memberStatus = mStatus}
             let Connection {viaUserContactLink} = conn
             when (isJust viaUserContactLink && isNothing (memberContactId m)) sendXGrpLinkMem
             when (connChatVersion < batchSend2Version) sendGroupAutoReply
-            case status' of
+            case mStatus of
               GSMemPendingApproval -> pure ()
               -- edge case: reviews were turned off mid connection;
               -- options: proceed to review (as now) or introduce to group and send XGrpLinkAcpt;
               -- choosing option 1 for simplicity, same edge case for approval is also not considered
               GSMemPendingReview -> introduceToModerators vr user gInfo m
-              _ -> introduceToGroup vr user gInfo m
+              _ -> introduceToAll vr user gInfo m
             where
               sendXGrpLinkMem = do
                 let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
                     profileToSend = profileToSendOnAccept user profileMode True
                 void $ sendDirectMemberMessage conn (XGrpLinkMem profileToSend) groupId
           _ -> do
+            unless (memberPending m) $ withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected
             let memCategory = memberCategory m
             withStore' (\db -> getViaGroupContact db vr user m) >>= \case
               Nothing -> do
@@ -2128,10 +2131,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Just mConn -> do
               let msg = XGrpLinkAcpt role (Just $ memberId' acceptedMember)
               void $ sendDirectMemberMessage mConn msg groupId
-              -- TODO [knocking] filter remaining members (based on introductions table)
-              members <- withStore' $ \db -> getGroupMembers db vr user gInfo
-              let recipients = filter memberCurrent members
-              introduceMember vr user gInfo acceptedMember recipients MSGroup
+              introduceToRemaining vr user gInfo m
               when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo acceptedMember
             Nothing -> messageError "x.grp.link.acpt error: no active accepted member connection"
 

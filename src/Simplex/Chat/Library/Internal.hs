@@ -974,10 +974,18 @@ introduceToModerators vr user gInfo m = do
   let rcpModMs = filter memberCurrent modMs
   introduceMember vr user gInfo m rcpModMs (MSMember $ memberId' m)
 
-introduceToGroup :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
-introduceToGroup vr user gInfo m = do
+introduceToAll :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
+introduceToAll vr user gInfo m = do
   members <- withStore' $ \db -> getGroupMembers db vr user gInfo
   let recipients = filter memberCurrent members
+  introduceMember vr user gInfo m recipients MSGroup
+  when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo m
+
+introduceToRemaining :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
+introduceToRemaining vr user gInfo m = do
+  (members, introducedGMIds) <-
+    withStore' $ \db -> (,) <$> getGroupMembers db vr user gInfo <*> getIntroducedGroupMemberIds db m
+  let recipients = filter (\mem -> memberCurrent mem && groupMemberId' mem `notElem` introducedGMIds) members
   introduceMember vr user gInfo m recipients MSGroup
   when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo m
 

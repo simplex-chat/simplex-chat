@@ -100,9 +100,8 @@ chatGroupTests = do
     it "group link member role" testGroupLinkMemberRole
     it "host profile received" testGroupLinkHostProfileReceived
     it "existing contact merged" testGroupLinkExistingContactMerged
-  describe "group links - join rejection" $ do
+  describe "group links - member screening" $ do
     it "reject member joining via group link - blocked name" testGLinkRejectBlockedName
-  describe "group links - manual acceptance" $ do
     it "manually accept member joining via group link" testGLinkManualAcceptMember
     it "delete pending member" testGLinkDeletePendingMember
   describe "group link connection plan" $ do
@@ -3004,7 +3003,7 @@ testGLinkManualAcceptMember =
       -- accept member
       alice ##> "/_accept member #1 3 member"
       concurrentlyN_
-        [ alice <## "#team: cath joined the group",
+        [ alice <## "#team: cath accepted",
           cath
             <### [ "#team: you joined the group",
                    WithTime "#team alice> hi group [>>]",

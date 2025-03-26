@@ -89,6 +89,7 @@ module Simplex.Chat.Store.Groups
     updateIntroStatus,
     saveIntroInvitation,
     getIntroduction,
+    getIntroducedGroupMemberIds,
     getForwardIntroducedMembers,
     getForwardInvitedMembers,
     createIntroReMember,
@@ -1441,6 +1442,14 @@ getIntroduction db reMember toMember = ExceptT $ do
       let introInvitation = IntroInvitation <$> groupConnReq <*> pure directConnReq
        in Right GroupMemberIntro {introId, reMember, toMember, introStatus, introInvitation}
     toIntro _ = Left SEIntroNotFound
+
+getIntroducedGroupMemberIds :: DB.Connection -> GroupMember -> IO [GroupMemberId]
+getIntroducedGroupMemberIds db invitee =
+  map fromOnly <$>
+    DB.query
+      db
+      "SELECT re_group_member_id FROM group_member_intros WHERE to_group_member_id = ?"
+      (Only $ groupMemberId' invitee)
 
 getForwardIntroducedMembers :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> Bool -> IO [GroupMember]
 getForwardIntroducedMembers db vr user invitee highlyAvailable = do
