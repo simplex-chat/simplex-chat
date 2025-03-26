@@ -2043,6 +2043,7 @@ processChatCommand' vr = \case
                 let msg = XGrpLinkAcpt role (Just $ memberId' m)
                 void $ sendDirectMemberMessage mConn msg groupId
                 introduceToRemaining vr user gInfo m {memberRole = role}
+                when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo m
                 m' <- withFastStore' $ \db -> updateGroupMemberAccepted db user m GSMemConnected role
                 pure $ CRMemberAccepted user gInfo m'
           Nothing -> throwChatError CEGroupMemberNotActive
