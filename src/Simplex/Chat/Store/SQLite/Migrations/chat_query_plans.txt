@@ -1619,147 +1619,11 @@ Query:
        
                       WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
                         AND (ct.unread_chat = 1 OR ChatStats.UnreadCount > 0)
-                    AND ct.chat_ts < ? ORDER BY ct.chat_ts DESC LIMIT ?
-Plan:
-MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND contact_id>?)
-SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=? AND chat_ts<?)
-SEARCH ChatStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
-CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
-
-Query: 
-        SELECT
-          ct.contact_id,
-          ct.chat_ts,
-          (
-            SELECT chat_item_id
-            FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
-            LIMIT 1
-          ) AS chat_item_id,
-          COALESCE(ChatStats.UnreadCount, 0),
-          0,
-          COALESCE(ChatStats.MinUnread, 0),
-          ct.unread_chat
-        FROM contacts ct
-        LEFT JOIN (
-          SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
-          FROM chat_items
-          WHERE user_id = ? AND contact_id IS NOT NULL AND item_status = ?
-          GROUP BY contact_id
-        ) ChatStats ON ChatStats.contact_id = ct.contact_id
-       
-                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
-                        AND (ct.unread_chat = 1 OR ChatStats.UnreadCount > 0)
-                    AND ct.chat_ts > ? ORDER BY ct.chat_ts ASC LIMIT ?
-Plan:
-MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND contact_id>?)
-SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=? AND chat_ts>?)
-SEARCH ChatStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
-CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
-
-Query: 
-        SELECT
-          ct.contact_id,
-          ct.chat_ts,
-          (
-            SELECT chat_item_id
-            FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
-            LIMIT 1
-          ) AS chat_item_id,
-          COALESCE(ChatStats.UnreadCount, 0),
-          0,
-          COALESCE(ChatStats.MinUnread, 0),
-          ct.unread_chat
-        FROM contacts ct
-        LEFT JOIN (
-          SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
-          FROM chat_items
-          WHERE user_id = ? AND contact_id IS NOT NULL AND item_status = ?
-          GROUP BY contact_id
-        ) ChatStats ON ChatStats.contact_id = ct.contact_id
-       
-                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
-                        AND (ct.unread_chat = 1 OR ChatStats.UnreadCount > 0)
                     ORDER BY ct.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND contact_id>?)
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
-SEARCH ChatStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
-CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
-
-Query: 
-        SELECT
-          ct.contact_id,
-          ct.chat_ts,
-          (
-            SELECT chat_item_id
-            FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
-            LIMIT 1
-          ) AS chat_item_id,
-          COALESCE(ChatStats.UnreadCount, 0),
-          0,
-          COALESCE(ChatStats.MinUnread, 0),
-          ct.unread_chat
-        FROM contacts ct
-        LEFT JOIN (
-          SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
-          FROM chat_items
-          WHERE user_id = ? AND contact_id IS NOT NULL AND item_status = ?
-          GROUP BY contact_id
-        ) ChatStats ON ChatStats.contact_id = ct.contact_id
-       
-                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
-                        AND ct.favorite = 1
-                    AND ct.chat_ts < ? ORDER BY ct.chat_ts DESC LIMIT ?
-Plan:
-MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND contact_id>?)
-SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=? AND chat_ts<?)
-SEARCH ChatStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
-CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
-
-Query: 
-        SELECT
-          ct.contact_id,
-          ct.chat_ts,
-          (
-            SELECT chat_item_id
-            FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
-            ORDER BY ci.created_at DESC
-            LIMIT 1
-          ) AS chat_item_id,
-          COALESCE(ChatStats.UnreadCount, 0),
-          0,
-          COALESCE(ChatStats.MinUnread, 0),
-          ct.unread_chat
-        FROM contacts ct
-        LEFT JOIN (
-          SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
-          FROM chat_items
-          WHERE user_id = ? AND contact_id IS NOT NULL AND item_status = ?
-          GROUP BY contact_id
-        ) ChatStats ON ChatStats.contact_id = ct.contact_id
-       
-                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
-                        AND ct.favorite = 1
-                    AND ct.chat_ts > ? ORDER BY ct.chat_ts ASC LIMIT ?
-Plan:
-MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts (user_id=? AND contact_id>?)
-SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=? AND chat_ts>?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (contact_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
@@ -2022,96 +1886,6 @@ Query:
        
                       WHERE g.user_id = ?
                         AND (g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
-                    AND g.chat_ts < ? ORDER BY g.chat_ts DESC LIMIT ?
-Plan:
-MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id>?)
-MATERIALIZE ReportCount
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
-SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts<?)
-SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
-SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
-CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
-
-Query: 
-        SELECT
-          g.group_id,
-          g.chat_ts,
-          (
-            SELECT chat_item_id
-            FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.group_id = g.group_id
-            ORDER BY ci.item_ts DESC
-            LIMIT 1
-          ) AS chat_item_id,
-          COALESCE(ChatStats.UnreadCount, 0),
-          COALESCE(ChatStats.UnreadMentions, 0),
-          COALESCE(ReportCount.Count, 0),
-          COALESCE(ChatStats.MinUnread, 0),
-          g.unread_chat
-        FROM groups g
-        LEFT JOIN (
-          SELECT group_id, COUNT(1) AS UnreadCount, SUM(user_mention) as UnreadMentions, MIN(chat_item_id) AS MinUnread
-          FROM chat_items
-          WHERE user_id = ? AND group_id IS NOT NULL AND item_status = ?
-          GROUP BY group_id
-        ) ChatStats ON ChatStats.group_id = g.group_id
-        LEFT JOIN (
-          SELECT group_id, COUNT(1) AS Count
-          FROM chat_items
-          WHERE user_id = ? AND group_id IS NOT NULL
-            AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0
-          GROUP BY group_id
-        ) ReportCount ON ReportCount.group_id = g.group_id
-       
-                      WHERE g.user_id = ?
-                        AND (g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
-                    AND g.chat_ts > ? ORDER BY g.chat_ts ASC LIMIT ?
-Plan:
-MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id>?)
-MATERIALIZE ReportCount
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
-SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts>?)
-SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
-SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
-CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
-
-Query: 
-        SELECT
-          g.group_id,
-          g.chat_ts,
-          (
-            SELECT chat_item_id
-            FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.group_id = g.group_id
-            ORDER BY ci.item_ts DESC
-            LIMIT 1
-          ) AS chat_item_id,
-          COALESCE(ChatStats.UnreadCount, 0),
-          COALESCE(ChatStats.UnreadMentions, 0),
-          COALESCE(ReportCount.Count, 0),
-          COALESCE(ChatStats.MinUnread, 0),
-          g.unread_chat
-        FROM groups g
-        LEFT JOIN (
-          SELECT group_id, COUNT(1) AS UnreadCount, SUM(user_mention) as UnreadMentions, MIN(chat_item_id) AS MinUnread
-          FROM chat_items
-          WHERE user_id = ? AND group_id IS NOT NULL AND item_status = ?
-          GROUP BY group_id
-        ) ChatStats ON ChatStats.group_id = g.group_id
-        LEFT JOIN (
-          SELECT group_id, COUNT(1) AS Count
-          FROM chat_items
-          WHERE user_id = ? AND group_id IS NOT NULL
-            AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0
-          GROUP BY group_id
-        ) ReportCount ON ReportCount.group_id = g.group_id
-       
-                      WHERE g.user_id = ?
-                        AND (g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
                     ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
@@ -2119,96 +1893,6 @@ SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=?)
-SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
-SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
-CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
-
-Query: 
-        SELECT
-          g.group_id,
-          g.chat_ts,
-          (
-            SELECT chat_item_id
-            FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.group_id = g.group_id
-            ORDER BY ci.item_ts DESC
-            LIMIT 1
-          ) AS chat_item_id,
-          COALESCE(ChatStats.UnreadCount, 0),
-          COALESCE(ChatStats.UnreadMentions, 0),
-          COALESCE(ReportCount.Count, 0),
-          COALESCE(ChatStats.MinUnread, 0),
-          g.unread_chat
-        FROM groups g
-        LEFT JOIN (
-          SELECT group_id, COUNT(1) AS UnreadCount, SUM(user_mention) as UnreadMentions, MIN(chat_item_id) AS MinUnread
-          FROM chat_items
-          WHERE user_id = ? AND group_id IS NOT NULL AND item_status = ?
-          GROUP BY group_id
-        ) ChatStats ON ChatStats.group_id = g.group_id
-        LEFT JOIN (
-          SELECT group_id, COUNT(1) AS Count
-          FROM chat_items
-          WHERE user_id = ? AND group_id IS NOT NULL
-            AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0
-          GROUP BY group_id
-        ) ReportCount ON ReportCount.group_id = g.group_id
-       
-                      WHERE g.user_id = ?
-                        AND g.favorite = 1
-                    AND g.chat_ts < ? ORDER BY g.chat_ts DESC LIMIT ?
-Plan:
-MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id>?)
-MATERIALIZE ReportCount
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
-SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts<?)
-SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
-SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
-CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
-
-Query: 
-        SELECT
-          g.group_id,
-          g.chat_ts,
-          (
-            SELECT chat_item_id
-            FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.group_id = g.group_id
-            ORDER BY ci.item_ts DESC
-            LIMIT 1
-          ) AS chat_item_id,
-          COALESCE(ChatStats.UnreadCount, 0),
-          COALESCE(ChatStats.UnreadMentions, 0),
-          COALESCE(ReportCount.Count, 0),
-          COALESCE(ChatStats.MinUnread, 0),
-          g.unread_chat
-        FROM groups g
-        LEFT JOIN (
-          SELECT group_id, COUNT(1) AS UnreadCount, SUM(user_mention) as UnreadMentions, MIN(chat_item_id) AS MinUnread
-          FROM chat_items
-          WHERE user_id = ? AND group_id IS NOT NULL AND item_status = ?
-          GROUP BY group_id
-        ) ChatStats ON ChatStats.group_id = g.group_id
-        LEFT JOIN (
-          SELECT group_id, COUNT(1) AS Count
-          FROM chat_items
-          WHERE user_id = ? AND group_id IS NOT NULL
-            AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0
-          GROUP BY group_id
-        ) ReportCount ON ReportCount.group_id = g.group_id
-       
-                      WHERE g.user_id = ?
-                        AND g.favorite = 1
-                    AND g.chat_ts > ? ORDER BY g.chat_ts ASC LIMIT ?
-Plan:
-MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id>?)
-MATERIALIZE ReportCount
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
-SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts>?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
@@ -2446,147 +2130,7 @@ Query:
        
                       WHERE nf.user_id = ?
                         AND (nf.unread_chat = 1 OR ChatStats.UnreadCount > 0)
-                    AND nf.chat_ts < ? ORDER BY nf.chat_ts DESC LIMIT ?
-Plan:
-MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_notes (user_id=? AND note_folder_id>?)
-SEARCH nf USING INDEX note_folders_user_id (user_id=?)
-SEARCH ChatStats USING AUTOMATIC COVERING INDEX (note_folder_id=?) LEFT-JOIN
-CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_notes_created_at (user_id=? AND note_folder_id=?)
-USE TEMP B-TREE FOR ORDER BY
-
-Query: 
-        SELECT
-          nf.note_folder_id,
-          nf.chat_ts,
-          (
-            SELECT chat_item_id
-            FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
-            LIMIT 1
-          ) AS chat_item_id,
-          COALESCE(ChatStats.UnreadCount, 0),
-          0,
-          COALESCE(ChatStats.MinUnread, 0),
-          nf.unread_chat
-        FROM note_folders nf
-        LEFT JOIN (
-          SELECT note_folder_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
-          FROM chat_items
-          WHERE user_id = ? AND note_folder_id IS NOT NULL AND item_status = ?
-          GROUP BY note_folder_id
-        ) ChatStats ON ChatStats.note_folder_id = nf.note_folder_id
-       
-                      WHERE nf.user_id = ?
-                        AND (nf.unread_chat = 1 OR ChatStats.UnreadCount > 0)
-                    AND nf.chat_ts > ? ORDER BY nf.chat_ts ASC LIMIT ?
-Plan:
-MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_notes (user_id=? AND note_folder_id>?)
-SEARCH nf USING INDEX note_folders_user_id (user_id=?)
-SEARCH ChatStats USING AUTOMATIC COVERING INDEX (note_folder_id=?) LEFT-JOIN
-CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_notes_created_at (user_id=? AND note_folder_id=?)
-USE TEMP B-TREE FOR ORDER BY
-
-Query: 
-        SELECT
-          nf.note_folder_id,
-          nf.chat_ts,
-          (
-            SELECT chat_item_id
-            FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
-            LIMIT 1
-          ) AS chat_item_id,
-          COALESCE(ChatStats.UnreadCount, 0),
-          0,
-          COALESCE(ChatStats.MinUnread, 0),
-          nf.unread_chat
-        FROM note_folders nf
-        LEFT JOIN (
-          SELECT note_folder_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
-          FROM chat_items
-          WHERE user_id = ? AND note_folder_id IS NOT NULL AND item_status = ?
-          GROUP BY note_folder_id
-        ) ChatStats ON ChatStats.note_folder_id = nf.note_folder_id
-       
-                      WHERE nf.user_id = ?
-                        AND (nf.unread_chat = 1 OR ChatStats.UnreadCount > 0)
                     ORDER BY nf.chat_ts DESC LIMIT ?
-Plan:
-MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_notes (user_id=? AND note_folder_id>?)
-SEARCH nf USING INDEX note_folders_user_id (user_id=?)
-SEARCH ChatStats USING AUTOMATIC COVERING INDEX (note_folder_id=?) LEFT-JOIN
-CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_notes_created_at (user_id=? AND note_folder_id=?)
-USE TEMP B-TREE FOR ORDER BY
-
-Query: 
-        SELECT
-          nf.note_folder_id,
-          nf.chat_ts,
-          (
-            SELECT chat_item_id
-            FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
-            LIMIT 1
-          ) AS chat_item_id,
-          COALESCE(ChatStats.UnreadCount, 0),
-          0,
-          COALESCE(ChatStats.MinUnread, 0),
-          nf.unread_chat
-        FROM note_folders nf
-        LEFT JOIN (
-          SELECT note_folder_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
-          FROM chat_items
-          WHERE user_id = ? AND note_folder_id IS NOT NULL AND item_status = ?
-          GROUP BY note_folder_id
-        ) ChatStats ON ChatStats.note_folder_id = nf.note_folder_id
-       
-                      WHERE nf.user_id = ?
-                        AND nf.favorite = 1
-                    AND nf.chat_ts < ? ORDER BY nf.chat_ts DESC LIMIT ?
-Plan:
-MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_notes (user_id=? AND note_folder_id>?)
-SEARCH nf USING INDEX note_folders_user_id (user_id=?)
-SEARCH ChatStats USING AUTOMATIC COVERING INDEX (note_folder_id=?) LEFT-JOIN
-CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_notes_created_at (user_id=? AND note_folder_id=?)
-USE TEMP B-TREE FOR ORDER BY
-
-Query: 
-        SELECT
-          nf.note_folder_id,
-          nf.chat_ts,
-          (
-            SELECT chat_item_id
-            FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
-            ORDER BY ci.created_at DESC
-            LIMIT 1
-          ) AS chat_item_id,
-          COALESCE(ChatStats.UnreadCount, 0),
-          0,
-          COALESCE(ChatStats.MinUnread, 0),
-          nf.unread_chat
-        FROM note_folders nf
-        LEFT JOIN (
-          SELECT note_folder_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
-          FROM chat_items
-          WHERE user_id = ? AND note_folder_id IS NOT NULL AND item_status = ?
-          GROUP BY note_folder_id
-        ) ChatStats ON ChatStats.note_folder_id = nf.note_folder_id
-       
-                      WHERE nf.user_id = ?
-                        AND nf.favorite = 1
-                    AND nf.chat_ts > ? ORDER BY nf.chat_ts ASC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_notes (user_id=? AND note_folder_id>?)
@@ -4652,6 +4196,30 @@ CORRELATED SCALAR SUBQUERY 1
 SEARCH cc USING COVERING INDEX idx_connections_group_member (user_id=? AND group_member_id=?)
 
 Query: 
+    SELECT
+      m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
+      m.created_at, m.updated_at, m.support_chat_ts, m.support_chat_unanswered,
+      c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
+      c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
+      c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+      c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+    FROM group_members m
+    JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+    LEFT JOIN connections c ON c.connection_id = (
+      SELECT max(cc.connection_id)
+      FROM connections cc
+      WHERE cc.user_id = ? AND cc.group_member_id = m.group_member_id
+    )
+   WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.support_chat_ts IS NOT NULL
+Plan:
+SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH c USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+CORRELATED SCALAR SUBQUERY 1
+SEARCH cc USING COVERING INDEX idx_connections_group_member (user_id=? AND group_member_id=?)
+
+Query: 
     SELECT conn_req_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
     FROM user_contact_links
     WHERE user_id = ?
@@ -5643,6 +5211,10 @@ SEARCH note_folders USING COVERING INDEX note_folders_user_id (user_id=?)
 Query: SELECT quota_err_counter FROM connections WHERE user_id = ? AND connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT re_group_member_id FROM group_member_intros WHERE to_group_member_id = ?
+Plan:
+SEARCH group_member_intros USING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
 
 Query: SELECT sent_inv_queue_info FROM group_members WHERE group_member_id = ? AND user_id = ?
 Plan:
