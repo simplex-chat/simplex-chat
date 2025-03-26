@@ -1626,7 +1626,7 @@ testJoinGroupIncognito =
           (cath </)
         ]
       cath ##> "#secret_club hello"
-      cath <## "you are no longer a member of the group"
+      cath <## "bad chat command: not current member"
 
 testCantInviteContactIncognito :: HasCallStack => TestParams -> IO ()
 testCantInviteContactIncognito = testChat2 aliceProfile bobProfile $

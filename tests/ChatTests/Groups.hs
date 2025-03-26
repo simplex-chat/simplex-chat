@@ -312,7 +312,7 @@ testGroupShared alice bob cath checkMessages = do
     (bob <# "#team alice> hello")
     (cath </)
   cath ##> "#team hello"
-  cath <## "you are no longer a member of the group"
+  cath <## "bad chat command: not current member"
   -- delete contact
   alice ##> "/d bob"
   alice <## "bob: contact is deleted"
@@ -649,7 +649,7 @@ testGroup2 =
           (dan </)
         ]
       dan ##> "#club how is it going?"
-      dan <## "you are no longer a member of the group"
+      dan <## "bad chat command: not current member"
       dan ##> "/d #club"
       dan <## "#club: you deleted the group"
       dan <##> alice
@@ -671,7 +671,7 @@ testGroup2 =
         (alice <# "#club cath> hey")
         (bob </)
       bob ##> "#club how is it going?"
-      bob <## "you are no longer a member of the group"
+      bob <## "bad chat command: not current member"
       bob ##> "/d #club"
       bob <## "#club: you deleted the group"
       bob <##> alice
@@ -696,7 +696,7 @@ testGroupDelete =
       bob ##> "/d #team"
       bob <## "#team: you deleted the group"
       cath ##> "#team hi"
-      cath <## "you are no longer a member of the group"
+      cath <## "bad chat command: not current member"
       cath ##> "/d #team"
       cath <## "#team: you deleted the group"
       alice <##> bob
