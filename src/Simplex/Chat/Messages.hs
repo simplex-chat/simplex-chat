@@ -60,17 +60,10 @@ import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 data ChatType = CTDirect | CTGroup | CTLocal | CTContactRequest | CTContactConnection
   deriving (Eq, Show, Ord)
 
-data NotInHistory = NotInHistory
-
 data GroupChatScope
   = GCSGroup
   | GCSMemberSupport {groupMemberId_ :: Maybe GroupMemberId} -- Nothing means own conversation with admins
   deriving (Eq, Show, Ord)
-
-gsScopeNotInHistory :: GroupChatScope -> Maybe NotInHistory
-gsScopeNotInHistory = \case
-  GCSGroup -> Nothing
-  GCSMemberSupport _ -> Just NotInHistory
 
 data ChatRefType = CRTDirect | CRTGroup GroupChatScope | CRTLocal | CRTContactRequest | CRTContactConnection
   deriving (Eq, Show, Ord)

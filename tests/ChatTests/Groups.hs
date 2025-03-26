@@ -3139,10 +3139,6 @@ testGLinkReviewMember =
                    StartsWith "duplicate group message",
                    StartsWith "duplicate group message",
                    StartsWith "duplicate group message",
-                   StartsWith "duplicate group message",
-                   StartsWith "duplicate group message",
-                   StartsWith "duplicate group message",
-                   StartsWith "duplicate group message",
                    StartsWith "duplicate group message"
                  ],
           do

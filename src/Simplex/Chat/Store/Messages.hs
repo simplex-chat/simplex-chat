@@ -386,9 +386,9 @@ updateChatTs db User {userId} chatDirection chatTs = case toChatInfo chatDirecti
       (chatTs, userId, noteFolderId)
   _ -> pure ()
 
-createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> Maybe NotInHistory -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> UTCTime -> IO ChatItemId
-createNewSndChatItem db user chatDirection notInHistory_ SndMessage {msgId, sharedMsgId} ciContent quotedItem itemForwarded timed live createdAt =
-  createNewChatItem_ db user chatDirection notInHistory_ createdByMsgId (Just sharedMsgId) ciContent quoteRow itemForwarded timed live False createdAt Nothing createdAt
+createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> UTCTime -> IO ChatItemId
+createNewSndChatItem db user chatDirection SndMessage {msgId, sharedMsgId} ciContent quotedItem itemForwarded timed live createdAt =
+  createNewChatItem_ db user chatDirection createdByMsgId (Just sharedMsgId) ciContent quoteRow itemForwarded timed live False createdAt Nothing createdAt
   where
     createdByMsgId = if msgId == 0 then Nothing else Just msgId
     quoteRow :: NewQuoteRow
@@ -402,9 +402,9 @@ createNewSndChatItem db user chatDirection notInHistory_ SndMessage {msgId, shar
           CIQGroupRcv (Just GroupMember {memberId}) -> (Just False, Just memberId)
           CIQGroupRcv Nothing -> (Just False, Nothing)
 
-createNewRcvChatItem :: ChatTypeQuotable c => DB.Connection -> User -> ChatDirection c 'MDRcv -> Maybe NotInHistory -> RcvMessage -> Maybe SharedMsgId -> CIContent 'MDRcv -> Maybe CITimed -> Bool -> Bool -> UTCTime -> UTCTime -> IO (ChatItemId, Maybe (CIQuote c), Maybe CIForwardedFrom)
-createNewRcvChatItem db user chatDirection notInHistory_ RcvMessage {msgId, chatMsgEvent, forwardedByMember} sharedMsgId_ ciContent timed live userMention itemTs createdAt = do
-  ciId <- createNewChatItem_ db user chatDirection notInHistory_ (Just msgId) sharedMsgId_ ciContent quoteRow itemForwarded timed live userMention itemTs forwardedByMember createdAt
+createNewRcvChatItem :: ChatTypeQuotable c => DB.Connection -> User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> CIContent 'MDRcv -> Maybe CITimed -> Bool -> Bool -> UTCTime -> UTCTime -> IO (ChatItemId, Maybe (CIQuote c), Maybe CIForwardedFrom)
+createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent, forwardedByMember} sharedMsgId_ ciContent timed live userMention itemTs createdAt = do
+  ciId <- createNewChatItem_ db user chatDirection (Just msgId) sharedMsgId_ ciContent quoteRow itemForwarded timed live userMention itemTs forwardedByMember createdAt
   quotedItem <- mapM (getChatItemQuote_ db user chatDirection) quotedMsg
   pure (ciId, quotedItem, itemForwarded)
   where
@@ -422,13 +422,13 @@ createNewRcvChatItem db user chatDirection notInHistory_ RcvMessage {msgId, chat
 
 createNewChatItemNoMsg :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> CIContent d -> UTCTime -> UTCTime -> IO ChatItemId
 createNewChatItemNoMsg db user chatDirection ciContent itemTs =
-  createNewChatItem_ db user chatDirection Nothing Nothing Nothing ciContent quoteRow Nothing Nothing False False itemTs Nothing
+  createNewChatItem_ db user chatDirection Nothing Nothing ciContent quoteRow Nothing Nothing False False itemTs Nothing
   where
     quoteRow :: NewQuoteRow
     quoteRow = (Nothing, Nothing, Nothing, Nothing, Nothing)
 
-createNewChatItem_ :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> Maybe NotInHistory -> Maybe MessageId -> Maybe SharedMsgId -> CIContent d -> NewQuoteRow -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> UTCTime -> Maybe GroupMemberId -> UTCTime -> IO ChatItemId
-createNewChatItem_ db User {userId} chatDirection notInHistory_ msgId_ sharedMsgId ciContent quoteRow itemForwarded timed live userMention itemTs forwardedByMember createdAt = do
+createNewChatItem_ :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> Maybe MessageId -> Maybe SharedMsgId -> CIContent d -> NewQuoteRow -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> UTCTime -> Maybe GroupMemberId -> UTCTime -> IO ChatItemId
+createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent quoteRow itemForwarded timed live userMention itemTs forwardedByMember createdAt = do
   DB.execute
     db
     [sql|
@@ -468,8 +468,8 @@ createNewChatItem_ db User {userId} chatDirection notInHistory_ msgId_ sharedMsg
           GCSIMemberSupport {groupMember_ = Nothing} -> Just $ groupMemberId' membership
     includeInHistory :: Bool
     includeInHistory =
-      let (_, groupId_, _, _, _) = idsRow
-       in isJust groupId_ && isNothing notInHistory_ && isJust (ciMsgContent ciContent) && ((msgContentTag <$> ciMsgContent ciContent) /= Just MCReport_)
+      let (_, groupId_, gsGroupMemberId_, _, _) = idsRow
+       in isJust groupId_ && isNothing gsGroupMemberId_ && isJust (ciMsgContent ciContent) && ((msgContentTag <$> ciMsgContent ciContent) /= Just MCReport_)
     forwardedFromRow :: (Maybe CIForwardedFromTag, Maybe Text, Maybe MsgDirection, Maybe Int64, Maybe Int64, Maybe Int64)
     forwardedFromRow = case itemForwarded of
       Nothing ->
