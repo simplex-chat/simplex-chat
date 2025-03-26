@@ -103,7 +103,7 @@ chatGroupTests = do
   describe "group links - member screening" $ do
     it "reject member - blocked name" testGLinkRejectBlockedName
     it "accept member - only host approval" testGLinkApproveMember
-    fit "accept member - only moderators review" testGLinkReviewMember
+    it "accept member - only moderators review" testGLinkReviewMember
     it "delete pending approval member" testGLinkDeletePendingApprovalMember
   describe "group link connection plan" $ do
     it "ok to connect; known group" testPlanGroupLinkKnown
@@ -3134,12 +3134,7 @@ testGLinkReviewMember =
                    WithTime "#team bob> 2 [>>]",
                    WithTime "#team cath> 3 [>>]",
                    WithTime "#team dan> 4 [>>]",
-                   "#team: member bob (Bob) is connected",
-                   -- TODO fix
-                   StartsWith "duplicate group message",
-                   StartsWith "duplicate group message",
-                   StartsWith "duplicate group message",
-                   StartsWith "duplicate group message"
+                   "#team: member bob (Bob) is connected"
                  ],
           do
             bob <## "#team: alice added eve (Eve) to the group (connecting...)"

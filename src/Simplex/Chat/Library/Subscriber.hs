@@ -797,10 +797,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             case mStatus of
               GSMemPendingApproval -> pure ()
               -- edge case: reviews were turned off mid connection;
-              -- options: proceed to review (as now) or introduce to group and send XGrpLinkAcpt;
-              -- choosing option 1 for simplicity, same edge case for approval is also not considered
+              -- options: proceed to review as declared, or introduce to group and send XGrpLinkAcpt;
+              -- choosing first option for simplicity, same edge case for approval is also not considered
               GSMemPendingReview -> introduceToModerators vr user gInfo m
-              _ -> introduceToAll vr user gInfo m
+              _ -> do
+                introduceToAll vr user gInfo m
+                when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo m
             where
               sendXGrpLinkMem = do
                 let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo

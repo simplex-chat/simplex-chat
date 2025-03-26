@@ -979,7 +979,6 @@ introduceToAll vr user gInfo m = do
   members <- withStore' $ \db -> getGroupMembers db vr user gInfo
   let recipients = filter memberCurrent members
   introduceMember vr user gInfo m recipients MSGroup
-  when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo m
 
 introduceToRemaining :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceToRemaining vr user gInfo m = do
@@ -987,7 +986,6 @@ introduceToRemaining vr user gInfo m = do
     withStore' $ \db -> (,) <$> getGroupMembers db vr user gInfo <*> getIntroducedGroupMemberIds db m
   let recipients = filter (introduceMemP introducedGMIds) members
   introduceMember vr user gInfo m recipients MSGroup
-  when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo m
   where
     introduceMemP introducedGMIds mem =
       memberCurrent mem
