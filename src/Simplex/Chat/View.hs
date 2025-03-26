@@ -1103,7 +1103,7 @@ viewJoinedGroupMember g@GroupInfo {groupId} m@GroupMember {groupMemberId, member
 
 viewMemberAccepted :: GroupInfo -> GroupMember -> [StyledString]
 viewMemberAccepted g m@GroupMember {memberStatus} = case memberStatus of
-  GSMemPendingReview -> [ttyGroup' g <> ": " <> ttyMember m <> " accepted and pending review"]
+  GSMemPendingReview -> [ttyGroup' g <> ": " <> ttyMember m <> " accepted and pending review (will introduce moderators)"]
   _ -> [ttyGroup' g <> ": " <> ttyMember m <> " accepted"]
 
 viewMemberAcceptedByOther :: GroupInfo -> GroupMember -> GroupMember -> [StyledString]

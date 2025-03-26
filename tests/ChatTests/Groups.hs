@@ -100,10 +100,11 @@ chatGroupTests = do
     it "group link member role" testGroupLinkMemberRole
     it "host profile received" testGroupLinkHostProfileReceived
     it "existing contact merged" testGroupLinkExistingContactMerged
-  describe "group links - member screening" $ do
+  fdescribe "group links - member screening" $ do
     it "reject member - blocked name" testGLinkRejectBlockedName
     it "accept member - only host approval" testGLinkApproveMember
     it "accept member - only moderators review" testGLinkReviewMember
+    it "accept member - host approval, then moderators review" testGLinkApproveThenReviewMember
     it "delete pending approval member" testGLinkDeletePendingApprovalMember
   describe "group link connection plan" $ do
     it "ok to connect; known group" testPlanGroupLinkKnown
@@ -3153,6 +3154,172 @@ testGLinkReviewMember =
 
       eve #> "#team 13"
       [alice, bob, cath, dan] *<# "#team eve> 13"
+
+testGLinkApproveThenReviewMember :: HasCallStack => TestParams -> IO ()
+testGLinkApproveThenReviewMember =
+  testChatCfg5 cfg aliceProfile bobProfile cathProfile danProfile eveProfile $
+    \alice bob cath dan eve -> do
+      createGroup4 "team" alice (bob, GRMember) (cath, GRModerator) (dan, GRModerator)
+
+      alice ##> "/set new member review #team on"
+      alice <## "updated group preferences:"
+      alice <## "New member review: on"
+      concurrentlyN_
+        [ do
+            bob <## "alice updated group #team:"
+            bob <## "updated group preferences:"
+            bob <## "New member review: on",
+          do
+            cath <## "alice updated group #team:"
+            cath <## "updated group preferences:"
+            cath <## "New member review: on",
+          do
+            dan <## "alice updated group #team:"
+            dan <## "updated group preferences:"
+            dan <## "New member review: on"
+        ]
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      eve ##> ("/c " <> gLink)
+      eve <## "connection request sent!"
+      alice <## "eve (Eve): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: eve connected and pending approval, use /_accept member #1 5 <role> to accept member",
+          do
+            eve <## "#team: joining the group..."
+            eve <## "#team: you joined the group, pending approval"
+        ]
+
+      -- pending member doesn't see messages sent in group
+      alice #> "#team 1"
+      [bob, cath, dan] *<# "#team alice> 1"
+
+      bob #> "#team 2"
+      [alice, cath, dan] *<# "#team bob> 2"
+
+      cath #> "#team 3"
+      [alice, bob, dan] *<# "#team cath> 3"
+
+      dan #> "#team 4"
+      [alice, bob, cath] *<# "#team dan> 4"
+
+      (eve </)
+
+      -- pending member can't send messages to group
+      eve ##> "#team hello"
+      eve <## "bad chat command: not current member"
+
+      -- pending member and host can send messages to each other
+      alice ##> "/_send #1 @support-5 text 5"
+      alice <# "#team 5"
+      eve <# "#team alice> 5"
+
+      eve ##> "/_send #1 @support text 6"
+      eve <# "#team 6"
+      alice <# "#team eve> 6"
+
+      (bob </)
+      (cath </)
+      (dan </)
+
+      -- accept member
+      alice ##> "/_accept member #1 5 member"
+      concurrentlyN_
+        [ alice <## "#team: eve accepted and pending review (will introduce moderators)",
+          eve
+            <### [ "#team: member cath (Catherine) is connected",
+                   "#team: member dan (Daniel) is connected"
+                 ],
+          do
+            cath <## "#team: alice added eve (Eve) to the group (connecting and pending review...), use /_accept member #1 5 <role> to accept member"
+            cath <## "#team: new member eve is connected and pending review, use /_accept member #1 5 <role> to accept member",
+          do
+            dan <## "#team: alice added eve (Eve) to the group (connecting and pending review...), use /_accept member #1 5 <role> to accept member"
+            dan <## "#team: new member eve is connected and pending review, use /_accept member #1 5 <role> to accept member"
+        ]
+
+      -- pending member doesn't see messages sent in group
+      alice #> "#team 7"
+      [bob, cath, dan] *<# "#team alice> 7"
+
+      bob #> "#team 8"
+      [alice, cath, dan] *<# "#team bob> 8"
+
+      cath #> "#team 9"
+      [alice, bob, dan] *<# "#team cath> 9"
+
+      dan #> "#team 10"
+      [alice, bob, cath] *<# "#team dan> 10"
+
+      (eve </)
+
+      -- pending member can't send messages to group
+      eve ##> "#team hello"
+      eve <## "bad chat command: not current member"
+
+      -- pending member and moderators can send messages to each other
+      alice ##> "/_send #1 @support-5 text 11"
+      alice <# "#team 11"
+      [cath, dan, eve] *<# "#team alice> 11"
+
+      cath ##> "/_send #1 @support-5 text 12"
+      cath <# "#team 12"
+      [alice, dan, eve] *<# "#team cath> 12"
+
+      dan ##> "/_send #1 @support-5 text 13"
+      dan <# "#team 13"
+      [alice, cath, eve] *<# "#team dan> 13"
+
+      eve ##> "/_send #1 @support text 14"
+      eve <# "#team 14"
+      [alice, cath, dan] *<# "#team eve> 14"
+
+      (bob </)
+
+      -- host is prohibited to accept member (other moderators have to review)
+      alice ##> "/_accept member #1 5 member"
+      alice <## "bad chat command: member should be pending approval and invitee, or pending review and not invitee"
+
+      -- accept member
+      dan ##> "/_accept member #1 5 member"
+      concurrentlyN_
+        [ dan <## "#team: eve accepted",
+          alice <## "#team: dan accepted eve to the group (will introduce remaining members)",
+          cath <## "#team: dan accepted eve to the group",
+          eve
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> 1 [>>]",
+                   WithTime "#team bob> 2 [>>]",
+                   WithTime "#team cath> 3 [>>]",
+                   WithTime "#team dan> 4 [>>]",
+                   WithTime "#team alice> 7 [>>]",
+                   WithTime "#team bob> 8 [>>]",
+                   WithTime "#team cath> 9 [>>]",
+                   WithTime "#team dan> 10 [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added eve (Eve) to the group (connecting...)"
+            bob <## "#team: new member eve is connected"
+        ]
+
+      alice #> "#team 15"
+      [bob, cath, dan, eve] *<# "#team alice> 15"
+
+      bob #> "#team 16"
+      [alice, cath, dan, eve] *<# "#team bob> 16"
+
+      cath #> "#team 17"
+      [alice, bob, dan, eve] *<# "#team cath> 17"
+
+      dan #> "#team 18"
+      [alice, bob, cath, eve] *<# "#team dan> 18"
+
+      eve #> "#team 19"
+      [alice, bob, cath, dan] *<# "#team eve> 19"
+  where
+    cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAPending, GRObserver))}}
 
 testGLinkDeletePendingApprovalMember :: HasCallStack => TestParams -> IO ()
 testGLinkDeletePendingApprovalMember =
