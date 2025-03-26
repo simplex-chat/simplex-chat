@@ -1114,7 +1114,7 @@ viewMemberAcceptedByOther g acceptingMember m@GroupMember {memberCategory} = cas
 viewJoinedGroupMemberConnecting :: GroupInfo -> GroupMember -> GroupMember -> [StyledString]
 viewJoinedGroupMemberConnecting g@GroupInfo {groupId} host m@GroupMember {groupMemberId, memberStatus} = case memberStatus of
   GSMemPendingReview ->
-    [ (ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting and pending review...)")
+    [ (ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting and pending review...), ")
       <> ("use " <> highlight ("/_accept member #" <> show groupId <> " " <> show groupMemberId <> " <role>") <> " to accept member")
     ]
   _ -> [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
@@ -1122,7 +1122,7 @@ viewJoinedGroupMemberConnecting g@GroupInfo {groupId} host m@GroupMember {groupM
 viewConnectedToGroupMember :: GroupInfo -> GroupMember -> [StyledString]
 viewConnectedToGroupMember g@GroupInfo {groupId} m@GroupMember {groupMemberId, memberStatus} = case memberStatus of
   GSMemPendingReview ->
-    [ (ttyGroup' g <> ": " <> connectedMember m <> " is connected and pending review")
+    [ (ttyGroup' g <> ": " <> connectedMember m <> " is connected and pending review, ")
       <> ("use " <> highlight ("/_accept member #" <> show groupId <> " " <> show groupMemberId <> " <role>") <> " to accept member")
     ]
   _ -> [ttyGroup' g <> ": " <> connectedMember m <> " is connected"]

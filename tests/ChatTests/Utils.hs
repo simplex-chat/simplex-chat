@@ -71,6 +71,9 @@ cathProfile = Profile {displayName = "cath", fullName = "Catherine", image = Not
 danProfile :: Profile
 danProfile = Profile {displayName = "dan", fullName = "Daniel", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
 
+eveProfile :: Profile
+eveProfile = Profile {displayName = "eve", fullName = "Eve", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
+
 businessProfile :: Profile
 businessProfile = Profile {displayName = "biz", fullName = "Biz Inc", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
 

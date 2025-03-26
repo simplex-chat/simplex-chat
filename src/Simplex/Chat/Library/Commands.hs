@@ -3464,6 +3464,7 @@ processChatCommand' vr = \case
 getGCSDependencies :: VersionRangeChat -> User -> GroupInfo -> GroupChatScope -> VersionChat -> CM (GroupChatScopeInfo, MsgScope, [GroupMember], Int)
 getGCSDependencies vr user gInfo@GroupInfo {membership} gcs modsCompatVersion = case gcs of
   GCSGroup -> do
+    unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
     ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
     let recipients = filter memberCurrent ms
     pure (GCSIGroup, MSGroup, recipients, length recipients)
@@ -3475,6 +3476,7 @@ getGCSDependencies vr user gInfo@GroupInfo {membership} gcs modsCompatVersion = 
       when (null rcpModMs') $ throwChatError $ CECommandError "no admins support this message"
       pure (gcsi, MSMember (memberId' membership), rcpModMs', length rcpModMs')
     Just gmId -> do
+      unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
       supportMem <- withFastStore $ \db -> getGroupMemberById db vr user gmId
       unless (memberCurrentOrPending supportMem) $ throwChatError $ CECommandError "support member not current or pending"
       gcsi <- liftIO $ memberSupportGCSI supportMem (Just supportMem)
@@ -4207,6 +4209,7 @@ chatCommandP =
       "/set voice " *> (SetUserFeature (ACF SCFVoice) <$> strP),
       "/set files #" *> (SetGroupFeatureRole (AGFR SGFFiles) <$> displayNameP <*> _strP <*> optional memberRole),
       "/set history #" *> (SetGroupFeature (AGFNR SGFHistory) <$> displayNameP <*> (A.space *> strP)),
+      "/set new member review #" *> (SetGroupFeature (AGFNR SGFNewMemberReview) <$> displayNameP <*> (A.space *> strP)),
       "/set reactions #" *> (SetGroupFeature (AGFNR SGFReactions) <$> displayNameP <*> (A.space *> strP)),
       "/set calls @" *> (SetContactFeature (ACF SCFCalls) <$> displayNameP <*> optional (A.space *> strP)),
       "/set calls " *> (SetUserFeature (ACF SCFCalls) <$> strP),
@@ -4360,7 +4363,7 @@ chatCommandP =
         <|> (A.char '#' $> SRGroup <*> A.decimal <*> (A.space *> gcScopeP <|> pure GCSGroup))
     gcScopeP =
       ("@group" $> GCSGroup)
-        <|> ("@support@" $> GCSMemberSupport . Just <*> A.decimal)
+        <|> ("@support-" $> GCSMemberSupport . Just <*> A.decimal)
         <|> ("@support" $> GCSMemberSupport Nothing)
     msgCountP = A.space *> A.decimal <|> pure 10
     ciTTLDecimal = ("default" $> Nothing) <|> (Just <$> A.decimal)

@@ -2131,7 +2131,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Just mConn -> do
               let msg = XGrpLinkAcpt role (Just $ memberId' acceptedMember)
               void $ sendDirectMemberMessage mConn msg groupId
-              introduceToRemaining vr user gInfo m
+              introduceToRemaining vr user gInfo acceptedMember
               when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo acceptedMember
             Nothing -> messageError "x.grp.link.acpt error: no active accepted member connection"
 
@@ -2537,7 +2537,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- For now, this branch compensates for the lack of delayed message delivery.
           Left _ -> withStore $ \db -> createNewGroupMember db user gInfo m memInfo GCPostMember GSMemAnnounced
           Right m' -> pure m'
-      withStore' $ \db -> saveMemberInvitation db toMember introInv
+      -- TODO [knocking] separate pending statuses from GroupMemberStatus?
+      -- TODO            add GSMemIntroInvitedPending, GSMemConnectedPending, etc.?
+      -- TODO            keep as is? (GSMemIntroInvited has no purpose)
+      let newMemberStatus = if memberPending toMember then memberStatus toMember else GSMemIntroInvited
+      withStore' $ \db -> saveMemberInvitation db toMember introInv newMemberStatus
       subMode <- chatReadVar subscriptionMode
       -- [incognito] send membership incognito profile, create direct connection as incognito
       let membershipProfile = redactedMemberProfile $ fromLocalProfile $ memberProfile membership

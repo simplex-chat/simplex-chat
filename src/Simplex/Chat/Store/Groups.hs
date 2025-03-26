@@ -1410,8 +1410,8 @@ saveIntroInvitation db reMember toMember introInv@IntroInvitation {groupConnReq}
       (GMIntroInvReceived, groupConnReq, directConnReq introInv, currentTs, introId intro)
   pure intro {introInvitation = Just introInv, introStatus = GMIntroInvReceived}
 
-saveMemberInvitation :: DB.Connection -> GroupMember -> IntroInvitation -> IO ()
-saveMemberInvitation db GroupMember {groupMemberId} IntroInvitation {groupConnReq, directConnReq} = do
+saveMemberInvitation :: DB.Connection -> GroupMember -> IntroInvitation -> GroupMemberStatus -> IO ()
+saveMemberInvitation db GroupMember {groupMemberId} IntroInvitation {groupConnReq, directConnReq} newMemberStatus = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -1423,7 +1423,7 @@ saveMemberInvitation db GroupMember {groupMemberId} IntroInvitation {groupConnRe
           updated_at = ?
       WHERE group_member_id = ?
     |]
-    (GSMemIntroInvited, groupConnReq, directConnReq, currentTs, groupMemberId)
+    (newMemberStatus, groupConnReq, directConnReq, currentTs, groupMemberId)
 
 getIntroduction :: DB.Connection -> GroupMember -> GroupMember -> ExceptT StoreError IO GroupMemberIntro
 getIntroduction db reMember toMember = ExceptT $ do

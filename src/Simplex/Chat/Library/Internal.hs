@@ -985,14 +985,19 @@ introduceToRemaining :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> 
 introduceToRemaining vr user gInfo m = do
   (members, introducedGMIds) <-
     withStore' $ \db -> (,) <$> getGroupMembers db vr user gInfo <*> getIntroducedGroupMemberIds db m
-  let recipients = filter (\mem -> memberCurrent mem && groupMemberId' mem `notElem` introducedGMIds) members
+  let recipients = filter (introduceMemP introducedGMIds) members
   introduceMember vr user gInfo m recipients MSGroup
   when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo m
+  where
+    introduceMemP introducedGMIds mem =
+      memberCurrent mem
+        && groupMemberId' mem `notElem` introducedGMIds
+        && groupMemberId' mem /= groupMemberId' m
 
 introduceMember :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> [GroupMember] -> MsgScope -> CM ()
 introduceMember _ _ _ GroupMember {activeConn = Nothing} _ _ = throwChatError $ CEInternalError "member connection not active"
 introduceMember vr user gInfo@GroupInfo {groupId} m@GroupMember {activeConn = Just conn} introduceToMembers msgScope = do
-  void . sendGroupMessage user gInfo GCSGroup introduceToMembers $ XGrpMemNew (memberInfo m) (Just msgScope)
+  void . sendGroupMessage' user gInfo introduceToMembers $ XGrpMemNew (memberInfo m) (Just msgScope)
   sendIntroductions introduceToMembers
   where
     sendIntroductions members = do
