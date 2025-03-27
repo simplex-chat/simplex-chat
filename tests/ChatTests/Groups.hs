@@ -4595,14 +4595,14 @@ testGroupMsgForwardReport =
           cath <## "#team: alice changed your role from admin to member"
         ]
       cath ##> "/report #team content hi there"
-      cath <# "#team > bob hi there"
+      cath <# "#team <<support>> > bob hi there"
       cath <## "      report content"
       concurrentlyN_
         [ do
-            alice <# "#team cath> > bob hi there"
+            alice <# "#team cath> <<support: cath>> > bob hi there"
             alice <## "      report content",
           do
-            bob <# "#team cath!> > bob hi there [>>]"
+            bob <# "#team cath!> <<support: cath>> > bob hi there [>>]"
             bob <## "      report content [>>]"
         ]
 
@@ -4614,11 +4614,11 @@ testGroupMsgForwardReport =
         ]
 
       cath ##> "/report #team content hi there"
-      cath <# "#team > bob hi there"
+      cath <# "#team <<support>> > bob hi there"
       cath <## "      report content"
       concurrentlyN_
         [ do
-            alice <# "#team cath> > bob hi there"
+            alice <# "#team cath> <<support: cath>> > bob hi there"
             alice <## "      report content",
           (bob </)
         ]
@@ -6627,14 +6627,14 @@ testGroupMemberReports =
           dan <# "#jokes cath> inappropriate joke"
         ]
       dan ##> "/report #jokes content inappropriate joke"
-      dan <# "#jokes > cath inappropriate joke"
+      dan <# "#jokes <<support>> > cath inappropriate joke"
       dan <## "      report content"
       concurrentlyN_
         [ do
-            alice <# "#jokes dan> > cath inappropriate joke"
+            alice <# "#jokes dan> <<support: dan>> > cath inappropriate joke"
             alice <## "      report content",
           do
-            bob <# "#jokes dan> > cath inappropriate joke"
+            bob <# "#jokes dan> <<support: dan>> > cath inappropriate joke"
             bob <## "      report content",
           (cath </)
         ]
@@ -6668,21 +6668,21 @@ testGroupMemberReports =
           dan <# "#jokes cath> ok joke"
         ]
       dan ##> "/report #jokes content ok joke"
-      dan <# "#jokes > cath ok joke"
+      dan <# "#jokes <<support>> > cath ok joke"
       dan <## "      report content"
       dan ##> "/report #jokes spam ok joke"
-      dan <# "#jokes > cath ok joke"
+      dan <# "#jokes <<support>> > cath ok joke"
       dan <## "      report spam"
       concurrentlyN_
         [ do
-            alice <# "#jokes dan> > cath ok joke"
+            alice <# "#jokes dan> <<support: dan>> > cath ok joke"
             alice <## "      report content"
-            alice <# "#jokes dan> > cath ok joke"
+            alice <# "#jokes dan> <<support: dan>> > cath ok joke"
             alice <## "      report spam",
           do
-            bob <# "#jokes dan> > cath ok joke"
+            bob <# "#jokes dan> <<support: dan>> > cath ok joke"
             bob <## "      report content"
-            bob <# "#jokes dan> > cath ok joke"
+            bob <# "#jokes dan> <<support: dan>> > cath ok joke"
             bob <## "      report spam",
           (cath </)
         ]
@@ -6709,14 +6709,14 @@ testGroupMemberReports =
           dan <# "#jokes cath> ok joke 2"
         ]
       dan ##> "/report #jokes content ok joke 2"
-      dan <# "#jokes > cath ok joke 2"
+      dan <# "#jokes <<support>> > cath ok joke 2"
       dan <## "      report content"
       concurrentlyN_
         [ do
-            alice <# "#jokes dan> > cath ok joke 2"
+            alice <# "#jokes dan> <<support: dan>> > cath ok joke 2"
             alice <## "      report content",
           do
-            bob <# "#jokes dan> > cath ok joke 2"
+            bob <# "#jokes dan> <<support: dan>> > cath ok joke 2"
             bob <## "      report content",
           (cath </)
         ]
