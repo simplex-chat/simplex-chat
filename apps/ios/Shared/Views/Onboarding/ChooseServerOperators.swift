@@ -78,26 +78,19 @@ struct OnboardingConditionsView: View {
                     Spacer()
 
                     VStack(alignment: .leading, spacing: 20) {
+                        Text("Private chats, groups and your contacts are not accessible to server operators.")
+                            .lineSpacing(2)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         Text("""
-                        By using SimpleX Chat you agree not to:
-                        
-                        - use the app or preset servers to spam or scam users.
-                        - promote violence in publicly viewable groups.
-                        - share illegal content in publicly viewable groups.
-                        
-                        Private conversations, groups and your connections are not accessible to server operators.
+                        By using SimpleX Chat you agree to:
+                        - send only legal content in public groups.
+                        - respect other users – no spam.
                         """)
-                        .font(.system(size: 17))
                         .lineSpacing(2)
-                        .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                        Button {
+                        Button("Privacy policy and conditions of use.") {
                             sheetItem = .showConditions
-                        } label: {
-                            Text("Privacy policy and conditions of use")
-                                .font(.system(size: 17))
-                                .lineSpacing(2)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -105,7 +98,7 @@ struct OnboardingConditionsView: View {
 
                     Spacer()
 
-                    VStack(spacing: 8) {
+                    VStack(spacing: 12) {
                         acceptConditionsButton()
 
                         Button("Configure server operators") {
