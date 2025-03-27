@@ -100,12 +100,14 @@
         <target>%@ 已认证</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ server" xml:space="preserve">
+      <trans-unit id="%@ server" xml:space="preserve" approved="no">
         <source>%@ server</source>
+        <target state="translated">服务器</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ servers" xml:space="preserve">
+      <trans-unit id="%@ servers" xml:space="preserve" approved="no">
         <source>%@ servers</source>
+        <target state="translated">服务器</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ uploaded" xml:space="preserve">
