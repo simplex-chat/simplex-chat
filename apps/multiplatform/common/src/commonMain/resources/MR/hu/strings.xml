@@ -2106,7 +2106,7 @@
     <string name="or_to_share_privately">Vagy a privát megosztáshoz</string>
     <string name="simplex_address_or_1_time_link">SimpleX-cím vagy egyszer használható meghívó?</string>
     <string name="create_1_time_link">Egyszer használható meghívó létrehozása</string>
-    <string name="onboarding_choose_server_operators">Kiszolgáló-üzemeltetők</string>
+    <string name="onboarding_choose_server_operators">Kiszolgálóüzemeltetők</string>
     <string name="onboarding_network_operators">Hálózatüzemeltetők</string>
     <string name="onboarding_network_operators_app_will_use_different_operators">Az alkalmazás úgy védi az adatait, hogy minden egyes beszélgetéshez más-más üzemeltetőt használ.</string>
     <string name="onboarding_network_operators_app_will_use_for_routing">Például, ha az Ön partnere egy SimpleX Chat-kiszolgálón keresztül fogadja az üzeneteket, az Ön alkalmazása egy Flux-kiszolgálón keresztül fogja azokat kézbesíteni.</string>
@@ -2159,7 +2159,7 @@
     <string name="appearance_bars_blur_radius">Elhomályosítás</string>
     <string name="v6_2_network_decentralization">Hálózati decentralizáció</string>
     <string name="v6_2_network_decentralization_descr">A második előre beállított üzemeltető az alkalmazásban!</string>
-    <string name="v6_2_network_decentralization_enable_flux">Flux engedélyezése</string>
+    <string name="v6_2_network_decentralization_enable_flux">A Flux kiszolgálókat engedélyezheti a beállításokban, a „Hálózat és kiszolgálók” menüben, a jobb metaadat-adatvédelem érdekében.</string>
     <string name="appearance_app_toolbars">Alkalmazás-eszköztárak</string>
     <string name="v6_2_network_decentralization_enable_flux_reason">a metaadatok jobb védelme érdekében.</string>
     <string name="v6_2_improved_chat_navigation">Javított csevegési navigáció</string>
@@ -2340,4 +2340,8 @@
     <string name="unblock_members_desc">A tagok összes üzenete meg fog jelenni!</string>
     <string name="feature_roles_moderators">moderátorok</string>
     <string name="onboarding_conditions_accept">Elfogadás</string>
+    <string name="onboarding_conditions_by_using_you_agree">A SimpleX Chat használatával Ön elfogadja, hogy:\n- csak elfogadott tartalmakat tesz közzé a nyilvános csoportokban.\n- tiszteletben tartja a többi felhasználót, és nem küld kéretlen tartalmat senkinek.</string>
+    <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Adatvédelmi szabályzat és felhasználási feltételek.</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">A privát csevegések, a csoportok és a partnerek nem érhetők el a szerver üzemeltetői számára.</string>
+    <string name="onboarding_conditions_configure_server_operators">Kiszolgálóüzemeltetők beállítása</string>
 </resources>
