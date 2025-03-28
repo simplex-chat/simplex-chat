@@ -688,11 +688,12 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
     plainContent = plain . ciContentToText
     prohibited = styled (colored Red) ("[unexpected chat item created, please report to developers]" :: String)
 
-gcsiDescr :: GroupChatScopeInfo -> Text
-gcsiDescr = \case
-  GCSIGroup -> ""
-  GCSIMemberSupport {groupMember_ = Nothing} -> "<<support>> "
-  GCSIMemberSupport {groupMember_ = Just m} -> "<<support: " <> viewMemberName m <> ">> "
+-- TODO [knocking] change syntax (see comment)
+gcsiDescr :: Maybe GroupChatScopeInfo -> Text
+gcsiDescr = maybe "" $ \case
+  GCSIMemberSupport {groupMember_} -> case groupMember_ of
+    Nothing -> "<<support>> "
+    Just m -> "<<support: " <> viewMemberName m <> ">> "
 
 viewChatItemInfo :: AChatItem -> ChatItemInfo -> TimeZone -> [StyledString]
 viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTimed, createdAt}}) ChatItemInfo {itemVersions, forwardedFromChatItem} tz =

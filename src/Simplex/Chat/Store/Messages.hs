@@ -368,12 +368,12 @@ updateChatTs db User {userId} chatDirection chatTs = case toChatInfo chatDirecti
       db
       "UPDATE contacts SET chat_ts = ?, chat_deleted = 0 WHERE user_id = ? AND contact_id = ?"
       (chatTs, userId, contactId)
-  GroupChat GroupInfo {groupId} GCSIGroup ->
+  GroupChat GroupInfo {groupId} Nothing ->
     DB.execute
       db
       "UPDATE groups SET chat_ts = ? WHERE user_id = ? AND group_id = ?"
       (chatTs, userId, groupId)
-  GroupChat GroupInfo {membership} GCSIMemberSupport {groupMember_} -> do
+  GroupChat GroupInfo {membership} (Just GCSIMemberSupport {groupMember_}) -> do
     let gmId = groupMemberId' $ fromMaybe membership groupMember_
     DB.execute
       db
@@ -461,11 +461,9 @@ createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent q
       CDLocalRcv NoteFolder {noteFolderId} -> (Nothing, Nothing, Nothing, Nothing, Just noteFolderId)
       CDLocalSnd NoteFolder {noteFolderId} -> (Nothing, Nothing, Nothing, Nothing, Just noteFolderId)
       where
-        gsGroupMemberId_ :: GroupInfo -> GroupChatScopeInfo -> Maybe Int64
-        gsGroupMemberId_ GroupInfo {membership} = \case
-          GCSIGroup -> Nothing
-          GCSIMemberSupport {groupMember_ = Just m} -> Just $ groupMemberId' m
-          GCSIMemberSupport {groupMember_ = Nothing} -> Just $ groupMemberId' membership
+        gsGroupMemberId_ :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe Int64
+        gsGroupMemberId_ GroupInfo {membership} = fmap $ \case
+          GCSIMemberSupport {groupMember_ = m} -> groupMemberId' $ fromMaybe membership m
     includeInHistory :: Bool
     includeInHistory =
       let (_, groupId_, gsGroupMemberId_, _, _) = idsRow
@@ -804,7 +802,7 @@ getGroupChatPreview_ db vr user (GroupChatPD _ groupId lastItemId_ stats) = do
   lastItem <- case lastItemId_ of
     Just lastItemId -> (: []) <$> getGroupCIWithReactions db user groupInfo lastItemId
     Nothing -> pure []
-  pure $ AChat SCTGroup (Chat (GroupChat groupInfo GCSIGroup) lastItem stats)
+  pure $ AChat SCTGroup (Chat (GroupChat groupInfo Nothing) lastItem stats)
 
 findLocalChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
 findLocalChatPreviews_ db User {userId} pagination clq =
@@ -1253,15 +1251,13 @@ getGroupChat db vr user groupId groupChatFilter pagination search_ = do
       unless (null search) $ throwError $ SEInternalError "initial chat pagination doesn't support search"
       getGroupChatInitial_ db user g gcsi groupChatFilter count
 
-getGroupChatScopeInfo' :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Maybe GroupChatFilter -> ExceptT StoreError IO GroupChatScopeInfo
+getGroupChatScopeInfo' :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Maybe GroupChatFilter -> ExceptT StoreError IO (Maybe GroupChatScopeInfo)
 getGroupChatScopeInfo' db vr user g = \case
-  Nothing -> pure GCSIGroup
-  Just (GCFMsgContentTag _) -> pure GCSIGroup
   Just (GCFChatScope gcScope) -> getGroupChatScopeInfo_ db vr user g gcScope
+  _ -> pure Nothing
 
-getGroupChatScopeInfo_ :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupChatScope -> ExceptT StoreError IO GroupChatScopeInfo
-getGroupChatScopeInfo_ db vr user GroupInfo {membership} = \case
-  GCSGroup -> pure GCSIGroup
+getGroupChatScopeInfo_ :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Maybe GroupChatScope -> ExceptT StoreError IO (Maybe GroupChatScopeInfo)
+getGroupChatScopeInfo_ db vr user GroupInfo {membership} = mapM $ \case
   GCSMemberSupport Nothing -> case supportChat membership of
     Nothing -> throwError $ SEInternalError "no support chat"
     Just GroupMemberSupportChat {chatTs, unanswered} ->
@@ -1273,7 +1269,7 @@ getGroupChatScopeInfo_ db vr user GroupInfo {membership} = \case
       Just GroupMemberSupportChat {chatTs, unanswered} ->
         pure GCSIMemberSupport {groupMember_ = Just m, chatTs, unanswered}
 
-getGroupChatLast_ :: DB.Connection -> User -> GroupInfo -> GroupChatScopeInfo -> Maybe GroupChatFilter -> Int -> String -> ChatStats -> IO (Chat 'CTGroup)
+getGroupChatLast_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupChatFilter -> Int -> String -> ChatStats -> IO (Chat 'CTGroup)
 getGroupChatLast_ db user g gcsi groupChatFilter count search stats = do
   ciIds <- getGroupChatItemIDs db user g groupChatFilter GRLast count search
   ts <- getCurrentTime
@@ -1285,8 +1281,8 @@ data GroupItemIDsRange = GRLast | GRAfter UTCTime ChatItemId | GRBefore UTCTime 
 getGroupChatItemIDs :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatFilter -> GroupItemIDsRange -> Int -> String -> IO [ChatItemId]
 getGroupChatItemIDs db User {userId} GroupInfo {groupId, membership} groupChatFilter range count search = case groupChatFilter of
   Nothing -> idsQuery (baseCond <> " AND group_scope_group_member_id IS NULL ") (userId, groupId)
-  Just (GCFChatScope GCSGroup) -> idsQuery (baseCond <> " AND group_scope_group_member_id IS NULL ") (userId, groupId)
-  Just (GCFChatScope (GCSMemberSupport gmId_)) ->
+  Just (GCFChatScope Nothing) -> idsQuery (baseCond <> " AND group_scope_group_member_id IS NULL ") (userId, groupId)
+  Just (GCFChatScope (Just (GCSMemberSupport gmId_))) ->
     let gmId = fromMaybe (groupMemberId' membership) gmId_
      in idsQuery (baseCond <> " AND group_scope_group_member_id = ? ") (userId, groupId, gmId)
   Just (GCFMsgContentTag mcTag) -> idsQuery (baseCond <> " AND msg_content_tag = ? ") (userId, groupId, mcTag)
@@ -1318,12 +1314,12 @@ getGroupChatItemIDs db User {userId} GroupInfo {groupId, membership} groupChatFi
         searchQuery c' p' =
           map fromOnly <$> DB.query db (baseQuery <> c <> c' <> ob <> " LIMIT ?") (p :. p' :. Only count)
 
-safeGetGroupItem :: DB.Connection -> User -> GroupInfo -> GroupChatScopeInfo -> UTCTime -> ChatItemId -> IO (CChatItem 'CTGroup)
+safeGetGroupItem :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> UTCTime -> ChatItemId -> IO (CChatItem 'CTGroup)
 safeGetGroupItem db user g gcsi currentTs itemId =
   runExceptT (getGroupCIWithReactions db user g itemId)
     >>= pure <$> safeToGroupItem gcsi currentTs itemId
 
-safeToGroupItem :: GroupChatScopeInfo -> UTCTime -> ChatItemId -> Either StoreError (CChatItem 'CTGroup) -> CChatItem 'CTGroup
+safeToGroupItem :: Maybe GroupChatScopeInfo -> UTCTime -> ChatItemId -> Either StoreError (CChatItem 'CTGroup) -> CChatItem 'CTGroup
 safeToGroupItem gcsi currentTs itemId = \case
   Right ci -> ci
   Left e@(SEBadChatItem _ (Just itemTs)) -> badGroupItem itemTs e
@@ -1361,7 +1357,7 @@ getGroupMemberChatItemLast db user@User {userId} groupId groupMemberId = do
         (userId, groupId, groupMemberId)
   getGroupChatItem db user groupId chatItemId
 
-getGroupChatAfter_ :: DB.Connection -> User -> GroupInfo -> GroupChatScopeInfo -> Maybe GroupChatFilter -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
+getGroupChatAfter_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupChatFilter -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChatAfter_ db user g@GroupInfo {groupId} gcsi groupChatFilter afterId count search = do
   afterCI <- getGroupChatItem db user groupId afterId
   let range = GRAfter (chatItemTs afterCI) (cChatItemId afterCI)
@@ -1370,7 +1366,7 @@ getGroupChatAfter_ db user g@GroupInfo {groupId} gcsi groupChatFilter afterId co
   cis <- liftIO $ mapM (safeGetGroupItem db user g gcsi ts) ciIds
   pure $ Chat (GroupChat g gcsi) cis emptyChatStats
 
-getGroupChatBefore_ :: DB.Connection -> User -> GroupInfo -> GroupChatScopeInfo -> Maybe GroupChatFilter -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
+getGroupChatBefore_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupChatFilter -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChatBefore_ db user g@GroupInfo {groupId} gcsi groupChatFilter beforeId count search = do
   beforeCI <- getGroupChatItem db user groupId beforeId
   let range = GRBefore (chatItemTs beforeCI) (cChatItemId beforeCI)
@@ -1379,12 +1375,12 @@ getGroupChatBefore_ db user g@GroupInfo {groupId} gcsi groupChatFilter beforeId 
   cis <- liftIO $ mapM (safeGetGroupItem db user g gcsi ts) ciIds
   pure $ Chat (GroupChat g gcsi) (reverse cis) emptyChatStats
 
-getGroupChatAround_ :: DB.Connection -> User -> GroupInfo -> GroupChatScopeInfo -> Maybe GroupChatFilter -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
+getGroupChatAround_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupChatFilter -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
 getGroupChatAround_ db user g gcsi groupChatFilter aroundId count search = do
   stats <- liftIO $ getGroupStats_ db user g
   getGroupChatAround' db user g gcsi groupChatFilter aroundId count search stats
 
-getGroupChatAround' :: DB.Connection -> User -> GroupInfo -> GroupChatScopeInfo -> Maybe GroupChatFilter -> ChatItemId -> Int -> String -> ChatStats -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
+getGroupChatAround' :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupChatFilter -> ChatItemId -> Int -> String -> ChatStats -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
 getGroupChatAround' db user g gcsi groupChatFilter aroundId count search stats = do
   aroundCI <- getGroupCIWithReactions db user g aroundId
   let beforeRange = GRBefore (chatItemTs aroundCI) (cChatItemId aroundCI)
@@ -1402,7 +1398,7 @@ getGroupChatAround' db user g gcsi groupChatFilter aroundId count search stats =
       [] -> pure $ NavigationInfo 0 0
       cis -> getGroupNavInfo_ db user g (last cis)
 
-getGroupChatInitial_ :: DB.Connection -> User -> GroupInfo -> GroupChatScopeInfo -> Maybe GroupChatFilter -> Int -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
+getGroupChatInitial_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupChatFilter -> Int -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
 getGroupChatInitial_ db user g gcsi groupChatFilter count = do
   liftIO (getGroupMinUnreadId_ db user g groupChatFilter) >>= \case
     Just minUnreadItemId -> do
@@ -1449,8 +1445,8 @@ queryUnreadGroupItems :: FromRow r => DB.Connection -> User -> GroupInfo -> Mayb
 queryUnreadGroupItems db User {userId} GroupInfo {groupId, membership} groupChatFilter baseQuery orderLimit =
   case groupChatFilter of
     Nothing -> noAddFilterQuery
-    Just (GCFChatScope GCSGroup) -> noAddFilterQuery
-    Just (GCFChatScope (GCSMemberSupport gmId_)) -> do
+    Just (GCFChatScope Nothing) -> noAddFilterQuery
+    Just (GCFChatScope (Just (GCSMemberSupport gmId_))) -> do
       let gmId = fromMaybe (groupMemberId' membership) gmId_
       DB.query
         db
@@ -1741,11 +1737,11 @@ getLocalNavInfo_ db User {userId} NoteFolder {noteFolderId} afterCI = do
 
 toChatItemRef :: (ChatItemId, Maybe Int64, Maybe Int64, Maybe Int64) -> Either StoreError (ChatRef, ChatItemId)
 toChatItemRef = \case
-  (itemId, Just contactId, Nothing, Nothing) -> Right (ChatRef CRTDirect contactId, itemId)
+  (itemId, Just contactId, Nothing, Nothing) -> Right (ChatRef CTDirect contactId Nothing, itemId)
   -- For "chat item refs" we don't care about scope, as they are only used for getting item by id (via getAChatItem).
   -- To get the scope without joining group_members, we could additionally store group scope "tag" to differentiate member support chats.
-  (itemId, Nothing, Just groupId, Nothing) -> Right (ChatRef (CRTGroup GCSGroup) groupId, itemId)
-  (itemId, Nothing, Nothing, Just folderId) -> Right (ChatRef CRTLocal folderId, itemId)
+  (itemId, Nothing, Just groupId, Nothing) -> Right (ChatRef CTGroup groupId Nothing, itemId)
+  (itemId, Nothing, Nothing, Just folderId) -> Right (ChatRef CTLocal folderId Nothing, itemId)
   (itemId, _, _, _) -> Left $ SEBadChatItem itemId Nothing
 
 updateDirectChatItemsRead :: DB.Connection -> User -> ContactId -> IO ()
@@ -1998,11 +1994,11 @@ toGroupChatItem
       deletedByGroupMember_ = toMaybeGroupMember userContactId deletedByGroupMemberRow_
       invalid = ACIContent msgDir $ CIInvalidJSON itemContentText
       gcsi_ = case gcsiMember_ of
-        Nothing -> Right GCSIGroup
+        Nothing -> Right Nothing
         Just GroupMember {memberCategory = GCUserMember, supportChat = Just GroupMemberSupportChat {chatTs, unanswered}} ->
-          Right $ GCSIMemberSupport {groupMember_ = Nothing, chatTs, unanswered}
+          Right $ Just GCSIMemberSupport {groupMember_ = Nothing, chatTs, unanswered}
         Just m@GroupMember {supportChat = Just GroupMemberSupportChat {chatTs, unanswered}} ->
-          Right $ GCSIMemberSupport {groupMember_ = Just m, chatTs, unanswered}
+          Right $ Just GCSIMemberSupport {groupMember_ = Just m, chatTs, unanswered}
         _ -> Left ()
       chatItem itemContent = case (itemContent, itemStatus, member_, fileStatus_, gcsi_) of
         (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, _, Just (AFS SMDSnd fileStatus), Right gcsi) ->
@@ -2884,26 +2880,26 @@ getChatRefViaItemId db User {userId} itemId = do
     DB.query db "SELECT contact_id, group_id FROM chat_items WHERE user_id = ? AND chat_item_id = ?" (userId, itemId)
   where
     toChatRef = \case
-      (Just contactId, Nothing) -> Right $ ChatRef CRTDirect contactId
+      (Just contactId, Nothing) -> Right $ ChatRef CTDirect contactId Nothing
       -- Only used in CLI and unused APIs
-      (Nothing, Just groupId) -> Right $ ChatRef (CRTGroup GCSGroup) groupId
+      (Nothing, Just groupId) -> Right $ ChatRef CTGroup groupId Nothing
       (_, _) -> Left $ SEBadChatItem itemId Nothing
 
 getAChatItem :: DB.Connection -> VersionRangeChat -> User -> ChatRef -> ChatItemId -> ExceptT StoreError IO AChatItem
-getAChatItem db vr user chatRef itemId = do
-  aci <- case chatRef of
-    ChatRef CRTDirect contactId -> do
-      ct <- getContact db vr user contactId
-      (CChatItem msgDir ci) <- getDirectChatItem db user contactId itemId
+getAChatItem db vr user (ChatRef cType chatId _) itemId = do
+  aci <- case cType of
+    CTDirect -> do
+      ct <- getContact db vr user chatId
+      (CChatItem msgDir ci) <- getDirectChatItem db user chatId itemId
       pure $ AChatItem SCTDirect msgDir (DirectChat ct) ci
-    ChatRef (CRTGroup _gcs) groupId -> do
-      gInfo <- getGroupInfo db vr user groupId
-      (CChatItem msgDir ci) <- getGroupChatItem db user groupId itemId
+    CTGroup -> do
+      gInfo <- getGroupInfo db vr user chatId
+      (CChatItem msgDir ci) <- getGroupChatItem db user chatId itemId
       let gcsi = groupCIDirectionScopeInfo ci
       pure $ AChatItem SCTGroup msgDir (GroupChat gInfo gcsi) ci
-    ChatRef CRTLocal folderId -> do
-      nf <- getNoteFolder db user folderId
-      CChatItem msgDir ci <- getLocalChatItem db user folderId itemId
+    CTLocal -> do
+      nf <- getNoteFolder db user chatId
+      CChatItem msgDir ci <- getLocalChatItem db user chatId itemId
       pure $ AChatItem SCTLocal msgDir (LocalChat nf) ci
     _ -> throwError $ SEChatItemNotFound itemId
   liftIO $ getACIReactions db aci
@@ -3117,9 +3113,9 @@ getTimedItems db User {userId} startTimedThreadCutoff =
   where
     toCIRefDeleteAt :: (ChatItemId, Maybe ContactId, Maybe GroupId, UTCTime) -> Maybe ((ChatRef, ChatItemId), UTCTime)
     toCIRefDeleteAt = \case
-      (itemId, Just contactId, Nothing, deleteAt) -> Just ((ChatRef CRTDirect contactId, itemId), deleteAt)
+      (itemId, Just contactId, Nothing, deleteAt) -> Just ((ChatRef CTDirect contactId Nothing, itemId), deleteAt)
       -- Scope isn't required in time items deletion; for response scope is present in chat items themselves
-      (itemId, Nothing, Just groupId, deleteAt) -> Just ((ChatRef (CRTGroup GCSGroup) groupId, itemId), deleteAt)
+      (itemId, Nothing, Just groupId, deleteAt) -> Just ((ChatRef CTGroup groupId Nothing, itemId), deleteAt)
       _ -> Nothing
 
 getChatItemTTL :: DB.Connection -> User -> IO Int64

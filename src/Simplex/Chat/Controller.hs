@@ -908,17 +908,17 @@ logResponseToFile = \case
 
 data SendRef
   = SRDirect ContactId
-  | SRGroup GroupId GroupChatScope
+  | SRGroup GroupId (Maybe GroupChatScope)
   deriving (Eq, Show)
 
 sendToChatRef :: SendRef -> ChatRef
 sendToChatRef = \case
-  SRDirect cId -> ChatRef CRTDirect cId
-  SRGroup gId gcs -> ChatRef (CRTGroup gcs) gId
+  SRDirect cId -> ChatRef CTDirect cId Nothing
+  SRGroup gId gcs -> ChatRef CTGroup gId gcs
 
 data GroupChatFilter
   = GCFMsgContentTag MsgContentTag
-  | GCFChatScope GroupChatScope
+  | GCFChatScope (Maybe GroupChatScope)
   deriving (Show)
 
 data ChatPagination

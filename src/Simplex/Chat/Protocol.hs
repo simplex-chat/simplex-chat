@@ -249,11 +249,10 @@ instance ToJSON SharedMsgId where
   toEncoding = strToJEncoding
 
 data MsgScope
-  = MSGroup
-  | MSMember {memberId :: MemberId} -- Admins can use any member id; members can use only their own id
+  = MSMember {memberId :: MemberId} -- Admins can use any member id; members can use only their own id
   deriving (Eq, Show)
 
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "MS") ''MsgScope)
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "MS") ''MsgScope)
 
 $(JQ.deriveJSON defaultJSON ''AppMessageJson)
 

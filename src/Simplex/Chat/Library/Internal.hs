@@ -190,13 +190,13 @@ toggleNtf user m ntfOn =
     forM_ (memberConnId m) $ \connId ->
       withAgent (\a -> toggleConnectionNtfs a connId ntfOn) `catchChatError` (toView . CRChatError (Just user))
 
-prepareGroupMsg :: DB.Connection -> User -> GroupInfo -> MsgScope -> MsgContent -> Map MemberName MsgMention -> Maybe ChatItemId -> Maybe CIForwardedFrom -> Maybe FileInvitation -> Maybe CITimed -> Bool -> ExceptT StoreError IO (ChatMsgEvent 'Json, Maybe (CIQuote 'CTGroup))
+prepareGroupMsg :: DB.Connection -> User -> GroupInfo -> Maybe MsgScope -> MsgContent -> Map MemberName MsgMention -> Maybe ChatItemId -> Maybe CIForwardedFrom -> Maybe FileInvitation -> Maybe CITimed -> Bool -> ExceptT StoreError IO (ChatMsgEvent 'Json, Maybe (CIQuote 'CTGroup))
 prepareGroupMsg db user g@GroupInfo {membership} msgScope mc mentions quotedItemId_ itemForwarded fInv_ timed_ live = case (quotedItemId_, itemForwarded) of
   (Nothing, Nothing) ->
-    let mc' = MCSimple $ ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live) (Just msgScope)
+    let mc' = MCSimple $ ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live) msgScope
      in pure (XMsgNew mc', Nothing)
   (Nothing, Just _) ->
-    let mc' = MCForward $ ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live) (Just msgScope)
+    let mc' = MCForward $ ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live) msgScope
      in pure (XMsgNew mc', Nothing)
   (Just quotedItemId, Nothing) -> do
     CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, mentions = quoteMentions, file} <-
@@ -206,15 +206,15 @@ prepareGroupMsg db user g@GroupInfo {membership} msgScope mc mentions quotedItem
         qmc = quoteContent mc origQmc file
         (qmc', ft', _) = updatedMentionNames qmc formattedText quoteMentions
         quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc', formattedText = ft'}
-        mc' = MCQuote QuotedMsg {msgRef, content = qmc'} (ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live) (Just msgScope))
+        mc' = MCQuote QuotedMsg {msgRef, content = qmc'} (ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live) msgScope)
     pure (XMsgNew mc', Just quotedItem)
   (Just _, Just _) -> throwError SEInvalidQuote
   where
     quoteData :: ChatItem c d -> GroupMember -> ExceptT StoreError IO (MsgContent, CIQDirection 'CTGroup, Bool, GroupMember)
     quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} _ = throwError SEInvalidQuote
     -- TODO [knocking] scope for quotes? see Messages.hs
-    quoteData ChatItem {chatDir = CIGroupSnd GCSIGroup, content = CISndMsgContent qmc} membership' = pure (qmc, CIQGroupSnd, True, membership')
-    quoteData ChatItem {chatDir = CIGroupRcv GCSIGroup m, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv $ Just m, False, m)
+    quoteData ChatItem {chatDir = CIGroupSnd Nothing, content = CISndMsgContent qmc} membership' = pure (qmc, CIQGroupSnd, True, membership')
+    quoteData ChatItem {chatDir = CIGroupRcv Nothing m, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv $ Just m, False, m)
     quoteData _ _ = throwError SEInvalidQuote
 
 updatedMentionNames :: MsgContent -> Maybe MarkdownList -> Map MemberName CIMention -> (MsgContent, Maybe MarkdownList, Map MemberName CIMention)
@@ -566,7 +566,7 @@ updateCallItemStatus user ct@Contact {contactId} Call {chatItemId} receivedStatu
     timed_ <- callTimed ct aciContent
     updateDirectChatItemView user ct chatItemId aciContent False False timed_ msgId_
     forM_ (timed_ >>= timedDeleteAt') $
-      startProximateTimedItemThread user (ChatRef CRTDirect contactId, chatItemId)
+      startProximateTimedItemThread user (ChatRef CTDirect contactId Nothing, chatItemId)
 
 updateDirectChatItemView :: User -> Contact -> ChatItemId -> ACIContent -> Bool -> Bool -> Maybe CITimed -> Maybe MessageId -> CM ()
 updateDirectChatItemView user ct chatItemId (ACIContent msgDir ciContent) edited live timed_ msgId_ = do
@@ -655,10 +655,10 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
     _ -> do
       chatRef <- withStore $ \db -> getChatRefByFileId db user fileId
       case (chatRef, grpMemberId) of
-        (ChatRef CRTDirect contactId, Nothing) -> do
+        (ChatRef CTDirect contactId _, Nothing) -> do
           ct <- withStore $ \db -> getContact db vr user contactId
           acceptFile CFCreateConnFileInvDirect $ \msg -> void $ sendDirectContactMessage user ct msg
-        (ChatRef (CRTGroup _gcs) groupId, Just memId) -> do
+        (ChatRef CTGroup groupId _, Just memId) -> do
           GroupMember {activeConn} <- withStore $ \db -> getGroupMember db vr user groupId memId
           case activeConn of
             Just conn -> do
@@ -952,7 +952,7 @@ acceptBusinessJoinRequestAsync
     let chatV = vr `peerConnChatVersion` cReqChatVRange
     connIds <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
     withStore' $ \db -> createJoiningMemberConnection db user connIds chatV ucr groupMemberId subMode
-    let cd = CDGroupSnd gInfo GCSIGroup
+    let cd = CDGroupSnd gInfo Nothing
     createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
     createGroupFeatureItems user cd CISndGroupFeature gInfo
     pure gInfo
@@ -972,30 +972,30 @@ introduceToModerators :: VersionRangeChat -> User -> GroupInfo -> GroupMember ->
 introduceToModerators vr user gInfo m = do
   modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
   let rcpModMs = filter memberCurrent modMs
-  introduceMember vr user gInfo m rcpModMs (MSMember $ memberId' m)
+  introduceMember vr user gInfo m rcpModMs (Just $ MSMember $ memberId' m)
 
 introduceToAll :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceToAll vr user gInfo m = do
   members <- withStore' $ \db -> getGroupMembers db vr user gInfo
   let recipients = filter memberCurrent members
-  introduceMember vr user gInfo m recipients MSGroup
+  introduceMember vr user gInfo m recipients Nothing
 
 introduceToRemaining :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceToRemaining vr user gInfo m = do
   (members, introducedGMIds) <-
     withStore' $ \db -> (,) <$> getGroupMembers db vr user gInfo <*> getIntroducedGroupMemberIds db m
   let recipients = filter (introduceMemP introducedGMIds) members
-  introduceMember vr user gInfo m recipients MSGroup
+  introduceMember vr user gInfo m recipients Nothing
   where
     introduceMemP introducedGMIds mem =
       memberCurrent mem
         && groupMemberId' mem `notElem` introducedGMIds
         && groupMemberId' mem /= groupMemberId' m
 
-introduceMember :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> [GroupMember] -> MsgScope -> CM ()
+introduceMember :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> [GroupMember] -> Maybe MsgScope -> CM ()
 introduceMember _ _ _ GroupMember {activeConn = Nothing} _ _ = throwChatError $ CEInternalError "member connection not active"
 introduceMember vr user gInfo@GroupInfo {groupId} m@GroupMember {activeConn = Just conn} introduceToMembers msgScope = do
-  void . sendGroupMessage' user gInfo introduceToMembers $ XGrpMemNew (memberInfo m) (Just msgScope)
+  void . sendGroupMessage' user gInfo introduceToMembers $ XGrpMemNew (memberInfo m) msgScope
   sendIntroductions introduceToMembers
   where
     sendIntroductions members = do
@@ -1096,7 +1096,7 @@ sendHistory user gInfo@GroupInfo {groupId, membership} m@GroupMember {activeConn
                   (mc', _, mentions') = updatedMentionNames mc formattedText mentions
                   mentions'' = M.map (\CIMention {memberId} -> MsgMention {memberId}) mentions'
               -- TODO [knocking] send history to other scopes too?
-              (chatMsgEvent, _) <- withStore $ \db -> prepareGroupMsg db user gInfo MSGroup mc' mentions'' quotedItemId_ Nothing fInv_ itemTimed False
+              (chatMsgEvent, _) <- withStore $ \db -> prepareGroupMsg db user gInfo Nothing mc' mentions'' quotedItemId_ Nothing fInv_ itemTimed False
               let senderVRange = memberChatVRange' sender
                   xMsgNewChatMsg = ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent}
               fileDescrEvents <- case (snd <$> fInvDescr_, itemSharedMsgId) of
@@ -1161,16 +1161,16 @@ startTimedItemThread user itemRef deleteAt = do
     atomically $ writeTVar threadTVar (Just tId)
 
 deleteTimedItem :: User -> (ChatRef, ChatItemId) -> UTCTime -> CM ()
-deleteTimedItem user (ChatRef cType chatId, itemId) deleteAt = do
+deleteTimedItem user (ChatRef cType chatId _, itemId) deleteAt = do
   ts <- liftIO getCurrentTime
   liftIO $ threadDelay' $ diffToMicroseconds $ diffUTCTime deleteAt ts
   lift waitChatStartedAndActivated
   vr <- chatVersionRange
   case cType of
-    CRTDirect -> do
+    CTDirect -> do
       (ct, ci) <- withStore $ \db -> (,) <$> getContact db vr user chatId <*> getDirectChatItem db user chatId itemId
       deleteDirectCIs user ct [ci] True True >>= toView
-    CRTGroup _gcs -> do
+    CTGroup -> do
       (gInfo, ci) <- withStore $ \db -> (,) <$> getGroupInfo db vr user chatId <*> getGroupChatItem db user chatId itemId
       deletedTs <- liftIO getCurrentTime
       deleteGroupCIs user gInfo [ci] True True Nothing deletedTs >>= toView
@@ -1288,16 +1288,16 @@ parseChatMessage conn s = do
     errType = CEInvalidChatMessage conn Nothing (safeDecodeUtf8 s)
 {-# INLINE parseChatMessage #-}
 
-getLocalGCSI :: GroupInfo -> IO GroupChatScopeInfo
+getLocalGCSI :: GroupInfo -> IO (Maybe GroupChatScopeInfo)
 getLocalGCSI GroupInfo {membership}
-  | memberPending membership = memberSupportGCSI membership Nothing
-  | otherwise = pure GCSIGroup
+  | memberPending membership = Just <$> memberSupportGCSI membership Nothing
+  | otherwise = pure Nothing
 
-getNonMsgGCSI :: GroupInfo -> GroupMember -> IO GroupChatScopeInfo
+getNonMsgGCSI :: GroupInfo -> GroupMember -> IO (Maybe GroupChatScopeInfo)
 getNonMsgGCSI GroupInfo {membership} m
-  | memberPending membership = memberSupportGCSI membership Nothing
-  | memberPending m = memberSupportGCSI m (Just m)
-  | otherwise = pure GCSIGroup
+  | memberPending membership = Just <$> memberSupportGCSI membership Nothing
+  | memberPending m = Just <$> memberSupportGCSI m (Just m)
+  | otherwise = pure Nothing
 
 -- convenience function to correct GCSIMemberSupport `scope` state (to be passed to UI)
 -- in case "member support chat" is new and wasn't present in member/membership state
@@ -1661,7 +1661,7 @@ deliverMessagesB msgReqs = do
       where
         updatePQ = updateConnPQSndEnabled db connId pqSndEnabled'
 
-sendGroupMessage :: MsgEncodingI e => User -> GroupInfo -> GroupChatScope -> [GroupMember] -> ChatMsgEvent e -> CM SndMessage
+sendGroupMessage :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> [GroupMember] -> ChatMsgEvent e -> CM SndMessage
 sendGroupMessage user gInfo gcScope members chatMsgEvent = do
   sendGroupMessages user gInfo gcScope members (chatMsgEvent :| []) >>= \case
     ((Right msg) :| [], _) -> pure msg
@@ -1673,7 +1673,7 @@ sendGroupMessage' user gInfo members chatMsgEvent =
     ((Right msg) :| [], _) -> pure msg
     _ -> throwChatError $ CEInternalError "sendGroupMessage': expected 1 message"
 
-sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> GroupChatScope -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
+sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
 sendGroupMessages user gInfo gcs members events = do
   -- TODO [knocking] send current profile to pending member after approval?
   when shouldSendProfileUpdate $
@@ -1683,7 +1683,7 @@ sendGroupMessages user gInfo gcs members events = do
     User {profile = p, userMemberProfileUpdatedAt} = user
     GroupInfo {userMemberProfileSentAt} = gInfo
     shouldSendProfileUpdate
-      | gcs /= GCSGroup = False
+      | isJust gcs = False -- why not sending profile updates to scopes?
       | incognitoMembership gInfo = False
       | otherwise =
           case (userMemberProfileSentAt, userMemberProfileUpdatedAt) of

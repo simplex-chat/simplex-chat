@@ -504,22 +504,22 @@ processChatCommand' vr = \case
     (errs, previews) <- partitionEithers <$> withFastStore' (\db -> getChatPreviews db vr user pendingConnections pagination query)
     unless (null errs) $ toView $ CRChatErrors (Just user) (map ChatErrorStore errs)
     pure $ CRApiChats user previews
-  APIGetChat (ChatRef cType cId) groupChatFilter pagination search -> withUser $ \user -> case cType of
+  APIGetChat (ChatRef cType cId _gcs) groupChatFilter pagination search -> withUser $ \user -> case cType of
     -- TODO optimize queries calculating ChatStats, currently they're disabled
-    CRTDirect -> do
+    CTDirect -> do
       when (isJust groupChatFilter) $ throwChatError $ CECommandError "group chat filter not supported"
       (directChat, navInfo) <- withFastStore (\db -> getDirectChat db vr user cId pagination search)
       pure $ CRApiChat user (AChat SCTDirect directChat) navInfo
-    -- TODO [knocking] review - scope redundant with groupChatFilter
-    CRTGroup _gcs -> do
+    -- TODO [knocking] review - scope redundant with groupChatFilter - remove filter, use scope
+    CTGroup -> do
       (groupChat, navInfo) <- withFastStore (\db -> getGroupChat db vr user cId groupChatFilter pagination search)
       pure $ CRApiChat user (AChat SCTGroup groupChat) navInfo
-    CRTLocal -> do
+    CTLocal -> do
       when (isJust groupChatFilter) $ throwChatError $ CECommandError "group chat filter not supported"
       (localChat, navInfo) <- withFastStore (\db -> getLocalChat db user cId pagination search)
       pure $ CRApiChat user (AChat SCTLocal localChat) navInfo
-    CRTContactRequest -> pure $ chatCmdError (Just user) "not implemented"
-    CRTContactConnection -> pure $ chatCmdError (Just user) "not supported"
+    CTContactRequest -> pure $ chatCmdError (Just user) "not implemented"
+    CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APIGetChatItems pagination search -> withUser $ \user -> do
     chatItems <- withFastStore $ \db -> getAllChatItems db vr user pagination search
     pure $ CRChatItems user Nothing chatItems
@@ -536,10 +536,10 @@ processChatCommand' vr = \case
       getForwardedFromItem :: User -> ChatItem c d -> CM (Maybe AChatItem)
       getForwardedFromItem user ChatItem {meta = CIMeta {itemForwarded}} = case itemForwarded of
         Just (CIFFContact _ _ (Just ctId) (Just fwdItemId)) ->
-          Just <$> withFastStore (\db -> getAChatItem db vr user (ChatRef CRTDirect ctId) fwdItemId)
+          Just <$> withFastStore (\db -> getAChatItem db vr user (ChatRef CTDirect ctId Nothing) fwdItemId)
         Just (CIFFGroup _ _ (Just gId) (Just fwdItemId)) ->
-          -- getAChatItem doesn't differentiate how to read based on scope
-          Just <$> withFastStore (\db -> getAChatItem db vr user (ChatRef (CRTGroup GCSGroup) gId) fwdItemId)
+          -- TODO [knocking] getAChatItem doesn't differentiate how to read based on scope - it should, instead of using groupfilter
+          Just <$> withFastStore (\db -> getAChatItem db vr user (ChatRef CTGroup gId Nothing) fwdItemId)
         _ -> pure Nothing
   APISendMessages sendRef live itemTTL cms -> withUser $ \user -> mapM_ assertAllowedContent' cms >> case sendRef of
     SRDirect chatId -> do
@@ -555,11 +555,11 @@ processChatCommand' vr = \case
   APICreateChatTag (ChatTagData emoji text) -> withUser $ \user -> withFastStore' $ \db -> do
     _ <- createChatTag db user emoji text
     CRChatTags user <$> getUserChatTags db user
-  APISetChatTags (ChatRef cType chatId) tagIds -> withUser $ \user -> withFastStore' $ \db -> case cType of
-    CRTDirect -> do
+  APISetChatTags (ChatRef cType chatId scope) tagIds -> withUser $ \user -> withFastStore' $ \db -> case cType of
+    CTDirect -> do
       updateDirectChatTags db chatId (maybe [] L.toList tagIds)
       CRTagsUpdated user <$> getUserChatTags db user <*> getDirectChatTags db chatId
-    CRTGroup GCSGroup -> do
+    CTGroup | isNothing scope -> do
       updateGroupChatTags db chatId (maybe [] L.toList tagIds)
       CRTagsUpdated user <$> getUserChatTags db user <*> getGroupChatTags db chatId
     _ -> pure $ chatCmdError (Just user) "not supported"
@@ -580,13 +580,14 @@ processChatCommand' vr = \case
       gInfo <- withFastStore $ \db -> getGroupInfo db vr user gId
       let mc = MCReport reportText reportReason
           cm = ComposedMessage {fileSource = Nothing, quotedItemId = Just reportedItemId, msgContent = mc, mentions = M.empty}
-      sendGroupContentMessages user gInfo (GCSMemberSupport Nothing) False Nothing [composedMessageReq cm]
+      -- TODO [knocking] reports sent to support scope may be wrong
+      sendGroupContentMessages user gInfo (Just $ GCSMemberSupport Nothing) False Nothing [composedMessageReq cm]
   ReportMessage {groupName, contactName_, reportReason, reportedMessage} -> withUser $ \user -> do
     gId <- withFastStore $ \db -> getGroupIdByName db user groupName
     reportedItemId <- withFastStore $ \db -> getGroupChatItemIdByText db user gId contactName_ reportedMessage
     processChatCommand $ APIReportMessage gId reportedItemId reportReason ""
-  APIUpdateChatItem (ChatRef cType chatId) itemId live (UpdatedMessage mc mentions) -> withUser $ \user -> assertAllowedContent mc >> case cType of
-    CRTDirect -> withContactLock "updateChatItem" chatId $ do
+  APIUpdateChatItem (ChatRef cType chatId scope) itemId live (UpdatedMessage mc mentions) -> withUser $ \user -> assertAllowedContent mc >> case cType of
+    CTDirect -> withContactLock "updateChatItem" chatId $ do
       unless (null mentions) $ throwChatError $ CECommandError "mentions are not supported in this chat"
       ct@Contact {contactId} <- withFastStore $ \db -> getContact db vr user chatId
       assertDirectAllowed user MDSnd ct XMsgUpdate_
@@ -606,14 +607,14 @@ processChatCommand' vr = \case
                       addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
                     let edited = itemLive /= Just True
                     updateDirectChatItem' db user contactId ci (CISndMsgContent mc) edited live Nothing $ Just msgId
-                  startUpdatedTimedItemThread user (ChatRef CRTDirect contactId) ci ci'
+                  startUpdatedTimedItemThread user (ChatRef CTDirect contactId Nothing) ci ci'
                   pure $ CRChatItemUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci')
                 else pure $ CRChatItemNotChanged user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
             _ -> throwChatError CEInvalidChatItemUpdate
         CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
-    CRTGroup gcs -> withGroupLock "updateChatItem" chatId $ do
+    CTGroup -> withGroupLock "updateChatItem" chatId $ do
       gInfo@GroupInfo {groupId, membership} <- withFastStore $ \db -> getGroupInfo db vr user chatId
-      when (gcs == GCSGroup) $ assertUserGroupRole gInfo GRAuthor
+      when (isNothing scope) $ assertUserGroupRole gInfo GRAuthor
       let (_, ft_) = msgContentTexts mc
       if prohibitedSimplexLinks gInfo membership ft_
         then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText GFSimplexLinks))
@@ -622,15 +623,15 @@ processChatCommand' vr = \case
           case cci of
             CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent} -> do
               case (ciContent, itemSharedMsgId, editable) of
-                (CISndMsgContent oldMC, Just itemSharedMId, True) | groupCIDirectionScope ci == gcs -> do
-                  (gcsi, msgScope, recipients, _) <- getGCSDependencies vr user gInfo gcs groupKnockingVersion
+                (CISndMsgContent oldMC, Just itemSharedMId, True) | groupCIDirectionScope ci == scope -> do
+                  (chatScope, msgScope, recipients, _) <- getGCSDependencies vr user gInfo scope groupKnockingVersion
                   let changed = mc /= oldMC
                   if changed || fromMaybe False itemLive
                     then do
                       ciMentions <- withFastStore $ \db -> getCIMentions db user gInfo ft_ mentions
                       let mentions' = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
-                          event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) (Just msgScope)
-                      SndMessage {msgId} <- sendGroupMessage user gInfo gcs recipients event
+                          event = XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive) msgScope
+                      SndMessage {msgId} <- sendGroupMessage user gInfo scope recipients event
                       ci' <- withFastStore' $ \db -> do
                         currentTs <- liftIO getCurrentTime
                         when changed $
@@ -638,12 +639,12 @@ processChatCommand' vr = \case
                         let edited = itemLive /= Just True
                         ci' <- updateGroupChatItem db user groupId ci (CISndMsgContent mc) edited live $ Just msgId
                         updateGroupCIMentions db gInfo ci' ciMentions
-                      startUpdatedTimedItemThread user (ChatRef (CRTGroup gcs) groupId) ci ci'
-                      pure $ CRChatItemUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo gcsi) ci')
-                    else pure $ CRChatItemNotChanged user (AChatItem SCTGroup SMDSnd (GroupChat gInfo gcsi) ci)
+                      startUpdatedTimedItemThread user (ChatRef CTGroup groupId scope) ci ci'
+                      pure $ CRChatItemUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScope) ci')
+                    else pure $ CRChatItemNotChanged user (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScope) ci)
                 _ -> throwChatError CEInvalidChatItemUpdate
             CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
-    CRTLocal -> do
+    CTLocal -> do
       unless (null mentions) $ throwChatError $ CECommandError "mentions are not supported in this chat"
       (nf@NoteFolder {noteFolderId}, cci) <- withFastStore $ \db -> (,) <$> getNoteFolder db user chatId <*> getLocalChatItem db user chatId itemId
       case cci of
@@ -655,10 +656,10 @@ processChatCommand' vr = \case
               ci' <- updateLocalChatItem' db user noteFolderId ci (CISndMsgContent mc) True
               pure $ CRChatItemUpdated user (AChatItem SCTLocal SMDSnd (LocalChat nf) ci')
         _ -> throwChatError CEInvalidChatItemUpdate
-    CRTContactRequest -> pure $ chatCmdError (Just user) "not supported"
-    CRTContactConnection -> pure $ chatCmdError (Just user) "not supported"
-  APIDeleteChatItem (ChatRef cType chatId) itemIds mode -> withUser $ \user -> case cType of
-    CRTDirect -> withContactLock "deleteChatItem" chatId $ do
+    CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
+    CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
+  APIDeleteChatItem (ChatRef cType chatId scope) itemIds mode -> withUser $ \user -> case cType of
+    CTDirect -> withContactLock "deleteChatItem" chatId $ do
       (ct, items) <- getCommandDirectChatItems user chatId itemIds
       case mode of
         CIDMInternal -> deleteDirectCIs user ct items True False
@@ -673,26 +674,26 @@ processChatCommand' vr = \case
           if featureAllowed SCFFullDelete forUser ct
             then deleteDirectCIs user ct items True False
             else markDirectCIsDeleted user ct items True =<< liftIO getCurrentTime
-    CRTGroup gcs -> withGroupLock "deleteChatItem" chatId $ do
+    CTGroup -> withGroupLock "deleteChatItem" chatId $ do
       (gInfo, items) <- getCommandGroupChatItems user chatId itemIds
       case mode of
         CIDMInternal -> deleteGroupCIs user gInfo items True False Nothing =<< liftIO getCurrentTime
         CIDMInternalMark -> markGroupCIsDeleted user gInfo items True Nothing =<< liftIO getCurrentTime
         CIDMBroadcast -> do
-          unless (all (\i -> groupCCIDirectionScope i == gcs) items) $ throwChatError CEInvalidChatItemDelete
-          (_gcsi, _, recipients, _) <- getGCSDependencies vr user gInfo gcs groupKnockingVersion
+          unless (all (\i -> groupCCIDirectionScope i == scope) items) $ throwChatError CEInvalidChatItemDelete
+          (_gcsi, _, recipients, _) <- getGCSDependencies vr user gInfo scope groupKnockingVersion
           assertDeletable items
           assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
           let msgIds = itemsMsgIds items
               events = L.nonEmpty $ map (`XMsgDel` Nothing) msgIds
-          mapM_ (sendGroupMessages user gInfo GCSGroup recipients) events
-          -- TODO [knocking] pass scope (gcsi) to item deletion?
+          mapM_ (sendGroupMessages user gInfo Nothing recipients) events
+          -- TODO [knocking] pass scope (chatScope) to item deletion?
           delGroupChatItems user gInfo items False
-    CRTLocal -> do
+    CTLocal -> do
       (nf, items) <- getCommandLocalChatItems user chatId itemIds
       deleteLocalCIs user nf items True False
-    CRTContactRequest -> pure $ chatCmdError (Just user) "not supported"
-    CRTContactConnection -> pure $ chatCmdError (Just user) "not supported"
+    CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
+    CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     where
       assertDeletable :: forall c. ChatTypeI c => [CChatItem c] -> CM ()
       assertDeletable items = do
@@ -709,7 +710,7 @@ processChatCommand' vr = \case
       itemsMsgIds = mapMaybe (\(CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}}) -> itemSharedMsgId)
   APIDeleteMemberChatItem gId itemIds -> withUser $ \user -> withGroupLock "deleteChatItem" gId $ do
     (gInfo, items) <- getCommandGroupChatItems user gId itemIds
-    unless (all (\i -> groupCCIDirectionScope i == GCSGroup) items) $ throwChatError CEInvalidChatItemDelete
+    unless (all (isNothing . groupCCIDirectionScope) items) $ throwChatError CEInvalidChatItemDelete
     ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
     let recipients = filter memberCurrent ms
     delGroupChatItemsForMembers user gInfo recipients items
@@ -732,8 +733,8 @@ processChatCommand' vr = \case
       isRcvReport = \case
         CChatItem _ ChatItem {content = CIRcvMsgContent (MCReport {})} -> True
         _ -> False
-  APIChatItemReaction (ChatRef cType chatId) itemId add reaction -> withUser $ \user -> case cType of
-    CRTDirect ->
+  APIChatItemReaction (ChatRef cType chatId scope) itemId add reaction -> withUser $ \user -> case cType of
+    CTDirect ->
       withContactLock "chatItemReaction" chatId $
         withFastStore (\db -> (,) <$> getContact db vr user chatId <*> getDirectChatItem db user chatId itemId) >>= \case
           (ct, CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
@@ -752,14 +753,14 @@ processChatCommand' vr = \case
                 r = ACIReaction SCTDirect SMDSnd (DirectChat ct) $ CIReaction CIDirectSnd ci' createdAt reaction
             pure $ CRChatItemReaction user add r
           _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
-    CRTGroup gcs ->
+    CTGroup ->
       withGroupLock "chatItemReaction" chatId $ do
         (g@GroupInfo {membership}, CChatItem md ci) <- withFastStore $ \db -> do
           g <- getGroupInfo db vr user chatId
           (g,) <$> getGroupCIWithReactions db user g itemId
-        (gcsi, _, recipients, _) <- getGCSDependencies vr user g gcs groupKnockingVersion
+        (chatScope, _, recipients, _) <- getGCSDependencies vr user g scope groupKnockingVersion
         case ci of
-          ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}} | groupCIDirectionScope ci == gcs -> do
+          ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}} | groupCIDirectionScope ci == scope -> do
             unless (groupFeatureAllowed SGFReactions g) $
               throwChatError (CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions))
             unless (ciReactionAllowed ci) $
@@ -767,18 +768,18 @@ processChatCommand' vr = \case
             let GroupMember {memberId = itemMemberId} = chatItemMember g ci
             rs <- withFastStore' $ \db -> getGroupReactions db g membership itemMemberId itemSharedMId True
             checkReactionAllowed rs
-            SndMessage {msgId} <- sendGroupMessage user g gcs recipients (XMsgReact itemSharedMId (Just itemMemberId) reaction add)
+            SndMessage {msgId} <- sendGroupMessage user g scope recipients (XMsgReact itemSharedMId (Just itemMemberId) reaction add)
             createdAt <- liftIO getCurrentTime
             reactions <- withFastStore' $ \db -> do
               setGroupReaction db g membership itemMemberId itemSharedMId True reaction add msgId createdAt
               liftIO $ getGroupCIReactions db g itemMemberId itemSharedMId
             let ci' = CChatItem md ci {reactions}
-                r = ACIReaction SCTGroup SMDSnd (GroupChat g gcsi) $ CIReaction (CIGroupSnd gcsi) ci' createdAt reaction
+                r = ACIReaction SCTGroup SMDSnd (GroupChat g chatScope) $ CIReaction (CIGroupSnd chatScope) ci' createdAt reaction
             pure $ CRChatItemReaction user add r
           _ -> throwChatError $ CECommandError "invalid reaction"
-    CRTLocal -> pure $ chatCmdError (Just user) "not supported"
-    CRTContactRequest -> pure $ chatCmdError (Just user) "not supported"
-    CRTContactConnection -> pure $ chatCmdError (Just user) "not supported"
+    CTLocal -> pure $ chatCmdError (Just user) "not supported"
+    CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
+    CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     where
       checkReactionAllowed rs = do
         when ((reaction `elem` rs) == add) $
@@ -790,12 +791,13 @@ processChatCommand' vr = \case
       CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}} <- getGroupChatItem db user groupId itemId
       liftIO $ getReactionMembers db vr user groupId itemSharedMId reaction
     pure $ CRReactionMembers user memberReactions
-  APIPlanForwardChatItems (ChatRef fromCType fromChatId) itemIds -> withUser $ \user -> case fromCType of
-    CRTDirect -> planForward user . snd =<< getCommandDirectChatItems user fromChatId itemIds
-    CRTGroup _gcs -> planForward user . snd =<< getCommandGroupChatItems user fromChatId itemIds
-    CRTLocal -> planForward user . snd =<< getCommandLocalChatItems user fromChatId itemIds
-    CRTContactRequest -> pure $ chatCmdError (Just user) "not supported"
-    CRTContactConnection -> pure $ chatCmdError (Just user) "not supported"
+  -- TODO [knocking] forward from scope?
+  APIPlanForwardChatItems (ChatRef fromCType fromChatId _gcs) itemIds -> withUser $ \user -> case fromCType of
+    CTDirect -> planForward user . snd =<< getCommandDirectChatItems user fromChatId itemIds
+    CTGroup -> planForward user . snd =<< getCommandGroupChatItems user fromChatId itemIds
+    CTLocal -> planForward user . snd =<< getCommandLocalChatItems user fromChatId itemIds
+    CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
+    CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     where
       planForward :: User -> [CChatItem c] -> CM ChatResponse
       planForward user items = do
@@ -836,34 +838,35 @@ processChatCommand' vr = \case
                 MCFile t -> t /= ""
                 MCReport {} -> True
                 MCUnknown {} -> True
-  APIForwardChatItems toChat@(ChatRef toCType toChatId) fromChat@(ChatRef fromCType fromChatId) itemIds itemTTL -> withUser $ \user -> case toCType of
-    CRTDirect -> do
+  -- TODO [knocking] forward from / to scope
+  APIForwardChatItems toChat@(ChatRef toCType toChatId toScope) fromChat@(ChatRef fromCType fromChatId _fromScope) itemIds itemTTL -> withUser $ \user -> case toCType of
+    CTDirect -> do
       cmrs <- prepareForward user
       case L.nonEmpty cmrs of
         Just cmrs' ->
           withContactLock "forwardChatItem, to contact" toChatId $
             sendContactContentMessages user toChatId False itemTTL cmrs'
         Nothing -> pure $ CRNewChatItems user []
-    CRTGroup gcs -> do
+    CTGroup -> do
       cmrs <- prepareForward user
       case L.nonEmpty cmrs of
         Just cmrs' ->
           withGroupLock "forwardChatItem, to group" toChatId $ do
             gInfo <- withFastStore $ \db -> getGroupInfo db vr user toChatId
-            sendGroupContentMessages user gInfo gcs False itemTTL cmrs'
+            sendGroupContentMessages user gInfo toScope False itemTTL cmrs'
         Nothing -> pure $ CRNewChatItems user []
-    CRTLocal -> do
+    CTLocal -> do
       cmrs <- prepareForward user
       case L.nonEmpty cmrs of
         Just cmrs' ->
           createNoteFolderContentItems user toChatId cmrs'
         Nothing -> pure $ CRNewChatItems user []
-    CRTContactRequest -> pure $ chatCmdError (Just user) "not supported"
-    CRTContactConnection -> pure $ chatCmdError (Just user) "not supported"
+    CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
+    CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     where
       prepareForward :: User -> CM [ComposedMessageReq]
       prepareForward user = case fromCType of
-        CRTDirect -> withContactLock "forwardChatItem, from contact" fromChatId $ do
+        CTDirect -> withContactLock "forwardChatItem, from contact" fromChatId $ do
           (ct, items) <- getCommandDirectChatItems user fromChatId itemIds
           catMaybes <$> mapM (\ci -> ciComposeMsgReq ct ci <$$> prepareMsgReq ci) items
           where
@@ -877,7 +880,8 @@ processChatCommand' vr = \case
                 forwardName Contact {profile = LocalProfile {displayName, localAlias}}
                   | localAlias /= "" = localAlias
                   | otherwise = displayName
-        CRTGroup _gcs -> withGroupLock "forwardChatItem, from group" fromChatId $ do
+        -- TODO [knocking] from scope?
+        CTGroup -> withGroupLock "forwardChatItem, from group" fromChatId $ do
           (gInfo, items) <- getCommandGroupChatItems user fromChatId itemIds
           catMaybes <$> mapM (\ci -> ciComposeMsgReq gInfo ci <$$> prepareMsgReq ci) items
           where
@@ -894,7 +898,7 @@ processChatCommand' vr = \case
               where
                 forwardName :: GroupInfo -> ContactName
                 forwardName GroupInfo {groupProfile = GroupProfile {displayName}} = displayName
-        CRTLocal -> do
+        CTLocal -> do
           (_, items) <- getCommandLocalChatItems user fromChatId itemIds
           catMaybes <$> mapM (\ci -> ciComposeMsgReq ci <$$> prepareMsgReq ci) items
           where
@@ -902,8 +906,8 @@ processChatCommand' vr = \case
             ciComposeMsgReq (CChatItem _ ci) (mc', file) =
               let ciff = forwardCIFF ci Nothing
                in (composedMessage file mc', ciff, msgContentTexts mc', M.empty)
-        CRTContactRequest -> throwChatError $ CECommandError "not supported"
-        CRTContactConnection -> throwChatError $ CECommandError "not supported"
+        CTContactRequest -> throwChatError $ CECommandError "not supported"
+        CTContactConnection -> throwChatError $ CECommandError "not supported"
         where
           prepareMsgReq :: CChatItem c -> CM (Maybe (MsgContent, Maybe CryptoFile))
           prepareMsgReq (CChatItem _ ci) = forwardMsgContent ci $>>= forwardContent ci
@@ -976,8 +980,8 @@ processChatCommand' vr = \case
             pure $ prefix <> formattedDate <> ext
   APIUserRead userId -> withUserId userId $ \user -> withFastStore' (`setUserChatsRead` user) >> ok user
   UserRead -> withUser $ \User {userId} -> processChatCommand $ APIUserRead userId
-  APIChatRead chatRef@(ChatRef cType chatId) -> withUser $ \_ -> case cType of
-    CRTDirect -> do
+  APIChatRead chatRef@(ChatRef cType chatId _scope) -> withUser $ \_ -> case cType of
+    CTDirect -> do
       user <- withFastStore $ \db -> getUserByContactId db chatId
       ts <- liftIO getCurrentTime
       timedItems <- withFastStore' $ \db -> do
@@ -986,7 +990,7 @@ processChatCommand' vr = \case
         setDirectChatItemsDeleteAt db user chatId timedItems ts
       forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
       ok user
-    CRTGroup _gcs -> do
+    CTGroup -> do
       user <- withFastStore $ \db -> getUserByGroupId db chatId
       ts <- liftIO getCurrentTime
       timedItems <- withFastStore' $ \db -> do
@@ -995,49 +999,51 @@ processChatCommand' vr = \case
         setGroupChatItemsDeleteAt db user chatId timedItems ts
       forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
       ok user
-    CRTLocal -> do
+    CTLocal -> do
       user <- withFastStore $ \db -> getUserByNoteFolderId db chatId
       withFastStore' $ \db -> updateLocalChatItemsRead db user chatId
       ok user
-    CRTContactRequest -> pure $ chatCmdError Nothing "not supported"
-    CRTContactConnection -> pure $ chatCmdError Nothing "not supported"
-  APIChatItemsRead chatRef@(ChatRef cType chatId) itemIds -> withUser $ \_ -> case cType of
-    CRTDirect -> do
+    CTContactRequest -> pure $ chatCmdError Nothing "not supported"
+    CTContactConnection -> pure $ chatCmdError Nothing "not supported"
+  -- TODO [knocking] read scope?
+  APIChatItemsRead chatRef@(ChatRef cType chatId _scope) itemIds -> withUser $ \_ -> case cType of
+    CTDirect -> do
       user <- withFastStore $ \db -> getUserByContactId db chatId
       timedItems <- withFastStore' $ \db -> do
         timedItems <- updateDirectChatItemsReadList db user chatId itemIds
         setDirectChatItemsDeleteAt db user chatId timedItems =<< getCurrentTime
       forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
       ok user
-    CRTGroup _gcs -> do
+    CTGroup -> do
       user <- withFastStore $ \db -> getUserByGroupId db chatId
       timedItems <- withFastStore' $ \db -> do
         timedItems <- updateGroupChatItemsReadList db user chatId itemIds
         setGroupChatItemsDeleteAt db user chatId timedItems =<< getCurrentTime
       forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
       ok user
-    CRTLocal -> pure $ chatCmdError Nothing "not supported"
-    CRTContactRequest -> pure $ chatCmdError Nothing "not supported"
-    CRTContactConnection -> pure $ chatCmdError Nothing "not supported"
-  APIChatUnread (ChatRef cType chatId) unreadChat -> withUser $ \user -> case cType of
-    CRTDirect -> do
+    CTLocal -> pure $ chatCmdError Nothing "not supported"
+    CTContactRequest -> pure $ chatCmdError Nothing "not supported"
+    CTContactConnection -> pure $ chatCmdError Nothing "not supported"
+  APIChatUnread (ChatRef cType chatId scope) unreadChat -> withUser $ \user -> case cType of
+    CTDirect -> do
       withFastStore $ \db -> do
         ct <- getContact db vr user chatId
         liftIO $ updateContactUnreadChat db user ct unreadChat
       ok user
-    CRTGroup GCSGroup -> do
+    -- TODO [knocking] set support chat as unread?
+    CTGroup | isNothing scope -> do
       withFastStore $ \db -> do
         Group {groupInfo} <- getGroup db vr user chatId
         liftIO $ updateGroupUnreadChat db user groupInfo unreadChat
       ok user
-    CRTLocal -> do
+    CTLocal -> do
       withFastStore $ \db -> do
         nf <- getNoteFolder db user chatId
         liftIO $ updateNoteFolderUnreadChat db user nf unreadChat
       ok user
     _ -> pure $ chatCmdError (Just user) "not supported"
-  APIDeleteChat cRef@(ChatRef cType chatId) cdm -> withUser $ \user@User {userId} -> case cType of
-    CRTDirect -> do
+  APIDeleteChat cRef@(ChatRef cType chatId scope) cdm -> withUser $ \user@User {userId} -> case cType of
+    CTDirect -> do
       ct <- withFastStore $ \db -> getContact db vr user chatId
       filesInfo <- withFastStore' $ \db -> getContactFileInfo db user ct
       withContactLock "deleteChat direct" chatId . procCmd $
@@ -1070,12 +1076,12 @@ processChatCommand' vr = \case
           when doSendDel $ void (sendDirectContactMessage user ct XDirectDel) `catchChatError` const (pure ())
           contactConnIds <- map aConnId <$> withFastStore' (\db -> getContactConnections db vr userId ct)
           deleteAgentConnectionsAsync' user contactConnIds doSendDel
-    CRTContactConnection -> withConnectionLock "deleteChat contactConnection" chatId . procCmd $ do
+    CTContactConnection -> withConnectionLock "deleteChat contactConnection" chatId . procCmd $ do
       conn@PendingContactConnection {pccAgentConnId = AgentConnId acId} <- withFastStore $ \db -> getPendingContactConnection db userId chatId
       deleteAgentConnectionAsync user acId
       withFastStore' $ \db -> deletePendingContactConnection db userId chatId
       pure $ CRContactConnectionDeleted user conn
-    CRTGroup GCSGroup -> do
+    CTGroup | isNothing scope -> do
       Group gInfo@GroupInfo {membership} members <- withFastStore $ \db -> getGroup db vr user chatId
       let GroupMember {memberRole = membershipMemRole} = membership
       let isOwner = membershipMemRole == GROwner
@@ -1095,34 +1101,30 @@ processChatCommand' vr = \case
         withFastStore' $ \db -> deleteGroupMembers db user gInfo
         withFastStore' $ \db -> deleteGroup db user gInfo
         pure $ CRGroupDeletedUser user gInfo
-    CRTGroup _gcs -> pure $ chatCmdError (Just user) "not supported"
-    CRTLocal -> pure $ chatCmdError (Just user) "not supported"
-    CRTContactRequest -> pure $ chatCmdError (Just user) "not supported"
-  APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
-    CRTDirect -> do
+    _ -> pure $ chatCmdError (Just user) "not supported"
+  APIClearChat (ChatRef cType chatId scope) -> withUser $ \user@User {userId} -> case cType of
+    CTDirect -> do
       ct <- withFastStore $ \db -> getContact db vr user chatId
       filesInfo <- withFastStore' $ \db -> getContactFileInfo db user ct
       deleteCIFiles user filesInfo
       withFastStore' $ \db -> deleteContactCIs db user ct
       pure $ CRChatCleared user (AChatInfo SCTDirect $ DirectChat ct)
-    CRTGroup GCSGroup -> do
+    CTGroup | isNothing scope -> do
       gInfo <- withFastStore $ \db -> getGroupInfo db vr user chatId
       filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
       deleteCIFiles user filesInfo
       withFastStore' $ \db -> deleteGroupChatItemsMessages db user gInfo
       membersToDelete <- withFastStore' $ \db -> getGroupMembersForExpiration db vr user gInfo
       forM_ membersToDelete $ \m -> withFastStore' $ \db -> deleteGroupMember db user m
-      pure $ CRChatCleared user (AChatInfo SCTGroup $ GroupChat gInfo GCSIGroup)
-    CRTGroup _gcs -> pure $ chatCmdError (Just user) "not supported"
-    CRTLocal -> do
+      pure $ CRChatCleared user (AChatInfo SCTGroup $ GroupChat gInfo Nothing)
+    CTLocal -> do
       nf <- withFastStore $ \db -> getNoteFolder db user chatId
       filesInfo <- withFastStore' $ \db -> getNoteFolderFileInfo db user nf
       deleteFilesLocally filesInfo
       withFastStore' $ \db -> deleteNoteFolderFiles db userId nf
       withFastStore' $ \db -> deleteNoteFolderCIs db user nf
       pure $ CRChatCleared user (AChatInfo SCTLocal $ LocalChat nf)
-    CRTContactConnection -> pure $ chatCmdError (Just user) "not supported"
-    CRTContactRequest -> pure $ chatCmdError (Just user) "not supported"
+    _ -> pure $ chatCmdError (Just user) "not supported"
   APIAcceptContact incognito connReqId -> withUser $ \_ -> do
     userContactLinkId <- withFastStore $ \db -> getUserContactLinkIdByCReq db connReqId
     withUserContactLock "acceptContact" userContactLinkId $ do
@@ -1182,7 +1184,7 @@ processChatCommand' vr = \case
         timed_ <- contactCITimed ct
         updateDirectChatItemView user ct chatItemId aciContent False False timed_ Nothing
         forM_ (timed_ >>= timedDeleteAt') $
-          startProximateTimedItemThread user (ChatRef CRTDirect contactId, chatItemId)
+          startProximateTimedItemThread user (ChatRef CTDirect contactId Nothing, chatItemId)
         pure Nothing
       _ -> throwChatError . CECallState $ callStateTag callState
   APISendCallOffer contactId WebRTCCallOffer {callType, rtcSession} ->
@@ -1272,13 +1274,13 @@ processChatCommand' vr = \case
       pure user'
     when (userId == uId') $ chatWriteVar currentUser $ Just (user :: User) {uiThemes}
     ok user'
-  APISetChatUIThemes (ChatRef cType chatId) uiThemes -> withUser $ \user -> case cType of
-    CRTDirect -> do
+  APISetChatUIThemes (ChatRef cType chatId scope) uiThemes -> withUser $ \user -> case cType of
+    CTDirect -> do
       withFastStore $ \db -> do
         ct <- getContact db vr user chatId
         liftIO $ setContactUIThemes db user ct uiThemes
       ok user
-    CRTGroup GCSGroup -> do
+    CTGroup | isNothing scope -> do
       withFastStore $ \db -> do
         g <- getGroupInfo db vr user chatId
         liftIO $ setGroupUIThemes db user g uiThemes
@@ -1406,7 +1408,7 @@ processChatCommand' vr = \case
     currentTs <- liftIO getCurrentTime
     acceptConditions db condId opIds currentTs
     CRServerOperatorConditions <$> getServerOperators db
-  APISetChatTTL userId (ChatRef cType chatId) newTTL_ ->
+  APISetChatTTL userId (ChatRef cType chatId scope) newTTL_ ->
     withUserId userId $ \user -> checkStoreNotChanged $ withChatLock "setChatTTL" $ do
       (oldTTL_, globalTTL, ttlCount) <- withStore' $ \db ->
         (,,) <$> getSetChatTTL db <*> getChatItemTTL db user <*> getChatTTLCount db user
@@ -1419,14 +1421,14 @@ processChatCommand' vr = \case
       ok user
     where
       getSetChatTTL db = case cType of
-        CRTDirect -> getDirectChatTTL db chatId <* setDirectChatTTL db chatId newTTL_
-        CRTGroup GCSGroup -> getGroupChatTTL db chatId <* setGroupChatTTL db chatId newTTL_
+        CTDirect -> getDirectChatTTL db chatId <* setDirectChatTTL db chatId newTTL_
+        CTGroup | isNothing scope -> getGroupChatTTL db chatId <* setGroupChatTTL db chatId newTTL_
         _ -> pure Nothing
       expireChat user globalTTL = do
         currentTs <- liftIO getCurrentTime
         case cType of
-          CRTDirect -> expireContactChatItems user vr globalTTL chatId
-          CRTGroup GCSGroup ->
+          CTDirect -> expireContactChatItems user vr globalTTL chatId
+          CTGroup | isNothing scope ->
             let createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
               in expireGroupChatItems user vr globalTTL createdAtCutoff chatId
           _ -> throwChatError $ CECommandError "not supported"
@@ -1434,10 +1436,11 @@ processChatCommand' vr = \case
     chatRef <- getChatRef user chatName
     processChatCommand $ APISetChatTTL userId chatRef newTTL
   GetChatTTL chatName -> withUser' $ \user -> do
-    ChatRef cType chatId <- getChatRef user chatName
+    -- TODO [knocking] support scope in CLI apis
+    ChatRef cType chatId _ <- getChatRef user chatName
     ttl <- case cType of
-      CRTDirect -> withFastStore' (`getDirectChatTTL` chatId)
-      CRTGroup GCSGroup -> withFastStore' (`getGroupChatTTL` chatId)
+      CTDirect -> withFastStore' (`getDirectChatTTL` chatId)
+      CTGroup -> withFastStore' (`getGroupChatTTL` chatId)
       _ -> throwChatError $ CECommandError "not supported"
     pure $ CRChatItemTTL user ttl
   APISetChatItemTTL userId newTTL -> withUserId userId $ \user ->
@@ -1469,8 +1472,8 @@ processChatCommand' vr = \case
   ReconnectServer userId srv -> withUserId userId $ \user -> do
     lift (withAgent' $ \a -> reconnectSMPServer a (aUserId user) srv)
     ok_
-  APISetChatSettings (ChatRef cType chatId) chatSettings -> withUser $ \user -> case cType of
-    CRTDirect -> do
+  APISetChatSettings (ChatRef cType chatId scope) chatSettings -> withUser $ \user -> case cType of
+    CTDirect -> do
       ct <- withFastStore $ \db -> do
         ct <- getContact db vr user chatId
         liftIO $ updateContactSettings db user chatId chatSettings
@@ -1478,7 +1481,7 @@ processChatCommand' vr = \case
       forM_ (contactConnId ct) $ \connId ->
         withAgent $ \a -> toggleConnectionNtfs a connId (chatHasNtfs chatSettings)
       ok user
-    CRTGroup GCSGroup -> do
+    CTGroup | isNothing scope -> do
       ms <- withFastStore $ \db -> do
         Group _ ms <- getGroup db vr user chatId
         liftIO $ updateGroupSettings db user chatId chatSettings
@@ -1561,8 +1564,8 @@ processChatCommand' vr = \case
     case memberConnId m of
       Just connId -> do
         cStats@ConnectionStats {ratchetSyncState = rss} <- withAgent $ \a -> synchronizeRatchet a connId PQSupportOff force
-        gcsi <- liftIO $ getNonMsgGCSI g m
-        createInternalChatItem user (CDGroupSnd g gcsi) (CISndConnEvent . SCERatchetSync rss . Just $ groupMemberRef m) Nothing
+        chatScope <- liftIO $ getNonMsgGCSI g m
+        createInternalChatItem user (CDGroupSnd g chatScope) (CISndConnEvent . SCERatchetSync rss . Just $ groupMemberRef m) Nothing
         pure $ CRGroupMemberRatchetSyncStarted user g m cStats
       _ -> throwChatError CEGroupMemberNotActive
   APIGetContactCode contactId -> withUser $ \user -> do
@@ -1768,8 +1771,8 @@ processChatCommand' vr = \case
       CPContactAddress (CAPContactViaAddress Contact {contactId}) ->
         processChatCommand $ APIConnectContactViaAddress userId incognito contactId
       _ -> processChatCommand $ APIConnect userId incognito (Just cReqUri)
-  DeleteContact cName cdm -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CRTDirect ctId) cdm
-  ClearContact cName -> withContactName cName $ APIClearChat . ChatRef CRTDirect
+  DeleteContact cName cdm -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId Nothing) cdm
+  ClearContact cName -> withContactName cName $ \chatId -> APIClearChat $ ChatRef CTDirect chatId Nothing
   APIListContacts userId -> withUserId userId $ \user ->
     CRContactsList user <$> withFastStore' (\db -> getUserContacts db vr user)
   ListContacts -> withUser $ \User {userId} ->
@@ -1824,17 +1827,17 @@ processChatCommand' vr = \case
     contactId <- withFastStore $ \db -> getContactIdByName db user fromContactName
     forwardedItemId <- withFastStore $ \db -> getDirectChatItemIdByText' db user contactId forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand $ APIForwardChatItems toChatRef (ChatRef CRTDirect contactId) (forwardedItemId :| []) Nothing
+    processChatCommand $ APIForwardChatItems toChatRef (ChatRef CTDirect contactId Nothing) (forwardedItemId :| []) Nothing
   ForwardGroupMessage toChatName fromGroupName fromMemberName_ forwardedMsg -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user fromGroupName
     forwardedItemId <- withFastStore $ \db -> getGroupChatItemIdByText db user groupId fromMemberName_ forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand $ APIForwardChatItems toChatRef (ChatRef (CRTGroup GCSGroup) groupId) (forwardedItemId :| []) Nothing
+    processChatCommand $ APIForwardChatItems toChatRef (ChatRef CTGroup groupId Nothing) (forwardedItemId :| []) Nothing
   ForwardLocalMessage toChatName forwardedMsg -> withUser $ \user -> do
     folderId <- withFastStore (`getUserNoteFolderId` user)
     forwardedItemId <- withFastStore $ \db -> getLocalChatItemIdByText' db user folderId forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand $ APIForwardChatItems toChatRef (ChatRef CRTLocal folderId) (forwardedItemId :| []) Nothing
+    processChatCommand $ APIForwardChatItems toChatRef (ChatRef CTLocal folderId Nothing) (forwardedItemId :| []) Nothing
   SendMessage (ChatName cType name) msg -> withUser $ \user -> do
     let mc = MCText msg
     case cType of
@@ -1857,7 +1860,7 @@ processChatCommand' vr = \case
         (gId, mentions) <- withFastStore $ \db -> do
           gId <- getGroupIdByName db user name
           (gId,) <$> liftIO (getMessageMentions db user gId msg)
-        let sendRef = SRGroup gId GCSGroup
+        let sendRef = SRGroup gId Nothing
         processChatCommand $ APISendMessages sendRef False Nothing [ComposedMessage Nothing Nothing mc mentions]
       CTLocal
         | name == "" -> do
@@ -1959,7 +1962,7 @@ processChatCommand' vr = \case
     -- [incognito] generate incognito profile for group membership
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     gInfo <- withFastStore $ \db -> createNewGroup db vr gVar user gProfile incognitoProfile
-    let cd = CDGroupSnd gInfo GCSIGroup
+    let cd = CDGroupSnd gInfo Nothing
     createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
     createGroupFeatureItems user cd CISndGroupFeature gInfo
     pure $ CRGroupCreated user gInfo
@@ -2048,11 +2051,11 @@ processChatCommand' vr = \case
                 pure $ CRMemberAccepted user gInfo m'
           Nothing -> throwChatError CEGroupMemberNotActive
       GSMemPendingReview | memberCategory m /= GCInviteeMember -> do -- only other admins can review
-        let gcs = GCSMemberSupport $ Just (groupMemberId' m)
+        let scope = Just $ GCSMemberSupport $ Just (groupMemberId' m)
         modMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
         let rcpModMs' = filter memberCurrent modMs
             msg = XGrpLinkAcpt role (Just $ memberId' m)
-        void $ sendGroupMessage user gInfo gcs rcpModMs' msg
+        void $ sendGroupMessage user gInfo scope rcpModMs' msg
         m' <- withFastStore' $ \db -> updateGroupMemberAccepted db user m newMemberStatus role
         pure $ CRMemberAccepted user gInfo m'
         where
@@ -2112,12 +2115,12 @@ processChatCommand' vr = \case
         Just memsToChange' -> do
           let events = L.map (\GroupMember {memberId} -> XGrpMemRole memberId newRole) memsToChange'
               recipients = filter memberCurrent members
-          (msgs_, _gsr) <- sendGroupMessages user gInfo GCSGroup recipients events
+          (msgs_, _gsr) <- sendGroupMessages user gInfo Nothing recipients events
           let itemsData = zipWith (fmap . sndItemData) memsToChange (L.toList msgs_)
-          cis_ <- saveSndChatItems user (CDGroupSnd gInfo GCSIGroup) itemsData Nothing False
+          cis_ <- saveSndChatItems user (CDGroupSnd gInfo Nothing) itemsData Nothing False
           when (length cis_ /= length memsToChange) $ logError "changeRoleCurrentMems: memsToChange and cis_ length mismatch"
           (errs, changed) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (updMember db) memsToChange)
-          let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo GCSIGroup)) $ rights cis_
+          let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo Nothing)) $ rights cis_
           pure (errs, changed, acis)
           where
             sndItemData :: GroupMember -> SndMessage -> NewSndChatItemData c
@@ -2159,9 +2162,9 @@ processChatCommand' vr = \case
               recipients = filter memberCurrent remainingMems
           (msgs_, _gsr) <- sendGroupMessages_ user gInfo recipients events
           let itemsData = zipWith (fmap . sndItemData) blockMems (L.toList msgs_)
-          cis_ <- saveSndChatItems user (CDGroupSnd gInfo GCSIGroup) itemsData Nothing False
+          cis_ <- saveSndChatItems user (CDGroupSnd gInfo Nothing) itemsData Nothing False
           when (length cis_ /= length blockMems) $ logError "blockMembers: blockMems and cis_ length mismatch"
-          let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo GCSIGroup)) $ rights cis_
+          let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo Nothing)) $ rights cis_
           unless (null acis) $ toView $ CRNewChatItems user acis
           (errs, blocked) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (updateGroupMemberBlocked db user gInfo mrs) blockMems)
           unless (null errs) $ toView $ CRChatErrors (Just user) errs
@@ -2184,17 +2187,17 @@ processChatCommand' vr = \case
       assertUserGroupRole gInfo $ max GRAdmin maxRole
       (errs1, deleted1) <- deleteInvitedMems user invitedMems
       let recipients = filter memberCurrent members
-      (errs2, deleted2, acis2) <- deleteMemsSend user gInfo GCSIGroup recipients currentMems
+      (errs2, deleted2, acis2) <- deleteMemsSend user gInfo Nothing recipients currentMems
       rs3 <- forM pendingApprvMems $ \m -> do
-        gcsi <- liftIO $ memberSupportGCSI m (Just m)
-        deleteMemsSend user gInfo gcsi [m] [m]
+        chatScope <- liftIO $ Just <$> memberSupportGCSI m (Just m)
+        deleteMemsSend user gInfo chatScope [m] [m]
       rs4 <-
         if not (null pendingRvwMems)
           then do
             let moderators = filter (\GroupMember {memberRole} -> memberRole >= GRModerator) members
             forM pendingRvwMems $ \m -> do
-              gcsi <- liftIO $ memberSupportGCSI m (Just m)
-              deleteMemsSend user gInfo gcsi (m : moderators) [m]
+              chatScope <- liftIO $ Just <$> memberSupportGCSI m (Just m)
+              deleteMemsSend user gInfo chatScope (m : moderators) [m]
           else pure []
       let (errs3, deleted3, acis3) = concatTuples rs3
           (errs4, deleted4, acis4) = concatTuples rs4
@@ -2228,19 +2231,20 @@ processChatCommand' vr = \case
           delMember db m = do
             deleteGroupMember db user m
             pure m {memberStatus = GSMemRemoved}
-      deleteMemsSend :: User -> GroupInfo -> GroupChatScopeInfo -> [GroupMember] -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem])
-      deleteMemsSend user gInfo gcsi sendToMems memsToDelete = case L.nonEmpty memsToDelete of
+      deleteMemsSend :: User -> GroupInfo -> Maybe GroupChatScopeInfo -> [GroupMember] -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem])
+      deleteMemsSend user gInfo chatScope sendToMems memsToDelete = case L.nonEmpty memsToDelete of
         Nothing -> pure ([], [], [])
         Just memsToDelete' -> do
-          let gcs = toGCS gcsi
+          -- TODO [knocking] possibly scope needs to be passed, but may not be needed after refactoring
+          let scope = toChatScope <$> chatScope
               events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId withMessages) memsToDelete'
-          (msgs_, _gsr) <- sendGroupMessages user gInfo gcs sendToMems events
+          (msgs_, _gsr) <- sendGroupMessages user gInfo scope sendToMems events
           let itemsData = zipWith (fmap . sndItemData) memsToDelete (L.toList msgs_)
-          cis_ <- saveSndChatItems user (CDGroupSnd gInfo gcsi) itemsData Nothing False
+          cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScope) itemsData Nothing False
           when (length cis_ /= length memsToDelete) $ logError "deleteCurrentMems: memsToDelete and cis_ length mismatch"
           deleteMembersConnections' user memsToDelete True
           (errs, deleted) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (delMember db) memsToDelete)
-          let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo gcsi)) $ rights cis_
+          let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScope)) $ rights cis_
           pure (errs, deleted, acis)
           where
             sndItemData :: GroupMember -> SndMessage -> NewSndChatItemData c
@@ -2264,9 +2268,9 @@ processChatCommand' vr = \case
       cancelFilesInProgress user filesInfo
       let recipients = filter memberCurrentOrPending members
       msg <- sendGroupMessage' user gInfo recipients XGrpLeave
-      gcsi <- liftIO $ getLocalGCSI gInfo
-      ci <- saveSndChatItem user (CDGroupSnd gInfo gcsi) msg (CISndGroupEvent SGEUserLeft)
-      toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo gcsi) ci]
+      chatScope <- liftIO $ getLocalGCSI gInfo
+      ci <- saveSndChatItem user (CDGroupSnd gInfo chatScope) msg (CISndGroupEvent SGEUserLeft)
+      toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScope) ci]
       -- TODO delete direct connections that were unused
       deleteGroupLinkIfExists user gInfo
       -- member records are not deleted to keep history
@@ -2307,10 +2311,10 @@ processChatCommand' vr = \case
     processChatCommand $ APILeaveGroup groupId
   DeleteGroup gName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
-    processChatCommand $ APIDeleteChat (ChatRef (CRTGroup GCSGroup) groupId) (CDMFull True)
+    processChatCommand $ APIDeleteChat (ChatRef CTGroup groupId Nothing) (CDMFull True)
   ClearGroup gName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
-    processChatCommand $ APIClearChat (ChatRef (CRTGroup GCSGroup) groupId)
+    processChatCommand $ APIClearChat (ChatRef CTGroup groupId Nothing)
   ListMembers gName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIListMembers groupId
@@ -2405,10 +2409,10 @@ processChatCommand' vr = \case
         qiId <- getGroupChatItemIdByText db user gId cName quotedMsg
         (gId, qiId,) <$> liftIO (getMessageMentions db user gId msg)
     let mc = MCText msg
-    processChatCommand $ APISendMessages (SRGroup groupId GCSGroup) False Nothing [ComposedMessage Nothing (Just quotedItemId) mc mentions]
+    processChatCommand $ APISendMessages (SRGroup groupId Nothing) False Nothing [ComposedMessage Nothing (Just quotedItemId) mc mentions]
   ClearNoteFolder -> withUser $ \user -> do
     folderId <- withFastStore (`getUserNoteFolderId` user)
-    processChatCommand $ APIClearChat (ChatRef CRTLocal folderId)
+    processChatCommand $ APIClearChat (ChatRef CTLocal folderId Nothing)
   LastChats count_ -> withUser' $ \user -> do
     let count = fromMaybe 5000 count_
     (errs, previews) <- partitionEithers <$> withFastStore' (\db -> getChatPreviews db vr user False (PTLast count) clqNoFilters)
@@ -2445,7 +2449,7 @@ processChatCommand' vr = \case
   SendFile chatName f -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     case chatRef of
-      ChatRef CRTLocal folderId -> processChatCommand $ APICreateChatItems folderId [composedMessage (Just f) (MCFile "")]
+      ChatRef CTLocal folderId _ -> processChatCommand $ APICreateChatItems folderId [composedMessage (Just f) (MCFile "")]
       _ -> withSendRef chatRef $ \sendRef -> processChatCommand $ APISendMessages sendRef False Nothing [composedMessage (Just f) (MCFile "")]
   SendImage chatName f@(CryptoFile fPath _) -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
@@ -2487,15 +2491,15 @@ processChatCommand' vr = \case
               case (cref_, aci_) of
                 (Nothing, _) ->
                   pure $ CRSndFileCancelled user Nothing ftm fts
-                (Just (ChatRef CRTDirect contactId), Just aci) -> do
+                (Just (ChatRef CTDirect contactId _), Just aci) -> do
                   (contact, sharedMsgId) <- withFastStore $ \db -> (,) <$> getContact db vr user contactId <*> getSharedMsgIdByFileId db userId fileId
                   void . sendDirectContactMessage user contact $ XFileCancel sharedMsgId
                   pure $ CRSndFileCancelled user (Just aci) ftm fts
-                (Just (ChatRef (CRTGroup gcs) groupId), Just aci@(AChatItem SCTGroup _ _ ci))
-                  | groupCIDirectionScope ci == gcs -> do
+                (Just (ChatRef CTGroup groupId scope), Just aci@(AChatItem SCTGroup _ _ ci))
+                  | groupCIDirectionScope ci == scope -> do
                     (gInfo, sharedMsgId) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getSharedMsgIdByFileId db userId fileId
-                    (_, _, recipients, _) <- getGCSDependencies vr user gInfo gcs groupKnockingVersion
-                    void . sendGroupMessage user gInfo gcs recipients $ XFileCancel sharedMsgId
+                    (_, _, recipients, _) <- getGCSDependencies vr user gInfo scope groupKnockingVersion
+                    void . sendGroupMessage user gInfo scope recipients $ XFileCancel sharedMsgId
                     pure $ CRSndFileCancelled user (Just aci) ftm fts
                 (Just _, _) -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
           where
@@ -2673,19 +2677,20 @@ processChatCommand' vr = \case
     ok_ = pure $ CRCmdOk Nothing
     ok = pure . CRCmdOk . Just
     getChatRef :: User -> ChatName -> CM ChatRef
-    getChatRef user (ChatName cType name) =
-      ChatRef (toChatRefType cType) <$> case cType of
+    getChatRef user (ChatName cType name) = do
+      chatId <- case cType of
         CTDirect -> withFastStore $ \db -> getContactIdByName db user name
         CTGroup -> withFastStore $ \db -> getGroupIdByName db user name
         CTLocal
           | name == "" -> withFastStore (`getUserNoteFolderId` user)
           | otherwise -> throwChatError $ CECommandError "not supported"
         _ -> throwChatError $ CECommandError "not supported"
+      pure $ ChatRef cType chatId Nothing
     getChatRefAndMentions :: User -> ChatName -> Text -> CM (ChatRef, Map MemberName GroupMemberId)
     getChatRefAndMentions user cName msg = do
-      chatRef@(ChatRef cType chatId) <- getChatRef user cName
+      chatRef@(ChatRef cType chatId _) <- getChatRef user cName
       (chatRef,) <$> case cType of
-        CRTGroup _gcs -> withFastStore' $ \db -> getMessageMentions db user chatId msg
+        CTGroup -> withFastStore' $ \db -> getMessageMentions db user chatId msg
         _ -> pure []
 #if !defined(dbPostgres)
     checkChatStopped :: CM ChatResponse -> CM ChatResponse
@@ -2718,16 +2723,16 @@ processChatCommand' vr = \case
       withFastStore' $ \db -> setConnectionVerified db user connId Nothing
       pure $ CRConnectionVerified user False code'
     getSentChatItemIdByText :: User -> ChatRef -> Text -> CM Int64
-    getSentChatItemIdByText user@User {userId, localDisplayName} (ChatRef cType cId) msg = case cType of
-      CRTDirect -> withFastStore $ \db -> getDirectChatItemIdByText db userId cId SMDSnd msg
-      CRTGroup _gcs -> withFastStore $ \db -> getGroupChatItemIdByText db user cId (Just localDisplayName) msg
-      CRTLocal -> withFastStore $ \db -> getLocalChatItemIdByText db user cId SMDSnd msg
+    getSentChatItemIdByText user@User {userId, localDisplayName} (ChatRef cType cId _gcs) msg = case cType of
+      CTDirect -> withFastStore $ \db -> getDirectChatItemIdByText db userId cId SMDSnd msg
+      CTGroup -> withFastStore $ \db -> getGroupChatItemIdByText db user cId (Just localDisplayName) msg
+      CTLocal -> withFastStore $ \db -> getLocalChatItemIdByText db user cId SMDSnd msg
       _ -> throwChatError $ CECommandError "not supported"
     getChatItemIdByText :: User -> ChatRef -> Text -> CM Int64
-    getChatItemIdByText user (ChatRef cType cId) msg = case cType of
-      CRTDirect -> withFastStore $ \db -> getDirectChatItemIdByText' db user cId msg
-      CRTGroup _gcs -> withFastStore $ \db -> getGroupChatItemIdByText' db user cId msg
-      CRTLocal -> withFastStore $ \db -> getLocalChatItemIdByText' db user cId msg
+    getChatItemIdByText user (ChatRef cType cId _gcs) msg = case cType of
+      CTDirect -> withFastStore $ \db -> getDirectChatItemIdByText' db user cId msg
+      CTGroup -> withFastStore $ \db -> getGroupChatItemIdByText' db user cId msg
+      CTLocal -> withFastStore $ \db -> getLocalChatItemIdByText' db user cId msg
       _ -> throwChatError $ CECommandError "not supported"
     connectViaContact :: User -> IncognitoEnabled -> ConnectionRequestUri 'CMContact -> CM ChatResponse
     connectViaContact user@User {userId} incognito cReq@(CRContactUri ConnReqUriData {crClientData}) = withInvitationLock "connectViaContact" (strEncode cReq) $ do
@@ -2887,17 +2892,17 @@ processChatCommand' vr = \case
               withStore $ \db -> getGroupMemberByMemberId db vr user g businessId
             let p'' = p' {displayName, fullName, image} :: GroupProfile
                 recipients = filter memberCurrentOrPending oldMs
-            void $ sendGroupMessage user g' GCSGroup recipients (XGrpInfo p'')
+            void $ sendGroupMessage user g' Nothing recipients (XGrpInfo p'')
           let ps' = fromMaybe defaultBusinessGroupPrefs $ groupPreferences p'
               recipients = filter memberCurrentOrPending newMs
-          sendGroupMessage user g' GCSGroup recipients $ XGrpPrefs ps'
+          sendGroupMessage user g' Nothing recipients $ XGrpPrefs ps'
         Nothing -> do
           let recipients = filter memberCurrentOrPending ms
-          sendGroupMessage user g' GCSGroup recipients (XGrpInfo p')
-      let cd = CDGroupSnd g' GCSIGroup
+          sendGroupMessage user g' Nothing recipients (XGrpInfo p')
+      let cd = CDGroupSnd g' Nothing
       unless (sameGroupProfileInfo p p') $ do
         ci <- saveSndChatItem user cd msg (CISndGroupEvent $ SGEGroupUpdated p')
-        toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat g' GCSIGroup) ci]
+        toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat g' Nothing) ci]
       createGroupFeatureChangedItems user cd CISndGroupFeature g g'
       pure $ CRGroupUpdated user g g' Nothing
     checkValidName :: GroupName -> CM ()
@@ -3027,7 +3032,7 @@ processChatCommand' vr = \case
       ci <- saveSndChatItem' user (CDDirectSnd ct) msg content Nothing Nothing Nothing timed_ False
       toView $ CRNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
       forM_ (timed_ >>= timedDeleteAt') $
-        startProximateTimedItemThread user (ChatRef CRTDirect contactId, chatItemId' ci)
+        startProximateTimedItemThread user (ChatRef CTDirect contactId Nothing, chatItemId' ci)
     drgRandomBytes :: Int -> CM ByteString
     drgRandomBytes n = asks random >>= atomically . C.randomBytes n
     privateGetUser :: UserId -> CM User
@@ -3092,7 +3097,7 @@ processChatCommand' vr = \case
             GroupInfo {chatSettings} <- getGroupInfo db vr user gId
             pure (gId, chatSettings)
         _ -> throwChatError $ CECommandError "not supported"
-      processChatCommand $ APISetChatSettings (ChatRef (toChatRefType cType) chatId) $ updateSettings chatSettings
+      processChatCommand $ APISetChatSettings (ChatRef cType chatId Nothing) $ updateSettings chatSettings
     connectPlan :: User -> AConnectionRequestUri -> CM ConnectionPlan
     connectPlan user (ACR SCMInvitation (CRInvitationUri crData e2e)) = do
       withFastStore' (\db -> getConnectionEntityByConnReq db vr user cReqSchemas) >>= \case
@@ -3177,7 +3182,7 @@ processChatCommand' vr = \case
               timed_ <- contactCITimed ct
               updateDirectChatItemView user ct itemId aciContent False False timed_ Nothing
               forM_ (timed_ >>= timedDeleteAt') $
-                startProximateTimedItemThread user (ChatRef CRTDirect contactId, itemId)
+                startProximateTimedItemThread user (ChatRef CTDirect contactId Nothing, itemId)
         _ -> pure () -- prohibited
     assertAllowedContent :: MsgContent -> CM ()
     assertAllowedContent = \case
@@ -3213,7 +3218,7 @@ processChatCommand' vr = \case
           processSendErrs user r
           forM_ (timed_ >>= timedDeleteAt') $ \deleteAt ->
             forM_ cis $ \ci ->
-              startProximateTimedItemThread user (ChatRef CRTDirect contactId, chatItemId' ci) deleteAt
+              startProximateTimedItemThread user (ChatRef CTDirect contactId Nothing, chatItemId' ci) deleteAt
           pure $ CRNewChatItems user (map (AChatItem SCTDirect SMDSnd (DirectChat ct)) cis)
           where
             setupSndFileTransfers :: CM (NonEmpty (Maybe FileInvitation, Maybe (CIFile 'MDSnd)))
@@ -3245,27 +3250,27 @@ processChatCommand' vr = \case
                 quoteData ChatItem {content = CISndMsgContent qmc} = pure (qmc, CIQDirectSnd, True)
                 quoteData ChatItem {content = CIRcvMsgContent qmc} = pure (qmc, CIQDirectRcv, False)
                 quoteData _ = throwError SEInvalidQuote
-    sendGroupContentMessages :: User -> GroupInfo -> GroupChatScope -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
-    sendGroupContentMessages user gInfo gcs live itemTTL cmrs = do
+    sendGroupContentMessages :: User -> GroupInfo -> Maybe GroupChatScope -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
+    sendGroupContentMessages user gInfo scope live itemTTL cmrs = do
       assertMultiSendable live cmrs
-      (gcsi, msgScope, recipients, numFileInvs) <- getGCSDependencies vr user gInfo gcs modsCompatVersion
-      sendGroupContentMessages_ user gInfo gcs gcsi msgScope recipients numFileInvs live itemTTL cmrs
+      (chatScope, msgScope, recipients, numFileInvs) <- getGCSDependencies vr user gInfo scope modsCompatVersion
+      sendGroupContentMessages_ user gInfo scope chatScope msgScope recipients numFileInvs live itemTTL cmrs
         where
           hasReport = any (\(ComposedMessage {msgContent}, _, _, _) -> isReport msgContent) cmrs
           modsCompatVersion = if hasReport then contentReportsVersion else groupKnockingVersion
-    sendGroupContentMessages_ :: User -> GroupInfo -> GroupChatScope -> GroupChatScopeInfo -> MsgScope -> [GroupMember] -> Int -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
-    sendGroupContentMessages_ user gInfo@GroupInfo {groupId, membership} gcs gcsi msgScope recipients numFileInvs live itemTTL cmrs = do
+    sendGroupContentMessages_ :: User -> GroupInfo -> Maybe GroupChatScope -> Maybe GroupChatScopeInfo -> Maybe MsgScope -> [GroupMember] -> Int -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
+    sendGroupContentMessages_ user gInfo@GroupInfo {groupId, membership} scope chatScope msgScope recipients numFileInvs live itemTTL cmrs = do
       forM_ allowedRole $ assertUserGroupRole gInfo
       assertGroupContentAllowed
       processComposedMessages
       where
         allowedRole :: Maybe GroupMemberRole
-        allowedRole = case gcs of
-          GCSGroup -> Just GRAuthor
-          GCSMemberSupport Nothing
+        allowedRole = case scope of
+          Nothing -> Just GRAuthor
+          Just (GCSMemberSupport Nothing)
             | memberPending membership -> Nothing
             | otherwise -> Just GRAuthor
-          GCSMemberSupport (Just _gmId) -> Just GRModerator
+          Just (GCSMemberSupport (Just _gmId)) -> Just GRModerator
         assertGroupContentAllowed :: CM ()
         assertGroupContentAllowed =
           case findProhibited (L.toList cmrs) of
@@ -3282,17 +3287,17 @@ processChatCommand' vr = \case
           (fInvs_, ciFiles_) <- L.unzip <$> setupSndFileTransfers numFileInvs
           timed_ <- sndGroupCITimed live gInfo itemTTL
           (chatMsgEvents, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
-          (msgs_, gsr) <- sendGroupMessages user gInfo GCSGroup recipients chatMsgEvents
+          (msgs_, gsr) <- sendGroupMessages user gInfo Nothing recipients chatMsgEvents
           let itemsData = prepareSndItemsData (L.toList cmrs) (L.toList ciFiles_) (L.toList quotedItems_) (L.toList msgs_)
-          cis_ <- saveSndChatItems user (CDGroupSnd gInfo gcsi) itemsData timed_ live
+          cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScope) itemsData timed_ live
           when (length cis_ /= length cmrs) $ logError "sendGroupContentMessages: cmrs and cis_ length mismatch"
           createMemberSndStatuses cis_ msgs_ gsr
           let r@(_, cis) = partitionEithers cis_
           processSendErrs user r
           forM_ (timed_ >>= timedDeleteAt') $ \deleteAt ->
             forM_ cis $ \ci ->
-              startProximateTimedItemThread user (ChatRef (CRTGroup gcs) groupId, chatItemId' ci) deleteAt
-          pure $ CRNewChatItems user (map (AChatItem SCTGroup SMDSnd (GroupChat gInfo gcsi)) cis)
+              startProximateTimedItemThread user (ChatRef CTGroup groupId scope, chatItemId' ci) deleteAt
+          pure $ CRNewChatItems user (map (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScope)) cis)
           where
             setupSndFileTransfers :: Int -> CM (NonEmpty (Maybe FileInvitation, Maybe (CIFile 'MDSnd)))
             setupSndFileTransfers n =
@@ -3457,35 +3462,36 @@ processChatCommand' vr = \case
       CRQueueInfo user msgInfo <$> withAgent (`getConnectionQueueInfo` acId)
     withSendRef :: ChatRef -> (SendRef -> CM ChatResponse) -> CM ChatResponse
     withSendRef chatRef a = case chatRef of
-      ChatRef CRTDirect cId -> a $ SRDirect cId
-      ChatRef (CRTGroup gcs) gId -> a $ SRGroup gId gcs
+      ChatRef CTDirect cId _ -> a $ SRDirect cId
+      ChatRef CTGroup gId scope -> a $ SRGroup gId scope
       _ -> throwChatError $ CECommandError "not supported"
 
-getGCSDependencies :: VersionRangeChat -> User -> GroupInfo -> GroupChatScope -> VersionChat -> CM (GroupChatScopeInfo, MsgScope, [GroupMember], Int)
-getGCSDependencies vr user gInfo@GroupInfo {membership} gcs modsCompatVersion = case gcs of
-  GCSGroup -> do
+-- TODO [knocking] refactor to GroupChatScope -> "a" function, "a" is some new type? Or possibly split to get scope/get recipients steps
+getGCSDependencies :: VersionRangeChat -> User -> GroupInfo -> Maybe GroupChatScope -> VersionChat -> CM (Maybe GroupChatScopeInfo, Maybe MsgScope, [GroupMember], Int)
+getGCSDependencies vr user gInfo@GroupInfo {membership} scope modsCompatVersion = case scope of
+  Nothing -> do
     unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
     ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
     let recipients = filter memberCurrent ms
-    pure (GCSIGroup, MSGroup, recipients, length recipients)
-  GCSMemberSupport gmId_ -> case gmId_ of
+    pure (Nothing, Nothing, recipients, length recipients)
+  Just (GCSMemberSupport gmId_) -> case gmId_ of
     Nothing -> do
-      gcsi <- liftIO $ memberSupportGCSI membership Nothing
+      chatScope <- liftIO $ memberSupportGCSI membership Nothing
       modMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
       let rcpModMs' = filter (\m -> compatible m && memberCurrent m) modMs
       when (null rcpModMs') $ throwChatError $ CECommandError "no admins support this message"
-      pure (gcsi, MSMember (memberId' membership), rcpModMs', length rcpModMs')
+      pure (Just chatScope, Just $ MSMember (memberId' membership), rcpModMs', length rcpModMs')
     Just gmId -> do
       unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
       supportMem <- withFastStore $ \db -> getGroupMemberById db vr user gmId
       unless (memberCurrentOrPending supportMem) $ throwChatError $ CECommandError "support member not current or pending"
-      gcsi <- liftIO $ memberSupportGCSI supportMem (Just supportMem)
+      chatScope <- liftIO $ memberSupportGCSI supportMem (Just supportMem)
       if memberStatus supportMem == GSMemPendingApproval
-        then pure (gcsi, MSMember (memberId' supportMem), [supportMem], 1)
+        then pure (Just chatScope, Just $ MSMember (memberId' supportMem), [supportMem], 1)
         else do
           modMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
           let rcpModMs' = filter (\m -> compatible m && memberCurrent m) modMs
-          pure (gcsi, MSMember (memberId' supportMem), [supportMem] <> rcpModMs', length rcpModMs' + 1)
+          pure (Just chatScope, Just $ MSMember (memberId' supportMem), [supportMem] <> rcpModMs', length rcpModMs' + 1)
     where
       compatible GroupMember {activeConn, memberChatVRange} =
         maxVersion (maybe memberChatVRange peerChatVRange activeConn) >= modsCompatVersion
@@ -4349,22 +4355,17 @@ chatCommandP =
         CTLocal -> pure $ ChatName CTLocal ""
         ct -> ChatName ct <$> displayNameP
     chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayNameP
-    chatRefP =
-      (A.char '@' $> ChatRef CRTDirect <*> A.decimal)
-        <|> groupChatRefP
-        <|> (A.char '*' $> ChatRef CRTLocal <*> A.decimal)
-        <|> (A.char ':' $> ChatRef CRTContactConnection <*> A.decimal)
-    groupChatRefP = do
-      gId <- A.char '#' *> A.decimal
-      gcs <- A.space *> gcScopeP <|> pure GCSGroup
-      pure $ ChatRef (CRTGroup gcs) gId
+    chatRefP = do
+      chatTypeP >>= \case
+        CTGroup -> ChatRef CTGroup <$> A.decimal <*> (A.space *> gcScopeP <|> pure Nothing)
+        cType -> (\chatId -> ChatRef cType chatId Nothing) <$> A.decimal
     sendRefP =
       (A.char '@' $> SRDirect <*> A.decimal)
-        <|> (A.char '#' $> SRGroup <*> A.decimal <*> (A.space *> gcScopeP <|> pure GCSGroup))
+        <|> (A.char '#' $> SRGroup <*> A.decimal <*> (A.space *> gcScopeP <|> pure Nothing))
     gcScopeP =
-      ("@group" $> GCSGroup)
-        <|> ("@support-" $> GCSMemberSupport . Just <*> A.decimal)
-        <|> ("@support" $> GCSMemberSupport Nothing)
+      ("@group" $> Nothing)
+        <|> ("@support-" *> (Just . GCSMemberSupport . Just <$> A.decimal))
+        <|> ("@support" $> Just (GCSMemberSupport Nothing))
     msgCountP = A.space *> A.decimal <|> pure 10
     ciTTLDecimal = ("default" $> Nothing) <|> (Just <$> A.decimal)
     ciTTL =

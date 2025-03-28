@@ -62,11 +62,7 @@ data ChatType = CTDirect | CTGroup | CTLocal | CTContactRequest | CTContactConne
   deriving (Eq, Show, Ord)
 
 data GroupChatScope
-  = GCSGroup
-  | GCSMemberSupport {groupMemberId_ :: Maybe GroupMemberId} -- Nothing means own conversation with admins
-  deriving (Eq, Show, Ord)
-
-data ChatRefType = CRTDirect | CRTGroup GroupChatScope | CRTLocal | CRTContactRequest | CRTContactConnection
+  = GCSMemberSupport {groupMemberId_ :: Maybe GroupMemberId} -- Nothing means own conversation with admins
   deriving (Eq, Show, Ord)
 
 data ChatName = ChatName {chatType :: ChatType, chatName :: Text}
@@ -83,20 +79,12 @@ chatTypeStr = \case
 chatNameStr :: ChatName -> String
 chatNameStr (ChatName cType name) = T.unpack $ chatTypeStr cType <> if T.any isSpace name then "'" <> name <> "'" else name
 
-data ChatRef = ChatRef ChatRefType Int64
+data ChatRef = ChatRef ChatType Int64 (Maybe GroupChatScope)
   deriving (Eq, Show, Ord)
-
-toChatRefType :: ChatType -> ChatRefType
-toChatRefType = \case
-  CTDirect -> CRTDirect
-  CTGroup -> CRTGroup GCSGroup
-  CTLocal -> CRTLocal
-  CTContactRequest -> CRTContactRequest
-  CTContactConnection -> CRTContactConnection
 
 data ChatInfo (c :: ChatType) where
   DirectChat :: Contact -> ChatInfo 'CTDirect
-  GroupChat :: GroupInfo -> GroupChatScopeInfo -> ChatInfo 'CTGroup
+  GroupChat :: GroupInfo -> Maybe GroupChatScopeInfo -> ChatInfo 'CTGroup
   LocalChat :: NoteFolder -> ChatInfo 'CTLocal
   ContactRequest :: UserContactRequest -> ChatInfo 'CTContactRequest
   ContactConnection :: PendingContactConnection -> ChatInfo 'CTContactConnection
@@ -104,32 +92,29 @@ data ChatInfo (c :: ChatType) where
 deriving instance Show (ChatInfo c)
 
 data GroupChatScopeInfo
-  = GCSIGroup
-  | GCSIMemberSupport
+  = GCSIMemberSupport
       { groupMember_ :: Maybe GroupMember,
         chatTs :: UTCTime,
         unanswered :: Bool
       }
   deriving (Show)
 
-toGCS :: GroupChatScopeInfo -> GroupChatScope
-toGCS = \case
-  GCSIGroup -> GCSGroup
+toChatScope :: GroupChatScopeInfo -> GroupChatScope
+toChatScope = \case
   GCSIMemberSupport {groupMember_} -> GCSMemberSupport $ groupMemberId' <$> groupMember_
 
 toMsgScope :: GroupInfo -> GroupChatScopeInfo -> MsgScope
 toMsgScope GroupInfo {membership} = \case
-  GCSIGroup -> MSGroup
   GCSIMemberSupport {groupMember_ = Nothing} -> MSMember $ memberId' membership
   GCSIMemberSupport {groupMember_ = Just m} -> MSMember $ memberId' m
 
 chatInfoToRef :: ChatInfo c -> ChatRef
 chatInfoToRef = \case
-  DirectChat Contact {contactId} -> ChatRef CRTDirect contactId
-  GroupChat GroupInfo {groupId} scopeInfo -> ChatRef (CRTGroup $ toGCS scopeInfo) groupId
-  LocalChat NoteFolder {noteFolderId} -> ChatRef CRTLocal noteFolderId
-  ContactRequest UserContactRequest {contactRequestId} -> ChatRef CRTContactRequest contactRequestId
-  ContactConnection PendingContactConnection {pccConnId} -> ChatRef CRTContactConnection pccConnId
+  DirectChat Contact {contactId} -> ChatRef CTDirect contactId Nothing
+  GroupChat GroupInfo {groupId} scopeInfo -> ChatRef CTGroup groupId (toChatScope <$> scopeInfo)
+  LocalChat NoteFolder {noteFolderId} -> ChatRef CTLocal noteFolderId Nothing
+  ContactRequest UserContactRequest {contactRequestId} -> ChatRef CTContactRequest contactRequestId Nothing
+  ContactConnection PendingContactConnection {pccConnId} -> ChatRef CTContactConnection pccConnId Nothing
 
 chatInfoMembership :: ChatInfo c -> Maybe GroupMember
 chatInfoMembership = \case
@@ -138,7 +123,7 @@ chatInfoMembership = \case
 
 data JSONChatInfo
   = JCInfoDirect {contact :: Contact}
-  | JCInfoGroup {groupInfo :: GroupInfo, groupChatScope :: GroupChatScopeInfo}
+  | JCInfoGroup {groupInfo :: GroupInfo, groupChatScope :: Maybe GroupChatScopeInfo}
   | JCInfoLocal {noteFolder :: NoteFolder}
   | JCInfoContactRequest {contactRequest :: UserContactRequest}
   | JCInfoContactConnection {contactConnection :: PendingContactConnection}
@@ -216,22 +201,22 @@ isUserMention ChatItem {meta = CIMeta {userMention}} = userMention
 data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectSnd :: CIDirection 'CTDirect 'MDSnd
   CIDirectRcv :: CIDirection 'CTDirect 'MDRcv
-  CIGroupSnd :: GroupChatScopeInfo -> CIDirection 'CTGroup 'MDSnd
-  CIGroupRcv :: GroupChatScopeInfo -> GroupMember -> CIDirection 'CTGroup 'MDRcv
+  CIGroupSnd :: Maybe GroupChatScopeInfo -> CIDirection 'CTGroup 'MDSnd
+  CIGroupRcv :: Maybe GroupChatScopeInfo -> GroupMember -> CIDirection 'CTGroup 'MDRcv
   CILocalSnd :: CIDirection 'CTLocal 'MDSnd
   CILocalRcv :: CIDirection 'CTLocal 'MDRcv
 
 deriving instance Show (CIDirection c d)
 
-groupCIDirectionScopeInfo :: ChatItem 'CTGroup d -> GroupChatScopeInfo
+groupCIDirectionScopeInfo :: ChatItem 'CTGroup d -> Maybe GroupChatScopeInfo
 groupCIDirectionScopeInfo ChatItem {chatDir} = case chatDir of
   CIGroupSnd s -> s
   CIGroupRcv s _ -> s
 
-groupCIDirectionScope :: ChatItem 'CTGroup d -> GroupChatScope
-groupCIDirectionScope = toGCS . groupCIDirectionScopeInfo
+groupCIDirectionScope :: ChatItem 'CTGroup d -> Maybe GroupChatScope
+groupCIDirectionScope = fmap toChatScope . groupCIDirectionScopeInfo
 
-groupCCIDirectionScope :: CChatItem 'CTGroup -> GroupChatScope
+groupCCIDirectionScope :: CChatItem 'CTGroup -> Maybe GroupChatScope
 groupCCIDirectionScope (CChatItem _ ci) = groupCIDirectionScope ci
 
 data CCIDirection c = forall d. MsgDirectionI d => CCID (SMsgDirection d) (CIDirection c d)
@@ -241,8 +226,8 @@ data ACIDirection = forall c d. (ChatTypeI c, MsgDirectionI d) => ACID (SChatTyp
 data JSONCIDirection
   = JCIDirectSnd
   | JCIDirectRcv
-  | JCIGroupSnd {groupChatScopeInfo :: GroupChatScopeInfo}
-  | JCIGroupRcv {groupChatScopeInfo :: GroupChatScopeInfo, groupMember :: GroupMember}
+  | JCIGroupSnd {groupChatScopeInfo :: Maybe GroupChatScopeInfo}
+  | JCIGroupRcv {groupChatScopeInfo :: Maybe GroupChatScopeInfo, groupMember :: GroupMember}
   | JCILocalSnd
   | JCILocalRcv
   deriving (Show)
@@ -308,8 +293,8 @@ ciReactionAllowed ChatItem {content} = isJust $ ciMsgContent content
 data ChatDirection (c :: ChatType) (d :: MsgDirection) where
   CDDirectSnd :: Contact -> ChatDirection 'CTDirect 'MDSnd
   CDDirectRcv :: Contact -> ChatDirection 'CTDirect 'MDRcv
-  CDGroupSnd :: GroupInfo -> GroupChatScopeInfo -> ChatDirection 'CTGroup 'MDSnd
-  CDGroupRcv :: GroupInfo -> GroupChatScopeInfo -> GroupMember -> ChatDirection 'CTGroup 'MDRcv
+  CDGroupSnd :: GroupInfo -> Maybe GroupChatScopeInfo -> ChatDirection 'CTGroup 'MDSnd
+  CDGroupRcv :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> ChatDirection 'CTGroup 'MDRcv
   CDLocalSnd :: NoteFolder -> ChatDirection 'CTLocal 'MDSnd
   CDLocalRcv :: NoteFolder -> ChatDirection 'CTLocal 'MDRcv
 
@@ -552,8 +537,8 @@ jsonCIQDirection :: CIQDirection c -> Maybe JSONCIDirection
 jsonCIQDirection = \case
   CIQDirectSnd -> Just JCIDirectSnd
   CIQDirectRcv -> Just JCIDirectRcv
-  CIQGroupSnd -> Just $ JCIGroupSnd GCSIGroup -- TODO [knocking] figure out what this is for, add scope to CIQDirection?
-  CIQGroupRcv (Just m) -> Just $ JCIGroupRcv GCSIGroup m
+  CIQGroupSnd -> Just $ JCIGroupSnd Nothing -- TODO [knocking] figure out what this is for, add scope to CIQDirection?
+  CIQGroupRcv (Just m) -> Just $ JCIGroupRcv Nothing m
   CIQGroupRcv Nothing -> Nothing
 
 jsonACIQDirection :: Maybe JSONCIDirection -> Either String ACIQDirection
