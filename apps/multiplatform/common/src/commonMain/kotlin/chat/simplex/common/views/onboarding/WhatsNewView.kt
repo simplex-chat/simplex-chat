@@ -14,7 +14,6 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatController.appPrefs
@@ -161,27 +160,28 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
       }
 
       if (updatedConditions) {
-        Row(
-          modifier = Modifier
-            .clip(shape = CircleShape)
-            .clickable {
-              modalManager.showModalCloseable { close ->
-                UsageConditionsView(
-                  userServers = mutableStateOf(emptyList()),
-                  currUserServers = mutableStateOf(emptyList()),
-                  close = close,
-                  rhId = rhId
-                )
+        Box(Modifier.clip(RoundedCornerShape(20.dp))) {
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier
+              .clickable {
+                modalManager.showModalCloseable { close ->
+                  UsageConditionsView(
+                    userServers = mutableStateOf(emptyList()),
+                    currUserServers = mutableStateOf(emptyList()),
+                    close = close,
+                    rhId = rhId
+                  )
+                }
               }
-            }
-            .padding(horizontal = 6.dp, vertical = 4.dp),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.Center
-        ) {
-          Text(
-            stringResource(MR.strings.view_updated_conditions),
-            color = MaterialTheme.colors.primary
-          )
+              .padding(8.dp)
+          ) {
+            Text(
+              stringResource(MR.strings.view_updated_conditions),
+              color = MaterialTheme.colors.primary
+            )
+          }
         }
       }
 
@@ -190,14 +190,21 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
         Box(
           Modifier.fillMaxWidth(), contentAlignment = Alignment.Center
         ) {
-          Text(
-            generalGetString(MR.strings.ok),
-            modifier = Modifier.clickable(onClick = {
-                close()
-            }),
-            style = MaterialTheme.typography.h3,
-            color = MaterialTheme.colors.primary
-          )
+          Box(Modifier.clip(RoundedCornerShape(20.dp))) {
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.Center,
+              modifier = Modifier
+                .clickable { close() }
+                .padding(8.dp)
+            ) {
+              Text(
+                generalGetString(MR.strings.ok),
+                style = MaterialTheme.typography.h3,
+                color = MaterialTheme.colors.primary
+              )
+            }
+          }
         }
         Spacer(Modifier.fillMaxHeight().weight(1f))
       }
@@ -212,10 +219,17 @@ fun ModalData.WhatsNewView(updatedConditions: Boolean = false, viaSettings: Bool
 @Composable
 fun ReadMoreButton(url: String) {
   val uriHandler = LocalUriHandler.current
-  Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = DEFAULT_PADDING.div(4))) {
-    Text(stringResource(MR.strings.whats_new_read_more), color = MaterialTheme.colors.primary,
-      modifier = Modifier.clickable { uriHandler.openUriCatching(url) })
-    Icon(painterResource(MR.images.ic_open_in_new), stringResource(MR.strings.whats_new_read_more), tint = MaterialTheme.colors.primary)
+  Box(Modifier.clip(RoundedCornerShape(20.dp))) {
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+      modifier = Modifier
+        .clickable { uriHandler.openUriCatching(url) }
+        .padding(8.dp)
+    ) {
+      Text(stringResource(MR.strings.whats_new_read_more), color = MaterialTheme.colors.primary)
+      Icon(painterResource(MR.images.ic_open_in_new), stringResource(MR.strings.whats_new_read_more), tint = MaterialTheme.colors.primary)
+    }
   }
 }
 
