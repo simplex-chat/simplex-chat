@@ -1162,6 +1162,11 @@
   <string name="use_random_passphrase">Use random passphrase</string>
 
   <!-- ChooseServerOperators.kt -->
+  <string name="onboarding_conditions_private_chats_not_accessible">Private chats, groups and your contacts are not accessible to server operators.</string>
+  <string name="onboarding_conditions_by_using_you_agree">By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam.</string>
+  <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Privacy policy and conditions of use.</string>
+  <string name="onboarding_conditions_accept">Accept</string>
+  <string name="onboarding_conditions_configure_server_operators">Configure server operators</string>
   <string name="onboarding_choose_server_operators">Server operators</string>
   <string name="onboarding_network_operators">Network operators</string>
   <string name="onboarding_network_operators_simplex_flux_agreement">SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app.</string>
@@ -2291,7 +2296,7 @@
   <string name="v6_1_delete_many_messages_descr">Delete or moderate up to 200 messages.</string>
   <string name="v6_2_network_decentralization">Network decentralization</string>
   <string name="v6_2_network_decentralization_descr">The second preset operator in the app!</string>
-  <string name="v6_2_network_decentralization_enable_flux">Enable flux</string>
+  <string name="v6_2_network_decentralization_enable_flux">Enable Flux in Network &amp; servers settings for better metadata privacy.</string>
   <string name="v6_2_network_decentralization_enable_flux_reason">for better metadata privacy.</string>
   <string name="v6_2_improved_chat_navigation">Improved chat navigation</string>
   <string name="v6_2_improved_chat_navigation_descr">- Open chat on the first unread message.\n- Jump to quoted messages.</string>
