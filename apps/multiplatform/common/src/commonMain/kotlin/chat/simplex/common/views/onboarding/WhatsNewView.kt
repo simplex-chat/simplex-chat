@@ -765,17 +765,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
             val src = (operatorsInfo[OperatorTag.Flux] ?: dummyOperatorInfo).largeLogo
             Image(painterResource(src), null, modifier = Modifier.height(48.dp))
             Text(stringResource(MR.strings.v6_2_network_decentralization_descr), modifier = Modifier.padding(top = 8.dp))
-            Row {
-              Text(
-                stringResource(MR.strings.v6_2_network_decentralization_enable_flux),
-                color = MaterialTheme.colors.primary,
-                modifier = Modifier.clickable {
-                  modalManager.showModalCloseable { close -> ChooseServerOperators(onboarding = false, close, modalManager) }
-                }
-              )
-              Text(" ")
-              Text(stringResource(MR.strings.v6_2_network_decentralization_enable_flux_reason))
-            }
+            Text(stringResource(MR.strings.v6_2_network_decentralization_enable_flux))
           }
         }
       ),

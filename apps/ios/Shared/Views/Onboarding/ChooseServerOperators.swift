@@ -132,15 +132,6 @@ struct OnboardingConditionsView: View {
         .padding(25)
     }
 
-//    private var viewConditionsText: AttributedString {
-//        let localizedString = String.LocalizationValue("By proceeding you accept these conditions and our {Privacy policy and conditions of use}.")
-//        var attributedString = AttributedString(localized: localizedString)
-//        if let range = attributedString.range(of: "{Privacy policy and conditions of use}") {
-//            attributedString[range].foregroundColor = .blue
-//        }
-//        return attributedString
-//    }
-
     private func continueToNextStep() {
         onboardingStageDefault.set(.step4_SetNotificationsMode)
         notificationsModeNavLinkActive = true
