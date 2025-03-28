@@ -166,6 +166,8 @@ CREATE TABLE group_members(
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   member_restriction TEXT,
+  support_chat_ts TEXT,
+  support_chat_unanswered INTEGER,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -407,7 +409,8 @@ CREATE TABLE chat_items(
   via_proxy INTEGER,
   msg_content_tag TEXT,
   include_in_history INTEGER NOT NULL DEFAULT 0,
-  user_mention INTEGER NOT NULL DEFAULT 0
+  user_mention INTEGER NOT NULL DEFAULT 0,
+  group_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE
 );
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(
@@ -1017,4 +1020,13 @@ CREATE INDEX idx_connections_group_member_id ON connections(group_member_id);
 CREATE INDEX idx_chat_items_group_id_shared_msg_id ON chat_items(
   group_id,
   shared_msg_id
+);
+CREATE INDEX idx_chat_items_group_scope_group_member_id ON chat_items(
+  group_scope_group_member_id
+);
+CREATE INDEX idx_chat_items_groups_group_scope_group_member_id_item_ts ON chat_items(
+  user_id,
+  group_id,
+  group_scope_group_member_id,
+  item_ts
 );

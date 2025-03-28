@@ -200,14 +200,14 @@ testPaginationAllChatTypes =
 
       ts7 <- iso8601Show <$> getCurrentTime
 
-      getChats_ alice "count=10" [("*", "psst"), ("@dan", "hey"), ("#team", "Recent history: on"), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
-      getChats_ alice "count=3" [("*", "psst"), ("@dan", "hey"), ("#team", "Recent history: on")]
+      getChats_ alice "count=10" [("*", "psst"), ("@dan", "hey"), ("#team", "New member review: off"), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
+      getChats_ alice "count=3" [("*", "psst"), ("@dan", "hey"), ("#team", "New member review: off")]
       getChats_ alice ("after=" <> ts2 <> " count=2") [(":3", ""), ("<@cath", "")]
-      getChats_ alice ("before=" <> ts5 <> " count=2") [("#team", "Recent history: on"), (":3", "")]
-      getChats_ alice ("after=" <> ts3 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", "Recent history: on"), (":3", "")]
+      getChats_ alice ("before=" <> ts5 <> " count=2") [("#team", "New member review: off"), (":3", "")]
+      getChats_ alice ("after=" <> ts3 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", "New member review: off"), (":3", "")]
       getChats_ alice ("before=" <> ts4 <> " count=10") [(":3", ""), ("<@cath", ""), ("@bob", "hey")]
-      getChats_ alice ("after=" <> ts1 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", "Recent history: on"), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
-      getChats_ alice ("before=" <> ts7 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", "Recent history: on"), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
+      getChats_ alice ("after=" <> ts1 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", "New member review: off"), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
+      getChats_ alice ("before=" <> ts7 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", "New member review: off"), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
       getChats_ alice ("after=" <> ts7 <> " count=10") []
       getChats_ alice ("before=" <> ts1 <> " count=10") []
 
@@ -219,11 +219,11 @@ testPaginationAllChatTypes =
       alice ##> "/_settings #1 {\"enableNtfs\":\"all\",\"favorite\":true}"
       alice <## "ok"
 
-      getChats_ alice queryFavorite [("#team", "Recent history: on"), ("@bob", "hey")]
+      getChats_ alice queryFavorite [("#team", "New member review: off"), ("@bob", "hey")]
       getChats_ alice ("before=" <> ts4 <> " count=1 " <> queryFavorite) [("@bob", "hey")]
-      getChats_ alice ("before=" <> ts5 <> " count=1 " <> queryFavorite) [("#team", "Recent history: on")]
+      getChats_ alice ("before=" <> ts5 <> " count=1 " <> queryFavorite) [("#team", "New member review: off")]
       getChats_ alice ("after=" <> ts1 <> " count=1 " <> queryFavorite) [("@bob", "hey")]
-      getChats_ alice ("after=" <> ts4 <> " count=1 " <> queryFavorite) [("#team", "Recent history: on")]
+      getChats_ alice ("after=" <> ts4 <> " count=1 " <> queryFavorite) [("#team", "New member review: off")]
 
       let queryUnread = "{\"type\": \"filters\", \"favorite\": false, \"unread\": true}"
 
