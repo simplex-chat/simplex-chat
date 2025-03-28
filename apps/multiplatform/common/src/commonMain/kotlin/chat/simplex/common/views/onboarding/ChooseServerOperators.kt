@@ -7,14 +7,18 @@ import SectionTextFooter
 import SectionView
 import TextIconSpaced
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
@@ -46,21 +50,36 @@ fun ModalData.OnboardingConditionsView() {
         }
 
         Spacer(Modifier.weight(1f))
-        Column((
-            if (appPlatform.isDesktop) Modifier.width(600.dp).align(Alignment.CenterHorizontally) else Modifier)
+        Column(
+          (if (appPlatform.isDesktop) Modifier.width(600.dp).align(Alignment.Start) else Modifier)
           .fillMaxWidth()
           .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
-          horizontalAlignment = Alignment.CenterHorizontally
+          horizontalAlignment = Alignment.Start
         ) {
-          Text(stringResource(MR.strings.onboarding_conditions_private_chats_not_accessible))
-          Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-          Text(stringResource(MR.strings.onboarding_conditions_by_using_you_agree))
-          Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-          TextButtonBelowOnboardingButton(stringResource(MR.strings.onboarding_conditions_privacy_policy_and_conditions_of_use)) {
-            ModalManager.fullscreen.showModal(endButtons = { ConditionsLinkButton() }) {
-              SimpleConditionsView(rhId = null)
-            }
-          }
+          Text(
+            stringResource(MR.strings.onboarding_conditions_private_chats_not_accessible),
+            style = TextStyle(fontSize = 17.sp, lineHeight = 23.sp)
+          )
+          Spacer(Modifier.height(DEFAULT_PADDING))
+          Text(
+            stringResource(MR.strings.onboarding_conditions_by_using_you_agree),
+            style = TextStyle(fontSize = 17.sp, lineHeight = 23.sp)
+          )
+          Spacer(Modifier.height(DEFAULT_PADDING))
+          Text(
+            stringResource(MR.strings.onboarding_conditions_privacy_policy_and_conditions_of_use),
+            style = TextStyle(fontSize = 17.sp),
+            color = MaterialTheme.colors.primary,
+            modifier = Modifier
+              .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+              ) {
+                ModalManager.fullscreen.showModal(endButtons = { ConditionsLinkButton() }) {
+                  SimpleConditionsView(rhId = null)
+                }
+              }
+          )
         }
         Spacer(Modifier.weight(1f))
 
