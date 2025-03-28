@@ -51,7 +51,7 @@ fun ModalData.OnboardingConditionsView() {
 
         Spacer(Modifier.weight(1f))
         Column(
-          (if (appPlatform.isDesktop) Modifier.width(600.dp).align(Alignment.Start) else Modifier)
+          (if (appPlatform.isDesktop) Modifier.width(450.dp).align(Alignment.CenterHorizontally) else Modifier)
           .fillMaxWidth()
           .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
           horizontalAlignment = Alignment.Start
