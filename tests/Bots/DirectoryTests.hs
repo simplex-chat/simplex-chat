@@ -64,6 +64,8 @@ directoryServiceTests = do
     it "should prohibit approval if a duplicate group is listed" testDuplicateProhibitApproval
   describe "list groups" $ do
     it "should list user's groups" testListUserGroups
+  describe "member admission" $ do
+    fit "should ask member to pass captcha screen" testCapthaScreening
   describe "store log" $ do
     it "should restore directory service state" testRestoreDirectory
   describe "captcha" $ do
@@ -953,6 +955,39 @@ testListUserGroups ps =
         superUser <# "SimpleX-Directory> The group ID 3 (anonymity) is de-listed (SimpleX-Directory role is changed to member)."
         groupNotFound cath "anonymity"
         listGroups superUser bob cath
+
+testCapthaScreening :: HasCallStack => TestParams -> IO ()
+testCapthaScreening ps =
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        registerGroup superUser bob "privacy" "Privacy"
+        -- check default role
+        bob #> "@SimpleX-Directory /role 1"
+        bob <# "SimpleX-Directory> > /role 1"
+        bob <## "      The initial member role for the group privacy is set to member"
+        bob <## "Send /role 1 observer to change it."
+        bob <## ""
+        note <- getTermLine bob
+        let groupLink = dropStrPrefix "Please note: it applies only to members joining via this link: " note
+        -- enable captcha
+        bob #> "@SimpleX-Directory /filter 1 captcha"
+        bob <# "SimpleX-Directory> > /filter 1 captcha"
+        bob <## "      Spam filter settings for group privacy set to:"
+        bob <## "- reject long/inappropriate names: disabled"
+        bob <## "- pass captcha to join: enabled"
+        bob <## ""
+        bob <## "Use /filter 1 [name] [captcha] to enable and /filter 1 off to disable filter."
+        -- connect with captcha screen
+        cath ##> ("/c " <> groupLink)
+        cath <## "connection request sent!"
+        cath <## "#privacy: joining the group..."
+        cath <## "#privacy: you joined the group"
+        cath <#. "#privacy SimpleX-Directory> Link to join the group privacy: https://simplex.chat/"
+        cath <## "#privacy: member bob (Bob) is connected"
+        bob <## "#privacy: SimpleX-Directory added cath (Catherine) to the group (connecting...)"
+        bob <## "#privacy: new member cath is connected"
 
 testRestoreDirectory :: HasCallStack => TestParams -> IO ()
 testRestoreDirectory ps = do
