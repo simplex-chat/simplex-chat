@@ -2339,4 +2339,5 @@
     <string name="block_members_desc">Ezen tagok összes új üzenete el lesz rejtve!</string>
     <string name="unblock_members_desc">A tagok összes üzenete meg fog jelenni!</string>
     <string name="feature_roles_moderators">moderátorok</string>
+    <string name="onboarding_conditions_accept">Elfogadás</string>
 </resources>
