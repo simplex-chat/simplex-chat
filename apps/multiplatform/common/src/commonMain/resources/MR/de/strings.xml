@@ -2246,7 +2246,7 @@
     <string name="error_server_operator_changed">Der Server-Betreiber wurde geändert.</string>
     <string name="error_server_protocol_changed">Das Server-Protokoll wurde geändert.</string>
     <string name="appearance_in_app_bars_alpha">Transparenz</string>
-    <string name="v6_2_network_decentralization_enable_flux">Flux aktivieren</string>
+    <string name="v6_2_network_decentralization_enable_flux">Für einen besseren Metadatenschutz Flux in den Netzwerk- und Servereinstellungen aktivieren.</string>
     <string name="v6_2_network_decentralization">Dezentralisiertes Netzwerk</string>
     <string name="v6_2_network_decentralization_descr">Der zweite voreingestellte Netzwerk-Betreiber in der App!</string>
     <string name="v6_2_improved_chat_navigation">Verbesserte Chat-Navigation</string>
@@ -2447,4 +2447,9 @@
     <string name="feature_roles_moderators">Moderatoren</string>
     <string name="block_members_for_all_question">Mitglieder für Alle blockieren?</string>
     <string name="block_members_desc">Alle neuen Nachrichten dieser Mitglieder werden nicht angezeigt!</string>
+    <string name="onboarding_conditions_by_using_you_agree">Durch die Nutzung von SimpleX Chat erklären Sie sich damit einverstanden:\n- nur legale Inhalte in öffentlichen Gruppen zu versenden\n- andere Nutzer zu respektieren - kein Spam</string>
+    <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Datenschutzbestimmungen und Nutzungsbedingungen</string>
+    <string name="onboarding_conditions_accept">Akzeptieren</string>
+    <string name="onboarding_conditions_configure_server_operators">Server-Betreiber konfigurieren</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">Private Chats, Gruppen und Ihre Kontakte sind für Server-Betreiber nicht zugänglich.</string>
 </resources>
