@@ -875,7 +875,7 @@
     <string name="ttl_w">%ds</string>
     <string name="ttl_weeks">%d setmanes</string>
     <string name="v6_0_upgrade_app_descr">Baixa noves versions de GitHub.</string>
-    <string name="v6_2_network_decentralization_enable_flux">Habilita Flux</string>
+    <string name="v6_2_network_decentralization_enable_flux">Habiliteu Flux a la configuració de la xarxa i dels servidors per obtenir una millor privadesa de les metadades.</string>
     <string name="connect_to_desktop">Connectar amb l\'ordinador</string>
     <string name="servers_info_sessions_connecting">Connectant</string>
     <string name="download_errors">Errors de descàrrega</string>
@@ -2338,4 +2338,9 @@
     <string name="members_will_be_removed_from_group_cannot_be_undone">Els/les membres s\'eliminaran del grup; això no es pot desfer!</string>
     <string name="restore_passphrase_can_not_be_read_enter_manually_desc">La frase de contrasenya a Keystore no es pot llegir, introduïu-la manualment. Això pot haver passat després que l\'actualització del sistema sigui incompatible amb l\'aplicació. Si no és el cas, poseu-vos en contacte amb els desenvolupadors.</string>
     <string name="button_remove_members_question">Expulsar membres?</string>
+    <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Política de privadesa i condicions d\'ús.</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">Els xats privats, els grups i els vostres contactes no són accessibles per als operadors de servidor.</string>
+    <string name="onboarding_conditions_accept">Acceptar</string>
+    <string name="onboarding_conditions_by_using_you_agree">En utilitzar SimpleX Chat accepteu:\n- enviar només contingut legal en grups públics.\n- Respectar els altres usuaris, sense correu brossa.</string>
+    <string name="onboarding_conditions_configure_server_operators">Configurar els operadors de servidor</string>
 </resources>
