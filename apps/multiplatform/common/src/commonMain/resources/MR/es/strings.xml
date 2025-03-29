@@ -342,7 +342,7 @@
     <string name="error_changing_address">Error al cambiar dirección</string>
     <string name="error_saving_file">Error al guardar archivo</string>
     <string name="icon_descr_server_status_error">Error</string>
-    <string name="from_gallery_button">De la Galería</string>
+    <string name="from_gallery_button">De la galería</string>
     <string name="gallery_image_button">Imagen</string>
     <string name="gallery_video_button">Vídeo</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Si has recibido un enlace de invitación a SimpleX Chat puedes abrirlo en tu navegador:</string>
