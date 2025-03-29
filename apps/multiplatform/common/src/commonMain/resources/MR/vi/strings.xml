@@ -1393,7 +1393,7 @@
     <string name="onboarding_network_operators_continue">Tiếp tục</string>
     <string name="operator_conditions_failed_to_load">Không thể tải văn bản về các điều kiện hiện tại, bạn có thể xem xét các điều kiện thông qua đường dẫn này:</string>
     <string name="operator_conditions_of_use">Các điều kiện sử dụng</string>
-    <string name="v6_2_network_decentralization_enable_flux">Cho phép flux</string>
+    <string name="v6_2_network_decentralization_enable_flux">Sử dụng Flux trong cài đặt Mạng &amp; máy chủ để bảo mật siêu dữ liệu tốt hơn.</string>
     <string name="operator_conditions_will_be_accepted_on">Các điều kiện sẽ được chấp nhận vào: %s.</string>
     <string name="error_adding_server">Lỗi thêm máy chủ</string>
     <string name="error_updating_server_title">Lỗi cập nhật máy chủ</string>
@@ -2347,4 +2347,9 @@
     <string name="group_member_status_pending_approval">đang chờ phê duyệt</string>
     <string name="unblock_members_for_all_question">Bỏ chặn các thành viên cho tất cả?</string>
     <string name="button_remove_members_question">Xóa các thành viên?</string>
+    <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Chính sách quyền riêng tư và các điều kiện sử dụng.</string>
+    <string name="onboarding_conditions_by_using_you_agree">Bằng việc sử dụng SimpleX Chat, bạn đồng ý:\n- chỉ gửi nội dung hợp pháp trong các nhóm công khai.\n- tôn trọng những người dùng khác - không gửi tin rác.</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">Các cuộc trò chuyện riêng tư, nhóm và liên hệ của bạn không thể truy cập được đối với các bên vận hành máy chủ.</string>
+    <string name="onboarding_conditions_accept">Chấp nhận</string>
+    <string name="onboarding_conditions_configure_server_operators">Định cấu hình các bên vận hành máy chủ</string>
 </resources>
