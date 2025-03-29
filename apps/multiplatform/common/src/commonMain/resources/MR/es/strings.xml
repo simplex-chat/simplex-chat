@@ -238,7 +238,7 @@
     <string name="icon_descr_email">Email</string>
     <string name="connect_button">Conectar</string>
     <string name="connect_via_link">Conectar mediante enlace</string>
-    <string name="database_passphrase_and_export">Contraseña de la base de datos y exportación</string>
+    <string name="database_passphrase_and_export">Base de Datos y Contraseña</string>
     <string name="contribute">Contribuye</string>
     <string name="core_version">Core versión: v%s</string>
     <string name="delete_image">Eliminar imagen</string>
@@ -271,7 +271,7 @@
     <string name="change_role">Cambiar rol</string>
     <string name="v4_5_transport_isolation_descr">Mediante perfil (predeterminado) o por conexión (BETA)</string>
     <string name="snd_conn_event_switch_queue_phase_changing">cambiando de servidor…</string>
-    <string name="chat_preferences">Preferencias del chat</string>
+    <string name="chat_preferences">Preferencias generales</string>
     <string name="feature_cancelled_item">cancelado %s</string>
     <string name="chat_is_stopped">SimpleX está parado</string>
     <string name="settings_section_title_calls">LLAMADAS</string>
@@ -518,7 +518,7 @@
     <string name="ok">OK</string>
     <string name="only_stored_on_members_devices">(sólo almacenado por miembros del grupo)</string>
     <string name="markdown_help">Ayuda sintaxis markdown</string>
-    <string name="network_and_servers">Red y servidores</string>
+    <string name="network_and_servers">Servidores y Red</string>
     <string name="network_use_onion_hosts_prefer_desc">Se usarán hosts .onion si están disponibles.</string>
     <string name="italic_text">cursiva</string>
     <string name="incoming_audio_call">Llamada audio entrante</string>
@@ -604,7 +604,7 @@
     <string name="onboarding_notifications_mode_title">Notificaciones privadas</string>
     <string name="image_descr_profile_image">imagen del perfil</string>
     <string name="prohibit_sending_voice_messages">No se permiten mensajes de voz.</string>
-    <string name="protect_app_screen">Proteger pantalla de la app</string>
+    <string name="protect_app_screen">Proteger pantalla de la aplicación</string>
     <string name="read_more_in_github_with_link"><![CDATA[Conoce más en nuestro <font color="#0088ff">repositorio GitHub</font> .]]></string>
     <string name="icon_descr_record_voice_message">Grabar mensaje de voz</string>
     <string name="rcv_group_event_member_deleted">ha expulsado a %1$s</string>
@@ -781,7 +781,7 @@
     <string name="is_not_verified">%s no está verificado</string>
     <string name="smp_servers_test_server">Probar servidor</string>
     <string name="smp_servers_test_servers">Probar servidores</string>
-    <string name="star_on_github">Estrella en GitHub</string>
+    <string name="star_on_github">Califica en GitHub</string>
     <string name="smp_servers_per_user">Servidores para conexiones nuevas en tu perfil</string>
     <string name="network_disable_socks">¿Usar conexión directa a Internet\?</string>
     <string name="profile_is_only_shared_with_your_contacts">El perfil sólo se comparte con tus contactos.</string>
@@ -1834,7 +1834,7 @@
     <string name="v5_8_chat_themes">Nuevos temas de chat</string>
     <string name="message_queue_info">Información cola de mensajes</string>
     <string name="message_queue_info_none">ninguno</string>
-    <string name="v5_8_private_routing_descr">Protege tu dirección IP de los servidores de retransmisión elegidos por tus contactos.\nActívalo en los ajustes de *Red y servidores*.</string>
+    <string name="v5_8_private_routing_descr">Protege tu dirección IP de los servidores elegidos por tus contactos.\nActívalo en *Servidores y Red*.</string>
     <string name="chat_theme_reset_to_user_theme">Reiniciar al tema del usuario</string>
     <string name="error_initializing_web_view">Error al inicializar WebView. Actualiza tu sistema a la última versión. Por favor, ponte en contacto con los desarrolladores.
 \nError: %s</string>
@@ -1854,7 +1854,7 @@
     <string name="remote_ctrl_connection_stopped_identity_desc">Este enlace ha sido usado en otro dispositivo móvil, por favor crea un enlace nuevo en el ordenador.</string>
     <string name="cannot_share_message_alert_title">No se puede enviar el mensaje</string>
     <string name="cannot_share_message_alert_text">Las preferencias seleccionadas no permiten este mensaje.</string>
-    <string name="servers_info">Info servidores</string>
+    <string name="servers_info">Estadísticas servidores</string>
     <string name="servers_info_files_tab">Archivos</string>
     <string name="servers_info_target">Mostrando</string>
     <string name="subscribed">Suscritas</string>
@@ -2050,7 +2050,7 @@
     <string name="v6_0_new_media_options">Nuevas opciones multimedia</string>
     <string name="one_hand_ui_change_instruction">Puedes cambiar la posición de la barra desde el menú Apariencia.</string>
     <string name="v6_0_upgrade_app_descr">Descarga nuevas versiones desde GitHub.</string>
-    <string name="new_message">Nuevo mensaje</string>
+    <string name="new_message">Mensaje nuevo</string>
     <string name="error_parsing_uri_title">Enlace no válido</string>
     <string name="error_parsing_uri_desc">Por favor, comprueba que el enlace SimpleX es correcto.</string>
     <string name="forward_files_in_progress_desc">%1$d archivo(s) se está(n) descargando todavía.</string>
@@ -2155,7 +2155,7 @@
     <string name="operator_conditions_accepted_for_enabled_operators_on">Las condiciones serán aceptadas automáticamente para los operadores habilitados el: %s.</string>
     <string name="onboarding_network_operators_continue">Continuar</string>
     <string name="operator_conditions_failed_to_load">El texto con las condiciones actuales no se ha podido cargar, puedes revisar las condiciones en el siguiente enlace:</string>
-    <string name="v6_2_network_decentralization_enable_flux">Habilita Flux desde los ajustes de Red y servidores para mejorar la privacidad de metadatos.</string>
+    <string name="v6_2_network_decentralization_enable_flux">Activa Flux en Servidores y Red para mejorar la privacidad de los metadatos.</string>
     <string name="error_accepting_operator_conditions">Error al aceptar las condiciones</string>
     <string name="error_updating_server_title">Error al actualizar el servidor</string>
     <string name="v6_2_network_decentralization_enable_flux_reason">para mejorar la privacidad de los metadatos.</string>
@@ -2185,7 +2185,7 @@
     <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[Los enlaces de un uso pueden ser usados <i>solamente con un contacto</i> - comparte en persona o mediante cualquier aplicación de mensajería.]]></string>
     <string name="you_can_set_connection_name_to_remember">Puedes añadir un nombre a la conexión para recordar a quién corresponde.</string>
     <string name="onboarding_network_operators_app_will_use_different_operators">La aplicación protege tu privacidad mediante el uso de diferentes operadores en cada conversación.</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">Puedes configurar los operadores desde los ajustes de Red y servidores.</string>
+    <string name="onboarding_network_operators_conditions_you_can_configure">Puedes configurar los operadores desde los ajustes de Servidores y Red.</string>
     <string name="operators_conditions_accepted_for"><![CDATA[Las condiciones se han aceptado para el(los) operador(s): <b>%s</b>.]]></string>
     <string name="operators_conditions_will_be_accepted_for"><![CDATA[Las condiciones serán aceptadas para el/los operador(es): <b>%s</b>.]]></string>
     <string name="operator_conditions_accepted_for_some"><![CDATA[Las condiciones ya se han aceptado para el/los siguiente(s) operador(s): <b>%s</b>.]]></string>
@@ -2374,6 +2374,7 @@
     <string name="restore_passphrase_can_not_be_read_enter_manually_desc">La frase de contraseña no se ha podido leer en Keystore. Por favor, introdúcela manualmente. Puede deberse a alguna actualización del sistema incompatible con la aplicación. Si no es así, por favor, ponte en contacto con los desarrolladores.</string>
     <string name="onboarding_conditions_accept">Aceptar</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Política de privacidad y condiciones de uso.</string>
-    <string name="onboarding_conditions_private_chats_not_accessible">Los chats privados, los grupos y tus contactos no son accesibles para los operadores del servidor.</string>
-    <string name="onboarding_conditions_by_using_you_agree">Al usar SimpleX Chat, aceptas:\n- enviar únicamente contenido legal en los grupos públicos.\n- respetar a los demás usuarios - nada de spam.</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">Los chats privados, los grupos y tus contactos no son accesibles para los operadores de servidores.</string>
+    <string name="onboarding_conditions_by_using_you_agree">Al usar SimpleX Chat, aceptas:\n- enviar únicamente contenido legal en los grupos públicos.\n- respetar a los demás usuarios - spam prohibido.</string>
+    <string name="onboarding_conditions_configure_server_operators">Configurar operadores de servidores</string>
 </resources>
