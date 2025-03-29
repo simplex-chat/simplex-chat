@@ -207,7 +207,7 @@ struct CreateFirstProfile: View {
     }
 
     private func nextStepDestinationView() -> some View {
-        ChooseServerOperators(onboarding: true)
+        OnboardingConditionsView()
             .navigationBarBackButtonHidden(true)
             .modifier(ThemedBackground())
     }

@@ -129,6 +129,7 @@ struct SimpleXInfo: View {
 
             NavigationLink(isActive: $createProfileNavLinkActive) {
                 CreateFirstProfile()
+                    .modifier(ThemedBackground())
             } label: {
                 EmptyView()
             }

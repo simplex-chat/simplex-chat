@@ -127,31 +127,13 @@ fun ToggleChatListCard() {
 @Composable
 fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedViewState>, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
-  val rhId = chatModel.remoteHostId()
 
   LaunchedEffect(Unit) {
     val showWhatsNew = shouldShowWhatsNew(chatModel)
     val showUpdatedConditions = chatModel.conditions.value.conditionsAction?.shouldShowNotice ?: false
-    if (showWhatsNew) {
+    if (showWhatsNew || showUpdatedConditions) {
       delay(1000L)
       ModalManager.center.showCustomModal { close -> WhatsNewView(close = close, updatedConditions = showUpdatedConditions) }
-    } else if (showUpdatedConditions) {
-      ModalManager.center.showModalCloseable(endButtons = { ConditionsLinkButton() }) { close ->
-        LaunchedEffect(Unit) {
-          val conditionsId = chatModel.conditions.value.currentConditions.conditionsId
-          try {
-            setConditionsNotified(rh = rhId, conditionsId = conditionsId)
-          } catch (e: Exception) {
-            Log.d(TAG, "UsageConditionsView setConditionsNotified error: ${e.message}")
-          }
-        }
-        UsageConditionsView(
-          userServers = mutableStateOf(emptyList()),
-          currUserServers = mutableStateOf(emptyList()),
-          close = close,
-          rhId = rhId
-        )
-      }
     }
   }
 

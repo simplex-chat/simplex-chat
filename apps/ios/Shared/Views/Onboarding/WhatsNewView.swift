@@ -594,8 +594,6 @@ func shouldShowWhatsNew() -> Bool {
 }
 
 fileprivate struct NewOperatorsView: View {
-    @State private var showOperatorsSheet = false
-
     var body: some View {
         VStack(alignment: .leading) {
             Image((operatorsInfo[.flux] ?? ServerOperator.dummyOperatorInfo).largeLogo)
@@ -606,16 +604,7 @@ fileprivate struct NewOperatorsView: View {
                 .multilineTextAlignment(.leading)
                 .lineLimit(10)
             HStack {
-                Button("Enable Flux") {
-                    showOperatorsSheet = true
-                }
-                Text("for better metadata privacy.")
-            }
-        }
-        .sheet(isPresented: $showOperatorsSheet) {
-            NavigationView {
-                ChooseServerOperators(onboarding: false)
-                    .modifier(ThemedBackground())
+                Text("Enable Flux in Network & servers settings for better metadata privacy.")
             }
         }
     }
