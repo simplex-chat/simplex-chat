@@ -20,7 +20,7 @@
     <string name="allow_your_contacts_to_send_voice_messages">Permites a tus contactos enviar mensajes de voz.</string>
     <string name="chat_preferences_always">siempre</string>
     <string name="notifications_mode_off_desc">La aplicación sólo puede recibir notificaciones cuando se está ejecutando. No se iniciará ningún servicio en segundo plano.</string>
-    <string name="settings_section_title_icon">ICONO APLICACIÓN</string>
+    <string name="settings_section_title_icon">ICONO DE LA APLICACIÓN</string>
     <string name="turning_off_service_and_periodic">La optimización de la batería está activa, desactivando el servicio en segundo plano y las solicitudes periódicas de nuevos mensajes. Puedes volver a activarlos en Configuración.</string>
     <string name="notifications_mode_service_desc">El servicio está siempre en funcionamiento en segundo plano. Las notificaciones se muestran en cuanto haya mensajes nuevos.</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Se puede desactivar en Configuración</b> – las notificaciones se seguirán mostrando mientras la app esté en funcionamiento.]]></string>
@@ -158,7 +158,7 @@
     <string name="icon_descr_server_status_connected">Conectado</string>
     <string name="copied">Copiado en portapapeles</string>
     <string name="share_one_time_link">Crea enlace de invitación de un uso.</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 Ordenador: escanéa el código QR desde la aplicación mediante <b>Escanear código QR </b>]]></string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 Ordenador: escanea el código QR desde la aplicación mediante <b>Escanear código QR </b>]]></string>
     <string name="delete_contact_menu_action">Eliminar</string>
     <string name="delete_group_menu_action">Eliminar</string>
     <string name="alert_title_contact_connection_pending">¡El contacto aun no se ha conectado!</string>
@@ -314,9 +314,9 @@
     <string name="delete_group_for_self_cannot_undo_warning">El grupo será eliminado para tí. ¡No puede deshacerse!</string>
     <string name="how_to_use_markdown">Cómo usar la sintaxis markdown</string>
     <string name="description_via_one_time_link_incognito">en modo incógnito mediante enlace de un solo uso</string>
-    <string name="simplex_link_contact">Dirección de contacto SimpleX</string>
+    <string name="simplex_link_contact">Dirección de contacto de SimpleX</string>
     <string name="error_saving_smp_servers">Error al guardar servidores SMP</string>
-    <string name="simplex_link_mode_browser_warning">Abrir el enlace en el navegador puede reducir la privacidad y seguridad de la conexión. Los enlaces SimpleX que no son de confianza aparecerán en rojo.</string>
+    <string name="simplex_link_mode_browser_warning">Abrir el enlace en el navegador puede reducir la privacidad y seguridad de la conexión. Los enlaces de SimpleX que no son de confianza aparecerán en rojo.</string>
     <string name="error_setting_network_config">Error al actualizar la configuración de red</string>
     <string name="error_creating_address">Error al crear dirección</string>
     <string name="error_deleting_user">Error al eliminar perfil</string>
@@ -749,9 +749,9 @@
 \nSe te pedirá que completes la autenticación antes de activar esta función.</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Para actualizar la configuración el cliente se reconectará a todos los servidores.</string>
     <string name="use_simplex_chat_servers__question">¿Usar servidores SimpleX Chat\?</string>
-    <string name="simplex_link_group">Enlace de grupo SimpleX</string>
-    <string name="simplex_link_invitation">Invitación única SimpleX</string>
-    <string name="simplex_link_mode">Enlaces SimpleX</string>
+    <string name="simplex_link_group">Enlace de grupo de SimpleX</string>
+    <string name="simplex_link_invitation">Invitación única de SimpleX</string>
+    <string name="simplex_link_mode">Enlaces de SimpleX</string>
     <string name="error_smp_test_server_auth">El servidor requiere autorización para crear colas, comprueba la contraseña</string>
     <string name="enter_passphrase_notification_desc">Para recibir notificaciones, introduce la contraseña de la base de datos</string>
     <string name="ntf_channel_calls">Llamadas de chat SimpleX</string>
@@ -935,7 +935,7 @@
     <string name="your_chat_profiles">Mis perfiles</string>
     <string name="your_simplex_contact_address">Mi dirección SimpleX</string>
     <string name="smp_servers_your_server">Tu servidor</string>
-    <string name="smp_servers_your_server_address">Dirección del servidor</string>
+    <string name="smp_servers_your_server_address">Dirección de tu servidor</string>
     <string name="your_current_profile">Tu perfil actual</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Tu perfil es almacenado en tu dispositivo y solamente se comparte con tus contactos. Los servidores SimpleX no pueden ver tu perfil.</string>
     <string name="language_system">Sistema</string>
@@ -992,10 +992,10 @@
     <string name="confirm_database_upgrades">Confirmar actualizaciones de la bases de datos</string>
     <string name="mtr_error_no_down_migration">la versión de la base de datos es más reciente que la aplicación, pero no hay migración hacia versión anterior para: %s</string>
     <string name="settings_section_title_experimenta">EXPERIMENTAL</string>
-    <string name="developer_options">IDs de la base de datos y opciónes de aislamiento de transporte.</string>
+    <string name="developer_options">IDs de la base de datos y opciones de aislamiento de transporte.</string>
     <string name="file_will_be_received_when_contact_completes_uploading">El archivo se recibirá cuando el contacto termine de subirlo.</string>
     <string name="image_will_be_received_when_contact_completes_uploading">La imagen se recibirá cuando el contacto termine de subirla.</string>
-    <string name="show_developer_options">Mostrar opciones de desarrollador</string>
+    <string name="show_developer_options">Mostrar opciones para desarrolladores</string>
     <string name="hide_dev_options">Ocultar:</string>
     <string name="show_dev_options">Mostrar:</string>
     <string name="delete_chat_profile">Eliminar perfil</string>
@@ -1143,7 +1143,7 @@
     <string name="color_sent_message">Mensaje enviado</string>
     <string name="stop_sharing">Dejar de compartir</string>
     <string name="stop_sharing_address">¿Dejar de compartir la dirección\?</string>
-    <string name="theme_colors_section_title">COLORES DEL INTERFAZ</string>
+    <string name="theme_colors_section_title">COLORES DE LA INTERFAZ</string>
     <string name="you_can_create_it_later">Puedes crearla más tarde</string>
     <string name="share_address_with_contacts_question">¿Compartir la dirección con los contactos\?</string>
     <string name="share_with_contacts">Compartir con contactos</string>
@@ -1233,7 +1233,7 @@
     <string name="settings_section_title_app">APLICACIÓN</string>
     <string name="settings_restart_app">Reiniciar</string>
     <string name="settings_shutdown">Cerrar</string>
-    <string name="shutdown_alert_desc">Las notificaciones dejarán de funcionar hasta que reinicies la aplicación</string>
+    <string name="shutdown_alert_desc">Las notificaciones dejarán de funcionar hasta que vuelvas a iniciar la aplicación</string>
     <string name="la_mode_off">Desactivado</string>
     <string name="error_aborting_address_change">Error al cancelar cambio de dirección</string>
     <string name="no_filtered_chats">Sin chats filtrados</string>
@@ -1517,8 +1517,8 @@
     <string name="disable_sending_recent_history">No se envía el historial a los miembros nuevos.</string>
     <string name="or_show_this_qr_code">O muestra el código QR</string>
     <string name="recent_history_is_sent_to_new_members">Hasta 100 últimos mensajes son enviados a los miembros nuevos.</string>
-    <string name="code_you_scanned_is_not_simplex_link_qr_code">El código QR escaneado no es un enlace SimpleX.</string>
-    <string name="the_text_you_pasted_is_not_a_link">El texto pegado no es un enlace SimpleX.</string>
+    <string name="code_you_scanned_is_not_simplex_link_qr_code">El código QR escaneado no es un enlace de SimpleX.</string>
+    <string name="the_text_you_pasted_is_not_a_link">El texto pegado no es un enlace de SimpleX.</string>
     <string name="enable_camera_access">Permitir acceso a la cámara</string>
     <string name="you_can_view_invitation_link_again">Podrás ver el enlace de invitación en detalles de conexión.</string>
     <string name="keep_unused_invitation_question">¿Guardar invitación no usada?</string>
@@ -1535,14 +1535,14 @@
     <string name="tap_to_scan">Pulsa para escanear</string>
     <string name="keep_invitation_link">Guardar</string>
     <string name="tap_to_paste_link">Pulsa para pegar el enlace</string>
-    <string name="search_or_paste_simplex_link">Buscar o pegar enlace SimpleX</string>
+    <string name="search_or_paste_simplex_link">Buscar o pegar enlace de SimpleX</string>
     <string name="v5_5_message_delivery_descr">Con uso reducido de batería.</string>
     <string name="blocked_by_admin_item_description">bloqueado por administrador</string>
     <string name="blocked_by_admin_items_description">%d mensajes bloqueados por el administrador</string>
     <string name="error_creating_message">Error al crear mensaje</string>
     <string name="error_deleting_note_folder">Error al eliminar notas privadas</string>
     <string name="clear_note_folder_question">¿Eliminar notas privadas?</string>
-    <string name="developer_options_section">Opciones desarrollador</string>
+    <string name="developer_options_section">Opciones para desarrolladores</string>
     <string name="rcv_group_event_member_blocked">ha bloqueado a %s</string>
     <string name="rcv_group_event_member_unblocked">ha desbloqueado a %s</string>
     <string name="snd_group_event_member_blocked">has bloqueado a %s</string>
@@ -1683,8 +1683,8 @@
     <string name="migrate_from_device_error_saving_settings">Error al guardar ajustes</string>
     <string name="migrate_from_device_exported_file_doesnt_exist">El archivo exportado no existe</string>
     <string name="migrate_from_device_chat_should_be_stopped">Para continuar, SimpleX debe estar parado.</string>
-    <string name="e2ee_info_no_pq"><![CDATA[Los mensajes, archivos y llamadas están protegidos mediante <b>cifrado de extremo a extremo</b> con secreto perfecto hacía adelante, repudio y recuperación tras ataque.]]></string>
-    <string name="e2ee_info_pq"><![CDATA[Los mensajes, archivos y llamadas están protegidos mediante <b>cifrado de extremo a extremo resistente a tecnología cuántica</b> con secreto perfecto hacía adelante, repudio y recuperación tras ataque.]]></string>
+    <string name="e2ee_info_no_pq"><![CDATA[Los mensajes, archivos y llamadas están protegidos mediante <b>cifrado de extremo a extremo</b> con secreto perfecto hacia adelante, repudio y recuperación tras ataque.]]></string>
+    <string name="e2ee_info_pq"><![CDATA[Los mensajes, archivos y llamadas están protegidos mediante <b>cifrado de extremo a extremo resistente a tecnología cuántica</b> con secreto perfecto hacia adelante, repudio y recuperación tras ataque.]]></string>
     <string name="migrate_to_device_title">Migrar aquí</string>
     <string name="migrate_from_device_to_another_device">Migrar a otro dispositivo</string>
     <string name="v5_6_app_data_migration_descr">Migrar a otro dispositivo mediante código QR.</string>
@@ -1708,11 +1708,11 @@
     <string name="settings_section_title_network_connection">Conexión de red</string>
     <string name="forwarded_description">reenviado</string>
     <string name="files_and_media_not_allowed">Archivos y multimedia no permitidos</string>
-    <string name="simplex_links_not_allowed">Enlaces SimpleX no permitidos</string>
+    <string name="simplex_links_not_allowed">Enlaces de SimpleX no permitidos</string>
     <string name="voice_messages_not_allowed">Mensajes de voz no permitidos</string>
-    <string name="simplex_links">Enlaces SimpleX</string>
-    <string name="group_members_can_send_simplex_links">Los miembros pueden enviar enlaces SimpleX.</string>
-    <string name="simplex_links_are_prohibited_in_group">Enlaces SimpleX no permitidos.</string>
+    <string name="simplex_links">Enlaces de SimpleX</string>
+    <string name="group_members_can_send_simplex_links">Los miembros pueden enviar enlaces de SimpleX.</string>
+    <string name="simplex_links_are_prohibited_in_group">Enlaces de SimpleX no permitidos.</string>
     <string name="feature_roles_owners">propietarios</string>
     <string name="network_type_cellular">Móvil</string>
     <string name="network_type_no_network_connection">Sin conexión de red</string>
@@ -1721,9 +1721,9 @@
     <string name="network_type_ethernet">Ethernet por cable</string>
     <string name="feature_roles_admins">administradores</string>
     <string name="feature_enabled_for">Activado para</string>
-    <string name="prohibit_sending_simplex_links">No se permite enviar enlaces SimpleX</string>
+    <string name="prohibit_sending_simplex_links">No se permite enviar enlaces de SimpleX</string>
     <string name="feature_roles_all_members">todos los miembros</string>
-    <string name="allow_to_send_simplex_links">Se permite enviar enlaces SimpleX.</string>
+    <string name="allow_to_send_simplex_links">Se permite enviar enlaces de SimpleX.</string>
     <string name="saved_description">guardado</string>
     <string name="saved_from_description">guardado desde %s</string>
     <string name="saved_chat_item_info_tab">Guardado</string>
@@ -1963,7 +1963,7 @@
     <string name="size">Tamaño</string>
     <string name="servers_info_subscriptions_connections_subscribed">Conexiones activas</string>
     <string name="servers_info_starting_from">Iniciado el %s.</string>
-    <string name="servers_info_private_data_disclaimer">Iniciado el %s \nLa información es privada en tu dispositivo.</string>
+    <string name="servers_info_private_data_disclaimer">Iniciado el %s \nTodos los datos se mantienen privados en tu dispositivo.</string>
     <string name="chunks_deleted">Bloques eliminados</string>
     <string name="chunks_downloaded">Bloques descargados</string>
     <string name="chunks_uploaded">Bloques subidos</string>
@@ -2018,7 +2018,7 @@
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">Por favor, pide a tu contacto que active las llamadas.</string>
     <string name="cant_call_member_send_message_alert_text">Enviar mensaje para activar llamadas.</string>
     <string name="v6_0_delete_many_messages_descr">Elimina hasta 20 mensajes a la vez.</string>
-    <string name="v6_0_reachable_chat_toolbar">Barra de herramientas accesible</string>
+    <string name="v6_0_reachable_chat_toolbar">Barra de chat accesible</string>
     <string name="v6_0_your_contacts_descr">Archiva contactos para charlar más tarde.</string>
     <string name="chat_database_exported_save">Puedes guardar el archivo exportado.</string>
     <string name="privacy_media_blur_radius_strong">Fuerte</string>
@@ -2052,7 +2052,7 @@
     <string name="v6_0_upgrade_app_descr">Descarga nuevas versiones desde GitHub.</string>
     <string name="new_message">Mensaje nuevo</string>
     <string name="error_parsing_uri_title">Enlace no válido</string>
-    <string name="error_parsing_uri_desc">Por favor, comprueba que el enlace SimpleX es correcto.</string>
+    <string name="error_parsing_uri_desc">Por favor, comprueba que el enlace de SimpleX es correcto.</string>
     <string name="forward_files_in_progress_desc">%1$d archivo(s) se está(n) descargando todavía.</string>
     <string name="n_other_file_errors">%1$d otro(s) error(es) de archivo.</string>
     <string name="settings_section_title_chat_database">BASE DE DATOS</string>
@@ -2122,7 +2122,7 @@
     <string name="address_settings">Ajustes de dirección</string>
     <string name="create_1_time_link">Crear enlace de un uso</string>
     <string name="for_social_media">Para redes sociales</string>
-    <string name="simplex_address_or_1_time_link">¿Dirección SimpleX o enlace de un uso?</string>
+    <string name="simplex_address_or_1_time_link">¿Dirección de SimpleX o enlace de un solo uso?</string>
     <string name="onboarding_choose_server_operators">Operadores de servidores</string>
     <string name="onboarding_network_operators">Operadores de red</string>
     <string name="onboarding_network_operators_conditions_will_be_accepted">Las condiciones de los operadores habilitados serán aceptadas después de 30 días.</string>
@@ -2168,7 +2168,7 @@
     <string name="or_to_share_privately">O para compartir en privado</string>
     <string name="onboarding_select_network_operators_to_use">Selecciona los operadores de red a utilizar</string>
     <string name="share_address_publicly">Compartir dirección públicamente</string>
-    <string name="simplex_address_and_1_time_links_are_safe_to_share">Compartir los enlaces de un uso y las direcciones SimpleX es seguro a través de cualquier medio.</string>
+    <string name="simplex_address_and_1_time_links_are_safe_to_share">Compartir los enlaces de un solo uso y las direcciones de SimpleX es seguro a través de cualquier medio.</string>
     <string name="onboarding_network_operators_update">Actualizar</string>
     <string name="operator_website">Sitio web</string>
     <string name="your_servers">Tus servidores</string>
