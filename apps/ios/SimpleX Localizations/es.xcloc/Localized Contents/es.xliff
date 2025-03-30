@@ -991,9 +991,9 @@
         <target>Grupo app:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App icon" xml:space="preserve">
+      <trans-unit id="App icon" xml:space="preserve" approved="no">
         <source>App icon</source>
-        <target>Icono aplicación</target>
+        <target state="translated">Icono de la aplicación</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App passcode" xml:space="preserve">
@@ -6080,9 +6080,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Valora la aplicación</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reachable chat toolbar" xml:space="preserve">
+      <trans-unit id="Reachable chat toolbar" xml:space="preserve" approved="no">
         <source>Reachable chat toolbar</source>
-        <target>Barra de chat accesible</target>
+        <target state="translated">Barra de menú accesible</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="React…" xml:space="preserve">
@@ -7278,9 +7278,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Dirección SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX address and 1-time links are safe to share via any messenger." xml:space="preserve">
+      <trans-unit id="SimpleX address and 1-time links are safe to share via any messenger." xml:space="preserve" approved="no">
         <source>SimpleX address and 1-time links are safe to share via any messenger.</source>
-        <target>Compartir los enlaces de un uso y las direcciones SimpleX es seguro a través de cualquier medio.</target>
+        <target state="translated">Compartir enlaces de un solo uso y direcciones SimpleX es seguro a través de cualquier medio.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX address or 1-time link?" xml:space="preserve">
@@ -7688,9 +7688,9 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <target>El intento de cambiar la contraseña de la base de datos no se ha completado.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The code you scanned is not a SimpleX link QR code." xml:space="preserve">
+      <trans-unit id="The code you scanned is not a SimpleX link QR code." xml:space="preserve" approved="no">
         <source>The code you scanned is not a SimpleX link QR code.</source>
-        <target>El código QR escaneado no es un enlace SimpleX.</target>
+        <target state="translated">El código QR escaneado no es un enlace de SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The connection reached the limit of undelivered messages, your contact may be offline." xml:space="preserve">
@@ -7793,9 +7793,9 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <target>Servidores para enviar archivos en tu perfil **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The text you pasted is not a SimpleX link." xml:space="preserve">
+      <trans-unit id="The text you pasted is not a SimpleX link." xml:space="preserve" approved="no">
         <source>The text you pasted is not a SimpleX link.</source>
-        <target>El texto pegado no es un enlace SimpleX.</target>
+        <target state="translated">El texto pegado no es un enlace de SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The uploaded database archive will be permanently removed from the servers." xml:space="preserve">
@@ -7945,9 +7945,9 @@ You will be prompted to complete authentication before this feature is enabled.<
 Se te pedirá que completes la autenticación antes de activar esta función.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect your privacy, SimpleX uses separate IDs for each of your contacts." xml:space="preserve">
+      <trans-unit id="To protect your privacy, SimpleX uses separate IDs for each of your contacts." xml:space="preserve" approved="no">
         <source>To protect your privacy, SimpleX uses separate IDs for each of your contacts.</source>
-        <target>Para proteger tu privacidad, en lugar de los identificadores de usuario que usan el resto de plataformas, SimpleX dispone de identificadores para las colas de mensajes, independientes para cada uno de tus contactos.</target>
+        <target state="translated">Para proteger tu privacidad, SimpleX usa identificadores distintos para cada uno de tus contactos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To receive" xml:space="preserve">
