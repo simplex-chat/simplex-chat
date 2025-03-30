@@ -2196,7 +2196,7 @@
     <string name="create_list">Criar lista</string>
     <string name="edit_chat_list_menu_action">Editar</string>
     <string name="settings_message_shape_corner">Canto</string>
-    <string name="v6_2_network_decentralization_enable_flux">Ativar flux</string>
+    <string name="v6_2_network_decentralization_enable_flux">Ativar o Flux nas Configurações de rede e servidores para melhor privacidade de metadados.</string>
     <string name="report_archive_alert_desc_all">Todas denúncias serão arquivadas para você.</string>
     <string name="report_archive_alert_title_all">Arquivar todas denúncias?</string>
     <string name="report_archive_alert_title_nth">Arquivar %d denúncias?</string>
@@ -2377,4 +2377,9 @@
     <string name="xftp_servers_per_user">Os servidores para novos arquivos do seu perfil de chat atual</string>
     <string name="connection_error_quota_desc">A conexão atingiu o limite de mensagens não entregues, seu contato pode estar offline.</string>
     <string name="connection_error_quota">Mensagens não entregues</string>
+    <string name="onboarding_conditions_configure_server_operators">Configurar operadores de servidor</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">Chats privados, grupos e seus contatos não são acessíveis aos operadores de servidor.</string>
+    <string name="onboarding_conditions_accept">Aceitar</string>
+    <string name="onboarding_conditions_by_using_you_agree">Ao usar o SimpleX Chat, você concorda em:\n- enviar apenas conteúdo legal em grupos públicos.\n- respeitar outros usuários – sem spam.</string>
+    <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Política de privacidade e condições de uso.</string>
 </resources>
