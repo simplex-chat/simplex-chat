@@ -2,7 +2,7 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
   <file original="en.lproj/Localizable.strings" source-language="en" target-language="es" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.4" build-num="15F31d"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id=" (can be copied)" xml:space="preserve">
@@ -440,7 +440,7 @@
         <source>1 day</source>
         <target>un dia</target>
         <note>delete after time
-   time interval</note>
+time interval</note>
       </trans-unit>
       <trans-unit id="1 hour" xml:space="preserve">
         <source>1 hour</source>
@@ -456,13 +456,13 @@
         <source>1 month</source>
         <target>un mes</target>
         <note>delete after time
-   time interval</note>
+time interval</note>
       </trans-unit>
       <trans-unit id="1 week" xml:space="preserve">
         <source>1 week</source>
         <target>una semana</target>
         <note>delete after time
-   time interval</note>
+time interval</note>
       </trans-unit>
       <trans-unit id="1 year" xml:space="preserve">
         <source>1 year</source>
@@ -562,8 +562,8 @@
         <source>Accept</source>
         <target>Aceptar</target>
         <note>accept contact request via notification
-   accept incoming call via notification
-   swipe action</note>
+accept incoming call via notification
+swipe action</note>
       </trans-unit>
       <trans-unit id="Accept conditions" xml:space="preserve">
         <source>Accept conditions</source>
@@ -584,7 +584,7 @@
         <source>Accept incognito</source>
         <target>Aceptar incógnito</target>
         <note>accept contact request via notification
-   swipe action</note>
+swipe action</note>
       </trans-unit>
       <trans-unit id="Accepted conditions" xml:space="preserve">
         <source>Accepted conditions</source>
@@ -743,12 +743,12 @@
       </trans-unit>
       <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve">
         <source>All chats and messages will be deleted - this cannot be undone!</source>
-        <target>Se eliminarán todos los chats y mensajes. ¡No podrá deshacerse!</target>
+        <target>Se eliminarán todos los chats y mensajes. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All chats will be removed from the list %@, and the list deleted." xml:space="preserve">
         <source>All chats will be removed from the list %@, and the list deleted.</source>
-        <target>Todos los chats serán quitados de la lista %@ y esta será eliminada.</target>
+        <target>Todos los chats se quitarán de la lista %@ y esta será eliminada.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="All data is erased when it is entered." xml:space="preserve">
@@ -773,12 +773,12 @@
       </trans-unit>
       <trans-unit id="All messages will be deleted - this cannot be undone!" xml:space="preserve">
         <source>All messages will be deleted - this cannot be undone!</source>
-        <target>Todos los mensajes serán borrados. ¡No podrá deshacerse!</target>
+        <target>Todos los mensajes serán eliminados. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve">
         <source>All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you.</source>
-        <target>Se eliminarán todos los mensajes SOLO para tí. ¡No podrá deshacerse!</target>
+        <target>Se eliminarán todos los mensajes SOLO para tí. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All new messages from %@ will be hidden!" xml:space="preserve">
@@ -993,7 +993,7 @@
       </trans-unit>
       <trans-unit id="App icon" xml:space="preserve">
         <source>App icon</source>
-        <target>Icono aplicación</target>
+        <target>Icono de la aplicación</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App passcode" xml:space="preserve">
@@ -1331,6 +1331,15 @@
         <target>Mediante perfil (predeterminado) o [por conexión](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="By using SimpleX Chat you agree to:&#10;- send only legal content in public groups.&#10;- respect other users – no spam." xml:space="preserve">
+        <source>By using SimpleX Chat you agree to:
+- send only legal content in public groups.
+- respect other users – no spam.</source>
+        <target>Al usar SimpleX Chat, aceptas:
+- enviar únicamente contenido legal en los grupos públicos.
+- respetar a los demás usuarios – spam prohibido.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve">
         <source>Call already ended!</source>
         <target>¡La llamada ha terminado!</target>
@@ -1380,7 +1389,7 @@
         <source>Cancel</source>
         <target>Cancelar</target>
         <note>alert action
-   alert button</note>
+alert button</note>
       </trans-unit>
       <trans-unit id="Cancel migration" xml:space="preserve">
         <source>Cancel migration</source>
@@ -1471,7 +1480,7 @@
         <source>Change self-destruct passcode</source>
         <target>Cambiar código autodestrucción</target>
         <note>authentication reason
-   set passcode view</note>
+set passcode view</note>
       </trans-unit>
       <trans-unit id="Chat" xml:space="preserve">
         <source>Chat</source>
@@ -1565,12 +1574,12 @@
       </trans-unit>
       <trans-unit id="Chat will be deleted for all members - this cannot be undone!" xml:space="preserve">
         <source>Chat will be deleted for all members - this cannot be undone!</source>
-        <target>El chat será eliminado para todos los miembros. ¡No podrá deshacerse!</target>
+        <target>El chat será eliminado para todos los miembros. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat will be deleted for you - this cannot be undone!" xml:space="preserve">
         <source>Chat will be deleted for you - this cannot be undone!</source>
-        <target>El chat será eliminado para tí. ¡No podrá deshacerse!</target>
+        <target>El chat será eliminado para tí. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
@@ -1713,16 +1722,6 @@
         <target>Condiciones de uso</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Conditions will be accepted for enabled operators after 30 days." xml:space="preserve">
-        <source>Conditions will be accepted for enabled operators after 30 days.</source>
-        <target>Las condiciones de los operadores habilitados serán aceptadas después de 30 días.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Conditions will be accepted for operator(s): **%@**." xml:space="preserve">
-        <source>Conditions will be accepted for operator(s): **%@**.</source>
-        <target>Las condiciones serán aceptadas para el/los operador(es): **%@**.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Conditions will be accepted for the operator(s): **%@**." xml:space="preserve">
         <source>Conditions will be accepted for the operator(s): **%@**.</source>
         <target>Las condiciones serán aceptadas para el/los operador(es): **%@**.</target>
@@ -1741,6 +1740,11 @@
       <trans-unit id="Configure ICE servers" xml:space="preserve">
         <source>Configure ICE servers</source>
         <target>Configure servidores ICE</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Configure server operators" xml:space="preserve">
+        <source>Configure server operators</source>
+        <target>Configurar operadores de servidores</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm" xml:space="preserve">
@@ -2026,7 +2030,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Contact will be deleted - this cannot be undone!" xml:space="preserve">
         <source>Contact will be deleted - this cannot be undone!</source>
-        <target>El contacto será eliminado. ¡No podrá deshacerse!</target>
+        <target>El contacto será eliminado. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contacts" xml:space="preserve">
@@ -2341,7 +2345,7 @@ This is your own one-time link!</source>
         <source>Delete</source>
         <target>Eliminar</target>
         <note>alert action
-   swipe action</note>
+swipe action</note>
       </trans-unit>
       <trans-unit id="Delete %lld messages of members?" xml:space="preserve">
         <source>Delete %lld messages of members?</source>
@@ -2515,7 +2519,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Delete or moderate up to 200 messages." xml:space="preserve">
         <source>Delete or moderate up to 200 messages.</source>
-        <target>Borra o modera hasta 200 mensajes a la vez.</target>
+        <target>Elimina o modera hasta 200 mensajes a la vez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete pending connection?" xml:space="preserve">
@@ -2535,7 +2539,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Delete report" xml:space="preserve">
         <source>Delete report</source>
-        <target>Borrar informe</target>
+        <target>Eliminar informe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete up to 20 messages at once." xml:space="preserve">
@@ -2837,7 +2841,7 @@ This is your own one-time link!</source>
         <source>Download</source>
         <target>Descargar</target>
         <note>alert button
-   chat item action</note>
+chat item action</note>
       </trans-unit>
       <trans-unit id="Download errors" xml:space="preserve">
         <source>Download errors</source>
@@ -2914,9 +2918,8 @@ This is your own one-time link!</source>
         <target>Activar (conservar anulaciones)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable Flux" xml:space="preserve">
-        <source>Enable Flux</source>
-        <target>Habilita Flux</target>
+      <trans-unit id="Enable Flux in Network &amp; servers settings for better metadata privacy." xml:space="preserve">
+        <source>Enable Flux in Network &amp; servers settings for better metadata privacy.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
@@ -3492,7 +3495,9 @@ This is your own one-time link!</source>
       <trans-unit id="Error: %@" xml:space="preserve">
         <source>Error: %@</source>
         <target>Error: %@</target>
-        <note>alert message</note>
+        <note>alert message
+file error text
+snd error text</note>
       </trans-unit>
       <trans-unit id="Error: URL is invalid" xml:space="preserve">
         <source>Error: URL is invalid</source>
@@ -3620,7 +3625,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="File not found - most likely file was deleted or cancelled." xml:space="preserve">
         <source>File not found - most likely file was deleted or cancelled.</source>
-        <target>Archivo no encontrado, probablemente haya sido borrado o cancelado.</target>
+        <target>Archivo no encontrado, probablemente haya sido eliminado o cancelado.</target>
         <note>file error text</note>
       </trans-unit>
       <trans-unit id="File server error: %@" xml:space="preserve">
@@ -3994,12 +3999,12 @@ Error: %2$@</target>
       </trans-unit>
       <trans-unit id="Group will be deleted for all members - this cannot be undone!" xml:space="preserve">
         <source>Group will be deleted for all members - this cannot be undone!</source>
-        <target>El grupo será eliminado para todos los miembros. ¡No podrá deshacerse!</target>
+        <target>El grupo será eliminado para todos los miembros. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group will be deleted for you - this cannot be undone!" xml:space="preserve">
         <source>Group will be deleted for you - this cannot be undone!</source>
-        <target>El grupo será eliminado para tí. ¡No podrá deshacerse!</target>
+        <target>El grupo será eliminado para tí. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Groups" xml:space="preserve">
@@ -4731,7 +4736,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Member reports" xml:space="preserve">
         <source>Member reports</source>
-        <target>Informes de miembro</target>
+        <target>Informes de miembros</target>
         <note>chat feature</note>
       </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve">
@@ -4751,12 +4756,12 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Member will be removed from chat - this cannot be undone!" xml:space="preserve">
         <source>Member will be removed from chat - this cannot be undone!</source>
-        <target>El miembro será eliminado del chat. ¡No podrá deshacerse!</target>
+        <target>El miembro será eliminado del chat. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve">
         <source>Member will be removed from group - this cannot be undone!</source>
-        <target>El miembro será expulsado del grupo. ¡No podrá deshacerse!</target>
+        <target>El miembro será expulsado del grupo. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Members can add message reactions." xml:space="preserve">
@@ -4916,7 +4921,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Messages in this chat will never be deleted." xml:space="preserve">
         <source>Messages in this chat will never be deleted.</source>
-        <target>Los mensajes de esta conversación nunca se borran.</target>
+        <target>Los mensajes de esta conversación nunca se eliminan.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Messages received" xml:space="preserve">
@@ -4931,7 +4936,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Messages were deleted after you selected them." xml:space="preserve">
         <source>Messages were deleted after you selected them.</source>
-        <target>Los mensajes han sido borrados después de seleccionarlos.</target>
+        <target>Los mensajes han sido eliminados después de seleccionarlos.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve">
@@ -5893,9 +5898,19 @@ Error: %@</target>
         <target>Privacidad para tus clientes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Privacy policy and conditions of use." xml:space="preserve">
+        <source>Privacy policy and conditions of use.</source>
+        <target>Política de privacidad y condiciones de uso.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Privacy redefined" xml:space="preserve">
         <source>Privacy redefined</source>
         <target>Privacidad redefinida</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Private chats, groups and your contacts are not accessible to server operators." xml:space="preserve">
+        <source>Private chats, groups and your contacts are not accessible to server operators.</source>
+        <target>Los chats privados, los grupos y tus contactos no son accesibles para los operadores de servidores.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private filenames" xml:space="preserve">
@@ -6082,7 +6097,7 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
       </trans-unit>
       <trans-unit id="Reachable chat toolbar" xml:space="preserve">
         <source>Reachable chat toolbar</source>
-        <target>Barra de chat accesible</target>
+        <target>Barra de menú accesible</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="React…" xml:space="preserve">
@@ -6264,7 +6279,7 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <source>Reject</source>
         <target>Rechazar</target>
         <note>reject incoming call via notification
-   swipe action</note>
+swipe action</note>
       </trans-unit>
       <trans-unit id="Reject (sender NOT notified)" xml:space="preserve">
         <source>Reject (sender NOT notified)</source>
@@ -6501,11 +6516,6 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Revisar condiciones</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Review later" xml:space="preserve">
-        <source>Review later</source>
-        <target>Revisar más tarde</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Revoke" xml:space="preserve">
         <source>Revoke</source>
         <target>Revocar</target>
@@ -6555,7 +6565,7 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <source>Save</source>
         <target>Guardar</target>
         <note>alert button
-   chat item action</note>
+chat item action</note>
       </trans-unit>
       <trans-unit id="Save (and notify contacts)" xml:space="preserve">
         <source>Save (and notify contacts)</source>
@@ -7039,7 +7049,7 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
       </trans-unit>
       <trans-unit id="Servers statistics will be reset - this cannot be undone!" xml:space="preserve">
         <source>Servers statistics will be reset - this cannot be undone!</source>
-        <target>Las estadísticas de los servidores serán restablecidas. ¡No podrá deshacerse!</target>
+        <target>Las estadísticas de los servidores serán restablecidas. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Session code" xml:space="preserve">
@@ -7126,7 +7136,7 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <source>Share</source>
         <target>Compartir</target>
         <note>alert action
-   chat item action</note>
+chat item action</note>
       </trans-unit>
       <trans-unit id="Share 1-time link" xml:space="preserve">
         <source>Share 1-time link</source>
@@ -7280,7 +7290,7 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
       </trans-unit>
       <trans-unit id="SimpleX address and 1-time links are safe to share via any messenger." xml:space="preserve">
         <source>SimpleX address and 1-time links are safe to share via any messenger.</source>
-        <target>Compartir los enlaces de un uso y las direcciones SimpleX es seguro a través de cualquier medio.</target>
+        <target>Compartir enlaces de un solo uso y direcciones SimpleX es seguro a través de cualquier medio.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX address or 1-time link?" xml:space="preserve">
@@ -7394,7 +7404,7 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <source>Spam</source>
         <target>Spam</target>
         <note>blocking reason
-   report reason</note>
+report reason</note>
       </trans-unit>
       <trans-unit id="Square, circle, or anything in between." xml:space="preserve">
         <source>Square, circle, or anything in between.</source>
@@ -7690,7 +7700,7 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
       </trans-unit>
       <trans-unit id="The code you scanned is not a SimpleX link QR code." xml:space="preserve">
         <source>The code you scanned is not a SimpleX link QR code.</source>
-        <target>El código QR escaneado no es un enlace SimpleX.</target>
+        <target>El código QR escaneado no es un enlace de SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The connection reached the limit of undelivered messages, your contact may be offline." xml:space="preserve">
@@ -7763,11 +7773,6 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <target>Las mismas condiciones se aplicarán al operador **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The same conditions will apply to operator(s): **%@**." xml:space="preserve">
-        <source>The same conditions will apply to operator(s): **%@**.</source>
-        <target>Las mismas condiciones se aplicarán a el/los operador(es) **%@**.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="The second preset operator in the app!" xml:space="preserve">
         <source>The second preset operator in the app!</source>
         <target>¡Segundo operador predefinido!</target>
@@ -7795,7 +7800,7 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
       </trans-unit>
       <trans-unit id="The text you pasted is not a SimpleX link." xml:space="preserve">
         <source>The text you pasted is not a SimpleX link.</source>
-        <target>El texto pegado no es un enlace SimpleX.</target>
+        <target>El texto pegado no es un enlace de SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The uploaded database archive will be permanently removed from the servers." xml:space="preserve">
@@ -7835,7 +7840,7 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
       </trans-unit>
       <trans-unit id="This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." xml:space="preserve">
         <source>This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted.</source>
-        <target>Todos los mensajes previos al período seleccionado serán eliminados del chat. ¡No podrá deshacerse!</target>
+        <target>Todos los mensajes previos al período seleccionado serán eliminados del chat. ¡No puede deshacerse!</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">
@@ -7890,7 +7895,7 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
       </trans-unit>
       <trans-unit id="This message was deleted or not received yet." xml:space="preserve">
         <source>This message was deleted or not received yet.</source>
-        <target>El mensaje ha sido borrado o aún no se ha recibido.</target>
+        <target>El mensaje ha sido eliminado o aún no se ha recibido.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve">
@@ -7947,7 +7952,7 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
       </trans-unit>
       <trans-unit id="To protect your privacy, SimpleX uses separate IDs for each of your contacts." xml:space="preserve">
         <source>To protect your privacy, SimpleX uses separate IDs for each of your contacts.</source>
-        <target>Para proteger tu privacidad, en lugar de los identificadores de usuario que usan el resto de plataformas, SimpleX dispone de identificadores para las colas de mensajes, independientes para cada uno de tus contactos.</target>
+        <target>Para proteger tu privacidad, SimpleX usa identificadores distintos para cada uno de tus contactos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To receive" xml:space="preserve">
@@ -8734,11 +8739,6 @@ Repeat join request?</source>
         <target>Puedes cambiar la posición de la barra desde el menú Apariencia.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can configure operators in Network &amp; servers settings." xml:space="preserve">
-        <source>You can configure operators in Network &amp; servers settings.</source>
-        <target>Puedes configurar los operadores desde Servidores y Redes.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="You can configure servers via settings." xml:space="preserve">
         <source>You can configure servers via settings.</source>
         <target>Puedes configurar los servidores a través de su configuración.</target>
@@ -8981,11 +8981,6 @@ Repeat connection request?</source>
         <target>Servidores ICE</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your SMP servers" xml:space="preserve">
-        <source>Your SMP servers</source>
-        <target>Servidores SMP</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Your SimpleX address" xml:space="preserve">
         <source>Your SimpleX address</source>
         <target>Mi dirección SimpleX</target>
@@ -9224,7 +9219,8 @@ Repeat connection request?</source>
       <trans-unit id="blocked by admin" xml:space="preserve">
         <source>blocked by admin</source>
         <target>bloqueado por administrador</target>
-        <note>marked deleted chat item preview text</note>
+        <note>blocked chat item
+marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
         <source>bold</source>
@@ -9395,7 +9391,7 @@ Repeat connection request?</source>
         <source>default (%@)</source>
         <target>predeterminado (%@)</target>
         <note>delete after time
-   pref value</note>
+pref value</note>
       </trans-unit>
       <trans-unit id="default (no)" xml:space="preserve">
         <source>default (no)</source>
@@ -9522,19 +9518,9 @@ Repeat connection request?</source>
         <target>error</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="event happened" xml:space="preserve">
-        <source>event happened</source>
-        <target>evento ocurrido</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="expired" xml:space="preserve">
         <source>expired</source>
         <target>expirados</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="for better metadata privacy." xml:space="preserve">
-        <source>for better metadata privacy.</source>
-        <target>para mejorar la privacidad de los metadatos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="forwarded" xml:space="preserve">
@@ -9746,8 +9732,8 @@ Repeat connection request?</source>
         <source>off</source>
         <target>desactivado</target>
         <note>enabled status
-   group pref value
-   time to disappear</note>
+group pref value
+time to disappear</note>
       </trans-unit>
       <trans-unit id="offered %@" xml:space="preserve">
         <source>offered %@</source>
@@ -10117,7 +10103,7 @@ last received msg: %2$@</source>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="es" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.4" build-num="15F31d"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id="CFBundleName" xml:space="preserve">
@@ -10154,7 +10140,7 @@ last received msg: %2$@</source>
   </file>
   <file original="SimpleX NSE/en.lproj/InfoPlist.strings" source-language="en" target-language="es" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.4" build-num="15F31d"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id="CFBundleDisplayName" xml:space="preserve">
@@ -10176,7 +10162,7 @@ last received msg: %2$@</source>
   </file>
   <file original="SimpleX NSE/en.lproj/Localizable.strings" source-language="en" target-language="es" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.4" build-num="15F31d"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id="%d new events" xml:space="preserve">
@@ -10208,7 +10194,7 @@ last received msg: %2$@</source>
   </file>
   <file original="SimpleX SE/en.lproj/InfoPlist.strings" source-language="en" target-language="es" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.4" build-num="15F31d"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id="CFBundleDisplayName" xml:space="preserve">
@@ -10230,7 +10216,7 @@ last received msg: %2$@</source>
   </file>
   <file original="SimpleX SE/en.lproj/Localizable.strings" source-language="en" target-language="es" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.4" build-num="15F31d"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id="%@" xml:space="preserve">

@@ -38,10 +38,10 @@
 "Database upgrade required" = "Adatbázis fejlesztése szükséges";
 
 /* No comment provided by engineer. */
-"Error preparing file" = "Hiba a fájl előkészítésekor";
+"Error preparing file" = "Hiba történt a fájl előkészítésekor";
 
 /* No comment provided by engineer. */
-"Error preparing message" = "Hiba az üzenet előkészítésekor";
+"Error preparing message" = "Hiba történt az üzenet előkészítésekor";
 
 /* No comment provided by engineer. */
 "Error: %@" = "Hiba: %@";

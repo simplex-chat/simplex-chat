@@ -215,7 +215,7 @@
 "0s" = "0s";
 
 /* delete after time
-   time interval */
+time interval */
 "1 day" = "1 den";
 
 /* time interval */
@@ -225,11 +225,11 @@
 "1 minute" = "1 minutu";
 
 /* delete after time
-   time interval */
+time interval */
 "1 month" = "1 měsíc";
 
 /* delete after time
-   time interval */
+time interval */
 "1 week" = "1 týden";
 
 /* No comment provided by engineer. */
@@ -272,8 +272,8 @@
 "above, then choose:" = "výše, pak vyberte:";
 
 /* accept contact request via notification
-   accept incoming call via notification
-   swipe action */
+accept incoming call via notification
+swipe action */
 "Accept" = "Přijmout";
 
 /* No comment provided by engineer. */
@@ -283,7 +283,7 @@
 "Accept contact request from %@?" = "Přijmout žádost o kontakt od %@?";
 
 /* accept contact request via notification
-   swipe action */
+swipe action */
 "Accept incognito" = "Přijmout inkognito";
 
 /* call status */
@@ -548,7 +548,7 @@
 "Can't invite contacts!" = "Nelze pozvat kontakty!";
 
 /* alert action
-   alert button */
+alert button */
 "Cancel" = "Zrušit";
 
 /* feature offered item */
@@ -588,7 +588,7 @@
 "Change self-destruct mode" = "Změnit režim sebedestrukce";
 
 /* authentication reason
-   set passcode view */
+set passcode view */
 "Change self-destruct passcode" = "Změnit sebedestrukční heslo";
 
 /* chat item text */
@@ -910,7 +910,7 @@
 "Decryption error" = "Chyba dešifrování";
 
 /* delete after time
-   pref value */
+pref value */
 "default (%@)" = "výchozí (%@)";
 
 /* No comment provided by engineer. */
@@ -920,7 +920,7 @@
 "default (yes)" = "výchozí (ano)";
 
 /* alert action
-   swipe action */
+swipe action */
 "Delete" = "Smazat";
 
 /* No comment provided by engineer. */
@@ -1409,7 +1409,9 @@
 /* No comment provided by engineer. */
 "Error: " = "Chyba: ";
 
-/* alert message */
+/* alert message
+file error text
+snd error text */
 "Error: %@" = "Chyba: %@";
 
 /* No comment provided by engineer. */
@@ -2127,8 +2129,8 @@
 "observer" = "pozorovatel";
 
 /* enabled status
-   group pref value
-   time to disappear */
+group pref value
+time to disappear */
 "off" = "vypnuto";
 
 /* blur media */
@@ -2435,7 +2437,7 @@
 "Reduced battery usage" = "Snížení spotřeby baterie";
 
 /* reject incoming call via notification
-   swipe action */
+swipe action */
 "Reject" = "Odmítnout";
 
 /* No comment provided by engineer. */
@@ -2535,7 +2537,7 @@
 "Run chat" = "Spustit chat";
 
 /* alert button
-   chat item action */
+chat item action */
 "Save" = "Uložit";
 
 /* alert button */
@@ -2749,7 +2751,7 @@
 "Settings" = "Nastavení";
 
 /* alert action
-   chat item action */
+chat item action */
 "Share" = "Sdílet";
 
 /* No comment provided by engineer. */
@@ -3471,7 +3473,4 @@
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Vaše SimpleX adresa";
-
-/* No comment provided by engineer. */
-"Your SMP servers" = "Vaše servery SMP";
 

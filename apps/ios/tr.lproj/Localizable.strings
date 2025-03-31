@@ -266,7 +266,7 @@
 "0s" = "0sn";
 
 /* delete after time
-   time interval */
+time interval */
 "1 day" = "1 gün";
 
 /* time interval */
@@ -276,11 +276,11 @@
 "1 minute" = "1 dakika";
 
 /* delete after time
-   time interval */
+time interval */
 "1 month" = "1 ay";
 
 /* delete after time
-   time interval */
+time interval */
 "1 week" = "1 hafta";
 
 /* No comment provided by engineer. */
@@ -335,8 +335,8 @@
 "Accent" = "Ana renk";
 
 /* accept contact request via notification
-   accept incoming call via notification
-   swipe action */
+accept incoming call via notification
+swipe action */
 "Accept" = "Kabul et";
 
 /* No comment provided by engineer. */
@@ -349,7 +349,7 @@
 "Accept contact request from %@?" = "%@ 'den gelen iletişim isteği kabul edilsin mi?";
 
 /* accept contact request via notification
-   swipe action */
+swipe action */
 "Accept incognito" = "Takma adla kabul et";
 
 /* call status */
@@ -751,7 +751,8 @@
 /* rcv group event chat item */
 "blocked %@" = "engellendi %@";
 
-/* marked deleted chat item preview text */
+/* blocked chat item
+marked deleted chat item preview text */
 "blocked by admin" = "yönetici tarafından engellendi";
 
 /* No comment provided by engineer. */
@@ -833,7 +834,7 @@
 "Can't message member" = "Üyeye mesaj gönderilemiyor";
 
 /* alert action
-   alert button */
+alert button */
 "Cancel" = "İptal et";
 
 /* No comment provided by engineer. */
@@ -888,7 +889,7 @@
 "Change self-destruct mode" = "Kendini yok etme modunu değiştir";
 
 /* authentication reason
-   set passcode view */
+set passcode view */
 "Change self-destruct passcode" = "Kendini yok eden parolayı değiştir";
 
 /* chat item text */
@@ -1046,12 +1047,6 @@
 
 /* No comment provided by engineer. */
 "Conditions of use" = "Kullanım koşulları";
-
-/* No comment provided by engineer. */
-"Conditions will be accepted for enabled operators after 30 days." = "Koşullar 30 gün sonra etkin operatörler tarafından kabul edilecektir.";
-
-/* No comment provided by engineer. */
-"Conditions will be accepted for operator(s): **%@**." = "Koşullar operatör(ler) için kabul edilecektir: **%@**.";
 
 /* No comment provided by engineer. */
 "Conditions will be accepted for the operator(s): **%@**." = "Koşullar bu operatör(ler) için kabul edilecektir: **%@**.";
@@ -1453,7 +1448,7 @@
 "decryption errors" = "Şifre çözme hataları";
 
 /* delete after time
-   pref value */
+pref value */
 "default (%@)" = "varsayılan (%@)";
 
 /* No comment provided by engineer. */
@@ -1463,7 +1458,7 @@
 "default (yes)" = "varsayılan (evet)";
 
 /* alert action
-   swipe action */
+swipe action */
 "Delete" = "Sil";
 
 /* No comment provided by engineer. */
@@ -1752,7 +1747,7 @@
 "Downgrade and open chat" = "Sürüm düşür ve sohbeti aç";
 
 /* alert button
-   chat item action */
+chat item action */
 "Download" = "İndir";
 
 /* No comment provided by engineer. */
@@ -1814,9 +1809,6 @@
 
 /* No comment provided by engineer. */
 "Enable camera access" = "Kamera erişimini etkinleştir";
-
-/* No comment provided by engineer. */
-"Enable Flux" = "Flux'u Etkinleştir";
 
 /* No comment provided by engineer. */
 "Enable for all" = "Herkes için etkinleştir";
@@ -2172,7 +2164,9 @@
 /* No comment provided by engineer. */
 "Error: " = "Hata: ";
 
-/* alert message */
+/* alert message
+file error text
+snd error text */
 "Error: %@" = "Hata: %@";
 
 /* No comment provided by engineer. */
@@ -2189,9 +2183,6 @@
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "Konuşma sırasında devre dışı bırakılsa bile.";
-
-/* No comment provided by engineer. */
-"event happened" = "etkinlik yaşandı";
 
 /* No comment provided by engineer. */
 "Exit without saving" = "Kaydetmeden çık";
@@ -3280,8 +3271,8 @@
 "observer" = "gözlemci";
 
 /* enabled status
-   group pref value
-   time to disappear */
+group pref value
+time to disappear */
 "off" = "kapalı";
 
 /* blur media */
@@ -3759,7 +3750,7 @@
 "Reduced battery usage" = "Azaltılmış pil kullanımı";
 
 /* reject incoming call via notification
-   swipe action */
+swipe action */
 "Reject" = "Reddet";
 
 /* No comment provided by engineer. */
@@ -3910,7 +3901,7 @@
 "Safer groups" = "Daha güvenli gruplar";
 
 /* alert button
-   chat item action */
+chat item action */
 "Save" = "Kaydet";
 
 /* alert button */
@@ -4262,7 +4253,7 @@
 "Shape profile images" = "Profil resimlerini şekillendir";
 
 /* alert action
-   chat item action */
+chat item action */
 "Share" = "Paylaş";
 
 /* No comment provided by engineer. */
@@ -5428,7 +5419,4 @@
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "SimpleX adresin";
-
-/* No comment provided by engineer. */
-"Your SMP servers" = "SMP sunucularınız";
 

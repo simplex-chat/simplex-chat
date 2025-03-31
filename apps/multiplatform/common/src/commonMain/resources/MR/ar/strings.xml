@@ -2156,7 +2156,7 @@
     <string name="appearance_app_toolbars">أشرطة أدوات التطبيق</string>
     <string name="appearance_bars_blur_radius">تمويه</string>
     <string name="appearance_in_app_bars_alpha">الشفافية</string>
-    <string name="v6_2_network_decentralization_enable_flux">فعّل flux</string>
+    <string name="v6_2_network_decentralization_enable_flux">فعّل flux في إعدادات الشبكة والخوادم لتحسين خصوصية البيانات الوصفية.</string>
     <string name="v6_2_network_decentralization">اللامركزية الشبكية</string>
     <string name="v6_2_network_decentralization_descr">المُشغل المُعد مسبقًا الثاني في التطبيق!</string>
     <string name="v6_2_network_decentralization_enable_flux_reason">لتحسين خصوصية البيانات الوصفية.</string>
@@ -2361,4 +2361,9 @@
     <string name="feature_roles_moderators">المشرفين</string>
     <string name="restore_passphrase_can_not_be_read_desc">لا يمكن قراءة عبارة المرور في Keystore. قد يكون هذا قد حدث بعد تحديث النظام غير متوافق مع التطبيق. إذا لم يكن الأمر كذلك، فيُرجى التواصل مع المطورين.</string>
     <string name="group_member_status_pending_approval">موافقة الانتظار</string>
+    <string name="onboarding_conditions_configure_server_operators">ضبّط مُشغلي الخادم</string>
+    <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">سياسة الخصوصية وشروط الاستخدام.</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">لا يمكن الوصول إلى الدردشات الخاصة والمجموعات وجهات اتصالك لمشغلي الخادم.</string>
+    <string name="onboarding_conditions_by_using_you_agree">باستخدام SimpleX Chat، توافق على:\n- إرسال المحتوى القانوني فقط في المجموعات العامة.\n- احترام المستخدمين الآخرين – لا سبام.</string>
+    <string name="onboarding_conditions_accept">اقبل</string>
 </resources>

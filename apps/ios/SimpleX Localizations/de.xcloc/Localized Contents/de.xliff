@@ -2,7 +2,7 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
   <file original="en.lproj/Localizable.strings" source-language="en" target-language="de" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.4" build-num="15F31d"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id=" (can be copied)" xml:space="preserve">
@@ -440,7 +440,7 @@
         <source>1 day</source>
         <target>Älter als ein Tag</target>
         <note>delete after time
-   time interval</note>
+time interval</note>
       </trans-unit>
       <trans-unit id="1 hour" xml:space="preserve">
         <source>1 hour</source>
@@ -456,13 +456,13 @@
         <source>1 month</source>
         <target>Älter als ein Monat</target>
         <note>delete after time
-   time interval</note>
+time interval</note>
       </trans-unit>
       <trans-unit id="1 week" xml:space="preserve">
         <source>1 week</source>
         <target>Älter als eine Woche</target>
         <note>delete after time
-   time interval</note>
+time interval</note>
       </trans-unit>
       <trans-unit id="1 year" xml:space="preserve">
         <source>1 year</source>
@@ -562,8 +562,8 @@
         <source>Accept</source>
         <target>Annehmen</target>
         <note>accept contact request via notification
-   accept incoming call via notification
-   swipe action</note>
+accept incoming call via notification
+swipe action</note>
       </trans-unit>
       <trans-unit id="Accept conditions" xml:space="preserve">
         <source>Accept conditions</source>
@@ -584,7 +584,7 @@
         <source>Accept incognito</source>
         <target>Inkognito akzeptieren</target>
         <note>accept contact request via notification
-   swipe action</note>
+swipe action</note>
       </trans-unit>
       <trans-unit id="Accepted conditions" xml:space="preserve">
         <source>Accepted conditions</source>
@@ -1331,6 +1331,15 @@
         <target>Per Chat-Profil (Voreinstellung) oder [per Verbindung](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="By using SimpleX Chat you agree to:&#10;- send only legal content in public groups.&#10;- respect other users – no spam." xml:space="preserve">
+        <source>By using SimpleX Chat you agree to:
+- send only legal content in public groups.
+- respect other users – no spam.</source>
+        <target>Durch die Nutzung von SimpleX Chat erklären Sie sich damit einverstanden:
+- nur legale Inhalte in öffentlichen Gruppen zu versenden.
+- andere Nutzer zu respektieren - kein Spam.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve">
         <source>Call already ended!</source>
         <target>Anruf ist bereits beendet!</target>
@@ -1380,7 +1389,7 @@
         <source>Cancel</source>
         <target>Abbrechen</target>
         <note>alert action
-   alert button</note>
+alert button</note>
       </trans-unit>
       <trans-unit id="Cancel migration" xml:space="preserve">
         <source>Cancel migration</source>
@@ -1471,7 +1480,7 @@
         <source>Change self-destruct passcode</source>
         <target>Selbstzerstörungs-Zugangscode ändern</target>
         <note>authentication reason
-   set passcode view</note>
+set passcode view</note>
       </trans-unit>
       <trans-unit id="Chat" xml:space="preserve">
         <source>Chat</source>
@@ -1713,16 +1722,6 @@
         <target>Nutzungsbedingungen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Conditions will be accepted for enabled operators after 30 days." xml:space="preserve">
-        <source>Conditions will be accepted for enabled operators after 30 days.</source>
-        <target>Die Nutzungsbedingungen der aktivierten Betreiber werden nach 30 Tagen akzeptiert.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Conditions will be accepted for operator(s): **%@**." xml:space="preserve">
-        <source>Conditions will be accepted for operator(s): **%@**.</source>
-        <target>Die Nutzungsbedingungen der/des Betreiber(s) werden akzeptiert: **%@**.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Conditions will be accepted for the operator(s): **%@**." xml:space="preserve">
         <source>Conditions will be accepted for the operator(s): **%@**.</source>
         <target>Die Nutzungsbedingungen der/des Betreiber(s) werden akzeptiert: **%@**.</target>
@@ -1741,6 +1740,11 @@
       <trans-unit id="Configure ICE servers" xml:space="preserve">
         <source>Configure ICE servers</source>
         <target>ICE-Server konfigurieren</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Configure server operators" xml:space="preserve">
+        <source>Configure server operators</source>
+        <target>Server-Betreiber konfigurieren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm" xml:space="preserve">
@@ -2341,7 +2345,7 @@ Das ist Ihr eigener Einmal-Link!</target>
         <source>Delete</source>
         <target>Löschen</target>
         <note>alert action
-   swipe action</note>
+swipe action</note>
       </trans-unit>
       <trans-unit id="Delete %lld messages of members?" xml:space="preserve">
         <source>Delete %lld messages of members?</source>
@@ -2837,7 +2841,7 @@ Das ist Ihr eigener Einmal-Link!</target>
         <source>Download</source>
         <target>Herunterladen</target>
         <note>alert button
-   chat item action</note>
+chat item action</note>
       </trans-unit>
       <trans-unit id="Download errors" xml:space="preserve">
         <source>Download errors</source>
@@ -2914,9 +2918,8 @@ Das ist Ihr eigener Einmal-Link!</target>
         <target>Aktivieren (vorgenommene Einstellungen bleiben erhalten)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable Flux" xml:space="preserve">
-        <source>Enable Flux</source>
-        <target>Flux aktivieren</target>
+      <trans-unit id="Enable Flux in Network &amp; servers settings for better metadata privacy." xml:space="preserve">
+        <source>Enable Flux in Network &amp; servers settings for better metadata privacy.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
@@ -3321,7 +3324,7 @@ Das ist Ihr eigener Einmal-Link!</target>
       </trans-unit>
       <trans-unit id="Error receiving file" xml:space="preserve">
         <source>Error receiving file</source>
-        <target>Fehler beim Empfangen der Datei</target>
+        <target>Fehler beim Herunterladen der Datei</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error reconnecting server" xml:space="preserve">
@@ -3492,7 +3495,9 @@ Das ist Ihr eigener Einmal-Link!</target>
       <trans-unit id="Error: %@" xml:space="preserve">
         <source>Error: %@</source>
         <target>Fehler: %@</target>
-        <note>alert message</note>
+        <note>alert message
+file error text
+snd error text</note>
       </trans-unit>
       <trans-unit id="Error: URL is invalid" xml:space="preserve">
         <source>Error: URL is invalid</source>
@@ -3645,12 +3650,12 @@ Das ist Ihr eigener Einmal-Link!</target>
       </trans-unit>
       <trans-unit id="File will be received when your contact completes uploading it." xml:space="preserve">
         <source>File will be received when your contact completes uploading it.</source>
-        <target>Die Datei wird empfangen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.</target>
+        <target>Die Datei wird heruntergeladen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be received when your contact is online, please wait or check later!" xml:space="preserve">
         <source>File will be received when your contact is online, please wait or check later!</source>
-        <target>Die Datei wird empfangen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später nochmal nach!</target>
+        <target>Die Datei wird heruntergeladen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später nochmal nach!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File: %@" xml:space="preserve">
@@ -4139,12 +4144,12 @@ Fehler: %2$@</target>
       </trans-unit>
       <trans-unit id="Image will be received when your contact completes uploading it." xml:space="preserve">
         <source>Image will be received when your contact completes uploading it.</source>
-        <target>Das Bild wird empfangen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.</target>
+        <target>Das Bild wird heruntergeladen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Image will be received when your contact is online, please wait or check later!" xml:space="preserve">
         <source>Image will be received when your contact is online, please wait or check later!</source>
-        <target>Das Bild wird empfangen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später nochmal nach!</target>
+        <target>Das Bild wird heruntergeladen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später nochmal nach!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Immediately" xml:space="preserve">
@@ -5306,7 +5311,7 @@ Das ist Ihr Link für die Gruppe %@!</target>
       </trans-unit>
       <trans-unit id="No received or sent files" xml:space="preserve">
         <source>No received or sent files</source>
-        <target>Keine empfangenen oder gesendeten Dateien</target>
+        <target>Keine herunter- oder hochgeladene Dateien</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No servers for private message routing." xml:space="preserve">
@@ -5316,7 +5321,7 @@ Das ist Ihr Link für die Gruppe %@!</target>
       </trans-unit>
       <trans-unit id="No servers to receive files." xml:space="preserve">
         <source>No servers to receive files.</source>
-        <target>Keine Server für den Empfang von Dateien.</target>
+        <target>Keine Server für das Herunterladen von Dateien.</target>
         <note>servers error</note>
       </trans-unit>
       <trans-unit id="No servers to receive messages." xml:space="preserve">
@@ -5893,9 +5898,19 @@ Fehler: %@</target>
         <target>Schutz der Privatsphäre Ihrer Kunden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Privacy policy and conditions of use." xml:space="preserve">
+        <source>Privacy policy and conditions of use.</source>
+        <target>Datenschutzbestimmungen und Nutzungsbedingungen.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Privacy redefined" xml:space="preserve">
         <source>Privacy redefined</source>
         <target>Datenschutz neu definiert</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Private chats, groups and your contacts are not accessible to server operators." xml:space="preserve">
+        <source>Private chats, groups and your contacts are not accessible to server operators.</source>
+        <target>Private Chats, Gruppen und Ihre Kontakte sind für Server-Betreiber nicht zugänglich.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private filenames" xml:space="preserve">
@@ -6172,7 +6187,7 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
       </trans-unit>
       <trans-unit id="Receiving file will be stopped." xml:space="preserve">
         <source>Receiving file will be stopped.</source>
-        <target>Der Empfang der Datei wird beendet.</target>
+        <target>Das Herunterladen der Datei wird beendet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receiving via" xml:space="preserve">
@@ -6264,7 +6279,7 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
         <source>Reject</source>
         <target>Ablehnen</target>
         <note>reject incoming call via notification
-   swipe action</note>
+swipe action</note>
       </trans-unit>
       <trans-unit id="Reject (sender NOT notified)" xml:space="preserve">
         <source>Reject (sender NOT notified)</source>
@@ -6501,11 +6516,6 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
         <target>Nutzungsbedingungen einsehen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Review later" xml:space="preserve">
-        <source>Review later</source>
-        <target>Später einsehen</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Revoke" xml:space="preserve">
         <source>Revoke</source>
         <target>Widerrufen</target>
@@ -6543,7 +6553,7 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
       </trans-unit>
       <trans-unit id="Safely receive files" xml:space="preserve">
         <source>Safely receive files</source>
-        <target>Dateien sicher empfangen</target>
+        <target>Dateien sicher herunterladen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Safer groups" xml:space="preserve">
@@ -6555,7 +6565,7 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
         <source>Save</source>
         <target>Speichern</target>
         <note>alert button
-   chat item action</note>
+chat item action</note>
       </trans-unit>
       <trans-unit id="Save (and notify contacts)" xml:space="preserve">
         <source>Save (and notify contacts)</source>
@@ -7126,7 +7136,7 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
         <source>Share</source>
         <target>Teilen</target>
         <note>alert action
-   chat item action</note>
+chat item action</note>
       </trans-unit>
       <trans-unit id="Share 1-time link" xml:space="preserve">
         <source>Share 1-time link</source>
@@ -7394,7 +7404,7 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
         <source>Spam</source>
         <target>Spam</target>
         <note>blocking reason
-   report reason</note>
+report reason</note>
       </trans-unit>
       <trans-unit id="Square, circle, or anything in between." xml:space="preserve">
         <source>Square, circle, or anything in between.</source>
@@ -7453,17 +7463,17 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
       </trans-unit>
       <trans-unit id="Stop file" xml:space="preserve">
         <source>Stop file</source>
-        <target>Datei beenden</target>
+        <target>Herunterladen beenden</target>
         <note>cancel file action</note>
       </trans-unit>
       <trans-unit id="Stop receiving file?" xml:space="preserve">
         <source>Stop receiving file?</source>
-        <target>Den Empfang der Datei beenden?</target>
+        <target>Das Herunterladen der Datei beenden?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Stop sending file?" xml:space="preserve">
         <source>Stop sending file?</source>
-        <target>Das Senden der Datei beenden?</target>
+        <target>Das Hochladen der Datei beenden?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Stop sharing" xml:space="preserve">
@@ -7763,11 +7773,6 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
         <target>Dieselben Nutzungsbedingungen gelten auch für den Betreiber **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The same conditions will apply to operator(s): **%@**." xml:space="preserve">
-        <source>The same conditions will apply to operator(s): **%@**.</source>
-        <target>Dieselben Nutzungsbedingungen gelten auch für den/die Betreiber: **%@**.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="The second preset operator in the app!" xml:space="preserve">
         <source>The second preset operator in the app!</source>
         <target>Der zweite voreingestellte Netzwerk-Betreiber in der App!</target>
@@ -7825,7 +7830,7 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
       </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
         <source>This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain.</source>
-        <target>Es werden alle empfangenen und gesendeten Dateien und Medien gelöscht. Bilder mit niedriger Auflösung bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden!</target>
+        <target>Es werden alle herunter- und hochgeladene Dateien und Medien gelöscht. Bilder mit niedriger Auflösung bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." xml:space="preserve">
@@ -8424,12 +8429,12 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       </trans-unit>
       <trans-unit id="Video will be received when your contact completes uploading it." xml:space="preserve">
         <source>Video will be received when your contact completes uploading it.</source>
-        <target>Das Video wird empfangen, sobald Ihr Kontakt das Hochladen beendet hat.</target>
+        <target>Das Video wird heruntergeladen, sobald Ihr Kontakt das Hochladen beendet hat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Video will be received when your contact is online, please wait or check later!" xml:space="preserve">
         <source>Video will be received when your contact is online, please wait or check later!</source>
-        <target>Das Video wird empfangen, wenn Ihr Kontakt online ist. Bitte warten oder überprüfen Sie es später!</target>
+        <target>Das Video wird heruntergeladen, sobald Ihr Kontakt online ist. Bitte warten oder überprüfen Sie es später!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Videos and files up to 1gb" xml:space="preserve">
@@ -8734,11 +8739,6 @@ Verbindungsanfrage wiederholen?</target>
         <target>Kann von Ihnen in den Erscheinungsbild-Einstellungen geändert werden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can configure operators in Network &amp; servers settings." xml:space="preserve">
-        <source>You can configure operators in Network &amp; servers settings.</source>
-        <target>Sie können die Betreiber in den Netzwerk- und Servereinstellungen konfigurieren.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="You can configure servers via settings." xml:space="preserve">
         <source>You can configure servers via settings.</source>
         <target>Sie können die Server über die Einstellungen konfigurieren.</target>
@@ -8981,11 +8981,6 @@ Verbindungsanfrage wiederholen?</target>
         <target>Ihre ICE-Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your SMP servers" xml:space="preserve">
-        <source>Your SMP servers</source>
-        <target>Ihre SMP-Server</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Your SimpleX address" xml:space="preserve">
         <source>Your SimpleX address</source>
         <target>Ihre SimpleX-Adresse</target>
@@ -9224,7 +9219,8 @@ Verbindungsanfrage wiederholen?</target>
       <trans-unit id="blocked by admin" xml:space="preserve">
         <source>blocked by admin</source>
         <target>wurde vom Administrator blockiert</target>
-        <note>marked deleted chat item preview text</note>
+        <note>blocked chat item
+marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
         <source>bold</source>
@@ -9395,7 +9391,7 @@ Verbindungsanfrage wiederholen?</target>
         <source>default (%@)</source>
         <target>Default (%@)</target>
         <note>delete after time
-   pref value</note>
+pref value</note>
       </trans-unit>
       <trans-unit id="default (no)" xml:space="preserve">
         <source>default (no)</source>
@@ -9522,19 +9518,9 @@ Verbindungsanfrage wiederholen?</target>
         <target>Fehler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="event happened" xml:space="preserve">
-        <source>event happened</source>
-        <target>event happened</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="expired" xml:space="preserve">
         <source>expired</source>
         <target>Abgelaufen</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="for better metadata privacy." xml:space="preserve">
-        <source>for better metadata privacy.</source>
-        <target>für einen besseren Metadatenschutz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="forwarded" xml:space="preserve">
@@ -9746,8 +9732,8 @@ Verbindungsanfrage wiederholen?</target>
         <source>off</source>
         <target>Aus</target>
         <note>enabled status
-   group pref value
-   time to disappear</note>
+group pref value
+time to disappear</note>
       </trans-unit>
       <trans-unit id="offered %@" xml:space="preserve">
         <source>offered %@</source>
@@ -10117,7 +10103,7 @@ Zuletzt empfangene Nachricht: %2$@</target>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="de" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.4" build-num="15F31d"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id="CFBundleName" xml:space="preserve">
@@ -10147,14 +10133,14 @@ Zuletzt empfangene Nachricht: %2$@</target>
       </trans-unit>
       <trans-unit id="NSPhotoLibraryAddUsageDescription" xml:space="preserve">
         <source>SimpleX needs access to Photo Library for saving captured and received media</source>
-        <target>SimpleX benötigt Zugriff auf das Fotoalbum, um selbst gemachte oder empfangene Bilder zu speichern</target>
+        <target>SimpleX benötigt Zugriff auf das Fotoalbum, um selbst gemachte oder heruntergeladene Bilder zu speichern</target>
         <note>Privacy - Photo Library Additions Usage Description</note>
       </trans-unit>
     </body>
   </file>
   <file original="SimpleX NSE/en.lproj/InfoPlist.strings" source-language="en" target-language="de" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.4" build-num="15F31d"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id="CFBundleDisplayName" xml:space="preserve">
@@ -10176,7 +10162,7 @@ Zuletzt empfangene Nachricht: %2$@</target>
   </file>
   <file original="SimpleX NSE/en.lproj/Localizable.strings" source-language="en" target-language="de" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.4" build-num="15F31d"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id="%d new events" xml:space="preserve">
@@ -10208,7 +10194,7 @@ Zuletzt empfangene Nachricht: %2$@</target>
   </file>
   <file original="SimpleX SE/en.lproj/InfoPlist.strings" source-language="en" target-language="de" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.4" build-num="15F31d"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id="CFBundleDisplayName" xml:space="preserve">
@@ -10230,7 +10216,7 @@ Zuletzt empfangene Nachricht: %2$@</target>
   </file>
   <file original="SimpleX SE/en.lproj/Localizable.strings" source-language="en" target-language="de" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.4" build-num="15F31d"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id="%@" xml:space="preserve">

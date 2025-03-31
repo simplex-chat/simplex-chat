@@ -266,7 +266,7 @@
 "0s" = "0秒";
 
 /* delete after time
-   time interval */
+time interval */
 "1 day" = "1日";
 
 /* time interval */
@@ -276,11 +276,11 @@
 "1 minute" = "1分";
 
 /* delete after time
-   time interval */
+time interval */
 "1 month" = "1ヶ月";
 
 /* delete after time
-   time interval */
+time interval */
 "1 week" = "1週間";
 
 /* No comment provided by engineer. */
@@ -329,8 +329,8 @@
 "above, then choose:" = "上で選んでください：";
 
 /* accept contact request via notification
-   accept incoming call via notification
-   swipe action */
+accept incoming call via notification
+swipe action */
 "Accept" = "承諾";
 
 /* No comment provided by engineer. */
@@ -340,7 +340,7 @@
 "Accept contact request from %@?" = "%@ からの連絡要求を受け入れますか?";
 
 /* accept contact request via notification
-   swipe action */
+swipe action */
 "Accept incognito" = "シークレットモードで承諾";
 
 /* call status */
@@ -647,7 +647,7 @@
 "Can't invite contacts!" = "連絡先を招待できません！";
 
 /* alert action
-   alert button */
+alert button */
 "Cancel" = "中止";
 
 /* feature offered item */
@@ -687,7 +687,7 @@
 "Change self-destruct mode" = "自己破壊モードの変更";
 
 /* authentication reason
-   set passcode view */
+set passcode view */
 "Change self-destruct passcode" = "自己破壊パスコードを変更する";
 
 /* chat item text */
@@ -1066,7 +1066,7 @@
 "Decryption error" = "復号化エラー";
 
 /* delete after time
-   pref value */
+pref value */
 "default (%@)" = "デフォルト (%@)";
 
 /* No comment provided by engineer. */
@@ -1076,7 +1076,7 @@
 "default (yes)" = "デフォルト（はい）";
 
 /* alert action
-   swipe action */
+swipe action */
 "Delete" = "削除";
 
 /* No comment provided by engineer. */
@@ -1565,7 +1565,9 @@
 /* No comment provided by engineer. */
 "Error: " = "エラー : ";
 
-/* alert message */
+/* alert message
+file error text
+snd error text */
 "Error: %@" = "エラー : %@";
 
 /* No comment provided by engineer. */
@@ -1576,9 +1578,6 @@
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "会話中に無効になっている場合でも。";
-
-/* No comment provided by engineer. */
-"event happened" = "イベント発生";
 
 /* No comment provided by engineer. */
 "Exit without saving" = "保存せずに閉じる";
@@ -2292,8 +2291,8 @@
 "observer" = "オブザーバー";
 
 /* enabled status
-   group pref value
-   time to disappear */
+group pref value
+time to disappear */
 "off" = "オフ";
 
 /* blur media */
@@ -2600,7 +2599,7 @@
 "Reduced battery usage" = "電池使用量低減";
 
 /* reject incoming call via notification
-   swipe action */
+swipe action */
 "Reject" = "拒否";
 
 /* No comment provided by engineer. */
@@ -2700,7 +2699,7 @@
 "Run chat" = "チャット起動";
 
 /* alert button
-   chat item action */
+chat item action */
 "Save" = "保存";
 
 /* alert button */
@@ -2887,7 +2886,7 @@
 "Settings" = "設定";
 
 /* alert action
-   chat item action */
+chat item action */
 "Share" = "共有する";
 
 /* No comment provided by engineer. */
@@ -3606,7 +3605,4 @@
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "あなたのSimpleXアドレス";
-
-/* No comment provided by engineer. */
-"Your SMP servers" = "あなたのSMPサーバ";
 
