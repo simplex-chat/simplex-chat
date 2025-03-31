@@ -926,6 +926,9 @@ set passcode view */
 "Completed" = "已完成";
 
 /* No comment provided by engineer. */
+"Conditions of use" = "使用条款";
+
+/* No comment provided by engineer. */
 "Configure ICE servers" = "配置 ICE 服务器";
 
 /* No comment provided by engineer. */
