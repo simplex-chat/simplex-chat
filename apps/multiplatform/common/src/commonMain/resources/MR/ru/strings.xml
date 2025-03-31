@@ -2231,7 +2231,7 @@
     <string name="appearance_in_app_bars_alpha">Прозрачность</string>
     <string name="v6_2_network_decentralization">Децентрализация сети</string>
     <string name="v6_2_network_decentralization_descr">Второй оператор серверов в приложении!</string>
-    <string name="v6_2_network_decentralization_enable_flux">Включить Flux</string>
+    <string name="v6_2_network_decentralization_enable_flux">Включите Flux в настройках Сеть и серверы для лучшей конфиденциальности метаданных.</string>
     <string name="v6_2_network_decentralization_enable_flux_reason">для лучшей конфиденциальности метаданных.</string>
     <string name="v6_2_improved_chat_navigation">Улучшенная навигация в разговоре</string>
     <string name="view_updated_conditions">Посмотреть измененные условия</string>
@@ -2354,7 +2354,7 @@
     <string name="open_with_app">Открыто с %s</string>
     <string name="create_list">Создать список</string>
     <string name="add_to_list">Добавить в список</string>
-    <string name="change_list">Список изменений</string>
+    <string name="change_list">Изменить список</string>
     <string name="save_list">Сохранить список</string>
     <string name="list_name_field_placeholder">Имя списка...</string>
     <string name="sync_connection_question">Исправить соединение?</string>
@@ -2458,4 +2458,9 @@
     <string name="members_will_be_removed_from_chat_cannot_be_undone">Участники будут удалены из разговора - это действие нельзя отменить!</string>
     <string name="feature_roles_moderators">модераторы</string>
     <string name="button_remove_members_question">Удалить членов группы?</string>
+    <string name="onboarding_conditions_accept">Принять</string>
+    <string name="onboarding_conditions_by_using_you_agree">Используя SimpleX Chat, Вы согласны:\n- отправлять только законные сообщения в публичных группах.\n- уважать других пользователей – не отправлять спам.</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">Частные разговоры, группы и Ваши контакты недоступны для операторов серверов.</string>
+    <string name="onboarding_conditions_configure_server_operators">Настроить операторов серверов</string>
+    <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Политика конфиденциальности и условия использования.</string>
 </resources>

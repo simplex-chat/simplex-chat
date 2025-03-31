@@ -269,7 +269,7 @@
 "0s" = "0s";
 
 /* delete after time
-   time interval */
+time interval */
 "1 day" = "1 dag";
 
 /* time interval */
@@ -279,11 +279,11 @@
 "1 minute" = "1 minuut";
 
 /* delete after time
-   time interval */
+time interval */
 "1 month" = "1 maand";
 
 /* delete after time
-   time interval */
+time interval */
 "1 week" = "1 week";
 
 /* delete after time */
@@ -341,8 +341,8 @@
 "Accent" = "Accent";
 
 /* accept contact request via notification
-   accept incoming call via notification
-   swipe action */
+accept incoming call via notification
+swipe action */
 "Accept" = "Accepteer";
 
 /* No comment provided by engineer. */
@@ -355,7 +355,7 @@
 "Accept contact request from %@?" = "Accepteer contactverzoek van %@?";
 
 /* accept contact request via notification
-   swipe action */
+swipe action */
 "Accept incognito" = "Accepteer incognito";
 
 /* call status */
@@ -817,7 +817,8 @@
 /* rcv group event chat item */
 "blocked %@" = "blokkeerde %@";
 
-/* marked deleted chat item preview text */
+/* blocked chat item
+marked deleted chat item preview text */
 "blocked by admin" = "geblokkeerd door beheerder";
 
 /* No comment provided by engineer. */
@@ -902,7 +903,7 @@
 "Can't message member" = "Kan geen bericht sturen naar lid";
 
 /* alert action
-   alert button */
+alert button */
 "Cancel" = "Annuleren";
 
 /* No comment provided by engineer. */
@@ -960,7 +961,7 @@
 "Change self-destruct mode" = "Zelfvernietigings modus wijzigen";
 
 /* authentication reason
-   set passcode view */
+set passcode view */
 "Change self-destruct passcode" = "Zelfvernietigings code wijzigen";
 
 /* chat item text */
@@ -1127,12 +1128,6 @@
 
 /* No comment provided by engineer. */
 "Conditions of use" = "Gebruiksvoorwaarden";
-
-/* No comment provided by engineer. */
-"Conditions will be accepted for enabled operators after 30 days." = "Voor ingeschakelde operators worden de voorwaarden na 30 dagen geaccepteerd.";
-
-/* No comment provided by engineer. */
-"Conditions will be accepted for operator(s): **%@**." = "Voorwaarden worden geaccepteerd voor operator(s): **%@**.";
 
 /* No comment provided by engineer. */
 "Conditions will be accepted for the operator(s): **%@**." = "Voorwaarden worden geaccepteerd voor de operator(s): **%@**.";
@@ -1555,7 +1550,7 @@
 "decryption errors" = "decoderingsfouten";
 
 /* delete after time
-   pref value */
+pref value */
 "default (%@)" = "standaard (%@)";
 
 /* No comment provided by engineer. */
@@ -1565,7 +1560,7 @@
 "default (yes)" = "standaard (ja)";
 
 /* alert action
-   swipe action */
+swipe action */
 "Delete" = "Verwijderen";
 
 /* No comment provided by engineer. */
@@ -1869,7 +1864,7 @@
 "Don't enable" = "Niet inschakelen";
 
 /* No comment provided by engineer. */
-"Don't miss important messages." = "‐Mis geen belangrijke berichten.";
+"Don't miss important messages." = "Mis geen belangrijke berichten.";
 
 /* No comment provided by engineer. */
 "Don't show again" = "Niet meer weergeven";
@@ -1881,7 +1876,7 @@
 "Downgrade and open chat" = "Downgraden en chat openen";
 
 /* alert button
-   chat item action */
+chat item action */
 "Download" = "Downloaden";
 
 /* No comment provided by engineer. */
@@ -1943,9 +1938,6 @@
 
 /* No comment provided by engineer. */
 "Enable camera access" = "Schakel cameratoegang in";
-
-/* No comment provided by engineer. */
-"Enable Flux" = "Flux inschakelen";
 
 /* No comment provided by engineer. */
 "Enable for all" = "Inschakelen voor iedereen";
@@ -2164,7 +2156,7 @@
 "Error creating profile!" = "Fout bij aanmaken van profiel!";
 
 /* No comment provided by engineer. */
-"Error creating report" = "Fout bij maken van rapport";
+"Error creating report" = "Fout bij het rapporteren";
 
 /* No comment provided by engineer. */
 "Error decrypting file" = "Fout bij het ontsleutelen van bestand";
@@ -2325,7 +2317,9 @@
 /* No comment provided by engineer. */
 "Error: " = "Fout: ";
 
-/* alert message */
+/* alert message
+file error text
+snd error text */
 "Error: %@" = "Fout: %@";
 
 /* No comment provided by engineer. */
@@ -2342,9 +2336,6 @@
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "Zelfs wanneer uitgeschakeld in het gesprek.";
-
-/* No comment provided by engineer. */
-"event happened" = "gebeurtenis gebeurd";
 
 /* No comment provided by engineer. */
 "Exit without saving" = "Afsluiten zonder opslaan";
@@ -2483,9 +2474,6 @@
 
 /* No comment provided by engineer. */
 "For all moderators" = "Voor alle moderators";
-
-/* No comment provided by engineer. */
-"for better metadata privacy." = "voor betere privacy van metagegevens.";
 
 /* servers error */
 "For chat profile %@:" = "Voor chatprofiel %@:";
@@ -3589,8 +3577,8 @@
 "observer" = "Waarnemer";
 
 /* enabled status
-   group pref value
-   time to disappear */
+group pref value
+time to disappear */
 "off" = "uit";
 
 /* blur media */
@@ -3801,7 +3789,13 @@
 "peer-to-peer" = "peer-to-peer";
 
 /* No comment provided by engineer. */
+"pending" = "In behandeling";
+
+/* No comment provided by engineer. */
 "Pending" = "in behandeling";
+
+/* No comment provided by engineer. */
+"pending approval" = "in afwachting van goedkeuring";
 
 /* No comment provided by engineer. */
 "Periodic" = "Periodiek";
@@ -4137,7 +4131,7 @@
 "Registered" = "Geregistreerd";
 
 /* reject incoming call via notification
-   swipe action */
+swipe action */
 "Reject" = "Afwijzen";
 
 /* No comment provided by engineer. */
@@ -4145,6 +4139,9 @@
 
 /* No comment provided by engineer. */
 "Reject contact request" = "Contactverzoek afwijzen";
+
+/* No comment provided by engineer. */
+"rejected" = "afgewezen";
 
 /* call status */
 "rejected call" = "geweigerde oproep";
@@ -4216,7 +4213,7 @@
 "Reply" = "Antwoord";
 
 /* chat item action */
-"Report" = "Rapport";
+"Report" = "rapporteren";
 
 /* report reason */
 "Report content: only group moderators will see it." = "Inhoud melden: alleen groepsmoderators kunnen dit zien.";
@@ -4237,7 +4234,7 @@
 "Report violation: only group moderators will see it." = "Rapporteer overtreding: alleen groepsmoderators kunnen dit zien.";
 
 /* report in notification */
-"Report: %@" = "Rapport: %@";
+"Report: %@" = "rapporteer: %@";
 
 /* No comment provided by engineer. */
 "Reporting messages to moderators is prohibited." = "Het is niet toegestaan om berichten aan moderators te melden.";
@@ -4303,9 +4300,6 @@
 "Review conditions" = "Voorwaarden bekijken";
 
 /* No comment provided by engineer. */
-"Review later" = "Later beoordelen";
-
-/* No comment provided by engineer. */
 "Revoke" = "Intrekken";
 
 /* cancel file action */
@@ -4327,7 +4321,7 @@
 "Safer groups" = "Veiligere groepen";
 
 /* alert button
-   chat item action */
+chat item action */
 "Save" = "Opslaan";
 
 /* alert button */
@@ -4520,7 +4514,7 @@
 "Send notifications" = "Meldingen verzenden";
 
 /* No comment provided by engineer. */
-"Send private reports" = "Verstuur rapporten privé";
+"Send private reports" = "Rapporteer privé";
 
 /* No comment provided by engineer. */
 "Send questions and ideas" = "Stuur vragen en ideeën";
@@ -4703,7 +4697,7 @@
 "Shape profile images" = "Vorm profiel afbeeldingen";
 
 /* alert action
-   chat item action */
+chat item action */
 "Share" = "Deel";
 
 /* No comment provided by engineer. */
@@ -4869,7 +4863,7 @@
 "Somebody" = "Iemand";
 
 /* blocking reason
-   report reason */
+report reason */
 "Spam" = "Spam";
 
 /* No comment provided by engineer. */
@@ -5099,9 +5093,6 @@
 
 /* No comment provided by engineer. */
 "The same conditions will apply to operator **%@**." = "Dezelfde voorwaarden gelden voor operator **%@**.";
-
-/* No comment provided by engineer. */
-"The same conditions will apply to operator(s): **%@**." = "Dezelfde voorwaarden gelden voor operator(s): **%@**.";
 
 /* No comment provided by engineer. */
 "The second preset operator in the app!" = "De tweede vooraf ingestelde operator in de app!";
@@ -5381,6 +5372,9 @@
 
 /* No comment provided by engineer. */
 "Update settings?" = "Instellingen actualiseren?";
+
+/* No comment provided by engineer. */
+"Updated conditions" = "Bijgewerkte voorwaarden";
 
 /* rcv group event chat item */
 "updated group profile" = "bijgewerkt groep profiel";
@@ -5755,9 +5749,6 @@
 "You can change it in Appearance settings." = "U kunt dit wijzigen in de instellingen onder uiterlijk.";
 
 /* No comment provided by engineer. */
-"You can configure operators in Network & servers settings." = "U kunt operators configureren in Netwerk- en serverinstellingen.";
-
-/* No comment provided by engineer. */
 "You can configure servers via settings." = "U kunt servers configureren via instellingen.";
 
 /* No comment provided by engineer. */
@@ -6002,7 +5993,4 @@
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Uw SimpleX adres";
-
-/* No comment provided by engineer. */
-"Your SMP servers" = "Uw SMP servers";
 
