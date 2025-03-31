@@ -864,6 +864,9 @@ marked deleted chat item preview text */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "A csevegési profillal (alapértelmezett), vagy a [kapcsolattal] (https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BÉTA).";
 
 /* No comment provided by engineer. */
+"By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam." = "A SimpleX Chat használatával Ön elfogadja, hogy:\n- csak elfogadott tartalmakat tesz közzé a nyilvános csoportokban.\n- tiszteletben tartja a többi felhasználót, és nem küld kéretlen tartalmat senkinek.";
+
+/* No comment provided by engineer. */
 "call" = "hívás";
 
 /* No comment provided by engineer. */
@@ -1140,6 +1143,9 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Configure ICE servers" = "ICE-kiszolgálók beállítása";
+
+/* No comment provided by engineer. */
+"Configure server operators" = "Kiszolgálóüzemeltetők beállítása";
 
 /* No comment provided by engineer. */
 "Confirm" = "Megerősítés";
@@ -3903,7 +3909,13 @@ time to disappear */
 "Privacy for your customers." = "Az Ön ügyfeleinek adatvédelme.";
 
 /* No comment provided by engineer. */
+"Privacy policy and conditions of use." = "Adatvédelmi szabályzat és felhasználási feltételek.";
+
+/* No comment provided by engineer. */
 "Privacy redefined" = "Adatvédelem újraértelmezve";
+
+/* No comment provided by engineer. */
+"Private chats, groups and your contacts are not accessible to server operators." = "A privát csevegések, a csoportok és a partnerek nem érhetők el a szerver üzemeltetői számára.";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Privát fájlnevek";

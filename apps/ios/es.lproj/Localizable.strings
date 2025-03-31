@@ -864,6 +864,9 @@ marked deleted chat item preview text */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Mediante perfil (predeterminado) o [por conexión](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
 
 /* No comment provided by engineer. */
+"By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam." = "Al usar SimpleX Chat, aceptas:\n- enviar únicamente contenido legal en los grupos públicos.\n- respetar a los demás usuarios – spam prohibido.";
+
+/* No comment provided by engineer. */
 "call" = "llamada";
 
 /* No comment provided by engineer. */
@@ -1140,6 +1143,9 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Configure ICE servers" = "Configure servidores ICE";
+
+/* No comment provided by engineer. */
+"Configure server operators" = "Configurar operadores de servidores";
 
 /* No comment provided by engineer. */
 "Confirm" = "Confirmar";
@@ -3903,7 +3909,13 @@ time to disappear */
 "Privacy for your customers." = "Privacidad para tus clientes.";
 
 /* No comment provided by engineer. */
+"Privacy policy and conditions of use." = "Política de privacidad y condiciones de uso.";
+
+/* No comment provided by engineer. */
 "Privacy redefined" = "Privacidad redefinida";
+
+/* No comment provided by engineer. */
+"Private chats, groups and your contacts are not accessible to server operators." = "Los chats privados, los grupos y tus contactos no son accesibles para los operadores de servidores.";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Nombres de archivos privados";

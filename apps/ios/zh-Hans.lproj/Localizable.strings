@@ -708,6 +708,9 @@ marked deleted chat item preview text */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "通过聊天资料（默认）或者[通过连接](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)。";
 
 /* No comment provided by engineer. */
+"By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam." = "使用 SimpleX Chat 代表您同意：\n- 在公开群中只发送合法内容\n- 尊重其他用户 – 没有垃圾信息。";
+
+/* No comment provided by engineer. */
 "call" = "呼叫";
 
 /* No comment provided by engineer. */
@@ -924,6 +927,9 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Configure ICE servers" = "配置 ICE 服务器";
+
+/* No comment provided by engineer. */
+"Configure server operators" = "配置服务器运营方";
 
 /* No comment provided by engineer. */
 "Confirm" = "确认";
@@ -3252,7 +3258,13 @@ time to disappear */
 "Privacy & security" = "隐私和安全";
 
 /* No comment provided by engineer. */
+"Privacy policy and conditions of use." = "隐私政策和使用条款。";
+
+/* No comment provided by engineer. */
 "Privacy redefined" = "重新定义隐私";
+
+/* No comment provided by engineer. */
+"Private chats, groups and your contacts are not accessible to server operators." = "服务器运营方无法访问私密聊天、群组和你的联系人。";
 
 /* No comment provided by engineer. */
 "Private filenames" = "私密文件名";

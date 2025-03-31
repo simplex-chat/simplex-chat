@@ -2447,8 +2447,8 @@
     <string name="feature_roles_moderators">Moderatoren</string>
     <string name="block_members_for_all_question">Mitglieder für Alle blockieren?</string>
     <string name="block_members_desc">Alle neuen Nachrichten dieser Mitglieder werden nicht angezeigt!</string>
-    <string name="onboarding_conditions_by_using_you_agree">Durch die Nutzung von SimpleX Chat erklären Sie sich damit einverstanden:\n- nur legale Inhalte in öffentlichen Gruppen zu versenden\n- andere Nutzer zu respektieren - kein Spam</string>
-    <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Datenschutzbestimmungen und Nutzungsbedingungen</string>
+    <string name="onboarding_conditions_by_using_you_agree">Durch die Nutzung von SimpleX Chat erklären Sie sich damit einverstanden:\n- nur legale Inhalte in öffentlichen Gruppen zu versenden.\n- andere Nutzer zu respektieren - kein Spam.</string>
+    <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Datenschutzbestimmungen und Nutzungsbedingungen.</string>
     <string name="onboarding_conditions_accept">Akzeptieren</string>
     <string name="onboarding_conditions_configure_server_operators">Server-Betreiber konfigurieren</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Private Chats, Gruppen und Ihre Kontakte sind für Server-Betreiber nicht zugänglich.</string>

@@ -1335,6 +1335,9 @@ swipe action</note>
         <source>By using SimpleX Chat you agree to:
 - send only legal content in public groups.
 - respect other users – no spam.</source>
+        <target>Al usar SimpleX Chat, aceptas:
+- enviar únicamente contenido legal en los grupos públicos.
+- respetar a los demás usuarios – spam prohibido.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve">
@@ -1741,6 +1744,7 @@ set passcode view</note>
       </trans-unit>
       <trans-unit id="Configure server operators" xml:space="preserve">
         <source>Configure server operators</source>
+        <target>Configurar operadores de servidores</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm" xml:space="preserve">
@@ -5896,6 +5900,7 @@ Error: %@</target>
       </trans-unit>
       <trans-unit id="Privacy policy and conditions of use." xml:space="preserve">
         <source>Privacy policy and conditions of use.</source>
+        <target>Política de privacidad y condiciones de uso.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Privacy redefined" xml:space="preserve">
@@ -5905,6 +5910,7 @@ Error: %@</target>
       </trans-unit>
       <trans-unit id="Private chats, groups and your contacts are not accessible to server operators." xml:space="preserve">
         <source>Private chats, groups and your contacts are not accessible to server operators.</source>
+        <target>Los chats privados, los grupos y tus contactos no son accesibles para los operadores de servidores.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private filenames" xml:space="preserve">
