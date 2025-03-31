@@ -19,6 +19,7 @@ m20250310_group_scope =
 ALTER TABLE group_members ADD COLUMN support_chat_ts TEXT;
 ALTER TABLE group_members ADD COLUMN support_chat_unanswered INTEGER;
 
+ALTER TABLE chat_items ADD COLUMN group_scope_tag TEXT;
 ALTER TABLE chat_items ADD COLUMN group_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE;
 
 CREATE INDEX idx_chat_items_group_scope_group_member_id ON chat_items(group_scope_group_member_id);
@@ -38,6 +39,7 @@ DROP INDEX idx_chat_items_groups_group_scope_group_member_id_item_ts;
 
 DROP INDEX idx_chat_items_group_scope_group_member_id;
 
+ALTER TABLE chat_items DROP COLUMN group_scope_tag;
 ALTER TABLE chat_items DROP COLUMN group_scope_group_member_id;
 
 ALTER TABLE group_members DROP COLUMN support_chat_ts;

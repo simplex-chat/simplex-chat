@@ -65,6 +65,21 @@ data GroupChatScope
   = GCSMemberSupport {groupMemberId_ :: Maybe GroupMemberId} -- Nothing means own conversation with support
   deriving (Eq, Show, Ord)
 
+data GroupChatScopeTag
+  = GCSTMemberSupport_
+  deriving (Eq, Show)
+
+instance FromField GroupChatScopeTag where fromField = fromTextField_ textDecode
+
+instance ToField GroupChatScopeTag where toField = toField . textEncode
+
+instance TextEncoding GroupChatScopeTag where
+  textDecode = \case
+    "member_support" -> Just GCSTMemberSupport_
+    _ -> Nothing
+  textEncode = \case
+    GCSTMemberSupport_ -> "member_support"
+
 data ChatName = ChatName {chatType :: ChatType, chatName :: Text}
   deriving (Show)
 

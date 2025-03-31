@@ -434,7 +434,7 @@ createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent q
     [sql|
       INSERT INTO chat_items (
         -- user and IDs
-        user_id, created_by_msg_id, contact_id, group_id, group_scope_group_member_id, group_member_id, note_folder_id,
+        user_id, created_by_msg_id, contact_id, group_id, group_scope_tag, group_scope_group_member_id, group_member_id, note_folder_id,
         -- meta
         item_sent, item_ts, item_content, item_content_tag, item_text, item_status, msg_content_tag, shared_msg_id,
         forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, timed_ttl, timed_delete_at,
@@ -442,7 +442,7 @@ createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent q
         quoted_shared_msg_id, quoted_sent_at, quoted_content, quoted_sent, quoted_member_id,
         -- forwarded from
         fwd_from_tag, fwd_from_chat_name, fwd_from_msg_dir, fwd_from_contact_id, fwd_from_group_id, fwd_from_chat_item_id
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
     ((userId, msgId_) :. idsRow :. itemRow :. quoteRow' :. forwardedFromRow)
   ciId <- insertedRowId db
@@ -452,22 +452,28 @@ createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent q
     itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, Text, CIStatus d, Maybe MsgContentTag, Maybe SharedMsgId, Maybe GroupMemberId, BoolInt) :. (UTCTime, UTCTime, Maybe BoolInt, BoolInt) :. (Maybe Int, Maybe UTCTime)
     itemRow = (msgDirection @d, itemTs, ciContent, toCIContentTag ciContent, ciContentToText ciContent, ciCreateStatus ciContent, msgContentTag <$> ciMsgContent ciContent, sharedMsgId, forwardedByMember, BI includeInHistory) :. (createdAt, createdAt, BI <$> (justTrue live), BI userMention) :. ciTimedRow timed
     quoteRow' = let (a, b, c, d, e) = quoteRow in (a, b, c, BI <$> d, e)
-    idsRow :: (Maybe ContactId, Maybe GroupId, Maybe GroupMemberId, Maybe GroupMemberId, Maybe NoteFolderId)
+    idsRow :: (Maybe ContactId, Maybe GroupId, Maybe GroupChatScopeTag, Maybe GroupMemberId, Maybe GroupMemberId, Maybe NoteFolderId)
     idsRow = case chatDirection of
-      CDDirectRcv Contact {contactId} -> (Just contactId, Nothing, Nothing, Nothing, Nothing)
-      CDDirectSnd Contact {contactId} -> (Just contactId, Nothing, Nothing, Nothing, Nothing)
-      CDGroupRcv g@GroupInfo {groupId} gcsi GroupMember {groupMemberId} -> (Nothing, Just groupId, gsGroupMemberId_ g gcsi, Just groupMemberId, Nothing)
-      CDGroupSnd g@GroupInfo {groupId} gcsi -> (Nothing, Just groupId, gsGroupMemberId_ g gcsi, Nothing, Nothing)
-      CDLocalRcv NoteFolder {noteFolderId} -> (Nothing, Nothing, Nothing, Nothing, Just noteFolderId)
-      CDLocalSnd NoteFolder {noteFolderId} -> (Nothing, Nothing, Nothing, Nothing, Just noteFolderId)
+      CDDirectRcv Contact {contactId} -> (Just contactId, Nothing, Nothing, Nothing, Nothing, Nothing)
+      CDDirectSnd Contact {contactId} -> (Just contactId, Nothing, Nothing, Nothing, Nothing, Nothing)
+      CDGroupRcv GroupInfo {groupId} gcsi GroupMember {groupMemberId} ->
+        let (gsTag_, gsGroupMemberId_) = groupScopeFields gcsi
+         in (Nothing, Just groupId, gsTag_, gsGroupMemberId_, Just groupMemberId, Nothing)
+      CDGroupSnd GroupInfo {groupId} gcsi ->
+        let (gsTag_, gsGroupMemberId_) = groupScopeFields gcsi
+         in (Nothing, Just groupId, gsTag_, gsGroupMemberId_, Nothing, Nothing)
+      CDLocalRcv NoteFolder {noteFolderId} -> (Nothing, Nothing, Nothing, Nothing, Nothing, Just noteFolderId)
+      CDLocalSnd NoteFolder {noteFolderId} -> (Nothing, Nothing, Nothing, Nothing, Nothing, Just noteFolderId)
       where
-        gsGroupMemberId_ :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe Int64
-        gsGroupMemberId_ GroupInfo {membership} = fmap $ \case
-          GCSIMemberSupport {groupMember_ = m} -> groupMemberId' $ fromMaybe membership m
+        groupScopeFields :: Maybe GroupChatScopeInfo -> (Maybe GroupChatScopeTag, Maybe GroupMemberId)
+        groupScopeFields = \case
+          Nothing -> (Nothing, Nothing)
+          Just GCSIMemberSupport {groupMember_ = Just m} -> (Just GCSTMemberSupport_, Just $ groupMemberId' m)
+          Just GCSIMemberSupport {groupMember_ = Nothing} -> (Just GCSTMemberSupport_, Nothing)
     includeInHistory :: Bool
     includeInHistory =
-      let (_, groupId_, gsGroupMemberId_, _, _) = idsRow
-       in isJust groupId_ && isNothing gsGroupMemberId_ && isJust (ciMsgContent ciContent) && ((msgContentTag <$> ciMsgContent ciContent) /= Just MCReport_)
+      let (_, groupId_, gsTag_, _, _, _) = idsRow
+       in isJust groupId_ && isNothing gsTag_ && isJust (ciMsgContent ciContent) && ((msgContentTag <$> ciMsgContent ciContent) /= Just MCReport_)
     forwardedFromRow :: (Maybe CIForwardedFromTag, Maybe Text, Maybe MsgDirection, Maybe Int64, Maybe Int64, Maybe Int64)
     forwardedFromRow = case itemForwarded of
       Nothing ->
@@ -1279,14 +1285,29 @@ getGroupChatLast_ db user g scopeInfo_ contentFilter count search stats = do
 data GroupItemIDsRange = GRLast | GRAfter UTCTime ChatItemId | GRBefore UTCTime ChatItemId
 
 getGroupChatItemIDs :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> GroupItemIDsRange -> Int -> String -> ExceptT StoreError IO [ChatItemId]
-getGroupChatItemIDs db User {userId} GroupInfo {groupId, membership} scopeInfo_ contentFilter range count search = case (scopeInfo_, contentFilter) of
-  (Nothing, Nothing) -> liftIO $ idsQuery (baseCond <> " AND group_scope_group_member_id IS NULL ") (userId, groupId)
-  -- TODO [knocking] and filter out scope?
-  (Nothing, Just mcTag) -> liftIO $ idsQuery (baseCond <> " AND msg_content_tag = ? ") (userId, groupId, mcTag)
-  (Just GCSIMemberSupport {groupMember_}, Nothing) ->
-    let gmId = groupMemberId' $ fromMaybe membership groupMember_
-     in liftIO $ idsQuery (baseCond <> " AND group_scope_group_member_id = ? ") (userId, groupId, gmId)
-  (Just _scope, Just _mcTag) -> throwError $ SEInternalError "group scope and content filter are not supported together"
+getGroupChatItemIDs db User {userId} GroupInfo {groupId} scopeInfo_ contentFilter range count search = case (scopeInfo_, contentFilter) of
+  (Nothing, Nothing) ->
+    liftIO $
+      idsQuery
+        (baseCond <> " AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL ")
+        (userId, groupId)
+  (Nothing, Just mcTag) ->
+    liftIO $
+      idsQuery
+        (baseCond <> " AND msg_content_tag = ? ")
+        (userId, groupId, mcTag)
+  (Just GCSIMemberSupport {groupMember_ = Just m}, Nothing) ->
+    liftIO $
+      idsQuery
+        (baseCond <> " AND group_scope_tag = ? AND group_scope_group_member_id = ? ")
+        (userId, groupId, GCSTMemberSupport_, groupMemberId' m)
+  (Just GCSIMemberSupport {groupMember_ = Nothing}, Nothing) ->
+    liftIO $
+      idsQuery
+        (baseCond <> " AND group_scope_tag = ? AND group_scope_group_member_id IS NULL ")
+        (userId, groupId, GCSTMemberSupport_)
+  (Just _scope, Just _mcTag) ->
+    throwError $ SEInternalError "group scope and content filter are not supported together"
   where
     baseQuery = " SELECT chat_item_id FROM chat_items WHERE "
     baseCond = " user_id = ? AND group_id = ? "
@@ -1444,9 +1465,14 @@ getGroupReportsCount_ db User {userId} GroupInfo {groupId} archived =
       (userId, groupId, MCReport_, BI archived)
 
 queryUnreadGroupItems :: FromRow r => DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> Query -> Query -> ExceptT StoreError IO [r]
-queryUnreadGroupItems db User {userId} GroupInfo {groupId, membership} scopeInfo_ contentFilter baseQuery orderLimit =
+queryUnreadGroupItems db User {userId} GroupInfo {groupId} scopeInfo_ contentFilter baseQuery orderLimit =
   case (scopeInfo_, contentFilter) of
-    (Nothing, Nothing) -> liftIO noAddFilterQuery
+    (Nothing, Nothing) ->
+      liftIO $
+        DB.query
+          db
+          (baseQuery <> " AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_status = ? " <> orderLimit)
+          (userId, groupId, CISRcvNew)
     -- TODO [knocking] and filter out scope?
     (Nothing, Just mcTag) ->
       liftIO $
@@ -1454,20 +1480,20 @@ queryUnreadGroupItems db User {userId} GroupInfo {groupId, membership} scopeInfo
           db
           (baseQuery <> " AND msg_content_tag = ? AND item_status = ? " <> orderLimit)
           (userId, groupId, mcTag, CISRcvNew)
-    (Just GCSIMemberSupport {groupMember_}, Nothing) -> do
-      let gmId = groupMemberId' $ fromMaybe membership groupMember_
+    (Just GCSIMemberSupport {groupMember_ = Just m}, Nothing) ->
       liftIO $
         DB.query
           db
-          (baseQuery <> " AND group_scope_group_member_id = ? AND item_status = ? " <> orderLimit)
-          (userId, groupId, gmId, CISRcvNew)
-    (Just _scope, Just _mcTag) -> throwError $ SEInternalError "group scope and content filter are not supported together"
-  where
-    noAddFilterQuery =
-      DB.query
-        db
-        (baseQuery <> " AND item_status = ? " <> orderLimit)
-        (userId, groupId, CISRcvNew)
+          (baseQuery <> " AND group_scope_tag = ? AND group_scope_group_member_id = ? AND item_status = ? " <> orderLimit)
+          (userId, groupId, GCSTMemberSupport_, groupMemberId' m, CISRcvNew)
+    (Just GCSIMemberSupport {groupMember_ = Nothing}, Nothing) ->
+      liftIO $
+        DB.query
+          db
+          (baseQuery <> " AND group_scope_tag = ? AND group_scope_group_member_id IS NULL AND item_status = ? " <> orderLimit)
+          (userId, groupId, GCSTMemberSupport_, CISRcvNew)
+    (Just _scope, Just _mcTag) ->
+      throwError $ SEInternalError "group scope and content filter are not supported together"
 
 getGroupNavInfo_ :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> IO NavigationInfo
 getGroupNavInfo_ db User {userId} GroupInfo {groupId} afterCI = do
@@ -1970,6 +1996,7 @@ toGroupChatItem ::
   UTCTime ->
   Int64 ->
   ChatItemRow
+    :. Only (Maybe GroupChatScopeTag)
     :. MaybeGroupMemberRow
     :. Only (Maybe GroupMemberId)
     :. MaybeGroupMemberRow
@@ -1985,6 +2012,7 @@ toGroupChatItem
         :. (timedTTL, timedDeleteAt, itemLive, BI userMention)
         :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_)
       )
+      :. Only groupScopeTag_
       :. gcsiMemberRow_
       :. Only forwardedByMember
       :. memberRow_
@@ -1998,11 +2026,11 @@ toGroupChatItem
       quotedMember_ = toMaybeGroupMember userContactId quotedMemberRow_
       deletedByGroupMember_ = toMaybeGroupMember userContactId deletedByGroupMemberRow_
       invalid = ACIContent msgDir $ CIInvalidJSON itemContentText
-      gcsi_ = case gcsiMember_ of
-        Nothing -> Right Nothing
-        Just GroupMember {memberCategory = GCUserMember, supportChat = Just GroupMemberSupportChat {chatTs, unanswered}} ->
-          Right $ Just GCSIMemberSupport {groupMember_ = Nothing, chatTs, unanswered}
-        Just m@GroupMember {supportChat = Just GroupMemberSupportChat {chatTs, unanswered}} ->
+      gcsi_ = case (groupScopeTag_, gcsiMember_) of
+        (Nothing, Nothing) -> Right Nothing
+        (Just GCSTMemberSupport_, Nothing) ->
+          Right $ Just GCSIMemberSupport {groupMember_ = Nothing, chatTs = currentTs, unanswered = True} -- TODO [knocking] join membership?
+        (Just GCSTMemberSupport_, Just m@GroupMember {supportChat = Just GroupMemberSupportChat {chatTs, unanswered}}) ->
           Right $ Just GCSIMemberSupport {groupMember_ = Just m, chatTs, unanswered}
         _ -> Left ()
       chatItem itemContent = case (itemContent, itemStatus, member_, fileStatus_, gcsi_) of
@@ -2660,7 +2688,7 @@ getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do
             -- CIFile
             f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol,
             -- GroupChatScopeInfo member
-            gsm.group_member_id, gsm.group_id, gsm.member_id, gsm.peer_chat_min_version, gsm.peer_chat_max_version, gsm.member_role, gsm.member_category,
+            i.group_scope_tag, gsm.group_member_id, gsm.group_id, gsm.member_id, gsm.peer_chat_min_version, gsm.peer_chat_max_version, gsm.member_role, gsm.member_category,
             gsm.member_status, gsm.show_messages, gsm.member_restriction, gsm.invited_by, gsm.invited_by_group_member_id, gsm.local_display_name, gsm.contact_id, gsm.contact_profile_id, gsp.contact_profile_id,
             gsp.display_name, gsp.full_name, gsp.image, gsp.contact_link, gsp.local_alias, gsp.preferences,
             gsm.created_at, gsm.updated_at, gsm.support_chat_ts, gsm.support_chat_unanswered,
