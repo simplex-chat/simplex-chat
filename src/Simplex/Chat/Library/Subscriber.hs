@@ -1655,7 +1655,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         saveRcvCI gcsi = saveRcvChatItem' user (CDGroupRcv gInfo gcsi m) msg sharedMsgId_ brokerTs
         createBlockedByAdmin
           | groupFeatureAllowed SGFFullDelete gInfo = do
-              gcsi <- getMsgScopeGCSI gInfo m msgScope_
+              gcsi <- getMessageScope gInfo m msgScope_
               -- ignores member role when blocked by admin
               ci <- saveRcvCI gcsi (ciContentNoParse CIRcvBlocked) Nothing timed' False M.empty
               ci' <- withStore' $ \db -> updateGroupCIBlockedByAdmin db user gInfo ci brokerTs
@@ -1669,7 +1669,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           | moderatorRole < GRModerator || moderatorRole < memberRole =
               createContentItem
           | groupFeatureMemberAllowed SGFFullDelete moderator gInfo = do
-              gcsi <- getMsgScopeGCSI gInfo m msgScope_
+              gcsi <- getMessageScope gInfo m msgScope_
               ci <- saveRcvCI gcsi (ciContentNoParse CIRcvModerated) Nothing timed' False M.empty
               ci' <- withStore' $ \db -> updateGroupChatItemModerated db user gInfo ci moderator moderatedAt
               groupMsgToView gInfo ci'
@@ -1678,7 +1678,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               ci <- createNonLive file_
               toView =<< markGroupCIsDeleted user gInfo [CChatItem SMDRcv ci] False (Just moderator) moderatedAt
         createNonLive file_ = do
-          gcsi <- getMsgScopeGCSI gInfo m msgScope_
+          gcsi <- getMessageScope gInfo m msgScope_
           saveRcvCI gcsi (CIRcvMsgContent content, ts) (snd <$> file_) timed' False mentions
         createContentItem = do
           file_ <- processFileInv
@@ -1688,14 +1688,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
         newChatItem ciContent ciFile_ timed_ live = do
           let mentions' = if showMessages (memberSettings m) then mentions else []
-          gcsi <- getMsgScopeGCSI gInfo m msgScope_
+          gcsi <- getMessageScope gInfo m msgScope_
           ci <- saveRcvCI gcsi ciContent ciFile_ timed_ live mentions'
           ci' <- blockedMember m ci $ withStore' $ \db -> markGroupChatItemBlocked db user gInfo ci
           reactions <- maybe (pure []) (\sharedMsgId -> withStore' $ \db -> getGroupCIReactions db gInfo memberId sharedMsgId) sharedMsgId_
           groupMsgToView gInfo ci' {reactions}
 
-    getMsgScopeGCSI :: GroupInfo -> GroupMember -> Maybe MsgScope -> CM (Maybe GroupChatScopeInfo)
-    getMsgScopeGCSI gInfo@GroupInfo {membership} m msgScope_ = do
+    getMessageScope :: GroupInfo -> GroupMember -> Maybe MsgScope -> CM (Maybe GroupChatScopeInfo)
+    getMessageScope gInfo@GroupInfo {membership} m msgScope_ = do
       memberScope <- liftIO $ getMemberMessageScope gInfo m
       case memberScope of
         Just scope -> pure $ Just scope
@@ -1718,7 +1718,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             -- Chat item and update message which created it will have different sharedMsgId in this case...
             let timed_ = rcvGroupCITimed gInfo ttl_
                 mentions' = if showMessages (memberSettings m) then mentions else []
-            gcsi <- getMsgScopeGCSI gInfo m msgScope_
+            gcsi <- getMessageScope gInfo m msgScope_
             ci <- saveRcvChatItem' user (CDGroupRcv gInfo gcsi m) msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live mentions'
             ci' <- withStore' $ \db -> do
               createChatItemVersion db (chatItemId' ci) brokerTs mc
