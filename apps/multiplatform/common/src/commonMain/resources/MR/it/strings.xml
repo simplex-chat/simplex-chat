@@ -266,7 +266,7 @@
     <string name="group_full_name_field">Nome completo del gruppo:</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Se non potete incontrarvi di persona, puoi <b>scansionare il codice QR nella videochiamata</b>, oppure il tuo contatto può condividere un link di invito.]]></string>
     <string name="full_backup">Backup dei dati dell\'app</string>
-    <string name="keychain_is_storing_securely">Android Keystore è usato per memorizzare in modo sicuro la password; permette il funzionamento del servizio di notifica.</string>
+    <string name="keychain_is_storing_securely">L\'archivio chiavi di Android è usato per memorizzare in modo sicuro la password; permette il funzionamento del servizio di notifica.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Permetti ai tuoi contatti di inviare messaggi vocali.</string>
     <string name="chat_database_deleted">Database della chat eliminato</string>
     <string name="settings_section_title_icon">ICONA APP</string>
@@ -274,7 +274,7 @@
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Consuma più batteria</b>! L\'app funziona sempre in secondo piano: le notifiche vengono mostrate istantaneamente.]]></string>
     <string name="callstatus_calling">chiamata…</string>
     <string name="icon_descr_cancel_link_preview">annulla anteprima link</string>
-    <string name="cannot_access_keychain">Impossibile accedere al Keystore per salvare la password del database</string>
+    <string name="cannot_access_keychain">Impossibile accedere all\'archivio chiavi per salvare la password del database</string>
     <string name="alert_title_cant_invite_contacts">Impossibile invitare i contatti!</string>
     <string name="change_role">Cambia ruolo</string>
     <string name="snd_conn_event_switch_queue_phase_changing">cambio indirizzo…</string>
@@ -285,7 +285,7 @@
     <string name="delete_link">Elimina link</string>
     <string name="create_address">Crea indirizzo</string>
     <string name="button_create_group_link">Crea link</string>
-    <string name="database_encryption_will_be_updated">La password di crittografia del database verrà aggiornata e conservata nel Keystore.</string>
+    <string name="database_encryption_will_be_updated">La password di crittografia del database verrà aggiornata e conservata nell\'archivio chiavi.</string>
     <string name="encrypted_with_random_passphrase">Il database è crittografato con una password casuale, puoi cambiarla.</string>
     <string name="database_passphrase_is_required">La password del database è necessaria per aprire la chat.</string>
     <string name="delete_group_menu_action">Elimina</string>
@@ -399,7 +399,7 @@
     <string name="settings_section_title_help">AIUTO</string>
     <string name="chat_is_stopped_indication">Chat fermata</string>
     <string name="database_error">Errore del database</string>
-    <string name="passphrase_is_different">La password del database è diversa da quella salvata nel Keystore.</string>
+    <string name="passphrase_is_different">La password del database è diversa da quella salvata nell\'archivio chiavi.</string>
     <string name="encrypted_database">Database crittografato</string>
     <string name="enter_correct_passphrase">Inserisci la password giusta.</string>
     <string name="enter_passphrase">Inserisci la password…</string>
@@ -497,7 +497,7 @@
     <string name="v4_4_verify_connection_security_desc">Confronta i codici di sicurezza con i tuoi contatti.</string>
     <string name="v4_4_disappearing_messages">Messaggi a tempo</string>
     <string name="v4_3_improved_privacy_and_security_desc">Nascondi la schermata dell\'app nelle app recenti.</string>
-    <string name="keychain_allows_to_receive_ntfs">Android Keystore verrà usato per memorizzare in modo sicuro la password dopo il riavvio dell\'app o la modifica della password; consentirà di ricevere le notifiche.</string>
+    <string name="keychain_allows_to_receive_ntfs">L\'archivio chiavi di Android verrà usato per memorizzare in modo sicuro la password dopo il riavvio dell\'app o la modifica della password; consentirà di ricevere le notifiche.</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Nota bene</b>: NON potrai recuperare o cambiare la password se la perdi.]]></string>
     <string name="change_database_passphrase_question">Cambiare password del database\?</string>
     <string name="confirm_new_passphrase">Conferma nuova password…</string>
@@ -505,7 +505,7 @@
     <string name="database_encrypted">Database crittografato!</string>
     <string name="database_passphrase_will_be_updated">La password di crittografia del database verrà aggiornata.</string>
     <string name="database_will_be_encrypted">Il database verrà crittografato.</string>
-    <string name="database_will_be_encrypted_and_passphrase_stored">Il database verrà crittografato e la password conservata nel Keystore.</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored">Il database verrà crittografato e la password conservata nell\'archivio chiavi.</string>
     <string name="delete_files_and_media_question">Eliminare i file e i multimediali\?</string>
     <string name="delete_messages">Elimina messaggi</string>
     <string name="delete_messages_after">Elimina messaggi dopo</string>
@@ -729,7 +729,7 @@
     <string name="leave_group_button">Esci</string>
     <string name="leave_group_question">Uscire dal gruppo\?</string>
     <string name="open_chat">Apri chat</string>
-    <string name="restore_passphrase_not_found_desc">Password non trovata nel Keystore, inseriscila a mano. Potrebbe essere successo se hai ripristinato i dati dell\'app usando uno strumento di backup. In caso contrario, contatta gli sviluppatori.</string>
+    <string name="restore_passphrase_not_found_desc">Password non trovata nell\'archivio chiavi, inseriscila a mano. Potrebbe essere successo se hai ripristinato i dati dell\'app usando uno strumento di backup. In caso contrario, contatta gli sviluppatori.</string>
     <string name="restore_database_alert_desc">Inserisci la password precedente dopo aver ripristinato il backup del database. Questa azione non può essere annullata.</string>
     <string name="store_passphrase_securely_without_recover">Conserva la password in modo sicuro, NON potrai accedere alla chat se la perdi.</string>
     <string name="restore_database_alert_confirm">Ripristina</string>
@@ -871,8 +871,8 @@
     <string name="enter_correct_current_passphrase">Inserisci la password attuale corretta.</string>
     <string name="store_passphrase_securely">Conserva la password in modo sicuro, NON potrai cambiarla se la perdi.</string>
     <string name="remove_passphrase">Rimuovi</string>
-    <string name="remove_passphrase_from_keychain">Rimuovere la password dal Keystore\?</string>
-    <string name="save_passphrase_in_keychain">Salva la password nel Keystore</string>
+    <string name="remove_passphrase_from_keychain">Rimuovere la password dall\'archivio chiavi?</string>
+    <string name="save_passphrase_in_keychain">Salva la password nell\'archivio chiavi</string>
     <string name="chat_item_ttl_seconds">%s secondo/i</string>
     <string name="delete_files_and_media_desc">Questa azione non può essere annullata: tutti i file e i media ricevuti e inviati verranno eliminati. Rimarranno le immagini a bassa risoluzione.</string>
     <string name="enable_automatic_deletion_message">Questa azione non può essere annullata: i messaggi inviati e ricevuti prima di quanto selezionato verranno eliminati. Potrebbe richiedere diversi minuti.</string>
@@ -1586,7 +1586,7 @@
     <string name="error_deleting_note_folder">Errore di eliminazione delle note private</string>
     <string name="v5_5_message_delivery">Consegna dei messaggi migliorata</string>
     <string name="v5_5_join_group_conversation">Entra in conversazioni di gruppo</string>
-    <string name="profile_update_event_member_name_changed">membro %1$s cambiato in %2$s</string>
+    <string name="profile_update_event_member_name_changed">il membro %1$s è diventato %2$s</string>
     <string name="v5_5_simpler_connect_ui">Incolla un link per connettere!</string>
     <string name="profile_update_event_removed_address">indirizzo di contatto rimosso</string>
     <string name="profile_update_event_contact_name_changed">contatto %1$s cambiato in %2$s</string>
@@ -2177,7 +2177,7 @@
     <string name="appearance_in_app_bars_alpha">Trasparenza</string>
     <string name="v6_2_network_decentralization">Decentralizzazione della rete</string>
     <string name="v6_2_network_decentralization_descr">Il secondo operatore preimpostato nell\'app!</string>
-    <string name="v6_2_network_decentralization_enable_flux">Attiva Flux</string>
+    <string name="v6_2_network_decentralization_enable_flux">Attiva Flux nelle impostazioni \"Rete e server\" per una migliore privacy dei metadati.</string>
     <string name="view_updated_conditions">Vedi le condizioni aggiornate</string>
     <string name="appearance_bars_blur_radius">Sfocatura</string>
     <string name="operator_added_message_servers">Server dei messaggi aggiunti</string>
@@ -2307,7 +2307,6 @@
     <string name="archive_report">Archivia la segnalazione</string>
     <string name="delete_report">Elimina la segnalazione</string>
     <string name="chat_list_group_reports">Segnalazioni</string>
-    <string name="group_reports_archived_member_reports">Segnalazioni dei membri archiviate</string>
     <string name="group_reports_active_one">1 segnalazione</string>
     <string name="report_item_archived_by">segnalazione archiviata da %s</string>
     <string name="group_reports_active">%d segnalazioni</string>
@@ -2363,4 +2362,23 @@
     <string name="v6_3_private_media_file_names">Nomi privati dei file multimediali.</string>
     <string name="group_member_status_rejected">rifiutato</string>
     <string name="group_preview_rejected">rifiutato</string>
+    <string name="error_reading_passphrase">Errore di lettura della password del database</string>
+    <string name="group_member_status_pending_approval">in attesa di approvazione</string>
+    <string name="group_member_status_pending_approval_short">in attesa</string>
+    <string name="operator_updated_conditions">Condizioni aggiornate</string>
+    <string name="restore_passphrase_can_not_be_read_desc">La password nell\'archivio chiavi non può essere letta. Potrebbe essere successo dopo un aggiornamento di sistema incompatibile con l\'app. In caso contrario, contatta gli sviluppatori.</string>
+    <string name="restore_passphrase_can_not_be_read_enter_manually_desc">La password nell\'archivio chiavi non può essere letta, inseriscila a mano. Potrebbe essere successo dopo un aggiornamento di sistema incompatibile con l\'app. In caso contrario, contatta gli sviluppatori.</string>
+    <string name="members_will_be_removed_from_chat_cannot_be_undone">I membri verranno rimossi dalla chat, non è reversibile!</string>
+    <string name="members_will_be_removed_from_group_cannot_be_undone">I membri verranno rimossi dal gruppo, non è reversibile!</string>
+    <string name="button_remove_members_question">Rimuovere i membri?</string>
+    <string name="unblock_members_desc">I messaggi di questi membri verranno mostrati!</string>
+    <string name="unblock_members_for_all_question">Sbloccare i membri per tutti?</string>
+    <string name="block_members_for_all_question">Bloccare i membri per tutti?</string>
+    <string name="feature_roles_moderators">moderatori</string>
+    <string name="block_members_desc">Tutti i nuovi messaggi di questi membri verranno nascosti!</string>
+    <string name="onboarding_conditions_by_using_you_agree">Usando SimpleX Chat accetti di:\n- inviare solo contenuto legale nei gruppi pubblici.\n- rispettare gli altri utenti - niente spam.</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">Le chat private, i gruppi e i tuoi contatti non sono accessibili agli operatori dei server.</string>
+    <string name="onboarding_conditions_accept">Accetta</string>
+    <string name="onboarding_conditions_configure_server_operators">Configura gli operatori dei server</string>
+    <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Informativa sulla privacy e condizioni d\'uso.</string>
 </resources>

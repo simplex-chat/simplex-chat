@@ -1,10 +1,4 @@
 /* No comment provided by engineer. */
-"\n" = "\n";
-
-/* No comment provided by engineer. */
-" (" = " (";
-
-/* No comment provided by engineer. */
 " (can be copied)" = " （可复制）";
 
 /* No comment provided by engineer. */
@@ -23,28 +17,13 @@
 "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- 语音消息最长5分钟。\n- 自定义限时消息。\n- 编辑消息历史。";
 
 /* No comment provided by engineer. */
-", " = ", ";
-
-/* No comment provided by engineer. */
-": " = ": ";
-
-/* No comment provided by engineer. */
 "!1 colored!" = "!1 种彩色!";
-
-/* No comment provided by engineer. */
-"." = ".";
-
-/* No comment provided by engineer. */
-"(" = "(";
 
 /* No comment provided by engineer. */
 "(new)" = "(新)";
 
 /* No comment provided by engineer. */
 "(this device v%@)" = "(此设备 v%@)";
-
-/* No comment provided by engineer. */
-")" = ")";
 
 /* No comment provided by engineer. */
 "[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[贡献](https://github.com/simplex-chat/simplex-chat#contribute)";
@@ -141,6 +120,12 @@
 
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ 已认证";
+
+/* No comment provided by engineer. */
+"%@ server" = "服务器";
+
+/* No comment provided by engineer. */
+"%@ servers" = "服务器";
 
 /* No comment provided by engineer. */
 "%@ uploaded" = "%@ 已上传";
@@ -260,7 +245,7 @@
 "0s" = "0秒";
 
 /* delete after time
-   time interval */
+time interval */
 "1 day" = "1天";
 
 /* time interval */
@@ -270,11 +255,11 @@
 "1 minute" = "1分钟";
 
 /* delete after time
-   time interval */
+time interval */
 "1 month" = "1月";
 
 /* delete after time
-   time interval */
+time interval */
 "1 week" = "1周";
 
 /* No comment provided by engineer. */
@@ -320,8 +305,8 @@
 "Accent" = "强调";
 
 /* accept contact request via notification
-   accept incoming call via notification
-   swipe action */
+accept incoming call via notification
+swipe action */
 "Accept" = "接受";
 
 /* No comment provided by engineer. */
@@ -331,7 +316,7 @@
 "Accept contact request from %@?" = "接受来自 %@ 的联系人请求？";
 
 /* accept contact request via notification
-   swipe action */
+swipe action */
 "Accept incognito" = "接受隐身聊天";
 
 /* call status */
@@ -685,7 +670,8 @@
 /* rcv group event chat item */
 "blocked %@" = "已封禁 %@";
 
-/* marked deleted chat item preview text */
+/* blocked chat item
+marked deleted chat item preview text */
 "blocked by admin" = "由管理员封禁";
 
 /* No comment provided by engineer. */
@@ -720,6 +706,9 @@
 
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "通过聊天资料（默认）或者[通过连接](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)。";
+
+/* No comment provided by engineer. */
+"By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam." = "使用 SimpleX Chat 代表您同意：\n- 在公开群中只发送合法内容\n- 尊重其他用户 – 没有垃圾信息。";
 
 /* No comment provided by engineer. */
 "call" = "呼叫";
@@ -761,7 +750,7 @@
 "Can't message member" = "无法向成员发送消息";
 
 /* alert action
-   alert button */
+alert button */
 "Cancel" = "取消";
 
 /* No comment provided by engineer. */
@@ -813,7 +802,7 @@
 "Change self-destruct mode" = "更改自毁模式";
 
 /* authentication reason
-   set passcode view */
+set passcode view */
 "Change self-destruct passcode" = "更改自毁密码";
 
 /* chat item text */
@@ -937,7 +926,13 @@
 "Completed" = "已完成";
 
 /* No comment provided by engineer. */
+"Conditions of use" = "使用条款";
+
+/* No comment provided by engineer. */
 "Configure ICE servers" = "配置 ICE 服务器";
+
+/* No comment provided by engineer. */
+"Configure server operators" = "配置服务器运营方";
 
 /* No comment provided by engineer. */
 "Confirm" = "确认";
@@ -1312,7 +1307,7 @@
 "decryption errors" = "解密错误";
 
 /* delete after time
-   pref value */
+pref value */
 "default (%@)" = "默认 (%@)";
 
 /* No comment provided by engineer. */
@@ -1322,7 +1317,7 @@
 "default (yes)" = "默认 (是)";
 
 /* alert action
-   swipe action */
+swipe action */
 "Delete" = "删除";
 
 /* No comment provided by engineer. */
@@ -1596,7 +1591,7 @@
 "Downgrade and open chat" = "降级并打开聊天";
 
 /* alert button
-   chat item action */
+chat item action */
 "Download" = "下载";
 
 /* No comment provided by engineer. */
@@ -1980,7 +1975,9 @@
 /* No comment provided by engineer. */
 "Error: " = "错误： ";
 
-/* alert message */
+/* alert message
+file error text
+snd error text */
 "Error: %@" = "错误： ％@";
 
 /* No comment provided by engineer. */
@@ -1994,9 +1991,6 @@
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "即使在对话中被禁用。";
-
-/* No comment provided by engineer. */
-"event happened" = "发生的事";
 
 /* No comment provided by engineer. */
 "Exit without saving" = "退出而不保存";
@@ -3010,8 +3004,8 @@
 "observer" = "观察者";
 
 /* enabled status
-   group pref value
-   time to disappear */
+group pref value
+time to disappear */
 "off" = "关闭";
 
 /* blur media */
@@ -3267,7 +3261,13 @@
 "Privacy & security" = "隐私和安全";
 
 /* No comment provided by engineer. */
+"Privacy policy and conditions of use." = "隐私政策和使用条款。";
+
+/* No comment provided by engineer. */
 "Privacy redefined" = "重新定义隐私";
+
+/* No comment provided by engineer. */
+"Private chats, groups and your contacts are not accessible to server operators." = "服务器运营方无法访问私密聊天、群组和你的联系人。";
 
 /* No comment provided by engineer. */
 "Private filenames" = "私密文件名";
@@ -3477,7 +3477,7 @@
 "Reduced battery usage" = "减少电池使用量";
 
 /* reject incoming call via notification
-   swipe action */
+swipe action */
 "Reject" = "拒绝";
 
 /* No comment provided by engineer. */
@@ -3625,7 +3625,7 @@
 "Safer groups" = "更安全的群组";
 
 /* alert button
-   chat item action */
+chat item action */
 "Save" = "保存";
 
 /* alert button */
@@ -3962,7 +3962,7 @@
 "Shape profile images" = "改变个人资料图形状";
 
 /* alert action
-   chat item action */
+chat item action */
 "Share" = "分享";
 
 /* No comment provided by engineer. */
@@ -5080,7 +5080,4 @@
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "您的 SimpleX 地址";
-
-/* No comment provided by engineer. */
-"Your SMP servers" = "您的 SMP 服务器";
 

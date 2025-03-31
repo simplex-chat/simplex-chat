@@ -311,8 +311,7 @@ testRetryAcceptingViaContactLink ps = testChatCfgOpts2 cfg' opts' aliceProfile b
       smpServerCfg
         { transports = [("7003", transport @TLS, False)],
           msgQueueQuota = 2,
-          storeLogFile = Just $ tmp <> "/smp-server-store.log",
-          storeMsgsFile = Just $ tmp <> "/smp-server-messages.log"
+          serverStoreCfg = persistentServerStoreCfg tmp
         }
     fastRetryInterval = defaultReconnectInterval {initialInterval = 50000} -- same as in agent tests
     cfg' =

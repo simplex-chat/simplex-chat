@@ -542,7 +542,7 @@ private let versionDescriptions: [VersionDescription] = [
     ),
     VersionDescription(
         version: "v6.3",
-        // post: URL(string: "https://simplex.chat/blog/20241210-simplex-network-v6-2-servers-by-flux-business-chats.html"),
+        post: URL(string: "https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html"),
         features: [
             .feature(Description(
                 icon: "at",
@@ -594,8 +594,6 @@ func shouldShowWhatsNew() -> Bool {
 }
 
 fileprivate struct NewOperatorsView: View {
-    @State private var showOperatorsSheet = false
-
     var body: some View {
         VStack(alignment: .leading) {
             Image((operatorsInfo[.flux] ?? ServerOperator.dummyOperatorInfo).largeLogo)
@@ -606,16 +604,7 @@ fileprivate struct NewOperatorsView: View {
                 .multilineTextAlignment(.leading)
                 .lineLimit(10)
             HStack {
-                Button("Enable Flux") {
-                    showOperatorsSheet = true
-                }
-                Text("for better metadata privacy.")
-            }
-        }
-        .sheet(isPresented: $showOperatorsSheet) {
-            NavigationView {
-                ChooseServerOperators(onboarding: false)
-                    .modifier(ThemedBackground())
+                Text("Enable Flux in Network & servers settings for better metadata privacy.")
             }
         }
     }

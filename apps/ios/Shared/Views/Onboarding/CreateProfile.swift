@@ -145,6 +145,7 @@ struct CreateFirstProfile: View {
                     TextField("Enter your name…", text: $displayName)
                         .focused($focusDisplayName)
                         .padding(.horizontal)
+                        .padding(.trailing, 20)
                         .padding(.vertical, 10)
                         .background(
                             RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -206,7 +207,7 @@ struct CreateFirstProfile: View {
     }
 
     private func nextStepDestinationView() -> some View {
-        ChooseServerOperators(onboarding: true)
+        OnboardingConditionsView()
             .navigationBarBackButtonHidden(true)
             .modifier(ThemedBackground())
     }

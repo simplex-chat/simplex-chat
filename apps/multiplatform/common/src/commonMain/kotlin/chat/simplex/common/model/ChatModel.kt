@@ -549,11 +549,11 @@ object ChatModel {
       }
     }
 
-    suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null) {
+    suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null, atIndex: Int? = null) {
       withContext(Dispatchers.Main) {
         if (chatId.value == cInfo.id) {
           val items = chatItems.value
-          val itemIndex = items.indexOfFirst { it.id == cItem.id }
+          val itemIndex = atIndex ?: items.indexOfFirst { it.id == cItem.id }
           if (itemIndex >= 0) {
             items[itemIndex] = cItem
           }
@@ -585,6 +585,48 @@ object ChatModel {
           val remove = it.id == cItem.id && it.meta.createdAt == cItem.meta.createdAt
           if (remove) { AudioPlayer.stop(it) }
           remove
+        }
+      }
+    }
+
+    suspend fun removeMemberItems(rhId: Long?, removedMember: GroupMember, byMember: GroupMember, groupInfo: GroupInfo) {
+      fun removedUpdatedItem(item: ChatItem): ChatItem? {
+        val newContent = when {
+          item.chatDir is CIDirection.GroupSnd && removedMember.groupMemberId == groupInfo.membership.groupMemberId -> CIContent.SndModerated
+          item.chatDir is CIDirection.GroupRcv && item.chatDir.groupMember.groupMemberId == removedMember.groupMemberId -> CIContent.RcvModerated
+          else -> return null
+        }
+        val updatedItem = item.copy(
+          meta = item.meta.copy(itemDeleted = CIDeleted.Moderated(Clock.System.now(), byGroupMember = byMember)),
+          content = if (groupInfo.fullGroupPreferences.fullDelete.on) newContent else item.content
+        )
+        if (item.isActiveReport) {
+          decreaseGroupReportsCounter(rhId, groupInfo.id)
+        }
+        return updatedItem
+      }
+
+      // this should not happen, only another member can "remove" user, user can only "leave" (another event).
+      if (byMember.groupMemberId == groupInfo.membership.groupMemberId) {
+        Log.d(TAG, "exiting removeMemberItems")
+        return
+      }
+      val cInfo = ChatInfo.Group(groupInfo)
+      if (chatId.value == groupInfo.id) {
+        for (i in 0 until chatItems.value.size) {
+          val updatedItem = removedUpdatedItem(chatItems.value[i])
+          if (updatedItem != null) {
+            updateChatItem(cInfo, updatedItem, atIndex = i)
+          }
+        }
+      } else {
+        val i = getChatIndex(rhId, groupInfo.id)
+        val chat = chats[i]
+        if (chat.chatItems.isNotEmpty()) {
+          val updatedItem = removedUpdatedItem(chat.chatItems[0])
+          if (updatedItem != null) {
+            chats.value[i] = chat.copy(chatItems = listOf(updatedItem))
+          }
         }
       }
     }
@@ -747,6 +789,11 @@ object ChatModel {
       }
       // update current chat
       return if (chatId.value == groupInfo.id) {
+        if (groupMembers.value.isNotEmpty() && groupMembers.value.firstOrNull()?.groupId != groupInfo.groupId) {
+          // stale data, should be cleared at that point, otherwise, duplicated items will be here which will produce crashes in LazyColumn
+          groupMembers.value = emptyList()
+          groupMembersIndexes.value = emptyMap()
+        }
         val memberIndex = groupMembersIndexes.value[member.groupMemberId]
         val updated = chatItems.value.map {
           // Take into account only specific changes, not all. Other member updates are not important and can be skipped
@@ -1958,8 +2005,8 @@ data class GroupMember (
 
   fun canBlockForAll(groupInfo: GroupInfo): Boolean {
     val userRole = groupInfo.membership.memberRole
-    return memberStatus != GroupMemberStatus.MemRemoved && memberStatus != GroupMemberStatus.MemLeft && memberRole < GroupMemberRole.Admin
-        && userRole >= GroupMemberRole.Admin && userRole >= memberRole && groupInfo.membership.memberActive
+    return memberStatus != GroupMemberStatus.MemRemoved && memberStatus != GroupMemberStatus.MemLeft && memberRole < GroupMemberRole.Moderator
+        && userRole >= GroupMemberRole.Moderator && userRole >= memberRole && groupInfo.membership.memberActive
   }
 
   val memberIncognito = memberProfile.profileId != memberContactProfileId
@@ -2439,14 +2486,14 @@ data class ChatItem (
   fun memberToModerate(chatInfo: ChatInfo): Pair<GroupInfo, GroupMember?>? {
     return if (chatInfo is ChatInfo.Group && chatDir is CIDirection.GroupRcv) {
       val m = chatInfo.groupInfo.membership
-      if (m.memberRole >= GroupMemberRole.Admin && m.memberRole >= chatDir.groupMember.memberRole && meta.itemDeleted == null) {
+      if (m.memberRole >= GroupMemberRole.Moderator && m.memberRole >= chatDir.groupMember.memberRole && meta.itemDeleted == null) {
         chatInfo.groupInfo to chatDir.groupMember
       } else {
       null
       }
     } else if (chatInfo is ChatInfo.Group && chatDir is CIDirection.GroupSnd) {
       val m = chatInfo.groupInfo.membership
-      if (m.memberRole >= GroupMemberRole.Admin) {
+      if (m.memberRole >= GroupMemberRole.Moderator) {
         chatInfo.groupInfo to null
       } else {
         null
@@ -3259,6 +3306,7 @@ sealed class CIContent: ItemContent {
       when (role) {
         GroupMemberRole.Owner -> generalGetString(MR.strings.feature_roles_owners)
         GroupMemberRole.Admin -> generalGetString(MR.strings.feature_roles_admins)
+        GroupMemberRole.Moderator -> generalGetString(MR.strings.feature_roles_moderators)
         else -> generalGetString(MR.strings.feature_roles_all_members)
       }
 

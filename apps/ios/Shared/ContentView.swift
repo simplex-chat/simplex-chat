@@ -11,12 +11,10 @@ import SimpleXChat
 
 private enum NoticesSheet: Identifiable {
     case whatsNew(updatedConditions: Bool)
-    case updatedConditions
 
     var id: String {
         switch self {
         case .whatsNew: return "whatsNew"
-        case .updatedConditions: return "updatedConditions"
         }
     }
 }
@@ -278,10 +276,8 @@ struct ContentView: View {
                             let showWhatsNew = shouldShowWhatsNew()
                             let showUpdatedConditions = chatModel.conditions.conditionsAction?.showNotice ?? false
                             noticesShown = showWhatsNew || showUpdatedConditions
-                            if showWhatsNew {
+                            if showWhatsNew || showUpdatedConditions {
                                 noticesSheetItem = .whatsNew(updatedConditions: showUpdatedConditions)
-                            } else if showUpdatedConditions {
-                                noticesSheetItem = .updatedConditions
                             }
                         }
                     }
@@ -300,13 +296,6 @@ struct ContentView: View {
                         .if(updatedConditions) { v in
                             v.task { await setConditionsNotified_() }
                         }
-                case .updatedConditions:
-                    UsageConditionsView(
-                        currUserServers: Binding.constant([]),
-                        userServers: Binding.constant([])
-                    )
-                    .modifier(ThemedBackground(grouped: true))
-                    .task { await setConditionsNotified_() }
                 }
             }
             if chatModel.setDeliveryReceipts {

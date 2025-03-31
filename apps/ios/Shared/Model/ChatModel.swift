@@ -66,6 +66,10 @@ class ItemsModel: ObservableObject {
     private var navigationTimeoutTask: Task<Void, Never>? = nil
     private var loadChatTask: Task<Void, Never>? = nil
 
+    var lastItemsLoaded: Bool {
+        chatState.splits.isEmpty || chatState.splits.first != reversedChatItems.first?.id
+    }
+
     init() {
         publisher
             .throttle(for: 0.2, scheduler: DispatchQueue.main, latest: true)
@@ -622,6 +626,45 @@ final class ChatModel: ObservableObject {
             }
         }
         VoiceItemState.stopVoiceInChatView(cInfo, cItem)
+    }
+
+    func removeMemberItems(_ removedMember: GroupMember, byMember: GroupMember, _ groupInfo: GroupInfo) {
+        // this should not happen, only another member can "remove" user, user can only "leave" (another event).
+        if byMember.groupMemberId == groupInfo.membership.groupMemberId {
+            logger.debug("exiting removeMemberItems")
+            return
+        }
+        if chatId == groupInfo.id {
+            for i in 0..<im.reversedChatItems.count {
+                if let updatedItem = removedUpdatedItem(im.reversedChatItems[i]) {
+                    _updateChatItem(at: i, with: updatedItem)
+                }
+            }
+        } else if let chat = getChat(groupInfo.id),
+                  chat.chatItems.count > 0,
+                  let updatedItem = removedUpdatedItem(chat.chatItems[0]) {
+                chat.chatItems = [updatedItem]
+        }
+        
+        func removedUpdatedItem(_ item: ChatItem) -> ChatItem? {
+            let newContent: CIContent
+            if case .groupSnd = item.chatDir, removedMember.groupMemberId == groupInfo.membership.groupMemberId {
+                newContent = .sndModerated
+            } else if case let .groupRcv(groupMember) = item.chatDir, groupMember.groupMemberId == removedMember.groupMemberId {
+                newContent = .rcvModerated
+            } else {
+                return nil
+            }
+            var updatedItem = item
+            updatedItem.meta.itemDeleted = .moderated(deletedTs: Date.now, byGroupMember: byMember)
+            if groupInfo.fullGroupPreferences.fullDelete.on {
+                updatedItem.content = newContent
+            }
+            if item.isActiveReport {
+                decreaseGroupReportsCounter(groupInfo.id)
+            }
+            return updatedItem
+        }
     }
 
     func nextChatItemData<T>(_ chatItemId: Int64, previous: Bool, map: @escaping (ChatItem) -> T?) -> T? {

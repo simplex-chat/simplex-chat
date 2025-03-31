@@ -528,7 +528,7 @@ struct ProfilePreview: View {
 func profileName(_ profileOf: NamedChat) -> Text {
     var t = Text(profileOf.displayName).fontWeight(.semibold).font(.title2)
     if profileOf.fullName != "" && profileOf.fullName != profileOf.displayName {
-        t = t + Text(" (" + profileOf.fullName + ")")
+        t = t + Text(verbatim: " (" + profileOf.fullName + ")")
 //                        .font(.callout)
         }
     return t

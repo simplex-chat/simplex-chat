@@ -171,6 +171,9 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
             visibleItems.last?.index ?? 0
         }
 
+        /// Specifies if visible items cover the whole screen or can cover it (if overscrolled)
+        var itemsCanCoverScreen: Bool = false
+
         /// Whether there is a non-animated scroll to item in progress or not
         var isScrolling: Bool = false
         /// Whether there is an animated scroll to item in progress or not
@@ -284,7 +287,8 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
 
     func updateItems(_ items: [ScrollItem], _ forceReloadVisible: Bool = false) {
         if !Thread.isMainThread {
-            fatalError("Use main thread to update items")
+            logger.error("Use main thread to update items")
+            return
         }
         if bounds.height == 0 {
             self.listState.items = items
@@ -302,6 +306,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
         if items.isEmpty {
             listState.visibleItems.forEach { item in item.view.removeFromSuperview() }
             listState.visibleItems = []
+            listState.itemsCanCoverScreen = false
             listState.firstVisibleItemId = EndlessScrollView<ScrollItem>.DEFAULT_ITEM_ID
             listState.firstVisibleItemIndex = 0
             listState.firstVisibleItemOffset = -insetTop
@@ -322,6 +327,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
 
         var oldVisible = listState.visibleItems
         var newVisible: [VisibleItem] = []
+        var visibleItemsHeight: CGFloat = 0
         let offsetsDiff = contentOffsetY - prevProcessedOffset
 
         var shouldBeFirstVisible = items.firstIndex(where: { item in item.id == listState.firstVisibleItemId as! ScrollItem.ID }) ?? 0
@@ -339,7 +345,11 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
             if let visibleIndex {
                 let v = oldVisible.remove(at: visibleIndex)
                 if forceReloadVisible || v.view.bounds.width != bounds.width || v.item.hashValue != item.hashValue {
+                    let wasHeight = v.view.bounds.height
                     updateCell(v.view, i, items)
+                    if wasHeight < v.view.bounds.height && i == 0 && shouldBeFirstVisible == i {
+                        v.view.frame.origin.y -= v.view.bounds.height - wasHeight
+                    }
                 }
                 visible = v
             } else {
@@ -389,6 +399,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
                     addSubview(vis.view)
                 }
                 newVisible.append(vis)
+                visibleItemsHeight += vis.view.frame.height
                 nextOffsetY = vis.view.frame.origin.y
             } else {
                 let vis: VisibleItem
@@ -406,6 +417,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
                     addSubview(vis.view)
                 }
                 newVisible.append(vis)
+                visibleItemsHeight += vis.view.frame.height
             }
             if abs(nextOffsetY) < contentOffsetY && !allowOneMore {
                 break
@@ -435,6 +447,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
                 }
                 offset += vis.view.frame.height
                 newVisible.insert(vis, at: 0)
+                visibleItemsHeight += vis.view.frame.height
                 if offset >= contentOffsetY + bounds.height {
                     break
                 }
@@ -450,11 +463,15 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
         prevProcessedOffset = contentOffsetY
 
         listState.visibleItems = newVisible
-        listState.items = items
+        // bottom drawing starts from 0 until top visible area at least (bound.height - insetTop) or above top bar (bounds.height).
+        // For visible items to preserve offset after adding more items having such height is enough
+        listState.itemsCanCoverScreen = visibleItemsHeight >= bounds.height - insetTop
 
         listState.firstVisibleItemId = listState.visibleItems.first?.item.id ?? EndlessScrollView<ScrollItem>.DEFAULT_ITEM_ID
         listState.firstVisibleItemIndex = listState.visibleItems.first?.index ?? 0
         listState.firstVisibleItemOffset = listState.visibleItems.first?.offset ?? -insetTop
+        // updating the items with the last step in order to call listener with fully updated state
+        listState.items = items
 
         estimatedContentHeight.update(contentOffset, listState, averageItemHeight, itemsCountChanged)
         scrollBarView.contentSize = CGSizeMake(bounds.width, estimatedContentHeight.virtualOverscrolledHeight)
@@ -517,7 +534,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
                 let y = if top {
                     min(estimatedContentHeight.bottomOffsetY - bounds.height, item.view.frame.origin.y - insetTop)
                 } else {
-                    max(estimatedContentHeight.topOffsetY - insetTop, item.view.frame.origin.y + item.view.bounds.height - bounds.height + insetBottom)
+                    max(estimatedContentHeight.topOffsetY - insetTop - insetBottom, item.view.frame.origin.y + item.view.bounds.height - bounds.height + insetBottom)
                 }
                 setContentOffset(CGPointMake(contentOffset.x, y), animated: false)
                 scrollBarView.flashScrollIndicators()
@@ -568,7 +585,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
                 let y = if top {
                     min(estimatedContentHeight.bottomOffsetY - bounds.height, item.view.frame.origin.y - insetTop)
                 } else {
-                    max(estimatedContentHeight.topOffsetY - insetTop, item.view.frame.origin.y + item.view.bounds.height - bounds.height + insetBottom)
+                    max(estimatedContentHeight.topOffsetY - insetTop - insetBottom, item.view.frame.origin.y + item.view.bounds.height - bounds.height + insetBottom)
                 }
                 setContentOffset(CGPointMake(contentOffset.x, y), animated: true)
                 scrollBarView.flashScrollIndicators()
@@ -632,7 +649,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
         }
         (view as? ReusableView)?.prepareForReuse()
         view.isHidden = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             if view.isHidden { view.removeFromSuperview() }
         }
     }

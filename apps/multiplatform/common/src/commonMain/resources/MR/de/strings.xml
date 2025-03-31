@@ -20,7 +20,7 @@
     <string name="deleted_description">Gelöscht</string>
     <string name="marked_deleted_description">als gelöscht markiert</string>
     <string name="sending_files_not_yet_supported">Das Senden von Dateien wird noch nicht unterstützt</string>
-    <string name="receiving_files_not_yet_supported">Der Empfang von Dateien wird noch nicht unterstützt</string>
+    <string name="receiving_files_not_yet_supported">Das Herunterladen von Dateien wird noch nicht unterstützt</string>
     <string name="sender_you_pronoun">Profil</string>
     <string name="unknown_message_format">Unbekanntes Nachrichtenformat</string>
     <string name="invalid_message_format">Ungültiges Nachrichtenformat</string>
@@ -58,9 +58,9 @@
     <string name="error_sending_message">Fehler beim Senden der Nachricht</string>
     <string name="error_adding_members">Fehler beim Hinzufügen von Mitgliedern</string>
     <string name="error_joining_group">Fehler beim Beitritt zur Gruppe</string>
-    <string name="cannot_receive_file">Datei kann nicht empfangen werden</string>
+    <string name="cannot_receive_file">Datei kann nicht heruntergeladen werden</string>
     <string name="sender_cancelled_file_transfer">Der Absender hat die Dateiübertragung abgebrochen.</string>
-    <string name="error_receiving_file">Fehler beim Empfangen der Datei</string>
+    <string name="error_receiving_file">Fehler beim Herunterladen der Datei</string>
     <string name="error_creating_address">Fehler beim Erstellen der Adresse</string>
     <string name="contact_already_exists">Kontakt besteht bereits</string>
     <string name="you_are_already_connected_to_vName_via_this_link">Sie sind bereits mit %1$s verbunden.</string>
@@ -195,10 +195,10 @@
     <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
     <string name="image_descr">Bild</string>
     <string name="icon_descr_waiting_for_image">Warten auf ein Bild</string>
-    <string name="icon_descr_asked_to_receive">Es wird um den Empfang eines Bildes gebeten</string>
+    <string name="icon_descr_asked_to_receive">Es wird um das Herunterladen eines Bildes gebeten</string>
     <string name="icon_descr_image_snd_complete">Bild gesendet</string>
     <string name="waiting_for_image">Warten auf ein Bild</string>
-    <string name="image_will_be_received_when_contact_is_online">Das Bild wird empfangen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später nochmal nach!</string>
+    <string name="image_will_be_received_when_contact_is_online">Das Bild wird heruntergeladen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später nochmal nach!</string>
     <string name="image_saved">Bild wurde im Fotoalbum gespeichert</string>
     <!-- Files - CIFileView.kt -->
     <string name="icon_descr_file">Datei</string>
@@ -206,7 +206,7 @@
     <string name="contact_sent_large_file">Ihr Kontakt hat eine Datei gesendet, die größer ist als die derzeit unterstützte maximale Größe (%1$s).</string>
     <string name="maximum_supported_file_size">Die derzeit maximal unterstützte Dateigröße beträgt %1$s.</string>
     <string name="waiting_for_file">Warte auf Datei</string>
-    <string name="file_will_be_received_when_contact_is_online">Die Datei wird empfangen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später noch mal nach!</string>
+    <string name="file_will_be_received_when_contact_is_online">Die Datei wird heruntergeladen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später noch mal nach!</string>
     <string name="file_saved">Datei gespeichert</string>
     <string name="file_not_found">Datei nicht gefunden</string>
     <string name="error_saving_file">Fehler beim Speichern der Datei</string>
@@ -597,8 +597,8 @@
     <string name="restart_the_app_to_create_a_new_chat_profile">Starten Sie die App neu, um ein neues Chat-Profil zu erstellen.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Sie dürfen die neueste Version Ihrer Chat-Datenbank NUR auf einem Gerät verwenden, andernfalls erhalten Sie möglicherweise keine Nachrichten mehr von einigen Ihrer Kontakte.</string>
     <string name="delete_files_and_media_question">Dateien und Medien löschen?</string>
-    <string name="delete_files_and_media_desc">Es werden alle empfangenen und gesendeten Dateien und Medien gelöscht. Bilder mit niedriger Auflösung bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden!</string>
-    <string name="no_received_app_files">Keine empfangenen oder gesendeten Dateien</string>
+    <string name="delete_files_and_media_desc">Es werden alle herunter- und hochgeladene Dateien und Medien gelöscht. Bilder mit niedriger Auflösung bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden!</string>
+    <string name="no_received_app_files">Keine herunter- oder hochgeladene Dateien</string>
     <string name="total_files_count_and_size">%d Datei(en) mit einem Gesamtspeicherverbrauch von %s</string>
     <string name="chat_item_ttl_none">nie</string>
     <string name="chat_item_ttl_day">Älter als ein Tag</string>
@@ -661,7 +661,7 @@
     <string name="restore_database_alert_desc">Bitte geben Sie das vorherige Passwort ein, nachdem Sie die Datenbanksicherung wiederhergestellt haben. Diese Aktion kann nicht rückgängig gemacht werden!</string>
     <string name="restore_database_alert_confirm">Wiederherstellen</string>
     <string name="database_restore_error">Fehler bei der Wiederherstellung der Datenbank</string>
-    <string name="restore_passphrase_not_found_desc">Das Passwort wurde nicht im Schlüsselbund gefunden. Bitte geben Sie es manuell ein. Das kann passieren, wenn Sie die App-Daten mit einem Backup-Programm wieder hergestellt haben. Bitte nehmen Sie Kontakt mit den Entwicklern auf, wenn das nicht der Fall ist.</string>
+    <string name="restore_passphrase_not_found_desc">Das Passwort wurde nicht im Schlüsselbund gefunden. Bitte geben Sie es manuell ein. Dies kann passieren, wenn Sie die App-Daten mit einem Backup-Programm wieder hergestellt haben. Wenden Sie sich bitte an die Entwickler, wenn dies nicht der Fall ist.</string>
     <!-- ChatModel.chatRunning interactions -->
     <string name="chat_is_stopped_indication">Der Chat wurde beendet</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Sie können den Chat über die App-Einstellungen/Datenbank oder durch Neustart der App starten.</string>
@@ -1077,22 +1077,22 @@
     <string name="mtr_error_no_down_migration">Die Datenbank-Version ist neuer als die App, keine Abwärts-Migration für: %s</string>
     <string name="hide_dev_options">Verberge:</string>
     <string name="database_migrations">Migrationen: %s</string>
-    <string name="image_will_be_received_when_contact_completes_uploading">Das Bild wird empfangen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.</string>
-    <string name="file_will_be_received_when_contact_completes_uploading">Die Datei wird empfangen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.</string>
+    <string name="image_will_be_received_when_contact_completes_uploading">Das Bild wird heruntergeladen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.</string>
+    <string name="file_will_be_received_when_contact_completes_uploading">Die Datei wird heruntergeladen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.</string>
     <string name="delete_chat_profile">Chat-Profil löschen</string>
     <string name="delete_profile">Profil löschen</string>
     <string name="unhide_profile">Verbergen des Profils aufheben</string>
     <string name="profile_password">Passwort für Profil</string>
     <string name="unhide_chat_profile">Verbergen des Chat-Profils aufheben</string>
-    <string name="icon_descr_video_asked_to_receive">Aufforderung zum Empfang des Videos</string>
+    <string name="icon_descr_video_asked_to_receive">Aufforderung zum Herunterladen des Videos</string>
     <string name="videos_limit_desc">Es können nur 10 Videos zur gleichen Zeit versendet werden</string>
     <string name="videos_limit_title">Zu viele Videos auf einmal!</string>
     <string name="video_descr">Video</string>
     <string name="icon_descr_video_snd_complete">Video gesendet</string>
-    <string name="video_will_be_received_when_contact_completes_uploading">Das Video wird empfangen, sobald Ihr Kontakt das Hochladen beendet hat.</string>
+    <string name="video_will_be_received_when_contact_completes_uploading">Das Video wird heruntergeladen, sobald Ihr Kontakt das Hochladen beendet hat.</string>
     <string name="icon_descr_waiting_for_video">Auf das Video warten</string>
     <string name="waiting_for_video">Auf das Video warten</string>
-    <string name="video_will_be_received_when_contact_is_online">Das Video wird empfangen, wenn Ihr Kontakt online ist. Bitte warten oder überprüfen Sie es später!</string>
+    <string name="video_will_be_received_when_contact_is_online">Das Video wird heruntergeladen, wenn Ihr Kontakt online ist. Bitte warten oder überprüfen Sie es später!</string>
     <string name="your_XFTP_servers">Ihre XFTP-Server</string>
     <string name="host_verb">Host</string>
     <string name="error_saving_xftp_servers">Fehler beim Speichern der XFTP-Server</string>
@@ -1159,11 +1159,11 @@
     <string name="both_you_and_your_contact_can_make_calls">Sowohl Sie als auch Ihr Kontakt können Anrufe tätigen.</string>
     <string name="only_you_can_make_calls">Nur Sie können Anrufe tätigen.</string>
     <string name="prohibit_calls">Audio-/Video-Anrufe nicht erlauben.</string>
-    <string name="stop_rcv_file__title">Den Empfang der Datei beenden\?</string>
-    <string name="stop_snd_file__title">Das Senden der Datei beenden\?</string>
-    <string name="stop_rcv_file__message">Der Empfang der Datei wird beendet.</string>
+    <string name="stop_rcv_file__title">Herunterladen der Datei beenden?</string>
+    <string name="stop_snd_file__title">Das Hochladen der Datei beenden?</string>
+    <string name="stop_rcv_file__message">Das Herunterladen der Datei wird beendet.</string>
     <string name="stop_snd_file__message">Das Senden der Datei wird beendet.</string>
-    <string name="stop_file__action">Datei beenden</string>
+    <string name="stop_file__action">Download beenden</string>
     <string name="revoke_file__message">Die Datei wird von den Servern gelöscht.</string>
     <string name="revoke_file__confirm">Widerrufen</string>
     <string name="revoke_file__action">Datei widerrufen</string>
@@ -1483,7 +1483,7 @@
     <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Sie sind bereits Mitglied in der Gruppe <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_simplex_address">Das ist Ihre eigene SimpleX-Adresse!</string>
     <string name="correct_name_to">Richtiger Name für %s?</string>
-    <string name="delete_messages__question">%d Nachrichten löschen?</string>
+    <string name="delete_messages__question">Sollen %d Nachrichten gelöscht werden?</string>
     <string name="connect_with_contact_name_question">Mit %1$s verbinden?</string>
     <string name="remove_member_button">Mitglied entfernen</string>
     <string name="block_member_confirmation">Blockieren</string>
@@ -1652,8 +1652,8 @@
     <string name="v5_5_private_notes">Private Notizen</string>
     <string name="clear_note_folder_warning">Es werden alle Nachrichten gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
     <string name="clear_note_folder_question">Private Notizen entfernen?</string>
-    <string name="rcv_group_event_member_blocked">%s wurde blockiert</string>
-    <string name="rcv_group_event_member_unblocked">%s wurde freigegeben</string>
+    <string name="rcv_group_event_member_blocked">es wurde %s blockiert</string>
+    <string name="rcv_group_event_member_unblocked">Es wurden %s freigegeben</string>
     <string name="snd_group_event_member_blocked">Sie haben %s blockiert</string>
     <string name="snd_group_event_member_unblocked">Sie haben %s freigegeben</string>
     <string name="block_for_all_question">Mitglied für Alle blockieren?</string>
@@ -1906,7 +1906,7 @@
     <string name="v5_8_private_routing">Privates Nachrichten-Routing 🚀</string>
     <string name="v5_8_private_routing_descr">Schützen Sie Ihre IP-Adresse vor den Nachrichten-Relais , die Ihr Kontakt ausgewählt hat.
 \nAktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</string>
-    <string name="v5_8_safe_files">Dateien sicher empfangen</string>
+    <string name="v5_8_safe_files">Dateien sicher herunterladen</string>
     <string name="v5_8_message_delivery_descr">Mit reduziertem Akkuverbrauch.</string>
     <string name="message_queue_info_none">Keine Information</string>
     <string name="info_row_debug_delivery">Debugging-Zustellung</string>
@@ -2089,10 +2089,10 @@
     <string name="toolbar_settings">Einstellungen</string>
     <string name="moderate_messages_will_be_deleted_warning">Die Nachrichten werden für alle Gruppenmitglieder gelöscht.</string>
     <string name="moderate_messages_will_be_marked_warning">Die Nachrichten werden für alle Mitglieder als moderiert markiert.</string>
-    <string name="delete_members_messages__question">%d Nachrichten der Mitglieder löschen?</string>
+    <string name="delete_members_messages__question">Sollen %d Nachrichten von Mitgliedern gelöscht werden?</string>
     <string name="compose_message_placeholder">Nachricht</string>
     <string name="delete_messages_mark_deleted_warning">Nachrichten werden zur Löschung markiert. Der/Die Empfänger hat/haben die Möglichkeit, diese Nachrichten aufzudecken.</string>
-    <string name="selected_chat_items_selected_n">%d ausgewählt</string>
+    <string name="selected_chat_items_selected_n">Es wurden %d ausgewählt</string>
     <string name="selected_chat_items_nothing_selected">Es wurde Nichts ausgewählt</string>
     <string name="select_verb">Auswählen</string>
     <string name="invite_friends_short">Einladen</string>
@@ -2154,7 +2154,7 @@
     <string name="forward_files_messages_deleted_after_selection_desc">Die Nachrichten wurden gelöscht, nachdem Sie sie ausgewählt hatten.</string>
     <string name="forward_alert_title_nothing_to_forward">Es gibt nichts zum Weiterleiten!</string>
     <string name="n_other_file_errors">%1$d andere(r) Datei-Fehler.</string>
-    <string name="forward_alert_title_messages_to_forward">%1$s Nachricht(en) weiterleiten?</string>
+    <string name="forward_alert_title_messages_to_forward">Soll(en) %1$s Nachricht(en) weitergeleitet werden?</string>
     <string name="forward_files_missing_desc">%1$d Datei(en) wurde(n) gelöscht.</string>
     <string name="forward_files_not_accepted_desc">%1$d Datei(en) wurde(n) nicht heruntergeladen.</string>
     <string name="forward_alert_forward_messages_without_files">Nachrichten ohne Dateien weiterleiten?</string>
@@ -2191,7 +2191,7 @@
     <string name="errors_in_servers_configuration">Fehler in der Server-Konfiguration.</string>
     <string name="for_chat_profile">Für das Chat-Profil %s:</string>
     <string name="no_media_servers_configured">Keine Medien- und Dateiserver.</string>
-    <string name="no_media_servers_configured_for_private_routing">Keine Server für den Empfang von Dateien.</string>
+    <string name="no_media_servers_configured_for_private_routing">Keine Server für das Herunterladen von Dateien.</string>
     <string name="no_media_servers_configured_for_sending">Keine Server für das Versenden von Dateien.</string>
     <string name="connection_error_quota">Nicht ausgelieferte Nachrichten</string>
     <string name="share_simplex_address_on_social_media">Die SimpleX-Adresse auf sozialen Medien teilen.</string>
@@ -2246,7 +2246,7 @@
     <string name="error_server_operator_changed">Der Server-Betreiber wurde geändert.</string>
     <string name="error_server_protocol_changed">Das Server-Protokoll wurde geändert.</string>
     <string name="appearance_in_app_bars_alpha">Transparenz</string>
-    <string name="v6_2_network_decentralization_enable_flux">Flux aktivieren</string>
+    <string name="v6_2_network_decentralization_enable_flux">Für einen besseren Metadatenschutz Flux in den Netzwerk- und Servereinstellungen aktivieren.</string>
     <string name="v6_2_network_decentralization">Dezentralisiertes Netzwerk</string>
     <string name="v6_2_network_decentralization_descr">Der zweite voreingestellte Netzwerk-Betreiber in der App!</string>
     <string name="v6_2_improved_chat_navigation">Verbesserte Chat-Navigation</string>
@@ -2382,7 +2382,6 @@
     <string name="group_reports_active">%d Meldungen</string>
     <string name="group_reports_member_reports">Mitglieder-Meldungen</string>
     <string name="chat_list_group_reports">Meldungen</string>
-    <string name="group_reports_archived_member_reports">Archivierte Mitglieder-Meldungen</string>
     <string name="blocking_reason_content">Inhalt verletzt Nutzungsbedingungen</string>
     <string name="blocking_reason_spam">Spam</string>
     <string name="connection_error_blocked">Verbindung blockiert</string>
@@ -2434,4 +2433,23 @@
     <string name="v6_3_organize_chat_lists_descr">Verpassen Sie keine wichtigen Nachrichten.</string>
     <string name="v6_3_organize_chat_lists">Chats in Listen verwalten</string>
     <string name="group_member_status_rejected">abgelehnt</string>
+    <string name="restore_passphrase_can_not_be_read_desc">Das Passwort kann nicht aus dem Schlüsselbund gelesen werden. Dies kann nach einer Systemaktualisierung passiert sein, die nicht mit der App kompatibel war. Wenden Sie sich bitte an die Entwickler, wenn dies nicht der Fall ist.</string>
+    <string name="group_member_status_pending_approval_short">ausstehend</string>
+    <string name="error_reading_passphrase">Fehler beim Lesen des Datenbank-Passworts</string>
+    <string name="operator_updated_conditions">Aktualisierte Nutzungsbedingungen</string>
+    <string name="group_member_status_pending_approval">ausstehende Genehmigung</string>
+    <string name="restore_passphrase_can_not_be_read_enter_manually_desc">Das Passwort kann nicht aus dem Schlüsselbund gelesen werden. Bitte geben Sie es manuell ein. Dies kann nach einer Systemaktualisierung passiert sein, die nicht mit der App kompatibel war. Wenden Sie sich bitte an die Entwickler, wenn dies nicht der Fall ist.</string>
+    <string name="button_remove_members_question">Mitglieder entfernen?</string>
+    <string name="members_will_be_removed_from_chat_cannot_be_undone">Mitglieder werden aus dem Chat entfernt. Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="members_will_be_removed_from_group_cannot_be_undone">Mitglieder werden aus der Gruppe entfernt. Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="unblock_members_for_all_question">Mitglieder für Alle freigeben?</string>
+    <string name="unblock_members_desc">Nachrichten dieser Mitglieder werden angezeigt!</string>
+    <string name="feature_roles_moderators">Moderatoren</string>
+    <string name="block_members_for_all_question">Mitglieder für Alle blockieren?</string>
+    <string name="block_members_desc">Alle neuen Nachrichten dieser Mitglieder werden nicht angezeigt!</string>
+    <string name="onboarding_conditions_by_using_you_agree">Durch die Nutzung von SimpleX Chat erklären Sie sich damit einverstanden:\n- nur legale Inhalte in öffentlichen Gruppen zu versenden.\n- andere Nutzer zu respektieren - kein Spam.</string>
+    <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Datenschutzbestimmungen und Nutzungsbedingungen.</string>
+    <string name="onboarding_conditions_accept">Akzeptieren</string>
+    <string name="onboarding_conditions_configure_server_operators">Server-Betreiber konfigurieren</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">Private Chats, Gruppen und Ihre Kontakte sind für Server-Betreiber nicht zugänglich.</string>
 </resources>

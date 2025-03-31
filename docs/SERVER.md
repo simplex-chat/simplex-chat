@@ -15,6 +15,7 @@ revision: 12.10.2024
    - [systemd service](#systemd-service) with [installation script](#installation-script) or [manually](#manual-deployment)
    - [docker container](#docker-container)
    - [Linode marketplace](#linode-marketplace)
+- [Verifying server binaries](#verifying-server-binaries)
 - [Configuration](#configuration)
    - [Interactively](#interactively)
    - [Via command line options](#via-command-line-options)
@@ -32,6 +33,7 @@ revision: 12.10.2024
    - [Systemd commands](#systemd-commands)
    - [Control port](#control-port)
    - [Daily statistics](#daily-statistics)
+- [Reproduce builds](#reproduce-builds)
 - [Updating your SMP server](#updating-your-smp-server)
 - [Configuring the app to use the server](#configuring-the-app-to-use-the-server)
 
@@ -514,6 +516,28 @@ This configuration allows you to retain the ability to manage 80 and 443 ports y
 ### Linode marketplace
 
 You can deploy smp-server upon creating new Linode VM. Please refer to: [Linode Marketplace](https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/)
+
+## Verifying server binaries
+
+Starting from v6.3 server builds are [reproducible](#reproduce-builds).
+
+That also allows us to sign server releases, confirming the integrity of GitHub builds.
+
+To verify server binaries after you downloaded them:
+
+1. Download `_sha256sums` (hashes of all server binaries) and `_sha256sums.asc` (signature).
+
+2. Download our key FB44AF81A45BDE327319797C85107E357D4A17FC from [openpgp.org](https://keys.openpgp.org/search?q=chat%40simplex.chat)
+
+3. Import the key with `gpg --import FB44AF81A45BDE327319797C85107E357D4A17FC`. Key filename should be the same as its fingerprint, but please change it if necessary.
+
+4. Run `gpg --verify --trusted-key  _sha256sums.asc _sha256sums`. It should print:
+
+> Good signature from "SimpleX Chat <chat@simplex.chat>"
+
+5. Compute the hashes of the binaries you plan to use with `shu256sum <file>` or with `openssl sha256 <file>` and compare them with the hashes in the file `_sha256sums` - they must be the same.
+
+That is it - you now verified authenticity of our GitHub server binaries.
 
 ## Configuration
 
@@ -1563,6 +1587,56 @@ To update your smp-server to latest version, choose your installation method and
         ```sh
         docker image prune
         ```
+
+## Reproduce builds
+
+You can locally reproduce server binaries, following these instructions.
+
+If you are a security expert or researcher, you can help SimpleX network and users community by signing the release checksums – we will [publish your signature](https://github.com/simplex-chat/simplexmq/releases/tag/v6.3.1). Please reach out to us!
+
+To reproduce the build you must have:
+
+- Linux machine
+- `x86-64` architecture
+- Installed `docker`, `curl` and `git`
+
+1. Download script:
+
+   ```sh
+   curl -LO 'https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/master/scripts/reproduce-builds.sh'
+   ```
+
+2. Make it executable:
+
+   ```sh
+   chmod +x reproduce-builds.sh
+   ```
+
+3. Execute the script with the required tag:
+
+   ```sh
+   ./reproduce-builds.sh 'v6.3.1'
+   ```
+
+   The script executes these steps (please review the script to confirm):
+
+   1) builds all server binaries for the release in docker container.
+   2) downloads binaries from the same GitHub release and compares them with the built binaries.
+   3) if they all match, generates _sha256sums file with their checksums.
+
+   This will take a while.
+
+4. After compilation, you should see the folder named as the tag (e.g., `v6.3.1`) with two subfolders:
+
+   ```sh
+   ls v6.3.1
+   ```
+
+   ```sh
+   from-source  prebuilt  _sha256sums
+   ```
+
+   The file _sha256sums contains the hashes of all builds - you can compare it with the same file in GitHub release.
 
 ## Configuring the app to use the server
 

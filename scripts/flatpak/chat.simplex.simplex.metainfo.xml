@@ -38,6 +38,22 @@
   </description>
 
   <releases>
+    <release version="6.3.0" date="2025-03-08">
+      <url type="details">https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html</url>
+      <description>
+        <p>New in v6.3.0:</p>
+        <ul>
+          <li>Mention members and get notified when mentioned.</li>
+          <li>Send private reports to moderators.</li>
+          <li>Delete, block and change role for multiple members at once</li>
+          <li>Faster sending messages and faster deletion.</li>
+          <li>Organize chats into lists to keep track of what's important.</li>
+          <li>Jump to found and forwarded messages.</li>
+          <li>Private media file names.</li>
+          <li>Message expiration in chats.</li>
+        </ul>
+      </description>
+    </release>
     <release version="6.2.5" date="2025-02-16">
       <url type="details">https://simplex.chat/blog/20241210-simplex-network-v6-2-servers-by-flux-business-chats.html</url>
       <description>

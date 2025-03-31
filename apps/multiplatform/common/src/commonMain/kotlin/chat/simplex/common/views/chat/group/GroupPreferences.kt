@@ -21,6 +21,7 @@ import chat.simplex.res.MR
 
 private val featureRoles: List<Pair<GroupMemberRole?, String>> = listOf(
   null to generalGetString(MR.strings.feature_roles_all_members),
+  GroupMemberRole.Moderator to generalGetString(MR.strings.feature_roles_moderators),
   GroupMemberRole.Admin to generalGetString(MR.strings.feature_roles_admins),
   GroupMemberRole.Owner to generalGetString(MR.strings.feature_roles_owners)
 )

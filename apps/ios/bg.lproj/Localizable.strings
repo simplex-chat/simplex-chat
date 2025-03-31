@@ -1,10 +1,4 @@
 /* No comment provided by engineer. */
-"\n" = "\n";
-
-/* No comment provided by engineer. */
-" (" = " (";
-
-/* No comment provided by engineer. */
 " (can be copied)" = " (може да се копира)";
 
 /* No comment provided by engineer. */
@@ -23,28 +17,13 @@
 "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- гласови съобщения до 5 минути.\n- персонализирано време за изчезване.\n- история на редактиране.";
 
 /* No comment provided by engineer. */
-", " = ", ";
-
-/* No comment provided by engineer. */
-": " = ": ";
-
-/* No comment provided by engineer. */
 "!1 colored!" = "!1 цветно!";
-
-/* No comment provided by engineer. */
-"." = ".";
-
-/* No comment provided by engineer. */
-"(" = "(";
 
 /* No comment provided by engineer. */
 "(new)" = "(ново)";
 
 /* No comment provided by engineer. */
 "(this device v%@)" = "(това устройство v%@)";
-
-/* No comment provided by engineer. */
-")" = ")";
 
 /* No comment provided by engineer. */
 "[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Допринеси](https://github.com/simplex-chat/simplex-chat#contribute)";
@@ -263,7 +242,7 @@
 "0s" = "0s";
 
 /* delete after time
-   time interval */
+time interval */
 "1 day" = "1 ден";
 
 /* time interval */
@@ -273,11 +252,11 @@
 "1 minute" = "1 минута";
 
 /* delete after time
-   time interval */
+time interval */
 "1 month" = "1 месец";
 
 /* delete after time
-   time interval */
+time interval */
 "1 week" = "1 седмица";
 
 /* No comment provided by engineer. */
@@ -329,8 +308,8 @@
 "Accent" = "Акцент";
 
 /* accept contact request via notification
-   accept incoming call via notification
-   swipe action */
+accept incoming call via notification
+swipe action */
 "Accept" = "Приеми";
 
 /* No comment provided by engineer. */
@@ -343,7 +322,7 @@
 "Accept contact request from %@?" = "Приемане на заявка за контакт от %@?";
 
 /* accept contact request via notification
-   swipe action */
+swipe action */
 "Accept incognito" = "Приеми инкогнито";
 
 /* call status */
@@ -739,7 +718,8 @@
 /* rcv group event chat item */
 "blocked %@" = "блокиран %@";
 
-/* marked deleted chat item preview text */
+/* blocked chat item
+marked deleted chat item preview text */
 "blocked by admin" = "блокиран от админ";
 
 /* No comment provided by engineer. */
@@ -815,7 +795,7 @@
 "Can't invite contacts!" = "Не може да поканят контактите!";
 
 /* alert action
-   alert button */
+alert button */
 "Cancel" = "Отказ";
 
 /* No comment provided by engineer. */
@@ -867,7 +847,7 @@
 "Change self-destruct mode" = "Промени режима на самоунищожение";
 
 /* authentication reason
-   set passcode view */
+set passcode view */
 "Change self-destruct passcode" = "Промени кода за достъп за самоунищожение";
 
 /* chat item text */
@@ -1273,7 +1253,7 @@
 "Decryption error" = "Грешка при декриптиране";
 
 /* delete after time
-   pref value */
+pref value */
 "default (%@)" = "по подразбиране (%@)";
 
 /* No comment provided by engineer. */
@@ -1283,7 +1263,7 @@
 "default (yes)" = "по подразбиране (да)";
 
 /* alert action
-   swipe action */
+swipe action */
 "Delete" = "Изтрий";
 
 /* No comment provided by engineer. */
@@ -1512,7 +1492,7 @@
 "Downgrade and open chat" = "Понижи версията и отвори чата";
 
 /* alert button
-   chat item action */
+chat item action */
 "Download" = "Изтегли";
 
 /* No comment provided by engineer. */
@@ -1866,7 +1846,9 @@
 /* No comment provided by engineer. */
 "Error: " = "Грешка: ";
 
-/* alert message */
+/* alert message
+file error text
+snd error text */
 "Error: %@" = "Грешка: %@";
 
 /* No comment provided by engineer. */
@@ -1877,9 +1859,6 @@
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "Дори когато е деактивиран в разговора.";
-
-/* No comment provided by engineer. */
-"event happened" = "събитие се случи";
 
 /* No comment provided by engineer. */
 "Exit without saving" = "Изход без запазване";
@@ -2767,8 +2746,8 @@
 "observer" = "наблюдател";
 
 /* enabled status
-   group pref value
-   time to disappear */
+group pref value
+time to disappear */
 "off" = "изключено";
 
 /* blur media */
@@ -3153,7 +3132,7 @@
 "Reduced battery usage" = "Намалена консумация на батерията";
 
 /* reject incoming call via notification
-   swipe action */
+swipe action */
 "Reject" = "Отхвърляне";
 
 /* No comment provided by engineer. */
@@ -3280,7 +3259,7 @@
 "Safer groups" = "По-безопасни групи";
 
 /* alert button
-   chat item action */
+chat item action */
 "Save" = "Запази";
 
 /* alert button */
@@ -3536,7 +3515,7 @@
 "Shape profile images" = "Променете формата на профилните изображения";
 
 /* alert action
-   chat item action */
+chat item action */
 "Share" = "Сподели";
 
 /* No comment provided by engineer. */
@@ -4483,7 +4462,4 @@
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Вашият адрес в SimpleX";
-
-/* No comment provided by engineer. */
-"Your SMP servers" = "Вашите SMP сървъри";
 

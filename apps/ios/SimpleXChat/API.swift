@@ -183,7 +183,9 @@ public func chatResponse(_ s: String) -> ChatResponse {
     //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
     //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
     do {
-        let r = try jsonDecoder.decode(APIResponse.self, from: d)
+        let r = try callWithLargeStack {
+            try jsonDecoder.decode(APIResponse.self, from: d)
+        }
         return r.resp
     } catch {
         logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
@@ -229,6 +231,32 @@ public func chatResponse(_ s: String) -> ChatResponse {
         json = serializeJSON(j, options: .prettyPrinted)
     }
     return ChatResponse.response(type: type ?? "invalid", json: json ?? s)
+}
+
+private let largeStackSize: Int = 2 * 1024 * 1024
+
+private func callWithLargeStack<T>(_ f: @escaping () throws -> T) throws -> T {
+    let semaphore = DispatchSemaphore(value: 0)
+    var result: Result<T, Error>?
+    let thread = Thread {
+        do {
+            result = .success(try f())
+        } catch {
+            result = .failure(error)
+        }
+        semaphore.signal()
+    }
+
+    thread.stackSize = largeStackSize
+    thread.qualityOfService = Thread.current.qualityOfService
+    thread.start()
+
+    semaphore.wait()
+
+    switch result! {
+    case let .success(r): return r
+    case let .failure(e): throw e
+    }
 }
 
 private func decodeUser_(_ jDict: NSDictionary) -> UserRef? {

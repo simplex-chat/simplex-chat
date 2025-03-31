@@ -8,6 +8,8 @@ import SectionItemViewLongClickable
 import SectionSpacer
 import SectionTextFooter
 import SectionView
+import androidx.compose.animation.*
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -17,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
@@ -37,7 +40,7 @@ import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
-import chat.simplex.common.views.chat.item.ItemAction
+import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.database.TtlOptions
 import chat.simplex.res.MR
@@ -49,7 +52,18 @@ val MEMBER_ROW_AVATAR_SIZE = 42.dp
 val MEMBER_ROW_VERTICAL_PADDING = 8.dp
 
 @Composable
-fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, scrollToItemId: MutableState<Long?>, onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit, close: () -> Unit, onSearchClicked: () -> Unit) {
+fun ModalData.GroupChatInfoView(
+  rhId: Long?,
+  chatId: String,
+  groupLink: String?,
+  groupLinkMemberRole: GroupMemberRole?,
+  selectedItems: MutableState<Set<Long>?>,
+  appBar: MutableState<@Composable (BoxScope.() -> Unit)?>,
+  scrollToItemId: MutableState<Long?>,
+  onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit,
+  close: () -> Unit,
+  onSearchClicked: () -> Unit
+) {
   BackHandler(onBack = close)
   // TODO derivedStateOf?
   val chat = chatModel.chats.value.firstOrNull { ch -> ch.id == chatId && ch.remoteHostId == rhId }
@@ -82,12 +96,14 @@ fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: Strin
 
         setChatTTLAlert(chat.remoteHostId, chat.chatInfo, chatItemTTL, previousChatTTL, deletingItems)
       },
-      members = remember { chatModel.groupMembers }.value
+      activeSortedMembers = remember { chatModel.groupMembers }.value
         .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
         .sortedByDescending { it.memberRole },
       developerTools,
       onLocalAliasChanged = { setGroupAlias(chat, it, chatModel) },
       groupLink,
+      selectedItems,
+      appBar,
       scrollToItemId,
       addMembers = {
         scope.launch(Dispatchers.Default) {
@@ -212,21 +228,23 @@ private fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMembe
     text = generalGetString(messageId),
     confirmText = generalGetString(MR.strings.remove_member_confirmation),
     onConfirm = {
-      withBGApi {
-        val updatedMembers = chatModel.controller.apiRemoveMembers(rhId, groupInfo.groupId, listOf(mem.groupMemberId))
-        if (updatedMembers != null) {
-          withChats {
-            updatedMembers.forEach { updatedMember ->
-              upsertGroupMember(rhId, groupInfo, updatedMember)
-            }
-          }
-          withReportsChatsIfOpen {
-            updatedMembers.forEach { updatedMember ->
-              upsertGroupMember(rhId, groupInfo, updatedMember)
-            }
-          }
-        }
-      }
+      removeMembers(rhId, groupInfo, listOf(mem.groupMemberId))
+    },
+    destructive = true,
+  )
+}
+
+private fun removeMembersAlert(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, onSuccess: () -> Unit = {}) {
+  val messageId = if (groupInfo.businessChat == null)
+    MR.strings.members_will_be_removed_from_group_cannot_be_undone
+  else
+    MR.strings.members_will_be_removed_from_chat_cannot_be_undone
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.button_remove_members_question),
+    text = generalGetString(messageId),
+    confirmText = generalGetString(MR.strings.remove_member_confirmation),
+    onConfirm = {
+      removeMembers(rhId, groupInfo, memberIds, onSuccess)
     },
     destructive = true,
   )
@@ -309,10 +327,12 @@ fun ModalData.GroupChatInfoLayout(
   setSendReceipts: (SendReceipts) -> Unit,
   chatItemTTL: MutableState<ChatItemTTL?>,
   setChatItemTTL: (ChatItemTTL?) -> Unit,
-  members: List<GroupMember>,
+  activeSortedMembers: List<GroupMember>,
   developerTools: Boolean,
   onLocalAliasChanged: (String) -> Unit,
   groupLink: String?,
+  selectedItems: MutableState<Set<Long>?>,
+  appBar: MutableState<@Composable (BoxScope.() -> Unit)?>,
   scrollToItemId: MutableState<Long?>,
   addMembers: () -> Unit,
   showMemberInfo: (GroupMember) -> Unit,
@@ -333,20 +353,38 @@ fun ModalData.GroupChatInfoLayout(
     scope.launch { listState.scrollToItem(0) }
   }
   val searchText = remember { stateGetOrPut("searchText") { TextFieldValue() } }
-  val filteredMembers = remember(members) {
+  val filteredMembers = remember(activeSortedMembers) {
     derivedStateOf {
       val s = searchText.value.text.trim().lowercase()
-      if (s.isEmpty()) members else members.filter { m -> m.anyNameContains(s) }
+      if (s.isEmpty()) activeSortedMembers else activeSortedMembers.filter { m -> m.anyNameContains(s) }
     }
   }
   Box {
     val oneHandUI = remember { appPrefs.oneHandUI.state }
+    val selectedItemsBarHeight = if (selectedItems.value != null) AppBarHeight * fontSizeSqrtMultiplier else 0.dp
+    val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val imePadding = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
   LazyColumnWithScrollBar(
     state = listState,
     contentPadding = if (oneHandUI.value) {
-      PaddingValues(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + DEFAULT_PADDING + 5.dp, bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
+      PaddingValues(
+        top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + DEFAULT_PADDING + 5.dp,
+        bottom = navBarPadding +
+            imePadding +
+            selectedItemsBarHeight +
+            // TODO: that's workaround but works. Actually, something in the codebase doesn't consume padding for AppBar and it produce
+            // different padding when the user has NavigationBar and doesn't have it with ime shown (developer options helps to test it nav bars)
+            (if (navBarPadding > 0.dp && imePadding > 0.dp) 0.dp else AppBarHeight * fontSizeSqrtMultiplier)
+      )
     } else {
-      PaddingValues(top = topPaddingToContent(false))
+      PaddingValues(
+        top = topPaddingToContent(false),
+        bottom = if (imePadding > 0.dp) {
+          imePadding + selectedItemsBarHeight
+        } else {
+          navBarPadding + selectedItemsBarHeight
+        }
+      )
     }
   ) {
     item {
@@ -401,7 +439,7 @@ fun ModalData.GroupChatInfoLayout(
             }
           }
         }
-        if (members.filter { it.memberCurrent }.size <= SMALL_GROUPS_RCPS_MEM_LIMIT) {
+        if (activeSortedMembers.filter { it.memberCurrent }.size <= SMALL_GROUPS_RCPS_MEM_LIMIT) {
           SendReceiptsOption(currentUser, sendReceipts, setSendReceipts)
         } else {
           SendReceiptsOptionDisabled()
@@ -424,7 +462,7 @@ fun ModalData.GroupChatInfoLayout(
       ChatTTLSection(chatItemTTL, setChatItemTTL, deletingItems)
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = true)
 
-      SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), members.count() + 1)) {
+      SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), activeSortedMembers.count() + 1)) {
         if (groupInfo.canAddMembers) {
           if (groupInfo.businessChat == null) {
             if (groupLink == null) {
@@ -442,7 +480,7 @@ fun ModalData.GroupChatInfoLayout(
           }
           AddMembersButton(addMembersTitleId, tint, onAddMembersClick)
         }
-        if (members.size > 8) {
+        if (activeSortedMembers.size > 8) {
           SectionItemView(padding = PaddingValues(start = 14.dp, end = DEFAULT_PADDING_HALF)) {
             SearchRowView(searchText)
           }
@@ -452,12 +490,34 @@ fun ModalData.GroupChatInfoLayout(
         }
       }
     }
-    items(filteredMembers.value) { member ->
+    items(filteredMembers.value, key = { it.groupMemberId }) { member ->
       Divider()
       val showMenu = remember { mutableStateOf(false) }
-      SectionItemViewLongClickable({ showMemberInfo(member) }, { showMenu.value = true }, minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-        DropDownMenuForMember(chat.remoteHostId, member, groupInfo, showMenu)
-        MemberRow(member)
+      val canBeSelected = groupInfo.membership.memberRole >= member.memberRole && member.memberRole < GroupMemberRole.Moderator
+      SectionItemViewLongClickable(
+        click = {
+          if (selectedItems.value != null) {
+            if (canBeSelected) {
+              toggleItemSelection(member.groupMemberId, selectedItems)
+            }
+          } else {
+            showMemberInfo(member)
+          }
+        },
+        longClick = { showMenu.value = true },
+        minHeight = 54.dp,
+        padding = PaddingValues(horizontal = DEFAULT_PADDING)
+      ) {
+        Box(contentAlignment = Alignment.CenterStart) {
+          androidx.compose.animation.AnimatedVisibility(selectedItems.value != null, enter = fadeIn(), exit = fadeOut()) {
+            SelectedListItem(Modifier.alpha(if (canBeSelected) 1f else 0f).padding(start = 2.dp), member.groupMemberId, selectedItems)
+          }
+          val selectionOffset by animateDpAsState(if (selectedItems.value != null) 20.dp + 22.dp * fontSizeMultiplier else 0.dp)
+          DropDownMenuForMember(chat.remoteHostId, member, groupInfo, selectedItems, showMenu)
+          Box(Modifier.padding(start = selectionOffset)) {
+            MemberRow(member)
+          }
+        }
       }
     }
     item {
@@ -482,12 +542,92 @@ fun ModalData.GroupChatInfoLayout(
         }
       }
       SectionBottomSpacer()
-      Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
     }
   }
     if (!oneHandUI.value) {
       NavigationBarBackground(oneHandUI.value, oneHandUI.value)
     }
+    SelectedItemsButtonsToolbar(chat, groupInfo, selectedItems, rememberUpdatedState(activeSortedMembers))
+    SelectedItemsCounterToolbarSetter(groupInfo, selectedItems, filteredMembers, appBar)
+  }
+}
+
+@Composable
+private fun BoxScope.SelectedItemsButtonsToolbar(chat: Chat, groupInfo: GroupInfo, selectedItems: MutableState<Set<Long>?>, activeMembers: State<List<GroupMember>>) {
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  Column(Modifier.align(Alignment.BottomCenter)) {
+    AnimatedVisibility(selectedItems.value != null) {
+      SelectedItemsMembersToolbar(
+        selectedItems = selectedItems,
+        activeMembers = activeMembers,
+        groupInfo = groupInfo,
+        delete = {
+          removeMembersAlert(chat.remoteHostId, groupInfo, selectedItems.value!!.sorted()) {
+            selectedItems.value = null
+          }
+        },
+        blockForAll = { block ->
+          if (block) {
+            blockForAllAlert(chat.remoteHostId, groupInfo, selectedItems.value!!.sorted()) {
+              selectedItems.value = null
+            }
+          } else {
+            unblockForAllAlert(chat.remoteHostId, groupInfo, selectedItems.value!!.sorted()) {
+              selectedItems.value = null
+            }
+          }
+        },
+        changeRole = { toRole ->
+          updateMembersRoleDialog(toRole, groupInfo) {
+            updateMembersRole(toRole, chat.remoteHostId, groupInfo, selectedItems.value!!.sorted()) {
+              selectedItems.value = null
+            }
+          }
+        }
+      )
+    }
+    if (oneHandUI.value) {
+      // That's placeholder to take some space for bottom app bar in oneHandUI
+      Box(Modifier.height(AppBarHeight * fontSizeSqrtMultiplier))
+    }
+  }
+}
+
+@Composable
+private fun SelectedItemsCounterToolbarSetter(
+  groupInfo: GroupInfo,
+  selectedItems: MutableState<Set<Long>?>,
+  filteredMembers: State<List<GroupMember>>,
+  appBar: MutableState<@Composable (BoxScope.() -> Unit)?>
+) {
+  LaunchedEffect(
+    groupInfo,
+    /* variable, not value - intentionally - to reduce work but handle variable change because it changes in remember(members) { derivedState {} } */
+    filteredMembers
+  ) {
+    snapshotFlow { selectedItems.value == null }
+      .collect { nullItems ->
+        if (!nullItems) {
+          appBar.value = {
+            SelectedItemsCounterToolbar(selectedItems, !remember { appPrefs.oneHandUI.state }.value) {
+              if (!groupInfo.membership.memberActive) return@SelectedItemsCounterToolbar
+              val ids: MutableSet<Long> = mutableSetOf()
+              for (mem in filteredMembers.value) {
+                if (groupInfo.membership.memberActive && groupInfo.membership.memberRole >= mem.memberRole && mem.memberRole < GroupMemberRole.Moderator) {
+                  ids.add(mem.groupMemberId)
+                }
+              }
+              if (ids.isNotEmpty() && (selectedItems.value ?: setOf()).containsAll(ids)) {
+                selectedItems.value = (selectedItems.value ?: setOf()).minus(ids)
+              } else {
+                selectedItems.value = (selectedItems.value ?: setOf()).union(ids)
+              }
+            }
+          }
+        } else {
+          appBar.value = null
+        }
+      }
   }
 }
 
@@ -612,7 +752,7 @@ fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = tr
       Text(stringResource(MR.strings.member_info_member_blocked), color = MaterialTheme.colors.secondary)
     } else {
       val role = member.memberRole
-      if (role in listOf(GroupMemberRole.Owner, GroupMemberRole.Admin, GroupMemberRole.Observer)) {
+      if (role in listOf(GroupMemberRole.Owner, GroupMemberRole.Admin, GroupMemberRole.Moderator, GroupMemberRole.Observer)) {
         Text(role.text, color = MaterialTheme.colors.secondary)
       }
     }
@@ -686,8 +826,8 @@ private fun MemberVerifiedShield() {
 }
 
 @Composable
-private fun DropDownMenuForMember(rhId: Long?, member: GroupMember, groupInfo: GroupInfo, showMenu: MutableState<Boolean>) {
-  if (groupInfo.membership.memberRole >= GroupMemberRole.Admin) {
+private fun DropDownMenuForMember(rhId: Long?, member: GroupMember, groupInfo: GroupInfo, selectedItems: MutableState<Set<Long>?>, showMenu: MutableState<Boolean>) {
+  if (groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
     val canBlockForAll = member.canBlockForAll(groupInfo)
     val canRemove = member.canBeRemoved(groupInfo)
     if (canBlockForAll || canRemove) {
@@ -710,6 +850,10 @@ private fun DropDownMenuForMember(rhId: Long?, member: GroupMember, groupInfo: G
             removeMemberAlert(rhId, groupInfo, member)
             showMenu.value = false
           })
+        }
+        if (selectedItems.value == null && member.memberRole < GroupMemberRole.Moderator) {
+          Divider()
+          SelectItemAction(showMenu) { toggleItemSelection(member.groupMemberId, selectedItems) }
         }
       }
     }
@@ -819,6 +963,37 @@ private fun setGroupAlias(chat: Chat, localAlias: String, chatModel: ChatModel) 
   }
 }
 
+fun removeMembers(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, onSuccess: () -> Unit = {}) {
+  withBGApi {
+    val updatedMembers = chatModel.controller.apiRemoveMembers(rhId, groupInfo.groupId, memberIds)
+    if (updatedMembers != null) {
+      withChats {
+        updatedMembers.forEach { updatedMember ->
+          upsertGroupMember(rhId, groupInfo, updatedMember)
+        }
+      }
+      withReportsChatsIfOpen {
+        updatedMembers.forEach { updatedMember ->
+          upsertGroupMember(rhId, groupInfo, updatedMember)
+        }
+      }
+      onSuccess()
+    }
+  }
+}
+
+fun <T> toggleItemSelection(itemId: T, selectedItems: MutableState<Set<T>?>) {
+  val select = selectedItems.value?.contains(itemId) != true
+  if (select) {
+    val sel = selectedItems.value ?: setOf()
+    selectedItems.value = sel + itemId
+  } else {
+    val sel = (selectedItems.value ?: setOf()).toMutableSet()
+    sel.remove(itemId)
+    selectedItems.value = sel
+  }
+}
+
 @Preview
 @Composable
 fun PreviewGroupChatInfoLayout() {
@@ -835,10 +1010,12 @@ fun PreviewGroupChatInfoLayout() {
       setSendReceipts = {},
       chatItemTTL = remember { mutableStateOf(ChatItemTTL.fromSeconds(0)) },
       setChatItemTTL = {},
-      members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
+      activeSortedMembers = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
       developerTools = false,
       onLocalAliasChanged = {},
       groupLink = null,
+      selectedItems = remember { mutableStateOf(null) },
+      appBar = remember { mutableStateOf(null) },
       scrollToItemId = remember { mutableStateOf(null) },
       addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, addOrEditWelcomeMessage = {}, openPreferences = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {}, onSearchClicked = {}, deletingItems = remember { mutableStateOf(true) }
     )

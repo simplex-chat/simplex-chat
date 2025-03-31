@@ -460,7 +460,6 @@
   <string name="group_reports_active_one">1 report</string>
   <string name="group_reports_active">%d reports</string>
   <string name="group_reports_member_reports">Member reports</string>
-  <string name="group_reports_archived_member_reports">Archived member reports</string>
 
   <!-- ShareListView.kt -->
   <string name="share_message">Share message…</string>
@@ -1163,6 +1162,11 @@
   <string name="use_random_passphrase">Use random passphrase</string>
 
   <!-- ChooseServerOperators.kt -->
+  <string name="onboarding_conditions_private_chats_not_accessible">Private chats, groups and your contacts are not accessible to server operators.</string>
+  <string name="onboarding_conditions_by_using_you_agree">By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam.</string>
+  <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Privacy policy and conditions of use.</string>
+  <string name="onboarding_conditions_accept">Accept</string>
+  <string name="onboarding_conditions_configure_server_operators">Configure server operators</string>
   <string name="onboarding_choose_server_operators">Server operators</string>
   <string name="onboarding_network_operators">Network operators</string>
   <string name="onboarding_network_operators_simplex_flux_agreement">SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app.</string>
@@ -1738,25 +1742,32 @@
 
   <!-- GroupMemberInfoView.kt -->
   <string name="button_remove_member_question">Remove member?</string>
+  <string name="button_remove_members_question">Remove members?</string>
   <string name="button_remove_member">Remove member</string>
 
   <string name="button_send_direct_message">Send direct message</string>
   <string name="member_will_be_removed_from_group_cannot_be_undone">Member will be removed from group - this cannot be undone!</string>
+  <string name="members_will_be_removed_from_group_cannot_be_undone">Members will be removed from group - this cannot be undone!</string>
   <string name="member_will_be_removed_from_chat_cannot_be_undone">Member will be removed from chat - this cannot be undone!</string>
+  <string name="members_will_be_removed_from_chat_cannot_be_undone">Members will be removed from chat - this cannot be undone!</string>
   <string name="remove_member_confirmation">Remove</string>
   <string name="remove_member_button">Remove member</string>
   <string name="block_member_question">Block member?</string>
   <string name="block_member_button">Block member</string>
   <string name="block_member_confirmation">Block</string>
   <string name="block_for_all_question">Block member for all?</string>
+  <string name="block_members_for_all_question">Block members for all?</string>
   <string name="block_for_all">Block for all</string>
   <string name="block_member_desc">All new messages from %s will be hidden!</string>
+  <string name="block_members_desc">All new messages from these members will be hidden!</string>
   <string name="unblock_member_question">Unblock member?</string>
   <string name="unblock_member_button">Unblock member</string>
   <string name="unblock_member_confirmation">Unblock</string>
   <string name="unblock_for_all_question">Unblock member for all?</string>
+  <string name="unblock_members_for_all_question">Unblock members for all?</string>
   <string name="unblock_for_all">Unblock for all</string>
   <string name="unblock_member_desc">Messages from %s will be shown!</string>
+  <string name="unblock_members_desc">Messages from these members will be shown!</string>
   <string name="member_blocked_by_admin">Blocked by admin</string>
   <string name="member_info_member_blocked">blocked</string>
   <string name="member_info_member_disabled">disabled</string>
@@ -2122,6 +2133,7 @@
   <string name="feature_offered_item_with_param">offered %s: %2s</string>
   <string name="feature_cancelled_item">cancelled %s</string>
   <string name="feature_roles_all_members">all members</string>
+  <string name="feature_roles_moderators">moderators</string>
   <string name="feature_roles_admins">admins</string>
   <string name="feature_roles_owners">owners</string>
   <string name="feature_enabled_for">Enabled for</string>
@@ -2284,7 +2296,7 @@
   <string name="v6_1_delete_many_messages_descr">Delete or moderate up to 200 messages.</string>
   <string name="v6_2_network_decentralization">Network decentralization</string>
   <string name="v6_2_network_decentralization_descr">The second preset operator in the app!</string>
-  <string name="v6_2_network_decentralization_enable_flux">Enable flux</string>
+  <string name="v6_2_network_decentralization_enable_flux">Enable Flux in Network &amp; servers settings for better metadata privacy.</string>
   <string name="v6_2_network_decentralization_enable_flux_reason">for better metadata privacy.</string>
   <string name="v6_2_improved_chat_navigation">Improved chat navigation</string>
   <string name="v6_2_improved_chat_navigation_descr">- Open chat on the first unread message.\n- Jump to quoted messages.</string>

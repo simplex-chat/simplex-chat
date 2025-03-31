@@ -2124,7 +2124,6 @@
     <string name="display_name_accepted_invitation">invitation acceptée</string>
     <string name="archive_report">Archiver le signalement</string>
     <string name="privacy_chat_list_open_links_ask">Demander</string>
-    <string name="group_reports_archived_member_reports">Rapports du membre archivés</string>
     <string name="add_to_list">Ajouter à la liste</string>
     <string name="delete_chat_list_warning">Toutes les discussions seront supprimées de la liste %s, et la liste sera supprimée</string>
     <string name="button_add_team_members">Ajouter des membres à l\'équipe</string>
@@ -2326,4 +2325,23 @@
     <string name="report_archive_alert_desc_all">Tous les signalements seront archivés pour vous.</string>
     <string name="report_archive_alert_title_all">Archiver tous les signalements ?</string>
     <string name="report_archive_alert_title_nth">Archiver %d signalements ?</string>
+    <string name="change_automatic_deletion_question">Modifier la suppression automatique des messages ?</string>
+    <string name="chat_ttl_options_footer">Supprimer les messages de discussion de votre appareil.</string>
+    <string name="chat_item_ttl_default">par défaut (%s)</string>
+    <string name="block_members_for_all_question">Bloquer ces membres pour tous ?</string>
+    <string name="disable_automatic_deletion_question">Désactiver la suppression automatique des messages ?</string>
+    <string name="disable_automatic_deletion">Désactiver la suppression des messages</string>
+    <string name="v6_3_organize_chat_lists_descr">Ne manquez pas les messages importants.</string>
+    <string name="v6_3_mentions_descr">Recevoir une notification en cas de mention.</string>
+    <string name="v6_3_better_privacy_and_security">Vie privée et sécurité renforcées</string>
+    <string name="v6_3_faster_deletion_of_groups">Suppression plus rapide des groupes.</string>
+    <string name="v6_3_faster_sending_messages">Envoi plus rapide des messages.</string>
+    <string name="report_archive_for_me">Pour moi</string>
+    <string name="archive_reports">Archiver les rapports</string>
+    <string name="report_archive_for_all_moderators">Pour tous les modérateurs</string>
+    <string name="group_members_can_send_reports">Les membres peuvent signaler des messages aux modérateurs.</string>
+    <string name="v6_3_better_groups_performance">Groupes plus performants</string>
+    <string name="error_reading_passphrase">Erreur lors de la lecture de la phase secrète de la base de données</string>
+    <string name="v6_3_reports_descr">Aider les administrateurs à modérer leurs groupes.</string>
+    <string name="block_members_desc">Tous les nouveaux messages de ces membres seront cachés !</string>
 </resources>

@@ -1,10 +1,4 @@
 /* No comment provided by engineer. */
-"\n" = "\n";
-
-/* No comment provided by engineer. */
-" (" = " (";
-
-/* No comment provided by engineer. */
 " (can be copied)" = " (peut être copié)";
 
 /* No comment provided by engineer. */
@@ -23,28 +17,13 @@
 "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- messages vocaux pouvant durer jusqu'à 5 minutes.\n- délai personnalisé de disparition.\n- l'historique de modification.";
 
 /* No comment provided by engineer. */
-", " = ", ";
-
-/* No comment provided by engineer. */
-": " = ": ";
-
-/* No comment provided by engineer. */
 "!1 colored!" = "!1 coloré!";
-
-/* No comment provided by engineer. */
-"." = ".";
-
-/* No comment provided by engineer. */
-"(" = "(";
 
 /* No comment provided by engineer. */
 "(new)" = "(nouveau)";
 
 /* No comment provided by engineer. */
 "(this device v%@)" = "(cet appareil v%@)";
-
-/* No comment provided by engineer. */
-")" = ")";
 
 /* No comment provided by engineer. */
 "[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Contribuer](https://github.com/simplex-chat/simplex-chat#contribute)";
@@ -287,7 +266,7 @@
 "0s" = "0s";
 
 /* delete after time
-   time interval */
+time interval */
 "1 day" = "1 jour";
 
 /* time interval */
@@ -297,11 +276,11 @@
 "1 minute" = "1 minute";
 
 /* delete after time
-   time interval */
+time interval */
 "1 month" = "1 mois";
 
 /* delete after time
-   time interval */
+time interval */
 "1 week" = "1 semaine";
 
 /* No comment provided by engineer. */
@@ -356,8 +335,8 @@
 "Accent" = "Principale";
 
 /* accept contact request via notification
-   accept incoming call via notification
-   swipe action */
+accept incoming call via notification
+swipe action */
 "Accept" = "Accepter";
 
 /* No comment provided by engineer. */
@@ -370,7 +349,7 @@
 "Accept contact request from %@?" = "Accepter la demande de contact de %@ ?";
 
 /* accept contact request via notification
-   swipe action */
+swipe action */
 "Accept incognito" = "Accepter en incognito";
 
 /* call status */
@@ -775,7 +754,8 @@
 /* rcv group event chat item */
 "blocked %@" = "%@ bloqué";
 
-/* marked deleted chat item preview text */
+/* blocked chat item
+marked deleted chat item preview text */
 "blocked by admin" = "bloqué par l'administrateur";
 
 /* No comment provided by engineer. */
@@ -857,7 +837,7 @@
 "Can't message member" = "Impossible d'envoyer un message à ce membre";
 
 /* alert action
-   alert button */
+alert button */
 "Cancel" = "Annuler";
 
 /* No comment provided by engineer. */
@@ -912,7 +892,7 @@
 "Change self-destruct mode" = "Modifier le mode d'autodestruction";
 
 /* authentication reason
-   set passcode view */
+set passcode view */
 "Change self-destruct passcode" = "Modifier le code d'autodestruction";
 
 /* chat item text */
@@ -1070,12 +1050,6 @@
 
 /* No comment provided by engineer. */
 "Conditions of use" = "Conditions d'utilisation";
-
-/* No comment provided by engineer. */
-"Conditions will be accepted for enabled operators after 30 days." = "Les conditions seront acceptées pour les opérateurs activés après 30 jours.";
-
-/* No comment provided by engineer. */
-"Conditions will be accepted for operator(s): **%@**." = "Les conditions seront acceptées pour le(s) opérateur(s) : **%@**.";
 
 /* No comment provided by engineer. */
 "Conditions will be accepted for the operator(s): **%@**." = "Les conditions seront acceptées pour le(s) opérateur(s) : **%@**.";
@@ -1477,7 +1451,7 @@
 "decryption errors" = "Erreurs de déchiffrement";
 
 /* delete after time
-   pref value */
+pref value */
 "default (%@)" = "défaut (%@)";
 
 /* No comment provided by engineer. */
@@ -1487,7 +1461,7 @@
 "default (yes)" = "par défaut (oui)";
 
 /* alert action
-   swipe action */
+swipe action */
 "Delete" = "Supprimer";
 
 /* No comment provided by engineer. */
@@ -1779,7 +1753,7 @@
 "Downgrade and open chat" = "Rétrograder et ouvrir le chat";
 
 /* alert button
-   chat item action */
+chat item action */
 "Download" = "Télécharger";
 
 /* No comment provided by engineer. */
@@ -1841,9 +1815,6 @@
 
 /* No comment provided by engineer. */
 "Enable camera access" = "Autoriser l'accès à la caméra";
-
-/* No comment provided by engineer. */
-"Enable Flux" = "Activer Flux";
 
 /* No comment provided by engineer. */
 "Enable for all" = "Activer pour tous";
@@ -2199,7 +2170,9 @@
 /* No comment provided by engineer. */
 "Error: " = "Erreur : ";
 
-/* alert message */
+/* alert message
+file error text
+snd error text */
 "Error: %@" = "Erreur : %@";
 
 /* No comment provided by engineer. */
@@ -2216,9 +2189,6 @@
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "Même s'il est désactivé dans la conversation.";
-
-/* No comment provided by engineer. */
-"event happened" = "event happened";
 
 /* No comment provided by engineer. */
 "Exit without saving" = "Quitter sans enregistrer";
@@ -2339,9 +2309,6 @@
 
 /* No comment provided by engineer. */
 "Fix not supported by group member" = "Correction non prise en charge par un membre du groupe";
-
-/* No comment provided by engineer. */
-"for better metadata privacy." = "pour une meilleure protection des métadonnées.";
 
 /* servers error */
 "For chat profile %@:" = "Pour le profil de discussion %@ :";
@@ -3349,8 +3316,8 @@
 "observer" = "observateur";
 
 /* enabled status
-   group pref value
-   time to disappear */
+group pref value
+time to disappear */
 "off" = "off";
 
 /* blur media */
@@ -3855,7 +3822,7 @@
 "Reduced battery usage" = "Réduction de la consommation de batterie";
 
 /* reject incoming call via notification
-   swipe action */
+swipe action */
 "Reject" = "Rejeter";
 
 /* No comment provided by engineer. */
@@ -3991,9 +3958,6 @@
 "Review conditions" = "Vérifier les conditions";
 
 /* No comment provided by engineer. */
-"Review later" = "Vérifier plus tard";
-
-/* No comment provided by engineer. */
 "Revoke" = "Révoquer";
 
 /* cancel file action */
@@ -4015,7 +3979,7 @@
 "Safer groups" = "Groupes plus sûrs";
 
 /* alert button
-   chat item action */
+chat item action */
 "Save" = "Enregistrer";
 
 /* alert button */
@@ -4379,7 +4343,7 @@
 "Shape profile images" = "Images de profil modelable";
 
 /* alert action
-   chat item action */
+chat item action */
 "Share" = "Partager";
 
 /* No comment provided by engineer. */
@@ -4762,9 +4726,6 @@
 
 /* No comment provided by engineer. */
 "The same conditions will apply to operator **%@**." = "Les mêmes conditions s'appliquent à l'opérateur **%@**.";
-
-/* No comment provided by engineer. */
-"The same conditions will apply to operator(s): **%@**." = "Les mêmes conditions s'appliquent à(aux) l'opérateur(s) : **%@**.";
 
 /* No comment provided by engineer. */
 "The second preset operator in the app!" = "Le deuxième opérateur prédéfini de l'application !";
@@ -5400,9 +5361,6 @@
 "You can change it in Appearance settings." = "Vous pouvez choisir de le modifier dans les paramètres d'apparence.";
 
 /* No comment provided by engineer. */
-"You can configure operators in Network & servers settings." = "Vous pouvez définir les opérateurs dans les paramètres Réseau et serveurs.";
-
-/* No comment provided by engineer. */
 "You can configure servers via settings." = "Vous pouvez configurer les serveurs via les paramètres.";
 
 /* No comment provided by engineer. */
@@ -5644,7 +5602,4 @@
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Votre adresse SimpleX";
-
-/* No comment provided by engineer. */
-"Your SMP servers" = "Vos serveurs SMP";
 

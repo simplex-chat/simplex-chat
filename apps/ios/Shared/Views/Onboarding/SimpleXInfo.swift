@@ -129,6 +129,7 @@ struct SimpleXInfo: View {
 
             NavigationLink(isActive: $createProfileNavLinkActive) {
                 CreateFirstProfile()
+                    .modifier(ThemedBackground())
             } label: {
                 EmptyView()
             }
@@ -139,6 +140,8 @@ struct SimpleXInfo: View {
 }
 
 let textSpace = Text(verbatim: " ")
+
+let textNewLine = Text(verbatim: "\n")
 
 struct SimpleXInfo_Previews: PreviewProvider {
     static var previews: some View {

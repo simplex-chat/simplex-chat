@@ -39,6 +39,7 @@ import qualified Data.Text.IO as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, diffUTCTime, getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import Directory.BlockedWords
+import Directory.Captcha
 import Directory.Events
 import Directory.Options
 import Directory.Search
@@ -67,7 +68,6 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow, ($>>=), (<$$>))
 import System.Directory (getAppUserDataDirectory)
 import System.Process (readProcess)
-import System.Random (randomRIO)
 
 data GroupProfileUpdate = GPNoServiceLink | GPServiceLinkAdded | GPServiceLinkRemoved | GPHasServiceLink | GPServiceLinkError
 
@@ -455,12 +455,6 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       atomically $ TM.insert gmId captcha $ pendingCaptchas env
       sendCaptcha mc
       where
-        getCaptchaStr 0 s = pure s
-        getCaptchaStr n s = do
-          i <- randomRIO (0, length chars - 1)
-          let c = chars !! i
-          getCaptchaStr (n - 1) (c : s)
-        chars = "23456789ABCDEFGHIJKLMNOPQRSTUVWXYZabdefghijkmnpqrsty"
         getCaptcha s = case captchaGenerator opts of
           Nothing -> pure textMsg
           Just script -> content <$> readProcess script [s] ""
@@ -475,7 +469,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
 
     approvePendingMember :: DirectoryMemberAcceptance -> GroupInfo -> GroupMember -> IO ()
     approvePendingMember a g@GroupInfo {groupId} m@GroupMember {memberProfile = LocalProfile {displayName, image}} = do
-      gli_ <- join <$> withDB' cc (\db -> getGroupLinkInfo db userId groupId)
+      gli_ <- join <$> withDB' "getGroupLinkInfo" cc (\db -> getGroupLinkInfo db userId groupId)
       let role = if useMemberFilter image (makeObserver a) then GRObserver else maybe GRMember (\GroupLinkInfo {memberRole} -> memberRole) gli_
           gmId = groupMemberId' m
       sendChatCmd cc (APIAcceptMember groupId gmId role) >>= \case
@@ -491,7 +485,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           atomically (TM.lookup (groupMemberId' m) $ pendingCaptchas env) >>= \case
             Just PendingCaptcha {captchaText, sentAt, attempts}
               | ts `diffUTCTime` sentAt > captchaTTL -> sendMemberCaptcha g m (Just ciId) captchaExpired $ attempts - 1
-              | captchaText == msgText -> do
+              | matchCaptchaStr captchaText msgText -> do
                   sendComposedMessages_ cc (SRGroup groupId $ Just $ groupMemberId' m) [(Just ciId, MCText $ "Correct, you joined the group " <> n)]
                   approvePendingMember a g m
               | attempts >= maxCaptchaAttempts -> rejectPendingMember tooManyAttempts
@@ -503,8 +497,8 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         rejectPendingMember rjctNotice = do
           let gmId = groupMemberId' m
           sendComposedMessages cc (SRGroup groupId $ Just gmId) [MCText rjctNotice]
-          sendChatCmd cc (APIRemoveMembers groupId [gmId]) >>= \case
-            CRUserDeletedMembers _ _ (_ : _) -> do
+          sendChatCmd cc (APIRemoveMembers groupId [gmId] False) >>= \case
+            CRUserDeletedMembers _ _ (_ : _) _ -> do
               atomically $ TM.delete gmId $ pendingCaptchas env
               logInfo $ "Member " <> viewName displayName <> " rejected, group " <> tshow groupId <> ":" <> viewGroupName g
             r -> logError $ "unexpected remove member response: " <> tshow r
@@ -704,7 +698,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           case acceptance_ of
             Just a' | a /= a' -> do
               let d = toCustomData $ DirectoryGroupData a'
-              withDB' cc (\db -> setGroupCustomData db user g $ Just d) >>= \case
+              withDB' "setGroupCustomData" cc (\db -> setGroupCustomData db user g $ Just d) >>= \case
                 Just () -> sendSettigns n a' " set to"
                 Nothing -> sendReply $ "Error changing spam filter settings for group " <> n
             _ -> sendSettigns n a ""
@@ -719,7 +713,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                   "",
                   -- "Use */filter " <> tshow gId <> " <level>* to change spam filter level: no (disable), basic, moderate, strong.",
                   -- "Or use */filter " <> tshow gId <> " [name[=noimage]] [captcha[=noimage]] [observer[=noimage]]* for advanced filter configuration."
-                  "Or use */filter " <> tshow gId <> " [name] [captcha]* to configure filter."
+                  "Use */filter " <> tshow gId <> " [name] [captcha]* to enable and */filter " <> tshow gId <> " off* to disable filter."
                 ]
           showCondition = \case
             Nothing -> "_disabled_"
@@ -983,24 +977,24 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           sendComposedMessage cc ct Nothing $ MCText text
 
 getContact' :: ChatController -> User -> ContactId -> IO (Maybe Contact)
-getContact' cc user ctId = withDB cc $ \db -> getContact db (vr cc) user ctId
+getContact' cc user ctId = withDB "getContact" cc $ \db -> getContact db (vr cc) user ctId
 
 getGroup :: ChatController -> User -> GroupId -> IO (Maybe GroupInfo)
-getGroup cc user gId = withDB cc $ \db -> getGroupInfo db (vr cc) user gId
+getGroup cc user gId = withDB "getGroupInfo" cc $ \db -> getGroupInfo db (vr cc) user gId
 
-withDB' :: ChatController -> (DB.Connection -> IO a) -> IO (Maybe a)
-withDB' cc a = withDB cc $ ExceptT . fmap Right . a
+withDB' :: Text -> ChatController -> (DB.Connection -> IO a) -> IO (Maybe a)
+withDB' cxt cc a = withDB cxt cc $ ExceptT . fmap Right . a
 
-withDB :: ChatController -> (DB.Connection -> ExceptT StoreError IO a) -> IO (Maybe a)
-withDB ChatController {chatStore} action = do
+withDB :: Text -> ChatController -> (DB.Connection -> ExceptT StoreError IO a) -> IO (Maybe a)
+withDB cxt ChatController {chatStore} action = do
   r_ :: Either ChatError a <- withTransaction chatStore (runExceptT . withExceptT ChatErrorStore . action) `E.catches` handleDBErrors
   case r_ of
     Right r -> pure $ Just r
-    Left e -> Nothing <$ logError ("Database error: " <> tshow e)
+    Left e -> Nothing <$ logError ("Database error: " <> cxt <> " " <> tshow e)
 
 getGroupAndSummary :: ChatController -> User -> GroupId -> IO (Maybe (GroupInfo, GroupSummary))
 getGroupAndSummary cc user gId =
-  withDB cc $ \db -> (,) <$> getGroupInfo db (vr cc) user gId <*> liftIO (getGroupSummary db user gId)
+  withDB "getGroupAndSummary" cc $ \db -> (,) <$> getGroupInfo db (vr cc) user gId <*> liftIO (getGroupSummary db user gId)
 
 vr :: ChatController -> VersionRangeChat
 vr ChatController {config = ChatConfig {chatVRange}} = chatVRange
@@ -1008,7 +1002,7 @@ vr ChatController {config = ChatConfig {chatVRange}} = chatVRange
 
 getGroupLinkRole :: ChatController -> User -> GroupInfo -> IO (Maybe (Int64, ConnReqContact, GroupMemberRole))
 getGroupLinkRole cc user gInfo =
-  withDB cc $ \db -> getGroupLink db user gInfo
+  withDB "getGroupLink" cc $ \db -> getGroupLink db user gInfo
 
 setGroupLinkRole :: ChatController -> GroupInfo -> GroupMemberRole -> IO (Maybe ConnReqContact)
 setGroupLinkRole cc GroupInfo {groupId} mRole = resp <$> sendChatCmd cc (APIGroupLinkMemberRole groupId mRole)

@@ -766,7 +766,7 @@
     <string name="restore_database_alert_title">Obnovit zálohu databáze\?</string>
     <string name="restore_database_alert_confirm">Obnovit</string>
     <string name="database_restore_error">Chyba při obnovování databáze</string>
-    <string name="restore_passphrase_not_found_desc">Přístupová fráze nebyla v klíčence nalezena, zadejte jej prosím ručně. K této situaci mohlo dojít, pokud jste obnovili data aplikace pomocí zálohovacího nástroje. Pokud tomu tak není, obraťte se na vývojáře.</string>
+    <string name="restore_passphrase_not_found_desc">Přístupová fráze nebyla v klíčence nalezena, zadejte ji prosím ručně. K této situaci mohlo dojít, pokud jste obnovili data aplikace pomocí zálohovacího nástroje. Pokud tomu tak není, kontaktujte prosím vývojáře.</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Chat můžete spustit v Nastavení / Databáze nebo restartováním aplikace.</string>
     <string name="group_invitation_item_description">pozvánka do skupiny %1$s</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Jste zváni do skupiny. Připojte se k členům skupiny.</string>
@@ -2175,7 +2175,6 @@
     <string name="error_updating_server_title">Chyba aktualizace serveru</string>
     <string name="operator_server_alert_title">Operátor serveru</string>
     <string name="v6_2_network_decentralization">Decentralizace sítě</string>
-    <string name="group_reports_archived_member_reports">Archivována hlášení členů</string>
     <string name="archive_reports">Archivovat hlášení</string>
     <string name="leave_chat_question">Opustit chat?</string>
     <string name="address_settings">Nastavení adres</string>
@@ -2354,4 +2353,18 @@
     <string name="chat_database_exported_migrate">Můžete přenést exportovanou databázi.</string>
     <string name="group_member_status_rejected">zamítnuto</string>
     <string name="privacy_media_blur_radius_soft">Jemný</string>
+    <string name="error_reading_passphrase">Chyba čtení přístupové fráze databáze</string>
+    <string name="restore_passphrase_can_not_be_read_enter_manually_desc">Přístupová fráze v úlozišti klíčů nelze načíst, prosím zadejte ji ručně. To se může stát po aktualizaci systému nekompatibilní s aplikací. Pokud to tak není, kontaktujte prosím vývojáře.</string>
+    <string name="restore_passphrase_can_not_be_read_desc">Přístupovou frázi v ůložišti klíčů nelze načíst. Mohlo se to stát po aktualizaci systému nekompatibilní s aplikací. Pokud to není váš případ, kontaktujte prosím vývojáře.</string>
+    <string name="operator_updated_conditions">Aktualizované podmínky</string>
+    <string name="group_member_status_pending_approval">čekám na schválení</string>
+    <string name="group_member_status_pending_approval_short">čekám</string>
+    <string name="block_members_for_all_question">Blokovat členy všem?</string>
+    <string name="block_members_desc">Všechny nové zprávy od těchto členů budou skryty!</string>
+    <string name="unblock_members_for_all_question">Odblokovat členy všem?</string>
+    <string name="feature_roles_moderators">moderátoři</string>
+    <string name="unblock_members_desc">Zprávy od těchto členů budou zobrazeny!</string>
+    <string name="members_will_be_removed_from_group_cannot_be_undone">Členové budou odstraněny ze skupiny - toto nelze zvrátit!</string>
+    <string name="button_remove_members_question">Odebrat členy?</string>
+    <string name="members_will_be_removed_from_chat_cannot_be_undone">Členové budou odstraněny z chatu - toto nelze zvrátit!</string>
 </resources>
