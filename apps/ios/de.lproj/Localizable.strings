@@ -269,7 +269,7 @@
 "0s" = "0s";
 
 /* delete after time
-   time interval */
+time interval */
 "1 day" = "Älter als ein Tag";
 
 /* time interval */
@@ -279,11 +279,11 @@
 "1 minute" = "1 Minute";
 
 /* delete after time
-   time interval */
+time interval */
 "1 month" = "Älter als ein Monat";
 
 /* delete after time
-   time interval */
+time interval */
 "1 week" = "Älter als eine Woche";
 
 /* delete after time */
@@ -341,8 +341,8 @@
 "Accent" = "Akzent";
 
 /* accept contact request via notification
-   accept incoming call via notification
-   swipe action */
+accept incoming call via notification
+swipe action */
 "Accept" = "Annehmen";
 
 /* No comment provided by engineer. */
@@ -355,7 +355,7 @@
 "Accept contact request from %@?" = "Die Kontaktanfrage von %@ annehmen?";
 
 /* accept contact request via notification
-   swipe action */
+swipe action */
 "Accept incognito" = "Inkognito akzeptieren";
 
 /* call status */
@@ -817,7 +817,8 @@
 /* rcv group event chat item */
 "blocked %@" = "%@ wurde blockiert";
 
-/* marked deleted chat item preview text */
+/* blocked chat item
+marked deleted chat item preview text */
 "blocked by admin" = "wurde vom Administrator blockiert";
 
 /* No comment provided by engineer. */
@@ -902,7 +903,7 @@
 "Can't message member" = "Mitglied kann nicht benachrichtigt werden";
 
 /* alert action
-   alert button */
+alert button */
 "Cancel" = "Abbrechen";
 
 /* No comment provided by engineer. */
@@ -960,7 +961,7 @@
 "Change self-destruct mode" = "Selbstzerstörungs-Modus ändern";
 
 /* authentication reason
-   set passcode view */
+set passcode view */
 "Change self-destruct passcode" = "Selbstzerstörungs-Zugangscode ändern";
 
 /* chat item text */
@@ -1127,12 +1128,6 @@
 
 /* No comment provided by engineer. */
 "Conditions of use" = "Nutzungsbedingungen";
-
-/* No comment provided by engineer. */
-"Conditions will be accepted for enabled operators after 30 days." = "Die Nutzungsbedingungen der aktivierten Betreiber werden nach 30 Tagen akzeptiert.";
-
-/* No comment provided by engineer. */
-"Conditions will be accepted for operator(s): **%@**." = "Die Nutzungsbedingungen der/des Betreiber(s) werden akzeptiert: **%@**.";
 
 /* No comment provided by engineer. */
 "Conditions will be accepted for the operator(s): **%@**." = "Die Nutzungsbedingungen der/des Betreiber(s) werden akzeptiert: **%@**.";
@@ -1555,7 +1550,7 @@
 "decryption errors" = "Entschlüsselungs-Fehler";
 
 /* delete after time
-   pref value */
+pref value */
 "default (%@)" = "Default (%@)";
 
 /* No comment provided by engineer. */
@@ -1565,7 +1560,7 @@
 "default (yes)" = "Voreinstellung (Ja)";
 
 /* alert action
-   swipe action */
+swipe action */
 "Delete" = "Löschen";
 
 /* No comment provided by engineer. */
@@ -1881,7 +1876,7 @@
 "Downgrade and open chat" = "Datenbank herabstufen und den Chat öffnen";
 
 /* alert button
-   chat item action */
+chat item action */
 "Download" = "Herunterladen";
 
 /* No comment provided by engineer. */
@@ -1943,9 +1938,6 @@
 
 /* No comment provided by engineer. */
 "Enable camera access" = "Kamera-Zugriff aktivieren";
-
-/* No comment provided by engineer. */
-"Enable Flux" = "Flux aktivieren";
 
 /* No comment provided by engineer. */
 "Enable for all" = "Für Alle aktivieren";
@@ -2224,7 +2216,7 @@
 "Error opening chat" = "Fehler beim Öffnen des Chats";
 
 /* alert title */
-"Error receiving file" = "Fehler beim Empfangen der Datei";
+"Error receiving file" = "Fehler beim Herunterladen der Datei";
 
 /* No comment provided by engineer. */
 "Error reconnecting server" = "Fehler beim Wiederherstellen der Verbindung zum Server";
@@ -2325,7 +2317,9 @@
 /* No comment provided by engineer. */
 "Error: " = "Fehler: ";
 
-/* alert message */
+/* alert message
+file error text
+snd error text */
 "Error: %@" = "Fehler: %@";
 
 /* No comment provided by engineer. */
@@ -2342,9 +2336,6 @@
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "Auch wenn sie im Chat deaktiviert sind.";
-
-/* No comment provided by engineer. */
-"event happened" = "event happened";
 
 /* No comment provided by engineer. */
 "Exit without saving" = "Beenden ohne Speichern";
@@ -2422,10 +2413,10 @@
 "File will be deleted from servers." = "Die Datei wird von den Servern gelöscht.";
 
 /* No comment provided by engineer. */
-"File will be received when your contact completes uploading it." = "Die Datei wird empfangen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.";
+"File will be received when your contact completes uploading it." = "Die Datei wird heruntergeladen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.";
 
 /* No comment provided by engineer. */
-"File will be received when your contact is online, please wait or check later!" = "Die Datei wird empfangen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später nochmal nach!";
+"File will be received when your contact is online, please wait or check later!" = "Die Datei wird heruntergeladen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später nochmal nach!";
 
 /* No comment provided by engineer. */
 "File: %@" = "Datei: %@";
@@ -2483,9 +2474,6 @@
 
 /* No comment provided by engineer. */
 "For all moderators" = "Für alle Moderatoren";
-
-/* No comment provided by engineer. */
-"for better metadata privacy." = "für einen besseren Metadatenschutz.";
 
 /* servers error */
 "For chat profile %@:" = "Für das Chat-Profil %@:";
@@ -2728,10 +2716,10 @@
 "Ignore" = "Ignorieren";
 
 /* No comment provided by engineer. */
-"Image will be received when your contact completes uploading it." = "Das Bild wird empfangen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.";
+"Image will be received when your contact completes uploading it." = "Das Bild wird heruntergeladen, sobald das Hochladen durch ihren Kontakt abgeschlossen ist.";
 
 /* No comment provided by engineer. */
-"Image will be received when your contact is online, please wait or check later!" = "Das Bild wird empfangen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später nochmal nach!";
+"Image will be received when your contact is online, please wait or check later!" = "Das Bild wird heruntergeladen, sobald Ihr Kontakt online ist. Bitte warten oder schauen Sie später nochmal nach!";
 
 /* No comment provided by engineer. */
 "Immediately" = "Sofort";
@@ -3529,13 +3517,13 @@
 "No push server" = "Lokal";
 
 /* No comment provided by engineer. */
-"No received or sent files" = "Keine empfangenen oder gesendeten Dateien";
+"No received or sent files" = "Keine herunter- oder hochgeladene Dateien";
 
 /* servers error */
 "No servers for private message routing." = "Keine Server für privates Nachrichten-Routing.";
 
 /* servers error */
-"No servers to receive files." = "Keine Server für den Empfang von Dateien.";
+"No servers to receive files." = "Keine Server für das Herunterladen von Dateien.";
 
 /* servers error */
 "No servers to receive messages." = "Keine Server für den Empfang von Nachrichten.";
@@ -3589,8 +3577,8 @@
 "observer" = "Beobachter";
 
 /* enabled status
-   group pref value
-   time to disappear */
+group pref value
+time to disappear */
 "off" = "Aus";
 
 /* blur media */
@@ -4089,7 +4077,7 @@
 "Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Die Empfängeradresse wird auf einen anderen Server geändert. Der Adresswechsel wird abgeschlossen, wenn der Absender wieder online ist.";
 
 /* No comment provided by engineer. */
-"Receiving file will be stopped." = "Der Empfang der Datei wird beendet.";
+"Receiving file will be stopped." = "Das Herunterladen der Datei wird beendet.";
 
 /* No comment provided by engineer. */
 "Receiving via" = "Empfangen über";
@@ -4143,7 +4131,7 @@
 "Registered" = "Registriert";
 
 /* reject incoming call via notification
-   swipe action */
+swipe action */
 "Reject" = "Ablehnen";
 
 /* No comment provided by engineer. */
@@ -4312,9 +4300,6 @@
 "Review conditions" = "Nutzungsbedingungen einsehen";
 
 /* No comment provided by engineer. */
-"Review later" = "Später einsehen";
-
-/* No comment provided by engineer. */
 "Revoke" = "Widerrufen";
 
 /* cancel file action */
@@ -4330,13 +4315,13 @@
 "Run chat" = "Chat starten";
 
 /* No comment provided by engineer. */
-"Safely receive files" = "Dateien sicher empfangen";
+"Safely receive files" = "Dateien sicher herunterladen";
 
 /* No comment provided by engineer. */
 "Safer groups" = "Sicherere Gruppen";
 
 /* alert button
-   chat item action */
+chat item action */
 "Save" = "Speichern";
 
 /* alert button */
@@ -4712,7 +4697,7 @@
 "Shape profile images" = "Form der Profil-Bilder";
 
 /* alert action
-   chat item action */
+chat item action */
 "Share" = "Teilen";
 
 /* No comment provided by engineer. */
@@ -4878,7 +4863,7 @@
 "Somebody" = "Jemand";
 
 /* blocking reason
-   report reason */
+report reason */
 "Spam" = "Spam";
 
 /* No comment provided by engineer. */
@@ -4918,13 +4903,13 @@
 "Stop chat?" = "Chat beenden?";
 
 /* cancel file action */
-"Stop file" = "Datei beenden";
+"Stop file" = "Herunterladen beenden";
 
 /* No comment provided by engineer. */
-"Stop receiving file?" = "Den Empfang der Datei beenden?";
+"Stop receiving file?" = "Das Herunterladen der Datei beenden?";
 
 /* No comment provided by engineer. */
-"Stop sending file?" = "Das Senden der Datei beenden?";
+"Stop sending file?" = "Das Hochladen der Datei beenden?";
 
 /* alert action */
 "Stop sharing" = "Teilen beenden";
@@ -5110,9 +5095,6 @@
 "The same conditions will apply to operator **%@**." = "Dieselben Nutzungsbedingungen gelten auch für den Betreiber **%@**.";
 
 /* No comment provided by engineer. */
-"The same conditions will apply to operator(s): **%@**." = "Dieselben Nutzungsbedingungen gelten auch für den/die Betreiber: **%@**.";
-
-/* No comment provided by engineer. */
 "The second preset operator in the app!" = "Der zweite voreingestellte Netzwerk-Betreiber in der App!";
 
 /* No comment provided by engineer. */
@@ -5146,7 +5128,7 @@
 "They can be overridden in contact and group settings." = "Sie können in den Kontakteinstellungen überschrieben werden.";
 
 /* No comment provided by engineer. */
-"This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Es werden alle empfangenen und gesendeten Dateien und Medien gelöscht. Bilder mit niedriger Auflösung bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden!";
+"This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Es werden alle herunter- und hochgeladene Dateien und Medien gelöscht. Bilder mit niedriger Auflösung bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden!";
 
 /* No comment provided by engineer. */
 "This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." = "Es werden alle empfangenen und gesendeten Nachrichten, die über den ausgewählten Zeitraum hinaus gehen, gelöscht. Dieser Vorgang kann mehrere Minuten dauern. Diese Aktion kann nicht rückgängig gemacht werden!";
@@ -5551,10 +5533,10 @@
 "video call (not e2e encrypted)" = "Videoanruf (nicht E2E verschlüsselt)";
 
 /* No comment provided by engineer. */
-"Video will be received when your contact completes uploading it." = "Das Video wird empfangen, sobald Ihr Kontakt das Hochladen beendet hat.";
+"Video will be received when your contact completes uploading it." = "Das Video wird heruntergeladen, sobald Ihr Kontakt das Hochladen beendet hat.";
 
 /* No comment provided by engineer. */
-"Video will be received when your contact is online, please wait or check later!" = "Das Video wird empfangen, wenn Ihr Kontakt online ist. Bitte warten oder überprüfen Sie es später!";
+"Video will be received when your contact is online, please wait or check later!" = "Das Video wird heruntergeladen, sobald Ihr Kontakt online ist. Bitte warten oder überprüfen Sie es später!";
 
 /* No comment provided by engineer. */
 "Videos and files up to 1gb" = "Videos und Dateien bis zu 1GB";
@@ -5765,9 +5747,6 @@
 
 /* No comment provided by engineer. */
 "You can change it in Appearance settings." = "Kann von Ihnen in den Erscheinungsbild-Einstellungen geändert werden.";
-
-/* No comment provided by engineer. */
-"You can configure operators in Network & servers settings." = "Sie können die Betreiber in den Netzwerk- und Servereinstellungen konfigurieren.";
 
 /* No comment provided by engineer. */
 "You can configure servers via settings." = "Sie können die Server über die Einstellungen konfigurieren.";
@@ -6014,7 +5993,4 @@
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Ihre SimpleX-Adresse";
-
-/* No comment provided by engineer. */
-"Your SMP servers" = "Ihre SMP-Server";
 

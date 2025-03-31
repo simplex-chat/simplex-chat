@@ -182,7 +182,7 @@
 "0s" = "0s";
 
 /* delete after time
-   time interval */
+time interval */
 "1 day" = "1 päivä";
 
 /* time interval */
@@ -192,11 +192,11 @@
 "1 minute" = "1 minuutti";
 
 /* delete after time
-   time interval */
+time interval */
 "1 month" = "1 kuukausi";
 
 /* delete after time
-   time interval */
+time interval */
 "1 week" = "1 viikko";
 
 /* No comment provided by engineer. */
@@ -239,8 +239,8 @@
 "above, then choose:" = "edellä, valitse sitten:";
 
 /* accept contact request via notification
-   accept incoming call via notification
-   swipe action */
+accept incoming call via notification
+swipe action */
 "Accept" = "Hyväksy";
 
 /* No comment provided by engineer. */
@@ -250,7 +250,7 @@
 "Accept contact request from %@?" = "Hyväksy kontaktipyyntö %@:ltä?";
 
 /* accept contact request via notification
-   swipe action */
+swipe action */
 "Accept incognito" = "Hyväksy tuntematon";
 
 /* call status */
@@ -509,7 +509,7 @@
 "Can't invite contacts!" = "Kontakteja ei voi kutsua!";
 
 /* alert action
-   alert button */
+alert button */
 "Cancel" = "Peruuta";
 
 /* feature offered item */
@@ -549,7 +549,7 @@
 "Change self-destruct mode" = "Vaihda itsetuhotilaa";
 
 /* authentication reason
-   set passcode view */
+set passcode view */
 "Change self-destruct passcode" = "Vaihda itsetuhoutuva pääsykoodi";
 
 /* chat item text */
@@ -868,7 +868,7 @@
 "Decryption error" = "Salauksen purkuvirhe";
 
 /* delete after time
-   pref value */
+pref value */
 "default (%@)" = "oletusarvo (%@)";
 
 /* No comment provided by engineer. */
@@ -878,7 +878,7 @@
 "default (yes)" = "oletusarvo (kyllä)";
 
 /* alert action
-   swipe action */
+swipe action */
 "Delete" = "Poista";
 
 /* No comment provided by engineer. */
@@ -1358,7 +1358,9 @@
 /* No comment provided by engineer. */
 "Error: " = "Virhe: ";
 
-/* alert message */
+/* alert message
+file error text
+snd error text */
 "Error: %@" = "Virhe: %@";
 
 /* No comment provided by engineer. */
@@ -1369,9 +1371,6 @@
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "Jopa kun ei käytössä keskustelussa.";
-
-/* No comment provided by engineer. */
-"event happened" = "tapahtuma tapahtui";
 
 /* No comment provided by engineer. */
 "Exit without saving" = "Poistu tallentamatta";
@@ -2076,8 +2075,8 @@
 "observer" = "tarkkailija";
 
 /* enabled status
-   group pref value
-   time to disappear */
+group pref value
+time to disappear */
 "off" = "pois";
 
 /* blur media */
@@ -2381,7 +2380,7 @@
 "Reduced battery usage" = "Pienempi akun käyttö";
 
 /* reject incoming call via notification
-   swipe action */
+swipe action */
 "Reject" = "Hylkää";
 
 /* No comment provided by engineer. */
@@ -2481,7 +2480,7 @@
 "Run chat" = "Käynnistä chat";
 
 /* alert button
-   chat item action */
+chat item action */
 "Save" = "Tallenna";
 
 /* alert button */
@@ -2689,7 +2688,7 @@
 "Settings" = "Asetukset";
 
 /* alert action
-   chat item action */
+chat item action */
 "Share" = "Jaa";
 
 /* No comment provided by engineer. */
@@ -3405,7 +3404,4 @@
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "SimpleX-osoitteesi";
-
-/* No comment provided by engineer. */
-"Your SMP servers" = "SMP-palvelimesi";
 

@@ -266,7 +266,7 @@
 "0s" = "0с";
 
 /* delete after time
-   time interval */
+time interval */
 "1 day" = "1 день";
 
 /* time interval */
@@ -276,11 +276,11 @@
 "1 minute" = "1 хвилина";
 
 /* delete after time
-   time interval */
+time interval */
 "1 month" = "1 місяць";
 
 /* delete after time
-   time interval */
+time interval */
 "1 week" = "1 тиждень";
 
 /* No comment provided by engineer. */
@@ -335,8 +335,8 @@
 "Accent" = "Акцент";
 
 /* accept contact request via notification
-   accept incoming call via notification
-   swipe action */
+accept incoming call via notification
+swipe action */
 "Accept" = "Прийняти";
 
 /* No comment provided by engineer. */
@@ -349,7 +349,7 @@
 "Accept contact request from %@?" = "Прийняти запит на контакт від %@?";
 
 /* accept contact request via notification
-   swipe action */
+swipe action */
 "Accept incognito" = "Прийняти інкогніто";
 
 /* call status */
@@ -754,7 +754,8 @@
 /* rcv group event chat item */
 "blocked %@" = "заблоковано %@";
 
-/* marked deleted chat item preview text */
+/* blocked chat item
+marked deleted chat item preview text */
 "blocked by admin" = "заблоковано адміністратором";
 
 /* No comment provided by engineer. */
@@ -836,7 +837,7 @@
 "Can't message member" = "Не можу надіслати повідомлення користувачеві";
 
 /* alert action
-   alert button */
+alert button */
 "Cancel" = "Скасувати";
 
 /* No comment provided by engineer. */
@@ -891,7 +892,7 @@
 "Change self-destruct mode" = "Змінити режим самознищення";
 
 /* authentication reason
-   set passcode view */
+set passcode view */
 "Change self-destruct passcode" = "Змінити пароль самознищення";
 
 /* chat item text */
@@ -1049,12 +1050,6 @@
 
 /* No comment provided by engineer. */
 "Conditions of use" = "Умови використання";
-
-/* No comment provided by engineer. */
-"Conditions will be accepted for enabled operators after 30 days." = "Умови будуть прийняті для ввімкнених операторів через 30 днів.";
-
-/* No comment provided by engineer. */
-"Conditions will be accepted for operator(s): **%@**." = "Умови приймаються для оператора(ів): **%@**.";
 
 /* No comment provided by engineer. */
 "Conditions will be accepted for the operator(s): **%@**." = "Для оператора(ів) приймаються умови: **%@**.";
@@ -1456,7 +1451,7 @@
 "decryption errors" = "помилки розшифровки";
 
 /* delete after time
-   pref value */
+pref value */
 "default (%@)" = "за замовчуванням (%@)";
 
 /* No comment provided by engineer. */
@@ -1466,7 +1461,7 @@
 "default (yes)" = "за замовчуванням (так)";
 
 /* alert action
-   swipe action */
+swipe action */
 "Delete" = "Видалити";
 
 /* No comment provided by engineer. */
@@ -1758,7 +1753,7 @@
 "Downgrade and open chat" = "Пониження та відкритий чат";
 
 /* alert button
-   chat item action */
+chat item action */
 "Download" = "Завантажити";
 
 /* No comment provided by engineer. */
@@ -1820,9 +1815,6 @@
 
 /* No comment provided by engineer. */
 "Enable camera access" = "Увімкніть доступ до камери";
-
-/* No comment provided by engineer. */
-"Enable Flux" = "Увімкнути Flux";
 
 /* No comment provided by engineer. */
 "Enable for all" = "Увімкнути для всіх";
@@ -2178,7 +2170,9 @@
 /* No comment provided by engineer. */
 "Error: " = "Помилка: ";
 
-/* alert message */
+/* alert message
+file error text
+snd error text */
 "Error: %@" = "Помилка: %@";
 
 /* No comment provided by engineer. */
@@ -2195,9 +2189,6 @@
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "Навіть коли вимкнений у розмові.";
-
-/* No comment provided by engineer. */
-"event happened" = "відбулася подія";
 
 /* No comment provided by engineer. */
 "Exit without saving" = "Вихід без збереження";
@@ -2318,9 +2309,6 @@
 
 /* No comment provided by engineer. */
 "Fix not supported by group member" = "Виправлення не підтримується учасником групи";
-
-/* No comment provided by engineer. */
-"for better metadata privacy." = "для кращої конфіденційності метаданих.";
 
 /* servers error */
 "For chat profile %@:" = "Для профілю чату %@:";
@@ -3328,8 +3316,8 @@
 "observer" = "спостерігач";
 
 /* enabled status
-   group pref value
-   time to disappear */
+group pref value
+time to disappear */
 "off" = "вимкнено";
 
 /* blur media */
@@ -3834,7 +3822,7 @@
 "Reduced battery usage" = "Зменшення використання акумулятора";
 
 /* reject incoming call via notification
-   swipe action */
+swipe action */
 "Reject" = "Відхилити";
 
 /* No comment provided by engineer. */
@@ -3970,9 +3958,6 @@
 "Review conditions" = "Умови перегляду";
 
 /* No comment provided by engineer. */
-"Review later" = "Перегляньте пізніше";
-
-/* No comment provided by engineer. */
 "Revoke" = "Відкликати";
 
 /* cancel file action */
@@ -3994,7 +3979,7 @@
 "Safer groups" = "Безпечніші групи";
 
 /* alert button
-   chat item action */
+chat item action */
 "Save" = "Зберегти";
 
 /* alert button */
@@ -4358,7 +4343,7 @@
 "Shape profile images" = "Сформуйте зображення профілю";
 
 /* alert action
-   chat item action */
+chat item action */
 "Share" = "Поділіться";
 
 /* No comment provided by engineer. */
@@ -4741,9 +4726,6 @@
 
 /* No comment provided by engineer. */
 "The same conditions will apply to operator **%@**." = "Такі ж умови діятимуть і для оператора **%@**.";
-
-/* No comment provided by engineer. */
-"The same conditions will apply to operator(s): **%@**." = "Такі ж умови будуть застосовуватися до оператора(ів): **%@**.";
 
 /* No comment provided by engineer. */
 "The second preset operator in the app!" = "Другий попередньо встановлений оператор у застосунку!";
@@ -5379,9 +5361,6 @@
 "You can change it in Appearance settings." = "Ви можете змінити його в налаштуваннях зовнішнього вигляду.";
 
 /* No comment provided by engineer. */
-"You can configure operators in Network & servers settings." = "Ви можете налаштувати операторів у налаштуваннях Мережі та серверів.";
-
-/* No comment provided by engineer. */
 "You can configure servers via settings." = "Ви можете налаштувати сервери за допомогою налаштувань.";
 
 /* No comment provided by engineer. */
@@ -5623,7 +5602,4 @@
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Ваша адреса SimpleX";
-
-/* No comment provided by engineer. */
-"Your SMP servers" = "Ваші SMP-сервери";
 

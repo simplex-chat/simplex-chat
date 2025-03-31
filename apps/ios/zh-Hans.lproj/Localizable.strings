@@ -122,6 +122,12 @@
 "%@ is verified" = "%@ 已认证";
 
 /* No comment provided by engineer. */
+"%@ server" = "服务器";
+
+/* No comment provided by engineer. */
+"%@ servers" = "服务器";
+
+/* No comment provided by engineer. */
 "%@ uploaded" = "%@ 已上传";
 
 /* notification title */
@@ -239,7 +245,7 @@
 "0s" = "0秒";
 
 /* delete after time
-   time interval */
+time interval */
 "1 day" = "1天";
 
 /* time interval */
@@ -249,11 +255,11 @@
 "1 minute" = "1分钟";
 
 /* delete after time
-   time interval */
+time interval */
 "1 month" = "1月";
 
 /* delete after time
-   time interval */
+time interval */
 "1 week" = "1周";
 
 /* No comment provided by engineer. */
@@ -299,8 +305,8 @@
 "Accent" = "强调";
 
 /* accept contact request via notification
-   accept incoming call via notification
-   swipe action */
+accept incoming call via notification
+swipe action */
 "Accept" = "接受";
 
 /* No comment provided by engineer. */
@@ -310,7 +316,7 @@
 "Accept contact request from %@?" = "接受来自 %@ 的联系人请求？";
 
 /* accept contact request via notification
-   swipe action */
+swipe action */
 "Accept incognito" = "接受隐身聊天";
 
 /* call status */
@@ -664,7 +670,8 @@
 /* rcv group event chat item */
 "blocked %@" = "已封禁 %@";
 
-/* marked deleted chat item preview text */
+/* blocked chat item
+marked deleted chat item preview text */
 "blocked by admin" = "由管理员封禁";
 
 /* No comment provided by engineer. */
@@ -740,7 +747,7 @@
 "Can't message member" = "无法向成员发送消息";
 
 /* alert action
-   alert button */
+alert button */
 "Cancel" = "取消";
 
 /* No comment provided by engineer. */
@@ -792,7 +799,7 @@
 "Change self-destruct mode" = "更改自毁模式";
 
 /* authentication reason
-   set passcode view */
+set passcode view */
 "Change self-destruct passcode" = "更改自毁密码";
 
 /* chat item text */
@@ -1291,7 +1298,7 @@
 "decryption errors" = "解密错误";
 
 /* delete after time
-   pref value */
+pref value */
 "default (%@)" = "默认 (%@)";
 
 /* No comment provided by engineer. */
@@ -1301,7 +1308,7 @@
 "default (yes)" = "默认 (是)";
 
 /* alert action
-   swipe action */
+swipe action */
 "Delete" = "删除";
 
 /* No comment provided by engineer. */
@@ -1575,7 +1582,7 @@
 "Downgrade and open chat" = "降级并打开聊天";
 
 /* alert button
-   chat item action */
+chat item action */
 "Download" = "下载";
 
 /* No comment provided by engineer. */
@@ -1959,7 +1966,9 @@
 /* No comment provided by engineer. */
 "Error: " = "错误： ";
 
-/* alert message */
+/* alert message
+file error text
+snd error text */
 "Error: %@" = "错误： ％@";
 
 /* No comment provided by engineer. */
@@ -1973,9 +1982,6 @@
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "即使在对话中被禁用。";
-
-/* No comment provided by engineer. */
-"event happened" = "发生的事";
 
 /* No comment provided by engineer. */
 "Exit without saving" = "退出而不保存";
@@ -2989,8 +2995,8 @@
 "observer" = "观察者";
 
 /* enabled status
-   group pref value
-   time to disappear */
+group pref value
+time to disappear */
 "off" = "关闭";
 
 /* blur media */
@@ -3456,7 +3462,7 @@
 "Reduced battery usage" = "减少电池使用量";
 
 /* reject incoming call via notification
-   swipe action */
+swipe action */
 "Reject" = "拒绝";
 
 /* No comment provided by engineer. */
@@ -3604,7 +3610,7 @@
 "Safer groups" = "更安全的群组";
 
 /* alert button
-   chat item action */
+chat item action */
 "Save" = "保存";
 
 /* alert button */
@@ -3941,7 +3947,7 @@
 "Shape profile images" = "改变个人资料图形状";
 
 /* alert action
-   chat item action */
+chat item action */
 "Share" = "分享";
 
 /* No comment provided by engineer. */
@@ -5059,7 +5065,4 @@
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "您的 SimpleX 地址";
-
-/* No comment provided by engineer. */
-"Your SMP servers" = "您的 SMP 服务器";
 
