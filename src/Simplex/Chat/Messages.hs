@@ -118,6 +118,12 @@ toChatScope :: GroupChatScopeInfo -> GroupChatScope
 toChatScope = \case
   GCSIMemberSupport {groupMember_} -> GCSMemberSupport $ groupMemberId' <$> groupMember_
 
+toMsgScope :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgScope
+toMsgScope GroupInfo {membership} = \case
+  Nothing -> Nothing
+  Just GCSIMemberSupport {groupMember_ = Nothing} -> Just $ MSMember (memberId' membership)
+  Just GCSIMemberSupport {groupMember_ = Just m} -> Just $ MSMember (memberId' m)
+
 chatInfoToRef :: ChatInfo c -> ChatRef
 chatInfoToRef = \case
   DirectChat Contact {contactId} -> ChatRef CTDirect contactId Nothing
