@@ -914,7 +914,7 @@ data SendRef
 sendToChatRef :: SendRef -> ChatRef
 sendToChatRef = \case
   SRDirect cId -> ChatRef CTDirect cId Nothing
-  SRGroup gId gcs -> ChatRef CTGroup gId gcs
+  SRGroup gId scope -> ChatRef CTGroup gId scope
 
 data ChatPagination
   = CPLast Int

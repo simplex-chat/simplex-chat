@@ -792,7 +792,7 @@ processChatCommand' vr = \case
       liftIO $ getReactionMembers db vr user groupId itemSharedMId reaction
     pure $ CRReactionMembers user memberReactions
   -- TODO [knocking] forward from scope?
-  APIPlanForwardChatItems (ChatRef fromCType fromChatId _gcs) itemIds -> withUser $ \user -> case fromCType of
+  APIPlanForwardChatItems (ChatRef fromCType fromChatId _scope) itemIds -> withUser $ \user -> case fromCType of
     CTDirect -> planForward user . snd =<< getCommandDirectChatItems user fromChatId itemIds
     CTGroup -> planForward user . snd =<< getCommandGroupChatItems user fromChatId itemIds
     CTLocal -> planForward user . snd =<< getCommandLocalChatItems user fromChatId itemIds
@@ -2723,13 +2723,13 @@ processChatCommand' vr = \case
       withFastStore' $ \db -> setConnectionVerified db user connId Nothing
       pure $ CRConnectionVerified user False code'
     getSentChatItemIdByText :: User -> ChatRef -> Text -> CM Int64
-    getSentChatItemIdByText user@User {userId, localDisplayName} (ChatRef cType cId _gcs) msg = case cType of
+    getSentChatItemIdByText user@User {userId, localDisplayName} (ChatRef cType cId _scope) msg = case cType of
       CTDirect -> withFastStore $ \db -> getDirectChatItemIdByText db userId cId SMDSnd msg
       CTGroup -> withFastStore $ \db -> getGroupChatItemIdByText db user cId (Just localDisplayName) msg
       CTLocal -> withFastStore $ \db -> getLocalChatItemIdByText db user cId SMDSnd msg
       _ -> throwChatError $ CECommandError "not supported"
     getChatItemIdByText :: User -> ChatRef -> Text -> CM Int64
-    getChatItemIdByText user (ChatRef cType cId _gcs) msg = case cType of
+    getChatItemIdByText user (ChatRef cType cId _scope) msg = case cType of
       CTDirect -> withFastStore $ \db -> getDirectChatItemIdByText' db user cId msg
       CTGroup -> withFastStore $ \db -> getGroupChatItemIdByText' db user cId msg
       CTLocal -> withFastStore $ \db -> getLocalChatItemIdByText' db user cId msg

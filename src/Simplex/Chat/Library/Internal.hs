@@ -551,8 +551,8 @@ markGroupMemberCIsDeleted_ db user gInfo member byGroupMember deletedTs = do
 groupDeletion :: MsgDirectionI d => SMsgDirection d -> GroupInfo -> ChatItem 'CTGroup d -> Maybe (ChatItem 'CTGroup d) -> ChatItemDeletion
 groupDeletion md g ci ci' = ChatItemDeletion (gItem ci) (gItem <$> ci')
   where
-    gcsi = groupCIDirectionScopeInfo ci
-    gItem = AChatItem SCTGroup md (GroupChat g gcsi)
+    scopeInfo = groupCIDirectionScopeInfo ci
+    gItem = AChatItem SCTGroup md (GroupChat g scopeInfo)
 
 contactDeletion :: MsgDirectionI d => SMsgDirection d -> Contact -> ChatItem 'CTDirect d -> Maybe (ChatItem 'CTDirect d) -> ChatItemDeletion
 contactDeletion md ct ci ci' = ChatItemDeletion (ctItem ci) (ctItem <$> ci')
@@ -1674,7 +1674,7 @@ sendGroupMessage' user gInfo members chatMsgEvent =
     _ -> throwChatError $ CEInternalError "sendGroupMessage': expected 1 message"
 
 sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
-sendGroupMessages user gInfo gcs members events = do
+sendGroupMessages user gInfo scope members events = do
   -- TODO [knocking] send current profile to pending member after approval?
   when shouldSendProfileUpdate $
     sendProfileUpdate `catchChatError` (toView . CRChatError (Just user))
@@ -1683,7 +1683,7 @@ sendGroupMessages user gInfo gcs members events = do
     User {profile = p, userMemberProfileUpdatedAt} = user
     GroupInfo {userMemberProfileSentAt} = gInfo
     shouldSendProfileUpdate
-      | isJust gcs = False -- why not sending profile updates to scopes?
+      | isJust scope = False -- why not sending profile updates to scopes?
       | incognitoMembership gInfo = False
       | otherwise =
           case (userMemberProfileSentAt, userMemberProfileUpdatedAt) of

@@ -242,8 +242,8 @@ data ACIDirection = forall c d. (ChatTypeI c, MsgDirectionI d) => ACID (SChatTyp
 data JSONCIDirection
   = JCIDirectSnd
   | JCIDirectRcv
-  | JCIGroupSnd {groupChatScopeInfo :: Maybe GroupChatScopeInfo}
-  | JCIGroupRcv {groupChatScopeInfo :: Maybe GroupChatScopeInfo, groupMember :: GroupMember}
+  | JCIGroupSnd {chatScopeInfo :: Maybe GroupChatScopeInfo}
+  | JCIGroupRcv {chatScopeInfo :: Maybe GroupChatScopeInfo, groupMember :: GroupMember}
   | JCILocalSnd
   | JCILocalRcv
   deriving (Show)
