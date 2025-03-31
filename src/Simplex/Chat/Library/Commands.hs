@@ -2188,14 +2188,14 @@ processChatCommand' vr = \case
       let recipients = filter memberCurrent members
       (errs2, deleted2, acis2) <- deleteMemsSend user gInfo Nothing recipients currentMems
       rs3 <- forM pendingApprvMems $ \m -> do
-        chatScope <- liftIO $ Just <$> memberSupportGCSI m (Just m)
+        chatScope <- liftIO $ Just <$> memberSupportScopeInfo m (Just m)
         deleteMemsSend user gInfo chatScope [m] [m]
       rs4 <-
         if not (null pendingRvwMems)
           then do
             let moderators = filter (\GroupMember {memberRole} -> memberRole >= GRModerator) members
             forM pendingRvwMems $ \m -> do
-              chatScope <- liftIO $ Just <$> memberSupportGCSI m (Just m)
+              chatScope <- liftIO $ Just <$> memberSupportScopeInfo m (Just m)
               deleteMemsSend user gInfo chatScope (m : moderators) [m]
           else pure []
       let (errs3, deleted3, acis3) = concatTuples rs3
@@ -2267,7 +2267,7 @@ processChatCommand' vr = \case
       cancelFilesInProgress user filesInfo
       let recipients = filter memberCurrentOrPending members
       msg <- sendGroupMessage' user gInfo recipients XGrpLeave
-      chatScope <- liftIO $ getLocalGCSI gInfo
+      chatScope <- liftIO $ getLocalMessageScope gInfo
       ci <- saveSndChatItem user (CDGroupSnd gInfo chatScope) msg (CISndGroupEvent SGEUserLeft)
       toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScope) ci]
       -- TODO delete direct connections that were unused
@@ -3475,7 +3475,7 @@ getGCSDependencies vr user gInfo@GroupInfo {membership} scope modsCompatVersion 
     pure (Nothing, Nothing, recipients, length recipients)
   Just (GCSMemberSupport gmId_) -> case gmId_ of
     Nothing -> do
-      chatScope <- liftIO $ memberSupportGCSI membership Nothing
+      chatScope <- liftIO $ memberSupportScopeInfo membership Nothing
       modMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
       let rcpModMs' = filter (\m -> compatible m && memberCurrent m) modMs
       when (null rcpModMs') $ throwChatError $ CECommandError "no admins support this message"
@@ -3484,7 +3484,7 @@ getGCSDependencies vr user gInfo@GroupInfo {membership} scope modsCompatVersion 
       unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
       supportMem <- withFastStore $ \db -> getGroupMemberById db vr user gmId
       unless (memberCurrentOrPending supportMem) $ throwChatError $ CECommandError "support member not current or pending"
-      chatScope <- liftIO $ memberSupportGCSI supportMem (Just supportMem)
+      chatScope <- liftIO $ memberSupportScopeInfo supportMem (Just supportMem)
       if memberStatus supportMem == GSMemPendingApproval
         then pure (Just chatScope, Just $ MSMember (memberId' supportMem), [supportMem], 1)
         else do

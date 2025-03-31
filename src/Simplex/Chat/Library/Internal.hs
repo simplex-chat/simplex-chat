@@ -1288,26 +1288,26 @@ parseChatMessage conn s = do
     errType = CEInvalidChatMessage conn Nothing (safeDecodeUtf8 s)
 {-# INLINE parseChatMessage #-}
 
-getLocalGCSI :: GroupInfo -> IO (Maybe GroupChatScopeInfo)
-getLocalGCSI GroupInfo {membership}
-  | memberPending membership = Just <$> memberSupportGCSI membership Nothing
+getLocalMessageScope :: GroupInfo -> IO (Maybe GroupChatScopeInfo)
+getLocalMessageScope GroupInfo {membership}
+  | memberPending membership = Just <$> memberSupportScopeInfo membership Nothing
   | otherwise = pure Nothing
 
 getMemberMessageScope :: GroupInfo -> GroupMember -> IO (Maybe GroupChatScopeInfo)
 getMemberMessageScope GroupInfo {membership} m
-  | memberPending membership = Just <$> memberSupportGCSI membership Nothing
-  | memberPending m = Just <$> memberSupportGCSI m (Just m)
+  | memberPending membership = Just <$> memberSupportScopeInfo membership Nothing
+  | memberPending m = Just <$> memberSupportScopeInfo m (Just m)
   | otherwise = pure Nothing
 
 -- convenience function to correct GCSIMemberSupport `scope` state (to be passed to UI)
 -- in case "member support chat" is new and wasn't present in member/membership state
-memberSupportGCSI :: GroupMember -> Maybe GroupMember -> IO GroupChatScopeInfo
-memberSupportGCSI GroupMember {supportChat} gcsiGroupMember_ = case supportChat of
+memberSupportScopeInfo :: GroupMember -> Maybe GroupMember -> IO GroupChatScopeInfo
+memberSupportScopeInfo GroupMember {supportChat} scopeGroupMember_ = case supportChat of
   Just GroupMemberSupportChat {chatTs, unanswered} ->
-    pure GCSIMemberSupport {groupMember_ = gcsiGroupMember_, chatTs, unanswered}
+    pure GCSIMemberSupport {groupMember_ = scopeGroupMember_, chatTs, unanswered}
   Nothing -> do
     chatTs <- getCurrentTime
-    pure GCSIMemberSupport {groupMember_ = gcsiGroupMember_, chatTs, unanswered = True}
+    pure GCSIMemberSupport {groupMember_ = scopeGroupMember_, chatTs, unanswered = True}
 
 sendFileChunk :: User -> SndFileTransfer -> CM ()
 sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentConnId acId} =

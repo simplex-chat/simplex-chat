@@ -1702,10 +1702,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         Nothing -> case msgScope_ of
           Nothing -> pure Nothing
           Just (MSMember mId)
-            | sameMemberId mId membership -> liftIO $ Just <$> memberSupportGCSI membership Nothing
+            | sameMemberId mId membership -> liftIO $ Just <$> memberSupportScopeInfo membership Nothing
             | otherwise -> do
                 referredMember <- withStore $ \db -> getGroupMemberByMemberId db vr user gInfo mId
-                liftIO $ Just <$> memberSupportGCSI referredMember (Just referredMember)
+                liftIO $ Just <$> memberSupportScopeInfo referredMember (Just referredMember)
 
     groupMessageUpdate :: GroupInfo -> GroupMember -> SharedMsgId -> MsgContent -> Map MemberName MsgMention -> Maybe MsgScope -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> CM ()
     groupMessageUpdate gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId, memberId} sharedMsgId mc mentions msgScope_ msg@RcvMessage {msgId} brokerTs ttl_ live_
@@ -2479,7 +2479,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           groupMsgToView gInfo ci
           toView $ CRJoinedGroupMemberConnecting user gInfo m announcedMember
         getMemNewGCSI announcedMember = forM msgScope_ $ \case
-          MSMember _ -> memberSupportGCSI announcedMember (Just announcedMember)
+          MSMember _ -> memberSupportScopeInfo announcedMember (Just announcedMember)
 
     xGrpMemIntro :: GroupInfo -> GroupMember -> MemberInfo -> Maybe MemberRestrictions -> CM ()
     xGrpMemIntro gInfo@GroupInfo {chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memChatVRange _) memRestrictions = do
