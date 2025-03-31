@@ -1563,7 +1563,7 @@ processChatCommand' vr = \case
     case memberConnId m of
       Just connId -> do
         cStats@ConnectionStats {ratchetSyncState = rss} <- withAgent $ \a -> synchronizeRatchet a connId PQSupportOff force
-        chatScope <- liftIO $ getMemberMessageScope g m
+        chatScope <- liftIO $ getMemberChatScope g m
         createInternalChatItem user (CDGroupSnd g chatScope) (CISndConnEvent . SCERatchetSync rss . Just $ groupMemberRef m) Nothing
         pure $ CRGroupMemberRatchetSyncStarted user g m cStats
       _ -> throwChatError CEGroupMemberNotActive
@@ -2267,7 +2267,7 @@ processChatCommand' vr = \case
       cancelFilesInProgress user filesInfo
       let recipients = filter memberCurrentOrPending members
       msg <- sendGroupMessage' user gInfo recipients XGrpLeave
-      chatScope <- liftIO $ getLocalMessageScope gInfo
+      chatScope <- liftIO $ getLocalGroupChatScope gInfo
       ci <- saveSndChatItem user (CDGroupSnd gInfo chatScope) msg (CISndGroupEvent SGEUserLeft)
       toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScope) ci]
       -- TODO delete direct connections that were unused

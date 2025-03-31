@@ -1288,13 +1288,13 @@ parseChatMessage conn s = do
     errType = CEInvalidChatMessage conn Nothing (safeDecodeUtf8 s)
 {-# INLINE parseChatMessage #-}
 
-getLocalMessageScope :: GroupInfo -> IO (Maybe GroupChatScopeInfo)
-getLocalMessageScope GroupInfo {membership}
+getLocalGroupChatScope :: GroupInfo -> IO (Maybe GroupChatScopeInfo)
+getLocalGroupChatScope GroupInfo {membership}
   | memberPending membership = Just <$> memberSupportScopeInfo membership Nothing
   | otherwise = pure Nothing
 
-getMemberMessageScope :: GroupInfo -> GroupMember -> IO (Maybe GroupChatScopeInfo)
-getMemberMessageScope GroupInfo {membership} m
+getMemberChatScope :: GroupInfo -> GroupMember -> IO (Maybe GroupChatScopeInfo)
+getMemberChatScope GroupInfo {membership} m
   | memberPending membership = Just <$> memberSupportScopeInfo membership Nothing
   | memberPending m = Just <$> memberSupportScopeInfo m (Just m)
   | otherwise = pure Nothing
