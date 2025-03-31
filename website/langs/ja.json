@@ -246,13 +246,15 @@
     "simplex-private-5-title": "何レイヤーもの<br>コンテンツパディング",
     "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a>は、大手ハイテク企業、政府機関、主要なブロックチェーン・プロジェクトなどを顧客に持つ、セキュリティとテクノロジーの大手コンサルタント会社です。",
     "jobs": "チームに参加する",
-    "hero-overlay-3-textlink": "セキュリティ監査",
-    "hero-overlay-3-title": "セキュリティ監査",
+    "hero-overlay-3-textlink": "セキュリティ評価",
+    "hero-overlay-3-title": "セキュリティ評価",
     "hero-overlay-card-3-p-2": "Trail of Bitsは2022年11月にSimpleXプラットフォームの暗号とネットワークのコンポーネントを検証しました。<a href=\"/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html\">詳しくは お知らせをご覧ください。</a>",
     "docs-dropdown-9": "ダウンロード",
     "please-enable-javascript": "QRコードを表示するためにJavaScriptを有効にしてください。",
     "please-use-link-in-mobile-app": "このリンクをモバイルアプリで使用してください",
     "docs-dropdown-10": "透明性",
     "docs-dropdown-11": "よくある質問",
-    "docs-dropdown-12": "セキュリティ"
+    "docs-dropdown-12": "セキュリティ",
+    "docs-dropdown-14": "ビジネス向けSimpleX",
+    "hero-overlay-card-3-p-3": "Trail of Bits は 2024 年 7 月に SimpleX ネットワーク プロトコルの暗号設計をレビューしました。"
 }
