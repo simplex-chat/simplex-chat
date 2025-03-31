@@ -6972,13 +6972,13 @@ testScopedSupportManyAdmins =
     bob <# "#team dan> <<support>> 5"
 
     alice #$> ("/_get chat #1 count=3", chat, [(0, "connected"), (1, "1"), (0, "2")])
-    alice #$> ("/_get chat #1 group_chat_scope=@support-2 count=100", chat, [(1, "3"), (0, "4"), (0, "5")])
+    alice #$> ("/_get chat #1 @support-2 count=100", chat, [(1, "3"), (0, "4"), (0, "5")])
     bob #$> ("/_get chat #1 count=3", chat, [(0, "connected"), (0, "1"), (1, "2")])
-    bob #$> ("/_get chat #1 group_chat_scope=@support count=100", chat, [(0, "3"), (1, "4"), (0, "5")])
+    bob #$> ("/_get chat #1 @support count=100", chat, [(0, "3"), (1, "4"), (0, "5")])
     dan #$> ("/_get chat #1 count=3", chat, [(0, "connected"), (0, "1"), (0, "2")])
-    dan #$> ("/_get chat #1 group_chat_scope=@support-3 count=100", chat, [(0, "3"), (0, "4"), (1, "5")])
+    dan #$> ("/_get chat #1 @support-3 count=100", chat, [(0, "3"), (0, "4"), (1, "5")])
     cath #$> ("/_get chat #1 count=3", chat, [(0, "connected"), (0, "1"), (0, "2")])
-    cath ##> "/_get chat #1 group_chat_scope=@support-3 count=100"
+    cath ##> "/_get chat #1 @support-3 count=100"
     cath <## "chat db error: SEInternalError {message = \"no support chat\"}"
 
     alice ##> "/_member support chats #1"
