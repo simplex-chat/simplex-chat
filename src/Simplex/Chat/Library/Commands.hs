@@ -1563,7 +1563,7 @@ processChatCommand' vr = \case
     case memberConnId m of
       Just connId -> do
         cStats@ConnectionStats {ratchetSyncState = rss} <- withAgent $ \a -> synchronizeRatchet a connId PQSupportOff force
-        chatScope <- liftIO $ getNonMsgGCSI g m
+        chatScope <- liftIO $ getMemberMessageScope g m
         createInternalChatItem user (CDGroupSnd g chatScope) (CISndConnEvent . SCERatchetSync rss . Just $ groupMemberRef m) Nothing
         pure $ CRGroupMemberRatchetSyncStarted user g m cStats
       _ -> throwChatError CEGroupMemberNotActive

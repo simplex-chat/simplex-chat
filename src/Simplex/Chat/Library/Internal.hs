@@ -1293,8 +1293,8 @@ getLocalGCSI GroupInfo {membership}
   | memberPending membership = Just <$> memberSupportGCSI membership Nothing
   | otherwise = pure Nothing
 
-getNonMsgGCSI :: GroupInfo -> GroupMember -> IO (Maybe GroupChatScopeInfo)
-getNonMsgGCSI GroupInfo {membership} m
+getMemberMessageScope :: GroupInfo -> GroupMember -> IO (Maybe GroupChatScopeInfo)
+getMemberMessageScope GroupInfo {membership} m
   | memberPending membership = Just <$> memberSupportGCSI membership Nothing
   | memberPending m = Just <$> memberSupportGCSI m (Just m)
   | otherwise = pure Nothing

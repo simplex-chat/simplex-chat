@@ -777,7 +777,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   else pure $ memberStatus membership
               pure (GSMemConnected, membershipStatus)
             toView $ CRUserJoinedGroup user gInfo {membership = membership {memberStatus = membershipStatus}} m {memberStatus = mStatus}
-            gcsi <- liftIO $ getNonMsgGCSI gInfo m
+            gcsi <- liftIO $ getMemberMessageScope gInfo m
             let cd = CDGroupRcv gInfo gcsi m
             createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
             createGroupFeatureItems user cd CIRcvGroupFeature gInfo
@@ -788,7 +788,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               if not (memberPending m)
                 then withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected $> GSMemConnected
                 else pure $ memberStatus m
-            gcsi <- liftIO $ getNonMsgGCSI gInfo m
+            gcsi <- liftIO $ getMemberMessageScope gInfo m
             memberConnectedChatItem gInfo gcsi m
             toView $ CRJoinedGroupMember user gInfo m {memberStatus = mStatus}
             let Connection {viaUserContactLink} = conn
@@ -843,7 +843,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         tags <- newTVarIO []
         withAckMessage "group msg" agentConnId msgMeta True (Just tags) $ \eInfo -> do
           -- possible improvement is to choose scope based on event (some events specify scope)
-          gcsi <- liftIO $ getNonMsgGCSI gInfo m
+          gcsi <- liftIO $ getMemberMessageScope gInfo m
           checkIntegrityCreateItem (CDGroupRcv gInfo gcsi m) msgMeta `catchChatError` \_ -> pure ()
           forM_ aChatMsgs $ \case
             Right (ACMsg _ chatMsg) ->
@@ -936,12 +936,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         when continued $ sendPendingGroupMessages user m conn
       SWITCH qd phase cStats -> do
         toView $ CRGroupMemberSwitch user gInfo m (SwitchProgress qd phase cStats)
-        gcsi <- liftIO $ getNonMsgGCSI gInfo m
+        gcsi <- liftIO $ getMemberMessageScope gInfo m
         when (phase == SPStarted || phase == SPCompleted) $ case qd of
           QDRcv -> createInternalChatItem user (CDGroupSnd gInfo gcsi) (CISndConnEvent . SCESwitchQueue phase . Just $ groupMemberRef m) Nothing
           QDSnd -> createInternalChatItem user (CDGroupRcv gInfo gcsi m) (CIRcvConnEvent $ RCESwitchQueue phase) Nothing
       RSYNC rss cryptoErr_ cStats -> do
-        gcsi <- liftIO $ getNonMsgGCSI gInfo m
+        gcsi <- liftIO $ getMemberMessageScope gInfo m
         case (rss, connectionCode, cryptoErr_) of
           (RSRequired, _, Just cryptoErr) -> processErr gcsi cryptoErr
           (RSAllowed, _, Just cryptoErr) -> processErr gcsi cryptoErr
@@ -1234,7 +1234,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                             | otherwise -> do
                                 let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
                                 mem <- acceptGroupJoinRequestAsync user gInfo cReq acceptance useRole profileMode
-                                gcsi <- liftIO $ getNonMsgGCSI gInfo mem
+                                gcsi <- liftIO $ getMemberMessageScope gInfo mem
                                 createInternalChatItem user (CDGroupRcv gInfo gcsi mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
                                 toView $ CRAcceptingGroupJoinRequestMember user gInfo mem
                           Left rjctReason
@@ -1379,7 +1379,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     notifyMemberConnected :: GroupInfo -> GroupMember -> Maybe Contact -> CM ()
     notifyMemberConnected gInfo m ct_ = do
-      gcsi <- liftIO $ getNonMsgGCSI gInfo m
+      gcsi <- liftIO $ getMemberMessageScope gInfo m
       memberConnectedChatItem gInfo gcsi m
       lift $ mapM_ (`setContactNetworkStatus` NSConnected) ct_
       toView $ CRConnectedToGroupMember user gInfo m ct_
@@ -1695,14 +1695,17 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           groupMsgToView gInfo ci' {reactions}
 
     getMsgScopeGCSI :: GroupInfo -> GroupMember -> Maybe MsgScope -> CM (Maybe GroupChatScopeInfo)
-    getMsgScopeGCSI gInfo@GroupInfo {membership} m = \case
-      -- first two cases check scope if member/membership is pending
-      Nothing -> liftIO $ getNonMsgGCSI gInfo m -- correct scope if member sends incorrect scope
-      Just (MSMember mId)
-        | sameMemberId mId membership -> liftIO $ Just <$> memberSupportGCSI membership Nothing
-        | otherwise -> do
-            referredMember <- withStore $ \db -> getGroupMemberByMemberId db vr user gInfo mId
-            liftIO $ Just <$> memberSupportGCSI referredMember (Just referredMember)
+    getMsgScopeGCSI gInfo@GroupInfo {membership} m msgScope_ = do
+      memberScope <- liftIO $ getMemberMessageScope gInfo m
+      case memberScope of
+        Just scope -> pure $ Just scope
+        Nothing -> case msgScope_ of
+          Nothing -> pure Nothing
+          Just (MSMember mId)
+            | sameMemberId mId membership -> liftIO $ Just <$> memberSupportGCSI membership Nothing
+            | otherwise -> do
+                referredMember <- withStore $ \db -> getGroupMemberByMemberId db vr user gInfo mId
+                liftIO $ Just <$> memberSupportGCSI referredMember (Just referredMember)
 
     groupMessageUpdate :: GroupInfo -> GroupMember -> SharedMsgId -> MsgContent -> Map MemberName MsgMention -> Maybe MsgScope -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> CM ()
     groupMessageUpdate gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId, memberId} sharedMsgId mc mentions msgScope_ msg@RcvMessage {msgId} brokerTs ttl_ live_
@@ -2177,7 +2180,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           BCCustomer -> customerId == memberId
         createProfileUpdatedItem m' =
           when createItems $ do
-            gcsi <- liftIO $ getNonMsgGCSI gInfo m
+            gcsi <- liftIO $ getMemberMessageScope gInfo m
             let ciContent = CIRcvGroupEvent $ RGEMemberProfileUpdated (fromLocalProfile p) p'
             createInternalChatItem user (CDGroupRcv gInfo gcsi m') ciContent itemTs_
 
@@ -2564,7 +2567,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           | senderRole < GRAdmin || senderRole < fromRole = messageError "x.grp.mem.role with insufficient member permissions"
           | otherwise = do
               withStore' $ \db -> updateGroupMemberRole db user member memRole
-              gcsi <- liftIO $ getNonMsgGCSI gInfo m
+              gcsi <- liftIO $ getMemberMessageScope gInfo m
               ci <- saveRcvChatItemNoParse user (CDGroupRcv gInfo gcsi m) msg brokerTs (CIRcvGroupEvent gEvent)
               groupMsgToView gInfo ci
               toView CRMemberRole {user, groupInfo = gInfo', byMember = m, member = member {memberRole = memRole}, fromRole, toRole = memRole}
@@ -2593,7 +2596,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     bm' <- setMemberBlocked bm
                     toggleNtf user bm' (not blocked)
                     let ciContent = CIRcvGroupEvent $ RGEMemberBlocked bmId (fromLocalProfile bmp) blocked
-                    gcsi <- liftIO $ getNonMsgGCSI gInfo m
+                    gcsi <- liftIO $ getMemberMessageScope gInfo m
                     ci <- saveRcvChatItemNoParse user (CDGroupRcv gInfo gcsi m) msg brokerTs ciContent
                     groupMsgToView gInfo ci
                     toView CRMemberBlockedForAll {user, groupInfo = gInfo, byMember = m, member = bm, blocked}
@@ -2678,7 +2681,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               messageError "x.grp.mem.del with insufficient member permissions"
           | otherwise = a
         deleteMemberItem gEvent = do
-          gcsi <- liftIO $ getNonMsgGCSI gInfo m
+          gcsi <- liftIO $ getMemberMessageScope gInfo m
           ci <- saveRcvChatItemNoParse user (CDGroupRcv gInfo gcsi m) msg brokerTs (CIRcvGroupEvent gEvent)
           groupMsgToView gInfo ci
         deleteMessages :: MsgDirectionI d => GroupMember -> SMsgDirection d -> CM ()
@@ -2691,7 +2694,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       deleteMemberConnection user m
       -- member record is not deleted to allow creation of "member left" chat item
       withStore' $ \db -> updateGroupMemberStatus db userId m GSMemLeft
-      gcsi <- liftIO $ getNonMsgGCSI gInfo m
+      gcsi <- liftIO $ getMemberMessageScope gInfo m
       ci <- saveRcvChatItemNoParse user (CDGroupRcv gInfo gcsi m) msg brokerTs (CIRcvGroupEvent RGEMemberLeft)
       groupMsgToView gInfo ci
       toView $ CRLeftMember user gInfo m {memberStatus = GSMemLeft}
@@ -2705,7 +2708,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         pure members
       -- member records are not deleted to keep history
       deleteMembersConnections user ms
-      gcsi <- liftIO $ getNonMsgGCSI gInfo m
+      gcsi <- liftIO $ getMemberMessageScope gInfo m
       ci <- saveRcvChatItemNoParse user (CDGroupRcv gInfo gcsi m) msg brokerTs (CIRcvGroupEvent RGEGroupDeleted)
       groupMsgToView gInfo ci
       toView $ CRGroupDeleted user gInfo {membership = membership {memberStatus = GSMemGroupDeleted}} m
@@ -2717,7 +2720,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           Nothing -> unless (p == p') $ do
             g' <- withStore $ \db -> updateGroupProfile db user g p'
             toView $ CRGroupUpdated user g g' (Just m)
-            gcsi <- liftIO $ getNonMsgGCSI g m
+            gcsi <- liftIO $ getMemberMessageScope g m
             let cd = CDGroupRcv g' gcsi m
             unless (sameGroupProfileInfo p p') $ do
               ci <- saveRcvChatItemNoParse user cd msg brokerTs (CIRcvGroupEvent $ RGEGroupUpdated p')
@@ -2735,7 +2738,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       unless (groupPreferences p == Just ps') $ do
         g' <- withStore' $ \db -> updateGroupPreferences db user g ps'
         toView $ CRGroupUpdated user g g' (Just m)
-        gcsi <- liftIO $ getNonMsgGCSI g m
+        gcsi <- liftIO $ getMemberMessageScope g m
         let cd = CDGroupRcv g' gcsi m
         createGroupFeatureChangedItems user cd CIRcvGroupFeature g g'
 
@@ -2777,7 +2780,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           dm <- encodeConnInfo $ XInfo p
           joinAgentConnectionAsync user True connReq dm subMode
         createItems mCt' m' = do
-          gcsi <- liftIO $ getNonMsgGCSI g m'
+          gcsi <- liftIO $ getMemberMessageScope g m'
           createInternalChatItem user (CDGroupRcv g gcsi m') (CIRcvGroupEvent RGEMemberCreatedContact) Nothing
           toView $ CRNewMemberContactReceivedInv user mCt' g m'
           forM_ mContent_ $ \mc -> do
@@ -2836,7 +2839,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     groupMsgReceived :: GroupInfo -> GroupMember -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> CM ()
     groupMsgReceived gInfo m conn@Connection {connId} msgMeta msgRcpts = do
-      gcsi <- liftIO $ getNonMsgGCSI gInfo m
+      gcsi <- liftIO $ getMemberMessageScope gInfo m
       checkIntegrityCreateItem (CDGroupRcv gInfo gcsi m) msgMeta `catchChatError` \_ -> pure ()
       forM_ msgRcpts $ \MsgReceipt {agentMsgId, msgRcptStatus} -> do
         withStore' $ \db -> updateSndMsgDeliveryStatus db connId agentMsgId $ MDSSndRcvd msgRcptStatus

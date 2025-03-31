@@ -193,8 +193,8 @@ chatGroupTests = do
     describe "uniqueMsgMentions" testUniqueMsgMentions
     describe "updatedMentionNames" testUpdatedMentionNames
   describe "group scoped messages" $ do
-    it "should send scoped messages to support (single admin)" testScopedSupportSingleAdmin
-    it "should send scoped messages to support (many admins)" testScopedSupportManyAdmins
+    it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
+    it "should send scoped messages to support (many moderators)" testScopedSupportManyModerators
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -6914,8 +6914,8 @@ testUpdatedMentionNames = do
       where
         ciMentionMember name = CIMentionMember {groupMemberId = 1, displayName = name, localAlias = Nothing, memberRole = GRMember}
 
-testScopedSupportSingleAdmin :: HasCallStack => TestParams -> IO ()
-testScopedSupportSingleAdmin =
+testScopedSupportSingleModerator :: HasCallStack => TestParams -> IO ()
+testScopedSupportSingleModerator =
   testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
     createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
 
@@ -6936,8 +6936,8 @@ testScopedSupportSingleAdmin =
     cath ##> "/_send #1 @support-3 text 5"
     cath <## "#team: you have insufficient permissions for this action, the required role is moderator"
 
-testScopedSupportManyAdmins :: HasCallStack => TestParams -> IO ()
-testScopedSupportManyAdmins =
+testScopedSupportManyModerators :: HasCallStack => TestParams -> IO ()
+testScopedSupportManyModerators =
   testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
     createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRModerator)
 
