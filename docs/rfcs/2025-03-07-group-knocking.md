@@ -10,7 +10,7 @@ The goal of next improvement is to let:
 
 ## Solution
 
-Group link host (further host), knowing group requires admin approval, would initially only introduce member pending approval to admins. Admins can connect with member for screening, meanwhile host would be forwarding messages as usual between connecting members. As a result of screening, pending member can either be removed, or approve by admins.
+Group link host (further host), knowing group requires admin approval, would initially only introduce member pending approval to admins. Admins can connect with member for screening, meanwhile host would be forwarding messages as usual between connecting members. As a result of screening, pending member can either be removed, or approved by admins.
 
 Upon acceptance, for further member connections to not depend on availability of admins, host should not only forward acceptance message, but also introduce remaining members to now accepted joining member. Respectively, admins' clients should not introduce members for approved members who are not their invitees.
 

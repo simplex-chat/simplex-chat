@@ -62,7 +62,7 @@ data ChatType = CTDirect | CTGroup | CTLocal | CTContactRequest | CTContactConne
   deriving (Eq, Show, Ord)
 
 data GroupChatScope
-  = GCSMemberSupport {groupMemberId_ :: Maybe GroupMemberId} -- Nothing means own conversation with admins
+  = GCSMemberSupport {groupMemberId_ :: Maybe GroupMemberId} -- Nothing means own conversation with support
   deriving (Eq, Show, Ord)
 
 data ChatName = ChatName {chatType :: ChatType, chatName :: Text}
@@ -102,11 +102,6 @@ data GroupChatScopeInfo
 toChatScope :: GroupChatScopeInfo -> GroupChatScope
 toChatScope = \case
   GCSIMemberSupport {groupMember_} -> GCSMemberSupport $ groupMemberId' <$> groupMember_
-
-toMsgScope :: GroupInfo -> GroupChatScopeInfo -> MsgScope
-toMsgScope GroupInfo {membership} = \case
-  GCSIMemberSupport {groupMember_ = Nothing} -> MSMember $ memberId' membership
-  GCSIMemberSupport {groupMember_ = Just m} -> MSMember $ memberId' m
 
 chatInfoToRef :: ChatInfo c -> ChatRef
 chatInfoToRef = \case

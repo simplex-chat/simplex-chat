@@ -301,7 +301,7 @@ data ChatCommand
   | APIGetAppSettings (Maybe AppSettings)
   | APIGetChatTags UserId
   | APIGetChats {userId :: UserId, pendingConnections :: Bool, pagination :: PaginationByTime, query :: ChatListQuery}
-  | APIGetChat ChatRef (Maybe GroupChatFilter) ChatPagination (Maybe String)
+  | APIGetChat ChatRef (Maybe MsgContentTag) ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
   | APIGetChatItemInfo ChatRef ChatItemId
   | APISendMessages {sendRef :: SendRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
@@ -915,11 +915,6 @@ sendToChatRef :: SendRef -> ChatRef
 sendToChatRef = \case
   SRDirect cId -> ChatRef CTDirect cId Nothing
   SRGroup gId gcs -> ChatRef CTGroup gId gcs
-
-data GroupChatFilter
-  = GCFMsgContentTag MsgContentTag
-  | GCFChatScope (Maybe GroupChatScope)
-  deriving (Show)
 
 data ChatPagination
   = CPLast Int
