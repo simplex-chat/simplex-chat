@@ -2892,7 +2892,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     updateGroupItemsStatus gInfo@GroupInfo {groupId} GroupMember {groupMemberId} Connection {connId} msgId newMemStatus viaProxy_ = do
       items <- withStore' (\db -> getGroupChatItemsByAgentMsgId db user groupId connId msgId)
       cis <- catMaybes <$> withStore (\db -> mapM (updateItem db) items)
-      -- 
+      -- SENT and RCVD events are received for messages that may be batched in single scope,
+      -- so we can look up scope of first item
       scopeInfo <- case cis of
         (ci : _) -> withStore $ \db -> getGroupChatScopeInfoForItem db vr user gInfo (chatItemId' ci)
         _ -> pure Nothing
