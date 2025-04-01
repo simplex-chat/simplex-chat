@@ -1089,7 +1089,7 @@ viewUserJoinedGroup g@GroupInfo {membership} =
   where
     pendingApproval_ = case memberStatus membership of
       GSMemPendingApproval -> ", pending approval"
-      GSMemPendingReview -> ", pending review"
+      GSMemPendingReview -> ", connecting to group moderators for admission to group"
       _ -> ""
 
 viewJoinedGroupMember :: GroupInfo -> GroupMember -> [StyledString]

@@ -3067,7 +3067,7 @@ testGLinkReviewMember =
         [ alice <## "#team: eve connected and pending review",
           eve
             <### [ "#team: joining the group...",
-                   "#team: you joined the group, pending review",
+                   "#team: you joined the group, connecting to group moderators for admission to group",
                    "#team: member cath (Catherine) is connected",
                    "#team: member dan (Daniel) is connected"
                  ],
