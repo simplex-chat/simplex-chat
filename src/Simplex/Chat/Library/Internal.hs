@@ -1171,7 +1171,7 @@ deleteTimedItem user (ChatRef cType chatId scope, itemId) deleteAt = do
     CTGroup -> do
       (gInfo, ci) <- withStore $ \db -> (,) <$> getGroupInfo db vr user chatId <*> getGroupChatItem db user chatId itemId
       deletedTs <- liftIO getCurrentTime
-      chatScopeInfo <- getChatScopeInfo vr user gInfo scope
+      chatScopeInfo <- mapM (getChatScopeInfo vr user gInfo) scope
       deleteGroupCIs user gInfo chatScopeInfo [ci] True True Nothing deletedTs >>= toView
     _ -> toView . CRChatError (Just user) . ChatError $ CEInternalError "bad deleteTimedItem cType"
 
@@ -1287,21 +1287,17 @@ parseChatMessage conn s = do
     errType = CEInvalidChatMessage conn Nothing (safeDecodeUtf8 s)
 {-# INLINE parseChatMessage #-}
 
--- refactor with getChatScopeRecipients
-getChatScopeInfo :: VersionRangeChat -> User -> GroupInfo -> Maybe GroupChatScope -> CM (Maybe GroupChatScopeInfo)
-getChatScopeInfo vr user GroupInfo {membership} scope = case scope of
-  Nothing -> pure Nothing
-  Just (GCSMemberSupport Nothing) -> do
-    chatScope <- liftIO $ memberSupportScopeInfo membership Nothing
-    pure $ Just chatScope
-  Just (GCSMemberSupport (Just gmId)) -> do
+getChatScopeInfo :: VersionRangeChat -> User -> GroupInfo -> GroupChatScope -> CM GroupChatScopeInfo
+getChatScopeInfo vr user GroupInfo {membership} = \case
+  GCSMemberSupport Nothing ->
+    liftIO $ memberSupportScopeInfo membership Nothing
+  GCSMemberSupport (Just gmId) -> do
     supportMem <- withFastStore $ \db -> getGroupMemberById db vr user gmId
-    chatScope <- liftIO $ memberSupportScopeInfo supportMem (Just supportMem)
-    pure $ Just chatScope
+    liftIO $ memberSupportScopeInfo supportMem (Just supportMem)
 
 -- TODO [knocking] refactor to GroupChatScope -> "a" function, "a" is some new type? Or possibly split to get scope/get recipients steps
-getChatScopeRecipients :: VersionRangeChat -> User -> GroupInfo -> Maybe GroupChatScope -> VersionChat -> CM (Maybe GroupChatScopeInfo, [GroupMember])
-getChatScopeRecipients vr user gInfo@GroupInfo {membership} scope modsCompatVersion = case scope of
+getGroupRecipients :: VersionRangeChat -> User -> GroupInfo -> Maybe GroupChatScope -> VersionChat -> CM (Maybe GroupChatScopeInfo, [GroupMember])
+getGroupRecipients vr user gInfo@GroupInfo {membership} scope modsCompatVersion = case scope of
   Nothing -> do
     unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
     ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo

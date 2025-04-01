@@ -624,7 +624,7 @@ processChatCommand' vr = \case
             CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent} -> do
               case (ciContent, itemSharedMsgId, editable) of
                 (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
-                  (chatScopeInfo, recipients) <- getChatScopeRecipients vr user gInfo scope groupKnockingVersion
+                  (chatScopeInfo, recipients) <- getGroupRecipients vr user gInfo scope groupKnockingVersion
                   let changed = mc /= oldMC
                   if changed || fromMaybe False itemLive
                     then do
@@ -680,15 +680,15 @@ processChatCommand' vr = \case
       -- TODO [knocking] check scope for all items?
       case mode of
         CIDMInternal -> do
-          chatScopeInfo <- getChatScopeInfo vr user gInfo scope
+          chatScopeInfo <- mapM (getChatScopeInfo vr user gInfo) scope
           ts <- liftIO getCurrentTime
           deleteGroupCIs user gInfo chatScopeInfo items True False Nothing ts
         CIDMInternalMark -> do
-          chatScopeInfo <- getChatScopeInfo vr user gInfo scope
+          chatScopeInfo <- mapM (getChatScopeInfo vr user gInfo) scope
           ts <- liftIO getCurrentTime
           markGroupCIsDeleted user gInfo chatScopeInfo items True Nothing ts
         CIDMBroadcast -> do
-          (chatScopeInfo, recipients) <- getChatScopeRecipients vr user gInfo scope groupKnockingVersion
+          (chatScopeInfo, recipients) <- getGroupRecipients vr user gInfo scope groupKnockingVersion
           assertDeletable items
           assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
           let msgIds = itemsMsgIds items
@@ -767,7 +767,7 @@ processChatCommand' vr = \case
         (g@GroupInfo {membership}, CChatItem md ci) <- withFastStore $ \db -> do
           g <- getGroupInfo db vr user chatId
           (g,) <$> getGroupCIWithReactions db user g itemId
-        (chatScopeInfo, recipients) <- getChatScopeRecipients vr user g scope groupKnockingVersion
+        (chatScopeInfo, recipients) <- getGroupRecipients vr user g scope groupKnockingVersion
         case ci of
           ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}} -> do
             unless (groupFeatureAllowed SGFReactions g) $
@@ -2499,7 +2499,7 @@ processChatCommand' vr = \case
                   pure $ CRSndFileCancelled user (Just aci) ftm fts
                 (Just (ChatRef CTGroup groupId scope), Just aci) -> do
                   (gInfo, sharedMsgId) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getSharedMsgIdByFileId db userId fileId
-                  (_chatScopeInfo, recipients) <- getChatScopeRecipients vr user gInfo scope groupKnockingVersion
+                  (_chatScopeInfo, recipients) <- getGroupRecipients vr user gInfo scope groupKnockingVersion
                   void . sendGroupMessage user gInfo scope recipients $ XFileCancel sharedMsgId
                   pure $ CRSndFileCancelled user (Just aci) ftm fts
                 (Just _, _) -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
@@ -3254,7 +3254,7 @@ processChatCommand' vr = \case
     sendGroupContentMessages :: User -> GroupInfo -> Maybe GroupChatScope -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
     sendGroupContentMessages user gInfo scope live itemTTL cmrs = do
       assertMultiSendable live cmrs
-      (chatScopeInfo, recipients) <- getChatScopeRecipients vr user gInfo scope modsCompatVersion
+      (chatScopeInfo, recipients) <- getGroupRecipients vr user gInfo scope modsCompatVersion
       sendGroupContentMessages_ user gInfo scope chatScopeInfo recipients live itemTTL cmrs
         where
           hasReport = any (\(ComposedMessage {msgContent}, _, _, _) -> isReport msgContent) cmrs
