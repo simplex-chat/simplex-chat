@@ -4333,15 +4333,14 @@ chatCommandP =
     chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayNameP
     chatRefP = do
       chatTypeP >>= \case
-        CTGroup -> ChatRef CTGroup <$> A.decimal <*> (A.space *> gcScopeP <|> pure Nothing)
+        CTGroup -> ChatRef CTGroup <$> A.decimal <*> (Just <$> gcScopeP <|> pure Nothing)
         cType -> (\chatId -> ChatRef cType chatId Nothing) <$> A.decimal
     sendRefP =
       (A.char '@' $> SRDirect <*> A.decimal)
-        <|> (A.char '#' $> SRGroup <*> A.decimal <*> (A.space *> gcScopeP <|> pure Nothing))
+        <|> (A.char '#' $> SRGroup <*> A.decimal <*> (Just <$> gcScopeP <|> pure Nothing))
     gcScopeP =
-      ("@group" $> Nothing)
-        <|> ("@support-" *> (Just . GCSMemberSupport . Just <$> A.decimal))
-        <|> ("@support" $> Just (GCSMemberSupport Nothing))
+      ("(_support:" *> (GCSMemberSupport . Just <$> A.decimal) <* ")")
+        <|> ("(_support)" $> (GCSMemberSupport Nothing))
     msgCountP = A.space *> A.decimal <|> pure 10
     ciTTLDecimal = ("default" $> Nothing) <|> (Just <$> A.decimal)
     ciTTL =

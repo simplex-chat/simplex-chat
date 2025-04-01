@@ -3000,11 +3000,11 @@ testGLinkApproveMember =
       cath <## "bad chat command: not current member"
 
       -- pending member and host can send messages to each other
-      alice ##> "/_send #1 @support-3 text send me proofs"
+      alice ##> "/_send #1(_support:3) text send me proofs"
       alice <# "#team (support: cath) send me proofs"
       cath <# "#team (support) alice> send me proofs"
 
-      cath ##> "/_send #1 @support text proofs"
+      cath ##> "/_send #1(_support) text proofs"
       cath <# "#team (support) proofs"
       alice <# "#team (support: cath) cath> proofs"
 
@@ -3099,22 +3099,22 @@ testGLinkReviewMember =
       eve <## "bad chat command: not current member"
 
       -- pending member and moderators can send messages to each other
-      alice ##> "/_send #1 @support-5 text 5"
+      alice ##> "/_send #1(_support:5) text 5"
       alice <# "#team (support: eve) 5"
       [cath, dan] *<# "#team (support: eve) alice> 5"
       eve <# "#team (support) alice> 5"
 
-      cath ##> "/_send #1 @support-5 text 6"
+      cath ##> "/_send #1(_support:5) text 6"
       cath <# "#team (support: eve) 6"
       [alice, dan] *<# "#team (support: eve) cath> 6"
       eve <# "#team (support) cath> 6"
 
-      dan ##> "/_send #1 @support-5 text 7"
+      dan ##> "/_send #1(_support:5) text 7"
       dan <# "#team (support: eve) 7"
       [alice, cath] *<# "#team (support: eve) dan> 7"
       eve <# "#team (support) dan> 7"
 
-      eve ##> "/_send #1 @support text 8"
+      eve ##> "/_send #1(_support) text 8"
       eve <# "#team (support) 8"
       [alice, cath, dan] *<# "#team (support: eve) eve> 8"
 
@@ -3214,11 +3214,11 @@ testGLinkApproveThenReviewMember =
       eve <## "bad chat command: not current member"
 
       -- pending member and host can send messages to each other
-      alice ##> "/_send #1 @support-5 text 5"
+      alice ##> "/_send #1(_support:5) text 5"
       alice <# "#team (support: eve) 5"
       eve <# "#team (support) alice> 5"
 
-      eve ##> "/_send #1 @support text 6"
+      eve ##> "/_send #1(_support) text 6"
       eve <# "#team (support) 6"
       alice <# "#team (support: eve) eve> 6"
 
@@ -3262,22 +3262,22 @@ testGLinkApproveThenReviewMember =
       eve <## "bad chat command: not current member"
 
       -- pending member and moderators can send messages to each other
-      alice ##> "/_send #1 @support-5 text 11"
+      alice ##> "/_send #1(_support:5) text 11"
       alice <# "#team (support: eve) 11"
       [cath, dan] *<# "#team (support: eve) alice> 11"
       eve <# "#team (support) alice> 11"
 
-      cath ##> "/_send #1 @support-5 text 12"
+      cath ##> "/_send #1(_support:5) text 12"
       cath <# "#team (support: eve) 12"
       [alice, dan] *<# "#team (support: eve) cath> 12"
       eve <# "#team (support) cath> 12"
 
-      dan ##> "/_send #1 @support-5 text 13"
+      dan ##> "/_send #1(_support:5) text 13"
       dan <# "#team (support: eve) 13"
       [alice, cath] *<# "#team (support: eve) dan> 13"
       eve <# "#team (support) dan> 13"
 
-      eve ##> "/_send #1 @support text 14"
+      eve ##> "/_send #1(_support) text 14"
       eve <# "#team (support) 14"
       [alice, cath, dan] *<# "#team (support: eve) eve> 14"
 
@@ -6925,15 +6925,15 @@ testScopedSupportSingleModerator =
     bob #> "#team 2"
     [alice, cath] *<# "#team bob> 2"
 
-    alice ##> "/_send #1 @support-2 text 3"
+    alice ##> "/_send #1(_support:2) text 3"
     alice <# "#team (support: bob) 3"
     bob <# "#team (support) alice> 3"
 
-    bob ##> "/_send #1 @support text 4"
+    bob ##> "/_send #1(_support) text 4"
     bob <# "#team (support) 4"
     alice <# "#team (support: bob) bob> 4"
 
-    cath ##> "/_send #1 @support-3 text 5"
+    cath ##> "/_send #1(_support:3) text 5"
     cath <## "#team: you have insufficient permissions for this action, the required role is moderator"
 
 testScopedSupportManyModerators :: HasCallStack => TestParams -> IO ()
@@ -6953,32 +6953,32 @@ testScopedSupportManyModerators =
 
     threadDelay 1000000
 
-    alice ##> "/_send #1 @support-2 text 3"
+    alice ##> "/_send #1(_support:2) text 3"
     alice <# "#team (support: bob) 3"
     bob <# "#team (support) alice> 3"
     dan <# "#team (support: bob) alice> 3"
 
     threadDelay 1000000
 
-    bob ##> "/_send #1 @support text 4"
+    bob ##> "/_send #1(_support) text 4"
     bob <# "#team (support) 4"
     [alice, dan] *<# "#team (support: bob) bob> 4"
 
     threadDelay 1000000
 
-    dan ##> "/_send #1 @support-3 text 5"
+    dan ##> "/_send #1(_support:3) text 5"
     dan <# "#team (support: bob) 5"
     alice <# "#team (support: bob) dan> 5"
     bob <# "#team (support) dan> 5"
 
     alice #$> ("/_get chat #1 count=3", chat, [(0, "connected"), (1, "1"), (0, "2")])
-    alice #$> ("/_get chat #1 @support-2 count=100", chat, [(1, "3"), (0, "4"), (0, "5")])
+    alice #$> ("/_get chat #1(_support:2) count=100", chat, [(1, "3"), (0, "4"), (0, "5")])
     bob #$> ("/_get chat #1 count=3", chat, [(0, "connected"), (0, "1"), (1, "2")])
-    bob #$> ("/_get chat #1 @support count=100", chat, [(0, "3"), (1, "4"), (0, "5")])
+    bob #$> ("/_get chat #1(_support) count=100", chat, [(0, "3"), (1, "4"), (0, "5")])
     dan #$> ("/_get chat #1 count=3", chat, [(0, "connected"), (0, "1"), (0, "2")])
-    dan #$> ("/_get chat #1 @support-3 count=100", chat, [(0, "3"), (0, "4"), (1, "5")])
+    dan #$> ("/_get chat #1(_support:3) count=100", chat, [(0, "3"), (0, "4"), (1, "5")])
     cath #$> ("/_get chat #1 count=3", chat, [(0, "connected"), (0, "1"), (0, "2")])
-    cath ##> "/_get chat #1 @support-3 count=100"
+    cath ##> "/_get chat #1(_support:3) count=100"
     cath <## "chat db error: SEInternalError {message = \"no support chat\"}"
 
     alice ##> "/_member support chats #1"
