@@ -2201,7 +2201,7 @@ processChatCommand' vr = \case
         foldM (\acc m -> deletePendingMember acc user gInfo [m] m) ([], [], []) pendingApprvMems
       let moderators = filter (\GroupMember {memberRole} -> memberRole >= GRModerator) members
       (errs4, deleted4, acis4) <-
-        foldM (\acc m -> deletePendingMember acc user gInfo (m : moderators) m) ([], [], []) pendingApprvMems
+        foldM (\acc m -> deletePendingMember acc user gInfo (m : moderators) m) ([], [], []) pendingRvwMems
       let acis = acis2 <> acis3 <> acis4
           errs = errs1 <> errs2 <> errs3 <> errs4
           deleted = deleted1 <> deleted2 <> deleted3 <> deleted4
@@ -2241,7 +2241,6 @@ processChatCommand' vr = \case
       deleteMemsSend user gInfo chatScopeInfo recipients memsToDelete = case L.nonEmpty memsToDelete of
         Nothing -> pure ([], [], [])
         Just memsToDelete' -> do
-          -- TODO [knocking] possibly scope needs to be passed, but may not be needed after refactoring
           let chatScope = toChatScope <$> chatScopeInfo
               events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId withMessages) memsToDelete'
           (msgs_, _gsr) <- sendGroupMessages user gInfo chatScope recipients events
