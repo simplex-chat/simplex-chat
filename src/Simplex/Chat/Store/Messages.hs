@@ -434,7 +434,7 @@ createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent q
     [sql|
       INSERT INTO chat_items (
         -- user and IDs
-        user_id, created_by_msg_id, contact_id, group_id, group_scope_tag, group_scope_group_member_id, group_member_id, note_folder_id,
+        user_id, created_by_msg_id, contact_id, group_id, group_member_id, note_folder_id, group_scope_tag, group_scope_group_member_id,
         -- meta
         item_sent, item_ts, item_content, item_content_tag, item_text, item_status, msg_content_tag, shared_msg_id,
         forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, timed_ttl, timed_delete_at,
@@ -444,7 +444,7 @@ createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent q
         fwd_from_tag, fwd_from_chat_name, fwd_from_msg_dir, fwd_from_contact_id, fwd_from_group_id, fwd_from_chat_item_id
       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
-    ((userId, msgId_) :. idsRow :. itemRow :. quoteRow' :. forwardedFromRow)
+    ((userId, msgId_) :. idsRow :. groupScopeRow :. itemRow :. quoteRow' :. forwardedFromRow)
   ciId <- insertedRowId db
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db ciId msgId createdAt
   pure ciId
@@ -452,28 +452,27 @@ createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent q
     itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, Text, CIStatus d, Maybe MsgContentTag, Maybe SharedMsgId, Maybe GroupMemberId, BoolInt) :. (UTCTime, UTCTime, Maybe BoolInt, BoolInt) :. (Maybe Int, Maybe UTCTime)
     itemRow = (msgDirection @d, itemTs, ciContent, toCIContentTag ciContent, ciContentToText ciContent, ciCreateStatus ciContent, msgContentTag <$> ciMsgContent ciContent, sharedMsgId, forwardedByMember, BI includeInHistory) :. (createdAt, createdAt, BI <$> (justTrue live), BI userMention) :. ciTimedRow timed
     quoteRow' = let (a, b, c, d, e) = quoteRow in (a, b, c, BI <$> d, e)
-    idsRow :: (Maybe ContactId, Maybe GroupId, Maybe GroupChatScopeTag, Maybe GroupMemberId, Maybe GroupMemberId, Maybe NoteFolderId)
+    idsRow :: (Maybe ContactId, Maybe GroupId, Maybe GroupMemberId, Maybe NoteFolderId)
     idsRow = case chatDirection of
-      CDDirectRcv Contact {contactId} -> (Just contactId, Nothing, Nothing, Nothing, Nothing, Nothing)
-      CDDirectSnd Contact {contactId} -> (Just contactId, Nothing, Nothing, Nothing, Nothing, Nothing)
-      CDGroupRcv GroupInfo {groupId} scopeInfo GroupMember {groupMemberId} ->
-        let (gsTag_, gsGroupMemberId_) = groupScopeFields scopeInfo
-         in (Nothing, Just groupId, gsTag_, gsGroupMemberId_, Just groupMemberId, Nothing)
-      CDGroupSnd GroupInfo {groupId} scopeInfo ->
-        let (gsTag_, gsGroupMemberId_) = groupScopeFields scopeInfo
-         in (Nothing, Just groupId, gsTag_, gsGroupMemberId_, Nothing, Nothing)
-      CDLocalRcv NoteFolder {noteFolderId} -> (Nothing, Nothing, Nothing, Nothing, Nothing, Just noteFolderId)
-      CDLocalSnd NoteFolder {noteFolderId} -> (Nothing, Nothing, Nothing, Nothing, Nothing, Just noteFolderId)
-      where
-        groupScopeFields :: Maybe GroupChatScopeInfo -> (Maybe GroupChatScopeTag, Maybe GroupMemberId)
-        groupScopeFields = \case
-          Nothing -> (Nothing, Nothing)
-          Just GCSIMemberSupport {groupMember_ = Just m} -> (Just GCSTMemberSupport_, Just $ groupMemberId' m)
-          Just GCSIMemberSupport {groupMember_ = Nothing} -> (Just GCSTMemberSupport_, Nothing)
+      CDDirectRcv Contact {contactId} -> (Just contactId, Nothing, Nothing, Nothing)
+      CDDirectSnd Contact {contactId} -> (Just contactId, Nothing, Nothing, Nothing)
+      CDGroupRcv GroupInfo {groupId} _ GroupMember {groupMemberId} -> (Nothing, Just groupId, Just groupMemberId, Nothing)
+      CDGroupSnd GroupInfo {groupId} _ -> (Nothing, Just groupId, Nothing, Nothing)
+      CDLocalRcv NoteFolder {noteFolderId} -> (Nothing, Nothing, Nothing, Just noteFolderId)
+      CDLocalSnd NoteFolder {noteFolderId} -> (Nothing, Nothing, Nothing, Just noteFolderId)
+    groupScope :: Maybe (Maybe GroupChatScopeInfo)
+    groupScope = case chatDirection of
+      CDGroupRcv _ scope _ -> Just scope
+      CDGroupSnd _ scope -> Just scope
+      _ -> Nothing
+    groupScopeRow :: (Maybe GroupChatScopeTag, Maybe GroupMemberId)
+    groupScopeRow = case groupScope of
+      Just (Just GCSIMemberSupport {groupMember_}) -> (Just GCSTMemberSupport_, groupMemberId' <$> groupMember_)
+      _ -> (Nothing, Nothing)
     includeInHistory :: Bool
-    includeInHistory =
-      let (_, groupId_, gsTag_, _, _, _) = idsRow
-       in isJust groupId_ && isNothing gsTag_ && isJust (ciMsgContent ciContent) && ((msgContentTag <$> ciMsgContent ciContent) /= Just MCReport_)
+    includeInHistory = case groupScope of
+      Just Nothing -> isJust (ciMsgContent ciContent) && ((msgContentTag <$> ciMsgContent ciContent) /= Just MCReport_)
+      _ -> False
     forwardedFromRow :: (Maybe CIForwardedFromTag, Maybe Text, Maybe MsgDirection, Maybe Int64, Maybe Int64, Maybe Int64)
     forwardedFromRow = case itemForwarded of
       Nothing ->
