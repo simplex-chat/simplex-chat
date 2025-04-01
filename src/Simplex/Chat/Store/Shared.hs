@@ -609,7 +609,7 @@ toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, 
 toBusinessChatInfo :: BusinessChatInfoRow -> Maybe BusinessChatInfo
 toBusinessChatInfo (Just chatType, Just businessId, Just customerId) = Just BusinessChatInfo {chatType, businessId, customerId}
 toBusinessChatInfo _ = Nothing
-
+ 
 groupInfoQuery :: Query
 groupInfoQuery =
   [sql|
@@ -623,7 +623,7 @@ groupInfoQuery =
       mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
       mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
       pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
-      mu.created_at, mu.updated_at, NULL AS mu_support_chat_ts, NULL AS mu_support_chat_unanswered,
+      mu.created_at, mu.updated_at, NULL AS mu_support_chat_ts, NULL AS mu_support_chat_unanswered
     FROM groups g
     JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
     JOIN group_members mu ON mu.group_id = g.group_id

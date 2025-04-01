@@ -146,7 +146,7 @@ import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, mapMaybe)
+import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
 import Data.Ord (Down (..), comparing)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -374,12 +374,16 @@ updateChatTs db User {userId} chatDirection chatTs = case toChatInfo chatDirecti
       db
       "UPDATE groups SET chat_ts = ? WHERE user_id = ? AND group_id = ?"
       (chatTs, userId, groupId)
-  GroupChat GroupInfo {membership} (Just GCSIMemberSupport {groupMember_}) -> do
-    let gmId = groupMemberId' $ fromMaybe membership groupMember_
+  GroupChat GroupInfo {groupId} (Just (GCSIMemberSupport Nothing)) -> do
+    DB.execute
+      db
+      "UPDATE groups SET mods_support_chat_ts = ? WHERE user_id = ? AND group_id = ?"
+      (chatTs, userId, groupId)
+  GroupChat _gInfo (Just (GCSIMemberSupport (Just GroupMember {groupMemberId}))) -> do
     DB.execute
       db
       "UPDATE group_members SET support_chat_ts = ? WHERE group_member_id = ?"
-      (chatTs, gmId)
+      (chatTs, groupMemberId)
   LocalChat NoteFolder {noteFolderId} ->
     DB.execute
       db

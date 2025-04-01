@@ -1323,27 +1323,43 @@ getGroupRecipients vr user gInfo@GroupInfo {membership} scope modsCompatVersion 
     compatible GroupMember {activeConn, memberChatVRange} =
       maxVersion (maybe memberChatVRange peerChatVRange activeConn) >= modsCompatVersion
 
-getLocalGroupChatScope :: GroupInfo -> IO (GroupInfo, Maybe GroupChatScopeInfo)
-getLocalGroupChatScope gInfo@GroupInfo {membership}
+mkLocalGroupChatScope :: GroupInfo -> IO (GroupInfo, Maybe GroupChatScopeInfo)
+mkLocalGroupChatScope gInfo@GroupInfo {membership}
   | memberPending membership = do
-      (gInfo', scopeInfo) <- patchGroupSupportChatInfo gInfo
+      (gInfo', scopeInfo) <- mkGroupSupportChatInfo gInfo
       pure (gInfo', Just scopeInfo)
   | otherwise =
       pure (gInfo, Nothing)
 
-getMemberChatScope :: GroupInfo -> GroupMember -> IO (GroupInfo, GroupMember, Maybe GroupChatScopeInfo)
-getMemberChatScope gInfo@GroupInfo {membership} m
+mkGroupChatScope :: GroupInfo -> GroupMember -> IO (GroupInfo, GroupMember, Maybe GroupChatScopeInfo)
+mkGroupChatScope gInfo@GroupInfo {membership} m
   | memberPending membership = do
-      (gInfo', scopeInfo) <- patchGroupSupportChatInfo gInfo
+      (gInfo', scopeInfo) <- mkGroupSupportChatInfo gInfo
       pure (gInfo', m, Just scopeInfo)
   | memberPending m = do
-      (m', scopeInfo) <- patchMemberSupportChatInfo m
+      (m', scopeInfo) <- mkMemberSupportChatInfo m
       pure (gInfo, m', Just scopeInfo)
   | otherwise =
       pure (gInfo, m, Nothing)
 
-patchGroupSupportChatInfo :: GroupInfo -> IO (GroupInfo, GroupChatScopeInfo)
-patchGroupSupportChatInfo gInfo@GroupInfo {modsSupportChat} =
+mkGetMessageChatScope :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> Maybe MsgScope -> CM (GroupInfo, GroupMember, Maybe GroupChatScopeInfo)
+mkGetMessageChatScope vr user gInfo@GroupInfo {membership} m msgScope_ =
+  liftIO (mkGroupChatScope gInfo m) >>= \case
+    groupScope@(_gInfo', _m', Just _scopeInfo) -> pure groupScope
+    (_, _, Nothing) -> case msgScope_ of
+      Nothing -> pure (gInfo, m, Nothing)
+      Just (MSMember mId)
+        | sameMemberId mId membership -> do
+            (gInfo', scopeInfo) <- liftIO $ mkGroupSupportChatInfo gInfo
+            pure (gInfo', m, Just scopeInfo)
+        | otherwise -> do
+            referredMember <- withStore $ \db -> getGroupMemberByMemberId db vr user gInfo mId
+            -- TODO [knocking] return patched _referredMember too?
+            (_referredMember', scopeInfo) <- liftIO $ mkMemberSupportChatInfo referredMember
+            pure (gInfo, m, Just scopeInfo)
+
+mkGroupSupportChatInfo :: GroupInfo -> IO (GroupInfo, GroupChatScopeInfo)
+mkGroupSupportChatInfo gInfo@GroupInfo {modsSupportChat} =
   case modsSupportChat of
     Nothing -> do
       chatTs <- getCurrentTime
@@ -1354,8 +1370,8 @@ patchGroupSupportChatInfo gInfo@GroupInfo {modsSupportChat} =
       let scopeInfo = GCSIMemberSupport {groupMember_ = Nothing}
        in pure (gInfo, scopeInfo)
 
-patchMemberSupportChatInfo :: GroupMember -> IO (GroupMember, GroupChatScopeInfo)
-patchMemberSupportChatInfo m@GroupMember {supportChat} =
+mkMemberSupportChatInfo :: GroupMember -> IO (GroupMember, GroupChatScopeInfo)
+mkMemberSupportChatInfo m@GroupMember {supportChat} =
   case supportChat of
     Nothing -> do
       chatTs <- getCurrentTime
