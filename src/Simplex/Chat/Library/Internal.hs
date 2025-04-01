@@ -212,9 +212,8 @@ prepareGroupMsg db user g@GroupInfo {membership} msgScope mc mentions quotedItem
   where
     quoteData :: ChatItem c d -> GroupMember -> ExceptT StoreError IO (MsgContent, CIQDirection 'CTGroup, Bool, GroupMember)
     quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} _ = throwError SEInvalidQuote
-    -- TODO [knocking] scope for quotes? see Messages.hs
-    quoteData ChatItem {chatDir = CIGroupSnd Nothing, content = CISndMsgContent qmc} membership' = pure (qmc, CIQGroupSnd, True, membership')
-    quoteData ChatItem {chatDir = CIGroupRcv Nothing m, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv $ Just m, False, m)
+    quoteData ChatItem {chatDir = CIGroupSnd, content = CISndMsgContent qmc} membership' = pure (qmc, CIQGroupSnd, True, membership')
+    quoteData ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv $ Just m, False, m)
     quoteData _ _ = throwError SEInvalidQuote
 
 updatedMentionNames :: MsgContent -> Maybe MarkdownList -> Map MemberName CIMention -> (MsgContent, Maybe MarkdownList, Map MemberName CIMention)
@@ -454,8 +453,8 @@ deleteDirectCIs user ct items byUser timed = do
       deleteDirectChatItem db user ct ci
       pure $ contactDeletion md ct ci Nothing
 
-deleteGroupCIs :: User -> GroupInfo -> [CChatItem 'CTGroup] -> Bool -> Bool -> Maybe GroupMember -> UTCTime -> CM ChatResponse
-deleteGroupCIs user gInfo items byUser timed byGroupMember_ deletedTs = do
+deleteGroupCIs :: User -> GroupInfo -> Maybe GroupChatScopeInfo -> [CChatItem 'CTGroup] -> Bool -> Bool -> Maybe GroupMember -> UTCTime -> CM ChatResponse
+deleteGroupCIs user gInfo chatScopeInfo items byUser timed byGroupMember_ deletedTs = do
   let ciFilesInfo = mapMaybe (\(CChatItem _ ChatItem {file}) -> mkCIFileInfo <$> file) items
   deleteCIFiles user ciFilesInfo
   (errs, deletions) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (deleteItem db) items)
@@ -467,7 +466,7 @@ deleteGroupCIs user gInfo items byUser timed byGroupMember_ deletedTs = do
       ci' <- case byGroupMember_ of
         Just m -> Just <$> updateGroupChatItemModerated db user gInfo ci m deletedTs
         Nothing -> Nothing <$ deleteGroupChatItem db user gInfo ci
-      pure $ groupDeletion md gInfo ci ci'
+      pure $ groupDeletion md gInfo chatScopeInfo ci ci'
 
 deleteGroupMemberCIs :: MsgDirectionI d => User -> GroupInfo -> GroupMember -> GroupMember -> SMsgDirection d -> CM ()
 deleteGroupMemberCIs user gInfo member byGroupMember msgDir = do
@@ -518,8 +517,8 @@ markDirectCIsDeleted user ct items byUser deletedTs = do
       ci' <- markDirectChatItemDeleted db user ct ci deletedTs
       pure $ contactDeletion md ct ci (Just ci')
 
-markGroupCIsDeleted :: User -> GroupInfo -> [CChatItem 'CTGroup] -> Bool -> Maybe GroupMember -> UTCTime -> CM ChatResponse
-markGroupCIsDeleted user gInfo items byUser byGroupMember_ deletedTs = do
+markGroupCIsDeleted :: User -> GroupInfo -> Maybe GroupChatScopeInfo -> [CChatItem 'CTGroup] -> Bool -> Maybe GroupMember -> UTCTime -> CM ChatResponse
+markGroupCIsDeleted user gInfo chatScopeInfo items byUser byGroupMember_ deletedTs = do
   let ciFilesInfo = mapMaybe (\(CChatItem _ ChatItem {file}) -> mkCIFileInfo <$> file) items
   cancelFilesInProgress user ciFilesInfo
   (errs, deletions) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (markDeleted db) items)
@@ -528,7 +527,7 @@ markGroupCIsDeleted user gInfo items byUser byGroupMember_ deletedTs = do
   where
     markDeleted db (CChatItem md ci) = do
       ci' <- markGroupChatItemDeleted db user gInfo ci byGroupMember_ deletedTs
-      pure $ groupDeletion md gInfo ci (Just ci')
+      pure $ groupDeletion md gInfo chatScopeInfo ci (Just ci')
 
 markGroupMemberCIsDeleted :: User -> GroupInfo -> GroupMember -> GroupMember -> CM ()
 markGroupMemberCIsDeleted user gInfo member byGroupMember = do
@@ -548,11 +547,10 @@ markGroupMemberCIsDeleted_ db user gInfo member byGroupMember deletedTs = do
   markMemberCIsDeleted db user gInfo member byGroupMember deletedTs
   pure fs
 
-groupDeletion :: MsgDirectionI d => SMsgDirection d -> GroupInfo -> ChatItem 'CTGroup d -> Maybe (ChatItem 'CTGroup d) -> ChatItemDeletion
-groupDeletion md g ci ci' = ChatItemDeletion (gItem ci) (gItem <$> ci')
+groupDeletion :: MsgDirectionI d => SMsgDirection d -> GroupInfo -> Maybe GroupChatScopeInfo -> ChatItem 'CTGroup d -> Maybe (ChatItem 'CTGroup d) -> ChatItemDeletion
+groupDeletion md g chatScopeInfo ci ci' = ChatItemDeletion (gItem ci) (gItem <$> ci')
   where
-    scopeInfo = groupCIDirectionScopeInfo ci
-    gItem = AChatItem SCTGroup md (GroupChat g scopeInfo)
+    gItem = AChatItem SCTGroup md (GroupChat g chatScopeInfo)
 
 contactDeletion :: MsgDirectionI d => SMsgDirection d -> Contact -> ChatItem 'CTDirect d -> Maybe (ChatItem 'CTDirect d) -> ChatItemDeletion
 contactDeletion md ct ci ci' = ChatItemDeletion (ctItem ci) (ctItem <$> ci')
@@ -1046,7 +1044,7 @@ sendHistory user gInfo@GroupInfo {groupId, membership} m@GroupMember {activeConn
       | otherwise = Nothing
     itemForwardEvents :: CChatItem 'CTGroup -> CM [ChatMsgEvent 'Json]
     itemForwardEvents cci = case cci of
-      (CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv _scope sender, content = CIRcvMsgContent mc, file})
+      (CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv sender, content = CIRcvMsgContent mc, file})
         | not (blockedByAdmin sender) -> do
             fInvDescr_ <- join <$> forM file getRcvFileInvDescr
             processContentItem sender ci mc fInvDescr_
@@ -1161,7 +1159,7 @@ startTimedItemThread user itemRef deleteAt = do
     atomically $ writeTVar threadTVar (Just tId)
 
 deleteTimedItem :: User -> (ChatRef, ChatItemId) -> UTCTime -> CM ()
-deleteTimedItem user (ChatRef cType chatId _, itemId) deleteAt = do
+deleteTimedItem user (ChatRef cType chatId scope, itemId) deleteAt = do
   ts <- liftIO getCurrentTime
   liftIO $ threadDelay' $ diffToMicroseconds $ diffUTCTime deleteAt ts
   lift waitChatStartedAndActivated
@@ -1173,7 +1171,8 @@ deleteTimedItem user (ChatRef cType chatId _, itemId) deleteAt = do
     CTGroup -> do
       (gInfo, ci) <- withStore $ \db -> (,) <$> getGroupInfo db vr user chatId <*> getGroupChatItem db user chatId itemId
       deletedTs <- liftIO getCurrentTime
-      deleteGroupCIs user gInfo [ci] True True Nothing deletedTs >>= toView
+      chatScopeInfo <- getChatScopeInfo vr user gInfo scope
+      deleteGroupCIs user gInfo chatScopeInfo [ci] True True Nothing deletedTs >>= toView
     _ -> toView . CRChatError (Just user) . ChatError $ CEInternalError "bad deleteTimedItem cType"
 
 startUpdatedTimedItemThread :: User -> ChatRef -> ChatItem c d -> ChatItem c d -> CM ()
@@ -1287,6 +1286,47 @@ parseChatMessage conn s = do
   where
     errType = CEInvalidChatMessage conn Nothing (safeDecodeUtf8 s)
 {-# INLINE parseChatMessage #-}
+
+-- refactor with getChatScopeRecipients
+getChatScopeInfo :: VersionRangeChat -> User -> GroupInfo -> Maybe GroupChatScope -> CM (Maybe GroupChatScopeInfo)
+getChatScopeInfo vr user GroupInfo {membership} scope = case scope of
+  Nothing -> pure Nothing
+  Just (GCSMemberSupport Nothing) -> do
+    chatScope <- liftIO $ memberSupportScopeInfo membership Nothing
+    pure $ Just chatScope
+  Just (GCSMemberSupport (Just gmId)) -> do
+    supportMem <- withFastStore $ \db -> getGroupMemberById db vr user gmId
+    chatScope <- liftIO $ memberSupportScopeInfo supportMem (Just supportMem)
+    pure $ Just chatScope
+
+-- TODO [knocking] refactor to GroupChatScope -> "a" function, "a" is some new type? Or possibly split to get scope/get recipients steps
+getChatScopeRecipients :: VersionRangeChat -> User -> GroupInfo -> Maybe GroupChatScope -> VersionChat -> CM (Maybe GroupChatScopeInfo, [GroupMember])
+getChatScopeRecipients vr user gInfo@GroupInfo {membership} scope modsCompatVersion = case scope of
+  Nothing -> do
+    unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
+    ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
+    let recipients = filter memberCurrent ms
+    pure (Nothing, recipients)
+  Just (GCSMemberSupport Nothing) -> do
+    chatScope <- liftIO $ memberSupportScopeInfo membership Nothing
+    modMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
+    let rcpModMs' = filter (\m -> compatible m && memberCurrent m) modMs
+    when (null rcpModMs') $ throwChatError $ CECommandError "no admins support this message"
+    pure (Just chatScope, rcpModMs')
+  Just (GCSMemberSupport (Just gmId)) -> do
+    unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
+    supportMem <- withFastStore $ \db -> getGroupMemberById db vr user gmId
+    unless (memberCurrentOrPending supportMem) $ throwChatError $ CECommandError "support member not current or pending"
+    chatScope <- liftIO $ memberSupportScopeInfo supportMem (Just supportMem)
+    if memberStatus supportMem == GSMemPendingApproval
+      then pure (Just chatScope, [supportMem])
+      else do
+        modMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
+        let rcpModMs' = filter (\m -> compatible m && memberCurrent m) modMs
+        pure (Just chatScope, [supportMem] <> rcpModMs')
+  where
+    compatible GroupMember {activeConn, memberChatVRange} =
+      maxVersion (maybe memberChatVRange peerChatVRange activeConn) >= modsCompatVersion
 
 getLocalGroupChatScope :: GroupInfo -> IO (Maybe GroupChatScopeInfo)
 getLocalGroupChatScope GroupInfo {membership}

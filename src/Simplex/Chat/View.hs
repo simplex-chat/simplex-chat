@@ -524,7 +524,7 @@ userNtf User {showNtfs, activeUser} = showNtfs || activeUser
 chatDirNtf :: User -> ChatInfo c -> CIDirection c d -> Bool -> Bool
 chatDirNtf user cInfo chatDir mention = case (cInfo, chatDir) of
   (DirectChat ct, CIDirectRcv) -> contactNtf user ct mention
-  (GroupChat g _scopeInfo, CIGroupRcv _scopeInfo' m) -> groupNtf user g mention && not (blockedByAdmin m) && showMessages (memberSettings m)
+  (GroupChat g _scopeInfo, CIGroupRcv m) -> groupNtf user g mention && not (blockedByAdmin m) && showMessages (memberSettings m)
   _ -> True
 
 contactNtf :: User -> Contact -> Bool -> Bool
@@ -623,14 +623,14 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
               (directQuote chatDir)
               quotedItem
       GroupChat g scopeInfo -> case chatDir of
-        CIGroupSnd _scopeInfo -> case content of
+        CIGroupSnd -> case content of
           CISndMsgContent mc -> hideLive meta $ withSndFile to $ sndMsg to context mc
           CISndGroupInvitation {} -> showSndItemProhibited to
           _ -> showSndItem to
           where
             to = ttyToGroup g <> scopeTo
             scopeTo = ttyTo $ scopeDescr scopeInfo
-        CIGroupRcv _scopeInfo m -> case content of
+        CIGroupRcv m -> case content of
           CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from context mc
           CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
           CIRcvGroupInvitation {} -> showRcvItemProhibited from
@@ -781,14 +781,14 @@ viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, itemEd
           (directQuote chatDir)
           quotedItem
   GroupChat g _scopeInfo -> case chatDir of
-    CIGroupRcv _scopeInfo m -> case content of
+    CIGroupRcv m -> case content of
       CIRcvMsgContent mc
         | itemLive == Just True && not liveItems -> []
         | otherwise -> viewReceivedUpdatedMessage from context mc ts tz meta
       _ -> []
       where
         from = if itemEdited then ttyFromGroupEdited g m else ttyFromGroup g m
-    CIGroupSnd _scopeInfo -> case content of
+    CIGroupSnd -> case content of
       CISndMsgContent mc -> hideLive meta $ viewSentMessage to context mc ts tz meta
       _ -> []
       where
@@ -840,7 +840,7 @@ viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md
       where
         from = ttyFromContact c
         reactionMsg mc = quoteText mc $ if toMsgDirection md == MDSnd then ">>" else ">"
-    (GroupChat g _scopeInfo, CIGroupRcv _scopeInfo' m) -> case ciMsgContent content of
+    (GroupChat g _scopeInfo, CIGroupRcv m) -> case ciMsgContent content of
       Just mc -> view from $ reactionMsg mc
       _ -> []
       where
@@ -853,7 +853,7 @@ viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md
         from = "* "
         reactionMsg mc = quoteText mc $ if toMsgDirection md == MDSnd then ">>" else ">"
     (_, CIDirectSnd) -> [sentText]
-    (_, CIGroupSnd _scopeInfo) -> [sentText]
+    (_, CIGroupSnd) -> [sentText]
     (_, CILocalSnd) -> [sentText]
   where
     view from msg
@@ -898,8 +898,8 @@ sentByMember GroupInfo {membership} = \case
 
 sentByMember' :: GroupInfo -> CIDirection 'CTGroup d -> GroupMember
 sentByMember' GroupInfo {membership} = \case
-  CIGroupSnd _scopeInfo -> membership
-  CIGroupRcv _scopeInfo m -> m
+  CIGroupSnd -> membership
+  CIGroupRcv m -> m
 
 quoteText :: MsgContent -> StyledString -> [StyledString]
 quoteText qmc sentBy = prependFirst (sentBy <> " ") $ msgPreview qmc
@@ -1885,7 +1885,7 @@ uploadingFile :: StyledString -> AChatItem -> [StyledString]
 uploadingFile status = \case
   AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectSnd} ->
     [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyContact c]
-  AChatItem _ _ (GroupChat g _scopeInfo) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd _scopeInfo'} ->
+  AChatItem _ _ (GroupChat g _scopeInfo) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd} ->
     [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g]
   _ -> [status <> " uploading file"]
 
@@ -1965,7 +1965,7 @@ cryptoFileArgsStr testView cfArgs@(CFArgs key nonce)
 
 fileFrom :: ChatInfo c -> CIDirection c d -> StyledString
 fileFrom (DirectChat ct) CIDirectRcv = " from " <> ttyContact' ct
-fileFrom _ (CIGroupRcv _scopeInfo m) = " from " <> ttyMember m
+fileFrom _ (CIGroupRcv m) = " from " <> ttyMember m
 fileFrom _ _ = ""
 
 receivingFile_ :: StyledString -> RcvFileTransfer -> [StyledString]

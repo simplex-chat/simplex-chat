@@ -24,9 +24,10 @@ ALTER TABLE chat_items ADD COLUMN group_scope_group_member_id INTEGER REFERENCES
 
 CREATE INDEX idx_chat_items_group_scope_group_member_id ON chat_items(group_scope_group_member_id);
 
-CREATE INDEX idx_chat_items_groups_group_scope_group_member_id_item_ts ON chat_items(
+CREATE INDEX idx_chat_items_group_scope_item_ts ON chat_items(
   user_id,
   group_id,
+  group_scope_tag,
   group_scope_group_member_id,
   item_ts
 );
@@ -35,7 +36,7 @@ CREATE INDEX idx_chat_items_groups_group_scope_group_member_id_item_ts ON chat_i
 down_m20250310_group_scope :: Query
 down_m20250310_group_scope =
   [sql|
-DROP INDEX idx_chat_items_groups_group_scope_group_member_id_item_ts;
+DROP INDEX idx_chat_items_group_scope_item_ts;
 
 DROP INDEX idx_chat_items_group_scope_group_member_id;
 

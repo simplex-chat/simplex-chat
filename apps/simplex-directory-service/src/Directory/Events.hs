@@ -71,7 +71,7 @@ crDirectoryEvent = \case
     | pending m -> Just $ DEPendingMember groupInfo m
     | otherwise -> Nothing
   CRNewChatItems {chatItems = AChatItem _ _ (GroupChat g _scopeInfo) ci : _} -> case ci of
-    ChatItem {chatDir = CIGroupRcv _scopeInfo m, content = CIRcvMsgContent (MCText t)} | pending m -> Just $ DEPendingMemberMsg g m (chatItemId' ci) t
+    ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent (MCText t)} | pending m -> Just $ DEPendingMemberMsg g m (chatItemId' ci) t
     _ -> Nothing
   CRMemberRole {groupInfo, member, toRole}
     | groupMemberId' member == groupMemberId' (membership groupInfo) -> Just $ DEServiceRoleChanged groupInfo toRole

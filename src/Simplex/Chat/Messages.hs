@@ -217,23 +217,12 @@ isUserMention ChatItem {meta = CIMeta {userMention}} = userMention
 data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectSnd :: CIDirection 'CTDirect 'MDSnd
   CIDirectRcv :: CIDirection 'CTDirect 'MDRcv
-  CIGroupSnd :: Maybe GroupChatScopeInfo -> CIDirection 'CTGroup 'MDSnd
-  CIGroupRcv :: Maybe GroupChatScopeInfo -> GroupMember -> CIDirection 'CTGroup 'MDRcv
+  CIGroupSnd :: CIDirection 'CTGroup 'MDSnd
+  CIGroupRcv :: GroupMember -> CIDirection 'CTGroup 'MDRcv
   CILocalSnd :: CIDirection 'CTLocal 'MDSnd
   CILocalRcv :: CIDirection 'CTLocal 'MDRcv
 
 deriving instance Show (CIDirection c d)
-
-groupCIDirectionScopeInfo :: ChatItem 'CTGroup d -> Maybe GroupChatScopeInfo
-groupCIDirectionScopeInfo ChatItem {chatDir} = case chatDir of
-  CIGroupSnd s -> s
-  CIGroupRcv s _ -> s
-
-groupCIDirectionScope :: ChatItem 'CTGroup d -> Maybe GroupChatScope
-groupCIDirectionScope = fmap toChatScope . groupCIDirectionScopeInfo
-
-groupCCIDirectionScope :: CChatItem 'CTGroup -> Maybe GroupChatScope
-groupCCIDirectionScope (CChatItem _ ci) = groupCIDirectionScope ci
 
 data CCIDirection c = forall d. MsgDirectionI d => CCID (SMsgDirection d) (CIDirection c d)
 
@@ -242,8 +231,8 @@ data ACIDirection = forall c d. (ChatTypeI c, MsgDirectionI d) => ACID (SChatTyp
 data JSONCIDirection
   = JCIDirectSnd
   | JCIDirectRcv
-  | JCIGroupSnd {chatScopeInfo :: Maybe GroupChatScopeInfo}
-  | JCIGroupRcv {chatScopeInfo :: Maybe GroupChatScopeInfo, groupMember :: GroupMember}
+  | JCIGroupSnd
+  | JCIGroupRcv {groupMember :: GroupMember}
   | JCILocalSnd
   | JCILocalRcv
   deriving (Show)
@@ -252,8 +241,8 @@ jsonCIDirection :: CIDirection c d -> JSONCIDirection
 jsonCIDirection = \case
   CIDirectSnd -> JCIDirectSnd
   CIDirectRcv -> JCIDirectRcv
-  CIGroupSnd s -> JCIGroupSnd s
-  CIGroupRcv s m -> JCIGroupRcv s m
+  CIGroupSnd -> JCIGroupSnd
+  CIGroupRcv m -> JCIGroupRcv m
   CILocalSnd -> JCILocalSnd
   CILocalRcv -> JCILocalRcv
 
@@ -261,8 +250,8 @@ jsonACIDirection :: JSONCIDirection -> ACIDirection
 jsonACIDirection = \case
   JCIDirectSnd -> ACID SCTDirect SMDSnd CIDirectSnd
   JCIDirectRcv -> ACID SCTDirect SMDRcv CIDirectRcv
-  JCIGroupSnd s -> ACID SCTGroup SMDSnd $ CIGroupSnd s
-  JCIGroupRcv s m -> ACID SCTGroup SMDRcv $ CIGroupRcv s m
+  JCIGroupSnd -> ACID SCTGroup SMDSnd CIGroupSnd
+  JCIGroupRcv m -> ACID SCTGroup SMDRcv $ CIGroupRcv m
   JCILocalSnd -> ACID SCTLocal SMDSnd CILocalSnd
   JCILocalRcv -> ACID SCTLocal SMDRcv CILocalRcv
 
@@ -299,8 +288,8 @@ timedDeleteAt' CITimed {deleteAt} = deleteAt
 
 chatItemMember :: GroupInfo -> ChatItem 'CTGroup d -> GroupMember
 chatItemMember GroupInfo {membership} ChatItem {chatDir} = case chatDir of
-  CIGroupSnd _s -> membership
-  CIGroupRcv _s m -> m
+  CIGroupSnd -> membership
+  CIGroupRcv m -> m
 
 ciReactionAllowed :: ChatItem c d -> Bool
 ciReactionAllowed ChatItem {meta = CIMeta {itemDeleted = Just _}} = False
@@ -318,8 +307,8 @@ toCIDirection :: ChatDirection c d -> CIDirection c d
 toCIDirection = \case
   CDDirectSnd _ -> CIDirectSnd
   CDDirectRcv _ -> CIDirectRcv
-  CDGroupSnd _ s -> CIGroupSnd s
-  CDGroupRcv _ s m -> CIGroupRcv s m
+  CDGroupSnd _ _ -> CIGroupSnd
+  CDGroupRcv _ _ m -> CIGroupRcv m
   CDLocalSnd _ -> CILocalSnd
   CDLocalRcv _ -> CILocalRcv
 
@@ -553,16 +542,16 @@ jsonCIQDirection :: CIQDirection c -> Maybe JSONCIDirection
 jsonCIQDirection = \case
   CIQDirectSnd -> Just JCIDirectSnd
   CIQDirectRcv -> Just JCIDirectRcv
-  CIQGroupSnd -> Just $ JCIGroupSnd Nothing -- TODO [knocking] figure out what this is for, add scope to CIQDirection?
-  CIQGroupRcv (Just m) -> Just $ JCIGroupRcv Nothing m
+  CIQGroupSnd -> Just JCIGroupSnd
+  CIQGroupRcv (Just m) -> Just $ JCIGroupRcv m
   CIQGroupRcv Nothing -> Nothing
 
 jsonACIQDirection :: Maybe JSONCIDirection -> Either String ACIQDirection
 jsonACIQDirection = \case
   Just JCIDirectSnd -> Right $ ACIQDirection SCTDirect CIQDirectSnd
   Just JCIDirectRcv -> Right $ ACIQDirection SCTDirect CIQDirectRcv
-  Just (JCIGroupSnd _scope) -> Right $ ACIQDirection SCTGroup CIQGroupSnd
-  Just (JCIGroupRcv _scope m) -> Right $ ACIQDirection SCTGroup $ CIQGroupRcv (Just m)
+  Just JCIGroupSnd -> Right $ ACIQDirection SCTGroup CIQGroupSnd
+  Just (JCIGroupRcv m) -> Right $ ACIQDirection SCTGroup $ CIQGroupRcv (Just m)
   Nothing -> Right $ ACIQDirection SCTGroup $ CIQGroupRcv Nothing
   Just JCILocalSnd -> Left "unquotable"
   Just JCILocalRcv -> Left "unquotable"
