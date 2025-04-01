@@ -363,7 +363,6 @@ data ChatCommand
   | APIRemoveMembers {groupId :: GroupId, groupMemberIds :: Set GroupMemberId, withMessages :: Bool}
   | APILeaveGroup GroupId
   | APIListMembers GroupId
-  | APIMemberSupportChats GroupId
   -- | APIDeleteGroupConversations GroupId (NonEmpty GroupConversationId)
   -- | APIArchiveGroupConversations GroupId (NonEmpty GroupConversationId)
   | APIUpdateGroupProfile GroupId GroupProfile
@@ -489,6 +488,7 @@ data ChatCommand
   | DeleteGroup GroupName
   | ClearGroup GroupName
   | ListMembers GroupName
+  | ListMemberSupportChats GroupName
   | APIListGroups UserId (Maybe ContactId) (Maybe String)
   | ListGroups (Maybe ContactName) (Maybe String)
   | UpdateGroupNames GroupName GroupProfile

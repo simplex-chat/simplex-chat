@@ -2288,12 +2288,6 @@ processChatCommand' vr = \case
       pure $ CRLeftMemberUser user gInfo {membership = membership {memberStatus = GSMemLeft}}
   APIListMembers groupId -> withUser $ \user ->
     CRGroupMembers user <$> withFastStore (\db -> getGroup db vr user groupId)
-  APIMemberSupportChats groupId -> withUser $ \user -> do
-    gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
-    -- TODO [knocking] delete all support chats (chat items) if role is lowered?
-    assertUserGroupRole gInfo GRModerator
-    supportMems <- withFastStore' $ \db -> getSupportMembers db vr user gInfo
-    pure $ CRMemberSupportChats user gInfo supportMems
   -- -- validate: prohibit to delete/archive if member is pending (has to communicate approval or rejection)
   -- APIDeleteGroupConversations groupId _gcId -> withUser $ \user -> do
   --   _gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
@@ -2327,6 +2321,12 @@ processChatCommand' vr = \case
   ListMembers gName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIListMembers groupId
+  ListMemberSupportChats gName -> withUser $ \user -> do
+    gInfo <- withFastStore $ \db -> getGroupInfoByName db vr user gName
+    -- TODO [knocking] delete all support chats (chat items) if role is lowered?
+    assertUserGroupRole gInfo GRModerator
+    supportMems <- withFastStore' $ \db -> getSupportMembers db vr user gInfo
+    pure $ CRMemberSupportChats user gInfo supportMems
   APIListGroups userId contactId_ search_ -> withUserId userId $ \user ->
     CRGroupsList user <$> withFastStore' (\db -> getUserGroupsWithSummary db vr user contactId_ search_)
   ListGroups cName_ search_ -> withUser $ \user@User {userId} -> do
@@ -4013,7 +4013,6 @@ chatCommandP =
       "/_remove #" *> (APIRemoveMembers <$> A.decimal <*> _strP <*> (" messages=" *> onOffP <|> pure False)),
       "/_leave #" *> (APILeaveGroup <$> A.decimal),
       "/_members #" *> (APIListMembers <$> A.decimal),
-      "/_member support chats #" *> (APIMemberSupportChats <$> A.decimal),
       -- "/_archive conversations #" *> (APIArchiveGroupConversations <$> A.decimal <*> _strP),
       -- "/_delete conversations #" *> (APIDeleteGroupConversations <$> A.decimal <*> _strP),
       "/_server test " *> (APITestProtoServer <$> A.decimal <* A.space <*> strP),
@@ -4107,6 +4106,7 @@ chatCommandP =
       "/clear #" *> (ClearGroup <$> displayNameP),
       "/clear " *> char_ '@' *> (ClearContact <$> displayNameP),
       ("/members " <|> "/ms ") *> char_ '#' *> (ListMembers <$> displayNameP),
+      "/member support chats #" *> (ListMemberSupportChats <$> displayNameP),
       "/_groups" *> (APIListGroups <$> A.decimal <*> optional (" @" *> A.decimal) <*> optional (A.space *> stringP)),
       ("/groups" <|> "/gs") *> (ListGroups <$> optional (" @" *> displayNameP) <*> optional (A.space *> stringP)),
       "/_group_profile #" *> (APIUpdateGroupProfile <$> A.decimal <* A.space <*> jsonP),
