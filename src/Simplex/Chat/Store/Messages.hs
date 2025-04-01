@@ -1255,19 +1255,16 @@ getGroupChat db vr user groupId scope_ contentFilter pagination search_ = do
       unless (null search) $ throwError $ SEInternalError "initial chat pagination doesn't support search"
       getGroupChatInitial_ db user g scopeInfo contentFilter count
 
--- TODO [knocking] why is it not patching the absent support chat here?
 getGroupChatScopeInfo :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupChatScope -> ExceptT StoreError IO GroupChatScopeInfo
-getGroupChatScopeInfo db vr user GroupInfo {membership} = \case
-  GCSMemberSupport Nothing -> case supportChat membership of
-    Nothing -> throwError $ SEInternalError "no support chat"
-    Just GroupMemberSupportChat {chatTs, unanswered} ->
-      pure $ GCSIMemberSupport {groupMember_ = Nothing, chatTs, unanswered}
+getGroupChatScopeInfo db vr user GroupInfo {modsSupportChat} = \case
+  GCSMemberSupport Nothing -> case modsSupportChat of
+    Nothing -> throwError $ SEInternalError "no moderators support chat"
+    Just _modsSupportChat -> pure $ GCSIMemberSupport {groupMember_ = Nothing}
   GCSMemberSupport (Just gmId) -> do
     m <- getGroupMemberById db vr user gmId
     case supportChat m of
       Nothing -> throwError $ SEInternalError "no support chat"
-      Just GroupMemberSupportChat {chatTs, unanswered} ->
-        pure GCSIMemberSupport {groupMember_ = Just m, chatTs, unanswered}
+      Just _supportChat -> pure GCSIMemberSupport {groupMember_ = Just m}
 
 getGroupChatScopeInfoForItem :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> ChatItemId -> ExceptT StoreError IO (Maybe GroupChatScopeInfo)
 getGroupChatScopeInfoForItem db vr user g itemId =

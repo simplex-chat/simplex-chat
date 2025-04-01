@@ -777,19 +777,19 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   else pure $ memberStatus membership
               pure (GSMemConnected, membershipStatus)
             toView $ CRUserJoinedGroup user gInfo {membership = membership {memberStatus = membershipStatus}} m {memberStatus = mStatus}
-            scopeInfo <- liftIO $ getMemberChatScope gInfo m
-            let cd = CDGroupRcv gInfo scopeInfo m
+            (gInfo', m', scopeInfo) <- liftIO $ getMemberChatScope gInfo m
+            let cd = CDGroupRcv gInfo' scopeInfo m'
             createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
-            createGroupFeatureItems user cd CIRcvGroupFeature gInfo
-            memberConnectedChatItem gInfo scopeInfo m
-            unless (memberPending membership) $ maybeCreateGroupDescrLocal gInfo m
+            createGroupFeatureItems user cd CIRcvGroupFeature gInfo'
+            memberConnectedChatItem gInfo' scopeInfo m'
+            unless (memberPending membership) $ maybeCreateGroupDescrLocal gInfo' m'
           GCInviteeMember -> do
             mStatus <-
               if not (memberPending m)
                 then withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected $> GSMemConnected
                 else pure $ memberStatus m
-            scopeInfo <- liftIO $ getMemberChatScope gInfo m
-            memberConnectedChatItem gInfo scopeInfo m
+            (gInfo', m', scopeInfo) <- liftIO $ getMemberChatScope gInfo m
+            memberConnectedChatItem gInfo' scopeInfo m'
             toView $ CRJoinedGroupMember user gInfo m {memberStatus = mStatus}
             let Connection {viaUserContactLink} = conn
             when (isJust viaUserContactLink && isNothing (memberContactId m)) sendXGrpLinkMem

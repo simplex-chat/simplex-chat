@@ -1171,7 +1171,7 @@ deleteTimedItem user (ChatRef cType chatId scope, itemId) deleteAt = do
     CTGroup -> do
       (gInfo, ci) <- withStore $ \db -> (,) <$> getGroupInfo db vr user chatId <*> getGroupChatItem db user chatId itemId
       deletedTs <- liftIO getCurrentTime
-      chatScopeInfo <- mapM (getChatScopeInfo vr user gInfo) scope
+      chatScopeInfo <- mapM (getChatScopeInfo vr user) scope
       deleteGroupCIs user gInfo chatScopeInfo [ci] True True Nothing deletedTs >>= toView
     _ -> toView . CRChatError (Just user) . ChatError $ CEInternalError "bad deleteTimedItem cType"
 
@@ -1287,13 +1287,12 @@ parseChatMessage conn s = do
     errType = CEInvalidChatMessage conn Nothing (safeDecodeUtf8 s)
 {-# INLINE parseChatMessage #-}
 
-getChatScopeInfo :: VersionRangeChat -> User -> GroupInfo -> GroupChatScope -> CM GroupChatScopeInfo
-getChatScopeInfo vr user GroupInfo {membership} = \case
-  GCSMemberSupport Nothing ->
-    liftIO $ memberSupportScopeInfo membership Nothing
+getChatScopeInfo :: VersionRangeChat -> User -> GroupChatScope -> CM GroupChatScopeInfo
+getChatScopeInfo vr user = \case
+  GCSMemberSupport Nothing -> pure $ GCSIMemberSupport Nothing
   GCSMemberSupport (Just gmId) -> do
     supportMem <- withFastStore $ \db -> getGroupMemberById db vr user gmId
-    liftIO $ memberSupportScopeInfo supportMem (Just supportMem)
+    pure $ GCSIMemberSupport (Just supportMem)
 
 -- TODO [knocking] refactor to GroupChatScope -> "a" function, "a" is some new type? Or possibly split to get scope/get recipients steps
 getGroupRecipients :: VersionRangeChat -> User -> GroupInfo -> Maybe GroupChatScope -> VersionChat -> CM (Maybe GroupChatScopeInfo, [GroupMember])
@@ -1304,47 +1303,68 @@ getGroupRecipients vr user gInfo@GroupInfo {membership} scope modsCompatVersion 
     let recipients = filter memberCurrent ms
     pure (Nothing, recipients)
   Just (GCSMemberSupport Nothing) -> do
-    chatScope <- liftIO $ memberSupportScopeInfo membership Nothing
     modMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
     let rcpModMs' = filter (\m -> compatible m && memberCurrent m) modMs
     when (null rcpModMs') $ throwChatError $ CECommandError "no admins support this message"
-    pure (Just chatScope, rcpModMs')
+    let scopeInfo = GCSIMemberSupport Nothing
+    pure (Just scopeInfo, rcpModMs')
   Just (GCSMemberSupport (Just gmId)) -> do
     unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
     supportMem <- withFastStore $ \db -> getGroupMemberById db vr user gmId
     unless (memberCurrentOrPending supportMem) $ throwChatError $ CECommandError "support member not current or pending"
-    chatScope <- liftIO $ memberSupportScopeInfo supportMem (Just supportMem)
+    let scopeInfo = GCSIMemberSupport (Just supportMem)
     if memberStatus supportMem == GSMemPendingApproval
-      then pure (Just chatScope, [supportMem])
+      then pure (Just scopeInfo, [supportMem])
       else do
         modMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
         let rcpModMs' = filter (\m -> compatible m && memberCurrent m) modMs
-        pure (Just chatScope, [supportMem] <> rcpModMs')
+        pure (Just scopeInfo, [supportMem] <> rcpModMs')
   where
     compatible GroupMember {activeConn, memberChatVRange} =
       maxVersion (maybe memberChatVRange peerChatVRange activeConn) >= modsCompatVersion
 
-getLocalGroupChatScope :: GroupInfo -> IO (Maybe GroupChatScopeInfo)
-getLocalGroupChatScope GroupInfo {membership}
-  | memberPending membership = Just <$> memberSupportScopeInfo membership Nothing
-  | otherwise = pure Nothing
+getLocalGroupChatScope :: GroupInfo -> IO (GroupInfo, Maybe GroupChatScopeInfo)
+getLocalGroupChatScope gInfo@GroupInfo {membership}
+  | memberPending membership = do
+      (gInfo', scopeInfo) <- patchGroupSupportChatInfo gInfo
+      pure (gInfo', Just scopeInfo)
+  | otherwise =
+      pure (gInfo, Nothing)
 
-getMemberChatScope :: GroupInfo -> GroupMember -> IO (Maybe GroupChatScopeInfo)
-getMemberChatScope GroupInfo {membership} m
-  | memberPending membership = Just <$> memberSupportScopeInfo membership Nothing
-  | memberPending m = Just <$> memberSupportScopeInfo m (Just m)
-  | otherwise = pure Nothing
+getMemberChatScope :: GroupInfo -> GroupMember -> IO (GroupInfo, GroupMember, Maybe GroupChatScopeInfo)
+getMemberChatScope gInfo@GroupInfo {membership} m
+  | memberPending membership = do
+      (gInfo', scopeInfo) <- patchGroupSupportChatInfo gInfo
+      pure (gInfo', m, Just scopeInfo)
+  | memberPending m = do
+      (m', scopeInfo) <- patchMemberSupportChatInfo m
+      pure (gInfo, m', Just scopeInfo)
+  | otherwise =
+      pure (gInfo, m, Nothing)
 
--- convenience function to correct GCSIMemberSupport `scope` state (to be passed to UI)
--- in case "member support chat" is new and wasn't present in member/membership state
--- TODO [knocking] it should patch member in scope and possibly membership in groupInfo
-memberSupportScopeInfo :: GroupMember -> Maybe GroupMember -> IO GroupChatScopeInfo
-memberSupportScopeInfo GroupMember {supportChat} scopeGroupMember_ = case supportChat of
-  Just GroupMemberSupportChat {chatTs, unanswered} ->
-    pure GCSIMemberSupport {groupMember_ = scopeGroupMember_, chatTs, unanswered}
-  Nothing -> do
-    chatTs <- getCurrentTime
-    pure GCSIMemberSupport {groupMember_ = scopeGroupMember_, chatTs, unanswered = True}
+patchGroupSupportChatInfo :: GroupInfo -> IO (GroupInfo, GroupChatScopeInfo)
+patchGroupSupportChatInfo gInfo@GroupInfo {modsSupportChat} =
+  case modsSupportChat of
+    Nothing -> do
+      chatTs <- getCurrentTime
+      let gInfo' = gInfo {modsSupportChat = Just $ GroupSupportChat chatTs True}
+          scopeInfo = GCSIMemberSupport {groupMember_ = Nothing}
+      pure (gInfo', scopeInfo)
+    Just _supportChat ->
+      let scopeInfo = GCSIMemberSupport {groupMember_ = Nothing}
+       in pure (gInfo, scopeInfo)
+
+patchMemberSupportChatInfo :: GroupMember -> IO (GroupMember, GroupChatScopeInfo)
+patchMemberSupportChatInfo m@GroupMember {supportChat} =
+  case supportChat of
+    Nothing -> do
+      chatTs <- getCurrentTime
+      let m' = m {supportChat = Just $ GroupSupportChat chatTs True}
+          scopeInfo = GCSIMemberSupport {groupMember_ = Just m'}
+      pure (m', scopeInfo)
+    Just _supportChat ->
+      let scopeInfo = GCSIMemberSupport {groupMember_ = Just m}
+       in pure (m, scopeInfo)
 
 sendFileChunk :: User -> SndFileTransfer -> CM ()
 sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentConnId acId} =

@@ -419,7 +419,14 @@ data GroupInfo = GroupInfo
     chatTags :: [ChatTagId],
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
-    customData :: Maybe CustomData
+    customData :: Maybe CustomData,
+    modsSupportChat :: Maybe GroupSupportChat
+  }
+  deriving (Eq, Show)
+
+data GroupSupportChat = GroupSupportChat
+  { chatTs :: UTCTime,
+    unanswered :: Bool
   }
   deriving (Eq, Show)
 
@@ -826,13 +833,7 @@ data GroupMember = GroupMember
     memberChatVRange :: VersionRangeChat,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
-    supportChat :: Maybe GroupMemberSupportChat
-  }
-  deriving (Eq, Show)
-
-data GroupMemberSupportChat = GroupMemberSupportChat
-  { chatTs :: UTCTime,
-    unanswered :: Bool
+    supportChat :: Maybe GroupSupportChat
   }
   deriving (Eq, Show)
 
@@ -1848,7 +1849,7 @@ $(JQ.deriveJSON defaultJSON ''Connection)
 
 $(JQ.deriveJSON defaultJSON ''PendingContactConnection)
 
-$(JQ.deriveJSON defaultJSON ''GroupMemberSupportChat)
+$(JQ.deriveJSON defaultJSON ''GroupSupportChat)
 
 $(JQ.deriveJSON defaultJSON ''GroupMember)
 
