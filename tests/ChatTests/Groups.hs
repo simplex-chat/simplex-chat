@@ -3001,12 +3001,12 @@ testGLinkApproveMember =
 
       -- pending member and host can send messages to each other
       alice ##> "/_send #1 @support-3 text send me proofs"
-      alice <# "#team <<support: cath>> send me proofs"
-      cath <# "#team alice> <<support>> send me proofs"
+      alice <# "#team (support: cath) send me proofs"
+      cath <# "#team (support) alice> send me proofs"
 
       cath ##> "/_send #1 @support text proofs"
-      cath <# "#team <<support>> proofs"
-      alice <# "#team cath> <<support: cath>> proofs"
+      cath <# "#team (support) proofs"
+      alice <# "#team (support: cath) cath> proofs"
 
       -- accept member
       alice ##> "/_accept member #1 3 member"
@@ -3100,23 +3100,23 @@ testGLinkReviewMember =
 
       -- pending member and moderators can send messages to each other
       alice ##> "/_send #1 @support-5 text 5"
-      alice <# "#team <<support: eve>> 5"
-      [cath, dan] *<# "#team alice> <<support: eve>> 5"
-      eve <# "#team alice> <<support>> 5"
+      alice <# "#team (support: eve) 5"
+      [cath, dan] *<# "#team (support: eve) alice> 5"
+      eve <# "#team (support) alice> 5"
 
       cath ##> "/_send #1 @support-5 text 6"
-      cath <# "#team <<support: eve>> 6"
-      [alice, dan] *<# "#team cath> <<support: eve>> 6"
-      eve <# "#team cath> <<support>> 6"
+      cath <# "#team (support: eve) 6"
+      [alice, dan] *<# "#team (support: eve) cath> 6"
+      eve <# "#team (support) cath> 6"
 
       dan ##> "/_send #1 @support-5 text 7"
-      dan <# "#team <<support: eve>> 7"
-      [alice, cath] *<# "#team dan> <<support: eve>> 7"
-      eve <# "#team dan> <<support>> 7"
+      dan <# "#team (support: eve) 7"
+      [alice, cath] *<# "#team (support: eve) dan> 7"
+      eve <# "#team (support) dan> 7"
 
       eve ##> "/_send #1 @support text 8"
-      eve <# "#team <<support>> 8"
-      [alice, cath, dan] *<# "#team eve> <<support: eve>> 8"
+      eve <# "#team (support) 8"
+      [alice, cath, dan] *<# "#team (support: eve) eve> 8"
 
       (bob </)
 
@@ -3215,12 +3215,12 @@ testGLinkApproveThenReviewMember =
 
       -- pending member and host can send messages to each other
       alice ##> "/_send #1 @support-5 text 5"
-      alice <# "#team <<support: eve>> 5"
-      eve <# "#team alice> <<support>> 5"
+      alice <# "#team (support: eve) 5"
+      eve <# "#team (support) alice> 5"
 
       eve ##> "/_send #1 @support text 6"
-      eve <# "#team <<support>> 6"
-      alice <# "#team eve> <<support: eve>> 6"
+      eve <# "#team (support) 6"
+      alice <# "#team (support: eve) eve> 6"
 
       (bob </)
       (cath </)
@@ -3263,23 +3263,23 @@ testGLinkApproveThenReviewMember =
 
       -- pending member and moderators can send messages to each other
       alice ##> "/_send #1 @support-5 text 11"
-      alice <# "#team <<support: eve>> 11"
-      [cath, dan] *<# "#team alice> <<support: eve>> 11"
-      eve <# "#team alice> <<support>> 11"
+      alice <# "#team (support: eve) 11"
+      [cath, dan] *<# "#team (support: eve) alice> 11"
+      eve <# "#team (support) alice> 11"
 
       cath ##> "/_send #1 @support-5 text 12"
-      cath <# "#team <<support: eve>> 12"
-      [alice, dan] *<# "#team cath> <<support: eve>> 12"
-      eve <# "#team cath> <<support>> 12"
+      cath <# "#team (support: eve) 12"
+      [alice, dan] *<# "#team (support: eve) cath> 12"
+      eve <# "#team (support) cath> 12"
 
       dan ##> "/_send #1 @support-5 text 13"
-      dan <# "#team <<support: eve>> 13"
-      [alice, cath] *<# "#team dan> <<support: eve>> 13"
-      eve <# "#team dan> <<support>> 13"
+      dan <# "#team (support: eve) 13"
+      [alice, cath] *<# "#team (support: eve) dan> 13"
+      eve <# "#team (support) dan> 13"
 
       eve ##> "/_send #1 @support text 14"
-      eve <# "#team <<support>> 14"
-      [alice, cath, dan] *<# "#team eve> <<support: eve>> 14"
+      eve <# "#team (support) 14"
+      [alice, cath, dan] *<# "#team (support: eve) eve> 14"
 
       (bob </)
 
@@ -4595,14 +4595,14 @@ testGroupMsgForwardReport =
           cath <## "#team: alice changed your role from admin to member"
         ]
       cath ##> "/report #team content hi there"
-      cath <# "#team <<support>> > bob hi there"
+      cath <# "#team (support) > bob hi there"
       cath <## "      report content"
       concurrentlyN_
         [ do
-            alice <# "#team cath> <<support: cath>> > bob hi there"
+            alice <# "#team (support: cath) cath> > bob hi there"
             alice <## "      report content",
           do
-            bob <# "#team cath!> <<support: cath>> > bob hi there [>>]"
+            bob <# "#team (support: cath) cath!> > bob hi there [>>]"
             bob <## "      report content [>>]"
         ]
 
@@ -4614,11 +4614,11 @@ testGroupMsgForwardReport =
         ]
 
       cath ##> "/report #team content hi there"
-      cath <# "#team <<support>> > bob hi there"
+      cath <# "#team (support) > bob hi there"
       cath <## "      report content"
       concurrentlyN_
         [ do
-            alice <# "#team cath> <<support: cath>> > bob hi there"
+            alice <# "#team (support: cath) cath> > bob hi there"
             alice <## "      report content",
           (bob </)
         ]
@@ -6627,14 +6627,14 @@ testGroupMemberReports =
           dan <# "#jokes cath> inappropriate joke"
         ]
       dan ##> "/report #jokes content inappropriate joke"
-      dan <# "#jokes <<support>> > cath inappropriate joke"
+      dan <# "#jokes (support) > cath inappropriate joke"
       dan <## "      report content"
       concurrentlyN_
         [ do
-            alice <# "#jokes dan> <<support: dan>> > cath inappropriate joke"
+            alice <# "#jokes (support: dan) dan> > cath inappropriate joke"
             alice <## "      report content",
           do
-            bob <# "#jokes dan> <<support: dan>> > cath inappropriate joke"
+            bob <# "#jokes (support: dan) dan> > cath inappropriate joke"
             bob <## "      report content",
           (cath </)
         ]
@@ -6668,21 +6668,21 @@ testGroupMemberReports =
           dan <# "#jokes cath> ok joke"
         ]
       dan ##> "/report #jokes content ok joke"
-      dan <# "#jokes <<support>> > cath ok joke"
+      dan <# "#jokes (support) > cath ok joke"
       dan <## "      report content"
       dan ##> "/report #jokes spam ok joke"
-      dan <# "#jokes <<support>> > cath ok joke"
+      dan <# "#jokes (support) > cath ok joke"
       dan <## "      report spam"
       concurrentlyN_
         [ do
-            alice <# "#jokes dan> <<support: dan>> > cath ok joke"
+            alice <# "#jokes (support: dan) dan> > cath ok joke"
             alice <## "      report content"
-            alice <# "#jokes dan> <<support: dan>> > cath ok joke"
+            alice <# "#jokes (support: dan) dan> > cath ok joke"
             alice <## "      report spam",
           do
-            bob <# "#jokes dan> <<support: dan>> > cath ok joke"
+            bob <# "#jokes (support: dan) dan> > cath ok joke"
             bob <## "      report content"
-            bob <# "#jokes dan> <<support: dan>> > cath ok joke"
+            bob <# "#jokes (support: dan) dan> > cath ok joke"
             bob <## "      report spam",
           (cath </)
         ]
@@ -6709,14 +6709,14 @@ testGroupMemberReports =
           dan <# "#jokes cath> ok joke 2"
         ]
       dan ##> "/report #jokes content ok joke 2"
-      dan <# "#jokes <<support>> > cath ok joke 2"
+      dan <# "#jokes (support) > cath ok joke 2"
       dan <## "      report content"
       concurrentlyN_
         [ do
-            alice <# "#jokes dan> <<support: dan>> > cath ok joke 2"
+            alice <# "#jokes (support: dan) dan> > cath ok joke 2"
             alice <## "      report content",
           do
-            bob <# "#jokes dan> <<support: dan>> > cath ok joke 2"
+            bob <# "#jokes (support: dan) dan> > cath ok joke 2"
             bob <## "      report content",
           (cath </)
         ]
@@ -6724,7 +6724,7 @@ testGroupMemberReports =
       i :: ChatItemId <- read <$> getTermLine alice
       alice ##> ("/_delete reports #1 " <> show i <> " broadcast")
       alice <## "message marked deleted by you"
-      bob <# "#jokes dan> [marked deleted by alice] report content"
+      bob <# "#jokes (support: dan) dan> [marked deleted by alice] report content"
       alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by you]")])
       bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by alice]")])
       dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content")])
@@ -6926,12 +6926,12 @@ testScopedSupportSingleModerator =
     [alice, cath] *<# "#team bob> 2"
 
     alice ##> "/_send #1 @support-2 text 3"
-    alice <# "#team <<support: bob>> 3"
-    bob <# "#team alice> <<support>> 3"
+    alice <# "#team (support: bob) 3"
+    bob <# "#team (support) alice> 3"
 
     bob ##> "/_send #1 @support text 4"
-    bob <# "#team <<support>> 4"
-    alice <# "#team bob> <<support: bob>> 4"
+    bob <# "#team (support) 4"
+    alice <# "#team (support: bob) bob> 4"
 
     cath ##> "/_send #1 @support-3 text 5"
     cath <## "#team: you have insufficient permissions for this action, the required role is moderator"
@@ -6954,22 +6954,22 @@ testScopedSupportManyModerators =
     threadDelay 1000000
 
     alice ##> "/_send #1 @support-2 text 3"
-    alice <# "#team <<support: bob>> 3"
-    bob <# "#team alice> <<support>> 3"
-    dan <# "#team alice> <<support: bob>> 3"
+    alice <# "#team (support: bob) 3"
+    bob <# "#team (support) alice> 3"
+    dan <# "#team (support: bob) alice> 3"
 
     threadDelay 1000000
 
     bob ##> "/_send #1 @support text 4"
-    bob <# "#team <<support>> 4"
-    [alice, dan] *<# "#team bob> <<support: bob>> 4"
+    bob <# "#team (support) 4"
+    [alice, dan] *<# "#team (support: bob) bob> 4"
 
     threadDelay 1000000
 
     dan ##> "/_send #1 @support-3 text 5"
-    dan <# "#team <<support: bob>> 5"
-    alice <# "#team dan> <<support: bob>> 5"
-    bob <# "#team dan> <<support>> 5"
+    dan <# "#team (support: bob) 5"
+    alice <# "#team (support: bob) dan> 5"
+    bob <# "#team (support) dan> 5"
 
     alice #$> ("/_get chat #1 count=3", chat, [(0, "connected"), (1, "1"), (0, "2")])
     alice #$> ("/_get chat #1 @support-2 count=100", chat, [(1, "3"), (0, "4"), (0, "5")])
