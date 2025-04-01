@@ -2197,20 +2197,12 @@ processChatCommand' vr = \case
       (errs1, deleted1) <- deleteInvitedMems user invitedMems
       let recipients = filter memberCurrent members
       (errs2, deleted2, acis2) <- deleteMemsSend user gInfo Nothing recipients currentMems
-      rs3 <- forM pendingApprvMems $ \m -> do
-        chatScope <- liftIO $ Just <$> memberSupportScopeInfo m (Just m)
-        deleteMemsSend user gInfo chatScope [m] [m]
-      rs4 <-
-        if not (null pendingRvwMems)
-          then do
-            let moderators = filter (\GroupMember {memberRole} -> memberRole >= GRModerator) members
-            forM pendingRvwMems $ \m -> do
-              chatScope <- liftIO $ Just <$> memberSupportScopeInfo m (Just m)
-              deleteMemsSend user gInfo chatScope (m : moderators) [m]
-          else pure []
-      let (errs3, deleted3, acis3) = concatTuples rs3
-          (errs4, deleted4, acis4) = concatTuples rs4
-          acis = acis2 <> acis3 <> acis4
+      (errs3, deleted3, acis3) <-
+        foldM (\acc m -> deletePendingMember acc user gInfo [m] m) ([], [], []) pendingApprvMems
+      let moderators = filter (\GroupMember {memberRole} -> memberRole >= GRModerator) members
+      (errs4, deleted4, acis4) <-
+        foldM (\acc m -> deletePendingMember acc user gInfo (m : moderators) m) ([], [], []) pendingApprvMems
+      let acis = acis2 <> acis3 <> acis4
           errs = errs1 <> errs2 <> errs3 <> errs4
           deleted = deleted1 <> deleted2 <> deleted3 <> deleted4
       unless (null acis) $ toView $ CRNewChatItems user acis
@@ -2240,14 +2232,19 @@ processChatCommand' vr = \case
           delMember db m = do
             deleteGroupMember db user m
             pure m {memberStatus = GSMemRemoved}
+      deletePendingMember :: ([ChatError], [GroupMember], [AChatItem]) -> User -> GroupInfo -> [GroupMember] -> GroupMember -> CM ([ChatError], [GroupMember], [AChatItem])
+      deletePendingMember (accErrs, accDeleted, accACIs) user gInfo recipients m = do
+        chatScope <- liftIO $ Just <$> memberSupportScopeInfo m (Just m)
+        (errs, deleted, acis) <- deleteMemsSend user gInfo chatScope recipients [m]
+        pure (errs <> accErrs, deleted <> accDeleted, acis <> accACIs)
       deleteMemsSend :: User -> GroupInfo -> Maybe GroupChatScopeInfo -> [GroupMember] -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem])
-      deleteMemsSend user gInfo chatScopeInfo sendToMems memsToDelete = case L.nonEmpty memsToDelete of
+      deleteMemsSend user gInfo chatScopeInfo recipients memsToDelete = case L.nonEmpty memsToDelete of
         Nothing -> pure ([], [], [])
         Just memsToDelete' -> do
           -- TODO [knocking] possibly scope needs to be passed, but may not be needed after refactoring
           let chatScope = toChatScope <$> chatScopeInfo
               events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId withMessages) memsToDelete'
-          (msgs_, _gsr) <- sendGroupMessages user gInfo chatScope sendToMems events
+          (msgs_, _gsr) <- sendGroupMessages user gInfo chatScope recipients events
           let itemsData = zipWith (fmap . sndItemData) memsToDelete (L.toList msgs_)
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScopeInfo) itemsData Nothing False
           when (length cis_ /= length memsToDelete) $ logError "deleteCurrentMems: memsToDelete and cis_ length mismatch"
@@ -2267,9 +2264,6 @@ processChatCommand' vr = \case
       deleteMessages user gInfo@GroupInfo {membership} ms
         | groupFeatureMemberAllowed SGFFullDelete membership gInfo = deleteGroupMembersCIs user gInfo ms membership
         | otherwise = markGroupMembersCIsDeleted user gInfo ms membership
-      concatTuples :: [([a], [b], [c])] -> ([a], [b], [c])
-      concatTuples xs = (concat as, concat bs, concat cs)
-        where (as, bs, cs) = unzip3 xs
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withFastStore $ \db -> getGroup db vr user groupId
     filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
