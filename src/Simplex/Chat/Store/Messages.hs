@@ -1246,7 +1246,7 @@ getGroupChat :: DB.Connection -> VersionRangeChat -> User -> Int64 -> Maybe Grou
 getGroupChat db vr user groupId scope_ contentFilter pagination search_ = do
   let search = fromMaybe "" search_
   g <- getGroupInfo db vr user groupId
-  scopeInfo <- getGroupChatScopeInfo' db vr user g scope_
+  scopeInfo <- mapM (getGroupChatScopeInfo db vr user g) scope_
   case pagination of
     CPLast count -> (,Nothing) <$> getGroupChatLast_ db user g scopeInfo contentFilter count search emptyChatStats
     CPAfter afterId count -> (,Nothing) <$> getGroupChatAfter_ db user g scopeInfo contentFilter afterId count search
@@ -1256,13 +1256,9 @@ getGroupChat db vr user groupId scope_ contentFilter pagination search_ = do
       unless (null search) $ throwError $ SEInternalError "initial chat pagination doesn't support search"
       getGroupChatInitial_ db user g scopeInfo contentFilter count
 
-getGroupChatScopeInfo' :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Maybe GroupChatScope -> ExceptT StoreError IO (Maybe GroupChatScopeInfo)
-getGroupChatScopeInfo' db vr user g = \case
-  Just scope -> Just <$> getGroupChatScopeInfo_ db vr user g scope
-  Nothing -> pure Nothing
-
-getGroupChatScopeInfo_ :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupChatScope -> ExceptT StoreError IO GroupChatScopeInfo
-getGroupChatScopeInfo_ db vr user GroupInfo {membership} = \case
+-- TODO [knocking] why is it not patching the absent support chat here?
+getGroupChatScopeInfo :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupChatScope -> ExceptT StoreError IO GroupChatScopeInfo
+getGroupChatScopeInfo db vr user GroupInfo {membership} = \case
   GCSMemberSupport Nothing -> case supportChat membership of
     Nothing -> throwError $ SEInternalError "no support chat"
     Just GroupMemberSupportChat {chatTs, unanswered} ->
@@ -1275,9 +1271,8 @@ getGroupChatScopeInfo_ db vr user GroupInfo {membership} = \case
         pure GCSIMemberSupport {groupMember_ = Just m, chatTs, unanswered}
 
 getGroupChatScopeInfoForItem :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> ChatItemId -> ExceptT StoreError IO (Maybe GroupChatScopeInfo)
-getGroupChatScopeInfoForItem db vr user g itemId = do
-  scope <- getGroupChatScopeForItem_ db itemId
-  getGroupChatScopeInfo' db vr user g scope
+getGroupChatScopeInfoForItem db vr user g itemId =
+  getGroupChatScopeForItem_ db itemId >>= mapM (getGroupChatScopeInfo db vr user g)
 
 getGroupChatScopeForItem_ :: DB.Connection -> ChatItemId -> ExceptT StoreError IO (Maybe GroupChatScope)
 getGroupChatScopeForItem_ db itemId =
@@ -2933,7 +2928,7 @@ getAChatItem db vr user (ChatRef cType chatId scope) itemId = do
     CTGroup -> do
       gInfo <- getGroupInfo db vr user chatId
       (CChatItem msgDir ci) <- getGroupChatItem db user chatId itemId
-      scopeInfo <- getGroupChatScopeInfo' db vr user gInfo scope
+      scopeInfo <- mapM (getGroupChatScopeInfo db vr user gInfo) scope
       pure $ AChatItem SCTGroup msgDir (GroupChat gInfo scopeInfo) ci
     CTLocal -> do
       nf <- getNoteFolder db user chatId

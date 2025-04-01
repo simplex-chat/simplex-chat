@@ -1337,6 +1337,7 @@ getMemberChatScope GroupInfo {membership} m
 
 -- convenience function to correct GCSIMemberSupport `scope` state (to be passed to UI)
 -- in case "member support chat" is new and wasn't present in member/membership state
+-- TODO [knocking] it should patch member in scope and possibly membership in groupInfo
 memberSupportScopeInfo :: GroupMember -> Maybe GroupMember -> IO GroupChatScopeInfo
 memberSupportScopeInfo GroupMember {supportChat} scopeGroupMember_ = case supportChat of
   Just GroupMemberSupportChat {chatTs, unanswered} ->

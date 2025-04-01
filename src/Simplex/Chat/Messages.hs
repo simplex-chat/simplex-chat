@@ -118,11 +118,9 @@ toChatScope :: GroupChatScopeInfo -> GroupChatScope
 toChatScope = \case
   GCSIMemberSupport {groupMember_} -> GCSMemberSupport $ groupMemberId' <$> groupMember_
 
-toMsgScope :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgScope
+toMsgScope :: GroupInfo -> GroupChatScopeInfo -> MsgScope
 toMsgScope GroupInfo {membership} = \case
-  Nothing -> Nothing
-  Just GCSIMemberSupport {groupMember_ = Nothing} -> Just $ MSMember (memberId' membership)
-  Just GCSIMemberSupport {groupMember_ = Just m} -> Just $ MSMember (memberId' m)
+  GCSIMemberSupport {groupMember_} -> MSMember $ memberId' $ fromMaybe membership groupMember_
 
 chatInfoToRef :: ChatInfo c -> ChatRef
 chatInfoToRef = \case
