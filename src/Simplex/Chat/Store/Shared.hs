@@ -609,7 +609,7 @@ toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, 
 toBusinessChatInfo :: BusinessChatInfoRow -> Maybe BusinessChatInfo
 toBusinessChatInfo (Just chatType, Just businessId, Just customerId) = Just BusinessChatInfo {chatType, businessId, customerId}
 toBusinessChatInfo _ = Nothing
- 
+
 groupInfoQuery :: Query
 groupInfoQuery =
   [sql|
