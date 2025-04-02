@@ -2918,8 +2918,9 @@ chat item action</note>
         <target>Engedélyezés (felülírások megtartásával)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable Flux in Network &amp; servers settings for better metadata privacy." xml:space="preserve">
+      <trans-unit id="Enable Flux in Network &amp; servers settings for better metadata privacy." xml:space="preserve" approved="no">
         <source>Enable Flux in Network &amp; servers settings for better metadata privacy.</source>
+        <target state="translated">A Flux kiszolgálókat engedélyezheti a beállításokban, a „Hálózat és kiszolgálók” menüben, a metaadatok jobb védelme érdekében.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
@@ -7546,14 +7547,14 @@ report reason</note>
         <target>Rendszer-hitelesítés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="TCP connection" xml:space="preserve">
+      <trans-unit id="TCP connection" xml:space="preserve" approved="no">
         <source>TCP connection</source>
-        <target>TCP kapcsolat</target>
+        <target state="translated">TCP-kapcsolat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="TCP connection timeout" xml:space="preserve">
+      <trans-unit id="TCP connection timeout" xml:space="preserve" approved="no">
         <source>TCP connection timeout</source>
-        <target>TCP kapcsolat időtúllépése</target>
+        <target state="translated">TCP-kapcsolat időtúllépése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="TCP port for messaging" xml:space="preserve">
