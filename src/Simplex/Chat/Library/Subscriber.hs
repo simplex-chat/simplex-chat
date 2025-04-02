@@ -1186,8 +1186,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             CORGroup gInfo -> toView $ CRBusinessRequestAlreadyAccepted user gInfo
             CORRequest cReq -> do
               ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
-              let (UserContactLink {connReqContact, autoAccept}, gLinkInfo_) = ucl
-                  isSimplexTeam = sameConnReqContact connReqContact adminContactReq
+              let (UserContactLink {connLinkContact = CCLink connReq _, autoAccept}, gLinkInfo_) = ucl
+                  isSimplexTeam = sameConnReqContact connReq adminContactReq
                   v = maxVersion chatVRange
               case autoAccept of
                 Just AutoAccept {acceptIncognito, businessAddress}
