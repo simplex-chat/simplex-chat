@@ -108,7 +108,8 @@ CREATE TABLE group_profiles(
   image TEXT,
   user_id INTEGER DEFAULT NULL REFERENCES users ON DELETE CASCADE,
   preferences TEXT,
-  description TEXT NULL
+  description TEXT NULL,
+  member_admission TEXT
 );
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID

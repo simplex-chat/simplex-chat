@@ -38,7 +38,7 @@ import Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Lazy as LB
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.Maybe (isJust)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -57,7 +57,7 @@ import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
-import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
+import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 #if defined(dbPostgres)
@@ -410,6 +410,7 @@ data GroupInfo = GroupInfo
     localAlias :: Text,
     businessChat :: Maybe BusinessChatInfo,
     fullGroupPreferences :: FullGroupPreferences,
+    fullMemberAdmission :: FullGroupMemberAdmission,
     membership :: GroupMember,
     chatSettings :: ChatSettings,
     createdAt :: UTCTime,
@@ -621,9 +622,46 @@ data GroupProfile = GroupProfile
     fullName :: Text,
     description :: Maybe Text,
     image :: Maybe ImageData,
-    groupPreferences :: Maybe GroupPreferences
+    groupPreferences :: Maybe GroupPreferences,
+    memberAdmission :: Maybe GroupMemberAdmission
   }
   deriving (Eq, Show)
+
+data GroupMemberAdmission = GroupMemberAdmission
+  { -- names :: Maybe MemberAdmissionCriteria,
+    -- captcha :: Maybe MemberAdmissionCriteria,
+    review :: Maybe MemberAdmissionCriteria
+  }
+  deriving (Eq, Show)
+
+data MemberAdmissionCriteria
+  = MACAutoAdmitAll
+  | MACAutoAdmitNoOne
+  -- \| MACAutoAdmitHasProfileImage
+  -- \| MACAutoAdmitVerifiedProfile
+  deriving (Eq, Show)
+
+data FullGroupMemberAdmission = FullGroupMemberAdmission
+  { -- names :: MemberAdmissionCriteria,
+    -- captcha :: MemberAdmissionCriteria,
+    review :: MemberAdmissionCriteria
+  }
+  deriving (Eq, Show)
+
+mergeGroupMemberAdmission :: Maybe GroupMemberAdmission -> FullGroupMemberAdmission
+mergeGroupMemberAdmission Nothing = defaultGroupMemberAdmission
+mergeGroupMemberAdmission (Just GroupMemberAdmission {review}) =
+  let FullGroupMemberAdmission {review = defaultReview} = defaultGroupMemberAdmission
+   in FullGroupMemberAdmission {review = fromMaybe defaultReview review}
+
+defaultGroupMemberAdmission :: FullGroupMemberAdmission
+defaultGroupMemberAdmission =
+  FullGroupMemberAdmission {
+    review = MACAutoAdmitAll
+  }
+
+emptyGroupMemberAdmission :: GroupMemberAdmission
+emptyGroupMemberAdmission = GroupMemberAdmission Nothing
 
 newtype ImageData = ImageData Text
   deriving (Eq, Show)
@@ -1031,10 +1069,10 @@ instance ToJSON GroupMemberStatus where
   toJSON = J.String . textEncode
   toEncoding = JE.text . textEncode
 
-acceptanceToStatus :: FullGroupPreferences -> GroupAcceptance -> GroupMemberStatus
-acceptanceToStatus prefs groupAcceptance
+acceptanceToStatus :: FullGroupMemberAdmission -> GroupAcceptance -> GroupMemberStatus
+acceptanceToStatus FullGroupMemberAdmission {review} groupAcceptance
   | groupAcceptance == GAPending = GSMemPendingApproval
-  | groupFeatureAllowed' SGFNewMemberReview prefs = GSMemPendingReview
+  | review == MACAutoAdmitNoOne = GSMemPendingReview
   | otherwise = GSMemAccepted
 
 memberActive :: GroupMember -> Bool
@@ -1833,6 +1871,16 @@ $(JQ.deriveJSON defaultJSON ''LocalProfile)
 
 $(JQ.deriveJSON defaultJSON ''UserContactRequest)
 
+$(JQ.deriveJSON (enumJSON $ dropPrefix "MAC") ''MemberAdmissionCriteria)
+
+$(JQ.deriveJSON defaultJSON ''GroupMemberAdmission)
+
+instance ToField GroupMemberAdmission where
+  toField = toField . encodeJSON
+
+instance FromField GroupMemberAdmission where
+  fromField = fromTextField_ decodeJSON
+
 $(JQ.deriveJSON defaultJSON ''GroupProfile)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "IB") ''InvitedBy)
@@ -1860,6 +1908,8 @@ $(JQ.deriveJSON defaultJSON ''ChatSettings)
 $(JQ.deriveJSON (enumJSON $ dropPrefix "BC") ''BusinessChatType)
 
 $(JQ.deriveJSON defaultJSON ''BusinessChatInfo)
+
+$(JQ.deriveJSON defaultJSON ''FullGroupMemberAdmission)
 
 $(JQ.deriveJSON defaultJSON ''GroupInfo)
 
