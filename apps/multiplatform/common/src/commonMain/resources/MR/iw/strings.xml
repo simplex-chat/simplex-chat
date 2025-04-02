@@ -371,7 +371,7 @@
     <string name="feature_enabled">מופעל</string>
     <string name="feature_enabled_for_contact">מופעל עבור איש הקשר</string>
     <string name="feature_enabled_for_you">מופעל עבורך</string>
-    <string name="disappearing_messages_are_prohibited">הודעות נעלמות אסורות בקבוצה זו.</string>
+    <string name="disappearing_messages_are_prohibited">הודעות נעלמות אסורות.</string>
     <string name="ttl_min">%d דקה</string>
     <string name="ttl_s">%d שנ׳</string>
     <string name="v4_4_disappearing_messages">הודעות נעלמות</string>
@@ -1936,7 +1936,7 @@
     <string name="report_archive_alert_title">להעביר דיווח לארכיון?</string>
     <string name="settings_section_title_chat_database">מסד נתונים של הצא\'טים</string>
     <string name="onboarding_notifications_mode_periodic_desc_short">בדוק עבור הודעות חדשות כל 10 דקות</string>
-    <string name="operator_conditions_accepted_on">התנאים ה%s ב: %s.</string>
+    <string name="operator_conditions_accepted_on">אישרת את תנאי השימוש ב:%s.</string>
     <string name="delete_chat_for_all_members_cannot_undo_warning">הצ\'אט יימחק עבור כל החברים - לא ניתן לבטל את זה!</string>
     <string name="call_desktop_permission_denied_chrome">לחץ על כפתור מידע ליד שדה כתובת כדי לאפשר שימוש במיקרופון.</string>
     <string name="operator_conditions_accepted_for_some"><![CDATA[כבר הסכמת לתנאי שימוש למפעיל/ים האלו: <b>%s</b>.]]></string>
@@ -1987,4 +1987,20 @@
     <string name="v6_3_better_privacy_and_security">שיפור בפרטיות ובאבטחה</string>
     <string name="v6_1_better_security">אבטחה יותר טובה✅</string>
     <string name="v6_1_better_user_experience">ממשק משתמש יותר נוח</string>
+    <string name="proxy_destination_error_broker_version">"גרסאת שרת היעד %1$s אינה  תואמת עם שרת ההעברה %2$s."</string>
+    <string name="v6_0_delete_many_messages_descr">מחק עד 20 הודעות בבת אחת.</string>
+    <string name="direct_messages_are_prohibited">הודעות ישירות בין חברים חסומות.</string>
+    <string name="disable_automatic_deletion">השבת מחיקת הודעות</string>
+    <string name="network_proxy_auth_mode_no_auth">אל תשתמש בתעודות עם פרוקסי.</string>
+    <string name="servers_info_downloaded">ירד</string>
+    <string name="group_reports_active">%d דיווחים</string>
+    <string name="app_check_for_updates_button_download">יורד %s (%s)</string>
+    <string name="disable_automatic_deletion_question">השבת מחיקת הודעות אוטומטית?</string>
+    <string name="duplicates_label">כפילויות</string>
+    <string name="operator_conditions_of_use">תנאי שימוש</string>
+    <string name="delete_without_notification">מחק בלי להתריע</string>
+    <string name="forward_files_not_accepted_receive_files">הורדה</string>
+    <string name="direct_messages_are_prohibited_in_chat">הודעות ישירות בין חברים אסורות בצ\'אט זה.</string>
+    <string name="v6_3_organize_chat_lists_descr">אל תחמיץ הודעות חשובות.</string>
+    <string name="v6_0_upgrade_app_descr">הורד גרסאות חדשות מ GitHub.</string>
 </resources>
