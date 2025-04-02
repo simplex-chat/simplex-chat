@@ -2918,8 +2918,9 @@ chat item action</note>
         <target>Attiva (mantieni sostituzioni)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable Flux in Network &amp; servers settings for better metadata privacy." xml:space="preserve">
+      <trans-unit id="Enable Flux in Network &amp; servers settings for better metadata privacy." xml:space="preserve" approved="no">
         <source>Enable Flux in Network &amp; servers settings for better metadata privacy.</source>
+        <target state="translated">Attiva Flux nelle impostazioni "Rete e server" per una migliore privacy dei metadati.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
