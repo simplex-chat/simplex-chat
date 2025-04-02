@@ -107,11 +107,7 @@ data ChatInfo (c :: ChatType) where
 deriving instance Show (ChatInfo c)
 
 data GroupChatScopeInfo
-  = GCSIMemberSupport
-      { groupMember_ :: Maybe GroupMember,
-        chatTs :: UTCTime,
-        unanswered :: Bool
-      }
+  = GCSIMemberSupport {groupMember_ :: Maybe GroupMember}
   deriving (Show)
 
 toChatScope :: GroupChatScopeInfo -> GroupChatScope

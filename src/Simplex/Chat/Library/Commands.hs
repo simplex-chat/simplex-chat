@@ -680,11 +680,11 @@ processChatCommand' vr = \case
       -- TODO [knocking] check scope for all items?
       case mode of
         CIDMInternal -> do
-          chatScopeInfo <- mapM (getChatScopeInfo vr user gInfo) scope
+          chatScopeInfo <- mapM (getChatScopeInfo vr user) scope
           ts <- liftIO getCurrentTime
           deleteGroupCIs user gInfo chatScopeInfo items True False Nothing ts
         CIDMInternalMark -> do
-          chatScopeInfo <- mapM (getChatScopeInfo vr user gInfo) scope
+          chatScopeInfo <- mapM (getChatScopeInfo vr user) scope
           ts <- liftIO getCurrentTime
           markGroupCIsDeleted user gInfo chatScopeInfo items True Nothing ts
         CIDMBroadcast -> do
@@ -1573,9 +1573,9 @@ processChatCommand' vr = \case
     case memberConnId m of
       Just connId -> do
         cStats@ConnectionStats {ratchetSyncState = rss} <- withAgent $ \a -> synchronizeRatchet a connId PQSupportOff force
-        chatScope <- liftIO $ getMemberChatScope g m
-        createInternalChatItem user (CDGroupSnd g chatScope) (CISndConnEvent . SCERatchetSync rss . Just $ groupMemberRef m) Nothing
-        pure $ CRGroupMemberRatchetSyncStarted user g m cStats
+        (g', m', scopeInfo) <- liftIO $ mkGroupChatScope g m
+        createInternalChatItem user (CDGroupSnd g' scopeInfo) (CISndConnEvent . SCERatchetSync rss . Just $ groupMemberRef m') Nothing
+        pure $ CRGroupMemberRatchetSyncStarted user g' m' cStats
       _ -> throwChatError CEGroupMemberNotActive
   APIGetContactCode contactId -> withUser $ \user -> do
     ct@Contact {activeConn} <- withFastStore $ \db -> getContact db vr user contactId
@@ -2234,8 +2234,8 @@ processChatCommand' vr = \case
             pure m {memberStatus = GSMemRemoved}
       deletePendingMember :: ([ChatError], [GroupMember], [AChatItem]) -> User -> GroupInfo -> [GroupMember] -> GroupMember -> CM ([ChatError], [GroupMember], [AChatItem])
       deletePendingMember (accErrs, accDeleted, accACIs) user gInfo recipients m = do
-        chatScope <- liftIO $ Just <$> memberSupportScopeInfo m (Just m)
-        (errs, deleted, acis) <- deleteMemsSend user gInfo chatScope recipients [m]
+        (m', scopeInfo) <- liftIO $ mkMemberSupportChatInfo m
+        (errs, deleted, acis) <- deleteMemsSend user gInfo (Just scopeInfo) recipients [m']
         pure (errs <> accErrs, deleted <> accDeleted, acis <> accACIs)
       deleteMemsSend :: User -> GroupInfo -> Maybe GroupChatScopeInfo -> [GroupMember] -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem])
       deleteMemsSend user gInfo chatScopeInfo recipients memsToDelete = case L.nonEmpty memsToDelete of
@@ -2270,15 +2270,15 @@ processChatCommand' vr = \case
       cancelFilesInProgress user filesInfo
       let recipients = filter memberCurrentOrPending members
       msg <- sendGroupMessage' user gInfo recipients XGrpLeave
-      chatScope <- liftIO $ getLocalGroupChatScope gInfo
-      ci <- saveSndChatItem user (CDGroupSnd gInfo chatScope) msg (CISndGroupEvent SGEUserLeft)
-      toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScope) ci]
+      (gInfo', scopeInfo) <- liftIO $ mkLocalGroupChatScope gInfo
+      ci <- saveSndChatItem user (CDGroupSnd gInfo' scopeInfo) msg (CISndGroupEvent SGEUserLeft)
+      toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo' scopeInfo) ci]
       -- TODO delete direct connections that were unused
-      deleteGroupLinkIfExists user gInfo
+      deleteGroupLinkIfExists user gInfo'
       -- member records are not deleted to keep history
       deleteMembersConnections' user members True
       withFastStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
-      pure $ CRLeftMemberUser user gInfo {membership = membership {memberStatus = GSMemLeft}}
+      pure $ CRLeftMemberUser user gInfo' {membership = membership {memberStatus = GSMemLeft}}
   APIListMembers groupId -> withUser $ \user ->
     CRGroupMembers user <$> withFastStore (\db -> getGroup db vr user groupId)
   -- -- validate: prohibit to delete/archive if member is pending (has to communicate approval or rejection)

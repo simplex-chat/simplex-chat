@@ -146,7 +146,7 @@ import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, mapMaybe)
+import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
 import Data.Ord (Down (..), comparing)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -374,12 +374,16 @@ updateChatTs db User {userId} chatDirection chatTs = case toChatInfo chatDirecti
       db
       "UPDATE groups SET chat_ts = ? WHERE user_id = ? AND group_id = ?"
       (chatTs, userId, groupId)
-  GroupChat GroupInfo {membership} (Just GCSIMemberSupport {groupMember_}) -> do
-    let gmId = groupMemberId' $ fromMaybe membership groupMember_
+  GroupChat GroupInfo {groupId} (Just (GCSIMemberSupport Nothing)) -> do
+    DB.execute
+      db
+      "UPDATE groups SET mods_support_chat_ts = ? WHERE user_id = ? AND group_id = ?"
+      (chatTs, userId, groupId)
+  GroupChat _gInfo (Just (GCSIMemberSupport (Just GroupMember {groupMemberId}))) -> do
     DB.execute
       db
       "UPDATE group_members SET support_chat_ts = ? WHERE group_member_id = ?"
-      (chatTs, gmId)
+      (chatTs, groupMemberId)
   LocalChat NoteFolder {noteFolderId} ->
     DB.execute
       db
@@ -1255,19 +1259,16 @@ getGroupChat db vr user groupId scope_ contentFilter pagination search_ = do
       unless (null search) $ throwError $ SEInternalError "initial chat pagination doesn't support search"
       getGroupChatInitial_ db user g scopeInfo contentFilter count
 
--- TODO [knocking] why is it not patching the absent support chat here?
 getGroupChatScopeInfo :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupChatScope -> ExceptT StoreError IO GroupChatScopeInfo
-getGroupChatScopeInfo db vr user GroupInfo {membership} = \case
-  GCSMemberSupport Nothing -> case supportChat membership of
-    Nothing -> throwError $ SEInternalError "no support chat"
-    Just GroupMemberSupportChat {chatTs, unanswered} ->
-      pure $ GCSIMemberSupport {groupMember_ = Nothing, chatTs, unanswered}
+getGroupChatScopeInfo db vr user GroupInfo {modsSupportChat} = \case
+  GCSMemberSupport Nothing -> case modsSupportChat of
+    Nothing -> throwError $ SEInternalError "no moderators support chat"
+    Just _modsSupportChat -> pure $ GCSIMemberSupport {groupMember_ = Nothing}
   GCSMemberSupport (Just gmId) -> do
     m <- getGroupMemberById db vr user gmId
     case supportChat m of
       Nothing -> throwError $ SEInternalError "no support chat"
-      Just GroupMemberSupportChat {chatTs, unanswered} ->
-        pure GCSIMemberSupport {groupMember_ = Just m, chatTs, unanswered}
+      Just _supportChat -> pure GCSIMemberSupport {groupMember_ = Just m}
 
 getGroupChatScopeInfoForItem :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> ChatItemId -> ExceptT StoreError IO (Maybe GroupChatScopeInfo)
 getGroupChatScopeInfoForItem db vr user g itemId =

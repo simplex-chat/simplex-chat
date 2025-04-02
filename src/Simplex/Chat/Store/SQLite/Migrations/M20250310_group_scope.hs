@@ -16,6 +16,9 @@ import Database.SQLite.Simple.QQ (sql)
 m20250310_group_scope :: Query
 m20250310_group_scope =
   [sql|
+ALTER TABLE groups ADD COLUMN mods_support_chat_ts TEXT;
+ALTER TABLE groups ADD COLUMN mods_support_chat_unanswered INTEGER;
+
 ALTER TABLE group_members ADD COLUMN support_chat_ts TEXT;
 ALTER TABLE group_members ADD COLUMN support_chat_unanswered INTEGER;
 
@@ -45,4 +48,7 @@ ALTER TABLE chat_items DROP COLUMN group_scope_group_member_id;
 
 ALTER TABLE group_members DROP COLUMN support_chat_ts;
 ALTER TABLE group_members DROP COLUMN support_chat_unanswered;
+
+ALTER TABLE groups DROP COLUMN mods_support_chat_ts;
+ALTER TABLE groups DROP COLUMN mods_support_chat_unanswered;
 |]
