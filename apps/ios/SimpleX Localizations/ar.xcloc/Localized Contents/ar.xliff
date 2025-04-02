@@ -553,8 +553,9 @@
         <target state="translated">يمكنك أنت وجهة اتصالك إرسال رسائل صوتية.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
+      <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve" approved="no">
         <source>By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</source>
+        <target state="translated">حسب ملف تعريف الدردشة (افتراضي) أو [حسب الاتصال] (https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve" approved="no">
@@ -582,8 +583,9 @@
         <target state="translated">إلغاء</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Cannot access keychain to save database password" xml:space="preserve">
+      <trans-unit id="Cannot access keychain to save database password" xml:space="preserve" approved="no">
         <source>Cannot access keychain to save database password</source>
+        <target state="translated">لا يمكن الوصول إلى سلسلة المفاتيح لحفظ كلمة مرور قاعدة البيانات</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cannot receive file" xml:space="preserve" approved="no">
@@ -601,8 +603,9 @@
         <target state="translated">تغيير عبارة مرور قاعدة البيانات؟</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change member role?" xml:space="preserve">
+      <trans-unit id="Change member role?" xml:space="preserve" approved="no">
         <source>Change member role?</source>
+        <target state="translated">تغيير دور العضو؟</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change receiving address" xml:space="preserve" approved="no">
@@ -669,12 +672,14 @@
         <target state="translated">تحقق من عنوان الخادم وحاول مرة أخرى.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Choose file" xml:space="preserve">
+      <trans-unit id="Choose file" xml:space="preserve" approved="no">
         <source>Choose file</source>
+        <target state="translated">اختر الملف</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Choose from library" xml:space="preserve">
+      <trans-unit id="Choose from library" xml:space="preserve" approved="no">
         <source>Choose from library</source>
+        <target state="translated">اختر من المكتبة</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Clear" xml:space="preserve" approved="no">
@@ -756,8 +761,9 @@
         <target state="translated">جارِ الاتصال بالخادم…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connecting server… (error: %@)" xml:space="preserve">
+      <trans-unit id="Connecting server… (error: %@)" xml:space="preserve" approved="no">
         <source>Connecting to server… (error: %@)</source>
+        <target state="translated">الاتصال بالخادم... (الخطأ: %@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection" xml:space="preserve" approved="no">
@@ -5388,6 +5394,88 @@ This is your own one-time link!</source>
       <trans-unit id="Enable self-destruct passcode" xml:space="preserve" approved="no">
         <source>Enable self-destruct passcode</source>
         <target state="translated">تفعيل رمز التدمير الذاتي</target>
+      </trans-unit>
+      <trans-unit id="Can't message member" xml:space="preserve" approved="no">
+        <source>Can't message member</source>
+        <target state="translated">لا يمكن الاتصال بالعضو</target>
+      </trans-unit>
+      <trans-unit id="Color chats with the new themes." xml:space="preserve" approved="no">
+        <source>Color chats with the new themes.</source>
+        <target state="translated">محادثات ملونة مع السمات الجديدة.</target>
+      </trans-unit>
+      <trans-unit id="All chats will be removed from the list %@, and the list deleted." xml:space="preserve" approved="no">
+        <source>All chats will be removed from the list %@, and the list deleted.</source>
+        <target state="translated">ستتم إزالة جميع الدردشات من القائمة %@، وسيتم حذف القائمة.</target>
+      </trans-unit>
+      <trans-unit id="Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" xml:space="preserve" approved="no">
+        <source>Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</source>
+        <target state="translated">البلغارية والفنلندية والتايلاندية والأوكرانية - شكرًا للمستخدمين و[Weblate] (https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</target>
+      </trans-unit>
+      <trans-unit id="Choose _Migrate from another device_ on the new device and scan QR code." xml:space="preserve" approved="no">
+        <source>Choose _Migrate from another device_ on the new device and scan QR code.</source>
+        <target state="translated">اختر _الترحيل من جهاز آخر_ على الجهاز الجديد وامسح رمز الاستجابة السريعة.</target>
+      </trans-unit>
+      <trans-unit id="Conditions will be accepted for the operator(s): **%@**." xml:space="preserve" approved="no">
+        <source>Conditions will be accepted for the operator(s): **%@**.</source>
+        <target state="translated">سيتم قبول شروط المشغل (المشغلين): **%@**.</target>
+      </trans-unit>
+      <trans-unit id="Conditions will be accepted on: %@." xml:space="preserve" approved="no">
+        <source>Conditions will be accepted on: %@.</source>
+        <target state="translated">سيتم قبول الشروط على: %@.</target>
+      </trans-unit>
+      <trans-unit id="Confirmed" xml:space="preserve" approved="no">
+        <source>Confirmed</source>
+        <target state="translated">تم التأكيد</target>
+      </trans-unit>
+      <trans-unit id="Connection is blocked by server operator:&#10;%@" xml:space="preserve" approved="no">
+        <source>Connection is blocked by server operator:
+%@</source>
+        <target state="translated">تم حظر الاتصال من قبل مشغل الخادم:
+%@</target>
+      </trans-unit>
+      <trans-unit id="Can't call member" xml:space="preserve" approved="no">
+        <source>Can't call member</source>
+        <target state="translated">لا يمكن الاتصال بالعضو</target>
+      </trans-unit>
+      <trans-unit id="Chat already exists" xml:space="preserve" approved="no">
+        <source>Chat already exists</source>
+        <target state="translated">الدردشة موجودة بالفعل</target>
+      </trans-unit>
+      <trans-unit id="Check messages every 20 min." xml:space="preserve" approved="no">
+        <source>Check messages every 20 min.</source>
+        <target state="translated">تحقق من الرسائل كل 20 دقيقة.</target>
+      </trans-unit>
+      <trans-unit id="Check messages when allowed." xml:space="preserve" approved="no">
+        <source>Check messages when allowed.</source>
+        <target state="translated">تحقق من الرسائل عندما يُسمح بذلك.</target>
+      </trans-unit>
+      <trans-unit id="Cannot forward message" xml:space="preserve" approved="no">
+        <source>Cannot forward message</source>
+        <target state="translated">لا يمكن إعادة توجيه الرسالة</target>
+      </trans-unit>
+      <trans-unit id="Chat preferences were changed." xml:space="preserve" approved="no">
+        <source>Chat preferences were changed.</source>
+        <target state="translated">تم تغيير تفضيلات المحادثة.</target>
+      </trans-unit>
+      <trans-unit id="Conditions are already accepted for these operator(s): **%@**." xml:space="preserve" approved="no">
+        <source>Conditions are already accepted for these operator(s): **%@**.</source>
+        <target state="translated">الشروط مقبولة بالفعل لهذا المشغل (المشغلين): **%@**.</target>
+      </trans-unit>
+      <trans-unit id="Conditions will be accepted for operator(s): **%@**." xml:space="preserve" approved="no">
+        <source>Conditions will be accepted for operator(s): **%@**.</source>
+        <target state="translated">سيتم قبول شروط المشغل (المشغلين): **%@**.</target>
+      </trans-unit>
+      <trans-unit id="Conditions accepted on: %@." xml:space="preserve" approved="no">
+        <source>Conditions accepted on: %@.</source>
+        <target state="translated">الشروط المقبولة على: %@.</target>
+      </trans-unit>
+      <trans-unit id="Conditions are accepted for the operator(s): **%@**." xml:space="preserve" approved="no">
+        <source>Conditions are accepted for the operator(s): **%@**.</source>
+        <target state="translated">يتم قبول شروط المشغل (المشغلين): **%@**.</target>
+      </trans-unit>
+      <trans-unit id="Conditions will be automatically accepted for enabled operators on: %@." xml:space="preserve" approved="no">
+        <source>Conditions will be automatically accepted for enabled operators on: %@.</source>
+        <target state="translated">سيتم قبول الشروط تلقائيًا للمشغلين الممكّنين على: %@.</target>
       </trans-unit>
     </body>
   </file>

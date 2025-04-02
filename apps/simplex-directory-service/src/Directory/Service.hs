@@ -469,7 +469,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
 
     approvePendingMember :: DirectoryMemberAcceptance -> GroupInfo -> GroupMember -> IO ()
     approvePendingMember a g@GroupInfo {groupId} m@GroupMember {memberProfile = LocalProfile {displayName, image}} = do
-      gli_ <- join <$> withDB' cc (\db -> getGroupLinkInfo db userId groupId)
+      gli_ <- join <$> withDB' "getGroupLinkInfo" cc (\db -> getGroupLinkInfo db userId groupId)
       let role = if useMemberFilter image (makeObserver a) then GRObserver else maybe GRMember (\GroupLinkInfo {memberRole} -> memberRole) gli_
           gmId = groupMemberId' m
       sendChatCmd cc (APIAcceptMember groupId gmId role) >>= \case
@@ -700,7 +700,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           case acceptance_ of
             Just a' | a /= a' -> do
               let d = toCustomData $ DirectoryGroupData a'
-              withDB' cc (\db -> setGroupCustomData db user g $ Just d) >>= \case
+              withDB' "setGroupCustomData" cc (\db -> setGroupCustomData db user g $ Just d) >>= \case
                 Just () -> sendSettigns n a' " set to"
                 Nothing -> sendReply $ "Error changing spam filter settings for group " <> n
             _ -> sendSettigns n a ""
@@ -979,24 +979,24 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           sendComposedMessage cc ct Nothing $ MCText text
 
 getContact' :: ChatController -> User -> ContactId -> IO (Maybe Contact)
-getContact' cc user ctId = withDB cc $ \db -> getContact db (vr cc) user ctId
+getContact' cc user ctId = withDB "getContact" cc $ \db -> getContact db (vr cc) user ctId
 
 getGroup :: ChatController -> User -> GroupId -> IO (Maybe GroupInfo)
-getGroup cc user gId = withDB cc $ \db -> getGroupInfo db (vr cc) user gId
+getGroup cc user gId = withDB "getGroupInfo" cc $ \db -> getGroupInfo db (vr cc) user gId
 
-withDB' :: ChatController -> (DB.Connection -> IO a) -> IO (Maybe a)
-withDB' cc a = withDB cc $ ExceptT . fmap Right . a
+withDB' :: Text -> ChatController -> (DB.Connection -> IO a) -> IO (Maybe a)
+withDB' cxt cc a = withDB cxt cc $ ExceptT . fmap Right . a
 
-withDB :: ChatController -> (DB.Connection -> ExceptT StoreError IO a) -> IO (Maybe a)
-withDB ChatController {chatStore} action = do
+withDB :: Text -> ChatController -> (DB.Connection -> ExceptT StoreError IO a) -> IO (Maybe a)
+withDB cxt ChatController {chatStore} action = do
   r_ :: Either ChatError a <- withTransaction chatStore (runExceptT . withExceptT ChatErrorStore . action) `E.catches` handleDBErrors
   case r_ of
     Right r -> pure $ Just r
-    Left e -> Nothing <$ logError ("Database error: " <> tshow e)
+    Left e -> Nothing <$ logError ("Database error: " <> cxt <> " " <> tshow e)
 
 getGroupAndSummary :: ChatController -> User -> GroupId -> IO (Maybe (GroupInfo, GroupSummary))
 getGroupAndSummary cc user gId =
-  withDB cc $ \db -> (,) <$> getGroupInfo db (vr cc) user gId <*> liftIO (getGroupSummary db user gId)
+  withDB "getGroupAndSummary" cc $ \db -> (,) <$> getGroupInfo db (vr cc) user gId <*> liftIO (getGroupSummary db user gId)
 
 vr :: ChatController -> VersionRangeChat
 vr ChatController {config = ChatConfig {chatVRange}} = chatVRange
@@ -1004,7 +1004,7 @@ vr ChatController {config = ChatConfig {chatVRange}} = chatVRange
 
 getGroupLinkRole :: ChatController -> User -> GroupInfo -> IO (Maybe (Int64, ConnReqContact, GroupMemberRole))
 getGroupLinkRole cc user gInfo =
-  withDB cc $ \db -> getGroupLink db user gInfo
+  withDB "getGroupLink" cc $ \db -> getGroupLink db user gInfo
 
 setGroupLinkRole :: ChatController -> GroupInfo -> GroupMemberRole -> IO (Maybe ConnReqContact)
 setGroupLinkRole cc GroupInfo {groupId} mRole = resp <$> sendChatCmd cc (APIGroupLinkMemberRole groupId mRole)

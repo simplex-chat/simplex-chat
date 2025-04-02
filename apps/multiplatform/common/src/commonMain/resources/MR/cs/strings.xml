@@ -2359,4 +2359,12 @@
     <string name="operator_updated_conditions">Aktualizované podmínky</string>
     <string name="group_member_status_pending_approval">čekám na schválení</string>
     <string name="group_member_status_pending_approval_short">čekám</string>
+    <string name="block_members_for_all_question">Blokovat členy všem?</string>
+    <string name="block_members_desc">Všechny nové zprávy od těchto členů budou skryty!</string>
+    <string name="unblock_members_for_all_question">Odblokovat členy všem?</string>
+    <string name="feature_roles_moderators">moderátoři</string>
+    <string name="unblock_members_desc">Zprávy od těchto členů budou zobrazeny!</string>
+    <string name="members_will_be_removed_from_group_cannot_be_undone">Členové budou odstraněny ze skupiny - toto nelze zvrátit!</string>
+    <string name="button_remove_members_question">Odebrat členy?</string>
+    <string name="members_will_be_removed_from_chat_cannot_be_undone">Členové budou odstraněny z chatu - toto nelze zvrátit!</string>
 </resources>

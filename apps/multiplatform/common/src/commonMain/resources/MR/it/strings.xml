@@ -1586,7 +1586,7 @@
     <string name="error_deleting_note_folder">Errore di eliminazione delle note private</string>
     <string name="v5_5_message_delivery">Consegna dei messaggi migliorata</string>
     <string name="v5_5_join_group_conversation">Entra in conversazioni di gruppo</string>
-    <string name="profile_update_event_member_name_changed">membro %1$s cambiato in %2$s</string>
+    <string name="profile_update_event_member_name_changed">il membro %1$s è diventato %2$s</string>
     <string name="v5_5_simpler_connect_ui">Incolla un link per connettere!</string>
     <string name="profile_update_event_removed_address">indirizzo di contatto rimosso</string>
     <string name="profile_update_event_contact_name_changed">contatto %1$s cambiato in %2$s</string>
@@ -2177,7 +2177,7 @@
     <string name="appearance_in_app_bars_alpha">Trasparenza</string>
     <string name="v6_2_network_decentralization">Decentralizzazione della rete</string>
     <string name="v6_2_network_decentralization_descr">Il secondo operatore preimpostato nell\'app!</string>
-    <string name="v6_2_network_decentralization_enable_flux">Attiva Flux</string>
+    <string name="v6_2_network_decentralization_enable_flux">Attiva Flux nelle impostazioni \"Rete e server\" per una migliore privacy dei metadati.</string>
     <string name="view_updated_conditions">Vedi le condizioni aggiornate</string>
     <string name="appearance_bars_blur_radius">Sfocatura</string>
     <string name="operator_added_message_servers">Server dei messaggi aggiunti</string>
@@ -2376,4 +2376,9 @@
     <string name="block_members_for_all_question">Bloccare i membri per tutti?</string>
     <string name="feature_roles_moderators">moderatori</string>
     <string name="block_members_desc">Tutti i nuovi messaggi di questi membri verranno nascosti!</string>
+    <string name="onboarding_conditions_by_using_you_agree">Usando SimpleX Chat accetti di:\n- inviare solo contenuto legale nei gruppi pubblici.\n- rispettare gli altri utenti - niente spam.</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">Le chat private, i gruppi e i tuoi contatti non sono accessibili agli operatori dei server.</string>
+    <string name="onboarding_conditions_accept">Accetta</string>
+    <string name="onboarding_conditions_configure_server_operators">Configura gli operatori dei server</string>
+    <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Informativa sulla privacy e condizioni d\'uso.</string>
 </resources>
