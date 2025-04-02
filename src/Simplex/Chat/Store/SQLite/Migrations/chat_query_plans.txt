@@ -37,16 +37,17 @@ Query:
                   g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
                   g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
                   g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
+                  g.mods_support_chat_ts, g.mods_support_chat_unanswered,
                   -- GroupInfo {membership}
                   mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
                   mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
                   -- GroupInfo {membership = GroupMember {memberProfile}}
                   pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
-                  mu.created_at, mu.updated_at,
+                  mu.created_at, mu.updated_at, NULL AS mu_support_chat_ts, NULL AS mu_support_chat_unanswered,
                   -- from GroupMember
                   m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
                   m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
-                  m.created_at, m.updated_at
+                  m.created_at, m.updated_at, m.support_chat_ts, m.support_chat_unanswered
                 FROM group_members m
                 JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
                 JOIN groups g ON g.group_id = m.group_id
@@ -483,7 +484,7 @@ Query:
             LIMIT ?
           
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_ts (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -494,7 +495,7 @@ Query:
             LIMIT ?
           
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_ts (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -558,7 +559,7 @@ Query:
               m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
               m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
               p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
-              m.created_at, m.updated_at
+              m.created_at, m.updated_at, m.support_chat_ts, m.support_chat_unanswered
             FROM group_members m
             JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
             LEFT JOIN contacts c ON m.contact_id = c.contact_id
@@ -707,21 +708,23 @@ Query:
             m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
             m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
             p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
-            m.created_at, m.updated_at,
+            m.created_at, m.updated_at, m.support_chat_ts, m.support_chat_unanswered,
             -- quoted ChatItem
             ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent,
             -- quoted GroupMember
             rm.group_member_id, rm.group_id, rm.member_id, rm.peer_chat_min_version, rm.peer_chat_max_version, rm.member_role, rm.member_category,
             rm.member_status, rm.show_messages, rm.member_restriction, rm.invited_by, rm.invited_by_group_member_id, rm.local_display_name, rm.contact_id, rm.contact_profile_id, rp.contact_profile_id,
             rp.display_name, rp.full_name, rp.image, rp.contact_link, rp.local_alias, rp.preferences,
-            rm.created_at, rm.updated_at,
+            rm.created_at, rm.updated_at, rm.support_chat_ts, rm.support_chat_unanswered,
             -- deleted by GroupMember
             dbm.group_member_id, dbm.group_id, dbm.member_id, dbm.peer_chat_min_version, dbm.peer_chat_max_version, dbm.member_role, dbm.member_category,
             dbm.member_status, dbm.show_messages, dbm.member_restriction, dbm.invited_by, dbm.invited_by_group_member_id, dbm.local_display_name, dbm.contact_id, dbm.contact_profile_id, dbp.contact_profile_id,
             dbp.display_name, dbp.full_name, dbp.image, dbp.contact_link, dbp.local_alias, dbp.preferences,
-            dbm.created_at, dbm.updated_at
+            dbm.created_at, dbm.updated_at, dbm.support_chat_ts, dbm.support_chat_unanswered
           FROM chat_items i
           LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
+          LEFT JOIN group_members gsm ON gsm.group_member_id = i.group_scope_group_member_id
+          LEFT JOIN contact_profiles gsp ON gsp.contact_profile_id = COALESCE(gsm.member_profile_id, gsm.contact_profile_id)
           LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
           LEFT JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
           LEFT JOIN chat_items ri ON ri.shared_msg_id = i.quoted_shared_msg_id AND ri.group_id = i.group_id
@@ -734,6 +737,7 @@ Query:
 Plan:
 SEARCH i USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH f USING INDEX idx_files_chat_item_id (chat_item_id=?) LEFT-JOIN
+SEARCH gsm USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH ri USING INDEX idx_chat_items_group_id_shared_msg_id (group_id=? AND shared_msg_id=?) LEFT-JOIN
@@ -791,16 +795,17 @@ Query:
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
             g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
+            g.mods_support_chat_ts, g.mods_support_chat_unanswered,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
             mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
             -- GroupInfo {membership = GroupMember {memberProfile}}
             pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
-            mu.created_at, mu.updated_at,
+            mu.created_at, mu.updated_at, NULL AS mu_support_chat_ts, NULL AS mu_support_chat_unanswered,
             -- via GroupMember
             m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
             m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
-            m.created_at, m.updated_at,
+            m.created_at, m.updated_at, m.support_chat_ts, m.support_chat_unanswered,
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
             c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
             c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -836,9 +841,10 @@ Query:
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
             g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
+            g.mods_support_chat_ts, g.mods_support_chat_unanswered,
             mu.group_member_id, g.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category, mu.member_status, mu.show_messages, mu.member_restriction,
             mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id, pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
-            mu.created_at, mu.updated_at
+            mu.created_at, mu.updated_at, NULL AS mu_support_chat_ts, NULL AS mu_support_chat_unanswered
           FROM groups g
           JOIN group_profiles gp USING (group_profile_id)
           JOIN group_members mu USING (group_id)
@@ -977,7 +983,7 @@ Query:
           LIMIT ?
         
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_ts (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -2910,7 +2916,7 @@ Plan:
 SEARCH chat_items USING INDEX chat_items_note_folder_id (note_folder_id=?)
 
 Query: 
-        SELECT chat_item_id, contact_id, group_id, timed_delete_at
+        SELECT chat_item_id, contact_id, group_id, group_scope_tag, group_scope_group_member_id, timed_delete_at
         FROM chat_items
         WHERE user_id = ? AND timed_delete_at IS NOT NULL AND timed_delete_at <= ?
       
@@ -3105,6 +3111,14 @@ Query:
       
 Plan:
 SEARCH group_member_intros USING INDEX sqlite_autoindex_group_member_intros_1 (re_group_member_id=? AND to_group_member_id=?)
+
+Query: 
+        SELECT group_scope_tag, group_scope_group_member_id
+        FROM chat_items
+        WHERE chat_item_id = ?
+      
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
         SELECT group_snd_item_status
@@ -3916,7 +3930,7 @@ Plan:
 Query: 
       INSERT INTO chat_items (
         -- user and IDs
-        user_id, created_by_msg_id, contact_id, group_id, group_member_id, note_folder_id,
+        user_id, created_by_msg_id, contact_id, group_id, group_member_id, note_folder_id, group_scope_tag, group_scope_group_member_id,
         -- meta
         item_sent, item_ts, item_content, item_content_tag, item_text, item_status, msg_content_tag, shared_msg_id,
         forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, timed_ttl, timed_delete_at,
@@ -3924,7 +3938,7 @@ Query:
         quoted_shared_msg_id, quoted_sent_at, quoted_content, quoted_sent, quoted_member_id,
         -- forwarded from
         fwd_from_tag, fwd_from_chat_name, fwd_from_msg_dir, fwd_from_contact_id, fwd_from_group_id, fwd_from_chat_item_id
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -4452,11 +4466,12 @@ Query:
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
       g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
       g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
+      g.mods_support_chat_ts, g.mods_support_chat_unanswered,
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
       mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
       pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
-      mu.created_at, mu.updated_at
+      mu.created_at, mu.updated_at, NULL AS mu_support_chat_ts, NULL AS mu_support_chat_unanswered
     FROM groups g
     JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
     JOIN group_members mu ON mu.group_id = g.group_id
@@ -4474,11 +4489,12 @@ Query:
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
       g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
       g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
+      g.mods_support_chat_ts, g.mods_support_chat_unanswered,
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
       mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
       pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
-      mu.created_at, mu.updated_at
+      mu.created_at, mu.updated_at, NULL AS mu_support_chat_ts, NULL AS mu_support_chat_unanswered
     FROM groups g
     JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
     JOIN group_members mu ON mu.group_id = g.group_id
@@ -4494,7 +4510,7 @@ Query:
     SELECT
       m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
-      m.created_at, m.updated_at,
+      m.created_at, m.updated_at, m.support_chat_ts, m.support_chat_unanswered,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -4526,7 +4542,7 @@ Query:
     SELECT
       m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
-      m.created_at, m.updated_at,
+      m.created_at, m.updated_at, m.support_chat_ts, m.support_chat_unanswered,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -4550,7 +4566,7 @@ Query:
     SELECT
       m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
-      m.created_at, m.updated_at,
+      m.created_at, m.updated_at, m.support_chat_ts, m.support_chat_unanswered,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -4574,7 +4590,7 @@ Query:
     SELECT
       m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
-      m.created_at, m.updated_at,
+      m.created_at, m.updated_at, m.support_chat_ts, m.support_chat_unanswered,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -4598,7 +4614,7 @@ Query:
     SELECT
       m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
-      m.created_at, m.updated_at,
+      m.created_at, m.updated_at, m.support_chat_ts, m.support_chat_unanswered,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -4622,7 +4638,7 @@ Query:
     SELECT
       m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
-      m.created_at, m.updated_at,
+      m.created_at, m.updated_at, m.support_chat_ts, m.support_chat_unanswered,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -4635,6 +4651,30 @@ Query:
       WHERE cc.user_id = ? AND cc.group_member_id = m.group_member_id
     )
    WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)
+Plan:
+SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH c USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+CORRELATED SCALAR SUBQUERY 1
+SEARCH cc USING COVERING INDEX idx_connections_group_member (user_id=? AND group_member_id=?)
+
+Query: 
+    SELECT
+      m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
+      m.created_at, m.updated_at, m.support_chat_ts, m.support_chat_unanswered,
+      c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
+      c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
+      c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+      c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+    FROM group_members m
+    JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+    LEFT JOIN connections c ON c.connection_id = (
+      SELECT max(cc.connection_id)
+      FROM connections cc
+      WHERE cc.user_id = ? AND cc.group_member_id = m.group_member_id
+    )
+   WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.support_chat_ts IS NOT NULL
 Plan:
 SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
@@ -4656,7 +4696,7 @@ Query:
     JOIN files f ON f.chat_item_id = i.chat_item_id
    WHERE i.user_id = ?
 Plan:
-SEARCH i USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=?)
+SEARCH i USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=?)
 SEARCH f USING INDEX idx_files_chat_item_id (chat_item_id=?)
 
 Query: 
@@ -4918,35 +4958,43 @@ Query:
 Plan:
 SCAN usage_conditions
 
-Query:  SELECT chat_item_id FROM chat_items WHERE  (( user_id = ? AND group_id = ?  AND  item_ts < ? ) OR ( user_id = ? AND group_id = ?  AND  item_ts = ? AND chat_item_id < ? ))  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
+Query:  SELECT chat_item_id FROM chat_items WHERE  (( user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL  AND  item_ts < ? ) OR ( user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL  AND  item_ts = ? AND chat_item_id < ? ))  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
 Plan:
 MULTI-INDEX OR
 INDEX 1
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=? AND item_ts<?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_ts<?)
 INDEX 2
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=? AND item_ts=? AND rowid<?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_ts=? AND rowid<?)
 USE TEMP B-TREE FOR ORDER BY
 
-Query:  SELECT chat_item_id FROM chat_items WHERE  (( user_id = ? AND group_id = ?  AND  item_ts > ? ) OR ( user_id = ? AND group_id = ?  AND  item_ts = ? AND chat_item_id > ? ))  ORDER BY item_ts ASC, chat_item_id ASC  LIMIT ?
+Query:  SELECT chat_item_id FROM chat_items WHERE  (( user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL  AND  item_ts > ? ) OR ( user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL  AND  item_ts = ? AND chat_item_id > ? ))  ORDER BY item_ts ASC, chat_item_id ASC  LIMIT ?
 Plan:
 MULTI-INDEX OR
 INDEX 1
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=? AND item_ts>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_ts>?)
 INDEX 2
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=? AND item_ts=? AND rowid>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_ts=? AND rowid>?)
 USE TEMP B-TREE FOR ORDER BY
 
-Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ?  AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
+Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ?  AND group_scope_tag = ? AND group_scope_group_member_id = ?  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
+
+Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ?  AND group_scope_tag = ? AND group_scope_group_member_id IS NULL  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
+
+Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL  AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
+
+Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
 
 Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ?  AND msg_content_tag = ?  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_item_ts (user_id=? AND group_id=? AND msg_content_tag=?)
-
-Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ?  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
-Plan:
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
 
 Query: CREATE TABLE temp_conn_ids (conn_id BLOB)
 Error: SQLite3 returned ErrorError while attempting to perform prepare "explain query plan CREATE TABLE temp_conn_ids (conn_id BLOB)": table temp_conn_ids already exists
@@ -5131,6 +5179,7 @@ SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_m
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_group_member_id (group_member_id=?)
 SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_moderator_member_id (moderator_member_id=?)
 SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_member_id (group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_group_member_id (group_scope_group_member_id=?)
 SEARCH chat_items USING COVERING INDEX idx_chat_items_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
 SEARCH chat_items USING COVERING INDEX idx_chat_items_item_deleted_by_group_member_id (item_deleted_by_group_member_id=?)
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_member_id (group_member_id=?)
@@ -5154,6 +5203,7 @@ SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_m
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_group_member_id (group_member_id=?)
 SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_moderator_member_id (moderator_member_id=?)
 SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_member_id (group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_group_member_id (group_scope_group_member_id=?)
 SEARCH chat_items USING COVERING INDEX idx_chat_items_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
 SEARCH chat_items USING COVERING INDEX idx_chat_items_item_deleted_by_group_member_id (item_deleted_by_group_member_id=?)
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_member_id (group_member_id=?)
@@ -5288,7 +5338,7 @@ SEARCH protocol_servers USING COVERING INDEX idx_smp_servers_user_id (user_id=?)
 SEARCH settings USING COVERING INDEX idx_settings_user_id (user_id=?)
 SEARCH commands USING COVERING INDEX idx_commands_user_id (user_id=?)
 SEARCH calls USING COVERING INDEX idx_calls_user_id (user_id=?)
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=?)
 SEARCH contact_requests USING COVERING INDEX sqlite_autoindex_contact_requests_2 (user_id=?)
 SEARCH user_contact_links USING COVERING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
 SEARCH connections USING COVERING INDEX idx_connections_group_member (user_id=?)
@@ -5445,9 +5495,9 @@ Query: SELECT COUNT(1) FROM groups WHERE user_id = ? AND chat_item_ttl > 0
 Plan:
 SEARCH groups USING INDEX idx_groups_chat_ts (user_id=?)
 
-Query: SELECT COUNT(1), COALESCE(SUM(user_mention), 0) FROM chat_items WHERE user_id = ? AND group_id = ?  AND item_status = ? 
+Query: SELECT COUNT(1), COALESCE(SUM(user_mention), 0) FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_status = ? 
 Plan:
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=? AND item_status=?)
+SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=? AND item_status=?)
 
 Query: SELECT accepted_at FROM operator_usage_conditions WHERE server_operator_id = ? AND conditions_commit = ?
 Plan:
@@ -5473,9 +5523,9 @@ Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND contact_id = ? 
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_direct_shared_msg_id (user_id=? AND contact_id=? AND shared_msg_id=?)
 
-Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ?  AND item_status = ?  ORDER BY item_ts ASC, chat_item_id ASC LIMIT 1
+Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_status = ?  ORDER BY item_ts ASC, chat_item_id ASC LIMIT 1
 Plan:
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups (user_id=? AND group_id=? AND item_status=?)
+SEARCH chat_items USING INDEX idx_chat_items_groups (user_id=? AND group_id=? AND item_status=?)
 
 Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AND group_member_id = ? LIMIT 1
 Plan:
@@ -5628,6 +5678,10 @@ SEARCH note_folders USING COVERING INDEX note_folders_user_id (user_id=?)
 Query: SELECT quota_err_counter FROM connections WHERE user_id = ? AND connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT re_group_member_id FROM group_member_intros WHERE to_group_member_id = ?
+Plan:
+SEARCH group_member_intros USING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
 
 Query: SELECT sent_inv_queue_info FROM group_members WHERE group_member_id = ? AND user_id = ?
 Plan:
@@ -5829,11 +5883,7 @@ Query: UPDATE group_members SET member_role = ? WHERE user_id = ? AND group_memb
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE group_members SET member_status='pending_approval' WHERE group_member_id = 1
-Plan:
-SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: UPDATE group_members SET member_status='pending_approval' WHERE group_member_id = 2
+Query: UPDATE group_members SET support_chat_ts = ? WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
@@ -5862,6 +5912,10 @@ Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE groups SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE groups SET mods_support_chat_ts = ? WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
