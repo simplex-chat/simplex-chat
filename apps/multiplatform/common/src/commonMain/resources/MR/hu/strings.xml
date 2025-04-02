@@ -1045,7 +1045,7 @@
     <string name="toast_permission_denied">Engedély megtagadva!</string>
     <string name="icon_descr_call_pending_sent">Függőben lévő hívás</string>
     <string name="opening_database">Adatbázis megnyitása…</string>
-    <string name="shutdown_alert_question">Leállítás?</string>
+    <string name="shutdown_alert_question">Leállítja az alkalmazást?</string>
     <string name="enter_passphrase_notification_title">Jelmondat szükséges</string>
     <string name="onboarding_notifications_mode_title">Privát értesítések</string>
     <string name="you_invited_a_contact">Ön meghívta egy partnerét</string>
@@ -1262,7 +1262,7 @@
     <string name="use_simplex_chat_servers__question">SimpleX Chat-kiszolgálók használata?</string>
     <string name="unhide_chat_profile">Csevegési profil felfedése</string>
     <string name="v5_0_large_files_support">Videók és fájlok legfeljebb 1GB méretig</string>
-    <string name="network_option_tcp_connection_timeout">TCP kapcsolat időtúllépése</string>
+    <string name="network_option_tcp_connection_timeout">TCP-kapcsolat időtúllépése</string>
     <string name="connect__your_profile_will_be_shared">A(z) %1$s nevű profilja meg lesz osztva.</string>
     <string name="you_are_already_connected_to_vName_via_this_link">Ön már kapcsolódott a következőhöz: %1$s.</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">A jelenlegi csevegési adatbázis TÖRÖLVE és CSERÉLVE lesz az importáltra!\nEz a művelet nem vonható vissza – profiljai, partnerei, csevegési üzenetei és fájljai véglegesen törölve lesznek.</string>
@@ -1999,7 +1999,7 @@
     <string name="network_options_save_and_reconnect">Mentés és újrakapcsolódás</string>
     <string name="v6_0_reachable_chat_toolbar_descr">Használja az alkalmazást egy kézzel.</string>
     <string name="v6_0_your_contacts_descr">A partnerek archiválása a későbbi csevegéshez.</string>
-    <string name="network_option_tcp_connection">TCP kapcsolat</string>
+    <string name="network_option_tcp_connection">TCP-kapcsolat</string>
     <string name="chat_database_exported_save">Az exportált archívumot elmentheti.</string>
     <string name="reset_all_hints">Tippek visszaállítása</string>
     <string name="one_hand_ui_card_title">Csevegési lista átváltása:</string>
@@ -2159,7 +2159,7 @@
     <string name="appearance_bars_blur_radius">Elhomályosítás</string>
     <string name="v6_2_network_decentralization">Hálózati decentralizáció</string>
     <string name="v6_2_network_decentralization_descr">A második előre beállított üzemeltető az alkalmazásban!</string>
-    <string name="v6_2_network_decentralization_enable_flux">A Flux kiszolgálókat engedélyezheti a beállításokban, a „Hálózat és kiszolgálók” menüben, a jobb metaadat-adatvédelem érdekében.</string>
+    <string name="v6_2_network_decentralization_enable_flux">A Flux kiszolgálókat engedélyezheti a beállításokban, a „Hálózat és kiszolgálók” menüben, a metaadatok jobb védelme érdekében.</string>
     <string name="appearance_app_toolbars">Alkalmazás-eszköztárak</string>
     <string name="v6_2_network_decentralization_enable_flux_reason">a metaadatok jobb védelme érdekében.</string>
     <string name="v6_2_improved_chat_navigation">Javított csevegési navigáció</string>
