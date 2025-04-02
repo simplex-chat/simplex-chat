@@ -2732,7 +2732,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       unless (groupPreferences p == Just ps') $ do
         g' <- withStore' $ \db -> updateGroupPreferences db user g ps'
         toView $ CRGroupUpdated user g g' (Just m)
-        (g'', m', scopeInfo) <- liftIO $ mkGroupChatScope g m
+        (g'', m', scopeInfo) <- liftIO $ mkGroupChatScope g' m
         let cd = CDGroupRcv g'' scopeInfo m'
         createGroupFeatureChangedItems user cd CIRcvGroupFeature g g''
 
