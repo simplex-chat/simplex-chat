@@ -118,7 +118,8 @@ testCoreOpts =
           -- dbSchemaPrefix is not used in tests (except bot tests where it's redefined),
           -- instead different schema prefix is passed per client so that single test database is used
           dbSchemaPrefix = "",
-          dbPoolSize = 3
+          dbPoolSize = 3,
+          dbCreateSchema = True
 #else
         { dbFilePrefix = "./simplex_v1", -- dbFilePrefix is not used in tests (except bot tests where it's redefined)
           dbKey = "", -- dbKey = "this is a pass-phrase to encrypt the database",
