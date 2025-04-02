@@ -7,11 +7,13 @@ module Simplex.Chat.Options.Postgres where
 import qualified Data.ByteString.Char8 as B
 import Foreign.C.String
 import Options.Applicative
+import Numeric.Natural (Natural)
 import Simplex.Messaging.Agent.Store.Interface (DBOpts (..))
 
 data ChatDbOpts = ChatDbOpts
   { dbConnstr :: String,
-    dbSchemaPrefix :: String
+    dbSchemaPrefix :: String,
+    dbPoolSize :: Natural
   }
 
 chatDbOptsP :: FilePath -> String -> Parser ChatDbOpts
@@ -33,16 +35,27 @@ chatDbOptsP _appDir defaultDbName = do
           <> value "simplex_v1"
           <> showDefault
       )
-  pure ChatDbOpts {dbConnstr, dbSchemaPrefix}
+  dbPoolSize <-
+    option
+      auto
+      ( long "pool-size"
+          <> metavar "DB_POOL_SIZE"
+          <> help "Database connection pool size"
+          <> value 1
+          <> showDefault
+      )
+  pure ChatDbOpts {dbConnstr, dbSchemaPrefix, dbPoolSize}
 
 dbString :: ChatDbOpts -> String
 dbString ChatDbOpts {dbConnstr} = dbConnstr
 
 toDBOpts :: ChatDbOpts -> String -> Bool -> DBOpts
-toDBOpts ChatDbOpts {dbConnstr, dbSchemaPrefix} dbSuffix _keepKey =
+toDBOpts ChatDbOpts {dbConnstr, dbSchemaPrefix, dbPoolSize} dbSuffix _keepKey =
   DBOpts
     { connstr = B.pack dbConnstr,
-      schema = if null dbSchemaPrefix then "simplex_v1" <> dbSuffix else dbSchemaPrefix <> dbSuffix
+      schema = B.pack $ if null dbSchemaPrefix then "simplex_v1" <> dbSuffix else dbSchemaPrefix <> dbSuffix,
+      poolSize = dbPoolSize,
+      createSchema = False
     }
 
 chatSuffix :: String
@@ -58,11 +71,12 @@ mobileDbOpts schemaPrefix connstr = do
   pure $
     ChatDbOpts
       { dbConnstr,
-        dbSchemaPrefix
+        dbSchemaPrefix,
+        dbPoolSize = 1
       }
 
 removeDbKey :: ChatDbOpts -> ChatDbOpts
 removeDbKey = id
 
 errorDbStr :: DBOpts -> String
-errorDbStr DBOpts {schema} = schema
+errorDbStr DBOpts {schema} = B.unpack schema
