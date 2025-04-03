@@ -32,7 +32,7 @@ jobs:
 
       - name: Build changelog
         id: build_changelog
-        uses: mikepenz/release-changelog-builder-action@v4
+        uses: simplex-chat/release-changelog-builder-action@v4
         with:
           configuration: .github/changelog_conf.json
           failOnError: true
@@ -42,7 +42,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create release
-        uses: softprops/action-gh-release@v1
+        uses: simplex-chat/action-gh-release@v1
         with:
           body: ${{ steps.build_changelog.outputs.changelog }}
           prerelease: true
@@ -97,7 +97,7 @@ jobs:
 
       - name: Configure pagefile (Windows)
         if: matrix.os == 'windows-latest'
-        uses: al-cheb/configure-pagefile-action@v1.3
+        uses: simplex-chat/configure-pagefile-action@v1.3
         with:
           minimum-size: 16GB
           maximum-size: 16GB
@@ -107,7 +107,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Setup Haskell
-        uses: haskell-actions/setup@v2
+        uses: simplex-chat/setup-haskell-action@v2
         with:
           ghc-version: ${{ matrix.ghc }}
           cabal-version: "3.10.1.0"
@@ -179,7 +179,7 @@ jobs:
 
       - name: Unix upload CLI binary to release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.asset_name && matrix.os != 'windows-latest'
-        uses: svenstaro/upload-release-action@v2
+        uses: simplex-chat/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ steps.unix_cli_build.outputs.bin_path }}
@@ -188,7 +188,7 @@ jobs:
 
       - name: Unix update CLI binary hash
         if: startsWith(github.ref, 'refs/tags/v') && matrix.asset_name && matrix.os != 'windows-latest'
-        uses: softprops/action-gh-release@v1
+        uses: simplex-chat/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -242,7 +242,7 @@ jobs:
 
       - name: Linux upload desktop package to release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.asset_name && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04')
-        uses: svenstaro/upload-release-action@v2
+        uses: simplex-chat/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ steps.linux_desktop_build.outputs.package_path }}
@@ -251,7 +251,7 @@ jobs:
 
       - name: Linux update desktop package hash
         if: startsWith(github.ref, 'refs/tags/v') && matrix.asset_name && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04')
-        uses: softprops/action-gh-release@v1
+        uses: simplex-chat/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -261,7 +261,7 @@ jobs:
 
       - name: Linux upload AppImage to release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.asset_name && matrix.os == 'ubuntu-20.04'
-        uses: svenstaro/upload-release-action@v2
+        uses: simplex-chat/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ steps.linux_appimage_build.outputs.appimage_path }}
@@ -270,7 +270,7 @@ jobs:
 
       - name: Linux update AppImage hash
         if: startsWith(github.ref, 'refs/tags/v') && matrix.asset_name && matrix.os == 'ubuntu-20.04'
-        uses: softprops/action-gh-release@v1
+        uses: simplex-chat/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -280,7 +280,7 @@ jobs:
 
       - name: Mac upload desktop package to release
         if: startsWith(github.ref, 'refs/tags/v') && (matrix.os == 'macos-latest' || matrix.os == 'macos-13')
-        uses: svenstaro/upload-release-action@v2
+        uses: simplex-chat/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ steps.mac_desktop_build.outputs.package_path }}
@@ -289,7 +289,7 @@ jobs:
 
       - name: Mac update desktop package hash
         if: startsWith(github.ref, 'refs/tags/v') && (matrix.os == 'macos-latest' || matrix.os == 'macos-13')
-        uses: softprops/action-gh-release@v1
+        uses: simplex-chat/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -319,7 +319,7 @@ jobs:
 
       - name: 'Setup MSYS2'
         if: matrix.os == 'windows-latest'
-        uses: msys2/setup-msys2@v2
+        uses: simplex-chat/setup-msys2@v2
         with:
           msystem: ucrt64
           update: true
@@ -357,7 +357,7 @@ jobs:
 
       - name: Windows upload CLI binary to release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
-        uses: svenstaro/upload-release-action@v2
+        uses: simplex-chat/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ steps.windows_build.outputs.bin_path }}
@@ -366,7 +366,7 @@ jobs:
 
       - name: Windows update CLI binary hash
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
-        uses: softprops/action-gh-release@v1
+        uses: simplex-chat/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -389,7 +389,7 @@ jobs:
 
       - name: Windows upload desktop package to release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
-        uses: svenstaro/upload-release-action@v2
+        uses: simplex-chat/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ steps.windows_desktop_build.outputs.package_path }}
@@ -398,7 +398,7 @@ jobs:
 
       - name: Windows update desktop package hash
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
-        uses: softprops/action-gh-release@v1
+        uses: simplex-chat/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
