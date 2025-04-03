@@ -310,8 +310,7 @@ groupFeatures'' dir =
     ((dir, "Files and media: on"), Nothing, Nothing),
     ((dir, "SimpleX links: on"), Nothing, Nothing),
     ((dir, "Member reports: on"), Nothing, Nothing),
-    ((dir, "Recent history: on"), Nothing, Nothing),
-    ((dir, "New member review: off"), Nothing, Nothing)
+    ((dir, "Recent history: on"), Nothing, Nothing)
   ]
 
 itemId :: Int -> String

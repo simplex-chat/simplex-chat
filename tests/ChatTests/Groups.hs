@@ -387,7 +387,7 @@ testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice 
   forM_ ([1 .. 10] :: [Int]) $ \n -> bob <# ("#team alice> " <> show n)
 
   -- All messages are unread for bob, should return area around unread
-  bob #$> ("/_get chat #1 initial=2", chat, [(0, "New member review: off"), (0, "connected"), (0, "1"), (0, "2"), (0, "3")])
+  bob #$> ("/_get chat #1 initial=2", chat, [(0, "Recent history: on"), (0, "connected"), (0, "1"), (0, "2"), (0, "3")])
 
   -- Read next 2 items
   let itemIds = intercalate "," $ map groupItemId [1 .. 2]
@@ -1571,7 +1571,6 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
       alice <## "SimpleX links: on"
       alice <## "Member reports: on"
       alice <## "Recent history: on"
-      alice <## "New member review: off"
     bobAddedDan :: HasCallStack => TestCC -> IO ()
     bobAddedDan cc = do
       cc <## "#team: bob added dan (Daniel) to the group (connecting...)"
@@ -3040,22 +3039,18 @@ testGLinkReviewMember =
     \alice bob cath dan eve -> do
       createGroup4 "team" alice (bob, GRMember) (cath, GRModerator) (dan, GRModerator)
 
-      alice ##> "/set new member review #team on"
-      alice <## "updated group preferences:"
-      alice <## "New member review: on"
+      alice ##> "/set admission review #team all"
+      alice <## "changed member admission rules"
       concurrentlyN_
         [ do
             bob <## "alice updated group #team:"
-            bob <## "updated group preferences:"
-            bob <## "New member review: on",
+            bob <## "changed member admission rules",
           do
             cath <## "alice updated group #team:"
-            cath <## "updated group preferences:"
-            cath <## "New member review: on",
+            cath <## "changed member admission rules",
           do
             dan <## "alice updated group #team:"
-            dan <## "updated group preferences:"
-            dan <## "New member review: on"
+            dan <## "changed member admission rules"
         ]
 
       alice ##> "/create link #team"
@@ -3164,22 +3159,18 @@ testGLinkApproveThenReviewMember =
     \alice bob cath dan eve -> do
       createGroup4 "team" alice (bob, GRMember) (cath, GRModerator) (dan, GRModerator)
 
-      alice ##> "/set new member review #team on"
-      alice <## "updated group preferences:"
-      alice <## "New member review: on"
+      alice ##> "/set admission review #team all"
+      alice <## "changed member admission rules"
       concurrentlyN_
         [ do
             bob <## "alice updated group #team:"
-            bob <## "updated group preferences:"
-            bob <## "New member review: on",
+            bob <## "changed member admission rules",
           do
             cath <## "alice updated group #team:"
-            cath <## "updated group preferences:"
-            cath <## "New member review: on",
+            cath <## "changed member admission rules",
           do
             dan <## "alice updated group #team:"
-            dan <## "updated group preferences:"
-            dan <## "New member review: on"
+            dan <## "changed member admission rules"
         ]
 
       alice ##> "/create link #team"

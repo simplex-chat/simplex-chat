@@ -473,7 +473,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       let role = if useMemberFilter image (makeObserver a) then GRObserver else maybe GRMember (\GroupLinkInfo {memberRole} -> memberRole) gli_
           gmId = groupMemberId' m
       sendChatCmd cc (APIAcceptMember groupId gmId role) >>= \case
-        CRJoinedGroupMember {member} -> do
+        CRMemberAccepted {member} -> do
           atomically $ TM.delete gmId $ pendingCaptchas env
           if memberStatus member == GSMemPendingReview
             then logInfo $ "Member " <> viewName displayName <> " accepted and pending review, group " <> tshow groupId <> ":" <> viewGroupName g
