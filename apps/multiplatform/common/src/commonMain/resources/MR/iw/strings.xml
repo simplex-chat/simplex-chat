@@ -608,7 +608,7 @@
     <string name="add_contact">קישור הזמנה חד־פעמי</string>
     <string name="markdown_in_messages">מרקדאון בהודעות</string>
     <string name="network_and_servers">רשת ושרתים</string>
-    <string name="network_settings_title">הגדרות רשת</string>
+    <string name="network_settings_title">הגדרות מתקדמות</string>
     <string name="new_database_archive">ארכיון מסד נתונים חדש</string>
     <string name="messages_section_title">הודעות</string>
     <string name="group_member_role_member">חבר קבוצה</string>
@@ -737,7 +737,7 @@
     <string name="smp_servers_preset_server">שרת מוגדר מראש</string>
     <string name="privacy_redefined">פרטיות מוגדרת מחדש</string>
     <string name="people_can_connect_only_via_links_you_share">אנשים יכולים להתחבר אליכם רק דרך הקישורים שאתם משתפים.</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">פרוטוקול וקוד פתוחים – כל אחד יכול להריץ את השרתים.</string>
+    <string name="opensource_protocol_and_code_anybody_can_run_servers">כל אחד יכול לארח שרתים.</string>
     <string name="onboarding_notifications_mode_periodic">תקופתי</string>
     <string name="restore_database_alert_desc">נא להזין את הסיסמה הקודמת לאחר שחזור גיבוי מסד הנתונים, לא ניתן לבטל פעולה זו.</string>
     <string name="prohibit_message_deletion">לאסור מחיקה בלתי הפיכה של הודעות.</string>
@@ -1767,7 +1767,7 @@
     <string name="chat_theme_set_default_theme">הגדר ערכת נושא ברירת מחדל</string>
     <string name="chat_theme_reset_to_user_theme">אפס ערכת נושא למשתמש</string>
     <string name="chat_theme_apply_to_mode">החל ל</string>
-    <string name="chat_theme_apply_to_all_modes">מצב כל הצבעים</string>
+    <string name="chat_theme_apply_to_all_modes">ערכת נושא</string>
     <string name="group_members_can_send_simplex_links">משתמשים יכולים לשלוח קישורי SimpleXצ</string>
     <string name="v5_8_chat_themes_descr">עשה שהצאט\'ים שלך יראו אחרת!</string>
     <string name="v5_7_network">הגדרות רשת</string>
@@ -2066,4 +2066,25 @@
     <string name="v6_1_forward_many_messages_descr">העבר עד 20 הודעות בבת אחת.</string>
     <string name="v6_3_mentions_descr">קבל התראה כאשר מתייגים אותך</string>
     <string name="v6_3_reports_descr">עזור לאחראי תוכן בדיווחים על תוכן בעייתי בקבוצות</string>
+    <string name="chat_list_add_list">הוסף רשימה</string>
+    <string name="color_primary_variant2">הדגשה נוספת 2</string>
+    <string name="onboarding_conditions_by_using_you_agree">בשימוש שלך ב- SimpleX Chat אתה מסכים ל:\n\n- לשלוח רק תוכן חוקי בקבוצות ציבוריות.\n\n- לכבד את שאר המשתמשים - לא לשלוח ספאם.</string>
+    <string name="operator_conditions_will_be_applied"><![CDATA[תנאי שימוש אלה יחולו גם על:<b>%s</b>.]]></string>
+    <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[אותם תנאי שימוש יחולו על מפעיל/ים: <b>%s</b>.]]></string>
+    <string name="button_add_friends">הוסף חברים</string>
+    <string name="operator_added_message_servers">שרתי הודעות שנוספו</string>
+    <string name="operator_added_xftp_servers">שרתי מדיה וקבצים שנוספו</string>
+    <string name="add_to_list">הוסף לרשימה</string>
+    <string name="servers_info_subscriptions_connections_subscribed">חיבורים פעילים</string>
+    <string name="add_your_team_members_to_conversations">הוסף את חברי הצוות שלך לשיחות.</string>
+    <string name="onboarding_notifications_mode_service_desc_short">האפליקציה תמיד רצה ברקע</string>
+    <string name="address_settings">הגדרות כתובת</string>
+    <string name="appearance_app_toolbars">סרגל הכלים של האפליקציה</string>
+    <string name="network_session_mode_session">סשן לאפליקציה</string>
+    <string name="address_or_1_time_link">כתובת או קישור חד פעמי?</string>
+    <string name="button_add_team_members">הוסף חברי צוות</string>
+    <string name="operator_same_conditions_will_be_applied"><![CDATA[אותם תנאי שימוש יחולו על המפעיל <b>%s</b>.]]></string>
+    <string name="info_row_chat">צ\'אט</string>
+    <string name="v6_2_business_chats">צא\'טים עסקיים</string>
+    <string name="chunks_deleted">"הזבל  נמחק"</string>
 </resources>
