@@ -134,9 +134,7 @@ CREATE TABLE groups(
   business_xcontact_id BLOB NULL,
   customer_member_id BLOB NULL,
   chat_item_ttl INTEGER,
-  local_alias TEXT DEFAULT '',
-  mods_support_chat_ts TEXT,
-  mods_support_chat_unanswered INTEGER, -- received
+  local_alias TEXT DEFAULT '', -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -170,7 +168,9 @@ CREATE TABLE group_members(
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   member_restriction TEXT,
   support_chat_ts TEXT,
+  support_chat_unread INTEGER,
   support_chat_unanswered INTEGER,
+  support_chat_mentions INTEGER,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
