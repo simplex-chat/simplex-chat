@@ -2317,11 +2317,10 @@ processChatCommand' vr = \case
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIListMembers groupId
   ListMemberSupportChats gName -> withUser $ \user -> do
-    gInfo <- withFastStore $ \db -> getGroupInfoByName db vr user gName
-    -- TODO [knocking] delete all support chats (chat items) if role is lowered?
-    assertUserGroupRole gInfo GRModerator
-    supportMems <- withFastStore' $ \db -> getSupportMembers db vr user gInfo
-    pure $ CRMemberSupportChats user gInfo supportMems
+    groupId <- withFastStore $ \db -> getGroupIdByName db user gName
+    (Group gInfo members) <- withFastStore $ \db -> getGroup db vr user groupId
+    let memberSupportChats = filter (isJust . supportChat) members
+    pure $ CRTerminalEvent $ TEMemberSupportChats user gInfo memberSupportChats
   APIListGroups userId contactId_ search_ -> withUserId userId $ \user ->
     CRGroupsList user <$> withFastStore' (\db -> getUserGroupsWithSummary db vr user contactId_ search_)
   ListGroups cName_ search_ -> withUser $ \user@User {userId} -> do

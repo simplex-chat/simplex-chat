@@ -1354,16 +1354,16 @@ mkGetMessageChatScope vr user gInfo@GroupInfo {membership} m msgScope_ =
             pure (gInfo', m, Just scopeInfo)
         | otherwise -> do
             referredMember <- withStore $ \db -> getGroupMemberByMemberId db vr user gInfo mId
-            -- TODO [knocking] return patched _referredMember too?
+            -- TODO [knocking] return patched _referredMember' too?
             (_referredMember', scopeInfo) <- liftIO $ mkMemberSupportChatInfo referredMember
             pure (gInfo, m, Just scopeInfo)
 
 mkGroupSupportChatInfo :: GroupInfo -> IO (GroupInfo, GroupChatScopeInfo)
-mkGroupSupportChatInfo gInfo@GroupInfo {modsSupportChat} =
-  case modsSupportChat of
+mkGroupSupportChatInfo gInfo@GroupInfo {membership} =
+  case supportChat membership of
     Nothing -> do
       chatTs <- getCurrentTime
-      let gInfo' = gInfo {modsSupportChat = Just $ GroupSupportChat chatTs True}
+      let gInfo' = gInfo {membership = membership {supportChat = Just $ GroupSupportChat chatTs 1 0 0}}
           scopeInfo = GCSIMemberSupport {groupMember_ = Nothing}
       pure (gInfo', scopeInfo)
     Just _supportChat ->
@@ -1375,7 +1375,7 @@ mkMemberSupportChatInfo m@GroupMember {supportChat} =
   case supportChat of
     Nothing -> do
       chatTs <- getCurrentTime
-      let m' = m {supportChat = Just $ GroupSupportChat chatTs True}
+      let m' = m {supportChat = Just $ GroupSupportChat chatTs 1 0 0}
           scopeInfo = GCSIMemberSupport {groupMember_ = Just m'}
       pure (m', scopeInfo)
     Just _supportChat ->

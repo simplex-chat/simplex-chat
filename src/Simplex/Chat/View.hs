@@ -186,7 +186,6 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRGroupMembers u g -> ttyUser u $ viewGroupMembers g
-  CRMemberSupportChats u _g ms -> ttyUser u $ viewSupportMembers ms
   -- CRGroupConversationsArchived u _g _conversations -> ttyUser u []
   -- CRGroupConversationsDeleted u _g _conversations -> ttyUser u []
   CRGroupsList u gs -> ttyUser u $ viewGroupsList gs
@@ -454,6 +453,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRTerminalEvent te -> case te of
     TERejectingGroupJoinRequestMember _ g m reason -> [ttyFullMember m <> ": rejecting request to join group " <> ttyGroup' g <> ", reason: " <> sShow reason]
     TEGroupLinkRejected u g reason -> ttyUser u [ttyGroup' g <> ": join rejected, reason: " <> sShow reason]
+    TEMemberSupportChats u _g ms -> ttyUser u $ viewMemberSupportChats ms
   where
     ttyUser :: User -> [StyledString] -> [StyledString]
     ttyUser user@User {showNtfs, activeUser, viewPwdHash} ss
@@ -1197,8 +1197,8 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
       | not (showMessages $ memberSettings m) = ["blocked"]
       | otherwise = []
 
-viewSupportMembers :: [GroupMember] -> [StyledString]
-viewSupportMembers = map groupMember
+viewMemberSupportChats :: [GroupMember] -> [StyledString]
+viewMemberSupportChats = map groupMember
   where
     groupMember m = memIncognito m <> ttyFullMember m <> ", id: " <> sShow (groupMemberId' m)
 

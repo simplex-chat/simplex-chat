@@ -6889,8 +6889,8 @@ testUpdatedMentionNames = do
     test (mm [("alice", Just "alice"), ("cath", Just "alice")]) "hello @alice @cath"
       `shouldBe` "hello @alice @alice_1"
   where
-    test mentions t =
-      let (mc', _, _) = updatedMentionNames (MCText t) (parseMaybeMarkdownList t) mentions
+    test mentionsMap t =
+      let (mc', _, _) = updatedMentionNames (MCText t) (parseMaybeMarkdownList t) mentionsMap
        in msgContentText mc'
     mm = M.fromList . map (second mentionedMember)
     mentionedMember name_ = CIMention {memberId = MemberId "abcd", memberRef = ciMentionMember <$> name_}
@@ -6969,6 +6969,6 @@ testScopedSupportManyModerators =
     dan ##> "/member support chats #team"
     dan <## "bob (Bob), id: 3"
     bob ##> "/member support chats #team"
-    bob <## "#team: you have insufficient permissions for this action, the required role is moderator"
+    bob <// 50000
     cath ##> "/member support chats #team"
-    cath <## "#team: you have insufficient permissions for this action, the required role is moderator"
+    cath <// 50000
