@@ -2090,4 +2090,5 @@
     <string name="chat_list_contacts">אנשי קשר</string>
     <string name="delete_contact_cannot_undo_warning">איש הקשר יימחק - לא ניתן לבטל זאת!</string>
     <string name="cant_call_contact_deleted_alert_text">איש הקשר נמחק.</string>
+    <string name="blocking_reason_spam">ספאם</string>
 </resources>
