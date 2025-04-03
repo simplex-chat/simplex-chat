@@ -524,7 +524,7 @@ data ChatCommand
   | SetContactFeature AChatFeature ContactName (Maybe FeatureAllowed)
   | SetGroupFeature AGroupFeatureNoRole GroupName GroupFeatureEnabled
   | SetGroupFeatureRole AGroupFeatureRole GroupName GroupFeatureEnabled (Maybe GroupMemberRole)
-  | SetGroupMemberAdmissionReview GroupName MemberAdmissionCriteria
+  | SetGroupMemberAdmissionReview GroupName (Maybe MemberAdmissionApplication)
   | SetUserTimedMessages Bool -- UserId (not used in UI)
   | SetContactTimedMessages ContactName (Maybe TimedMessagesEnabled)
   | SetGroupTimedMessages GroupName (Maybe Int)

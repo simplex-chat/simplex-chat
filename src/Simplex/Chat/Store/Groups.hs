@@ -322,7 +322,6 @@ createNewGroup :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User ->
 createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = ExceptT $ do
   let GroupProfile {displayName, fullName, description, image, groupPreferences, memberAdmission} = groupProfile
       fullGroupPreferences = mergeGroupPreferences groupPreferences
-      fullMemberAdmission = mergeGroupMemberAdmission memberAdmission
   currentTs <- getCurrentTime
   customUserProfileId <- mapM (createIncognitoProfile_ db userId currentTs) incognitoProfile
   withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
@@ -353,7 +352,6 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
           localAlias = "",
           businessChat = Nothing,
           fullGroupPreferences,
-          fullMemberAdmission,
           membership,
           chatSettings,
           createdAt = currentTs,
@@ -394,7 +392,6 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
     createGroupInvitation_ = do
       let GroupProfile {displayName, fullName, description, image, groupPreferences, memberAdmission} = groupProfile
           fullGroupPreferences = mergeGroupPreferences groupPreferences
-          fullMemberAdmission = mergeGroupMemberAdmission memberAdmission
       ExceptT $
         withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
           currentTs <- liftIO getCurrentTime
@@ -426,7 +423,6 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                   localAlias = "",
                   businessChat = Nothing,
                   fullGroupPreferences,
-                  fullMemberAdmission,
                   membership,
                   chatSettings,
                   createdAt = currentTs,
@@ -533,8 +529,7 @@ deleteContactCardKeepConn db connId Contact {contactId, profile = LocalProfile {
 createGroupInvitedViaLink :: DB.Connection -> VersionRangeChat -> User -> Connection -> GroupLinkInvitation -> ExceptT StoreError IO (GroupInfo, GroupMember)
 createGroupInvitedViaLink db vr user conn GroupLinkInvitation {fromMember, fromMemberName, invitedMember, groupProfile, accepted, business} = do
   let fromMemberProfile = profileFromName fromMemberName
-      fullMemberAdmission = mergeGroupMemberAdmission $ memberAdmission groupProfile
-      initialStatus = maybe GSMemAccepted (acceptanceToStatus fullMemberAdmission) accepted
+      initialStatus = maybe GSMemAccepted (acceptanceToStatus $ memberAdmission groupProfile) accepted
   createGroupViaLink' db vr user conn fromMember fromMemberProfile invitedMember groupProfile business initialStatus
 
 createGroupRejectedViaLink :: DB.Connection -> VersionRangeChat -> User -> Connection -> GroupLinkRejection -> ExceptT StoreError IO (GroupInfo, GroupMember)
@@ -1635,16 +1630,15 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
   | displayName == newName = liftIO $ do
       currentTs <- getCurrentTime
       updateGroupProfile_ currentTs
-      pure (g :: GroupInfo) {groupProfile = p', fullGroupPreferences, fullMemberAdmission}
+      pure (g :: GroupInfo) {groupProfile = p', fullGroupPreferences}
   | otherwise =
       ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
         currentTs <- getCurrentTime
         updateGroupProfile_ currentTs
         updateGroup_ ldn currentTs
-        pure $ Right (g :: GroupInfo) {localDisplayName = ldn, groupProfile = p', fullGroupPreferences, fullMemberAdmission}
+        pure $ Right (g :: GroupInfo) {localDisplayName = ldn, groupProfile = p', fullGroupPreferences}
   where
     fullGroupPreferences = mergeGroupPreferences groupPreferences
-    fullMemberAdmission = mergeGroupMemberAdmission memberAdmission
     updateGroupProfile_ currentTs =
       DB.execute
         db

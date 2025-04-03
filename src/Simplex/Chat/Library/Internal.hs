@@ -859,13 +859,13 @@ acceptContactRequestAsync user cReq@UserContactRequest {agentInvitationId = Agen
 acceptGroupJoinRequestAsync :: User -> GroupInfo -> UserContactRequest -> GroupAcceptance -> GroupMemberRole -> Maybe IncognitoProfile -> CM GroupMember
 acceptGroupJoinRequestAsync
   user
-  gInfo@GroupInfo {groupProfile, fullMemberAdmission, membership, businessChat}
+  gInfo@GroupInfo {groupProfile, membership, businessChat}
   ucr@UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange}
   gAccepted
   gLinkMemRole
   incognitoProfile = do
     gVar <- asks random
-    let initialStatus = acceptanceToStatus fullMemberAdmission gAccepted
+    let initialStatus = acceptanceToStatus (memberAdmission groupProfile) gAccepted
     (groupMemberId, memberId) <- withStore $ \db -> do
       liftIO $ deleteContactRequestRec db user ucr
       createJoiningMember db gVar user gInfo ucr gLinkMemRole initialStatus

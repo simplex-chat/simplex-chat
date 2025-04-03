@@ -2044,10 +2044,10 @@ processChatCommand' vr = \case
     assertUserGroupRole gInfo GRModerator
     case memberStatus m of
       GSMemPendingApproval | memberCategory m == GCInviteeMember -> do -- only host can approve
-        let GroupInfo {fullMemberAdmission = FullGroupMemberAdmission {review}} = gInfo
+        let GroupInfo {groupProfile = GroupProfile {memberAdmission}} = gInfo
         case memberConn m of
           Just mConn
-            | review == MACAutoAdmitNoOne -> do
+            | (memberAdmission >>= review) == Just MAAApplyToAll -> do
                 introduceToModerators vr user gInfo m
                 withFastStore' $ \db -> updateGroupMemberStatus db userId m GSMemPendingReview
                 let m' = m {memberStatus = GSMemPendingReview}
@@ -2557,11 +2557,11 @@ processChatCommand' vr = \case
   SetGroupFeatureRole (AGFR f) gName enabled role ->
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreferenceRole f enabled role $ groupPreferences p}
-  SetGroupMemberAdmissionReview gName reviewAdmissionCriteria ->
+  SetGroupMemberAdmissionReview gName reviewAdmissionApplication ->
     updateGroupProfileByName gName $ \p@GroupProfile {memberAdmission} ->
       case memberAdmission of
-        Nothing -> p {memberAdmission = Just (emptyGroupMemberAdmission :: GroupMemberAdmission) {review = Just reviewAdmissionCriteria}}
-        Just ma -> p {memberAdmission = Just (ma :: GroupMemberAdmission) {review = Just reviewAdmissionCriteria}}
+        Nothing -> p {memberAdmission = Just (emptyGroupMemberAdmission :: GroupMemberAdmission) {review = reviewAdmissionApplication}}
+        Just ma -> p {memberAdmission = Just (ma :: GroupMemberAdmission) {review = reviewAdmissionApplication}}
   SetUserTimedMessages onOff -> withUser $ \user@User {profile} -> do
     let allowed = if onOff then FAYes else FANo
         pref = TimedMessagesPreference allowed Nothing
@@ -4205,7 +4205,7 @@ chatCommandP =
       "/set disappear " *> (SetUserTimedMessages <$> (("yes" $> True) <|> ("no" $> False))),
       "/set reports #" *> (SetGroupFeature (AGFNR SGFReports) <$> displayNameP <*> _strP),
       "/set links #" *> (SetGroupFeatureRole (AGFR SGFSimplexLinks) <$> displayNameP <*> _strP <*> optional memberRole),
-      "/set admission review #" *> (SetGroupMemberAdmissionReview <$> displayNameP <*> (A.space *> memberAdmissionCriteriaP)),
+      "/set admission review #" *> (SetGroupMemberAdmissionReview <$> displayNameP <*> (A.space *> memberAdmissionApplicationP)),
       ("/incognito" <* optional (A.space *> onOffP)) $> ChatHelp HSIncognito,
       "/set device name " *> (SetLocalDeviceName <$> textP),
       "/list remote hosts" $> ListRemoteHosts,
@@ -4306,9 +4306,7 @@ chatCommandP =
                   history = Just HistoryGroupPreference {enable = FEOn}
                 }
       pure GroupProfile {displayName = gName, fullName, description = Nothing, image = Nothing, groupPreferences, memberAdmission = Nothing}
-    memberAdmissionCriteriaP =
-      ("auto_admit_all" $> MACAutoAdmitAll)
-        <|> ("auto_admit_no_one" $> MACAutoAdmitNoOne)
+    memberAdmissionApplicationP = ("apply_to_all" $> Just MAAApplyToAll) <|> ("off" $> Nothing)
     fullNameP = A.space *> textP <|> pure ""
     textP = safeDecodeUtf8 <$> A.takeByteString
     pwdP = jsonP <|> (UserPwd . safeDecodeUtf8 <$> A.takeTill (== ' '))

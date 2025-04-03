@@ -38,7 +38,7 @@ import Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Lazy as LB
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -410,7 +410,6 @@ data GroupInfo = GroupInfo
     localAlias :: Text,
     businessChat :: Maybe BusinessChatInfo,
     fullGroupPreferences :: FullGroupPreferences,
-    fullMemberAdmission :: FullGroupMemberAdmission,
     membership :: GroupMember,
     chatSettings :: ChatSettings,
     createdAt :: UTCTime,
@@ -628,37 +627,14 @@ data GroupProfile = GroupProfile
   deriving (Eq, Show)
 
 data GroupMemberAdmission = GroupMemberAdmission
-  { -- names :: Maybe MemberAdmissionCriteria,
-    -- captcha :: Maybe MemberAdmissionCriteria,
-    review :: Maybe MemberAdmissionCriteria
+  { -- names :: Maybe MemberAdmissionApplication,
+    -- captcha :: Maybe MemberAdmissionApplication,
+    review :: Maybe MemberAdmissionApplication
   }
   deriving (Eq, Show)
 
-data MemberAdmissionCriteria
-  = MACAutoAdmitAll
-  | MACAutoAdmitNoOne
-  -- \| MACAutoAdmitHasProfileImage
-  -- \| MACAutoAdmitVerifiedProfile
+data MemberAdmissionApplication = MAAApplyToAll
   deriving (Eq, Show)
-
-data FullGroupMemberAdmission = FullGroupMemberAdmission
-  { -- names :: MemberAdmissionCriteria,
-    -- captcha :: MemberAdmissionCriteria,
-    review :: MemberAdmissionCriteria
-  }
-  deriving (Eq, Show)
-
-mergeGroupMemberAdmission :: Maybe GroupMemberAdmission -> FullGroupMemberAdmission
-mergeGroupMemberAdmission Nothing = defaultGroupMemberAdmission
-mergeGroupMemberAdmission (Just GroupMemberAdmission {review}) =
-  let FullGroupMemberAdmission {review = defaultReview} = defaultGroupMemberAdmission
-   in FullGroupMemberAdmission {review = fromMaybe defaultReview review}
-
-defaultGroupMemberAdmission :: FullGroupMemberAdmission
-defaultGroupMemberAdmission =
-  FullGroupMemberAdmission {
-    review = MACAutoAdmitAll
-  }
 
 emptyGroupMemberAdmission :: GroupMemberAdmission
 emptyGroupMemberAdmission = GroupMemberAdmission Nothing
@@ -1069,10 +1045,10 @@ instance ToJSON GroupMemberStatus where
   toJSON = J.String . textEncode
   toEncoding = JE.text . textEncode
 
-acceptanceToStatus :: FullGroupMemberAdmission -> GroupAcceptance -> GroupMemberStatus
-acceptanceToStatus FullGroupMemberAdmission {review} groupAcceptance
+acceptanceToStatus :: Maybe GroupMemberAdmission -> GroupAcceptance -> GroupMemberStatus
+acceptanceToStatus memberAdmission groupAcceptance
   | groupAcceptance == GAPending = GSMemPendingApproval
-  | review == MACAutoAdmitNoOne = GSMemPendingReview
+  | (memberAdmission >>= review) == Just MAAApplyToAll = GSMemPendingReview
   | otherwise = GSMemAccepted
 
 memberActive :: GroupMember -> Bool
@@ -1871,7 +1847,7 @@ $(JQ.deriveJSON defaultJSON ''LocalProfile)
 
 $(JQ.deriveJSON defaultJSON ''UserContactRequest)
 
-$(JQ.deriveJSON (enumJSON $ dropPrefix "MAC") ''MemberAdmissionCriteria)
+$(JQ.deriveJSON (enumJSON $ dropPrefix "MAA") ''MemberAdmissionApplication)
 
 $(JQ.deriveJSON defaultJSON ''GroupMemberAdmission)
 
@@ -1908,8 +1884,6 @@ $(JQ.deriveJSON defaultJSON ''ChatSettings)
 $(JQ.deriveJSON (enumJSON $ dropPrefix "BC") ''BusinessChatType)
 
 $(JQ.deriveJSON defaultJSON ''BusinessChatInfo)
-
-$(JQ.deriveJSON defaultJSON ''FullGroupMemberAdmission)
 
 $(JQ.deriveJSON defaultJSON ''GroupInfo)
 

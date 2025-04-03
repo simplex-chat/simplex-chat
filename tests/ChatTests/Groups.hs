@@ -3039,7 +3039,7 @@ testGLinkReviewMember =
     \alice bob cath dan eve -> do
       createGroup4 "team" alice (bob, GRMember) (cath, GRModerator) (dan, GRModerator)
 
-      alice ##> "/set admission review #team auto_admit_no_one"
+      alice ##> "/set admission review #team apply_to_all"
       alice <## "changed member admission rules"
       concurrentlyN_
         [ do
@@ -3159,7 +3159,7 @@ testGLinkApproveThenReviewMember =
     \alice bob cath dan eve -> do
       createGroup4 "team" alice (bob, GRMember) (cath, GRModerator) (dan, GRModerator)
 
-      alice ##> "/set admission review #team auto_admit_no_one"
+      alice ##> "/set admission review #team apply_to_all"
       alice <## "changed member admission rules"
       concurrentlyN_
         [ do
