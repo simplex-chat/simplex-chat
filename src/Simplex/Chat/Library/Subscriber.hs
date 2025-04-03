@@ -815,7 +815,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               Nothing -> do
                 notifyMemberConnected gInfo m Nothing
                 let connectedIncognito = memberIncognito membership
-                when (memCategory == GCPreMember && not (memberPending membership)) $
+                when (memCategory == GCPreMember) $
                   probeMatchingMemberContact m connectedIncognito
               Just ct@Contact {activeConn} ->
                 forM_ activeConn $ \Connection {connStatus} ->
@@ -875,7 +875,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XFileAcptInv sharedMsgId fileConnReq_ fName -> xFileAcptInvGroup gInfo' m'' sharedMsgId fileConnReq_ fName
               XInfo p -> xInfoMember gInfo' m'' p brokerTs
               XGrpLinkMem p -> xGrpLinkMem gInfo' m'' conn' p
-              XGrpLinkAcpt role memberId_ -> xGrpLinkAcpt gInfo' m'' role memberId_
+              XGrpLinkAcpt role memberId -> xGrpLinkAcpt gInfo' m'' role memberId
               XGrpMemNew memInfo msgScope -> xGrpMemNew gInfo' m'' memInfo msgScope msg brokerTs
               XGrpMemIntro memInfo memRestrictions_ -> xGrpMemIntro gInfo' m'' memInfo memRestrictions_
               XGrpMemInv memId introInv -> xGrpMemInv gInfo' m'' memId introInv
@@ -2082,27 +2082,24 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         then do
           m' <- processMemberProfileUpdate gInfo m p' False Nothing
           withStore' $ \db -> setXGrpLinkMemReceived db groupMemberId True
-          unless (memberStatus == GSMemPendingApproval) $ do
-            let connectedIncognito = memberIncognito membership
-            probeMatchingMemberContact m' connectedIncognito
+          let connectedIncognito = memberIncognito membership
+          probeMatchingMemberContact m' connectedIncognito
         else messageError "x.grp.link.mem error: invalid group link host profile update"
 
-    xGrpLinkAcpt :: GroupInfo -> GroupMember -> GroupMemberRole -> Maybe MemberId -> CM ()
-    xGrpLinkAcpt gInfo@GroupInfo {groupId, membership} m role memberId_ = case memberId_ of
-      Nothing -> processUserAccepted -- backwards compatibility
-      Just memberId
-        | sameMemberId memberId membership -> processUserAccepted
-        | otherwise ->
-            withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memberId) >>= \case
-              Left _ -> messageError "x.grp.link.acpt error: referenced member does not exist"
-              Right referencedMember -> do
-                referencedMember' <- withFastStore' $ \db -> updateGroupMemberAccepted db user referencedMember (newMemberStatus referencedMember) role
-                when (memberCategory referencedMember == GCInviteeMember) $ introduceToRemainingMembers referencedMember'
-                toView $ CRMemberAcceptedByOther user gInfo m referencedMember'
-                where
-                  newMemberStatus refMem = case memberConn refMem of
-                    Just c | connReady c -> GSMemConnected
-                    _ -> GSMemAnnounced
+    xGrpLinkAcpt :: GroupInfo -> GroupMember -> GroupMemberRole -> MemberId -> CM ()
+    xGrpLinkAcpt gInfo@GroupInfo {groupId, membership} m role memberId
+      | sameMemberId memberId membership = processUserAccepted
+      | otherwise =
+          withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memberId) >>= \case
+            Left _ -> messageError "x.grp.link.acpt error: referenced member does not exist"
+            Right referencedMember -> do
+              referencedMember' <- withFastStore' $ \db -> updateGroupMemberAccepted db user referencedMember (newMemberStatus referencedMember) role
+              when (memberCategory referencedMember == GCInviteeMember) $ introduceToRemainingMembers referencedMember'
+              toView $ CRMemberAcceptedByOther user gInfo m referencedMember'
+              where
+                newMemberStatus refMem = case memberConn refMem of
+                  Just c | connReady c -> GSMemConnected
+                  _ -> GSMemAnnounced
       where
         processUserAccepted = do
           membership' <- withStore' $ \db -> updateGroupMemberAccepted db user membership GSMemConnected role
@@ -2111,19 +2108,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
           createGroupFeatureItems user cd CIRcvGroupFeature gInfo
           maybeCreateGroupDescrLocal gInfo m
-          -- Here we can safely probe all known members, because host sends XGrpLinkAcpt before remaining introductions
-          let connectedIncognito = memberIncognito membership
-          members <- withStore' $ \db -> getGroupMembers db vr user gInfo
-          forM_ (filter memberActive members) $ \mem ->
-            probeMatchingMemberContact mem connectedIncognito
         introduceToRemainingMembers acceptedMember = do
-          case memberConn acceptedMember of
-            Just mConn -> do
-              let msg = XGrpLinkAcpt role (Just $ memberId' acceptedMember)
-              void $ sendDirectMemberMessage mConn msg groupId
-              introduceToRemaining vr user gInfo acceptedMember
-              when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo acceptedMember
-            Nothing -> messageError "x.grp.link.acpt error: no active accepted member connection"
+          introduceToRemaining vr user gInfo acceptedMember
+          when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo acceptedMember
 
     maybeCreateGroupDescrLocal :: GroupInfo -> GroupMember -> CM ()
     maybeCreateGroupDescrLocal gInfo@GroupInfo {groupProfile = GroupProfile {description}} m =

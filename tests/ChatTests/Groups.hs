@@ -3115,10 +3115,6 @@ testGLinkReviewMember =
 
       (bob </)
 
-      -- host is prohibited to accept member (other moderators have to review)
-      alice ##> "/_accept member #1 5 member"
-      alice <## "bad chat command: member should be pending approval and invitee, or pending review and not invitee"
-
       -- accept member
       dan ##> "/_accept member #1 5 member"
       concurrentlyN_
@@ -3273,10 +3269,6 @@ testGLinkApproveThenReviewMember =
       [alice, cath, dan] *<# "#team (support: eve) eve> 14"
 
       (bob </)
-
-      -- host is prohibited to accept member (other moderators have to review)
-      alice ##> "/_accept member #1 5 member"
-      alice <## "bad chat command: member should be pending approval and invitee, or pending review and not invitee"
 
       -- accept member
       dan ##> "/_accept member #1 5 member"

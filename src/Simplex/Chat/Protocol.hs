@@ -346,7 +346,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpLinkInv :: GroupLinkInvitation -> ChatMsgEvent 'Json
   XGrpLinkReject :: GroupLinkRejection -> ChatMsgEvent 'Json
   XGrpLinkMem :: Profile -> ChatMsgEvent 'Json
-  XGrpLinkAcpt :: GroupMemberRole -> Maybe MemberId -> ChatMsgEvent 'Json -- Maybe MemberId for compatibility
+  XGrpLinkAcpt :: GroupMemberRole -> MemberId -> ChatMsgEvent 'Json
   XGrpMemNew :: MemberInfo -> Maybe MsgScope -> ChatMsgEvent 'Json
   XGrpMemIntro :: MemberInfo -> Maybe MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemInv :: MemberId -> IntroInvitation -> ChatMsgEvent 'Json
@@ -1099,7 +1099,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpLinkInv_ -> XGrpLinkInv <$> p "groupLinkInvitation"
       XGrpLinkReject_ -> XGrpLinkReject <$> p "groupLinkRejection"
       XGrpLinkMem_ -> XGrpLinkMem <$> p "profile"
-      XGrpLinkAcpt_ -> XGrpLinkAcpt <$> p "role" <*> opt "memberId"
+      XGrpLinkAcpt_ -> XGrpLinkAcpt <$> p "role" <*> p "memberId"
       XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo" <*> opt "scope"
       XGrpMemIntro_ -> XGrpMemIntro <$> p "memberInfo" <*> opt "memberRestrictions"
       XGrpMemInv_ -> XGrpMemInv <$> p "memberId" <*> p "memberIntro"
@@ -1163,7 +1163,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XGrpLinkInv groupLinkInv -> o ["groupLinkInvitation" .= groupLinkInv]
       XGrpLinkReject groupLinkRjct -> o ["groupLinkRejection" .= groupLinkRjct]
       XGrpLinkMem profile -> o ["profile" .= profile]
-      XGrpLinkAcpt role memberId -> o $ ("memberId" .=? memberId) ["role" .= role]
+      XGrpLinkAcpt role memberId -> o ["role" .= role, "memberId" .= memberId]
       XGrpMemNew memInfo scope -> o $ ("scope" .=? scope) ["memberInfo" .= memInfo]
       XGrpMemIntro memInfo memRestrictions -> o $ ("memberRestrictions" .=? memRestrictions) ["memberInfo" .= memInfo]
       XGrpMemInv memId memIntro -> o ["memberId" .= memId, "memberIntro" .= memIntro]
