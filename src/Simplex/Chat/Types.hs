@@ -627,13 +627,13 @@ data GroupProfile = GroupProfile
   deriving (Eq, Show)
 
 data GroupMemberAdmission = GroupMemberAdmission
-  { -- names :: Maybe MemberAdmissionApplication,
-    -- captcha :: Maybe MemberAdmissionApplication,
-    review :: Maybe MemberAdmissionApplication
+  { -- names :: Maybe MemberCriteria,
+    -- captcha :: Maybe MemberCriteria,
+    review :: Maybe MemberCriteria
   }
   deriving (Eq, Show)
 
-data MemberAdmissionApplication = MAAApplyToAll
+data MemberCriteria = MCAll
   deriving (Eq, Show)
 
 emptyGroupMemberAdmission :: GroupMemberAdmission
@@ -1048,7 +1048,7 @@ instance ToJSON GroupMemberStatus where
 acceptanceToStatus :: Maybe GroupMemberAdmission -> GroupAcceptance -> GroupMemberStatus
 acceptanceToStatus memberAdmission groupAcceptance
   | groupAcceptance == GAPending = GSMemPendingApproval
-  | (memberAdmission >>= review) == Just MAAApplyToAll = GSMemPendingReview
+  | (memberAdmission >>= review) == Just MCAll = GSMemPendingReview
   | otherwise = GSMemAccepted
 
 memberActive :: GroupMember -> Bool
@@ -1847,7 +1847,7 @@ $(JQ.deriveJSON defaultJSON ''LocalProfile)
 
 $(JQ.deriveJSON defaultJSON ''UserContactRequest)
 
-$(JQ.deriveJSON (enumJSON $ dropPrefix "MAA") ''MemberAdmissionApplication)
+$(JQ.deriveJSON (enumJSON $ dropPrefix "MC") ''MemberCriteria)
 
 $(JQ.deriveJSON defaultJSON ''GroupMemberAdmission)
 

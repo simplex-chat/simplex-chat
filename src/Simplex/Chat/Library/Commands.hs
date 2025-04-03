@@ -2046,13 +2046,14 @@ processChatCommand' vr = \case
       GSMemPendingApproval | memberCategory m == GCInviteeMember -> do -- only host can approve
         let GroupInfo {groupProfile = GroupProfile {memberAdmission}} = gInfo
         case memberConn m of
-          Just mConn
-            | (memberAdmission >>= review) == Just MAAApplyToAll -> do
+          Just mConn ->
+            case memberAdmission >>= review of
+              Just MCAll -> do
                 introduceToModerators vr user gInfo m
                 withFastStore' $ \db -> updateGroupMemberStatus db userId m GSMemPendingReview
                 let m' = m {memberStatus = GSMemPendingReview}
                 pure $ CRMemberAccepted user gInfo m'
-            | otherwise -> do
+              Nothing -> do
                 let msg = XGrpLinkAcpt role (Just $ memberId' m)
                 void $ sendDirectMemberMessage mConn msg groupId
                 introduceToRemaining vr user gInfo m {memberRole = role}
@@ -4205,7 +4206,7 @@ chatCommandP =
       "/set disappear " *> (SetUserTimedMessages <$> (("yes" $> True) <|> ("no" $> False))),
       "/set reports #" *> (SetGroupFeature (AGFNR SGFReports) <$> displayNameP <*> _strP),
       "/set links #" *> (SetGroupFeatureRole (AGFR SGFSimplexLinks) <$> displayNameP <*> _strP <*> optional memberRole),
-      "/set admission review #" *> (SetGroupMemberAdmissionReview <$> displayNameP <*> (A.space *> memberAdmissionApplicationP)),
+      "/set admission review #" *> (SetGroupMemberAdmissionReview <$> displayNameP <*> (A.space *> memberCriteriaP)),
       ("/incognito" <* optional (A.space *> onOffP)) $> ChatHelp HSIncognito,
       "/set device name " *> (SetLocalDeviceName <$> textP),
       "/list remote hosts" $> ListRemoteHosts,
@@ -4306,7 +4307,7 @@ chatCommandP =
                   history = Just HistoryGroupPreference {enable = FEOn}
                 }
       pure GroupProfile {displayName = gName, fullName, description = Nothing, image = Nothing, groupPreferences, memberAdmission = Nothing}
-    memberAdmissionApplicationP = ("apply_to_all" $> Just MAAApplyToAll) <|> ("off" $> Nothing)
+    memberCriteriaP = ("all" $> Just MCAll) <|> ("off" $> Nothing)
     fullNameP = A.space *> textP <|> pure ""
     textP = safeDecodeUtf8 <$> A.takeByteString
     pwdP = jsonP <|> (UserPwd . safeDecodeUtf8 <$> A.takeTill (== ' '))

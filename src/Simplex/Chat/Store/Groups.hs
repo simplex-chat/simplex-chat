@@ -320,7 +320,7 @@ getGroupAndMember db User {userId, userContactId} groupMemberId vr = do
 -- | creates completely new group with a single member - the current user
 createNewGroup :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> GroupProfile -> Maybe Profile -> ExceptT StoreError IO GroupInfo
 createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = ExceptT $ do
-  let GroupProfile {displayName, fullName, description, image, groupPreferences, memberAdmission} = groupProfile
+  let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile
       fullGroupPreferences = mergeGroupPreferences groupPreferences
   currentTs <- getCurrentTime
   customUserProfileId <- mapM (createIncognitoProfile_ db userId currentTs) incognitoProfile
@@ -390,7 +390,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
         DB.query db "SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMIT 1" (connRequest, userId)
     createGroupInvitation_ :: ExceptT StoreError IO (GroupInfo, GroupMemberId)
     createGroupInvitation_ = do
-      let GroupProfile {displayName, fullName, description, image, groupPreferences, memberAdmission} = groupProfile
+      let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile
           fullGroupPreferences = mergeGroupPreferences groupPreferences
       ExceptT $
         withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
