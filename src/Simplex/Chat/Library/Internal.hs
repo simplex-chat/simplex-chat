@@ -2008,7 +2008,7 @@ saveSndChatItems ::
 saveSndChatItems user cd itemsData itemTimed live = do
   createdAt <- liftIO getCurrentTime
   when (contactChatDeleted cd || any (\NewSndChatItemData {content} -> ciRequiresAttention content) (rights itemsData)) $
-    withStore' (\db -> updateChatTs db user cd createdAt)
+    withStore' (\db -> updateChatTsStats db user cd createdAt (0, MUInc 0, 0))
   lift $ withStoreBatch (\db -> map (bindRight $ createItem db createdAt) itemsData)
   where
     createItem :: DB.Connection -> UTCTime -> NewSndChatItemData c -> IO (Either ChatError (ChatItem c 'MDSnd))
@@ -2034,7 +2034,6 @@ saveRcvChatItem' :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c
 saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, forwardedByMember} sharedMsgId_ brokerTs (content, (t, ft_)) ciFile itemTimed live mentions = do
   createdAt <- liftIO getCurrentTime
   withStore' $ \db -> do
-    when (ciRequiresAttention content || contactChatDeleted cd) $ updateChatTs db user cd createdAt
     (mentions' :: Map MemberName CIMention, userMention) <- case cd of
       CDGroupRcv g@GroupInfo {membership} _scope _m -> do
         mentions' <- getRcvCIMentions db user g ft_ mentions
@@ -2044,12 +2043,25 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, forwardedByMember} shared
             userMention' = userReply || any (\CIMention {memberId} -> sameMemberId memberId membership) mentions'
          in pure (mentions', userMention')
       CDDirectRcv _ -> pure (M.empty, False)
+    when (ciRequiresAttention content || contactChatDeleted cd) $ updateChatTsStats db user cd createdAt (chatStatsCounts userMention)
     (ciId, quotedItem, itemForwarded) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live userMention brokerTs createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
     let ci = mkChatItem_ cd ciId content (t, ft_) ciFile quotedItem sharedMsgId_ itemForwarded itemTimed live userMention brokerTs forwardedByMember createdAt
     case cd of
       CDGroupRcv g _scope _m | not (null mentions') -> createGroupCIMentions db g ci mentions'
       _ -> pure ci
+  where
+    chatStatsCounts :: Bool -> (Int, ModifyUnanswered, Int)
+    chatStatsCounts userMention = case cd of
+      CDGroupRcv _g (Just scope) m -> do
+        let numRcvNew = if ciCreateStatus content == CISRcvNew then 1 else 0
+            numMentions = if userMention then 1 else 0
+        case scope of
+          GCSIMemberSupport (Just m')
+            | groupMemberId' m' == groupMemberId' m -> (numRcvNew, MUInc numRcvNew, numMentions)
+            | otherwise -> (numRcvNew, MUReset, numMentions)
+          GCSIMemberSupport Nothing -> (numRcvNew, MUInc 0, numMentions)
+      _ -> (0, MUInc 0, 0)
 
 -- TODO [mentions] optimize by avoiding unnecessary parsing
 mkChatItem :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> ChatItem c d
@@ -2268,8 +2280,20 @@ createInternalItemsForChats user itemTs_ dirsCIContents = do
   where
     updateChat :: DB.Connection -> UTCTime -> ChatDirection c d -> [CIContent d] -> IO ()
     updateChat db createdAt cd contents
-      | any ciRequiresAttention contents || contactChatDeleted cd = updateChatTs db user cd createdAt
+      | any ciRequiresAttention contents || contactChatDeleted cd = updateChatTsStats db user cd createdAt chatStatsCounts
       | otherwise = pure ()
+      where
+        chatStatsCounts :: (Int, ModifyUnanswered, Int)
+        chatStatsCounts = case cd of
+          CDGroupRcv _g (Just scope) m -> do
+            let statuses = map ciCreateStatus contents
+                numRcvNew = length $ filter (== CISRcvNew) statuses
+            case scope of
+              GCSIMemberSupport (Just m')
+                | groupMemberId' m' == groupMemberId' m -> (numRcvNew, MUInc numRcvNew, 0)
+                | otherwise -> (numRcvNew, MUReset, 0)
+              GCSIMemberSupport Nothing -> (numRcvNew, MUInc 0, 0)
+          _ -> (0, MUInc 0, 0)
     createACIs :: DB.Connection -> UTCTime -> UTCTime -> ChatDirection c d -> [CIContent d] -> [IO AChatItem]
     createACIs db itemTs createdAt cd = map $ \content -> do
       ciId <- createNewChatItemNoMsg db user cd content itemTs createdAt
@@ -2283,7 +2307,7 @@ createLocalChatItems ::
   UTCTime ->
   CM [ChatItem 'CTLocal 'MDSnd]
 createLocalChatItems user cd itemsData createdAt = do
-  withStore' $ \db -> updateChatTs db user cd createdAt
+  withStore' $ \db -> updateChatTsStats db user cd createdAt (0, MUInc 0, 0)
   (errs, items) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (createItem db) $ L.toList itemsData)
   unless (null errs) $ toView $ CRChatErrors (Just user) errs
   pure items

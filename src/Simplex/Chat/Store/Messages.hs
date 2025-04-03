@@ -33,7 +33,8 @@ module Simplex.Chat.Store.Messages
     getPendingGroupMessages,
     deletePendingGroupMessage,
     deleteOldMessages,
-    updateChatTs,
+    ModifyUnanswered (..),
+    updateChatTsStats,
     createNewSndChatItem,
     createNewRcvChatItem,
     createNewChatItemNoMsg,
@@ -362,8 +363,10 @@ deleteOldMessages db createdAtCutoff = do
 
 type NewQuoteRow = (Maybe SharedMsgId, Maybe UTCTime, Maybe MsgContent, Maybe Bool, Maybe MemberId)
 
-updateChatTs :: DB.Connection -> User -> ChatDirection c d -> UTCTime -> IO ()
-updateChatTs db User {userId} chatDirection chatTs = case toChatInfo chatDirection of
+data ModifyUnanswered = MUInc Int | MUReset
+
+updateChatTsStats :: DB.Connection -> User -> ChatDirection c d -> UTCTime -> (Int, ModifyUnanswered, Int) -> IO ()
+updateChatTsStats db User {userId} chatDirection chatTs (unread, modifyUnanswered, mentions) = case toChatInfo chatDirection of
   DirectChat Contact {contactId} ->
     DB.execute
       db
@@ -374,16 +377,33 @@ updateChatTs db User {userId} chatDirection chatTs = case toChatInfo chatDirecti
       db
       "UPDATE groups SET chat_ts = ? WHERE user_id = ? AND group_id = ?"
       (chatTs, userId, groupId)
-  GroupChat GroupInfo {membership} (Just (GCSIMemberSupport Nothing)) ->
-    DB.execute
-      db
-      "UPDATE group_members SET support_chat_ts = ? WHERE group_member_id = ?"
-      (chatTs, groupMemberId' membership)
-  GroupChat _gInfo (Just (GCSIMemberSupport (Just GroupMember {groupMemberId}))) ->
-    DB.execute
-      db
-      "UPDATE group_members SET support_chat_ts = ? WHERE group_member_id = ?"
-      (chatTs, groupMemberId)
+  GroupChat GroupInfo {membership} (Just GCSIMemberSupport {groupMember_}) -> do
+    let gmId = groupMemberId' $ fromMaybe membership groupMember_
+    case modifyUnanswered of
+      MUInc unanswered ->
+        DB.execute
+          db
+          [sql|
+            UPDATE group_members
+            SET support_chat_ts = ?,
+                support_chat_unread = support_chat_unread + ?,
+                support_chat_unanswered = support_chat_unanswered + ?,
+                support_chat_mentions = support_chat_mentions + ?
+            WHERE group_member_id = ?
+          |]
+          (chatTs, unread, unanswered, mentions, gmId)
+      MUReset ->
+        DB.execute
+          db
+          [sql|
+            UPDATE group_members
+            SET support_chat_ts = ?,
+                support_chat_unread = support_chat_unread + ?,
+                support_chat_unanswered = 0,
+                support_chat_mentions = support_chat_mentions + ?
+            WHERE group_member_id = ?
+          |]
+          (chatTs, unread, mentions, gmId)
   LocalChat NoteFolder {noteFolderId} ->
     DB.execute
       db
