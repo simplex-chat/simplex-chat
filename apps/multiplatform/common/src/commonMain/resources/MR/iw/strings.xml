@@ -2087,4 +2087,7 @@
     <string name="info_row_chat">צ\'אט</string>
     <string name="v6_2_business_chats">צא\'טים עסקיים</string>
     <string name="chunks_deleted">"הזבל  נמחק"</string>
+    <string name="chat_list_contacts">אנשי קשר</string>
+    <string name="delete_contact_cannot_undo_warning">איש הקשר יימחק - לא ניתן לבטל זאת!</string>
+    <string name="cant_call_contact_deleted_alert_text">איש הקשר נמחק.</string>
 </resources>
