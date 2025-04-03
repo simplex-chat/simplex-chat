@@ -1878,8 +1878,8 @@ setDirectChatItemsDeleteAt db User {userId} contactId itemIds currentTs = forM i
     (deleteAt, userId, contactId, chatItemId)
   pure (chatItemId, deleteAt)
 
-updateGroupChatItemsRead :: DB.Connection -> User -> GroupId -> IO ()
-updateGroupChatItemsRead db User {userId} groupId = do
+updateGroupChatItemsRead :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScope -> IO ()
+updateGroupChatItemsRead db User {userId} GroupInfo {groupId, membership} scope = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -1888,6 +1888,20 @@ updateGroupChatItemsRead db User {userId} groupId = do
       WHERE user_id = ? AND group_id = ? AND item_status = ?
     |]
     (CISRcvRead, currentTs, userId, groupId, CISRcvNew)
+  case scope of
+    Nothing -> pure ()
+    Just GCSMemberSupport {groupMemberId_} -> do
+      let gmId = fromMaybe (groupMemberId' membership) groupMemberId_
+      DB.execute
+        db
+        [sql|
+          UPDATE group_members
+          SET support_chat_unread = 0,
+              support_chat_unanswered = 0,
+              support_chat_mentions = 0
+          WHERE group_member_id = ?
+        |]
+        (Only gmId)
 
 getGroupUnreadTimedItems :: DB.Connection -> User -> GroupId -> IO [(ChatItemId, Int)]
 getGroupUnreadTimedItems db User {userId} groupId =
@@ -1900,10 +1914,17 @@ getGroupUnreadTimedItems db User {userId} groupId =
     |]
     (userId, groupId, CISRcvNew)
 
-updateGroupChatItemsReadList :: DB.Connection -> User -> GroupId -> NonEmpty ChatItemId -> IO [(ChatItemId, Int)]
-updateGroupChatItemsReadList db User {userId} groupId itemIds = do
+updateGroupChatItemsReadList :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScope -> NonEmpty ChatItemId -> IO [(ChatItemId, Int)]
+updateGroupChatItemsReadList db User {userId} GroupInfo {groupId, membership} scope itemIds = do
   currentTs <- getCurrentTime
-  catMaybes . L.toList <$> mapM (getUpdateGroupItem currentTs) itemIds
+  timedItems <- catMaybes . L.toList <$> mapM (getUpdateGroupItem currentTs) itemIds
+  case scope of
+    Nothing -> pure ()
+    Just GCSMemberSupport {groupMemberId_} -> do
+      let gmId = fromMaybe (groupMemberId' membership) groupMemberId_
+      -- TODO calculate counts via getUpdateGroupItem, update
+      pure ()
+  pure timedItems
   where
     getUpdateGroupItem currentTs itemId = do
       ttl_ <- maybeFirstRow fromOnly getUnreadTimedItem

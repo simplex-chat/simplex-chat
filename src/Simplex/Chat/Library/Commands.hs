@@ -989,7 +989,7 @@ processChatCommand' vr = \case
             pure $ prefix <> formattedDate <> ext
   APIUserRead userId -> withUserId userId $ \user -> withFastStore' (`setUserChatsRead` user) >> ok user
   UserRead -> withUser $ \User {userId} -> processChatCommand $ APIUserRead userId
-  APIChatRead chatRef@(ChatRef cType chatId _scope) -> withUser $ \_ -> case cType of
+  APIChatRead chatRef@(ChatRef cType chatId scope) -> withUser $ \_ -> case cType of
     CTDirect -> do
       user <- withFastStore $ \db -> getUserByContactId db chatId
       ts <- liftIO getCurrentTime
@@ -1000,11 +1000,14 @@ processChatCommand' vr = \case
       forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
       ok user
     CTGroup -> do
-      user <- withFastStore $ \db -> getUserByGroupId db chatId
+      (user, gInfo) <- withFastStore $ \db -> do
+        user <- getUserByGroupId db chatId
+        gInfo <- getGroupInfo db vr user chatId
+        pure (user, gInfo)
       ts <- liftIO getCurrentTime
       timedItems <- withFastStore' $ \db -> do
         timedItems <- getGroupUnreadTimedItems db user chatId
-        updateGroupChatItemsRead db user chatId
+        updateGroupChatItemsRead db user gInfo scope
         setGroupChatItemsDeleteAt db user chatId timedItems ts
       forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
       ok user
@@ -1014,8 +1017,7 @@ processChatCommand' vr = \case
       ok user
     CTContactRequest -> pure $ chatCmdError Nothing "not supported"
     CTContactConnection -> pure $ chatCmdError Nothing "not supported"
-  -- TODO [knocking] read scope?
-  APIChatItemsRead chatRef@(ChatRef cType chatId _scope) itemIds -> withUser $ \_ -> case cType of
+  APIChatItemsRead chatRef@(ChatRef cType chatId scope) itemIds -> withUser $ \_ -> case cType of
     CTDirect -> do
       user <- withFastStore $ \db -> getUserByContactId db chatId
       timedItems <- withFastStore' $ \db -> do
@@ -1024,9 +1026,12 @@ processChatCommand' vr = \case
       forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
       ok user
     CTGroup -> do
-      user <- withFastStore $ \db -> getUserByGroupId db chatId
+      (user, gInfo) <- withFastStore $ \db -> do
+        user <- getUserByGroupId db chatId
+        gInfo <- getGroupInfo db vr user chatId
+        pure (user, gInfo)
       timedItems <- withFastStore' $ \db -> do
-        timedItems <- updateGroupChatItemsReadList db user chatId itemIds
+        timedItems <- updateGroupChatItemsReadList db user gInfo scope itemIds
         setGroupChatItemsDeleteAt db user chatId timedItems =<< getCurrentTime
       forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
       ok user
