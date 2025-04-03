@@ -2054,19 +2054,19 @@ processChatCommand' vr = \case
                 let m' = m {memberStatus = GSMemPendingReview}
                 pure $ CRMemberAccepted user gInfo m'
               Nothing -> do
-                let msg = XGrpLinkAcpt role (Just $ memberId' m)
+                let msg = XGrpLinkAcpt role (memberId' m)
                 void $ sendDirectMemberMessage mConn msg groupId
                 introduceToRemaining vr user gInfo m {memberRole = role}
                 when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo m
                 m' <- withFastStore' $ \db -> updateGroupMemberAccepted db user m GSMemConnected role
                 pure $ CRMemberAccepted user gInfo m'
           Nothing -> throwChatError CEGroupMemberNotActive
-      GSMemPendingReview | memberCategory m /= GCInviteeMember -> do -- only other admins can review
+      GSMemPendingReview -> do
         let scope = Just $ GCSMemberSupport $ Just (groupMemberId' m)
         modMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
         let rcpModMs' = filter memberCurrent modMs
-            msg = XGrpLinkAcpt role (Just $ memberId' m)
-        void $ sendGroupMessage user gInfo scope rcpModMs' msg
+            msg = XGrpLinkAcpt role (memberId' m)
+        void $ sendGroupMessage user gInfo scope ([m] <> rcpModMs') msg
         m' <- withFastStore' $ \db -> updateGroupMemberAccepted db user m newMemberStatus role
         pure $ CRMemberAccepted user gInfo m'
         where
