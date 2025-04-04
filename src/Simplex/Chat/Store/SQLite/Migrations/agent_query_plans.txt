@@ -444,6 +444,14 @@ Plan:
 SEARCH connections USING PRIMARY KEY (conn_id=?)
 
 Query: 
+        SELECT link_id, snd_private_key
+        FROM inv_short_links
+        WHERE host = ? AND port = ? AND snd_id = ?
+      
+Plan:
+SEARCH inv_short_links USING INDEX idx_inv_short_links_link_id (host=? AND port=?)
+
+Query: 
         SELECT s.internal_id, m.msg_type, s.internal_hash, s.rcpt_internal_id, s.rcpt_status
         FROM snd_messages s
         JOIN messages m ON s.conn_id = m.conn_id AND s.internal_id = m.internal_id
@@ -524,7 +532,10 @@ SEARCH messages USING COVERING INDEX idx_messages_conn_id_internal_rcv_id (conn_
 
 Query: 
       INSERT INTO rcv_queues
-        (host, port, rcv_id, conn_id, rcv_private_key, rcv_dh_secret, e2e_priv_key, e2e_dh_secret, snd_id, snd_secure, status, rcv_queue_id, rcv_primary, replace_rcv_queue_id, smp_client_version, server_key_hash) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+        ( host, port, rcv_id, conn_id, rcv_private_key, rcv_dh_secret, e2e_priv_key, e2e_dh_secret,
+          snd_id, queue_mode, status, rcv_queue_id, rcv_primary, replace_rcv_queue_id, smp_client_version, server_key_hash,
+          link_id, link_key, link_priv_sig_key, link_enc_fixed_data
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
     
 Plan:
 
@@ -546,14 +557,14 @@ SEARCH messages USING COVERING INDEX idx_messages_conn_id_internal_snd_id (conn_
 
 Query: 
       INSERT INTO snd_queues
-        (host, port, snd_id, snd_secure, conn_id, snd_public_key, snd_private_key, e2e_pub_key, e2e_dh_secret,
+        (host, port, snd_id, queue_mode, conn_id, snd_public_key, snd_private_key, e2e_pub_key, e2e_dh_secret,
          status, snd_queue_id, snd_primary, replace_snd_queue_id, smp_client_version, server_key_hash)
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       ON CONFLICT (host, port, snd_id) DO UPDATE SET
         host=EXCLUDED.host,
         port=EXCLUDED.port,
         snd_id=EXCLUDED.snd_id,
-        snd_secure=EXCLUDED.snd_secure,
+        queue_mode=EXCLUDED.queue_mode,
         conn_id=EXCLUDED.conn_id,
         snd_public_key=EXCLUDED.snd_public_key,
         snd_private_key=EXCLUDED.snd_private_key,
@@ -691,7 +702,7 @@ SEARCH snd_queues USING PRIMARY KEY (host=? AND port=? AND snd_id=?)
 
 Query: 
     SELECT
-      c.user_id, COALESCE(q.server_key_hash, s.key_hash), q.conn_id, q.host, q.port, q.snd_id, q.snd_secure,
+      c.user_id, COALESCE(q.server_key_hash, s.key_hash), q.conn_id, q.host, q.port, q.snd_id, q.queue_mode,
       q.snd_public_key, q.snd_private_key, q.e2e_pub_key, q.e2e_dh_secret, q.status,
       q.snd_queue_id, q.snd_primary, q.replace_snd_queue_id, q.switch_status, q.smp_client_version
     FROM snd_queues q
@@ -705,9 +716,10 @@ SEARCH s USING PRIMARY KEY (host=? AND port=?)
 
 Query: 
     SELECT c.user_id, COALESCE(q.server_key_hash, s.key_hash), q.conn_id, q.host, q.port, q.rcv_id, q.rcv_private_key, q.rcv_dh_secret,
-      q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.snd_secure, q.status,
+      q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.queue_mode, q.status,
       q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id, q.switch_status, q.smp_client_version, q.delete_errors,
-      q.ntf_public_key, q.ntf_private_key, q.ntf_id, q.rcv_ntf_dh_secret
+      q.ntf_public_key, q.ntf_private_key, q.ntf_id, q.rcv_ntf_dh_secret,
+      q.link_id, q.link_key, q.link_priv_sig_key, q.link_enc_fixed_data
     FROM rcv_queues q
     JOIN servers s ON q.host = s.host AND q.port = s.port
     JOIN connections c ON q.conn_id = c.conn_id
@@ -719,9 +731,10 @@ SEARCH s USING PRIMARY KEY (host=? AND port=?)
 
 Query: 
     SELECT c.user_id, COALESCE(q.server_key_hash, s.key_hash), q.conn_id, q.host, q.port, q.rcv_id, q.rcv_private_key, q.rcv_dh_secret,
-      q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.snd_secure, q.status,
+      q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.queue_mode, q.status,
       q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id, q.switch_status, q.smp_client_version, q.delete_errors,
-      q.ntf_public_key, q.ntf_private_key, q.ntf_id, q.rcv_ntf_dh_secret
+      q.ntf_public_key, q.ntf_private_key, q.ntf_id, q.rcv_ntf_dh_secret,
+      q.link_id, q.link_key, q.link_priv_sig_key, q.link_enc_fixed_data
     FROM rcv_queues q
     JOIN servers s ON q.host = s.host AND q.port = s.port
     JOIN connections c ON q.conn_id = c.conn_id
@@ -733,9 +746,10 @@ SEARCH c USING PRIMARY KEY (conn_id=?)
 
 Query: 
     SELECT c.user_id, COALESCE(q.server_key_hash, s.key_hash), q.conn_id, q.host, q.port, q.rcv_id, q.rcv_private_key, q.rcv_dh_secret,
-      q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.snd_secure, q.status,
+      q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.queue_mode, q.status,
       q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id, q.switch_status, q.smp_client_version, q.delete_errors,
-      q.ntf_public_key, q.ntf_private_key, q.ntf_id, q.rcv_ntf_dh_secret
+      q.ntf_public_key, q.ntf_private_key, q.ntf_id, q.rcv_ntf_dh_secret,
+      q.link_id, q.link_key, q.link_priv_sig_key, q.link_enc_fixed_data
     FROM rcv_queues q
     JOIN servers s ON q.host = s.host AND q.port = s.port
     JOIN connections c ON q.conn_id = c.conn_id
@@ -747,9 +761,10 @@ SEARCH c USING PRIMARY KEY (conn_id=?)
 
 Query: 
     SELECT c.user_id, COALESCE(q.server_key_hash, s.key_hash), q.conn_id, q.host, q.port, q.rcv_id, q.rcv_private_key, q.rcv_dh_secret,
-      q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.snd_secure, q.status,
+      q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.queue_mode, q.status,
       q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id, q.switch_status, q.smp_client_version, q.delete_errors,
-      q.ntf_public_key, q.ntf_private_key, q.ntf_id, q.rcv_ntf_dh_secret
+      q.ntf_public_key, q.ntf_private_key, q.ntf_id, q.rcv_ntf_dh_secret,
+      q.link_id, q.link_key, q.link_priv_sig_key, q.link_enc_fixed_data
     FROM rcv_queues q
     JOIN servers s ON q.host = s.host AND q.port = s.port
     JOIN connections c ON q.conn_id = c.conn_id
@@ -761,9 +776,10 @@ SEARCH s USING PRIMARY KEY (host=? AND port=?)
 
 Query: 
     SELECT c.user_id, COALESCE(q.server_key_hash, s.key_hash), q.conn_id, q.host, q.port, q.rcv_id, q.rcv_private_key, q.rcv_dh_secret,
-      q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.snd_secure, q.status,
+      q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.queue_mode, q.status,
       q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id, q.switch_status, q.smp_client_version, q.delete_errors,
-      q.ntf_public_key, q.ntf_private_key, q.ntf_id, q.rcv_ntf_dh_secret
+      q.ntf_public_key, q.ntf_private_key, q.ntf_id, q.rcv_ntf_dh_secret,
+      q.link_id, q.link_key, q.link_priv_sig_key, q.link_enc_fixed_data
     FROM rcv_queues q
     JOIN servers s ON q.host = s.host AND q.port = s.port
     JOIN connections c ON q.conn_id = c.conn_id

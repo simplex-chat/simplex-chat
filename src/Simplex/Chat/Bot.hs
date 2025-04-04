@@ -15,6 +15,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import qualified Data.Map.Strict as M
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Simplex.Chat.Controller
@@ -24,6 +25,7 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Store
 import Simplex.Chat.Types (Contact (..), ContactId, IsContact (..), User (..))
+import Simplex.Messaging.Agent.Protocol (CreatedConnLink (..))
 import Simplex.Messaging.Encoding.String (strEncode)
 import System.Exit (exitFailure)
 
@@ -49,16 +51,18 @@ initializeBotAddress = initializeBotAddress' True
 initializeBotAddress' :: Bool -> ChatController -> IO ()
 initializeBotAddress' logAddress cc = do
   sendChatCmd cc ShowMyAddress >>= \case
-    CRUserContactLink _ UserContactLink {connReqContact} -> showBotAddress connReqContact
+    CRUserContactLink _ UserContactLink {connLinkContact} -> showBotAddress connLinkContact
     CRChatCmdError _ (ChatErrorStore SEUserContactLinkNotFound) -> do
       when logAddress $ putStrLn "No bot address, creating..."
-      sendChatCmd cc CreateMyAddress >>= \case
-        CRUserContactLinkCreated _ uri -> showBotAddress uri
+      -- TODO [short links] create short link by default
+      sendChatCmd cc (CreateMyAddress False) >>= \case
+        CRUserContactLinkCreated _ ccLink -> showBotAddress ccLink
         _ -> putStrLn "can't create bot address" >> exitFailure
     _ -> putStrLn "unexpected response" >> exitFailure
   where
-    showBotAddress uri = do
-      when logAddress $ putStrLn $ "Bot's contact address is: " <> B.unpack (strEncode uri)
+    showBotAddress (CCLink uri shortUri) = do
+      when logAddress $ putStrLn $ "Bot's contact address is: " <> B.unpack (maybe (strEncode uri) strEncode shortUri)
+      when (isJust shortUri) $ putStrLn $ "Full contact address for old clients: " <> B.unpack (strEncode uri)
       void $ sendChatCmd cc $ AddressAutoAccept $ Just AutoAccept {businessAddress = False, acceptIncognito = False, autoReply = Nothing}
 
 sendMessage :: ChatController -> Contact -> Text -> IO ()

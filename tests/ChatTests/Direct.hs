@@ -1113,6 +1113,8 @@ testSendMultiManyBatches =
         DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdBob) :: IO [[Int]]
       bobItemsCount `shouldBe` [[300]]
 
+      threadDelay 1000000
+
 testGetSetSMPServers :: HasCallStack => TestParams -> IO ()
 testGetSetSMPServers =
   testChat aliceProfile $

@@ -437,21 +437,21 @@ data ChatCommand
   | EnableGroupMember GroupName ContactName
   | ChatHelp HelpSection
   | Welcome
-  | APIAddContact UserId IncognitoEnabled
-  | AddContact IncognitoEnabled
+  | APIAddContact UserId CreateShortLink IncognitoEnabled
+  | AddContact CreateShortLink IncognitoEnabled
   | APISetConnectionIncognito Int64 IncognitoEnabled
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
-  | APIConnectPlan UserId AConnectionRequestUri
+  | APIConnectPlan UserId AConnectionLink
   | APIConnect UserId IncognitoEnabled (Maybe AConnectionRequestUri)
-  | Connect IncognitoEnabled (Maybe AConnectionRequestUri)
+  | Connect IncognitoEnabled (Maybe AConnectionLink)
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
   | DeleteContact ContactName ChatDeleteMode
   | ClearContact ContactName
   | APIListContacts UserId
   | ListContacts
-  | APICreateMyAddress UserId
-  | CreateMyAddress
+  | APICreateMyAddress UserId CreateShortLink
+  | CreateMyAddress CreateShortLink
   | APIDeleteMyAddress UserId
   | DeleteMyAddress
   | APIShowMyAddress UserId
@@ -674,10 +674,10 @@ data ChatResponse
   | CRUserProfileNoChange {user :: User}
   | CRUserPrivacy {user :: User, updatedUser :: User}
   | CRVersionInfo {versionInfo :: CoreVersionInfo, chatMigrations :: [UpMigration], agentMigrations :: [UpMigration]}
-  | CRInvitation {user :: User, connReqInvitation :: ConnReqInvitation, connection :: PendingContactConnection}
+  | CRInvitation {user :: User, connLinkInvitation :: CreatedLinkInvitation, connection :: PendingContactConnection}
   | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection}
   | CRConnectionUserChanged {user :: User, fromConnection :: PendingContactConnection, toConnection :: PendingContactConnection, newUser :: User}
-  | CRConnectionPlan {user :: User, connectionPlan :: ConnectionPlan}
+  | CRConnectionPlan {user :: User, connReq :: AConnectionRequestUri, connectionPlan :: ConnectionPlan}
   | CRSentConfirmation {user :: User, connection :: PendingContactConnection}
   | CRSentInvitation {user :: User, connection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRSentInvitationToContact {user :: User, contact :: Contact, customUserProfile :: Maybe Profile}
@@ -687,7 +687,7 @@ data ChatResponse
   | CRContactDeleted {user :: User, contact :: Contact}
   | CRContactDeletedByContact {user :: User, contact :: Contact}
   | CRChatCleared {user :: User, chatInfo :: AChatInfo}
-  | CRUserContactLinkCreated {user :: User, connReqContact :: ConnReqContact}
+  | CRUserContactLinkCreated {user :: User, connLinkContact :: CreatedLinkContact}
   | CRUserContactLinkDeleted {user :: User}
   | CRReceivedContactRequest {user :: User, contactRequest :: UserContactRequest}
   | CRAcceptingContactRequest {user :: User, contact :: Contact}

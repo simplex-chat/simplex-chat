@@ -29,7 +29,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ConnReqUriData (..), ConnectionRequestUri (..), SMPQueue (..))
+import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..))
@@ -248,24 +248,36 @@ markdownP = mconcat <$> A.many' fragmentP
       ')' -> False
       c -> isPunctuation c
     uriMarkdown s = case strDecode $ encodeUtf8 s of
-      Right cReq -> markdown (simplexUriFormat cReq) s
+      Right cLink -> markdown (simplexUriFormat cLink) s
       _ -> markdown Uri s
     isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:/"]
     isEmail s = T.any (== '@') s && Email.isValid (encodeUtf8 s)
     noFormat = pure . unmarked
-    simplexUriFormat :: AConnectionRequestUri -> Format
+    simplexUriFormat :: AConnectionLink -> Format
     simplexUriFormat = \case
-      ACR _ (CRContactUri crData) ->
-        let uri = safeDecodeUtf8 . strEncode $ CRContactUri crData {crScheme = SSSimplex}
-         in SimplexLink (linkType' crData) uri $ uriHosts crData
-      ACR _ (CRInvitationUri crData e2e) ->
-        let uri = safeDecodeUtf8 . strEncode $ CRInvitationUri crData {crScheme = SSSimplex} e2e
-         in SimplexLink XLInvitation uri $ uriHosts crData
-      where
-        uriHosts ConnReqUriData {crSmpQueues} = L.map (safeDecodeUtf8 . strEncode) $ sconcat $ L.map (host . qServer) crSmpQueues
-        linkType' ConnReqUriData {crClientData} = case crClientData >>= decodeJSON of
-          Just (CRDataGroup _) -> XLGroup
-          Nothing -> XLContact
+      ACL _ (CLFull cReq) -> case cReq of
+        CRContactUri crData ->
+          let uri = strEncodeText $ CRContactUri crData {crScheme = SSSimplex}
+           in SimplexLink (linkType' crData) uri $ uriHosts crData
+        CRInvitationUri crData e2e ->
+          let uri = strEncodeText $ CRInvitationUri crData {crScheme = SSSimplex} e2e
+           in SimplexLink XLInvitation uri $ uriHosts crData
+        where
+          uriHosts ConnReqUriData {crSmpQueues} = L.map strEncodeText $ sconcat $ L.map (host . qServer) crSmpQueues
+          linkType' ConnReqUriData {crClientData} = case crClientData >>= decodeJSON of
+            Just (CRDataGroup _) -> XLGroup
+            Nothing -> XLContact
+      ACL _ (CLShort cLink) -> case cLink of
+        CSLContact srv connType _ -> SimplexLink (linkType' connType) uri $ uriHosts srv
+        CSLInvitation srv _ _ -> SimplexLink XLInvitation uri $ uriHosts srv
+        where
+          uri = strEncodeText cLink
+          uriHosts srv = L.map strEncodeText $ host srv
+          linkType' = \case
+            CCTGroup -> XLGroup
+            CCTContact -> XLContact
+    strEncodeText :: StrEncoding a => a -> Text
+    strEncodeText = safeDecodeUtf8 . strEncode
 
 markdownText :: FormattedText -> Text
 markdownText (FormattedText f_ t) = case f_ of

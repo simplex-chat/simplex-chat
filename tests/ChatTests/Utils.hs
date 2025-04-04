@@ -11,7 +11,7 @@ module ChatTests.Utils where
 import ChatClient
 import ChatTests.DBUtils
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (concurrently_)
+import Control.Concurrent.Async (concurrently_, mapConcurrently_)
 import Control.Concurrent.STM
 import Control.Monad (unless, when)
 import Control.Monad.Except (runExceptT)
@@ -424,7 +424,7 @@ getInAnyOrder f cc ls = do
 cc <# line = (dropTime <$> getTermLine cc) `shouldReturn` line
 
 (*<#) :: HasCallStack => [TestCC] -> String -> Expectation
-ccs *<# line = concurrentlyN_ $ map (<# line) ccs
+ccs *<# line = mapConcurrently_ (<# line) ccs
 
 (?<#) :: HasCallStack => TestCC -> String -> Expectation
 cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line

@@ -297,6 +297,7 @@ CREATE TABLE connections(
   pq_snd_enabled INTEGER,
   pq_rcv_enabled INTEGER,
   quota_err_counter INTEGER NOT NULL DEFAULT 0,
+  short_link_inv BLOB,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -316,6 +317,7 @@ CREATE TABLE user_contact_links(
   group_link_id BLOB,
   group_link_member_role TEXT NULL,
   business_address INTEGER DEFAULT 0,
+  short_link_contact BLOB,
   UNIQUE(user_id, local_display_name)
 );
 CREATE TABLE contact_requests(
