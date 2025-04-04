@@ -168,9 +168,9 @@ CREATE TABLE group_members(
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   member_restriction TEXT,
   support_chat_ts TEXT,
-  support_chat_unread INTEGER,
-  support_chat_unanswered INTEGER,
-  support_chat_mentions INTEGER,
+  support_chat_unread INTEGER NOT NULL DEFAULT 0,
+  support_chat_unanswered INTEGER NOT NULL DEFAULT 0,
+  support_chat_mentions INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

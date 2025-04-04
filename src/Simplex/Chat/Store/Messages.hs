@@ -10,6 +10,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -364,6 +365,7 @@ deleteOldMessages db createdAtCutoff = do
 type NewQuoteRow = (Maybe SharedMsgId, Maybe UTCTime, Maybe MsgContent, Maybe Bool, Maybe MemberId)
 
 data ModifyUnanswered = MUInc Int | MUReset
+  deriving (Show)
 
 updateChatTsStats :: DB.Connection -> User -> ChatDirection c d -> UTCTime -> (Int, ModifyUnanswered, Int) -> IO ()
 updateChatTsStats db User {userId} chatDirection chatTs (unread, modifyUnanswered, mentions) = case toChatInfo chatDirection of
@@ -1969,6 +1971,8 @@ updateGroupChatItemsReadList db User {userId} GroupInfo {groupId, membership} sc
       where
         addTimedItem acc (itemId, Just ttl, Nothing, _, _) = (itemId, ttl) : acc
         addTimedItem acc _ = acc
+
+deriving instance Show BoolInt
 
 setGroupChatItemsDeleteAt :: DB.Connection -> User -> GroupId -> [(ChatItemId, Int)] -> UTCTime -> IO [(ChatItemId, UTCTime)]
 setGroupChatItemsDeleteAt db User {userId} groupId itemIds currentTs = forM itemIds $ \(chatItemId, ttl) -> do

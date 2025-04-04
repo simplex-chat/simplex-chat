@@ -453,7 +453,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRTerminalEvent te -> case te of
     TERejectingGroupJoinRequestMember _ g m reason -> [ttyFullMember m <> ": rejecting request to join group " <> ttyGroup' g <> ", reason: " <> sShow reason]
     TEGroupLinkRejected u g reason -> ttyUser u [ttyGroup' g <> ": join rejected, reason: " <> sShow reason]
-    TEMemberSupportChats u _g ms -> ttyUser u $ viewMemberSupportChats ms
+    TEMemberSupportChats u g ms -> ttyUser u $ viewMemberSupportChats g ms
   where
     ttyUser :: User -> [StyledString] -> [StyledString]
     ttyUser user@User {showNtfs, activeUser, viewPwdHash} ss
@@ -1197,10 +1197,17 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
       | not (showMessages $ memberSettings m) = ["blocked"]
       | otherwise = []
 
-viewMemberSupportChats :: [GroupMember] -> [StyledString]
-viewMemberSupportChats = map groupMember
+viewMemberSupportChats :: GroupInfo -> [GroupMember] -> [StyledString]
+viewMemberSupportChats GroupInfo {membership} ms = support <> map groupMember ms
   where
-    groupMember m = memIncognito m <> ttyFullMember m <> ", id: " <> sShow (groupMemberId' m)
+    support = case supportChat membership of
+      Just sc -> ["support: " <> chatStats sc]
+      Nothing -> []
+    groupMember m@GroupMember {supportChat} = case supportChat of
+      Just sc -> memIncognito m <> ttyFullMember m <> (" (id " <> sShow (groupMemberId' m) <> "): ") <> chatStats sc
+      Nothing -> ""
+    chatStats GroupSupportChat {unread, unanswered, mentions} =
+      "unread: " <> sShow unread <> ", unanswered: " <> sShow unanswered <> ", mentions: " <> sShow mentions
 
 viewContactConnected :: Contact -> Maybe Profile -> Bool -> [StyledString]
 viewContactConnected ct userIncognitoProfile testView =

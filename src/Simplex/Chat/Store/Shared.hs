@@ -579,7 +579,7 @@ type BusinessChatInfoRow = (Maybe BusinessChatType, Maybe MemberId, Maybe Member
 
 type GroupInfoRow = (Int64, GroupName, GroupName, Text, Text, Maybe Text, Maybe ImageData, Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe GroupPreferences, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. BusinessChatInfoRow :. (Maybe UIThemeEntityOverrides, Maybe CustomData, Maybe Int64) :. GroupMemberRow
 
-type GroupMemberRow = (Int64, Int64, MemberId, VersionChat, VersionChat, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId, ProfileId, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Maybe Preferences) :. (UTCTime, UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64)
+type GroupMemberRow = (Int64, Int64, MemberId, VersionChat, VersionChat, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId, ProfileId, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Maybe Preferences) :. (UTCTime, UTCTime) :. (Maybe UTCTime, Int64, Int64, Int64)
 
 toGroupInfo :: VersionRangeChat -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo
 toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, fullName, localAlias, description, image, enableNtfs_, sendRcpts, BI favorite, groupPreferences, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. businessRow :. (uiThemes, customData, chatItemTTL) :. userMemberRow) =
@@ -591,20 +591,20 @@ toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, 
    in GroupInfo {groupId, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, chatTags, chatItemTTL, uiThemes, customData}
 
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
-toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, BI showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image, contactLink, localAlias, preferences) :. (createdAt, updatedAt) :. (supportChatTs_, supportChatUnread_, supportChatUnanswered_, supportChatMentions_)) =
+toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, BI showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image, contactLink, localAlias, preferences) :. (createdAt, updatedAt) :. (supportChatTs_, supportChatUnread, supportChatUnanswered, supportChatMentions)) =
   let memberProfile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
       memberSettings = GroupMemberSettings {showMessages}
       blockedByAdmin = maybe False mrsBlocked memberRestriction_
       invitedBy = toInvitedBy userContactId invitedById
       activeConn = Nothing
       memberChatVRange = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
-      supportChat = case (supportChatTs_, supportChatUnread_, supportChatUnanswered_, supportChatMentions_) of
-        (Just chatTs, unread_, unanswered_, mentions_) ->
+      supportChat = case supportChatTs_ of
+        Just chatTs ->
           Just GroupSupportChat {
             chatTs,
-            unread = fromMaybe 0 unread_,
-            unanswered = fromMaybe 0 unanswered_,
-            mentions = fromMaybe 0 mentions_
+            unread = supportChatUnread,
+            unanswered = supportChatUnanswered,
+            mentions = supportChatMentions
           }
         _ -> Nothing
    in GroupMember {..}
