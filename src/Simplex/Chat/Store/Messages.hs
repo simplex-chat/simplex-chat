@@ -142,7 +142,7 @@ import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import Data.Either (fromRight, rights)
 import Data.Int (Int64)
-import Data.List (sortBy)
+import Data.List (foldl', sortBy)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -1917,37 +1917,58 @@ getGroupUnreadTimedItems db User {userId} groupId =
 updateGroupChatItemsReadList :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScope -> NonEmpty ChatItemId -> IO [(ChatItemId, Int)]
 updateGroupChatItemsReadList db User {userId} GroupInfo {groupId, membership} scope itemIds = do
   currentTs <- getCurrentTime
-  timedItems <- catMaybes . L.toList <$> mapM (getUpdateGroupItem currentTs) itemIds
-  case scope of
-    Nothing -> pure ()
-    Just GCSMemberSupport {groupMemberId_} -> do
-      let gmId = fromMaybe (groupMemberId' membership) groupMemberId_
-      -- TODO calculate counts via getUpdateGroupItem, update
-      pure ()
-  pure timedItems
+  -- Possible improvement is to differentiate retrieval queries for each scope,
+  -- but we rely on UI to not pass item IDs from incorrect scope.
+  readItemsData <- catMaybes . L.toList <$> mapM (getUpdateGroupItem currentTs) itemIds
+  updateChatStats readItemsData
+  pure $ timedItems readItemsData
   where
-    getUpdateGroupItem currentTs itemId = do
-      ttl_ <- maybeFirstRow fromOnly getUnreadTimedItem
-      setItemRead
-      pure $ (itemId,) <$> ttl_
+    getUpdateGroupItem :: UTCTime -> ChatItemId -> IO (Maybe (ChatItemId, Maybe Int, Maybe UTCTime, Maybe GroupMemberId, Maybe BoolInt))
+    getUpdateGroupItem currentTs itemId =
+      maybeFirstRow id $
+        DB.query
+          db
+          [sql|
+            UPDATE chat_items SET item_status = ?, updated_at = ?
+            WHERE user_id = ? AND group_id = ? AND item_status = ? AND chat_item_id = ?
+            RETURNING chat_item_id, timed_ttl, timed_delete_at, group_member_id, user_mention
+          |]
+          (CISRcvRead, currentTs, userId, groupId, CISRcvNew, itemId)
+    updateChatStats :: [(ChatItemId, Maybe Int, Maybe UTCTime, Maybe GroupMemberId, Maybe BoolInt)] -> IO ()
+    updateChatStats readItemsData = case scope of
+      Nothing -> pure ()
+      Just GCSMemberSupport {groupMemberId_} -> do
+        let unread = length readItemsData
+            (unanswered, mentions) = decStats
+            gmId = fromMaybe (groupMemberId' membership) groupMemberId_
+        DB.execute
+          db
+          [sql|
+            UPDATE group_members
+            SET support_chat_unread = support_chat_unread - ?,
+                support_chat_unanswered = support_chat_unanswered - ?,
+                support_chat_mentions = support_chat_mentions - ?
+            WHERE group_member_id = ?
+          |]
+          (unread, unanswered, mentions, gmId)
+        where
+          decStats :: (Int, Int)
+          decStats = foldl' countItem (0, 0) readItemsData
+            where
+              countItem :: (Int, Int) -> (ChatItemId, Maybe Int, Maybe UTCTime, Maybe GroupMemberId, Maybe BoolInt) -> (Int, Int)
+              countItem (unanswered, mentions) (_, _, _, itemGMId_, userMention_) =
+                let unanswered' = case (groupMemberId_, itemGMId_) of
+                      (Just itemGMId, Just itemGMId') | itemGMId == itemGMId' -> unanswered + 1
+                      _ -> unanswered
+                    mentions' = case userMention_ of
+                      Just (BI True) -> mentions + 1
+                      _ -> mentions
+                 in (unanswered', mentions')
+    timedItems :: [(ChatItemId, Maybe Int, Maybe UTCTime, Maybe GroupMemberId, Maybe BoolInt)] -> [(ChatItemId, Int)]
+    timedItems = foldl' addTimedItem []
       where
-        getUnreadTimedItem =
-          DB.query
-            db
-            [sql|
-              SELECT timed_ttl
-              FROM chat_items
-              WHERE user_id = ? AND group_id = ? AND item_status = ? AND chat_item_id = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
-            |]
-            (userId, groupId, CISRcvNew, itemId)
-        setItemRead =
-          DB.execute
-            db
-            [sql|
-              UPDATE chat_items SET item_status = ?, updated_at = ?
-              WHERE user_id = ? AND group_id = ? AND item_status = ? AND chat_item_id = ?
-            |]
-            (CISRcvRead, currentTs, userId, groupId, CISRcvNew, itemId)
+        addTimedItem acc (itemId, Just ttl, Nothing, _, _) = (itemId, ttl) : acc
+        addTimedItem acc _ = acc
 
 setGroupChatItemsDeleteAt :: DB.Connection -> User -> GroupId -> [(ChatItemId, Int)] -> UTCTime -> IO [(ChatItemId, UTCTime)]
 setGroupChatItemsDeleteAt db User {userId} groupId itemIds currentTs = forM itemIds $ \(chatItemId, ttl) -> do
