@@ -1255,6 +1255,16 @@ Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+          UPDATE group_members
+          SET support_chat_unread = 0,
+              support_chat_unanswered = 0,
+              support_chat_mentions = 0
+          WHERE group_member_id = ?
+        
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
           UPDATE group_profiles
           SET display_name = ?, full_name = ?, description = ?, image = ?, preferences = ?, member_admission = ?, updated_at = ?
           WHERE group_profile_id IN (
