@@ -1958,7 +1958,7 @@ updateGroupChatItemsReadList db User {userId} GroupInfo {groupId, membership} sc
               countItem :: (Int, Int) -> (ChatItemId, Maybe Int, Maybe UTCTime, Maybe GroupMemberId, Maybe BoolInt) -> (Int, Int)
               countItem (unanswered, mentions) (_, _, _, itemGMId_, userMention_) =
                 let unanswered' = case (groupMemberId_, itemGMId_) of
-                      (Just itemGMId, Just itemGMId') | itemGMId == itemGMId' -> unanswered + 1
+                      (Just scopeGMId, Just itemGMId) | itemGMId == scopeGMId -> unanswered + 1
                       _ -> unanswered
                     mentions' = case userMention_ of
                       Just (BI True) -> mentions + 1
