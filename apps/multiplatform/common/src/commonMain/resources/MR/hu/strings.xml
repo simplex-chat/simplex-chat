@@ -287,7 +287,7 @@
     <string name="clear_verification">Hitelesítés törlése</string>
     <string name="group_member_status_creator">készítő</string>
     <string name="confirm_verb">Megerősítés</string>
-    <string name="for_me_only">Csak számomra</string>
+    <string name="for_me_only">Csak nálam</string>
     <string name="delete_messages__question">Töröl %d üzenetet?</string>
     <string name="v5_1_custom_themes">Egyéni témák</string>
     <string name="group_member_status_accepted">kapcsolódás (elfogadva)</string>
@@ -475,7 +475,7 @@
     <string name="network_option_enable_tcp_keep_alive">TCP életben tartása</string>
     <string name="icon_descr_flip_camera">Kamera váltás</string>
     <string name="email_invite_body">Üdvözlöm!\nCsatlakozzon hozzám a SimpleX Chaten keresztül: %s</string>
-    <string name="display_name_cannot_contain_whitespace">A megjelenített név nem tartalmazhat szóközöket.</string>
+    <string name="display_name_cannot_contain_whitespace">A megjelenítendő név nem tartalmazhat szóközöket.</string>
     <string name="info_row_group">Csoport</string>
     <string name="enter_welcome_message_optional">Adja meg az üdvözlőüzenetet… (nem kötelező)</string>
     <string name="error_exporting_chat_database">Hiba történt a csevegési adatbázis exportálásakor</string>
@@ -835,7 +835,7 @@
     <string name="v4_5_reduced_battery_usage_descr">Hamarosan további fejlesztések érkeznek!</string>
     <string name="feature_off">kikapcsolva</string>
     <string name="install_simplex_chat_for_terminal">SimpleX Chat telepítése a terminálhoz</string>
-    <string name="self_destruct_new_display_name">Új megjelenített név:</string>
+    <string name="self_destruct_new_display_name">Új megjelenítendő név:</string>
     <string name="new_passphrase">Új jelmondat…</string>
     <string name="callstatus_missed">nem fogadott hívás</string>
     <string name="database_migrations">Átköltöztetés: %s</string>
@@ -2240,7 +2240,7 @@
     <string name="delete_chat_list_menu_action">Törlés</string>
     <string name="delete_chat_list_question">Törli a listát?</string>
     <string name="edit_chat_list_menu_action">Szerkesztés</string>
-    <string name="list_name_field_placeholder">Listanév…</string>
+    <string name="list_name_field_placeholder">Lista neve…</string>
     <string name="duplicated_list_error">Az összes lista nevének és emodzsijának különbözőnek kell lennie.</string>
     <string name="no_chats_in_list">Nincsenek csevegések a(z) %s nevű listában.</string>
     <string name="chat_list_notes">Jegyzetek</string>
