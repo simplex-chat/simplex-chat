@@ -3,6 +3,7 @@ plugins {
   id("org.jetbrains.compose")
   id("com.android.library")
   id("org.jetbrains.kotlin.plugin.serialization")
+  id("org.jetbrains.kotlin.plugin.compose")
   id("dev.icerock.mobile.multiplatform-resources")
   id("com.github.gmazzo.buildconfig") version "5.3.5"
 }
@@ -125,7 +126,7 @@ kotlin {
 
 android {
   namespace = "chat.simplex.common"
-  compileSdk = 34
+  compileSdk = 35
   sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
   defaultConfig {
     minSdk = 26
