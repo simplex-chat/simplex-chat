@@ -1206,8 +1206,8 @@ viewMemberSupportChats GroupInfo {membership} ms = support <> map groupMember ms
     groupMember m@GroupMember {supportChat} = case supportChat of
       Just sc -> memIncognito m <> ttyFullMember m <> (" (id " <> sShow (groupMemberId' m) <> "): ") <> chatStats sc
       Nothing -> ""
-    chatStats GroupSupportChat {unread, unanswered, mentions} =
-      "unread: " <> sShow unread <> ", unanswered: " <> sShow unanswered <> ", mentions: " <> sShow mentions
+    chatStats GroupSupportChat {unread, memberAttention, mentions} =
+      "unread: " <> sShow unread <> ", require attention: " <> sShow memberAttention <> ", mentions: " <> sShow mentions
 
 viewContactConnected :: Contact -> Maybe Profile -> Bool -> [StyledString]
 viewContactConnected ct userIncognitoProfile testView =

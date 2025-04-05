@@ -847,7 +847,7 @@ data GroupMember = GroupMember
 data GroupSupportChat = GroupSupportChat
   { chatTs :: UTCTime,
     unread :: Int64,
-    unanswered :: Int64,
+    memberAttention :: Int64,
     mentions :: Int64
   }
   deriving (Eq, Show)

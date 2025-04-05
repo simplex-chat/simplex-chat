@@ -591,7 +591,7 @@ toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, 
    in GroupInfo {groupId, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, chatTags, chatItemTTL, uiThemes, customData}
 
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
-toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, BI showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image, contactLink, localAlias, preferences) :. (createdAt, updatedAt) :. (supportChatTs_, supportChatUnread, supportChatUnanswered, supportChatMentions)) =
+toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, BI showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image, contactLink, localAlias, preferences) :. (createdAt, updatedAt) :. (supportChatTs_, supportChatUnread, supportChatMemberAttention, supportChatMentions)) =
   let memberProfile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
       memberSettings = GroupMemberSettings {showMessages}
       blockedByAdmin = maybe False mrsBlocked memberRestriction_
@@ -603,7 +603,7 @@ toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, 
           Just GroupSupportChat {
             chatTs,
             unread = supportChatUnread,
-            unanswered = supportChatUnanswered,
+            memberAttention = supportChatMemberAttention,
             mentions = supportChatMentions
           }
         _ -> Nothing
@@ -626,7 +626,7 @@ groupInfoQuery =
       mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
       pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
       mu.created_at, mu.updated_at,
-      mu.support_chat_ts, mu.support_chat_unread, mu.support_chat_unanswered, mu.support_chat_mentions
+      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions
     FROM groups g
     JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
     JOIN group_members mu ON mu.group_id = g.group_id

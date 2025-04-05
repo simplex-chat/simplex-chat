@@ -2051,11 +2051,11 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, forwardedByMember} shared
       CDGroupRcv g _scope _m | not (null mentions') -> createGroupCIMentions db g ci mentions'
       _ -> pure ci
   where
-    chatStatsCounts :: Bool -> Maybe (Int, UnansweredChange, Int)
+    chatStatsCounts :: Bool -> Maybe (Int, MemberAttention, Int)
     chatStatsCounts userMention = case cd of
       CDGroupRcv _g (Just scope) m -> do
         let unread = fromEnum $ ciCreateStatus content == CISRcvNew
-         in Just (unread, unansweredChange unread m scope, fromEnum userMention)
+         in Just (unread, memberAttentionChange unread m scope, fromEnum userMention)
       _ -> Nothing
 
 -- TODO [mentions] optimize by avoiding unnecessary parsing
@@ -2278,11 +2278,11 @@ createInternalItemsForChats user itemTs_ dirsCIContents = do
       | any ciRequiresAttention contents || contactChatDeleted cd = updateChatTsStats db user cd createdAt chatStatsCounts
       | otherwise = pure ()
       where
-        chatStatsCounts :: Maybe (Int, UnansweredChange, Int)
+        chatStatsCounts :: Maybe (Int, MemberAttention, Int)
         chatStatsCounts = case cd of
           CDGroupRcv _g (Just scope) m -> do
             let unread = length $ filter ciRequiresAttention contents
-             in Just (unread, unansweredChange unread m scope, 0)
+             in Just (unread, memberAttentionChange unread m scope, 0)
           _ -> Nothing
     createACIs :: DB.Connection -> UTCTime -> UTCTime -> ChatDirection c d -> [CIContent d] -> [IO AChatItem]
     createACIs db itemTs createdAt cd = map $ \content -> do
@@ -2290,12 +2290,12 @@ createInternalItemsForChats user itemTs_ dirsCIContents = do
       let ci = mkChatItem cd ciId content Nothing Nothing Nothing Nothing Nothing False False itemTs Nothing createdAt
       pure $ AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci
 
-unansweredChange :: Int -> GroupMember -> GroupChatScopeInfo -> UnansweredChange
-unansweredChange unread m = \case
+memberAttentionChange :: Int -> GroupMember -> GroupChatScopeInfo -> MemberAttention
+memberAttentionChange unread m = \case
   GCSIMemberSupport (Just m')
-    | groupMemberId' m' == groupMemberId' m -> UCInc unread
-    | otherwise -> UCReset
-  GCSIMemberSupport Nothing -> UCInc 0
+    | groupMemberId' m' == groupMemberId' m -> MAInc unread
+    | otherwise -> MAReset
+  GCSIMemberSupport Nothing -> MAInc 0
 
 createLocalChatItems ::
   User ->

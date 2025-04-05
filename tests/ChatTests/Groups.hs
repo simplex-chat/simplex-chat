@@ -6966,11 +6966,11 @@ testScopedSupportManyModerators =
     cath <## "chat db error: SEInternalError {message = \"no support chat\"}"
 
     alice ##> "/member support chats #team"
-    alice <## "bob (Bob) (id 2): unread: 0, unanswered: 0, mentions: 0"
+    alice <## "bob (Bob) (id 2): unread: 0, require attention: 0, mentions: 0"
     dan ##> "/member support chats #team"
-    dan <## "bob (Bob) (id 3): unread: 0, unanswered: 0, mentions: 0"
+    dan <## "bob (Bob) (id 3): unread: 0, require attention: 0, mentions: 0"
     bob ##> "/member support chats #team"
-    bob <## "support: unread: 0, unanswered: 0, mentions: 0"
+    bob <## "support: unread: 0, require attention: 0, mentions: 0"
     cath ##> "/member support chats #team"
     cath <// 50000
 
@@ -6991,22 +6991,22 @@ testScopedSupportUnreadStats =
     dan <# "#team (support: bob) alice> 3"
 
     alice ##> "/member support chats #team"
-    alice <## "bob (Bob) (id 2): unread: 0, unanswered: 0, mentions: 0"
+    alice <## "bob (Bob) (id 2): unread: 0, require attention: 0, mentions: 0"
     dan ##> "/member support chats #team"
-    dan <## "bob (Bob) (id 3): unread: 1, unanswered: 0, mentions: 0"
+    dan <## "bob (Bob) (id 3): unread: 1, require attention: 0, mentions: 0"
     bob ##> "/member support chats #team"
-    bob <## "support: unread: 1, unanswered: 0, mentions: 0"
+    bob <## "support: unread: 1, require attention: 0, mentions: 0"
 
     bob ##> "/_send #1(_support) text 4"
     bob <# "#team (support) 4"
     [alice, dan] *<# "#team (support: bob) bob> 4"
 
     alice ##> "/member support chats #team"
-    alice <## "bob (Bob) (id 2): unread: 1, unanswered: 1, mentions: 0"
+    alice <## "bob (Bob) (id 2): unread: 1, require attention: 1, mentions: 0"
     dan ##> "/member support chats #team"
-    dan <## "bob (Bob) (id 3): unread: 2, unanswered: 1, mentions: 0"
+    dan <## "bob (Bob) (id 3): unread: 2, require attention: 1, mentions: 0"
     bob ##> "/member support chats #team"
-    bob <## "support: unread: 1, unanswered: 0, mentions: 0"
+    bob <## "support: unread: 1, require attention: 0, mentions: 0"
 
     dan ##> "/_send #1(_support:3) text 5"
     dan <# "#team (support: bob) 5"
@@ -7014,12 +7014,12 @@ testScopedSupportUnreadStats =
     bob <# "#team (support) dan> 5"
 
     alice ##> "/member support chats #team"
-    alice <## "bob (Bob) (id 2): unread: 2, unanswered: 0, mentions: 0"
+    alice <## "bob (Bob) (id 2): unread: 2, require attention: 0, mentions: 0"
     -- In test "answering" doesn't reset unanswered, but in UI items would be marked read on opening chat
     dan ##> "/member support chats #team"
-    dan <## "bob (Bob) (id 3): unread: 2, unanswered: 1, mentions: 0"
+    dan <## "bob (Bob) (id 3): unread: 2, require attention: 1, mentions: 0"
     bob ##> "/member support chats #team"
-    bob <## "support: unread: 2, unanswered: 0, mentions: 0"
+    bob <## "support: unread: 2, require attention: 0, mentions: 0"
 
     threadDelay 1000000
 
@@ -7029,11 +7029,11 @@ testScopedSupportUnreadStats =
     bob <# "#team (support) dan> @alice 6"
 
     alice ##> "/member support chats #team"
-    alice <## "bob (Bob) (id 2): unread: 3, unanswered: 0, mentions: 1"
+    alice <## "bob (Bob) (id 2): unread: 3, require attention: 0, mentions: 1"
     dan ##> "/member support chats #team"
-    dan <## "bob (Bob) (id 3): unread: 2, unanswered: 1, mentions: 0"
+    dan <## "bob (Bob) (id 3): unread: 2, require attention: 1, mentions: 0"
     bob ##> "/member support chats #team"
-    bob <## "support: unread: 3, unanswered: 0, mentions: 0"
+    bob <## "support: unread: 3, require attention: 0, mentions: 0"
 
     aliceMentionedByDanItemId <- lastItemId alice
 
@@ -7045,11 +7045,11 @@ testScopedSupportUnreadStats =
     dan <# "#team (support: bob) bob> @alice 7"
 
     alice ##> "/member support chats #team"
-    alice <## "bob (Bob) (id 2): unread: 4, unanswered: 1, mentions: 2"
+    alice <## "bob (Bob) (id 2): unread: 4, require attention: 1, mentions: 2"
     dan ##> "/member support chats #team"
-    dan <## "bob (Bob) (id 3): unread: 3, unanswered: 2, mentions: 0"
+    dan <## "bob (Bob) (id 3): unread: 3, require attention: 2, mentions: 0"
     bob ##> "/member support chats #team"
-    bob <## "support: unread: 3, unanswered: 0, mentions: 0"
+    bob <## "support: unread: 3, require attention: 0, mentions: 0"
 
     aliceMentionedByBobItemId <- lastItemId alice
 
@@ -7059,21 +7059,21 @@ testScopedSupportUnreadStats =
     dan <# "#team (support: bob) bob!> @dan 8"
 
     alice ##> "/member support chats #team"
-    alice <## "bob (Bob) (id 2): unread: 5, unanswered: 2, mentions: 2"
+    alice <## "bob (Bob) (id 2): unread: 5, require attention: 2, mentions: 2"
     dan ##> "/member support chats #team"
-    dan <## "bob (Bob) (id 3): unread: 4, unanswered: 3, mentions: 1"
+    dan <## "bob (Bob) (id 3): unread: 4, require attention: 3, mentions: 1"
     bob ##> "/member support chats #team"
-    bob <## "support: unread: 3, unanswered: 0, mentions: 0"
+    bob <## "support: unread: 3, require attention: 0, mentions: 0"
 
     alice #$> ("/_read chat items #1(_support:2) " <> aliceMentionedByDanItemId, id, "ok")
 
     alice ##> "/member support chats #team"
-    alice <## "bob (Bob) (id 2): unread: 4, unanswered: 2, mentions: 1"
+    alice <## "bob (Bob) (id 2): unread: 4, require attention: 2, mentions: 1"
 
     alice #$> ("/_read chat items #1(_support:2) " <> aliceMentionedByBobItemId, id, "ok")
 
     alice ##> "/member support chats #team"
-    alice <## "bob (Bob) (id 2): unread: 3, unanswered: 1, mentions: 0"
+    alice <## "bob (Bob) (id 2): unread: 3, require attention: 1, mentions: 0"
 
     dan ##> "/_send #1(_support:3) json [{\"msgContent\": {\"type\": \"text\", \"text\": \"@bob 9\"}, \"mentions\": {\"bob\": 3}}]"
     dan <# "#team (support: bob) @bob 9"
@@ -7081,26 +7081,26 @@ testScopedSupportUnreadStats =
     bob <# "#team (support) dan!> @bob 9"
 
     alice ##> "/member support chats #team"
-    alice <## "bob (Bob) (id 2): unread: 4, unanswered: 0, mentions: 0"
+    alice <## "bob (Bob) (id 2): unread: 4, require attention: 0, mentions: 0"
     dan ##> "/member support chats #team"
-    dan <## "bob (Bob) (id 3): unread: 4, unanswered: 3, mentions: 1"
+    dan <## "bob (Bob) (id 3): unread: 4, require attention: 3, mentions: 1"
     bob ##> "/member support chats #team"
-    bob <## "support: unread: 4, unanswered: 0, mentions: 1"
+    bob <## "support: unread: 4, require attention: 0, mentions: 1"
 
     alice #$> ("/_read chat #1(_support:2)", id, "ok")
 
     alice ##> "/member support chats #team"
-    alice <## "bob (Bob) (id 2): unread: 0, unanswered: 0, mentions: 0"
+    alice <## "bob (Bob) (id 2): unread: 0, require attention: 0, mentions: 0"
 
     dan #$> ("/_read chat #1(_support:3)", id, "ok")
 
     dan ##> "/member support chats #team"
-    dan <## "bob (Bob) (id 3): unread: 0, unanswered: 0, mentions: 0"
+    dan <## "bob (Bob) (id 3): unread: 0, require attention: 0, mentions: 0"
 
     bob #$> ("/_read chat #1(_support)", id, "ok")
 
     bob ##> "/member support chats #team"
-    bob <## "support: unread: 0, unanswered: 0, mentions: 0"
+    bob <## "support: unread: 0, require attention: 0, mentions: 0"
 
     cath ##> "/member support chats #team"
     cath <// 50000

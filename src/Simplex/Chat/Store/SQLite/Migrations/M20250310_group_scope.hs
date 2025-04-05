@@ -12,9 +12,9 @@ m20250310_group_scope =
 ALTER TABLE group_profiles ADD COLUMN member_admission TEXT;
 
 ALTER TABLE group_members ADD COLUMN support_chat_ts TEXT;
-ALTER TABLE group_members ADD COLUMN support_chat_unread INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE group_members ADD COLUMN support_chat_unanswered INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE group_members ADD COLUMN support_chat_mentions INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE group_members ADD COLUMN support_chat_items_unread INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE group_members ADD COLUMN support_chat_items_member_attention INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE group_members ADD COLUMN support_chat_items_mentions INTEGER NOT NULL DEFAULT 0;
 
 ALTER TABLE chat_items ADD COLUMN group_scope_tag TEXT;
 ALTER TABLE chat_items ADD COLUMN group_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE;
@@ -41,9 +41,9 @@ ALTER TABLE chat_items DROP COLUMN group_scope_tag;
 ALTER TABLE chat_items DROP COLUMN group_scope_group_member_id;
 
 ALTER TABLE group_members DROP COLUMN support_chat_ts;
-ALTER TABLE group_members DROP COLUMN support_chat_unread;
-ALTER TABLE group_members DROP COLUMN support_chat_unanswered;
-ALTER TABLE group_members DROP COLUMN support_chat_mentions;
+ALTER TABLE group_members DROP COLUMN support_chat_items_unread;
+ALTER TABLE group_members DROP COLUMN support_chat_items_member_attention;
+ALTER TABLE group_members DROP COLUMN support_chat_items_mentions;
 
 ALTER TABLE group_profiles DROP COLUMN member_admission;
 |]

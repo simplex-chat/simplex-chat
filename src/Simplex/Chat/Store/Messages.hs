@@ -35,7 +35,7 @@ module Simplex.Chat.Store.Messages
     getPendingGroupMessages,
     deletePendingGroupMessage,
     deleteOldMessages,
-    UnansweredChange (..),
+    MemberAttention (..),
     updateChatTsStats,
     createNewSndChatItem,
     createNewRcvChatItem,
@@ -365,10 +365,10 @@ deleteOldMessages db createdAtCutoff = do
 
 type NewQuoteRow = (Maybe SharedMsgId, Maybe UTCTime, Maybe MsgContent, Maybe Bool, Maybe MemberId)
 
-data UnansweredChange = UCInc Int | UCReset
+data MemberAttention = MAInc Int | MAReset
   deriving (Show)
 
-updateChatTsStats :: DB.Connection -> User -> ChatDirection c d -> UTCTime -> Maybe (Int, UnansweredChange, Int) -> IO ()
+updateChatTsStats :: DB.Connection -> User -> ChatDirection c d -> UTCTime -> Maybe (Int, MemberAttention, Int) -> IO ()
 updateChatTsStats db User {userId} chatDirection chatTs chatStats_ = case toChatInfo chatDirection of
   DirectChat Contact {contactId} ->
     DB.execute
@@ -388,27 +388,27 @@ updateChatTsStats db User {userId} chatDirection chatTs chatStats_ = case toChat
           db
           "UPDATE group_members SET support_chat_ts = ? WHERE group_member_id = ?"
           (chatTs, gmId)
-      Just (unread, UCInc unanswered, mentions) ->
+      Just (unread, MAInc unanswered, mentions) ->
         DB.execute
           db
           [sql|
             UPDATE group_members
             SET support_chat_ts = ?,
-                support_chat_unread = support_chat_unread + ?,
-                support_chat_unanswered = support_chat_unanswered + ?,
-                support_chat_mentions = support_chat_mentions + ?
+                support_chat_items_unread = support_chat_items_unread + ?,
+                support_chat_items_member_attention = support_chat_items_member_attention + ?,
+                support_chat_items_mentions = support_chat_items_mentions + ?
             WHERE group_member_id = ?
           |]
           (chatTs, unread, unanswered, mentions, gmId)
-      Just (unread, UCReset, mentions) ->
+      Just (unread, MAReset, mentions) ->
         DB.execute
           db
           [sql|
             UPDATE group_members
             SET support_chat_ts = ?,
-                support_chat_unread = support_chat_unread + ?,
-                support_chat_unanswered = 0,
-                support_chat_mentions = support_chat_mentions + ?
+                support_chat_items_unread = support_chat_items_unread + ?,
+                support_chat_items_member_attention = 0,
+                support_chat_items_mentions = support_chat_items_mentions + ?
             WHERE group_member_id = ?
           |]
           (chatTs, unread, mentions, gmId)
@@ -573,7 +573,7 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
               m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
               p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
               m.created_at, m.updated_at,
-              m.support_chat_ts, m.support_chat_unread, m.support_chat_unanswered, m.support_chat_mentions
+              m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions
             FROM group_members m
             JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
             LEFT JOIN contacts c ON m.contact_id = c.contact_id
@@ -1904,9 +1904,9 @@ updateGroupChatItemsRead db User {userId} GroupInfo {groupId, membership} scope 
         db
         [sql|
           UPDATE group_members
-          SET support_chat_unread = 0,
-              support_chat_unanswered = 0,
-              support_chat_mentions = 0
+          SET support_chat_items_unread = 0,
+              support_chat_items_member_attention = 0,
+              support_chat_items_mentions = 0
           WHERE group_member_id = ?
         |]
         (Only gmId)
@@ -1953,9 +1953,9 @@ updateGroupChatItemsReadList db User {userId} GroupInfo {groupId, membership} sc
           db
           [sql|
             UPDATE group_members
-            SET support_chat_unread = support_chat_unread - ?,
-                support_chat_unanswered = support_chat_unanswered - ?,
-                support_chat_mentions = support_chat_mentions - ?
+            SET support_chat_items_unread = support_chat_items_unread - ?,
+                support_chat_items_member_attention = support_chat_items_member_attention - ?,
+                support_chat_items_mentions = support_chat_items_mentions - ?
             WHERE group_member_id = ?
           |]
           (unread, unanswered, mentions, gmId)
@@ -2772,7 +2772,7 @@ getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do
             m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
             p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
             m.created_at, m.updated_at,
-            m.support_chat_ts, m.support_chat_unread, m.support_chat_unanswered, m.support_chat_mentions,
+            m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions,
             -- quoted ChatItem
             ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent,
             -- quoted GroupMember
@@ -2780,13 +2780,13 @@ getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do
             rm.member_status, rm.show_messages, rm.member_restriction, rm.invited_by, rm.invited_by_group_member_id, rm.local_display_name, rm.contact_id, rm.contact_profile_id, rp.contact_profile_id,
             rp.display_name, rp.full_name, rp.image, rp.contact_link, rp.local_alias, rp.preferences,
             rm.created_at, rm.updated_at,
-            rm.support_chat_ts, rm.support_chat_unread, rm.support_chat_unanswered, rm.support_chat_mentions,
+            rm.support_chat_ts, rm.support_chat_items_unread, rm.support_chat_items_member_attention, rm.support_chat_items_mentions,
             -- deleted by GroupMember
             dbm.group_member_id, dbm.group_id, dbm.member_id, dbm.peer_chat_min_version, dbm.peer_chat_max_version, dbm.member_role, dbm.member_category,
             dbm.member_status, dbm.show_messages, dbm.member_restriction, dbm.invited_by, dbm.invited_by_group_member_id, dbm.local_display_name, dbm.contact_id, dbm.contact_profile_id, dbp.contact_profile_id,
             dbp.display_name, dbp.full_name, dbp.image, dbp.contact_link, dbp.local_alias, dbp.preferences,
             dbm.created_at, dbm.updated_at,
-            dbm.support_chat_ts, dbm.support_chat_unread, dbm.support_chat_unanswered, dbm.support_chat_mentions
+            dbm.support_chat_ts, dbm.support_chat_items_unread, dbm.support_chat_items_member_attention, dbm.support_chat_items_mentions
           FROM chat_items i
           LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
           LEFT JOIN group_members gsm ON gsm.group_member_id = i.group_scope_group_member_id
