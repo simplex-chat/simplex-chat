@@ -54,7 +54,6 @@ module Simplex.Chat.Store.Groups
     getGroupMemberByMemberId,
     getGroupMembers,
     getGroupModerators,
-    getSupportMembers,
     getGroupMembersForExpiration,
     getGroupCurrentMembersCount,
     deleteGroupChatItems,
@@ -177,11 +176,11 @@ import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
-type MaybeGroupMemberRow = (Maybe Int64, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId, Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe ImageData, Maybe ConnReqContact, Maybe LocalAlias, Maybe Preferences) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe BoolInt)
+type MaybeGroupMemberRow = (Maybe Int64, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId, Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe ImageData, Maybe ConnReqContact, Maybe LocalAlias, Maybe Preferences) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64)
 
 toMaybeGroupMember :: Int64 -> MaybeGroupMemberRow -> Maybe GroupMember
-toMaybeGroupMember userContactId ((Just groupMemberId, Just groupId, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked) :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId, Just profileId, Just displayName, Just fullName, image, contactLink, Just localAlias, contactPreferences) :. (Just createdAt, Just updatedAt) :. (supportChatTs, supportChatUnanswered)) =
-  Just $ toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image, contactLink, localAlias, contactPreferences) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnanswered))
+toMaybeGroupMember userContactId ((Just groupMemberId, Just groupId, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked) :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId, Just profileId, Just displayName, Just fullName, image, contactLink, Just localAlias, contactPreferences) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions)) =
+  Just $ toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image, contactLink, localAlias, contactPreferences) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions))
 toMaybeGroupMember _ _ = Nothing
 
 createGroupLink :: DB.Connection -> User -> GroupInfo -> ConnId -> ConnReqContact -> GroupLinkId -> GroupMemberRole -> SubscriptionMode -> ExceptT StoreError IO ()
@@ -280,17 +279,18 @@ getGroupAndMember db User {userId, userContactId} groupMemberId vr = do
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
             g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
-            g.mods_support_chat_ts, g.mods_support_chat_unanswered,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
             mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
             -- GroupInfo {membership = GroupMember {memberProfile}}
             pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
-            mu.created_at, mu.updated_at, NULL AS mu_support_chat_ts, NULL AS mu_support_chat_unanswered,
+            mu.created_at, mu.updated_at,
+            mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions,
             -- from GroupMember
             m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
             m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
-            m.created_at, m.updated_at, m.support_chat_ts, m.support_chat_unanswered,
+            m.created_at, m.updated_at,
+            m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions,
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
             c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
             c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -361,8 +361,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
           chatTags = [],
           chatItemTTL = Nothing,
           uiThemes = Nothing,
-          customData = Nothing,
-          modsSupportChat = Nothing
+          customData = Nothing
         }
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
@@ -432,8 +431,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                   chatTags = [],
                   chatItemTTL = Nothing,
                   uiThemes = Nothing,
-                  customData = Nothing,
-                  modsSupportChat = Nothing
+                  customData = Nothing
                 },
               groupMemberId
             )
@@ -770,10 +768,10 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
             g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
-            g.mods_support_chat_ts, g.mods_support_chat_unanswered,
             mu.group_member_id, g.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category, mu.member_status, mu.show_messages, mu.member_restriction,
             mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id, pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
-            mu.created_at, mu.updated_at, NULL AS mu_support_chat_ts, NULL AS mu_support_chat_unanswered
+            mu.created_at, mu.updated_at,
+            mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions
           FROM groups g
           JOIN group_profiles gp USING (group_profile_id)
           JOIN group_members mu USING (group_id)
@@ -837,7 +835,8 @@ groupMemberQuery =
     SELECT
       m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
-      m.created_at, m.updated_at, m.support_chat_ts, m.support_chat_unanswered,
+      m.created_at, m.updated_at,
+      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -923,14 +922,6 @@ getGroupModerators db vr user@User {userId, userContactId} GroupInfo {groupId} =
       db
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)")
       (userId, userId, groupId, userContactId, GRModerator, GRAdmin, GROwner)
-
-getSupportMembers :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
-getSupportMembers db vr user@User {userId, userContactId} GroupInfo {groupId} = do
-  map (toContactMember vr user)
-    <$> DB.query
-      db
-      (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.support_chat_ts IS NOT NULL")
-      (userId, userId, groupId, userContactId)
 
 getGroupMembersForExpiration :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
 getGroupMembersForExpiration db vr user@User {userId, userContactId} GroupInfo {groupId} = do
@@ -1570,17 +1561,18 @@ getViaGroupMember db vr User {userId, userContactId} Contact {contactId} = do
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
             g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
-            g.mods_support_chat_ts, g.mods_support_chat_unanswered,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
             mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
             -- GroupInfo {membership = GroupMember {memberProfile}}
             pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
-            mu.created_at, mu.updated_at, NULL AS mu_support_chat_ts, NULL AS mu_support_chat_unanswered,
+            mu.created_at, mu.updated_at,
+            mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions,
             -- via GroupMember
             m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
             m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
-            m.created_at, m.updated_at, m.support_chat_ts, m.support_chat_unanswered,
+            m.created_at, m.updated_at,
+            m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions,
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
             c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
             c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,

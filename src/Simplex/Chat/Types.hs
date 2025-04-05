@@ -419,14 +419,7 @@ data GroupInfo = GroupInfo
     chatTags :: [ChatTagId],
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
-    customData :: Maybe CustomData,
-    modsSupportChat :: Maybe GroupSupportChat
-  }
-  deriving (Eq, Show)
-
-data GroupSupportChat = GroupSupportChat
-  { chatTs :: UTCTime,
-    unanswered :: Bool
+    customData :: Maybe CustomData
   }
   deriving (Eq, Show)
 
@@ -848,6 +841,14 @@ data GroupMember = GroupMember
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     supportChat :: Maybe GroupSupportChat
+  }
+  deriving (Eq, Show)
+
+data GroupSupportChat = GroupSupportChat
+  { chatTs :: UTCTime,
+    unread :: Int64,
+    memberAttention :: Int64,
+    mentions :: Int64
   }
   deriving (Eq, Show)
 

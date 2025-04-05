@@ -195,6 +195,7 @@ chatGroupTests = do
   describe "group scoped messages" $ do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
     it "should send scoped messages to support (many moderators)" testScopedSupportManyModerators
+    it "should correctly maintain unread stats for support chats" testScopedSupportUnreadStats
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -6889,8 +6890,8 @@ testUpdatedMentionNames = do
     test (mm [("alice", Just "alice"), ("cath", Just "alice")]) "hello @alice @cath"
       `shouldBe` "hello @alice @alice_1"
   where
-    test mentions t =
-      let (mc', _, _) = updatedMentionNames (MCText t) (parseMaybeMarkdownList t) mentions
+    test mentionsMap t =
+      let (mc', _, _) = updatedMentionNames (MCText t) (parseMaybeMarkdownList t) mentionsMap
        in msgContentText mc'
     mm = M.fromList . map (second mentionedMember)
     mentionedMember name_ = CIMention {memberId = MemberId "abcd", memberRef = ciMentionMember <$> name_}
@@ -6965,10 +6966,147 @@ testScopedSupportManyModerators =
     cath <## "chat db error: SEInternalError {message = \"no support chat\"}"
 
     alice ##> "/member support chats #team"
-    alice <## "bob (Bob), id: 2"
+    alice <## "bob (Bob) (id 2): unread: 0, require attention: 0, mentions: 0"
     dan ##> "/member support chats #team"
-    dan <## "bob (Bob), id: 3"
+    dan <## "bob (Bob) (id 3): unread: 0, require attention: 0, mentions: 0"
     bob ##> "/member support chats #team"
-    bob <## "#team: you have insufficient permissions for this action, the required role is moderator"
+    bob <## "support: unread: 0, require attention: 0, mentions: 0"
     cath ##> "/member support chats #team"
-    cath <## "#team: you have insufficient permissions for this action, the required role is moderator"
+    cath <// 50000
+
+testScopedSupportUnreadStats :: HasCallStack => TestParams -> IO ()
+testScopedSupportUnreadStats =
+  testChatOpts4 opts aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
+    createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRModerator)
+
+    alice #> "#team 1"
+    [bob, cath, dan] *<# "#team alice> 1"
+
+    bob #> "#team 2"
+    [alice, cath, dan] *<# "#team bob> 2"
+
+    alice ##> "/_send #1(_support:2) text 3"
+    alice <# "#team (support: bob) 3"
+    bob <# "#team (support) alice> 3"
+    dan <# "#team (support: bob) alice> 3"
+
+    alice ##> "/member support chats #team"
+    alice <## "bob (Bob) (id 2): unread: 0, require attention: 0, mentions: 0"
+    dan ##> "/member support chats #team"
+    dan <## "bob (Bob) (id 3): unread: 1, require attention: 0, mentions: 0"
+    bob ##> "/member support chats #team"
+    bob <## "support: unread: 1, require attention: 0, mentions: 0"
+
+    bob ##> "/_send #1(_support) text 4"
+    bob <# "#team (support) 4"
+    [alice, dan] *<# "#team (support: bob) bob> 4"
+
+    alice ##> "/member support chats #team"
+    alice <## "bob (Bob) (id 2): unread: 1, require attention: 1, mentions: 0"
+    dan ##> "/member support chats #team"
+    dan <## "bob (Bob) (id 3): unread: 2, require attention: 1, mentions: 0"
+    bob ##> "/member support chats #team"
+    bob <## "support: unread: 1, require attention: 0, mentions: 0"
+
+    dan ##> "/_send #1(_support:3) text 5"
+    dan <# "#team (support: bob) 5"
+    alice <# "#team (support: bob) dan> 5"
+    bob <# "#team (support) dan> 5"
+
+    alice ##> "/member support chats #team"
+    alice <## "bob (Bob) (id 2): unread: 2, require attention: 0, mentions: 0"
+    -- In test "answering" doesn't reset unanswered, but in UI items would be marked read on opening chat
+    dan ##> "/member support chats #team"
+    dan <## "bob (Bob) (id 3): unread: 2, require attention: 1, mentions: 0"
+    bob ##> "/member support chats #team"
+    bob <## "support: unread: 2, require attention: 0, mentions: 0"
+
+    threadDelay 1000000
+
+    dan ##> "/_send #1(_support:3) json [{\"msgContent\": {\"type\": \"text\", \"text\": \"@alice 6\"}, \"mentions\": {\"alice\": 1}}]"
+    dan <# "#team (support: bob) @alice 6"
+    alice <# "#team (support: bob) dan!> @alice 6"
+    bob <# "#team (support) dan> @alice 6"
+
+    alice ##> "/member support chats #team"
+    alice <## "bob (Bob) (id 2): unread: 3, require attention: 0, mentions: 1"
+    dan ##> "/member support chats #team"
+    dan <## "bob (Bob) (id 3): unread: 2, require attention: 1, mentions: 0"
+    bob ##> "/member support chats #team"
+    bob <## "support: unread: 3, require attention: 0, mentions: 0"
+
+    aliceMentionedByDanItemId <- lastItemId alice
+
+    threadDelay 1000000
+
+    bob ##> "/_send #1(_support) json [{\"msgContent\": {\"type\": \"text\", \"text\": \"@alice 7\"}, \"mentions\": {\"alice\": 1}}]"
+    bob <# "#team (support) @alice 7"
+    alice <# "#team (support: bob) bob!> @alice 7"
+    dan <# "#team (support: bob) bob> @alice 7"
+
+    alice ##> "/member support chats #team"
+    alice <## "bob (Bob) (id 2): unread: 4, require attention: 1, mentions: 2"
+    dan ##> "/member support chats #team"
+    dan <## "bob (Bob) (id 3): unread: 3, require attention: 2, mentions: 0"
+    bob ##> "/member support chats #team"
+    bob <## "support: unread: 3, require attention: 0, mentions: 0"
+
+    aliceMentionedByBobItemId <- lastItemId alice
+
+    bob ##> "/_send #1(_support) json [{\"msgContent\": {\"type\": \"text\", \"text\": \"@dan 8\"}, \"mentions\": {\"dan\": 4}}]"
+    bob <# "#team (support) @dan 8"
+    alice <# "#team (support: bob) bob> @dan 8"
+    dan <# "#team (support: bob) bob!> @dan 8"
+
+    alice ##> "/member support chats #team"
+    alice <## "bob (Bob) (id 2): unread: 5, require attention: 2, mentions: 2"
+    dan ##> "/member support chats #team"
+    dan <## "bob (Bob) (id 3): unread: 4, require attention: 3, mentions: 1"
+    bob ##> "/member support chats #team"
+    bob <## "support: unread: 3, require attention: 0, mentions: 0"
+
+    alice #$> ("/_read chat items #1(_support:2) " <> aliceMentionedByDanItemId, id, "ok")
+
+    alice ##> "/member support chats #team"
+    alice <## "bob (Bob) (id 2): unread: 4, require attention: 2, mentions: 1"
+
+    alice #$> ("/_read chat items #1(_support:2) " <> aliceMentionedByBobItemId, id, "ok")
+
+    alice ##> "/member support chats #team"
+    alice <## "bob (Bob) (id 2): unread: 3, require attention: 1, mentions: 0"
+
+    dan ##> "/_send #1(_support:3) json [{\"msgContent\": {\"type\": \"text\", \"text\": \"@bob 9\"}, \"mentions\": {\"bob\": 3}}]"
+    dan <# "#team (support: bob) @bob 9"
+    alice <# "#team (support: bob) dan> @bob 9"
+    bob <# "#team (support) dan!> @bob 9"
+
+    alice ##> "/member support chats #team"
+    alice <## "bob (Bob) (id 2): unread: 4, require attention: 0, mentions: 0"
+    dan ##> "/member support chats #team"
+    dan <## "bob (Bob) (id 3): unread: 4, require attention: 3, mentions: 1"
+    bob ##> "/member support chats #team"
+    bob <## "support: unread: 4, require attention: 0, mentions: 1"
+
+    alice #$> ("/_read chat #1(_support:2)", id, "ok")
+
+    alice ##> "/member support chats #team"
+    alice <## "bob (Bob) (id 2): unread: 0, require attention: 0, mentions: 0"
+
+    dan #$> ("/_read chat #1(_support:3)", id, "ok")
+
+    dan ##> "/member support chats #team"
+    dan <## "bob (Bob) (id 3): unread: 0, require attention: 0, mentions: 0"
+
+    bob #$> ("/_read chat #1(_support)", id, "ok")
+
+    bob ##> "/member support chats #team"
+    bob <## "support: unread: 0, require attention: 0, mentions: 0"
+
+    cath ##> "/member support chats #team"
+    cath <// 50000
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }
+

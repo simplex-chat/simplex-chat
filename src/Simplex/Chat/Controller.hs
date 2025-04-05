@@ -662,7 +662,6 @@ data ChatResponse
   | CRWelcome {user :: User}
   | CRGroupCreated {user :: User, groupInfo :: GroupInfo}
   | CRGroupMembers {user :: User, group :: Group}
-  | CRMemberSupportChats {user :: User, groupInfo :: GroupInfo, members :: [GroupMember]}
   -- | CRGroupConversationsArchived {user :: User, groupInfo :: GroupInfo, archivedGroupConversations :: [GroupConversation]}
   -- | CRGroupConversationsDeleted {user :: User, groupInfo :: GroupInfo, deletedGroupConversations :: [GroupConversation]}
   | CRContactsList {user :: User, contacts :: [Contact]}
@@ -851,6 +850,7 @@ data ChatResponse
 data TerminalEvent
   = TEGroupLinkRejected {user :: User, groupInfo :: GroupInfo, groupRejectionReason :: GroupRejectionReason}
   | TERejectingGroupJoinRequestMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember, groupRejectionReason :: GroupRejectionReason}
+  | TEMemberSupportChats {user :: User, groupInfo :: GroupInfo, members :: [GroupMember]}
   deriving (Show)
 
 data DeletedRcvQueue = DeletedRcvQueue

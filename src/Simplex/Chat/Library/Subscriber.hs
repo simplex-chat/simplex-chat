@@ -2076,7 +2076,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xInfoMember gInfo m p' brokerTs = void $ processMemberProfileUpdate gInfo m p' True (Just brokerTs)
 
     xGrpLinkMem :: GroupInfo -> GroupMember -> Connection -> Profile -> CM ()
-    xGrpLinkMem gInfo@GroupInfo {membership, businessChat} m@GroupMember {groupMemberId, memberCategory, memberStatus} Connection {viaGroupLink} p' = do
+    xGrpLinkMem gInfo@GroupInfo {membership, businessChat} m@GroupMember {groupMemberId, memberCategory} Connection {viaGroupLink} p' = do
       xGrpLinkMemReceived <- withStore $ \db -> getXGrpLinkMemReceived db groupMemberId
       if (viaGroupLink || isJust businessChat) && isNothing (memberContactId m) && memberCategory == GCHostMember && not xGrpLinkMemReceived
         then do
@@ -2087,7 +2087,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         else messageError "x.grp.link.mem error: invalid group link host profile update"
 
     xGrpLinkAcpt :: GroupInfo -> GroupMember -> GroupMemberRole -> MemberId -> CM ()
-    xGrpLinkAcpt gInfo@GroupInfo {groupId, membership} m role memberId
+    xGrpLinkAcpt gInfo@GroupInfo {membership} m role memberId
       | sameMemberId memberId membership = processUserAccepted
       | otherwise =
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memberId) >>= \case
