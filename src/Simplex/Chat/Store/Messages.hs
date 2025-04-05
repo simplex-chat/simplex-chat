@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -34,7 +35,7 @@ module Simplex.Chat.Store.Messages
     getPendingGroupMessages,
     deletePendingGroupMessage,
     deleteOldMessages,
-    ModifyUnanswered (..),
+    UnansweredChange (..),
     updateChatTsStats,
     createNewSndChatItem,
     createNewRcvChatItem,
@@ -364,11 +365,11 @@ deleteOldMessages db createdAtCutoff = do
 
 type NewQuoteRow = (Maybe SharedMsgId, Maybe UTCTime, Maybe MsgContent, Maybe Bool, Maybe MemberId)
 
-data ModifyUnanswered = MUInc Int | MUReset
+data UnansweredChange = UCInc Int | UCReset
   deriving (Show)
 
-updateChatTsStats :: DB.Connection -> User -> ChatDirection c d -> UTCTime -> (Int, ModifyUnanswered, Int) -> IO ()
-updateChatTsStats db User {userId} chatDirection chatTs (unread, modifyUnanswered, mentions) = case toChatInfo chatDirection of
+updateChatTsStats :: DB.Connection -> User -> ChatDirection c d -> UTCTime -> Maybe (Int, UnansweredChange, Int) -> IO ()
+updateChatTsStats db User {userId} chatDirection chatTs chatStats_ = case toChatInfo chatDirection of
   DirectChat Contact {contactId} ->
     DB.execute
       db
@@ -381,8 +382,13 @@ updateChatTsStats db User {userId} chatDirection chatTs (unread, modifyUnanswere
       (chatTs, userId, groupId)
   GroupChat GroupInfo {membership} (Just GCSIMemberSupport {groupMember_}) -> do
     let gmId = groupMemberId' $ fromMaybe membership groupMember_
-    case modifyUnanswered of
-      MUInc unanswered ->
+    case chatStats_ of
+      Nothing ->
+        DB.execute
+          db
+          "UPDATE group_members SET support_chat_ts = ? WHERE group_member_id = ?"
+          (chatTs, gmId)
+      Just (unread, UCInc unanswered, mentions) ->
         DB.execute
           db
           [sql|
@@ -394,7 +400,7 @@ updateChatTsStats db User {userId} chatDirection chatTs (unread, modifyUnanswere
             WHERE group_member_id = ?
           |]
           (chatTs, unread, unanswered, mentions, gmId)
-      MUReset ->
+      Just (unread, UCReset, mentions) ->
         DB.execute
           db
           [sql|
@@ -1958,7 +1964,7 @@ updateGroupChatItemsReadList db User {userId} GroupInfo {groupId, membership} sc
           decStats = foldl' countItem (0, 0) readItemsData
             where
               countItem :: (Int, Int) -> (ChatItemId, Maybe Int, Maybe UTCTime, Maybe GroupMemberId, Maybe BoolInt) -> (Int, Int)
-              countItem (unanswered, mentions) (_, _, _, itemGMId_, userMention_) =
+              countItem (!unanswered, !mentions) (_, _, _, itemGMId_, userMention_) =
                 let unanswered' = case (groupMemberId_, itemGMId_) of
                       (Just scopeGMId, Just itemGMId) | itemGMId == scopeGMId -> unanswered + 1
                       _ -> unanswered
