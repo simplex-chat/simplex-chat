@@ -231,6 +231,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20250126_mentions
           Simplex.Chat.Store.SQLite.Migrations.M20250129_delete_unused_contacts
           Simplex.Chat.Store.SQLite.Migrations.M20250130_indexes
+          Simplex.Chat.Store.SQLite.Migrations.M20250310_group_scope
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
