@@ -875,7 +875,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XFileAcptInv sharedMsgId fileConnReq_ fName -> xFileAcptInvGroup gInfo' m'' sharedMsgId fileConnReq_ fName
               XInfo p -> xInfoMember gInfo' m'' p brokerTs
               XGrpLinkMem p -> xGrpLinkMem gInfo' m'' conn' p
-              XGrpLinkAcpt role memberId -> xGrpLinkAcpt gInfo' m'' role memberId
+              XGrpLinkAcpt role memberId -> xGrpLinkAcpt gInfo' m'' role memberId msg brokerTs
               XGrpMemNew memInfo msgScope -> xGrpMemNew gInfo' m'' memInfo msgScope msg brokerTs
               XGrpMemIntro memInfo memRestrictions_ -> xGrpMemIntro gInfo' m'' memInfo memRestrictions_
               XGrpMemInv memId introInv -> xGrpMemInv gInfo' m'' memId introInv
@@ -2086,8 +2086,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           probeMatchingMemberContact m' connectedIncognito
         else messageError "x.grp.link.mem error: invalid group link host profile update"
 
-    xGrpLinkAcpt :: GroupInfo -> GroupMember -> GroupMemberRole -> MemberId -> CM ()
-    xGrpLinkAcpt gInfo@GroupInfo {membership} m role memberId
+    xGrpLinkAcpt :: GroupInfo -> GroupMember -> GroupMemberRole -> MemberId -> RcvMessage -> UTCTime -> CM ()
+    xGrpLinkAcpt gInfo@GroupInfo {membership} m role memberId msg brokerTs
       | sameMemberId memberId membership = processUserAccepted
       | otherwise =
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memberId) >>= \case
@@ -2095,6 +2095,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Right referencedMember -> do
               referencedMember' <- withFastStore' $ \db -> updateGroupMemberAccepted db user referencedMember (newMemberStatus referencedMember) role
               when (memberCategory referencedMember == GCInviteeMember) $ introduceToRemainingMembers referencedMember'
+              let scopeInfo = Just $ GCSIMemberSupport {groupMember_ = Just referencedMember'}
+                  gEvent = RGEMemberAccepted (groupMemberId' referencedMember') (fromLocalProfile $ memberProfile referencedMember')
+              ci <- saveRcvChatItemNoParse user (CDGroupRcv gInfo scopeInfo m) msg brokerTs (CIRcvGroupEvent gEvent)
+              groupMsgToView gInfo scopeInfo ci
               toView $ CRMemberAcceptedByOther user gInfo m referencedMember'
               where
                 newMemberStatus refMem = case memberConn refMem of
@@ -2103,6 +2107,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       where
         processUserAccepted = do
           membership' <- withStore' $ \db -> updateGroupMemberAccepted db user membership GSMemConnected role
+          let scopeInfo = Just $ GCSIMemberSupport {groupMember_ = Nothing}
+          ci <- saveRcvChatItemNoParse user (CDGroupRcv gInfo scopeInfo m) msg brokerTs (CIRcvGroupEvent RGEUserAccepted)
+          groupMsgToView gInfo scopeInfo ci
           toView $ CRUserJoinedGroup user gInfo {membership = membership'} m
           let cd = CDGroupRcv gInfo Nothing m
           createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
