@@ -158,7 +158,7 @@
     "invitation-hero-header": "You received a 1-time link to connect on SimpleX Chat",
     "contact-hero-subheader": "Scan the QR code with the SimpleX Chat app on your phone or tablet.",
     "contact-hero-p-1": "The public keys and message queue address in this link are NOT sent over the network when you view this page &mdash; they are contained in the hash fragment of the link URL.",
-    "contact-hero-p-2": "Not downloaded the SimpleX Chat yet?",
+    "contact-hero-p-2": "Not downloaded the SimpleX Chat app yet?",
     "contact-hero-p-3": "Use the links below to download the app.",
     "scan-qr-code-from-mobile-app": "Scan QR code from mobile app",
     "to-make-a-connection": "To make a connection:",
