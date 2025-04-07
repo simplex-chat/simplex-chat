@@ -206,6 +206,8 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvGroupEvent rge -> case rge of
       RGEMemberAdded {} -> False
       RGEMemberConnected -> False
+      RGEMemberAccepted {} -> False
+      RGEUserAccepted -> False
       RGEMemberLeft -> False
       RGEMemberRole {} -> False
       RGEMemberBlocked {} -> False
@@ -317,6 +319,8 @@ rcvGroupEventToText :: RcvGroupEvent -> Text
 rcvGroupEventToText = \case
   RGEMemberAdded _ p -> "added " <> profileToText p
   RGEMemberConnected -> "connected"
+  RGEMemberAccepted _ p -> "accepted " <> profileToText p
+  RGEUserAccepted -> "accepted you"
   RGEMemberLeft -> "left"
   RGEMemberRole _ p r -> "changed role of " <> profileToText p <> " to " <> safeDecodeUtf8 (strEncode r)
   RGEMemberBlocked _ p blocked -> (if blocked then "blocked" else "unblocked") <> " " <> profileToText p
