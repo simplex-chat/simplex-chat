@@ -62,7 +62,7 @@ mentionedNames = mapMaybe (\(FormattedText f _) -> mentionedName =<< f)
       Mention name -> Just name
       _ -> Nothing
 
-data SimplexLinkType = XLContact | XLInvitation | XLGroup
+data SimplexLinkType = XLContact | XLInvitation | XLGroup | XLChannel
   deriving (Eq, Show)
 
 colored :: Color -> Format
@@ -268,13 +268,14 @@ markdownP = mconcat <$> A.many' fragmentP
             Just (CRDataGroup _) -> XLGroup
             Nothing -> XLContact
       ACL _ (CLShort cLink) -> case cLink of
-        CSLContact srv connType _ -> SimplexLink (linkType' connType) uri $ uriHosts srv
+        CSLContact connType srv _ -> SimplexLink (linkType' connType) uri $ uriHosts srv
         CSLInvitation srv _ _ -> SimplexLink XLInvitation uri $ uriHosts srv
         where
           uri = strEncodeText cLink
           uriHosts srv = L.map strEncodeText $ host srv
           linkType' = \case
             CCTGroup -> XLGroup
+            CCTChannel -> XLChannel
             CCTContact -> XLContact
     strEncodeText :: StrEncoding a => a -> Text
     strEncodeText = safeDecodeUtf8 . strEncode

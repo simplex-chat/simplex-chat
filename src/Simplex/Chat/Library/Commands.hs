@@ -2282,16 +2282,17 @@ processChatCommand' vr = \case
     updateGroupProfileByName gName $ \p -> p {description}
   ShowGroupDescription gName -> withUser $ \user ->
     CRGroupDescription user <$> withFastStore (\db -> getGroupInfoByName db vr user gName)
-  APICreateGroupLink groupId mRole -> withUser $ \user -> withGroupLock "createGroupLink" groupId $ do
+  APICreateGroupLink groupId mRole short -> withUser $ \user -> withGroupLock "createGroupLink" groupId $ do
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
     assertUserGroupRole gInfo GRAdmin
     when (mRole > GRMember) $ throwChatError $ CEGroupMemberInitialRole gInfo mRole
     groupLinkId <- GroupLinkId <$> drgRandomBytes 16
     subMode <- chatReadVar subscriptionMode
     let crClientData = encodeJSON $ CRDataGroup groupLinkId
-    (connId, CCLink cReq _) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact Nothing (Just crClientData) IKPQOff subMode
-    withFastStore $ \db -> createGroupLink db user gInfo connId cReq groupLinkId mRole subMode
-    pure $ CRGroupLinkCreated user gInfo cReq mRole
+        userData = shortLinkUserData short
+    (connId, ccLink) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact userData (Just crClientData) IKPQOff subMode
+    withFastStore $ \db -> createGroupLink db user gInfo connId ccLink groupLinkId mRole subMode
+    pure $ CRGroupLinkCreated user gInfo ccLink mRole
   APIGroupLinkMemberRole groupId mRole' -> withUser $ \user -> withGroupLock "groupLinkMemberRole" groupId $ do
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
     (groupLinkId, groupLink, mRole) <- withFastStore $ \db -> getGroupLink db user gInfo
@@ -2338,9 +2339,9 @@ processChatCommand' vr = \case
           toView $ CRNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct') ci]
         pure $ CRNewMemberContactSentInv user ct' g m
       _ -> throwChatError CEGroupMemberNotActive
-  CreateGroupLink gName mRole -> withUser $ \user -> do
+  CreateGroupLink gName mRole short -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
-    processChatCommand $ APICreateGroupLink groupId mRole
+    processChatCommand $ APICreateGroupLink groupId mRole short
   GroupLinkMemberRole gName mRole -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIGroupLinkMemberRole groupId mRole
@@ -3120,7 +3121,12 @@ processChatCommand' vr = \case
     getLinkConnReq :: User -> ConnectionLink m -> CM (ConnectionRequestUri m)
     getLinkConnReq User {userId} = \case
       CLFull r -> pure r
-      CLShort l -> fst <$> withAgent (\a -> getConnShortLink a userId l)
+      CLShort l -> do
+        (cReq, cData) <- withAgent (\a -> getConnShortLink a userId l)
+        case cData of
+          ContactLinkData {direct} | not direct -> throwChatError CEUnsupportedConnReq
+          _ -> pure ()
+        pure cReq
     shortLinkUserData short = if short then Just "" else Nothing
     updateCIGroupInvitationStatus :: User -> GroupInfo -> CIGroupInvitationStatus -> CM ()
     updateCIGroupInvitationStatus user GroupInfo {groupId} newStatus = do
@@ -4056,11 +4062,11 @@ chatCommandP =
       "/set welcome " *> char_ '#' *> (UpdateGroupDescription <$> displayNameP <* A.space <*> (Just <$> msgTextP)),
       "/delete welcome " *> char_ '#' *> (UpdateGroupDescription <$> displayNameP <*> pure Nothing),
       "/show welcome " *> char_ '#' *> (ShowGroupDescription <$> displayNameP),
-      "/_create link #" *> (APICreateGroupLink <$> A.decimal <*> (memberRole <|> pure GRMember)),
+      "/_create link #" *> (APICreateGroupLink <$> A.decimal <*> (memberRole <|> pure GRMember) <*> shortOnOffP),
       "/_set link role #" *> (APIGroupLinkMemberRole <$> A.decimal <*> memberRole),
       "/_delete link #" *> (APIDeleteGroupLink <$> A.decimal),
       "/_get link #" *> (APIGetGroupLink <$> A.decimal),
-      "/create link #" *> (CreateGroupLink <$> displayNameP <*> (memberRole <|> pure GRMember)),
+      "/create link #" *> (CreateGroupLink <$> displayNameP <*> (memberRole <|> pure GRMember) <*> shortP),
       "/set link role #" *> (GroupLinkMemberRole <$> displayNameP <*> memberRole),
       "/delete link #" *> (DeleteGroupLink <$> displayNameP),
       "/show link #" *> (ShowGroupLink <$> displayNameP),

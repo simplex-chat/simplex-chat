@@ -364,7 +364,7 @@ data ChatCommand
   | APILeaveGroup GroupId
   | APIListMembers GroupId
   | APIUpdateGroupProfile GroupId GroupProfile
-  | APICreateGroupLink GroupId GroupMemberRole
+  | APICreateGroupLink GroupId GroupMemberRole CreateShortLink
   | APIGroupLinkMemberRole GroupId GroupMemberRole
   | APIDeleteGroupLink GroupId
   | APIGetGroupLink GroupId
@@ -492,7 +492,7 @@ data ChatCommand
   | ShowGroupProfile GroupName
   | UpdateGroupDescription GroupName (Maybe Text)
   | ShowGroupDescription GroupName
-  | CreateGroupLink GroupName GroupMemberRole
+  | CreateGroupLink GroupName GroupMemberRole CreateShortLink
   | GroupLinkMemberRole GroupName GroupMemberRole
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName
@@ -765,8 +765,8 @@ data ChatResponse
   | CRGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
   | CRGroupProfile {user :: User, groupInfo :: GroupInfo}
   | CRGroupDescription {user :: User, groupInfo :: GroupInfo} -- only used in CLI
-  | CRGroupLinkCreated {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact, memberRole :: GroupMemberRole}
-  | CRGroupLink {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact, memberRole :: GroupMemberRole}
+  | CRGroupLinkCreated {user :: User, groupInfo :: GroupInfo, connLinkContact :: CreatedLinkContact, memberRole :: GroupMemberRole}
+  | CRGroupLink {user :: User, groupInfo :: GroupInfo, connLinkContact :: CreatedLinkContact, memberRole :: GroupMemberRole}
   | CRGroupLinkDeleted {user :: User, groupInfo :: GroupInfo}
   | CRAcceptingGroupJoinRequestMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRNoMemberContactCreating {user :: User, groupInfo :: GroupInfo, member :: GroupMember} -- only used in CLI
@@ -1249,6 +1249,7 @@ data ChatErrorType
   | CEChatStoreChanged
   | CEConnectionPlan {connectionPlan :: ConnectionPlan}
   | CEInvalidConnReq
+  | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEContactNotFound {contactName :: ContactName, suspectedMember :: Maybe (GroupInfo, GroupMember)}
   | CEContactNotReady {contact :: Contact}

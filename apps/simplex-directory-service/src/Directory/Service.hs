@@ -60,6 +60,7 @@ import Simplex.Chat.Terminal.Main (simplexChatCLI')
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.View (serializeChatResponse, simplexChatContact, viewContactName, viewGroupName)
+import Simplex.Messaging.Agent.Protocol (CreatedConnLink (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String
@@ -337,15 +338,15 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           setGroupRegOwner st gr owner
           let GroupInfo {groupId, groupProfile = GroupProfile {displayName}} = g
           notifyOwner gr $ "Joined the group " <> displayName <> ", creating the link…"
-          sendChatCmd cc (APICreateGroupLink groupId GRMember) >>= \case
-            CRGroupLinkCreated {connReqContact} -> do
+          sendChatCmd cc (APICreateGroupLink groupId GRMember False) >>= \case
+            CRGroupLinkCreated {connLinkContact = CCLink gLink _} -> do
               setGroupStatus st gr GRSPendingUpdate
               notifyOwner
                 gr
                 "Created the public link to join the group via this directory service that is always online.\n\n\
                 \Please add it to the group welcome message.\n\
                 \For example, add:"
-              notifyOwner gr $ "Link to join the group " <> displayName <> ": " <> strEncodeTxt (simplexChatContact connReqContact)
+              notifyOwner gr $ "Link to join the group " <> displayName <> ": " <> strEncodeTxt (simplexChatContact gLink)
             CRChatCmdError _ (ChatError e) -> case e of
               CEGroupUserRole {} -> notifyOwner gr "Failed creating group link, as service is no longer an admin."
               CEGroupMemberUserRemoved -> notifyOwner gr "Failed creating group link, as service is removed from the group."
@@ -421,9 +422,9 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         groupProfileUpdate = profileUpdate <$> sendChatCmd cc (APIGetGroupLink groupId)
           where
             profileUpdate = \case
-              CRGroupLink {connReqContact} ->
-                let groupLink1 = strEncodeTxt connReqContact
-                    groupLink2 = strEncodeTxt $ simplexChatContact connReqContact
+              CRGroupLink {connLinkContact = CCLink gLink _} ->
+                let groupLink1 = strEncodeTxt gLink
+                    groupLink2 = strEncodeTxt $ simplexChatContact gLink
                     hadLinkBefore = groupLink1 `isInfix` description p || groupLink2 `isInfix` description p
                     hasLinkNow = groupLink1 `isInfix` description p' || groupLink2 `isInfix` description p'
                  in if
@@ -677,7 +678,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           case mRole_ of
             Nothing ->
               getGroupLinkRole cc user g >>= \case
-                Just (_, gLink, mRole) -> do
+                Just (_, CCLink gLink _, mRole) -> do
                   let anotherRole = case mRole of GRObserver -> GRMember; _ -> GRObserver
                   sendReply $
                     initialRole n mRole
@@ -854,10 +855,10 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             let groupRef = groupReference' groupId gName
             withGroupAndReg sendReply groupId gName $ \_ _ ->
               sendChatCmd cc (APIGetGroupLink groupId) >>= \case
-                CRGroupLink {connReqContact, memberRole} ->
+                CRGroupLink {connLinkContact = CCLink cReq _, memberRole} ->
                   sendReply $ T.unlines
                     [ "The link to join the group " <> groupRef <> ":",
-                      strEncodeTxt $ simplexChatContact connReqContact,
+                      strEncodeTxt $ simplexChatContact cReq,
                       "New member role: " <> strEncodeTxt memberRole
                     ]
                 CRChatCmdError _ (ChatErrorStore (SEGroupLinkNotFound _)) ->
@@ -1000,7 +1001,7 @@ vr :: ChatController -> VersionRangeChat
 vr ChatController {config = ChatConfig {chatVRange}} = chatVRange
 {-# INLINE vr #-}
 
-getGroupLinkRole :: ChatController -> User -> GroupInfo -> IO (Maybe (Int64, ConnReqContact, GroupMemberRole))
+getGroupLinkRole :: ChatController -> User -> GroupInfo -> IO (Maybe (Int64, CreatedLinkContact, GroupMemberRole))
 getGroupLinkRole cc user gInfo =
   withDB "getGroupLink" cc $ \db -> getGroupLink db user gInfo
 
@@ -1008,7 +1009,7 @@ setGroupLinkRole :: ChatController -> GroupInfo -> GroupMemberRole -> IO (Maybe 
 setGroupLinkRole cc GroupInfo {groupId} mRole = resp <$> sendChatCmd cc (APIGroupLinkMemberRole groupId mRole)
   where
     resp = \case
-      CRGroupLink _ _ gLink _ -> Just gLink
+      CRGroupLink _ _ (CCLink gLink _) _ -> Just gLink
       _ -> Nothing
 
 unexpectedError :: Text -> Text

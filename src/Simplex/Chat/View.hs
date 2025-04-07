@@ -314,8 +314,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRGroupUpdated u g g' m -> ttyUser u $ viewGroupUpdated g g' m
   CRGroupProfile u g -> ttyUser u $ viewGroupProfile g
   CRGroupDescription u g -> ttyUser u $ viewGroupDescription g
-  CRGroupLinkCreated u g cReq mRole -> ttyUser u $ groupLink_ "Group link is created!" g cReq mRole
-  CRGroupLink u g cReq mRole -> ttyUser u $ groupLink_ "Group link:" g cReq mRole
+  CRGroupLinkCreated u g ccLink mRole -> ttyUser u $ groupLink_ "Group link is created!" g ccLink mRole
+  CRGroupLink u g ccLink mRole -> ttyUser u $ groupLink_ "Group link:" g ccLink mRole
   CRGroupLinkDeleted u g -> ttyUser u $ viewGroupLinkDeleted g
   CRAcceptingGroupJoinRequestMember _ g m -> [ttyFullMember m <> ": accepting request to join group " <> ttyGroup' g <> "..."]
   CRNoMemberContactCreating u g m -> ttyUser u ["member " <> ttyGroup' g <> " " <> ttyMember m <> " does not have direct connection, creating"]
@@ -1011,16 +1011,19 @@ autoAcceptStatus_ = \case
         | otherwise = ""
   _ -> ["auto_accept off"]
 
-groupLink_ :: StyledString -> GroupInfo -> ConnReqContact -> GroupMemberRole -> [StyledString]
-groupLink_ intro g cReq mRole =
+groupLink_ :: StyledString -> GroupInfo -> CreatedLinkContact -> GroupMemberRole -> [StyledString]
+groupLink_ intro g (CCLink cReq shortLink) mRole =
   [ intro,
     "",
-    (plain . strEncode) (simplexChatContact cReq),
+    plain $ maybe cReqStr strEncode shortLink,
     "",
     "Anybody can connect to you and join group as " <> showRole mRole <> " with: " <> highlight' "/c <group_link_above>",
     "to show it again: " <> highlight ("/show link #" <> viewGroupName g),
     "to delete it: " <> highlight ("/delete link #" <> viewGroupName g) <> " (joined members will remain connected to you)"
   ]
+    <> ["The group link for old clients: " <> plain cReqStr | isJust shortLink]
+  where
+    cReqStr = strEncode $ simplexChatContact cReq
 
 viewGroupLinkDeleted :: GroupInfo -> [StyledString]
 viewGroupLinkDeleted g =
@@ -2154,6 +2157,7 @@ viewChatError isCmd logLevel testView = \case
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
     CEConnectionPlan connectionPlan -> viewConnectionPlan connectionPlan
     CEInvalidConnReq -> viewInvalidConnReq
+    CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]
     CEInvalidChatMessage Connection {connId} msgMeta_ msg e ->
       [ plain $
           ("chat message error: " <> e <> " (" <> T.unpack (T.take 120 msg) <> ")")
