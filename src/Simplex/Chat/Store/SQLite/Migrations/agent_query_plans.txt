@@ -452,6 +452,14 @@ Plan:
 SEARCH inv_short_links USING INDEX idx_inv_short_links_link_id (host=? AND port=?)
 
 Query: 
+        SELECT link_key, snd_private_key, snd_id
+        FROM inv_short_links
+        WHERE host = ? AND port = ? AND link_id = ?
+      
+Plan:
+SEARCH inv_short_links USING INDEX idx_inv_short_links_link_id (host=? AND port=? AND link_id=?)
+
+Query: 
         SELECT s.internal_id, m.msg_type, s.internal_hash, s.rcpt_internal_id, s.rcpt_status
         FROM snd_messages s
         JOIN messages m ON s.conn_id = m.conn_id AND s.internal_id = m.internal_id
@@ -471,6 +479,19 @@ SEARCH conn_confirmations USING COVERING INDEX idx_conn_confirmations_conn_id (c
 Query: 
       INSERT INTO connections
         (user_id, conn_id, conn_mode, smp_agent_version, enable_ntfs, pq_support, duplex_handshake) VALUES (?,?,?,?,?,?,?)
+    
+Plan:
+
+Query: 
+      INSERT INTO inv_short_links
+        (host, port, server_key_hash, link_id, link_key, snd_private_key, snd_id)
+      VALUES (?,?,?,?,?,?,?)
+      ON CONFLICT (host, port, link_id)
+      DO UPDATE SET
+        server_key_hash = EXCLUDED.server_key_hash,
+        link_key = EXCLUDED.link_key,
+        snd_private_key = EXCLUDED.snd_private_key,
+        snd_id = EXCLUDED.snd_id
     
 Plan:
 
@@ -641,6 +662,14 @@ Query:
     
 Plan:
 SEARCH connections USING PRIMARY KEY (conn_id=?)
+
+Query: 
+      UPDATE inv_short_links
+      SET snd_id = ?
+      WHERE host = ? AND port = ? AND link_id = ?
+    
+Plan:
+SEARCH inv_short_links USING INDEX idx_inv_short_links_link_id (host=? AND port=? AND link_id=?)
 
 Query: 
       UPDATE ratchets
@@ -814,6 +843,10 @@ SEARCH rcv_queues USING COVERING INDEX idx_rcv_queue_id (conn_id=?)
 Query: DELETE FROM deleted_snd_chunk_replicas WHERE deleted_snd_chunk_replica_id = ?
 Plan:
 SEARCH deleted_snd_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: DELETE FROM inv_short_links WHERE host = ? AND port = ? AND link_id = ?
+Plan:
+SEARCH inv_short_links USING INDEX idx_inv_short_links_link_id (host=? AND port=? AND link_id=?)
 
 Query: DELETE FROM messages WHERE conn_id = ? AND internal_id = ?;
 Plan:
