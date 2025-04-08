@@ -145,7 +145,7 @@ fun AddGroupMembersLayout(
       horizontalArrangement = Arrangement.Center
     ) {
       ChatInfoToolbarTitle(
-        ChatInfo.Group(groupInfo),
+        ChatInfo.Group(groupInfo, groupChatScope = null),
         imageSize = 60.dp,
         iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight
       )

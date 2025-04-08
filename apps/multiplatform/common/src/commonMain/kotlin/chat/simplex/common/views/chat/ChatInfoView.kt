@@ -1383,7 +1383,7 @@ private fun setChatTTL(
 private suspend fun afterSetChatTTL(rhId: Long?, chatInfo: ChatInfo, progressIndicator: MutableState<Boolean>) {
   try {
     val pagination = ChatPagination.Initial(ChatPagination.INITIAL_COUNT)
-    val (chat, navInfo) = controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, null, pagination) ?: return
+    val (chat, navInfo) = controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, scope = null, contentTag = null, pagination) ?: return
     if (chat.chatItems.isEmpty()) {
       // replacing old chat with the same old chat but without items. Less intrusive way of clearing a preview
       withChats {

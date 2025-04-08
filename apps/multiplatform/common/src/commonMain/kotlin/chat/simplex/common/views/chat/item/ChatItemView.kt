@@ -278,7 +278,7 @@ fun ChatItemView(
       if (searchIsNotBlank.value) {
         GoToItemInnerButton(alignStart, MR.images.ic_search, 17.dp, parentActivated) {
           withBGApi {
-            openChat(rhId, cInfo.chatType, cInfo.apiId, null, cItem.id)
+            openChat(rhId, cInfo.chatType, cInfo.apiId, cInfo.groupChatScope(), contentTag = null, cItem.id)
             closeReportsIfNeeded()
           }
         }
@@ -286,7 +286,8 @@ fun ChatItemView(
         GoToItemInnerButton(alignStart, MR.images.ic_arrow_forward, 22.dp, parentActivated) {
           val (chatType, apiId, msgId) = chatTypeApiIdMsgId
           withBGApi {
-            openChat(rhId, chatType, apiId, null, msgId)
+            // improvement could be to track "forwarded from" scope and open it
+            openChat(rhId, chatType, apiId, scope = null, contentTag = null, msgId)
             closeReportsIfNeeded()
           }
         }

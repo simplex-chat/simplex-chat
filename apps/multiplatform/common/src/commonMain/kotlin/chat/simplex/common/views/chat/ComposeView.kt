@@ -467,6 +467,7 @@ fun ComposeView(
         rh = chat.remoteHostId,
         type = cInfo.chatType,
         id = cInfo.apiId,
+        scope = cInfo.groupChatScope(),
         live = live,
         ttl = ttl,
         composedMessages = listOf(ComposedMessage(file, quoted, mc, mentions))
@@ -499,8 +500,10 @@ fun ComposeView(
         rh = rhId,
         toChatType = chat.chatInfo.chatType,
         toChatId = chat.chatInfo.apiId,
+        toScope = chat.chatInfo.groupChatScope(),
         fromChatType = fromChatInfo.chatType,
         fromChatId = fromChatInfo.apiId,
+        fromScope = fromChatInfo.groupChatScope(),
         itemIds = forwardedItem.map { it.id },
         ttl = ttl
       )
@@ -595,6 +598,7 @@ fun ComposeView(
           rh = chat.remoteHostId,
           type = cInfo.chatType,
           id = cInfo.apiId,
+          scope = cInfo.groupChatScope(),
           itemId = ei.meta.itemId,
           updatedMessage = UpdatedMessage(updateMsgContent(oldMsgContent), cs.memberMentions),
           live = live

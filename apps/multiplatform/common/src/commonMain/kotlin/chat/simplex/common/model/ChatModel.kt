@@ -409,7 +409,7 @@ object ChatModel {
       updateContact(rhId, updatedContact)
     }
 
-    suspend fun updateGroup(rhId: Long?, groupInfo: GroupInfo) = updateChat(rhId, ChatInfo.Group(groupInfo))
+    suspend fun updateGroup(rhId: Long?, groupInfo: GroupInfo) = updateChat(rhId, ChatInfo.Group(groupInfo, groupChatScope = null)) // TODO [knocking] review
 
     private suspend fun updateChat(rhId: Long?, cInfo: ChatInfo, addMissing: Boolean = true) {
       if (hasChat(rhId, cInfo.id)) {
@@ -611,7 +611,7 @@ object ChatModel {
         Log.d(TAG, "exiting removeMemberItems")
         return
       }
-      val cInfo = ChatInfo.Group(groupInfo)
+      val cInfo = ChatInfo.Group(groupInfo, groupChatScope = null) // TODO [knocking] review
       if (chatId.value == groupInfo.id) {
         for (i in 0 until chatItems.value.size) {
           val updatedItem = removedUpdatedItem(chatItems.value[i])
@@ -1132,6 +1132,23 @@ enum class ChatType(val type: String) {
   ContactConnection(":");
 }
 
+sealed class GroupChatScope {
+  class MemberSupport(val groupMemberId_: Long?): GroupChatScope()
+}
+
+@Serializable
+sealed class GroupChatScopeInfo {
+  @Serializable @SerialName("memberSupport") data class MemberSupport(val groupMember_: GroupMember?) : GroupChatScopeInfo()
+
+  fun toChatScope(): GroupChatScope =
+    when (this) {
+      is GroupChatScopeInfo.MemberSupport -> when (groupMember_) {
+        null -> GroupChatScope.MemberSupport(groupMemberId_ = null)
+        else -> GroupChatScope.MemberSupport(groupMemberId_ = groupMember_.groupMemberId)
+      }
+    }
+}
+
 @Serializable
 data class User(
   val remoteHostId: Long?,
@@ -1333,7 +1350,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
   }
 
   @Serializable @SerialName("group")
-  data class Group(val groupInfo: GroupInfo): ChatInfo() {
+  data class Group(val groupInfo: GroupInfo, val groupChatScope: GroupChatScopeInfo?): ChatInfo() {
     override val chatType get() = ChatType.Group
     override val localDisplayName get() = groupInfo.localDisplayName
     override val id get() = groupInfo.id
@@ -1352,7 +1369,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val localAlias get() = groupInfo.localAlias
 
     companion object {
-      val sampleData = Group(GroupInfo.sampleData)
+      val sampleData = Group(GroupInfo.sampleData, groupChatScope = null)
     }
   }
 
@@ -1451,6 +1468,11 @@ sealed class ChatInfo: SomeChat, NamedChat {
     companion object {
       private val invalidChatName = generalGetString(MR.strings.invalid_chat)
     }
+  }
+
+  fun groupChatScope(): GroupChatScope? = when (this) {
+    is ChatInfo.Group -> groupChatScope?.toChatScope()
+    else -> null
   }
 
   fun ntfsEnabled(ci: ChatItem): Boolean =
@@ -1868,7 +1890,8 @@ data class GroupProfile (
   val description: String? = null,
   override val image: String? = null,
   override val localAlias: String = "",
-  val groupPreferences: GroupPreferences? = null
+  val groupPreferences: GroupPreferences? = null,
+  val memberAdmission: GroupMemberAdmission? = null
 ): NamedChat {
   companion object {
     val sampleData = GroupProfile(
@@ -1876,6 +1899,22 @@ data class GroupProfile (
       fullName = "My Team"
     )
   }
+}
+
+@Serializable
+data class GroupMemberAdmission(
+  val review: MemberCriteria? = null,
+) {
+  companion object {
+    val sampleData = GroupMemberAdmission(
+      review = null,
+    )
+  }
+}
+
+@Serializable
+enum class MemberCriteria {
+  @SerialName("all") All
 }
 
 @Serializable
@@ -1906,7 +1945,8 @@ data class GroupMember (
   val memberProfile: LocalProfile,
   val memberContactId: Long? = null,
   val memberContactProfileId: Long,
-  var activeConn: Connection? = null
+  var activeConn: Connection? = null,
+  val supportChat: GroupSupportChat? = null
 ): NamedChat {
   val id: String get() = "#$groupId @$groupMemberId"
   val ready get() = activeConn?.connStatus == ConnStatus.Ready
@@ -1965,6 +2005,7 @@ data class GroupMember (
     GroupMemberStatus.MemUnknown -> false
     GroupMemberStatus.MemInvited -> false
     GroupMemberStatus.MemPendingApproval -> true
+    GroupMemberStatus.MemPendingReview -> true
     GroupMemberStatus.MemIntroduced -> false
     GroupMemberStatus.MemIntroInvited -> false
     GroupMemberStatus.MemAccepted -> false
@@ -1982,6 +2023,7 @@ data class GroupMember (
     GroupMemberStatus.MemUnknown -> false
     GroupMemberStatus.MemInvited -> false
     GroupMemberStatus.MemPendingApproval -> false
+    GroupMemberStatus.MemPendingReview -> false
     GroupMemberStatus.MemIntroduced -> true
     GroupMemberStatus.MemIntroInvited -> true
     GroupMemberStatus.MemAccepted -> true
@@ -2030,6 +2072,14 @@ data class GroupMember (
     )
   }
 }
+
+@Serializable
+class GroupSupportChat (
+  val chatTs: Instant,
+  val unread: Long,
+  val memberAttention: Long,
+  val mentions: Long
+)
 
 @Serializable
 data class GroupMemberSettings(val showMessages: Boolean) {}
@@ -2087,6 +2137,7 @@ enum class GroupMemberStatus {
   @SerialName("unknown") MemUnknown,
   @SerialName("invited") MemInvited,
   @SerialName("pending_approval") MemPendingApproval,
+  @SerialName("pending_review") MemPendingReview,
   @SerialName("introduced") MemIntroduced,
   @SerialName("intro-inv") MemIntroInvited,
   @SerialName("accepted") MemAccepted,
@@ -2103,6 +2154,7 @@ enum class GroupMemberStatus {
     MemUnknown -> generalGetString(MR.strings.group_member_status_unknown)
     MemInvited -> generalGetString(MR.strings.group_member_status_invited)
     MemPendingApproval -> generalGetString(MR.strings.group_member_status_pending_approval)
+    MemPendingReview -> generalGetString(MR.strings.group_member_status_pending_review)
     MemIntroduced -> generalGetString(MR.strings.group_member_status_introduced)
     MemIntroInvited -> generalGetString(MR.strings.group_member_status_intro_invitation)
     MemAccepted -> generalGetString(MR.strings.group_member_status_accepted)
@@ -2120,6 +2172,7 @@ enum class GroupMemberStatus {
     MemUnknown -> generalGetString(MR.strings.group_member_status_unknown_short)
     MemInvited -> generalGetString(MR.strings.group_member_status_invited)
     MemPendingApproval -> generalGetString(MR.strings.group_member_status_pending_approval_short)
+    MemPendingReview -> generalGetString(MR.strings.group_member_status_pending_review_short)
     MemIntroduced -> generalGetString(MR.strings.group_member_status_connecting)
     MemIntroInvited -> generalGetString(MR.strings.group_member_status_connecting)
     MemAccepted -> generalGetString(MR.strings.group_member_status_connecting)
@@ -2542,6 +2595,8 @@ data class ChatItem (
       is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
         is RcvGroupEvent.MemberAdded -> false
         is RcvGroupEvent.MemberConnected -> false
+        is RcvGroupEvent.MemberAccepted -> false
+        is RcvGroupEvent.UserAccepted -> false
         is RcvGroupEvent.MemberLeft -> false
         is RcvGroupEvent.MemberRole -> false
         is RcvGroupEvent.MemberBlocked -> false
@@ -4183,6 +4238,8 @@ sealed class RcvDirectEvent() {
 sealed class RcvGroupEvent() {
   @Serializable @SerialName("memberAdded") class MemberAdded(val groupMemberId: Long, val profile: Profile): RcvGroupEvent()
   @Serializable @SerialName("memberConnected") class MemberConnected(): RcvGroupEvent()
+  @Serializable @SerialName("memberAccepted") class MemberAccepted(val groupMemberId: Long, val profile: Profile): RcvGroupEvent()
+  @Serializable @SerialName("userAccepted") class UserAccepted(): RcvGroupEvent()
   @Serializable @SerialName("memberLeft") class MemberLeft(): RcvGroupEvent()
   @Serializable @SerialName("memberRole") class MemberRole(val groupMemberId: Long, val profile: Profile, val role: GroupMemberRole): RcvGroupEvent()
   @Serializable @SerialName("memberBlocked") class MemberBlocked(val groupMemberId: Long, val profile: Profile, val blocked: Boolean): RcvGroupEvent()
@@ -4198,6 +4255,8 @@ sealed class RcvGroupEvent() {
   val text: String get() = when (this) {
     is MemberAdded -> String.format(generalGetString(MR.strings.rcv_group_event_member_added), profile.profileViewName)
     is MemberConnected -> generalGetString(MR.strings.rcv_group_event_member_connected)
+    is MemberAccepted -> String.format(generalGetString(MR.strings.rcv_group_event_member_accepted), profile.profileViewName)
+    is UserAccepted -> generalGetString(MR.strings.rcv_group_event_user_accepted)
     is MemberLeft -> generalGetString(MR.strings.rcv_group_event_member_left)
     is MemberRole -> String.format(generalGetString(MR.strings.rcv_group_event_changed_member_role), profile.profileViewName, role.text)
     is MemberBlocked -> if (blocked) {

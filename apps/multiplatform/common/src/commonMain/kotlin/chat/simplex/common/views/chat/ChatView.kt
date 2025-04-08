@@ -222,6 +222,7 @@ fun ChatView(
                           rh = chatRh,
                           fromChatType = chatInfo.chatType,
                           fromChatId = chatInfo.apiId,
+                          fromScope = chatInfo.groupChatScope(),
                           chatItemIds = chatItemIds
                         )
 
@@ -359,7 +360,7 @@ fun ChatView(
               val c = chatModel.getChat(chatId)
               if (chatModel.chatId.value != chatId) return@ChatLayout
               if (c != null) {
-                apiLoadMessages(c.remoteHostId, c.chatInfo.chatType, c.chatInfo.apiId, contentTag, pagination, searchText.value, null, visibleItemIndexes)
+                apiLoadMessages(c.remoteHostId, c.chatInfo.chatType, c.chatInfo.apiId, c.chatInfo.groupChatScope(), contentTag, pagination, searchText.value, null, visibleItemIndexes)
               }
             },
             deleteMessage = { itemId, mode ->
@@ -381,6 +382,7 @@ fun ChatView(
                     chatRh,
                     type = chatInfo.chatType,
                     id = chatInfo.apiId,
+                    scope = chatInfo.groupChatScope(),
                     itemIds = listOf(itemId),
                     mode = mode
                   )
@@ -514,6 +516,7 @@ fun ChatView(
                   rh = chatRh,
                   type = cInfo.chatType,
                   id = cInfo.apiId,
+                  scope = cInfo.groupChatScope(),
                   itemId = cItem.id,
                   add = add,
                   reaction = reaction
@@ -532,7 +535,7 @@ fun ChatView(
             },
             showItemDetails = { cInfo, cItem ->
               suspend fun loadChatItemInfo(): ChatItemInfo? = coroutineScope {
-                val ciInfo = chatModel.controller.apiGetChatItemInfo(chatRh, cInfo.chatType, cInfo.apiId, cItem.id)
+                val ciInfo = chatModel.controller.apiGetChatItemInfo(chatRh, cInfo.chatType, cInfo.apiId, cInfo.groupChatScope(), cItem.id)
                 if (ciInfo != null) {
                   if (chatInfo is ChatInfo.Group) {
                     setGroupMembers(chatRh, chatInfo.groupInfo, chatModel)
@@ -588,6 +591,7 @@ fun ChatView(
                     chatRh,
                     chatInfo.chatType,
                     chatInfo.apiId,
+                    chatInfo.groupChatScope(),
                     itemsIds
                   )
                 }
@@ -607,7 +611,8 @@ fun ChatView(
                   chatModel.controller.apiChatRead(
                     chatRh,
                     chatInfo.chatType,
-                    chatInfo.apiId
+                    chatInfo.apiId,
+                    chatInfo.groupChatScope()
                   )
                 }
                 withReportsChatsIfOpen {
@@ -2324,7 +2329,7 @@ private fun findQuotedItemFromItem(
   contentTag: MsgContentTag?
 ): (Long) -> Unit = { itemId: Long ->
   scope.launch(Dispatchers.Default) {
-    val item = apiLoadSingleMessage(rhId.value, chatInfo.value.chatType, chatInfo.value.apiId, itemId, contentTag)
+    val item = apiLoadSingleMessage(rhId.value, chatInfo.value.chatType, chatInfo.value.apiId, chatInfo.value.groupChatScope(), itemId, contentTag)
     if (item != null) {
       withChats {
         updateChatItem(chatInfo.value, item)
@@ -2505,6 +2510,7 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
           chatRh,
           type = chatInfo.chatType,
           id = chatInfo.apiId,
+          scope = chatInfo.groupChatScope(),
           itemIds = itemIds,
           mode = if (forAll) CIDeleteMode.cidmBroadcast else CIDeleteMode.cidmInternal
         )

@@ -87,5 +87,5 @@ suspend fun showGroupReportsView(staleChatId: State<String?>, scrollToItemId: Mu
 }
 
 private suspend fun reloadItems(chat: Chat, contentTag: MsgContentTag?) {
-  apiLoadMessages(chat.remoteHostId, chat.chatInfo.chatType, chat.chatInfo.apiId, contentTag, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
+  apiLoadMessages(chat.remoteHostId, chat.chatInfo.chatType, chat.chatInfo.apiId, chat.chatInfo.groupChatScope(), contentTag, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
 }

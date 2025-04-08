@@ -156,6 +156,7 @@
   <string name="error_loading_details">Error loading details</string>
   <string name="error_adding_members">Error adding member(s)</string>
   <string name="error_joining_group">Error joining group</string>
+  <string name="error_accepting_member">Error accepting member</string>
   <string name="cannot_receive_file">Cannot receive file</string>
   <string name="sender_cancelled_file_transfer">Sender cancelled file transfer.</string>
   <string name="file_not_approved_title">Unknown servers!</string>
@@ -1561,6 +1562,8 @@
   <!-- Group event chat items -->
   <string name="rcv_group_event_member_added">invited %1$s</string>
   <string name="rcv_group_event_member_connected">connected</string>
+  <string name="rcv_group_event_member_accepted">accepted %1$s</string>
+  <string name="rcv_group_event_user_accepted">accepted you</string>
   <string name="rcv_group_event_member_left">left</string>
   <string name="rcv_group_event_changed_member_role">changed role of %s to %s</string>
   <string name="rcv_group_event_member_blocked">blocked %s</string>
@@ -1638,6 +1641,8 @@
   <string name="group_member_status_invited">invited</string>
   <string name="group_member_status_pending_approval">pending approval</string>
   <string name="group_member_status_pending_approval_short">pending</string>
+  <string name="group_member_status_pending_review">pending review</string>
+  <string name="group_member_status_pending_review_short">review</string>
   <string name="group_member_status_introduced">connecting (introduced)</string>
   <string name="group_member_status_intro_invitation">connecting (introduction invitation)</string>
   <string name="group_member_status_accepted">connecting (accepted)</string>
