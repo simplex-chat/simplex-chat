@@ -29,11 +29,10 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..))
+import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..), simplexConnReqUri, simplexShortLink)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..))
-import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import Simplex.Messaging.Util (decodeJSON, safeDecodeUtf8)
 import System.Console.ANSI.Types
 import qualified Text.Email.Validate as Email
@@ -256,22 +255,19 @@ markdownP = mconcat <$> A.many' fragmentP
     simplexUriFormat :: AConnectionLink -> Format
     simplexUriFormat = \case
       ACL _ (CLFull cReq) -> case cReq of
-        CRContactUri crData ->
-          let uri = strEncodeText $ CRContactUri crData {crScheme = SSSimplex}
-           in SimplexLink (linkType' crData) uri $ uriHosts crData
-        CRInvitationUri crData e2e ->
-          let uri = strEncodeText $ CRInvitationUri crData {crScheme = SSSimplex} e2e
-           in SimplexLink XLInvitation uri $ uriHosts crData
+        CRContactUri crData -> SimplexLink (linkType' crData) uri $ uriHosts crData
+        CRInvitationUri crData _ -> SimplexLink XLInvitation uri $ uriHosts crData
         where
+          uri = strEncodeText $ simplexConnReqUri cReq
           uriHosts ConnReqUriData {crSmpQueues} = L.map strEncodeText $ sconcat $ L.map (host . qServer) crSmpQueues
           linkType' ConnReqUriData {crClientData} = case crClientData >>= decodeJSON of
             Just (CRDataGroup _) -> XLGroup
             Nothing -> XLContact
       ACL _ (CLShort cLink) -> case cLink of
-        CSLContact connType srv _ -> SimplexLink (linkType' connType) uri $ uriHosts srv
-        CSLInvitation srv _ _ -> SimplexLink XLInvitation uri $ uriHosts srv
+        CSLContact _ ct srv _ -> SimplexLink (linkType' ct) uri $ uriHosts srv
+        CSLInvitation _ srv _ _ -> SimplexLink XLInvitation uri $ uriHosts srv
         where
-          uri = strEncodeText cLink
+          uri = strEncodeText $ simplexShortLink cLink
           uriHosts srv = L.map strEncodeText $ host srv
           linkType' = \case
             CCTGroup -> XLGroup
