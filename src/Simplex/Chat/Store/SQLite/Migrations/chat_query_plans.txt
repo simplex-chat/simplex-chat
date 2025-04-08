@@ -5439,7 +5439,7 @@ Plan:
 Query: INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, file_inline, ci_file_status, protocol, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)
 Plan:
 
-Query: INSERT INTO group_profiles (display_name, full_name, description, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)
+Query: INSERT INTO group_profiles (display_name, full_name, description, image, user_id, preferences, member_admission, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)
 Plan:
 
 Query: INSERT INTO group_profiles (display_name, full_name, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?)
