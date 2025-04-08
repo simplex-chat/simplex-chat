@@ -626,7 +626,7 @@ data GroupMemberAdmission = GroupMemberAdmission
   }
   deriving (Eq, Show)
 
-data MemberCriteria = MCAll | MCOff
+data MemberCriteria = MCAll
   deriving (Eq, Show)
 
 emptyGroupMemberAdmission :: GroupMemberAdmission
@@ -1848,7 +1848,7 @@ $(JQ.deriveJSON defaultJSON ''LocalProfile)
 
 $(JQ.deriveJSON defaultJSON ''UserContactRequest)
 
-$(JQ.deriveJSON (enumJSON $ dropPrefix "MC") ''MemberCriteria)
+$(JQ.deriveJSON (enumJSON $ dropPrefix "MC") {J.tagSingleConstructors = True} ''MemberCriteria)
 
 $(JQ.deriveJSON defaultJSON ''GroupMemberAdmission)
 

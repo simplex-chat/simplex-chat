@@ -2058,7 +2058,7 @@ processChatCommand' vr = \case
                 withFastStore' $ \db -> updateGroupMemberStatus db userId m GSMemPendingReview
                 let m' = m {memberStatus = GSMemPendingReview}
                 pure $ CRMemberAccepted user gInfo m'
-              _ -> do
+              Nothing -> do
                 let msg = XGrpLinkAcpt role (memberId' m)
                 void $ sendDirectMemberMessage mConn msg groupId
                 introduceToRemaining vr user gInfo m {memberRole = role}
