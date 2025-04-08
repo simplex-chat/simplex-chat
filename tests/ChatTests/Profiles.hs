@@ -101,6 +101,10 @@ chatProfileTests = do
       it "files & media" testGroupPrefsFilesForRole
       it "SimpleX links" testGroupPrefsSimplexLinksForRole
     it "set user, contact and group UI theme" testSetUITheme
+  describe "short links" $ do
+    it "should connect via one-time inviation" testShortLinkInvitation
+    it "should connect via contact address" testShortLinkContactAddress
+    it "should join group" testShortLinkJoinGroup
 
 testUpdateProfile :: HasCallStack => TestParams -> IO ()
 testUpdateProfile =
@@ -2583,3 +2587,50 @@ testSetUITheme =
     groupInfo a = do
       a <## "group ID: 1"
       a <## "current members: 1"
+
+testShortLinkInvitation :: HasCallStack => TestParams -> IO ()
+testShortLinkInvitation =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/c short"
+    inv <- getShortInvitation alice
+    bob ##> ("/c " <> inv)
+    bob <## "confirmation sent!"
+    concurrently_
+      (alice <## "bob (Bob): contact is connected")
+      (bob <## "alice (Alice): contact is connected")
+    alice #> "@bob hi"
+    bob <# "alice> hi"
+    bob #> "@alice hey"
+    alice <# "bob> hey"
+
+testShortLinkContactAddress :: HasCallStack => TestParams -> IO ()
+testShortLinkContactAddress =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad short"
+    cLink <- getShortContactLink alice True
+    bob ##> ("/c " <> cLink)
+    alice <#? bob
+    alice ##> "/ac bob"
+    alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+    concurrently_
+      (bob <## "alice (Alice): contact is connected")
+      (alice <## "bob (Bob): contact is connected")
+
+testShortLinkJoinGroup :: HasCallStack => TestParams -> IO ()
+testShortLinkJoinGroup =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    threadDelay 100000
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    alice ##> "/create link #team short"
+    gLink <- getShortGroupLink alice "team" GRMember True
+    bob ##> ("/c " <> gLink)
+    bob <## "connection request sent!"
+    alice <## "bob (Bob): accepting request to join group #team..."
+    concurrentlyN_
+      [ alice <## "#team: bob joined the group",
+        do
+          bob <## "#team: joining the group..."
+          bob <## "#team: you joined the group"
+      ]

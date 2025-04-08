@@ -502,16 +502,29 @@ dropPartialReceipt_ msg = case splitAt 2 msg of
   _ -> Nothing
 
 getInvitation :: HasCallStack => TestCC -> IO String
-getInvitation cc = do
+getInvitation = getInvitation_ False
+
+getShortInvitation :: HasCallStack => TestCC -> IO String
+getShortInvitation = getInvitation_ True
+
+getInvitation_ :: HasCallStack => Bool -> TestCC -> IO String
+getInvitation_ short cc = do
   cc <## "pass this invitation link to your contact (via another channel):"
   cc <## ""
   inv <- getTermLine cc
   cc <## ""
   cc <## "and ask them to connect: /c <invitation_link_above>"
+  when short $ cc <##. "The invitation link for old clients: https://simplex.chat/invitation#"
   pure inv
 
 getContactLink :: HasCallStack => TestCC -> Bool -> IO String
-getContactLink cc created = do
+getContactLink = getContactLink_ False
+
+getShortContactLink :: HasCallStack => TestCC -> Bool -> IO String
+getShortContactLink = getContactLink_ True
+
+getContactLink_ :: HasCallStack => Bool -> TestCC -> Bool -> IO String
+getContactLink_ short cc created = do
   cc <## if created then "Your new chat address is created!" else "Your chat address:"
   cc <## ""
   link <- getTermLine cc
@@ -520,10 +533,17 @@ getContactLink cc created = do
   cc <## "to show it again: /sa"
   cc <## "to share with your contacts: /profile_address on"
   cc <## "to delete it: /da (accepted contacts will remain connected)"
+  when short $ cc <##. "The contact link for old clients: https://simplex.chat/contact#"
   pure link
 
 getGroupLink :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO String
-getGroupLink cc gName mRole created = do
+getGroupLink = getGroupLink_ False
+
+getShortGroupLink :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO String
+getShortGroupLink = getGroupLink_ True
+
+getGroupLink_ :: HasCallStack => Bool -> TestCC -> String -> GroupMemberRole -> Bool -> IO String
+getGroupLink_ short cc gName mRole created = do
   cc <## if created then "Group link is created!" else "Group link:"
   cc <## ""
   link <- getTermLine cc
@@ -531,6 +551,7 @@ getGroupLink cc gName mRole created = do
   cc <## ("Anybody can connect to you and join group as " <> B.unpack (strEncode mRole) <> " with: /c <group_link_above>")
   cc <## ("to show it again: /show link #" <> gName)
   cc <## ("to delete it: /delete link #" <> gName <> " (joined members will remain connected to you)")
+  when short $ cc <##. "The group link for old clients: https://simplex.chat/contact#"
   pure link
 
 hasContactProfiles :: HasCallStack => TestCC -> [ContactName] -> Expectation
