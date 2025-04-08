@@ -626,7 +626,7 @@ data GroupMemberAdmission = GroupMemberAdmission
   }
   deriving (Eq, Show)
 
-data MemberCriteria = MCAll
+data MemberCriteria = MCAll | MCOff
   deriving (Eq, Show)
 
 emptyGroupMemberAdmission :: GroupMemberAdmission

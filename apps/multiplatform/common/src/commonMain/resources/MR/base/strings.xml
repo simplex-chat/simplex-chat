@@ -1043,6 +1043,7 @@
   <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</string>
   <string name="edit_image">Edit image</string>
   <string name="delete_image">Delete image</string>
+  <string name="save_admission_question">Save admission settings?</string>
   <string name="save_preferences_question">Save preferences?</string>
   <string name="save_and_notify_contact">Save and notify contact</string>
   <string name="save_and_notify_contacts">Save and notify contacts</string>
@@ -2142,6 +2143,13 @@
   <string name="feature_roles_admins">admins</string>
   <string name="feature_roles_owners">owners</string>
   <string name="feature_enabled_for">Enabled for</string>
+
+  <!-- MemberAdmission.kt -->
+  <string name="member_admission">Member admission</string>
+  <string name="admission_stage_review">Review</string>
+  <string name="admission_stage_review_descr">Review new members before admitting to group.</string>
+  <string name="member_criteria_off">off</string>
+  <string name="member_criteria_all">all</string>
 
   <!-- WhatsNewView.kt -->
   <string name="whats_new">What\'s new</string>

@@ -1914,7 +1914,12 @@ data class GroupMemberAdmission(
 
 @Serializable
 enum class MemberCriteria {
-  @SerialName("all") All
+  @SerialName("all") All;
+
+  val text: String
+    get() = when(this) {
+      MemberCriteria.All -> generalGetString(MR.strings.member_criteria_all)
+    }
 }
 
 @Serializable
