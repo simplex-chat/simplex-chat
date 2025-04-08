@@ -20,6 +20,8 @@ struct PrivacySettings: View {
     @AppStorage(GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES, store: groupDefaults) private var encryptLocalFiles = true
     @AppStorage(GROUP_DEFAULT_PRIVACY_ASK_TO_APPROVE_RELAYS, store: groupDefaults) private var askToApproveRelays = true
     @State private var simplexLinkMode = privacySimplexLinkModeDefault.get()
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
+    @AppStorage(DEFAULT_PRIVACY_SHORT_LINKS) private var shortSimpleLinks = false
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @State private var currentLAMode = privacyLocalAuthModeDefault.get()
@@ -110,6 +112,11 @@ struct PrivacySettings: View {
                     .frame(height: 36)
                     .onChange(of: simplexLinkMode) { mode in
                         privacySimplexLinkModeDefault.set(mode)
+                    }
+                    if developerTools {
+                        settingsRow("link.badge.plus", color: theme.colors.secondary) {
+                            Toggle("Use short links (BETA)", isOn: $shortSimpleLinks)
+                        }
                     }
                 } header: {
                     Text("Chats")

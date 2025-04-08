@@ -839,13 +839,14 @@ func apiVerifyGroupMember(_ groupId: Int64, _ groupMemberId: Int64, connectionCo
     return nil
 }
 
-func apiAddContact(incognito: Bool) async -> ((String, PendingContactConnection)?, Alert?) {
+func apiAddContact(incognito: Bool) async -> ((CreatedConnLink, PendingContactConnection)?, Alert?) {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiAddContact: no current user")
         return (nil, nil)
     }
-    let r = await chatSendCmd(.apiAddContact(userId: userId, incognito: incognito), bgTask: false)
-    if case let .invitation(_, connReqInvitation, connection) = r { return ((connReqInvitation, connection), nil) }
+    let short = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_SHORT_LINKS)
+    let r = await chatSendCmd(.apiAddContact(userId: userId, short: short, incognito: incognito), bgTask: false)
+    if case let .invitation(_, connLinkInv, connection) = r { return ((connLinkInv, connection), nil) }
     let alert = connectionErrorAlert(r)
     return (nil, alert)
 }
@@ -856,19 +857,22 @@ func apiSetConnectionIncognito(connId: Int64, incognito: Bool) async throws -> P
     throw r
 }
 
-func apiChangeConnectionUser(connId: Int64, userId: Int64) async throws -> PendingContactConnection? {
+func apiChangeConnectionUser(connId: Int64, userId: Int64) async throws -> PendingContactConnection {
     let r = await chatSendCmd(.apiChangeConnectionUser(connId: connId, userId: userId))
 
     if case let .connectionUserChanged(_, _, toConnection, _) = r {return toConnection}
     throw r
 }
 
-func apiConnectPlan(connReq: String) async throws -> ConnectionPlan {
-    let userId = try currentUserId("apiConnectPlan")
-    let r = await chatSendCmd(.apiConnectPlan(userId: userId, connReq: connReq))
-    if case let .connectionPlan(_, connectionPlan) = r { return connectionPlan }
-    logger.error("apiConnectPlan error: \(responseError(r))")
-    throw r
+func apiConnectPlan(connLink: String) async -> ((String, ConnectionPlan)?, Alert?) {
+    guard let userId = ChatModel.shared.currentUser?.userId else {
+        logger.error("apiConnectPlan: no current user")
+        return (nil, nil)
+    }
+    let r = await chatSendCmd(.apiConnectPlan(userId: userId, connLink: connLink))
+    if case let .connectionPlan(_, connReq, connPlan) = r { return ((connReq, connPlan), nil) }
+    let alert = apiConnectResponseAlert(r) ?? connectionErrorAlert(r)
+    return (nil, alert)
 }
 
 func apiConnect(incognito: Bool, connReq: String) async -> (ConnReqType, PendingContactConnection)? {
@@ -899,20 +903,38 @@ func apiConnect_(incognito: Bool, connReq: String) async -> ((ConnReqType, Pendi
         }
         let alert = contactAlreadyExistsAlert(contact)
         return (nil, alert)
+    default: ()
+    }
+    let alert = apiConnectResponseAlert(r) ?? connectionErrorAlert(r)
+    return (nil, alert)
+}
+
+func contactAlreadyExistsAlert(_ contact: Contact) -> Alert {
+    mkAlert(
+        title: "Contact already exists",
+        message: "You are already connected to \(contact.displayName)."
+    )
+}
+
+private func apiConnectResponseAlert(_ r: ChatResponse) -> Alert? {
+    switch r {
     case .chatCmdError(_, .error(.invalidConnReq)):
-        let alert = mkAlert(
+        mkAlert(
             title: "Invalid connection link",
             message: "Please check that you used the correct link or ask your contact to send you another one."
         )
-        return (nil, alert)
+    case .chatCmdError(_, .error(.unsupportedConnReq)):
+        mkAlert(
+            title: "Unsupported connection link",
+            message: "This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link."
+        )
     case .chatCmdError(_, .errorAgent(.SMP(_, .AUTH))):
-        let alert = mkAlert(
+        mkAlert(
             title: "Connection error (AUTH)",
             message: "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection."
         )
-        return (nil, alert)
     case let .chatCmdError(_, .errorAgent(.SMP(_, .BLOCKED(info)))):
-        let alert = Alert(
+        Alert(
             title: Text("Connection blocked"),
             message: Text("Connection is blocked by server operator:\n\(info.reason.text)"),
             primaryButton: .default(Text("Ok")),
@@ -922,32 +944,22 @@ func apiConnect_(incognito: Bool, connReq: String) async -> ((ConnReqType, Pendi
                 }
             }
         )
-        return (nil, alert)
     case .chatCmdError(_, .errorAgent(.SMP(_, .QUOTA))):
-        let alert = mkAlert(
+        mkAlert(
             title: "Undelivered messages",
             message: "The connection reached the limit of undelivered messages, your contact may be offline."
         )
-        return (nil, alert)
     case let .chatCmdError(_, .errorAgent(.INTERNAL(internalErr))):
         if internalErr == "SEUniqueID" {
-            let alert = mkAlert(
+            mkAlert(
                 title: "Already connected?",
                 message: "It seems like you are already connected via this link. If it is not the case, there was an error (\(responseError(r)))."
             )
-            return (nil, alert)
+        } else {
+            nil
         }
-    default: ()
+    default: nil
     }
-    let alert = connectionErrorAlert(r)
-    return (nil, alert)
-}
-
-func contactAlreadyExistsAlert(_ contact: Contact) -> Alert {
-    mkAlert(
-        title: "Contact already exists",
-        message: "You are already connected to \(contact.displayName)."
-    )
 }
 
 private func connectionErrorAlert(_ r: ChatResponse) -> Alert {
@@ -1130,10 +1142,10 @@ func apiSetChatUIThemes(chatId: ChatId, themes: ThemeModeOverrides?) async -> Bo
 }
 
 
-func apiCreateUserAddress() async throws -> String {
+func apiCreateUserAddress(short: Bool) async throws -> CreatedConnLink {
     let userId = try currentUserId("apiCreateUserAddress")
-    let r = await chatSendCmd(.apiCreateMyAddress(userId: userId))
-    if case let .userContactLinkCreated(_, connReq) = r { return connReq }
+    let r = await chatSendCmd(.apiCreateMyAddress(userId: userId, short: short))
+    if case let .userContactLinkCreated(_, connLink) = r { return connLink }
     throw r
 }
 
@@ -1642,15 +1654,16 @@ func apiUpdateGroup(_ groupId: Int64, _ groupProfile: GroupProfile) async throws
     throw r
 }
 
-func apiCreateGroupLink(_ groupId: Int64, memberRole: GroupMemberRole = .member) async throws -> (String, GroupMemberRole) {
-    let r = await chatSendCmd(.apiCreateGroupLink(groupId: groupId, memberRole: memberRole))
-    if case let .groupLinkCreated(_, _, connReq, memberRole) = r { return (connReq, memberRole) }
+func apiCreateGroupLink(_ groupId: Int64, memberRole: GroupMemberRole = .member) async throws -> (CreatedConnLink, GroupMemberRole) {
+    let short = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_SHORT_LINKS)
+    let r = await chatSendCmd(.apiCreateGroupLink(groupId: groupId, memberRole: memberRole, short: short))
+    if case let .groupLinkCreated(_, _, connLink, memberRole) = r { return (connLink, memberRole) }
     throw r
 }
 
-func apiGroupLinkMemberRole(_ groupId: Int64, memberRole: GroupMemberRole = .member) async throws -> (String, GroupMemberRole) {
+func apiGroupLinkMemberRole(_ groupId: Int64, memberRole: GroupMemberRole = .member) async throws -> (CreatedConnLink, GroupMemberRole) {
     let r = await chatSendCmd(.apiGroupLinkMemberRole(groupId: groupId, memberRole: memberRole))
-    if case let .groupLink(_, _, connReq, memberRole) = r { return (connReq, memberRole) }
+    if case let .groupLink(_, _, connLink, memberRole) = r { return (connLink, memberRole) }
     throw r
 }
 
@@ -1660,11 +1673,11 @@ func apiDeleteGroupLink(_ groupId: Int64) async throws {
     throw r
 }
 
-func apiGetGroupLink(_ groupId: Int64) throws -> (String, GroupMemberRole)? {
+func apiGetGroupLink(_ groupId: Int64) throws -> (CreatedConnLink, GroupMemberRole)? {
     let r = chatSendCmdSync(.apiGetGroupLink(groupId: groupId))
     switch r {
-    case let .groupLink(_, _, connReq, memberRole):
-        return (connReq, memberRole)
+    case let .groupLink(_, _, connLink, memberRole):
+        return (connLink, memberRole)
     case .chatCmdError(_, chatError: .errorStore(storeError: .groupLinkNotFound)):
         return nil
     default: throw r

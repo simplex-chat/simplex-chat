@@ -77,7 +77,7 @@ public enum ChatCommand {
     case apiLeaveGroup(groupId: Int64)
     case apiListMembers(groupId: Int64)
     case apiUpdateGroupProfile(groupId: Int64, groupProfile: GroupProfile)
-    case apiCreateGroupLink(groupId: Int64, memberRole: GroupMemberRole)
+    case apiCreateGroupLink(groupId: Int64, memberRole: GroupMemberRole, short: Bool)
     case apiGroupLinkMemberRole(groupId: Int64, memberRole: GroupMemberRole)
     case apiDeleteGroupLink(groupId: Int64)
     case apiGetGroupLink(groupId: Int64)
@@ -116,10 +116,10 @@ public enum ChatCommand {
     case apiGetGroupMemberCode(groupId: Int64, groupMemberId: Int64)
     case apiVerifyContact(contactId: Int64, connectionCode: String?)
     case apiVerifyGroupMember(groupId: Int64, groupMemberId: Int64, connectionCode: String?)
-    case apiAddContact(userId: Int64, incognito: Bool)
+    case apiAddContact(userId: Int64, short: Bool, incognito: Bool)
     case apiSetConnectionIncognito(connId: Int64, incognito: Bool)
     case apiChangeConnectionUser(connId: Int64, userId: Int64)
-    case apiConnectPlan(userId: Int64, connReq: String)
+    case apiConnectPlan(userId: Int64, connLink: String)
     case apiConnect(userId: Int64, incognito: Bool, connReq: String)
     case apiConnectContactViaAddress(userId: Int64, incognito: Bool, contactId: Int64)
     case apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode)
@@ -132,7 +132,7 @@ public enum ChatCommand {
     case apiSetConnectionAlias(connId: Int64, localAlias: String)
     case apiSetUserUIThemes(userId: Int64, themes: ThemeModeOverrides?)
     case apiSetChatUIThemes(chatId: String, themes: ThemeModeOverrides?)
-    case apiCreateMyAddress(userId: Int64)
+    case apiCreateMyAddress(userId: Int64, short: Bool)
     case apiDeleteMyAddress(userId: Int64)
     case apiShowMyAddress(userId: Int64)
     case apiSetProfileAddress(userId: Int64, on: Bool)
@@ -256,7 +256,7 @@ public enum ChatCommand {
             case let .apiLeaveGroup(groupId): return "/_leave #\(groupId)"
             case let .apiListMembers(groupId): return "/_members #\(groupId)"
             case let .apiUpdateGroupProfile(groupId, groupProfile): return "/_group_profile #\(groupId) \(encodeJSON(groupProfile))"
-            case let .apiCreateGroupLink(groupId, memberRole): return "/_create link #\(groupId) \(memberRole)"
+            case let .apiCreateGroupLink(groupId, memberRole, short): return "/_create link #\(groupId) \(memberRole) short=\(onOff(short))"
             case let .apiGroupLinkMemberRole(groupId, memberRole): return "/_set link role #\(groupId) \(memberRole)"
             case let .apiDeleteGroupLink(groupId): return "/_delete link #\(groupId)"
             case let .apiGetGroupLink(groupId): return "/_get link #\(groupId)"
@@ -305,7 +305,7 @@ public enum ChatCommand {
             case let .apiVerifyContact(contactId, .none): return "/_verify code @\(contactId)"
             case let .apiVerifyGroupMember(groupId, groupMemberId, .some(connectionCode)): return "/_verify code #\(groupId) \(groupMemberId) \(connectionCode)"
             case let .apiVerifyGroupMember(groupId, groupMemberId, .none): return "/_verify code #\(groupId) \(groupMemberId)"
-            case let .apiAddContact(userId, incognito): return "/_connect \(userId) incognito=\(onOff(incognito))"
+            case let .apiAddContact(userId, short, incognito): return "/_connect \(userId) short=\(onOff(short)) incognito=\(onOff(incognito))"
             case let .apiSetConnectionIncognito(connId, incognito): return "/_set incognito :\(connId) \(onOff(incognito))"
             case let .apiChangeConnectionUser(connId, userId): return "/_set conn user :\(connId) \(userId)"
             case let .apiConnectPlan(userId, connReq): return "/_connect plan \(userId) \(connReq)"
@@ -321,7 +321,7 @@ public enum ChatCommand {
             case let .apiSetConnectionAlias(connId, localAlias): return "/_set alias :\(connId) \(localAlias.trimmingCharacters(in: .whitespaces))"
             case let .apiSetUserUIThemes(userId, themes): return "/_set theme user \(userId) \(themes != nil ? encodeJSON(themes) : "")"
             case let .apiSetChatUIThemes(chatId, themes): return "/_set theme \(chatId) \(themes != nil ? encodeJSON(themes) : "")"
-            case let .apiCreateMyAddress(userId): return "/_address \(userId)"
+            case let .apiCreateMyAddress(userId, short): return "/_address \(userId) short=\(onOff(short))"
             case let .apiDeleteMyAddress(userId): return "/_delete_address \(userId)"
             case let .apiShowMyAddress(userId): return "/_show_address \(userId)"
             case let .apiSetProfileAddress(userId, on): return "/_profile_address \(userId) \(onOff(on))"
@@ -629,10 +629,10 @@ public enum ChatResponse: Decodable, Error {
     case groupMemberCode(user: UserRef, groupInfo: GroupInfo, member: GroupMember, connectionCode: String)
     case connectionVerified(user: UserRef, verified: Bool, expectedCode: String)
     case tagsUpdated(user: UserRef, userTags: [ChatTag], chatTags: [Int64])
-    case invitation(user: UserRef, connReqInvitation: String, connection: PendingContactConnection)
+    case invitation(user: UserRef, connLinkInvitation: CreatedConnLink, connection: PendingContactConnection)
     case connectionIncognitoUpdated(user: UserRef, toConnection: PendingContactConnection)
     case connectionUserChanged(user: UserRef, fromConnection: PendingContactConnection, toConnection: PendingContactConnection, newUser: UserRef)
-    case connectionPlan(user: UserRef, connectionPlan: ConnectionPlan)
+    case connectionPlan(user: UserRef, connReq: String, connectionPlan: ConnectionPlan)
     case sentConfirmation(user: UserRef, connection: PendingContactConnection)
     case sentInvitation(user: UserRef, connection: PendingContactConnection)
     case sentInvitationToContact(user: UserRef, contact: Contact, customUserProfile: Profile?)
@@ -649,7 +649,7 @@ public enum ChatResponse: Decodable, Error {
     case contactPrefsUpdated(user: User, fromContact: Contact, toContact: Contact)
     case userContactLink(user: User, contactLink: UserContactLink)
     case userContactLinkUpdated(user: User, contactLink: UserContactLink)
-    case userContactLinkCreated(user: User, connReqContact: String)
+    case userContactLinkCreated(user: User, connLinkContact: CreatedConnLink)
     case userContactLinkDeleted(user: User)
     case contactConnected(user: UserRef, contact: Contact, userCustomProfile: Profile?)
     case contactConnecting(user: UserRef, contact: Contact)
@@ -702,8 +702,8 @@ public enum ChatResponse: Decodable, Error {
     case connectedToGroupMember(user: UserRef, groupInfo: GroupInfo, member: GroupMember, memberContact: Contact?)
     case groupRemoved(user: UserRef, groupInfo: GroupInfo) // unused
     case groupUpdated(user: UserRef, toGroup: GroupInfo)
-    case groupLinkCreated(user: UserRef, groupInfo: GroupInfo, connReqContact: String, memberRole: GroupMemberRole)
-    case groupLink(user: UserRef, groupInfo: GroupInfo, connReqContact: String, memberRole: GroupMemberRole)
+    case groupLinkCreated(user: UserRef, groupInfo: GroupInfo, connLinkContact: CreatedConnLink, memberRole: GroupMemberRole)
+    case groupLink(user: UserRef, groupInfo: GroupInfo, connLinkContact: CreatedConnLink, memberRole: GroupMemberRole)
     case groupLinkDeleted(user: UserRef, groupInfo: GroupInfo)
     case newMemberContact(user: UserRef, contact: Contact, groupInfo: GroupInfo, member: GroupMember)
     case newMemberContactSentInv(user: UserRef, contact: Contact, groupInfo: GroupInfo, member: GroupMember)
@@ -989,10 +989,10 @@ public enum ChatResponse: Decodable, Error {
             case let .groupMemberCode(u, groupInfo, member, connectionCode): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionCode: \(connectionCode)")
             case let .connectionVerified(u, verified, expectedCode): return withUser(u, "verified: \(verified)\nconnectionCode: \(expectedCode)")
             case let .tagsUpdated(u, userTags, chatTags): return withUser(u, "userTags: \(String(describing: userTags))\nchatTags: \(String(describing: chatTags))")
-            case let .invitation(u, connReqInvitation, connection): return withUser(u, "connReqInvitation: \(connReqInvitation)\nconnection: \(connection)")
+            case let .invitation(u, connLinkInvitation, connection): return withUser(u, "connLinkInvitation: \(connLinkInvitation)\nconnection: \(connection)")
             case let .connectionIncognitoUpdated(u, toConnection): return withUser(u, String(describing: toConnection))
-            case let .connectionUserChanged(u, fromConnection, toConnection, newUser): return withUser(u, "fromConnection: \(String(describing: fromConnection))\ntoConnection: \(String(describing: toConnection))\newUserId: \(String(describing: newUser.userId))")
-            case let .connectionPlan(u, connectionPlan): return withUser(u, String(describing: connectionPlan))
+            case let .connectionUserChanged(u, fromConnection, toConnection, newUser): return withUser(u, "fromConnection: \(String(describing: fromConnection))\ntoConnection: \(String(describing: toConnection))\nnewUserId: \(String(describing: newUser.userId))")
+            case let .connectionPlan(u, connReq, connectionPlan): return withUser(u, "connReq: \(String(describing: connReq))\nconnectionPlan: \(String(describing: connectionPlan))")
             case let .sentConfirmation(u, connection): return withUser(u, String(describing: connection))
             case let .sentInvitation(u, connection): return withUser(u, String(describing: connection))
             case let .sentInvitationToContact(u, contact, _): return withUser(u, String(describing: contact))
@@ -1009,7 +1009,7 @@ public enum ChatResponse: Decodable, Error {
             case let .contactPrefsUpdated(u, fromContact, toContact): return withUser(u, "fromContact: \(String(describing: fromContact))\ntoContact: \(String(describing: toContact))")
             case let .userContactLink(u, contactLink): return withUser(u, contactLink.responseDetails)
             case let .userContactLinkUpdated(u, contactLink): return withUser(u, contactLink.responseDetails)
-            case let .userContactLinkCreated(u, connReq): return withUser(u, connReq)
+            case let .userContactLinkCreated(u, connLink): return withUser(u, String(describing: connLink))
             case .userContactLinkDeleted: return noDetails
             case let .contactConnected(u, contact, _): return withUser(u, String(describing: contact))
             case let .contactConnecting(u, contact): return withUser(u, String(describing: contact))
@@ -1069,8 +1069,8 @@ public enum ChatResponse: Decodable, Error {
             case let .connectedToGroupMember(u, groupInfo, member, memberContact): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)\nmemberContact: \(String(describing: memberContact))")
             case let .groupRemoved(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .groupUpdated(u, toGroup): return withUser(u, String(describing: toGroup))
-            case let .groupLinkCreated(u, groupInfo, connReqContact, memberRole): return withUser(u, "groupInfo: \(groupInfo)\nconnReqContact: \(connReqContact)\nmemberRole: \(memberRole)")
-            case let .groupLink(u, groupInfo, connReqContact, memberRole): return withUser(u, "groupInfo: \(groupInfo)\nconnReqContact: \(connReqContact)\nmemberRole: \(memberRole)")
+            case let .groupLinkCreated(u, groupInfo, connLinkContact, memberRole): return withUser(u, "groupInfo: \(groupInfo)\nconnLinkContact: \(connLinkContact)\nmemberRole: \(memberRole)")
+            case let .groupLink(u, groupInfo, connLinkContact, memberRole): return withUser(u, "groupInfo: \(groupInfo)\nconnLinkContact: \(connLinkContact)\nmemberRole: \(memberRole)")
             case let .groupLinkDeleted(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .newMemberContact(u, contact, groupInfo, member): return withUser(u, "contact: \(contact)\ngroupInfo: \(groupInfo)\nmember: \(member)")
             case let .newMemberContactSentInv(u, contact, groupInfo, member): return withUser(u, "contact: \(contact)\ngroupInfo: \(groupInfo)\nmember: \(member)")
@@ -1171,6 +1171,26 @@ public enum ChatDeleteMode: Codable {
         default: return false
         }
     }
+}
+
+public struct CreatedConnLink: Decodable, Hashable {
+    public var connFullLink: String
+    public var connShortLink: String?
+
+    public init(connFullLink: String, connShortLink: String?) {
+        self.connFullLink = connFullLink
+        self.connShortLink = connShortLink
+    }
+
+    public func simplexChatUri(short: Bool = true) -> String {
+        short ? (connShortLink ?? simplexChatLink(connFullLink)) : simplexChatLink(connFullLink)
+    }
+}
+
+public func simplexChatLink(_ uri: String) -> String {
+    uri.starts(with: "simplex:/")
+    ? uri.replacingOccurrences(of: "simplex:/", with: "https://simplex.chat/")
+    : uri
 }
 
 public enum ConnectionPlan: Decodable, Hashable {
@@ -2183,16 +2203,16 @@ public enum RatchetSyncState: String, Decodable {
 }
 
 public struct UserContactLink: Decodable, Hashable {
-    public var connReqContact: String
+    public var connLinkContact: CreatedConnLink
     public var autoAccept: AutoAccept?
 
-    public init(connReqContact: String, autoAccept: AutoAccept? = nil) {
-        self.connReqContact = connReqContact
+    public init(connLinkContact: CreatedConnLink, autoAccept: AutoAccept? = nil) {
+        self.connLinkContact = connLinkContact
         self.autoAccept = autoAccept
     }
 
     var responseDetails: String {
-        "connReqContact: \(connReqContact)\nautoAccept: \(AutoAccept.cmdString(autoAccept))"
+        "connLinkContact: \(connLinkContact)\nautoAccept: \(AutoAccept.cmdString(autoAccept))"
     }
 }
 
@@ -2406,6 +2426,7 @@ public enum ChatErrorType: Decodable, Hashable {
     case chatStoreChanged
     case connectionPlan(connectionPlan: ConnectionPlan)
     case invalidConnReq
+    case unsupportedConnReq
     case invalidChatMessage(connection: Connection, message: String)
     case contactNotReady(contact: Contact)
     case contactNotActive(contact: Contact)

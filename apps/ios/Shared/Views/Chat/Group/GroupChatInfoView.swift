@@ -21,7 +21,7 @@ struct GroupChatInfoView: View {
     @State var localAlias: String
     @FocusState private var aliasTextFieldFocused: Bool
     @State private var alert: GroupChatInfoViewAlert? = nil
-    @State private var groupLink: String?
+    @State private var groupLink: CreatedConnLink?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
     @State private var groupLinkNavLinkActive: Bool = false
     @State private var addMembersNavLinkActive: Bool = false
