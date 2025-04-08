@@ -125,7 +125,7 @@ private fun AdmissionSection(
     } else {
       InfoRow(
         stringResource(admissionStageStrId),
-        memberCriteria.value?.text ?: generalGetString(MR.strings.member_criteria_all)
+        memberCriteria.value?.text ?: generalGetString(MR.strings.member_criteria_off)
       )
     }
   }
