@@ -363,7 +363,7 @@ jobs:
         uses: ./.github/actions/prepare-release
         with:
           bin_path: ${{ steps.mac_desktop_build.outputs.package_path }}
-          bin_name: ${{ matrix.cli_asset_name }}
+          bin_name: ${{ matrix.desktop_asset_name }}
           bin_hash: ${{ steps.mac_desktop_build.outputs.package_hash }}
           github_ref: ${{ github.ref }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
