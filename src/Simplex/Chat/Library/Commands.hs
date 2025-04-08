@@ -61,6 +61,7 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
+import Simplex.Chat.Operators.Presets (allPresetServers)
 import Simplex.Chat.Options
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
@@ -1653,9 +1654,10 @@ processChatCommand' vr = \case
     subMode <- chatReadVar subscriptionMode
     let userData = shortLinkUserData short
     (connId, ccLink) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation userData Nothing IKPQOn subMode
+    let ccLink' = shortenCreatedLink ccLink
     -- TODO PQ pass minVersion from the current range
-    conn <- withFastStore' $ \db -> createDirectConnection db user connId ccLink ConnNew incognitoProfile subMode initialChatVersion PQSupportOn
-    pure $ CRInvitation user ccLink conn
+    conn <- withFastStore' $ \db -> createDirectConnection db user connId ccLink' ConnNew incognitoProfile subMode initialChatVersion PQSupportOn
+    pure $ CRInvitation user ccLink' conn
   AddContact short incognito -> withUser $ \User {userId} ->
     processChatCommand $ APIAddContact userId short incognito
   APISetConnectionIncognito connId incognito -> withUser $ \user@User {userId} -> do
@@ -1780,8 +1782,9 @@ processChatCommand' vr = \case
     subMode <- chatReadVar subscriptionMode
     let userData = shortLinkUserData short
     (connId, ccLink) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact userData Nothing IKPQOn subMode
-    withFastStore $ \db -> createUserContactLink db user connId ccLink subMode
-    pure $ CRUserContactLinkCreated user ccLink
+    let ccLink' = shortenCreatedLink ccLink
+    withFastStore $ \db -> createUserContactLink db user connId ccLink' subMode
+    pure $ CRUserContactLinkCreated user ccLink'
   CreateMyAddress short -> withUser $ \User {userId} ->
     processChatCommand $ APICreateMyAddress userId short
   APIDeleteMyAddress userId -> withUserId userId $ \user@User {profile = p} -> do
@@ -2291,8 +2294,9 @@ processChatCommand' vr = \case
     let crClientData = encodeJSON $ CRDataGroup groupLinkId
         userData = shortLinkUserData short
     (connId, ccLink) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact userData (Just crClientData) IKPQOff subMode
-    withFastStore $ \db -> createGroupLink db user gInfo connId ccLink groupLinkId mRole subMode
-    pure $ CRGroupLinkCreated user gInfo ccLink mRole
+    let ccLink' = shortenCreatedLink ccLink
+    withFastStore $ \db -> createGroupLink db user gInfo connId ccLink' groupLinkId mRole subMode
+    pure $ CRGroupLinkCreated user gInfo ccLink' mRole
   APIGroupLinkMemberRole groupId mRole' -> withUser $ \user -> withGroupLock "groupLinkMemberRole" groupId $ do
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
     (groupLinkId, groupLink, mRole) <- withFastStore $ \db -> getGroupLink db user gInfo
@@ -3122,12 +3126,15 @@ processChatCommand' vr = \case
     getLinkConnReq User {userId} = \case
       CLFull r -> pure r
       CLShort l -> do
-        (cReq, cData) <- withAgent (\a -> getConnShortLink a userId l)
+        let l' = restoreShortLink allPresetServers l
+        (cReq, cData) <- withAgent (\a -> getConnShortLink a userId l')
         case cData of
           ContactLinkData {direct} | not direct -> throwChatError CEUnsupportedConnReq
           _ -> pure ()
         pure cReq
     shortLinkUserData short = if short then Just "" else Nothing
+    shortenCreatedLink :: CreatedConnLink m -> CreatedConnLink m
+    shortenCreatedLink (CCLink cReq shortLink) = CCLink cReq $ shortenShortLink allPresetServers <$> shortLink
     updateCIGroupInvitationStatus :: User -> GroupInfo -> CIGroupInvitationStatus -> CM ()
     updateCIGroupInvitationStatus user GroupInfo {groupId} newStatus = do
       AChatItem _ _ cInfo ChatItem {content, meta = CIMeta {itemId}} <- withFastStore $ \db -> getChatItemByGroupId db vr user groupId

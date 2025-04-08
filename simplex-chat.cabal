@@ -55,6 +55,7 @@ library
       Simplex.Chat.Mobile.WebRTC
       Simplex.Chat.Operators
       Simplex.Chat.Operators.Conditions
+      Simplex.Chat.Operators.Presets
       Simplex.Chat.Options
       Simplex.Chat.Options.DB
       Simplex.Chat.ProfileGenerator
