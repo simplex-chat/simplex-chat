@@ -320,7 +320,7 @@ getGroupAndMember db User {userId, userContactId} groupMemberId vr = do
 -- | creates completely new group with a single member - the current user
 createNewGroup :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> GroupProfile -> Maybe Profile -> ExceptT StoreError IO GroupInfo
 createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = ExceptT $ do
-  let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile
+  let GroupProfile {displayName, fullName, description, image, groupPreferences, memberAdmission} = groupProfile
       fullGroupPreferences = mergeGroupPreferences groupPreferences
   currentTs <- getCurrentTime
   customUserProfileId <- mapM (createIncognitoProfile_ db userId currentTs) incognitoProfile
@@ -328,8 +328,8 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
     groupId <- liftIO $ do
       DB.execute
         db
-        "INSERT INTO group_profiles (display_name, full_name, description, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-        (displayName, fullName, description, image, userId, groupPreferences, currentTs, currentTs)
+        "INSERT INTO group_profiles (display_name, full_name, description, image, user_id, preferences, member_admission, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+        (displayName, fullName, description, image, userId, groupPreferences, memberAdmission, currentTs, currentTs)
       profileId <- insertedRowId db
       DB.execute
         db
@@ -389,7 +389,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
         DB.query db "SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMIT 1" (connRequest, userId)
     createGroupInvitation_ :: ExceptT StoreError IO (GroupInfo, GroupMemberId)
     createGroupInvitation_ = do
-      let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile
+      let GroupProfile {displayName, fullName, description, image, groupPreferences, memberAdmission} = groupProfile
           fullGroupPreferences = mergeGroupPreferences groupPreferences
       ExceptT $
         withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
@@ -397,8 +397,8 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
           groupId <- liftIO $ do
             DB.execute
               db
-              "INSERT INTO group_profiles (display_name, full_name, description, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-              (displayName, fullName, description, image, userId, groupPreferences, currentTs, currentTs)
+              "INSERT INTO group_profiles (display_name, full_name, description, image, user_id, preferences, member_admission, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+              (displayName, fullName, description, image, userId, groupPreferences, memberAdmission, currentTs, currentTs)
             profileId <- insertedRowId db
             DB.execute
               db
@@ -557,13 +557,13 @@ createGroupViaLink'
     (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user hostMemberId
     where
       insertGroup_ currentTs = ExceptT $ do
-        let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile
+        let GroupProfile {displayName, fullName, description, image, groupPreferences, memberAdmission} = groupProfile
         withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
           liftIO $ do
             DB.execute
               db
-              "INSERT INTO group_profiles (display_name, full_name, description, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-              (displayName, fullName, description, image, userId, groupPreferences, currentTs, currentTs)
+              "INSERT INTO group_profiles (display_name, full_name, description, image, user_id, preferences, member_admission, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+              (displayName, fullName, description, image, userId, groupPreferences, memberAdmission, currentTs, currentTs)
             profileId <- insertedRowId db
             DB.execute
               db
