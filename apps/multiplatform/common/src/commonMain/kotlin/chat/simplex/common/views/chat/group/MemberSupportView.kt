@@ -68,7 +68,7 @@ private fun ModalData.MemberSupportViewLayout(
       AppBarTitle(stringResource(MR.strings.member_support))
     }
 
-    if (filteredMembers.value.isEmpty()) {
+    if (membersSupportChats.isEmpty()) {
       item {
         Box(Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
           Text(generalGetString(MR.strings.no_support_chats), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
