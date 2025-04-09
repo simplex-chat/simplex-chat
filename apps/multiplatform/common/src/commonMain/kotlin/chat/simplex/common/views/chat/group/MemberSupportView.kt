@@ -23,6 +23,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.LazyColumnWithScrollBar
+import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.item.ItemAction
@@ -30,6 +31,7 @@ import chat.simplex.common.views.chatlist.ChatListTimestampView
 import chat.simplex.common.views.chatlist.unreadCountStr
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
+import kotlinx.coroutines.launch
 
 @Composable
 fun ModalData.MemberSupportView(
@@ -56,6 +58,8 @@ private fun ModalData.MemberSupportViewLayout(
   groupInfo: GroupInfo,
   activeSortedMembers: List<GroupMember>
 ) {
+  val scope = rememberCoroutineScope()
+  val scrollToItemId: MutableState<Long?> = remember { mutableStateOf(null) } // TODO [knocking] ?
   val membersSupportChats = activeSortedMembers.filter { it.supportChat != null }
   val searchText = remember { stateGetOrPut("searchText") { TextFieldValue() } }
   // TODO [knocking] sort members in order pending > unanswered > unread > other
@@ -95,7 +99,14 @@ private fun ModalData.MemberSupportViewLayout(
         val showMenu = remember { mutableStateOf(false) }
         SectionItemViewLongClickable(
           click = {
-            // TODO [knocking] open chat
+            val supportChatInfo = ChatInfo.Group(groupInfo, groupChatScope = GroupChatScopeInfo.MemberSupport(groupMember_ = member))
+            scope.launch {
+              showMemberSupportChatView(
+                chatModel.chatId,
+                scrollToItemId = scrollToItemId,
+                supportChatInfo
+              )
+            }
           },
           longClick = { showMenu.value = true },
           minHeight = 54.dp,
