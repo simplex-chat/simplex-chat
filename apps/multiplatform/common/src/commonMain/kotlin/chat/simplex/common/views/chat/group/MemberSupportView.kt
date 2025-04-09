@@ -215,6 +215,7 @@ fun SupportChatRow(member: GroupMember) {
       }
     }
 
+    // TODO [knocking] better layout (timestamp to stay in place)
     if (member.supportChat != null) {
       Column {
         val ts = getTimestampText(member.supportChat.chatTs)
