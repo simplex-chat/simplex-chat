@@ -173,12 +173,12 @@ jobs:
 
       # chmod/git commands are used to workaround permission issues when cache is restored
       - name: Build CLI
-        shell: docker exec -t builder sh {0}
+        shell: docker exec -t builder sh -eu {0}
         run: |
           chmod -R 777 dist-newstyle ~/.cabal && git config --global --add safe.directory '*'
           cabal clean
           cabal update
-          cabal build -j --enable-tests all || exit 1
+          cabal build -j --enable-tests
           mkdir -p /out
           for i in simplex-chat simplex-chat-test; do
             bin=$(find /project/dist-newstyle -name "$i" -type f -executable)
@@ -214,7 +214,7 @@ jobs:
 
       - name: Build Desktop
         if: startsWith(github.ref, 'refs/tags/v') && matrix.desktop_asset_name
-        shell: docker exec -t builder sh {0}
+        shell: docker exec -t builder sh -eu {0}
         run: |
           scripts/desktop/build-lib-linux.sh
           cd apps/multiplatform
@@ -241,7 +241,7 @@ jobs:
 
       - name: Build AppImage
         if: startsWith(github.ref, 'refs/tags/v') && matrix.desktop_asset_name && matrix.os == '20.04'
-        shell: docker exec -t builder sh {0}
+        shell: docker exec -t builder sh -eu {0}
         run: |
           scripts/desktop/make-appimage-linux.sh
 
