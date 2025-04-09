@@ -2038,6 +2038,12 @@ data class GroupMember (
     GroupMemberStatus.MemCreator -> true
   }
 
+  val memberPending: Boolean get() = when (this.memberStatus) {
+    GroupMemberStatus.MemPendingApproval -> true
+    GroupMemberStatus.MemPendingReview -> true
+    else -> false
+  }
+
   fun canBeRemoved(groupInfo: GroupInfo): Boolean {
     val userRole = groupInfo.membership.memberRole
     return memberStatus != GroupMemberStatus.MemRemoved && memberStatus != GroupMemberStatus.MemLeft
@@ -2081,9 +2087,9 @@ data class GroupMember (
 @Serializable
 class GroupSupportChat (
   val chatTs: Instant,
-  val unread: Long,
-  val memberAttention: Long,
-  val mentions: Long
+  val unread: Int,
+  val memberAttention: Int,
+  val mentions: Int
 )
 
 @Serializable

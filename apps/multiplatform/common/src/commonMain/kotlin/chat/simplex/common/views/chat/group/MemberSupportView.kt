@@ -4,23 +4,30 @@ import SectionBottomSpacer
 import SectionItemView
 import SectionItemViewLongClickable
 import androidx.compose.animation.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.LazyColumnWithScrollBar
-import chat.simplex.common.ui.theme.DEFAULT_PADDING
-import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.item.ItemAction
+import chat.simplex.common.views.chatlist.ChatListTimestampView
+import chat.simplex.common.views.chatlist.unreadCountStr
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 
@@ -51,6 +58,7 @@ private fun ModalData.MemberSupportViewLayout(
 ) {
   val membersSupportChats = activeSortedMembers.filter { it.supportChat != null }
   val searchText = remember { stateGetOrPut("searchText") { TextFieldValue() } }
+  // TODO [knocking] sort members in order pending > unanswered > unread > other
   val filteredMembers = remember(membersSupportChats) {
     derivedStateOf {
       val s = searchText.value.text.trim().lowercase()
@@ -95,7 +103,7 @@ private fun ModalData.MemberSupportViewLayout(
         ) {
           Box(contentAlignment = Alignment.CenterStart) {
             DropDownMenuForSupportChat(chat.remoteHostId, member, groupInfo, showMenu)
-            MemberRow(member)
+            SupportChatRow(member)
           }
         }
       }
@@ -108,10 +116,122 @@ private fun ModalData.MemberSupportViewLayout(
 }
 
 @Composable
+fun SupportChatRow(member: GroupMember) {
+  fun memberStatus(): String {
+    return if (member.activeConn?.connDisabled == true) {
+      generalGetString(MR.strings.member_info_member_disabled)
+    } else if (member.activeConn?.connDisabled == true) {
+      generalGetString(MR.strings.member_info_member_inactive)
+    } else if (member.memberPending) {
+      member.memberStatus.text
+    } else {
+      member.memberRole.text
+    }
+  }
+
+  @Composable
+  fun SupportChatUnreadIndicator(supportChat: GroupSupportChat) {
+    Box(Modifier.widthIn(min = 34.sp.toDp()), contentAlignment = Alignment.TopEnd) {
+      Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.sp.toDp())) {
+        if (supportChat.unread > 0 || supportChat.mentions > 0 || supportChat.memberAttention > 0) {
+          val indicatorTint = when {
+            supportChat.mentions > 0 || supportChat.memberAttention > 0 -> MaterialTheme.colors.primaryVariant
+            else -> MaterialTheme.colors.secondary
+          }
+          if (supportChat.mentions == 1 && supportChat.unread == 1) {
+            Box(modifier = Modifier.offset(y = 2.sp.toDp()).size(15.sp.toDp()).background(indicatorTint, shape = CircleShape), contentAlignment = Alignment.Center) {
+              Icon(
+                painterResource(MR.images.ic_alternate_email),
+                contentDescription = generalGetString(MR.strings.notifications),
+                tint = Color.White,
+                modifier = Modifier.size(9.sp.toDp())
+              )
+            }
+          } else {
+            if (supportChat.mentions > 0 && supportChat.unread > 1) {
+              Icon(
+                painterResource(MR.images.ic_alternate_email),
+                contentDescription = generalGetString(MR.strings.notifications),
+                tint = indicatorTint,
+                modifier = Modifier.size(12.sp.toDp()).offset(y = 3.sp.toDp())
+              )
+            }
+
+            Text(
+              unreadCountStr(supportChat.unread),
+              color = Color.White,
+              fontSize = 10.sp,
+              style = TextStyle(textAlign = TextAlign.Center),
+              modifier = Modifier
+                .offset(y = 3.sp.toDp())
+                .background(indicatorTint, shape = CircleShape)
+                .badgeLayout()
+                .padding(horizontal = 2.sp.toDp())
+                .padding(vertical = 1.sp.toDp())
+            )
+          }
+        } else if (member.memberPending) {
+          Icon(
+            painterResource(MR.images.ic_flag_filled),
+            contentDescription = null,
+            Modifier.padding(end = 3.dp).size(16.dp),
+            tint = MaterialTheme.colors.primaryVariant
+          )
+        }
+      }
+    }
+  }
+
+  Row(
+    Modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.SpaceBetween,
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Row(
+      Modifier.weight(1f).padding(top = MEMBER_ROW_VERTICAL_PADDING, end = DEFAULT_PADDING, bottom = MEMBER_ROW_VERTICAL_PADDING),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+      MemberProfileImage(size = MEMBER_ROW_AVATAR_SIZE, member)
+      Spacer(Modifier.width(DEFAULT_PADDING_HALF))
+      Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          if (member.verified) {
+            MemberVerifiedShield()
+          }
+          Text(
+            member.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            color = if (member.memberIncognito) Indigo else Color.Unspecified
+          )
+        }
+
+        Text(
+          memberStatus(),
+          color = MaterialTheme.colors.secondary,
+          fontSize = 12.sp,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis
+        )
+      }
+    }
+
+    if (member.supportChat != null) {
+      Column {
+        val ts = getTimestampText(member.supportChat.chatTs)
+        ChatListTimestampView(ts)
+        SupportChatUnreadIndicator(member.supportChat)
+      }
+    }
+  }
+}
+
+// TODO [knocking] implement menu actions
+@Composable
 private fun DropDownMenuForSupportChat(rhId: Long?, member: GroupMember, groupInfo: GroupInfo, showMenu: MutableState<Boolean>) {
   DefaultDropdownMenu(showMenu) {
+    // TODO mark read
+    // TODO accept, remove
     ItemAction(stringResource(MR.strings.mark_unread), painterResource(MR.images.ic_mark_chat_unread), onClick = {
-      // TODO [knocking] mark support chat unread
       showMenu.value = false
     })
   }

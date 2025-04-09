@@ -868,7 +868,7 @@ fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = tr
 }
 
 @Composable
-private fun MemberVerifiedShield() {
+fun MemberVerifiedShield() {
   Icon(painterResource(MR.images.ic_verified_user), null, Modifier.padding(end = 3.dp).size(16.dp), tint = MaterialTheme.colors.secondary)
 }
 
