@@ -308,7 +308,7 @@ public enum ChatCommand {
             case let .apiAddContact(userId, short, incognito): return "/_connect \(userId) short=\(onOff(short)) incognito=\(onOff(incognito))"
             case let .apiSetConnectionIncognito(connId, incognito): return "/_set incognito :\(connId) \(onOff(incognito))"
             case let .apiChangeConnectionUser(connId, userId): return "/_set conn user :\(connId) \(userId)"
-            case let .apiConnectPlan(userId, connReq): return "/_connect plan \(userId) \(connReq)"
+            case let .apiConnectPlan(userId, connLink): return "/_connect plan \(userId) \(connLink)"
             case let .apiConnect(userId, incognito, connReq): return "/_connect \(userId) incognito=\(onOff(incognito)) \(connReq)"
             case let .apiConnectContactViaAddress(userId, incognito, contactId): return "/_connect contact \(userId) incognito=\(onOff(incognito)) \(contactId)"
             case let .apiDeleteChat(type, id, chatDeleteMode): return "/_delete \(ref(type, id)) \(chatDeleteMode.cmdString)"

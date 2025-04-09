@@ -909,13 +909,6 @@ func apiConnect_(incognito: Bool, connReq: String) async -> ((ConnReqType, Pendi
     return (nil, alert)
 }
 
-func contactAlreadyExistsAlert(_ contact: Contact) -> Alert {
-    mkAlert(
-        title: "Contact already exists",
-        message: "You are already connected to \(contact.displayName)."
-    )
-}
-
 private func apiConnectResponseAlert(_ r: ChatResponse) -> Alert? {
     switch r {
     case .chatCmdError(_, .error(.invalidConnReq)):
@@ -960,6 +953,13 @@ private func apiConnectResponseAlert(_ r: ChatResponse) -> Alert? {
         }
     default: nil
     }
+}
+
+func contactAlreadyExistsAlert(_ contact: Contact) -> Alert {
+    mkAlert(
+        title: "Contact already exists",
+        message: "You are already connected to \(contact.displayName)."
+    )
 }
 
 private func connectionErrorAlert(_ r: ChatResponse) -> Alert {
