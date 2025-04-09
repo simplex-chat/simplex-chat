@@ -2294,7 +2294,7 @@ processChatCommand' vr = \case
     let crClientData = encodeJSON $ CRDataGroup groupLinkId
         userData = shortLinkUserData short
     (connId, ccLink) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact userData (Just crClientData) IKPQOff subMode
-    let ccLink' = shortenCreatedLink ccLink
+    let ccLink' = createdGroupLink $ shortenCreatedLink ccLink
     withFastStore $ \db -> createGroupLink db user gInfo connId ccLink' groupLinkId mRole subMode
     pure $ CRGroupLinkCreated user gInfo ccLink' mRole
   APIGroupLinkMemberRole groupId mRole' -> withUser $ \user -> withGroupLock "groupLinkMemberRole" groupId $ do
@@ -3135,6 +3135,11 @@ processChatCommand' vr = \case
     shortLinkUserData short = if short then Just "" else Nothing
     shortenCreatedLink :: CreatedConnLink m -> CreatedConnLink m
     shortenCreatedLink (CCLink cReq shortLink) = CCLink cReq $ shortenShortLink allPresetServers <$> shortLink
+    createdGroupLink :: CreatedLinkContact -> CreatedLinkContact
+    createdGroupLink (CCLink cReq shortLink) = CCLink cReq (toGroupLink <$> shortLink)
+      where
+        toGroupLink :: ConnShortLink 'CMContact -> ConnShortLink 'CMContact
+        toGroupLink (CSLContact sch _ srv k) = CSLContact sch CCTGroup srv k
     updateCIGroupInvitationStatus :: User -> GroupInfo -> CIGroupInvitationStatus -> CM ()
     updateCIGroupInvitationStatus user GroupInfo {groupId} newStatus = do
       AChatItem _ _ cInfo ChatItem {content, meta = CIMeta {itemId}} <- withFastStore $ \db -> getChatItemByGroupId db vr user groupId

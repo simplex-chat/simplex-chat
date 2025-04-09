@@ -103,6 +103,7 @@ chatProfileTests = do
     it "set user, contact and group UI theme" testSetUITheme
   describe "short links" $ do
     it "should connect via one-time inviation" testShortLinkInvitation
+    it "should plan and connect via one-time inviation" testPlanShortLinkInvitation
     it "should connect via contact address" testShortLinkContactAddress
     it "should join group" testShortLinkJoinGroup
 
@@ -2603,11 +2604,38 @@ testShortLinkInvitation =
     bob #> "@alice hey"
     alice <# "bob> hey"
 
+testPlanShortLinkInvitation :: HasCallStack => TestParams -> IO ()
+testPlanShortLinkInvitation =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    alice ##> "/c short"
+    inv <- getShortInvitation alice
+    bob ##> ("/_connect plan 1 " <> inv)
+    bob <## "invitation link: ok to connect"
+    -- nobody else can connect
+    cath ##> ("/_connect plan 1 " <> inv)
+    cath <##. "error: connection authorization failed"
+    cath ##> ("/c " <> inv)
+    cath <##. "error: connection authorization failed"
+    -- bob can retry "plan"
+    bob ##> ("/_connect plan 1 " <> inv)
+    bob <## "invitation link: ok to connect"
+    bob ##> ("/c " <> inv)
+    bob <## "confirmation sent!"
+    concurrently_
+      (alice <## "bob (Bob): contact is connected")
+      (bob <## "alice (Alice): contact is connected")
+    alice #> "@bob hi"
+    bob <# "alice> hi"
+    bob #> "@alice hey"
+    alice <# "bob> hey"
+
 testShortLinkContactAddress :: HasCallStack => TestParams -> IO ()
 testShortLinkContactAddress =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     alice ##> "/ad short"
     cLink <- getShortContactLink alice True
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "contact address: ok to connect"
     bob ##> ("/c " <> cLink)
     alice <#? bob
     alice ##> "/ac bob"
@@ -2615,6 +2643,9 @@ testShortLinkContactAddress =
     concurrently_
       (bob <## "alice (Alice): contact is connected")
       (alice <## "bob (Bob): contact is connected")
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "contact address: known contact alice"
+    bob <## "use @alice <message> to send messages"
 
 testShortLinkJoinGroup :: HasCallStack => TestParams -> IO ()
 testShortLinkJoinGroup =
@@ -2625,6 +2656,8 @@ testShortLinkJoinGroup =
     alice <## "to add members use /a team <name> or /create link #team"
     alice ##> "/create link #team short"
     gLink <- getShortGroupLink alice "team" GRMember True
+    bob ##> ("/_connect plan 1 " <> gLink)
+    bob <## "group link: ok to connect"
     bob ##> ("/c " <> gLink)
     bob <## "connection request sent!"
     alice <## "bob (Bob): accepting request to join group #team..."
@@ -2634,3 +2667,6 @@ testShortLinkJoinGroup =
           bob <## "#team: joining the group..."
           bob <## "#team: you joined the group"
       ]
+    bob ##> ("/_connect plan 1 " <> gLink)
+    bob <## "group link: known group #team"
+    bob <## "use #team <message> to send messages"
