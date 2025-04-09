@@ -75,6 +75,9 @@ fun ModalData.GroupChatInfoView(
     val chatItemTTL = remember(groupInfo.id) { mutableStateOf(if (groupInfo.chatItemTTL != null) ChatItemTTL.fromSeconds(groupInfo.chatItemTTL) else null) }
     val deletingItems = rememberSaveable(groupInfo.id) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val activeSortedMembers = remember { chatModel.groupMembers }.value
+      .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
+      .sortedByDescending { it.memberRole }
 
     GroupChatInfoLayout(
       chat,
@@ -96,9 +99,7 @@ fun ModalData.GroupChatInfoView(
 
         setChatTTLAlert(chat.remoteHostId, chat.chatInfo, chatItemTTL, previousChatTTL, deletingItems)
       },
-      activeSortedMembers = remember { chatModel.groupMembers }.value
-        .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
-        .sortedByDescending { it.memberRole },
+      activeSortedMembers = activeSortedMembers,
       developerTools,
       onLocalAliasChanged = { setGroupAlias(chat, it, chatModel) },
       groupLink,
@@ -140,6 +141,16 @@ fun ModalData.GroupChatInfoView(
       },
       addOrEditWelcomeMessage = {
         ModalManager.end.showCustomModal { close -> GroupWelcomeView(chatModel, rhId, groupInfo, close) }
+      },
+      openMemberSupport = {
+        ModalManager.end.showCustomModal { close ->
+          MemberSupportView(
+            chat,
+            groupInfo,
+            activeSortedMembers,
+            close
+          )
+        }
       },
       openMemberAdmission = {
         ModalManager.end.showCustomModal { close ->
@@ -348,6 +359,7 @@ fun ModalData.GroupChatInfoLayout(
   showMemberInfo: (GroupMember) -> Unit,
   editGroupProfile: () -> Unit,
   addOrEditWelcomeMessage: () -> Unit,
+  openMemberSupport: () -> Unit,
   openMemberAdmission: () -> Unit,
   openPreferences: () -> Unit,
   deleteGroup: () -> Unit,
@@ -477,6 +489,9 @@ fun ModalData.GroupChatInfoLayout(
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = true)
 
       SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), activeSortedMembers.count() + 1)) {
+        if (groupInfo.businessChat == null) {
+          MemberSupportButton(openMemberSupport)
+        }
         if (groupInfo.canAddMembers) {
           if (groupInfo.businessChat == null) {
             if (groupLink == null) {
@@ -496,7 +511,7 @@ fun ModalData.GroupChatInfoLayout(
         }
         if (activeSortedMembers.size > 8) {
           SectionItemView(padding = PaddingValues(start = 14.dp, end = DEFAULT_PADDING_HALF)) {
-            SearchRowView(searchText)
+            MemberListSearchRowView(searchText)
           }
         }
         SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
@@ -696,6 +711,15 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
       )
     }
   }
+}
+
+@Composable
+private fun MemberSupportButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_flag), // TODO [knocking] change icon
+    stringResource(MR.strings.member_support),
+    click = onClick
+  )
 }
 
 @Composable
@@ -965,7 +989,7 @@ private fun DeleteGroupButton(titleId: StringResource, onClick: () -> Unit) {
 }
 
 @Composable
-private fun SearchRowView(
+fun MemberListSearchRowView(
   searchText: MutableState<TextFieldValue> = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) }
 ) {
   Box(Modifier.width(36.dp), contentAlignment = Alignment.Center) {
@@ -1044,6 +1068,7 @@ fun PreviewGroupChatInfoLayout() {
       showMemberInfo = {},
       editGroupProfile = {},
       addOrEditWelcomeMessage = {},
+      openMemberSupport = {},
       openMemberAdmission = {},
       openPreferences = {},
       deleteGroup = {},

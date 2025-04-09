@@ -11,9 +11,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import dev.icerock.moko.resources.compose.stringResource
-import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.usersettings.PreferenceToggleWithIcon
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.ColumnWithScrollBar

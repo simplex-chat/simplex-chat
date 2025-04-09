@@ -2151,6 +2151,10 @@
   <string name="member_criteria_off">off</string>
   <string name="member_criteria_all">all</string>
 
+  <!-- MemberSupportView.kt -->
+  <string name="member_support">Member support</string>
+  <string name="no_support_chats">No support chats</string>
+
   <!-- WhatsNewView.kt -->
   <string name="whats_new">What\'s new</string>
   <string name="new_in_version">New in %s</string>
