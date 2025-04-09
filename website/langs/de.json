@@ -54,7 +54,7 @@
     "simplex-private-6-title": "Out-of-Band-<br>Schlüsselaustausch",
     "simplex-private-9-title": "Unidirektionale<br>Nachrichten-Warteschlangen",
     "simplex-private-10-title": "Temporäre, anonyme paarweise Kennungen",
-    "simplex-private-card-1-point-1": "Double-Ratchet-Protokoll &mdash;<br>Off-the-Record-Nachrichten mit Perfect Forward Secrecy und Einbruchsresistenz.",
+    "simplex-private-card-1-point-1": "Double-Ratchet-Protokoll &mdash;<br>Off-the-Record-Nachrichten mit Perfect Forward Secrecy und Wiederherstellung nach einer Kompromittierung.",
     "simplex-private-card-1-point-2": "NaCL-Kryptobox in jeder Warteschlange, um eine Korrelation des Datenverkehrs zwischen Nachrichtenwarteschlangen zu verhindern, falls TLS kompromittiert wurde.",
     "simplex-private-card-3-point-1": "Für Client-Server-Verbindungen wird nur TLS 1.2/1.3 mit starken Algorithmen verwendet.",
     "simplex-private-card-2-point-1": "Zusätzliche Server-Verschlüsselungs-Schicht für die Zustellung an den Empfänger, um eine Korrelation zwischen empfangenen und gesendeten Server-Daten zu vermeiden, falls TLS kompromittiert wurde.",
