@@ -67,13 +67,14 @@ struct ContactConnectionInfo: View {
                             .id("simplex-invitation-qrcode-\(connLinkInv.simplexChatUri(short: showShortLink))")
                         incognitoEnabled()
                         shareLinkButton(connLinkInv, short: showShortLink)
-                        if connLinkInv.connShortLink != nil {
-                            toggleShortLinkButton(short: $showShortLink)
-                        }
                         oneTimeLinkLearnMoreButton()
                     } else {
                         incognitoEnabled()
                         oneTimeLinkLearnMoreButton()
+                    }
+                } header: {
+                    if let connLinkInv = contactConnection.connLinkInv, connLinkInv.connShortLink != nil {
+                        ToggleShortLinkHeader(text: Text(""), link: connLinkInv, short: $showShortLink)
                     }
                 } footer: {
                     sharedProfileInfo(contactConnection.incognito)

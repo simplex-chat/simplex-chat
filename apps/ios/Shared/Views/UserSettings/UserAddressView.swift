@@ -317,18 +317,6 @@ struct ToggleShortLinkHeader: View {
     }
 }
 
-func toggleShortLinkButton(short: Binding<Bool>) -> some View {
-    Button {
-        short.wrappedValue.toggle()
-    } label: {
-        if short.wrappedValue {
-            Label("Show full link", systemImage: "arrow.left.and.line.vertical.and.arrow.right")
-        } else {
-            Label("Show short link (BETA)", systemImage: "arrow.right.and.line.vertical.and.arrow.left")
-        }
-    }
-}
-
 private struct AutoAcceptState: Equatable {
     var enable = false
     var incognito = false

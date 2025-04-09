@@ -78,9 +78,6 @@ struct GroupLinkView: View {
                     } label: {
                         Label("Share link", systemImage: "square.and.arrow.up")
                     }
-                    if groupLink.connShortLink != nil {
-                        toggleShortLinkButton(short: $showShortLink)
-                    }
 
                     if !creatingGroup {
                         Button(role: .destructive) { alert = .deleteLink } label: {
@@ -97,6 +94,10 @@ struct GroupLinkView: View {
                             .scaleEffect(2)
                             .frame(maxWidth: .infinity)
                     }
+                }
+            } header: {
+                if let groupLink, groupLink.connShortLink != nil {
+                    ToggleShortLinkHeader(text: Text(""), link: groupLink, short: $showShortLink)
                 }
             }
             .alert(item: $alert) { alert in

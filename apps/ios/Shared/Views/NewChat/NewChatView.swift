@@ -315,7 +315,7 @@ private struct InviteView: View {
     private func qrCodeView() -> some View {
         Section {
             SimpleXCreatedLinkQRCode(link: connLinkInvitation, short: $showShortLink, onShare: setInvitationUsed)
-                .id("simplex-qrcode-view-for-\(connLinkInvitation.connFullLink)")
+                .id("simplex-qrcode-view-for-\(connLinkInvitation.simplexChatUri(short: showShortLink))")
                 .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
