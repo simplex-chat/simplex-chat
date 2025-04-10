@@ -33,7 +33,7 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.activeCall
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
-import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
+import chat.simplex.common.model.ChatModel.withSidePanelChatIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.group.*
@@ -402,7 +402,7 @@ fun ChatView(
                       decreaseGroupReportsCounter(chatRh, chatInfo.id)
                     }
                   }
-                  withReportsChatsIfOpen {
+                  withSidePanelChatIfOpen {
                     if (deletedChatItem.isReport) {
                       if (toChatItem != null) {
                         upsertChatItem(chatRh, chatInfo, toChatItem)
@@ -525,7 +525,7 @@ fun ChatView(
                   withChats {
                     updateChatItem(cInfo, updatedCI)
                   }
-                  withReportsChatsIfOpen {
+                  withSidePanelChatIfOpen {
                     if (cItem.isReport) {
                       updateChatItem(cInfo, updatedCI)
                     }
@@ -547,7 +547,7 @@ fun ChatView(
               groupMembersJob.cancel()
               groupMembersJob = scope.launch(Dispatchers.Default) {
                 var initialCiInfo = loadChatItemInfo() ?: return@launch
-                if (!ModalManager.end.hasModalOpen(ModalViewId.GROUP_REPORTS)) {
+                if (!ModalManager.end.hasModalOpen(ModalViewId.SIDE_PANEL_CHAT)) {
                   ModalManager.end.closeModals()
                 }
                 ModalManager.end.showModalCloseable(endButtons = {
@@ -595,7 +595,7 @@ fun ChatView(
                     itemsIds
                   )
                 }
-                withReportsChatsIfOpen {
+                withSidePanelChatIfOpen {
                   markChatItemsRead(chatRh, chatInfo.id, itemsIds)
                 }
               }
@@ -615,7 +615,7 @@ fun ChatView(
                     chatInfo.groupChatScope()
                   )
                 }
-                withReportsChatsIfOpen {
+                withSidePanelChatIfOpen {
                   markChatItemsRead(chatRh, chatInfo.id)
                 }
               }
@@ -2134,7 +2134,7 @@ private fun SaveReportsStateOnDispose(listState: State<LazyListState>) {
   val contentTag = LocalContentTag.current
   DisposableEffect(Unit) {
     onDispose {
-      reportsListState = if (contentTag == MsgContentTag.Report && ModalManager.end.hasModalOpen(ModalViewId.GROUP_REPORTS)) listState.value else null
+      reportsListState = if (contentTag == MsgContentTag.Report && ModalManager.end.hasModalOpen(ModalViewId.SIDE_PANEL_CHAT)) listState.value else null
     }
   }
 }
@@ -2334,7 +2334,7 @@ private fun findQuotedItemFromItem(
       withChats {
         updateChatItem(chatInfo.value, item)
       }
-      withReportsChatsIfOpen {
+      withSidePanelChatIfOpen {
         updateChatItem(chatInfo.value, item)
       }
       if (item.quotedItem?.itemId != null) {
@@ -2530,7 +2530,7 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
             }
           }
         }
-        withReportsChatsIfOpen {
+        withSidePanelChatIfOpen {
           for (di in deleted) {
             if (di.deletedChatItem.chatItem.isReport) {
               val toChatItem = di.toChatItem?.chatItem
@@ -2572,7 +2572,7 @@ private fun archiveReports(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
             }
           }
         }
-        withReportsChatsIfOpen {
+        withSidePanelChatIfOpen {
           for (di in deleted) {
             if (di.deletedChatItem.chatItem.isReport) {
               val toChatItem = di.toChatItem?.chatItem

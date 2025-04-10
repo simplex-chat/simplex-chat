@@ -10,7 +10,6 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
@@ -1315,7 +1314,7 @@ fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Bo
 }
 
 private fun closeReportsIfNeeded() {
-  if (appPlatform.isAndroid && ModalManager.end.isLastModalOpen(ModalViewId.GROUP_REPORTS)) {
+  if (appPlatform.isAndroid && ModalManager.end.isLastModalOpen(ModalViewId.SIDE_PANEL_CHAT)) {
     ModalManager.end.closeModals()
   }
 }

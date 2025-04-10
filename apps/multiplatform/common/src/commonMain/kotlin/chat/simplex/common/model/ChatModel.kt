@@ -67,7 +67,7 @@ object ChatModel {
   val chatId = mutableStateOf<String?>(null)
   val openAroundItemId: MutableState<Long?> = mutableStateOf(null)
   val chatsContext = ChatsContext(null)
-  val reportsChatsContext = ChatsContext(MsgContentTag.Report)
+  val sidePanelChatsContext = ChatsContext(MsgContentTag.Report)
   // declaration of chatsContext should be before any other variable that is taken from ChatsContext class and used in the model, otherwise, strange crash with NullPointerException for "this" parameter in random functions
   val chats: State<List<Chat>> = chatsContext.chats
   // rhId, chatId
@@ -170,33 +170,33 @@ object ChatModel {
   // return true if you handled the click
   var centerPanelBackgroundClickHandler: (() -> Boolean)? = null
 
-  fun chatsForContent(contentTag: MsgContentTag?): State<SnapshotStateList<Chat>> = when(contentTag) {
+  fun chatsForContent(sidePanelChatFilter: SidePanelChatFilter?): State<SnapshotStateList<Chat>> = when(sidePanelChatFilter) {
     null -> chatsContext.chats
-    MsgContentTag.Report -> reportsChatsContext.chats
+    MsgContentTag.Report -> sidePanelChatsContext.chats
     else -> TODO()
   }
 
-  fun chatItemsForContent(contentTag: MsgContentTag?): State<SnapshotStateList<ChatItem>> = when(contentTag) {
+  fun chatItemsForContent(sidePanelChatFilter: SidePanelChatFilter?): State<SnapshotStateList<ChatItem>> = when(sidePanelChatFilter) {
     null -> chatsContext.chatItems
-    MsgContentTag.Report -> reportsChatsContext.chatItems
+    MsgContentTag.Report -> sidePanelChatsContext.chatItems
     else -> TODO()
   }
 
-  fun chatStateForContent(contentTag: MsgContentTag?): ActiveChatState = when(contentTag) {
+  fun chatStateForContent(sidePanelChatFilter: SidePanelChatFilter?): ActiveChatState = when(sidePanelChatFilter) {
     null -> chatsContext.chatState
-    MsgContentTag.Report -> reportsChatsContext.chatState
+    MsgContentTag.Report -> sidePanelChatsContext.chatState
     else -> TODO()
   }
 
-  fun chatItemsChangesListenerForContent(contentTag: MsgContentTag?): ChatItemsChangesListener? = when(contentTag) {
+  fun chatItemsChangesListenerForContent(sidePanelChatFilter: SidePanelChatFilter?): ChatItemsChangesListener? = when(sidePanelChatFilter) {
     null -> chatsContext.chatItemsChangesListener
-    MsgContentTag.Report -> reportsChatsContext.chatItemsChangesListener
+    MsgContentTag.Report -> sidePanelChatsContext.chatItemsChangesListener
     else -> TODO()
   }
 
-  fun setChatItemsChangeListenerForContent(listener: ChatItemsChangesListener?, contentTag: MsgContentTag?) = when(contentTag) {
+  fun setChatItemsChangeListenerForContent(listener: ChatItemsChangesListener?, sidePanelChatFilter: SidePanelChatFilter?) = when(sidePanelChatFilter) {
     null -> chatsContext.chatItemsChangesListener = listener
-    MsgContentTag.Report -> reportsChatsContext.chatItemsChangesListener = listener
+    MsgContentTag.Report -> sidePanelChatsContext.chatItemsChangesListener = listener
     else -> TODO()
   }
 
@@ -325,21 +325,21 @@ object ChatModel {
   }
 
   // running everything inside the block on main thread. Make sure any heavy computation is moved to a background thread
-  suspend fun <T> withChats(contentTag: MsgContentTag? = null, action: suspend ChatsContext.() -> T): T = withContext(Dispatchers.Main) {
+  suspend fun <T> withChats(sidePanelChatFilter: SidePanelChatFilter? = null, action: suspend ChatsContext.() -> T): T = withContext(Dispatchers.Main) {
     when {
-      contentTag == null -> chatsContext.action()
-      contentTag == MsgContentTag.Report -> reportsChatsContext.action()
+      sidePanelChatFilter == null -> chatsContext.action()
+      sidePanelChatFilter == MsgContentTag.Report -> sidePanelChatsContext.action()
       else -> TODO()
     }
   }
 
-  suspend fun <T> withReportsChatsIfOpen(action: suspend ChatsContext.() -> T) = withContext(Dispatchers.Main) {
-    if (ModalManager.end.hasModalOpen(ModalViewId.GROUP_REPORTS)) {
-      reportsChatsContext.action()
+  suspend fun <T> withSidePanelChatIfOpen(action: suspend ChatsContext.() -> T) = withContext(Dispatchers.Main) {
+    if (ModalManager.end.hasModalOpen(ModalViewId.SIDE_PANEL_CHAT)) {
+      sidePanelChatsContext.action()
     }
   }
 
-  class ChatsContext(private val contentTag: MsgContentTag?) {
+  class ChatsContext(private val sidePanelChatFilter: SidePanelChatFilter?) {
     val chats = mutableStateOf(SnapshotStateList<Chat>())
     /** if you modify the items by adding/removing them, use helpers methods like [addAndNotify], [removeLastAndNotify], [removeAllAndNotify], [clearAndNotify] and so on.
      * If some helper is missing, create it. Notify is needed to track state of items that we added manually (not via api call). See [apiLoadMessages].
@@ -493,9 +493,9 @@ object ChatModel {
           // Prevent situation when chat item already in the list received from backend
           if (chatItems.value.none { it.id == cItem.id }) {
             if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-              chatItems.addAndNotify(kotlin.math.max(0, chatItems.value.lastIndex), cItem, contentTag)
+              chatItems.addAndNotify(kotlin.math.max(0, chatItems.value.lastIndex), cItem, sidePanelChatFilter)
             } else {
-              chatItems.addAndNotify(cItem, contentTag)
+              chatItems.addAndNotify(cItem, sidePanelChatFilter)
             }
           }
         }
@@ -540,7 +540,7 @@ object ChatModel {
             } else {
               cItem
             }
-            chatItems.addAndNotify(ci, contentTag)
+            chatItems.addAndNotify(ci, sidePanelChatFilter)
             true
           }
         } else {
@@ -647,9 +647,9 @@ object ChatModel {
       }
     }
 
-    val popChatCollector = PopChatCollector(contentTag)
+    val popChatCollector = PopChatCollector(sidePanelChatFilter)
 
-    class PopChatCollector(contentTag: MsgContentTag?) {
+    class PopChatCollector(sidePanelChatFilter: SidePanelChatFilter?) {
       private val subject = MutableSharedFlow<Unit>()
       private var remoteHostId: Long? = null
       private val chatsToPop = mutableMapOf<ChatId, Instant>()
@@ -659,7 +659,7 @@ object ChatModel {
           subject
             .throttleLatest(2000)
             .collect {
-              withChats(contentTag) {
+              withChats(sidePanelChatFilter) {
                 chats.replaceAll(popCollectedChats())
               }
             }
@@ -753,9 +753,11 @@ object ChatModel {
       return markedRead to mentionsMarkedRead
     }
 
+    // TODO [knocking] [maintain stats] for SidePanelChatFilter.GroupChatScopeContext we have to maintain stats (read, etc.);
+    // TODO                             more of the same below
     private fun decreaseCounterInChatNoContentTag(rhId: Long?, chatId: ChatId) {
       // updates anything only in main ChatView, not GroupReportsView or anything else from the future
-      if (contentTag != null) return
+      if (sidePanelChatFilter != null) return
 
       val chatIndex = getChatIndex(rhId, chatId)
       if (chatIndex == -1) return
@@ -845,9 +847,10 @@ object ChatModel {
       changeUnreadCounterNoContentTag(rhId, user, -by)
     }
 
+    // TODO [knocking] [maintain stats]
     private fun changeUnreadCounterNoContentTag(rhId: Long?, user: UserLike, by: Int) {
       // updates anything only in main ChatView, not GroupReportsView or anything else from the future
-      if (contentTag != null) return
+      if (sidePanelChatFilter != null) return
 
       val i = users.indexOfFirst { it.user.userId == user.userId && it.user.remoteHostId == rhId }
       if (i != -1) {
@@ -855,9 +858,10 @@ object ChatModel {
       }
     }
 
+    // TODO [knocking] [maintain stats]
     fun updateChatTagReadNoContentTag(chat: Chat, wasUnread: Boolean) {
       // updates anything only in main ChatView, not GroupReportsView or anything else from the future
-      if (contentTag != null) return
+      if (sidePanelChatFilter != null) return
 
       val tags = chat.chatInfo.chatTags ?: return
       val nowUnread = chat.unreadTag
@@ -879,9 +883,10 @@ object ChatModel {
       }
     }
 
+    // TODO [knocking] [maintain stats]
     private fun markChatTagReadNoContentTag_(chat: Chat, tags: List<Long>) {
       // updates anything only in main ChatView, not GroupReportsView or anything else from the future
-      if (contentTag != null) return
+      if (sidePanelChatFilter != null) return
 
       for (tag in tags) {
         val count = unreadTags[tag]
@@ -917,8 +922,9 @@ object ChatModel {
       }
     }
 
+    // TODO [knocking] [maintain stats]
     private fun changeGroupReportsTagNoContentTag(by: Int = 0) {
-      if (by == 0 || contentTag != null) return
+      if (by == 0 || sidePanelChatFilter != null) return
       presetTags[PresetTagKind.GROUP_REPORTS] = kotlin.math.max(0, (presetTags[PresetTagKind.GROUP_REPORTS] ?: 0) + by)
       clearActiveChatFilterIfNeeded()
     }
@@ -958,10 +964,11 @@ object ChatModel {
     currentUser.value = updated
   }
 
+  // TODO [knocking] remove live message button in scoped chat send view?
   suspend fun addLiveDummy(chatInfo: ChatInfo): ChatItem {
     val cItem = ChatItem.liveDummy(chatInfo is ChatInfo.Direct)
     withChats {
-      chatItems.addAndNotify(cItem, contentTag = null)
+      chatItems.addAndNotify(cItem, sidePanelChatFilter = null)
     }
     return cItem
   }
@@ -970,7 +977,7 @@ object ChatModel {
     if (chatItemsForContent(null).value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
       withApi {
         withChats {
-          chatItems.removeLastAndNotify(contentTag = null)
+          chatItems.removeLastAndNotify(sidePanelChatFilter = null)
         }
       }
     }
@@ -2800,12 +2807,17 @@ data class ChatItem (
   }
 }
 
+sealed class SidePanelChatFilter {
+  class GroupChatScopeContext(val groupScopeInfo: GroupChatScopeInfo): SidePanelChatFilter()
+  class MsgContentTagContext(val contentTag: MsgContentTag): SidePanelChatFilter()
+}
+
 fun MutableState<SnapshotStateList<Chat>>.add(index: Int, elem: Chat) {
   value = SnapshotStateList<Chat>().apply { addAll(value); add(index, elem) }
 }
 
-fun MutableState<SnapshotStateList<ChatItem>>.addAndNotify(index: Int, elem: ChatItem, contentTag: MsgContentTag?) {
-  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(index, elem); chatModel.chatItemsChangesListenerForContent(contentTag)?.added(elem.id to elem.isRcvNew, index) }
+fun MutableState<SnapshotStateList<ChatItem>>.addAndNotify(index: Int, elem: ChatItem, sidePanelChatFilter: SidePanelChatFilter?) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(index, elem); chatModel.chatItemsChangesListenerForContent(sidePanelChatFilter)?.added(elem.id to elem.isRcvNew, index) }
 }
 
 fun MutableState<SnapshotStateList<Chat>>.add(elem: Chat) {
@@ -2816,8 +2828,8 @@ fun MutableState<SnapshotStateList<Chat>>.add(elem: Chat) {
 fun <T> MutableList<T>.removeAll(predicate: (T) -> Boolean): Boolean = if (isEmpty()) false else remAll(predicate)
 
 // Adds item to chatItems and notifies a listener about newly added item
-fun MutableState<SnapshotStateList<ChatItem>>.addAndNotify(elem: ChatItem, contentTag: MsgContentTag?) {
-  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(elem); chatModel.chatItemsChangesListenerForContent(contentTag)?.added(elem.id to elem.isRcvNew, lastIndex) }
+fun MutableState<SnapshotStateList<ChatItem>>.addAndNotify(elem: ChatItem, sidePanelChatFilter: SidePanelChatFilter?) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(elem); chatModel.chatItemsChangesListenerForContent(sidePanelChatFilter)?.added(elem.id to elem.isRcvNew, lastIndex) }
 }
 
 fun <T> MutableState<SnapshotStateList<T>>.addAll(index: Int, elems: List<T>) {
@@ -2847,7 +2859,7 @@ fun MutableState<SnapshotStateList<ChatItem>>.removeAllAndNotify(block: (ChatIte
   }
   if (toRemove.isNotEmpty()) {
     chatModel.chatsContext.chatItemsChangesListener?.removed(toRemove, value)
-    chatModel.reportsChatsContext.chatItemsChangesListener?.removed(toRemove, value)
+    chatModel.sidePanelChatsContext.chatItemsChangesListener?.removed(toRemove, value)
   }
 }
 
@@ -2859,7 +2871,7 @@ fun MutableState<SnapshotStateList<Chat>>.removeAt(index: Int): Chat {
   return res
 }
 
-fun MutableState<SnapshotStateList<ChatItem>>.removeLastAndNotify(contentTag: MsgContentTag?) {
+fun MutableState<SnapshotStateList<ChatItem>>.removeLastAndNotify(sidePanelChatFilter: SidePanelChatFilter?) {
   val removed: Triple<Long, Int, Boolean>
   value = SnapshotStateList<ChatItem>().apply {
     addAll(value)
@@ -2867,7 +2879,7 @@ fun MutableState<SnapshotStateList<ChatItem>>.removeLastAndNotify(contentTag: Ms
     val rem = removeLast()
     removed = Triple(rem.id, remIndex, rem.isRcvNew)
   }
-  chatModel.chatItemsChangesListenerForContent(contentTag)?.removed(listOf(removed), value)
+  chatModel.chatItemsChangesListenerForContent(sidePanelChatFilter)?.removed(listOf(removed), value)
 }
 
 fun <T> MutableState<SnapshotStateList<T>>.replaceAll(elems: List<T>) {
@@ -2882,7 +2894,7 @@ fun MutableState<SnapshotStateList<Chat>>.clear() {
 fun MutableState<SnapshotStateList<ChatItem>>.clearAndNotify() {
   value = SnapshotStateList()
   chatModel.chatsContext.chatItemsChangesListener?.cleared()
-  chatModel.reportsChatsContext.chatItemsChangesListener?.cleared()
+  chatModel.sidePanelChatsContext.chatItemsChangesListener?.cleared()
 }
 
 fun <T> State<SnapshotStateList<T>>.asReversed(): MutableList<T> = value.asReversed()

@@ -12,7 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
@@ -22,7 +21,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
-import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
+import chat.simplex.common.model.ChatModel.withSidePanelChatIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -543,7 +542,7 @@ fun deleteChatDatabaseFilesAndState() {
       chats.clear()
       popChatCollector.clear()
     }
-    withReportsChatsIfOpen {
+    withSidePanelChatIfOpen {
       chatItems.clearAndNotify()
       chats.clear()
       popChatCollector.clear()

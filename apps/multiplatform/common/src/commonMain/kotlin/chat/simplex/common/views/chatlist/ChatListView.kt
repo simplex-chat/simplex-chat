@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.AppLock
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
-import chat.simplex.common.model.ChatController.setConditionsNotified
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -38,8 +37,6 @@ import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.*
-import chat.simplex.common.views.usersettings.networkAndServers.ConditionsLinkButton
-import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -139,7 +136,7 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
 
   if (appPlatform.isDesktop) {
     KeyChangeEffect(chatModel.chatId.value) {
-      if (chatModel.chatId.value != null && !ModalManager.end.isLastModalOpen(ModalViewId.GROUP_REPORTS)) {
+      if (chatModel.chatId.value != null && !ModalManager.end.isLastModalOpen(ModalViewId.SIDE_PANEL_CHAT)) {
         ModalManager.end.closeModalsExceptFirst()
       }
       AudioPlayer.stop()

@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
-import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
+import chat.simplex.common.model.ChatModel.withSidePanelChatIfOpen
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
@@ -609,7 +609,7 @@ fun markChatRead(c: Chat) {
       withChats {
         markChatItemsRead(chat.remoteHostId, chat.chatInfo.id)
       }
-      withReportsChatsIfOpen {
+      withSidePanelChatIfOpen {
         markChatItemsRead(chat.remoteHostId, chat.chatInfo.id)
       }
       chatModel.controller.apiChatRead(

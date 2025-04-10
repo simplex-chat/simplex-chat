@@ -85,7 +85,7 @@ class ModalData(val keyboardCoversBar: Boolean = true) {
 }
 
 enum class ModalViewId {
-  GROUP_REPORTS
+  SIDE_PANEL_CHAT
 }
 
 class ModalManager(private val placement: ModalPlacement? = null) {

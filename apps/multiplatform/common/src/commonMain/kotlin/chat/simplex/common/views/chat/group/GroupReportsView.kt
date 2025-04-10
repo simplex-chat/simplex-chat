@@ -72,7 +72,7 @@ private fun ItemsReload(contentTag: MsgContentTag?) {
 
 suspend fun showGroupReportsView(staleChatId: State<String?>, scrollToItemId: MutableState<Long?>, chatInfo: ChatInfo) {
   openChat(chatModel.remoteHostId(), chatInfo, MsgContentTag.Report)
-  ModalManager.end.showCustomModal(true, id = ModalViewId.GROUP_REPORTS) { close ->
+  ModalManager.end.showCustomModal(true, id = ModalViewId.SIDE_PANEL_CHAT) { close ->
     ModalView({}, showAppBar = false) {
       val chatInfo = remember { derivedStateOf { chatModel.chats.value.firstOrNull { it.id == chatModel.chatId.value }?.chatInfo } }.value
       if (chatInfo is ChatInfo.Group && chatInfo.groupInfo.canModerate) {

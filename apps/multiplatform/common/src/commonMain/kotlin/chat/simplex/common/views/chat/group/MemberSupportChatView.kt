@@ -14,8 +14,7 @@ private fun MemberSupportChatView(staleChatId: State<String?>, scrollToItemId: M
 
 suspend fun showMemberSupportChatView(staleChatId: State<String?>, scrollToItemId: MutableState<Long?>, chatInfo: ChatInfo) {
   openChat(chatModel.remoteHostId(), chatInfo, contentTag = null)
-  // ModalManager.end.showCustomModal(true, id = ModalViewId.GROUP_REPORTS) { close -> // TODO [knocking] modal id GROUP_REPORTS?
-  ModalManager.end.showCustomModal(true, id = null) { close ->
+  ModalManager.end.showCustomModal(true, id = ModalViewId.SIDE_PANEL_CHAT) { close ->
     ModalView({}, showAppBar = false) {
       if (chatInfo is ChatInfo.Group && chatInfo.groupChatScope != null) {
         MemberSupportChatView(staleChatId, scrollToItemId)
