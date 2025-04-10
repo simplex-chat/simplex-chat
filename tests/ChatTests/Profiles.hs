@@ -101,7 +101,7 @@ chatProfileTests = do
       it "files & media" testGroupPrefsFilesForRole
       it "SimpleX links" testGroupPrefsSimplexLinksForRole
     it "set user, contact and group UI theme" testSetUITheme
-  fdescribe "short links" $ do
+  describe "short links" $ do
     it "should connect via one-time inviation" testShortLinkInvitation
     it "should plan and connect via one-time inviation" testPlanShortLinkInvitation
     it "should connect via contact address" testShortLinkContactAddress
