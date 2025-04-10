@@ -448,7 +448,7 @@ struct ContentView: View {
             if let url = m.appOpenUrl {
                 m.appOpenUrl = nil
                 var path = url.path
-                if (path == "/contact" || path == "/invitation") {
+                if (path == "/contact" || path == "/invitation" || path == "/a" || path == "/c" || path == "/i") {
                     path.removeFirst()
                     let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
                     planAndConnect(

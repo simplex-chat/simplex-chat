@@ -21,7 +21,7 @@ enum class ConnectionLinkType {
 
 suspend fun planAndConnect(
   rhId: Long?,
-  uri: String,
+  shortOrFullLink: String,
   incognito: Boolean?,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)? = null,
@@ -38,8 +38,9 @@ suspend fun planAndConnect(
     cleanup?.invoke()
     completable.complete(!completable.isActive)
   }
-  val connectionPlan = chatModel.controller.apiConnectPlan(rhId, uri)
-  if (connectionPlan != null) {
+  val result = chatModel.controller.apiConnectPlan(rhId, shortOrFullLink)
+  if (result != null) {
+    val (uri, connectionPlan) = result
     val link = strHasSingleSimplexLink(uri.trim())
     val linkText = if (link?.format is Format.SimplexLink)
       "<br><br><u>${link.simplexLinkText(link.format.linkType, link.format.smpHosts)}</u>"
@@ -330,18 +331,6 @@ suspend fun planAndConnect(
           }
         }
       }
-    }
-  } else {
-    Log.d(TAG, "planAndConnect, plan error")
-    if (incognito != null) {
-      connectViaUri(chatModel, rhId, uri, incognito, connectionPlan = null, close, cleanup)
-    } else {
-      askCurrentOrIncognitoProfileAlert(
-        chatModel, rhId, uri, connectionPlan = null, close,
-        title = generalGetString(MR.strings.connect_plan_connect_via_link),
-        connectDestructive = false,
-        cleanup = cleanup,
-      )
     }
   }
   return completable
