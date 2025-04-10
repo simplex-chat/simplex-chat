@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -12,6 +13,7 @@ module Simplex.Chat.Store.Connections
   ( getChatLockEntity,
     getConnectionEntity,
     getConnectionEntityByConnReq,
+    getConnectionEntityViaShortLink,
     getContactConnEntityByConnReqHash,
     getConnectionsToSubscribe,
     unsetConnectionToSubscribe,
@@ -33,11 +35,11 @@ import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (ConnId)
+import Simplex.Messaging.Agent.Protocol (ConnId, ConnShortLink, ConnectionMode (..))
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, firstRow', maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Util (eitherToMaybe)
+import Simplex.Messaging.Util (eitherToMaybe, ($>>=))
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
@@ -203,6 +205,22 @@ getConnectionEntityByConnReq db vr user@User {userId} (cReqSchema1, cReqSchema2)
     maybeFirstRow fromOnly $
       DB.query db "SELECT agent_conn_id FROM connections WHERE user_id = ? AND conn_req_inv IN (?,?) LIMIT 1" (userId, cReqSchema1, cReqSchema2)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db vr user) connId_
+
+getConnectionEntityViaShortLink :: DB.Connection -> VersionRangeChat -> User -> ConnShortLink 'CMInvitation -> IO (Maybe (ConnReqInvitation, ConnectionEntity))
+getConnectionEntityViaShortLink db vr user@User {userId} shortLink = do
+  getConnReqConnId  $>>= \(cReq, connId) ->
+    fmap (cReq,) . eitherToMaybe <$> runExceptT (getConnectionEntity db vr user connId)
+  where
+    getConnReqConnId = 
+      maybeFirstRow id $
+        DB.query
+          db
+          [sql|
+            SELECT conn_req_inv, agent_conn_id
+            FROM connections
+            WHERE user_id = ? AND short_link_inv = ? LIMIT 1
+          |]
+          (userId, shortLink)
 
 -- search connection for connection plan:
 -- multiple connections can have same via_contact_uri_hash if request was repeated;

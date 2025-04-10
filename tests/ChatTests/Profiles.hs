@@ -2609,6 +2609,8 @@ testPlanShortLinkInvitation =
   testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
     alice ##> "/c short"
     inv <- getShortInvitation alice
+    alice ##> ("/_connect plan 1 " <> inv)
+    alice <## "invitation link: own link"
     bob ##> ("/_connect plan 1 " <> inv)
     bob <## "invitation link: ok to connect"
     -- nobody else can connect
