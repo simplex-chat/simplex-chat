@@ -60,7 +60,7 @@ struct ContactConnectionInfo: View {
                         }
                         .onTapGesture { aliasTextFieldFocused = true }
                     }
-                    
+
                     if contactConnection.initiated,
                        let connLinkInv = contactConnection.connLinkInv {
                         SimpleXCreatedLinkQRCode(link: connLinkInv, short: $showShortLink)
