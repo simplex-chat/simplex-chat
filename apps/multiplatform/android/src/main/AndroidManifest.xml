@@ -102,6 +102,7 @@
         <data android:pathPrefix="/contact" />
         <data android:pathPrefix="/a" />
         <data android:pathPrefix="/c" />
+        <data android:pathPrefix="/g" />
         <data android:pathPrefix="/i" />
       </intent-filter>
       <!-- Receive files from other apps -->
