@@ -101,7 +101,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Env.SQLite (ServerRoles (..))
-import Simplex.Messaging.Agent.Protocol (ACorrId, ConnId, ConnShortLink, ConnectionLink (..), ConnectionMode (..), CreatedConnLink (..), UserId)
+import Simplex.Messaging.Agent.Protocol (ACorrId, ConnId, ConnectionLink (..), CreatedConnLink (..), UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -475,7 +475,7 @@ $(J.deriveJSON defaultJSON ''AutoAccept)
 
 $(J.deriveJSON defaultJSON ''UserContactLink)
 
-toUserContactLink :: (ConnReqContact, Maybe (ConnShortLink 'CMContact), BoolInt, BoolInt, BoolInt, Maybe MsgContent) -> UserContactLink
+toUserContactLink :: (ConnReqContact, Maybe ShortLinkContact, BoolInt, BoolInt, BoolInt, Maybe MsgContent) -> UserContactLink
 toUserContactLink (connReq, shortLink, BI autoAccept, BI businessAddress, BI acceptIncognito, autoReply) =
   UserContactLink (CCLink connReq shortLink) $
     if autoAccept then Just AutoAccept {businessAddress, acceptIncognito, autoReply} else Nothing
@@ -519,7 +519,7 @@ getUserContactLinkByConnReq db User {userId} (cReqSchema1, cReqSchema2) =
   maybeFirstRow toUserContactLink $
     DB.query db (userContactLinkQuery <> " WHERE user_id = ? AND conn_req_contact IN (?,?)") (userId, cReqSchema1, cReqSchema2)
 
-getUserContactLinkViaShortLink :: DB.Connection -> User -> ConnShortLink 'CMContact -> IO (Maybe UserContactLink)
+getUserContactLinkViaShortLink :: DB.Connection -> User -> ShortLinkContact -> IO (Maybe UserContactLink)
 getUserContactLinkViaShortLink db User {userId} shortLink =
   maybeFirstRow toUserContactLink $
     DB.query db (userContactLinkQuery <> " WHERE user_id = ? AND short_link_contact = ?") (userId, shortLink)

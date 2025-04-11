@@ -2632,6 +2632,8 @@ testPlanShortLinkInvitation =
     alice <# "bob> hey"
     bob ##> ("/_connect plan 1 " <> inv)
     bob <##. "error: connection authorization failed"
+    alice ##> ("/_connect plan 1 " <> inv)
+    alice <##. "error: connection authorization failed" -- short_link_inv and conn_req_inv are removed after connection
 
 testShortLinkContactAddress :: HasCallStack => TestParams -> IO ()
 testShortLinkContactAddress =
@@ -2665,6 +2667,8 @@ testShortLinkJoinGroup :: HasCallStack => TestParams -> IO ()
 testShortLinkJoinGroup =
   testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
     threadDelay 100000
+    alice ##> "/ad short" -- create the address to test that it can co-exist with group link
+    _ <- getShortContactLink alice True
     alice ##> "/g team"
     alice <## "group #team is created"
     alice <## "to add members use /a team <name> or /create link #team"

@@ -298,6 +298,7 @@ CREATE TABLE connections(
   pq_rcv_enabled INTEGER,
   quota_err_counter INTEGER NOT NULL DEFAULT 0,
   short_link_inv BLOB,
+  via_short_link_contact BLOB,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE

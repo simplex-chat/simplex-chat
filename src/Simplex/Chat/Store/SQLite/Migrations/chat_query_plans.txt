@@ -500,10 +500,26 @@ USE TEMP B-TREE FOR ORDER BY
 Query: 
             SELECT conn_req_contact, group_id
             FROM user_contact_links
+            WHERE user_id = ? AND short_link_contact = ?
+          
+Plan:
+SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
+
+Query: 
+            SELECT conn_req_contact, group_id
+            FROM user_contact_links
             WHERE user_id = ? AND user_contact_link_id = ?
           
 Plan:
 SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+            SELECT conn_req_inv, agent_conn_id
+            FROM connections
+            WHERE user_id = ? AND short_link_inv = ? LIMIT 1
+          
+Plan:
+SEARCH connections USING INDEX idx_connections_updated_at (user_id=?)
 
 Query: 
             SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, custom_user_profile_id,
@@ -2935,22 +2951,6 @@ Plan:
 SEARCH commands USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-        SELECT conn_req_contact, short_link_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
-        FROM user_contact_links
-        WHERE user_id = ? AND conn_req_contact IN (?,?)
-      
-Plan:
-SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
-
-Query: 
-        SELECT conn_req_contact, short_link_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
-        FROM user_contact_links
-        WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
-      
-Plan:
-SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
-
-Query: 
         SELECT conn_req_contact, short_link_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
         FROM user_contact_links
         WHERE user_id = ? AND user_contact_link_id = ?
@@ -4649,6 +4649,27 @@ SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH cc USING COVERING INDEX idx_connections_group_member (user_id=? AND group_member_id=?)
+
+Query: 
+    SELECT conn_req_contact, short_link_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
+    FROM user_contact_links
+   WHERE user_id = ? AND conn_req_contact IN (?,?)
+Plan:
+SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
+
+Query: 
+    SELECT conn_req_contact, short_link_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
+    FROM user_contact_links
+   WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
+Plan:
+SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
+
+Query: 
+    SELECT conn_req_contact, short_link_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
+    FROM user_contact_links
+   WHERE user_id = ? AND short_link_contact = ?
+Plan:
+SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
 
 Query: 
     SELECT f.file_id, f.ci_file_status, f.file_path

@@ -39,7 +39,7 @@ import Simplex.Messaging.Agent.Protocol (ConnId, ConnShortLink, ConnectionMode (
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, firstRow', maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Util (eitherToMaybe, ($>>=))
+import Simplex.Messaging.Util (eitherToMaybe)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
@@ -207,12 +207,12 @@ getConnectionEntityByConnReq db vr user@User {userId} (cReqSchema1, cReqSchema2)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db vr user) connId_
 
 getConnectionEntityViaShortLink :: DB.Connection -> VersionRangeChat -> User -> ConnShortLink 'CMInvitation -> IO (Maybe (ConnReqInvitation, ConnectionEntity))
-getConnectionEntityViaShortLink db vr user@User {userId} shortLink = do
-  getConnReqConnId  $>>= \(cReq, connId) ->
-    fmap (cReq,) . eitherToMaybe <$> runExceptT (getConnectionEntity db vr user connId)
+getConnectionEntityViaShortLink db vr user@User {userId} shortLink = fmap eitherToMaybe $ runExceptT $ do
+  (cReq, connId) <- ExceptT getConnReqConnId
+  (cReq,) <$> getConnectionEntity db vr user connId
   where
     getConnReqConnId = 
-      maybeFirstRow id $
+      firstRow' toConnReqConnId (SEInternalError "connection not found") $
         DB.query
           db
           [sql|
@@ -221,6 +221,10 @@ getConnectionEntityViaShortLink db vr user@User {userId} shortLink = do
             WHERE user_id = ? AND short_link_inv = ? LIMIT 1
           |]
           (userId, shortLink)
+    -- cReq is Maybe - it is removed when connection is established
+    toConnReqConnId = \case
+      (Just cReq, connId) -> Right (cReq, connId)
+      _ -> Left $ SEInternalError "no connection request"
 
 -- search connection for connection plan:
 -- multiple connections can have same via_contact_uri_hash if request was repeated;

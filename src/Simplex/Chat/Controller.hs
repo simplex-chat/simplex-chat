@@ -442,7 +442,7 @@ data ChatCommand
   | APISetConnectionIncognito Int64 IncognitoEnabled
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
   | APIConnectPlan UserId AConnectionLink
-  | APIConnect UserId IncognitoEnabled (Maybe AConnectionRequestUri)
+  | APIConnect UserId IncognitoEnabled (Maybe ACreatedConnLink)
   | Connect IncognitoEnabled (Maybe AConnectionLink)
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
@@ -677,7 +677,7 @@ data ChatResponse
   | CRInvitation {user :: User, connLinkInvitation :: CreatedLinkInvitation, connection :: PendingContactConnection}
   | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection}
   | CRConnectionUserChanged {user :: User, fromConnection :: PendingContactConnection, toConnection :: PendingContactConnection, newUser :: User}
-  | CRConnectionPlan {user :: User, connReq :: AConnectionRequestUri, connectionPlan :: ConnectionPlan}
+  | CRConnectionPlan {user :: User, connLink :: ACreatedConnLink, connectionPlan :: ConnectionPlan}
   | CRSentConfirmation {user :: User, connection :: PendingContactConnection}
   | CRSentInvitation {user :: User, connection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRSentInvitationToContact {user :: User, contact :: Contact, customUserProfile :: Maybe Profile}

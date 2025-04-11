@@ -158,14 +158,14 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (ConnId, ConnShortLink, ConnectionMode (..), CreatedConnLink (..), UserId)
+import Simplex.Messaging.Agent.Protocol (ConnId, CreatedConnLink (..), UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, fromOnlyBI, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff, pattern PQSupportOff)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
-import Simplex.Messaging.Util (eitherToMaybe, ($>>=), (<$$>))
+import Simplex.Messaging.Util (eitherToMaybe, firstRow', ($>>=), (<$$>))
 import Simplex.Messaging.Version
 import UnliftIO.STM
 #if defined(dbPostgres)
@@ -1684,8 +1684,9 @@ getGroupInfo db vr User {userId, userContactId} groupId = ExceptT $ do
 
 getGroupInfoByUserContactLinkConnReq :: DB.Connection -> VersionRangeChat -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe GroupInfo)
 getGroupInfoByUserContactLinkConnReq db vr user@User {userId} (cReqSchema1, cReqSchema2) = do
+  -- fmap join is to support group_id = NULL if non-group contact request is sent to this function (e.g., if client data is appended).
   groupId_ <-
-    maybeFirstRow fromOnly $
+    fmap join . maybeFirstRow fromOnly $
       DB.query
         db
         [sql|
@@ -1696,13 +1697,13 @@ getGroupInfoByUserContactLinkConnReq db vr user@User {userId} (cReqSchema1, cReq
         (userId, cReqSchema1, cReqSchema2)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getGroupInfo db vr user) groupId_
 
-getGroupInfoViaUserShortLink :: DB.Connection -> VersionRangeChat -> User -> ConnShortLink 'CMContact -> IO (Maybe (ConnReqContact, GroupInfo))
-getGroupInfoViaUserShortLink db vr user@User {userId} shortLink =
-  getConnReqGroup $>>= \(cReq, groupId) ->
-    fmap (cReq,) . eitherToMaybe <$> runExceptT (getGroupInfo db vr user groupId)
+getGroupInfoViaUserShortLink :: DB.Connection -> VersionRangeChat -> User -> ShortLinkContact -> IO (Maybe (ConnReqContact, GroupInfo))
+getGroupInfoViaUserShortLink db vr user@User {userId} shortLink = fmap eitherToMaybe $ runExceptT $ do
+  (cReq, groupId) <- ExceptT getConnReqGroup
+  (cReq,) <$> getGroupInfo db vr user groupId
   where
     getConnReqGroup = 
-      maybeFirstRow id $
+      firstRow' toConnReqGroupId (SEInternalError "group link not found") $
         DB.query
           db
           [sql|
@@ -1711,6 +1712,10 @@ getGroupInfoViaUserShortLink db vr user@User {userId} shortLink =
             WHERE user_id = ? AND short_link_contact = ?
           |]
           (userId, shortLink)
+    toConnReqGroupId = \case
+      -- cReq is "not null", group_id is nullable
+      (cReq, Just groupId) -> Right (cReq, groupId)
+      _ -> Left $ SEInternalError "no conn req or group ID"
 
 getGroupInfoByGroupLinkHash :: DB.Connection -> VersionRangeChat -> User -> (ConnReqUriHash, ConnReqUriHash) -> IO (Maybe GroupInfo)
 getGroupInfoByGroupLinkHash db vr user@User {userId, userContactId} (groupLinkHash1, groupLinkHash2) = do
