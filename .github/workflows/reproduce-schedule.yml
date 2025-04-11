@@ -1,0 +1,45 @@
+name: Reproduce latest release
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *' # every day at 02:00 night
+
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Get latest release
+        shell: bash
+        run: |
+          curl --proto '=https' \
+               --tlsv1.2 \
+               -sSf -L \
+               'https://api.github.com/repos/simplex-chat/simplex-chat/releases/latest' \
+               2>/dev/null | \
+          grep -i "tag_name" | \
+          awk -F \" '{print "TAG="$4}' >> $GITHUB_ENV
+
+      - name: Execute reproduce script
+        run: |
+          ${GITHUB_WORKSPACE}/scripts/reproduce-builds.sh "$TAG"
+
+      - name: Check if build has been reproduced
+        env:
+          url: ${{ secrets.STATUS_SIMPLEX_WEBHOOK_URL }}
+          user: ${{ secrets.STATUS_SIMPLEX_WEBHOOK_USER }}
+          pass: ${{ secrets.STATUS_SIMPLEX_WEBHOOK_PASS }}
+        run: |
+          if [ -f "${GITHUB_WORKSPACE}/$TAG/_sha256sums" ]; then
+            exit 0
+          else
+            curl --proto '=https' --tlsv1.2 -sSf \
+              -u "${user}:${pass}" \
+              -H 'Content-Type: application/json' \
+              -d '{"title": "👾 GitHub: Runner", "description": "⛔️ '"$TAG"' did not reproduce."}' \
+              "$url"
+            exit 1
+          fi
