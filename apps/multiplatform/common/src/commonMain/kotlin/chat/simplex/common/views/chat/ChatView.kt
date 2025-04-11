@@ -32,7 +32,6 @@ import chat.simplex.common.model.CIDirection.GroupRcv
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.activeCall
 import chat.simplex.common.model.ChatModel.controller
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.model.ChatModel.withSecondaryChatIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
@@ -390,15 +389,15 @@ fun ChatView(
                 if (deleted != null) {
                   deletedChatItem = deleted.deletedChatItem.chatItem
                   toChatItem = deleted.toChatItem?.chatItem
-                  withChats {
+                  withContext(Dispatchers.Main) {
                     if (toChatItem != null) {
-                      upsertChatItem(chatRh, chatInfo, toChatItem)
+                      chatModel.chatsContext.upsertChatItem(chatRh, chatInfo, toChatItem)
                     } else {
-                      removeChatItem(chatRh, chatInfo, deletedChatItem)
+                      chatModel.chatsContext.removeChatItem(chatRh, chatInfo, deletedChatItem)
                     }
                     val deletedItem = deleted.deletedChatItem.chatItem
                     if (deletedItem.isActiveReport) {
-                      decreaseGroupReportsCounter(chatRh, chatInfo.id)
+                      chatModel.chatsContext.decreaseGroupReportsCounter(chatRh, chatInfo.id)
                     }
                   }
                   withSecondaryChatIfOpen {
@@ -464,8 +463,8 @@ fun ChatView(
                 if (r != null) {
                   val contactStats = r.first
                   if (contactStats != null)
-                    withChats {
-                      updateContactConnectionStats(chatRh, contact, contactStats)
+                    withContext(Dispatchers.Main) {
+                      chatModel.chatsContext.updateContactConnectionStats(chatRh, contact, contactStats)
                     }
                 }
               }
@@ -476,8 +475,8 @@ fun ChatView(
                 if (r != null) {
                   val memStats = r.second
                   if (memStats != null) {
-                    withChats {
-                      updateGroupMemberConnectionStats(chatRh, groupInfo, r.first, memStats)
+                    withContext(Dispatchers.Main) {
+                      chatModel.chatsContext.updateGroupMemberConnectionStats(chatRh, groupInfo, r.first, memStats)
                     }
                   }
                 }
@@ -487,8 +486,8 @@ fun ChatView(
               withBGApi {
                 val cStats = chatModel.controller.apiSyncContactRatchet(chatRh, contact.contactId, force = false)
                 if (cStats != null) {
-                  withChats {
-                    updateContactConnectionStats(chatRh, contact, cStats)
+                  withContext(Dispatchers.Main) {
+                    chatModel.chatsContext.updateContactConnectionStats(chatRh, contact, cStats)
                   }
                 }
               }
@@ -497,8 +496,8 @@ fun ChatView(
               withBGApi {
                 val r = chatModel.controller.apiSyncGroupMemberRatchet(chatRh, groupInfo.apiId, member.groupMemberId, force = false)
                 if (r != null) {
-                  withChats {
-                    updateGroupMemberConnectionStats(chatRh, groupInfo, r.first, r.second)
+                  withContext(Dispatchers.Main) {
+                    chatModel.chatsContext.updateGroupMemberConnectionStats(chatRh, groupInfo, r.first, r.second)
                   }
                 }
               }
@@ -520,8 +519,8 @@ fun ChatView(
                   reaction = reaction
                 )
                 if (updatedCI != null) {
-                  withChats {
-                    updateChatItem(cInfo, updatedCI)
+                  withContext(Dispatchers.Main) {
+                    chatModel.chatsContext.updateChatItem(cInfo, updatedCI)
                   }
                   withSecondaryChatIfOpen {
                     if (cItem.isReport) {
@@ -579,11 +578,8 @@ fun ChatView(
             openGroupLink = { groupInfo -> openGroupLink(view = view, groupInfo = groupInfo, rhId = chatRh, close = { ModalManager.end.closeModals() }) },
             markItemsRead = { itemsIds ->
               withBGApi {
-                withChats {
-                  // It's important to call it on Main thread. Otherwise, composable crash occurs from time-to-time without useful stacktrace
-                  withContext(Dispatchers.Main) {
-                    markChatItemsRead(chatRh, chatInfo.id, itemsIds)
-                  }
+                withContext(Dispatchers.Main) {
+                  chatModel.chatsContext.markChatItemsRead(chatRh, chatInfo.id, itemsIds)
                   ntfManager.cancelNotificationsForChat(chatInfo.id)
                   chatModel.controller.apiChatItemsRead(
                     chatRh,
@@ -599,11 +595,8 @@ fun ChatView(
             },
             markChatRead = {
               withBGApi {
-                withChats {
-                  // It's important to call it on Main thread. Otherwise, composable crash occurs from time-to-time without useful stacktrace
-                  withContext(Dispatchers.Main) {
-                    markChatItemsRead(chatRh, chatInfo.id)
-                  }
+                withContext(Dispatchers.Main) {
+                  chatModel.chatsContext.markChatItemsRead(chatRh, chatInfo.id)
                   ntfManager.cancelNotificationsForChat(chatInfo.id)
                   chatModel.controller.apiChatRead(
                     chatRh,
@@ -637,8 +630,8 @@ fun ChatView(
           LaunchedEffect(chatInfo.id) {
             onComposed(chatInfo.id)
             ModalManager.end.closeModals()
-            withChats {
-              chatItems.clearAndNotify()
+            withContext(Dispatchers.Main) {
+              chatModel.chatsContext.chatItems.clearAndNotify()
             }
           }
       }
@@ -650,8 +643,8 @@ fun ChatView(
           LaunchedEffect(chatInfo.id) {
             onComposed(chatInfo.id)
             ModalManager.end.closeModals()
-            withChats {
-              chatItems.clearAndNotify()
+            withContext(Dispatchers.Main) {
+              chatModel.chatsContext.chatItems.clearAndNotify()
             }
           }
       }
@@ -2332,8 +2325,8 @@ private fun findQuotedItemFromItem(
   scope.launch(Dispatchers.Default) {
     val item = apiLoadSingleMessage(rhId.value, chatInfo.value.chatType, chatInfo.value.apiId, itemId, contentTag)
     if (item != null) {
-      withChats {
-        updateChatItem(chatInfo.value, item)
+      withContext(Dispatchers.Main) {
+        chatModel.chatsContext.updateChatItem(chatInfo.value, item)
       }
       withSecondaryChatIfOpen {
         updateChatItem(chatInfo.value, item)
@@ -2516,17 +2509,17 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
         )
       }
       if (deleted != null) {
-        withChats {
+        withContext(Dispatchers.Main) {
           for (di in deleted) {
             val toChatItem = di.toChatItem?.chatItem
             if (toChatItem != null) {
-              upsertChatItem(chatRh, chatInfo, toChatItem)
+              chatModel.chatsContext.upsertChatItem(chatRh, chatInfo, toChatItem)
             } else {
-              removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
+              chatModel.chatsContext.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
             }
             val deletedItem = di.deletedChatItem.chatItem
             if (deletedItem.isActiveReport) {
-              decreaseGroupReportsCounter(chatRh, chatInfo.id)
+              chatModel.chatsContext.decreaseGroupReportsCounter(chatRh, chatInfo.id)
             }
           }
         }
@@ -2558,17 +2551,17 @@ private fun archiveReports(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
         mode = if (forAll) CIDeleteMode.cidmBroadcast else CIDeleteMode.cidmInternalMark
       )
       if (deleted != null) {
-        withChats {
+        withContext(Dispatchers.Main) {
           for (di in deleted) {
             val toChatItem = di.toChatItem?.chatItem
             if (toChatItem != null) {
-              upsertChatItem(chatRh, chatInfo, toChatItem)
+              chatModel.chatsContext.upsertChatItem(chatRh, chatInfo, toChatItem)
             } else {
-              removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
+              chatModel.chatsContext.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
             }
             val deletedItem = di.deletedChatItem.chatItem
             if (deletedItem.isActiveReport) {
-              decreaseGroupReportsCounter(chatRh, chatInfo.id)
+              chatModel.chatsContext.decreaseGroupReportsCounter(chatRh, chatInfo.id)
             }
           }
         }
@@ -2613,9 +2606,9 @@ private fun markUnreadChatAsRead(chatId: String) {
       false
     )
     if (success) {
-      withChats {
-        replaceChat(chatRh, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
-        markChatTagRead(chat)
+      withContext(Dispatchers.Main) {
+        chatModel.chatsContext.replaceChat(chatRh, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
+        chatModel.chatsContext.markChatTagRead(chat)
       }
     }
   }

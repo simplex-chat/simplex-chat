@@ -294,15 +294,6 @@ object ChatModel {
     }
   }
 
-  // running everything inside the block on main thread. Make sure any heavy computation is moved to a background thread
-  suspend fun <T> withChats(contentTag: MsgContentTag? = null, action: suspend ChatsContext.() -> T): T = withContext(Dispatchers.Main) {
-    when {
-      contentTag == null -> chatsContext.action()
-      contentTag == MsgContentTag.Report -> secondaryChatsContext.action()
-      else -> TODO()
-    }
-  }
-
   suspend fun <T> withSecondaryChatIfOpen(action: suspend ChatsContext.() -> T) = withContext(Dispatchers.Main) {
     if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
       secondaryChatsContext.action()
@@ -629,8 +620,9 @@ object ChatModel {
           subject
             .throttleLatest(2000)
             .collect {
-              withChats(contentTag) {
-                chats.replaceAll(popCollectedChats())
+              withContext(Dispatchers.Main) {
+                val chatsCtx = if (contentTag == null) chatsContext else secondaryChatsContext
+                chatsCtx.chats.replaceAll(popCollectedChats())
               }
             }
         }
@@ -930,8 +922,8 @@ object ChatModel {
 
   suspend fun addLiveDummy(chatInfo: ChatInfo): ChatItem {
     val cItem = ChatItem.liveDummy(chatInfo is ChatInfo.Direct)
-    withChats {
-      chatItems.addAndNotify(cItem, contentTag = null)
+    withContext(Dispatchers.Main) {
+      chatsContext.chatItems.addAndNotify(cItem, contentTag = null)
     }
     return cItem
   }
@@ -939,8 +931,8 @@ object ChatModel {
   fun removeLiveDummy() {
     if (chatsContext.chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
       withApi {
-        withChats {
-          chatItems.removeLastAndNotify(contentTag = null)
+        withContext(Dispatchers.Main) {
+          chatsContext.chatItems.removeLastAndNotify(contentTag = null)
         }
       }
     }
@@ -1012,9 +1004,11 @@ object ChatModel {
   fun replaceConnReqView(id: String, withId: String) {
     if (id == showingInvitation.value?.connId) {
       withApi {
-        withChats {
+        withContext(Dispatchers.Main) {
           showingInvitation.value = null
-          chatItems.clearAndNotify()
+          // TODO [contexts] - why does clearAndNotify operates with listeners for both contexts?
+          // TODO            - should it be called for both contexts here instead?
+          chatsContext.chatItems.clearAndNotify()
           chatModel.chatId.value = withId
         }
       }
@@ -1025,9 +1019,10 @@ object ChatModel {
 
   fun dismissConnReqView(id: String) = withApi {
     if (id == showingInvitation.value?.connId) {
-      withChats {
+      withContext(Dispatchers.Main) {
         showingInvitation.value = null
-        chatItems.clearAndNotify()
+        // TODO [contexts] see replaceConnReqView
+        chatsContext.chatItems.clearAndNotify()
         chatModel.chatId.value = null
       }
       // Close NewChatView

@@ -32,7 +32,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.model.ChatModel.withSecondaryChatIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -182,8 +181,8 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
       withBGApi {
         val r = chatModel.controller.apiDeleteChat(chat.remoteHostId, chatInfo.chatType, chatInfo.apiId)
         if (r) {
-          withChats {
-            removeChat(chat.remoteHostId, chatInfo.id)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.removeChat(chat.remoteHostId, chatInfo.id)
             if (chatModel.chatId.value == chatInfo.id) {
               chatModel.chatId.value = null
               ModalManager.end.closeModals()
@@ -957,8 +956,8 @@ private fun SearchRowView(
 private fun setGroupAlias(chat: Chat, localAlias: String, chatModel: ChatModel) = withBGApi {
   val chatRh = chat.remoteHostId
   chatModel.controller.apiSetGroupAlias(chatRh, chat.chatInfo.apiId, localAlias)?.let {
-    withChats {
-      updateGroup(chatRh, it)
+    withContext(Dispatchers.Main) {
+      chatModel.chatsContext.updateGroup(chatRh, it)
     }
   }
 }
@@ -967,9 +966,9 @@ fun removeMembers(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, onSu
   withBGApi {
     val updatedMembers = chatModel.controller.apiRemoveMembers(rhId, groupInfo.groupId, memberIds)
     if (updatedMembers != null) {
-      withChats {
+      withContext(Dispatchers.Main) {
         updatedMembers.forEach { updatedMember ->
-          upsertGroupMember(rhId, groupInfo, updatedMember)
+          chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, updatedMember)
         }
       }
       withSecondaryChatIfOpen {
