@@ -864,19 +864,19 @@ func apiChangeConnectionUser(connId: Int64, userId: Int64) async throws -> Pendi
     throw r
 }
 
-func apiConnectPlan(connLink: String) async -> ((String, ConnectionPlan)?, Alert?) {
+func apiConnectPlan(connLink: String) async -> ((CreatedConnLink, ConnectionPlan)?, Alert?) {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiConnectPlan: no current user")
         return (nil, nil)
     }
     let r = await chatSendCmd(.apiConnectPlan(userId: userId, connLink: connLink))
-    if case let .connectionPlan(_, connReq, connPlan) = r { return ((connReq, connPlan), nil) }
+    if case let .connectionPlan(_, connLink, connPlan) = r { return ((connLink, connPlan), nil) }
     let alert = apiConnectResponseAlert(r) ?? connectionErrorAlert(r)
     return (nil, alert)
 }
 
-func apiConnect(incognito: Bool, connReq: String) async -> (ConnReqType, PendingContactConnection)? {
-    let (r, alert) = await apiConnect_(incognito: incognito, connReq: connReq)
+func apiConnect(incognito: Bool, connLink: CreatedConnLink) async -> (ConnReqType, PendingContactConnection)? {
+    let (r, alert) = await apiConnect_(incognito: incognito, connLink: connLink)
     if let alert = alert {
         AlertManager.shared.showAlert(alert)
         return nil
@@ -885,12 +885,12 @@ func apiConnect(incognito: Bool, connReq: String) async -> (ConnReqType, Pending
     }
 }
 
-func apiConnect_(incognito: Bool, connReq: String) async -> ((ConnReqType, PendingContactConnection)?, Alert?) {
+func apiConnect_(incognito: Bool, connLink: CreatedConnLink) async -> ((ConnReqType, PendingContactConnection)?, Alert?) {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiConnect: no current user")
         return (nil, nil)
     }
-    let r = await chatSendCmd(.apiConnect(userId: userId, incognito: incognito, connReq: connReq))
+    let r = await chatSendCmd(.apiConnect(userId: userId, incognito: incognito, connLink: connLink))
     let m = ChatModel.shared
     switch r {
     case let .sentConfirmation(_, connection):

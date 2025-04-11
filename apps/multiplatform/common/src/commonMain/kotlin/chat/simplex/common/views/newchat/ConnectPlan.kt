@@ -29,19 +29,19 @@ suspend fun planAndConnect(
   filterKnownGroup: ((GroupInfo) -> Unit)? = null,
 ): CompletableDeferred<Boolean> {
   val completable = CompletableDeferred<Boolean>()
-  val close: (() -> Unit)? = {
+  val close: (() -> Unit) = {
     close?.invoke()
     // if close was called, it means the connection was created
     completable.complete(true)
   }
-  val cleanup: (() -> Unit)? = {
+  val cleanup: (() -> Unit) = {
     cleanup?.invoke()
     completable.complete(!completable.isActive)
   }
   val result = chatModel.controller.apiConnectPlan(rhId, shortOrFullLink)
   if (result != null) {
-    val (uri, connectionPlan) = result
-    val link = strHasSingleSimplexLink(uri.trim())
+    val (connectionLink, connectionPlan) = result
+    val link = strHasSingleSimplexLink(shortOrFullLink.trim())
     val linkText = if (link?.format is Format.SimplexLink)
       "<br><br><u>${link.simplexLinkText(link.format.linkType, link.format.smpHosts)}</u>"
     else
@@ -51,10 +51,10 @@ suspend fun planAndConnect(
         InvitationLinkPlan.Ok -> {
           Log.d(TAG, "planAndConnect, .InvitationLink, .Ok, incognito=$incognito")
           if (incognito != null) {
-            connectViaUri(chatModel, rhId, uri, incognito, connectionPlan, close, cleanup)
+            connectViaUri(chatModel, rhId, connectionLink, incognito, connectionPlan, close, cleanup)
           } else {
             askCurrentOrIncognitoProfileAlert(
-              chatModel, rhId, uri, connectionPlan, close,
+              chatModel, rhId, connectionLink, connectionPlan, close,
               title = generalGetString(MR.strings.connect_via_invitation_link),
               text = generalGetString(MR.strings.profile_will_be_sent_to_contact_sending_link) + linkText,
               connectDestructive = false,
@@ -69,7 +69,7 @@ suspend fun planAndConnect(
               title = generalGetString(MR.strings.connect_plan_connect_to_yourself),
               text = generalGetString(MR.strings.connect_plan_this_is_your_own_one_time_link) + linkText,
               confirmText = if (incognito) generalGetString(MR.strings.connect_via_link_incognito) else generalGetString(MR.strings.connect_via_link_verb),
-              onConfirm = { withBGApi { connectViaUri(chatModel, rhId, uri, incognito, connectionPlan, close, cleanup) } },
+              onConfirm = { withBGApi { connectViaUri(chatModel, rhId, connectionLink, incognito, connectionPlan, close, cleanup) } },
               onDismiss = cleanup,
               onDismissRequest = cleanup,
               destructive = true,
@@ -77,7 +77,7 @@ suspend fun planAndConnect(
             )
           } else {
             askCurrentOrIncognitoProfileAlert(
-              chatModel, rhId, uri, connectionPlan, close,
+              chatModel, rhId, connectionLink, connectionPlan, close,
               title = generalGetString(MR.strings.connect_plan_connect_to_yourself),
               text = generalGetString(MR.strings.connect_plan_this_is_your_own_one_time_link) + linkText,
               connectDestructive = true,
@@ -98,7 +98,7 @@ suspend fun planAndConnect(
                 String.format(generalGetString(MR.strings.connect_plan_you_are_already_connecting_to_vName), contact.displayName) + linkText,
                 hostDevice = hostDevice(rhId),
               )
-              cleanup?.invoke()
+              cleanup()
             }
           } else {
             AlertManager.privacySensitive.showAlertMsg(
@@ -106,7 +106,7 @@ suspend fun planAndConnect(
               generalGetString(MR.strings.connect_plan_you_are_already_connecting_via_this_one_time_link) + linkText,
               hostDevice = hostDevice(rhId),
             )
-            cleanup?.invoke()
+            cleanup()
           }
         }
         is InvitationLinkPlan.Known -> {
@@ -121,7 +121,7 @@ suspend fun planAndConnect(
               String.format(generalGetString(MR.strings.you_are_already_connected_to_vName_via_this_link), contact.displayName) + linkText,
               hostDevice = hostDevice(rhId),
             )
-            cleanup?.invoke()
+            cleanup()
           }
         }
       }
@@ -129,10 +129,10 @@ suspend fun planAndConnect(
         ContactAddressPlan.Ok -> {
           Log.d(TAG, "planAndConnect, .ContactAddress, .Ok, incognito=$incognito")
           if (incognito != null) {
-            connectViaUri(chatModel, rhId, uri, incognito, connectionPlan, close, cleanup)
+            connectViaUri(chatModel, rhId, connectionLink, incognito, connectionPlan, close, cleanup)
           } else {
             askCurrentOrIncognitoProfileAlert(
-              chatModel, rhId, uri, connectionPlan, close,
+              chatModel, rhId, connectionLink, connectionPlan, close,
               title = generalGetString(MR.strings.connect_via_contact_link),
               text = generalGetString(MR.strings.profile_will_be_sent_to_contact_sending_link) + linkText,
               connectDestructive = false,
@@ -147,7 +147,7 @@ suspend fun planAndConnect(
               title = generalGetString(MR.strings.connect_plan_connect_to_yourself),
               text = generalGetString(MR.strings.connect_plan_this_is_your_own_simplex_address) + linkText,
               confirmText = if (incognito) generalGetString(MR.strings.connect_via_link_incognito) else generalGetString(MR.strings.connect_via_link_verb),
-              onConfirm = { withBGApi { connectViaUri(chatModel, rhId, uri, incognito, connectionPlan, close, cleanup) } },
+              onConfirm = { withBGApi { connectViaUri(chatModel, rhId, connectionLink, incognito, connectionPlan, close, cleanup) } },
               destructive = true,
               onDismiss = cleanup,
               onDismissRequest = cleanup,
@@ -155,7 +155,7 @@ suspend fun planAndConnect(
             )
           } else {
             askCurrentOrIncognitoProfileAlert(
-              chatModel, rhId, uri, connectionPlan, close,
+              chatModel, rhId, connectionLink, connectionPlan, close,
               title = generalGetString(MR.strings.connect_plan_connect_to_yourself),
               text = generalGetString(MR.strings.connect_plan_this_is_your_own_simplex_address) + linkText,
               connectDestructive = true,
@@ -170,7 +170,7 @@ suspend fun planAndConnect(
               title = generalGetString(MR.strings.connect_plan_repeat_connection_request),
               text = generalGetString(MR.strings.connect_plan_you_have_already_requested_connection_via_this_address) + linkText,
               confirmText = if (incognito) generalGetString(MR.strings.connect_via_link_incognito) else generalGetString(MR.strings.connect_via_link_verb),
-              onConfirm = { withBGApi { connectViaUri(chatModel, rhId, uri, incognito, connectionPlan, close, cleanup) } },
+              onConfirm = { withBGApi { connectViaUri(chatModel, rhId, connectionLink, incognito, connectionPlan, close, cleanup) } },
               onDismiss = cleanup,
               onDismissRequest = cleanup,
               destructive = true,
@@ -178,7 +178,7 @@ suspend fun planAndConnect(
             )
           } else {
             askCurrentOrIncognitoProfileAlert(
-              chatModel, rhId, uri, connectionPlan, close,
+              chatModel, rhId, connectionLink, connectionPlan, close,
               title = generalGetString(MR.strings.connect_plan_repeat_connection_request),
               text = generalGetString(MR.strings.connect_plan_you_have_already_requested_connection_via_this_address) + linkText,
               connectDestructive = true,
@@ -198,7 +198,7 @@ suspend fun planAndConnect(
               String.format(generalGetString(MR.strings.connect_plan_you_are_already_connecting_to_vName), contact.displayName) + linkText,
               hostDevice = hostDevice(rhId),
             )
-            cleanup?.invoke()
+            cleanup()
           }
         }
         is ContactAddressPlan.Known -> {
@@ -213,19 +213,19 @@ suspend fun planAndConnect(
               String.format(generalGetString(MR.strings.you_are_already_connected_to_vName_via_this_link), contact.displayName) + linkText,
               hostDevice = hostDevice(rhId),
             )
-            cleanup?.invoke()
+            cleanup()
           }
         }
         is ContactAddressPlan.ContactViaAddress -> {
           Log.d(TAG, "planAndConnect, .ContactAddress, .ContactViaAddress, incognito=$incognito")
           val contact = connectionPlan.contactAddressPlan.contact
           if (incognito != null) {
-            close?.invoke()
+            close()
             connectContactViaAddress(chatModel, rhId, contact.contactId, incognito)
           } else {
             askCurrentOrIncognitoProfileConnectContactViaAddress(chatModel, rhId, contact, close, openChat = false)
           }
-          cleanup?.invoke()
+          cleanup()
         }
       }
       is ConnectionPlan.GroupLink -> when (connectionPlan.groupLinkPlan) {
@@ -236,14 +236,14 @@ suspend fun planAndConnect(
               title = generalGetString(MR.strings.connect_via_group_link),
               text = generalGetString(MR.strings.you_will_join_group) + linkText,
               confirmText = if (incognito) generalGetString(MR.strings.join_group_incognito_button) else generalGetString(MR.strings.join_group_button),
-              onConfirm = { withBGApi { connectViaUri(chatModel, rhId, uri, incognito, connectionPlan, close, cleanup) } },
+              onConfirm = { withBGApi { connectViaUri(chatModel, rhId, connectionLink, incognito, connectionPlan, close, cleanup) } },
               onDismiss = cleanup,
               onDismissRequest = cleanup,
               hostDevice = hostDevice(rhId),
             )
           } else {
             askCurrentOrIncognitoProfileAlert(
-              chatModel, rhId, uri, connectionPlan, close,
+              chatModel, rhId, connectionLink, connectionPlan, close,
               title = generalGetString(MR.strings.connect_via_group_link),
               text = generalGetString(MR.strings.you_will_join_group) + linkText,
               connectDestructive = false,
@@ -257,7 +257,7 @@ suspend fun planAndConnect(
           if (filterKnownGroup != null) {
             filterKnownGroup(groupInfo)
           } else {
-            ownGroupLinkConfirmConnect(chatModel, rhId, uri, linkText, incognito, connectionPlan, groupInfo, close, cleanup)
+            ownGroupLinkConfirmConnect(chatModel, rhId, connectionLink, linkText, incognito, connectionPlan, groupInfo, close, cleanup)
           }
         }
         GroupLinkPlan.ConnectingConfirmReconnect -> {
@@ -267,7 +267,7 @@ suspend fun planAndConnect(
               title = generalGetString(MR.strings.connect_plan_repeat_join_request),
               text = generalGetString(MR.strings.connect_plan_you_are_already_joining_the_group_via_this_link) + linkText,
               confirmText = if (incognito) generalGetString(MR.strings.join_group_incognito_button) else generalGetString(MR.strings.join_group_button),
-              onConfirm = { withBGApi { connectViaUri(chatModel, rhId, uri, incognito, connectionPlan, close, cleanup) } },
+              onConfirm = { withBGApi { connectViaUri(chatModel, rhId, connectionLink, incognito, connectionPlan, close, cleanup) } },
               onDismiss = cleanup,
               onDismissRequest = cleanup,
               destructive = true,
@@ -275,7 +275,7 @@ suspend fun planAndConnect(
             )
           } else {
             askCurrentOrIncognitoProfileAlert(
-              chatModel, rhId, uri, connectionPlan, close,
+              chatModel, rhId, connectionLink, connectionPlan, close,
               title = generalGetString(MR.strings.connect_plan_repeat_join_request),
               text = generalGetString(MR.strings.connect_plan_you_are_already_joining_the_group_via_this_link) + linkText,
               connectDestructive = true,
@@ -305,7 +305,7 @@ suspend fun planAndConnect(
               hostDevice = hostDevice(rhId),
             )
           }
-          cleanup?.invoke()
+          cleanup()
         }
         is GroupLinkPlan.Known -> {
           Log.d(TAG, "planAndConnect, .GroupLink, .Known, incognito=$incognito")
@@ -327,8 +327,21 @@ suspend fun planAndConnect(
                 hostDevice = hostDevice(rhId),
               )
             }
-            cleanup?.invoke()
+            cleanup()
           }
+        }
+      }
+      is ConnectionPlan.Error -> {
+        Log.d(TAG, "planAndConnect, error ${connectionPlan.chatError}")
+        if (incognito != null) {
+          connectViaUri(chatModel, rhId, connectionLink, incognito, connectionPlan = null, close, cleanup)
+        } else {
+          askCurrentOrIncognitoProfileAlert(
+            chatModel, rhId, connectionLink, connectionPlan = null, close,
+            title = generalGetString(MR.strings.connect_plan_connect_via_link),
+            connectDestructive = false,
+            cleanup = cleanup,
+          )
         }
       }
     }
@@ -339,14 +352,14 @@ suspend fun planAndConnect(
 suspend fun connectViaUri(
   chatModel: ChatModel,
   rhId: Long?,
-  uri: String,
+  connLink: CreatedConnLink,
   incognito: Boolean,
   connectionPlan: ConnectionPlan?,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)?,
 ): Boolean {
-  val pcc = chatModel.controller.apiConnect(rhId, incognito, uri)
-  val connLinkType = if (connectionPlan != null) planToConnectionLinkType(connectionPlan) else ConnectionLinkType.INVITATION
+  val pcc = chatModel.controller.apiConnect(rhId, incognito, connLink)
+  val connLinkType = if (connectionPlan != null) planToConnectionLinkType(connectionPlan) ?: ConnectionLinkType.INVITATION else ConnectionLinkType.INVITATION
   if (pcc != null) {
     withChats {
       updateContactConnection(rhId, pcc)
@@ -367,18 +380,19 @@ suspend fun connectViaUri(
   return pcc != null
 }
 
-fun planToConnectionLinkType(connectionPlan: ConnectionPlan): ConnectionLinkType {
+fun planToConnectionLinkType(connectionPlan: ConnectionPlan): ConnectionLinkType? {
   return when(connectionPlan) {
     is ConnectionPlan.InvitationLink -> ConnectionLinkType.INVITATION
     is ConnectionPlan.ContactAddress -> ConnectionLinkType.CONTACT
     is ConnectionPlan.GroupLink -> ConnectionLinkType.GROUP
+    is ConnectionPlan.Error -> null
   }
 }
 
 fun askCurrentOrIncognitoProfileAlert(
   chatModel: ChatModel,
   rhId: Long?,
-  uri: String,
+  connectionLink: CreatedConnLink,
   connectionPlan: ConnectionPlan?,
   close: (() -> Unit)?,
   title: String,
@@ -395,7 +409,7 @@ fun askCurrentOrIncognitoProfileAlert(
         SectionItemView({
           AlertManager.privacySensitive.hideAlert()
           withBGApi {
-            connectViaUri(chatModel, rhId, uri, incognito = false, connectionPlan, close, cleanup)
+            connectViaUri(chatModel, rhId, connectionLink, incognito = false, connectionPlan, close, cleanup)
           }
         }) {
           Text(generalGetString(MR.strings.connect_use_current_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = connectColor)
@@ -403,7 +417,7 @@ fun askCurrentOrIncognitoProfileAlert(
         SectionItemView({
           AlertManager.privacySensitive.hideAlert()
           withBGApi {
-            connectViaUri(chatModel, rhId, uri, incognito = true, connectionPlan, close, cleanup)
+            connectViaUri(chatModel, rhId, connectionLink, incognito = true, connectionPlan, close, cleanup)
           }
         }) {
           Text(generalGetString(MR.strings.connect_use_new_incognito_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = connectColor)
@@ -434,7 +448,7 @@ fun openKnownContact(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, co
 fun ownGroupLinkConfirmConnect(
   chatModel: ChatModel,
   rhId: Long?,
-  uri: String,
+  connectionLink: CreatedConnLink,
   linkText: String,
   incognito: Boolean?,
   connectionPlan: ConnectionPlan?,
@@ -460,7 +474,7 @@ fun ownGroupLinkConfirmConnect(
           SectionItemView({
             AlertManager.privacySensitive.hideAlert()
             withBGApi {
-              connectViaUri(chatModel, rhId, uri, incognito, connectionPlan, close, cleanup)
+              connectViaUri(chatModel, rhId, connectionLink, incognito, connectionPlan, close, cleanup)
             }
           }) {
             Text(
@@ -473,7 +487,7 @@ fun ownGroupLinkConfirmConnect(
           SectionItemView({
             AlertManager.privacySensitive.hideAlert()
             withBGApi {
-              connectViaUri(chatModel, rhId, uri, incognito = false, connectionPlan, close, cleanup)
+              connectViaUri(chatModel, rhId, connectionLink, incognito = false, connectionPlan, close, cleanup)
             }
           }) {
             Text(generalGetString(MR.strings.connect_use_current_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
@@ -482,7 +496,7 @@ fun ownGroupLinkConfirmConnect(
           SectionItemView({
             AlertManager.privacySensitive.hideAlert()
             withBGApi {
-              connectViaUri(chatModel, rhId, uri, incognito = true, connectionPlan, close, cleanup)
+              connectViaUri(chatModel, rhId, connectionLink, incognito = true, connectionPlan, close, cleanup)
             }
           }) {
             Text(generalGetString(MR.strings.connect_use_new_incognito_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
