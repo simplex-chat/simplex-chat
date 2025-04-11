@@ -39,6 +39,7 @@ module Simplex.Chat.Store.Groups
     getGroup,
     getGroupInfo,
     getGroupInfoByUserContactLinkConnReq,
+    getGroupInfoViaUserShortLink,
     getGroupInfoByGroupLinkHash,
     updateGroupProfile,
     updateGroupPreferences,
@@ -164,7 +165,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff, pattern PQSupportOff)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
-import Simplex.Messaging.Util (eitherToMaybe, ($>>=), (<$$>))
+import Simplex.Messaging.Util (eitherToMaybe, firstRow', ($>>=), (<$$>))
 import Simplex.Messaging.Version
 import UnliftIO.STM
 #if defined(dbPostgres)
@@ -1683,8 +1684,9 @@ getGroupInfo db vr User {userId, userContactId} groupId = ExceptT $ do
 
 getGroupInfoByUserContactLinkConnReq :: DB.Connection -> VersionRangeChat -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe GroupInfo)
 getGroupInfoByUserContactLinkConnReq db vr user@User {userId} (cReqSchema1, cReqSchema2) = do
+  -- fmap join is to support group_id = NULL if non-group contact request is sent to this function (e.g., if client data is appended).
   groupId_ <-
-    maybeFirstRow fromOnly $
+    fmap join . maybeFirstRow fromOnly $
       DB.query
         db
         [sql|
@@ -1694,6 +1696,26 @@ getGroupInfoByUserContactLinkConnReq db vr user@User {userId} (cReqSchema1, cReq
         |]
         (userId, cReqSchema1, cReqSchema2)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getGroupInfo db vr user) groupId_
+
+getGroupInfoViaUserShortLink :: DB.Connection -> VersionRangeChat -> User -> ShortLinkContact -> IO (Maybe (ConnReqContact, GroupInfo))
+getGroupInfoViaUserShortLink db vr user@User {userId} shortLink = fmap eitherToMaybe $ runExceptT $ do
+  (cReq, groupId) <- ExceptT getConnReqGroup
+  (cReq,) <$> getGroupInfo db vr user groupId
+  where
+    getConnReqGroup = 
+      firstRow' toConnReqGroupId (SEInternalError "group link not found") $
+        DB.query
+          db
+          [sql|
+            SELECT conn_req_contact, group_id
+            FROM user_contact_links
+            WHERE user_id = ? AND short_link_contact = ?
+          |]
+          (userId, shortLink)
+    toConnReqGroupId = \case
+      -- cReq is "not null", group_id is nullable
+      (cReq, Just groupId) -> Right (cReq, groupId)
+      _ -> Left $ SEInternalError "no conn req or group ID"
 
 getGroupInfoByGroupLinkHash :: DB.Connection -> VersionRangeChat -> User -> (ConnReqUriHash, ConnReqUriHash) -> IO (Maybe GroupInfo)
 getGroupInfoByGroupLinkHash db vr user@User {userId, userContactId} (groupLinkHash1, groupLinkHash2) = do

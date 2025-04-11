@@ -840,24 +840,24 @@ func sharedProfileInfo(_ incognito: Bool) -> Text {
 }
 
 enum PlanAndConnectAlert: Identifiable {
-    case ownInvitationLinkConfirmConnect(connectionLink: String, connectionPlan: ConnectionPlan, incognito: Bool)
-    case invitationLinkConnecting(connectionLink: String)
-    case ownContactAddressConfirmConnect(connectionLink: String, connectionPlan: ConnectionPlan, incognito: Bool)
-    case contactAddressConnectingConfirmReconnect(connectionLink: String, connectionPlan: ConnectionPlan, incognito: Bool)
-    case groupLinkConfirmConnect(connectionLink: String, connectionPlan: ConnectionPlan, incognito: Bool)
-    case groupLinkConnectingConfirmReconnect(connectionLink: String, connectionPlan: ConnectionPlan, incognito: Bool)
-    case groupLinkConnecting(connectionLink: String, groupInfo: GroupInfo?)
+    case ownInvitationLinkConfirmConnect(connectionLink: CreatedConnLink, connectionPlan: ConnectionPlan, incognito: Bool)
+    case invitationLinkConnecting(connectionLink: CreatedConnLink)
+    case ownContactAddressConfirmConnect(connectionLink: CreatedConnLink, connectionPlan: ConnectionPlan, incognito: Bool)
+    case contactAddressConnectingConfirmReconnect(connectionLink: CreatedConnLink, connectionPlan: ConnectionPlan, incognito: Bool)
+    case groupLinkConfirmConnect(connectionLink: CreatedConnLink, connectionPlan: ConnectionPlan, incognito: Bool)
+    case groupLinkConnectingConfirmReconnect(connectionLink: CreatedConnLink, connectionPlan: ConnectionPlan, incognito: Bool)
+    case groupLinkConnecting(connectionLink: CreatedConnLink, groupInfo: GroupInfo?)
     case error(shortOrFullLink: String, alert: Alert)
 
     var id: String {
         switch self {
-        case let .ownInvitationLinkConfirmConnect(connectionLink, _, _): return "ownInvitationLinkConfirmConnect \(connectionLink)"
-        case let .invitationLinkConnecting(connectionLink): return "invitationLinkConnecting \(connectionLink)"
-        case let .ownContactAddressConfirmConnect(connectionLink, _, _): return "ownContactAddressConfirmConnect \(connectionLink)"
-        case let .contactAddressConnectingConfirmReconnect(connectionLink, _, _): return "contactAddressConnectingConfirmReconnect \(connectionLink)"
-        case let .groupLinkConfirmConnect(connectionLink, _, _): return "groupLinkConfirmConnect \(connectionLink)"
-        case let .groupLinkConnectingConfirmReconnect(connectionLink, _, _): return "groupLinkConnectingConfirmReconnect \(connectionLink)"
-        case let .groupLinkConnecting(connectionLink, _): return "groupLinkConnecting \(connectionLink)"
+        case let .ownInvitationLinkConfirmConnect(connectionLink, _, _): return "ownInvitationLinkConfirmConnect \(connectionLink.connFullLink)"
+        case let .invitationLinkConnecting(connectionLink): return "invitationLinkConnecting \(connectionLink.connFullLink)"
+        case let .ownContactAddressConfirmConnect(connectionLink, _, _): return "ownContactAddressConfirmConnect \(connectionLink.connFullLink)"
+        case let .contactAddressConnectingConfirmReconnect(connectionLink, _, _): return "contactAddressConnectingConfirmReconnect \(connectionLink.connFullLink)"
+        case let .groupLinkConfirmConnect(connectionLink, _, _): return "groupLinkConfirmConnect \(connectionLink.connFullLink)"
+        case let .groupLinkConnectingConfirmReconnect(connectionLink, _, _): return "groupLinkConnectingConfirmReconnect \(connectionLink.connFullLink)"
+        case let .groupLinkConnecting(connectionLink, _): return "groupLinkConnecting \(connectionLink.connFullLink)"
         case let .error(shortOrFullLink, alert): return "error \(shortOrFullLink)"
         }
     }
@@ -946,17 +946,17 @@ func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: Bool, cleanup: (
 }
 
 enum PlanAndConnectActionSheet: Identifiable {
-    case askCurrentOrIncognitoProfile(connectionLink: String, connectionPlan: ConnectionPlan?, title: LocalizedStringKey)
-    case askCurrentOrIncognitoProfileDestructive(connectionLink: String, connectionPlan: ConnectionPlan, title: LocalizedStringKey)
+    case askCurrentOrIncognitoProfile(connectionLink: CreatedConnLink, connectionPlan: ConnectionPlan?, title: LocalizedStringKey)
+    case askCurrentOrIncognitoProfileDestructive(connectionLink: CreatedConnLink, connectionPlan: ConnectionPlan, title: LocalizedStringKey)
     case askCurrentOrIncognitoProfileConnectContactViaAddress(contact: Contact)
-    case ownGroupLinkConfirmConnect(connectionLink: String, connectionPlan: ConnectionPlan, incognito: Bool?, groupInfo: GroupInfo)
+    case ownGroupLinkConfirmConnect(connectionLink: CreatedConnLink, connectionPlan: ConnectionPlan, incognito: Bool?, groupInfo: GroupInfo)
 
     var id: String {
         switch self {
-        case let .askCurrentOrIncognitoProfile(connectionLink, _, _): return "askCurrentOrIncognitoProfile \(connectionLink)"
-        case let .askCurrentOrIncognitoProfileDestructive(connectionLink, _, _): return "askCurrentOrIncognitoProfileDestructive \(connectionLink)"
+        case let .askCurrentOrIncognitoProfile(connectionLink, _, _): return "askCurrentOrIncognitoProfile \(connectionLink.connFullLink)"
+        case let .askCurrentOrIncognitoProfileDestructive(connectionLink, _, _): return "askCurrentOrIncognitoProfileDestructive \(connectionLink.connFullLink)"
         case let .askCurrentOrIncognitoProfileConnectContactViaAddress(contact): return "askCurrentOrIncognitoProfileConnectContactViaAddress \(contact.contactId)"
-        case let .ownGroupLinkConfirmConnect(connectionLink, _, _, _): return "ownGroupLinkConfirmConnect \(connectionLink)"
+        case let .ownGroupLinkConfirmConnect(connectionLink, _, _, _): return "ownGroupLinkConfirmConnect \(connectionLink.connFullLink)"
         }
     }
 }
@@ -1170,6 +1170,13 @@ func planAndConnect(
                         }
                     }
                 }
+            case let .error(chatError):
+                logger.debug("planAndConnect, .error \(chatErrorString(chatError))")
+                if let incognito = incognito {
+                    connectViaLink(connectionLink, connectionPlan: nil, dismiss: dismiss, incognito: incognito, cleanup: cleanup)
+                } else {
+                    showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: nil, title: "Connect via link"))
+                }
             }
         } else if let alert {
             await MainActor.run {
@@ -1195,22 +1202,22 @@ private func connectContactViaAddress_(_ contact: Contact, dismiss: Bool, incogn
 }
 
 private func connectViaLink(
-    _ connectionLink: String,
+    _ connectionLink: CreatedConnLink,
     connectionPlan: ConnectionPlan?,
     dismiss: Bool,
     incognito: Bool,
     cleanup: (() -> Void)?
 ) {
     Task {
-        if let (connReqType, pcc) = await apiConnect(incognito: incognito, connReq: connectionLink) {
+        if let (connReqType, pcc) = await apiConnect(incognito: incognito, connLink: connectionLink) {
             await MainActor.run {
                 ChatModel.shared.updateContactConnection(pcc)
             }
             let crt: ConnReqType
-            if let plan = connectionPlan {
-                crt = planToConnReqType(plan)
+            crt = if let plan = connectionPlan {
+                planToConnReqType(plan) ?? connReqType
             } else {
-                crt = connReqType
+                connReqType
             }
             DispatchQueue.main.async {
                 if dismiss {
@@ -1299,11 +1306,12 @@ enum ConnReqType: Equatable {
     }
 }
 
-private func planToConnReqType(_ connectionPlan: ConnectionPlan) -> ConnReqType {
+private func planToConnReqType(_ connectionPlan: ConnectionPlan) -> ConnReqType? {
     switch connectionPlan {
-    case .invitationLink: return .invitation
-    case .contactAddress: return .contact
-    case .groupLink: return .groupLink
+    case .invitationLink: .invitation
+    case .contactAddress: .contact
+    case .groupLink: .groupLink
+    case .error: nil
     }
 }
 

@@ -148,14 +148,14 @@ deletePendingContactConnection db userId connId =
     |]
     (userId, connId, ConnContact)
 
-createAddressContactConnection :: DB.Connection -> VersionRangeChat -> User -> Contact -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> ExceptT StoreError IO (Int64, Contact)
-createAddressContactConnection db vr user@User {userId} Contact {contactId} acId cReqHash xContactId incognitoProfile subMode chatV pqSup = do
-  PendingContactConnection {pccConnId} <- liftIO $ createConnReqConnection db userId acId cReqHash xContactId incognitoProfile Nothing subMode chatV pqSup
+createAddressContactConnection :: DB.Connection -> VersionRangeChat -> User -> Contact -> ConnId -> ConnReqUriHash -> Maybe ShortLinkContact -> XContactId -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> ExceptT StoreError IO (Int64, Contact)
+createAddressContactConnection db vr user@User {userId} Contact {contactId} acId cReqHash sLnk xContactId incognitoProfile subMode chatV pqSup = do
+  PendingContactConnection {pccConnId} <- liftIO $ createConnReqConnection db userId acId cReqHash sLnk xContactId incognitoProfile Nothing subMode chatV pqSup
   liftIO $ DB.execute db "UPDATE connections SET contact_id = ? WHERE connection_id = ?" (contactId, pccConnId)
   (pccConnId,) <$> getContact db vr user contactId
 
-createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> SubscriptionMode -> VersionChat -> PQSupport -> IO PendingContactConnection
-createConnReqConnection db userId acId cReqHash xContactId incognitoProfile groupLinkId subMode chatV pqSup = do
+createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> Maybe ShortLinkContact -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> SubscriptionMode -> VersionChat -> PQSupport -> IO PendingContactConnection
+createConnReqConnection db userId acId cReqHash sLnk xContactId incognitoProfile groupLinkId subMode chatV pqSup = do
   createdAt <- getCurrentTime
   customUserProfileId <- mapM (createIncognitoProfile_ db userId createdAt) incognitoProfile
   let pccConnStatus = ConnJoined
@@ -164,11 +164,11 @@ createConnReqConnection db userId acId cReqHash xContactId incognitoProfile grou
     [sql|
       INSERT INTO connections (
         user_id, agent_conn_id, conn_status, conn_type, contact_conn_initiated,
-        via_contact_uri_hash, xcontact_id, custom_user_profile_id, via_group_link, group_link_id,
+        via_contact_uri_hash, via_short_link_contact, xcontact_id, custom_user_profile_id, via_group_link, group_link_id,
         created_at, updated_at, to_subscribe, conn_chat_version, pq_support, pq_encryption
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
-    ( (userId, acId, pccConnStatus, ConnContact, BI True, cReqHash, xContactId)
+    ( (userId, acId, pccConnStatus, ConnContact, BI True, cReqHash, sLnk, xContactId)
         :. (customUserProfileId, BI (isJust groupLinkId), groupLinkId)
         :. (createdAt, createdAt, BI (subMode == SMOnlyCreate), chatV, pqSup, pqSup)
     )
@@ -989,7 +989,7 @@ updateConnectionStatus_ :: DB.Connection -> Int64 -> ConnStatus -> IO ()
 updateConnectionStatus_ db connId connStatus = do
   currentTs <- getCurrentTime
   if connStatus == ConnReady
-    then DB.execute db "UPDATE connections SET conn_status = ?, updated_at = ?, conn_req_inv = NULL WHERE connection_id = ?" (connStatus, currentTs, connId)
+    then DB.execute db "UPDATE connections SET conn_status = ?, updated_at = ?, conn_req_inv = NULL, short_link_inv = NULL WHERE connection_id = ?" (connStatus, currentTs, connId)
     else DB.execute db "UPDATE connections SET conn_status = ?, updated_at = ? WHERE connection_id = ?" (connStatus, currentTs, connId)
 
 updateContactSettings :: DB.Connection -> User -> Int64 -> ChatSettings -> IO ()

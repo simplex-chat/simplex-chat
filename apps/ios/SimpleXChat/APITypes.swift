@@ -120,7 +120,7 @@ public enum ChatCommand {
     case apiSetConnectionIncognito(connId: Int64, incognito: Bool)
     case apiChangeConnectionUser(connId: Int64, userId: Int64)
     case apiConnectPlan(userId: Int64, connLink: String)
-    case apiConnect(userId: Int64, incognito: Bool, connReq: String)
+    case apiConnect(userId: Int64, incognito: Bool, connLink: CreatedConnLink)
     case apiConnectContactViaAddress(userId: Int64, incognito: Bool, contactId: Int64)
     case apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode)
     case apiClearChat(type: ChatType, id: Int64)
@@ -309,7 +309,7 @@ public enum ChatCommand {
             case let .apiSetConnectionIncognito(connId, incognito): return "/_set incognito :\(connId) \(onOff(incognito))"
             case let .apiChangeConnectionUser(connId, userId): return "/_set conn user :\(connId) \(userId)"
             case let .apiConnectPlan(userId, connLink): return "/_connect plan \(userId) \(connLink)"
-            case let .apiConnect(userId, incognito, connReq): return "/_connect \(userId) incognito=\(onOff(incognito)) \(connReq)"
+            case let .apiConnect(userId, incognito, connLink): return "/_connect \(userId) incognito=\(onOff(incognito)) \(connLink.connFullLink) \(connLink.connShortLink ?? "")"
             case let .apiConnectContactViaAddress(userId, incognito, contactId): return "/_connect contact \(userId) incognito=\(onOff(incognito)) \(contactId)"
             case let .apiDeleteChat(type, id, chatDeleteMode): return "/_delete \(ref(type, id)) \(chatDeleteMode.cmdString)"
             case let .apiClearChat(type, id): return "/_clear chat \(ref(type, id))"
@@ -632,7 +632,7 @@ public enum ChatResponse: Decodable, Error {
     case invitation(user: UserRef, connLinkInvitation: CreatedConnLink, connection: PendingContactConnection)
     case connectionIncognitoUpdated(user: UserRef, toConnection: PendingContactConnection)
     case connectionUserChanged(user: UserRef, fromConnection: PendingContactConnection, toConnection: PendingContactConnection, newUser: UserRef)
-    case connectionPlan(user: UserRef, connReq: String, connectionPlan: ConnectionPlan)
+    case connectionPlan(user: UserRef, connLink: CreatedConnLink, connectionPlan: ConnectionPlan)
     case sentConfirmation(user: UserRef, connection: PendingContactConnection)
     case sentInvitation(user: UserRef, connection: PendingContactConnection)
     case sentInvitationToContact(user: UserRef, contact: Contact, customUserProfile: Profile?)
@@ -992,7 +992,7 @@ public enum ChatResponse: Decodable, Error {
             case let .invitation(u, connLinkInvitation, connection): return withUser(u, "connLinkInvitation: \(connLinkInvitation)\nconnection: \(connection)")
             case let .connectionIncognitoUpdated(u, toConnection): return withUser(u, String(describing: toConnection))
             case let .connectionUserChanged(u, fromConnection, toConnection, newUser): return withUser(u, "fromConnection: \(String(describing: fromConnection))\ntoConnection: \(String(describing: toConnection))\nnewUserId: \(String(describing: newUser.userId))")
-            case let .connectionPlan(u, connReq, connectionPlan): return withUser(u, "connReq: \(String(describing: connReq))\nconnectionPlan: \(String(describing: connectionPlan))")
+            case let .connectionPlan(u, connLink, connectionPlan): return withUser(u, "connLink: \(String(describing: connLink))\nconnectionPlan: \(String(describing: connectionPlan))")
             case let .sentConfirmation(u, connection): return withUser(u, String(describing: connection))
             case let .sentInvitation(u, connection): return withUser(u, String(describing: connection))
             case let .sentInvitationToContact(u, contact, _): return withUser(u, String(describing: contact))
@@ -1197,6 +1197,7 @@ public enum ConnectionPlan: Decodable, Hashable {
     case invitationLink(invitationLinkPlan: InvitationLinkPlan)
     case contactAddress(contactAddressPlan: ContactAddressPlan)
     case groupLink(groupLinkPlan: GroupLinkPlan)
+    case error(chatError: ChatError)
 }
 
 public enum InvitationLinkPlan: Decodable, Hashable {
@@ -2424,7 +2425,6 @@ public enum ChatErrorType: Decodable, Hashable {
     case chatNotStarted
     case chatNotStopped
     case chatStoreChanged
-    case connectionPlan(connectionPlan: ConnectionPlan)
     case invalidConnReq
     case unsupportedConnReq
     case invalidChatMessage(connection: Connection, message: String)

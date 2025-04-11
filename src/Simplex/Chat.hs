@@ -85,6 +85,10 @@ defaultChatConfig =
             ntf = _defaultNtfServers,
             netCfg = defaultNetworkConfig
           },
+      -- please note: if these servers are changed, this option needs to be split to two,
+      -- to have a different set of servers on the receiving end and on the sending end.
+      -- To preserve backward compatibility receiving end should update before the sending.
+      shortLinkPresetServers = allPresetServers,
       tbqSize = 1024,
       fileChunkSize = 15780, -- do not change
       xftpDescrPartSize = 14000,

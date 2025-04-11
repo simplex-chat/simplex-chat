@@ -90,7 +90,7 @@ serializeChatResponse :: (Maybe RemoteHostId, Maybe User) -> CurrentTime -> Time
 serializeChatResponse user_ ts tz remoteHost_ = unlines . map unStyle . responseToView user_ defaultChatConfig False ts tz remoteHost_
 
 responseToView :: (Maybe RemoteHostId, Maybe User) -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatResponse -> [StyledString]
-responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showReceipts, testView} liveItems ts tz outputRH = \case
+responseToView hu@(currentRH, user_) cfg@ChatConfig {logLevel, showReactions, showReceipts, testView} liveItems ts tz outputRH = \case
   CRActiveUser User {profile, uiThemes} -> viewUserProfile (fromLocalProfile profile) <> viewUITheme uiThemes
   CRUsersList users -> viewUsersList users
   CRChatStarted -> ["chat started"]
@@ -108,7 +108,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRUserServersValidation {} -> []
   CRUsageConditions current _ accepted_ -> viewUsageConditions current accepted_
   CRChatItemTTL u ttl -> ttyUser u $ viewChatItemTTL ttl
-  CRNetworkConfig cfg -> viewNetworkConfig cfg
+  CRNetworkConfig netCfg -> viewNetworkConfig netCfg
   CRContactInfo u ct cStats customUserProfile -> ttyUser u $ viewContactInfo ct cStats customUserProfile
   CRGroupInfo u g s -> ttyUser u $ viewGroupInfo g s
   CRGroupMemberInfo u g m cStats -> ttyUser u $ viewGroupMemberInfo g m cStats
@@ -203,7 +203,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRInvitation u ccLink _ -> ttyUser u $ viewConnReqInvitation ccLink
   CRConnectionIncognitoUpdated u c -> ttyUser u $ viewConnectionIncognitoUpdated c
   CRConnectionUserChanged u c c' nu -> ttyUser u $ viewConnectionUserChanged u c nu c'
-  CRConnectionPlan u _ connectionPlan -> ttyUser u $ viewConnectionPlan connectionPlan
+  CRConnectionPlan u _ connectionPlan -> ttyUser u $ viewConnectionPlan cfg connectionPlan
   CRSentConfirmation u _ -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u _ customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
   CRSentInvitationToContact u _c customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
@@ -1693,8 +1693,8 @@ viewConnectionUserChanged User {localDisplayName = n} PendingContactConnection {
       where
         cReqStr = strEncode $ simplexChatInvitation cReq
 
-viewConnectionPlan :: ConnectionPlan -> [StyledString]
-viewConnectionPlan = \case
+viewConnectionPlan :: ChatConfig -> ConnectionPlan -> [StyledString]
+viewConnectionPlan ChatConfig {logLevel, testView} = \case
   CPInvitationLink ilp -> case ilp of
     ILPOk -> [invLink "ok to connect"]
     ILPOwnLink -> [invLink "own link"]
@@ -1733,6 +1733,7 @@ viewConnectionPlan = \case
       grpOrBiz GroupInfo {businessChat} = case businessChat of
         Just _ -> "business"
         Nothing -> "group"
+  CPError e -> viewChatError False logLevel testView e
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated
@@ -2155,7 +2156,6 @@ viewChatError isCmd logLevel testView = \case
     CEChatNotStarted -> ["error: chat not started"]
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
-    CEConnectionPlan connectionPlan -> viewConnectionPlan connectionPlan
     CEInvalidConnReq -> viewInvalidConnReq
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]
     CEInvalidChatMessage Connection {connId} msgMeta_ msg e ->

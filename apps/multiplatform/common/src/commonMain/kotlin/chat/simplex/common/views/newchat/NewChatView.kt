@@ -541,7 +541,10 @@ private fun InviteView(rhId: Long?, connLinkInvitation: CreatedConnLink, contact
 fun ToggleShortLinkButton(short: MutableState<Boolean>) {
   Text(
     stringResource(if (short.value) MR.strings.full_link_button_text else MR.strings.short_link_button_text),
-    modifier = Modifier.clickable { short.value = !short.value },
+    modifier = Modifier.clickable(
+      interactionSource = remember { MutableInteractionSource() },
+      indication = null
+    ) { short.value = !short.value },
     style = MaterialTheme.typography.body2, fontSize = 14.sp, color = MaterialTheme.colors.primary
   )
 }
