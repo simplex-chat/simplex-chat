@@ -7,7 +7,7 @@ tempdir="$(mktemp -d)"
 init_dir="$PWD"
 
 repo_name="simplex-chat"
-repo="https://github.com/shumvgolove/${repo_name}"
+repo="https://github.com/simplex-chat/${repo_name}"
 
 cabal_local='ignore-project: False
 package direct-sqlcipher
