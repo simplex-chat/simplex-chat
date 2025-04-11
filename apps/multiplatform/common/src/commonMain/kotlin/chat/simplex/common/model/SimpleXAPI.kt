@@ -18,7 +18,7 @@ import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.ChatController.setNetCfg
 import chat.simplex.common.model.ChatModel.changingActiveUserMutex
 import chat.simplex.common.model.ChatModel.withChats
-import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
+import chat.simplex.common.model.ChatModel.withSecondaryChatIfOpen
 import chat.simplex.common.model.MsgContent.MCUnknown
 import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
@@ -2479,7 +2479,7 @@ object ChatController {
           withChats {
             upsertGroupMember(rhId, r.groupInfo, r.toMember)
           }
-          withReportsChatsIfOpen {
+          withSecondaryChatIfOpen {
             upsertGroupMember(rhId, r.groupInfo, r.toMember)
           }
         }
@@ -2534,7 +2534,7 @@ object ChatController {
                 increaseGroupReportsCounter(rhId, cInfo.id)
               }
             }
-            withReportsChatsIfOpen {
+            withSecondaryChatIfOpen {
               if (cItem.isReport) {
                 addChatItem(rhId, cInfo, cItem)
               }
@@ -2565,7 +2565,7 @@ object ChatController {
             withChats {
               updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
             }
-            withReportsChatsIfOpen {
+            withSecondaryChatIfOpen {
               if (cItem.isReport) {
                 updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
               }
@@ -2579,7 +2579,7 @@ object ChatController {
           withChats {
             updateChatItem(r.reaction.chatInfo, r.reaction.chatReaction.chatItem)
           }
-          withReportsChatsIfOpen {
+          withSecondaryChatIfOpen {
             if (r.reaction.chatReaction.chatItem.isReport) {
               updateChatItem(r.reaction.chatInfo, r.reaction.chatReaction.chatItem)
             }
@@ -2624,7 +2624,7 @@ object ChatController {
               decreaseGroupReportsCounter(rhId, cInfo.id)
             }
           }
-          withReportsChatsIfOpen {
+          withSecondaryChatIfOpen {
             if (cItem.isReport) {
               if (toChatItem == null) {
                 removeChatItem(rhId, cInfo, cItem)
@@ -2698,7 +2698,7 @@ object ChatController {
               removeMemberItems(rhId, r.groupInfo.membership, byMember = r.member, r.groupInfo)
             }
           }
-          withReportsChatsIfOpen {
+          withSecondaryChatIfOpen {
             if (r.withMessages) {
               removeMemberItems(rhId, r.groupInfo.membership, byMember = r.member, r.groupInfo)
             }
@@ -2712,7 +2712,7 @@ object ChatController {
               removeMemberItems(rhId, r.deletedMember, byMember = r.byMember, r.groupInfo)
             }
           }
-          withReportsChatsIfOpen {
+          withSecondaryChatIfOpen {
             upsertGroupMember(rhId, r.groupInfo, r.deletedMember)
             if (r.withMessages) {
               removeMemberItems(rhId, r.deletedMember, byMember = r.byMember, r.groupInfo)
@@ -2724,7 +2724,7 @@ object ChatController {
           withChats {
             upsertGroupMember(rhId, r.groupInfo, r.member)
           }
-          withReportsChatsIfOpen {
+          withSecondaryChatIfOpen {
             upsertGroupMember(rhId, r.groupInfo, r.member)
           }
         }
@@ -2733,7 +2733,7 @@ object ChatController {
           withChats {
             upsertGroupMember(rhId, r.groupInfo, r.member)
           }
-          withReportsChatsIfOpen {
+          withSecondaryChatIfOpen {
             upsertGroupMember(rhId, r.groupInfo, r.member)
           }
         }
@@ -2744,7 +2744,7 @@ object ChatController {
               upsertGroupMember(rhId, r.groupInfo, member)
             }
           }
-          withReportsChatsIfOpen {
+          withSecondaryChatIfOpen {
             r.members.forEach { member ->
               upsertGroupMember(rhId, r.groupInfo, member)
             }
@@ -2755,7 +2755,7 @@ object ChatController {
           withChats {
             upsertGroupMember(rhId, r.groupInfo, r.member)
           }
-          withReportsChatsIfOpen {
+          withSecondaryChatIfOpen {
             upsertGroupMember(rhId, r.groupInfo, r.member)
           }
         }
@@ -3131,7 +3131,7 @@ object ChatController {
       val cInfo = aChatItem.chatInfo
       val cItem = aChatItem.chatItem
       withChats { upsertChatItem(rh, cInfo, cItem) }
-      withReportsChatsIfOpen {
+      withSecondaryChatIfOpen {
         if (cItem.isReport) {
           upsertChatItem(rh, cInfo, cItem)
         }
@@ -3173,7 +3173,7 @@ object ChatController {
         upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
       }
     }
-    withReportsChatsIfOpen {
+    withSecondaryChatIfOpen {
       r.chatItemIDs.forEach { itemId ->
         val cItem = chatItems.value.lastOrNull { it.id == itemId } ?: return@forEach
         if (chatModel.chatId.value != null) {
@@ -3198,7 +3198,7 @@ object ChatController {
       notify()
     } else {
       val createdChat = withChats { upsertChatItem(rh, cInfo, cItem) }
-      withReportsChatsIfOpen { if (cItem.content.msgContent is MsgContent.MCReport) { upsertChatItem(rh, cInfo, cItem) } }
+      withSecondaryChatIfOpen { if (cItem.content.msgContent is MsgContent.MCReport) { upsertChatItem(rh, cInfo, cItem) } }
       if (createdChat) {
         notify()
       } else if (cItem.content is CIContent.RcvCall && cItem.content.status == CICallStatus.Missed) {
@@ -3248,7 +3248,7 @@ object ChatController {
         chats.clear()
         popChatCollector.clear()
       }
-      withReportsChatsIfOpen {
+      withSecondaryChatIfOpen {
         chatItems.clearAndNotify()
         chats.clear()
         popChatCollector.clear()

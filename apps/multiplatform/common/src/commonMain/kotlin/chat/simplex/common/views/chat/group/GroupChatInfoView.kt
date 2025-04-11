@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.withChats
-import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
+import chat.simplex.common.model.ChatModel.withSecondaryChatIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -972,7 +972,7 @@ fun removeMembers(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, onSu
           upsertGroupMember(rhId, groupInfo, updatedMember)
         }
       }
-      withReportsChatsIfOpen {
+      withSecondaryChatIfOpen {
         updatedMembers.forEach { updatedMember ->
           upsertGroupMember(rhId, groupInfo, updatedMember)
         }

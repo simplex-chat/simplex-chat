@@ -48,9 +48,10 @@ suspend fun processLoadedChat(
   openAroundItemId: Long?,
   visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 }
 ) {
-  val chatState = chatModel.chatStateForContent(contentTag)
+  val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
+  val chatState = chatsCtx.chatState
   val (splits, unreadAfterItemId, totalAfter, unreadTotal, unreadAfter, unreadAfterNewestLoaded) = chatState
-  val oldItems = chatModel.chatItemsForContent(contentTag).value
+  val oldItems = chatsCtx.chatItems.value
   val newItems = SnapshotStateList<ChatItem>()
   when (pagination) {
     is ChatPagination.Initial -> {

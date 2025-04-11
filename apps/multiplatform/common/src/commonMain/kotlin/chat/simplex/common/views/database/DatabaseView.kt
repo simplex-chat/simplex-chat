@@ -22,7 +22,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
-import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
+import chat.simplex.common.model.ChatModel.withSecondaryChatIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -543,7 +543,7 @@ fun deleteChatDatabaseFilesAndState() {
       chats.clear()
       popChatCollector.clear()
     }
-    withReportsChatsIfOpen {
+    withSecondaryChatIfOpen {
       chatItems.clearAndNotify()
       chats.clear()
       popChatCollector.clear()
