@@ -25,6 +25,7 @@ module Directory.Store
     filterListedGroups,
     groupRegStatusText,
     pendingApproval,
+    groupRemoved,
     fromCustomData,
     toCustomData,
     noJoinFilter,
@@ -139,13 +140,19 @@ data GroupRegStatus
   | GRSSuspended
   | GRSSuspendedBadRoles
   | GRSRemoved
+  deriving (Show)
 
 pendingApproval :: GroupRegStatus -> Bool
 pendingApproval = \case
   GRSPendingApproval _ -> True
   _ -> False
 
-data DirectoryStatus = DSListed | DSReserved | DSRegistered
+groupRemoved :: GroupRegStatus -> Bool
+groupRemoved = \case
+  GRSRemoved -> True
+  _ -> False
+
+data DirectoryStatus = DSListed | DSReserved | DSRegistered | DSRemoved
 
 groupRegStatusText :: GroupRegStatus -> Text
 groupRegStatusText = \case
@@ -163,6 +170,7 @@ grDirectoryStatus = \case
   GRSActive -> DSListed
   GRSSuspended -> DSReserved
   GRSSuspendedBadRoles -> DSReserved
+  GRSRemoved -> DSRemoved
   _ -> DSRegistered
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "PC") ''ProfileCondition)
@@ -200,8 +208,9 @@ addGroupReg st ct GroupInfo {groupId} grStatus = do
       | otherwise = mx
 
 delGroupReg :: DirectoryStore -> GroupReg -> IO ()
-delGroupReg st GroupReg {dbGroupId = gId} = do
+delGroupReg st GroupReg {dbGroupId = gId, groupRegStatus} = do
   logGDelete st gId
+  atomically $ writeTVar groupRegStatus GRSRemoved
   atomically $ unlistGroup st gId
   atomically $ modifyTVar' (groupRegs st) $ filter ((gId ==) . dbGroupId)
 
@@ -216,6 +225,7 @@ setGroupStatus st gr grStatus = do
       DSListed -> listGroup
       DSReserved -> reserveGroup
       DSRegistered -> unlistGroup
+      DSRemoved -> unlistGroup
 
 setGroupRegOwner :: DirectoryStore -> GroupReg -> GroupMember -> IO ()
 setGroupRegOwner st gr owner = do
@@ -390,6 +400,7 @@ mkDirectoryStore h groups =
         DSListed -> (grs', S.insert gId listed, reserved)
         DSReserved -> (grs', listed, S.insert gId reserved)
         DSRegistered -> (grs', listed, reserved)
+        DSRemoved -> (grs, listed, reserved)
 
 mkDirectoryStore_ :: Maybe Handle -> ([GroupReg], Set GroupId, Set GroupId) -> IO DirectoryStore
 mkDirectoryStore_ h (grs, listed, reserved) = do
