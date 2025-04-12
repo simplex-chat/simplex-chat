@@ -33,7 +33,7 @@ jobs:
           ./website/web.sh
 
       - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
+        uses: simplex-chat/actions-gh-pages@v3
         with:
           publish_dir: ./website/_site
           github_token: ${{ secrets.GITHUB_TOKEN }}

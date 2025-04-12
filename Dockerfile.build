@@ -1,0 +1,84 @@
+# syntax=docker/dockerfile:1.7.0-labs
+ARG TAG=24.04
+FROM ubuntu:${TAG} AS build
+
+### Build stage
+
+ARG GHC=9.6.3
+ARG CABAL=3.10.1.0
+ARG JAVA=17
+
+ENV TZ=Etc/UTC \
+    DEBIAN_FRONTEND=noninteractive
+
+# Install curl, git and and simplexmq dependencies
+RUN apt-get update && \
+    apt-get install -y curl \
+                       libpq-dev \
+                       git \
+                       sqlite3 \
+                       libsqlite3-dev \
+                       build-essential \
+                       libgmp3-dev \
+                       zlib1g-dev \
+                       llvm \
+                       cmake \
+                       llvm-dev \
+                       libnuma-dev \
+                       libssl-dev \
+                       desktop-file-utils \
+                       openjdk-${JAVA}-jdk-headless \
+                       patchelf \
+                       ca-certificates \
+                       zip \
+                       wget \
+                       fuse3 \
+                       file \
+                       appstream \
+                       gpg \
+                       unzip &&\
+    export JAVA_HOME=$(update-java-alternatives -l | head -n 1 | awk -F ' ' '{print $NF}') &&\
+    ln -s /bin/fusermount /bin/fusermount3 || :
+
+# Specify bootstrap Haskell versions
+ENV BOOTSTRAP_HASKELL_GHC_VERSION=${GHC}
+ENV BOOTSTRAP_HASKELL_CABAL_VERSION=${CABAL}
+
+# Do not install Stack
+ENV BOOTSTRAP_HASKELL_INSTALL_NO_STACK=true
+ENV BOOTSTRAP_HASKELL_INSTALL_NO_STACK_HOOK=true
+
+# Install ghcup
+RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 sh
+
+# Adjust PATH
+ENV PATH="/root/.cabal/bin:/root/.ghcup/bin:$PATH"
+
+# Set both as default
+RUN ghcup set ghc "${GHC}" && \
+    ghcup set cabal "${CABAL}"
+
+#=====================
+# Install Android SDK
+#=====================
+ARG SDK_VERSION=13114758
+
+ENV SDK_VERSION=$SDK_VERSION \
+    ANDROID_HOME=/root
+
+RUN curl -L -o tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-${SDK_VERSION}_latest.zip" && \
+    unzip tools.zip && rm tools.zip && \
+    mv cmdline-tools tools && mkdir "$ANDROID_HOME/cmdline-tools" && mv tools "$ANDROID_HOME/cmdline-tools/" && \
+    ln -s "$ANDROID_HOME/cmdline-tools/tools" "$ANDROID_HOME/cmdline-tools/latest"
+
+ENV PATH="$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/cmdline-tools/tools/bin"
+
+# https://askubuntu.com/questions/885658/android-sdk-repositories-cfg-could-not-be-loaded
+RUN mkdir -p ~/.android ~/.gradle && \
+    touch ~/.android/repositories.cfg && \
+    echo 'org.gradle.console=plain' > ~/.gradle/gradle.properties &&\
+    yes | sdkmanager --licenses >/dev/null
+
+ENV PATH=$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools
+
+WORKDIR /project
