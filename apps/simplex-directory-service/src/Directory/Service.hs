@@ -185,13 +185,13 @@ useMemberFilter img_ = \case
   Nothing -> False
 
 readBlockedWordsConfig :: DirectoryOpts -> IO BlockedWordsConfig
-readBlockedWordsConfig DirectoryOpts {blockedFragmentsFile, blockedWordsFile, nameSpellingFile, blockedExtensionRules} = do
+readBlockedWordsConfig DirectoryOpts {blockedFragmentsFile, blockedWordsFile, nameSpellingFile, blockedExtensionRules, testing} = do
   extensionRules <- maybe (pure []) (fmap read . readFile) blockedExtensionRules  
   spelling <- maybe (pure M.empty) (fmap (M.fromList . read) . readFile) nameSpellingFile
   blockedFragments <- S.fromList <$> maybe (pure []) (fmap T.lines . T.readFile) blockedFragmentsFile
   bws <- maybe (pure []) (fmap lines . readFile) blockedWordsFile
   let blockedWords = S.fromList $ concatMap (wordVariants extensionRules) bws
-  putStrLn $ "Blocked fragments: " <> show (length blockedFragments) <> ", blocked words: " <> show (length blockedWords) <> ", spelling rules: " <> show (M.size spelling)
+  unless testing $ putStrLn $ "Blocked fragments: " <> show (length blockedFragments) <> ", blocked words: " <> show (length blockedWords) <> ", spelling rules: " <> show (M.size spelling)
   pure BlockedWordsConfig {blockedFragments, blockedWords, extensionRules, spelling}
 
 directoryServiceEvent :: DirectoryStore -> DirectoryOpts -> ServiceState -> User -> ChatController -> ChatResponse -> IO ()
@@ -253,17 +253,25 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     getDuplicateGroup GroupInfo {groupId, groupProfile = GroupProfile {displayName, fullName}} =
       getGroups fullName >>= mapM duplicateGroup
       where
-        sameGroup (GroupInfo {groupId = gId, groupProfile = GroupProfile {displayName = n, fullName = fn}}, _) =
-          gId /= groupId && n == displayName && fn == fullName
+        sameGroupNotRemoved (g@GroupInfo {groupId = gId, groupProfile = GroupProfile {displayName = n, fullName = fn}}, _) =
+          gId /= groupId && n == displayName && fn == fullName && not (memberRemoved $ membership g)
         duplicateGroup [] = pure DGUnique
         duplicateGroup groups = do
-          let gs = filter sameGroup groups
+          let gs = filter sameGroupNotRemoved groups
           if null gs
             then pure DGUnique
             else do
               (lgs, rgs) <- atomically $ (,) <$> readTVar (listedGroups st) <*> readTVar (reservedGroups st)
               let reserved = any (\(GroupInfo {groupId = gId}, _) -> gId `S.member` lgs || gId `S.member` rgs) gs
-              pure $ if reserved then DGReserved else DGRegistered
+              if reserved
+                then pure DGReserved
+                else do
+                  removed <- foldM (\r -> fmap (r &&) . isGroupRemoved) True gs
+                  pure $ if removed then DGUnique else DGRegistered
+        isGroupRemoved (GroupInfo {groupId = gId}, _) =
+          getGroupReg st gId >>= \case
+            Just GroupReg {groupRegStatus} -> groupRemoved <$> readTVarIO groupRegStatus
+            Nothing -> pure True
 
     processInvitation :: Contact -> GroupInfo -> IO ()
     processInvitation ct g@GroupInfo {groupId, groupProfile = GroupProfile {displayName}} = do
@@ -617,7 +625,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
 
     deUserCommand :: Contact -> ChatItemId -> DirectoryCmd 'DRUser -> IO ()
     deUserCommand ct ciId = \case
-      DCHelp ->
+      DCHelp DHSRegistration ->
         sendMessage cc ct $
           "You must be the owner to add the group to the directory:\n\
           \1. Invite "
@@ -628,7 +636,16 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             <> " bot will create a public group link for the new members to join even when you are offline.\n\
                \3. You will then need to add this link to the group welcome message.\n\
                \4. Once the link is added, service admins will approve the group (it can take up to 48 hours), and everybody will be able to find it in directory.\n\n\
-               \Start from inviting the bot to your group as admin - it will guide you through the process"
+               \Start from inviting the bot to your group as admin - it will guide you through the process."
+      DCHelp DHSCommands ->
+        sendMessage cc ct $
+          "*/help commands* - receive this help message.\n\
+          \*/help* - how to register your group to be added to directory.\n\
+          \*/list* - list the groups you registered.\n\
+          \*/delete <ID>:<NAME>* - remove the group you submitted from directory, with _ID_ and _name_ as shown by */list* command.\n\
+          \*/role <ID>* - view and set default member role for your group.\n\
+          \*/filter <ID>* - view and set spam filter settings for group.\n\n\
+          \To search for groups, send the search text."
       DCSearchGroup s -> withFoundListedGroups (Just s) $ sendSearchResults s
       DCSearchNext ->
         atomically (TM.lookup (contactId' ct) searchRequests) >>= \case
@@ -667,10 +684,10 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               "0 registered groups for " <> localDisplayName' ct <> " (" <> tshow (contactId' ct) <> ") out of " <> tshow total <> " registrations"
           void . forkIO $ forM_ (reverse grs) $ \gr@GroupReg {userGroupRegId} ->
             sendGroupInfo ct gr userGroupRegId Nothing
-      DCDeleteGroup ugrId gName ->
-        withUserGroupReg ugrId gName $ \GroupInfo {groupProfile = GroupProfile {displayName}} gr -> do
+      DCDeleteGroup gId gName ->
+        (if isAdmin then withGroupAndReg sendReply else withUserGroupReg) gId gName $ \GroupInfo {groupProfile = GroupProfile {displayName}} gr -> do
           delGroupReg st gr
-          sendReply $ "Your group " <> displayName <> " is deleted from the directory"
+          sendReply $ (if isAdmin then "The group " else "Your group ") <> displayName <> " is deleted from the directory"
       DCMemberRole gId gName_ mRole_ ->
         (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \g _gr -> do
           let GroupInfo {groupProfile = GroupProfile {displayName = n}} = g
@@ -802,9 +819,12 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                               setGroupStatus st gr GRSActive
                               let approved = "The group " <> userGroupReference' gr n <> " is approved"
                               notifyOwner gr $
-                                (approved <> " and listed in directory!\n")
+                                (approved <> " and listed in directory - please moderate it!\n")
                                   <> "Please note: if you change the group profile it will be hidden from directory until it is re-approved.\n\n"
-                                  <> ("Use */filter " <> tshow ugrId <> "* to configure anti-spam filter and */role " <> tshow ugrId <> "* to set default member role.")
+                                  <> "Supported commands:\n"
+                                  <> ("- */filter " <> tshow ugrId <> "* - to configure anti-spam filter.\n")
+                                  <> ("- */role " <> tshow ugrId <> "* - to set default member role.\n")
+                                  <> "- */help commands* - other commands."
                               invited <-
                                 forM ownersGroup $ \og@KnownGroup {localDisplayName = ogName} -> do
                                   inviteToOwnersGroup og gr $ \case
