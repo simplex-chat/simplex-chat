@@ -200,7 +200,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     DEContactConnected ct -> deContactConnected ct
     DEGroupInvitation {contact = ct, groupInfo = g, fromMemberRole, memberRole} -> deGroupInvitation ct g fromMemberRole memberRole
     DEServiceJoinedGroup ctId g owner -> deServiceJoinedGroup ctId g owner
-    DEGroupUpdated {contactId, fromGroup, toGroup} -> deGroupUpdated contactId fromGroup toGroup
+    DEGroupUpdated {member, fromGroup, toGroup} -> deGroupUpdated member fromGroup toGroup
     DEPendingMember g m -> dePendingMember g m
     DEPendingMemberMsg g m ciId t -> dePendingMemberMsg g m ciId t
     DEContactRoleChanged g ctId role -> deContactRoleChanged g ctId role
@@ -362,31 +362,36 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               _ -> notifyOwner gr $ unexpectedError "can't create group link"
             _ -> notifyOwner gr $ unexpectedError "can't create group link"
 
-    deGroupUpdated :: ContactId -> GroupInfo -> GroupInfo -> IO ()
-    deGroupUpdated ctId fromGroup toGroup = do
+    deGroupUpdated :: GroupMember -> GroupInfo -> GroupInfo -> IO ()
+    deGroupUpdated m@GroupMember {memberProfile = LocalProfile {displayName = mName}} fromGroup toGroup = do
       logInfo $ "group updated " <> viewGroupName toGroup
       unless (sameProfile p p') $ do
         withGroupReg toGroup "group updated" $ \gr -> do
           let userGroupRef = userGroupReference gr toGroup
+              byMember = case memberContactId m of
+                Just ctId | ctId `isOwner` gr -> "" -- group registration owner, not any group owner.
+                _ -> " by " <> mName -- owner notification from directory will include the name.
           readTVarIO (groupRegStatus gr) >>= \case
             GRSPendingConfirmation -> pure ()
             GRSProposed -> pure ()
             GRSPendingUpdate ->
               groupProfileUpdate >>= \case
                 GPNoServiceLink ->
-                  when (ctId `isOwner` gr) $ notifyOwner gr $ "The profile updated for " <> userGroupRef <> ", but the group link is not added to the welcome message."
-                GPServiceLinkAdded
-                  | ctId `isOwner` gr -> groupLinkAdded gr
-                  | otherwise -> notifyOwner gr "The group link is added by another group member, your registration will not be processed.\n\nPlease update the group profile yourself."
-                GPServiceLinkRemoved -> when (ctId `isOwner` gr) $ notifyOwner gr $ "The group link of " <> userGroupRef <> " is removed from the welcome message, please add it."
-                GPHasServiceLink -> when (ctId `isOwner` gr) $ groupLinkAdded gr
+                  notifyOwner gr $ "The profile updated for " <> userGroupRef <> byMember <> ", but the group link is not added to the welcome message."
+                GPServiceLinkAdded -> groupLinkAdded gr byMember
+                GPServiceLinkRemoved ->
+                  notifyOwner gr $
+                    "The group link of " <> userGroupRef <> " is removed from the welcome message" <> byMember <> ", please add it."
+                GPHasServiceLink -> groupLinkAdded gr byMember
                 GPServiceLinkError -> do
-                  when (ctId `isOwner` gr) $ notifyOwner gr $ "Error: " <> serviceName <> " has no group link for " <> userGroupRef <> ". Please report the error to the developers."
+                  notifyOwner gr $
+                    ("Error: " <> serviceName <> " has no group link for " <> userGroupRef)
+                      <> " after profile was updated" <> byMember <> ". Please report the error to the developers."
                   logError $ "Error: no group link for " <> userGroupRef
-            GRSPendingApproval n -> processProfileChange gr $ n + 1
-            GRSActive -> processProfileChange gr 1
-            GRSSuspended -> processProfileChange gr 1
-            GRSSuspendedBadRoles -> processProfileChange gr 1
+            GRSPendingApproval n -> processProfileChange gr byMember $ n + 1
+            GRSActive -> processProfileChange gr byMember 1
+            GRSSuspended -> processProfileChange gr byMember 1
+            GRSSuspendedBadRoles -> processProfileChange gr byMember 1
             GRSRemoved -> pure ()
       where
         isInfix l d_ = l `T.isInfixOf` fromMaybe "" d_
@@ -396,34 +401,44 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           GroupProfile {displayName = n, fullName = fn, image = i, description = d}
           GroupProfile {displayName = n', fullName = fn', image = i', description = d'} =
             n == n' && fn == fn' && i == i' && d == d'
-        groupLinkAdded gr = do
+        groupLinkAdded gr byMember = do
           getDuplicateGroup toGroup >>= \case
             Nothing -> notifyOwner gr "Error: getDuplicateGroup. Please notify the developers."
             Just DGReserved -> notifyOwner gr $ groupAlreadyListed toGroup
             _ -> do
               let gaId = 1
               setGroupStatus st gr $ GRSPendingApproval gaId
-              notifyOwner gr $ "Thank you! The group link for " <> userGroupReference gr toGroup <> " is added to the welcome message.\nYou will be notified once the group is added to the directory - it may take up to 48 hours."
+              notifyOwner gr $
+                ("Thank you! The group link for " <> userGroupReference gr toGroup <> " is added to the welcome message" <> byMember)
+                  <> ".\nYou will be notified once the group is added to the directory - it may take up to 48 hours."
               checkRolesSendToApprove gr gaId
-        processProfileChange gr n' = do
+        processProfileChange gr byMember n' = do
           setGroupStatus st gr GRSPendingUpdate
           let userGroupRef = userGroupReference gr toGroup
               groupRef = groupReference toGroup
           groupProfileUpdate >>= \case
             GPNoServiceLink -> do
-              notifyOwner gr $ "The group profile is updated " <> userGroupRef <> ", but no link is added to the welcome message.\n\nThe group will remain hidden from the directory until the group link is added and the group is re-approved."
+              notifyOwner gr $
+                ("The group profile is updated for " <> userGroupRef <> byMember <> ", but no link is added to the welcome message.\n\n")
+                  <> "The group will remain hidden from the directory until the group link is added and the group is re-approved."
             GPServiceLinkRemoved -> do
-              notifyOwner gr $ "The group link for " <> userGroupRef <> " is removed from the welcome message.\n\nThe group is hidden from the directory until the group link is added and the group is re-approved."
+              notifyOwner gr $
+                ("The group link for " <> userGroupRef <> " is removed from the welcome message" <> byMember)
+                  <> ".\n\nThe group is hidden from the directory until the group link is added and the group is re-approved."
               notifyAdminUsers $ "The group link is removed from " <> groupRef <> ", de-listed."
             GPServiceLinkAdded -> do
               setGroupStatus st gr $ GRSPendingApproval n'
-              notifyOwner gr $ "The group link is added to " <> userGroupRef <> "!\nIt is hidden from the directory until approved."
-              notifyAdminUsers $ "The group link is added to " <> groupRef <> "."
+              notifyOwner gr $
+                ("The group link is added to " <> userGroupRef <> byMember)
+                  <> "!\nIt is hidden from the directory until approved."
+              notifyAdminUsers $ "The group link is added to " <> groupRef <> byMember <> "."
               checkRolesSendToApprove gr n'
             GPHasServiceLink -> do
               setGroupStatus st gr $ GRSPendingApproval n'
-              notifyOwner gr $ "The group " <> userGroupRef <> " is updated!\nIt is hidden from the directory until approved."
-              notifyAdminUsers $ "The group " <> groupRef <> " is updated."
+              notifyOwner gr $
+                ("The group " <> userGroupRef <> " is updated" <> byMember)
+                  <> "!\nIt is hidden from the directory until approved."
+              notifyAdminUsers $ "The group " <> groupRef <> " is updated" <> byMember <> "."
               checkRolesSendToApprove gr n'
             GPServiceLinkError -> logError $ "Error: no group link for " <> groupRef <> " pending approval."
         groupProfileUpdate = profileUpdate <$> sendChatCmd cc (APIGetGroupLink groupId)

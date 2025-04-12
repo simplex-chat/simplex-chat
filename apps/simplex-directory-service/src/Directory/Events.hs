@@ -47,7 +47,7 @@ data DirectoryEvent
   = DEContactConnected Contact
   | DEGroupInvitation {contact :: Contact, groupInfo :: GroupInfo, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
   | DEServiceJoinedGroup {contactId :: ContactId, groupInfo :: GroupInfo, hostMember :: GroupMember}
-  | DEGroupUpdated {contactId :: ContactId, fromGroup :: GroupInfo, toGroup :: GroupInfo}
+  | DEGroupUpdated {member :: GroupMember, fromGroup :: GroupInfo, toGroup :: GroupInfo}
   | DEPendingMember GroupInfo GroupMember
   | DEPendingMemberMsg GroupInfo GroupMember ChatItemId Text
   | DEContactRoleChanged GroupInfo ContactId GroupMemberRole -- contactId here is the contact whose role changed
@@ -68,7 +68,7 @@ crDirectoryEvent = \case
   CRContactConnected {contact} -> Just $ DEContactConnected contact
   CRReceivedGroupInvitation {contact, groupInfo, fromMemberRole, memberRole} -> Just $ DEGroupInvitation {contact, groupInfo, fromMemberRole, memberRole}
   CRUserJoinedGroup {groupInfo, hostMember} -> (\contactId -> DEServiceJoinedGroup {contactId, groupInfo, hostMember}) <$> memberContactId hostMember
-  CRGroupUpdated {fromGroup, toGroup, member_} -> (\contactId -> DEGroupUpdated {contactId, fromGroup, toGroup}) <$> (memberContactId =<< member_)
+  CRGroupUpdated {fromGroup, toGroup, member_} -> (\member -> DEGroupUpdated {member, fromGroup, toGroup}) <$> member_
   CRJoinedGroupMember {groupInfo, member = m}
     | pending m -> Just $ DEPendingMember groupInfo m
     | otherwise -> Nothing

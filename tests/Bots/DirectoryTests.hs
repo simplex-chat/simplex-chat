@@ -53,10 +53,12 @@ directoryServiceTests = do
     it "should NOT allow approving if roles are incorrect" testNotApprovedBadRoles
   describe "should require re-approval if profile is changed by" $ do
     it "the registration owner" testRegOwnerChangedProfile
-    it "another owner" testAnotherOwnerChangedProfile -- TODO fix - doesn't work if another owner is not connected as contact
+    it "another owner" testAnotherOwnerChangedProfile
+    it "another owner not connected to directory" testNotConnectedOwnerChangedProfile
   describe "should require profile update if group link is removed by " $ do
     it "the registration owner" testRegOwnerRemovedLink
-    it "another owner" testAnotherOwnerRemovedLink -- TODO fix - doesn't work if another owner is not connected as contact
+    it "another owner" testAnotherOwnerRemovedLink
+    it "another owner not connected to directory" testNotConnectedOwnerRemovedLink
   describe "duplicate groups (same display name and full name)" $ do
     it "should ask for confirmation if a duplicate group is submitted" testDuplicateAskConfirmation
     it "should prohibit registration if a duplicate group is listed" testDuplicateProhibitRegistration
@@ -762,12 +764,33 @@ testAnotherOwnerChangedProfile ps =
         cath <## "full name changed to: Privacy and Security"
         bob <## "cath updated group #privacy:"
         bob <## "full name changed to: Privacy and Security"
-        bob <# "SimpleX-Directory> The group ID 1 (privacy) is updated!"
+        bob <# "SimpleX-Directory> The group ID 1 (privacy) is updated by cath!"
         bob <## "It is hidden from the directory until approved."
         groupNotFound cath "privacy"
-        superUser <# "SimpleX-Directory> The group ID 1 (privacy) is updated."
+        superUser <# "SimpleX-Directory> The group ID 1 (privacy) is updated by cath."
         reapproveGroup 3 superUser bob
         groupFoundN 3 cath "privacy"
+
+testNotConnectedOwnerChangedProfile :: HasCallStack => TestParams -> IO ()
+testNotConnectedOwnerChangedProfile ps =
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          bob `connectVia` dsLink
+          dan `connectVia` dsLink
+          registerGroup superUser bob "privacy" "Privacy"
+          addCathAsOwner bob cath
+          cath ##> "/gp privacy privacy Privacy and Security"
+          cath <## "full name changed to: Privacy and Security"
+          bob <## "cath updated group #privacy:"
+          bob <## "full name changed to: Privacy and Security"
+          bob <# "SimpleX-Directory> The group ID 1 (privacy) is updated by cath!"
+          bob <## "It is hidden from the directory until approved."
+          groupNotFound dan "privacy"
+          superUser <# "SimpleX-Directory> The group ID 1 (privacy) is updated by cath."
+          reapproveGroup 3 superUser bob
+          groupFoundN 3 dan "privacy"
 
 testRegOwnerRemovedLink :: HasCallStack => TestParams -> IO ()
 testRegOwnerRemovedLink ps =
@@ -825,7 +848,7 @@ testAnotherOwnerRemovedLink ps =
         bob <## "cath updated group #privacy:"
         bob <## "description changed to:"
         bob <## "Welcome!"
-        bob <# "SimpleX-Directory> The group link for ID 1 (privacy) is removed from the welcome message."
+        bob <# "SimpleX-Directory> The group link for ID 1 (privacy) is removed from the welcome message by cath."
         bob <## ""
         bob <## "The group is hidden from the directory until the group link is added and the group is re-approved."
         superUser <# "SimpleX-Directory> The group link is removed from ID 1 (privacy), de-listed."
@@ -836,19 +859,54 @@ testAnotherOwnerRemovedLink ps =
         bob <## "cath updated group #privacy:"
         bob <## "description changed to:"
         bob <## welcomeWithLink
-        bob <# "SimpleX-Directory> The group link is added by another group member, your registration will not be processed."
-        bob <## ""
-        bob <## "Please update the group profile yourself."
-        bob ##> ("/set welcome #privacy " <> welcomeWithLink <> " - welcome!")
-        bob <## "description changed to:"
-        bob <## (welcomeWithLink <> " - welcome!")
-        bob <# "SimpleX-Directory> Thank you! The group link for ID 1 (privacy) is added to the welcome message."
+        bob <# "SimpleX-Directory> Thank you! The group link for ID 1 (privacy) is added to the welcome message by cath."
         bob <## "You will be notified once the group is added to the directory - it may take up to 48 hours."
-        cath <## "bob updated group #privacy:"
-        cath <## "description changed to:"
-        cath <## (welcomeWithLink <> " - welcome!")
         reapproveGroup 3 superUser bob
         groupFoundN 3 cath "privacy"
+
+testNotConnectedOwnerRemovedLink :: HasCallStack => TestParams -> IO ()
+testNotConnectedOwnerRemovedLink ps =
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          bob `connectVia` dsLink
+          dan `connectVia` dsLink
+          registerGroup superUser bob "privacy" "Privacy"
+          addCathAsOwner bob cath
+          bob ##> "/show welcome #privacy"
+          bob <## "Welcome message:"
+          welcomeWithLink <- getTermLine bob
+          cath ##> "/set welcome #privacy Welcome!"
+          cath <## "description changed to:"
+          cath <## "Welcome!"
+          bob <## "cath updated group #privacy:"
+          bob <## "description changed to:"
+          bob <## "Welcome!"
+          bob <# "SimpleX-Directory> The group link for ID 1 (privacy) is removed from the welcome message by cath."
+          bob <## ""
+          bob <## "The group is hidden from the directory until the group link is added and the group is re-approved."
+          superUser <# "SimpleX-Directory> The group link is removed from ID 1 (privacy), de-listed."
+          groupNotFound dan "privacy"
+          cath ##> ("/set welcome #privacy " <> welcomeWithLink)
+          cath <## "description changed to:"
+          cath <## welcomeWithLink
+          bob <## "cath updated group #privacy:"
+          bob <## "description changed to:"
+          bob <## welcomeWithLink
+          -- bob <# "SimpleX-Directory> The group link is added by another group member, your registration will not be processed."
+          -- bob <## ""
+          -- bob <## "Please update the group profile yourself."
+          -- bob ##> ("/set welcome #privacy " <> welcomeWithLink <> " - welcome!")
+          -- bob <## "description changed to:"
+          -- bob <## (welcomeWithLink <> " - welcome!")
+          bob <# "SimpleX-Directory> Thank you! The group link for ID 1 (privacy) is added to the welcome message by cath."
+          bob <## "You will be notified once the group is added to the directory - it may take up to 48 hours."
+          -- cath <## "bob updated group #privacy:"
+          -- cath <## "description changed to:"
+          -- cath <## (welcomeWithLink <> " - welcome!")
+          reapproveGroup 3 superUser bob
+          groupFoundN 3 dan "privacy"
 
 testDuplicateAskConfirmation :: HasCallStack => TestParams -> IO ()
 testDuplicateAskConfirmation ps =
