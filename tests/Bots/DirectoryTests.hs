@@ -817,14 +817,15 @@ testRegOwnerRemovedLink ps =
         cath <## "contact and member are merged: SimpleX-Directory_1, #privacy SimpleX-Directory"
         cath <## "use @SimpleX-Directory <message> to send messages"
         groupNotFound cath "privacy"
-        bob ##> ("/set welcome #privacy " <> welcomeWithLink)
+        let withChangedLink = T.unpack $ T.replace "contact#/?v=2-7&" "contact#/?v=3-7&" $ T.pack welcomeWithLink
+        bob ##> ("/set welcome #privacy " <> withChangedLink)
         bob <## "description changed to:"
-        bob <## welcomeWithLink
+        bob <## withChangedLink
         bob <# "SimpleX-Directory> Thank you! The group link for ID 1 (privacy) is added to the welcome message."
         bob <## "You will be notified once the group is added to the directory - it may take up to 48 hours."
         cath <## "bob updated group #privacy:"
         cath <## "description changed to:"
-        cath <## welcomeWithLink
+        cath <## withChangedLink
         reapproveGroup 3 superUser bob
         groupFoundN 3 cath "privacy"
 

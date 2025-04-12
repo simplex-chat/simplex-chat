@@ -48,6 +48,7 @@ import Simplex.Chat.Bot
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
+import Simplex.Chat.Markdown (FormattedText (..), Format (..), parseMaybeMarkdownList)
 import Simplex.Chat.Messages
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..))
@@ -61,6 +62,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.View (serializeChatResponse, simplexChatContact, viewContactName, viewGroupName)
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
+import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), SConnectionMode (..), sameConnReqContact)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.TMap (TMap)
@@ -394,7 +396,6 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             GRSSuspendedBadRoles -> processProfileChange gr byMember 1
             GRSRemoved -> pure ()
       where
-        isInfix l d_ = l `T.isInfixOf` fromMaybe "" d_
         GroupInfo {groupId, groupProfile = p} = fromGroup
         GroupInfo {groupProfile = p'} = toGroup
         sameProfile
@@ -445,10 +446,13 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           where
             profileUpdate = \case
               CRGroupLink {connReqContact} ->
-                let groupLink1 = strEncodeTxt connReqContact
-                    groupLink2 = strEncodeTxt $ simplexChatContact connReqContact
-                    hadLinkBefore = groupLink1 `isInfix` description p || groupLink2 `isInfix` description p
-                    hasLinkNow = groupLink1 `isInfix` description p' || groupLink2 `isInfix` description p'
+                let hadLinkBefore = profileHasGroupLink fromGroup
+                    hasLinkNow = profileHasGroupLink toGroup
+                    profileHasGroupLink GroupInfo {groupProfile = gp} =
+                      maybe False (any ftHasLink) $ parseMaybeMarkdownList =<< description gp
+                    ftHasLink = \case
+                      FormattedText (Just SimplexLink {simplexUri = ACR SCMContact cr'}) _ -> sameConnReqContact connReqContact cr'
+                      _ -> False
                  in if
                       | hadLinkBefore && hasLinkNow -> GPHasServiceLink
                       | hadLinkBefore -> GPServiceLinkRemoved

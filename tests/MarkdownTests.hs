@@ -8,7 +8,9 @@ module MarkdownTests where
 import Data.List.NonEmpty (NonEmpty)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Markdown
+import Simplex.Messaging.Encoding.String
 import System.Console.ANSI.Types
 import Test.Hspec
 
@@ -169,7 +171,12 @@ uri :: Text -> Markdown
 uri = Markdown $ Just Uri
 
 simplexLink :: SimplexLinkType -> Text -> NonEmpty Text -> Text -> Markdown
-simplexLink linkType simplexUri smpHosts = Markdown $ Just SimplexLink {linkType, simplexUri, smpHosts}
+simplexLink linkType uriText smpHosts t = Markdown (simplexLinkFormat linkType uriText smpHosts) t
+
+simplexLinkFormat :: SimplexLinkType -> Text -> NonEmpty Text -> Maybe Format
+simplexLinkFormat linkType uriText smpHosts = case strDecode $ encodeUtf8 uriText of
+  Right simplexUri -> Just SimplexLink {linkType, simplexUri, smpHosts}
+  Left e -> error e
 
 textWithUri :: Spec
 textWithUri = describe "text with Uri" do
@@ -275,6 +282,6 @@ multilineMarkdownList = describe "multiline markdown" do
   it "multiline with simplex link" do
     ("https://simplex.chat" <> inv <> "\ntext")
       <<==>>
-        [ FormattedText (Just $ SimplexLink XLInvitation ("simplex:" <> inv) ["smp.simplex.im"]) ("https://simplex.chat" <> inv),
+        [ FormattedText (simplexLinkFormat XLInvitation ("simplex:" <> inv) ["smp.simplex.im"]) ("https://simplex.chat" <> inv),
           "\ntext"
         ]
