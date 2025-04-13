@@ -48,7 +48,7 @@ data Format
   | Secret
   | Colored {color :: FormatColor}
   | Uri
-  | SimplexLink {linkType :: SimplexLinkType, simplexUri :: Text, smpHosts :: NonEmpty Text}
+  | SimplexLink {linkType :: SimplexLinkType, simplexUri :: AConnectionLink, smpHosts :: NonEmpty Text}
   | Mention {memberName :: Text}
   | Email
   | Phone
@@ -254,20 +254,20 @@ markdownP = mconcat <$> A.many' fragmentP
     noFormat = pure . unmarked
     simplexUriFormat :: AConnectionLink -> Format
     simplexUriFormat = \case
-      ACL _ (CLFull cReq) -> case cReq of
-        CRContactUri crData -> SimplexLink (linkType' crData) uri $ uriHosts crData
-        CRInvitationUri crData _ -> SimplexLink XLInvitation uri $ uriHosts crData
+      ACL m (CLFull cReq) -> case cReq of
+        CRContactUri crData -> SimplexLink (linkType' crData) cLink $ uriHosts crData
+        CRInvitationUri crData _ -> SimplexLink XLInvitation cLink $ uriHosts crData
         where
-          uri = strEncodeText $ simplexConnReqUri cReq
+          cLink = ACL m $ CLFull $ simplexConnReqUri cReq
           uriHosts ConnReqUriData {crSmpQueues} = L.map strEncodeText $ sconcat $ L.map (host . qServer) crSmpQueues
           linkType' ConnReqUriData {crClientData} = case crClientData >>= decodeJSON of
             Just (CRDataGroup _) -> XLGroup
             Nothing -> XLContact
-      ACL _ (CLShort cLink) -> case cLink of
-        CSLContact _ ct srv _ -> SimplexLink (linkType' ct) uri $ uriHosts srv
-        CSLInvitation _ srv _ _ -> SimplexLink XLInvitation uri $ uriHosts srv
+      ACL m (CLShort sLnk) -> case sLnk of
+        CSLContact _ ct srv _ -> SimplexLink (linkType' ct) cLink $ uriHosts srv
+        CSLInvitation _ srv _ _ -> SimplexLink XLInvitation cLink $ uriHosts srv
         where
-          uri = strEncodeText $ simplexShortLink cLink
+          cLink = ACL m $ CLShort $ simplexShortLink sLnk
           uriHosts srv = L.map strEncodeText $ host srv
           linkType' = \case
             CCTGroup -> XLGroup

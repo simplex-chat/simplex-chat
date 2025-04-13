@@ -11,6 +11,7 @@ module Directory.Events
   ( DirectoryEvent (..),
     DirectoryCmd (..),
     ADirectoryCmd (..),
+    DirectoryHelpSection (..),
     DirectoryRole (..),
     SDirectoryRole (..),
     crDirectoryEvent,
@@ -25,6 +26,7 @@ import qualified Data.Attoparsec.Text as A
 import Data.Char (isSpace)
 import Data.Either (fromRight)
 import Data.Functor (($>))
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -45,7 +47,7 @@ data DirectoryEvent
   = DEContactConnected Contact
   | DEGroupInvitation {contact :: Contact, groupInfo :: GroupInfo, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
   | DEServiceJoinedGroup {contactId :: ContactId, groupInfo :: GroupInfo, hostMember :: GroupMember}
-  | DEGroupUpdated {contactId :: ContactId, fromGroup :: GroupInfo, toGroup :: GroupInfo}
+  | DEGroupUpdated {member :: GroupMember, fromGroup :: GroupInfo, toGroup :: GroupInfo}
   | DEPendingMember GroupInfo GroupMember
   | DEPendingMemberMsg GroupInfo GroupMember ChatItemId Text
   | DEContactRoleChanged GroupInfo ContactId GroupMemberRole -- contactId here is the contact whose role changed
@@ -66,7 +68,7 @@ crDirectoryEvent = \case
   CRContactConnected {contact} -> Just $ DEContactConnected contact
   CRReceivedGroupInvitation {contact, groupInfo, fromMemberRole, memberRole} -> Just $ DEGroupInvitation {contact, groupInfo, fromMemberRole, memberRole}
   CRUserJoinedGroup {groupInfo, hostMember} -> (\contactId -> DEServiceJoinedGroup {contactId, groupInfo, hostMember}) <$> memberContactId hostMember
-  CRGroupUpdated {fromGroup, toGroup, member_} -> (\contactId -> DEGroupUpdated {contactId, fromGroup, toGroup}) <$> (memberContactId =<< member_)
+  CRGroupUpdated {fromGroup, toGroup, member_} -> (\member -> DEGroupUpdated {member, fromGroup, toGroup}) <$> member_
   CRJoinedGroupMember {groupInfo, member = m}
     | pending m -> Just $ DEPendingMember groupInfo m
     | otherwise -> Nothing
@@ -137,8 +139,11 @@ deriving instance Show (DirectoryCmdTag r)
 
 data ADirectoryCmdTag = forall r. ADCT (SDirectoryRole r) (DirectoryCmdTag r)
 
+data DirectoryHelpSection = DHSRegistration | DHSCommands
+  deriving (Show)
+
 data DirectoryCmd (r :: DirectoryRole) where
-  DCHelp :: DirectoryCmd 'DRUser
+  DCHelp :: DirectoryHelpSection -> DirectoryCmd 'DRUser
   DCSearchGroup :: Text -> DirectoryCmd 'DRUser
   DCSearchNext :: DirectoryCmd 'DRUser
   DCAllGroups :: DirectoryCmd 'DRUser
@@ -180,7 +185,7 @@ directoryCmdP =
       (tagP >>= \(ADCT u t) -> ADC u <$> (cmdP t <|> pure (DCCommandError t)))
         <|> pure (ADC SDRUser DCUnknownCommand)
     tagP =
-      A.takeTill (== ' ') >>= \case
+      A.takeTill isSpace >>= \case
         "help" -> u DCHelp_
         "h" -> u DCHelp_
         "next" -> u DCSearchNext_
@@ -213,11 +218,19 @@ directoryCmdP =
         su = pure . ADCT SDRSuperUser
     cmdP :: DirectoryCmdTag r -> Parser (DirectoryCmd r)
     cmdP = \case
-      DCHelp_ -> pure DCHelp
+      DCHelp_ -> DCHelp . fromMaybe DHSRegistration <$> optional (A.takeWhile isSpace *> helpSectionP)
+        where
+          helpSectionP =
+            A.takeText >>= \case
+              "registration" -> pure DHSRegistration
+              "r" -> pure DHSRegistration
+              "commands" -> pure DHSCommands
+              "c" -> pure DHSCommands
+              _ -> fail "bad help section"
       DCSearchNext_ -> pure DCSearchNext
       DCAllGroups_ -> pure DCAllGroups
       DCRecentGroups_ -> pure DCRecentGroups
-      DCSubmitGroup_ -> fmap DCSubmitGroup . strDecode . encodeUtf8 <$?> (A.takeWhile1 isSpace *> A.takeText)
+      DCSubmitGroup_ -> fmap DCSubmitGroup . strDecode . encodeUtf8 <$?> (spacesP *> A.takeText)
       DCConfirmDuplicateGroup_ -> gc DCConfirmDuplicateGroup
       DCListUserGroups_ -> pure DCListUserGroups
       DCDeleteGroup_ -> gc DCDeleteGroup
@@ -228,7 +241,7 @@ directoryCmdP =
       DCGroupFilter_ -> do
         (groupId, displayName_) <- gc_ (,)
         acceptance_ <-
-          (A.takeWhile (== ' ') >> A.endOfInput) $> Nothing
+          (A.takeWhile isSpace >> A.endOfInput) $> Nothing
             <|> Just <$> (acceptancePresetsP <|> acceptanceFiltersP)
         pure $ DCGroupFilter groupId displayName_ acceptance_
         where
@@ -272,15 +285,15 @@ directoryCmdP =
       where
         gc f = f <$> (spacesP *> A.decimal) <*> (A.char ':' *> displayNameTextP)
         gc_ f = f <$> (spacesP *> A.decimal) <*> optional (A.char ':' *> displayNameTextP)
-        -- wordP = spacesP *> A.takeTill (== ' ')
-        spacesP = A.takeWhile1 (== ' ')
+        -- wordP = spacesP *> A.takeTill isSpace
+        spacesP = A.takeWhile1 isSpace
 
 viewName :: Text -> Text
-viewName n = if T.any (== ' ') n then "'" <> n <> "'" else n
+viewName n = if T.any isSpace n then "'" <> n <> "'" else n
 
 directoryCmdTag :: DirectoryCmd r -> Text
 directoryCmdTag = \case
-  DCHelp -> "help"
+  DCHelp _ -> "help"
   DCSearchGroup _ -> "search"
   DCSearchNext -> "next"
   DCAllGroups -> "all"
