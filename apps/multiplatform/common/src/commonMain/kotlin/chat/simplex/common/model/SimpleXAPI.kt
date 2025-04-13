@@ -6779,6 +6779,7 @@ sealed class StoreError {
       is ContactNotFoundByFileId -> "contactNotFoundByFileId"
       is NoGroupSndStatus -> "noGroupSndStatus"
       is LargeMsg -> "largeMsg"
+      is DBException -> "dBException"
     }
 
   @Serializable @SerialName("duplicateName") object DuplicateName: StoreError()
@@ -6839,6 +6840,7 @@ sealed class StoreError {
   @Serializable @SerialName("contactNotFoundByFileId") class ContactNotFoundByFileId(val fileId: Long): StoreError()
   @Serializable @SerialName("noGroupSndStatus") class NoGroupSndStatus(val itemId: Long, val groupMemberId: Long): StoreError()
   @Serializable @SerialName("largeMsg") object LargeMsg: StoreError()
+  @Serializable @SerialName("dBException") class DBException(val message: String): StoreError()
 }
 
 @Serializable

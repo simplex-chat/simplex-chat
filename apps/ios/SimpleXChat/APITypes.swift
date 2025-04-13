@@ -2542,6 +2542,7 @@ public enum StoreError: Decodable, Hashable {
     case hostMemberIdNotFound(groupId: Int64)
     case contactNotFoundByFileId(fileId: Int64)
     case noGroupSndStatus(itemId: Int64, groupMemberId: Int64)
+    case dBException(message: String)
 }
 
 public enum DatabaseError: Decodable, Hashable {
