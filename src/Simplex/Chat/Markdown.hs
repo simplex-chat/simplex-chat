@@ -49,7 +49,7 @@ data Format
   | Secret
   | Colored {color :: FormatColor}
   | Uri
-  | SimplexLink {linkType :: SimplexLinkType, simplexUri :: Text, smpHosts :: NonEmpty Text}
+  | SimplexLink {linkType :: SimplexLinkType, simplexUri :: AConnectionRequestUri, smpHosts :: NonEmpty Text}
   | Mention {memberName :: Text}
   | Email
   | Phone
@@ -255,12 +255,12 @@ markdownP = mconcat <$> A.many' fragmentP
     noFormat = pure . unmarked
     simplexUriFormat :: AConnectionRequestUri -> Format
     simplexUriFormat = \case
-      ACR _ (CRContactUri crData) ->
-        let uri = safeDecodeUtf8 . strEncode $ CRContactUri crData {crScheme = SSSimplex}
-         in SimplexLink (linkType' crData) uri $ uriHosts crData
-      ACR _ (CRInvitationUri crData e2e) ->
-        let uri = safeDecodeUtf8 . strEncode $ CRInvitationUri crData {crScheme = SSSimplex} e2e
-         in SimplexLink XLInvitation uri $ uriHosts crData
+      ACR m (CRContactUri crData) ->
+        let cReq = ACR m $ CRContactUri crData {crScheme = SSSimplex}
+         in SimplexLink (linkType' crData) cReq $ uriHosts crData
+      ACR m (CRInvitationUri crData e2e) ->
+        let cReq = ACR m $ CRInvitationUri crData {crScheme = SSSimplex} e2e
+         in SimplexLink XLInvitation cReq $ uriHosts crData
       where
         uriHosts ConnReqUriData {crSmpQueues} = L.map (safeDecodeUtf8 . strEncode) $ sconcat $ L.map (host . qServer) crSmpQueues
         linkType' ConnReqUriData {crClientData} = case crClientData >>= decodeJSON of
