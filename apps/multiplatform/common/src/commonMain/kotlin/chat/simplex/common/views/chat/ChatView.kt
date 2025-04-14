@@ -400,13 +400,11 @@ fun ChatView(
                     }
                   }
                   withContext(Dispatchers.Main) {
-                    if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-                      if (deletedChatItem.isReport) {
-                        if (toChatItem != null) {
-                          chatModel.secondaryChatsContext.value?.upsertChatItem(chatRh, chatInfo, toChatItem)
-                        } else {
-                          chatModel.secondaryChatsContext.value?.removeChatItem(chatRh, chatInfo, deletedChatItem)
-                        }
+                    if (deletedChatItem.isReport) {
+                      if (toChatItem != null) {
+                        chatModel.secondaryChatsContext.value?.upsertChatItem(chatRh, chatInfo, toChatItem)
+                      } else {
+                        chatModel.secondaryChatsContext.value?.removeChatItem(chatRh, chatInfo, deletedChatItem)
                       }
                     }
                   }
@@ -524,10 +522,8 @@ fun ChatView(
                     chatModel.chatsContext.updateChatItem(cInfo, updatedCI)
                   }
                   withContext(Dispatchers.Main) {
-                    if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-                      if (cItem.isReport) {
-                        chatModel.secondaryChatsContext.value?.updateChatItem(cInfo, updatedCI)
-                      }
+                    if (cItem.isReport) {
+                      chatModel.secondaryChatsContext.value?.updateChatItem(cInfo, updatedCI)
                     }
                   }
                 }
@@ -592,9 +588,7 @@ fun ChatView(
                   )
                 }
                 withContext(Dispatchers.Main) {
-                  if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-                    chatModel.secondaryChatsContext.value?.markChatItemsRead(chatRh, chatInfo.id, itemsIds)
-                  }
+                  chatModel.secondaryChatsContext.value?.markChatItemsRead(chatRh, chatInfo.id, itemsIds)
                 }
               }
             },
@@ -610,9 +604,7 @@ fun ChatView(
                   )
                 }
                 withContext(Dispatchers.Main) {
-                  if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-                    chatModel.secondaryChatsContext.value?.markChatItemsRead(chatRh, chatInfo.id)
-                  }
+                  chatModel.secondaryChatsContext.value?.markChatItemsRead(chatRh, chatInfo.id)
                 }
               }
             },
@@ -2344,9 +2336,7 @@ private fun findQuotedItemFromItem(
         chatModel.chatsContext.updateChatItem(chatInfo.value, item)
       }
       withContext(Dispatchers.Main) {
-        if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-          chatModel.secondaryChatsContext.value?.updateChatItem(chatInfo.value, item)
-        }
+        chatModel.secondaryChatsContext.value?.updateChatItem(chatInfo.value, item)
       }
       if (item.quotedItem?.itemId != null) {
         scrollToItem(item.quotedItem.itemId)
@@ -2541,15 +2531,13 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
           }
         }
         withContext(Dispatchers.Main) {
-          if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-            for (di in deleted) {
-              if (di.deletedChatItem.chatItem.isReport) {
-                val toChatItem = di.toChatItem?.chatItem
-                if (toChatItem != null) {
-                  chatModel.secondaryChatsContext.value?.upsertChatItem(chatRh, chatInfo, toChatItem)
-                } else {
-                  chatModel.secondaryChatsContext.value?.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
-                }
+          for (di in deleted) {
+            if (di.deletedChatItem.chatItem.isReport) {
+              val toChatItem = di.toChatItem?.chatItem
+              if (toChatItem != null) {
+                chatModel.secondaryChatsContext.value?.upsertChatItem(chatRh, chatInfo, toChatItem)
+              } else {
+                chatModel.secondaryChatsContext.value?.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
               }
             }
           }

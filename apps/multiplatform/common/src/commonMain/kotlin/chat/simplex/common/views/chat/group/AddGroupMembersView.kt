@@ -65,9 +65,7 @@ fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolea
               chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, member)
             }
             withContext(Dispatchers.Main) {
-              if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-                chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, groupInfo, member)
-              }
+              chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, groupInfo, member)
             }
           } else {
             break

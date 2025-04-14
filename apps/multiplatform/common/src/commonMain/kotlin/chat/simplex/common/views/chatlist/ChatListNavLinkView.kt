@@ -612,9 +612,7 @@ fun markChatRead(c: Chat) {
         chatModel.chatsContext.markChatItemsRead(chat.remoteHostId, chat.chatInfo.id)
       }
       withContext(Dispatchers.Main) {
-        if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-          chatModel.secondaryChatsContext.value?.markChatItemsRead(chat.remoteHostId, chat.chatInfo.id)
-        }
+        chatModel.secondaryChatsContext.value?.markChatItemsRead(chat.remoteHostId, chat.chatInfo.id)
       }
       chatModel.controller.apiChatRead(
         chat.remoteHostId,

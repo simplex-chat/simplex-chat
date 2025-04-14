@@ -66,9 +66,7 @@ fun GroupMemberInfoView(
           chatModel.chatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
         }
         withContext(Dispatchers.Main) {
-          if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-            chatModel.secondaryChatsContext.value?.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
-          }
+          chatModel.secondaryChatsContext.value?.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
         }
         close.invoke()
       }
@@ -154,9 +152,7 @@ fun GroupMemberInfoView(
                 chatModel.chatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               }
               withContext(Dispatchers.Main) {
-                if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-                  chatModel.secondaryChatsContext.value?.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
-                }
+                chatModel.secondaryChatsContext.value?.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               }
               close.invoke()
             }
@@ -173,9 +169,7 @@ fun GroupMemberInfoView(
                 chatModel.chatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               }
               withContext(Dispatchers.Main) {
-                if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-                  chatModel.secondaryChatsContext.value?.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
-                }
+                chatModel.secondaryChatsContext.value?.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               }
               close.invoke()
             }
@@ -195,9 +189,7 @@ fun GroupMemberInfoView(
                 chatModel.chatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               }
               withContext(Dispatchers.Main) {
-                if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-                  chatModel.secondaryChatsContext.value?.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
-                }
+                chatModel.secondaryChatsContext.value?.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               }
               close.invoke()
             }
@@ -223,9 +215,7 @@ fun GroupMemberInfoView(
                     chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, copy)
                   }
                   withContext(Dispatchers.Main) {
-                    if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-                      chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, groupInfo, copy)
-                    }
+                    chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, groupInfo, copy)
                   }
                   r
                 }
@@ -262,10 +252,8 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
             }
           }
           withContext(Dispatchers.Main) {
-            if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-              removedMembers.forEach { removedMember ->
-                chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, groupInfo, removedMember)
-              }
+            removedMembers.forEach { removedMember ->
+              chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, groupInfo, removedMember)
             }
           }
         }
@@ -714,10 +702,8 @@ fun updateMembersRole(newRole: GroupMemberRole, rhId: Long?, groupInfo: GroupInf
         }
       }
       withContext(Dispatchers.Main) {
-        if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-          members.forEach { member ->
-            chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, groupInfo, member)
-          }
+        members.forEach { member ->
+          chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, groupInfo, member)
         }
       }
       onSuccess()
@@ -815,9 +801,7 @@ fun updateMemberSettings(rhId: Long?, gInfo: GroupInfo, member: GroupMember, mem
         chatModel.chatsContext.upsertGroupMember(rhId, gInfo, member.copy(memberSettings = memberSettings))
       }
       withContext(Dispatchers.Main) {
-        if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-          chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, gInfo, member.copy(memberSettings = memberSettings))
-        }
+        chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, gInfo, member.copy(memberSettings = memberSettings))
       }
     }
   }
@@ -878,10 +862,8 @@ fun blockMemberForAll(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>, bloc
       }
     }
     withContext(Dispatchers.Main) {
-      if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-        updatedMembers.forEach { updatedMember ->
-          chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, gInfo, updatedMember)
-        }
+      updatedMembers.forEach { updatedMember ->
+        chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, gInfo, updatedMember)
       }
     }
     onSuccess()
