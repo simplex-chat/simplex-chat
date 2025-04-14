@@ -294,16 +294,6 @@ object ChatModel {
     }
   }
 
-  // chatModel.chatsContext.
-  //  withContext(Dispatchers.Main) {
-  //    val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
-  //
-  //  withContext(Dispatchers.Main) {
-  //    if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-  //      secondaryChatsContext.action()
-  //    }
-  //  }
-
   class ChatsContext(private val contentTag: MsgContentTag?) {
     val chats = mutableStateOf(SnapshotStateList<Chat>())
     /** if you modify the items by adding/removing them, use helpers methods like [addAndNotify], [removeLastAndNotify], [removeAllAndNotify], [clearAndNotify] and so on.
