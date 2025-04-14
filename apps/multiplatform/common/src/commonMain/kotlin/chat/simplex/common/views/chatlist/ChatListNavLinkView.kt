@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
-import chat.simplex.common.model.ChatModel.withSecondaryChatIfOpen
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
@@ -608,8 +607,10 @@ fun markChatRead(c: Chat) {
       withContext(Dispatchers.Main) {
         chatModel.chatsContext.markChatItemsRead(chat.remoteHostId, chat.chatInfo.id)
       }
-      withSecondaryChatIfOpen {
-        markChatItemsRead(chat.remoteHostId, chat.chatInfo.id)
+      withContext(Dispatchers.Main) {
+        if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+          chatModel.secondaryChatsContext.markChatItemsRead(chat.remoteHostId, chat.chatInfo.id)
+        }
       }
       chatModel.controller.apiChatRead(
         chat.remoteHostId,

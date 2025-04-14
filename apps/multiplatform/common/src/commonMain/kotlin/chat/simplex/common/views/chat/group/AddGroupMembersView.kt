@@ -25,7 +25,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatModel.withSecondaryChatIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.ChatInfoToolbarTitle
 import chat.simplex.common.views.helpers.*
@@ -65,8 +64,10 @@ fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolea
             withContext(Dispatchers.Main) {
               chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, member)
             }
-            withSecondaryChatIfOpen {
-              upsertGroupMember(rhId, groupInfo, member)
+            withContext(Dispatchers.Main) {
+              if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+                chatModel.secondaryChatsContext.upsertGroupMember(rhId, groupInfo, member)
+              }
             }
           } else {
             break

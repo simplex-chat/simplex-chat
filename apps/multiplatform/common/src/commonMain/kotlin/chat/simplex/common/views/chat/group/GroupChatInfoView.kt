@@ -32,7 +32,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
-import chat.simplex.common.model.ChatModel.withSecondaryChatIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -971,9 +970,11 @@ fun removeMembers(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, onSu
           chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, updatedMember)
         }
       }
-      withSecondaryChatIfOpen {
-        updatedMembers.forEach { updatedMember ->
-          upsertGroupMember(rhId, groupInfo, updatedMember)
+      withContext(Dispatchers.Main) {
+        if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+          updatedMembers.forEach { updatedMember ->
+            chatModel.secondaryChatsContext.upsertGroupMember(rhId, groupInfo, updatedMember)
+          }
         }
       }
       onSuccess()

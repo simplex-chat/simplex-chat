@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
-import chat.simplex.common.model.ChatModel.withSecondaryChatIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -543,10 +542,12 @@ fun deleteChatDatabaseFilesAndState() {
       chatModel.chatsContext.chats.clear()
       chatModel.chatsContext.popChatCollector.clear()
     }
-    withSecondaryChatIfOpen {
-      chatItems.clearAndNotify()
-      chats.clear()
-      popChatCollector.clear()
+    withContext(Dispatchers.Main) {
+      if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+        chatModel.secondaryChatsContext.chatItems.clearAndNotify()
+        chatModel.secondaryChatsContext.chats.clear()
+        chatModel.secondaryChatsContext.popChatCollector.clear()
+      }
     }
   }
   chatModel.users.clear()

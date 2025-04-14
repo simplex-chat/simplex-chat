@@ -294,12 +294,15 @@ object ChatModel {
     }
   }
 
-  // TODO [contexts] remove
-  suspend fun <T> withSecondaryChatIfOpen(action: suspend ChatsContext.() -> T) = withContext(Dispatchers.Main) {
-    if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-      secondaryChatsContext.action()
-    }
-  }
+  // chatModel.chatsContext.
+  //  withContext(Dispatchers.Main) {
+  //    val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
+  //
+  //  withContext(Dispatchers.Main) {
+  //    if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+  //      secondaryChatsContext.action()
+  //    }
+  //  }
 
   class ChatsContext(private val contentTag: MsgContentTag?) {
     val chats = mutableStateOf(SnapshotStateList<Chat>())

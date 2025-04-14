@@ -27,7 +27,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
-import chat.simplex.common.model.ChatModel.withSecondaryChatIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
@@ -66,8 +65,10 @@ fun GroupMemberInfoView(
         withContext(Dispatchers.Main) {
           chatModel.chatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
         }
-        withSecondaryChatIfOpen {
-          updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+        withContext(Dispatchers.Main) {
+          if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+            chatModel.secondaryChatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+          }
         }
         close.invoke()
       }
@@ -152,8 +153,10 @@ fun GroupMemberInfoView(
               withContext(Dispatchers.Main) {
                 chatModel.chatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               }
-              withSecondaryChatIfOpen {
-                updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+              withContext(Dispatchers.Main) {
+                if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+                  chatModel.secondaryChatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+                }
               }
               close.invoke()
             }
@@ -169,8 +172,10 @@ fun GroupMemberInfoView(
               withContext(Dispatchers.Main) {
                 chatModel.chatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               }
-              withSecondaryChatIfOpen {
-                updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+              withContext(Dispatchers.Main) {
+                if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+                  chatModel.secondaryChatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+                }
               }
               close.invoke()
             }
@@ -189,8 +194,10 @@ fun GroupMemberInfoView(
               withContext(Dispatchers.Main) {
                 chatModel.chatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               }
-              withSecondaryChatIfOpen {
-                updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+              withContext(Dispatchers.Main) {
+                if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+                  chatModel.secondaryChatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+                }
               }
               close.invoke()
             }
@@ -215,8 +222,10 @@ fun GroupMemberInfoView(
                   withContext(Dispatchers.Main) {
                     chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, copy)
                   }
-                  withSecondaryChatIfOpen {
-                    upsertGroupMember(rhId, groupInfo, copy)
+                  withContext(Dispatchers.Main) {
+                    if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+                      chatModel.secondaryChatsContext.upsertGroupMember(rhId, groupInfo, copy)
+                    }
                   }
                   r
                 }
@@ -252,9 +261,11 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
               chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, removedMember)
             }
           }
-          withSecondaryChatIfOpen {
-            removedMembers.forEach { removedMember ->
-              upsertGroupMember(rhId, groupInfo, removedMember)
+          withContext(Dispatchers.Main) {
+            if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+              removedMembers.forEach { removedMember ->
+                chatModel.secondaryChatsContext.upsertGroupMember(rhId, groupInfo, removedMember)
+              }
             }
           }
         }
@@ -702,9 +713,11 @@ fun updateMembersRole(newRole: GroupMemberRole, rhId: Long?, groupInfo: GroupInf
           chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, member)
         }
       }
-      withSecondaryChatIfOpen {
-        members.forEach { member ->
-          upsertGroupMember(rhId, groupInfo, member)
+      withContext(Dispatchers.Main) {
+        if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+          members.forEach { member ->
+            chatModel.secondaryChatsContext.upsertGroupMember(rhId, groupInfo, member)
+          }
         }
       }
       onSuccess()
@@ -801,8 +814,10 @@ fun updateMemberSettings(rhId: Long?, gInfo: GroupInfo, member: GroupMember, mem
       withContext(Dispatchers.Main) {
         chatModel.chatsContext.upsertGroupMember(rhId, gInfo, member.copy(memberSettings = memberSettings))
       }
-      withSecondaryChatIfOpen {
-        upsertGroupMember(rhId, gInfo, member.copy(memberSettings = memberSettings))
+      withContext(Dispatchers.Main) {
+        if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+          chatModel.secondaryChatsContext.upsertGroupMember(rhId, gInfo, member.copy(memberSettings = memberSettings))
+        }
       }
     }
   }
@@ -862,9 +877,11 @@ fun blockMemberForAll(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>, bloc
         chatModel.chatsContext.upsertGroupMember(rhId, gInfo, updatedMember)
       }
     }
-    withSecondaryChatIfOpen {
-      updatedMembers.forEach { updatedMember ->
-        upsertGroupMember(rhId, gInfo, updatedMember)
+    withContext(Dispatchers.Main) {
+      if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+        updatedMembers.forEach { updatedMember ->
+          chatModel.secondaryChatsContext.upsertGroupMember(rhId, gInfo, updatedMember)
+        }
       }
     }
     onSuccess()
