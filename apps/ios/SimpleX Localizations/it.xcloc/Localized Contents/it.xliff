@@ -1216,9 +1216,9 @@ swipe action</note>
         <target>Notifiche migliorate</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better privacy and security" xml:space="preserve">
+      <trans-unit id="Better privacy and security" xml:space="preserve" approved="no">
         <source>Better privacy and security</source>
-        <target>Privacy e sicurezza migliorate</target>
+        <target state="translated">Privacy e sicurezza migliori</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better security ✅" xml:space="preserve">
