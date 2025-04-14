@@ -27,8 +27,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
-import chat.simplex.common.model.ChatModel.withChats
-import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
@@ -40,6 +38,7 @@ import chat.simplex.common.views.chatlist.openLoadedChat
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.datetime.Clock
+import kotlinx.coroutines.*
 
 @Composable
 fun GroupMemberInfoView(
@@ -63,11 +62,13 @@ fun GroupMemberInfoView(
       val r = chatModel.controller.apiSyncGroupMemberRatchet(rhId, groupInfo.apiId, member.groupMemberId, force = false)
       if (r != null) {
         connStats.value = r.second
-        withChats {
-          updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
         }
-        withReportsChatsIfOpen {
-          updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+        withContext(Dispatchers.Main) {
+          if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+            chatModel.secondaryChatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+          }
         }
         close.invoke()
       }
@@ -100,8 +101,8 @@ fun GroupMemberInfoView(
             val memberContact = chatModel.controller.apiCreateMemberContact(rhId, groupInfo.apiId, member.groupMemberId)
             if (memberContact != null) {
               val memberChat = Chat(remoteHostId = rhId, ChatInfo.Direct(memberContact), chatItems = arrayListOf())
-              withChats {
-                addChat(memberChat)
+              withContext(Dispatchers.Main) {
+                chatModel.chatsContext.addChat(memberChat)
               }
               openLoadedChat(memberChat)
               closeAll()
@@ -149,11 +150,13 @@ fun GroupMemberInfoView(
             val r = chatModel.controller.apiSwitchGroupMember(rhId, groupInfo.apiId, member.groupMemberId)
             if (r != null) {
               connStats.value = r.second
-              withChats {
-                updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+              withContext(Dispatchers.Main) {
+                chatModel.chatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               }
-              withReportsChatsIfOpen {
-                updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+              withContext(Dispatchers.Main) {
+                if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+                  chatModel.secondaryChatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+                }
               }
               close.invoke()
             }
@@ -166,11 +169,13 @@ fun GroupMemberInfoView(
             val r = chatModel.controller.apiAbortSwitchGroupMember(rhId, groupInfo.apiId, member.groupMemberId)
             if (r != null) {
               connStats.value = r.second
-              withChats {
-                updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+              withContext(Dispatchers.Main) {
+                chatModel.chatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               }
-              withReportsChatsIfOpen {
-                updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+              withContext(Dispatchers.Main) {
+                if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+                  chatModel.secondaryChatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+                }
               }
               close.invoke()
             }
@@ -186,11 +191,13 @@ fun GroupMemberInfoView(
             val r = chatModel.controller.apiSyncGroupMemberRatchet(rhId, groupInfo.apiId, member.groupMemberId, force = true)
             if (r != null) {
               connStats.value = r.second
-              withChats {
-                updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+              withContext(Dispatchers.Main) {
+                chatModel.chatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               }
-              withReportsChatsIfOpen {
-                updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+              withContext(Dispatchers.Main) {
+                if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+                  chatModel.secondaryChatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+                }
               }
               close.invoke()
             }
@@ -212,11 +219,13 @@ fun GroupMemberInfoView(
                       connectionCode = if (verified) SecurityCode(existingCode, Clock.System.now()) else null
                     )
                   )
-                  withChats {
-                    upsertGroupMember(rhId, groupInfo, copy)
+                  withContext(Dispatchers.Main) {
+                    chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, copy)
                   }
-                  withReportsChatsIfOpen {
-                    upsertGroupMember(rhId, groupInfo, copy)
+                  withContext(Dispatchers.Main) {
+                    if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+                      chatModel.secondaryChatsContext.upsertGroupMember(rhId, groupInfo, copy)
+                    }
                   }
                   r
                 }
@@ -247,14 +256,16 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
       withBGApi {
         val removedMembers = chatModel.controller.apiRemoveMembers(rhId, member.groupId, listOf(member.groupMemberId))
         if (removedMembers != null) {
-          withChats {
+          withContext(Dispatchers.Main) {
             removedMembers.forEach { removedMember ->
-              upsertGroupMember(rhId, groupInfo, removedMember)
+              chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, removedMember)
             }
           }
-          withReportsChatsIfOpen {
-            removedMembers.forEach { removedMember ->
-              upsertGroupMember(rhId, groupInfo, removedMember)
+          withContext(Dispatchers.Main) {
+            if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+              removedMembers.forEach { removedMember ->
+                chatModel.secondaryChatsContext.upsertGroupMember(rhId, groupInfo, removedMember)
+              }
             }
           }
         }
@@ -697,14 +708,16 @@ fun updateMembersRole(newRole: GroupMemberRole, rhId: Long?, groupInfo: GroupInf
   withBGApi {
     kotlin.runCatching {
       val members = chatModel.controller.apiMembersRole(rhId, groupInfo.groupId, memberIds, newRole)
-      withChats {
+      withContext(Dispatchers.Main) {
         members.forEach { member ->
-          upsertGroupMember(rhId, groupInfo, member)
+          chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, member)
         }
       }
-      withReportsChatsIfOpen {
-        members.forEach { member ->
-          upsertGroupMember(rhId, groupInfo, member)
+      withContext(Dispatchers.Main) {
+        if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+          members.forEach { member ->
+            chatModel.secondaryChatsContext.upsertGroupMember(rhId, groupInfo, member)
+          }
         }
       }
       onSuccess()
@@ -798,11 +811,13 @@ fun updateMemberSettings(rhId: Long?, gInfo: GroupInfo, member: GroupMember, mem
   withBGApi {
     val success = ChatController.apiSetMemberSettings(rhId, gInfo.groupId, member.groupMemberId, memberSettings)
     if (success) {
-      withChats {
-        upsertGroupMember(rhId, gInfo, member.copy(memberSettings = memberSettings))
+      withContext(Dispatchers.Main) {
+        chatModel.chatsContext.upsertGroupMember(rhId, gInfo, member.copy(memberSettings = memberSettings))
       }
-      withReportsChatsIfOpen {
-        upsertGroupMember(rhId, gInfo, member.copy(memberSettings = memberSettings))
+      withContext(Dispatchers.Main) {
+        if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+          chatModel.secondaryChatsContext.upsertGroupMember(rhId, gInfo, member.copy(memberSettings = memberSettings))
+        }
       }
     }
   }
@@ -857,14 +872,16 @@ fun unblockForAllAlert(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>, onS
 fun blockMemberForAll(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>, blocked: Boolean, onSuccess: () -> Unit = {}) {
   withBGApi {
     val updatedMembers = ChatController.apiBlockMembersForAll(rhId, gInfo.groupId, memberIds, blocked)
-    withChats {
+    withContext(Dispatchers.Main) {
       updatedMembers.forEach { updatedMember ->
-        upsertGroupMember(rhId, gInfo, updatedMember)
+        chatModel.chatsContext.upsertGroupMember(rhId, gInfo, updatedMember)
       }
     }
-    withReportsChatsIfOpen {
-      updatedMembers.forEach { updatedMember ->
-        upsertGroupMember(rhId, gInfo, updatedMember)
+    withContext(Dispatchers.Main) {
+      if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+        updatedMembers.forEach { updatedMember ->
+          chatModel.secondaryChatsContext.upsertGroupMember(rhId, gInfo, updatedMember)
+        }
       }
     }
     onSuccess()

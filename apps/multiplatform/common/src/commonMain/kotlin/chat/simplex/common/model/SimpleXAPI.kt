@@ -17,8 +17,6 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.ChatController.setNetCfg
 import chat.simplex.common.model.ChatModel.changingActiveUserMutex
-import chat.simplex.common.model.ChatModel.withChats
-import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.model.MsgContent.MCUnknown
 import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
@@ -544,9 +542,9 @@ object ChatController {
         }
         Log.d(TAG, "startChat: started")
       } else {
-        withChats {
+        withContext(Dispatchers.Main) {
           val chats = apiGetChats(null)
-          updateChats(chats)
+          chatModel.chatsContext.updateChats(chats)
         }
         Log.d(TAG, "startChat: running")
       }
@@ -627,9 +625,9 @@ object ChatController {
     val hasUser = chatModel.currentUser.value != null
     chatModel.userAddress.value = if (hasUser) apiGetUserAddress(rhId) else null
     chatModel.chatItemTTL.value = if (hasUser) getChatItemTTL(rhId) else ChatItemTTL.None
-    withChats {
+    withContext(Dispatchers.Main) {
       val chats = apiGetChats(rhId)
-      updateChats(chats)
+      chatModel.chatsContext.updateChats(chats)
     }
     chatModel.userTags.value = apiGetChatTags(rhId).takeIf { hasUser } ?: emptyList()
     chatModel.activeChatTagFilter.value = null
@@ -1490,8 +1488,8 @@ object ChatController {
   suspend fun deleteChat(chat: Chat, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true)) {
     val cInfo = chat.chatInfo
     if (apiDeleteChat(rh = chat.remoteHostId, type = cInfo.chatType, id = cInfo.apiId, chatDeleteMode = chatDeleteMode)) {
-      withChats {
-        removeChat(chat.remoteHostId, cInfo.id)
+      withContext(Dispatchers.Main) {
+        chatModel.chatsContext.removeChat(chat.remoteHostId, cInfo.id)
       }
     }
   }
@@ -1539,11 +1537,11 @@ object ChatController {
     withBGApi {
       val updatedChatInfo = apiClearChat(chat.remoteHostId, chat.chatInfo.chatType, chat.chatInfo.apiId)
       if (updatedChatInfo != null) {
-        withChats {
-          clearChat(chat.remoteHostId, updatedChatInfo)
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.clearChat(chat.remoteHostId, updatedChatInfo)
         }
-        withChats(MsgContentTag.Report) {
-          clearChat(chat.remoteHostId, updatedChatInfo)
+        withContext(Dispatchers.Main) {
+          chatModel.secondaryChatsContext.clearChat(chat.remoteHostId, updatedChatInfo)
         }
         ntfManager.cancelNotificationsForChat(chat.chatInfo.id)
         close?.invoke()
@@ -1975,12 +1973,14 @@ object ChatController {
     val r = sendCmd(rh, CC.ApiJoinGroup(groupId))
     when (r) {
       is CR.UserAcceptedGroupSent ->
-        withChats {
-          updateGroup(rh, r.groupInfo)
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.updateGroup(rh, r.groupInfo)
         }
       is CR.ChatCmdError -> {
         val e = r.chatError
-        suspend fun deleteGroup() { if (apiDeleteChat(rh, ChatType.Group, groupId)) { withChats { removeChat(rh, "#$groupId") } } }
+        suspend fun deleteGroup() { if (apiDeleteChat(rh, ChatType.Group, groupId)) {
+          withContext(Dispatchers.Main) { chatModel.chatsContext.removeChat(rh, "#$groupId") } }
+        }
         if (e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.SMP && e.agentError.smpErr is SMPErrorType.AUTH) {
           deleteGroup()
           AlertManager.shared.showAlertMsg(generalGetString(MR.strings.alert_title_group_invitation_expired), generalGetString(MR.strings.alert_message_group_invitation_expired))
@@ -2134,8 +2134,8 @@ object ChatController {
     val prefs = contact.mergedPreferences.toPreferences().setAllowed(feature, param = param)
     val toContact = apiSetContactPrefs(rh, contact.contactId, prefs)
     if (toContact != null) {
-      withChats {
-        updateContact(rh, toContact)
+      withContext(Dispatchers.Main) {
+        chatModel.chatsContext.updateContact(rh, toContact)
       }
     }
   }
@@ -2406,19 +2406,19 @@ object ChatController {
     when (r) {
       is CR.ContactDeletedByContact -> {
         if (active(r.user) && r.contact.directOrUsed) {
-          withChats {
-            updateContact(rhId, r.contact)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateContact(rhId, r.contact)
           }
         }
       }
       is CR.ContactConnected -> {
         if (active(r.user) && r.contact.directOrUsed) {
-          withChats {
-            updateContact(rhId, r.contact)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateContact(rhId, r.contact)
             val conn = r.contact.activeConn
             if (conn != null) {
               chatModel.replaceConnReqView(conn.id, "@${r.contact.contactId}")
-              removeChat(rhId, conn.id)
+              chatModel.chatsContext.removeChat(rhId, conn.id)
             }
           }
         }
@@ -2429,24 +2429,24 @@ object ChatController {
       }
       is CR.ContactConnecting -> {
         if (active(r.user) && r.contact.directOrUsed) {
-          withChats {
-            updateContact(rhId, r.contact)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateContact(rhId, r.contact)
             val conn = r.contact.activeConn
             if (conn != null) {
               chatModel.replaceConnReqView(conn.id, "@${r.contact.contactId}")
-              removeChat(rhId, conn.id)
+              chatModel.chatsContext.removeChat(rhId, conn.id)
             }
           }
         }
       }
       is CR.ContactSndReady -> {
         if (active(r.user) && r.contact.directOrUsed) {
-          withChats {
-            updateContact(rhId, r.contact)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateContact(rhId, r.contact)
             val conn = r.contact.activeConn
             if (conn != null) {
               chatModel.replaceConnReqView(conn.id, "@${r.contact.contactId}")
-              removeChat(rhId, conn.id)
+              chatModel.chatsContext.removeChat(rhId, conn.id)
             }
           }
         }
@@ -2456,11 +2456,11 @@ object ChatController {
         val contactRequest = r.contactRequest
         val cInfo = ChatInfo.ContactRequest(contactRequest)
         if (active(r.user)) {
-          withChats {
-            if (hasChat(rhId, contactRequest.id)) {
-              updateChatInfo(rhId, cInfo)
+          withContext(Dispatchers.Main) {
+            if (chatModel.chatsContext.hasChat(rhId, contactRequest.id)) {
+              chatModel.chatsContext.updateChatInfo(rhId, cInfo)
             } else {
-              addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = listOf()))
+              chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = listOf()))
             }
           }
         }
@@ -2469,18 +2469,20 @@ object ChatController {
       is CR.ContactUpdated -> {
         if (active(r.user) && chatModel.chatsContext.hasChat(rhId, r.toContact.id)) {
           val cInfo = ChatInfo.Direct(r.toContact)
-          withChats {
-            updateChatInfo(rhId, cInfo)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateChatInfo(rhId, cInfo)
           }
         }
       }
       is CR.GroupMemberUpdated -> {
         if (active(r.user)) {
-          withChats {
-            upsertGroupMember(rhId, r.groupInfo, r.toMember)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.toMember)
           }
-          withReportsChatsIfOpen {
-            upsertGroupMember(rhId, r.groupInfo, r.toMember)
+          withContext(Dispatchers.Main) {
+            if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+              chatModel.secondaryChatsContext.upsertGroupMember(rhId, r.groupInfo, r.toMember)
+            }
           }
         }
       }
@@ -2489,8 +2491,8 @@ object ChatController {
           if (chatModel.chatId.value == r.mergedContact.id) {
             chatModel.chatId.value = r.intoContact.id
           }
-          withChats {
-            removeChat(rhId, r.mergedContact.id)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.removeChat(rhId, r.mergedContact.id)
           }
         }
       }
@@ -2501,8 +2503,8 @@ object ChatController {
       is CR.ContactSubSummary -> {
         for (sub in r.contactSubscriptions) {
           if (active(r.user)) {
-            withChats {
-              updateContact(rhId, sub.contact)
+            withContext(Dispatchers.Main) {
+              chatModel.chatsContext.updateContact(rhId, sub.contact)
             }
           }
           val err = sub.contactError
@@ -2528,20 +2530,22 @@ object ChatController {
           val cInfo = chatItem.chatInfo
           val cItem = chatItem.chatItem
           if (active(r.user)) {
-            withChats {
-              addChatItem(rhId, cInfo, cItem)
+            withContext(Dispatchers.Main) {
+              chatModel.chatsContext.addChatItem(rhId, cInfo, cItem)
               if (cItem.isActiveReport) {
-                increaseGroupReportsCounter(rhId, cInfo.id)
+                chatModel.chatsContext.increaseGroupReportsCounter(rhId, cInfo.id)
               }
             }
-            withReportsChatsIfOpen {
-              if (cItem.isReport) {
-                addChatItem(rhId, cInfo, cItem)
+            withContext(Dispatchers.Main) {
+              if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+                if (cItem.isReport) {
+                  chatModel.secondaryChatsContext.addChatItem(rhId, cInfo, cItem)
+                }
               }
             }
           } else if (cItem.isRcvNew && cInfo.ntfsEnabled(cItem)) {
-            withChats {
-              increaseUnreadCounter(rhId, r.user)
+            withContext(Dispatchers.Main) {
+              chatModel.chatsContext.increaseUnreadCounter(rhId, r.user)
             }
           }
           val file = cItem.file
@@ -2562,12 +2566,14 @@ object ChatController {
           val cInfo = chatItem.chatInfo
           val cItem = chatItem.chatItem
           if (!cItem.isDeletedContent && active(r.user)) {
-            withChats {
-              updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
+            withContext(Dispatchers.Main) {
+              chatModel.chatsContext.updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
             }
-            withReportsChatsIfOpen {
-              if (cItem.isReport) {
-                updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
+            withContext(Dispatchers.Main) {
+              if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+                if (cItem.isReport) {
+                  chatModel.secondaryChatsContext.updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
+                }
               }
             }
           }
@@ -2576,12 +2582,14 @@ object ChatController {
         chatItemUpdateNotify(rhId, r.user, r.chatItem)
       is CR.ChatItemReaction -> {
         if (active(r.user)) {
-          withChats {
-            updateChatItem(r.reaction.chatInfo, r.reaction.chatReaction.chatItem)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateChatItem(r.reaction.chatInfo, r.reaction.chatReaction.chatItem)
           }
-          withReportsChatsIfOpen {
-            if (r.reaction.chatReaction.chatItem.isReport) {
-              updateChatItem(r.reaction.chatInfo, r.reaction.chatReaction.chatItem)
+          withContext(Dispatchers.Main) {
+            if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+              if (r.reaction.chatReaction.chatItem.isReport) {
+                chatModel.secondaryChatsContext.updateChatItem(r.reaction.chatInfo, r.reaction.chatReaction.chatItem)
+              }
             }
           }
         }
@@ -2590,8 +2598,8 @@ object ChatController {
         if (!active(r.user)) {
           r.chatItemDeletions.forEach { (deletedChatItem, toChatItem) ->
             if (toChatItem == null && deletedChatItem.chatItem.isRcvNew && deletedChatItem.chatInfo.ntfsEnabled(deletedChatItem.chatItem)) {
-              withChats {
-                decreaseUnreadCounter(rhId, r.user)
+              withContext(Dispatchers.Main) {
+                chatModel.chatsContext.decreaseUnreadCounter(rhId, r.user)
               }
             }
           }
@@ -2614,22 +2622,24 @@ object ChatController {
               generalGetString(if (toChatItem != null) MR.strings.marked_deleted_description else MR.strings.deleted_description)
             )
           }
-          withChats {
+          withContext(Dispatchers.Main) {
             if (toChatItem == null) {
-              removeChatItem(rhId, cInfo, cItem)
+              chatModel.chatsContext.removeChatItem(rhId, cInfo, cItem)
             } else {
-              upsertChatItem(rhId, cInfo, toChatItem.chatItem)
+              chatModel.chatsContext.upsertChatItem(rhId, cInfo, toChatItem.chatItem)
             }
             if (cItem.isActiveReport) {
-              decreaseGroupReportsCounter(rhId, cInfo.id)
+              chatModel.chatsContext.decreaseGroupReportsCounter(rhId, cInfo.id)
             }
           }
-          withReportsChatsIfOpen {
-            if (cItem.isReport) {
-              if (toChatItem == null) {
-                removeChatItem(rhId, cInfo, cItem)
-              } else {
-                upsertChatItem(rhId, cInfo, toChatItem.chatItem)
+          withContext(Dispatchers.Main) {
+            if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+              if (cItem.isReport) {
+                if (toChatItem == null) {
+                  chatModel.secondaryChatsContext.removeChatItem(rhId, cInfo, cItem)
+                } else {
+                  chatModel.secondaryChatsContext.upsertChatItem(rhId, cInfo, toChatItem.chatItem)
+                }
               }
             }
           }
@@ -2640,9 +2650,9 @@ object ChatController {
       }
       is CR.ReceivedGroupInvitation -> {
         if (active(r.user)) {
-          withChats {
+          withContext(Dispatchers.Main) {
             // update so that repeat group invitations are not duplicated
-            updateGroup(rhId, r.groupInfo)
+            chatModel.chatsContext.updateGroup(rhId, r.groupInfo)
           }
           // TODO NtfManager.shared.notifyGroupInvitation
         }
@@ -2650,137 +2660,149 @@ object ChatController {
       is CR.UserAcceptedGroupSent -> {
         if (!active(r.user)) return
 
-        withChats {
-          updateGroup(rhId, r.groupInfo)
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.updateGroup(rhId, r.groupInfo)
           val conn = r.hostContact?.activeConn
           if (conn != null) {
             chatModel.replaceConnReqView(conn.id, "#${r.groupInfo.groupId}")
-            removeChat(rhId, conn.id)
+            chatModel.chatsContext.removeChat(rhId, conn.id)
           }
         }
       }
       is CR.GroupLinkConnecting -> {
         if (!active(r.user)) return
 
-        withChats {
-          updateGroup(rhId, r.groupInfo)
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.updateGroup(rhId, r.groupInfo)
           val hostConn = r.hostMember.activeConn
           if (hostConn != null) {
             chatModel.replaceConnReqView(hostConn.id, "#${r.groupInfo.groupId}")
-            removeChat(rhId, hostConn.id)
+            chatModel.chatsContext.removeChat(rhId, hostConn.id)
           }
         }
       }
       is CR.BusinessLinkConnecting -> {
         if (!active(r.user)) return
 
-        withChats {
-          updateGroup(rhId, r.groupInfo)
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.updateGroup(rhId, r.groupInfo)
         }
         if (chatModel.chatId.value == r.fromContact.id) {
           openGroupChat(rhId, r.groupInfo.groupId)
         }
-        withChats {
-          removeChat(rhId, r.fromContact.id)
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.removeChat(rhId, r.fromContact.id)
         }
       }
       is CR.JoinedGroupMemberConnecting ->
         if (active(r.user)) {
-          withChats {
-            upsertGroupMember(rhId, r.groupInfo, r.member)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
           }
         }
       is CR.DeletedMemberUser -> // TODO update user member
         if (active(r.user)) {
-          withChats {
-            updateGroup(rhId, r.groupInfo)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateGroup(rhId, r.groupInfo)
             if (r.withMessages) {
-              removeMemberItems(rhId, r.groupInfo.membership, byMember = r.member, r.groupInfo)
+              chatModel.chatsContext.removeMemberItems(rhId, r.groupInfo.membership, byMember = r.member, r.groupInfo)
             }
           }
-          withReportsChatsIfOpen {
-            if (r.withMessages) {
-              removeMemberItems(rhId, r.groupInfo.membership, byMember = r.member, r.groupInfo)
+          withContext(Dispatchers.Main) {
+            if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+              if (r.withMessages) {
+                chatModel.secondaryChatsContext.removeMemberItems(rhId, r.groupInfo.membership, byMember = r.member, r.groupInfo)
+              }
             }
           }
         }
       is CR.DeletedMember ->
         if (active(r.user)) {
-          withChats {
-            upsertGroupMember(rhId, r.groupInfo, r.deletedMember)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.deletedMember)
             if (r.withMessages) {
-              removeMemberItems(rhId, r.deletedMember, byMember = r.byMember, r.groupInfo)
+              chatModel.chatsContext.removeMemberItems(rhId, r.deletedMember, byMember = r.byMember, r.groupInfo)
             }
           }
-          withReportsChatsIfOpen {
-            upsertGroupMember(rhId, r.groupInfo, r.deletedMember)
-            if (r.withMessages) {
-              removeMemberItems(rhId, r.deletedMember, byMember = r.byMember, r.groupInfo)
+          withContext(Dispatchers.Main) {
+            if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+              chatModel.secondaryChatsContext.upsertGroupMember(rhId, r.groupInfo, r.deletedMember)
+              if (r.withMessages) {
+                chatModel.secondaryChatsContext.removeMemberItems(rhId, r.deletedMember, byMember = r.byMember, r.groupInfo)
+              }
             }
           }
         }
       is CR.LeftMember ->
         if (active(r.user)) {
-          withChats {
-            upsertGroupMember(rhId, r.groupInfo, r.member)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
           }
-          withReportsChatsIfOpen {
-            upsertGroupMember(rhId, r.groupInfo, r.member)
+          withContext(Dispatchers.Main) {
+            if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+              chatModel.secondaryChatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
+            }
           }
         }
       is CR.MemberRole ->
         if (active(r.user)) {
-          withChats {
-            upsertGroupMember(rhId, r.groupInfo, r.member)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
           }
-          withReportsChatsIfOpen {
-            upsertGroupMember(rhId, r.groupInfo, r.member)
+          withContext(Dispatchers.Main) {
+            if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+              chatModel.secondaryChatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
+            }
           }
         }
       is CR.MembersRoleUser ->
         if (active(r.user)) {
-          withChats {
+          withContext(Dispatchers.Main) {
             r.members.forEach { member ->
-              upsertGroupMember(rhId, r.groupInfo, member)
+              chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, member)
             }
           }
-          withReportsChatsIfOpen {
-            r.members.forEach { member ->
-              upsertGroupMember(rhId, r.groupInfo, member)
+          withContext(Dispatchers.Main) {
+            if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+              r.members.forEach { member ->
+                chatModel.secondaryChatsContext.upsertGroupMember(rhId, r.groupInfo, member)
+              }
             }
           }
         }
       is CR.MemberBlockedForAll ->
         if (active(r.user)) {
-          withChats {
-            upsertGroupMember(rhId, r.groupInfo, r.member)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
           }
-          withReportsChatsIfOpen {
-            upsertGroupMember(rhId, r.groupInfo, r.member)
+          withContext(Dispatchers.Main) {
+            if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+              chatModel.secondaryChatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
+            }
           }
         }
       is CR.GroupDeleted -> // TODO update user member
         if (active(r.user)) {
-          withChats {
-            updateGroup(rhId, r.groupInfo)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateGroup(rhId, r.groupInfo)
           }
         }
       is CR.UserJoinedGroup ->
         if (active(r.user)) {
-          withChats {
-            updateGroup(rhId, r.groupInfo)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateGroup(rhId, r.groupInfo)
           }
         }
       is CR.JoinedGroupMember ->
         if (active(r.user)) {
-          withChats {
-            upsertGroupMember(rhId, r.groupInfo, r.member)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
           }
         }
       is CR.ConnectedToGroupMember -> {
         if (active(r.user)) {
-          withChats {
-            upsertGroupMember(rhId, r.groupInfo, r.member)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
           }
         }
         if (r.memberContact != null) {
@@ -2789,14 +2811,14 @@ object ChatController {
       }
       is CR.GroupUpdated ->
         if (active(r.user)) {
-          withChats {
-            updateGroup(rhId, r.toGroup)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateGroup(rhId, r.toGroup)
           }
         }
       is CR.NewMemberContactReceivedInv ->
         if (active(r.user)) {
-          withChats {
-            updateContact(rhId, r.contact)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateContact(rhId, r.contact)
           }
         }
       is CR.RcvFileStart ->
@@ -2897,26 +2919,26 @@ object ChatController {
       }
       is CR.ContactSwitch ->
         if (active(r.user)) {
-          withChats {
-            updateContactConnectionStats(rhId, r.contact, r.switchProgress.connectionStats)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateContactConnectionStats(rhId, r.contact, r.switchProgress.connectionStats)
           }
         }
       is CR.GroupMemberSwitch ->
         if (active(r.user)) {
-          withChats {
-            updateGroupMemberConnectionStats(rhId, r.groupInfo, r.member, r.switchProgress.connectionStats)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateGroupMemberConnectionStats(rhId, r.groupInfo, r.member, r.switchProgress.connectionStats)
           }
         }
       is CR.ContactRatchetSync ->
         if (active(r.user)) {
-          withChats {
-            updateContactConnectionStats(rhId, r.contact, r.ratchetSyncProgress.connectionStats)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateContactConnectionStats(rhId, r.contact, r.ratchetSyncProgress.connectionStats)
           }
         }
       is CR.GroupMemberRatchetSync ->
         if (active(r.user)) {
-          withChats {
-            updateGroupMemberConnectionStats(rhId, r.groupInfo, r.member, r.ratchetSyncProgress.connectionStats)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateGroupMemberConnectionStats(rhId, r.groupInfo, r.member, r.ratchetSyncProgress.connectionStats)
           }
         }
       is CR.RemoteHostSessionCode -> {
@@ -2930,8 +2952,8 @@ object ChatController {
       }
       is CR.ContactDisabled -> {
         if (active(r.user)) {
-          withChats {
-            updateContact(rhId, r.contact)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateContact(rhId, r.contact)
           }
         }
       }
@@ -3055,8 +3077,8 @@ object ChatController {
       }
       is CR.ContactPQEnabled ->
         if (active(r.user)) {
-          withChats {
-            updateContact(rhId, r.contact)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateContact(rhId, r.contact)
           }
         }
       is CR.ChatRespError -> when {
@@ -3120,8 +3142,8 @@ object ChatController {
   suspend fun leaveGroup(rh: Long?, groupId: Long) {
     val groupInfo = apiLeaveGroup(rh, groupId)
     if (groupInfo != null) {
-      withChats {
-        updateGroup(rh, groupInfo)
+      withContext(Dispatchers.Main) {
+        chatModel.chatsContext.updateGroup(rh, groupInfo)
       }
     }
   }
@@ -3130,10 +3152,12 @@ object ChatController {
     if (activeUser(rh, user)) {
       val cInfo = aChatItem.chatInfo
       val cItem = aChatItem.chatItem
-      withChats { upsertChatItem(rh, cInfo, cItem) }
-      withReportsChatsIfOpen {
-        if (cItem.isReport) {
-          upsertChatItem(rh, cInfo, cItem)
+      withContext(Dispatchers.Main) { chatModel.chatsContext.upsertChatItem(rh, cInfo, cItem) }
+      withContext(Dispatchers.Main) {
+        if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+          if (cItem.isReport) {
+            chatModel.secondaryChatsContext.upsertChatItem(rh, cInfo, cItem)
+          }
         }
       }
     }
@@ -3147,15 +3171,16 @@ object ChatController {
       return
     }
     val cInfo = ChatInfo.Group(r.groupInfo)
-    withChats {
+    withContext(Dispatchers.Main) {
+      val chatsCtx = chatModel.chatsContext
       r.chatItemIDs.forEach { itemId ->
-        decreaseGroupReportsCounter(rhId, cInfo.id)
-        val cItem = chatItems.value.lastOrNull { it.id == itemId } ?: return@forEach
+        chatsCtx.decreaseGroupReportsCounter(rhId, cInfo.id)
+        val cItem = chatsCtx.chatItems.value.lastOrNull { it.id == itemId } ?: return@forEach
         if (chatModel.chatId.value != null) {
           // Stop voice playback only inside a chat, allow to play in a chat list
           AudioPlayer.stop(cItem)
         }
-        val isLastChatItem = getChat(cInfo.id)?.chatItems?.lastOrNull()?.id == cItem.id
+        val isLastChatItem = chatsCtx.getChat(cInfo.id)?.chatItems?.lastOrNull()?.id == cItem.id
         if (isLastChatItem && ntfManager.hasNotificationsForChat(cInfo.id)) {
           ntfManager.cancelNotificationsForChat(cInfo.id)
           ntfManager.displayNotification(
@@ -3170,22 +3195,25 @@ object ChatController {
         } else {
           CIDeleted.Deleted(Clock.System.now())
         }
-        upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
+        chatsCtx.upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
       }
     }
-    withReportsChatsIfOpen {
-      r.chatItemIDs.forEach { itemId ->
-        val cItem = chatItems.value.lastOrNull { it.id == itemId } ?: return@forEach
-        if (chatModel.chatId.value != null) {
-          // Stop voice playback only inside a chat, allow to play in a chat list
-          AudioPlayer.stop(cItem)
+    withContext(Dispatchers.Main) {
+      if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+        val chatsCtx = chatModel.secondaryChatsContext
+        r.chatItemIDs.forEach { itemId ->
+          val cItem = chatsCtx.chatItems.value.lastOrNull { it.id == itemId } ?: return@forEach
+          if (chatModel.chatId.value != null) {
+            // Stop voice playback only inside a chat, allow to play in a chat list
+            AudioPlayer.stop(cItem)
+          }
+          val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember?.groupMemberId != r.member_.groupMemberId) {
+            CIDeleted.Moderated(Clock.System.now(), r.member_)
+          } else {
+            CIDeleted.Deleted(Clock.System.now())
+          }
+          chatsCtx.upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
         }
-        val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember?.groupMemberId != r.member_.groupMemberId) {
-          CIDeleted.Moderated(Clock.System.now(), r.member_)
-        } else {
-          CIDeleted.Deleted(Clock.System.now())
-        }
-        upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
       }
     }
   }
@@ -3197,8 +3225,14 @@ object ChatController {
     if (!activeUser(rh, user)) {
       notify()
     } else {
-      val createdChat = withChats { upsertChatItem(rh, cInfo, cItem) }
-      withReportsChatsIfOpen { if (cItem.content.msgContent is MsgContent.MCReport) { upsertChatItem(rh, cInfo, cItem) } }
+      val createdChat = withContext(Dispatchers.Main) { chatModel.chatsContext.upsertChatItem(rh, cInfo, cItem) }
+      withContext(Dispatchers.Main) {
+        if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+          if (cItem.content.msgContent is MsgContent.MCReport) {
+            chatModel.secondaryChatsContext.upsertChatItem(rh, cInfo, cItem)
+          }
+        }
+      }
       if (createdChat) {
         notify()
       } else if (cItem.content is CIContent.RcvCall && cItem.content.status == CICallStatus.Missed) {
@@ -3243,15 +3277,17 @@ object ChatController {
     chatModel.users.addAll(users)
     chatModel.currentUser.value = user
     if (user == null) {
-      withChats {
-        chatItems.clearAndNotify()
-        chats.clear()
-        popChatCollector.clear()
+      withContext(Dispatchers.Main) {
+        chatModel.chatsContext.chatItems.clearAndNotify()
+        chatModel.chatsContext.chats.clear()
+        chatModel.chatsContext.popChatCollector.clear()
       }
-      withReportsChatsIfOpen {
-        chatItems.clearAndNotify()
-        chats.clear()
-        popChatCollector.clear()
+      withContext(Dispatchers.Main) {
+        if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+          chatModel.secondaryChatsContext.chatItems.clearAndNotify()
+          chatModel.secondaryChatsContext.chats.clear()
+          chatModel.secondaryChatsContext.popChatCollector.clear()
+        }
       }
     }
     val statuses = apiGetNetworkStatuses(rhId)

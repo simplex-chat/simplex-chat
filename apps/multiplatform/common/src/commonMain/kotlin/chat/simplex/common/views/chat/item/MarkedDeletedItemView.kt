@@ -44,7 +44,8 @@ fun MarkedDeletedItemView(ci: ChatItem, chatInfo: ChatInfo, timedMessagesTTL: In
 
 @Composable
 private fun MergedMarkedDeletedText(chatItem: ChatItem, chatInfo: ChatInfo, revealed: State<Boolean>) {
-  val reversedChatItems = chatModel.chatItemsForContent(LocalContentTag.current).value.asReversed()
+  val chatsCtx = if (LocalContentTag.current == null) chatModel.chatsContext else chatModel.secondaryChatsContext
+  val reversedChatItems = chatsCtx.chatItems.value.asReversed()
   var i = getChatItemIndexOrNull(chatItem, reversedChatItems)
   val ciCategory = chatItem.mergeCategory
   val text =  if (!revealed.value && ciCategory != null && i != null) {

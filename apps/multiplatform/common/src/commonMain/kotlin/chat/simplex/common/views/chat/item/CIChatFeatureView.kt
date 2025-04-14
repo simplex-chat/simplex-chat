@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.getChatItemIndexOrNull
+import chat.simplex.common.platform.chatModel
 import chat.simplex.common.platform.onRightClick
 import chat.simplex.common.views.chat.group.LocalContentTag
 
@@ -76,7 +77,8 @@ private fun mergedFeatures(chatItem: ChatItem, chatInfo: ChatInfo): List<Feature
   val m = ChatModel
   val fs: ArrayList<FeatureInfo> = arrayListOf()
   val icons: MutableSet<PainterBox> = mutableSetOf()
-  val reversedChatItems = m.chatItemsForContent(LocalContentTag.current).value.asReversed()
+  val chatsCtx = if (LocalContentTag.current == null) m.chatsContext else m.secondaryChatsContext
+  val reversedChatItems = chatsCtx.chatItems.value.asReversed()
   var i = getChatItemIndexOrNull(chatItem, reversedChatItems)
   if (i != null) {
     while (i < reversedChatItems.size) {

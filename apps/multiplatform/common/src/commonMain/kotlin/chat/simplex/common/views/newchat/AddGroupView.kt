@@ -18,7 +18,6 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.group.AddGroupMembersView
 import chat.simplex.common.views.chatlist.setGroupMembers
@@ -30,6 +29,7 @@ import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import java.net.URI
 
 @Composable
@@ -42,10 +42,10 @@ fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, c
       withBGApi {
         val groupInfo = chatModel.controller.apiNewGroup(rhId, incognito, groupProfile)
         if (groupInfo != null) {
-          withChats {
-            updateGroup(rhId = rhId, groupInfo)
-            chatItems.clearAndNotify()
-            chatItemStatuses.clear()
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateGroup(rhId = rhId, groupInfo)
+            chatModel.chatsContext.chatItems.clearAndNotify()
+            chatModel.chatsContext.chatItemStatuses.clear()
             chatModel.chatId.value = groupInfo.id
           }
           setGroupMembers(rhId, groupInfo, chatModel)
