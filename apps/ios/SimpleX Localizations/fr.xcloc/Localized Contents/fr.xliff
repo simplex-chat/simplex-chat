@@ -190,8 +190,9 @@
         <target>%d sec</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d seconds(s)" xml:space="preserve">
+      <trans-unit id="%d seconds(s)" xml:space="preserve" approved="no">
         <source>%d seconds(s)</source>
+        <target state="translated">%d seconde(s)</target>
         <note>delete after time</note>
       </trans-unit>
       <trans-unit id="%d skipped message(s)" xml:space="preserve">
@@ -463,8 +464,9 @@ time interval</note>
         <note>delete after time
 time interval</note>
       </trans-unit>
-      <trans-unit id="1 year" xml:space="preserve">
+      <trans-unit id="1 year" xml:space="preserve" approved="no">
         <source>1 year</source>
+        <target state="translated">1 an</target>
         <note>delete after time</note>
       </trans-unit>
       <trans-unit id="1-time link" xml:space="preserve">
@@ -599,8 +601,9 @@ swipe action</note>
         <target>Erreur d'accusé de réception</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Active" xml:space="preserve">
+      <trans-unit id="Active" xml:space="preserve" approved="no">
         <source>Active</source>
+        <target state="translated">Actif</target>
         <note>token status text</note>
       </trans-unit>
       <trans-unit id="Active connections" xml:space="preserve">
@@ -618,8 +621,9 @@ swipe action</note>
         <target>Ajouter des amis</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add list" xml:space="preserve">
+      <trans-unit id="Add list" xml:space="preserve" approved="no">
         <source>Add list</source>
+        <target state="translated">Ajouter une liste</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add profile" xml:space="preserve">
@@ -647,8 +651,9 @@ swipe action</note>
         <target>Ajouter à un autre appareil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add to list" xml:space="preserve">
+      <trans-unit id="Add to list" xml:space="preserve" approved="no">
         <source>Add to list</source>
+        <target state="translated">Ajouter à la liste</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add welcome message" xml:space="preserve">
@@ -726,8 +731,9 @@ swipe action</note>
         <target>Paramètres avancés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All" xml:space="preserve">
+      <trans-unit id="All" xml:space="preserve" approved="no">
         <source>All</source>
+        <target state="translated">Tout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All app data is deleted." xml:space="preserve">
@@ -740,8 +746,9 @@ swipe action</note>
         <target>Toutes les discussions et tous les messages seront supprimés - il est impossible de revenir en arrière !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All chats will be removed from the list %@, and the list deleted." xml:space="preserve">
+      <trans-unit id="All chats will be removed from the list %@, and the list deleted." xml:space="preserve" approved="no">
         <source>All chats will be removed from the list %@, and the list deleted.</source>
+        <target state="translated">Tous les chats seront supprimés de la liste %@, et la liste sera supprimée.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="All data is erased when it is entered." xml:space="preserve">
@@ -784,8 +791,9 @@ swipe action</note>
         <target>Tous les profiles</target>
         <note>profile dropdown</note>
       </trans-unit>
-      <trans-unit id="All reports will be archived for you." xml:space="preserve">
+      <trans-unit id="All reports will be archived for you." xml:space="preserve" approved="no">
         <source>All reports will be archived for you.</source>
+        <target state="translated">Tous les rapports seront archivés pour vous.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
@@ -863,8 +871,9 @@ swipe action</note>
         <target>Autoriser la suppression irréversible de messages envoyés. (24 heures)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to report messsages to moderators." xml:space="preserve">
+      <trans-unit id="Allow to report messsages to moderators." xml:space="preserve" approved="no">
         <source>Allow to report messsages to moderators.</source>
+        <target state="translated">Permettre de signaler des messages aux modérateurs.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to send SimpleX links." xml:space="preserve">
@@ -947,8 +956,9 @@ swipe action</note>
         <target>Un profil de chat vierge portant le nom fourni est créé et l'application s'ouvre normalement.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Another reason" xml:space="preserve">
+      <trans-unit id="Another reason" xml:space="preserve" approved="no">
         <source>Another reason</source>
+        <target state="translated">Autre raison</target>
         <note>report reason</note>
       </trans-unit>
       <trans-unit id="Answer call" xml:space="preserve">
@@ -1025,16 +1035,19 @@ swipe action</note>
         <target>Appliquer à</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archive" xml:space="preserve">
+      <trans-unit id="Archive" xml:space="preserve" approved="no">
         <source>Archive</source>
+        <target state="translated">Archiver</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archive %lld reports?" xml:space="preserve">
+      <trans-unit id="Archive %lld reports?" xml:space="preserve" approved="no">
         <source>Archive %lld reports?</source>
+        <target state="translated">Archiver les rapports %lld ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archive all reports?" xml:space="preserve">
+      <trans-unit id="Archive all reports?" xml:space="preserve" approved="no">
         <source>Archive all reports?</source>
+        <target state="translated">Archiver tous les rapports ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Archive and upload" xml:space="preserve">
@@ -1047,16 +1060,19 @@ swipe action</note>
         <target>Archiver les contacts pour discuter plus tard.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archive report" xml:space="preserve">
+      <trans-unit id="Archive report" xml:space="preserve" approved="no">
         <source>Archive report</source>
+        <target state="translated">Archiver le rapport</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archive report?" xml:space="preserve">
+      <trans-unit id="Archive report?" xml:space="preserve" approved="no">
         <source>Archive report?</source>
+        <target state="translated">Archiver le rapport ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archive reports" xml:space="preserve">
+      <trans-unit id="Archive reports" xml:space="preserve" approved="no">
         <source>Archive reports</source>
+        <target state="translated">Archiver les rapports</target>
         <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Archived contacts" xml:space="preserve">
@@ -1069,8 +1085,9 @@ swipe action</note>
         <target>Archivage de la base de données</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Ask" xml:space="preserve">
+      <trans-unit id="Ask" xml:space="preserve" approved="no">
         <source>Ask</source>
+        <target state="translated">Demander</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Attach" xml:space="preserve">
@@ -1173,8 +1190,9 @@ swipe action</note>
         <target>Des groupes plus performants</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better groups performance" xml:space="preserve">
+      <trans-unit id="Better groups performance" xml:space="preserve" approved="no">
         <source>Better groups performance</source>
+        <target state="translated">Meilleure performance des groupes</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better message dates." xml:space="preserve">
@@ -1197,8 +1215,9 @@ swipe action</note>
         <target>Notifications améliorées</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better privacy and security" xml:space="preserve">
+      <trans-unit id="Better privacy and security" xml:space="preserve" approved="no">
         <source>Better privacy and security</source>
+        <target state="translated">Meilleure protection de la privacité et de la sécurité</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better security ✅" xml:space="preserve">
@@ -1301,8 +1320,9 @@ swipe action</note>
         <target>Discussions professionnelles</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Businesses" xml:space="preserve">
+      <trans-unit id="Businesses" xml:space="preserve" approved="no">
         <source>Businesses</source>
+        <target state="translated">Entreprises</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
@@ -1310,10 +1330,13 @@ swipe action</note>
         <target>Par profil de chat (par défaut) ou [par connexion](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="By using SimpleX Chat you agree to:&#10;- send only legal content in public groups.&#10;- respect other users – no spam." xml:space="preserve">
+      <trans-unit id="By using SimpleX Chat you agree to:&#10;- send only legal content in public groups.&#10;- respect other users – no spam." xml:space="preserve" approved="no">
         <source>By using SimpleX Chat you agree to:
 - send only legal content in public groups.
 - respect other users – no spam.</source>
+        <target state="translated">En utilisant SimpleX Chat, vous acceptez de :
+- n'envoyer que du contenu légal dans les groupes publics.
+- respecter les autres utilisateurs - pas de spam.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve">
@@ -1402,8 +1425,9 @@ alert button</note>
         <target>Changer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change automatic message deletion?" xml:space="preserve">
+      <trans-unit id="Change automatic message deletion?" xml:space="preserve" approved="no">
         <source>Change automatic message deletion?</source>
+        <target state="translated">Modifier la suppression automatique des messages ?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Change chat profiles" xml:space="preserve">
@@ -1627,12 +1651,14 @@ set passcode view</note>
         <target>Effacer la conversation ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear group?" xml:space="preserve">
+      <trans-unit id="Clear group?" xml:space="preserve" approved="no">
         <source>Clear group?</source>
+        <target state="translated">Vider le groupe ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear or delete group?" xml:space="preserve">
+      <trans-unit id="Clear or delete group?" xml:space="preserve" approved="no">
         <source>Clear or delete group?</source>
+        <target state="translated">Vider ou supprimer le groupe ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Clear private notes?" xml:space="preserve">
@@ -1655,8 +1681,9 @@ set passcode view</note>
         <target>Mode de couleur</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Community guidelines violation" xml:space="preserve">
+      <trans-unit id="Community guidelines violation" xml:space="preserve" approved="no">
         <source>Community guidelines violation</source>
+        <target state="translated">Infraction aux règles communautaires</target>
         <note>report reason</note>
       </trans-unit>
       <trans-unit id="Compare file" xml:space="preserve">
@@ -1714,8 +1741,9 @@ set passcode view</note>
         <target>Configurer les serveurs ICE</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Configure server operators" xml:space="preserve">
+      <trans-unit id="Configure server operators" xml:space="preserve" approved="no">
         <source>Configure server operators</source>
+        <target state="translated">Configurer les opérateurs de serveur</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm" xml:space="preserve">
@@ -1768,8 +1796,9 @@ set passcode view</note>
         <target>Confirmer la transmission</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirmed" xml:space="preserve">
+      <trans-unit id="Confirmed" xml:space="preserve" approved="no">
         <source>Confirmed</source>
+        <target state="translated">Confirmé</target>
         <note>token status text</note>
       </trans-unit>
       <trans-unit id="Connect" xml:space="preserve">
@@ -1891,8 +1920,9 @@ Il s'agit de votre propre lien unique !</target>
         <target>État de la connexion et des serveurs.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection blocked" xml:space="preserve">
+      <trans-unit id="Connection blocked" xml:space="preserve" approved="no">
         <source>Connection blocked</source>
+        <target state="translated">Connexion bloquée</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection error" xml:space="preserve">
@@ -1905,13 +1935,16 @@ Il s'agit de votre propre lien unique !</target>
         <target>Erreur de connexion (AUTH)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection is blocked by server operator:&#10;%@" xml:space="preserve">
+      <trans-unit id="Connection is blocked by server operator:&#10;%@" xml:space="preserve" approved="no">
         <source>Connection is blocked by server operator:
 %@</source>
+        <target state="translated">La connexion est bloquée par l'opérateur du serveur :
+%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection not ready." xml:space="preserve">
+      <trans-unit id="Connection not ready." xml:space="preserve" approved="no">
         <source>Connection not ready.</source>
+        <target state="translated">La connexion n'est pas prête.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection notifications" xml:space="preserve">
@@ -1924,8 +1957,9 @@ Il s'agit de votre propre lien unique !</target>
         <target>Demande de connexion envoyée !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection requires encryption renegotiation." xml:space="preserve">
+      <trans-unit id="Connection requires encryption renegotiation." xml:space="preserve" approved="no">
         <source>Connection requires encryption renegotiation.</source>
+        <target state="translated">La connexion nécessite une renégociation du cryptage.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection security" xml:space="preserve">
@@ -2008,8 +2042,9 @@ Il s'agit de votre propre lien unique !</target>
         <target>Vos contacts peuvent marquer les messages pour les supprimer ; vous pourrez les consulter.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Content violates conditions of use" xml:space="preserve">
+      <trans-unit id="Content violates conditions of use" xml:space="preserve" approved="no">
         <source>Content violates conditions of use</source>
+        <target state="translated">Le contenu enfreint les conditions d'utilisation</target>
         <note>blocking reason</note>
       </trans-unit>
       <trans-unit id="Continue" xml:space="preserve">
@@ -2087,8 +2122,9 @@ Il s'agit de votre propre lien unique !</target>
         <target>Créer un lien</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create list" xml:space="preserve">
+      <trans-unit id="Create list" xml:space="preserve" approved="no">
         <source>Create list</source>
+        <target state="translated">Créer une liste</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve">
@@ -2350,8 +2386,9 @@ swipe action</note>
         <target>Supprimer la discussion</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete chat messages from your device." xml:space="preserve">
+      <trans-unit id="Delete chat messages from your device." xml:space="preserve" approved="no">
         <source>Delete chat messages from your device.</source>
+        <target state="translated">Supprimer les messages de chat de votre appareil.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete chat profile" xml:space="preserve">
@@ -2444,8 +2481,9 @@ swipe action</note>
         <target>Supprimer le lien ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete list?" xml:space="preserve">
+      <trans-unit id="Delete list?" xml:space="preserve" approved="no">
         <source>Delete list?</source>
+        <target state="translated">Supprimer la liste ?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Delete member message?" xml:space="preserve">
@@ -2498,8 +2536,9 @@ swipe action</note>
         <target>Supprimer la file d'attente</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Delete report" xml:space="preserve">
+      <trans-unit id="Delete report" xml:space="preserve" approved="no">
         <source>Delete report</source>
+        <target state="translated">Supprimer le rapport</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete up to 20 messages at once." xml:space="preserve">
@@ -2662,12 +2701,14 @@ swipe action</note>
         <target>Désactiver SimpleX Lock</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Disable automatic message deletion?" xml:space="preserve">
+      <trans-unit id="Disable automatic message deletion?" xml:space="preserve" approved="no">
         <source>Disable automatic message deletion?</source>
+        <target state="translated">Désactiver la suppression automatique des messages ?</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Disable delete messages" xml:space="preserve">
+      <trans-unit id="Disable delete messages" xml:space="preserve" approved="no">
         <source>Disable delete messages</source>
+        <target state="translated">Désactiver la suppression des messages</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Disable for all" xml:space="preserve">
@@ -2760,8 +2801,9 @@ swipe action</note>
         <target>Ne pas utiliser d'identifiants avec le proxy.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Documents:" xml:space="preserve">
+      <trans-unit id="Documents:" xml:space="preserve" approved="no">
         <source>Documents:</source>
+        <target state="translated">Documents:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Don't create address" xml:space="preserve">
@@ -2774,8 +2816,9 @@ swipe action</note>
         <target>Ne pas activer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Don't miss important messages." xml:space="preserve">
+      <trans-unit id="Don't miss important messages." xml:space="preserve" approved="no">
         <source>Don't miss important messages.</source>
+        <target state="translated">Ne manquez pas les messages importants.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Don't show again" xml:space="preserve">
@@ -2783,8 +2826,9 @@ swipe action</note>
         <target>Ne plus afficher</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Done" xml:space="preserve">
+      <trans-unit id="Done" xml:space="preserve" approved="no">
         <source>Done</source>
+        <target state="translated">Terminé</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Downgrade and open chat" xml:space="preserve">
@@ -2873,8 +2917,9 @@ chat item action</note>
         <target>Activer (conserver les remplacements)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable Flux in Network &amp; servers settings for better metadata privacy." xml:space="preserve">
+      <trans-unit id="Enable Flux in Network &amp; servers settings for better metadata privacy." xml:space="preserve" approved="no">
         <source>Enable Flux in Network &amp; servers settings for better metadata privacy.</source>
+        <target state="translated">Activez Flux dans les paramètres du réseau et des serveurs pour une meilleure confidentialité des métadonnées.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
@@ -3017,8 +3062,9 @@ chat item action</note>
         <target>La renégociation du chiffrement a échoué.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Encryption renegotiation in progress." xml:space="preserve">
+      <trans-unit id="Encryption renegotiation in progress." xml:space="preserve" approved="no">
         <source>Encryption renegotiation in progress.</source>
+        <target state="translated">Renégociation du chiffrement en cours.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter Passcode" xml:space="preserve">
@@ -3131,8 +3177,9 @@ chat item action</note>
         <target>Erreur lors du passage en mode incognito !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error checking token status" xml:space="preserve">
+      <trans-unit id="Error checking token status" xml:space="preserve" approved="no">
         <source>Error checking token status</source>
+        <target state="translated">Erreur lors de la vérification de l'état du jeton (token)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error connecting to forwarding server %@. Please try later." xml:space="preserve">
@@ -3155,8 +3202,9 @@ chat item action</note>
         <target>Erreur lors de la création du lien du groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error creating list" xml:space="preserve">
+      <trans-unit id="Error creating list" xml:space="preserve" approved="no">
         <source>Error creating list</source>
+        <target state="translated">Erreur lors de la création de la liste</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error creating member contact" xml:space="preserve">
@@ -3174,8 +3222,9 @@ chat item action</note>
         <target>Erreur lors de la création du profil !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error creating report" xml:space="preserve">
+      <trans-unit id="Error creating report" xml:space="preserve" approved="no">
         <source>Error creating report</source>
+        <target state="translated">Erreur lors de la création du rapport</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error decrypting file" xml:space="preserve">
@@ -3288,8 +3337,9 @@ chat item action</note>
         <target>Erreur de reconnexion des serveurs</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error registering for notifications" xml:space="preserve">
+      <trans-unit id="Error registering for notifications" xml:space="preserve" approved="no">
         <source>Error registering for notifications</source>
+        <target state="translated">Erreur lors de l'inscription aux notifications</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error removing member" xml:space="preserve">
@@ -3297,8 +3347,9 @@ chat item action</note>
         <target>Erreur lors de la suppression d'un membre</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error reordering lists" xml:space="preserve">
+      <trans-unit id="Error reordering lists" xml:space="preserve" approved="no">
         <source>Error reordering lists</source>
+        <target state="translated">Erreur lors de la réorganisation des listes</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error resetting statistics" xml:space="preserve">
@@ -3311,8 +3362,9 @@ chat item action</note>
         <target>Erreur lors de la sauvegarde des serveurs ICE</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving chat list" xml:space="preserve">
+      <trans-unit id="Error saving chat list" xml:space="preserve" approved="no">
         <source>Error saving chat list</source>
+        <target state="translated">Erreur lors de l'enregistrement de la liste des chats</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error saving group profile" xml:space="preserve">
@@ -3395,8 +3447,9 @@ chat item action</note>
         <target>Erreur de synchronisation de connexion</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error testing server connection" xml:space="preserve">
+      <trans-unit id="Error testing server connection" xml:space="preserve" approved="no">
         <source>Error testing server connection</source>
+        <target state="translated">Erreur lors du test de connexion au serveur</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error updating group link" xml:space="preserve">
@@ -3481,8 +3534,9 @@ snd error text</note>
         <target>Étendre</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Expired" xml:space="preserve">
+      <trans-unit id="Expired" xml:space="preserve" approved="no">
         <source>Expired</source>
+        <target state="translated">Expiré</target>
         <note>token status text</note>
       </trans-unit>
       <trans-unit id="Export database" xml:space="preserve">
@@ -3525,8 +3579,9 @@ snd error text</note>
         <target>Rapide et ne nécessitant pas d'attendre que l'expéditeur soit en ligne !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Faster deletion of groups." xml:space="preserve">
+      <trans-unit id="Faster deletion of groups." xml:space="preserve" approved="no">
         <source>Faster deletion of groups.</source>
+        <target state="translated">Suppression plus rapide des groupes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Faster joining and more reliable messages." xml:space="preserve">
@@ -3534,8 +3589,9 @@ snd error text</note>
         <target>Connexion plus rapide et messages plus fiables.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Faster sending messages." xml:space="preserve">
+      <trans-unit id="Faster sending messages." xml:space="preserve" approved="no">
         <source>Faster sending messages.</source>
+        <target state="translated">Envoi plus rapide des messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Favorite" xml:space="preserve">
@@ -3543,8 +3599,9 @@ snd error text</note>
         <target>Favoris</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Favorites" xml:space="preserve">
+      <trans-unit id="Favorites" xml:space="preserve" approved="no">
         <source>Favorites</source>
+        <target state="translated">Favoris</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File error" xml:space="preserve">
@@ -3559,9 +3616,11 @@ snd error text</note>
 %@</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="File is blocked by server operator:&#10;%@." xml:space="preserve">
+      <trans-unit id="File is blocked by server operator:&#10;%@." xml:space="preserve" approved="no">
         <source>File is blocked by server operator:
 %@.</source>
+        <target state="translated">Le fichier est bloqué par l'opérateur du serveur :
+%@.</target>
         <note>file error text</note>
       </trans-unit>
       <trans-unit id="File not found - most likely file was deleted or cancelled." xml:space="preserve">
