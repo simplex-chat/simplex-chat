@@ -61,7 +61,6 @@ fun showApp() {
                   chatModel.chatsContext.chatItems.clearAndNotify()
                 }
                 withContext(Dispatchers.Main) {
-                  chatModel.secondaryChatsContext.value?.chatItems?.clearAndNotify()
                   chatModel.secondaryChatsContext.value = null
                 }
               }
