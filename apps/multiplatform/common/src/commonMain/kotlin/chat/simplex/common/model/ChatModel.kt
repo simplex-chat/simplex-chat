@@ -1078,7 +1078,7 @@ interface ChatItemsChangesListener {
 
 data class ShowingInvitation(
   val connId: String,
-  val connReq: String,
+  val connLink: CreatedConnLink,
   val connChatUsed: Boolean,
   val conn: PendingContactConnection
 )
@@ -2198,7 +2198,7 @@ class PendingContactConnection(
   val viaContactUri: Boolean,
   val groupLinkId: String? = null,
   val customUserProfileId: Long? = null,
-  val connReqInv: String? = null,
+  val connLinkInv: CreatedConnLink? = null,
   override val localAlias: String,
   override val createdAt: Instant,
   override val updatedAt: Instant
@@ -3968,12 +3968,14 @@ sealed class Format {
 enum class SimplexLinkType(val linkType: String) {
   contact("contact"),
   invitation("invitation"),
-  group("group");
+  group("group"),
+  channel("channel");
 
   val description: String get() = generalGetString(when (this) {
       contact -> MR.strings.simplex_link_contact
       invitation -> MR.strings.simplex_link_invitation
       group -> MR.strings.simplex_link_group
+      channel -> MR.strings.simplex_link_channel
   })
 }
 

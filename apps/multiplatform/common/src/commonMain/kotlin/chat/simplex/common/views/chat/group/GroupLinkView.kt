@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chat.group
 
 import SectionBottomSpacer
+import SectionViewWithButton
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -15,11 +16,11 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.ColumnWithScrollBar
-import chat.simplex.common.platform.shareText
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.*
+import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.MR
 
 @Composable
@@ -27,13 +28,13 @@ fun GroupLinkView(
   chatModel: ChatModel,
   rhId: Long?,
   groupInfo: GroupInfo,
-  connReqContact: String?,
+  connLinkContact: CreatedConnLink?,
   memberRole: GroupMemberRole?,
-  onGroupLinkUpdated: ((Pair<String, GroupMemberRole>?) -> Unit)?,
+  onGroupLinkUpdated: ((Pair<CreatedConnLink, GroupMemberRole>?) -> Unit)?,
   creatingGroup: Boolean = false,
   close: (() -> Unit)? = null
 ) {
-  var groupLink by rememberSaveable { mutableStateOf(connReqContact) }
+  var groupLink by rememberSaveable(stateSaver = CreatedConnLink.nullableStateSaver) { mutableStateOf(connLinkContact) }
   val groupLinkMemberRole = rememberSaveable { mutableStateOf(memberRole) }
   var creatingLink by rememberSaveable { mutableStateOf(false) }
   fun createLink() {
@@ -99,7 +100,7 @@ fun GroupLinkView(
 
 @Composable
 fun GroupLinkLayout(
-  groupLink: String?,
+  groupLink: CreatedConnLink?,
   groupInfo: GroupInfo,
   groupLinkMemberRole: MutableState<GroupMemberRole?>,
   creatingLink: Boolean,
@@ -150,7 +151,15 @@ fun GroupLinkLayout(
           }
           initialLaunch = false
         }
-        SimpleXLinkQRCode(groupLink)
+        val showShortLink = remember { mutableStateOf(true) }
+        Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+        if (groupLink.connShortLink == null) {
+          SimpleXCreatedLinkQRCode(groupLink, short = false)
+        } else {
+          SectionViewWithButton(titleButton = { ToggleShortLinkButton(showShortLink) }) {
+            SimpleXCreatedLinkQRCode(groupLink, short = showShortLink.value)
+          }
+        }
         Row(
           horizontalArrangement = Arrangement.spacedBy(10.dp),
           verticalAlignment = Alignment.CenterVertically,
@@ -160,7 +169,7 @@ fun GroupLinkLayout(
           SimpleButton(
             stringResource(MR.strings.share_link),
             icon = painterResource(MR.images.ic_share),
-            click = { clipboard.shareText(simplexChatLink(groupLink)) }
+            click = { clipboard.shareText(groupLink.simplexChatUri(short = showShortLink.value)) }
           )
           if (creatingGroup && close != null) {
             ContinueButton(close)

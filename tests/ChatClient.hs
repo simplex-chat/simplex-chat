@@ -186,6 +186,7 @@ testCfg =
   defaultChatConfig
     { agentConfig = testAgentCfg,
       showReceipts = False,
+      shortLinkPresetServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7001"],
       testView = True,
       tbqSize = 16
     }
@@ -290,8 +291,8 @@ startTestChat_ TestParams {printOutput} db cfg opts@ChatOpts {maintenance} user 
   ct <- newChatTerminal t opts
   cc <- newChatController db (Just user) cfg opts False
   void $ execChatCommand' (SetTempFolder "tests/tmp/tmp") `runReaderT` cc
-  chatAsync <- async . runSimplexChat opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
-  atomically . unless maintenance $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
+  chatAsync <- async $ runSimplexChat opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
+  unless maintenance $ atomically $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ
   pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ, printOutput}
@@ -393,14 +394,14 @@ withTmpFiles =
 
 testChatN :: HasCallStack => ChatConfig -> ChatOpts -> [Profile] -> (HasCallStack => [TestCC] -> IO ()) -> TestParams -> IO ()
 testChatN cfg opts ps test params =
-  bracket (getTestCCs (zip ps [1 ..]) []) entTests test
+  bracket (getTestCCs $ zip ps [1 ..]) endTests test
   where
-    getTestCCs :: [(Profile, Int)] -> [TestCC] -> IO [TestCC]
-    getTestCCs [] tcs = pure tcs
-    getTestCCs ((p, db) : envs') tcs = (:) <$> createTestChat params cfg opts (show db) p <*> getTestCCs envs' tcs
-    entTests tcs = do
-      concurrentlyN_ $ map (<// 100000) tcs
-      concurrentlyN_ $ map (stopTestChat params) tcs
+    getTestCCs :: [(Profile, Int)] -> IO [TestCC]
+    getTestCCs [] = pure []
+    getTestCCs ((p, db) : envs') = (:) <$> createTestChat params cfg opts (show db) p <*> getTestCCs envs'
+    endTests tcs = do
+      mapConcurrently_ (<// 100000) tcs
+      mapConcurrently_ (stopTestChat params) tcs
 
 (<//) :: HasCallStack => TestCC -> Int -> Expectation
 (<//) cc t = timeout t (getTermLine cc) `shouldReturn` Nothing
@@ -481,7 +482,7 @@ smpServerCfg =
       msgQueueQuota = 16,
       maxJournalMsgCount = 24,
       maxJournalStateLines = 4,
-      queueIdBytes = 12,
+      queueIdBytes = 24,
       msgIdBytes = 6,
       serverStoreCfg = ASSCfg SQSMemory SMSMemory $ SSCMemory Nothing,
       storeNtfsFile = Nothing,

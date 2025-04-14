@@ -263,7 +263,7 @@ fun ChatView(
                 // The idea is to preload information before showing a modal because large groups can take time to load all members
                 var preloadedContactInfo: Pair<ConnectionStats?, Profile?>? = null
                 var preloadedCode: String? = null
-                var preloadedLink: Pair<String, GroupMemberRole>? = null
+                var preloadedLink: Pair<CreatedConnLink, GroupMemberRole>? = null
                 if (chatInfo is ChatInfo.Direct) {
                   preloadedContactInfo = chatModel.controller.apiContactInfo(chatRh, chatInfo.apiId)
                   preloadedCode = chatModel.controller.apiGetContactCode(chatRh, chatInfo.apiId)?.second
@@ -291,7 +291,7 @@ fun ChatView(
                         showSearch.value = true
                       }
                     } else if (chatInfo is ChatInfo.Group) {
-                      var link: Pair<String, GroupMemberRole>? by remember(chatInfo.id) { mutableStateOf(preloadedLink) }
+                      var link: Pair<CreatedConnLink, GroupMemberRole>? by remember(chatInfo.id) { mutableStateOf(preloadedLink) }
                       KeyChangeEffect(chatInfo.id) {
                         setGroupMembers(chatRh, chatInfo.groupInfo, chatModel)
                         link = chatModel.controller.apiGetGroupLink(chatRh, chatInfo.groupInfo.groupId)
@@ -632,7 +632,7 @@ fun ChatView(
       is ChatInfo.ContactConnection -> {
         val close = { chatModel.chatId.value = null }
           ModalView(close, showClose = appPlatform.isAndroid, content = {
-            ContactConnectionInfoView(chatModel, chatRh, chatInfo.contactConnection.connReqInv, chatInfo.contactConnection, false, close)
+            ContactConnectionInfoView(chatModel, chatRh, chatInfo.contactConnection.connLinkInv, chatInfo.contactConnection, false, close)
           })
           LaunchedEffect(chatInfo.id) {
             onComposed(chatInfo.id)
