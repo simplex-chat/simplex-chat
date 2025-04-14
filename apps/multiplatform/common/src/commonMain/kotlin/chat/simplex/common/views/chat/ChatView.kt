@@ -2573,15 +2573,13 @@ private fun archiveReports(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
           }
         }
         withContext(Dispatchers.Main) {
-          if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-            for (di in deleted) {
-              if (di.deletedChatItem.chatItem.isReport) {
-                val toChatItem = di.toChatItem?.chatItem
-                if (toChatItem != null) {
-                  chatModel.secondaryChatsContext.value?.upsertChatItem(chatRh, chatInfo, toChatItem)
-                } else {
-                  chatModel.secondaryChatsContext.value?.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
-                }
+          for (di in deleted) {
+            if (di.deletedChatItem.chatItem.isReport) {
+              val toChatItem = di.toChatItem?.chatItem
+              if (toChatItem != null) {
+                chatModel.secondaryChatsContext.value?.upsertChatItem(chatRh, chatInfo, toChatItem)
+              } else {
+                chatModel.secondaryChatsContext.value?.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
               }
             }
           }

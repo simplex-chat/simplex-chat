@@ -2566,10 +2566,8 @@ object ChatController {
               chatModel.chatsContext.updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
             }
             withContext(Dispatchers.Main) {
-              if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-                if (cItem.isReport) {
-                  chatModel.secondaryChatsContext.value?.updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
-                }
+              if (cItem.isReport) {
+                chatModel.secondaryChatsContext.value?.updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
               }
             }
           }
