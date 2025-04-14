@@ -67,7 +67,7 @@ object ChatModel {
   val chatId = mutableStateOf<String?>(null)
   val openAroundItemId: MutableState<Long?> = mutableStateOf(null)
   val chatsContext = ChatsContext(null)
-  val secondaryChatsContext = ChatsContext(MsgContentTag.Report)
+  val secondaryChatsContext = mutableStateOf<ChatsContext?>(null)
   // declaration of chatsContext should be before any other variable that is taken from ChatsContext class and used in the model, otherwise, strange crash with NullPointerException for "this" parameter in random functions
   val chats: State<List<Chat>> = chatsContext.chats
   // rhId, chatId
@@ -615,8 +615,8 @@ object ChatModel {
             .throttleLatest(2000)
             .collect {
               withContext(Dispatchers.Main) {
-                val chatsCtx = if (contentTag == null) chatsContext else secondaryChatsContext
-                chatsCtx.chats.replaceAll(popCollectedChats())
+                val chatsCtx = if (contentTag == null) chatsContext else secondaryChatsContext.value
+                chatsCtx?.chats?.replaceAll(popCollectedChats())
               }
             }
         }
@@ -2698,8 +2698,8 @@ fun MutableState<SnapshotStateList<Chat>>.add(index: Int, elem: Chat) {
 }
 
 fun MutableState<SnapshotStateList<ChatItem>>.addAndNotify(index: Int, elem: ChatItem, contentTag: MsgContentTag?) {
-  val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
-  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(index, elem); chatsCtx.chatItemsChangesListener?.added(elem.id to elem.isRcvNew, index) }
+  val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext.value
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(index, elem); chatsCtx?.chatItemsChangesListener?.added(elem.id to elem.isRcvNew, index) }
 }
 
 fun MutableState<SnapshotStateList<Chat>>.add(elem: Chat) {
@@ -2711,8 +2711,8 @@ fun <T> MutableList<T>.removeAll(predicate: (T) -> Boolean): Boolean = if (isEmp
 
 // Adds item to chatItems and notifies a listener about newly added item
 fun MutableState<SnapshotStateList<ChatItem>>.addAndNotify(elem: ChatItem, contentTag: MsgContentTag?) {
-  val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
-  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(elem); chatsCtx.chatItemsChangesListener?.added(elem.id to elem.isRcvNew, lastIndex) }
+  val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext.value
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(elem); chatsCtx?.chatItemsChangesListener?.added(elem.id to elem.isRcvNew, lastIndex) }
 }
 
 fun <T> MutableState<SnapshotStateList<T>>.addAll(index: Int, elems: List<T>) {
@@ -2742,7 +2742,7 @@ fun MutableState<SnapshotStateList<ChatItem>>.removeAllAndNotify(block: (ChatIte
   }
   if (toRemove.isNotEmpty()) {
     chatModel.chatsContext.chatItemsChangesListener?.removed(toRemove, value)
-    chatModel.secondaryChatsContext.chatItemsChangesListener?.removed(toRemove, value)
+    chatModel.secondaryChatsContext.value?.chatItemsChangesListener?.removed(toRemove, value)
   }
 }
 
@@ -2762,8 +2762,8 @@ fun MutableState<SnapshotStateList<ChatItem>>.removeLastAndNotify(contentTag: Ms
     val rem = removeLast()
     removed = Triple(rem.id, remIndex, rem.isRcvNew)
   }
-  val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
-  chatsCtx.chatItemsChangesListener?.removed(listOf(removed), value)
+  val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext.value
+  chatsCtx?.chatItemsChangesListener?.removed(listOf(removed), value)
 }
 
 fun <T> MutableState<SnapshotStateList<T>>.replaceAll(elems: List<T>) {
@@ -2778,7 +2778,7 @@ fun MutableState<SnapshotStateList<Chat>>.clear() {
 fun MutableState<SnapshotStateList<ChatItem>>.clearAndNotify() {
   value = SnapshotStateList()
   chatModel.chatsContext.chatItemsChangesListener?.cleared()
-  chatModel.secondaryChatsContext.chatItemsChangesListener?.cleared()
+  chatModel.secondaryChatsContext.value?.chatItemsChangesListener?.cleared()
 }
 
 fun <T> State<SnapshotStateList<T>>.asReversed(): MutableList<T> = value.asReversed()

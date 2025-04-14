@@ -77,8 +77,8 @@ private fun mergedFeatures(chatItem: ChatItem, chatInfo: ChatInfo): List<Feature
   val m = ChatModel
   val fs: ArrayList<FeatureInfo> = arrayListOf()
   val icons: MutableSet<PainterBox> = mutableSetOf()
-  val chatsCtx = if (LocalContentTag.current == null) m.chatsContext else m.secondaryChatsContext
-  val reversedChatItems = chatsCtx.chatItems.value.asReversed()
+  val chatsCtx = if (LocalContentTag.current == null) m.chatsContext else m.secondaryChatsContext.value
+  val reversedChatItems = chatsCtx?.chatItems?.value?.asReversed() ?: emptyList()
   var i = getChatItemIndexOrNull(chatItem, reversedChatItems)
   if (i != null) {
     while (i < reversedChatItems.size) {

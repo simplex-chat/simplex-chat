@@ -973,7 +973,7 @@ fun removeMembers(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, onSu
       withContext(Dispatchers.Main) {
         if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
           updatedMembers.forEach { updatedMember ->
-            chatModel.secondaryChatsContext.upsertGroupMember(rhId, groupInfo, updatedMember)
+            chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, groupInfo, updatedMember)
           }
         }
       }

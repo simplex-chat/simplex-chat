@@ -215,7 +215,10 @@ suspend fun openChat(
   apiId: Long,
   contentTag: MsgContentTag? = null,
   openAroundItemId: Long? = null
-) =
+) {
+  if (contentTag != null) {
+    chatModel.secondaryChatsContext.value = ChatModel.ChatsContext(contentTag)
+  }
   apiLoadMessages(
     rhId,
     chatType,
@@ -229,21 +232,22 @@ suspend fun openChat(
     "",
     openAroundItemId
   )
+}
 
 suspend fun openLoadedChat(chat: Chat, contentTag: MsgContentTag? = null) {
   withContext(Dispatchers.Main) {
-    val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
-    chatsCtx.chatItemStatuses.clear()
-    chatsCtx.chatItems.replaceAll(chat.chatItems)
+    val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext.value
+    chatsCtx?.chatItemStatuses?.clear()
+    chatsCtx?.chatItems?.replaceAll(chat.chatItems)
     chatModel.chatId.value = chat.chatInfo.id
-    chatsCtx.chatState.clear()
+    chatsCtx?.chatState?.clear()
   }
 }
 
 suspend fun apiFindMessages(ch: Chat, search: String, contentTag: MsgContentTag?) {
   withContext(Dispatchers.Main) {
-    val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
-    chatsCtx.chatItems.clearAndNotify()
+    val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext.value
+    chatsCtx?.chatItems?.clearAndNotify()
   }
   apiLoadMessages(ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, contentTag, pagination = if (search.isNotEmpty()) ChatPagination.Last(ChatPagination.INITIAL_COUNT) else ChatPagination.Initial(ChatPagination.INITIAL_COUNT), search = search)
 }
@@ -609,7 +613,7 @@ fun markChatRead(c: Chat) {
       }
       withContext(Dispatchers.Main) {
         if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-          chatModel.secondaryChatsContext.markChatItemsRead(chat.remoteHostId, chat.chatInfo.id)
+          chatModel.secondaryChatsContext.value?.markChatItemsRead(chat.remoteHostId, chat.chatInfo.id)
         }
       }
       chatModel.controller.apiChatRead(

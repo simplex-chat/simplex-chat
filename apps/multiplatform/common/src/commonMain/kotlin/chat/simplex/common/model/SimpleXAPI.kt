@@ -1541,7 +1541,7 @@ object ChatController {
           chatModel.chatsContext.clearChat(chat.remoteHostId, updatedChatInfo)
         }
         withContext(Dispatchers.Main) {
-          chatModel.secondaryChatsContext.clearChat(chat.remoteHostId, updatedChatInfo)
+          chatModel.secondaryChatsContext.value?.clearChat(chat.remoteHostId, updatedChatInfo)
         }
         ntfManager.cancelNotificationsForChat(chat.chatInfo.id)
         close?.invoke()
@@ -2481,7 +2481,7 @@ object ChatController {
           }
           withContext(Dispatchers.Main) {
             if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-              chatModel.secondaryChatsContext.upsertGroupMember(rhId, r.groupInfo, r.toMember)
+              chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, r.groupInfo, r.toMember)
             }
           }
         }
@@ -2539,7 +2539,7 @@ object ChatController {
             withContext(Dispatchers.Main) {
               if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
                 if (cItem.isReport) {
-                  chatModel.secondaryChatsContext.addChatItem(rhId, cInfo, cItem)
+                  chatModel.secondaryChatsContext.value?.addChatItem(rhId, cInfo, cItem)
                 }
               }
             }
@@ -2572,7 +2572,7 @@ object ChatController {
             withContext(Dispatchers.Main) {
               if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
                 if (cItem.isReport) {
-                  chatModel.secondaryChatsContext.updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
+                  chatModel.secondaryChatsContext.value?.updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
                 }
               }
             }
@@ -2588,7 +2588,7 @@ object ChatController {
           withContext(Dispatchers.Main) {
             if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
               if (r.reaction.chatReaction.chatItem.isReport) {
-                chatModel.secondaryChatsContext.updateChatItem(r.reaction.chatInfo, r.reaction.chatReaction.chatItem)
+                chatModel.secondaryChatsContext.value?.updateChatItem(r.reaction.chatInfo, r.reaction.chatReaction.chatItem)
               }
             }
           }
@@ -2636,9 +2636,9 @@ object ChatController {
             if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
               if (cItem.isReport) {
                 if (toChatItem == null) {
-                  chatModel.secondaryChatsContext.removeChatItem(rhId, cInfo, cItem)
+                  chatModel.secondaryChatsContext.value?.removeChatItem(rhId, cInfo, cItem)
                 } else {
-                  chatModel.secondaryChatsContext.upsertChatItem(rhId, cInfo, toChatItem.chatItem)
+                  chatModel.secondaryChatsContext.value?.upsertChatItem(rhId, cInfo, toChatItem.chatItem)
                 }
               }
             }
@@ -2711,7 +2711,7 @@ object ChatController {
           withContext(Dispatchers.Main) {
             if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
               if (r.withMessages) {
-                chatModel.secondaryChatsContext.removeMemberItems(rhId, r.groupInfo.membership, byMember = r.member, r.groupInfo)
+                chatModel.secondaryChatsContext.value?.removeMemberItems(rhId, r.groupInfo.membership, byMember = r.member, r.groupInfo)
               }
             }
           }
@@ -2726,9 +2726,9 @@ object ChatController {
           }
           withContext(Dispatchers.Main) {
             if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-              chatModel.secondaryChatsContext.upsertGroupMember(rhId, r.groupInfo, r.deletedMember)
+              chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, r.groupInfo, r.deletedMember)
               if (r.withMessages) {
-                chatModel.secondaryChatsContext.removeMemberItems(rhId, r.deletedMember, byMember = r.byMember, r.groupInfo)
+                chatModel.secondaryChatsContext.value?.removeMemberItems(rhId, r.deletedMember, byMember = r.byMember, r.groupInfo)
               }
             }
           }
@@ -2740,7 +2740,7 @@ object ChatController {
           }
           withContext(Dispatchers.Main) {
             if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-              chatModel.secondaryChatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
+              chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, r.groupInfo, r.member)
             }
           }
         }
@@ -2751,7 +2751,7 @@ object ChatController {
           }
           withContext(Dispatchers.Main) {
             if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-              chatModel.secondaryChatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
+              chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, r.groupInfo, r.member)
             }
           }
         }
@@ -2765,7 +2765,7 @@ object ChatController {
           withContext(Dispatchers.Main) {
             if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
               r.members.forEach { member ->
-                chatModel.secondaryChatsContext.upsertGroupMember(rhId, r.groupInfo, member)
+                chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, r.groupInfo, member)
               }
             }
           }
@@ -2777,7 +2777,7 @@ object ChatController {
           }
           withContext(Dispatchers.Main) {
             if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-              chatModel.secondaryChatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
+              chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, r.groupInfo, r.member)
             }
           }
         }
@@ -3156,7 +3156,7 @@ object ChatController {
       withContext(Dispatchers.Main) {
         if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
           if (cItem.isReport) {
-            chatModel.secondaryChatsContext.upsertChatItem(rh, cInfo, cItem)
+            chatModel.secondaryChatsContext.value?.upsertChatItem(rh, cInfo, cItem)
           }
         }
       }
@@ -3200,19 +3200,21 @@ object ChatController {
     }
     withContext(Dispatchers.Main) {
       if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-        val chatsCtx = chatModel.secondaryChatsContext
-        r.chatItemIDs.forEach { itemId ->
-          val cItem = chatsCtx.chatItems.value.lastOrNull { it.id == itemId } ?: return@forEach
-          if (chatModel.chatId.value != null) {
-            // Stop voice playback only inside a chat, allow to play in a chat list
-            AudioPlayer.stop(cItem)
+        val chatsCtx = chatModel.secondaryChatsContext.value
+        if (chatsCtx != null) {
+          r.chatItemIDs.forEach { itemId ->
+            val cItem = chatsCtx.chatItems.value.lastOrNull { it.id == itemId } ?: return@forEach
+            if (chatModel.chatId.value != null) {
+              // Stop voice playback only inside a chat, allow to play in a chat list
+              AudioPlayer.stop(cItem)
+            }
+            val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember?.groupMemberId != r.member_.groupMemberId) {
+              CIDeleted.Moderated(Clock.System.now(), r.member_)
+            } else {
+              CIDeleted.Deleted(Clock.System.now())
+            }
+            chatsCtx.upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
           }
-          val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember?.groupMemberId != r.member_.groupMemberId) {
-            CIDeleted.Moderated(Clock.System.now(), r.member_)
-          } else {
-            CIDeleted.Deleted(Clock.System.now())
-          }
-          chatsCtx.upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
         }
       }
     }
@@ -3229,7 +3231,7 @@ object ChatController {
       withContext(Dispatchers.Main) {
         if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
           if (cItem.content.msgContent is MsgContent.MCReport) {
-            chatModel.secondaryChatsContext.upsertChatItem(rh, cInfo, cItem)
+            chatModel.secondaryChatsContext.value?.upsertChatItem(rh, cInfo, cItem)
           }
         }
       }
@@ -3284,9 +3286,9 @@ object ChatController {
       }
       withContext(Dispatchers.Main) {
         if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-          chatModel.secondaryChatsContext.chatItems.clearAndNotify()
-          chatModel.secondaryChatsContext.chats.clear()
-          chatModel.secondaryChatsContext.popChatCollector.clear()
+          chatModel.secondaryChatsContext.value?.chatItems?.clearAndNotify()
+          chatModel.secondaryChatsContext.value?.chats?.clear()
+          chatModel.secondaryChatsContext.value?.popChatCollector?.clear()
         }
       }
     }

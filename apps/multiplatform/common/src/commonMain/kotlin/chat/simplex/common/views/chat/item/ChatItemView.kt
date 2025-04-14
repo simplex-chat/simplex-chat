@@ -631,8 +631,8 @@ fun ChatItemView(
             }
 
             @Composable fun EventItemView() {
-              val chatsCtx = if (LocalContentTag.current == null) chatModel.chatsContext else chatModel.secondaryChatsContext
-              val reversedChatItems = chatsCtx.chatItems.value.asReversed()
+              val chatsCtx = if (LocalContentTag.current == null) chatModel.chatsContext else chatModel.secondaryChatsContext.value
+              val reversedChatItems = chatsCtx?.chatItems?.value?.asReversed() ?: emptyList()
               CIEventView(eventItemViewText(reversedChatItems))
             }
 
@@ -839,14 +839,14 @@ fun DeleteItemAction(
   buttonText: String = stringResource(MR.strings.delete_verb),
 ) {
   val contentTag = LocalContentTag.current
-  val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
+  val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext.value
   ItemAction(
     buttonText,
     painterResource(MR.images.ic_delete),
     onClick = {
       showMenu.value = false
       if (!revealed.value) {
-        val reversedChatItems = chatsCtx.chatItems.value.asReversed()
+        val reversedChatItems = chatsCtx?.chatItems?.value?.asReversed() ?: emptyList()
         val currIndex = chatModel.getChatItemIndexOrNull(cItem, reversedChatItems)
         val ciCategory = cItem.mergeCategory
         if (currIndex != null && ciCategory != null) {

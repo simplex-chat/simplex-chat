@@ -122,8 +122,8 @@ fun SelectedItemsButtonsToolbar(
     }
     Divider(Modifier.align(Alignment.TopStart))
   }
-  val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
-  val chatItems = remember { derivedStateOf { chatsCtx.chatItems.value } }
+  val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext.value
+  val chatItems = remember { derivedStateOf { chatsCtx?.chatItems?.value ?: emptyList() } }
   LaunchedEffect(chatInfo, chatItems.value, selectedChatItems.value) {
     recheckItems(chatInfo, chatItems.value, selectedChatItems, deleteEnabled, deleteForEveryoneEnabled, canArchiveReports, canModerate, moderateEnabled, forwardEnabled, deleteCountProhibited, forwardCountProhibited)
   }

@@ -47,7 +47,8 @@ suspend fun processLoadedChat(
   openAroundItemId: Long?,
   visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 }
 ) {
-  val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
+  val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext.value
+  chatsCtx ?: return
   val chatState = chatsCtx.chatState
   val (splits, unreadAfterItemId, totalAfter, unreadTotal, unreadAfter, unreadAfterNewestLoaded) = chatState
   val oldItems = chatsCtx.chatItems.value
