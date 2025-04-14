@@ -524,7 +524,7 @@
     <string name="turn_off_battery_optimization"><![CDATA[<b>אפשר זאת</b> בתיבת הדו-שיח הבאה כדי לקבל התראות על הודעות חדשות באופן מיידי.]]></string>
     <string name="service_notifications_disabled">התראות מיידיות מושבתות!</string>
     <string name="icon_descr_add_members">הזמן חברי קבוצה</string>
-    <string name="group_member_status_invited">הוזמן</string>
+    <string name="group_member_status_invited">הזמין את</string>
     <string name="conn_level_desc_indirect">עקיף (%1$s)</string>
     <string name="incognito_info_protects">מצב זהות נסתרת מגן על הפרטיות שלך על ידי שימוש בפרופיל אקראי חדש עבור כל איש קשר.</string>
     <string name="incompatible_database_version">גרסת מסד נתונים לא תואמת</string>
@@ -1239,7 +1239,7 @@
     <string name="settings_shutdown">כיבוי</string>
     <string name="settings_section_title_app">אפליקציה</string>
     <string name="allow_to_send_files">אפשר לשלוח קבצים ומדיה.</string>
-    <string name="favorite_chat">מועדף</string>
+    <string name="favorite_chat">הוסף למועדפים</string>
     <string name="files_and_media">קבצים ומדיה</string>
     <string name="no_filtered_chats">אין צ\'אטים מסוננים</string>
     <string name="shutdown_alert_question">לכבות\?</string>
@@ -1247,7 +1247,7 @@
     <string name="files_are_prohibited_in_group">קבצים ומדיה אסורים.</string>
     <string name="group_members_can_send_files">משתמשים יכולים לשלוח קבצים ומדיה.</string>
     <string name="settings_restart_app">איתחול</string>
-    <string name="unfavorite_chat">שנוא</string>
+    <string name="unfavorite_chat">הסר מהמועדפים</string>
     <string name="la_mode_off">כבוי</string>
     <string name="strikethrough_text">קו חוצה</string>
     <string name="prohibit_sending_files">לאסור שליחת קבצים ומדיה.</string>
@@ -1528,8 +1528,8 @@
     <string name="show_slow_api_calls">הצג קריאות API איטיות</string>
     <string name="developer_options_section">אפשרויות למפתח</string>
     <string name="create_another_profile_button">צור פרופיל</string>
-    <string name="rcv_group_and_other_events">ו %d שאר האירועים</string>
-    <string name="profile_update_event_set_new_address">הגדר כתובת איש קשר חדש</string>
+    <string name="rcv_group_and_other_events">בנוסף ל- %d אירועים אחרים</string>
+    <string name="profile_update_event_set_new_address">איש הקשר הגדיר כתובת חדשה</string>
     <string name="contact_tap_to_connect">לחץ לחיבור</string>
     <string name="unable_to_open_browser_desc">דפדפן האינטרנט המוגדר כברירת מחדל נדרש לשיחות. אנא הגדר דפדפן ברירת מחדל במערכת, ושתף מידע נוסף עם המפתחים.</string>
     <string name="e2ee_info_no_pq_short">השיחה הזו מוגנת באמצעות הצפנה קצה-אל-קצה.</string>
@@ -1609,7 +1609,7 @@
     <string name="remote_ctrl_was_disconnected_title">החיבור עצר</string>
     <string name="non_content_uri_alert_title">נתיב קובץ לא חוקי</string>
     <string name="non_content_uri_alert_text">שיתפת נתיב קובץ לא חוקי. דווח על הבעיה למפתחי האפליקציה.</string>
-    <string name="moderated_items_description">%1$d הודעות שנערכו על ידי %2$s</string>
+    <string name="moderated_items_description">%1$d הודעות נחסמו על ידי %2$s</string>
     <string name="marked_deleted_items_description">%d הודעות סומנו כנמחקות</string>
     <string name="connect_plan_repeat_connection_request">האם לחזור על בקשת החיבור?</string>
     <string name="blocked_item_description">חסום</string>
@@ -1632,13 +1632,13 @@
     <string name="loading_remote_file_title">טעינה של הקובץ</string>
     <string name="settings_section_title_use_from_desktop">שימוש ממחשב שולחני</string>
     <string name="rcv_group_event_member_blocked">חסומים %s</string>
-    <string name="rcv_direct_event_contact_deleted">מחק איש קשר</string>
+    <string name="rcv_direct_event_contact_deleted">איש קשר נמחק</string>
     <string name="rcv_group_events_count">%d אירועי קבוצה</string>
     <string name="group_members_n">%s, %s ו-%d חברים</string>
     <string name="profile_update_event_contact_name_changed">איש הקשר %1$s השתנה ל-%2$s</string>
     <string name="profile_update_event_removed_address">כתובת איש קשר הוסרה</string>
     <string name="profile_update_event_removed_picture">תמונת פרופיל הוסרה</string>
-    <string name="profile_update_event_set_new_picture">הגדר תמונת פרופיל חדשה</string>
+    <string name="profile_update_event_set_new_picture">הגדיר תמונת פרופיל חדשה</string>
     <string name="profile_update_event_updated_profile">עדכן פרופיל</string>
     <string name="group_member_status_unknown">מצב לא ידוע</string>
     <string name="info_row_created_at">נוצר ב</string>
