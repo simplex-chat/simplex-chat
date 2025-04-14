@@ -30,8 +30,8 @@ import chat.simplex.common.views.isValidDisplayName
 import chat.simplex.common.views.localauth.SetAppPasscodeView
 import chat.simplex.common.views.onboarding.ReadableText
 import chat.simplex.common.model.ChatModel
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
+import kotlinx.coroutines.*
 
 enum class LAMode {
   SYSTEM,
@@ -126,15 +126,15 @@ fun PrivacySettingsView(
           chatModel.currentUser.value = currentUser.copy(sendRcptsContacts = enable)
           if (clearOverrides) {
             // For loop here is to prevent ConcurrentModificationException that happens with forEach
-            withChats {
-              for (i in 0 until chats.size) {
-                val chat = chats[i]
+            withContext(Dispatchers.Main) {
+              for (i in 0 until chatModel.chatsContext.chats.size) {
+                val chat = chatModel.chatsContext.chats[i]
                 if (chat.chatInfo is ChatInfo.Direct) {
                   var contact = chat.chatInfo.contact
                   val sendRcpts = contact.chatSettings.sendRcpts
                   if (sendRcpts != null && sendRcpts != enable) {
                     contact = contact.copy(chatSettings = contact.chatSettings.copy(sendRcpts = null))
-                    updateContact(currentUser.remoteHostId, contact)
+                    chatModel.chatsContext.updateContact(currentUser.remoteHostId, contact)
                   }
                 }
               }
@@ -150,16 +150,16 @@ fun PrivacySettingsView(
           chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
           chatModel.currentUser.value = currentUser.copy(sendRcptsSmallGroups = enable)
           if (clearOverrides) {
-            withChats {
+            withContext(Dispatchers.Main) {
               // For loop here is to prevent ConcurrentModificationException that happens with forEach
-              for (i in 0 until chats.size) {
-                val chat = chats[i]
+              for (i in 0 until chatModel.chatsContext.chats.size) {
+                val chat = chatModel.chatsContext.chats[i]
                 if (chat.chatInfo is ChatInfo.Group) {
                   var groupInfo = chat.chatInfo.groupInfo
                   val sendRcpts = groupInfo.chatSettings.sendRcpts
                   if (sendRcpts != null && sendRcpts != enable) {
                     groupInfo = groupInfo.copy(chatSettings = groupInfo.chatSettings.copy(sendRcpts = null))
-                    updateGroup(currentUser.remoteHostId, groupInfo)
+                    chatModel.chatsContext.updateGroup(currentUser.remoteHostId, groupInfo)
                   }
                 }
               }

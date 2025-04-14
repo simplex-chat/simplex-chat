@@ -12,16 +12,16 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.PreferenceToggle
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.ColumnWithScrollBar
+import chat.simplex.common.platform.chatModel
 import chat.simplex.res.MR
+import kotlinx.coroutines.*
 
 @Composable
 fun ContactPreferencesView(
@@ -41,8 +41,8 @@ fun ContactPreferencesView(
       val prefs = contactFeaturesAllowedToPrefs(featuresAllowed)
       val toContact = m.controller.apiSetContactPrefs(rhId, ct.contactId, prefs)
       if (toContact != null) {
-        withChats {
-          updateContact(rhId, toContact)
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.updateContact(rhId, toContact)
           currentFeaturesAllowed = featuresAllowed
         }
       }

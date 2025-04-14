@@ -10,7 +10,6 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
@@ -632,7 +631,8 @@ fun ChatItemView(
             }
 
             @Composable fun EventItemView() {
-              val reversedChatItems = chatModel.chatItemsForContent(LocalContentTag.current).value.asReversed()
+              val chatsCtx = if (LocalContentTag.current == null) chatModel.chatsContext else chatModel.secondaryChatsContext
+              val reversedChatItems = chatsCtx.chatItems.value.asReversed()
               CIEventView(eventItemViewText(reversedChatItems))
             }
 
@@ -839,13 +839,14 @@ fun DeleteItemAction(
   buttonText: String = stringResource(MR.strings.delete_verb),
 ) {
   val contentTag = LocalContentTag.current
+  val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
   ItemAction(
     buttonText,
     painterResource(MR.images.ic_delete),
     onClick = {
       showMenu.value = false
       if (!revealed.value) {
-        val reversedChatItems = chatModel.chatItemsForContent(contentTag).value.asReversed()
+        val reversedChatItems = chatsCtx.chatItems.value.asReversed()
         val currIndex = chatModel.getChatItemIndexOrNull(cItem, reversedChatItems)
         val ciCategory = cItem.mergeCategory
         if (currIndex != null && ciCategory != null) {
@@ -1314,7 +1315,7 @@ fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Bo
 }
 
 private fun closeReportsIfNeeded() {
-  if (appPlatform.isAndroid && ModalManager.end.isLastModalOpen(ModalViewId.GROUP_REPORTS)) {
+  if (appPlatform.isAndroid && ModalManager.end.isLastModalOpen(ModalViewId.SECONDARY_CHAT)) {
     ModalManager.end.closeModals()
   }
 }

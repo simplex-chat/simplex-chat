@@ -7,13 +7,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
-import java.net.URI
 
 enum class ConnectionLinkType {
   INVITATION, CONTACT, GROUP
@@ -361,8 +359,8 @@ suspend fun connectViaUri(
   val pcc = chatModel.controller.apiConnect(rhId, incognito, connLink)
   val connLinkType = if (connectionPlan != null) planToConnectionLinkType(connectionPlan) ?: ConnectionLinkType.INVITATION else ConnectionLinkType.INVITATION
   if (pcc != null) {
-    withChats {
-      updateContactConnection(rhId, pcc)
+    withContext(Dispatchers.Main) {
+      chatModel.chatsContext.updateContactConnection(rhId, pcc)
     }
     close?.invoke()
     AlertManager.privacySensitive.showAlertMsg(

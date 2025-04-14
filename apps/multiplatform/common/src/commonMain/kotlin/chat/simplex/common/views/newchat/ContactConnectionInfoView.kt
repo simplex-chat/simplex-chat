@@ -22,11 +22,11 @@ import chat.simplex.common.views.chat.LocalAliasEditor
 import chat.simplex.common.views.chatlist.deleteContactConnectionAlert
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.model.PendingContactConnection
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
+import kotlinx.coroutines.*
 
 @Composable
 fun ContactConnectionInfoView(
@@ -191,8 +191,8 @@ fun DeleteButton(onClick: () -> Unit) {
 
 private fun setContactAlias(rhId: Long?, contactConnection: PendingContactConnection, localAlias: String, chatModel: ChatModel) = withBGApi {
   chatModel.controller.apiSetConnectionAlias(rhId, contactConnection.pccConnId, localAlias)?.let {
-    withChats {
-      updateContactConnection(rhId, it)
+    withContext(Dispatchers.Main) {
+      chatModel.chatsContext.updateContactConnection(rhId, it)
     }
   }
 }

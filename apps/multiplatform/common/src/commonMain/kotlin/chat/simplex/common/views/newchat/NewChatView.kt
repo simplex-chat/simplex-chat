@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.topPaddingToContent
@@ -40,7 +39,6 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
-import java.net.URI
 
 enum class NewChatOption {
   INVITE, CONNECT
@@ -316,8 +314,8 @@ fun ActiveProfilePicker(
             if (contactConnection != null) {
               updatedConn = controller.apiChangeConnectionUser(rhId, contactConnection.pccConnId, user.userId)
               if (updatedConn != null) {
-                withChats {
-                  updateContactConnection(rhId, updatedConn)
+                withContext(Dispatchers.Main) {
+                  chatModel.chatsContext.updateContactConnection(rhId, updatedConn)
                   updateShownConnection(updatedConn)
                 }
               }
@@ -339,8 +337,8 @@ fun ActiveProfilePicker(
             }
 
             if (updatedConn != null) {
-              withChats {
-                updateContactConnection(user.remoteHostId, updatedConn)
+              withContext(Dispatchers.Main) {
+                chatModel.chatsContext.updateContactConnection(user.remoteHostId, updatedConn)
               }
             }
 
@@ -369,8 +367,8 @@ fun ActiveProfilePicker(
             appPreferences.incognito.set(true)
             val conn = controller.apiSetConnectionIncognito(rhId, contactConnection.pccConnId, true)
             if (conn != null) {
-              withChats {
-                updateContactConnection(rhId, conn)
+              withContext(Dispatchers.Main) {
+                chatModel.chatsContext.updateContactConnection(rhId, conn)
                 updateShownConnection(conn)
               }
               close()
@@ -704,8 +702,8 @@ private fun createInvitation(
   withBGApi {
     val (r, alert) = controller.apiAddContact(rhId, incognito = controller.appPrefs.incognito.get())
     if (r != null) {
-      withChats {
-        updateContactConnection(rhId, r.second)
+      withContext(Dispatchers.Main) {
+        chatModel.chatsContext.updateContactConnection(rhId, r.second)
         chatModel.showingInvitation.value = ShowingInvitation(connId = r.second.id, connLink = r.first, connChatUsed = false, conn = r.second)
         contactConnection.value = r.second
       }

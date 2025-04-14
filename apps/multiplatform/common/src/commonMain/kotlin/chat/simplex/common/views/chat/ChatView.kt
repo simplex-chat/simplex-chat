@@ -32,8 +32,6 @@ import chat.simplex.common.model.CIDirection.GroupRcv
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.activeCall
 import chat.simplex.common.model.ChatModel.controller
-import chat.simplex.common.model.ChatModel.withChats
-import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.group.*
@@ -114,9 +112,10 @@ fun ChatView(
     val chatRh = remoteHostId.value
     // We need to have real unreadCount value for displaying it inside top right button
     // Having activeChat reloaded on every change in it is inefficient (UI lags)
+    val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
     val unreadCount = remember {
       derivedStateOf {
-        chatModel.chatsForContent(contentTag).value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.chatStats?.unreadCount ?: 0
+        chatsCtx.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.chatStats?.unreadCount ?: 0
       }
     }
     val clipboard = LocalClipboardManager.current
@@ -389,23 +388,25 @@ fun ChatView(
                 if (deleted != null) {
                   deletedChatItem = deleted.deletedChatItem.chatItem
                   toChatItem = deleted.toChatItem?.chatItem
-                  withChats {
+                  withContext(Dispatchers.Main) {
                     if (toChatItem != null) {
-                      upsertChatItem(chatRh, chatInfo, toChatItem)
+                      chatModel.chatsContext.upsertChatItem(chatRh, chatInfo, toChatItem)
                     } else {
-                      removeChatItem(chatRh, chatInfo, deletedChatItem)
+                      chatModel.chatsContext.removeChatItem(chatRh, chatInfo, deletedChatItem)
                     }
                     val deletedItem = deleted.deletedChatItem.chatItem
                     if (deletedItem.isActiveReport) {
-                      decreaseGroupReportsCounter(chatRh, chatInfo.id)
+                      chatModel.chatsContext.decreaseGroupReportsCounter(chatRh, chatInfo.id)
                     }
                   }
-                  withReportsChatsIfOpen {
-                    if (deletedChatItem.isReport) {
-                      if (toChatItem != null) {
-                        upsertChatItem(chatRh, chatInfo, toChatItem)
-                      } else {
-                        removeChatItem(chatRh, chatInfo, deletedChatItem)
+                  withContext(Dispatchers.Main) {
+                    if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+                      if (deletedChatItem.isReport) {
+                        if (toChatItem != null) {
+                          chatModel.secondaryChatsContext.upsertChatItem(chatRh, chatInfo, toChatItem)
+                        } else {
+                          chatModel.secondaryChatsContext.removeChatItem(chatRh, chatInfo, deletedChatItem)
+                        }
                       }
                     }
                   }
@@ -463,8 +464,8 @@ fun ChatView(
                 if (r != null) {
                   val contactStats = r.first
                   if (contactStats != null)
-                    withChats {
-                      updateContactConnectionStats(chatRh, contact, contactStats)
+                    withContext(Dispatchers.Main) {
+                      chatModel.chatsContext.updateContactConnectionStats(chatRh, contact, contactStats)
                     }
                 }
               }
@@ -475,8 +476,8 @@ fun ChatView(
                 if (r != null) {
                   val memStats = r.second
                   if (memStats != null) {
-                    withChats {
-                      updateGroupMemberConnectionStats(chatRh, groupInfo, r.first, memStats)
+                    withContext(Dispatchers.Main) {
+                      chatModel.chatsContext.updateGroupMemberConnectionStats(chatRh, groupInfo, r.first, memStats)
                     }
                   }
                 }
@@ -486,8 +487,8 @@ fun ChatView(
               withBGApi {
                 val cStats = chatModel.controller.apiSyncContactRatchet(chatRh, contact.contactId, force = false)
                 if (cStats != null) {
-                  withChats {
-                    updateContactConnectionStats(chatRh, contact, cStats)
+                  withContext(Dispatchers.Main) {
+                    chatModel.chatsContext.updateContactConnectionStats(chatRh, contact, cStats)
                   }
                 }
               }
@@ -496,8 +497,8 @@ fun ChatView(
               withBGApi {
                 val r = chatModel.controller.apiSyncGroupMemberRatchet(chatRh, groupInfo.apiId, member.groupMemberId, force = false)
                 if (r != null) {
-                  withChats {
-                    updateGroupMemberConnectionStats(chatRh, groupInfo, r.first, r.second)
+                  withContext(Dispatchers.Main) {
+                    chatModel.chatsContext.updateGroupMemberConnectionStats(chatRh, groupInfo, r.first, r.second)
                   }
                 }
               }
@@ -519,12 +520,14 @@ fun ChatView(
                   reaction = reaction
                 )
                 if (updatedCI != null) {
-                  withChats {
-                    updateChatItem(cInfo, updatedCI)
+                  withContext(Dispatchers.Main) {
+                    chatModel.chatsContext.updateChatItem(cInfo, updatedCI)
                   }
-                  withReportsChatsIfOpen {
-                    if (cItem.isReport) {
-                      updateChatItem(cInfo, updatedCI)
+                  withContext(Dispatchers.Main) {
+                    if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+                      if (cItem.isReport) {
+                        chatModel.secondaryChatsContext.updateChatItem(cInfo, updatedCI)
+                      }
                     }
                   }
                 }
@@ -544,7 +547,7 @@ fun ChatView(
               groupMembersJob.cancel()
               groupMembersJob = scope.launch(Dispatchers.Default) {
                 var initialCiInfo = loadChatItemInfo() ?: return@launch
-                if (!ModalManager.end.hasModalOpen(ModalViewId.GROUP_REPORTS)) {
+                if (!ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
                   ModalManager.end.closeModals()
                 }
                 ModalManager.end.showModalCloseable(endButtons = {
@@ -578,11 +581,8 @@ fun ChatView(
             openGroupLink = { groupInfo -> openGroupLink(view = view, groupInfo = groupInfo, rhId = chatRh, close = { ModalManager.end.closeModals() }) },
             markItemsRead = { itemsIds ->
               withBGApi {
-                withChats {
-                  // It's important to call it on Main thread. Otherwise, composable crash occurs from time-to-time without useful stacktrace
-                  withContext(Dispatchers.Main) {
-                    markChatItemsRead(chatRh, chatInfo.id, itemsIds)
-                  }
+                withContext(Dispatchers.Main) {
+                  chatModel.chatsContext.markChatItemsRead(chatRh, chatInfo.id, itemsIds)
                   ntfManager.cancelNotificationsForChat(chatInfo.id)
                   chatModel.controller.apiChatItemsRead(
                     chatRh,
@@ -591,18 +591,17 @@ fun ChatView(
                     itemsIds
                   )
                 }
-                withReportsChatsIfOpen {
-                  markChatItemsRead(chatRh, chatInfo.id, itemsIds)
+                withContext(Dispatchers.Main) {
+                  if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+                    chatModel.secondaryChatsContext.markChatItemsRead(chatRh, chatInfo.id, itemsIds)
+                  }
                 }
               }
             },
             markChatRead = {
               withBGApi {
-                withChats {
-                  // It's important to call it on Main thread. Otherwise, composable crash occurs from time-to-time without useful stacktrace
-                  withContext(Dispatchers.Main) {
-                    markChatItemsRead(chatRh, chatInfo.id)
-                  }
+                withContext(Dispatchers.Main) {
+                  chatModel.chatsContext.markChatItemsRead(chatRh, chatInfo.id)
                   ntfManager.cancelNotificationsForChat(chatInfo.id)
                   chatModel.controller.apiChatRead(
                     chatRh,
@@ -610,8 +609,10 @@ fun ChatView(
                     chatInfo.apiId
                   )
                 }
-                withReportsChatsIfOpen {
-                  markChatItemsRead(chatRh, chatInfo.id)
+                withContext(Dispatchers.Main) {
+                  if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+                    chatModel.secondaryChatsContext.markChatItemsRead(chatRh, chatInfo.id)
+                  }
                 }
               }
             },
@@ -636,8 +637,8 @@ fun ChatView(
           LaunchedEffect(chatInfo.id) {
             onComposed(chatInfo.id)
             ModalManager.end.closeModals()
-            withChats {
-              chatItems.clearAndNotify()
+            withContext(Dispatchers.Main) {
+              chatModel.chatsContext.chatItems.clearAndNotify()
             }
           }
       }
@@ -649,8 +650,8 @@ fun ChatView(
           LaunchedEffect(chatInfo.id) {
             onComposed(chatInfo.id)
             ModalManager.end.closeModals()
-            withChats {
-              chatItems.clearAndNotify()
+            withContext(Dispatchers.Main) {
+              chatModel.chatsContext.chatItems.clearAndNotify()
             }
           }
       }
@@ -1206,12 +1207,13 @@ fun BoxScope.ChatItemsList(
   val revealedItems = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(setOf<Long>()) }
   val contentTag = LocalContentTag.current
   // not using reversedChatItems inside to prevent possible derivedState bug in Compose when one derived state access can cause crash asking another derived state
+  val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
   val mergedItems = remember {
     derivedStateOf {
-      MergedItems.create(chatModel.chatItemsForContent(contentTag).value.asReversed(), unreadCount, revealedItems.value, chatModel.chatStateForContent(contentTag))
+      MergedItems.create(chatsCtx.chatItems.value.asReversed(), unreadCount, revealedItems.value, chatsCtx.chatState)
     }
   }
-  val reversedChatItems = remember { derivedStateOf { chatModel.chatItemsForContent(contentTag).value.asReversed() } }
+  val reversedChatItems = remember { derivedStateOf { chatsCtx.chatItems.value.asReversed() } }
   val reportsCount = reportsCount(chatInfo.id)
   val topPaddingToContent = topPaddingToContent(chatView = contentTag == null, contentTag == null && reportsCount > 0)
   val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent.roundToPx() })
@@ -1297,11 +1299,11 @@ fun BoxScope.ChatItemsList(
 
   DisposableEffectOnGone(
     always = {
-      chatModel.setChatItemsChangeListenerForContent(recalculateChatStatePositions(chatModel.chatStateForContent(contentTag)), contentTag)
+      chatsCtx.chatItemsChangesListener = recalculateChatStatePositions(chatsCtx.chatState)
     },
     whenGone = {
       VideoPlayerHolder.releaseAll()
-      chatModel.setChatItemsChangeListenerForContent(recalculateChatStatePositions(chatModel.chatStateForContent(contentTag)), contentTag)
+      chatsCtx.chatItemsChangesListener = recalculateChatStatePositions(chatsCtx.chatState)
     }
   )
 
@@ -1648,8 +1650,9 @@ private suspend fun loadLastItems(chatId: State<ChatId>, contentTag: MsgContentT
 }
 
 private fun lastItemsLoaded(contentTag: MsgContentTag?): Boolean {
-  val chatState = chatModel.chatStateForContent(contentTag)
-  return chatState.splits.value.isEmpty() || chatState.splits.value.firstOrNull() != chatModel.chatItemsForContent(contentTag).value.lastOrNull()?.id
+  val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
+  val chatState = chatsCtx.chatState
+  return chatState.splits.value.isEmpty() || chatState.splits.value.firstOrNull() != chatsCtx.chatItems.value.lastOrNull()?.id
 }
 
 // TODO: in extra rare case when after loading last items only 1 item is loaded, the view will jump like when receiving new message
@@ -1740,7 +1743,8 @@ fun BoxScope.FloatingButtons(
   fun scrollToTopUnread() {
     scope.launch {
       tryBlockAndSetLoadingMore(loadingMoreItems) {
-        if (chatModel.chatStateForContent(contentTag).splits.value.isNotEmpty()) {
+        val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
+        if (chatsCtx.chatState.splits.value.isNotEmpty()) {
           val pagination = ChatPagination.Initial(ChatPagination.INITIAL_COUNT)
           val oldSize = reversedChatItems.value.size
           loadMessages(chatInfo.value.id, pagination) {
@@ -2129,7 +2133,7 @@ private fun SaveReportsStateOnDispose(listState: State<LazyListState>) {
   val contentTag = LocalContentTag.current
   DisposableEffect(Unit) {
     onDispose {
-      reportsListState = if (contentTag == MsgContentTag.Report && ModalManager.end.hasModalOpen(ModalViewId.GROUP_REPORTS)) listState.value else null
+      reportsListState = if (contentTag == MsgContentTag.Report && ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) listState.value else null
     }
   }
 }
@@ -2240,8 +2244,10 @@ fun reportsCount(staleChatId: String?): Int {
   }
 }
 
-private fun reversedChatItemsStatic(contentTag: MsgContentTag?): List<ChatItem> =
-  chatModel.chatItemsForContent(contentTag).value.asReversed()
+private fun reversedChatItemsStatic(contentTag: MsgContentTag?): List<ChatItem> {
+  val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
+  return chatsCtx.chatItems.value.asReversed()
+}
 
 private fun oldestPartiallyVisibleListItemInListStateOrNull(topPaddingToContentPx: State<Int>, mergedItems: State<MergedItems>, listState: State<LazyListState>): ListItem? {
   val lastFullyVisibleOffset = listState.value.layoutInfo.viewportEndOffset - topPaddingToContentPx.value
@@ -2326,11 +2332,13 @@ private fun findQuotedItemFromItem(
   scope.launch(Dispatchers.Default) {
     val item = apiLoadSingleMessage(rhId.value, chatInfo.value.chatType, chatInfo.value.apiId, itemId, contentTag)
     if (item != null) {
-      withChats {
-        updateChatItem(chatInfo.value, item)
+      withContext(Dispatchers.Main) {
+        chatModel.chatsContext.updateChatItem(chatInfo.value, item)
       }
-      withReportsChatsIfOpen {
-        updateChatItem(chatInfo.value, item)
+      withContext(Dispatchers.Main) {
+        if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+          chatModel.secondaryChatsContext.updateChatItem(chatInfo.value, item)
+        }
       }
       if (item.quotedItem?.itemId != null) {
         scrollToItem(item.quotedItem.itemId)
@@ -2510,28 +2518,30 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
         )
       }
       if (deleted != null) {
-        withChats {
+        withContext(Dispatchers.Main) {
           for (di in deleted) {
             val toChatItem = di.toChatItem?.chatItem
             if (toChatItem != null) {
-              upsertChatItem(chatRh, chatInfo, toChatItem)
+              chatModel.chatsContext.upsertChatItem(chatRh, chatInfo, toChatItem)
             } else {
-              removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
+              chatModel.chatsContext.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
             }
             val deletedItem = di.deletedChatItem.chatItem
             if (deletedItem.isActiveReport) {
-              decreaseGroupReportsCounter(chatRh, chatInfo.id)
+              chatModel.chatsContext.decreaseGroupReportsCounter(chatRh, chatInfo.id)
             }
           }
         }
-        withReportsChatsIfOpen {
-          for (di in deleted) {
-            if (di.deletedChatItem.chatItem.isReport) {
-              val toChatItem = di.toChatItem?.chatItem
-              if (toChatItem != null) {
-                upsertChatItem(chatRh, chatInfo, toChatItem)
-              } else {
-                removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
+        withContext(Dispatchers.Main) {
+          if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+            for (di in deleted) {
+              if (di.deletedChatItem.chatItem.isReport) {
+                val toChatItem = di.toChatItem?.chatItem
+                if (toChatItem != null) {
+                  chatModel.secondaryChatsContext.upsertChatItem(chatRh, chatInfo, toChatItem)
+                } else {
+                  chatModel.secondaryChatsContext.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
+                }
               }
             }
           }
@@ -2552,28 +2562,30 @@ private fun archiveReports(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
         mode = if (forAll) CIDeleteMode.cidmBroadcast else CIDeleteMode.cidmInternalMark
       )
       if (deleted != null) {
-        withChats {
+        withContext(Dispatchers.Main) {
           for (di in deleted) {
             val toChatItem = di.toChatItem?.chatItem
             if (toChatItem != null) {
-              upsertChatItem(chatRh, chatInfo, toChatItem)
+              chatModel.chatsContext.upsertChatItem(chatRh, chatInfo, toChatItem)
             } else {
-              removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
+              chatModel.chatsContext.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
             }
             val deletedItem = di.deletedChatItem.chatItem
             if (deletedItem.isActiveReport) {
-              decreaseGroupReportsCounter(chatRh, chatInfo.id)
+              chatModel.chatsContext.decreaseGroupReportsCounter(chatRh, chatInfo.id)
             }
           }
         }
-        withReportsChatsIfOpen {
-          for (di in deleted) {
-            if (di.deletedChatItem.chatItem.isReport) {
-              val toChatItem = di.toChatItem?.chatItem
-              if (toChatItem != null) {
-                upsertChatItem(chatRh, chatInfo, toChatItem)
-              } else {
-                removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
+        withContext(Dispatchers.Main) {
+          if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
+            for (di in deleted) {
+              if (di.deletedChatItem.chatItem.isReport) {
+                val toChatItem = di.toChatItem?.chatItem
+                if (toChatItem != null) {
+                  chatModel.secondaryChatsContext.upsertChatItem(chatRh, chatInfo, toChatItem)
+                } else {
+                  chatModel.secondaryChatsContext.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
+                }
               }
             }
           }
@@ -2607,9 +2619,9 @@ private fun markUnreadChatAsRead(chatId: String) {
       false
     )
     if (success) {
-      withChats {
-        replaceChat(chatRh, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
-        markChatTagRead(chat)
+      withContext(Dispatchers.Main) {
+        chatModel.chatsContext.replaceChat(chatRh, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
+        chatModel.chatsContext.markChatTagRead(chat)
       }
     }
   }
@@ -2791,7 +2803,7 @@ private fun ViewConfiguration.bigTouchSlop(slop: Float = 50f) = object: ViewConf
 private fun forwardContent(chatItemsIds: List<Long>, chatInfo: ChatInfo) {
   chatModel.chatId.value = null
   chatModel.sharedContent.value = SharedContent.Forward(
-    chatModel.chatItemsForContent(null).value.filter { chatItemsIds.contains(it.id) },
+    chatModel.chatsContext.chatItems.value.filter { chatItemsIds.contains(it.id) },
     chatInfo
   )
 }

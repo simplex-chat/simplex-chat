@@ -5,7 +5,6 @@ import androidx.compose.ui.graphics.Color
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.item.ItemAction
