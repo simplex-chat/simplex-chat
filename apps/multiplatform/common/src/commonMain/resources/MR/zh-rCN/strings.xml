@@ -2365,4 +2365,10 @@
     <string name="onboarding_conditions_by_using_you_agree">使用 SimpleX Chat 代表您同意：\n- 在公开群中只发送合法内容\n- 尊重其他用户 – 没有垃圾信息。</string>
     <string name="onboarding_conditions_private_chats_not_accessible">服务器运营方无法访问私密聊天、群组和你的联系人。</string>
     <string name="onboarding_conditions_configure_server_operators">配置服务器运营方</string>
+    <string name="unsupported_connection_link">不支持的连接链接</string>
+    <string name="privacy_short_links">使用短链接（测试）</string>
+    <string name="simplex_link_channel">SimpleX 频道链接</string>
+    <string name="short_link_button_text">短链接</string>
+    <string name="link_requires_newer_app_version_please_upgrade">此链接需要更新的应用版本。请升级应用或请求你的联系人发送相容的链接。</string>
+    <string name="full_link_button_text">完整链接</string>
 </resources>
