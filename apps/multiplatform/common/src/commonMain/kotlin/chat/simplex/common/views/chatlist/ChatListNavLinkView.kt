@@ -234,13 +234,12 @@ suspend fun openChat(
   )
 }
 
-suspend fun openLoadedChat(chat: Chat, contentTag: MsgContentTag? = null) {
+suspend fun openLoadedChat(chat: Chat) {
   withContext(Dispatchers.Main) {
-    val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext.value
-    chatsCtx?.chatItemStatuses?.clear()
-    chatsCtx?.chatItems?.replaceAll(chat.chatItems)
+    chatModel.chatsContext.chatItemStatuses.clear()
+    chatModel.chatsContext.chatItems.replaceAll(chat.chatItems)
     chatModel.chatId.value = chat.chatInfo.id
-    chatsCtx?.chatState?.clear()
+    chatModel.chatsContext.chatState.clear()
   }
 }
 

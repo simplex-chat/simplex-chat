@@ -621,9 +621,10 @@ object ChatModel {
       }
     }
 
-    val popChatCollector = PopChatCollector(contentTag)
+    val popChatCollector = PopChatCollector(this)
 
-    class PopChatCollector(contentTag: MsgContentTag?) {
+    // TODO [contexts] no reason for this to be nested?
+    class PopChatCollector(chatsCtx: ChatsContext) {
       private val subject = MutableSharedFlow<Unit>()
       private var remoteHostId: Long? = null
       private val chatsToPop = mutableMapOf<ChatId, Instant>()
@@ -634,8 +635,7 @@ object ChatModel {
             .throttleLatest(2000)
             .collect {
               withContext(Dispatchers.Main) {
-                val chatsCtx = if (contentTag == null) chatsContext else secondaryChatsContext.value
-                chatsCtx?.chats?.replaceAll(popCollectedChats())
+                chatsCtx.chats.replaceAll(popCollectedChats())
               }
             }
         }

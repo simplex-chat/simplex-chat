@@ -1735,7 +1735,7 @@ fun BoxScope.FloatingButtons(
   fun scrollToTopUnread() {
     scope.launch {
       tryBlockAndSetLoadingMore(loadingMoreItems) {
-        if (chatsCtx?.chatState?.splits?.value?.isNotEmpty() == true) {
+        if (chatsCtx.chatState.splits.value.isNotEmpty()) {
           val pagination = ChatPagination.Initial(ChatPagination.INITIAL_COUNT)
           val oldSize = reversedChatItems.value.size
           loadMessages(chatInfo.value.id, pagination) {
