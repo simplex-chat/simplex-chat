@@ -61,9 +61,7 @@ fun showApp() {
                   chatModel.chatsContext.chatItems.clearAndNotify()
                 }
                 withContext(Dispatchers.Main) {
-                  if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-                    chatModel.secondaryChatsContext.chatItems.clearAndNotify()
-                  }
+                  chatModel.secondaryChatsContext.value = null
                 }
               }
             }

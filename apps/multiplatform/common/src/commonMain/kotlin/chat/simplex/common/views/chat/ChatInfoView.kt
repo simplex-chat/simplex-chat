@@ -55,6 +55,7 @@ import java.io.File
 
 @Composable
 fun ChatInfoView(
+  chatsCtx: ChatModel.ChatsContext,
   chatModel: ChatModel,
   contact: Contact,
   connectionStats: ConnectionStats?,
@@ -97,7 +98,7 @@ fun ChatInfoView(
         val previousChatTTL = chatItemTTL.value
         chatItemTTL.value = it
 
-        setChatTTLAlert(chat.remoteHostId, chat.chatInfo, chatItemTTL, previousChatTTL, deletingItems)
+        setChatTTLAlert(chatsCtx, chat.remoteHostId, chat.chatInfo, chatItemTTL, previousChatTTL, deletingItems)
       },
       connStats = connStats,
       contactNetworkStatus.value,
@@ -1332,6 +1333,7 @@ fun queueInfoText(info: Pair<RcvMsgInfo?, ServerQueueInfo>): String {
 }
 
 fun setChatTTLAlert(
+  chatsCtx: ChatModel.ChatsContext,
   rhId: Long?,
   chatInfo: ChatInfo,
   selectedChatTTL: MutableState<ChatItemTTL?>,
@@ -1351,7 +1353,7 @@ fun setChatTTLAlert(
       } else MR.strings.enable_automatic_deletion_question),
     text = generalGetString(if (newTTLToUse.neverExpires) MR.strings.disable_automatic_deletion_message else MR.strings.change_automatic_chat_deletion_message),
     confirmText = generalGetString(if (newTTLToUse.neverExpires) MR.strings.disable_automatic_deletion else MR.strings.delete_messages),
-    onConfirm = { setChatTTL(rhId, chatInfo, selectedChatTTL, progressIndicator, previousChatTTL) },
+    onConfirm = { setChatTTL(chatsCtx, rhId, chatInfo, selectedChatTTL, progressIndicator, previousChatTTL) },
     onDismiss = { selectedChatTTL.value = previousChatTTL },
     onDismissRequest = { selectedChatTTL.value = previousChatTTL },
     destructive = true,
@@ -1359,6 +1361,7 @@ fun setChatTTLAlert(
 }
 
 private fun setChatTTL(
+  chatsCtx: ChatModel.ChatsContext,
   rhId: Long?,
   chatInfo: ChatInfo,
   chatTTL: MutableState<ChatItemTTL?>,
@@ -1369,16 +1372,16 @@ private fun setChatTTL(
   withBGApi {
     try {
       chatModel.controller.setChatTTL(rhId, chatInfo.chatType, chatInfo.apiId, chatTTL.value)
-      afterSetChatTTL(rhId, chatInfo, progressIndicator)
+      afterSetChatTTL(chatsCtx, rhId, chatInfo, progressIndicator)
     } catch (e: Exception) {
       chatTTL.value = previousChatTTL
-      afterSetChatTTL(rhId, chatInfo, progressIndicator)
+      afterSetChatTTL(chatsCtx, rhId, chatInfo, progressIndicator)
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_message_deletion), e.stackTraceToString())
     }
   }
 }
 
-private suspend fun afterSetChatTTL(rhId: Long?, chatInfo: ChatInfo, progressIndicator: MutableState<Boolean>) {
+private suspend fun afterSetChatTTL(chatsCtx: ChatModel.ChatsContext, rhId: Long?, chatInfo: ChatInfo, progressIndicator: MutableState<Boolean>) {
   try {
     val pagination = ChatPagination.Initial(ChatPagination.INITIAL_COUNT)
     val (chat, navInfo) = controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, null, pagination) ?: return
@@ -1393,9 +1396,9 @@ private suspend fun afterSetChatTTL(rhId: Long?, chatInfo: ChatInfo, progressInd
     }
     if (chat.remoteHostId != chatModel.remoteHostId() || chat.id != chatModel.chatId.value) return
     processLoadedChat(
+      chatsCtx,
       chat,
       navInfo,
-      contentTag = null,
       pagination = pagination,
       openAroundItemId = null
     )

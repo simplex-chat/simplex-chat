@@ -55,13 +55,13 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, showDel
                     when (contactType) {
                         ContactType.RECENT -> {
                             withApi {
-                                openChat(rhId, chat.chatInfo)
+                                openChat(secondaryChatsCtx = null, rhId, chat.chatInfo)
                                 ModalManager.start.closeModals()
                             }
                         }
                         ContactType.CHAT_DELETED -> {
                             withApi {
-                                openChat(rhId, chat.chatInfo)
+                                openChat(secondaryChatsCtx = null, rhId, chat.chatInfo)
                                 ModalManager.start.closeModals()
                             }
                         }

@@ -15,7 +15,6 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.BackHandler
 import chat.simplex.common.platform.chatModel
-import chat.simplex.common.views.chat.group.LocalContentTag
 import chat.simplex.common.views.helpers.*
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.res.MR
@@ -60,8 +59,8 @@ private fun SelectAllButton(onClick: () -> Unit) {
 
 @Composable
 fun SelectedItemsButtonsToolbar(
+  chatsCtx: ChatModel.ChatsContext,
   chatInfo: ChatInfo,
-  contentTag: MsgContentTag?,
   selectedChatItems: MutableState<Set<Long>?>,
   deleteItems: (Boolean) -> Unit, // Boolean - delete for everyone is possible
   archiveItems: () -> Unit,
@@ -122,7 +121,6 @@ fun SelectedItemsButtonsToolbar(
     }
     Divider(Modifier.align(Alignment.TopStart))
   }
-  val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
   val chatItems = remember { derivedStateOf { chatsCtx.chatItems.value } }
   LaunchedEffect(chatInfo, chatItems.value, selectedChatItems.value) {
     recheckItems(chatInfo, chatItems.value, selectedChatItems, deleteEnabled, deleteForEveryoneEnabled, canArchiveReports, canModerate, moderateEnabled, forwardEnabled, deleteCountProhibited, forwardCountProhibited)

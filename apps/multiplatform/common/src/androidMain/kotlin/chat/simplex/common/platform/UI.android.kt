@@ -80,9 +80,6 @@ actual class GlobalExceptionsHandler: Thread.UncaughtExceptionHandler {
           chatModel.chatId.value = null
           chatModel.chatsContext.chatItems.clearAndNotify()
         }
-        withContext(Dispatchers.Main) {
-          chatModel.chatsContext.chatItems.clearAndNotify()
-        }
       }
     } else {
       // ChatList, nothing to do. Maybe to show other view except ChatList

@@ -57,8 +57,8 @@ data class ItemSeparation(val timestamp: Boolean, val largeGap: Boolean, val dat
 // staleChatId means the id that was before chatModel.chatId becomes null. It's needed for Android only to make transition from chat
 // to chat list smooth. Otherwise, chat view will become blank right before the transition starts
 fun ChatView(
+  chatsCtx: ChatModel.ChatsContext,
   staleChatId: State<String?>,
-  contentTag: MsgContentTag?,
   scrollToItemId: MutableState<Long?> = remember { mutableStateOf(null) },
   onComposed: suspend (chatId: String) -> Unit
 ) {
@@ -99,7 +99,7 @@ fun ChatView(
           .distinctUntilChanged()
           .filterNotNull()
           .collect { chatId ->
-            if (contentTag == null) {
+            if (chatsCtx.contentTag == null) {
               markUnreadChatAsRead(chatId)
             }
             showSearch.value = false
@@ -112,7 +112,6 @@ fun ChatView(
     val chatRh = remoteHostId.value
     // We need to have real unreadCount value for displaying it inside top right button
     // Having activeChat reloaded on every change in it is inefficient (UI lags)
-    val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
     val unreadCount = remember {
       derivedStateOf {
         chatsCtx.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.chatStats?.unreadCount ?: 0
@@ -121,7 +120,6 @@ fun ChatView(
     val clipboard = LocalClipboardManager.current
     CompositionLocalProvider(
       LocalAppBarHandler provides rememberAppBarHandler(chatInfo.id, keyboardCoversBar = false),
-      LocalContentTag provides contentTag
     ) {
     when (chatInfo) {
       is ChatInfo.Direct, is ChatInfo.Group, is ChatInfo.Local -> {
@@ -135,15 +133,16 @@ fun ChatView(
             val sameText = searchText.value == value
             // showSearch can be false with empty text when it was closed manually after clicking on message from search to load .around it
             // (required on Android to have this check to prevent call to search with old text)
-            val emptyAndClosedSearch = searchText.value.isEmpty() && !showSearch.value && contentTag == null
+            val emptyAndClosedSearch = searchText.value.isEmpty() && !showSearch.value && chatsCtx.contentTag == null
             val c = chatModel.getChat(chatInfo.id)
             if (sameText || emptyAndClosedSearch || c == null || chatModel.chatId.value != chatInfo.id) return@onSearchValueChanged
             withBGApi {
-              apiFindMessages(c, value, contentTag)
+              apiFindMessages(chatsCtx, c, value)
               searchText.value = value
             }
           }
           ChatLayout(
+            chatsCtx = chatsCtx,
             remoteHostId = remoteHostId,
             chatInfo = activeChatInfo,
             unreadCount,
@@ -175,7 +174,7 @@ fun ChatView(
                 }
               } else {
                 SelectedItemsButtonsToolbar(
-                  contentTag = contentTag,
+                  chatsCtx = chatsCtx,
                   selectedChatItems = selectedChatItems,
                   chatInfo = chatInfo,
                   deleteItems = { canDeleteForAll ->
@@ -287,7 +286,7 @@ fun ChatView(
                         code = chatModel.controller.apiGetContactCode(chatRh, chatInfo.apiId)?.second
                         preloadedCode = code
                       }
-                      ChatInfoView(chatModel, chatInfo.contact, contactInfo?.first, contactInfo?.second, chatInfo.localAlias, code, close) {
+                      ChatInfoView(chatsCtx, chatModel, chatInfo.contact, contactInfo?.first, contactInfo?.second, chatInfo.localAlias, code, close) {
                         showSearch.value = true
                       }
                     } else if (chatInfo is ChatInfo.Group) {
@@ -297,7 +296,7 @@ fun ChatView(
                         link = chatModel.controller.apiGetGroupLink(chatRh, chatInfo.groupInfo.groupId)
                         preloadedLink = link
                       }
-                      GroupChatInfoView(chatRh, chatInfo.id, link?.first, link?.second, selectedItems, appBar, scrollToItemId, {
+                      GroupChatInfoView(chatsCtx, chatRh, chatInfo.id, link?.first, link?.second, selectedItems, appBar, scrollToItemId, {
                         link = it
                         preloadedLink = it
                       }, close, { showSearch.value = true })
@@ -344,7 +343,7 @@ fun ChatView(
                 setGroupMembers(chatRh, groupInfo, chatModel)
                 if (!isActive) return@launch
 
-                if (contentTag == null) {
+                if (chatsCtx.contentTag == null) {
                   ModalManager.end.closeModals()
                 }
                 ModalManager.end.showModalCloseable(true) { close ->
@@ -358,12 +357,12 @@ fun ChatView(
               val c = chatModel.getChat(chatId)
               if (chatModel.chatId.value != chatId) return@ChatLayout
               if (c != null) {
-                apiLoadMessages(c.remoteHostId, c.chatInfo.chatType, c.chatInfo.apiId, contentTag, pagination, searchText.value, null, visibleItemIndexes)
+                apiLoadMessages(chatsCtx, c.remoteHostId, c.chatInfo.chatType, c.chatInfo.apiId, pagination, searchText.value, null, visibleItemIndexes)
               }
             },
             deleteMessage = { itemId, mode ->
               withBGApi {
-                val toDeleteItem = reversedChatItemsStatic(contentTag).lastOrNull { it.id == itemId }
+                val toDeleteItem = reversedChatItemsStatic(chatsCtx).lastOrNull { it.id == itemId }
                 val toModerate = toDeleteItem?.memberToModerate(chatInfo)
                 val groupInfo = toModerate?.first
                 val groupMember = toModerate?.second
@@ -400,13 +399,11 @@ fun ChatView(
                     }
                   }
                   withContext(Dispatchers.Main) {
-                    if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-                      if (deletedChatItem.isReport) {
-                        if (toChatItem != null) {
-                          chatModel.secondaryChatsContext.upsertChatItem(chatRh, chatInfo, toChatItem)
-                        } else {
-                          chatModel.secondaryChatsContext.removeChatItem(chatRh, chatInfo, deletedChatItem)
-                        }
+                    if (deletedChatItem.isReport) {
+                      if (toChatItem != null) {
+                        chatModel.secondaryChatsContext.value?.upsertChatItem(chatRh, chatInfo, toChatItem)
+                      } else {
+                        chatModel.secondaryChatsContext.value?.removeChatItem(chatRh, chatInfo, deletedChatItem)
                       }
                     }
                   }
@@ -524,10 +521,8 @@ fun ChatView(
                     chatModel.chatsContext.updateChatItem(cInfo, updatedCI)
                   }
                   withContext(Dispatchers.Main) {
-                    if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-                      if (cItem.isReport) {
-                        chatModel.secondaryChatsContext.updateChatItem(cInfo, updatedCI)
-                      }
+                    if (cItem.isReport) {
+                      chatModel.secondaryChatsContext.value?.updateChatItem(cInfo, updatedCI)
                     }
                   }
                 }
@@ -592,9 +587,7 @@ fun ChatView(
                   )
                 }
                 withContext(Dispatchers.Main) {
-                  if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-                    chatModel.secondaryChatsContext.markChatItemsRead(chatRh, chatInfo.id, itemsIds)
-                  }
+                  chatModel.secondaryChatsContext.value?.markChatItemsRead(chatRh, chatInfo.id, itemsIds)
                 }
               }
             },
@@ -610,9 +603,7 @@ fun ChatView(
                   )
                 }
                 withContext(Dispatchers.Main) {
-                  if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-                    chatModel.secondaryChatsContext.markChatItemsRead(chatRh, chatInfo.id)
-                  }
+                  chatModel.secondaryChatsContext.value?.markChatItemsRead(chatRh, chatInfo.id)
                 }
               }
             },
@@ -676,6 +667,7 @@ fun startChatCall(remoteHostId: Long?, chatInfo: ChatInfo, media: CallMediaType)
 
 @Composable
 fun ChatLayout(
+  chatsCtx: ChatModel.ChatsContext,
   remoteHostId: State<Long?>,
   chatInfo: State<ChatInfo?>,
   unreadCount: State<Int>,
@@ -753,8 +745,7 @@ fun ChatLayout(
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
       val composeViewHeight = remember { mutableStateOf(0.dp) }
-      val contentTag = LocalContentTag.current
-      Box(Modifier.fillMaxSize().chatViewBackgroundModifier(MaterialTheme.colors, MaterialTheme.wallpaper, LocalAppBarHandler.current?.backgroundGraphicsLayerSize, LocalAppBarHandler.current?.backgroundGraphicsLayer, contentTag == null)) {
+      Box(Modifier.fillMaxSize().chatViewBackgroundModifier(MaterialTheme.colors, MaterialTheme.wallpaper, LocalAppBarHandler.current?.backgroundGraphicsLayerSize, LocalAppBarHandler.current?.backgroundGraphicsLayer, drawWallpaper = chatsCtx.contentTag == null)) {
         val remoteHostId = remember { remoteHostId }.value
         val chatInfo = remember { chatInfo }.value
         val oneHandUI = remember { appPrefs.oneHandUI.state }
@@ -768,7 +759,7 @@ fun ChatLayout(
                 override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float = 0f
               }) {
                 ChatItemsList(
-                  remoteHostId, chatInfo, unreadCount, composeState, composeViewHeight, searchValue,
+                  chatsCtx, remoteHostId, chatInfo, unreadCount, composeState, composeViewHeight, searchValue,
                   useLinkPreviews, linkMode, scrollToItemId, selectedChatItems, showMemberInfo, showChatInfo = info, loadMessages, deleteMessage, deleteMessages, archiveReports,
                   receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat, forwardItem,
                   updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
@@ -791,7 +782,7 @@ fun ChatLayout(
               }
             }
           }
-          if (contentTag == MsgContentTag.Report) {
+          if (chatsCtx.contentTag == MsgContentTag.Report) {
             Column(
               Modifier
                 .layoutId(CHAT_COMPOSE_LAYOUT_ID)
@@ -802,7 +793,7 @@ fun ChatLayout(
               AnimatedVisibility(selectedChatItems.value != null) {
                 if (chatInfo != null) {
                   SelectedItemsButtonsToolbar(
-                    contentTag = contentTag,
+                    chatsCtx = chatsCtx,
                     selectedChatItems = selectedChatItems,
                     chatInfo = chatInfo,
                     deleteItems = { _ ->
@@ -842,7 +833,7 @@ fun ChatLayout(
         }
         val reportsCount = reportsCount(chatInfo?.id)
         if (oneHandUI.value && chatBottomBar.value) {
-          if (contentTag == null && reportsCount > 0) {
+          if (chatsCtx.contentTag == null && reportsCount > 0) {
             ReportedCountToolbar(reportsCount, withStatusBar = true, showGroupReports)
           } else {
             StatusBarBackground()
@@ -850,14 +841,14 @@ fun ChatLayout(
         } else {
           NavigationBarBackground(true, oneHandUI.value, noAlpha = true)
         }
-        if (contentTag == MsgContentTag.Report) {
+        if (chatsCtx.contentTag == MsgContentTag.Report) {
           if (oneHandUI.value) {
             StatusBarBackground()
           }
           Column(if (oneHandUI.value) Modifier.align(Alignment.BottomStart).imePadding() else Modifier) {
             Box {
               if (selectedChatItems.value == null) {
-                GroupReportsAppBar(contentTag, { ModalManager.end.closeModal() }, onSearchValueChanged)
+                GroupReportsAppBar(chatsCtx, { ModalManager.end.closeModal() }, onSearchValueChanged)
               } else {
                 SelectedItemsCounterToolbar(selectedChatItems, !oneHandUI.value)
               }
@@ -868,13 +859,13 @@ fun ChatLayout(
             Box {
               if (selectedChatItems.value == null) {
                 if (chatInfo != null) {
-                  ChatInfoToolbar(chatInfo, contentTag, back, info, startCall, endCall, addMembers, openGroupLink, changeNtfsState, onSearchValueChanged, showSearch)
+                  ChatInfoToolbar(chatsCtx, chatInfo, back, info, startCall, endCall, addMembers, openGroupLink, changeNtfsState, onSearchValueChanged, showSearch)
                 }
               } else {
                 SelectedItemsCounterToolbar(selectedChatItems, !oneHandUI.value || !chatBottomBar.value)
               }
             }
-            if (contentTag == null && reportsCount > 0 && (!oneHandUI.value || !chatBottomBar.value)) {
+            if (chatsCtx.contentTag == null && reportsCount > 0 && (!oneHandUI.value || !chatBottomBar.value)) {
               ReportedCountToolbar(reportsCount, withStatusBar = false, showGroupReports)
             }
           }
@@ -886,8 +877,8 @@ fun ChatLayout(
 
 @Composable
 fun BoxScope.ChatInfoToolbar(
+  chatsCtx: ChatModel.ChatsContext,
   chatInfo: ChatInfo,
-  contentTag: MsgContentTag?,
   back: () -> Unit,
   info: () -> Unit,
   startCall: (CallMediaType) -> Unit,
@@ -909,7 +900,7 @@ fun BoxScope.ChatInfoToolbar(
       showSearch.value = false
     }
   }
-  if (appPlatform.isAndroid && contentTag == null) {
+  if (appPlatform.isAndroid && chatsCtx.contentTag == null) {
     BackHandler(onBack = onBackClicked)
   }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
@@ -1148,6 +1139,7 @@ private var reportsListState: LazyListState? = null
 
 @Composable
 fun BoxScope.ChatItemsList(
+  chatsCtx: ChatModel.ChatsContext,
   remoteHostId: Long?,
   chatInfo: ChatInfo,
   unreadCount: State<Int>,
@@ -1205,107 +1197,107 @@ fun BoxScope.ChatItemsList(
   val searchValueIsEmpty = remember { derivedStateOf { searchValue.value.isEmpty() } }
   val searchValueIsNotBlank = remember { derivedStateOf { searchValue.value.isNotBlank() } }
   val revealedItems = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(setOf<Long>()) }
-  val contentTag = LocalContentTag.current
   // not using reversedChatItems inside to prevent possible derivedState bug in Compose when one derived state access can cause crash asking another derived state
-  val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
-  val mergedItems = remember {
-    derivedStateOf {
-      MergedItems.create(chatsCtx.chatItems.value.asReversed(), unreadCount, revealedItems.value, chatsCtx.chatState)
+  if (chatsCtx != null) {
+    val mergedItems = remember {
+      derivedStateOf {
+        MergedItems.create(chatsCtx.chatItems.value.asReversed(), unreadCount, revealedItems.value, chatsCtx.chatState)
+      }
     }
-  }
-  val reversedChatItems = remember { derivedStateOf { chatsCtx.chatItems.value.asReversed() } }
-  val reportsCount = reportsCount(chatInfo.id)
-  val topPaddingToContent = topPaddingToContent(chatView = contentTag == null, contentTag == null && reportsCount > 0)
-  val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent.roundToPx() })
-  val numberOfBottomAppBars = numberOfBottomAppBars()
-  /** determines height based on window info and static height of two AppBars. It's needed because in the first graphic frame height of
-   * [composeViewHeight] is unknown, but we need to set scroll position for unread messages already so it will be correct before the first frame appears
-   * */
-  val maxHeightForList = rememberUpdatedState(
-    with(LocalDensity.current) { LocalWindowHeight().roundToPx() - topPaddingToContentPx.value - (AppBarHeight * fontSizeSqrtMultiplier * numberOfBottomAppBars).roundToPx() }
-  )
-  val resetListState = remember { mutableStateOf(false) }
-  remember(chatModel.openAroundItemId.value) {
-    if (chatModel.openAroundItemId.value != null) {
-      closeSearch()
-      resetListState.value = !resetListState.value
+    val reversedChatItems = remember { derivedStateOf { chatsCtx.chatItems.value.asReversed() } }
+    val reportsCount = reportsCount(chatInfo.id)
+    val topPaddingToContent = topPaddingToContent(
+      chatView = chatsCtx.contentTag == null,
+      additionalTopBar = chatsCtx.contentTag == null && reportsCount > 0
+    )
+    val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent.roundToPx() })
+    val numberOfBottomAppBars = numberOfBottomAppBars()
+
+    /** determines height based on window info and static height of two AppBars. It's needed because in the first graphic frame height of
+     * [composeViewHeight] is unknown, but we need to set scroll position for unread messages already so it will be correct before the first frame appears
+     * */
+    val maxHeightForList = rememberUpdatedState(
+      with(LocalDensity.current) { LocalWindowHeight().roundToPx() - topPaddingToContentPx.value - (AppBarHeight * fontSizeSqrtMultiplier * numberOfBottomAppBars).roundToPx() }
+    )
+    val resetListState = remember { mutableStateOf(false) }
+    remember(chatModel.openAroundItemId.value) {
+      if (chatModel.openAroundItemId.value != null) {
+        closeSearch()
+        resetListState.value = !resetListState.value
+      }
     }
-  }
-  val highlightedItems = remember { mutableStateOf(setOf<Long>()) }
-  val hoveredItemId = remember { mutableStateOf(null as Long?) }
-  val listState = rememberUpdatedState(rememberSaveable(chatInfo.id, searchValueIsEmpty.value, resetListState.value, saver = LazyListState.Saver) {
-    val openAroundItemId = chatModel.openAroundItemId.value
-    val index = mergedItems.value.indexInParentItems[openAroundItemId] ?: mergedItems.value.items.indexOfLast { it.hasUnread() }
-    val reportsState = reportsListState
-    if (openAroundItemId != null) {
-      highlightedItems.value += openAroundItemId
-      chatModel.openAroundItemId.value = null
+    val highlightedItems = remember { mutableStateOf(setOf<Long>()) }
+    val hoveredItemId = remember { mutableStateOf(null as Long?) }
+    val listState = rememberUpdatedState(rememberSaveable(chatInfo.id, searchValueIsEmpty.value, resetListState.value, saver = LazyListState.Saver) {
+      val openAroundItemId = chatModel.openAroundItemId.value
+      val index = mergedItems.value.indexInParentItems[openAroundItemId] ?: mergedItems.value.items.indexOfLast { it.hasUnread() }
+      val reportsState = reportsListState
+      if (openAroundItemId != null) {
+        highlightedItems.value += openAroundItemId
+        chatModel.openAroundItemId.value = null
+      }
+      hoveredItemId.value = null
+      if (reportsState != null) {
+        reportsListState = null
+        reportsState
+      } else if (index <= 0 || !searchValueIsEmpty.value) {
+        LazyListState(0, 0)
+      } else {
+        LazyListState(index + 1, -maxHeightForList.value)
+      }
+    })
+    SaveReportsStateOnDispose(chatsCtx, listState)
+    val maxHeight = remember { derivedStateOf { listState.value.layoutInfo.viewportEndOffset - topPaddingToContentPx.value } }
+    val loadingMoreItems = remember { mutableStateOf(false) }
+    val animatedScrollingInProgress = remember { mutableStateOf(false) }
+    val ignoreLoadingRequests = remember(remoteHostId) { mutableSetOf<Long>() }
+    LaunchedEffect(chatInfo.id, searchValueIsEmpty.value) {
+      if (searchValueIsEmpty.value && reversedChatItems.value.size < ChatPagination.INITIAL_COUNT)
+        ignoreLoadingRequests.add(reversedChatItems.value.lastOrNull()?.id ?: return@LaunchedEffect)
     }
-    hoveredItemId.value = null
-    if (reportsState != null) {
-      reportsListState = null
-      reportsState
-    } else if (index <= 0 || !searchValueIsEmpty.value) {
-      LazyListState(0, 0)
-    } else {
-      LazyListState(index + 1, -maxHeightForList.value)
-    }
-  })
-  SaveReportsStateOnDispose(listState)
-  val maxHeight = remember { derivedStateOf { listState.value.layoutInfo.viewportEndOffset - topPaddingToContentPx.value } }
-  val loadingMoreItems = remember { mutableStateOf(false) }
-  val animatedScrollingInProgress = remember { mutableStateOf(false) }
-  val ignoreLoadingRequests = remember(remoteHostId) { mutableSetOf<Long>() }
-  LaunchedEffect(chatInfo.id, searchValueIsEmpty.value) {
-    if (searchValueIsEmpty.value && reversedChatItems.value.size < ChatPagination.INITIAL_COUNT)
-      ignoreLoadingRequests.add(reversedChatItems.value.lastOrNull()?.id ?: return@LaunchedEffect)
-  }
-  PreloadItems(chatInfo.id, if (searchValueIsEmpty.value) ignoreLoadingRequests else mutableSetOf(), loadingMoreItems, resetListState, contentTag, mergedItems, listState, ChatPagination.UNTIL_PRELOAD_COUNT) { chatId, pagination ->
-    if (loadingMoreItems.value || chatId != chatModel.chatId.value) return@PreloadItems false
-    loadingMoreItems.value = true
-    withContext(NonCancellable) {
-      try {
-        loadMessages(chatId, pagination) {
-          visibleItemIndexesNonReversed(mergedItems, reversedChatItems.value.size, listState.value)
+    PreloadItems(chatsCtx, chatInfo.id, if (searchValueIsEmpty.value) ignoreLoadingRequests else mutableSetOf(), loadingMoreItems, resetListState, mergedItems, listState, ChatPagination.UNTIL_PRELOAD_COUNT) { chatId, pagination ->
+      if (loadingMoreItems.value || chatId != chatModel.chatId.value) return@PreloadItems false
+      loadingMoreItems.value = true
+      withContext(NonCancellable) {
+        try {
+          loadMessages(chatId, pagination) {
+            visibleItemIndexesNonReversed(mergedItems, reversedChatItems.value.size, listState.value)
+          }
+        } finally {
+          loadingMoreItems.value = false
         }
-      } finally {
-        loadingMoreItems.value = false
+      }
+      true
+    }
+    val remoteHostIdUpdated = rememberUpdatedState(remoteHostId)
+    val chatInfoUpdated = rememberUpdatedState(chatInfo)
+    val scope = rememberCoroutineScope()
+    val scrollToItem: (Long) -> Unit = remember {
+      // In group reports just set the itemId to scroll to so the main ChatView will handle scrolling
+      if (chatsCtx.contentTag == MsgContentTag.Report) return@remember { scrollToItemId.value = it }
+      scrollToItem(searchValue, loadingMoreItems, animatedScrollingInProgress, highlightedItems, chatInfoUpdated, maxHeight, scope, reversedChatItems, mergedItems, listState, loadMessages)
+    }
+    val scrollToQuotedItemFromItem: (Long) -> Unit = remember { findQuotedItemFromItem(chatsCtx, remoteHostIdUpdated, chatInfoUpdated, scope, scrollToItem) }
+    if (chatsCtx.contentTag == null) {
+      LaunchedEffect(Unit) {
+        snapshotFlow { scrollToItemId.value }.filterNotNull().collect {
+          if (appPlatform.isAndroid) {
+            ModalManager.end.closeModals()
+          }
+          scrollToItem(it)
+          scrollToItemId.value = null
+        }
       }
     }
-    true
-  }
+    SmallScrollOnNewMessage(listState, reversedChatItems)
+    val finishedInitialComposition = remember { mutableStateOf(false) }
+    NotifyChatListOnFinishingComposition(finishedInitialComposition, chatInfo, revealedItems, listState, onComposed)
 
-  val remoteHostIdUpdated = rememberUpdatedState(remoteHostId)
-  val chatInfoUpdated = rememberUpdatedState(chatInfo)
-  val scope = rememberCoroutineScope()
-  val scrollToItem: (Long) -> Unit = remember {
-    // In group reports just set the itemId to scroll to so the main ChatView will handle scrolling
-    if (contentTag == MsgContentTag.Report) return@remember { scrollToItemId.value = it }
-    scrollToItem(searchValue, loadingMoreItems, animatedScrollingInProgress, highlightedItems, chatInfoUpdated, maxHeight, scope, reversedChatItems, mergedItems, listState, loadMessages)
-  }
-  val scrollToQuotedItemFromItem: (Long) -> Unit = remember { findQuotedItemFromItem(remoteHostIdUpdated, chatInfoUpdated, scope, scrollToItem, contentTag) }
-  if (contentTag == null) {
-    LaunchedEffect(Unit) { snapshotFlow { scrollToItemId.value }.filterNotNull().collect {
-      if (appPlatform.isAndroid) {
-        ModalManager.end.closeModals()
+    DisposableEffectOnGone(
+      whenGone = {
+        VideoPlayerHolder.releaseAll()
       }
-      scrollToItem(it)
-      scrollToItemId.value = null }
-    }
-  }
-  SmallScrollOnNewMessage(listState, reversedChatItems)
-  val finishedInitialComposition = remember { mutableStateOf(false) }
-  NotifyChatListOnFinishingComposition(finishedInitialComposition, chatInfo, revealedItems, listState, onComposed)
-
-  DisposableEffectOnGone(
-    always = {
-      chatsCtx.chatItemsChangesListener = recalculateChatStatePositions(chatsCtx.chatState)
-    },
-    whenGone = {
-      VideoPlayerHolder.releaseAll()
-      chatsCtx.chatItemsChangesListener = recalculateChatStatePositions(chatsCtx.chatState)
-    }
-  )
+    )
 
     @Composable
     fun ChatViewListItem(
@@ -1350,7 +1342,7 @@ fun BoxScope.ChatItemsList(
                   highlightedItems.value = setOf()
                 }
             }
-            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
+            ChatItemView(chatsCtx, remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
           }
         }
 
@@ -1487,7 +1479,7 @@ fun BoxScope.ChatItemsList(
                   }
                 } else {
                   ChatItemBox {
-                    AnimatedVisibility (selectionVisible, enter = fadeIn(), exit = fadeOut()) {
+                    AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                       SelectedListItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
                     }
                     Row(
@@ -1502,7 +1494,7 @@ fun BoxScope.ChatItemsList(
                 }
               } else {
                 ChatItemBox {
-                  AnimatedVisibility (selectionVisible, enter = fadeIn(), exit = fadeOut()) {
+                  AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                     SelectedListItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
                   }
                   Box(
@@ -1517,7 +1509,7 @@ fun BoxScope.ChatItemsList(
               }
             } else { // direct message
               ChatItemBox {
-                AnimatedVisibility (selectionVisible, enter = fadeIn(), exit = fadeOut()) {
+                AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
                   SelectedListItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
                 }
 
@@ -1547,110 +1539,110 @@ fun BoxScope.ChatItemsList(
         ChatItemView(cItem, range, itemSeparation, previousItemSeparationLargeGap)
       }
     }
-  LazyColumnWithScrollBar(
-    Modifier.align(Alignment.BottomCenter),
-    state = listState.value,
-    contentPadding = PaddingValues(
-      top = topPaddingToContent,
-      bottom = composeViewHeight.value
-    ),
-    reverseLayout = true,
-    additionalBarOffset = composeViewHeight,
-    additionalTopBar = rememberUpdatedState(contentTag == null && reportsCount > 0),
-    chatBottomBar = remember { appPrefs.chatBottomBar.state }
-  ) {
-    val mergedItemsValue = mergedItems.value
-    itemsIndexed(mergedItemsValue.items, key = { _, merged -> keyForItem(merged.newest().item) }) { index, merged ->
-      val isLastItem = index == mergedItemsValue.items.lastIndex
-      val last = if (isLastItem) reversedChatItems.value.lastOrNull() else null
-      val listItem = merged.newest()
-      val item = listItem.item
-      val range = if (merged is MergedItem.Grouped) {
-        merged.rangeInReversed.value
-      } else {
-        null
-      }
-      val showAvatar = shouldShowAvatar(item, listItem.nextItem)
-      val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
-      val itemSeparation: ItemSeparation
-      val prevItemSeparationLargeGap: Boolean
-      if (merged is MergedItem.Single || isRevealed.value) {
-        val prev = listItem.prevItem
-        itemSeparation = getItemSeparation(item, prev)
-        val nextForGap = if ((item.mergeCategory != null && item.mergeCategory == prev?.mergeCategory) || isLastItem) null else listItem.nextItem
-        prevItemSeparationLargeGap = if (nextForGap == null) false else getItemSeparationLargeGap(nextForGap, item)
-      } else {
-        itemSeparation = getItemSeparation(item, null)
-        prevItemSeparationLargeGap = false
-      }
-      ChatViewListItem(index == 0, rememberUpdatedState(range), showAvatar, item, itemSeparation, prevItemSeparationLargeGap, isRevealed) {
-        if (merged is MergedItem.Grouped) merged.reveal(it, revealedItems)
-      }
-
-      if (last != null) {
-        // no using separate item(){} block in order to have total number of items in LazyColumn match number of merged items
-        DateSeparator(last.meta.itemTs)
-      }
-      if (item.isRcvNew) {
-        val itemIds = when (merged) {
-          is MergedItem.Single -> listOf(merged.item.item.id)
-          is MergedItem.Grouped -> merged.items.map { it.item.id }
+    LazyColumnWithScrollBar(
+      Modifier.align(Alignment.BottomCenter),
+      state = listState.value,
+      contentPadding = PaddingValues(
+        top = topPaddingToContent,
+        bottom = composeViewHeight.value
+      ),
+      reverseLayout = true,
+      additionalBarOffset = composeViewHeight,
+      additionalTopBar = rememberUpdatedState(chatsCtx.contentTag == null && reportsCount > 0),
+      chatBottomBar = remember { appPrefs.chatBottomBar.state }
+    ) {
+      val mergedItemsValue = mergedItems.value
+      itemsIndexed(mergedItemsValue.items, key = { _, merged -> keyForItem(merged.newest().item) }) { index, merged ->
+        val isLastItem = index == mergedItemsValue.items.lastIndex
+        val last = if (isLastItem) reversedChatItems.value.lastOrNull() else null
+        val listItem = merged.newest()
+        val item = listItem.item
+        val range = if (merged is MergedItem.Grouped) {
+          merged.rangeInReversed.value
+        } else {
+          null
         }
-        MarkItemsReadAfterDelay(keyForItem(item), itemIds, finishedInitialComposition, chatInfo.id, listState, markItemsRead)
+        val showAvatar = shouldShowAvatar(item, listItem.nextItem)
+        val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
+        val itemSeparation: ItemSeparation
+        val prevItemSeparationLargeGap: Boolean
+        if (merged is MergedItem.Single || isRevealed.value) {
+          val prev = listItem.prevItem
+          itemSeparation = getItemSeparation(item, prev)
+          val nextForGap = if ((item.mergeCategory != null && item.mergeCategory == prev?.mergeCategory) || isLastItem) null else listItem.nextItem
+          prevItemSeparationLargeGap = if (nextForGap == null) false else getItemSeparationLargeGap(nextForGap, item)
+        } else {
+          itemSeparation = getItemSeparation(item, null)
+          prevItemSeparationLargeGap = false
+        }
+        ChatViewListItem(index == 0, rememberUpdatedState(range), showAvatar, item, itemSeparation, prevItemSeparationLargeGap, isRevealed) {
+          if (merged is MergedItem.Grouped) merged.reveal(it, revealedItems)
+        }
+
+        if (last != null) {
+          // no using separate item(){} block in order to have total number of items in LazyColumn match number of merged items
+          DateSeparator(last.meta.itemTs)
+        }
+        if (item.isRcvNew) {
+          val itemIds = when (merged) {
+            is MergedItem.Single -> listOf(merged.item.item.id)
+            is MergedItem.Grouped -> merged.items.map { it.item.id }
+          }
+          MarkItemsReadAfterDelay(keyForItem(item), itemIds, finishedInitialComposition, chatInfo.id, listState, markItemsRead)
+        }
       }
     }
-  }
-  FloatingButtons(
-    reversedChatItems,
-    chatInfoUpdated,
-    topPaddingToContent,
-    topPaddingToContentPx,
-    contentTag,
-    loadingMoreItems,
-    loadingTopItems,
-    loadingBottomItems,
-    animatedScrollingInProgress,
-    mergedItems,
-    unreadCount,
-    maxHeight,
-    composeViewHeight,
-    searchValue,
-    markChatRead,
-    listState,
-    loadMessages
-  )
-  FloatingDate(Modifier.padding(top = 10.dp + topPaddingToContent).align(Alignment.TopCenter), topPaddingToContentPx, mergedItems, listState)
+    FloatingButtons(
+      chatsCtx,
+      reversedChatItems,
+      chatInfoUpdated,
+      topPaddingToContent,
+      topPaddingToContentPx,
+      loadingMoreItems,
+      loadingTopItems,
+      loadingBottomItems,
+      animatedScrollingInProgress,
+      mergedItems,
+      unreadCount,
+      maxHeight,
+      composeViewHeight,
+      searchValue,
+      markChatRead,
+      listState,
+      loadMessages
+    )
+    FloatingDate(Modifier.padding(top = 10.dp + topPaddingToContent).align(Alignment.TopCenter), topPaddingToContentPx, mergedItems, listState)
 
-  LaunchedEffect(Unit) {
-    snapshotFlow { listState.value.isScrollInProgress }
-      .collect {
-        chatViewScrollState.value = it
-      }
-  }
-  LaunchedEffect(Unit) {
-    snapshotFlow { listState.value.isScrollInProgress }
-      .filter { !it }
-      .collect {
-        if (animatedScrollingInProgress.value) {
-          animatedScrollingInProgress.value = false
+    LaunchedEffect(Unit) {
+      snapshotFlow { listState.value.isScrollInProgress }
+        .collect {
+          chatViewScrollState.value = it
         }
-      }
+    }
+    LaunchedEffect(Unit) {
+      snapshotFlow { listState.value.isScrollInProgress }
+        .filter { !it }
+        .collect {
+          if (animatedScrollingInProgress.value) {
+            animatedScrollingInProgress.value = false
+          }
+        }
+    }
   }
 }
 
-private suspend fun loadLastItems(chatId: State<ChatId>, contentTag: MsgContentTag?, listState: State<LazyListState>, loadItems: State<suspend (ChatId, ChatPagination) -> Boolean>) {
+private suspend fun loadLastItems(chatsCtx: ChatModel.ChatsContext, chatId: State<ChatId>, listState: State<LazyListState>, loadItems: State<suspend (ChatId, ChatPagination) -> Boolean>) {
   val lastVisible = listState.value.layoutInfo.visibleItemsInfo.lastOrNull()
   val itemsCanCoverScreen = lastVisible != null && listState.value.layoutInfo.viewportEndOffset - listState.value.layoutInfo.afterContentPadding <= lastVisible.offset + lastVisible.size
   if (!itemsCanCoverScreen) return
 
-  if (lastItemsLoaded(contentTag)) return
+  if (lastItemsLoaded(chatsCtx)) return
 
   delay(500)
   loadItems.value(chatId.value, ChatPagination.Last(ChatPagination.INITIAL_COUNT))
 }
 
-private fun lastItemsLoaded(contentTag: MsgContentTag?): Boolean {
-  val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
+private fun lastItemsLoaded(chatsCtx: ChatModel.ChatsContext): Boolean {
   val chatState = chatsCtx.chatState
   return chatState.splits.value.isEmpty() || chatState.splits.value.firstOrNull() != chatsCtx.chatItems.value.lastOrNull()?.id
 }
@@ -1715,11 +1707,11 @@ private fun NotifyChatListOnFinishingComposition(
 
 @Composable
 fun BoxScope.FloatingButtons(
+  chatsCtx: ChatModel.ChatsContext,
   reversedChatItems: State<List<ChatItem>>,
   chatInfo: State<ChatInfo>,
   topPaddingToContent: Dp,
   topPaddingToContentPx: State<Int>,
-  contentTag: MsgContentTag?,
   loadingMoreItems: MutableState<Boolean>,
   loadingTopItems: MutableState<Boolean>,
   loadingBottomItems: MutableState<Boolean>,
@@ -1743,7 +1735,6 @@ fun BoxScope.FloatingButtons(
   fun scrollToTopUnread() {
     scope.launch {
       tryBlockAndSetLoadingMore(loadingMoreItems) {
-        val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
         if (chatsCtx.chatState.splits.value.isNotEmpty()) {
           val pagination = ChatPagination.Initial(ChatPagination.INITIAL_COUNT)
           val oldSize = reversedChatItems.value.size
@@ -1806,7 +1797,7 @@ fun BoxScope.FloatingButtons(
     animatedScrollingInProgress,
     composeViewHeight,
     onClick = {
-      if (loadingBottomItems.value || !lastItemsLoaded(contentTag)) {
+      if (loadingBottomItems.value || !lastItemsLoaded(chatsCtx)) {
         requestedTopScroll.value = false
         requestedBottomScroll.value = true
       } else {
@@ -1881,11 +1872,11 @@ fun BoxScope.FloatingButtons(
 
 @Composable
 fun PreloadItems(
+  chatsCtx: ChatModel.ChatsContext,
   chatId: String,
   ignoreLoadingRequests: MutableSet<Long>,
   loadingMoreItems: State<Boolean>,
   resetListState: State<Boolean>,
-  contentTag: MsgContentTag?,
   mergedItems: State<MergedItems>,
   listState: State<LazyListState>,
   remaining: Int,
@@ -1911,20 +1902,20 @@ fun PreloadItems(
       snapshotFlow { listState.value.firstVisibleItemIndex }
         .distinctUntilChanged()
         .collect { firstVisibleIndex ->
-          if (!preloadItemsBefore(firstVisibleIndex, chatId, ignoreLoadingRequests, contentTag, mergedItems, listState, remaining, loadItems)) {
-            preloadItemsAfter(firstVisibleIndex, chatId, contentTag, mergedItems, remaining, loadItems)
+          if (!preloadItemsBefore(chatsCtx, firstVisibleIndex, chatId, ignoreLoadingRequests, mergedItems, listState, remaining, loadItems)) {
+            preloadItemsAfter(chatsCtx, firstVisibleIndex, chatId, mergedItems, remaining, loadItems)
           }
-          loadLastItems(chatId, contentTag, listState, loadItems)
+          loadLastItems(chatsCtx, chatId, listState, loadItems)
         }
     }
   }
 }
 
 private suspend fun preloadItemsBefore(
+  chatsCtx: ChatModel.ChatsContext,
   firstVisibleIndex: Int,
   chatId: State<String>,
   ignoreLoadingRequests: State<MutableSet<Long>>,
-  contentTag: MsgContentTag?,
   mergedItems: State<MergedItems>,
   listState: State<LazyListState>,
   remaining: Int,
@@ -1933,18 +1924,18 @@ private suspend fun preloadItemsBefore(
   val splits = mergedItems.value.splits
   val lastVisibleIndex = (listState.value.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0)
   var lastIndexToLoadFrom: Int? = findLastIndexToLoadFromInSplits(firstVisibleIndex, lastVisibleIndex, remaining, splits)
-  val items = reversedChatItemsStatic(contentTag)
+  val items = reversedChatItemsStatic(chatsCtx)
   if (splits.isEmpty() && items.isNotEmpty() && lastVisibleIndex > mergedItems.value.items.size - remaining) {
     lastIndexToLoadFrom = items.lastIndex
   }
   if (lastIndexToLoadFrom != null) {
     val loadFromItemId = items.getOrNull(lastIndexToLoadFrom)?.id ?: return false
     if (!ignoreLoadingRequests.value.contains(loadFromItemId)) {
-      val items = reversedChatItemsStatic(contentTag)
+      val items = reversedChatItemsStatic(chatsCtx)
       val sizeWas = items.size
       val oldestItemIdWas = items.lastOrNull()?.id
       val triedToLoad = loadItems.value(chatId.value, ChatPagination.Before(loadFromItemId, ChatPagination.PRELOAD_COUNT))
-      val itemsUpdated = reversedChatItemsStatic(contentTag)
+      val itemsUpdated = reversedChatItemsStatic(chatsCtx)
       if (triedToLoad && sizeWas == itemsUpdated.size && oldestItemIdWas == itemsUpdated.lastOrNull()?.id) {
         ignoreLoadingRequests.value.add(loadFromItemId)
         return false
@@ -1956,14 +1947,14 @@ private suspend fun preloadItemsBefore(
 }
 
 private suspend fun preloadItemsAfter(
+  chatsCtx: ChatModel.ChatsContext,
   firstVisibleIndex: Int,
   chatId: State<String>,
-  contentTag: MsgContentTag?,
   mergedItems: State<MergedItems>,
   remaining: Int,
   loadItems: State<suspend (ChatId, ChatPagination) -> Boolean>,
 ) {
-  val items = reversedChatItemsStatic(contentTag)
+  val items = reversedChatItemsStatic(chatsCtx)
   val splits = mergedItems.value.splits
   val split = splits.lastOrNull { it.indexRangeInParentItems.contains(firstVisibleIndex) }
   // we're inside a splitRange (top --- [end of the splitRange --- we're here --- start of the splitRange] --- bottom)
@@ -2129,11 +2120,10 @@ private fun FloatingDate(
 }
 
 @Composable
-private fun SaveReportsStateOnDispose(listState: State<LazyListState>) {
-  val contentTag = LocalContentTag.current
+private fun SaveReportsStateOnDispose(chatsCtx: ChatModel.ChatsContext, listState: State<LazyListState>) {
   DisposableEffect(Unit) {
     onDispose {
-      reportsListState = if (contentTag == MsgContentTag.Report && ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) listState.value else null
+      reportsListState = if (chatsCtx.contentTag == MsgContentTag.Report && ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) listState.value else null
     }
   }
 }
@@ -2244,10 +2234,8 @@ fun reportsCount(staleChatId: String?): Int {
   }
 }
 
-private fun reversedChatItemsStatic(contentTag: MsgContentTag?): List<ChatItem> {
-  val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext
-  return chatsCtx.chatItems.value.asReversed()
-}
+private fun reversedChatItemsStatic(chatsCtx: ChatModel.ChatsContext): List<ChatItem> =
+  chatsCtx.chatItems.value.asReversed()
 
 private fun oldestPartiallyVisibleListItemInListStateOrNull(topPaddingToContentPx: State<Int>, mergedItems: State<MergedItems>, listState: State<LazyListState>): ListItem? {
   val lastFullyVisibleOffset = listState.value.layoutInfo.viewportEndOffset - topPaddingToContentPx.value
@@ -2323,22 +2311,20 @@ private fun scrollToItem(
 }
 
 private fun findQuotedItemFromItem(
+  chatsCtx: ChatModel.ChatsContext,
   rhId: State<Long?>,
   chatInfo: State<ChatInfo>,
   scope: CoroutineScope,
-  scrollToItem: (Long) -> Unit,
-  contentTag: MsgContentTag?
+  scrollToItem: (Long) -> Unit
 ): (Long) -> Unit = { itemId: Long ->
   scope.launch(Dispatchers.Default) {
-    val item = apiLoadSingleMessage(rhId.value, chatInfo.value.chatType, chatInfo.value.apiId, itemId, contentTag)
+    val item = apiLoadSingleMessage(chatsCtx, rhId.value, chatInfo.value.chatType, chatInfo.value.apiId, itemId)
     if (item != null) {
       withContext(Dispatchers.Main) {
         chatModel.chatsContext.updateChatItem(chatInfo.value, item)
       }
       withContext(Dispatchers.Main) {
-        if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-          chatModel.secondaryChatsContext.updateChatItem(chatInfo.value, item)
-        }
+        chatModel.secondaryChatsContext.value?.updateChatItem(chatInfo.value, item)
       }
       if (item.quotedItem?.itemId != null) {
         scrollToItem(item.quotedItem.itemId)
@@ -2533,15 +2519,13 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
           }
         }
         withContext(Dispatchers.Main) {
-          if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-            for (di in deleted) {
-              if (di.deletedChatItem.chatItem.isReport) {
-                val toChatItem = di.toChatItem?.chatItem
-                if (toChatItem != null) {
-                  chatModel.secondaryChatsContext.upsertChatItem(chatRh, chatInfo, toChatItem)
-                } else {
-                  chatModel.secondaryChatsContext.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
-                }
+          for (di in deleted) {
+            if (di.deletedChatItem.chatItem.isReport) {
+              val toChatItem = di.toChatItem?.chatItem
+              if (toChatItem != null) {
+                chatModel.secondaryChatsContext.value?.upsertChatItem(chatRh, chatInfo, toChatItem)
+              } else {
+                chatModel.secondaryChatsContext.value?.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
               }
             }
           }
@@ -2577,15 +2561,13 @@ private fun archiveReports(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
           }
         }
         withContext(Dispatchers.Main) {
-          if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-            for (di in deleted) {
-              if (di.deletedChatItem.chatItem.isReport) {
-                val toChatItem = di.toChatItem?.chatItem
-                if (toChatItem != null) {
-                  chatModel.secondaryChatsContext.upsertChatItem(chatRh, chatInfo, toChatItem)
-                } else {
-                  chatModel.secondaryChatsContext.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
-                }
+          for (di in deleted) {
+            if (di.deletedChatItem.chatItem.isReport) {
+              val toChatItem = di.toChatItem?.chatItem
+              if (toChatItem != null) {
+                chatModel.secondaryChatsContext.value?.upsertChatItem(chatRh, chatInfo, toChatItem)
+              } else {
+                chatModel.secondaryChatsContext.value?.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
               }
             }
           }
@@ -2938,6 +2920,7 @@ fun PreviewChatLayout() {
     val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
     val searchValue = remember { mutableStateOf("") }
     ChatLayout(
+      chatsCtx = ChatModel.ChatsContext(contentTag = null),
       remoteHostId = remember { mutableStateOf(null) },
       chatInfo = remember { mutableStateOf(ChatInfo.Direct.sampleData) },
       unreadCount = unreadCount,
@@ -3015,6 +2998,7 @@ fun PreviewGroupChatLayout() {
     val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
     val searchValue = remember { mutableStateOf("") }
     ChatLayout(
+      chatsCtx = ChatModel.ChatsContext(contentTag = null),
       remoteHostId = remember { mutableStateOf(null) },
       chatInfo = remember { mutableStateOf(ChatInfo.Direct.sampleData) },
       unreadCount = unreadCount,

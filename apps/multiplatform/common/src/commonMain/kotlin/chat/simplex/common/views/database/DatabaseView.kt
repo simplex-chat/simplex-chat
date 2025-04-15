@@ -543,11 +543,9 @@ fun deleteChatDatabaseFilesAndState() {
       chatModel.chatsContext.popChatCollector.clear()
     }
     withContext(Dispatchers.Main) {
-      if (ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)) {
-        chatModel.secondaryChatsContext.chatItems.clearAndNotify()
-        chatModel.secondaryChatsContext.chats.clear()
-        chatModel.secondaryChatsContext.popChatCollector.clear()
-      }
+      chatModel.secondaryChatsContext.value?.chatItems?.clearAndNotify()
+      chatModel.secondaryChatsContext.value?.chats?.clear()
+      chatModel.secondaryChatsContext.value?.popChatCollector?.clear()
     }
   }
   chatModel.users.clear()
