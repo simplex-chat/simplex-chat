@@ -275,6 +275,10 @@ data UserServer' s (p :: ProtocolType) = UserServer
   }
   deriving (Show)
 
+presetServerAddress :: UserServer' s p -> ProtocolServer p
+presetServerAddress UserServer {server = ProtoServerWithAuth srv _} = srv
+{-# INLINE presetServerAddress #-}
+
 data PresetOperator = PresetOperator
   { operator :: Maybe NewServerOperator,
     smp :: [NewUserServer 'PSMP],
@@ -296,6 +300,9 @@ operatorServersToUse :: UserProtocol p => SProtocolType p -> PresetOperator -> I
 operatorServersToUse p PresetOperator {useSMP, useXFTP} = case p of
   SPSMP -> useSMP
   SPXFTP -> useXFTP
+
+presetServer' :: Bool -> ProtocolServer p -> NewUserServer p
+presetServer' enabled = presetServer enabled . (`ProtoServerWithAuth` Nothing)
 
 presetServer :: Bool -> ProtoServerWithAuth p -> NewUserServer p
 presetServer = newUserServer_ True

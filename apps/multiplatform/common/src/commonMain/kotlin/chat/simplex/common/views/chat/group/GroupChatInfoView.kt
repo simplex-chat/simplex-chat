@@ -54,12 +54,12 @@ fun ModalData.GroupChatInfoView(
   chatsCtx: ChatModel.ChatsContext,
   rhId: Long?,
   chatId: String,
-  groupLink: String?,
+  groupLink: CreatedConnLink?,
   groupLinkMemberRole: GroupMemberRole?,
   selectedItems: MutableState<Set<Long>?>,
   appBar: MutableState<@Composable (BoxScope.() -> Unit)?>,
   scrollToItemId: MutableState<Long?>,
-  onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit,
+  onGroupLinkUpdated: (Pair<CreatedConnLink, GroupMemberRole>?) -> Unit,
   close: () -> Unit,
   onSearchClicked: () -> Unit
 ) {
@@ -329,7 +329,7 @@ fun ModalData.GroupChatInfoLayout(
   activeSortedMembers: List<GroupMember>,
   developerTools: Boolean,
   onLocalAliasChanged: (String) -> Unit,
-  groupLink: String?,
+  groupLink: CreatedConnLink?,
   selectedItems: MutableState<Set<Long>?>,
   appBar: MutableState<@Composable (BoxScope.() -> Unit)?>,
   scrollToItemId: MutableState<Long?>,

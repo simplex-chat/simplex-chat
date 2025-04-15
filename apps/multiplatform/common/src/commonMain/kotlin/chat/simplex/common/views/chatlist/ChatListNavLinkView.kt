@@ -549,7 +549,7 @@ fun ContactConnectionMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactConnection
       ModalManager.center.closeModals()
       ModalManager.end.closeModals()
       ModalManager.center.showModalCloseable(true, showClose = appPlatform.isAndroid) { close ->
-        ContactConnectionInfoView(chatModel, rhId, chatInfo.contactConnection.connReqInv, chatInfo.contactConnection, true, close)
+        ContactConnectionInfoView(chatModel, rhId, chatInfo.contactConnection.connLinkInv, chatInfo.contactConnection, true, close)
       }
       showMenu.value = false
     },

@@ -4,6 +4,7 @@ import SectionBottomSpacer
 import SectionItemView
 import SectionTextFooter
 import SectionView
+import SectionViewWithButton
 import TextIconSpaced
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -48,17 +49,17 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
   val selection = remember { stateGetOrPut("selection") { selection } }
   val showQRCodeScanner = remember { stateGetOrPut("showQRCodeScanner") { showQRCodeScanner } }
   val contactConnection: MutableState<PendingContactConnection?> = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(chatModel.showingInvitation.value?.conn) }
-  val connReqInvitation by remember { derivedStateOf { chatModel.showingInvitation.value?.connReq ?: "" } }
+  val connLinkInvitation by remember { derivedStateOf { chatModel.showingInvitation.value?.connLink ?: CreatedConnLink("", null) } }
   val creatingConnReq = rememberSaveable { mutableStateOf(false) }
   val pastedLink = rememberSaveable { mutableStateOf("") }
   LaunchedEffect(selection.value) {
     if (
       selection.value == NewChatOption.INVITE
-      && connReqInvitation.isEmpty()
+      && connLinkInvitation.connFullLink.isEmpty()
       && contactConnection.value == null
       && !creatingConnReq.value
     ) {
-      createInvitation(rh?.remoteHostId, creatingConnReq, connReqInvitation, contactConnection)
+      createInvitation(rh?.remoteHostId, creatingConnReq, connLinkInvitation, contactConnection)
     }
   }
   DisposableEffect(Unit) {
@@ -143,12 +144,12 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
           Modifier
             .fillMaxWidth()
             .heightIn(min = this@BoxWithConstraints.maxHeight - 150.dp),
-          verticalArrangement = if (index == NewChatOption.INVITE.ordinal && connReqInvitation.isEmpty()) Arrangement.Center else Arrangement.Top
+          verticalArrangement = if (index == NewChatOption.INVITE.ordinal && connLinkInvitation.connFullLink.isEmpty()) Arrangement.Center else Arrangement.Top
         ) {
           Spacer(Modifier.height(DEFAULT_PADDING))
           when (index) {
             NewChatOption.INVITE.ordinal -> {
-              PrepareAndInviteView(rh?.remoteHostId, contactConnection, connReqInvitation, creatingConnReq)
+              PrepareAndInviteView(rh?.remoteHostId, contactConnection, connLinkInvitation, creatingConnReq)
             }
             NewChatOption.CONNECT.ordinal -> {
               ConnectView(rh?.remoteHostId, showQRCodeScanner, pastedLink, close)
@@ -162,17 +163,17 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
 }
 
 @Composable
-private fun PrepareAndInviteView(rhId: Long?, contactConnection: MutableState<PendingContactConnection?>, connReqInvitation: String, creatingConnReq: MutableState<Boolean>) {
-  if (connReqInvitation.isNotEmpty()) {
+private fun PrepareAndInviteView(rhId: Long?, contactConnection: MutableState<PendingContactConnection?>, connLinkInvitation: CreatedConnLink, creatingConnReq: MutableState<Boolean>) {
+  if (connLinkInvitation.connFullLink.isNotEmpty()) {
     InviteView(
       rhId,
-      connReqInvitation = connReqInvitation,
+      connLinkInvitation = connLinkInvitation,
       contactConnection = contactConnection,
     )
   } else if (creatingConnReq.value) {
     CreatingLinkProgressView()
   } else {
-    RetryButton { createInvitation(rhId, creatingConnReq, connReqInvitation, contactConnection) }
+    RetryButton { createInvitation(rhId, creatingConnReq, connLinkInvitation, contactConnection) }
   }
 }
 
@@ -185,7 +186,7 @@ private fun updateShownConnection(conn: PendingContactConnection) {
   chatModel.showingInvitation.value = chatModel.showingInvitation.value?.copy(
     conn = conn,
     connId = conn.id,
-    connReq = conn.connReqInv ?: "",
+    connLink = conn.connLinkInv ?: CreatedConnLink("", null),
     connChatUsed = true
   )
 }
@@ -449,15 +450,21 @@ fun ActiveProfilePicker(
 }
 
 @Composable
-private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection: MutableState<PendingContactConnection?>) {
-  SectionView(stringResource(MR.strings.share_this_1_time_link).uppercase(), headerBottomPadding = 5.dp) {
-    LinkTextView(connReqInvitation, true)
-  }
-
+private fun InviteView(rhId: Long?, connLinkInvitation: CreatedConnLink, contactConnection: MutableState<PendingContactConnection?>) {
+  val showShortLink = remember { mutableStateOf(true) }
   Spacer(Modifier.height(10.dp))
 
-  SectionView(stringResource(MR.strings.or_show_this_qr_code).uppercase(), headerBottomPadding = 5.dp) {
-    SimpleXLinkQRCode(connReqInvitation, onShare = { chatModel.markShowingInvitationUsed() })
+  SectionView(stringResource(MR.strings.share_this_1_time_link).uppercase(), headerBottomPadding = 5.dp) {
+    LinkTextView(connLinkInvitation.simplexChatUri(short = showShortLink.value), true)
+  }
+
+  Spacer(Modifier.height(DEFAULT_PADDING))
+
+  SectionViewWithButton(
+    stringResource(MR.strings.or_show_this_qr_code).uppercase(),
+    titleButton = if (connLinkInvitation.connShortLink != null) {{ ToggleShortLinkButton(showShortLink) }} else null
+  ) {
+    SimpleXCreatedLinkQRCode(connLinkInvitation, short = showShortLink.value, onShare = { chatModel.markShowingInvitationUsed() })
   }
 
   Spacer(Modifier.height(DEFAULT_PADDING))
@@ -526,6 +533,18 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
       SectionTextFooter(generalGetString(MR.strings.connect__a_new_random_profile_will_be_shared))
     }
   }
+}
+
+@Composable
+fun ToggleShortLinkButton(short: MutableState<Boolean>) {
+  Text(
+    stringResource(if (short.value) MR.strings.full_link_button_text else MR.strings.short_link_button_text),
+    modifier = Modifier.clickable(
+      interactionSource = remember { MutableInteractionSource() },
+      indication = null
+    ) { short.value = !short.value },
+    style = MaterialTheme.typography.body2, fontSize = 14.sp, color = MaterialTheme.colors.primary
+  )
 }
 
 @Composable
@@ -675,17 +694,17 @@ private suspend fun connect(rhId: Long?, link: String, close: () -> Unit, cleanu
 private fun createInvitation(
   rhId: Long?,
   creatingConnReq: MutableState<Boolean>,
-  connReqInvitation: String,
+  connLinkInvitation: CreatedConnLink,
   contactConnection: MutableState<PendingContactConnection?>
 ) {
-  if (connReqInvitation.isNotEmpty() || contactConnection.value != null || creatingConnReq.value) return
+  if (connLinkInvitation.connFullLink.isNotEmpty() || contactConnection.value != null || creatingConnReq.value) return
   creatingConnReq.value = true
   withBGApi {
     val (r, alert) = controller.apiAddContact(rhId, incognito = controller.appPrefs.incognito.get())
     if (r != null) {
       withContext(Dispatchers.Main) {
         chatModel.chatsContext.updateContactConnection(rhId, r.second)
-        chatModel.showingInvitation.value = ShowingInvitation(connId = r.second.id, connReq = simplexChatLink(r.first), connChatUsed = false, conn = r.second)
+        chatModel.showingInvitation.value = ShowingInvitation(connId = r.second.id, connLink = r.first, connChatUsed = false, conn = r.second)
         contactConnection.value = r.second
       }
     } else {

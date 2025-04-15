@@ -11,7 +11,7 @@ ARG JAVA=17
 ENV TZ=Etc/UTC \
     DEBIAN_FRONTEND=noninteractive
 
-# Install curl, git and and simplexmq dependencies
+# Install curl, git and and simplex-chat dependencies
 RUN apt-get update && \
     apt-get install -y curl \
                        libpq-dev \
@@ -27,7 +27,6 @@ RUN apt-get update && \
                        libnuma-dev \
                        libssl-dev \
                        desktop-file-utils \
-                       openjdk-${JAVA}-jdk-headless \
                        patchelf \
                        ca-certificates \
                        zip \
@@ -37,8 +36,17 @@ RUN apt-get update && \
                        appstream \
                        gpg \
                        unzip &&\
-    export JAVA_HOME=$(update-java-alternatives -l | head -n 1 | awk -F ' ' '{print $NF}') &&\
     ln -s /bin/fusermount /bin/fusermount3 || :
+
+# Install Java Coretto
+# Required, because official Java in Ubuntu
+# depends on libjpeg.so.8 and liblcms2.so.2 which are NOT copied into final
+# /usr/lib/runtime/lib directory and I do not have time to figure out gradle.kotlin
+# to fix this :(
+RUN curl --proto '=https' --tlsv1.2 -sSf 'https://apt.corretto.aws/corretto.key' | gpg --dearmor -o /usr/share/keyrings/corretto-keyring.gpg &&\
+    echo "deb [signed-by=/usr/share/keyrings/corretto-keyring.gpg] https://apt.corretto.aws stable main" > /etc/apt/sources.list.d/corretto.list &&\
+    apt update &&\
+    apt install -y java-${JAVA}-amazon-corretto-jdk
 
 # Specify bootstrap Haskell versions
 ENV BOOTSTRAP_HASKELL_GHC_VERSION=${GHC}

@@ -10,12 +10,14 @@ import SwiftUI
 import SimpleXChat
 
 struct GroupLinkView: View {
+    @EnvironmentObject var theme: AppTheme
     var groupId: Int64
-    @Binding var groupLink: String?
+    @Binding var groupLink: CreatedConnLink?
     @Binding var groupLinkMemberRole: GroupMemberRole
     var showTitle: Bool = false
     var creatingGroup: Bool = false
     var linkCreatedCb: (() -> Void)? = nil
+    @State private var showShortLink = true
     @State private var creatingLink = false
     @State private var alert: GroupLinkAlert?
     @State private var shouldCreate = true
@@ -69,10 +71,10 @@ struct GroupLinkView: View {
                         }
                     }
                     .frame(height: 36)
-                    SimpleXLinkQRCode(uri: groupLink)
-                        .id("simplex-qrcode-view-for-\(groupLink)")
+                    SimpleXCreatedLinkQRCode(link: groupLink, short: $showShortLink)
+                        .id("simplex-qrcode-view-for-\(groupLink.simplexChatUri(short: showShortLink))")
                     Button {
-                        showShareSheet(items: [simplexChatLink(groupLink)])
+                        showShareSheet(items: [groupLink.simplexChatUri(short: showShortLink)])
                     } label: {
                         Label("Share link", systemImage: "square.and.arrow.up")
                     }
@@ -92,6 +94,10 @@ struct GroupLinkView: View {
                             .scaleEffect(2)
                             .frame(maxWidth: .infinity)
                     }
+                }
+            } header: {
+                if let groupLink, groupLink.connShortLink != nil {
+                    ToggleShortLinkHeader(text: Text(""), link: groupLink, short: $showShortLink)
                 }
             }
             .alert(item: $alert) { alert in
@@ -158,8 +164,8 @@ struct GroupLinkView: View {
 
 struct GroupLinkView_Previews: PreviewProvider {
     static var previews: some View {
-        @State var groupLink: String? = "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
-        @State var noGroupLink: String? = nil
+        @State var groupLink: CreatedConnLink? = CreatedConnLink(connFullLink: "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D", connShortLink: nil)
+        @State var noGroupLink: CreatedConnLink? = nil
 
         return Group {
             GroupLinkView(groupId: 1, groupLink: $groupLink, groupLinkMemberRole: Binding.constant(.member))

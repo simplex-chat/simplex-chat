@@ -45,7 +45,7 @@ struct ChatView: View {
     @State private var selectedMember: GMember? = nil
     // opening GroupLinkView on link button (incognito)
     @State private var showGroupLinkSheet: Bool = false
-    @State private var groupLink: String?
+    @State private var groupLink: CreatedConnLink?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
     @State private var forwardedChatItems: [ChatItem] = []
     @State private var selectedChatItems: Set<Int64>? = nil
