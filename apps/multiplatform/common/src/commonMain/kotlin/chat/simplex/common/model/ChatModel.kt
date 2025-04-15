@@ -303,7 +303,6 @@ object ChatModel {
     val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
     val chatItemStatuses = mutableMapOf<Long, CIStatus>()
     // set listener here that will be notified on every add/delete of a chat item
-    var chatItemsChangesListener: ChatItemsChangesListener? = null
     val chatState = ActiveChatState()
 
     fun hasChat(rhId: Long?, id: String): Boolean = chats.value.firstOrNull { it.id == id && it.remoteHostId == rhId } != null
@@ -397,11 +396,11 @@ object ChatModel {
     }
 
     fun addToChatItems(index: Int, elem: ChatItem) {
-      chatItems.value = SnapshotStateList<ChatItem>().apply { addAll(chatItems.value); add(index, elem); chatItemsChangesListener?.added(elem.id to elem.isRcvNew, index) }
+      chatItems.value = SnapshotStateList<ChatItem>().apply { addAll(chatItems.value); add(index, elem); chatState.itemAdded(elem.id to elem.isRcvNew) }
     }
 
     fun addToChatItems(elem: ChatItem) {
-      chatItems.value = SnapshotStateList<ChatItem>().apply { addAll(chatItems.value); add(elem); chatItemsChangesListener?.added(elem.id to elem.isRcvNew, lastIndex) }
+      chatItems.value = SnapshotStateList<ChatItem>().apply { addAll(chatItems.value); add(elem); chatState.itemAdded(elem.id to elem.isRcvNew) }
     }
 
     fun removeLastChatItemsAndNotify() {
@@ -412,7 +411,7 @@ object ChatModel {
         val rem = removeLast()
         removed = Triple(rem.id, remIndex, rem.isRcvNew)
       }
-      chatItemsChangesListener?.removed(listOf(removed), chatItems.value)
+      chatState.itemsRemoved(listOf(removed), chatItems.value)
     }
 
     suspend fun addChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
@@ -724,7 +723,7 @@ object ChatModel {
           }
           i--
         }
-        chatItemsChangesListener?.read(if (itemIds != null) markedReadIds else null, items)
+        chatState.itemsRead(if (itemIds != null) markedReadIds else null, items)
       }
       return markedRead to mentionsMarkedRead
     }
@@ -1082,15 +1081,6 @@ object ChatModel {
 
   val connectedToRemote: Boolean @Composable get() = currentRemoteHost.value != null || remoteCtrlSession.value?.active == true
   fun connectedToRemote(): Boolean = currentRemoteHost.value != null || remoteCtrlSession.value?.active == true
-}
-
-interface ChatItemsChangesListener {
-  // pass null itemIds if the whole chat now read
-  fun read(itemIds: Set<Long>?, newItems: List<ChatItem>)
-  fun added(item: Pair<Long, Boolean>, index: Int)
-  // itemId, index in old chatModel.chatItems (before the update), isRcvNew (is item unread or not)
-  fun removed(itemIds: List<Triple<Long, Int, Boolean>>, newItems: List<ChatItem>)
-  fun cleared()
 }
 
 data class ShowingInvitation(
@@ -2748,8 +2738,8 @@ fun MutableState<SnapshotStateList<ChatItem>>.removeAllAndNotify(block: (ChatIte
     }
   }
   if (toRemove.isNotEmpty()) {
-    chatModel.chatsContext.chatItemsChangesListener?.removed(toRemove, value)
-    chatModel.secondaryChatsContext.value?.chatItemsChangesListener?.removed(toRemove, value)
+    chatModel.chatsContext.chatState.itemsRemoved(toRemove, value)
+    chatModel.secondaryChatsContext.value?.chatState?.itemsRemoved(toRemove, value)
   }
 }
 
@@ -2773,8 +2763,8 @@ fun MutableState<SnapshotStateList<Chat>>.clear() {
 // Removes all chatItems and notifies a listener about it
 fun MutableState<SnapshotStateList<ChatItem>>.clearAndNotify() {
   value = SnapshotStateList()
-  chatModel.chatsContext.chatItemsChangesListener?.cleared()
-  chatModel.secondaryChatsContext.value?.chatItemsChangesListener?.cleared()
+  chatModel.chatsContext.chatState.clear()
+  chatModel.secondaryChatsContext.value?.chatState?.clear()
 }
 
 fun <T> State<SnapshotStateList<T>>.asReversed(): MutableList<T> = value.asReversed()

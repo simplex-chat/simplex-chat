@@ -1293,12 +1293,8 @@ fun BoxScope.ChatItemsList(
     NotifyChatListOnFinishingComposition(finishedInitialComposition, chatInfo, revealedItems, listState, onComposed)
 
     DisposableEffectOnGone(
-      always = {
-        chatsCtx.chatItemsChangesListener = recalculateChatStatePositions(chatsCtx.chatState)
-      },
       whenGone = {
         VideoPlayerHolder.releaseAll()
-        chatsCtx.chatItemsChangesListener = recalculateChatStatePositions(chatsCtx.chatState)
       }
     )
 
