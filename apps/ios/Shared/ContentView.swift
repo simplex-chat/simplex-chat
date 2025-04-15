@@ -443,12 +443,12 @@ struct ContentView: View {
     }
 
     func connectViaUrl() {
-        dismissAllSheets() {
-            let m = ChatModel.shared
-            if let url = m.appOpenUrl {
-                m.appOpenUrl = nil
+        let m = ChatModel.shared
+        if let url = m.appOpenUrl {
+            m.appOpenUrl = nil
+            dismissAllSheets() {
                 var path = url.path
-                if (path == "/contact" || path == "/invitation") {
+                if (path == "/contact" || path == "/invitation" || path == "/a" || path == "/c" || path == "/g" || path == "/i") {
                     path.removeFirst()
                     let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
                     planAndConnect(

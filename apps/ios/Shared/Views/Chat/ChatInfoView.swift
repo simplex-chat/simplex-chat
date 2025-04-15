@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import SimpleXChat
+@preconcurrency import SimpleXChat
 
 func infoRow(_ title: LocalizedStringKey, _ value: String) -> some View {
     HStack {

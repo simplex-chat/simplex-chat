@@ -1,13 +1,13 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.SQLite.Migrations.M20250310_group_scope where
+module Simplex.Chat.Store.SQLite.Migrations.M20250403_group_scope where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
 -- TODO [knocking] review indexes (drop idx_chat_items_groups_item_ts?)
-m20250310_group_scope :: Query
-m20250310_group_scope =
+m20250403_group_scope :: Query
+m20250403_group_scope =
   [sql|
 ALTER TABLE group_profiles ADD COLUMN member_admission TEXT;
 
@@ -30,8 +30,8 @@ CREATE INDEX idx_chat_items_group_scope_item_ts ON chat_items(
 );
 |]
 
-down_m20250310_group_scope :: Query
-down_m20250310_group_scope =
+down_m20250403_group_scope :: Query
+down_m20250403_group_scope =
   [sql|
 DROP INDEX idx_chat_items_group_scope_item_ts;
 

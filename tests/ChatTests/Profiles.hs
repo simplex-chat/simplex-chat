@@ -101,6 +101,11 @@ chatProfileTests = do
       it "files & media" testGroupPrefsFilesForRole
       it "SimpleX links" testGroupPrefsSimplexLinksForRole
     it "set user, contact and group UI theme" testSetUITheme
+  describe "short links" $ do
+    it "should connect via one-time inviation" testShortLinkInvitation
+    it "should plan and connect via one-time inviation" testPlanShortLinkInvitation
+    it "should connect via contact address" testShortLinkContactAddress
+    it "should join group" testShortLinkJoinGroup
 
 testUpdateProfile :: HasCallStack => TestParams -> IO ()
 testUpdateProfile =
@@ -2583,3 +2588,162 @@ testSetUITheme =
     groupInfo a = do
       a <## "group ID: 1"
       a <## "current members: 1"
+
+testShortLinkInvitation :: HasCallStack => TestParams -> IO ()
+testShortLinkInvitation =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/c short"
+    inv <- getShortInvitation alice
+    bob ##> ("/c " <> inv)
+    bob <## "confirmation sent!"
+    concurrently_
+      (alice <## "bob (Bob): contact is connected")
+      (bob <## "alice (Alice): contact is connected")
+    alice #> "@bob hi"
+    bob <# "alice> hi"
+    bob #> "@alice hey"
+    alice <# "bob> hey"
+
+testPlanShortLinkInvitation :: HasCallStack => TestParams -> IO ()
+testPlanShortLinkInvitation =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    alice ##> "/c short"
+    inv <- getShortInvitation alice
+    alice ##> ("/_connect plan 1 " <> inv)
+    alice <## "invitation link: own link"
+    alice ##> ("/_connect plan 1 " <> slSimplexScheme inv)
+    alice <## "invitation link: own link"
+    bob ##> ("/_connect plan 1 " <> inv)
+    bob <## "invitation link: ok to connect"
+    -- nobody else can connect
+    cath ##> ("/_connect plan 1 " <> inv)
+    cath <##. "error: connection authorization failed"
+    cath ##> ("/c " <> inv)
+    cath <##. "error: connection authorization failed"
+    -- bob can retry "plan"
+    bob ##> ("/_connect plan 1 " <> inv)
+    bob <## "invitation link: ok to connect"
+    -- with simplex: scheme too
+    bob ##> ("/_connect plan 1 " <> slSimplexScheme inv)
+    bob <## "invitation link: ok to connect"
+    bob ##> ("/c " <> inv)
+    bob <## "confirmation sent!"
+    concurrently_
+      (alice <## "bob (Bob): contact is connected")
+      (bob <## "alice (Alice): contact is connected")
+    alice #> "@bob hi"
+    bob <# "alice> hi"
+    bob #> "@alice hey"
+    alice <# "bob> hey"
+    bob ##> ("/_connect plan 1 " <> inv)
+    bob <##. "error: connection authorization failed"
+    alice ##> ("/_connect plan 1 " <> inv)
+    alice <##. "error: connection authorization failed" -- short_link_inv and conn_req_inv are removed after connection
+
+slSimplexScheme :: String -> String
+slSimplexScheme sl = T.unpack $ T.replace "https://localhost/" "simplex:/" (T.pack sl) <> "?h=localhost"
+
+testShortLinkContactAddress :: HasCallStack => TestParams -> IO ()
+testShortLinkContactAddress =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
+    alice ##> "/ad short"
+    (shortLink, fullLink) <- getShortContactLink alice True
+    alice ##> ("/_connect plan 1 " <> shortLink)
+    alice <## "contact address: own address"
+    alice ##> ("/_connect plan 1 " <> slSimplexScheme shortLink)
+    alice <## "contact address: own address"
+    alice ##> ("/_connect plan 1 " <> fullLink)
+    alice <## "contact address: own address"
+    (alice, bob) `connectVia` shortLink
+    bob ##> ("/_connect plan 1 " <> slSimplexScheme shortLink)
+    bob <## "contact address: known contact alice"
+    bob <## "use @alice <message> to send messages"
+    (alice, cath) `connectVia` slSimplexScheme shortLink
+    cath ##> ("/_connect plan 1 " <> shortLink)
+    cath <## "contact address: known contact alice"
+    cath <## "use @alice <message> to send messages"
+    (alice, dan) `connectVia` fullLink
+  where
+    (alice, cc) `connectVia` cLink = do
+      name <- userName cc
+      sName <- showName cc
+      cc ##> ("/_connect plan 1 " <> cLink)
+      cc <## "contact address: ok to connect"
+      cc ##> ("/c " <> cLink)
+      alice <#? cc
+      alice ##> ("/ac " <> name)
+      alice <## (sName <> ": accepting contact request, you can send messages to contact")
+      concurrently_
+        (cc <## "alice (Alice): contact is connected")
+        (alice <## (sName <> ": contact is connected"))
+      cc ##> ("/_connect plan 1 " <> cLink)
+      cc <## "contact address: known contact alice"
+      cc <## "use @alice <message> to send messages"
+
+testShortLinkJoinGroup :: HasCallStack => TestParams -> IO ()
+testShortLinkJoinGroup =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
+    threadDelay 100000
+    alice ##> "/ad short" -- create the address to test that it can co-exist with group link
+    _ <- getShortContactLink alice True
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    alice ##> "/create link #team short"
+    (shortLink, fullLink) <- getShortGroupLink alice "team" GRMember True
+    alice ##> ("/_connect plan 1 " <> shortLink)
+    alice <## "group link: own link for group #team"
+    alice ##> ("/_connect plan 1 " <> slSimplexScheme shortLink)
+    alice <## "group link: own link for group #team"
+    alice ##> ("/_connect plan 1 " <> fullLink)
+    alice <## "group link: own link for group #team"
+    joinGroup alice bob shortLink
+    bob ##> ("/_connect plan 1 " <> shortLink)
+    bob <## "group link: known group #team"
+    bob <## "use #team <message> to send messages"
+    bob ##> ("/_connect plan 1 " <> slSimplexScheme shortLink)
+    bob <## "group link: known group #team"
+    bob <## "use #team <message> to send messages"
+    joinGroup alice cath $ slSimplexScheme shortLink
+    concurrentlyN_
+      [ do
+          bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+          bob <## "#team: new member cath is connected",
+        cath <## "#team: member bob (Bob) is connected"
+      ]
+    cath ##> ("/_connect plan 1 " <> slSimplexScheme shortLink)
+    cath <## "group link: known group #team"
+    cath <## "use #team <message> to send messages"
+    cath ##> ("/_connect plan 1 " <> shortLink)
+    cath <## "group link: known group #team"
+    cath <## "use #team <message> to send messages"
+    joinGroup alice dan fullLink
+    concurrentlyN_
+      [ do
+          bob <## "#team: alice added dan (Daniel) to the group (connecting...)"
+          bob <## "#team: new member dan is connected",
+        do
+          cath <## "#team: alice added dan (Daniel) to the group (connecting...)"
+          cath <## "#team: new member dan is connected",
+        do
+          dan <## "#team: member bob (Bob) is connected"
+          dan <## "#team: member cath (Catherine) is connected"
+      ]
+    dan ##> ("/_connect plan 1 " <> fullLink)
+    dan <## "group link: known group #team"
+    dan <## "use #team <message> to send messages"
+  where
+    joinGroup alice cc link = do
+      name <- userName cc
+      sName <- showName cc
+      cc ##> ("/_connect plan 1 " <> link)
+      cc <## "group link: ok to connect"
+      cc ##> ("/c " <> link)
+      cc <## "connection request sent!"
+      alice <## (sName <> ": accepting request to join group #team...")
+      concurrentlyN_
+        [ alice <## ("#team: " <> name <> " joined the group"),
+          do
+            cc <## "#team: joining the group..."
+            cc <## "#team: you joined the group"
+        ]

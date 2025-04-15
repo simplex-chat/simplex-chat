@@ -59,8 +59,8 @@ private fun SelectAllButton(onClick: () -> Unit) {
 
 @Composable
 fun SelectedItemsButtonsToolbar(
+  chatsCtx: ChatModel.ChatsContext,
   chatInfo: ChatInfo,
-  contentTag: MsgContentTag?,
   selectedChatItems: MutableState<Set<Long>?>,
   deleteItems: (Boolean) -> Unit, // Boolean - delete for everyone is possible
   archiveItems: () -> Unit,
@@ -121,7 +121,7 @@ fun SelectedItemsButtonsToolbar(
     }
     Divider(Modifier.align(Alignment.TopStart))
   }
-  val chatItems = remember { derivedStateOf { chatModel.chatItemsForContent(contentTag).value } }
+  val chatItems = remember { derivedStateOf { chatsCtx.chatItems.value } }
   LaunchedEffect(chatInfo, chatItems.value, selectedChatItems.value) {
     recheckItems(chatInfo, chatItems.value, selectedChatItems, deleteEnabled, deleteForEveryoneEnabled, canArchiveReports, canModerate, moderateEnabled, forwardEnabled, deleteCountProhibited, forwardCountProhibited)
   }

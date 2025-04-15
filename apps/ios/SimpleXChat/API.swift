@@ -324,7 +324,7 @@ public func responseError(_ err: Error) -> String {
     }
 }
 
-func chatErrorString(_ err: ChatError) -> String {
+public func chatErrorString(_ err: ChatError) -> String {
     if case let .invalidJSON(json) = err { return json }
     return String(describing: err)
 }
