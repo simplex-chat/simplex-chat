@@ -11,7 +11,7 @@ module ChatTests.Utils where
 import ChatClient
 import ChatTests.DBUtils
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (concurrently_)
+import Control.Concurrent.Async (concurrently_, mapConcurrently_)
 import Control.Concurrent.STM
 import Control.Monad (unless, when)
 import Control.Monad.Except (runExceptT)
@@ -427,7 +427,7 @@ getInAnyOrder f cc ls = do
 cc <# line = (dropTime <$> getTermLine cc) `shouldReturn` line
 
 (*<#) :: HasCallStack => [TestCC] -> String -> Expectation
-ccs *<# line = concurrentlyN_ $ map (<# line) ccs
+ccs *<# line = mapConcurrently_ (<# line) ccs
 
 (?<#) :: HasCallStack => TestCC -> String -> Expectation
 cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line
@@ -505,13 +505,26 @@ dropPartialReceipt_ msg = case splitAt 2 msg of
   _ -> Nothing
 
 getInvitation :: HasCallStack => TestCC -> IO String
-getInvitation cc = do
+getInvitation = getInvitation_ False
+
+getShortInvitation :: HasCallStack => TestCC -> IO String
+getShortInvitation = getInvitation_ True
+
+getInvitation_ :: HasCallStack => Bool -> TestCC -> IO String
+getInvitation_ short cc = do
   cc <## "pass this invitation link to your contact (via another channel):"
   cc <## ""
   inv <- getTermLine cc
   cc <## ""
   cc <## "and ask them to connect: /c <invitation_link_above>"
+  when short $ cc <##. "The invitation link for old clients: https://simplex.chat/invitation#"
   pure inv
+
+getShortContactLink :: HasCallStack => TestCC -> Bool -> IO (String, String)
+getShortContactLink cc created = do
+  shortLink <- getContactLink cc created
+  fullLink <- dropLinePrefix "The contact link for old clients: " =<< getTermLine cc
+  pure (shortLink, fullLink)
 
 getContactLink :: HasCallStack => TestCC -> Bool -> IO String
 getContactLink cc created = do
@@ -524,6 +537,17 @@ getContactLink cc created = do
   cc <## "to share with your contacts: /profile_address on"
   cc <## "to delete it: /da (accepted contacts will remain connected)"
   pure link
+
+dropLinePrefix :: String -> String -> IO String
+dropLinePrefix line s
+  | line `isPrefixOf` s = pure $ drop (length line) s
+  | otherwise = error $ "expected to start from: " <> line <> ", got: " <> s
+
+getShortGroupLink :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO (String, String)
+getShortGroupLink cc gName mRole created = do
+  shortLink <- getGroupLink cc gName mRole created
+  fullLink <- dropLinePrefix "The group link for old clients: " =<< getTermLine cc
+  pure (shortLink, fullLink)
 
 getGroupLink :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO String
 getGroupLink cc gName mRole created = do

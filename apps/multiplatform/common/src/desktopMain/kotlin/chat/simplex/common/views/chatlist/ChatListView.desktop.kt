@@ -51,7 +51,7 @@ private fun ActiveCallInteractiveAreaOneHand(call: Call, showMenu: MutableState<
         val chat = chatModel.getChat(call.contact.id)
         if (chat != null) {
           withBGApi {
-            openChat(chat.remoteHostId, chat.chatInfo)
+            openChat(secondaryChatsCtx = null, chat.remoteHostId, chat.chatInfo)
           }
         }
       },
@@ -116,7 +116,7 @@ private fun ActiveCallInteractiveAreaNonOneHand(call: Call, showMenu: MutableSta
           val chat = chatModel.getChat(call.contact.id)
           if (chat != null) {
             withBGApi {
-              openChat(chat.remoteHostId, chat.chatInfo)
+              openChat(secondaryChatsCtx = null, chat.remoteHostId, chat.chatInfo)
             }
           }
         },

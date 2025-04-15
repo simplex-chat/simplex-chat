@@ -4,8 +4,8 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionTextFooter
 import SectionView
+import SectionViewWithButton
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -22,24 +22,24 @@ import chat.simplex.common.views.chat.LocalAliasEditor
 import chat.simplex.common.views.chatlist.deleteContactConnectionAlert
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.model.PendingContactConnection
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
+import kotlinx.coroutines.*
 
 @Composable
 fun ContactConnectionInfoView(
   chatModel: ChatModel,
   rhId: Long?,
-  connReqInvitation: String?,
+  connLinkInvitation: CreatedConnLink?,
   contactConnection: PendingContactConnection,
   focusAlias: Boolean,
   close: () -> Unit
 ) {
-  LaunchedEffect(connReqInvitation) {
-    if (connReqInvitation != null) {
-      chatModel.showingInvitation.value = ShowingInvitation(contactConnection.id, connReqInvitation, false, conn = contactConnection)
+  LaunchedEffect(connLinkInvitation) {
+    if (connLinkInvitation != null) {
+      chatModel.showingInvitation.value = ShowingInvitation(contactConnection.id, connLinkInvitation, false, conn = contactConnection)
     }
   }
   /** When [AddContactLearnMore] is open, we don't need to drop [ChatModel.showingInvitation].
@@ -54,16 +54,16 @@ fun ContactConnectionInfoView(
       }
     }
   }
-  val clipboard = LocalClipboardManager.current
+  val showShortLink = remember { mutableStateOf(true) }
   ContactConnectionInfoLayout(
     chatModel = chatModel,
-    connReq = connReqInvitation,
+    connLink = connLinkInvitation,
+    showShortLink = showShortLink,
     contactConnection = contactConnection,
     focusAlias = focusAlias,
     rhId = rhId,
     deleteConnection = { deleteContactConnectionAlert(rhId, contactConnection, chatModel, close) },
     onLocalAliasChanged = { setContactAlias(rhId, contactConnection, it, chatModel) },
-    share = { if (connReqInvitation != null) clipboard.shareText(connReqInvitation) },
     learnMore = {
       ModalManager.end.showModalCloseable { close ->
         AddContactLearnMore(close)
@@ -75,13 +75,13 @@ fun ContactConnectionInfoView(
 @Composable
 private fun ContactConnectionInfoLayout(
   chatModel: ChatModel,
-  connReq: String?,
+  connLink: CreatedConnLink?,
+  showShortLink: MutableState<Boolean>,
   contactConnection: PendingContactConnection,
   focusAlias: Boolean,
   rhId: Long?,
   deleteConnection: () -> Unit,
   onLocalAliasChanged: (String) -> Unit,
-  share: () -> Unit,
   learnMore: () -> Unit,
 ) {
   @Composable fun incognitoEnabled() {
@@ -127,13 +127,19 @@ private fun ContactConnectionInfoLayout(
       LocalAliasEditor(contactConnection.id, contactConnection.localAlias, center = false, leadingIcon = true, focus = focusAlias, updateValue = onLocalAliasChanged)
     }
 
-    SectionView {
-      if (!connReq.isNullOrEmpty() && contactConnection.initiated) {
-        SimpleXLinkQRCode(connReq)
+    if (connLink != null && connLink.connFullLink.isNotEmpty() && contactConnection.initiated) {
+      Spacer(Modifier.height(DEFAULT_PADDING))
+      SectionViewWithButton(
+        stringResource(MR.strings.one_time_link).uppercase(),
+        titleButton = if (connLink.connShortLink == null) null else {{ ToggleShortLinkButton(showShortLink) }}
+      ) {
+        SimpleXCreatedLinkQRCode(connLink, short = showShortLink.value)
         incognitoEnabled()
-        ShareLinkButton(connReq)
+        ShareLinkButton(connLink.simplexChatUri(short = showShortLink.value))
         OneTimeLinkLearnMoreButton(learnMore)
-      } else {
+      }
+    } else {
+      SectionView {
         incognitoEnabled()
         OneTimeLinkLearnMoreButton(learnMore)
       }
@@ -149,14 +155,14 @@ private fun ContactConnectionInfoLayout(
 }
 
 @Composable
-fun ShareLinkButton(connReqInvitation: String) {
+fun ShareLinkButton(linkUri: String) {
   val clipboard = LocalClipboardManager.current
   SettingsActionItem(
     painterResource(MR.images.ic_share),
     stringResource(MR.strings.share_invitation_link),
     click = {
       chatModel.showingInvitation.value = chatModel.showingInvitation.value?.copy(connChatUsed = true)
-      clipboard.shareText(simplexChatLink(connReqInvitation))
+      clipboard.shareText(simplexChatLink(linkUri))
     },
     iconColor = MaterialTheme.colors.primary,
     textColor = MaterialTheme.colors.primary,
@@ -185,8 +191,8 @@ fun DeleteButton(onClick: () -> Unit) {
 
 private fun setContactAlias(rhId: Long?, contactConnection: PendingContactConnection, localAlias: String, chatModel: ChatModel) = withBGApi {
   chatModel.controller.apiSetConnectionAlias(rhId, contactConnection.pccConnId, localAlias)?.let {
-    withChats {
-      updateContactConnection(rhId, it)
+    withContext(Dispatchers.Main) {
+      chatModel.chatsContext.updateContactConnection(rhId, it)
     }
   }
 }
@@ -201,13 +207,13 @@ private fun PreviewContactConnectionInfoView() {
   SimpleXTheme {
     ContactConnectionInfoLayout(
       chatModel = ChatModel,
-      connReq = "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D",
+      connLink = CreatedConnLink("https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D", null),
+      showShortLink = remember { mutableStateOf(true) },
       contactConnection = PendingContactConnection.getSampleData(),
       focusAlias = false,
       rhId = null,
       deleteConnection = {},
       onLocalAliasChanged = {},
-      share = {},
       learnMore = {}
     )
   }

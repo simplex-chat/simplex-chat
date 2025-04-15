@@ -19,7 +19,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.*
@@ -37,17 +36,16 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.group.ChatTTLSection
-import chat.simplex.common.views.chat.group.ProgressIndicator
 import chat.simplex.common.views.chatlist.updateChatSettings
 import chat.simplex.common.views.database.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
+import kotlinx.coroutines.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -57,6 +55,7 @@ import java.io.File
 
 @Composable
 fun ChatInfoView(
+  chatsCtx: ChatModel.ChatsContext,
   chatModel: ChatModel,
   contact: Contact,
   connectionStats: ConnectionStats?,
@@ -99,7 +98,7 @@ fun ChatInfoView(
         val previousChatTTL = chatItemTTL.value
         chatItemTTL.value = it
 
-        setChatTTLAlert(chat.remoteHostId, chat.chatInfo, chatItemTTL, previousChatTTL, deletingItems)
+        setChatTTLAlert(chatsCtx, chat.remoteHostId, chat.chatInfo, chatItemTTL, previousChatTTL, deletingItems)
       },
       connStats = connStats,
       contactNetworkStatus.value,
@@ -126,8 +125,8 @@ fun ChatInfoView(
             val cStats = chatModel.controller.apiSwitchContact(chatRh, contact.contactId)
             connStats.value = cStats
             if (cStats != null) {
-              withChats {
-                updateContactConnectionStats(chatRh, contact, cStats)
+              withContext(Dispatchers.Main) {
+                chatModel.chatsContext.updateContactConnectionStats(chatRh, contact, cStats)
               }
             }
             close.invoke()
@@ -140,8 +139,8 @@ fun ChatInfoView(
             val cStats = chatModel.controller.apiAbortSwitchContact(chatRh, contact.contactId)
             connStats.value = cStats
             if (cStats != null) {
-              withChats {
-                updateContactConnectionStats(chatRh, contact, cStats)
+              withContext(Dispatchers.Main) {
+                chatModel.chatsContext.updateContactConnectionStats(chatRh, contact, cStats)
               }
             }
           }
@@ -171,8 +170,8 @@ fun ChatInfoView(
               verify = { code ->
                 chatModel.controller.apiVerifyContact(chatRh, ct.contactId, code)?.let { r ->
                   val (verified, existingCode) = r
-                  withChats {
-                    updateContact(
+                  withContext(Dispatchers.Main) {
+                    chatModel.chatsContext.updateContact(
                       chatRh,
                       ct.copy(
                         activeConn = ct.activeConn?.copy(
@@ -200,8 +199,8 @@ suspend fun syncContactConnection(rhId: Long?, contact: Contact, connectionStats
   val cStats = chatModel.controller.apiSyncContactRatchet(rhId, contact.contactId, force = force)
   connectionStats.value = cStats
   if (cStats != null) {
-    withChats {
-      updateContactConnectionStats(rhId, contact, cStats)
+    withContext(Dispatchers.Main) {
+      chatModel.chatsContext.updateContactConnectionStats(rhId, contact, cStats)
     }
   }
 }
@@ -475,14 +474,14 @@ fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDe
     val chatRh = chat.remoteHostId
     val ct = chatModel.controller.apiDeleteContact(chatRh, chatInfo.apiId, chatDeleteMode)
     if (ct != null) {
-      withChats {
+      withContext(Dispatchers.Main) {
         when (chatDeleteMode) {
           is ChatDeleteMode.Full ->
-            removeChat(chatRh, chatInfo.id)
+            chatModel.chatsContext.removeChat(chatRh, chatInfo.id)
           is ChatDeleteMode.Entity ->
-            updateContact(chatRh, ct)
+            chatModel.chatsContext.updateContact(chatRh, ct)
           is ChatDeleteMode.Messages ->
-            clearChat(chatRh, ChatInfo.Direct(ct))
+            chatModel.chatsContext.clearChat(chatRh, ChatInfo.Direct(ct))
         }
       }
       if (chatModel.chatId.value == chatInfo.id) {
@@ -1270,11 +1269,11 @@ suspend fun save(applyToMode: DefaultThemeMode?, newTheme: ThemeModeOverride?, c
   wallpaperFilesToDelete.forEach(::removeWallpaperFile)
 
   if (controller.apiSetChatUIThemes(chat.remoteHostId, chat.id, changedThemes)) {
-    withChats {
+    withContext(Dispatchers.Main) {
       if (chat.chatInfo is ChatInfo.Direct) {
-        updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(contact = chat.chatInfo.contact.copy(uiThemes = changedThemes)))
+        chatModel.chatsContext.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(contact = chat.chatInfo.contact.copy(uiThemes = changedThemes)))
       } else if (chat.chatInfo is ChatInfo.Group) {
-        updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(groupInfo = chat.chatInfo.groupInfo.copy(uiThemes = changedThemes)))
+        chatModel.chatsContext.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(groupInfo = chat.chatInfo.groupInfo.copy(uiThemes = changedThemes)))
       }
     }
   }
@@ -1283,8 +1282,8 @@ suspend fun save(applyToMode: DefaultThemeMode?, newTheme: ThemeModeOverride?, c
 private fun setContactAlias(chat: Chat, localAlias: String, chatModel: ChatModel) = withBGApi {
   val chatRh = chat.remoteHostId
   chatModel.controller.apiSetContactAlias(chatRh, chat.chatInfo.apiId, localAlias)?.let {
-    withChats {
-      updateContact(chatRh, it)
+    withContext(Dispatchers.Main) {
+      chatModel.chatsContext.updateContact(chatRh, it)
     }
   }
 }
@@ -1334,6 +1333,7 @@ fun queueInfoText(info: Pair<RcvMsgInfo?, ServerQueueInfo>): String {
 }
 
 fun setChatTTLAlert(
+  chatsCtx: ChatModel.ChatsContext,
   rhId: Long?,
   chatInfo: ChatInfo,
   selectedChatTTL: MutableState<ChatItemTTL?>,
@@ -1353,7 +1353,7 @@ fun setChatTTLAlert(
       } else MR.strings.enable_automatic_deletion_question),
     text = generalGetString(if (newTTLToUse.neverExpires) MR.strings.disable_automatic_deletion_message else MR.strings.change_automatic_chat_deletion_message),
     confirmText = generalGetString(if (newTTLToUse.neverExpires) MR.strings.disable_automatic_deletion else MR.strings.delete_messages),
-    onConfirm = { setChatTTL(rhId, chatInfo, selectedChatTTL, progressIndicator, previousChatTTL) },
+    onConfirm = { setChatTTL(chatsCtx, rhId, chatInfo, selectedChatTTL, progressIndicator, previousChatTTL) },
     onDismiss = { selectedChatTTL.value = previousChatTTL },
     onDismissRequest = { selectedChatTTL.value = previousChatTTL },
     destructive = true,
@@ -1361,6 +1361,7 @@ fun setChatTTLAlert(
 }
 
 private fun setChatTTL(
+  chatsCtx: ChatModel.ChatsContext,
   rhId: Long?,
   chatInfo: ChatInfo,
   chatTTL: MutableState<ChatItemTTL?>,
@@ -1371,33 +1372,33 @@ private fun setChatTTL(
   withBGApi {
     try {
       chatModel.controller.setChatTTL(rhId, chatInfo.chatType, chatInfo.apiId, chatTTL.value)
-      afterSetChatTTL(rhId, chatInfo, progressIndicator)
+      afterSetChatTTL(chatsCtx, rhId, chatInfo, progressIndicator)
     } catch (e: Exception) {
       chatTTL.value = previousChatTTL
-      afterSetChatTTL(rhId, chatInfo, progressIndicator)
+      afterSetChatTTL(chatsCtx, rhId, chatInfo, progressIndicator)
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_message_deletion), e.stackTraceToString())
     }
   }
 }
 
-private suspend fun afterSetChatTTL(rhId: Long?, chatInfo: ChatInfo, progressIndicator: MutableState<Boolean>) {
+private suspend fun afterSetChatTTL(chatsCtx: ChatModel.ChatsContext, rhId: Long?, chatInfo: ChatInfo, progressIndicator: MutableState<Boolean>) {
   try {
     val pagination = ChatPagination.Initial(ChatPagination.INITIAL_COUNT)
     val (chat, navInfo) = controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, scope = null, contentTag = null, pagination) ?: return
     if (chat.chatItems.isEmpty()) {
       // replacing old chat with the same old chat but without items. Less intrusive way of clearing a preview
-      withChats {
-        val oldChat = getChat(chat.id)
+      withContext(Dispatchers.Main) {
+        val oldChat = chatModel.chatsContext.getChat(chat.id)
         if (oldChat != null) {
-          replaceChat(oldChat.remoteHostId, oldChat.id, oldChat.copy(chatItems = emptyList()))
+          chatModel.chatsContext.replaceChat(oldChat.remoteHostId, oldChat.id, oldChat.copy(chatItems = emptyList()))
         }
       }
     }
     if (chat.remoteHostId != chatModel.remoteHostId() || chat.id != chatModel.chatId.value) return
     processLoadedChat(
+      chatsCtx,
       chat,
       navInfo,
-      contentTag = null,
       pagination = pagination,
       openAroundItemId = null
     )

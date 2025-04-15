@@ -138,6 +138,7 @@ data ChatConfig = ChatConfig
     chatVRange :: VersionRangeChat,
     confirmMigrations :: MigrationConfirmation,
     presetServers :: PresetServers,
+    shortLinkPresetServers :: NonEmpty SMPServer,
     tbqSize :: Natural,
     fileChunkSize :: Integer,
     xftpDescrPartSize :: Int,
@@ -366,7 +367,7 @@ data ChatCommand
   -- | APIDeleteGroupConversations GroupId (NonEmpty GroupConversationId)
   -- | APIArchiveGroupConversations GroupId (NonEmpty GroupConversationId)
   | APIUpdateGroupProfile GroupId GroupProfile
-  | APICreateGroupLink GroupId GroupMemberRole
+  | APICreateGroupLink GroupId GroupMemberRole CreateShortLink
   | APIGroupLinkMemberRole GroupId GroupMemberRole
   | APIDeleteGroupLink GroupId
   | APIGetGroupLink GroupId
@@ -439,21 +440,21 @@ data ChatCommand
   | EnableGroupMember GroupName ContactName
   | ChatHelp HelpSection
   | Welcome
-  | APIAddContact UserId IncognitoEnabled
-  | AddContact IncognitoEnabled
+  | APIAddContact UserId CreateShortLink IncognitoEnabled
+  | AddContact CreateShortLink IncognitoEnabled
   | APISetConnectionIncognito Int64 IncognitoEnabled
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
-  | APIConnectPlan UserId AConnectionRequestUri
-  | APIConnect UserId IncognitoEnabled (Maybe AConnectionRequestUri)
-  | Connect IncognitoEnabled (Maybe AConnectionRequestUri)
+  | APIConnectPlan UserId AConnectionLink
+  | APIConnect UserId IncognitoEnabled (Maybe ACreatedConnLink)
+  | Connect IncognitoEnabled (Maybe AConnectionLink)
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
   | DeleteContact ContactName ChatDeleteMode
   | ClearContact ContactName
   | APIListContacts UserId
   | ListContacts
-  | APICreateMyAddress UserId
-  | CreateMyAddress
+  | APICreateMyAddress UserId CreateShortLink
+  | CreateMyAddress CreateShortLink
   | APIDeleteMyAddress UserId
   | DeleteMyAddress
   | APIShowMyAddress UserId
@@ -495,7 +496,7 @@ data ChatCommand
   | ShowGroupProfile GroupName
   | UpdateGroupDescription GroupName (Maybe Text)
   | ShowGroupDescription GroupName
-  | CreateGroupLink GroupName GroupMemberRole
+  | CreateGroupLink GroupName GroupMemberRole CreateShortLink
   | GroupLinkMemberRole GroupName GroupMemberRole
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName
@@ -680,10 +681,10 @@ data ChatResponse
   | CRUserProfileNoChange {user :: User}
   | CRUserPrivacy {user :: User, updatedUser :: User}
   | CRVersionInfo {versionInfo :: CoreVersionInfo, chatMigrations :: [UpMigration], agentMigrations :: [UpMigration]}
-  | CRInvitation {user :: User, connReqInvitation :: ConnReqInvitation, connection :: PendingContactConnection}
+  | CRInvitation {user :: User, connLinkInvitation :: CreatedLinkInvitation, connection :: PendingContactConnection}
   | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection}
   | CRConnectionUserChanged {user :: User, fromConnection :: PendingContactConnection, toConnection :: PendingContactConnection, newUser :: User}
-  | CRConnectionPlan {user :: User, connectionPlan :: ConnectionPlan}
+  | CRConnectionPlan {user :: User, connLink :: ACreatedConnLink, connectionPlan :: ConnectionPlan}
   | CRSentConfirmation {user :: User, connection :: PendingContactConnection}
   | CRSentInvitation {user :: User, connection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRSentInvitationToContact {user :: User, contact :: Contact, customUserProfile :: Maybe Profile}
@@ -693,7 +694,7 @@ data ChatResponse
   | CRContactDeleted {user :: User, contact :: Contact}
   | CRContactDeletedByContact {user :: User, contact :: Contact}
   | CRChatCleared {user :: User, chatInfo :: AChatInfo}
-  | CRUserContactLinkCreated {user :: User, connReqContact :: ConnReqContact}
+  | CRUserContactLinkCreated {user :: User, connLinkContact :: CreatedLinkContact}
   | CRUserContactLinkDeleted {user :: User}
   | CRReceivedContactRequest {user :: User, contactRequest :: UserContactRequest}
   | CRAcceptingContactRequest {user :: User, contact :: Contact}
@@ -773,8 +774,8 @@ data ChatResponse
   | CRGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
   | CRGroupProfile {user :: User, groupInfo :: GroupInfo}
   | CRGroupDescription {user :: User, groupInfo :: GroupInfo} -- only used in CLI
-  | CRGroupLinkCreated {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact, memberRole :: GroupMemberRole}
-  | CRGroupLink {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact, memberRole :: GroupMemberRole}
+  | CRGroupLinkCreated {user :: User, groupInfo :: GroupInfo, connLinkContact :: CreatedLinkContact, memberRole :: GroupMemberRole}
+  | CRGroupLink {user :: User, groupInfo :: GroupInfo, connLinkContact :: CreatedLinkContact, memberRole :: GroupMemberRole}
   | CRGroupLinkDeleted {user :: User, groupInfo :: GroupInfo}
   | CRAcceptingGroupJoinRequestMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRNoMemberContactCreating {user :: User, groupInfo :: GroupInfo, member :: GroupMember} -- only used in CLI
@@ -949,6 +950,7 @@ data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
   | CPContactAddress {contactAddressPlan :: ContactAddressPlan}
   | CPGroupLink {groupLinkPlan :: GroupLinkPlan}
+  | CPError {chatError :: ChatError}
   deriving (Show)
 
 data InvitationLinkPlan
@@ -992,6 +994,7 @@ connectionPlanProceed = \case
     GLPOwnLink _ -> True
     GLPConnectingConfirmReconnect -> True
     _ -> False
+  CPError _ -> True
 
 data ForwardConfirmation
   = FCFilesNotAccepted {fileIds :: [FileTransferId]}
@@ -1255,8 +1258,8 @@ data ChatErrorType
   | CEChatNotStarted
   | CEChatNotStopped
   | CEChatStoreChanged
-  | CEConnectionPlan {connectionPlan :: ConnectionPlan}
   | CEInvalidConnReq
+  | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEContactNotFound {contactName :: ContactName, suspectedMember :: Maybe (GroupInfo, GroupMember)}
   | CEContactNotReady {contact :: Contact}
@@ -1591,8 +1594,6 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CAP") ''ContactAddressPlan)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GLP") ''GroupLinkPlan)
 
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CP") ''ConnectionPlan)
-
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FC") ''ForwardConfirmation)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CE") ''ChatErrorType)
@@ -1606,6 +1607,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SQLite") ''SQLiteError)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "DB") ''DatabaseError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "Chat") ''ChatError)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CP") ''ConnectionPlan)
 
 $(JQ.deriveJSON defaultJSON ''AppFilePathsConfig)
 

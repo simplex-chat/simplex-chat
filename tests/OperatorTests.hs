@@ -19,6 +19,7 @@ import qualified Data.List.NonEmpty as L
 import Simplex.Chat
 import Simplex.Chat.Controller (ChatConfig (..), PresetServers (..))
 import Simplex.Chat.Operators
+import Simplex.Chat.Operators.Presets
 import Simplex.Chat.Types
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.Messaging.Agent.Env.SQLite (ServerRoles (..), allRoles)

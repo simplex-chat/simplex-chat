@@ -10,7 +10,6 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
@@ -30,7 +29,6 @@ import chat.simplex.common.model.ChatModel.currentUser
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
-import chat.simplex.common.views.chat.group.LocalContentTag
 import chat.simplex.common.views.chatlist.openChat
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -64,6 +62,7 @@ data class ChatItemReactionMenuItem (
 
 @Composable
 fun ChatItemView(
+  chatsCtx: ChatModel.ChatsContext,
   rhId: Long?,
   cInfo: ChatInfo,
   cItem: ChatItem,
@@ -272,13 +271,14 @@ fun ChatItemView(
       }
     }
 
+    // improvement could be to track "forwarded from" scope and open it
     @Composable
     fun GoToItemButton(alignStart: Boolean, parentActivated: State<Boolean>) {
       val chatTypeApiIdMsgId = cItem.meta.itemForwarded?.chatTypeApiIdMsgId
       if (searchIsNotBlank.value) {
         GoToItemInnerButton(alignStart, MR.images.ic_search, 17.dp, parentActivated) {
           withBGApi {
-            openChat(rhId, cInfo.chatType, cInfo.apiId, cInfo.groupChatScope(), contentTag = null, cItem.id)
+            openChat(secondaryChatsCtx = null, rhId, cInfo.chatType, cInfo.apiId, cItem.id)
             closeReportsIfNeeded()
           }
         }
@@ -286,8 +286,7 @@ fun ChatItemView(
         GoToItemInnerButton(alignStart, MR.images.ic_arrow_forward, 22.dp, parentActivated) {
           val (chatType, apiId, msgId) = chatTypeApiIdMsgId
           withBGApi {
-            // improvement could be to track "forwarded from" scope and open it
-            openChat(rhId, chatType, apiId, scope = null, contentTag = null, msgId)
+            openChat(secondaryChatsCtx = null, rhId, chatType, apiId, msgId)
             closeReportsIfNeeded()
           }
         }
@@ -366,7 +365,7 @@ fun ChatItemView(
             @Composable
             fun DeleteItemMenu() {
               DefaultDropdownMenu(showMenu) {
-                DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                DeleteItemAction(chatsCtx, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                 if (cItem.canBeDeletedForSelf) {
                   Divider()
                   SelectItemAction(showMenu, selectChatItem)
@@ -384,7 +383,7 @@ fun ChatItemView(
                     if (cItem.chatDir !is CIDirection.GroupSnd && cInfo.groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
                       ArchiveReportItemAction(cItem.id, cInfo.groupInfo.membership.memberActive, showMenu, archiveReports)
                     }
-                    DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages, buttonText = stringResource(MR.strings.delete_report))
+                    DeleteItemAction(chatsCtx, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages, buttonText = stringResource(MR.strings.delete_report))
                     Divider()
                     SelectItemAction(showMenu, selectChatItem)
                   }
@@ -474,7 +473,7 @@ fun ChatItemView(
                       CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile, cancelAction = cItem.file.cancelAction)
                     }
                     if (!(live && cItem.meta.isLive) && !preview) {
-                      DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                      DeleteItemAction(chatsCtx, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                     }
                     if (cItem.chatDir !is CIDirection.GroupSnd) {
                       val groupInfo = cItem.memberToModerate(cInfo)?.first
@@ -500,7 +499,7 @@ fun ChatItemView(
                       ExpandItemAction(revealed, showMenu, reveal)
                     }
                     ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
-                    DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                    DeleteItemAction(chatsCtx, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                     if (cItem.canBeDeletedForSelf) {
                       Divider()
                       SelectItemAction(showMenu, selectChatItem)
@@ -510,7 +509,7 @@ fun ChatItemView(
                 cItem.isDeletedContent -> {
                   DefaultDropdownMenu(showMenu) {
                     ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
-                    DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                    DeleteItemAction(chatsCtx, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                     if (cItem.canBeDeletedForSelf) {
                       Divider()
                       SelectItemAction(showMenu, selectChatItem)
@@ -524,7 +523,7 @@ fun ChatItemView(
                     } else {
                       ExpandItemAction(revealed, showMenu, reveal)
                     }
-                    DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                    DeleteItemAction(chatsCtx, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                     if (cItem.canBeDeletedForSelf) {
                       Divider()
                       SelectItemAction(showMenu, selectChatItem)
@@ -533,7 +532,7 @@ fun ChatItemView(
                 }
                 else -> {
                   DefaultDropdownMenu(showMenu) {
-                    DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                    DeleteItemAction(chatsCtx, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                     if (selectedChatItems.value == null) {
                       Divider()
                       SelectItemAction(showMenu, selectChatItem)
@@ -550,7 +549,7 @@ fun ChatItemView(
                   RevealItemAction(revealed, showMenu, reveal)
                 }
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
-                DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                DeleteItemAction(chatsCtx, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                 if (cItem.canBeDeletedForSelf) {
                   Divider()
                   SelectItemAction(showMenu, selectChatItem)
@@ -562,7 +561,7 @@ fun ChatItemView(
             fun ContentItem() {
               val mc = cItem.content.msgContent
               if (cItem.meta.itemDeleted != null && (!revealed.value || cItem.isDeletedContent)) {
-                MarkedDeletedItemView(cItem, cInfo, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+                MarkedDeletedItemView(chatsCtx, cItem, cInfo, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 MarkedDeletedItemDropdownMenu()
               } else {
                 if (cItem.quotedItem == null && cItem.meta.itemForwarded == null && cItem.meta.itemDeleted == null && !cItem.meta.isLive) {
@@ -584,7 +583,7 @@ fun ChatItemView(
               DeletedItemView(cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
               DefaultDropdownMenu(showMenu) {
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
-                DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                DeleteItemAction(chatsCtx, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                 if (cItem.canBeDeletedForSelf) {
                   Divider()
                   SelectItemAction(showMenu, selectChatItem)
@@ -633,13 +632,13 @@ fun ChatItemView(
             }
 
             @Composable fun EventItemView() {
-              val reversedChatItems = chatModel.chatItemsForContent(LocalContentTag.current).value.asReversed()
+              val reversedChatItems = chatsCtx.chatItems.value.asReversed()
               CIEventView(eventItemViewText(reversedChatItems))
             }
 
             @Composable
             fun DeletedItem() {
-              MarkedDeletedItemView(cItem, cInfo, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+              MarkedDeletedItemView(chatsCtx, cItem, cInfo, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
               DefaultDropdownMenu(showMenu) {
                 if (revealed.value) {
                   HideItemAction(revealed, showMenu, reveal)
@@ -649,7 +648,7 @@ fun ChatItemView(
                   ExpandItemAction(revealed, showMenu, reveal)
                 }
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
-                DeleteItemAction(cItem, revealed, showMenu, questionText = generalGetString(MR.strings.delete_message_cannot_be_undone_warning), deleteMessage, deleteMessages)
+                DeleteItemAction(chatsCtx, cItem, revealed, showMenu, questionText = generalGetString(MR.strings.delete_message_cannot_be_undone_warning), deleteMessage, deleteMessages)
                 if (cItem.canBeDeletedForSelf) {
                   Divider()
                   SelectItemAction(showMenu, selectChatItem)
@@ -730,11 +729,11 @@ fun ChatItemView(
                 MsgContentItemDropdownMenu()
               }
               is CIContent.RcvChatFeature -> {
-                CIChatFeatureView(cInfo, cItem, c.feature, c.enabled.iconColor, revealed = revealed, showMenu = showMenu)
+                CIChatFeatureView(chatsCtx, cInfo, cItem, c.feature, c.enabled.iconColor, revealed = revealed, showMenu = showMenu)
                 MsgContentItemDropdownMenu()
               }
               is CIContent.SndChatFeature -> {
-                CIChatFeatureView(cInfo, cItem, c.feature, c.enabled.iconColor, revealed = revealed, showMenu = showMenu)
+                CIChatFeatureView(chatsCtx, cInfo, cItem, c.feature, c.enabled.iconColor, revealed = revealed, showMenu = showMenu)
                 MsgContentItemDropdownMenu()
               }
               is CIContent.RcvChatPreference -> {
@@ -743,23 +742,23 @@ fun ChatItemView(
                 DeleteItemMenu()
               }
               is CIContent.SndChatPreference -> {
-                CIChatFeatureView(cInfo, cItem, c.feature, MaterialTheme.colors.secondary, icon = c.feature.icon, revealed, showMenu = showMenu)
+                CIChatFeatureView(chatsCtx, cInfo, cItem, c.feature, MaterialTheme.colors.secondary, icon = c.feature.icon, revealed, showMenu = showMenu)
                 MsgContentItemDropdownMenu()
               }
               is CIContent.RcvGroupFeature -> {
-                CIChatFeatureView(cInfo, cItem, c.groupFeature, c.preference.enabled(c.memberRole_, (cInfo as? ChatInfo.Group)?.groupInfo?.membership).iconColor, revealed = revealed, showMenu = showMenu)
+                CIChatFeatureView(chatsCtx, cInfo, cItem, c.groupFeature, c.preference.enabled(c.memberRole_, (cInfo as? ChatInfo.Group)?.groupInfo?.membership).iconColor, revealed = revealed, showMenu = showMenu)
                 MsgContentItemDropdownMenu()
               }
               is CIContent.SndGroupFeature -> {
-                CIChatFeatureView(cInfo, cItem, c.groupFeature, c.preference.enabled(c.memberRole_, (cInfo as? ChatInfo.Group)?.groupInfo?.membership).iconColor, revealed = revealed, showMenu = showMenu)
+                CIChatFeatureView(chatsCtx, cInfo, cItem, c.groupFeature, c.preference.enabled(c.memberRole_, (cInfo as? ChatInfo.Group)?.groupInfo?.membership).iconColor, revealed = revealed, showMenu = showMenu)
                 MsgContentItemDropdownMenu()
               }
               is CIContent.RcvChatFeatureRejected -> {
-                CIChatFeatureView(cInfo, cItem, c.feature, Color.Red, revealed = revealed, showMenu = showMenu)
+                CIChatFeatureView(chatsCtx, cInfo, cItem, c.feature, Color.Red, revealed = revealed, showMenu = showMenu)
                 MsgContentItemDropdownMenu()
               }
               is CIContent.RcvGroupFeatureRejected -> {
-                CIChatFeatureView(cInfo, cItem, c.groupFeature, Color.Red, revealed = revealed, showMenu = showMenu)
+                CIChatFeatureView(chatsCtx, cInfo, cItem, c.groupFeature, Color.Red, revealed = revealed, showMenu = showMenu)
                 MsgContentItemDropdownMenu()
               }
               is CIContent.SndModerated -> DeletedItem()
@@ -831,6 +830,7 @@ fun ItemInfoAction(
 
 @Composable
 fun DeleteItemAction(
+  chatsCtx: ChatModel.ChatsContext,
   cItem: ChatItem,
   revealed: State<Boolean>,
   showMenu: MutableState<Boolean>,
@@ -839,14 +839,13 @@ fun DeleteItemAction(
   deleteMessages: (List<Long>) -> Unit,
   buttonText: String = stringResource(MR.strings.delete_verb),
 ) {
-  val contentTag = LocalContentTag.current
   ItemAction(
     buttonText,
     painterResource(MR.images.ic_delete),
     onClick = {
       showMenu.value = false
       if (!revealed.value) {
-        val reversedChatItems = chatModel.chatItemsForContent(contentTag).value.asReversed()
+        val reversedChatItems = chatsCtx.chatItems.value.asReversed()
         val currIndex = chatModel.getChatItemIndexOrNull(cItem, reversedChatItems)
         val ciCategory = cItem.mergeCategory
         if (currIndex != null && ciCategory != null) {
@@ -1315,7 +1314,7 @@ fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Bo
 }
 
 private fun closeReportsIfNeeded() {
-  if (appPlatform.isAndroid && ModalManager.end.isLastModalOpen(ModalViewId.GROUP_REPORTS)) {
+  if (appPlatform.isAndroid && ModalManager.end.isLastModalOpen(ModalViewId.SECONDARY_CHAT)) {
     ModalManager.end.closeModals()
   }
 }
@@ -1424,6 +1423,7 @@ fun PreviewChatItemView(
   chatItem: ChatItem = ChatItem.getSampleData(1, CIDirection.DirectSnd(), Clock.System.now(), "hello")
 ) {
   ChatItemView(
+    chatsCtx = ChatModel.ChatsContext(contentTag = null),
     rhId = null,
     ChatInfo.Direct.sampleData,
     chatItem,
@@ -1473,6 +1473,7 @@ fun PreviewChatItemView(
 fun PreviewChatItemViewDeletedContent() {
   SimpleXTheme {
     ChatItemView(
+      chatsCtx = ChatModel.ChatsContext(contentTag = null),
       rhId = null,
       ChatInfo.Direct.sampleData,
       ChatItem.getDeletedContentSampleData(),

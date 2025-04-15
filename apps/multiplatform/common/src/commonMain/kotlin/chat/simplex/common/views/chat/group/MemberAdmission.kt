@@ -13,10 +13,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.ColumnWithScrollBar
+import chat.simplex.common.platform.chatModel
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun MemberAdmissionView(m: ChatModel, rhId: Long?, chatId: String, close: () -> Unit) {
@@ -34,12 +36,9 @@ fun MemberAdmissionView(m: ChatModel, rhId: Long?, chatId: String, close: () -> 
       val gp = gInfo.groupProfile.copy(memberAdmission = admission)
       val g = m.controller.apiUpdateGroup(rhId, gInfo.groupId, gp)
       if (g != null) {
-        withChats {
-          updateGroup(rhId, g)
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.updateGroup(rhId, g)
           currentAdmission = admission
-        }
-        withChats {
-          updateGroup(rhId, g)
         }
       }
       afterSave()

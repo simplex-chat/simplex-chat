@@ -14,16 +14,14 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.flow.*
 
-val LocalContentTag: ProvidableCompositionLocal<MsgContentTag?> = staticCompositionLocalOf { null }
-
 @Composable
-private fun GroupReportsView(staleChatId: State<String?>, scrollToItemId: MutableState<Long?>) {
-  ChatView(staleChatId, contentTag = MsgContentTag.Report, scrollToItemId, onComposed = {})
+private fun GroupReportsView(reportsChatsCtx: ChatModel.ChatsContext, staleChatId: State<String?>, scrollToItemId: MutableState<Long?>) {
+  ChatView(reportsChatsCtx, staleChatId, scrollToItemId, onComposed = {})
 }
 
 @Composable
 fun GroupReportsAppBar(
-  contentTag: MsgContentTag?,
+  chatsCtx: ChatModel.ChatsContext,
   close: () -> Unit,
   onSearchValueChanged: (String) -> Unit
 ) {
@@ -51,11 +49,11 @@ fun GroupReportsAppBar(
       }
     }
   )
-  ItemsReload(contentTag)
+  ItemsReload(chatsCtx)
 }
 
 @Composable
-private fun ItemsReload(contentTag: MsgContentTag?) {
+private fun ItemsReload(chatsCtx: ChatModel.ChatsContext,) {
   LaunchedEffect(Unit) {
     snapshotFlow { chatModel.chatId.value }
       .distinctUntilChanged()
@@ -65,18 +63,19 @@ private fun ItemsReload(contentTag: MsgContentTag?) {
       .filterNotNull()
       .filter { it.chatInfo is ChatInfo.Group }
       .collect { chat ->
-        reloadItems(chat, contentTag)
+        reloadItems(chatsCtx, chat)
       }
   }
 }
 
 suspend fun showGroupReportsView(staleChatId: State<String?>, scrollToItemId: MutableState<Long?>, chatInfo: ChatInfo) {
-  openChat(chatModel.remoteHostId(), chatInfo, MsgContentTag.Report)
-  ModalManager.end.showCustomModal(true, id = ModalViewId.GROUP_REPORTS) { close ->
+  val reportsChatsCtx = ChatModel.ChatsContext(contentTag = MsgContentTag.Report)
+  openChat(secondaryChatsCtx = reportsChatsCtx, chatModel.remoteHostId(), chatInfo)
+  ModalManager.end.showCustomModal(true, id = ModalViewId.SECONDARY_CHAT) { close ->
     ModalView({}, showAppBar = false) {
       val chatInfo = remember { derivedStateOf { chatModel.chats.value.firstOrNull { it.id == chatModel.chatId.value }?.chatInfo } }.value
       if (chatInfo is ChatInfo.Group && chatInfo.groupInfo.canModerate) {
-        GroupReportsView(staleChatId, scrollToItemId)
+        GroupReportsView(reportsChatsCtx, staleChatId, scrollToItemId)
       } else {
         LaunchedEffect(Unit) {
           close()
@@ -86,6 +85,6 @@ suspend fun showGroupReportsView(staleChatId: State<String?>, scrollToItemId: Mu
   }
 }
 
-private suspend fun reloadItems(chat: Chat, contentTag: MsgContentTag?) {
-  apiLoadMessages(chat.remoteHostId, chat.chatInfo.chatType, chat.chatInfo.apiId, chat.chatInfo.groupChatScope(), contentTag, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
+private suspend fun reloadItems(chatsCtx: ChatModel.ChatsContext, chat: Chat) {
+  apiLoadMessages(chatsCtx, chat.remoteHostId, chat.chatInfo.chatType, chat.chatInfo.apiId, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
 }

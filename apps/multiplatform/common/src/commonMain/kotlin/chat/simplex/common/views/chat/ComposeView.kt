@@ -25,7 +25,6 @@ import androidx.compose.ui.util.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.filesToDelete
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.*
@@ -474,8 +473,8 @@ fun ComposeView(
       )
     if (!chatItems.isNullOrEmpty()) {
       chatItems.forEach { aChatItem ->
-        withChats {
-          addChatItem(chat.remoteHostId, cInfo, aChatItem.chatItem)
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.addChatItem(chat.remoteHostId, cInfo, aChatItem.chatItem)
         }
       }
       return chatItems.first().chatItem
@@ -508,9 +507,9 @@ fun ComposeView(
         ttl = ttl
       )
 
-      withChats {
+      withContext(Dispatchers.Main) {
         chatItems?.forEach { chatItem ->
-          addChatItem(rhId, chat.chatInfo, chatItem)
+          chatModel.chatsContext.addChatItem(rhId, chat.chatInfo, chatItem)
         }
       }
 
@@ -570,9 +569,9 @@ fun ComposeView(
     suspend fun sendReport(reportReason: ReportReason, chatItemId: Long): List<ChatItem>? {
       val cItems = chatModel.controller.apiReportMessage(chat.remoteHostId, chat.chatInfo.apiId, chatItemId, reportReason, msgText)
       if (cItems != null) {
-        withChats {
+        withContext(Dispatchers.Main) {
           cItems.forEach { chatItem ->
-            addChatItem(chat.remoteHostId, chat.chatInfo, chatItem.chatItem)
+            chatModel.chatsContext.addChatItem(chat.remoteHostId, chat.chatInfo, chatItem.chatItem)
           }
         }
       }
@@ -584,8 +583,8 @@ fun ComposeView(
       val mc = checkLinkPreview()
       val contact = chatModel.controller.apiSendMemberContactInvitation(chat.remoteHostId, chat.chatInfo.apiId, mc)
       if (contact != null) {
-        withChats {
-          updateContact(chat.remoteHostId, contact)
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.updateContact(chat.remoteHostId, contact)
         }
       }
     }
@@ -603,8 +602,10 @@ fun ComposeView(
           updatedMessage = UpdatedMessage(updateMsgContent(oldMsgContent), cs.memberMentions),
           live = live
         )
-        if (updatedItem != null) withChats {
-          upsertChatItem(chat.remoteHostId, cInfo, updatedItem.chatItem)
+        if (updatedItem != null) {
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.upsertChatItem(chat.remoteHostId, cInfo, updatedItem.chatItem)
+          }
         }
         return updatedItem?.chatItem
       }
@@ -894,7 +895,7 @@ fun ComposeView(
 
   fun editPrevMessage() {
     if (composeState.value.contextItem != ComposeContextItem.NoContextItem || composeState.value.preview != ComposePreview.NoPreview) return
-    val lastEditable = chatModel.chatItemsForContent(null).value.findLast { it.meta.editable }
+    val lastEditable = chatModel.chatsContext.chatItems.value.findLast { it.meta.editable }
     if (lastEditable != null) {
       composeState.value = ComposeState(editingItem = lastEditable, useLinkPreviews = useLinkPreviews)
     }

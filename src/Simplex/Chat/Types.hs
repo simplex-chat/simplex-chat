@@ -51,7 +51,7 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
-import Simplex.Messaging.Agent.Protocol (ACorrId, AEventTag (..), AEvtTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
+import Simplex.Messaging.Agent.Protocol (ACorrId, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
@@ -219,6 +219,8 @@ contactConnId :: Contact -> Maybe ConnId
 contactConnId c = aConnId <$> contactConn c
 
 type IncognitoEnabled = Bool
+
+type CreateShortLink = Bool
 
 contactConnIncognito :: Contact -> IncognitoEnabled
 contactConnIncognito = maybe False connIncognito . contactConn
@@ -559,7 +561,7 @@ data Profile = Profile
   { displayName :: ContactName,
     fullName :: Text,
     image :: Maybe ImageData,
-    contactLink :: Maybe ConnReqContact,
+    contactLink :: Maybe ConnLinkContact,
     preferences :: Maybe Preferences
     -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
     -- - contact_profile_id
@@ -592,7 +594,7 @@ data LocalProfile = LocalProfile
     displayName :: ContactName,
     fullName :: Text,
     image :: Maybe ImageData,
-    contactLink :: Maybe ConnReqContact,
+    contactLink :: Maybe ConnLinkContact,
     preferences :: Maybe Preferences,
     localAlias :: LocalAlias
   }
@@ -1449,6 +1451,14 @@ type ConnReqInvitation = ConnectionRequestUri 'CMInvitation
 
 type ConnReqContact = ConnectionRequestUri 'CMContact
 
+type CreatedLinkInvitation = CreatedConnLink 'CMInvitation
+
+type CreatedLinkContact = CreatedConnLink 'CMContact
+
+type ConnLinkContact = ConnectionLink 'CMContact
+
+type ShortLinkContact = ConnShortLink 'CMContact
+
 data Connection = Connection
   { connId :: Int64,
     agentConnId :: AgentConnId,
@@ -1526,7 +1536,7 @@ data PendingContactConnection = PendingContactConnection
     viaUserContactLink :: Maybe Int64,
     groupLinkId :: Maybe GroupLinkId,
     customUserProfileId :: Maybe Int64,
-    connReqInv :: Maybe ConnReqInvitation,
+    connLinkInv :: Maybe CreatedLinkInvitation,
     localAlias :: Text,
     createdAt :: UTCTime,
     updatedAt :: UTCTime

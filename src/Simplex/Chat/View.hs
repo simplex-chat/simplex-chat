@@ -90,7 +90,7 @@ serializeChatResponse :: (Maybe RemoteHostId, Maybe User) -> CurrentTime -> Time
 serializeChatResponse user_ ts tz remoteHost_ = unlines . map unStyle . responseToView user_ defaultChatConfig False ts tz remoteHost_
 
 responseToView :: (Maybe RemoteHostId, Maybe User) -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatResponse -> [StyledString]
-responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showReceipts, testView} liveItems ts tz outputRH = \case
+responseToView hu@(currentRH, user_) cfg@ChatConfig {logLevel, showReactions, showReceipts, testView} liveItems ts tz outputRH = \case
   CRActiveUser User {profile, uiThemes} -> viewUserProfile (fromLocalProfile profile) <> viewUITheme uiThemes
   CRUsersList users -> viewUsersList users
   CRChatStarted -> ["chat started"]
@@ -108,7 +108,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRUserServersValidation {} -> []
   CRUsageConditions current _ accepted_ -> viewUsageConditions current accepted_
   CRChatItemTTL u ttl -> ttyUser u $ viewChatItemTTL ttl
-  CRNetworkConfig cfg -> viewNetworkConfig cfg
+  CRNetworkConfig netCfg -> viewNetworkConfig netCfg
   CRContactInfo u ct cStats customUserProfile -> ttyUser u $ viewContactInfo ct cStats customUserProfile
   CRGroupInfo u g s -> ttyUser u $ viewGroupInfo g s
   CRGroupMemberInfo u g m cStats -> ttyUser u $ viewGroupMemberInfo g m cStats
@@ -181,7 +181,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     HSDatabase -> databaseHelpInfo
   CRWelcome user -> chatWelcome user
   CRContactsList u cs -> ttyUser u $ viewContactsList cs
-  CRUserContactLink u UserContactLink {connReqContact, autoAccept} -> ttyUser u $ connReqContact_ "Your chat address:" connReqContact <> autoAcceptStatus_ autoAccept
+  CRUserContactLink u UserContactLink {connLinkContact, autoAccept} -> ttyUser u $ connReqContact_ "Your chat address:" connLinkContact <> autoAcceptStatus_ autoAccept
   CRUserContactLinkUpdated u UserContactLink {autoAccept} -> ttyUser u $ autoAcceptStatus_ autoAccept
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
@@ -202,10 +202,10 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRUserProfileNoChange u -> ttyUser u ["user profile did not change"]
   CRUserPrivacy u u' -> ttyUserPrefix u $ viewUserPrivacy u u'
   CRVersionInfo info _ _ -> viewVersionInfo logLevel info
-  CRInvitation u cReq _ -> ttyUser u $ viewConnReqInvitation cReq
+  CRInvitation u ccLink _ -> ttyUser u $ viewConnReqInvitation ccLink
   CRConnectionIncognitoUpdated u c -> ttyUser u $ viewConnectionIncognitoUpdated c
   CRConnectionUserChanged u c c' nu -> ttyUser u $ viewConnectionUserChanged u c nu c'
-  CRConnectionPlan u connectionPlan -> ttyUser u $ viewConnectionPlan connectionPlan
+  CRConnectionPlan u _ connectionPlan -> ttyUser u $ viewConnectionPlan cfg connectionPlan
   CRSentConfirmation u _ -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u _ customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
   CRSentInvitationToContact u _c customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
@@ -217,7 +217,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRContactAlreadyExists u c -> ttyUser u [ttyFullContact c <> ": contact already exists"]
   CRContactRequestAlreadyAccepted u c -> ttyUser u [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
   CRBusinessRequestAlreadyAccepted u g -> ttyUser u [ttyFullGroup g <> ": sent you a duplicate connection request, but you are already connected, no action needed"]
-  CRUserContactLinkCreated u cReq -> ttyUser u $ connReqContact_ "Your new chat address is created!" cReq
+  CRUserContactLinkCreated u ccLink -> ttyUser u $ connReqContact_ "Your new chat address is created!" ccLink
   CRUserContactLinkDeleted u -> ttyUser u viewUserContactLinkDeleted
   CRUserAcceptedGroupSent u _g _ -> ttyUser u [] -- [ttyGroup' g <> ": joining the group..."]
   CRGroupLinkConnecting u g _ -> ttyUser u [ttyGroup' g <> ": joining the group..."]
@@ -318,8 +318,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRGroupUpdated u g g' m -> ttyUser u $ viewGroupUpdated g g' m
   CRGroupProfile u g -> ttyUser u $ viewGroupProfile g
   CRGroupDescription u g -> ttyUser u $ viewGroupDescription g
-  CRGroupLinkCreated u g cReq mRole -> ttyUser u $ groupLink_ "Group link is created!" g cReq mRole
-  CRGroupLink u g cReq mRole -> ttyUser u $ groupLink_ "Group link:" g cReq mRole
+  CRGroupLinkCreated u g ccLink mRole -> ttyUser u $ groupLink_ "Group link is created!" g ccLink mRole
+  CRGroupLink u g ccLink mRole -> ttyUser u $ groupLink_ "Group link:" g ccLink mRole
   CRGroupLinkDeleted u g -> ttyUser u $ viewGroupLinkDeleted g
   CRAcceptingGroupJoinRequestMember _ g m -> [ttyFullMember m <> ": accepting request to join group " <> ttyGroup' g <> "..."]
   CRNoMemberContactCreating u g m -> ttyUser u ["member " <> ttyGroup' g <> " " <> ttyMember m <> " does not have direct connection, creating"]
@@ -916,14 +916,17 @@ viewInvalidConnReq =
     plain updateStr
   ]
 
-viewConnReqInvitation :: ConnReqInvitation -> [StyledString]
-viewConnReqInvitation cReq =
+viewConnReqInvitation :: CreatedLinkInvitation -> [StyledString]
+viewConnReqInvitation (CCLink cReq shortLink) =
   [ "pass this invitation link to your contact (via another channel): ",
     "",
-    (plain . strEncode) (simplexChatInvitation cReq),
+    plain $ maybe cReqStr strEncode shortLink,
     "",
     "and ask them to connect: " <> highlight' "/c <invitation_link_above>"
   ]
+    <> ["The invitation link for old clients: " <> plain cReqStr | isJust shortLink]
+  where
+    cReqStr = strEncode $ simplexChatInvitation cReq
 
 simplexChatInvitation :: ConnReqInvitation -> ConnReqInvitation
 simplexChatInvitation (CRInvitationUri crData e2e) = CRInvitationUri crData {crScheme = simplexChat} e2e
@@ -978,20 +981,28 @@ viewForwardPlan count itemIds = maybe [forwardCount] $ \fc -> [confirmation fc, 
       | otherwise = plain $ show len <> " message(s) out of " <> show count <> " can be forwarded"
     len = length itemIds
 
-connReqContact_ :: StyledString -> ConnReqContact -> [StyledString]
-connReqContact_ intro cReq =
+connReqContact_ :: StyledString -> CreatedLinkContact -> [StyledString]
+connReqContact_ intro (CCLink cReq shortLink) =
   [ intro,
     "",
-    (plain . strEncode) (simplexChatContact cReq),
+    plain $ maybe cReqStr strEncode shortLink,
     "",
     "Anybody can send you contact requests with: " <> highlight' "/c <contact_link_above>",
     "to show it again: " <> highlight' "/sa",
     "to share with your contacts: " <> highlight' "/profile_address on",
     "to delete it: " <> highlight' "/da" <> " (accepted contacts will remain connected)"
   ]
+    <> ["The contact link for old clients: " <> plain cReqStr | isJust shortLink]
+  where
+    cReqStr = strEncode $ simplexChatContact cReq
 
 simplexChatContact :: ConnReqContact -> ConnReqContact
 simplexChatContact (CRContactUri crData) = CRContactUri crData {crScheme = simplexChat}
+
+simplexChatContact' :: ConnLinkContact -> ConnLinkContact
+simplexChatContact' = \case
+  CLFull (CRContactUri crData) -> CLFull $ CRContactUri crData {crScheme = simplexChat}
+  l@(CLShort _) -> l
 
 autoAcceptStatus_ :: Maybe AutoAccept -> [StyledString]
 autoAcceptStatus_ = \case
@@ -1005,16 +1016,19 @@ autoAcceptStatus_ = \case
         | otherwise = ""
   _ -> ["auto_accept off"]
 
-groupLink_ :: StyledString -> GroupInfo -> ConnReqContact -> GroupMemberRole -> [StyledString]
-groupLink_ intro g cReq mRole =
+groupLink_ :: StyledString -> GroupInfo -> CreatedLinkContact -> GroupMemberRole -> [StyledString]
+groupLink_ intro g (CCLink cReq shortLink) mRole =
   [ intro,
     "",
-    (plain . strEncode) (simplexChatContact cReq),
+    plain $ maybe cReqStr strEncode shortLink,
     "",
     "Anybody can connect to you and join group as " <> showRole mRole <> " with: " <> highlight' "/c <group_link_above>",
     "to show it again: " <> highlight ("/show link #" <> viewGroupName g),
     "to delete it: " <> highlight ("/delete link #" <> viewGroupName g) <> " (joined members will remain connected to you)"
   ]
+    <> ["The group link for old clients: " <> plain cReqStr | isJust shortLink]
+  where
+    cReqStr = strEncode $ simplexChatContact cReq
 
 viewGroupLinkDeleted :: GroupInfo -> [StyledString]
 viewGroupLinkDeleted g =
@@ -1450,7 +1464,7 @@ viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledS
 viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink}, activeConn, uiThemes, customData} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
     <> maybe [] viewConnectionStats stats
-    <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) (simplexChatContact l)]) contactLink
+    <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) (simplexChatContact' l)]) contactLink
     <> maybe
       ["you've shared main profile with this contact"]
       (\p -> ["you've shared incognito profile with this contact: " <> incognitoProfile' p])
@@ -1482,7 +1496,7 @@ viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProf
     "member ID: " <> sShow groupMemberId
   ]
     <> maybe ["member not connected"] viewConnectionStats stats
-    <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) (simplexChatContact l)]) contactLink
+    <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) (simplexChatContact' l)]) contactLink
     <> ["alias: " <> plain localAlias | localAlias /= ""]
     <> [viewConnectionVerified (memberSecurityCode m) | isJust stats]
     <> maybe [] (\ac -> [viewPeerChatVRange (peerChatVRange ac)]) activeConn
@@ -1711,21 +1725,24 @@ viewConnectionIncognitoUpdated PendingContactConnection {pccConnId, customUserPr
   | otherwise = ["connection " <> sShow pccConnId <> " changed to non incognito"]
 
 viewConnectionUserChanged :: User -> PendingContactConnection -> User -> PendingContactConnection -> [StyledString]
-viewConnectionUserChanged User {localDisplayName = n} PendingContactConnection {pccConnId, connReqInv} User {localDisplayName = n'} PendingContactConnection {connReqInv = connReqInv'} =
-  case (connReqInv, connReqInv') of
-    (Just cReqInv, Just cReqInv')
-      | cReqInv /= cReqInv' -> [userChangedStr <> ", new link:"] <> newLink cReqInv'
+viewConnectionUserChanged User {localDisplayName = n} PendingContactConnection {pccConnId, connLinkInv} User {localDisplayName = n'} PendingContactConnection {connLinkInv = connLinkInv'} =
+  case (connLinkInv, connLinkInv') of
+    (Just ccLink, Just ccLink')
+      | ccLink /= ccLink' -> [userChangedStr <> ", new link:"] <> newLink ccLink'
     _ -> [userChangedStr]
   where
     userChangedStr = "connection " <> sShow pccConnId <> " changed from user " <> plain n <> " to user " <> plain n'
-    newLink cReqInv =
+    newLink (CCLink cReq shortLink) =
       [ "",
-        (plain . strEncode) (simplexChatInvitation cReqInv),
+        plain $ maybe cReqStr strEncode shortLink,
         ""
       ]
+        <> ["The invitation link for old clients: " <> plain cReqStr | isJust shortLink]
+      where
+        cReqStr = strEncode $ simplexChatInvitation cReq
 
-viewConnectionPlan :: ConnectionPlan -> [StyledString]
-viewConnectionPlan = \case
+viewConnectionPlan :: ChatConfig -> ConnectionPlan -> [StyledString]
+viewConnectionPlan ChatConfig {logLevel, testView} = \case
   CPInvitationLink ilp -> case ilp of
     ILPOk -> [invLink "ok to connect"]
     ILPOwnLink -> [invLink "own link"]
@@ -1764,6 +1781,7 @@ viewConnectionPlan = \case
       grpOrBiz GroupInfo {businessChat} = case businessChat of
         Just _ -> "business"
         Nothing -> "group"
+  CPError e -> viewChatError False logLevel testView e
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated
@@ -2186,8 +2204,8 @@ viewChatError isCmd logLevel testView = \case
     CEChatNotStarted -> ["error: chat not started"]
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
-    CEConnectionPlan connectionPlan -> viewConnectionPlan connectionPlan
     CEInvalidConnReq -> viewInvalidConnReq
+    CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]
     CEInvalidChatMessage Connection {connId} msgMeta_ msg e ->
       [ plain $
           ("chat message error: " <> e <> " (" <> T.unpack (T.take 120 msg) <> ")")

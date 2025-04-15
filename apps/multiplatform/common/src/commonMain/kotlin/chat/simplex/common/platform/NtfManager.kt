@@ -73,7 +73,7 @@ abstract class NtfManager {
       }
       val cInfo = chatModel.getChat(chatId)?.chatInfo
       chatModel.clearOverlays.value = true
-      if (cInfo != null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group)) openChat(null, cInfo)
+      if (cInfo != null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group)) openChat(secondaryChatsCtx = null, rhId = null, cInfo)
     }
   }
 

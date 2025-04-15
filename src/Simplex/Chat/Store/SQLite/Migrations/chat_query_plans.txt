@@ -487,10 +487,26 @@ USE TEMP B-TREE FOR ORDER BY
 Query: 
             SELECT conn_req_contact, group_id
             FROM user_contact_links
+            WHERE user_id = ? AND short_link_contact = ?
+          
+Plan:
+SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
+
+Query: 
+            SELECT conn_req_contact, group_id
+            FROM user_contact_links
             WHERE user_id = ? AND user_contact_link_id = ?
           
 Plan:
 SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+            SELECT conn_req_inv, agent_conn_id
+            FROM connections
+            WHERE user_id = ? AND short_link_inv = ? LIMIT 1
+          
+Plan:
+SEARCH connections USING INDEX idx_connections_updated_at (user_id=?)
 
 Query: 
             SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, custom_user_profile_id,
@@ -1394,7 +1410,7 @@ SCAN cc
 Query: 
         SELECT
           connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, group_link_id,
-          custom_user_profile_id, conn_req_inv, local_alias, created_at, updated_at
+          custom_user_profile_id, conn_req_inv, short_link_inv, local_alias, created_at, updated_at
         FROM connections
         WHERE user_id = ?
           AND conn_type = ?
@@ -1411,7 +1427,7 @@ SEARCH connections USING INDEX idx_connections_updated_at (user_id=? AND updated
 Query: 
         SELECT
           connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, group_link_id,
-          custom_user_profile_id, conn_req_inv, local_alias, created_at, updated_at
+          custom_user_profile_id, conn_req_inv, short_link_inv, local_alias, created_at, updated_at
         FROM connections
         WHERE user_id = ?
           AND conn_type = ?
@@ -1428,7 +1444,7 @@ SEARCH connections USING INDEX idx_connections_updated_at (user_id=? AND updated
 Query: 
         SELECT
           connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, group_link_id,
-          custom_user_profile_id, conn_req_inv, local_alias, created_at, updated_at
+          custom_user_profile_id, conn_req_inv, short_link_inv, local_alias, created_at, updated_at
         FROM connections
         WHERE user_id = ?
           AND conn_type = ?
@@ -2982,23 +2998,7 @@ Plan:
 SEARCH commands USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-        SELECT conn_req_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
-        FROM user_contact_links
-        WHERE user_id = ? AND conn_req_contact IN (?,?)
-      
-Plan:
-SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
-
-Query: 
-        SELECT conn_req_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
-        FROM user_contact_links
-        WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
-      
-Plan:
-SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
-
-Query: 
-        SELECT conn_req_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
+        SELECT conn_req_contact, short_link_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
         FROM user_contact_links
         WHERE user_id = ? AND user_contact_link_id = ?
       
@@ -3017,7 +3017,7 @@ Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-        SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, group_link_id, custom_user_profile_id, conn_req_inv, local_alias, created_at, updated_at
+        SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, group_link_id, custom_user_profile_id, conn_req_inv, short_link_inv, local_alias, created_at, updated_at
         FROM connections
         WHERE user_id = ?
           AND conn_type = ?
@@ -3027,7 +3027,7 @@ Plan:
 SEARCH connections USING INDEX idx_connections_updated_at (user_id=?)
 
 Query: 
-        SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, group_link_id, custom_user_profile_id, conn_req_inv, local_alias, created_at, updated_at
+        SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, group_link_id, custom_user_profile_id, conn_req_inv, short_link_inv, local_alias, created_at, updated_at
         FROM connections
         WHERE user_id = ?
           AND connection_id = ?
@@ -3999,9 +3999,9 @@ Plan:
 
 Query: 
       INSERT INTO connections
-        (user_id, agent_conn_id, conn_req_inv, conn_status, conn_type, contact_conn_initiated, custom_user_profile_id,
+        (user_id, agent_conn_id, conn_req_inv, short_link_inv, conn_status, conn_type, contact_conn_initiated, custom_user_profile_id,
          created_at, updated_at, to_subscribe, conn_chat_version, pq_support, pq_encryption)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -4017,9 +4017,9 @@ Plan:
 Query: 
       INSERT INTO connections (
         user_id, agent_conn_id, conn_status, conn_type, contact_conn_initiated,
-        via_contact_uri_hash, xcontact_id, custom_user_profile_id, via_group_link, group_link_id,
+        via_contact_uri_hash, via_short_link_contact, xcontact_id, custom_user_profile_id, via_group_link, group_link_id,
         created_at, updated_at, to_subscribe, conn_chat_version, pq_support, pq_encryption
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -4712,6 +4712,27 @@ SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH cc USING COVERING INDEX idx_connections_group_member (user_id=? AND group_member_id=?)
+
+Query: 
+    SELECT conn_req_contact, short_link_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
+    FROM user_contact_links
+   WHERE user_id = ? AND conn_req_contact IN (?,?)
+Plan:
+SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
+
+Query: 
+    SELECT conn_req_contact, short_link_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
+    FROM user_contact_links
+   WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
+Plan:
+SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
+
+Query: 
+    SELECT conn_req_contact, short_link_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
+    FROM user_contact_links
+   WHERE user_id = ? AND short_link_contact = ?
+Plan:
+SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
 
 Query: 
     SELECT f.file_id, f.ci_file_status, f.file_path
@@ -5439,7 +5460,7 @@ Plan:
 Query: INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, file_inline, ci_file_status, protocol, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)
 Plan:
 
-Query: INSERT INTO group_profiles (display_name, full_name, description, image, user_id, preferences, member_admission, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)
+Query: INSERT INTO group_profiles (display_name, full_name, description, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)
 Plan:
 
 Query: INSERT INTO group_profiles (display_name, full_name, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?)
@@ -5482,10 +5503,10 @@ SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 Query: INSERT INTO temp_conn_ids (conn_id) VALUES (?)
 Plan:
 
-Query: INSERT INTO user_contact_links (user_id, conn_req_contact, created_at, updated_at) VALUES (?,?,?,?)
+Query: INSERT INTO user_contact_links (user_id, conn_req_contact, short_link_contact, created_at, updated_at) VALUES (?,?,?,?,?)
 Plan:
 
-Query: INSERT INTO user_contact_links (user_id, group_id, group_link_id, local_display_name, conn_req_contact, group_link_member_role, auto_accept, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)
+Query: INSERT INTO user_contact_links (user_id, group_id, group_link_id, local_display_name, conn_req_contact, short_link_contact, group_link_member_role, auto_accept, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)
 Plan:
 
 Query: INSERT INTO users (agent_user_id, local_display_name, active_user, active_order, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, created_at, updated_at) VALUES (?,?,?,?,0,?,?,?,?,?)
@@ -5714,7 +5735,7 @@ Query: SELECT user_contact_link_id FROM contact_requests WHERE contact_request_i
 Plan:
 SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: SELECT user_contact_link_id, conn_req_contact, group_link_member_role FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1
+Query: SELECT user_contact_link_id, conn_req_contact, short_link_contact, group_link_member_role FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1
 Plan:
 SEARCH user_contact_links USING INDEX idx_user_contact_links_group_id (group_id=?)
 
@@ -5762,7 +5783,7 @@ Query: UPDATE connections SET conn_status = ?, updated_at = ? WHERE connection_i
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE connections SET conn_status = ?, updated_at = ?, conn_req_inv = NULL WHERE connection_id = ?
+Query: UPDATE connections SET conn_status = ?, updated_at = ?, conn_req_inv = NULL, short_link_inv = NULL WHERE connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
