@@ -294,7 +294,7 @@ object ChatModel {
     }
   }
 
-  class ChatsContext(private val contentTag: MsgContentTag?) {
+  class ChatsContext(val contentTag: MsgContentTag?) {
     val chats = mutableStateOf(SnapshotStateList<Chat>())
     /** if you modify the items by adding/removing them, use helpers methods like [addToChatItems], [removeLastChatItemsAndNotify], [removeAllAndNotify], [clearAndNotify] and so on.
      * If some helper is missing, create it. Notify is needed to track state of items that we added manually (not via api call). See [apiLoadMessages].

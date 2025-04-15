@@ -51,6 +51,7 @@ val MEMBER_ROW_VERTICAL_PADDING = 8.dp
 
 @Composable
 fun ModalData.GroupChatInfoView(
+  chatsCtx: ChatModel.ChatsContext,
   rhId: Long?,
   chatId: String,
   groupLink: String?,
@@ -92,7 +93,7 @@ fun ModalData.GroupChatInfoView(
         val previousChatTTL = chatItemTTL.value
         chatItemTTL.value = it
 
-        setChatTTLAlert(chat.remoteHostId, chat.chatInfo, chatItemTTL, previousChatTTL, deletingItems)
+        setChatTTLAlert(chatsCtx, chat.remoteHostId, chat.chatInfo, chatItemTTL, previousChatTTL, deletingItems)
       },
       activeSortedMembers = remember { chatModel.groupMembers }.value
         .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }

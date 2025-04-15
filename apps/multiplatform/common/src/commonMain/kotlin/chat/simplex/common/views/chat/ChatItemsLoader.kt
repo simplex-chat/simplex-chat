@@ -11,44 +11,42 @@ import kotlin.math.min
 const val TRIM_KEEP_COUNT = 200
 
 suspend fun apiLoadSingleMessage(
+  chatsCtx: ChatModel.ChatsContext,
   rhId: Long?,
   chatType: ChatType,
   apiId: Long,
-  itemId: Long,
-  contentTag: MsgContentTag?,
+  itemId: Long
 ): ChatItem? = coroutineScope {
-  val (chat, _) = chatModel.controller.apiGetChat(rhId, chatType, apiId, contentTag, ChatPagination.Around(itemId, 0), "") ?: return@coroutineScope null
+  val (chat, _) = chatModel.controller.apiGetChat(rhId, chatType, apiId, chatsCtx.contentTag, ChatPagination.Around(itemId, 0), "") ?: return@coroutineScope null
   chat.chatItems.firstOrNull()
 }
 
 suspend fun apiLoadMessages(
+  chatsCtx: ChatModel.ChatsContext,
   rhId: Long?,
   chatType: ChatType,
   apiId: Long,
-  contentTag: MsgContentTag?,
   pagination: ChatPagination,
   search: String = "",
   openAroundItemId: Long? = null,
   visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 }
 ) = coroutineScope {
-  val (chat, navInfo) = chatModel.controller.apiGetChat(rhId, chatType, apiId, contentTag, pagination, search) ?: return@coroutineScope
+  val (chat, navInfo) = chatModel.controller.apiGetChat(rhId, chatType, apiId, chatsCtx.contentTag, pagination, search) ?: return@coroutineScope
   // For .initial allow the chatItems to be empty as well as chatModel.chatId to not match this chat because these values become set after .initial finishes
   /** When [openAroundItemId] is provided, chatId can be different too */
   if (((chatModel.chatId.value != chat.id || chat.chatItems.isEmpty()) && pagination !is ChatPagination.Initial && pagination !is ChatPagination.Last && openAroundItemId == null)
     || !isActive) return@coroutineScope
-  processLoadedChat(chat, navInfo, contentTag, pagination, openAroundItemId, visibleItemIndexesNonReversed)
+  processLoadedChat(chatsCtx, chat, navInfo, pagination, openAroundItemId, visibleItemIndexesNonReversed)
 }
 
 suspend fun processLoadedChat(
+  chatsCtx: ChatModel.ChatsContext,
   chat: Chat,
   navInfo: NavigationInfo,
-  contentTag: MsgContentTag?,
   pagination: ChatPagination,
   openAroundItemId: Long?,
   visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 }
 ) {
-  val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext.value
-  chatsCtx ?: return
   val chatState = chatsCtx.chatState
   val (splits, unreadAfterItemId, totalAfter, unreadTotal, unreadAfter, unreadAfterNewestLoaded) = chatState
   val oldItems = chatsCtx.chatItems.value
@@ -56,7 +54,7 @@ suspend fun processLoadedChat(
   when (pagination) {
     is ChatPagination.Initial -> {
       val newSplits = if (chat.chatItems.isNotEmpty() && navInfo.afterTotal > 0) listOf(chat.chatItems.last().id) else emptyList()
-      if (contentTag == null) {
+      if (chatsCtx.contentTag == null) {
         // update main chats, not content tagged
         withContext(Dispatchers.Main) {
           val oldChat = chatModel.chatsContext.getChat(chat.id)

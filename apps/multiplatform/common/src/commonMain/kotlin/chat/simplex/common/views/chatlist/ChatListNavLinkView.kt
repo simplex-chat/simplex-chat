@@ -189,7 +189,7 @@ fun ErrorChatListItem() {
 suspend fun directChatAction(rhId: Long?, contact: Contact, chatModel: ChatModel) {
   when {
     contact.activeConn == null && contact.profile.contactLink != null && contact.active -> askCurrentOrIncognitoProfileConnectContactViaAddress(chatModel, rhId, contact, close = null, openChat = true)
-    else -> openChat(rhId, ChatInfo.Direct(contact))
+    else -> openDirectChat(rhId, contact.contactId)
   }
 }
 
@@ -197,33 +197,33 @@ suspend fun groupChatAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
   when (groupInfo.membership.memberStatus) {
     GroupMemberStatus.MemInvited -> acceptGroupInvitationAlertDialog(rhId, groupInfo, chatModel, inProgress)
     GroupMemberStatus.MemAccepted -> groupInvitationAcceptedAlert(rhId)
-    else -> openChat(rhId, ChatInfo.Group(groupInfo))
+    else -> openGroupChat(rhId, groupInfo.groupId)
   }
 }
 
-suspend fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) = openChat(rhId, ChatInfo.Local(noteFolder))
+suspend fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) = openChat(secondaryChatsCtx = null, rhId, ChatInfo.Local(noteFolder))
 
-suspend fun openDirectChat(rhId: Long?, contactId: Long) = openChat(rhId, ChatType.Direct, contactId)
+suspend fun openDirectChat(rhId: Long?, contactId: Long) = openChat(secondaryChatsCtx = null, rhId, ChatType.Direct, contactId)
 
-suspend fun openGroupChat(rhId: Long?, groupId: Long, contentTag: MsgContentTag? = null) = openChat(rhId, ChatType.Group, groupId, contentTag)
+suspend fun openGroupChat(rhId: Long?, groupId: Long) = openChat(secondaryChatsCtx = null, rhId, ChatType.Group, groupId)
 
-suspend fun openChat(rhId: Long?, chatInfo: ChatInfo, contentTag: MsgContentTag? = null) = openChat(rhId, chatInfo.chatType, chatInfo.apiId, contentTag)
+suspend fun openChat(secondaryChatsCtx: ChatModel.ChatsContext?, rhId: Long?, chatInfo: ChatInfo) = openChat(secondaryChatsCtx, rhId, chatInfo.chatType, chatInfo.apiId)
 
 suspend fun openChat(
+  secondaryChatsCtx: ChatModel.ChatsContext?,
   rhId: Long?,
   chatType: ChatType,
   apiId: Long,
-  contentTag: MsgContentTag? = null,
   openAroundItemId: Long? = null
 ) {
-  if (contentTag != null) {
-    chatModel.secondaryChatsContext.value = ChatModel.ChatsContext(contentTag)
+  if (secondaryChatsCtx != null) {
+    chatModel.secondaryChatsContext.value = secondaryChatsCtx
   }
   apiLoadMessages(
+    chatsCtx = secondaryChatsCtx ?: chatModel.chatsContext,
     rhId,
     chatType,
     apiId,
-    contentTag,
     if (openAroundItemId != null) {
       ChatPagination.Around(openAroundItemId, ChatPagination.INITIAL_COUNT)
     } else {
@@ -244,12 +244,11 @@ suspend fun openLoadedChat(chat: Chat, contentTag: MsgContentTag? = null) {
   }
 }
 
-suspend fun apiFindMessages(ch: Chat, search: String, contentTag: MsgContentTag?) {
+suspend fun apiFindMessages(chatsCtx: ChatModel.ChatsContext, ch: Chat, search: String) {
   withContext(Dispatchers.Main) {
-    val chatsCtx = if (contentTag == null) chatModel.chatsContext else chatModel.secondaryChatsContext.value
-    chatsCtx?.chatItems?.clearAndNotify()
+    chatsCtx.chatItems.clearAndNotify()
   }
-  apiLoadMessages(ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, contentTag, pagination = if (search.isNotEmpty()) ChatPagination.Last(ChatPagination.INITIAL_COUNT) else ChatPagination.Initial(ChatPagination.INITIAL_COUNT), search = search)
+  apiLoadMessages(chatsCtx, ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, pagination = if (search.isNotEmpty()) ChatPagination.Last(ChatPagination.INITIAL_COUNT) else ChatPagination.Initial(ChatPagination.INITIAL_COUNT), search = search)
 }
 
 suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) = coroutineScope {
