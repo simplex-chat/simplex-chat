@@ -2344,4 +2344,10 @@
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Adatvédelmi szabályzat és felhasználási feltételek.</string>
     <string name="onboarding_conditions_private_chats_not_accessible">A privát csevegések, a csoportok és a partnerek nem érhetők el a szerver üzemeltetői számára.</string>
     <string name="onboarding_conditions_configure_server_operators">Kiszolgálóüzemeltetők beállítása</string>
+    <string name="unsupported_connection_link">Nem támogatott kapcsolattartási hivatkozás</string>
+    <string name="privacy_short_links">Rövid hivatkozások használata (béta)</string>
+    <string name="short_link_button_text">Rövid hivatkozás</string>
+    <string name="full_link_button_text">Teljes hivatkozás</string>
+    <string name="link_requires_newer_app_version_please_upgrade">Ez a hivatkozás újabb alkalmazásverziót igényel. Frissítse az alkalmazást vagy kérjen egy kompatibilis hivatkozást a partnerétől.</string>
+    <string name="simplex_link_channel">SimpleX-csatornahivatkozás</string>
 </resources>
