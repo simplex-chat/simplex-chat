@@ -296,7 +296,7 @@ object ChatModel {
 
   class ChatsContext(val contentTag: MsgContentTag?) {
     val chats = mutableStateOf(SnapshotStateList<Chat>())
-    /** if you modify the items by adding/removing them, use helpers methods like [addToChatItems], [removeLastChatItemsAndNotify], [removeAllAndNotify], [clearAndNotify] and so on.
+    /** if you modify the items by adding/removing them, use helpers methods like [addToChatItems], [removeLastChatItems], [removeAllAndNotify], [clearAndNotify] and so on.
      * If some helper is missing, create it. Notify is needed to track state of items that we added manually (not via api call). See [apiLoadMessages].
      * If you use api call to get the items, use just [add] instead of [addToChatItems].
      * Never modify underlying list directly because it produces unexpected results in ChatView's LazyColumn (setting by index is ok) */
@@ -403,7 +403,7 @@ object ChatModel {
       chatItems.value = SnapshotStateList<ChatItem>().apply { addAll(chatItems.value); add(elem); chatState.itemAdded(elem.id to elem.isRcvNew) }
     }
 
-    fun removeLastChatItemsAndNotify() {
+    fun removeLastChatItems() {
       val removed: Triple<Long, Int, Boolean>
       chatItems.value = SnapshotStateList<ChatItem>().apply {
         addAll(chatItems.value)
@@ -945,7 +945,7 @@ object ChatModel {
     if (chatsContext.chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
       withApi {
         withContext(Dispatchers.Main) {
-          chatsContext.removeLastChatItemsAndNotify()
+          chatsContext.removeLastChatItems()
         }
       }
     }
