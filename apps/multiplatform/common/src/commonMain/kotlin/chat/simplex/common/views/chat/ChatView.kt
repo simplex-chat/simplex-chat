@@ -178,7 +178,7 @@ fun ChatView(
                     )
                   }
                   ComposeView(
-                    chatModel, Chat(remoteHostId = chatRh, chatInfo = chatInfo, chatItems = emptyList()), composeState, attachmentOption,
+                    chatModel, chatsCtx, Chat(remoteHostId = chatRh, chatInfo = chatInfo, chatItems = emptyList()), composeState, attachmentOption,
                     showChooseAttachment = { scope.launch { attachmentBottomSheetState.show() } },
                     focusRequester = focusRequester
                   )

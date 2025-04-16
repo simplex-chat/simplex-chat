@@ -334,6 +334,7 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
 @Composable
 fun ComposeView(
   chatModel: ChatModel,
+  chatsCtx: ChatModel.ChatsContext,
   chat: Chat,
   composeState: MutableState<ComposeState>,
   attachmentOption: MutableState<AttachmentOption?>,
@@ -474,7 +475,7 @@ fun ComposeView(
     if (!chatItems.isNullOrEmpty()) {
       chatItems.forEach { aChatItem ->
         withContext(Dispatchers.Main) {
-          chatModel.chatsContext.addChatItem(chat.remoteHostId, cInfo, aChatItem.chatItem)
+          chatsCtx.addChatItem(chat.remoteHostId, cInfo, aChatItem.chatItem)
         }
       }
       return chatItems.first().chatItem
@@ -509,7 +510,7 @@ fun ComposeView(
 
       withContext(Dispatchers.Main) {
         chatItems?.forEach { chatItem ->
-          chatModel.chatsContext.addChatItem(rhId, chat.chatInfo, chatItem)
+          chatsCtx.addChatItem(rhId, chat.chatInfo, chatItem)
         }
       }
 
@@ -569,9 +570,10 @@ fun ComposeView(
     suspend fun sendReport(reportReason: ReportReason, chatItemId: Long): List<ChatItem>? {
       val cItems = chatModel.controller.apiReportMessage(chat.remoteHostId, chat.chatInfo.apiId, chatItemId, reportReason, msgText)
       if (cItems != null) {
+        // TODO [knocking] create report chat items in support scope
         withContext(Dispatchers.Main) {
           cItems.forEach { chatItem ->
-            chatModel.chatsContext.addChatItem(chat.remoteHostId, chat.chatInfo, chatItem.chatItem)
+            chatsCtx.addChatItem(chat.remoteHostId, chat.chatInfo, chatItem.chatItem)
           }
         }
       }
@@ -584,7 +586,7 @@ fun ComposeView(
       val contact = chatModel.controller.apiSendMemberContactInvitation(chat.remoteHostId, chat.chatInfo.apiId, mc)
       if (contact != null) {
         withContext(Dispatchers.Main) {
-          chatModel.chatsContext.updateContact(chat.remoteHostId, contact)
+          chatsCtx.updateContact(chat.remoteHostId, contact)
         }
       }
     }
@@ -604,7 +606,7 @@ fun ComposeView(
         )
         if (updatedItem != null) {
           withContext(Dispatchers.Main) {
-            chatModel.chatsContext.upsertChatItem(chat.remoteHostId, cInfo, updatedItem.chatItem)
+            chatsCtx.upsertChatItem(chat.remoteHostId, cInfo, updatedItem.chatItem)
           }
         }
         return updatedItem?.chatItem
@@ -895,7 +897,7 @@ fun ComposeView(
 
   fun editPrevMessage() {
     if (composeState.value.contextItem != ComposeContextItem.NoContextItem || composeState.value.preview != ComposePreview.NoPreview) return
-    val lastEditable = chatModel.chatsContext.chatItems.value.findLast { it.meta.editable }
+    val lastEditable = chatsCtx.chatItems.value.findLast { it.meta.editable }
     if (lastEditable != null) {
       composeState.value = ComposeState(editingItem = lastEditable, useLinkPreviews = useLinkPreviews)
     }
