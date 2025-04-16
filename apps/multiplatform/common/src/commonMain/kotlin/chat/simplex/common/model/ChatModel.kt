@@ -429,55 +429,56 @@ object ChatModel {
     }
 
     suspend fun addChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
-      // mark chat non deleted
-      if (cInfo is ChatInfo.Direct && cInfo.chatDeleted) {
-        val updatedContact = cInfo.contact.copy(chatDeleted = false)
-        updateContact(rhId, updatedContact)
-      }
-      // update previews
-      val i = getChatIndex(rhId, cInfo.id)
-      val chat: Chat
-      if (i >= 0) {
-        chat = chats[i]
-        val newPreviewItem = when (cInfo) {
-          is ChatInfo.Group -> {
-            val currentPreviewItem = chat.chatItems.firstOrNull()
-            if (currentPreviewItem != null) {
-              if (cItem.meta.itemTs >= currentPreviewItem.meta.itemTs) {
-                cItem
+      if (cInfo.groupChatScope() == null) {
+        // mark chat non deleted
+        if (cInfo is ChatInfo.Direct && cInfo.chatDeleted) {
+          val updatedContact = cInfo.contact.copy(chatDeleted = false)
+          updateContact(rhId, updatedContact)
+        }
+        // update previews
+        val i = getChatIndex(rhId, cInfo.id)
+        val chat: Chat
+        if (i >= 0) {
+          chat = chats[i]
+          val newPreviewItem = when (cInfo) {
+            is ChatInfo.Group -> {
+              val currentPreviewItem = chat.chatItems.firstOrNull()
+              if (currentPreviewItem != null) {
+                if (cItem.meta.itemTs >= currentPreviewItem.meta.itemTs) {
+                  cItem
+                } else {
+                  currentPreviewItem
+                }
               } else {
-                currentPreviewItem
+                cItem
               }
-            } else {
-              cItem
             }
-          }
-          else -> cItem
-        }
-        val wasUnread = chat.unreadTag
-        chats[i] = chat.copy(
-          chatItems = arrayListOf(newPreviewItem),
-          chatStats =
-          if (cItem.meta.itemStatus is CIStatus.RcvNew) {
-            increaseUnreadCounter(rhId, currentUser.value!!)
-            chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1, unreadMentions = if (cItem.meta.userMention) chat.chatStats.unreadMentions + 1 else chat.chatStats.unreadMentions)
-          }
-          else
-            chat.chatStats
-        )
-        updateChatTagReadInPrimaryContext(chats[i], wasUnread)
 
-        if (appPlatform.isDesktop && cItem.chatDir.sent) {
-          reorderChat(chats[i], 0)
+            else -> cItem
+          }
+          val wasUnread = chat.unreadTag
+          chats[i] = chat.copy(
+            chatItems = arrayListOf(newPreviewItem),
+            chatStats =
+            if (cItem.meta.itemStatus is CIStatus.RcvNew) {
+              increaseUnreadCounter(rhId, currentUser.value!!)
+              chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1, unreadMentions = if (cItem.meta.userMention) chat.chatStats.unreadMentions + 1 else chat.chatStats.unreadMentions)
+            } else
+              chat.chatStats
+          )
+          updateChatTagReadInPrimaryContext(chats[i], wasUnread)
+
+          if (appPlatform.isDesktop && cItem.chatDir.sent) {
+            reorderChat(chats[i], 0)
+          } else {
+            popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = i)
+          }
         } else {
-          popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = i)
+          addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
         }
-      } else {
-        addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
       }
       withContext(Dispatchers.Main) {
-        // add to current chat
-        if (chatId.value == cInfo.id) {
+        if (chatItemBelongsToScope(cInfo, cItem)) {
           // Prevent situation when chat item already in the list received from backend
           if (chatItems.value.none { it.id == cItem.id }) {
             if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
@@ -489,6 +490,25 @@ object ChatModel {
         }
       }
     }
+
+    // TODO [knocking] replace similar check in other methods:
+    //   // add to current chat
+    //   if (chatId.value == cInfo.id) { ... }
+    private fun chatItemBelongsToScope(cInfo: ChatInfo, cItem: ChatItem): Boolean =
+      when (secondaryContextFilter) {
+        null ->
+          chatId.value == cInfo.id && cInfo.groupChatScope() == null
+        is SecondaryContextFilter.GroupChatScopeContext -> {
+          val cInfoScope = cInfo.groupChatScope()
+          if (cInfoScope != null) {
+            chatId.value == cInfo.id && sameChatScope(cInfoScope, secondaryContextFilter.groupScopeInfo.toChatScope())
+          } else {
+            false
+          }
+        }
+        is SecondaryContextFilter.MsgContentTagContext ->
+          chatId.value == cInfo.id && cItem.isReport
+      }
 
     suspend fun upsertChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem): Boolean {
       // update previews
@@ -1116,13 +1136,19 @@ sealed class GroupChatScope {
   class MemberSupport(val groupMemberId_: Long?): GroupChatScope()
 }
 
+// TODO [knocking] change equals / some other interface?
+fun sameChatScope(scope1: GroupChatScope, scope2: GroupChatScope) =
+  scope1 is GroupChatScope.MemberSupport
+      && scope2 is GroupChatScope.MemberSupport
+      && scope1.groupMemberId_ == scope2.groupMemberId_
+
 @Serializable
 sealed class GroupChatScopeInfo {
   @Serializable @SerialName("memberSupport") data class MemberSupport(val groupMember_: GroupMember?) : GroupChatScopeInfo()
 
   fun toChatScope(): GroupChatScope =
     when (this) {
-      is GroupChatScopeInfo.MemberSupport -> when (groupMember_) {
+      is MemberSupport -> when (groupMember_) {
         null -> GroupChatScope.MemberSupport(groupMemberId_ = null)
         else -> GroupChatScope.MemberSupport(groupMemberId_ = groupMember_.groupMemberId)
       }
@@ -1451,7 +1477,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
   }
 
   fun groupChatScope(): GroupChatScope? = when (this) {
-    is ChatInfo.Group -> groupChatScope?.toChatScope()
+    is Group -> groupChatScope?.toChatScope()
     else -> null
   }
 

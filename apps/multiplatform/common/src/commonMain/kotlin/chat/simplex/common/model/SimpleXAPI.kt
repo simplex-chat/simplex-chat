@@ -2556,14 +2556,14 @@ object ChatController {
           if (active(r.user)) {
             withContext(Dispatchers.Main) {
               chatModel.chatsContext.addChatItem(rhId, cInfo, cItem)
+              // TODO [knocking] increase support chats unread count
               if (cItem.isActiveReport) {
                 chatModel.chatsContext.increaseGroupReportsCounter(rhId, cInfo.id)
               }
             }
             withContext(Dispatchers.Main) {
-              if (cItem.isReport) {
-                chatModel.secondaryChatsContext.value?.addChatItem(rhId, cInfo, cItem)
-              }
+              // TODO [knocking] remove similar check in other apis: `if (cItem.isReport) { ... }`; fix checks in scope methods (see addChatItem)
+              chatModel.secondaryChatsContext.value?.addChatItem(rhId, cInfo, cItem)
             }
           } else if (cItem.isRcvNew && cInfo.ntfsEnabled(cItem)) {
             withContext(Dispatchers.Main) {
