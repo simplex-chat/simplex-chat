@@ -2161,6 +2161,9 @@
   <string name="member_support">Member support</string>
   <string name="no_support_chats">No support chats</string>
 
+  <!-- MemberSupportChatView.kt -->
+  <string name="support_chat">Support</string>
+
   <!-- WhatsNewView.kt -->
   <string name="whats_new">What\'s new</string>
   <string name="new_in_version">New in %s</string>

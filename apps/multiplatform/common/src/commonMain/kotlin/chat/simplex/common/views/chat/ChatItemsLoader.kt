@@ -54,7 +54,7 @@ suspend fun processLoadedChat(
   when (pagination) {
     is ChatPagination.Initial -> {
       val newSplits = if (chat.chatItems.isNotEmpty() && navInfo.afterTotal > 0) listOf(chat.chatItems.last().id) else emptyList()
-      if (chatsCtx.contentTag == null) {
+      if (chatsCtx.secondaryContextFilter == null) {
         // update main chats, not content tagged
         withContext(Dispatchers.Main) {
           val oldChat = chatModel.chatsContext.getChat(chat.id)

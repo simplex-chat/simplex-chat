@@ -53,7 +53,7 @@ fun GroupReportsAppBar(
 }
 
 @Composable
-private fun ItemsReload(chatsCtx: ChatModel.ChatsContext,) {
+fun ItemsReload(chatsCtx: ChatModel.ChatsContext,) {
   LaunchedEffect(Unit) {
     snapshotFlow { chatModel.chatId.value }
       .distinctUntilChanged()
