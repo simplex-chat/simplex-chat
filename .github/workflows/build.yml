@@ -106,16 +106,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: 20.04
+          - os: 22.04
             ghc: "8.10.7"
-          - os: 20.04
-            ghc: ${{ needs.variables.outputs.GHC_VER }}
-            cli_asset_name: simplex-chat-ubuntu-20_04-x86-64
-            desktop_asset_name: simplex-desktop-ubuntu-20_04-x86_64.deb
           - os: 22.04
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             cli_asset_name: simplex-chat-ubuntu-22_04-x86-64
             desktop_asset_name: simplex-desktop-ubuntu-22_04-x86_64.deb
+          - os: 24.04
+            ghc: ${{ needs.variables.outputs.GHC_VER }}
+            cli_asset_name: simplex-chat-ubuntu-24_04-x86-64
+            desktop_asset_name: simplex-desktop-ubuntu-24_04-x86_64.deb
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -240,14 +240,14 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build AppImage
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.desktop_asset_name && matrix.os == '20.04'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.desktop_asset_name && matrix.os == '22.04'
         shell: docker exec -t builder sh -eu {0}
         run: |
           scripts/desktop/make-appimage-linux.sh
 
       - name: Prepare AppImage
         id: linux_appimage_build
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.desktop_asset_name && matrix.os == '20.04'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.desktop_asset_name && matrix.os == '22.04'
         shell: bash
         run: |
           path=$(echo ${{ github.workspace }}/apps/multiplatform/release/main/*imple*.AppImage)
@@ -255,7 +255,7 @@ jobs:
           echo "appimage_hash=$(echo SHA2-256\(simplex-desktop-x86_64.AppImage\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload AppImage
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.desktop_asset_name && matrix.os == '20.04'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.desktop_asset_name && matrix.os == '22.04'
         uses: ./.github/actions/prepare-release
         with:
           bin_path: ${{ steps.linux_appimage_build.outputs.appimage_path }}
