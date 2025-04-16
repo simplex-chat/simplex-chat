@@ -117,6 +117,11 @@ jobs:
             cli_asset_name: simplex-chat-ubuntu-24_04-x86-64
             desktop_asset_name: simplex-desktop-ubuntu-24_04-x86_64.deb
     steps:
+      - name: Skip unreliable ghc 8.10.7 build on stable branch or in release
+        shell: bash
+        if: inputs.ghc_ver == '8.10.7' && (inputs.github_ref == 'refs/heads/stable' || startsWith(inputs.github_ref, 'refs/tags/v'))
+        run: exit 0
+
       - name: Checkout Code
         uses: actions/checkout@v3
 
