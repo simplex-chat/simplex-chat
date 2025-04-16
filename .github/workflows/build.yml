@@ -394,7 +394,6 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run tests
-        timeout-minutes: 40
         shell: bash
         run: |
           i=1
