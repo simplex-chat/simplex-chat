@@ -30,7 +30,7 @@ git -C "$tempdir" clone "$repo.git" &&\
 	cd "$tempdir/${repo_name}" &&\
 	git checkout "$TAG"
 
-for os in 20.04 22.04; do
+for os in 22.04 24.04; do
 	os_url="$(printf '%s' "$os" | tr '.' '_')"
 
 	# Build image
