@@ -652,7 +652,7 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
     if (success) {
       withContext(Dispatchers.Main) {
         chatModel.chatsContext.replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
-        chatModel.chatsContext.updateChatTagReadNoContentTag(chat, wasUnread)
+        chatModel.chatsContext.updateChatTagReadInPrimaryContext(chat, wasUnread)
       }
     }
   }
@@ -915,7 +915,7 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       val updatedChat = chatModel.getChat(chatInfo.id)
       if (updatedChat != null) {
         withContext(Dispatchers.Main) {
-          chatModel.chatsContext.updateChatTagReadNoContentTag(updatedChat, wasUnread)
+          chatModel.chatsContext.updateChatTagReadInPrimaryContext(updatedChat, wasUnread)
         }
       }
       val current = currentState?.value

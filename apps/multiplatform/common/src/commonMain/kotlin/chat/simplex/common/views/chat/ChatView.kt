@@ -2926,7 +2926,7 @@ fun PreviewChatLayout() {
     val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
     val searchValue = remember { mutableStateOf("") }
     ChatLayout(
-      chatsCtx = ChatModel.ChatsContext(contentTag = null),
+      chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
       remoteHostId = remember { mutableStateOf(null) },
       chatInfo = remember { mutableStateOf(ChatInfo.Direct.sampleData) },
       unreadCount = unreadCount,
@@ -3004,7 +3004,7 @@ fun PreviewGroupChatLayout() {
     val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
     val searchValue = remember { mutableStateOf("") }
     ChatLayout(
-      chatsCtx = ChatModel.ChatsContext(contentTag = null),
+      chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
       remoteHostId = remember { mutableStateOf(null) },
       chatInfo = remember { mutableStateOf(ChatInfo.Direct.sampleData) },
       unreadCount = unreadCount,

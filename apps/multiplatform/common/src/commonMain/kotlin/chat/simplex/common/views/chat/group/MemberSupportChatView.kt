@@ -12,8 +12,8 @@ private fun MemberSupportChatView(memberSupportChatsCtx: ChatModel.ChatsContext,
   ChatView(memberSupportChatsCtx, staleChatId, scrollToItemId, onComposed = {})
 }
 
-suspend fun showMemberSupportChatView(staleChatId: State<String?>, scrollToItemId: MutableState<Long?>, chatInfo: ChatInfo) {
-  val memberSupportChatsCtx = ChatModel.ChatsContext(contentTag = null) // TODO [knocking] sum type for group scope / content tag
+suspend fun showMemberSupportChatView(staleChatId: State<String?>, scrollToItemId: MutableState<Long?>, chatInfo: ChatInfo, scopeInfo: GroupChatScopeInfo) {
+  val memberSupportChatsCtx = ChatModel.ChatsContext(secondaryContextFilter = SecondaryContextFilter.GroupChatScopeContext(scopeInfo))
   openChat(secondaryChatsCtx = memberSupportChatsCtx, chatModel.remoteHostId(), chatInfo)
   ModalManager.end.showCustomModal(true, id = ModalViewId.SECONDARY_CHAT) { close ->
     ModalView({}, showAppBar = false) {

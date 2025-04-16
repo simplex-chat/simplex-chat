@@ -294,7 +294,7 @@ object ChatModel {
     }
   }
 
-  class ChatsContext(val contentTag: MsgContentTag?) {
+  class ChatsContext(val secondaryContextFilter: SecondaryContextFilter?) {
     val chats = mutableStateOf(SnapshotStateList<Chat>())
     /** if you modify the items by adding/removing them, use helpers methods like [addToChatItems], [removeLastChatItems], [removeAllAndNotify], [clearAndNotify] and so on.
      * If some helper is missing, create it. Notify is needed to track state of items that we added manually (not via api call). See [apiLoadMessages].
@@ -308,6 +308,20 @@ object ChatModel {
     fun hasChat(rhId: Long?, id: String): Boolean = chats.value.firstOrNull { it.id == id && it.remoteHostId == rhId } != null
     fun getChat(id: String): Chat? = chats.value.firstOrNull { it.id == id }
     private fun getChatIndex(rhId: Long?, id: String): Int = chats.value.indexOfFirst { it.id == id && it.remoteHostId == rhId }
+
+    val contentTag: MsgContentTag? =
+      when (secondaryContextFilter) {
+        null -> null
+        is SecondaryContextFilter.GroupChatScopeContext -> null
+        is SecondaryContextFilter.MsgContentTagContext -> secondaryContextFilter.contentTag
+      }
+
+    val groupScopeInfo: GroupChatScopeInfo? =
+      when (secondaryContextFilter) {
+        null -> null
+        is SecondaryContextFilter.GroupChatScopeContext -> secondaryContextFilter.groupScopeInfo
+        is SecondaryContextFilter.MsgContentTagContext -> null
+      }
 
     suspend fun addChat(chat: Chat) {
       chats.add(index = 0, chat)
@@ -451,7 +465,7 @@ object ChatModel {
           else
             chat.chatStats
         )
-        updateChatTagReadNoContentTag(chats[i], wasUnread)
+        updateChatTagReadInPrimaryContext(chats[i], wasUnread)
 
         if (appPlatform.isDesktop && cItem.chatDir.sent) {
           reorderChat(chats[i], 0)
@@ -488,7 +502,7 @@ object ChatModel {
           chats[i] = chat.copy(chatItems = arrayListOf(cItem))
           if (pItem.isRcvNew && !cItem.isRcvNew) {
             // status changed from New to Read, update counter
-            decreaseCounterInChatNoContentTag(rhId, cInfo.id)
+            decreaseCounterInPrimaryContext(rhId, cInfo.id)
           }
         }
         res = false
@@ -539,7 +553,7 @@ object ChatModel {
 
     fun removeChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
       if (cItem.isRcvNew) {
-        decreaseCounterInChatNoContentTag(rhId, cInfo.id)
+        decreaseCounterInPrimaryContext(rhId, cInfo.id)
       }
       // update previews
       val i = getChatIndex(rhId, cInfo.id)
@@ -687,7 +701,7 @@ object ChatModel {
           chats[chatIdx] = chat.copy(
             chatStats = chat.chatStats.copy(unreadCount = unreadCount, unreadMentions = unreadMentions)
           )
-          updateChatTagReadNoContentTag(chats[chatIdx], wasUnread)
+          updateChatTagReadInPrimaryContext(chats[chatIdx], wasUnread)
         }
       }
     }
@@ -728,9 +742,9 @@ object ChatModel {
       return markedRead to mentionsMarkedRead
     }
 
-    private fun decreaseCounterInChatNoContentTag(rhId: Long?, chatId: ChatId) {
+    private fun decreaseCounterInPrimaryContext(rhId: Long?, chatId: ChatId) {
       // updates anything only in main ChatView, not GroupReportsView or anything else from the future
-      if (contentTag != null) return
+      if (secondaryContextFilter != null) return
 
       val chatIndex = getChatIndex(rhId, chatId)
       if (chatIndex == -1) return
@@ -744,7 +758,7 @@ object ChatModel {
           unreadCount = unreadCount,
         )
       )
-      updateChatTagReadNoContentTag(chats[chatIndex], wasUnread)
+      updateChatTagReadInPrimaryContext(chats[chatIndex], wasUnread)
     }
 
     fun removeChat(rhId: Long?, id: String) {
@@ -813,16 +827,16 @@ object ChatModel {
     }
 
     fun increaseUnreadCounter(rhId: Long?, user: UserLike) {
-      changeUnreadCounterNoContentTag(rhId, user, 1)
+      changeUnreadCounterInPrimaryContext(rhId, user, 1)
     }
 
     fun decreaseUnreadCounter(rhId: Long?, user: UserLike, by: Int = 1) {
-      changeUnreadCounterNoContentTag(rhId, user, -by)
+      changeUnreadCounterInPrimaryContext(rhId, user, -by)
     }
 
-    private fun changeUnreadCounterNoContentTag(rhId: Long?, user: UserLike, by: Int) {
+    private fun changeUnreadCounterInPrimaryContext(rhId: Long?, user: UserLike, by: Int) {
       // updates anything only in main ChatView, not GroupReportsView or anything else from the future
-      if (contentTag != null) return
+      if (secondaryContextFilter != null) return
 
       val i = users.indexOfFirst { it.user.userId == user.userId && it.user.remoteHostId == rhId }
       if (i != -1) {
@@ -830,9 +844,9 @@ object ChatModel {
       }
     }
 
-    fun updateChatTagReadNoContentTag(chat: Chat, wasUnread: Boolean) {
+    fun updateChatTagReadInPrimaryContext(chat: Chat, wasUnread: Boolean) {
       // updates anything only in main ChatView, not GroupReportsView or anything else from the future
-      if (contentTag != null) return
+      if (secondaryContextFilter != null) return
 
       val tags = chat.chatInfo.chatTags ?: return
       val nowUnread = chat.unreadTag
@@ -842,21 +856,21 @@ object ChatModel {
           unreadTags[tag] = (unreadTags[tag] ?: 0) + 1
         }
       } else if (!nowUnread && wasUnread) {
-        markChatTagReadNoContentTag_(chat, tags)
+        markChatTagReadInPrimaryContext_(chat, tags)
       }
     }
 
     fun markChatTagRead(chat: Chat) {
       if (chat.unreadTag) {
         chat.chatInfo.chatTags?.let { tags ->
-          markChatTagReadNoContentTag_(chat, tags)
+          markChatTagReadInPrimaryContext_(chat, tags)
         }
       }
     }
 
-    private fun markChatTagReadNoContentTag_(chat: Chat, tags: List<Long>) {
+    private fun markChatTagReadInPrimaryContext_(chat: Chat, tags: List<Long>) {
       // updates anything only in main ChatView, not GroupReportsView or anything else from the future
-      if (contentTag != null) return
+      if (secondaryContextFilter != null) return
 
       for (tag in tags) {
         val count = unreadTags[tag]
@@ -888,12 +902,12 @@ object ChatModel {
         val wasReportsCount = chat.chatStats.reportsCount
         val nowReportsCount = chats[i].chatStats.reportsCount
         val by = if (wasReportsCount == 0 && nowReportsCount > 0) 1 else if (wasReportsCount > 0 && nowReportsCount == 0) -1 else 0
-        changeGroupReportsTagNoContentTag(by)
+        changeGroupReportsTagInPrimaryContext(by)
       }
     }
 
-    private fun changeGroupReportsTagNoContentTag(by: Int = 0) {
-      if (by == 0 || contentTag != null) return
+    private fun changeGroupReportsTagInPrimaryContext(by: Int = 0) {
+      if (by == 0 || secondaryContextFilter != null) return
       presetTags[PresetTagKind.GROUP_REPORTS] = kotlin.math.max(0, (presetTags[PresetTagKind.GROUP_REPORTS] ?: 0) + by)
       clearActiveChatFilterIfNeeded()
     }
@@ -2764,6 +2778,11 @@ data class ChatItem (
         file = null
       )
   }
+}
+
+sealed class SecondaryContextFilter {
+  class GroupChatScopeContext(val groupScopeInfo: GroupChatScopeInfo): SecondaryContextFilter()
+  class MsgContentTagContext(val contentTag: MsgContentTag): SecondaryContextFilter()
 }
 
 fun MutableState<SnapshotStateList<Chat>>.add(index: Int, elem: Chat) {

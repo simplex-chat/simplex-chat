@@ -3,7 +3,6 @@ package chat.simplex.common.views.chat.group
 import SectionBottomSpacer
 import SectionItemView
 import SectionItemViewLongClickable
-import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.items
@@ -99,12 +98,14 @@ private fun ModalData.MemberSupportViewLayout(
         val showMenu = remember { mutableStateOf(false) }
         SectionItemViewLongClickable(
           click = {
-            val supportChatInfo = ChatInfo.Group(groupInfo, groupChatScope = GroupChatScopeInfo.MemberSupport(groupMember_ = member))
+            val scopeInfo = GroupChatScopeInfo.MemberSupport(groupMember_ = member)
+            val supportChatInfo = ChatInfo.Group(groupInfo, groupChatScope = scopeInfo)
             scope.launch {
               showMemberSupportChatView(
                 chatModel.chatId,
                 scrollToItemId = scrollToItemId,
-                supportChatInfo
+                supportChatInfo,
+                scopeInfo
               )
             }
           },

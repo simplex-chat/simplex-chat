@@ -1423,7 +1423,7 @@ fun PreviewChatItemView(
   chatItem: ChatItem = ChatItem.getSampleData(1, CIDirection.DirectSnd(), Clock.System.now(), "hello")
 ) {
   ChatItemView(
-    chatsCtx = ChatModel.ChatsContext(contentTag = null),
+    chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
     rhId = null,
     ChatInfo.Direct.sampleData,
     chatItem,
@@ -1473,7 +1473,7 @@ fun PreviewChatItemView(
 fun PreviewChatItemViewDeletedContent() {
   SimpleXTheme {
     ChatItemView(
-      chatsCtx = ChatModel.ChatsContext(contentTag = null),
+      chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
       rhId = null,
       ChatInfo.Direct.sampleData,
       ChatItem.getDeletedContentSampleData(),

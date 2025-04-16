@@ -69,7 +69,7 @@ private fun ItemsReload(chatsCtx: ChatModel.ChatsContext,) {
 }
 
 suspend fun showGroupReportsView(staleChatId: State<String?>, scrollToItemId: MutableState<Long?>, chatInfo: ChatInfo) {
-  val reportsChatsCtx = ChatModel.ChatsContext(contentTag = MsgContentTag.Report)
+  val reportsChatsCtx = ChatModel.ChatsContext(secondaryContextFilter = SecondaryContextFilter.MsgContentTagContext(MsgContentTag.Report))
   openChat(secondaryChatsCtx = reportsChatsCtx, chatModel.remoteHostId(), chatInfo)
   ModalManager.end.showCustomModal(true, id = ModalViewId.SECONDARY_CHAT) { close ->
     ModalView({}, showAppBar = false) {

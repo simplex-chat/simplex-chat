@@ -17,8 +17,7 @@ suspend fun apiLoadSingleMessage(
   apiId: Long,
   itemId: Long
 ): ChatItem? = coroutineScope {
-  // TODO [knocking] pass scope from context
-  val (chat, _) = chatModel.controller.apiGetChat(rhId, chatType, apiId, scope = null, chatsCtx.contentTag, ChatPagination.Around(itemId, 0), "") ?: return@coroutineScope null
+  val (chat, _) = chatModel.controller.apiGetChat(rhId, chatType, apiId, chatsCtx.groupScopeInfo?.toChatScope(), chatsCtx.contentTag, ChatPagination.Around(itemId, 0), "") ?: return@coroutineScope null
   chat.chatItems.firstOrNull()
 }
 
@@ -32,8 +31,7 @@ suspend fun apiLoadMessages(
   openAroundItemId: Long? = null,
   visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 }
 ) = coroutineScope {
-  // TODO [knocking] pass scope from context
-  val (chat, navInfo) = chatModel.controller.apiGetChat(rhId, chatType, apiId, scope = null, chatsCtx.contentTag, pagination, search) ?: return@coroutineScope
+  val (chat, navInfo) = chatModel.controller.apiGetChat(rhId, chatType, apiId, chatsCtx.groupScopeInfo?.toChatScope(), chatsCtx.contentTag, pagination, search) ?: return@coroutineScope
   // For .initial allow the chatItems to be empty as well as chatModel.chatId to not match this chat because these values become set after .initial finishes
   /** When [openAroundItemId] is provided, chatId can be different too */
   if (((chatModel.chatId.value != chat.id || chat.chatItems.isEmpty()) && pagination !is ChatPagination.Initial && pagination !is ChatPagination.Last && openAroundItemId == null)
