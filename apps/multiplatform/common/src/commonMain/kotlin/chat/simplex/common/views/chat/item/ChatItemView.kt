@@ -337,7 +337,7 @@ fun ChatItemView(
 
             @Composable
             fun MsgReactionsMenu() {
-              val rs = MsgReaction.old.mapNotNull { r ->
+              val rs = MsgReaction.supported.mapNotNull { r ->
                 if (null == cItem.reactions.find { it.userReacted && it.reaction.text == r.text }) {
                   r
                 } else {
@@ -348,7 +348,7 @@ fun ChatItemView(
                 Row(modifier = Modifier.padding(horizontal = DEFAULT_PADDING).horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
                   rs.forEach() { r ->
                     Box(
-                      Modifier.size(36.dp).clickable {
+                      Modifier.size(36.dp).clip(CircleShape).clickable {
                         setReaction(cInfo, cItem, true, r)
                         showMenu.value = false
                       },

@@ -3336,14 +3336,16 @@ sealed class MsgReaction {
   }
 
   companion object {
-    val values: List<MsgReaction> get() = MREmojiChar.values().map(::Emoji)
-    val old: List<MsgReaction> get() = listOf(
+    val values: List<MsgReaction> get() = MREmojiChar.entries.map(::Emoji)
+    val supported: List<MsgReaction> get() = listOf(
       MREmojiChar.ThumbsUp,
       MREmojiChar.ThumbsDown,
       MREmojiChar.Smile,
+      MREmojiChar.Laugh,
       MREmojiChar.Sad,
       MREmojiChar.Heart,
-      MREmojiChar.Launch
+      MREmojiChar.Launch,
+      MREmojiChar.Check
     ).map(::Emoji)
   }
 }
