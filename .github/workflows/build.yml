@@ -73,7 +73,7 @@ jobs:
       - name: Build changelog
         id: build_changelog
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: simplex-chat/release-changelog-builder-action@v4
+        uses: simplex-chat/release-changelog-builder-action@v5
         with:
           configuration: .github/changelog_conf.json
           failOnError: true
@@ -84,7 +84,7 @@ jobs:
 
       - name: Create release
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: simplex-chat/action-gh-release@v1
+        uses: simplex-chat/action-gh-release@v2
         with:
           body: ${{ steps.build_changelog.outputs.changelog }}
           prerelease: true
