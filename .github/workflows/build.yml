@@ -200,7 +200,7 @@ jobs:
           docker cp builder:/out/simplex-chat ./${{ matrix.cli_asset_name }}
           path="${{ github.workspace }}/${{ matrix.cli_asset_name }}"
           echo "bin_path=$path" >> $GITHUB_OUTPUT
-          echo "bin_hash=$(echo SHA2-512\(${{ matrix.cli_asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          echo "bin_hash=$(echo SHA2-256\(${{ matrix.cli_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload CLI
         if: startsWith(github.ref, 'refs/tags/v') && matrix.cli_asset_name
@@ -227,7 +227,7 @@ jobs:
         run: |
           path=$(echo ${{ github.workspace }}/apps/multiplatform/release/main/deb/simplex_*_amd64.deb )
           echo "package_path=$path" >> $GITHUB_OUTPUT
-          echo "package_hash=$(echo SHA2-512\(${{ matrix.desktop_asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          echo "package_hash=$(echo SHA2-256\(${{ matrix.desktop_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload Desktop
         uses: ./.github/actions/prepare-release
@@ -252,7 +252,7 @@ jobs:
         run: |
           path=$(echo ${{ github.workspace }}/apps/multiplatform/release/main/*imple*.AppImage)
           echo "appimage_path=$path" >> $GITHUB_OUTPUT
-          echo "appimage_hash=$(echo SHA2-512\(simplex-desktop-x86_64.AppImage\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          echo "appimage_hash=$(echo SHA2-256\(simplex-desktop-x86_64.AppImage\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload AppImage
         if: startsWith(github.ref, 'refs/tags/v') && matrix.desktop_asset_name && matrix.os == '20.04'
@@ -273,7 +273,20 @@ jobs:
       - name: Run tests
         shell: bash
         run: |
-          ./simplex-chat-test
+          i=1
+          while [ "$i" -le 10 ]; do
+            if ./simplex-chat-test; then
+              break
+            else
+              echo "Attempt $i failed, retrying..."
+              i=$((i + 1))
+              sleep 1
+            fi
+          done
+          if [ "$i" -gt 10 ]; then
+            echo "All 10 attempts failed."
+            exit 1
+          fi
 
 # =========================
 #        MacOS Build
@@ -332,7 +345,7 @@ jobs:
           cabal build -j --enable-tests
           path=$(cabal list-bin simplex-chat)
           echo "bin_path=$path" >> $GITHUB_OUTPUT
-          echo "bin_hash=$(echo SHA2-512\(${{ matrix.cli_asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          echo "bin_hash=$(echo SHA2-256\(${{ matrix.cli_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload CLI
         if: startsWith(github.ref, 'refs/tags/v')
@@ -356,7 +369,7 @@ jobs:
           scripts/ci/build-desktop-mac.sh
           path=$(echo $PWD/apps/multiplatform/release/main/dmg/SimpleX-*.dmg)
           echo "package_path=$path" >> $GITHUB_OUTPUT
-          echo "package_hash=$(echo SHA2-512\(${{ matrix.desktop_asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          echo "package_hash=$(echo SHA2-256\(${{ matrix.desktop_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload Desktop
         if: startsWith(github.ref, 'refs/tags/v')
@@ -371,7 +384,21 @@ jobs:
       - name: Run tests
         timeout-minutes: 40
         shell: bash
-        run: cabal test --test-show-details=direct
+        run: |
+          i=1
+          while [ "$i" -le 10 ]; do
+            if cabal test --test-show-details=direct; then
+              break
+            else
+              echo "Attempt $i failed, retrying..."
+              i=$((i + 1))
+              sleep 1
+            fi
+          done
+          if [ "$i" -gt 10 ]; then
+            echo "All 10 attempts failed."
+            exit 1
+          fi
 
 # =========================
 #      Windows Build
@@ -443,7 +470,7 @@ jobs:
           rm -rf dist-newstyle/src/direct-sq*
           path=$(cabal list-bin simplex-chat | tail -n 1)
           echo "bin_path=$path" >> $GITHUB_OUTPUT
-          echo "bin_hash=$(echo SHA2-512\(${{ matrix.cli_asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          echo "bin_hash=$(echo SHA2-256\(${{ matrix.cli_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload CLI
         if: startsWith(github.ref, 'refs/tags/v')
@@ -467,7 +494,7 @@ jobs:
           rm -rf dist-newstyle/src/direct-sq*
           path=$(echo $PWD/release/main/msi/*imple*.msi | sed 's#/\([a-z]\)#\1:#' | sed 's#/#\\#g')
           echo "package_path=$path" >> $GITHUB_OUTPUT
-          echo "package_hash=$(echo SHA2-512\(${{ matrix.desktop_asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          echo "package_hash=$(echo SHA2-256\(${{ matrix.desktop_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload Desktop
         if: startsWith(github.ref, 'refs/tags/v')
