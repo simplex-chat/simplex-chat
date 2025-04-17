@@ -785,6 +785,7 @@ fun ChatLayout(
                     .padding(bottom = composeViewHeight.value)
                 ) {
                   GroupMentions(
+                    chatsCtx = chatsCtx,
                     rhId = remoteHostId,
                     composeState = composeState,
                     composeViewFocusRequester = composeViewFocusRequester,
