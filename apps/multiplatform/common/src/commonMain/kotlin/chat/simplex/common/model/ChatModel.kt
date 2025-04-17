@@ -492,10 +492,7 @@ object ChatModel {
         }
       }
     }
-
-    // TODO [knocking] replace similar check in other methods:
-    //   // add to current chat
-    //   if (chatId.value == cInfo.id) { ... }
+    
     private fun chatItemBelongsToScope(cInfo: ChatInfo, cItem: ChatItem): Boolean =
       when (secondaryContextFilter) {
         null ->
