@@ -208,14 +208,14 @@ suspend fun groupChatAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
       openGroupChat(rhId, groupInfo.groupId)
       val scopeInfo = GroupChatScopeInfo.MemberSupport(groupMember_ = null)
       val supportChatInfo = ChatInfo.Group(groupInfo, groupChatScope = scopeInfo)
-      // TODO [knocking] should auto-close secondary context view when user is accepted
-      // TODO [knocking] dynamically receiving/updating items in this secondary context doesn't work
+      // TODO [knocking] should auto-close secondary context view when user is accepted;
+      // TODO            dynamically receiving/updating items in this secondary context doesn't work;
+      // TODO            don't show back button
       showMemberSupportChatView(
         chat.simplex.common.platform.chatModel.chatId,
         scrollToItemId = mutableStateOf(null),
         supportChatInfo,
-        scopeInfo,
-        showClose = false
+        scopeInfo
       )
     }
     else -> openGroupChat(rhId, groupInfo.groupId)
