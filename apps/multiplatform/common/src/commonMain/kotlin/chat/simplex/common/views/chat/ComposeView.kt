@@ -333,6 +333,7 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
 
 @Composable
 fun ComposeView(
+  rhId: Long?,
   chatModel: ChatModel,
   chatsCtx: ChatModel.ChatsContext,
   chat: Chat,
@@ -1011,6 +1012,21 @@ fun ComposeView(
   val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
 
   Column {
+    if (
+      chat.chatInfo is ChatInfo.Group
+      && chatsCtx.secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext
+      && chatsCtx.secondaryContextFilter.groupScopeInfo is GroupChatScopeInfo.MemberSupport
+      && chatsCtx.secondaryContextFilter.groupScopeInfo.groupMember_ != null
+      && chatsCtx.secondaryContextFilter.groupScopeInfo.groupMember_.memberPending
+      && composeState.value.contextItem == ComposeContextItem.NoContextItem
+      && composeState.value.preview == ComposePreview.NoPreview
+    ) {
+      ComposeContextPendingMemberActionsView(
+        rhId = rhId,
+        groupInfo = chat.chatInfo.groupInfo,
+        member = chatsCtx.secondaryContextFilter.groupScopeInfo.groupMember_
+      )
+    }
     if (nextSendGrpInv.value) {
       ComposeContextInvitingContactMemberView()
     }

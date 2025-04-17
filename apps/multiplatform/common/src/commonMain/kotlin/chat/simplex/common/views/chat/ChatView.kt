@@ -178,7 +178,7 @@ fun ChatView(
                     )
                   }
                   ComposeView(
-                    chatModel, chatsCtx, Chat(remoteHostId = chatRh, chatInfo = chatInfo, chatItems = emptyList()), composeState, attachmentOption,
+                    rhId = remoteHostId.value, chatModel, chatsCtx, Chat(remoteHostId = chatRh, chatInfo = chatInfo, chatItems = emptyList()), composeState, attachmentOption,
                     showChooseAttachment = { scope.launch { attachmentBottomSheetState.show() } },
                     focusRequester = focusRequester
                   )
@@ -678,78 +678,6 @@ fun startChatCall(remoteHostId: Long?, chatInfo: ChatInfo, media: CallMediaType)
 }
 
 @Composable
-fun PendingMemberScopeButtons(
-  rhId: Long?,
-  groupInfo: GroupInfo,
-  member: GroupMember
-) {
-  Column(
-    Modifier
-      .height(60.dp)
-      .background(MaterialTheme.colors.surface)
-  ) {
-    Divider()
-
-    Row(
-      Modifier
-        .fillMaxWidth(),
-      horizontalArrangement = Arrangement.SpaceEvenly,
-    ) {
-      Column(
-        Modifier
-          .fillMaxWidth()
-          .fillMaxHeight()
-          .weight(1F)
-          .clickable {
-            removeMemberDialog(rhId, groupInfo, member, chatModel, close = { ModalManager.end.closeModal() })
-          },
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-      ) {
-        Text(stringResource(MR.strings.remove_pending_member_button), color = Color.Red)
-      }
-
-      Column(
-        Modifier
-          .fillMaxWidth()
-          .fillMaxHeight()
-          .weight(1F)
-          .clickable {
-            acceptMemberDialog(rhId, groupInfo, member, close = { ModalManager.end.closeModal() })
-          },
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-      ) {
-        Text(stringResource(MR.strings.accept_pending_member_button), color = MaterialTheme.colors.primary)
-      }
-    }
-  }
-}
-
-// TODO [knocking] can allow to choose role
-fun acceptMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, close: (() -> Unit)? = null) {
-  AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.accept_pending_member_alert_title),
-    text = generalGetString(MR.strings.accept_pending_member_alert_question),
-    confirmText = generalGetString(MR.strings.accept_pending_member_button),
-    onConfirm = {
-      withBGApi {
-        val acceptedMember = chatModel.controller.apiAcceptMember(rhId, groupInfo.groupId, member.groupMemberId, GroupMemberRole.Member)
-        if (acceptedMember != null) {
-          withContext(Dispatchers.Main) {
-            chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, acceptedMember)
-          }
-          withContext(Dispatchers.Main) {
-            chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, groupInfo, acceptedMember)
-          }
-        }
-        close?.invoke()
-      }
-    }
-  )
-}
-
-@Composable
 fun ChatLayout(
   chatsCtx: ChatModel.ChatsContext,
   remoteHostId: State<Long?>,
@@ -849,27 +777,6 @@ fun ChatLayout(
                   updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
                   setReaction, showItemDetails, markItemsRead, markChatRead, closeSearch, remember { { onComposed(it) } }, developerTools, showViaProxy,
                 )
-              }
-              if (
-                chatInfo is ChatInfo.Group
-                && chatsCtx.secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext
-                && chatsCtx.secondaryContextFilter.groupScopeInfo is GroupChatScopeInfo.MemberSupport
-                && chatsCtx.secondaryContextFilter.groupScopeInfo.groupMember_ != null
-                && chatsCtx.secondaryContextFilter.groupScopeInfo.groupMember_.memberPending
-                && composeState.value.contextItem == ComposeContextItem.NoContextItem
-                && composeState.value.preview == ComposePreview.NoPreview
-                ) {
-                Column(
-                  Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(bottom = composeViewHeight.value)
-                ) {
-                  PendingMemberScopeButtons(
-                    rhId = remoteHostId,
-                    groupInfo = chatInfo.groupInfo,
-                    member = chatsCtx.secondaryContextFilter.groupScopeInfo.groupMember_
-                  )
-                }
               }
               if (chatInfo is ChatInfo.Group && composeState.value.message.text.isNotEmpty()) {
                 Column(
