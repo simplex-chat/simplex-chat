@@ -2556,13 +2556,12 @@ object ChatController {
           if (active(r.user)) {
             withContext(Dispatchers.Main) {
               chatModel.chatsContext.addChatItem(rhId, cInfo, cItem)
-              // TODO [knocking] increase support chats unread count
+              // TODO [knocking] increase support chats unread count; move `isActiveReport` checks inside model functions?
               if (cItem.isActiveReport) {
                 chatModel.chatsContext.increaseGroupReportsCounter(rhId, cInfo.id)
               }
             }
             withContext(Dispatchers.Main) {
-              // TODO [knocking] remove similar check in other apis: `if (cItem.isReport) { ... }`; fix checks in scope methods (see addChatItem)
               chatModel.secondaryChatsContext.value?.addChatItem(rhId, cInfo, cItem)
             }
           } else if (cItem.isRcvNew && cInfo.ntfsEnabled(cItem)) {
@@ -2592,9 +2591,7 @@ object ChatController {
               chatModel.chatsContext.updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
             }
             withContext(Dispatchers.Main) {
-              if (cItem.isReport) {
-                chatModel.secondaryChatsContext.value?.updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
-              }
+              chatModel.secondaryChatsContext.value?.updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
             }
           }
         }
@@ -2606,9 +2603,7 @@ object ChatController {
             chatModel.chatsContext.updateChatItem(r.reaction.chatInfo, r.reaction.chatReaction.chatItem)
           }
           withContext(Dispatchers.Main) {
-            if (r.reaction.chatReaction.chatItem.isReport) {
-              chatModel.secondaryChatsContext.value?.updateChatItem(r.reaction.chatInfo, r.reaction.chatReaction.chatItem)
-            }
+            chatModel.secondaryChatsContext.value?.updateChatItem(r.reaction.chatInfo, r.reaction.chatReaction.chatItem)
           }
         }
       }
@@ -2651,12 +2646,10 @@ object ChatController {
             }
           }
           withContext(Dispatchers.Main) {
-            if (cItem.isReport) {
-              if (toChatItem == null) {
-                chatModel.secondaryChatsContext.value?.removeChatItem(rhId, cInfo, cItem)
-              } else {
-                chatModel.secondaryChatsContext.value?.upsertChatItem(rhId, cInfo, toChatItem.chatItem)
-              }
+            if (toChatItem == null) {
+              chatModel.secondaryChatsContext.value?.removeChatItem(rhId, cInfo, cItem)
+            } else {
+              chatModel.secondaryChatsContext.value?.upsertChatItem(rhId, cInfo, toChatItem.chatItem)
             }
           }
         }
@@ -3163,11 +3156,11 @@ object ChatController {
     if (activeUser(rh, user)) {
       val cInfo = aChatItem.chatInfo
       val cItem = aChatItem.chatItem
-      withContext(Dispatchers.Main) { chatModel.chatsContext.upsertChatItem(rh, cInfo, cItem) }
       withContext(Dispatchers.Main) {
-        if (cItem.isReport) {
-          chatModel.secondaryChatsContext.value?.upsertChatItem(rh, cInfo, cItem)
-        }
+        chatModel.chatsContext.upsertChatItem(rh, cInfo, cItem)
+      }
+      withContext(Dispatchers.Main) {
+        chatModel.secondaryChatsContext.value?.upsertChatItem(rh, cInfo, cItem)
       }
     }
   }
@@ -3234,11 +3227,11 @@ object ChatController {
     if (!activeUser(rh, user)) {
       notify()
     } else {
-      val createdChat = withContext(Dispatchers.Main) { chatModel.chatsContext.upsertChatItem(rh, cInfo, cItem) }
+      val createdChat = withContext(Dispatchers.Main) {
+        chatModel.chatsContext.upsertChatItem(rh, cInfo, cItem)
+      }
       withContext(Dispatchers.Main) {
-        if (cItem.content.msgContent is MsgContent.MCReport) {
-          chatModel.secondaryChatsContext.value?.upsertChatItem(rh, cInfo, cItem)
-        }
+        chatModel.secondaryChatsContext.value?.upsertChatItem(rh, cInfo, cItem)
       }
       if (createdChat) {
         notify()

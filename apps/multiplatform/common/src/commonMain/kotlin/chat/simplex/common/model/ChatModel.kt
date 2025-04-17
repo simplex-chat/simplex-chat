@@ -429,13 +429,14 @@ object ChatModel {
     }
 
     suspend fun addChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
+      // update chat list
       if (cInfo.groupChatScope() == null) {
         // mark chat non deleted
         if (cInfo is ChatInfo.Direct && cInfo.chatDeleted) {
           val updatedContact = cInfo.contact.copy(chatDeleted = false)
           updateContact(rhId, updatedContact)
         }
-        // update previews
+        // update preview
         val i = getChatIndex(rhId, cInfo.id)
         val chat: Chat
         if (i >= 0) {
@@ -477,6 +478,7 @@ object ChatModel {
           addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
         }
       }
+      // add to current scope
       withContext(Dispatchers.Main) {
         if (chatItemBelongsToScope(cInfo, cItem)) {
           // Prevent situation when chat item already in the list received from backend
@@ -511,28 +513,29 @@ object ChatModel {
       }
 
     suspend fun upsertChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem): Boolean {
-      // update previews
-      val i = getChatIndex(rhId, cInfo.id)
-      val chat: Chat
-      val res: Boolean
-      if (i >= 0) {
-        chat = chats[i]
-        val pItem = chat.chatItems.lastOrNull()
-        if (pItem?.id == cItem.id) {
-          chats[i] = chat.copy(chatItems = arrayListOf(cItem))
-          if (pItem.isRcvNew && !cItem.isRcvNew) {
-            // status changed from New to Read, update counter
-            decreaseCounterInPrimaryContext(rhId, cInfo.id)
+      var itemAdded = false
+      // update chat list
+      if (cInfo.groupChatScope() == null) {
+        val i = getChatIndex(rhId, cInfo.id)
+        val chat: Chat
+        if (i >= 0) {
+          chat = chats[i]
+          val pItem = chat.chatItems.lastOrNull()
+          if (pItem?.id == cItem.id) {
+            chats[i] = chat.copy(chatItems = arrayListOf(cItem))
+            if (pItem.isRcvNew && !cItem.isRcvNew) {
+              // status changed from New to Read, update counter
+              decreaseCounterInPrimaryContext(rhId, cInfo.id)
+            }
           }
+        } else {
+          addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
+          itemAdded = true
         }
-        res = false
-      } else {
-        addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
-        res = true
       }
-      return withContext(Dispatchers.Main) {
-        // update current chat
-        if (chatId.value == cInfo.id) {
+      // update current scope
+      withContext(Dispatchers.Main) {
+        if (chatItemBelongsToScope(cInfo, cItem)) {
           if (cItem.isDeletedContent || cItem.meta.itemDeleted != null) {
             AudioPlayer.stop(cItem)
           }
@@ -540,7 +543,6 @@ object ChatModel {
           val itemIndex = items.indexOfFirst { it.id == cItem.id }
           if (itemIndex >= 0) {
             items[itemIndex] = cItem
-            false
           } else {
             val status = chatItemStatuses.remove(cItem.id)
             val ci = if (status != null && cItem.meta.itemStatus is CIStatus.SndNew) {
@@ -549,44 +551,52 @@ object ChatModel {
               cItem
             }
             addToChatItems(ci)
-            true
+            itemAdded = true
           }
-        } else {
-          res
         }
       }
+      return  itemAdded
     }
 
     suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null, atIndex: Int? = null) {
+      // TODO [knocking] see diff:
+      //   why chatItemStatuses gets updated even if chatId doesn't match?
+      //   should chatItemBelongsToScope replace chatId check?
+      //   should chatItemStatuses be updated only if chatItemBelongsToScope (as in changed code)? this seems to make more sense
       withContext(Dispatchers.Main) {
-        if (chatId.value == cInfo.id) {
+        if (chatItemBelongsToScope(cInfo, cItem)) {
           val items = chatItems.value
           val itemIndex = atIndex ?: items.indexOfFirst { it.id == cItem.id }
           if (itemIndex >= 0) {
             items[itemIndex] = cItem
           }
-        } else if (status != null) {
-          chatItemStatuses[cItem.id] = status
+          if (status != null) {
+            chatItemStatuses[cItem.id] = status
+          }
         }
       }
     }
 
+    // TODO [knocking] why does this function not use `withContext(Dispatchers.Main) { ... }` ?
     fun removeChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
-      if (cItem.isRcvNew) {
-        decreaseCounterInPrimaryContext(rhId, cInfo.id)
-      }
-      // update previews
-      val i = getChatIndex(rhId, cInfo.id)
-      val chat: Chat
-      if (i >= 0) {
-        chat = chats[i]
-        val pItem = chat.chatItems.lastOrNull()
-        if (pItem?.id == cItem.id) {
-          chats[i] = chat.copy(chatItems = arrayListOf(ChatItem.deletedItemDummy))
+      // update chat list
+      if (cInfo.groupChatScope() == null) {
+        if (cItem.isRcvNew) {
+          decreaseCounterInPrimaryContext(rhId, cInfo.id)
+        }
+        // update preview
+        val i = getChatIndex(rhId, cInfo.id)
+        val chat: Chat
+        if (i >= 0) {
+          chat = chats[i]
+          val pItem = chat.chatItems.lastOrNull()
+          if (pItem?.id == cItem.id) {
+            chats[i] = chat.copy(chatItems = arrayListOf(ChatItem.deletedItemDummy))
+          }
         }
       }
-      // remove from current chat
-      if (chatId.value == cInfo.id) {
+      // remove from current scope
+      if (chatItemBelongsToScope(cInfo, cItem)) {
         chatItems.removeAllAndNotify {
           // We delete taking into account meta.createdAt to make sure we will not be in situation when two items with the same id will be deleted
           // (it can happen if already deleted chat item in backend still in the list and new one came with the same (re-used) chat item id)

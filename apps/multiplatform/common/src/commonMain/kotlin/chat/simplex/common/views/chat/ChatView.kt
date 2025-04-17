@@ -412,12 +412,10 @@ fun ChatView(
                     }
                   }
                   withContext(Dispatchers.Main) {
-                    if (deletedChatItem.isReport) {
-                      if (toChatItem != null) {
-                        chatModel.secondaryChatsContext.value?.upsertChatItem(chatRh, chatInfo, toChatItem)
-                      } else {
-                        chatModel.secondaryChatsContext.value?.removeChatItem(chatRh, chatInfo, deletedChatItem)
-                      }
+                    if (toChatItem != null) {
+                      chatModel.secondaryChatsContext.value?.upsertChatItem(chatRh, chatInfo, toChatItem)
+                    } else {
+                      chatModel.secondaryChatsContext.value?.removeChatItem(chatRh, chatInfo, deletedChatItem)
                     }
                   }
                 }
@@ -535,9 +533,7 @@ fun ChatView(
                     chatModel.chatsContext.updateChatItem(cInfo, updatedCI)
                   }
                   withContext(Dispatchers.Main) {
-                    if (cItem.isReport) {
-                      chatModel.secondaryChatsContext.value?.updateChatItem(cInfo, updatedCI)
-                    }
+                    chatModel.secondaryChatsContext.value?.updateChatItem(cInfo, updatedCI)
                   }
                 }
               }
@@ -2562,13 +2558,11 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
         }
         withContext(Dispatchers.Main) {
           for (di in deleted) {
-            if (di.deletedChatItem.chatItem.isReport) {
-              val toChatItem = di.toChatItem?.chatItem
-              if (toChatItem != null) {
-                chatModel.secondaryChatsContext.value?.upsertChatItem(chatRh, chatInfo, toChatItem)
-              } else {
-                chatModel.secondaryChatsContext.value?.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
-              }
+            val toChatItem = di.toChatItem?.chatItem
+            if (toChatItem != null) {
+              chatModel.secondaryChatsContext.value?.upsertChatItem(chatRh, chatInfo, toChatItem)
+            } else {
+              chatModel.secondaryChatsContext.value?.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
             }
           }
         }
@@ -2604,13 +2598,11 @@ private fun archiveReports(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
         }
         withContext(Dispatchers.Main) {
           for (di in deleted) {
-            if (di.deletedChatItem.chatItem.isReport) {
-              val toChatItem = di.toChatItem?.chatItem
-              if (toChatItem != null) {
-                chatModel.secondaryChatsContext.value?.upsertChatItem(chatRh, chatInfo, toChatItem)
-              } else {
-                chatModel.secondaryChatsContext.value?.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
-              }
+            val toChatItem = di.toChatItem?.chatItem
+            if (toChatItem != null) {
+              chatModel.secondaryChatsContext.value?.upsertChatItem(chatRh, chatInfo, toChatItem)
+            } else {
+              chatModel.secondaryChatsContext.value?.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
             }
           }
         }
