@@ -1756,7 +1756,7 @@
   <string name="button_remove_member_question">Remove member?</string>
   <string name="button_remove_members_question">Remove members?</string>
   <string name="button_remove_member">Remove member</string>
-
+  <string name="button_support_chat">Support chat</string>
   <string name="button_send_direct_message">Send direct message</string>
   <string name="member_will_be_removed_from_group_cannot_be_undone">Member will be removed from group - this cannot be undone!</string>
   <string name="members_will_be_removed_from_group_cannot_be_undone">Members will be removed from group - this cannot be undone!</string>

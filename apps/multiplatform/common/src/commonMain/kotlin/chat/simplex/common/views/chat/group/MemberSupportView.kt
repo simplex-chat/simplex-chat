@@ -58,7 +58,7 @@ private fun ModalData.MemberSupportViewLayout(
   activeSortedMembers: List<GroupMember>
 ) {
   val scope = rememberCoroutineScope()
-  val scrollToItemId: MutableState<Long?> = remember { mutableStateOf(null) } // TODO [knocking] ?
+  val scrollToItemId: MutableState<Long?> = remember { mutableStateOf(null) } // TODO [knocking] scroll to report from support chat?
   val membersSupportChats = activeSortedMembers.filter { it.supportChat != null }
   val searchText = remember { stateGetOrPut("searchText") { TextFieldValue() } }
   // TODO [knocking] sort members in order pending > unanswered > unread > other

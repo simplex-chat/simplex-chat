@@ -300,6 +300,30 @@ fun GroupMemberInfoLayout(
   }
 
   @Composable
+  fun SupportChatButton() {
+    val scope = rememberCoroutineScope()
+    val scrollToItemId: MutableState<Long?> = remember { mutableStateOf(null) } // TODO [knocking] scroll to report from support chat?
+
+    SettingsActionItem(
+      painterResource(MR.images.ic_flag),
+      stringResource(MR.strings.button_support_chat),
+      click = {
+        val scopeInfo = GroupChatScopeInfo.MemberSupport(groupMember_ = member)
+        val supportChatInfo = ChatInfo.Group(groupInfo, groupChatScope = scopeInfo)
+        scope.launch {
+          showMemberSupportChatView(
+            chatModel.chatId,
+            scrollToItemId = scrollToItemId,
+            supportChatInfo,
+            scopeInfo
+          )
+        }
+      },
+      iconColor = MaterialTheme.colors.secondary,
+    )
+  }
+
+  @Composable
   fun ModeratorDestructiveSection() {
     val canBlockForAll = member.canBlockForAll(groupInfo)
     val canRemove = member.canBeRemoved(groupInfo)
@@ -413,6 +437,12 @@ fun GroupMemberInfoLayout(
 
     if (member.memberActive) {
       SectionView {
+        // TODO [knocking] allow creating support chat with members that don't have it (currently doesn't work)
+        //   groupInfo.membership.memberRole >= GroupMemberRole.Moderator &&
+        //   (member.memberRole <= GroupMemberRole.Moderator || member.supportChat != null)
+        if (groupInfo.membership.memberRole >= GroupMemberRole.Moderator && member.supportChat != null) {
+          SupportChatButton()
+        }
         if (connectionCode != null) {
           VerifyCodeButton(member.verified, verifyClicked)
         }
