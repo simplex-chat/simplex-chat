@@ -106,11 +106,11 @@ fun MemberSupportChatToolbarTitle(member: GroupMember, imageSize: Dp = 40.dp, ic
   }
 }
 
-suspend fun showMemberSupportChatView(staleChatId: State<String?>, scrollToItemId: MutableState<Long?>, chatInfo: ChatInfo, scopeInfo: GroupChatScopeInfo) {
+suspend fun showMemberSupportChatView(staleChatId: State<String?>, scrollToItemId: MutableState<Long?>, chatInfo: ChatInfo, scopeInfo: GroupChatScopeInfo, showClose: Boolean = true) {
   val memberSupportChatsCtx = ChatModel.ChatsContext(secondaryContextFilter = SecondaryContextFilter.GroupChatScopeContext(scopeInfo))
   openChat(secondaryChatsCtx = memberSupportChatsCtx, chatModel.remoteHostId(), chatInfo)
   ModalManager.end.showCustomModal(true, id = ModalViewId.SECONDARY_CHAT) { close ->
-    ModalView({}, showAppBar = false) {
+    ModalView({}, showClose = showClose, showAppBar = false) {
       if (chatInfo is ChatInfo.Group && chatInfo.groupChatScope != null) {
         MemberSupportChatView(memberSupportChatsCtx, staleChatId, scrollToItemId)
       } else {
