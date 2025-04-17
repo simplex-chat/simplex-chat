@@ -1952,7 +1952,7 @@ Query:
           (
             SELECT chat_item_id
             FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.group_id = g.group_id
+            WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL
             ORDER BY ci.item_ts DESC
             LIMIT 1
           ) AS chat_item_id,
@@ -1995,7 +1995,7 @@ SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
+SEARCH ci USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
 
 Query: 
         SELECT
@@ -2004,7 +2004,7 @@ Query:
           (
             SELECT chat_item_id
             FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.group_id = g.group_id
+            WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL
             ORDER BY ci.item_ts DESC
             LIMIT 1
           ) AS chat_item_id,
@@ -2041,7 +2041,7 @@ SEARCH g USING INDEX idx_groups_chat_ts (user_id=?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
+SEARCH ci USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
 
 Query: 
         SELECT
@@ -2050,7 +2050,7 @@ Query:
           (
             SELECT chat_item_id
             FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.group_id = g.group_id
+            WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL
             ORDER BY ci.item_ts DESC
             LIMIT 1
           ) AS chat_item_id,
@@ -2086,7 +2086,7 @@ SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts<?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
+SEARCH ci USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
 
 Query: 
         SELECT
@@ -2095,7 +2095,7 @@ Query:
           (
             SELECT chat_item_id
             FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.group_id = g.group_id
+            WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL
             ORDER BY ci.item_ts DESC
             LIMIT 1
           ) AS chat_item_id,
@@ -2131,7 +2131,7 @@ SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts>?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
+SEARCH ci USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
 
 Query: 
         SELECT
@@ -2140,7 +2140,7 @@ Query:
           (
             SELECT chat_item_id
             FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.group_id = g.group_id
+            WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL
             ORDER BY ci.item_ts DESC
             LIMIT 1
           ) AS chat_item_id,
@@ -2176,7 +2176,7 @@ SEARCH g USING INDEX idx_groups_chat_ts (user_id=?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
+SEARCH ci USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
 
 Query: 
         SELECT
@@ -2185,7 +2185,7 @@ Query:
           (
             SELECT chat_item_id
             FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.group_id = g.group_id
+            WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL
             ORDER BY ci.item_ts DESC
             LIMIT 1
           ) AS chat_item_id,
@@ -2221,7 +2221,7 @@ SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts<?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
+SEARCH ci USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
 
 Query: 
         SELECT
@@ -2230,7 +2230,7 @@ Query:
           (
             SELECT chat_item_id
             FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.group_id = g.group_id
+            WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL
             ORDER BY ci.item_ts DESC
             LIMIT 1
           ) AS chat_item_id,
@@ -2266,7 +2266,7 @@ SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts>?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
+SEARCH ci USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
 
 Query: 
         SELECT
@@ -2275,7 +2275,7 @@ Query:
           (
             SELECT chat_item_id
             FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.group_id = g.group_id
+            WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL
             ORDER BY ci.item_ts DESC
             LIMIT 1
           ) AS chat_item_id,
@@ -2311,7 +2311,7 @@ SEARCH g USING INDEX idx_groups_chat_ts (user_id=?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
+SEARCH ci USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
 
 Query: 
         SELECT
@@ -2320,7 +2320,7 @@ Query:
           (
             SELECT chat_item_id
             FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.group_id = g.group_id
+            WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL
             ORDER BY ci.item_ts DESC
             LIMIT 1
           ) AS chat_item_id,
@@ -2353,7 +2353,7 @@ SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts<?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
+SEARCH ci USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
 
 Query: 
         SELECT
@@ -2362,7 +2362,7 @@ Query:
           (
             SELECT chat_item_id
             FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.group_id = g.group_id
+            WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL
             ORDER BY ci.item_ts DESC
             LIMIT 1
           ) AS chat_item_id,
@@ -2395,7 +2395,7 @@ SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts>?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
+SEARCH ci USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
 
 Query: 
         SELECT
@@ -2404,7 +2404,7 @@ Query:
           (
             SELECT chat_item_id
             FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.group_id = g.group_id
+            WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL
             ORDER BY ci.item_ts DESC
             LIMIT 1
           ) AS chat_item_id,
@@ -2437,7 +2437,7 @@ SEARCH g USING INDEX idx_groups_chat_ts (user_id=?)
 SEARCH ChatStats USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 SEARCH ReportCount USING AUTOMATIC COVERING INDEX (group_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
-SEARCH ci USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
+SEARCH ci USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
 
 Query: 
         SELECT
