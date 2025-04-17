@@ -755,7 +755,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
           (
             SELECT chat_item_id
             FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.group_id = g.group_id
+            WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL
             ORDER BY ci.item_ts DESC
             LIMIT 1
           ) AS chat_item_id,

@@ -6955,6 +6955,11 @@ testScopedSupportManyModerators =
     alice <# "#team (support: bob) dan> 5"
     bob <# "#team (support) dan> 5"
 
+    alice @@@ [("#team","2"), ("@dan","sent invitation to join group team as moderator"), ("@cath","sent invitation to join group team as member"), ("@bob","sent invitation to join group team as member")]
+    bob @@@ [("#team","2"), ("@alice","received invitation to join group team as member")]
+    dan @@@ [("#team","2"), ("@alice","received invitation to join group team as moderator")]
+    cath @@@ [("#team","2"), ("@alice","received invitation to join group team as member")]
+
     alice #$> ("/_get chat #1 count=3", chat, [(0, "connected"), (1, "1"), (0, "2")])
     alice #$> ("/_get chat #1(_support:2) count=100", chat, [(1, "3"), (0, "4"), (0, "5")])
     bob #$> ("/_get chat #1 count=3", chat, [(0, "connected"), (0, "1"), (1, "2")])
