@@ -2163,6 +2163,10 @@
 
   <!-- MemberSupportChatView.kt -->
   <string name="support_chat">Support</string>
+  <string name="remove_pending_member_button">Remove</string>
+  <string name="accept_pending_member_button">Accept</string>
+  <string name="accept_pending_member_alert_title">Accept member</string>
+  <string name="accept_pending_member_alert_question">Member will join the group, accept member?</string>
 
   <!-- WhatsNewView.kt -->
   <string name="whats_new">What\'s new</string>
