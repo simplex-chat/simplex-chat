@@ -2796,6 +2796,16 @@ object ChatController {
           withContext(Dispatchers.Main) {
             chatModel.chatsContext.updateGroup(rhId, r.groupInfo)
           }
+          if (
+            chatModel.chatId.value == r.groupInfo.id
+            && ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)
+            && chatModel.secondaryChatsContext.value?.secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext
+          ) {
+            withContext(Dispatchers.Main) {
+              chatModel.secondaryChatsContext.value = null
+            }
+            ModalManager.end.closeModals()
+          }
         }
       is CR.JoinedGroupMember ->
         if (active(r.user)) {
