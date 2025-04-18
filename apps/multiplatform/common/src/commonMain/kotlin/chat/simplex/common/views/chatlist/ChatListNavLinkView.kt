@@ -194,10 +194,9 @@ suspend fun directChatAction(rhId: Long?, contact: Contact, chatModel: ChatModel
 }
 
 suspend fun groupChatAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, inProgress: MutableState<Boolean>? = null) {
-  val membership = groupInfo.membership
-  when {
-    membership.memberStatus == GroupMemberStatus.MemInvited -> acceptGroupInvitationAlertDialog(rhId, groupInfo, chatModel, inProgress)
-    membership.memberStatus == GroupMemberStatus.MemAccepted -> groupInvitationAcceptedAlert(rhId)
+  when (groupInfo.membership.memberStatus) {
+    GroupMemberStatus.MemInvited -> acceptGroupInvitationAlertDialog(rhId, groupInfo, chatModel, inProgress)
+    GroupMemberStatus.MemAccepted -> groupInvitationAcceptedAlert(rhId)
     else -> openGroupChat(rhId, groupInfo.groupId)
   }
 }
