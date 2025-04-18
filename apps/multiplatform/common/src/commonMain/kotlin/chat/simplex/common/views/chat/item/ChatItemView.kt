@@ -271,6 +271,7 @@ fun ChatItemView(
       }
     }
 
+    // improvement could be to track "forwarded from" scope and open it
     @Composable
     fun GoToItemButton(alignStart: Boolean, parentActivated: State<Boolean>) {
       val chatTypeApiIdMsgId = cItem.meta.itemForwarded?.chatTypeApiIdMsgId
@@ -1422,7 +1423,7 @@ fun PreviewChatItemView(
   chatItem: ChatItem = ChatItem.getSampleData(1, CIDirection.DirectSnd(), Clock.System.now(), "hello")
 ) {
   ChatItemView(
-    chatsCtx = ChatModel.ChatsContext(contentTag = null),
+    chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
     rhId = null,
     ChatInfo.Direct.sampleData,
     chatItem,
@@ -1472,7 +1473,7 @@ fun PreviewChatItemView(
 fun PreviewChatItemViewDeletedContent() {
   SimpleXTheme {
     ChatItemView(
-      chatsCtx = ChatModel.ChatsContext(contentTag = null),
+      chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
       rhId = null,
       ChatInfo.Direct.sampleData,
       ChatItem.getDeletedContentSampleData(),

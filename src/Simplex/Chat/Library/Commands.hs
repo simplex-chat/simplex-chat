@@ -1578,7 +1578,7 @@ processChatCommand' vr = \case
     case memberConnId m of
       Just connId -> do
         cStats@ConnectionStats {ratchetSyncState = rss} <- withAgent $ \a -> synchronizeRatchet a connId PQSupportOff force
-        (g', m', scopeInfo) <- liftIO $ mkGroupChatScope g m
+        (g', m', scopeInfo) <- mkGroupChatScope g m
         createInternalChatItem user (CDGroupSnd g' scopeInfo) (CISndConnEvent . SCERatchetSync rss . Just $ groupMemberRef m') Nothing
         pure $ CRGroupMemberRatchetSyncStarted user g' m' cStats
       _ -> throwChatError CEGroupMemberNotActive
@@ -2244,7 +2244,7 @@ processChatCommand' vr = \case
             pure m {memberStatus = GSMemRemoved}
       deletePendingMember :: ([ChatError], [GroupMember], [AChatItem]) -> User -> GroupInfo -> [GroupMember] -> GroupMember -> CM ([ChatError], [GroupMember], [AChatItem])
       deletePendingMember (accErrs, accDeleted, accACIs) user gInfo recipients m = do
-        (m', scopeInfo) <- liftIO $ mkMemberSupportChatInfo m
+        (m', scopeInfo) <- mkMemberSupportChatInfo m
         (errs, deleted, acis) <- deleteMemsSend user gInfo (Just scopeInfo) recipients [m']
         pure (errs <> accErrs, deleted <> accDeleted, acis <> accACIs)
       deleteMemsSend :: User -> GroupInfo -> Maybe GroupChatScopeInfo -> [GroupMember] -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem])
@@ -2280,7 +2280,7 @@ processChatCommand' vr = \case
       cancelFilesInProgress user filesInfo
       let recipients = filter memberCurrentOrPending members
       msg <- sendGroupMessage' user gInfo recipients XGrpLeave
-      (gInfo', scopeInfo) <- liftIO $ mkLocalGroupChatScope gInfo
+      (gInfo', scopeInfo) <- mkLocalGroupChatScope gInfo
       ci <- saveSndChatItem user (CDGroupSnd gInfo' scopeInfo) msg (CISndGroupEvent SGEUserLeft)
       toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo' scopeInfo) ci]
       -- TODO delete direct connections that were unused

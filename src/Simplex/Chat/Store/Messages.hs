@@ -37,6 +37,7 @@ module Simplex.Chat.Store.Messages
     deleteOldMessages,
     MemberAttention (..),
     updateChatTsStats,
+    setSupportChatTs,
     createNewSndChatItem,
     createNewRcvChatItem,
     createNewChatItemNoMsg,
@@ -419,6 +420,10 @@ updateChatTsStats db User {userId} chatDirection chatTs chatStats_ = case toChat
       (chatTs, userId, noteFolderId)
   _ -> pure ()
 
+setSupportChatTs :: DB.Connection -> GroupMemberId -> UTCTime -> IO ()
+setSupportChatTs db groupMemberId chatTs =
+  DB.execute db "UPDATE group_members SET support_chat_ts = ? WHERE group_member_id = ?" (chatTs, groupMemberId)
+
 createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> UTCTime -> IO ChatItemId
 createNewSndChatItem db user chatDirection SndMessage {msgId, sharedMsgId} ciContent quotedItem itemForwarded timed live createdAt =
   createNewChatItem_ db user chatDirection createdByMsgId (Just sharedMsgId) ciContent quoteRow itemForwarded timed live False createdAt Nothing createdAt
@@ -750,7 +755,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
           (
             SELECT chat_item_id
             FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.group_id = g.group_id
+            WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL
             ORDER BY ci.item_ts DESC
             LIMIT 1
           ) AS chat_item_id,
@@ -1812,14 +1817,22 @@ getLocalNavInfo_ db User {userId} NoteFolder {noteFolderId} afterCI = do
               :. (userId, noteFolderId, ciCreatedAt afterCI, cChatItemId afterCI)
           )
 
-toChatItemRef :: (ChatItemId, Maybe Int64, Maybe Int64, Maybe Int64) -> Either StoreError (ChatRef, ChatItemId)
+toChatItemRef ::
+  (ChatItemId, Maybe ContactId, Maybe GroupId, Maybe GroupChatScopeTag, Maybe GroupMemberId, Maybe NoteFolderId) ->
+  Either StoreError (ChatRef, ChatItemId)
 toChatItemRef = \case
-  (itemId, Just contactId, Nothing, Nothing) -> Right (ChatRef CTDirect contactId Nothing, itemId)
-  -- For "chat item refs" we don't care about scope, as they are only used for getting item by id (via getAChatItem).
-  -- To get the scope without joining group_members, we could additionally store group scope "tag" to differentiate member support chats.
-  (itemId, Nothing, Just groupId, Nothing) -> Right (ChatRef CTGroup groupId Nothing, itemId)
-  (itemId, Nothing, Nothing, Just folderId) -> Right (ChatRef CTLocal folderId Nothing, itemId)
-  (itemId, _, _, _) -> Left $ SEBadChatItem itemId Nothing
+  (itemId, Just contactId, Nothing, Nothing, Nothing, Nothing) ->
+    Right (ChatRef CTDirect contactId Nothing, itemId)
+  (itemId, Nothing, Just groupId, Nothing, Nothing, Nothing) ->
+    Right (ChatRef CTGroup groupId Nothing, itemId)
+  (itemId, Nothing, Just groupId, Just GCSTMemberSupport_, Nothing, Nothing) ->
+    Right (ChatRef CTGroup groupId (Just (GCSMemberSupport Nothing)), itemId)
+  (itemId, Nothing, Just groupId, Just GCSTMemberSupport_, Just scopeGMId, Nothing) ->
+    Right (ChatRef CTGroup groupId (Just (GCSMemberSupport $ Just scopeGMId)), itemId)
+  (itemId, Nothing, Nothing, Nothing, Nothing, Just folderId) ->
+    Right (ChatRef CTLocal folderId Nothing, itemId)
+  (itemId, _, _, _, _, _) ->
+    Left $ SEBadChatItem itemId Nothing
 
 updateDirectChatItemsRead :: DB.Connection -> User -> ContactId -> IO ()
 updateDirectChatItemsRead db User {userId} contactId = do
@@ -2170,7 +2183,7 @@ getAllChatItems db vr user@User {userId} pagination search_ = do
         <$> DB.query
           db
           [sql|
-            SELECT chat_item_id, contact_id, group_id, note_folder_id
+            SELECT chat_item_id, contact_id, group_id, group_scope_tag, group_scope_group_member_id, note_folder_id
             FROM chat_items
             WHERE user_id = ? AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'
             ORDER BY item_ts DESC, chat_item_id DESC
@@ -2181,7 +2194,7 @@ getAllChatItems db vr user@User {userId} pagination search_ = do
       DB.query
         db
         [sql|
-          SELECT chat_item_id, contact_id, group_id, note_folder_id
+          SELECT chat_item_id, contact_id, group_id, group_scope_tag, group_scope_group_member_id, note_folder_id
           FROM chat_items
           WHERE user_id = ? AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'
             AND (item_ts > ? OR (item_ts = ? AND chat_item_id > ?))
@@ -2194,7 +2207,7 @@ getAllChatItems db vr user@User {userId} pagination search_ = do
         <$> DB.query
           db
           [sql|
-            SELECT chat_item_id, contact_id, group_id, note_folder_id
+            SELECT chat_item_id, contact_id, group_id, group_scope_tag, group_scope_group_member_id, note_folder_id
             FROM chat_items
             WHERE user_id = ? AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'
               AND (item_ts < ? OR (item_ts = ? AND chat_item_id < ?))
@@ -2206,7 +2219,7 @@ getAllChatItems db vr user@User {userId} pagination search_ = do
       DB.query
         db
         [sql|
-          SELECT chat_item_id, contact_id, group_id, note_folder_id
+          SELECT chat_item_id, contact_id, group_id, group_scope_tag, group_scope_group_member_id, note_folder_id
           FROM chat_items
           WHERE chat_item_id = ?
         |]
@@ -2952,7 +2965,7 @@ getChatItemByFileId db vr user@User {userId} fileId = do
       DB.query
         db
         [sql|
-            SELECT i.chat_item_id, i.contact_id, i.group_id, i.note_folder_id
+            SELECT i.chat_item_id, i.contact_id, i.group_id, i.group_scope_tag, i.group_scope_group_member_id, i.note_folder_id
             FROM chat_items i
             JOIN files f ON f.chat_item_id = i.chat_item_id
             WHERE f.user_id = ? AND f.file_id = ?
@@ -2974,7 +2987,7 @@ getChatItemByGroupId db vr user@User {userId} groupId = do
       DB.query
         db
         [sql|
-          SELECT i.chat_item_id, i.contact_id, i.group_id, i.note_folder_id
+          SELECT i.chat_item_id, i.contact_id, i.group_id, i.group_scope_tag, i.group_scope_group_member_id, i.note_folder_id
           FROM chat_items i
           JOIN groups g ON g.chat_item_id = i.chat_item_id
           WHERE g.user_id = ? AND g.group_id = ?

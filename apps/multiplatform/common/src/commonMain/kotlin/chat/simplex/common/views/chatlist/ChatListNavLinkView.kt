@@ -615,7 +615,8 @@ fun markChatRead(c: Chat) {
       chatModel.controller.apiChatRead(
         chat.remoteHostId,
         chat.chatInfo.chatType,
-        chat.chatInfo.apiId
+        chat.chatInfo.apiId,
+        chat.chatInfo.groupChatScope()
       )
       chat = chatModel.getChat(chat.id) ?: return@withApi
     }
@@ -651,7 +652,7 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
     if (success) {
       withContext(Dispatchers.Main) {
         chatModel.chatsContext.replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
-        chatModel.chatsContext.updateChatTagReadNoContentTag(chat, wasUnread)
+        chatModel.chatsContext.updateChatTagReadInPrimaryContext(chat, wasUnread)
       }
     }
   }
@@ -886,7 +887,7 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       ChatInfo.Direct(contact.copy(chatSettings = chatSettings))
     }
     is ChatInfo.Group -> with(chatInfo) {
-      ChatInfo.Group(groupInfo.copy(chatSettings = chatSettings))
+      ChatInfo.Group(groupInfo.copy(chatSettings = chatSettings), groupChatScope = null)
     }
     else -> null
   }
@@ -914,7 +915,7 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       val updatedChat = chatModel.getChat(chatInfo.id)
       if (updatedChat != null) {
         withContext(Dispatchers.Main) {
-          chatModel.chatsContext.updateChatTagReadNoContentTag(updatedChat, wasUnread)
+          chatModel.chatsContext.updateChatTagReadInPrimaryContext(updatedChat, wasUnread)
         }
       }
       val current = currentState?.value
