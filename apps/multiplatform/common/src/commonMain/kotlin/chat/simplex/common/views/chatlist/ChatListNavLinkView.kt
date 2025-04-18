@@ -204,13 +204,11 @@ suspend fun groupChatAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
       // val memberSupportChatsCtx = ChatModel.ChatsContext(secondaryContextFilter = SecondaryContextFilter.GroupChatScopeContext(scopeInfo))
       // openChat(secondaryChatsCtx = memberSupportChatsCtx, rhId, ChatType.Group, groupInfo.groupId)
 
-      // TODO [knocking] should prohibit sending in main context when user is a pending member (same as when observer)
       openGroupChat(rhId, groupInfo.groupId)
       val scopeInfo = GroupChatScopeInfo.MemberSupport(groupMember_ = null)
       val supportChatInfo = ChatInfo.Group(groupInfo, groupChatScope = scopeInfo)
       // TODO [knocking] should auto-close secondary context view when user is accepted;
-      // TODO            dynamically receiving/updating items in this secondary context doesn't work;
-      // TODO            don't show back button
+      // TODO            dynamically receiving/updating items doesn't work on desktop when this context is opened from chat list;
       showMemberSupportChatView(
         chat.simplex.common.platform.chatModel.chatId,
         scrollToItemId = mutableStateOf(null),
