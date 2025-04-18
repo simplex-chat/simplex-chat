@@ -207,8 +207,7 @@ suspend fun groupChatAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
       openGroupChat(rhId, groupInfo.groupId)
       val scopeInfo = GroupChatScopeInfo.MemberSupport(groupMember_ = null)
       val supportChatInfo = ChatInfo.Group(groupInfo, groupChatScope = scopeInfo)
-      // TODO [knocking] should auto-close secondary context view when user is accepted;
-      // TODO            dynamically receiving/updating items doesn't work on desktop when this context is opened from chat list;
+      // TODO [knocking] dynamically receiving/updating items doesn't work on desktop when this context is opened from chat list;
       showMemberSupportChatView(
         chat.simplex.common.platform.chatModel.chatId,
         scrollToItemId = mutableStateOf(null),
