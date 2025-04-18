@@ -339,6 +339,30 @@ fun AddGroupMembersButton(
 }
 
 @Composable
+fun UserSupportChatButton(groupInfo: GroupInfo) {
+  val scope = rememberCoroutineScope()
+  val scrollToItemId: MutableState<Long?> = remember { mutableStateOf(null) }
+
+  SettingsActionItem(
+    painterResource(MR.images.ic_flag),
+    stringResource(MR.strings.button_support_chat),
+    click = {
+      val scopeInfo = GroupChatScopeInfo.MemberSupport(groupMember_ = null)
+      val supportChatInfo = ChatInfo.Group(groupInfo, groupChatScope = scopeInfo)
+      scope.launch {
+        showMemberSupportChatView(
+          chatModel.chatId,
+          scrollToItemId = scrollToItemId,
+          supportChatInfo,
+          scopeInfo
+        )
+      }
+    },
+    iconColor = MaterialTheme.colors.secondary,
+  )
+}
+
+@Composable
 fun ModalData.GroupChatInfoLayout(
   chat: Chat,
   groupInfo: GroupInfo,
@@ -451,6 +475,9 @@ fun ModalData.GroupChatInfoLayout(
         }
         if (groupInfo.groupProfile.description != null || (groupInfo.isOwner && groupInfo.businessChat?.chatType == null)) {
           AddOrEditWelcomeMessage(groupInfo.groupProfile.description, addOrEditWelcomeMessage)
+        }
+        if (groupInfo.membership.supportChat != null) {
+          UserSupportChatButton(groupInfo)
         }
         if (groupInfo.businessChat == null) {
           MemberAdmissionButton(openMemberAdmission)
