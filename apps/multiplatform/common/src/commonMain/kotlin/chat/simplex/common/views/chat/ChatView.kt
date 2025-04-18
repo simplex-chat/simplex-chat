@@ -119,6 +119,18 @@ fun ChatView(
           }
       }
     }
+    if (chatsCtx.secondaryContextFilter == null && chatInfo is ChatInfo.Group && chatInfo.groupInfo.membership.memberPending) {
+      LaunchedEffect(Unit) {
+        val scopeInfo = GroupChatScopeInfo.MemberSupport(groupMember_ = null)
+        val supportChatInfo = ChatInfo.Group(chatInfo.groupInfo, groupChatScope = scopeInfo)
+        showMemberSupportChatView(
+          chatModel.chatId,
+          scrollToItemId = mutableStateOf(null),
+          supportChatInfo,
+          scopeInfo
+        )
+      }
+    }
     val view = LocalMultiplatformView()
     val chatRh = remoteHostId.value
     // We need to have real unreadCount value for displaying it inside top right button

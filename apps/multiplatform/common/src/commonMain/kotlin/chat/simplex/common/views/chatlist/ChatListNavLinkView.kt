@@ -198,23 +198,6 @@ suspend fun groupChatAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
   when {
     membership.memberStatus == GroupMemberStatus.MemInvited -> acceptGroupInvitationAlertDialog(rhId, groupInfo, chatModel, inProgress)
     membership.memberStatus == GroupMemberStatus.MemAccepted -> groupInvitationAcceptedAlert(rhId)
-    membership.memberPending -> {
-      // TODO [knocking] hard to make it work in center view
-      // val scopeInfo = GroupChatScopeInfo.MemberSupport(groupMember_ = null)
-      // val memberSupportChatsCtx = ChatModel.ChatsContext(secondaryContextFilter = SecondaryContextFilter.GroupChatScopeContext(scopeInfo))
-      // openChat(secondaryChatsCtx = memberSupportChatsCtx, rhId, ChatType.Group, groupInfo.groupId)
-
-      openGroupChat(rhId, groupInfo.groupId)
-      val scopeInfo = GroupChatScopeInfo.MemberSupport(groupMember_ = null)
-      val supportChatInfo = ChatInfo.Group(groupInfo, groupChatScope = scopeInfo)
-      // TODO [knocking] dynamically receiving/updating items doesn't work on desktop when this context is opened from chat list;
-      showMemberSupportChatView(
-        chat.simplex.common.platform.chatModel.chatId,
-        scrollToItemId = mutableStateOf(null),
-        supportChatInfo,
-        scopeInfo
-      )
-    }
     else -> openGroupChat(rhId, groupInfo.groupId)
   }
 }
