@@ -462,7 +462,7 @@ SEARCH uc USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local
 SEARCH c USING INDEX idx_connections_user_contact_link_id (user_contact_link_id=?)
 
 Query: 
-            SELECT chat_item_id, contact_id, group_id, note_folder_id
+            SELECT chat_item_id, contact_id, group_id, group_scope_tag, group_scope_group_member_id, note_folder_id
             FROM chat_items
             WHERE user_id = ? AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'
               AND (item_ts < ? OR (item_ts = ? AND chat_item_id < ?))
@@ -474,7 +474,7 @@ SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_ts (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
-            SELECT chat_item_id, contact_id, group_id, note_folder_id
+            SELECT chat_item_id, contact_id, group_id, group_scope_tag, group_scope_group_member_id, note_folder_id
             FROM chat_items
             WHERE user_id = ? AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'
             ORDER BY item_ts DESC, chat_item_id DESC
@@ -578,7 +578,7 @@ SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH i USING COVERING INDEX idx_chat_items_group_shared_msg_id (user_id=? AND group_id=? AND group_member_id=? AND shared_msg_id=?) LEFT-JOIN
 
 Query: 
-            SELECT i.chat_item_id, i.contact_id, i.group_id, i.note_folder_id
+            SELECT i.chat_item_id, i.contact_id, i.group_id, i.group_scope_tag, i.group_scope_group_member_id, i.note_folder_id
             FROM chat_items i
             JOIN files f ON f.chat_item_id = i.chat_item_id
             WHERE f.user_id = ? AND f.file_id = ?
@@ -1014,7 +1014,7 @@ Plan:
 SEARCH chat_items USING INDEX idx_chat_items_group_id (group_id=?)
 
 Query: 
-          SELECT chat_item_id, contact_id, group_id, note_folder_id
+          SELECT chat_item_id, contact_id, group_id, group_scope_tag, group_scope_group_member_id, note_folder_id
           FROM chat_items
           WHERE chat_item_id = ?
         
@@ -1022,7 +1022,7 @@ Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-          SELECT chat_item_id, contact_id, group_id, note_folder_id
+          SELECT chat_item_id, contact_id, group_id, group_scope_tag, group_scope_group_member_id, note_folder_id
           FROM chat_items
           WHERE user_id = ? AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'
             AND (item_ts > ? OR (item_ts = ? AND chat_item_id > ?))
@@ -1179,7 +1179,7 @@ SEARCH i USING INDEX idx_chat_items_group_id (group_id=?)
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-          SELECT i.chat_item_id, i.contact_id, i.group_id, i.note_folder_id
+          SELECT i.chat_item_id, i.contact_id, i.group_id, i.group_scope_tag, i.group_scope_group_member_id, i.note_folder_id
           FROM chat_items i
           JOIN groups g ON g.chat_item_id = i.chat_item_id
           WHERE g.user_id = ? AND g.group_id = ?
