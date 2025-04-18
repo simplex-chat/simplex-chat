@@ -1518,10 +1518,18 @@ sealed class ChatInfo: SomeChat, NamedChat {
   val userCanSend: Boolean
     get() = when (this) {
       is ChatInfo.Direct -> true
-      is ChatInfo.Group -> groupInfo.membership.memberRole >= GroupMemberRole.Member
+      is ChatInfo.Group -> groupInfo.membership.memberRole >= GroupMemberRole.Member && !userIsPendingInMainScope
       is ChatInfo.Local -> true
       else -> false
     }
+
+  val userIsPendingInMainScope: Boolean get() = when(this) {
+    is ChatInfo.Group -> {
+      val m = groupInfo.membership
+      m.memberPending && groupChatScope == null
+    }
+    else -> false
+  }
 
   val chatTags: List<Long>?
     get() = when (this) {

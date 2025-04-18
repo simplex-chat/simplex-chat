@@ -1009,6 +1009,7 @@ fun ComposeView(
   val userCanSend = rememberUpdatedState(chat.chatInfo.userCanSend)
   val sendMsgEnabled = rememberUpdatedState(chat.chatInfo.sendMsgEnabled)
   val userIsObserver = rememberUpdatedState(chat.userIsObserver)
+  val userIsPendingInMainScope = rememberUpdatedState(chat.chatInfo.userIsPendingInMainScope)
   val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
 
   Column {
@@ -1187,6 +1188,7 @@ fun ComposeView(
           allowedVoiceByPrefs,
           allowVoiceToContact = ::allowVoiceToContact,
           userIsObserver = userIsObserver.value,
+          userIsPendingInMainScope = userIsPendingInMainScope.value,
           userCanSend = userCanSend.value,
           sendButtonColor = sendButtonColor,
           timedMessageAllowed = timedMessageAllowed,
