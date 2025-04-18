@@ -94,56 +94,50 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-# =============================
-#     Prepare Linux matrix
-# =============================
-
-# E.g. for exluding 8.10.7 on stable or releases
-# Unfortunately, that is the only way, see: https://github.com/actions/runner/issues/1985
-
-  linux_prep:
-    runs-on: ubuntu-latest
-    needs: variables
-    outputs:
-      jobs: ${{ steps.include-jobs.outputs.jobs }}
-    steps:
-      - id: include-jobs
-        run: |
-          includeJobs='
-            ${{ !(github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) && '{"os": "22.04", "ghc": "8.10.7" },' || '' }}
-            {"os": "22.04", "ghc": "${{ needs.variables.outputs.GHC_VER }}", "cli_asset_name": "simplex-chat-ubuntu-22_04-x86-64", "desktop_asset_name": "simplex-desktop-ubuntu-22_04-x86_64.deb"},
-            {"os": "24.04", "ghc": "${{ needs.variables.outputs.GHC_VER }}", "cli_asset_name": "simplex-chat-ubuntu-24_04-x86-64", "desktop_asset_name": "simplex-desktop-ubuntu-24_04-x86_64.deb"}
-          '
-          printf 'jobs=[%s]' "$includeJobs" | tr -d '[:space:]' >> $GITHUB_OUTPUT
-
 # =========================
 #        Linux Build
 # =========================
 
   build-linux:
     name: "ubuntu-${{ matrix.os }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
-    needs: [maybe-release, linux_prep]
+    needs: [maybe-release, variables]
     runs-on: ubuntu-${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(needs.linux_prep.outputs.jobs) }}
+        include:
+          - os: 22.04
+            ghc: "8.10.7"
+            should_run: ${{ !(github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }}
+          - os: 22.04
+            ghc: ${{ needs.variables.outputs.GHC_VER }}
+            cli_asset_name: simplex-chat-ubuntu-22_04-x86-64
+            desktop_asset_name: simplex-desktop-ubuntu-22_04-x86_64.deb
+            should_run: true
+          - os: 24.04
+            ghc: ${{ needs.variables.outputs.GHC_VER }}
+            cli_asset_name: simplex-chat-ubuntu-24_04-x86-64
+            desktop_asset_name: simplex-desktop-ubuntu-24_04-x86_64.deb
+            should_run: true
     steps:
       - name: Checkout Code
+        if: matrix.should_run == true
         uses: actions/checkout@v3
 
       - name: Setup swap
-        if: matrix.ghc == '8.10.7'
+        if: matrix.ghc == '8.10.7' && matrix.should_run == true
         uses: ./.github/actions/swap
         with:
           swap-size-gb: 30
 
       # Otherwise we run out of disk space with Docker build
       - name: Free disk space
+        if: matrix.should_run == true
         shell: bash
         run: ./scripts/ci/linux_util_free_space.sh
 
       - name: Restore cached build
+        if: matrix.should_run == true
         uses: actions/cache@v4
         with:
           path: |
@@ -152,9 +146,11 @@ jobs:
           key: ubuntu-${{ matrix.os }}-ghc${{ matrix.ghc }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}
 
       - name: Set up Docker Buildx
+        if: matrix.should_run == true
         uses: simplex-chat/docker-setup-buildx-action@v3
 
       - name: Build and cache Docker image
+        if: matrix.should_run == true
         uses: simplex-chat/docker-build-push-action@v6
         with:
           context: .
@@ -170,6 +166,7 @@ jobs:
       # --cap-add SYS_ADMIN
       # --security-opt apparmor:unconfined
       - name: Start container
+        if: matrix.should_run == true
         shell: bash
         run: |
           docker run -t -d \
@@ -183,6 +180,7 @@ jobs:
             build/${{ matrix.os }}:latest
 
       - name: Prepare cabal.project.local
+        if: matrix.should_run == true
         shell: bash
         run: |
           echo "ignore-project: False"    >> cabal.project.local
@@ -191,6 +189,7 @@ jobs:
 
       # chmod/git commands are used to workaround permission issues when cache is restored
       - name: Build CLI
+        if: matrix.should_run == true
         shell: docker exec -t builder sh -eu {0}
         run: |
           chmod -R 777 dist-newstyle ~/.cabal && git config --global --add safe.directory '*'
@@ -206,13 +205,14 @@ jobs:
           strip /out/simplex-chat
 
       - name: Copy tests from container
+        if: matrix.should_run == true
         shell: bash
         run: |
           docker cp builder:/out/simplex-chat-test .
 
       - name: Copy CLI from container and prepare it
         id: linux_cli_prepare
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
         shell: bash
         run: |
           docker cp builder:/out/simplex-chat ./${{ matrix.cli_asset_name }}
@@ -221,7 +221,7 @@ jobs:
           echo "bin_hash=$(echo SHA2-256\(${{ matrix.cli_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload CLI
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
         uses: ./.github/actions/prepare-release
         with:
           bin_path: ${{ steps.linux_cli_prepare.outputs.bin_path }}
@@ -231,7 +231,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Desktop
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
         shell: docker exec -t builder sh -eu {0}
         run: |
           scripts/desktop/build-lib-linux.sh
@@ -240,7 +240,7 @@ jobs:
 
       - name: Prepare Desktop
         id: linux_desktop_build
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
         shell: bash
         run: |
           path=$(echo ${{ github.workspace }}/apps/multiplatform/release/main/deb/simplex_*_amd64.deb )
@@ -249,7 +249,7 @@ jobs:
 
       - name: Upload Desktop
         uses: ./.github/actions/prepare-release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
         with:
           bin_path: ${{ steps.linux_desktop_build.outputs.package_path }}
           bin_name: ${{ matrix.desktop_asset_name }}
@@ -258,14 +258,14 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build AppImage
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == '22.04'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == '22.04' && matrix.should_run == true
         shell: docker exec -t builder sh -eu {0}
         run: |
           scripts/desktop/make-appimage-linux.sh
 
       - name: Prepare AppImage
         id: linux_appimage_build
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == '22.04'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == '22.04' && matrix.should_run == true
         shell: bash
         run: |
           path=$(echo ${{ github.workspace }}/apps/multiplatform/release/main/*imple*.AppImage)
@@ -273,7 +273,7 @@ jobs:
           echo "appimage_hash=$(echo SHA2-256\(simplex-desktop-x86_64.AppImage\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload AppImage
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == '22.04'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == '22.04' && matrix.should_run == true
         uses: ./.github/actions/prepare-release
         with:
           bin_path: ${{ steps.linux_appimage_build.outputs.appimage_path }}
@@ -283,12 +283,14 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Fix permissions for cache
+        if: matrix.should_run == true
         shell: bash
         run: |
           sudo chmod -R 777 dist-newstyle ~/.cabal
           sudo chown -R $(id -u):$(id -g) dist-newstyle ~/.cabal
 
       - name: Run tests
+        if: matrix.should_run == true
         shell: bash
         run: |
           i=1
