@@ -479,6 +479,9 @@ fun ModalData.GroupChatInfoLayout(
         if (groupInfo.membership.supportChat != null) {
           UserSupportChatButton(groupInfo)
         }
+        if (groupInfo.businessChat == null && groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
+          MemberSupportButton(openMemberSupport)
+        }
         if (groupInfo.businessChat == null) {
           MemberAdmissionButton(openMemberAdmission)
         }
@@ -515,9 +518,6 @@ fun ModalData.GroupChatInfoLayout(
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = true)
 
       SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), activeSortedMembers.count() + 1)) {
-        if (groupInfo.businessChat == null && groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
-          MemberSupportButton(openMemberSupport)
-        }
         if (groupInfo.canAddMembers) {
           if (groupInfo.businessChat == null) {
             if (groupLink == null) {
