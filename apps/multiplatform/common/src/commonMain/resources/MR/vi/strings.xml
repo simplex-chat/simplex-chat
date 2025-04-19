@@ -828,7 +828,7 @@
     <string name="wallpaper_preview_hello_alice">Chào buổi chiều!</string>
     <string name="v4_4_french_interface">Giao diện tiếng Pháp</string>
     <string name="found_desktop">Đã tìm thấy máy tính</string>
-    <string name="simplex_link_mode_full">Đầy đủ đường dẫn</string>
+    <string name="simplex_link_mode_full">Toàn bộ đường dẫn</string>
     <string name="from_gallery_button">Từ Thư viện</string>
     <string name="full_name__field">Tên đầy đủ:</string>
     <string name="group_is_decentralized">Tuyệt đối phi tập trung - chỉ hiển thị cho thành viên.</string>
@@ -2352,4 +2352,10 @@
     <string name="onboarding_conditions_private_chats_not_accessible">Các cuộc trò chuyện riêng tư, nhóm và liên hệ của bạn không thể truy cập được đối với các bên vận hành máy chủ.</string>
     <string name="onboarding_conditions_accept">Chấp nhận</string>
     <string name="onboarding_conditions_configure_server_operators">Định cấu hình các bên vận hành máy chủ</string>
+    <string name="link_requires_newer_app_version_please_upgrade">Đường dẫn này yêu cầu một phiên bản ứng dụng mới hơn. Vui lòng nâng cấp ứng dụng hoặc yêu cầu liên hệ của một gửi cho một đường dẫn tương thích.</string>
+    <string name="simplex_link_channel">Đường dẫn kênh SimpleX</string>
+    <string name="unsupported_connection_link">Đường dẫn kết nối không được hỗ trợ</string>
+    <string name="privacy_short_links">Sử dụng đường dẫn ngắn (BETA)</string>
+    <string name="full_link_button_text">Toàn bộ đường dẫn</string>
+    <string name="short_link_button_text">Đường dẫn ngắn</string>
 </resources>
