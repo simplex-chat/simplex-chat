@@ -24,13 +24,13 @@ cleanup() {
 }
 trap 'cleanup' EXIT INT
 
-mkdir -p "$init_dir/$TAG/from-source" "$init_dir/$TAG/prebuilt"
+mkdir -p "$init_dir/$TAG-$repo_name/from-source" "$init_dir/$TAG-$repo_name/prebuilt"
 
 git -C "$tempdir" clone "$repo.git" &&\
 	cd "$tempdir/${repo_name}" &&\
 	git checkout "$TAG"
 
-for os in 20.04 22.04; do
+for os in 22.04 24.04; do
 	os_url="$(printf '%s' "$os" | tr '.' '_')"
 
 	# Build image
@@ -57,11 +57,11 @@ for os in 20.04 22.04; do
 
 	docker cp \
 		builder:/out/simplex-chat \
-		"$init_dir/$TAG/from-source/simplex-chat-ubuntu-${os_url}-x86-64"
+		"$init_dir/$TAG-$repo_name/from-source/simplex-chat-ubuntu-${os_url}-x86-64"
 
 	# Download prebuilt postgresql binary
 	curl -L \
-		--output-dir "$init_dir/$TAG/prebuilt/" \
+		--output-dir "$init_dir/$TAG-$repo_name/prebuilt/" \
 		-O \
 		"$repo/releases/download/${TAG}/simplex-chat-ubuntu-${os_url}-x86-64"
 	
@@ -87,7 +87,7 @@ cd "$init_dir"
 # Final stage: compare hashes
 
 # Path to binaries
-path_bin="$init_dir/$TAG"
+path_bin="$init_dir/$TAG-$repo_name"
 
 # Assume everything is okay for now
 bad=0
@@ -114,7 +114,7 @@ done
 
 # If everything is still okay, compute checksums file
 if [ "$bad" = 0 ]; then
-	sha256sum "$path_bin"/from-source/* | sed -e "s|$PWD/||g" -e 's|from-source/||g' > "$path_bin/_sha256sums"
+	sha256sum "$path_bin"/from-source/* | sed -e "s|$PWD/||g" -e 's|from-source/||g' -e "s|-$repo_name||g" > "$path_bin/_sha256sums"
 
 	printf 'Checksums computed - %s\n' "$path_bin/_sha256sums"
 fi

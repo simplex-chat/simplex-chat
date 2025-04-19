@@ -19,7 +19,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Linux upload AppImage to release
+    - name: Upload file with specific name
       if: startsWith(inputs.github_ref, 'refs/tags/v')
       uses: simplex-chat/upload-release-action@v2
       with:
@@ -28,7 +28,7 @@ runs:
         asset_name: ${{ inputs.bin_name }}
         tag: ${{ inputs.github_ref }}
 
-    - name: Linux update AppImage hash
+    - name: Add hash to release notes
       if: startsWith(inputs.github_ref, 'refs/tags/v')
       uses: simplex-chat/action-gh-release@v2
       env:

@@ -24,11 +24,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Skip unreliable ghc 8.10.7 build on stable branch
-      shell: bash
-      if: inputs.ghc_ver == '8.10.7' && inputs.github_ref == 'refs/heads/stable'
-      run: exit 0
-
     - name: Setup Haskell
       uses: simplex-chat/setup-haskell-action@v2
       with:
