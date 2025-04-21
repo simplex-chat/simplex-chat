@@ -2378,4 +2378,10 @@
     <string name="onboarding_conditions_by_using_you_agree">Використовуючи SimpleX Chat, ви погоджуєтесь на:\n- надсилати тільки легальний контент у публічних групах.\n- поважати інших користувачів – без спаму.</string>
     <string name="onboarding_conditions_configure_server_operators">Налаштувати операторів сервера</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Політика конфіденційності та умови використання</string>
+    <string name="privacy_short_links">Використовувати короткі посилання (BETA)</string>
+    <string name="link_requires_newer_app_version_please_upgrade">Це посилання вимагає новішої версії додатку. Будь ласка, оновіть додаток або попросіть вашого контакту надіслати сумісне посилання.</string>
+    <string name="full_link_button_text">Повне посилання</string>
+    <string name="short_link_button_text">Коротке посилання</string>
+    <string name="simplex_link_channel">Посилання на канал SimpleX</string>
+    <string name="unsupported_connection_link">Несумісне посилання для підключення</string>
 </resources>
