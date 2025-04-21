@@ -333,7 +333,9 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
 
 @Composable
 fun ComposeView(
+  rhId: Long?,
   chatModel: ChatModel,
+  chatsCtx: ChatModel.ChatsContext,
   chat: Chat,
   composeState: MutableState<ComposeState>,
   attachmentOption: MutableState<AttachmentOption?>,
@@ -466,6 +468,7 @@ fun ComposeView(
         rh = chat.remoteHostId,
         type = cInfo.chatType,
         id = cInfo.apiId,
+        scope = cInfo.groupChatScope(),
         live = live,
         ttl = ttl,
         composedMessages = listOf(ComposedMessage(file, quoted, mc, mentions))
@@ -473,7 +476,7 @@ fun ComposeView(
     if (!chatItems.isNullOrEmpty()) {
       chatItems.forEach { aChatItem ->
         withContext(Dispatchers.Main) {
-          chatModel.chatsContext.addChatItem(chat.remoteHostId, cInfo, aChatItem.chatItem)
+          chatsCtx.addChatItem(chat.remoteHostId, cInfo, aChatItem.chatItem)
         }
       }
       return chatItems.first().chatItem
@@ -498,15 +501,17 @@ fun ComposeView(
         rh = rhId,
         toChatType = chat.chatInfo.chatType,
         toChatId = chat.chatInfo.apiId,
+        toScope = chat.chatInfo.groupChatScope(),
         fromChatType = fromChatInfo.chatType,
         fromChatId = fromChatInfo.apiId,
+        fromScope = fromChatInfo.groupChatScope(),
         itemIds = forwardedItem.map { it.id },
         ttl = ttl
       )
 
       withContext(Dispatchers.Main) {
         chatItems?.forEach { chatItem ->
-          chatModel.chatsContext.addChatItem(rhId, chat.chatInfo, chatItem)
+          chatsCtx.addChatItem(rhId, chat.chatInfo, chatItem)
         }
       }
 
@@ -566,9 +571,10 @@ fun ComposeView(
     suspend fun sendReport(reportReason: ReportReason, chatItemId: Long): List<ChatItem>? {
       val cItems = chatModel.controller.apiReportMessage(chat.remoteHostId, chat.chatInfo.apiId, chatItemId, reportReason, msgText)
       if (cItems != null) {
+        // TODO [knocking] create report chat items in support scope
         withContext(Dispatchers.Main) {
           cItems.forEach { chatItem ->
-            chatModel.chatsContext.addChatItem(chat.remoteHostId, chat.chatInfo, chatItem.chatItem)
+            chatsCtx.addChatItem(chat.remoteHostId, chat.chatInfo, chatItem.chatItem)
           }
         }
       }
@@ -581,7 +587,7 @@ fun ComposeView(
       val contact = chatModel.controller.apiSendMemberContactInvitation(chat.remoteHostId, chat.chatInfo.apiId, mc)
       if (contact != null) {
         withContext(Dispatchers.Main) {
-          chatModel.chatsContext.updateContact(chat.remoteHostId, contact)
+          chatsCtx.updateContact(chat.remoteHostId, contact)
         }
       }
     }
@@ -594,13 +600,14 @@ fun ComposeView(
           rh = chat.remoteHostId,
           type = cInfo.chatType,
           id = cInfo.apiId,
+          scope = cInfo.groupChatScope(),
           itemId = ei.meta.itemId,
           updatedMessage = UpdatedMessage(updateMsgContent(oldMsgContent), cs.memberMentions),
           live = live
         )
         if (updatedItem != null) {
           withContext(Dispatchers.Main) {
-            chatModel.chatsContext.upsertChatItem(chat.remoteHostId, cInfo, updatedItem.chatItem)
+            chatsCtx.upsertChatItem(chat.remoteHostId, cInfo, updatedItem.chatItem)
           }
         }
         return updatedItem?.chatItem
@@ -891,7 +898,7 @@ fun ComposeView(
 
   fun editPrevMessage() {
     if (composeState.value.contextItem != ComposeContextItem.NoContextItem || composeState.value.preview != ComposePreview.NoPreview) return
-    val lastEditable = chatModel.chatsContext.chatItems.value.findLast { it.meta.editable }
+    val lastEditable = chatsCtx.chatItems.value.findLast { it.meta.editable }
     if (lastEditable != null) {
       composeState.value = ComposeState(editingItem = lastEditable, useLinkPreviews = useLinkPreviews)
     }
@@ -1002,9 +1009,25 @@ fun ComposeView(
   val userCanSend = rememberUpdatedState(chat.chatInfo.userCanSend)
   val sendMsgEnabled = rememberUpdatedState(chat.chatInfo.sendMsgEnabled)
   val userIsObserver = rememberUpdatedState(chat.userIsObserver)
+  val userIsPending = rememberUpdatedState(chat.userIsPending)
   val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
 
   Column {
+    if (
+      chat.chatInfo is ChatInfo.Group
+      && chatsCtx.secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext
+      && chatsCtx.secondaryContextFilter.groupScopeInfo is GroupChatScopeInfo.MemberSupport
+      && chatsCtx.secondaryContextFilter.groupScopeInfo.groupMember_ != null
+      && chatsCtx.secondaryContextFilter.groupScopeInfo.groupMember_.memberPending
+      && composeState.value.contextItem == ComposeContextItem.NoContextItem
+      && composeState.value.preview == ComposePreview.NoPreview
+    ) {
+      ComposeContextPendingMemberActionsView(
+        rhId = rhId,
+        groupInfo = chat.chatInfo.groupInfo,
+        member = chatsCtx.secondaryContextFilter.groupScopeInfo.groupMember_
+      )
+    }
     if (nextSendGrpInv.value) {
       ComposeContextInvitingContactMemberView()
     }
@@ -1164,7 +1187,8 @@ fun ComposeView(
           needToAllowVoiceToContact,
           allowedVoiceByPrefs,
           allowVoiceToContact = ::allowVoiceToContact,
-          userIsObserver = userIsObserver.value,
+          userIsObserver = if (chatsCtx.secondaryContextFilter == null) userIsObserver.value else false,
+          userIsPending = if (chatsCtx.secondaryContextFilter == null) userIsPending.value else false,
           userCanSend = userCanSend.value,
           sendButtonColor = sendButtonColor,
           timedMessageAllowed = timedMessageAllowed,

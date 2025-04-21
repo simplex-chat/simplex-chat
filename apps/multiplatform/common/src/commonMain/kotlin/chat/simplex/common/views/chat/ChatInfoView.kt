@@ -40,9 +40,8 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.chat.group.ChatTTLSection
+import chat.simplex.common.views.chat.group.ChatTTLOption
 import chat.simplex.common.views.chatlist.updateChatSettings
-import chat.simplex.common.views.database.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
@@ -617,7 +616,10 @@ fun ChatInfoLayout(
     }
     SectionDividerSpaced(maxBottomPadding = false)
 
-    ChatTTLSection(chatItemTTL, setChatItemTTL, deletingItems)
+    SectionView {
+      ChatTTLOption(chatItemTTL, setChatItemTTL, deletingItems)
+      SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
+    }
     SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
 
     val conn = contact.activeConn
@@ -1384,7 +1386,7 @@ private fun setChatTTL(
 private suspend fun afterSetChatTTL(chatsCtx: ChatModel.ChatsContext, rhId: Long?, chatInfo: ChatInfo, progressIndicator: MutableState<Boolean>) {
   try {
     val pagination = ChatPagination.Initial(ChatPagination.INITIAL_COUNT)
-    val (chat, navInfo) = controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, null, pagination) ?: return
+    val (chat, navInfo) = controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, scope = null, contentTag = null, pagination) ?: return
     if (chat.chatItems.isEmpty()) {
       // replacing old chat with the same old chat but without items. Less intrusive way of clearing a preview
       withContext(Dispatchers.Main) {

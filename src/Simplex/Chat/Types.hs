@@ -1858,7 +1858,7 @@ $(JQ.deriveJSON defaultJSON ''LocalProfile)
 
 $(JQ.deriveJSON defaultJSON ''UserContactRequest)
 
-$(JQ.deriveJSON (enumJSON $ dropPrefix "MC") ''MemberCriteria)
+$(JQ.deriveJSON (enumJSON $ dropPrefix "MC") {J.tagSingleConstructors = True} ''MemberCriteria)
 
 $(JQ.deriveJSON defaultJSON ''GroupMemberAdmission)
 
