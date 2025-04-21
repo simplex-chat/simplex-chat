@@ -78,6 +78,8 @@ fun ModalData.GroupChatInfoView(
       .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
       .sortedByDescending { it.memberRole }
 
+    Log.e(TAG, "######### GroupChatInfoView chatModel.groupMembers length = ${chatModel.groupMembers.value.count()}")
+
     GroupChatInfoLayout(
       chat,
       groupInfo,
@@ -146,7 +148,6 @@ fun ModalData.GroupChatInfoView(
           MemberSupportView(
             chat,
             groupInfo,
-            activeSortedMembers,
             close
           )
         }

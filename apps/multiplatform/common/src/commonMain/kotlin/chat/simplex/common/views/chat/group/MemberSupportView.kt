@@ -21,8 +21,7 @@ import androidx.compose.ui.unit.sp
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.LazyColumnWithScrollBar
-import chat.simplex.common.platform.chatModel
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.item.ItemAction
@@ -36,7 +35,6 @@ import kotlinx.coroutines.launch
 fun ModalData.MemberSupportView(
   chat: Chat,
   groupInfo: GroupInfo,
-  activeSortedMembers: List<GroupMember>,
   close: () -> Unit
 ) {
   KeyChangeEffect(chat.id) {
@@ -45,8 +43,7 @@ fun ModalData.MemberSupportView(
   ModalView(close = close) {
     MemberSupportViewLayout(
       chat,
-      groupInfo,
-      activeSortedMembers,
+      groupInfo
     )
   }
 }
@@ -54,14 +51,14 @@ fun ModalData.MemberSupportView(
 @Composable
 private fun ModalData.MemberSupportViewLayout(
   chat: Chat,
-  groupInfo: GroupInfo,
-  activeSortedMembers: List<GroupMember>
+  groupInfo: GroupInfo
 ) {
   val oneHandUI = remember { ChatController.appPrefs.oneHandUI.state }
   val scope = rememberCoroutineScope()
   val scrollToItemId: MutableState<Long?> = remember { mutableStateOf(null) } // TODO [knocking] scroll to report from support chat?
-  val membersSupportChats = activeSortedMembers
-    .filter { it.supportChat != null }
+
+  val membersWithChats = remember { chatModel.groupMembers }.value
+    .filter { it.supportChat != null && it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
     .sortedWith(
       compareByDescending<GroupMember> { it.memberPending }
         .thenByDescending { (it.supportChat?.mentions ?: 0) > 0 }
@@ -69,12 +66,12 @@ private fun ModalData.MemberSupportViewLayout(
         .thenByDescending { (it.supportChat?.unread ?: 0) > 0 }
         .thenByDescending { it.supportChat?.chatTs }
     )
+
   val searchText = remember { stateGetOrPut("searchText") { TextFieldValue() } }
-  // TODO [knocking] sort members in order pending > unanswered > unread > other
-  val filteredMembers = remember(membersSupportChats) {
+  val filteredmembersWithChats = remember(membersWithChats) {
     derivedStateOf {
       val s = searchText.value.text.trim().lowercase()
-      if (s.isEmpty()) membersSupportChats else membersSupportChats.filter { m -> m.anyNameContains(s) }
+      if (s.isEmpty()) membersWithChats else membersWithChats.filter { m -> m.anyNameContains(s) }
     }
   }
 
@@ -88,7 +85,7 @@ private fun ModalData.MemberSupportViewLayout(
       AppBarTitle(stringResource(MR.strings.member_support))
     }
 
-    if (membersSupportChats.isEmpty()) {
+    if (membersWithChats.isEmpty()) {
       item {
         Box(Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
           Text(generalGetString(MR.strings.no_support_chats), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
@@ -100,7 +97,7 @@ private fun ModalData.MemberSupportViewLayout(
           MemberListSearchRowView(searchText)
         }
       }
-      items(filteredMembers.value, key = { it.groupMemberId }) { member ->
+      items(filteredmembersWithChats.value, key = { it.groupMemberId }) { member ->
         Divider()
         val showMenu = remember { mutableStateOf(false) }
         SectionItemViewLongClickable(
