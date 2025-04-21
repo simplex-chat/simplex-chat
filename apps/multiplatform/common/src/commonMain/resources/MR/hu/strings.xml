@@ -1219,7 +1219,7 @@
     <string name="v4_6_hidden_chat_profiles_descr">Védje meg a csevegési profiljait egy jelszóval!</string>
     <string name="only_your_contact_can_send_disappearing">Csak a partnere tud eltűnő üzeneteket küldeni.</string>
     <string name="your_ICE_servers">Saját ICE-kiszolgálók</string>
-    <string name="scan_qr_code_from_desktop">QR-kód beolvasása számítógépről</string>
+    <string name="scan_qr_code_from_desktop">QR-kód beolvasása a számítógépről</string>
     <string name="image_descr_simplex_logo">SimpleX logó</string>
     <string name="unblock_member_confirmation">Feloldás</string>
     <string name="unmute_chat">Némítás megszüntetése</string>
