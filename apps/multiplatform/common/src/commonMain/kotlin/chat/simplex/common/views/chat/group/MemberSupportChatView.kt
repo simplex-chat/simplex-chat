@@ -25,7 +25,6 @@ private fun MemberSupportChatView(memberSupportChatsCtx: ChatModel.ChatsContext,
   ChatView(memberSupportChatsCtx, staleChatId, scrollToItemId, onComposed = {})
 }
 
-// TODO [knocking] review
 @Composable
 fun MemberSupportChatAppBar(
   chatsCtx: ChatModel.ChatsContext,

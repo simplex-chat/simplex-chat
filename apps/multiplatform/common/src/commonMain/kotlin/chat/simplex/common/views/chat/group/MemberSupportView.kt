@@ -57,6 +57,7 @@ private fun ModalData.MemberSupportViewLayout(
   groupInfo: GroupInfo,
   activeSortedMembers: List<GroupMember>
 ) {
+  val oneHandUI = remember { ChatController.appPrefs.oneHandUI.state }
   val scope = rememberCoroutineScope()
   val scrollToItemId: MutableState<Long?> = remember { mutableStateOf(null) } // TODO [knocking] scroll to report from support chat?
   val membersSupportChats = activeSortedMembers.filter { it.supportChat != null }
@@ -71,9 +72,9 @@ private fun ModalData.MemberSupportViewLayout(
 
   LazyColumnWithScrollBar(
     contentPadding =
-      PaddingValues(
-        top = topPaddingToContent(false)
-      )
+    PaddingValues(
+      top = if (oneHandUI.value) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + DEFAULT_PADDING + 5.dp else topPaddingToContent(false)
+    )
   ) {
     item {
       AppBarTitle(stringResource(MR.strings.member_support))

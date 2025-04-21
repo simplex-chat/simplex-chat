@@ -858,7 +858,7 @@ fun ChatLayout(
         }
         val reportsCount = reportsCount(chatInfo?.id)
         if (oneHandUI.value && chatBottomBar.value) {
-          if (chatsCtx.contentTag == null && reportsCount > 0) { // TODO [knocking] support chats unread count toolbar
+          if (chatsCtx.secondaryContextFilter == null && reportsCount > 0) { // TODO [knocking] support chats unread count toolbar
             ReportedCountToolbar(reportsCount, withStatusBar = true, showGroupReports)
           } else {
             StatusBarBackground()
@@ -915,7 +915,7 @@ fun ChatLayout(
                   SelectedItemsCounterToolbar(selectedChatItems, !oneHandUI.value || !chatBottomBar.value)
                 }
               }
-              if (chatsCtx.contentTag == null && reportsCount > 0 && (!oneHandUI.value || !chatBottomBar.value)) {
+              if (reportsCount > 0 && (!oneHandUI.value || !chatBottomBar.value)) {
                 ReportedCountToolbar(reportsCount, withStatusBar = false, showGroupReports)
               }
             }
