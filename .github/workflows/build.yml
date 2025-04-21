@@ -294,7 +294,7 @@ jobs:
         shell: bash
         run: |
           i=1
-          while [ "$i" -le 10 ]; do
+          while [ "$i" -le 3 ]; do
             if ./simplex-chat-test; then
               break
             else
@@ -303,8 +303,8 @@ jobs:
               sleep 1
             fi
           done
-          if [ "$i" -gt 10 ]; then
-            echo "All 10 attempts failed."
+          if [ "$i" -gt 3 ]; then
+            echo "All 3 attempts failed."
             exit 1
           fi
 
@@ -405,7 +405,7 @@ jobs:
         shell: bash
         run: |
           i=1
-          while [ "$i" -le 10 ]; do
+          while [ "$i" -le 3 ]; do
             if cabal test --test-show-details=direct; then
               break
             else
@@ -414,8 +414,8 @@ jobs:
               sleep 1
             fi
           done
-          if [ "$i" -gt 10 ]; then
-            echo "All 10 attempts failed."
+          if [ "$i" -gt 3 ]; then
+            echo "All 3 attempts failed."
             exit 1
           fi
 
