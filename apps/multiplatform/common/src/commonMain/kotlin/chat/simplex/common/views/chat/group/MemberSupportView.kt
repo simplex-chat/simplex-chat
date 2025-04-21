@@ -25,7 +25,6 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.item.ItemAction
-import chat.simplex.common.views.chatlist.ChatListTimestampView
 import chat.simplex.common.views.chatlist.unreadCountStr
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
