@@ -60,7 +60,15 @@ private fun ModalData.MemberSupportViewLayout(
   val oneHandUI = remember { ChatController.appPrefs.oneHandUI.state }
   val scope = rememberCoroutineScope()
   val scrollToItemId: MutableState<Long?> = remember { mutableStateOf(null) } // TODO [knocking] scroll to report from support chat?
-  val membersSupportChats = activeSortedMembers.filter { it.supportChat != null }
+  val membersSupportChats = activeSortedMembers
+    .filter { it.supportChat != null }
+    .sortedWith(
+      compareByDescending<GroupMember> { it.memberPending }
+        .thenByDescending { (it.supportChat?.mentions ?: 0) > 0 }
+        .thenByDescending { (it.supportChat?.memberAttention ?: 0) > 0 }
+        .thenByDescending { (it.supportChat?.unread ?: 0) > 0 }
+        .thenByDescending { it.supportChat?.chatTs }
+    )
   val searchText = remember { stateGetOrPut("searchText") { TextFieldValue() } }
   // TODO [knocking] sort members in order pending > unanswered > unread > other
   val filteredMembers = remember(membersSupportChats) {
@@ -87,11 +95,9 @@ private fun ModalData.MemberSupportViewLayout(
         }
       }
     } else {
-      if (membersSupportChats.size > 8) {
-        item {
-          SectionItemView(padding = PaddingValues(start = 14.dp, end = DEFAULT_PADDING_HALF)) {
-            MemberListSearchRowView(searchText)
-          }
+      item {
+        SectionItemView(padding = PaddingValues(start = 14.dp, end = DEFAULT_PADDING_HALF)) {
+          MemberListSearchRowView(searchText)
         }
       }
       items(filteredMembers.value, key = { it.groupMemberId }) { member ->
@@ -183,13 +189,6 @@ fun SupportChatRow(member: GroupMember) {
                 .padding(vertical = 1.sp.toDp())
             )
           }
-        } else if (member.memberPending) {
-          Icon(
-            painterResource(MR.images.ic_flag_filled),
-            contentDescription = null,
-            Modifier.padding(end = 3.dp).size(16.dp),
-            tint = MaterialTheme.colors.primaryVariant
-          )
         }
       }
     }
@@ -202,8 +201,8 @@ fun SupportChatRow(member: GroupMember) {
   ) {
     Row(
       Modifier.weight(1f).padding(top = MEMBER_ROW_VERTICAL_PADDING, end = DEFAULT_PADDING, bottom = MEMBER_ROW_VERTICAL_PADDING),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(4.dp)
+      horizontalArrangement = Arrangement.spacedBy(4.dp),
+      verticalAlignment = Alignment.CenterVertically
     ) {
       MemberProfileImage(size = MEMBER_ROW_AVATAR_SIZE, member)
       Spacer(Modifier.width(DEFAULT_PADDING_HALF))
@@ -228,11 +227,16 @@ fun SupportChatRow(member: GroupMember) {
       }
     }
 
-    // TODO [knocking] better layout (timestamp to stay in place)
-    if (member.supportChat != null) {
-      Column {
-        val ts = getTimestampText(member.supportChat.chatTs)
-        ChatListTimestampView(ts)
+    Row {
+      if (member.memberPending) {
+        Icon(
+          painterResource(MR.images.ic_flag_filled),
+          contentDescription = null,
+          Modifier.padding(end = 3.dp).size(16.dp),
+          tint = MaterialTheme.colors.primaryVariant
+        )
+      }
+      if (member.supportChat != null) {
         SupportChatUnreadIndicator(member.supportChat)
       }
     }
