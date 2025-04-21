@@ -1331,10 +1331,13 @@ swipe action</note>
         <target>Via chatprofiel (standaard) of [via verbinding](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="By using SimpleX Chat you agree to:&#10;- send only legal content in public groups.&#10;- respect other users – no spam." xml:space="preserve">
+      <trans-unit id="By using SimpleX Chat you agree to:&#10;- send only legal content in public groups.&#10;- respect other users – no spam." xml:space="preserve" approved="no">
         <source>By using SimpleX Chat you agree to:
 - send only legal content in public groups.
 - respect other users – no spam.</source>
+        <target state="translated">Door SimpleX Chat te gebruiken, gaat u ermee akkoord:
+- alleen legale content te versturen in openbare groepen.
+- andere gebruikers te respecteren – geen spam.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve">
@@ -1739,8 +1742,9 @@ set passcode view</note>
         <target>ICE servers configureren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Configure server operators" xml:space="preserve">
+      <trans-unit id="Configure server operators" xml:space="preserve" approved="no">
         <source>Configure server operators</source>
+        <target state="translated">Serveroperators configureren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm" xml:space="preserve">
@@ -2914,8 +2918,9 @@ chat item action</note>
         <target>Inschakelen (overschrijvingen behouden)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable Flux in Network &amp; servers settings for better metadata privacy." xml:space="preserve">
+      <trans-unit id="Enable Flux in Network &amp; servers settings for better metadata privacy." xml:space="preserve" approved="no">
         <source>Enable Flux in Network &amp; servers settings for better metadata privacy.</source>
+        <target state="translated">Schakel Flux in bij Netwerk- en serverinstellingen voor betere privacy van metagegevens.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
@@ -5894,8 +5899,9 @@ Fout: %@</target>
         <target>Privacy voor uw klanten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Privacy policy and conditions of use." xml:space="preserve">
+      <trans-unit id="Privacy policy and conditions of use." xml:space="preserve" approved="no">
         <source>Privacy policy and conditions of use.</source>
+        <target state="translated">Privacybeleid en gebruiksvoorwaarden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Privacy redefined" xml:space="preserve">
@@ -5903,8 +5909,9 @@ Fout: %@</target>
         <target>Privacy opnieuw gedefinieerd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Private chats, groups and your contacts are not accessible to server operators." xml:space="preserve">
+      <trans-unit id="Private chats, groups and your contacts are not accessible to server operators." xml:space="preserve" approved="no">
         <source>Private chats, groups and your contacts are not accessible to server operators.</source>
+        <target state="translated">Privéchats, groepen en uw contacten zijn niet toegankelijk voor serverbeheerders.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private filenames" xml:space="preserve">
