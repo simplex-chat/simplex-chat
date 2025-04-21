@@ -239,14 +239,22 @@ fun SupportChatRow(member: GroupMember) {
   }
 }
 
-// TODO [knocking] implement menu actions
 @Composable
 private fun DropDownMenuForSupportChat(rhId: Long?, member: GroupMember, groupInfo: GroupInfo, showMenu: MutableState<Boolean>) {
   DefaultDropdownMenu(showMenu) {
-    // TODO mark read
-    // TODO accept, remove
-    ItemAction(stringResource(MR.strings.mark_unread), painterResource(MR.images.ic_mark_chat_unread), onClick = {
+    if (member.memberPending) {
+      ItemAction(stringResource(MR.strings.accept_pending_member_button), painterResource(MR.images.ic_check), color = MaterialTheme.colors.primary, onClick = {
+        acceptMemberDialog(rhId, groupInfo, member)
+        showMenu.value = false
+      })
+    }
+    ItemAction(stringResource(MR.strings.remove_pending_member_button), painterResource(MR.images.ic_delete), color = MaterialTheme.colors.error, onClick = {
+      removeMemberDialog(rhId, groupInfo, member, chatModel)
       showMenu.value = false
     })
+    // TODO [knocking] mark read, mark unread
+    // ItemAction(stringResource(MR.strings.mark_unread), painterResource(MR.images.ic_mark_chat_unread), onClick = {
+    //   showMenu.value = false
+    // })
   }
 }

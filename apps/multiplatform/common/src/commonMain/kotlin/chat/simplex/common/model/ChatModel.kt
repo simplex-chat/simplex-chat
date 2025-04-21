@@ -1143,7 +1143,6 @@ sealed class GroupChatScope {
   class MemberSupport(val groupMemberId_: Long?): GroupChatScope()
 }
 
-// TODO [knocking] change equals / some other interface?
 fun sameChatScope(scope1: GroupChatScope, scope2: GroupChatScope) =
   scope1 is GroupChatScope.MemberSupport
       && scope2 is GroupChatScope.MemberSupport

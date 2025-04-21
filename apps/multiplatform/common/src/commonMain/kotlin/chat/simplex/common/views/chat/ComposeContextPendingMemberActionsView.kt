@@ -69,7 +69,7 @@ fun ComposeContextPendingMemberActionsView(
   }
 }
 
-fun acceptMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, close: () -> Unit) {
+fun acceptMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.accept_pending_member_alert_title),
     text = generalGetString(MR.strings.accept_pending_member_alert_question),
@@ -100,7 +100,7 @@ fun acceptMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
   )
 }
 
-private fun acceptMember(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, role: GroupMemberRole, close: () -> Unit) {
+private fun acceptMember(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, role: GroupMemberRole, close: (() -> Unit)?) {
   withBGApi {
     val acceptedMember = chatModel.controller.apiAcceptMember(rhId, groupInfo.groupId, member.groupMemberId, role)
     if (acceptedMember != null) {
@@ -111,6 +111,6 @@ private fun acceptMember(rhId: Long?, groupInfo: GroupInfo, member: GroupMember,
         chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, groupInfo, acceptedMember)
       }
     }
-    close.invoke()
+    close?.invoke()
   }
 }

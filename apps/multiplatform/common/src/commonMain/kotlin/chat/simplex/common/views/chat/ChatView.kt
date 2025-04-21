@@ -65,7 +65,6 @@ fun ChatView(
   val showSearch = rememberSaveable { mutableStateOf(false) }
   // They have their own iterator inside for a reason to prevent crash "Reading a state that was created after the snapshot..."
   val remoteHostId = remember { derivedStateOf { chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.remoteHostId } }
-  // TODO [knocking] review - hack, come up with some design?
   val activeChatInfo = remember { derivedStateOf {
     var chatInfo = chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.chatInfo
     if (
