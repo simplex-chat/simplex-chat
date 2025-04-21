@@ -48,7 +48,7 @@ actual fun PlatformTextField(
   textStyle: MutableState<TextStyle>,
   showDeleteTextButton: MutableState<Boolean>,
   userIsObserver: Boolean,
-  userIsPendingInMainScope: Boolean,
+  userIsPending: Boolean,
   placeholder: String,
   showVoiceButton: Boolean,
   onMessageChange: (ComposeMessage) -> Unit,
@@ -205,7 +205,7 @@ actual fun PlatformTextField(
   showDeleteTextButton.value = cs.message.text.split("\n").size >= 4 && !cs.inProgress
   if (composeState.value.preview is ComposePreview.VoicePreview) {
     ComposeOverlay(MR.strings.voice_message_send_text, textStyle, padding)
-  } else if (userIsPendingInMainScope) {
+  } else if (userIsPending) {
     ComposeOverlay(MR.strings.reviewed_by_moderators, textStyle, padding)
   } else if (userIsObserver) {
     ComposeOverlay(MR.strings.you_are_observer, textStyle, padding)

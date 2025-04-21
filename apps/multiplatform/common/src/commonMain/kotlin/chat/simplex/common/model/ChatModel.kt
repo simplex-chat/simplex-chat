@@ -1299,6 +1299,11 @@ data class Chat(
     else -> false
   }
 
+  val userIsPending: Boolean get() = when(chatInfo) {
+    is ChatInfo.Group -> chatInfo.groupInfo.membership.memberPending
+    else -> false
+  }
+
   val unreadTag: Boolean get() = when (chatInfo.chatSettings?.enableNtfs) {
     All -> chatStats.unreadChat || chatStats.unreadCount > 0
     Mentions -> chatStats.unreadChat || chatStats.unreadMentions > 0
@@ -1518,18 +1523,12 @@ sealed class ChatInfo: SomeChat, NamedChat {
   val userCanSend: Boolean
     get() = when (this) {
       is ChatInfo.Direct -> true
-      is ChatInfo.Group -> groupInfo.membership.memberRole >= GroupMemberRole.Member && !userIsPendingInMainScope
+      is ChatInfo.Group ->
+        (groupInfo.membership.memberRole >= GroupMemberRole.Member && !groupInfo.membership.memberPending)
+            || groupChatScope != null
       is ChatInfo.Local -> true
       else -> false
     }
-
-  val userIsPendingInMainScope: Boolean get() = when(this) {
-    is ChatInfo.Group -> {
-      val m = groupInfo.membership
-      m.memberPending && groupChatScope == null
-    }
-    else -> false
-  }
 
   val chatTags: List<Long>?
     get() = when (this) {
