@@ -29,7 +29,7 @@
     <string name="accept_connection_request__question">Elfogadja a meghívási kérést?</string>
     <string name="accept_contact_button">Elfogadás</string>
     <string name="accept">Elfogadás</string>
-    <string name="add_address_to_your_profile">Cím hozzáadása a profilhoz, hogy a partnerei megoszthassák másokkal. A profilfrissítés el lesz küldve az Ön partnerei számára.</string>
+    <string name="add_address_to_your_profile">Cím hozzáadása a profilhoz, hogy a partnerei megoszthassák másokkal. A profilfrissítés el lesz küldve a saját partnerei számára.</string>
     <string name="color_primary_variant">További kiemelőszín</string>
     <string name="callstatus_error">híváshiba</string>
     <string name="v5_4_block_group_members">Csoporttagok letiltása</string>
@@ -48,7 +48,7 @@
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Megjegyzés:</b> az üzenet- és fájltovábbító kiszolgálók SOCKS-proxyn keresztül kapcsolódnak. A hívások és a hivatkozások előnézetének elküldése közvetlen kapcsolatot használnak.]]></string>
     <string name="full_backup">Alkalmazásadatok biztonsági mentése</string>
     <string name="database_initialization_error_title">Az adatbázis előkészítése sikertelen</string>
-    <string name="all_your_contacts_will_remain_connected_update_sent">A partnereivel kapcsolatban marad. A profilfrissítés el lesz küldve az Ön partnerei számára.</string>
+    <string name="all_your_contacts_will_remain_connected_update_sent">A partnereivel kapcsolatban marad. A profilfrissítés el lesz küldve a saját partnerei számára.</string>
     <string name="v4_5_transport_isolation_descr">A csevegési profillal (alapértelmezett), vagy a kapcsolattal (BÉTA).</string>
     <string name="connect__a_new_random_profile_will_be_shared">Egy új, véletlenszerű profil lesz megosztva.</string>
     <string name="allow_voice_messages_only_if">A hangüzenetek küldése csak abban az esetben van engedélyezve, ha a partnere is engedélyezi.</string>
@@ -740,7 +740,7 @@
     <string name="notification_new_contact_request">Új meghívási kérés</string>
     <string name="joining_group">Csatlakozás a csoporthoz</string>
     <string name="linked_desktop_options">Társított számítógép beállítások</string>
-    <string name="rcv_group_event_invited_via_your_group_link">meghíva az Ön csoporthivatkozásán keresztül</string>
+    <string name="rcv_group_event_invited_via_your_group_link">meghíva a saját csoporthivatkozásán keresztül</string>
     <string name="rcv_group_event_member_left">elhagyta a csoportot</string>
     <string name="linked_desktops">Társított számítógépek</string>
     <string name="la_no_app_password">Nincs alkalmazás jelkód</string>
@@ -926,7 +926,7 @@
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(beolvasás, vagy beillesztés a vágólapról)</string>
     <string name="waiting_for_video">Várakozás a videóra</string>
     <string name="reply_verb">Válasz</string>
-    <string name="connect_plan_this_is_your_own_one_time_link">Ez az Ön egyszer használható meghívója!</string>
+    <string name="connect_plan_this_is_your_own_one_time_link">Ez a saját egyszer használható meghívója!</string>
     <string name="ntf_channel_calls">SimpleX Chat hívások</string>
     <string name="connect_use_new_incognito_profile">Új inkognitóprofil használata</string>
     <string name="contact_developers">Frissítse az alkalmazást, és lépjen kapcsolatba a fejlesztőkkel.</string>
@@ -1038,7 +1038,7 @@
     <string name="smp_servers_save">Kiszolgálók mentése</string>
     <string name="group_welcome_title">Üdvözlőüzenet</string>
     <string name="network_option_seconds_label">mp</string>
-    <string name="profile_update_will_be_sent_to_contacts">A profilfrissítés el lesz küldve az Ön partnerei számára.</string>
+    <string name="profile_update_will_be_sent_to_contacts">A profilfrissítés el lesz küldve a saját partnerei számára.</string>
     <string name="v5_3_simpler_incognito_mode">Egyszerűsített inkognitómód</string>
     <string name="save_welcome_message_question">Menti az üdvözlőüzenetet?</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Új csevegési fiók létrehozásához indítsa újra az alkalmazást.</string>
@@ -1061,7 +1061,7 @@
     <string name="setup_database_passphrase">Adatbázis-jelmondat beállítása</string>
     <string name="color_sent_message">Üzenetbuborék színe</string>
     <string name="notifications_mode_periodic">Időszakosan indul</string>
-    <string name="connect_plan_this_is_your_own_simplex_address">Ez az Ön SimpleX-címe!</string>
+    <string name="connect_plan_this_is_your_own_simplex_address">Ez a saját SimpleX-címe!</string>
     <string name="group_member_status_removed">eltávolítva</string>
     <string name="share_link">Megosztás</string>
     <string name="icon_descr_simplex_team">SimpleX csapat</string>
@@ -1361,7 +1361,7 @@
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">A profilja az eszközén van tárolva és csak a partnereivel van megosztva. A SimpleX-kiszolgálók nem láthatják a profilját.</string>
     <string name="snd_group_event_changed_member_role">Ön a következőre módosította %s szerepkörét: „%s”</string>
     <string name="you_rejected_group_invitation">Csoportmeghívó elutasítva</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Az Ön adatainak védelme érdekében a SimpleX külön üzenet-azonosítókat használ minden egyes kapcsolatához.</string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">Saját adatainak védelme érdekében a SimpleX külön üzenet-azonosítókat használ minden egyes kapcsolatához.</string>
     <string name="to_share_with_your_contact">(a megosztáshoz a partnerével)</string>
     <string name="you_sent_group_invitation">Csoportmeghívó elküldve</string>
     <string name="update_network_session_mode_question">Frissíti az átvitel-izoláció módját?</string>
@@ -1380,7 +1380,7 @@
     <string name="v4_3_irreversible_message_deletion_desc">A partnerei engedélyezhetik a teljes üzenet törlését.</string>
     <string name="you_have_to_enter_passphrase_every_time">A jelmondatot minden alkalommal meg kell adnia, amikor az alkalmazás elindul – nem az eszközön van tárolva.</string>
     <string name="open_port_in_firewall_desc">Ha engedélyezni szeretné a hordozható eszköz-alkalmazás társítását a számítógéphez, akkor nyissa meg ezt a portot a tűzfalában, miután engedélyezte azt</string>
-    <string name="your_profile_is_stored_on_your_device">A profilja, a partnerei és az elküldött üzenetei az Ön eszközén vannak tárolva.</string>
+    <string name="your_profile_is_stored_on_your_device">A profilja, a partnerei és az elküldött üzenetei a saját eszközén vannak tárolva.</string>
     <string name="system_restricted_background_warn"><![CDATA[Az értesítések engedélyezéséhez válassza ki az <b>Alkalmazás akkumulátor-használata</b> / <b>Korlátlan</b> módot az alkalmazás beállításaiban.]]></string>
     <string name="this_string_is_not_a_connection_link">Ez a karakterlánc nem egy meghívási hivatkozás!</string>
     <string name="to_start_a_new_chat_help_header">Új csevegés indításához</string>
@@ -1399,7 +1399,7 @@
     <string name="v5_3_simpler_incognito_mode_descr">Inkognitóra váltás kapcsolódáskor.</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Megoszthat egy hivatkozást vagy QR-kódot – így bárki csatlakozhat a csoporthoz. Ha a csoportot Ön később törli, akkor nem fogja elveszíteni annak tagjait.</string>
     <string name="you_joined_this_group">Ön csatlakozott ehhez a csoporthoz</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Ez az Ön hivatkozása a(z) <b>%1$s</b> nevű csoporthoz!]]></string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Ez a saját hivatkozása a(z) <b>%1$s</b> nevű csoporthoz!]]></string>
     <string name="voice_prohibited_in_this_chat">A hangüzenetek küldése le van tiltva ebben a csevegésben.</string>
     <string name="you_control_your_chat">Ön irányítja csevegését!</string>
     <string name="verify_code_with_desktop">Kód hitelesítése a számítógépen</string>
@@ -1744,13 +1744,13 @@
     <string name="network_smp_proxy_mode_unknown_description">Használjon privát útválasztást ismeretlen kiszolgálókkal.</string>
     <string name="network_smp_proxy_mode_always_description">Mindig használjon privát útválasztást.</string>
     <string name="update_network_smp_proxy_mode_question">Üzenet-útválasztási mód</string>
-    <string name="network_smp_proxy_fallback_allow_protected_description">Közvetlen üzenetküldés, ha az IP-cím védett és az Ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
-    <string name="network_smp_proxy_fallback_allow_description">Közvetlen üzenetküldés, ha az Ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
+    <string name="network_smp_proxy_fallback_allow_protected_description">Közvetlen üzenetküldés, ha az IP-cím védett és a saját kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
+    <string name="network_smp_proxy_fallback_allow_description">Közvetlen üzenetküldés, ha a saját kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
     <string name="private_routing_explanation">Az IP-cím védelmének érdekében a privát útválasztás az SMP-kiszolgálókat használja az üzenetek kézbesítéséhez.</string>
     <string name="update_network_smp_proxy_fallback_question">Üzenet-útválasztási tartalék</string>
     <string name="settings_section_title_private_message_routing">PRIVÁT ÜZENET-ÚTVÁLASZTÁS</string>
     <string name="network_smp_proxy_mode_unprotected_description">Használjon privát útválasztást ismeretlen kiszolgálókkal, ha az IP-cím nem védett.</string>
-    <string name="network_smp_proxy_fallback_prohibit_description">NE küldjön üzeneteket közvetlenül, még akkor sem, ha az Ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
+    <string name="network_smp_proxy_fallback_prohibit_description">NE küldjön üzeneteket közvetlenül, még akkor sem, ha a saját kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Tor vagy VPN nélkül az Ön IP-címe látható lesz a fájlkiszolgálók számára.</string>
     <string name="settings_section_title_files">FÁJLOK</string>
     <string name="protect_ip_address">IP-cím védelme</string>
@@ -1834,7 +1834,7 @@
     <string name="servers_info_sessions_connecting">Kapcsolódás</string>
     <string name="servers_info_sessions_errors">Hibák</string>
     <string name="servers_info_subscriptions_connections_pending">Függőben</string>
-    <string name="servers_info_private_data_disclaimer">Statisztikagyűjtés kezdete: %s.\nAz összes adat privát módon van tárolva az Ön eszközén.</string>
+    <string name="servers_info_private_data_disclaimer">Statisztikagyűjtés kezdete: %s.\nAz összes adat privát módon van tárolva a saját eszközén.</string>
     <string name="servers_info_messages_sent">Elküldött üzenetek</string>
     <string name="servers_info_proxied_servers_section_header">Proxyzott kiszolgálók</string>
     <string name="servers_info_reconnect_servers_title">Újrakapcsolódik a kiszolgálókhoz?</string>
@@ -2090,7 +2090,7 @@
     <string name="errors_in_servers_configuration">Hibák a kiszolgálók konfigurációjában.</string>
     <string name="error_accepting_operator_conditions">Hiba történt a feltételek elfogadásakor</string>
     <string name="connection_error_quota">Kézbesítetlen üzenetek</string>
-    <string name="connection_error_quota_desc">A kapcsolat elérte a kézbesítetlen üzenetek számának határát, az Ön partnere lehet, hogy offline állapotban van.</string>
+    <string name="connection_error_quota_desc">A kapcsolat elérte a kézbesítetlen üzenetek számának határát, a saját partnere lehet, hogy offline állapotban van.</string>
     <string name="message_deleted_or_not_received_error_title">Nincs üzenet</string>
     <string name="message_deleted_or_not_received_error_desc">Ez az üzenet törölve lett vagy még nem érkezett meg.</string>
     <string name="address_creation_instruction">Koppintson a SimpleX-cím létrehozása menüpontra a későbbi létrehozáshoz.</string>
@@ -2109,7 +2109,7 @@
     <string name="onboarding_choose_server_operators">Kiszolgálóüzemeltetők</string>
     <string name="onboarding_network_operators">Hálózatüzemeltetők</string>
     <string name="onboarding_network_operators_app_will_use_different_operators">Az alkalmazás úgy védi az adatait, hogy minden egyes beszélgetéshez más-más üzemeltetőt használ.</string>
-    <string name="onboarding_network_operators_app_will_use_for_routing">Például, ha az Ön partnere egy SimpleX Chat-kiszolgálón keresztül fogadja az üzeneteket, az Ön alkalmazása egy Flux-kiszolgálón keresztül fogja azokat kézbesíteni.</string>
+    <string name="onboarding_network_operators_app_will_use_for_routing">Például, ha a partnere egy SimpleX Chat-kiszolgálón keresztül fogadja az üzeneteket, akkor az Ön alkalmazása egy Flux-kiszolgálón keresztül fogja azokat kézbesíteni.</string>
     <string name="onboarding_select_network_operators_to_use">Jelölje ki a használni kívánt hálózatüzemeltetőket.</string>
     <string name="onboarding_network_operators_review_later">Felülvizsgálat később</string>
     <string name="onboarding_network_operators_configure_via_settings">A kiszolgálókat a „Hálózat és kiszolgálók” menüben konfigurálhatja.</string>
@@ -2195,7 +2195,7 @@
     <string name="chat_main_profile_sent">A csevegési profilja el lesz küldve a csevegésben résztvevő tagok számára</string>
     <string name="direct_messages_are_prohibited">A tagok közötti közvetlen üzenetek le vannak tiltva.</string>
     <string name="v6_2_business_chats">Üzleti csevegések</string>
-    <string name="v6_2_business_chats_descr">Az Ön ügyfeleinek adatvédelme.</string>
+    <string name="v6_2_business_chats_descr">Saját ügyfeleinek adatvédelme.</string>
     <string name="connect_plan_you_are_already_connected_with_vName"><![CDATA[Ön már kapcsolódva van vele: <b>%1$s</b>.]]></string>
     <string name="connect_plan_chat_already_exists">A csevegés már létezik!</string>
     <string name="maximum_message_size_reached_text">Csökkentse az üzenet méretét, és küldje el újra.</string>
@@ -2291,7 +2291,7 @@
     <string name="disable_automatic_deletion_message">Az ebben a csevegésben lévő üzenetek soha nem lesznek törölve.</string>
     <string name="chat_item_ttl_year">1 év</string>
     <string name="chat_item_ttl_default">alapértelmezett (%s)</string>
-    <string name="chat_ttl_options_footer">Csevegési üzenetek törlése az Ön eszközéről.</string>
+    <string name="chat_ttl_options_footer">Csevegési üzenetek törlése a saját eszközéről.</string>
     <string name="change_automatic_deletion_question">Módosítja az automatikus üzenettörlést?</string>
     <string name="change_automatic_chat_deletion_message">Ez a művelet nem vonható vissza – a kijelölt üzenettől korábban küldött és fogadott üzenetek törölve lesznek a csevegésből.</string>
     <string name="network_smp_web_port_footer">A következő TCP-port használata, amikor nincs port megadva: %1$s.</string>
