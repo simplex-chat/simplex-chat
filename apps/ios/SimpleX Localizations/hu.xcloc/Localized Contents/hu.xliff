@@ -6683,9 +6683,9 @@ chat item action</note>
         <target>QR-kód beolvasása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Scan QR code from desktop" xml:space="preserve">
+      <trans-unit id="Scan QR code from desktop" xml:space="preserve" approved="no">
         <source>Scan QR code from desktop</source>
-        <target>QR-kód beolvasása számítógépről</target>
+        <target state="translated">QR-kód beolvasása a számítógépről</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Scan code" xml:space="preserve">
