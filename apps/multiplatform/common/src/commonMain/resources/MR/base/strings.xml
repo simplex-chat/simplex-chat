@@ -2168,6 +2168,8 @@
   <string name="accept_pending_member_button">Accept</string>
   <string name="accept_pending_member_alert_title">Accept member</string>
   <string name="accept_pending_member_alert_question">Member will join the group, accept member?</string>
+  <string name="accept_pending_member_alert_confirmation_as_member">Accept as member</string>
+  <string name="accept_pending_member_alert_confirmation_as_observer">Accept as observer</string>
 
   <!-- WhatsNewView.kt -->
   <string name="whats_new">What\'s new</string>

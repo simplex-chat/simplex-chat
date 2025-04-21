@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chat
 
+import SectionItemView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -8,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.chatModel
@@ -67,25 +69,48 @@ fun ComposeContextPendingMemberActionsView(
   }
 }
 
-// TODO [knocking] can allow to choose role
-fun acceptMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, close: (() -> Unit)? = null) {
-  AlertManager.shared.showAlertDialog(
+fun acceptMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, close: () -> Unit) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.accept_pending_member_alert_title),
     text = generalGetString(MR.strings.accept_pending_member_alert_question),
-    confirmText = generalGetString(MR.strings.accept_pending_member_button),
-    onConfirm = {
-      withBGApi {
-        val acceptedMember = chatModel.controller.apiAcceptMember(rhId, groupInfo.groupId, member.groupMemberId, GroupMemberRole.Member)
-        if (acceptedMember != null) {
-          withContext(Dispatchers.Main) {
-            chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, acceptedMember)
-          }
-          withContext(Dispatchers.Main) {
-            chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, groupInfo, acceptedMember)
-          }
+    buttons = {
+      Column {
+        // Accept as member
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          acceptMember(rhId, groupInfo, member, GroupMemberRole.Member, close)
+        }) {
+          Text(generalGetString(MR.strings.accept_pending_member_alert_confirmation_as_member), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
-        close?.invoke()
+        // Accept as observer
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          acceptMember(rhId, groupInfo, member, GroupMemberRole.Observer, close)
+        }) {
+          Text(generalGetString(MR.strings.accept_pending_member_alert_confirmation_as_observer), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        // Cancel
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
       }
     }
   )
+}
+
+private fun acceptMember(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, role: GroupMemberRole, close: () -> Unit) {
+  withBGApi {
+    val acceptedMember = chatModel.controller.apiAcceptMember(rhId, groupInfo.groupId, member.groupMemberId, role)
+    if (acceptedMember != null) {
+      withContext(Dispatchers.Main) {
+        chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, acceptedMember)
+      }
+      withContext(Dispatchers.Main) {
+        chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, groupInfo, acceptedMember)
+      }
+    }
+    close.invoke()
+  }
 }
