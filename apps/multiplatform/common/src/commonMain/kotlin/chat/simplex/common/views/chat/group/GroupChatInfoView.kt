@@ -78,8 +78,6 @@ fun ModalData.GroupChatInfoView(
       .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
       .sortedByDescending { it.memberRole }
 
-    Log.e(TAG, "######### GroupChatInfoView chatModel.groupMembers length = ${chatModel.groupMembers.value.count()}")
-
     GroupChatInfoLayout(
       chat,
       groupInfo,
@@ -129,7 +127,7 @@ fun ModalData.GroupChatInfoView(
           }
           ModalManager.end.showModalCloseable(true) { closeCurrent ->
             remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
-              GroupMemberInfoView(rhId, groupInfo, mem, stats, code, chatModel, closeCurrent) {
+              GroupMemberInfoView(rhId, groupInfo, mem, scrollToItemId, stats, code, chatModel, closeCurrent) {
                 closeCurrent()
                 close()
               }
@@ -148,6 +146,7 @@ fun ModalData.GroupChatInfoView(
           MemberSupportView(
             chat,
             groupInfo,
+            scrollToItemId,
             close
           )
         }
@@ -330,9 +329,11 @@ fun AddGroupMembersButton(
 }
 
 @Composable
-fun UserSupportChatButton(groupInfo: GroupInfo) {
+fun UserSupportChatButton(
+  groupInfo: GroupInfo,
+  scrollToItemId: MutableState<Long?>
+) {
   val scope = rememberCoroutineScope()
-  val scrollToItemId: MutableState<Long?> = remember { mutableStateOf(null) }
 
   SettingsActionItem(
     painterResource(MR.images.ic_flag),
@@ -463,7 +464,7 @@ fun ModalData.GroupChatInfoLayout(
       SectionView {
         if (groupInfo.membership.supportChat != null) {
           anyTopSectionRowShow = true
-          UserSupportChatButton(groupInfo)
+          UserSupportChatButton(groupInfo, scrollToItemId)
         }
         if (groupInfo.businessChat == null && groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
           anyTopSectionRowShow = true
@@ -738,7 +739,7 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
 @Composable
 private fun MemberSupportButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_flag), // TODO [knocking] change icon
+    painterResource(MR.images.ic_flag),
     stringResource(MR.strings.member_support),
     click = onClick
   )

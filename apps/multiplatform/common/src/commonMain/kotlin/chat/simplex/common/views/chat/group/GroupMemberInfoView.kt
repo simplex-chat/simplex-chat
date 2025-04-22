@@ -45,6 +45,7 @@ fun GroupMemberInfoView(
   rhId: Long?,
   groupInfo: GroupInfo,
   member: GroupMember,
+  scrollToItemId: MutableState<Long?>,
   connectionStats: ConnectionStats?,
   connectionCode: String?,
   chatModel: ChatModel,
@@ -79,6 +80,7 @@ fun GroupMemberInfoView(
       rhId = rhId,
       groupInfo,
       member,
+      scrollToItemId,
       connStats,
       newRole,
       developerTools,
@@ -269,6 +271,7 @@ fun GroupMemberInfoLayout(
   rhId: Long?,
   groupInfo: GroupInfo,
   member: GroupMember,
+  scrollToItemId: MutableState<Long?>,
   connStats: MutableState<ConnectionStats?>,
   newRole: MutableState<GroupMemberRole>,
   developerTools: Boolean,
@@ -302,7 +305,6 @@ fun GroupMemberInfoLayout(
   @Composable
   fun SupportChatButton() {
     val scope = rememberCoroutineScope()
-    val scrollToItemId: MutableState<Long?> = remember { mutableStateOf(null) } // TODO [knocking] scroll to report from support chat?
 
     SettingsActionItem(
       painterResource(MR.images.ic_flag),
@@ -908,6 +910,7 @@ fun PreviewGroupMemberInfoLayout() {
       rhId = null,
       groupInfo = GroupInfo.sampleData,
       member = GroupMember.sampleData,
+      scrollToItemId = remember { mutableStateOf(null) },
       connStats = remember { mutableStateOf(null) },
       newRole = remember { mutableStateOf(GroupMemberRole.Member) },
       developerTools = false,

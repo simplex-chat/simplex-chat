@@ -15,7 +15,15 @@ import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.flow.*
 
 @Composable
-private fun GroupReportsView(reportsChatsCtx: ChatModel.ChatsContext, staleChatId: State<String?>, scrollToItemId: MutableState<Long?>) {
+private fun GroupReportsView(
+  reportsChatsCtx: ChatModel.ChatsContext,
+  staleChatId: State<String?>,
+  scrollToItemId: MutableState<Long?>,
+  close: () -> Unit
+) {
+  KeyChangeEffect(chatModel.chatId.value) {
+    close()
+  }
   ChatView(reportsChatsCtx, staleChatId, scrollToItemId, onComposed = {})
 }
 
@@ -75,7 +83,7 @@ suspend fun showGroupReportsView(staleChatId: State<String?>, scrollToItemId: Mu
     ModalView({}, showAppBar = false) {
       val chatInfo = remember { derivedStateOf { chatModel.chats.value.firstOrNull { it.id == chatModel.chatId.value }?.chatInfo } }.value
       if (chatInfo is ChatInfo.Group && chatInfo.groupInfo.canModerate) {
-        GroupReportsView(reportsChatsCtx, staleChatId, scrollToItemId)
+        GroupReportsView(reportsChatsCtx, staleChatId, scrollToItemId, close)
       } else {
         LaunchedEffect(Unit) {
           close()

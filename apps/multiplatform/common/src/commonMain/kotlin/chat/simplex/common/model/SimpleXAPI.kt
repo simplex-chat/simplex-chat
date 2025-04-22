@@ -191,6 +191,7 @@ class AppPreferences {
   val oneHandUICardShown = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN, false)
   val addressCreationCardShown = mkBoolPreference(SHARED_PREFS_ADDRESS_CREATION_CARD_SHOWN, false)
   val showMuteProfileAlert = mkBoolPreference(SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT, true)
+  val showReportsInSupportChatAlert = mkBoolPreference(SHARED_PREFS_SHOW_REPORTS_IN_SUPPORT_CHAT_ALERT, true)
   val appLanguage = mkStrPreference(SHARED_PREFS_APP_LANGUAGE, null)
   val appUpdateChannel = mkEnumPreference(SHARED_PREFS_APP_UPDATE_CHANNEL, AppUpdatesChannel.DISABLED) { AppUpdatesChannel.entries.firstOrNull { it.name == this } }
   val appSkippedUpdate = mkStrPreference(SHARED_PREFS_APP_SKIPPED_UPDATE, "")
@@ -273,6 +274,7 @@ class AppPreferences {
     liveMessageAlertShown to false,
     showHiddenProfilesNotice to true,
     showMuteProfileAlert to true,
+    showReportsInSupportChatAlert to true,
     showDeleteConversationNotice to true,
     showDeleteContactNotice to true,
   )
@@ -431,6 +433,7 @@ class AppPreferences {
     private const val SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN = "OneHandUICardShown"
     private const val SHARED_PREFS_ADDRESS_CREATION_CARD_SHOWN = "AddressCreationCardShown"
     private const val SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT = "ShowMuteProfileAlert"
+    private const val SHARED_PREFS_SHOW_REPORTS_IN_SUPPORT_CHAT_ALERT = "ShowReportsInSupportChatAlert"
     private const val SHARED_PREFS_STORE_DB_PASSPHRASE = "StoreDBPassphrase"
     private const val SHARED_PREFS_INITIAL_RANDOM_DB_PASSPHRASE = "InitialRandomDBPassphrase"
     private const val SHARED_PREFS_ENCRYPTED_DB_PASSPHRASE = "EncryptedDBPassphrase"
@@ -2711,7 +2714,6 @@ object ChatController {
         }
       is CR.MemberAcceptedByOther ->
         if (active(r.user)) {
-          // TODO [knocking] update secondary context?
           withContext(Dispatchers.Main) {
             chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
           }

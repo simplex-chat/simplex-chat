@@ -376,7 +376,7 @@ object ChatModel {
       updateContact(rhId, updatedContact)
     }
 
-    suspend fun updateGroup(rhId: Long?, groupInfo: GroupInfo) = updateChat(rhId, ChatInfo.Group(groupInfo, groupChatScope = null)) // TODO [knocking] review
+    suspend fun updateGroup(rhId: Long?, groupInfo: GroupInfo) = updateChat(rhId, ChatInfo.Group(groupInfo, groupChatScope = null))
 
     private suspend fun updateChat(rhId: Long?, cInfo: ChatInfo, addMissing: Boolean = true) {
       if (hasChat(rhId, cInfo.id)) {
@@ -567,7 +567,6 @@ object ChatModel {
       }
     }
 
-    // TODO [knocking] why does this function not use `withContext(Dispatchers.Main) { ... }` ?
     fun removeChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
       // update chat list
       if (cInfo.groupChatScope() == null) {

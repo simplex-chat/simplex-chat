@@ -21,7 +21,14 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
-private fun MemberSupportChatView(memberSupportChatsCtx: ChatModel.ChatsContext, staleChatId: State<String?>, scrollToItemId: MutableState<Long?>) {
+private fun MemberSupportChatView(
+  memberSupportChatsCtx: ChatModel.ChatsContext,
+  staleChatId: State<String?>,
+  scrollToItemId: MutableState<Long?>
+) {
+  KeyChangeEffect(chatModel.chatId.value) {
+    ModalManager.end.closeModals()
+  }
   ChatView(memberSupportChatsCtx, staleChatId, scrollToItemId, onComposed = {})
 }
 
