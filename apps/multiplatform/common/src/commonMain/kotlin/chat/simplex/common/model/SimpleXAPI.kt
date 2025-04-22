@@ -2714,7 +2714,6 @@ object ChatController {
         }
       is CR.MemberAcceptedByOther ->
         if (active(r.user)) {
-          // TODO [knocking] update secondary context?
           withContext(Dispatchers.Main) {
             chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
           }
