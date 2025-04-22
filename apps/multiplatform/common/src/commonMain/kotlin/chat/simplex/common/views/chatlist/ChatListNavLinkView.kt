@@ -236,7 +236,6 @@ suspend fun openChat(
 
 suspend fun openLoadedChat(chat: Chat) {
   withContext(Dispatchers.Main) {
-    chatModel.chatsContext.chatItemStatuses.clear()
     chatModel.chatsContext.chatItems.replaceAll(chat.chatItems)
     chatModel.chatId.value = chat.chatInfo.id
     chatModel.chatsContext.chatState.clear()

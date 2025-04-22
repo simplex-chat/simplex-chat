@@ -2588,10 +2588,10 @@ object ChatController {
           val cItem = chatItem.chatItem
           if (!cItem.isDeletedContent && active(r.user)) {
             withContext(Dispatchers.Main) {
-              chatModel.chatsContext.updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
+              chatModel.chatsContext.upsertChatItem(rhId, cInfo, cItem)
             }
             withContext(Dispatchers.Main) {
-              chatModel.secondaryChatsContext.value?.updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
+              chatModel.secondaryChatsContext.value?.upsertChatItem(rhId, cInfo, cItem)
             }
           }
         }

@@ -68,7 +68,6 @@ suspend fun processLoadedChat(
         }
       }
       withContext(Dispatchers.Main) {
-        chatsCtx.chatItemStatuses.clear()
         chatsCtx.chatItems.replaceAll(chat.chatItems)
         chatModel.chatId.value = chat.id
         splits.value = newSplits
