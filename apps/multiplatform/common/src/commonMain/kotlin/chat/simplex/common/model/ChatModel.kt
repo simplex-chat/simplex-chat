@@ -301,7 +301,6 @@ object ChatModel {
      * If you use api call to get the items, use just [add] instead of [addToChatItems].
      * Never modify underlying list directly because it produces unexpected results in ChatView's LazyColumn (setting by index is ok) */
     val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
-    val chatItemStatuses = mutableMapOf<Long, CIStatus>()
     // set listener here that will be notified on every add/delete of a chat item
     val chatState = ActiveChatState()
 
@@ -539,15 +538,16 @@ object ChatModel {
           val items = chatItems.value
           val itemIndex = items.indexOfFirst { it.id == cItem.id }
           if (itemIndex >= 0) {
-            items[itemIndex] = cItem
-          } else {
-            val status = chatItemStatuses.remove(cItem.id)
-            val ci = if (status != null && cItem.meta.itemStatus is CIStatus.SndNew) {
-              cItem.copy(meta = cItem.meta.copy(itemStatus = status))
+            val oldStatus = items[itemIndex].meta.itemStatus
+            val newStatus = cItem.meta.itemStatus
+            val ci = if (shouldKeepOldSndCIStatus(oldStatus, newStatus)) {
+              cItem.copy(meta = cItem.meta.copy(itemStatus = oldStatus))
             } else {
               cItem
             }
-            addToChatItems(ci)
+            items[itemIndex] = ci
+          } else {
+            addToChatItems(cItem)
             itemAdded = true
           }
         }
@@ -556,19 +556,12 @@ object ChatModel {
     }
 
     suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null, atIndex: Int? = null) {
-      // TODO [knocking] see diff:
-      //   why chatItemStatuses gets updated even if chatId doesn't match?
-      //   should chatItemBelongsToScope replace chatId check?
-      //   should chatItemStatuses be updated only if chatItemBelongsToScope (as in changed code)? this seems to make more sense
       withContext(Dispatchers.Main) {
         if (chatItemBelongsToScope(cInfo, cItem)) {
           val items = chatItems.value
           val itemIndex = atIndex ?: items.indexOfFirst { it.id == cItem.id }
           if (itemIndex >= 0) {
             items[itemIndex] = cItem
-          }
-          if (status != null) {
-            chatItemStatuses[cItem.id] = status
           }
         }
       }
@@ -657,7 +650,6 @@ object ChatModel {
       }
       // clear current chat
       if (chatId.value == cInfo.id) {
-        chatItemStatuses.clear()
         chatItems.clearAndNotify()
       }
     }
@@ -3082,6 +3074,18 @@ sealed class CIStatus {
   @Serializable @SerialName("rcvRead") class RcvRead: CIStatus()
   @Serializable @SerialName("invalid") class Invalid(val text: String): CIStatus()
 
+  fun isSent(): Boolean = when(this) {
+    is SndNew -> false
+    is SndSent -> true
+    is SndRcvd -> false
+    is SndErrorAuth -> true
+    is CISSndError -> true
+    is SndWarning -> true
+    is RcvNew -> false
+    is RcvRead -> false
+    is Invalid -> false
+  }
+
   fun statusIcon(
     primaryColor: Color,
     metaColor: Color = CurrentColors.value.colors.secondary,
@@ -3120,6 +3124,13 @@ sealed class CIStatus {
     is Invalid -> "Invalid status" to this.text
   }
 }
+
+fun shouldKeepOldSndCIStatus(oldStatus: CIStatus, newStatus: CIStatus): Boolean =
+  when {
+    oldStatus is CIStatus.SndRcvd && newStatus !is CIStatus.SndRcvd -> true
+    oldStatus.isSent() && newStatus is CIStatus.SndNew -> true
+    else -> false
+  }
 
 @Serializable
 sealed class SndError {
