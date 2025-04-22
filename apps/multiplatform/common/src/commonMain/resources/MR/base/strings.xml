@@ -509,6 +509,8 @@
   <string name="report_compose_reason_header_community">Report violation: only group moderators will see it.</string>
   <string name="report_compose_reason_header_illegal">Report content: only group moderators will see it.</string>
   <string name="report_compose_reason_header_other">Report other: only group moderators will see it.</string>
+  <string name="report_sent_alert_title">Report sent to moderators</string>
+  <string name="report_sent_alert_msg_view_in_support_chat">You can view your reports in Support Chat.</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>

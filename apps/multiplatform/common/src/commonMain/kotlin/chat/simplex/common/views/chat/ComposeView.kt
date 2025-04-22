@@ -568,17 +568,21 @@ fun ComposeView(
       }
     }
 
+    fun showReportsInSupportChatAlert() {
+      AlertManager.shared.showAlertDialog(
+        title = generalGetString(MR.strings.report_sent_alert_title),
+        text = generalGetString(MR.strings.report_sent_alert_msg_view_in_support_chat),
+        confirmText = generalGetString(MR.strings.ok),
+        dismissText = generalGetString(MR.strings.dont_show_again),
+        onDismiss = {
+          chatModel.controller.appPrefs.showReportsInSupportChatAlert.set(false)
+        },
+      )
+    }
+
     suspend fun sendReport(reportReason: ReportReason, chatItemId: Long): List<ChatItem>? {
       val cItems = chatModel.controller.apiReportMessage(chat.remoteHostId, chat.chatInfo.apiId, chatItemId, reportReason, msgText)
-      if (cItems != null) {
-        // TODO [knocking] create report chat items in support scope
-        withContext(Dispatchers.Main) {
-          cItems.forEach { chatItem ->
-            chatsCtx.addChatItem(chat.remoteHostId, chat.chatInfo, chatItem.chatItem)
-          }
-        }
-      }
-
+      if (chatModel.controller.appPrefs.showReportsInSupportChatAlert.get()) showReportsInSupportChatAlert()
       return cItems?.map { it.chatItem }
     }
 
