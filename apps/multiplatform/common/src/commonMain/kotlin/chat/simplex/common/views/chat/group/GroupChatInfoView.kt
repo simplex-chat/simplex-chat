@@ -739,7 +739,7 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
 @Composable
 private fun MemberSupportButton(onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_flag), // TODO [knocking] change icon
+    painterResource(MR.images.ic_flag),
     stringResource(MR.strings.member_support),
     click = onClick
   )

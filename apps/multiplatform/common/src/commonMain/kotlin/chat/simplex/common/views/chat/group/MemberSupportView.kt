@@ -37,8 +37,8 @@ fun ModalData.MemberSupportView(
   scrollToItemId: MutableState<Long?>,
   close: () -> Unit
 ) {
-  KeyChangeEffect(chat.id) {
-    close()
+  KeyChangeEffect(chatModel.chatId.value) {
+    ModalManager.end.closeModals()
   }
   ModalView(close = close) {
     MemberSupportViewLayout(
