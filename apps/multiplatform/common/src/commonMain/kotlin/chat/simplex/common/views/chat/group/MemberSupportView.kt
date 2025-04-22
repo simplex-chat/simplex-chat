@@ -34,6 +34,7 @@ import kotlinx.coroutines.launch
 fun ModalData.MemberSupportView(
   chat: Chat,
   groupInfo: GroupInfo,
+  scrollToItemId: MutableState<Long?>,
   close: () -> Unit
 ) {
   KeyChangeEffect(chat.id) {
@@ -42,7 +43,8 @@ fun ModalData.MemberSupportView(
   ModalView(close = close) {
     MemberSupportViewLayout(
       chat,
-      groupInfo
+      groupInfo,
+      scrollToItemId
     )
   }
 }
@@ -50,11 +52,11 @@ fun ModalData.MemberSupportView(
 @Composable
 private fun ModalData.MemberSupportViewLayout(
   chat: Chat,
-  groupInfo: GroupInfo
+  groupInfo: GroupInfo,
+  scrollToItemId: MutableState<Long?>
 ) {
   val oneHandUI = remember { ChatController.appPrefs.oneHandUI.state }
   val scope = rememberCoroutineScope()
-  val scrollToItemId: MutableState<Long?> = remember { mutableStateOf(null) } // TODO [knocking] scroll to report from support chat?
 
   val membersWithChats = remember { chatModel.groupMembers }.value
     .filter { it.supportChat != null && it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }

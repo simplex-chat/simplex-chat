@@ -124,7 +124,7 @@ fun ChatView(
         val supportChatInfo = ChatInfo.Group(chatInfo.groupInfo, groupChatScope = scopeInfo)
         showMemberSupportChatView(
           chatModel.chatId,
-          scrollToItemId = mutableStateOf(null),
+          scrollToItemId,
           supportChatInfo,
           scopeInfo
         )
@@ -371,7 +371,7 @@ fun ChatView(
                 }
                 ModalManager.end.showModalCloseable(true) { close ->
                   remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
-                    GroupMemberInfoView(chatRh, groupInfo, mem, stats, code, chatModel, close, close)
+                    GroupMemberInfoView(chatRh, groupInfo, mem, scrollToItemId, stats, code, chatModel, close, close)
                   }
                 }
               }
@@ -1322,8 +1322,8 @@ fun BoxScope.ChatItemsList(
   val chatInfoUpdated = rememberUpdatedState(chatInfo)
   val scope = rememberCoroutineScope()
   val scrollToItem: (Long) -> Unit = remember {
-    // In group reports just set the itemId to scroll to so the main ChatView will handle scrolling
-    if (chatsCtx.contentTag == MsgContentTag.Report) return@remember { scrollToItemId.value = it }
+    // In secondary chat just set the itemId to scroll to so the main ChatView will handle scrolling
+    if (chatsCtx.contentTag == MsgContentTag.Report || chatsCtx.secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext) return@remember { scrollToItemId.value = it }
     scrollToItem(searchValue, loadingMoreItems, animatedScrollingInProgress, highlightedItems, chatInfoUpdated, maxHeight, scope, reversedChatItems, mergedItems, listState, loadMessages)
   }
   val scrollToQuotedItemFromItem: (Long) -> Unit = remember { findQuotedItemFromItem(chatsCtx, remoteHostIdUpdated, chatInfoUpdated, scope, scrollToItem) }
@@ -2167,7 +2167,6 @@ private fun FloatingDate(
   }
 }
 
-// TODO [knocking] same for member support chats?
 @Composable
 private fun SaveReportsStateOnDispose(chatsCtx: ChatModel.ChatsContext, listState: State<LazyListState>) {
   DisposableEffect(Unit) {
