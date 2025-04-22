@@ -101,21 +101,21 @@ fun SelectedItemsButtonsToolbar(
         )
       }
 
-      IconButton({ moderateItems() }, Modifier.alpha(if (canModerate.value) 1f else 0f), enabled = moderateEnabled.value && !deleteCountProhibited.value) {
+      IconButton({ moderateItems() }, Modifier.alpha(if (canModerate.value) 1f else 0f), enabled = moderateEnabled.value && !deleteCountProhibited.value && chatsCtx.secondaryContextFilter == null) {
         Icon(
           painterResource(MR.images.ic_flag),
           null,
           Modifier.size(22.dp),
-          tint = if (!moderateEnabled.value || deleteCountProhibited.value) MaterialTheme.colors.secondary else MaterialTheme.colors.error
+          tint = if (!moderateEnabled.value || deleteCountProhibited.value || chatsCtx.secondaryContextFilter != null) MaterialTheme.colors.secondary else MaterialTheme.colors.error
         )
       }
 
-      IconButton({ forwardItems() }, enabled = forwardEnabled.value && !forwardCountProhibited.value) {
+      IconButton({ forwardItems() }, enabled = forwardEnabled.value && !forwardCountProhibited.value && chatsCtx.secondaryContextFilter == null) {
         Icon(
           painterResource(MR.images.ic_forward),
           null,
           Modifier.size(22.dp),
-          tint = if (!forwardEnabled.value || forwardCountProhibited.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+          tint = if (!forwardEnabled.value || forwardCountProhibited.value || chatsCtx.secondaryContextFilter != null) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
         )
       }
     }
