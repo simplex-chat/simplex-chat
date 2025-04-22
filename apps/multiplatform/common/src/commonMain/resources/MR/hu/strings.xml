@@ -29,7 +29,7 @@
     <string name="accept_connection_request__question">Elfogadja a meghívási kérést?</string>
     <string name="accept_contact_button">Elfogadás</string>
     <string name="accept">Elfogadás</string>
-    <string name="add_address_to_your_profile">Cím hozzáadása a profilhoz, hogy a partnerei megoszthassák másokkal. A profilfrissítés el lesz küldve a saját partnerei számára.</string>
+    <string name="add_address_to_your_profile">Cím hozzáadása a profilhoz, hogy a partnerei megoszthassák másokkal. A profilfrissítés el lesz küldve partnerei számára.</string>
     <string name="color_primary_variant">További kiemelőszín</string>
     <string name="callstatus_error">híváshiba</string>
     <string name="v5_4_block_group_members">Csoporttagok letiltása</string>
@@ -48,7 +48,7 @@
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Megjegyzés:</b> az üzenet- és fájltovábbító kiszolgálók SOCKS-proxyn keresztül kapcsolódnak. A hívások és a hivatkozások előnézetének elküldése közvetlen kapcsolatot használnak.]]></string>
     <string name="full_backup">Alkalmazásadatok biztonsági mentése</string>
     <string name="database_initialization_error_title">Az adatbázis előkészítése sikertelen</string>
-    <string name="all_your_contacts_will_remain_connected_update_sent">A partnereivel kapcsolatban marad. A profilfrissítés el lesz küldve a saját partnerei számára.</string>
+    <string name="all_your_contacts_will_remain_connected_update_sent">A partnereivel kapcsolatban marad. A profilfrissítés el lesz küldve a partnerei számára.</string>
     <string name="v4_5_transport_isolation_descr">A csevegési profillal (alapértelmezett), vagy a kapcsolattal (BÉTA).</string>
     <string name="connect__a_new_random_profile_will_be_shared">Egy új, véletlenszerű profil lesz megosztva.</string>
     <string name="allow_voice_messages_only_if">A hangüzenetek küldése csak abban az esetben van engedélyezve, ha a partnere is engedélyezi.</string>
@@ -1038,7 +1038,7 @@
     <string name="smp_servers_save">Kiszolgálók mentése</string>
     <string name="group_welcome_title">Üdvözlőüzenet</string>
     <string name="network_option_seconds_label">mp</string>
-    <string name="profile_update_will_be_sent_to_contacts">A profilfrissítés el lesz küldve a saját partnerei számára.</string>
+    <string name="profile_update_will_be_sent_to_contacts">A profilfrissítés el lesz küldve a partnerei számára.</string>
     <string name="v5_3_simpler_incognito_mode">Egyszerűsített inkognitómód</string>
     <string name="save_welcome_message_question">Menti az üdvözlőüzenetet?</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Új csevegési fiók létrehozásához indítsa újra az alkalmazást.</string>
@@ -1341,7 +1341,7 @@
     <string name="you_can_use_markdown_to_format_messages__prompt">Üzenetek formázása a szövegbe szúrt speciális karakterekkel:</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[A hivatkozásra kattintva is kapcsolódhat. Ha megnyílik a böngészőben, kattintson a<b>Megnyitás az alkalmazásban</b> gombra.]]></string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">A csevegési profilja el lesz küldve\na partnere számára</string>
-    <string name="invite_prohibited_description">Egy olyan partnerét próbálja meghívni, akivel inkognitóprofilt osztott meg abban a csoportban, amelyben a saját fő profilja van használatban</string>
+    <string name="invite_prohibited_description">Egy olyan partnerét próbálja meghívni, akivel inkognitóprofilt osztott meg abban a csoportban, amelyben a fő profilja van használatban</string>
     <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[A csatlakozás már folyamatban van a(z) <b>%1$s</b> nevű csoporthoz.]]></string>
     <string name="onboarding_notifications_mode_off">Amikor az alkalmazás fut</string>
     <string name="alert_title_cant_invite_contacts_descr">Inkognitóprofilt használ ehhez a csoporthoz – fő profilja megosztásának elkerülése érdekében a meghívók küldése le van tiltva</string>
@@ -1361,7 +1361,7 @@
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">A profilja az eszközén van tárolva és csak a partnereivel van megosztva. A SimpleX-kiszolgálók nem láthatják a profilját.</string>
     <string name="snd_group_event_changed_member_role">Ön a következőre módosította %s szerepkörét: „%s”</string>
     <string name="you_rejected_group_invitation">Csoportmeghívó elutasítva</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Saját adatainak védelme érdekében a SimpleX külön üzenet-azonosítókat használ minden egyes kapcsolatához.</string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">Adatainak védelme érdekében a SimpleX külön üzenet-azonosítókat használ minden egyes kapcsolatához.</string>
     <string name="to_share_with_your_contact">(a megosztáshoz a partnerével)</string>
     <string name="you_sent_group_invitation">Csoportmeghívó elküldve</string>
     <string name="update_network_session_mode_question">Frissíti az átvitel-izoláció módját?</string>
@@ -1834,7 +1834,7 @@
     <string name="servers_info_sessions_connecting">Kapcsolódás</string>
     <string name="servers_info_sessions_errors">Hibák</string>
     <string name="servers_info_subscriptions_connections_pending">Függőben</string>
-    <string name="servers_info_private_data_disclaimer">Statisztikagyűjtés kezdete: %s.\nAz összes adat privát módon van tárolva a saját eszközén.</string>
+    <string name="servers_info_private_data_disclaimer">Statisztikagyűjtés kezdete: %s.\nAz összes adat privát módon van tárolva az eszközén.</string>
     <string name="servers_info_messages_sent">Elküldött üzenetek</string>
     <string name="servers_info_proxied_servers_section_header">Proxyzott kiszolgálók</string>
     <string name="servers_info_reconnect_servers_title">Újrakapcsolódik a kiszolgálókhoz?</string>
@@ -2090,7 +2090,7 @@
     <string name="errors_in_servers_configuration">Hibák a kiszolgálók konfigurációjában.</string>
     <string name="error_accepting_operator_conditions">Hiba történt a feltételek elfogadásakor</string>
     <string name="connection_error_quota">Kézbesítetlen üzenetek</string>
-    <string name="connection_error_quota_desc">A kapcsolat elérte a kézbesítetlen üzenetek számának határát, a saját partnere lehet, hogy offline állapotban van.</string>
+    <string name="connection_error_quota_desc">A kapcsolat elérte a kézbesítetlen üzenetek számának határát, a partnere lehet, hogy offline állapotban van.</string>
     <string name="message_deleted_or_not_received_error_title">Nincs üzenet</string>
     <string name="message_deleted_or_not_received_error_desc">Ez az üzenet törölve lett vagy még nem érkezett meg.</string>
     <string name="address_creation_instruction">Koppintson a SimpleX-cím létrehozása menüpontra a későbbi létrehozáshoz.</string>
