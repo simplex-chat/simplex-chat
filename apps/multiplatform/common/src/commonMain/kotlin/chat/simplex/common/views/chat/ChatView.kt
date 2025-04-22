@@ -806,7 +806,7 @@ fun ChatLayout(
               }
             }
           }
-          if (chatsCtx.contentTag == MsgContentTag.Report) { // TODO [knocking] similar bar for support chats, without archiveItems?
+          if (chatsCtx.contentTag == MsgContentTag.Report || chatsCtx.secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext) {
             Column(
               Modifier
                 .layoutId(CHAT_COMPOSE_LAYOUT_ID)
