@@ -496,7 +496,7 @@
     <string name="prohibit_sending_disappearing">Забороняйте надсилання повідомлень, які зникають.</string>
     <string name="prohibit_message_deletion">Забороняйте невідворотне видалення повідомлень.</string>
     <string name="group_members_can_send_voice">Учасники можуть надсилати голосові повідомлення.</string>
-    <string name="ttl_m">%dm</string>
+    <string name="ttl_m">%dм</string>
     <string name="new_in_version">Нове в %s</string>
     <string name="v5_1_self_destruct_passcode">Самознищуючий пароль</string>
     <string name="v4_5_italian_interface">Італійський інтерфейс</string>
@@ -528,7 +528,7 @@
     <string name="accept_feature_set_1_day">Встановити на 1 день</string>
     <string name="prohibit_message_reactions">Забороняйте реакції на повідомлення.</string>
     <string name="message_reactions_prohibited_in_this_chat">Реакції на повідомлення заборонені в цьому чаті.</string>
-    <string name="ttl_s">%ds</string>
+    <string name="ttl_s">%dс</string>
     <string name="custom_time_unit_minutes">хвилини</string>
     <string name="v4_6_chinese_spanish_interface">Китайський та іспанський інтерфейс</string>
     <string name="connection_local_display_name">підключення %1$d</string>
@@ -756,7 +756,7 @@
     <string name="ttl_hour">%d година</string>
     <string name="ttl_week">%d тиждень</string>
     <string name="ttl_weeks">%d тижні</string>
-    <string name="ttl_w">%dw</string>
+    <string name="ttl_w">%dтиж</string>
     <string name="feature_offered_item_with_param">запропоновано %s: %2s</string>
     <string name="v4_2_auto_accept_contact_requests_desc">З опційним вітанням.</string>
     <string name="v4_3_improved_privacy_and_security_desc">Приховуйте екран додатка в останніх програмах.</string>
@@ -876,7 +876,7 @@
     <string name="share_text_sent_at">Надіслано о: %s</string>
     <string name="share_text_deleted_at">Видалено о: %s</string>
     <string name="current_version_timestamp">%s (поточне)</string>
-    <string name="ttl_h">%dh</string>
+    <string name="ttl_h">%dч</string>
     <string name="ttl_day">%d день</string>
     <string name="ttl_days">%d днів</string>
     <string name="feature_cancelled_item">скасовано %s</string>
@@ -985,7 +985,7 @@
     <string name="change_role">Змінити роль</string>
     <string name="you_will_still_receive_calls_and_ntfs">Ви все ще отримуватимете дзвінки та сповіщення від приглушених профілів, коли вони активні.</string>
     <string name="ttl_months">%d місяці</string>
-    <string name="ttl_mth">%dmth</string>
+    <string name="ttl_mth">%dміс</string>
     <string name="v4_4_disappearing_messages_desc">Надіслані повідомлення будуть видалені після встановленого часу.</string>
     <string name="opening_database">Відкриття бази даних…</string>
     <string name="error_setting_address">Помилка встановлення адреси</string>
@@ -1133,7 +1133,7 @@
     <string name="connect_button">Підключитися</string>
     <string name="to_reveal_profile_enter_password">Щоб показати ваш схований профіль, введіть повний пароль у поле пошуку на сторінці Ваші профілі.</string>
     <string name="confirm_password">Підтвердити пароль</string>
-    <string name="ttl_d">%dd</string>
+    <string name="ttl_d">%dд</string>
     <string name="v4_6_hidden_chat_profiles_descr">Захистіть свої чат-профілі паролем!</string>
     <string name="decryption_error">Помилка дешифрування</string>
     <string name="error_xftp_test_server_auth">Сервер вимагає авторизації для завантаження, перевірте пароль</string>
@@ -2179,7 +2179,7 @@
     <string name="operator_conditions_failed_to_load">Текст поточних умов не вдалося завантажити, ви можете переглянути умови за цим посиланням:</string>
     <string name="errors_in_servers_configuration">Помилки в конфігурації серверів.</string>
     <string name="operator_conditions_accepted_on">Умови приймаються з: %s.</string>
-    <string name="v6_2_network_decentralization_enable_flux">Увімкнути flux</string>
+    <string name="v6_2_network_decentralization_enable_flux">Увімкніть Flux у налаштуваннях мережі та серверів для кращої конфіденційності метаданих</string>
     <string name="operator_conditions_will_be_accepted_on">Умови приймаються до: %s.</string>
     <string name="onboarding_network_operators_continue">Продовжити</string>
     <string name="create_1_time_link">Створити одноразове посилання</string>
@@ -2373,4 +2373,15 @@
     <string name="members_will_be_removed_from_chat_cannot_be_undone">Учасників буде видалено з чату – це неможливо скасувати!</string>
     <string name="unblock_members_for_all_question">Розблокувати учасників для всіх?</string>
     <string name="operator_updated_conditions">Оновлені умови</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">Приватні чати, групи та ваші контакти недоступні для операторів сервера.</string>
+    <string name="onboarding_conditions_accept">Прийняти</string>
+    <string name="onboarding_conditions_by_using_you_agree">Використовуючи SimpleX Chat, ви погоджуєтесь на:\n- надсилати тільки легальний контент у публічних групах.\n- поважати інших користувачів – без спаму.</string>
+    <string name="onboarding_conditions_configure_server_operators">Налаштувати операторів сервера</string>
+    <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Політика конфіденційності та умови використання</string>
+    <string name="privacy_short_links">Використовувати короткі посилання (BETA)</string>
+    <string name="link_requires_newer_app_version_please_upgrade">Це посилання вимагає новішої версії додатку. Будь ласка, оновіть додаток або попросіть вашого контакту надіслати сумісне посилання.</string>
+    <string name="full_link_button_text">Повне посилання</string>
+    <string name="short_link_button_text">Коротке посилання</string>
+    <string name="simplex_link_channel">Посилання на канал SimpleX</string>
+    <string name="unsupported_connection_link">Несумісне посилання для підключення</string>
 </resources>
