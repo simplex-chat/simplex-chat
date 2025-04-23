@@ -27,7 +27,6 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chatlist.setGroupMembers
 import chat.simplex.common.views.chatlist.unreadCountStr
-import chat.simplex.common.views.newchat.AddContactLearnMore
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.launch

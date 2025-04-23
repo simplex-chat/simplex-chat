@@ -1315,6 +1315,8 @@ data class Chat(
     val unreadMentions: Int = 0,
     // actual only via getChats() and getChat(.initial), otherwise, zero
     val reportsCount: Int = 0,
+    // actual only via getChats() and getChat(.initial), otherwise, zero
+    val supportChatsUnreadCount: Int = 0,
     val minUnreadItemId: Long = 0,
     // actual only via getChats(), otherwise, false
     val unreadChat: Boolean = false
