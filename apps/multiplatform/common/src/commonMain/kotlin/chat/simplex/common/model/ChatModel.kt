@@ -898,6 +898,28 @@ object ChatModel {
       }
     }
 
+    fun increaseGroupSupportChatsUnreadCounter(rhId: Long?, chatId: ChatId) {
+      changeGroupSupportChatsUnreadCounter(rhId, chatId, 1)
+    }
+
+    fun decreaseGroupSupportChatsUnreadCounter(rhId: Long?, chatId: ChatId, by: Int = 1) {
+      changeGroupSupportChatsUnreadCounter(rhId, chatId, -by)
+    }
+
+    private fun changeGroupSupportChatsUnreadCounter(rhId: Long?, chatId: ChatId, by: Int = 0) {
+      if (by == 0) return
+
+      val i = getChatIndex(rhId, chatId)
+      if (i >= 0) {
+        val chat = chats.value[i]
+        chats[i] = chat.copy(
+          chatStats = chat.chatStats.copy(
+            supportChatsUnreadCount = (chat.chatStats.supportChatsUnreadCount + by).coerceAtLeast(0),
+          )
+        )
+      }
+    }
+
     fun increaseGroupReportsCounter(rhId: Long?, chatId: ChatId) {
       changeGroupReportsCounter(rhId, chatId, 1)
     }

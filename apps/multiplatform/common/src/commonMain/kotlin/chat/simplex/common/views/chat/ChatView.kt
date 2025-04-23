@@ -624,6 +624,9 @@ fun ChatView(
               withBGApi {
                 withContext(Dispatchers.Main) {
                   chatModel.chatsContext.markChatItemsRead(chatRh, chatInfo.id, itemsIds)
+                  if (chatsCtx.secondaryContextFilter != null) {
+                    chatModel.chatsContext.decreaseGroupSupportChatsUnreadCounter(chatRh, chatInfo.id)
+                  }
                   ntfManager.cancelNotificationsForChat(chatInfo.id)
                   chatModel.controller.apiChatItemsRead(
                     chatRh,

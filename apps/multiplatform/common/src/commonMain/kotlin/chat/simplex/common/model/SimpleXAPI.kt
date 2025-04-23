@@ -2559,9 +2559,11 @@ object ChatController {
           if (active(r.user)) {
             withContext(Dispatchers.Main) {
               chatModel.chatsContext.addChatItem(rhId, cInfo, cItem)
-              // TODO [knocking] increase support chats unread count; move `isActiveReport` checks inside model functions?
               if (cItem.isActiveReport) {
                 chatModel.chatsContext.increaseGroupReportsCounter(rhId, cInfo.id)
+              }
+              if (cInfo.groupChatScope() != null && cItem.isRcvNew && cInfo.ntfsEnabled(cItem)) {
+                chatModel.chatsContext.increaseGroupSupportChatsUnreadCounter(rhId, cInfo.id)
               }
             }
             withContext(Dispatchers.Main) {
