@@ -140,10 +140,10 @@
 "%@, %@" = "%1$@, %2$@";
 
 /* No comment provided by engineer. */
-"%@, %@ and %lld members" = "%@, %@ и %lld участников";
+"%@, %@ and %lld members" = "%@, %@ и %lld членов группы";
 
 /* No comment provided by engineer. */
-"%@, %@ and %lld other members connected" = "установлено соединение с %@, %@ и %lld других участников";
+"%@, %@ and %lld other members connected" = "установлено соединение с %@, %@ и %lld других членов группы";
 
 /* copied message info */
 "%@:" = "%@:";
@@ -203,7 +203,7 @@
 "%lld group events" = "%lld событий";
 
 /* No comment provided by engineer. */
-"%lld members" = "%lld участников";
+"%lld members" = "%lld членов";
 
 /* No comment provided by engineer. */
 "%lld messages blocked" = "%lld сообщений заблокировано";
@@ -317,7 +317,7 @@ time interval */
 "A separate TCP connection will be used **for each chat profile you have in the app**." = "Отдельное TCP-соединение будет использоваться **для каждого профиля чата, который Вы имеете в приложении**.";
 
 /* No comment provided by engineer. */
-"A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "Будет использовано отдельное TCP соединение **для каждого контакта и участника группы**.\n**Примечание**: Чем больше подключений, тем быстрее разряжается батарея и расходуется трафик, а некоторые соединения могут отваливаться.";
+"A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "Будет использовано отдельное TCP соединение **для каждого контакта и члена группы**.\n**Примечание**: Чем больше подключений, тем быстрее разряжается батарея и расходуется трафик, а некоторые соединения могут отваливаться.";
 
 /* No comment provided by engineer. */
 "Abort" = "Прекратить";
@@ -446,7 +446,7 @@ swipe action */
 "admins" = "админы";
 
 /* No comment provided by engineer. */
-"Admins can block a member for all." = "Админы могут заблокировать участника группы.";
+"Admins can block a member for all." = "Админы могут заблокировать члена группы.";
 
 /* No comment provided by engineer. */
 "Admins can create the links to join groups." = "Админы могут создать ссылки для вступления в группу.";
@@ -482,7 +482,7 @@ swipe action */
 "All data is kept private on your device." = "Все данные хранятся только на вашем устройстве.";
 
 /* No comment provided by engineer. */
-"All group members will remain connected." = "Все участники группы останутся соединены.";
+"All group members will remain connected." = "Все члены группы останутся соединены.";
 
 /* No comment provided by engineer. */
 "All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages." = "Все сообщения и файлы отправляются с **end-to-end шифрованием**, с постквантовой безопасностью в прямых разговорах.";
@@ -536,7 +536,7 @@ swipe action */
 "Allow message reactions." = "Разрешить реакции на сообщения.";
 
 /* No comment provided by engineer. */
-"Allow sending direct messages to members." = "Разрешить личные сообщения участникам группы.";
+"Allow sending direct messages to members." = "Разрешить личные сообщения членам группы.";
 
 /* No comment provided by engineer. */
 "Allow sending disappearing messages." = "Разрешить посылать исчезающие сообщения.";
@@ -797,16 +797,16 @@ swipe action */
 "Block for all" = "Заблокировать для всех";
 
 /* No comment provided by engineer. */
-"Block group members" = "Заблокировать участников группы";
+"Block group members" = "Заблокировать членов группы";
 
 /* No comment provided by engineer. */
-"Block member" = "Заблокировать участника";
+"Block member" = "Заблокировать члена группы";
 
 /* No comment provided by engineer. */
 "Block member for all?" = "Заблокировать для всех?";
 
 /* No comment provided by engineer. */
-"Block member?" = "Заблокировать участника?";
+"Block member?" = "Заблокировать члена группы?";
 
 /* marked deleted chat item preview text */
 "blocked" = "заблокировано";
@@ -891,7 +891,7 @@ marked deleted chat item preview text */
 "Can't call contact" = "Не удается позвонить контакту";
 
 /* No comment provided by engineer. */
-"Can't call member" = "Не удаётся позвонить участнику группы";
+"Can't call member" = "Не удаётся позвонить члену группы";
 
 /* No comment provided by engineer. */
 "Can't invite contact!" = "Нельзя пригласить контакт!";
@@ -900,7 +900,7 @@ marked deleted chat item preview text */
 "Can't invite contacts!" = "Нельзя пригласить контакты!";
 
 /* No comment provided by engineer. */
-"Can't message member" = "Не удаётся отправить сообщение участнику";
+"Can't message member" = "Не удаётся отправить сообщение члену группы";
 
 /* alert action
 alert button */
@@ -943,7 +943,7 @@ alert button */
 "Change lock mode" = "Изменить режим блокировки";
 
 /* No comment provided by engineer. */
-"Change member role?" = "Поменять роль участника?";
+"Change member role?" = "Поменять роль члена группы?";
 
 /* authentication reason */
 "Change passcode" = "Изменить код доступа";
@@ -1567,7 +1567,7 @@ swipe action */
 "Delete" = "Удалить";
 
 /* No comment provided by engineer. */
-"Delete %lld messages of members?" = "Удалить %lld сообщений участников?";
+"Delete %lld messages of members?" = "Удалить %lld сообщений членов группы?";
 
 /* No comment provided by engineer. */
 "Delete %lld messages?" = "Удалить %lld сообщений?";
