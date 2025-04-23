@@ -63,6 +63,7 @@ fun ChatView(
   onComposed: suspend (chatId: String) -> Unit
 ) {
   val showSearch = rememberSaveable { mutableStateOf(false) }
+  val chat = chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }
   // They have their own iterator inside for a reason to prevent crash "Reading a state that was created after the snapshot..."
   val remoteHostId = remember { derivedStateOf { chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.remoteHostId } }
   val activeChatInfo = remember { derivedStateOf {
@@ -78,7 +79,7 @@ fun ChatView(
   } }
   val user = chatModel.currentUser.value
   val chatInfo = activeChatInfo.value
-  if (chatInfo == null || user == null) {
+  if (chat == null || chatInfo == null || user == null) {
     LaunchedEffect(Unit) {
       chatModel.chatId.value = null
       ModalManager.end.closeModals()
@@ -139,6 +140,7 @@ fun ChatView(
         chatsCtx.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.chatStats?.unreadCount ?: 0
       }
     }
+    val reportsCount = reportsCount(chatInfo.id)
     val clipboard = LocalClipboardManager.current
     CompositionLocalProvider(
       LocalAppBarHandler provides rememberAppBarHandler(chatInfo.id, keyboardCoversBar = false),
@@ -340,7 +342,7 @@ fun ChatView(
                 }
               }
             },
-            showGroupReports = {
+            showReportsOrSupportChats = {
               val info = activeChatInfo.value ?: return@ChatLayout
               if (ModalManager.end.hasModalsOpen()) {
                 ModalManager.end.closeModals()
@@ -348,7 +350,30 @@ fun ChatView(
               }
               hideKeyboard(view)
               scope.launch {
-                showGroupReportsView(staleChatId, scrollToItemId, info)
+                if (reportsCount > 0) {
+                  showGroupReportsView(staleChatId, scrollToItemId, info)
+                } else if (info is ChatInfo.Group && info.groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
+                  ModalManager.end.showCustomModal { close ->
+                    MemberSupportView(
+                      chatRh,
+                      chat,
+                      info.groupInfo,
+                      scrollToItemId,
+                      close
+                    )
+                  }
+                } else if (info is ChatInfo.Group) {
+                  val scopeInfo = GroupChatScopeInfo.MemberSupport(groupMember_ = null)
+                  val supportChatInfo = ChatInfo.Group(info.groupInfo, groupChatScope = scopeInfo)
+                  scope.launch {
+                    showMemberSupportChatView(
+                      chatModel.chatId,
+                      scrollToItemId = scrollToItemId,
+                      supportChatInfo,
+                      scopeInfo
+                    )
+                  }
+                }
               }
             },
             showMemberInfo = { groupInfo: GroupInfo, member: GroupMember ->
@@ -599,6 +624,9 @@ fun ChatView(
               withBGApi {
                 withContext(Dispatchers.Main) {
                   chatModel.chatsContext.markChatItemsRead(chatRh, chatInfo.id, itemsIds)
+                  if (chatsCtx.secondaryContextFilter != null) {
+                    chatModel.chatsContext.decreaseGroupSupportChatsUnreadCounter(chatRh, chatInfo.id)
+                  }
                   ntfManager.cancelNotificationsForChat(chatInfo.id)
                   chatModel.controller.apiChatItemsRead(
                     chatRh,
@@ -705,7 +733,7 @@ fun ChatLayout(
   selectedChatItems: MutableState<Set<Long>?>,
   back: () -> Unit,
   info: () -> Unit,
-  showGroupReports: () -> Unit,
+  showReportsOrSupportChats: () -> Unit,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   loadMessages: suspend (ChatId, ChatPagination, visibleItemIndexesNonReversed: () -> IntRange) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
@@ -856,9 +884,10 @@ fun ChatLayout(
           }
         }
         val reportsCount = reportsCount(chatInfo?.id)
+        val supportChatsUnreadCount = supportChatsUnreadCount(chatInfo?.id)
         if (oneHandUI.value && chatBottomBar.value) {
-          if (chatsCtx.secondaryContextFilter == null && reportsCount > 0) { // TODO [knocking] support chats unread count toolbar
-            ReportedCountToolbar(reportsCount, withStatusBar = true, showGroupReports)
+          if (chatsCtx.secondaryContextFilter == null && (reportsCount > 0 || supportChatsUnreadCount > 0)) {
+            SupportChatsCountToolbar(reportsCount, supportChatsUnreadCount, withStatusBar = true, showReportsOrSupportChats)
           } else {
             StatusBarBackground()
           }
@@ -914,8 +943,8 @@ fun ChatLayout(
                   SelectedItemsCounterToolbar(selectedChatItems, !oneHandUI.value || !chatBottomBar.value)
                 }
               }
-              if (reportsCount > 0 && (!oneHandUI.value || !chatBottomBar.value)) {
-                ReportedCountToolbar(reportsCount, withStatusBar = false, showGroupReports)
+              if ((reportsCount > 0 || supportChatsUnreadCount > 0) && (!oneHandUI.value || !chatBottomBar.value)) {
+                SupportChatsCountToolbar(reportsCount, supportChatsUnreadCount, withStatusBar = false, showReportsOrSupportChats)
               }
             }
           }
@@ -1147,10 +1176,11 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
 }
 
 @Composable
-private fun ReportedCountToolbar(
+private fun SupportChatsCountToolbar(
   reportsCount: Int,
+  supportChatsUnreadCount: Int,
   withStatusBar: Boolean,
-  showGroupReports: () -> Unit
+  showReportsOrSupportChats: () -> Unit
 ) {
   Box {
     val statusBarPadding = if (withStatusBar) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else 0.dp
@@ -1159,18 +1189,25 @@ private fun ReportedCountToolbar(
         .fillMaxWidth()
         .height(AppBarHeight * fontSizeSqrtMultiplier + statusBarPadding)
         .background(MaterialTheme.colors.background)
-        .clickable(onClick = showGroupReports)
+        .clickable(onClick = showReportsOrSupportChats)
         .padding(top = statusBarPadding),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.Center
     ) {
-      Icon(painterResource(MR.images.ic_flag), null, Modifier.size(22.dp), tint = MaterialTheme.colors.error)
+      val iconColor = if (reportsCount == 0) MaterialTheme.colors.primary else MaterialTheme.colors.error
+      Icon(painterResource(MR.images.ic_flag), null, Modifier.size(22.dp), tint = iconColor)
       Spacer(Modifier.width(4.dp))
       Text(
-        if (reportsCount == 1) {
-          stringResource(MR.strings.group_reports_active_one)
+        if (supportChatsUnreadCount == 0) {
+          if (reportsCount == 1) {
+            stringResource(MR.strings.group_reports_active_one)
+          } else {
+            stringResource(MR.strings.group_reports_active).format(reportsCount)
+          }
+        } else if (reportsCount == 0) {
+          stringResource(MR.strings.group_new_support_messages).format(supportChatsUnreadCount)
         } else {
-          stringResource(MR.strings.group_reports_active).format(reportsCount)
+          String.format(generalGetString(MR.strings.group_reports_active_new_support_messages), reportsCount, supportChatsUnreadCount)
         },
         style = MaterialTheme.typography.button
       )
@@ -1255,9 +1292,10 @@ fun BoxScope.ChatItemsList(
   }
   val reversedChatItems = remember { derivedStateOf { chatsCtx.chatItems.value.asReversed() } }
   val reportsCount = reportsCount(chatInfo.id)
+  val supportChatsUnreadCount = supportChatsUnreadCount(chatInfo.id)
   val topPaddingToContent = topPaddingToContent(
     chatView = chatsCtx.secondaryContextFilter == null,
-    additionalTopBar = chatsCtx.secondaryContextFilter == null && reportsCount > 0 // TODO [knocking] && support chats unread count > 0 ?
+    additionalTopBar = chatsCtx.secondaryContextFilter == null && (reportsCount > 0 || supportChatsUnreadCount > 0)
   )
   val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent.roundToPx() })
   val numberOfBottomAppBars = numberOfBottomAppBars()
@@ -1597,7 +1635,7 @@ fun BoxScope.ChatItemsList(
     ),
     reverseLayout = true,
     additionalBarOffset = composeViewHeight,
-    additionalTopBar = rememberUpdatedState(chatsCtx.secondaryContextFilter == null && reportsCount > 0), // TODO [knocking] && support chats unread count > 0 ?
+    additionalTopBar = rememberUpdatedState(chatsCtx.secondaryContextFilter == null && (reportsCount > 0 || supportChatsUnreadCount > 0)),
     chatBottomBar = remember { appPrefs.chatBottomBar.state }
   ) {
     val mergedItemsValue = mergedItems.value
@@ -2279,6 +2317,15 @@ fun reportsCount(staleChatId: String?): Int {
     0
   } else {
     remember(staleChatId) { derivedStateOf { chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId }?.chatStats } }.value?.reportsCount ?: 0
+  }
+}
+
+@Composable
+fun supportChatsUnreadCount(staleChatId: String?): Int {
+  return if (staleChatId?.startsWith("#") != true) {
+    0
+  } else {
+    remember(staleChatId) { derivedStateOf { chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId }?.chatStats } }.value?.supportChatsUnreadCount ?: 0
   }
 }
 
@@ -2980,7 +3027,7 @@ fun PreviewChatLayout() {
       selectedChatItems = remember { mutableStateOf(setOf()) },
       back = {},
       info = {},
-      showGroupReports = {},
+      showReportsOrSupportChats = {},
       showMemberInfo = { _, _ -> },
       loadMessages = { _, _, _ -> },
       deleteMessage = { _, _ -> },
@@ -3058,7 +3105,7 @@ fun PreviewGroupChatLayout() {
       selectedChatItems = remember { mutableStateOf(setOf()) },
       back = {},
       info = {},
-      showGroupReports = {},
+      showReportsOrSupportChats = {},
       showMemberInfo = { _, _ -> },
       loadMessages = { _, _, _ -> },
       deleteMessage = { _, _ -> },
