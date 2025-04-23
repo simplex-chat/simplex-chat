@@ -380,7 +380,7 @@ swipe action */
 "Active connections" = "Aktív kapcsolatok száma";
 
 /* No comment provided by engineer. */
-"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Cím hozzáadása a profilhoz, hogy a partnerei megoszthassák másokkal. A profilfrissítés el lesz küldve az Ön partnerei számára.";
+"Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Cím hozzáadása a profilhoz, hogy a partnerei megoszthassák másokkal. A profilfrissítés el lesz küldve partnerei számára.";
 
 /* No comment provided by engineer. */
 "Add friends" = "Barátok hozzáadása";
@@ -479,7 +479,7 @@ swipe action */
 "All data is erased when it is entered." = "A jelkód megadása után az összes adat törölve lesz.";
 
 /* No comment provided by engineer. */
-"All data is kept private on your device." = "Az összes adat privát módon van tárolva az Ön eszközén.";
+"All data is kept private on your device." = "Az összes adat privát módon van tárolva az eszközén.";
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Az összes csoporttag kapcsolatban marad.";
@@ -509,7 +509,7 @@ swipe action */
 "All your contacts will remain connected." = "Az összes partnerével kapcsolatban marad.";
 
 /* No comment provided by engineer. */
-"All your contacts will remain connected. Profile update will be sent to your contacts." = "A partnereivel kapcsolatban marad. A profilfrissítés el lesz küldve az Ön partnerei számára.";
+"All your contacts will remain connected. Profile update will be sent to your contacts." = "A partnereivel kapcsolatban marad. A profilfrissítés el lesz küldve a partnerei számára.";
 
 /* No comment provided by engineer. */
 "All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." = "Az összes partnere, -beszélgetése és -fájlja biztonságosan titkosítva lesz, majd töredékekre bontva feltöltődnek a beállított XFTP-továbbítókiszolgálókra.";
@@ -1202,10 +1202,10 @@ set passcode view */
 "Connect to yourself?" = "Kapcsolódik saját magához?";
 
 /* No comment provided by engineer. */
-"Connect to yourself?\nThis is your own one-time link!" = "Kapcsolódik saját magához?\nEz az Ön egyszer használható meghívója!";
+"Connect to yourself?\nThis is your own one-time link!" = "Kapcsolódik saját magához?\nEz a saját egyszer használható meghívója!";
 
 /* No comment provided by engineer. */
-"Connect to yourself?\nThis is your own SimpleX address!" = "Kapcsolódik saját magához?\nEz az Ön SimpleX-címe!";
+"Connect to yourself?\nThis is your own SimpleX address!" = "Kapcsolódik saját magához?\nEz a saját SimpleX-címe!";
 
 /* No comment provided by engineer. */
 "Connect via contact address" = "Kapcsolódás a kapcsolattartási címen keresztül";
@@ -1594,7 +1594,7 @@ swipe action */
 "Delete chat" = "Csevegés törlése";
 
 /* No comment provided by engineer. */
-"Delete chat messages from your device." = "Csevegési üzenetek törlése az Ön eszközéről.";
+"Delete chat messages from your device." = "Csevegési üzenetek törlése a saját eszközéről.";
 
 /* No comment provided by engineer. */
 "Delete chat profile" = "Csevegési profil törlése";
@@ -1633,7 +1633,7 @@ swipe action */
 "Delete for everyone" = "Törlés az összes tagnál";
 
 /* No comment provided by engineer. */
-"Delete for me" = "Csak számomra";
+"Delete for me" = "Csak nálam";
 
 /* No comment provided by engineer. */
 "Delete group" = "Csoport törlése";
@@ -1849,7 +1849,7 @@ swipe action */
 "Do not send history to new members." = "Az előzmények ne legyenek elküldve az új tagok számára.";
 
 /* No comment provided by engineer. */
-"Do NOT send messages directly, even if your or destination server does not support private routing." = "NE küldjön üzeneteket közvetlenül, még akkor sem, ha az Ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.";
+"Do NOT send messages directly, even if your or destination server does not support private routing." = "NE küldjön üzeneteket közvetlenül, még akkor sem, ha a saját kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.";
 
 /* No comment provided by engineer. */
 "Do not use credentials with proxy." = "Ne használja a hitelesítőadatokat proxyval.";
@@ -1910,7 +1910,7 @@ chat item action */
 "Downloading link details" = "Letöltési hivatkozás részletei";
 
 /* No comment provided by engineer. */
-"Duplicate display name!" = "Duplikált megjelenített név!";
+"Duplicate display name!" = "Duplikált megjelenítendő név!";
 
 /* integrity error chat item */
 "duplicate message" = "duplikált üzenet";
@@ -1944,6 +1944,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Enable camera access" = "Kamera hozzáférés engedélyezése";
+
+/* No comment provided by engineer. */
+"Enable Flux in Network & servers settings for better metadata privacy." = "A Flux kiszolgálókat engedélyezheti a beállításokban, a „Hálózat és kiszolgálók” menüben, a metaadatok jobb védelme érdekében.";
 
 /* No comment provided by engineer. */
 "Enable for all" = "Engedélyezés az összes tag számára";
@@ -2488,7 +2491,7 @@ snd error text */
 "For console" = "Konzolhoz";
 
 /* No comment provided by engineer. */
-"For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." = "Például, ha az Ön partnere egy SimpleX Chat-kiszolgálón keresztül fogadja az üzeneteket, az Ön alkalmazása egy Flux-kiszolgálón keresztül fogja azokat kézbesíteni.";
+"For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." = "Például, ha a partnere egy SimpleX Chat-kiszolgálón keresztül fogadja az üzeneteket, akkor az Ön alkalmazása egy Flux-kiszolgálón keresztül fogja azokat kézbesíteni.";
 
 /* No comment provided by engineer. */
 "For me" = "Csak magamnak";
@@ -2929,7 +2932,7 @@ snd error text */
 "invited to connect" = "Függőben lévő meghívó";
 
 /* rcv group event chat item */
-"invited via your group link" = "meghíva az Ön csoporthivatkozásán keresztül";
+"invited via your group link" = "meghíva a saját csoporthivatkozásán keresztül";
 
 /* No comment provided by engineer. */
 "iOS Keychain is used to securely store passphrase - it allows receiving push notifications." = "Az iOS kulcstartó a jelmondat biztonságos tárolására szolgál – lehetővé teszi a push-értesítések fogadását.";
@@ -2995,7 +2998,7 @@ snd error text */
 "Join with current profile" = "Csatlakozás a jelenlegi profillal";
 
 /* No comment provided by engineer. */
-"Join your group?\nThis is your link for group %@!" = "Csatlakozik a csoportjához?\nEz az Ön hivatkozása a(z) %@ nevű csoporthoz!";
+"Join your group?\nThis is your link for group %@!" = "Csatlakozik a csoportjához?\nEz a saját hivatkozása a(z) %@ nevű csoporthoz!";
 
 /* No comment provided by engineer. */
 "Joining group" = "Csatlakozás a csoporthoz";
@@ -3070,7 +3073,7 @@ snd error text */
 "List name and emoji should be different for all lists." = "Az összes lista nevének és emodzsijának különbözőnek kell lennie.";
 
 /* No comment provided by engineer. */
-"List name..." = "Listanév…";
+"List name..." = "Lista neve…";
 
 /* No comment provided by engineer. */
 "LIVE" = "ÉLŐ";
@@ -3415,7 +3418,7 @@ snd error text */
 "New desktop app!" = "Új számítógép-alkalmazás!";
 
 /* No comment provided by engineer. */
-"New display name" = "Új megjelenítési név";
+"New display name" = "Új megjelenítendő név";
 
 /* notification */
 "New events" = "Új események";
@@ -3906,7 +3909,7 @@ time to disappear */
 "Privacy & security" = "Adatvédelem és biztonság";
 
 /* No comment provided by engineer. */
-"Privacy for your customers." = "Az Ön ügyfeleinek adatvédelme.";
+"Privacy for your customers." = "Saját ügyfeleinek adatvédelme.";
 
 /* No comment provided by engineer. */
 "Privacy policy and conditions of use." = "Adatvédelmi szabályzat és felhasználási feltételek.";
@@ -3954,7 +3957,7 @@ time to disappear */
 "Profile theme" = "Profiltéma";
 
 /* alert message */
-"Profile update will be sent to your contacts." = "A profilfrissítés el lesz küldve az Ön partnerei számára.";
+"Profile update will be sent to your contacts." = "A profilfrissítés el lesz küldve a partnerei számára.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "A hívások kezdeményezése le van tiltva.";
@@ -4415,7 +4418,7 @@ chat item action */
 "Scan QR code" = "QR-kód beolvasása";
 
 /* No comment provided by engineer. */
-"Scan QR code from desktop" = "QR-kód beolvasása számítógépről";
+"Scan QR code from desktop" = "QR-kód beolvasása a számítógépről";
 
 /* No comment provided by engineer. */
 "Scan security code from your contact's app." = "Biztonsági kód beolvasása a partnere alkalmazásából.";
@@ -4517,10 +4520,10 @@ chat item action */
 "Send message to enable calls." = "Üzenet küldése a hívások engedélyezéséhez.";
 
 /* No comment provided by engineer. */
-"Send messages directly when IP address is protected and your or destination server does not support private routing." = "Közvetlen üzenetküldés, ha az IP-cím védett és az Ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.";
+"Send messages directly when IP address is protected and your or destination server does not support private routing." = "Közvetlen üzenetküldés, ha az IP-cím védett és a saját kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.";
 
 /* No comment provided by engineer. */
-"Send messages directly when your or destination server does not support private routing." = "Közvetlen üzenetküldés, ha az Ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.";
+"Send messages directly when your or destination server does not support private routing." = "Közvetlen üzenetküldés, ha a saját kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.";
 
 /* No comment provided by engineer. */
 "Send notifications" = "Értesítések küldése";
@@ -5002,10 +5005,10 @@ report reason */
 "Tap to scan" = "Koppintson ide a QR-kód beolvasásához";
 
 /* No comment provided by engineer. */
-"TCP connection" = "TCP kapcsolat";
+"TCP connection" = "TCP-kapcsolat";
 
 /* No comment provided by engineer. */
-"TCP connection timeout" = "TCP kapcsolat időtúllépése";
+"TCP connection timeout" = "TCP-kapcsolat időtúllépése";
 
 /* No comment provided by engineer. */
 "TCP port for messaging" = "TCP-port az üzenetváltáshoz";
@@ -5062,7 +5065,7 @@ report reason */
 "The code you scanned is not a SimpleX link QR code." = "A beolvasott QR-kód nem egy SimpleX-QR-kód-hivatkozás.";
 
 /* No comment provided by engineer. */
-"The connection reached the limit of undelivered messages, your contact may be offline." = "A kapcsolat elérte a kézbesítetlen üzenetek számának határát, az Ön partnere lehet, hogy offline állapotban van.";
+"The connection reached the limit of undelivered messages, your contact may be offline." = "A kapcsolat elérte a kézbesítetlen üzenetek számának határát, a partnere lehet, hogy offline állapotban van.";
 
 /* No comment provided by engineer. */
 "The connection you accepted will be cancelled!" = "Az Ön által elfogadott kérelem vissza lesz vonva!";
@@ -5173,10 +5176,10 @@ report reason */
 "This group no longer exists." = "Ez a csoport már nem létezik.";
 
 /* No comment provided by engineer. */
-"This is your own one-time link!" = "Ez az Ön egyszer használható meghívója!";
+"This is your own one-time link!" = "Ez a saját egyszer használható meghívója!";
 
 /* No comment provided by engineer. */
-"This is your own SimpleX address!" = "Ez az Ön SimpleX-címe!";
+"This is your own SimpleX address!" = "Ez a saját SimpleX-címe!";
 
 /* No comment provided by engineer. */
 "This link was used with another mobile device, please create a new link on the desktop." = "Ezt a hivatkozást egy másik hordozható eszközön már használták, hozzon létre egy új hivatkozást a számítógépén.";
@@ -5215,7 +5218,7 @@ report reason */
 "To protect your IP address, private routing uses your SMP servers to deliver messages." = "Az IP-cím védelmének érdekében a privát útválasztás az SMP-kiszolgálókat használja az üzenetek kézbesítéséhez.";
 
 /* No comment provided by engineer. */
-"To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "Az Ön adatainak védelme érdekében a SimpleX külön üzenet-azonosítókat használ minden egyes kapcsolatához.";
+"To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "Adatainak védelme érdekében a SimpleX külön üzenet-azonosítókat használ minden egyes kapcsolatához.";
 
 /* No comment provided by engineer. */
 "To receive" = "A fogadáshoz";
@@ -5707,7 +5710,7 @@ report reason */
 "You allow" = "Ön engedélyezi";
 
 /* No comment provided by engineer. */
-"You already have a chat profile with the same display name. Please choose another name." = "Már van egy csevegési profil ugyanezzel a megjelenített névvel. Válasszon egy másik nevet.";
+"You already have a chat profile with the same display name. Please choose another name." = "Már van egy csevegési profil ugyanezzel a megjelenítendő névvel. Válasszon egy másik nevet.";
 
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Ön már kapcsolódott a következőhöz: %@.";
@@ -5926,7 +5929,7 @@ report reason */
 "you: " = "Ön: ";
 
 /* No comment provided by engineer. */
-"You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" = "Egy olyan partnerét próbálja meghívni, akivel inkognitóprofilt osztott meg abban a csoportban, amelyben a saját fő profilja van használatban";
+"You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" = "Egy olyan partnerét próbálja meghívni, akivel inkognitóprofilt osztott meg abban a csoportban, amelyben a fő profilja van használatban";
 
 /* No comment provided by engineer. */
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Inkognitóprofilt használ ehhez a csoporthoz – fő profilja megosztásának elkerülése érdekében a meghívók küldése le van tiltva";
@@ -5986,10 +5989,10 @@ report reason */
 "Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "A profilja az eszközén van tárolva és csak a partnereivel van megosztva. A SimpleX-kiszolgálók nem láthatják a profilját.";
 
 /* alert message */
-"Your profile was changed. If you save it, the updated profile will be sent to all your contacts." = "A profilja módosult. Ha elmenti, a profilfrissítés el lesz küldve az Ön partnerei számára.";
+"Your profile was changed. If you save it, the updated profile will be sent to all your contacts." = "A profilja módosult. Ha elmenti, a profilfrissítés el lesz küldve a partnerei számára.";
 
 /* No comment provided by engineer. */
-"Your profile, contacts and delivered messages are stored on your device." = "A profilja, a partnerei és az elküldött üzenetei az Ön eszközén vannak tárolva.";
+"Your profile, contacts and delivered messages are stored on your device." = "A profilja, a partnerei és az elküldött üzenetei a saját eszközén vannak tárolva.";
 
 /* No comment provided by engineer. */
 "Your random profile" = "Véletlenszerű profil";

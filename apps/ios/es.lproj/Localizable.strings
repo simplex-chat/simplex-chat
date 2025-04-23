@@ -287,7 +287,7 @@ time interval */
 "1 week" = "una semana";
 
 /* delete after time */
-"1 year" = "Un año";
+"1 year" = "1 año";
 
 /* No comment provided by engineer. */
 "1-time link" = "Enlace de un uso";
@@ -551,7 +551,7 @@ swipe action */
 "Allow to irreversibly delete sent messages. (24 hours)" = "Se permite la eliminación irreversible de mensajes. (24 horas)";
 
 /* No comment provided by engineer. */
-"Allow to report messsages to moderators." = "Se permite informar de mensajes a los moderadores.";
+"Allow to report messsages to moderators." = "Permitir informar de mensajes a los moderadores.";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Se permite enviar archivos y multimedia.";
@@ -1944,6 +1944,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Enable camera access" = "Permitir acceso a la cámara";
+
+/* No comment provided by engineer. */
+"Enable Flux in Network & servers settings for better metadata privacy." = "Habilitar Flux en la configuración de Red y servidores para mejorar la privacidad de los metadatos.";
 
 /* No comment provided by engineer. */
 "Enable for all" = "Activar para todos";

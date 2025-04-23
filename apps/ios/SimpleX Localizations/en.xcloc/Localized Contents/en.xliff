@@ -7199,6 +7199,11 @@ chat item action</note>
         <target>Share with contacts</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Short link" xml:space="preserve">
+        <source>Short link</source>
+        <target>Short link</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Show QR code" xml:space="preserve">
         <source>Show QR code</source>
         <target>Show QR code</target>
@@ -7298,6 +7303,11 @@ chat item action</note>
         <source>SimpleX address or 1-time link?</source>
         <target>SimpleX address or 1-time link?</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX channel link" xml:space="preserve">
+        <source>SimpleX channel link</source>
+        <target>SimpleX channel link</target>
+        <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="SimpleX contact address" xml:space="preserve">
         <source>SimpleX contact address</source>
@@ -7889,6 +7899,11 @@ It can happen because of some bug or when the connection is compromised.</target
         <target>This is your own one-time link!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." xml:space="preserve">
+        <source>This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.</source>
+        <target>This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="This link was used with another mobile device, please create a new link on the desktop." xml:space="preserve">
         <source>This link was used with another mobile device, please create a new link on the desktop.</source>
         <target>This link was used with another mobile device, please create a new link on the desktop.</target>
@@ -8188,6 +8203,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>Unread</target>
         <note>swipe action</note>
       </trans-unit>
+      <trans-unit id="Unsupported connection link" xml:space="preserve">
+        <source>Unsupported connection link</source>
+        <target>Unsupported connection link</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve">
         <source>Up to 100 last messages are sent to new members.</source>
         <target>Up to 100 last messages are sent to new members.</target>
@@ -8346,6 +8366,11 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Use servers" xml:space="preserve">
         <source>Use servers</source>
         <target>Use servers</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use short links (BETA)" xml:space="preserve">
+        <source>Use short links (BETA)</source>
+        <target>Use short links (BETA)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use the app while in the call." xml:space="preserve">

@@ -1950,10 +1950,10 @@
     <string name="block_members_desc">כל ההודעות החדשות מחברים אלו יוסתרו!</string>
     <string name="block_members_for_all_question">לחסום את חברי הקבוצה לכולם?</string>
     <string name="report_item_archived_by">הדיווח הועבר לארכיון ע\"י %s</string>
-    <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[ניתן להשתמש בקישור חד פעמי <i> עם איש קשר אחד בלבד</i> - שתף באופן אישי או באמצעות כל מסנג'ר.]]></string>
+    <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[ניתן להשתמש בקישור חד פעמי <i> עם איש קשר אחד בלבד</i> - שתף באופן אישי או באמצעות כל מסנג\'ר.]]></string>
     <string name="v6_0_privacy_blur">טשטוש בשביל שיפור הפרטיות.</string>
     <string name="group_reports_active_one">דיווח 1</string>
-    <string name="delete_chat_list_warning">כל הצ\'אטים יוסרו מהרשימת %s, והרשימה %s תימחק</string>
+    <string name="delete_chat_list_warning">כל הצ\'אטים יוסרו מהרשימת %s, והרשימה תימחק</string>
     <string name="change_list">שנה רשימה</string>
     <string name="allow_calls_question">לאפשר שיחות?</string>
     <string name="delete_chat_for_self_cannot_undo_warning">הצ\'אט יימחק עבורך - אי אפשר לבטל את זה!</string>

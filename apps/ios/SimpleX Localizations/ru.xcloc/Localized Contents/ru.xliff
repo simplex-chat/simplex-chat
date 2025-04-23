@@ -125,14 +125,14 @@
         <target>%1$@, %2$@</target>
         <note>format for date separator in chat</note>
       </trans-unit>
-      <trans-unit id="%@, %@ and %lld members" xml:space="preserve" approved="no">
+      <trans-unit id="%@, %@ and %lld members" xml:space="preserve">
         <source>%@, %@ and %lld members</source>
-        <target state="translated">%@, %@ и %lld участников</target>
+        <target>%@, %@ и %lld участников</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@, %@ and %lld other members connected" xml:space="preserve" approved="no">
+      <trans-unit id="%@, %@ and %lld other members connected" xml:space="preserve">
         <source>%@, %@ and %lld other members connected</source>
-        <target state="translated">установлено соединение с %@, %@ и %lld других участников</target>
+        <target>установлено соединение с %@, %@ и %lld других участников</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@:" xml:space="preserve">
@@ -230,9 +230,9 @@
         <target>%lld событий</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld members" xml:space="preserve" approved="no">
+      <trans-unit id="%lld members" xml:space="preserve">
         <source>%lld members</source>
-        <target state="translated">%lld участников</target>
+        <target>%lld участников</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld messages blocked" xml:space="preserve">
@@ -521,10 +521,10 @@ time interval</note>
         <target>Отдельное TCP-соединение будет использоваться **для каждого профиля чата, который Вы имеете в приложении**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="A separate TCP connection will be used **for each contact and group member**.&#10;**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." xml:space="preserve" approved="no">
+      <trans-unit id="A separate TCP connection will be used **for each contact and group member**.&#10;**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." xml:space="preserve">
         <source>A separate TCP connection will be used **for each contact and group member**.
 **Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.</source>
-        <target state="translated">Будет использовано отдельное TCP соединение **для каждого контакта и участника группы**.
+        <target>Будет использовано отдельное TCP соединение **для каждого контакта и участника группы**.
 **Примечание**: Чем больше подключений, тем быстрее разряжается батарея и расходуется трафик, а некоторые соединения могут отваливаться.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -711,9 +711,9 @@ swipe action</note>
         <target>Настройки адреса</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Admins can block a member for all." xml:space="preserve" approved="no">
+      <trans-unit id="Admins can block a member for all." xml:space="preserve">
         <source>Admins can block a member for all.</source>
-        <target state="translated">Админы могут заблокировать участника группы.</target>
+        <target>Админы могут заблокировать участника группы.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
@@ -761,9 +761,9 @@ swipe action</note>
         <target>Все данные хранятся только на вашем устройстве.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All group members will remain connected." xml:space="preserve" approved="no">
+      <trans-unit id="All group members will remain connected." xml:space="preserve">
         <source>All group members will remain connected.</source>
-        <target state="translated">Все участники группы останутся соединены.</target>
+        <target>Все участники группы останутся соединены.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages." xml:space="preserve">
@@ -851,9 +851,9 @@ swipe action</note>
         <target>Разрешить реакции на сообщения.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow sending direct messages to members." xml:space="preserve" approved="no">
+      <trans-unit id="Allow sending direct messages to members." xml:space="preserve">
         <source>Allow sending direct messages to members.</source>
-        <target state="translated">Разрешить личные сообщения участникам группы.</target>
+        <target>Разрешить личные сообщения участникам группы.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow sending disappearing messages." xml:space="preserve">
@@ -1246,24 +1246,24 @@ swipe action</note>
         <target>Заблокировать для всех</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Block group members" xml:space="preserve" approved="no">
+      <trans-unit id="Block group members" xml:space="preserve">
         <source>Block group members</source>
-        <target state="translated">Заблокировать участников группы</target>
+        <target>Заблокировать участников группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Block member" xml:space="preserve" approved="no">
+      <trans-unit id="Block member" xml:space="preserve">
         <source>Block member</source>
-        <target state="translated">Заблокировать участника</target>
+        <target>Заблокировать участника</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Block member for all?" xml:space="preserve" approved="no">
+      <trans-unit id="Block member for all?" xml:space="preserve">
         <source>Block member for all?</source>
-        <target state="translated">Заблокировать для всех?</target>
+        <target>Заблокировать для всех?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Block member?" xml:space="preserve" approved="no">
+      <trans-unit id="Block member?" xml:space="preserve">
         <source>Block member?</source>
-        <target state="translated">Заблокировать участника?</target>
+        <target>Заблокировать участника?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Blocked by admin" xml:space="preserve">
@@ -1365,9 +1365,9 @@ swipe action</note>
         <target>Не удается позвонить контакту</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't call member" xml:space="preserve" approved="no">
+      <trans-unit id="Can't call member" xml:space="preserve">
         <source>Can't call member</source>
-        <target state="translated">Не удаётся позвонить участнику группы</target>
+        <target>Не удаётся позвонить участнику группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
@@ -1380,9 +1380,9 @@ swipe action</note>
         <target>Нельзя пригласить контакты!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't message member" xml:space="preserve" approved="no">
+      <trans-unit id="Can't message member" xml:space="preserve">
         <source>Can't message member</source>
-        <target state="translated">Не удаётся отправить сообщение участнику</target>
+        <target>Не удаётся отправить сообщение участнику</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cancel" xml:space="preserve">
@@ -1446,9 +1446,9 @@ alert button</note>
         <target>Изменить режим блокировки</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Change member role?" xml:space="preserve" approved="no">
+      <trans-unit id="Change member role?" xml:space="preserve">
         <source>Change member role?</source>
-        <target state="translated">Поменять роль участника?</target>
+        <target>Поменять роль участника?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change passcode" xml:space="preserve">
@@ -2347,9 +2347,9 @@ This is your own one-time link!</source>
         <note>alert action
 swipe action</note>
       </trans-unit>
-      <trans-unit id="Delete %lld messages of members?" xml:space="preserve" approved="no">
+      <trans-unit id="Delete %lld messages of members?" xml:space="preserve">
         <source>Delete %lld messages of members?</source>
-        <target state="translated">Удалить %lld сообщений участников?</target>
+        <target>Удалить %lld сообщений участников?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete %lld messages?" xml:space="preserve">
@@ -2682,9 +2682,9 @@ swipe action</note>
         <target>Прямые сообщения</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Direct messages between members are prohibited in this chat." xml:space="preserve" approved="no">
+      <trans-unit id="Direct messages between members are prohibited in this chat." xml:space="preserve">
         <source>Direct messages between members are prohibited in this chat.</source>
-        <target state="translated">Личные сообщения запрещены в этой группе.</target>
+        <target>Личные сообщения запрещены в этой группе.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Direct messages between members are prohibited." xml:space="preserve">
@@ -7158,6 +7158,10 @@ chat item action</note>
         <target>Поделиться с контактами</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Short link" xml:space="preserve">
+        <source>Short link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Show QR code" xml:space="preserve">
         <source>Show QR code</source>
         <target>Показать QR код</target>
@@ -7257,6 +7261,10 @@ chat item action</note>
         <source>SimpleX address or 1-time link?</source>
         <target>Адрес SimpleX или одноразовая ссылка?</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX channel link" xml:space="preserve">
+        <source>SimpleX channel link</source>
+        <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="SimpleX contact address" xml:space="preserve">
         <source>SimpleX contact address</source>
@@ -7843,6 +7851,10 @@ It can happen because of some bug or when the connection is compromised.</source
         <target>Это ваша собственная одноразовая ссылка!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." xml:space="preserve">
+        <source>This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="This link was used with another mobile device, please create a new link on the desktop." xml:space="preserve">
         <source>This link was used with another mobile device, please create a new link on the desktop.</source>
         <target>Эта ссылка была использована на другом мобильном, пожалуйста, создайте новую ссылку на компьютере.</target>
@@ -8139,6 +8151,10 @@ To connect, please ask your contact to create another connection link and check 
         <target>Не прочитано</target>
         <note>swipe action</note>
       </trans-unit>
+      <trans-unit id="Unsupported connection link" xml:space="preserve">
+        <source>Unsupported connection link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve">
         <source>Up to 100 last messages are sent to new members.</source>
         <note>No comment provided by engineer.</note>
@@ -8296,6 +8312,10 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Use servers" xml:space="preserve">
         <source>Use servers</source>
         <target>Использовать серверы</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use short links (BETA)" xml:space="preserve">
+        <source>Use short links (BETA)</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use the app while in the call." xml:space="preserve">

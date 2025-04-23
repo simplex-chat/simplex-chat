@@ -1331,11 +1331,11 @@ swipe action</note>
         <target>Via chatprofiel (standaard) of [via verbinding](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="By using SimpleX Chat you agree to:&#10;- send only legal content in public groups.&#10;- respect other users – no spam." xml:space="preserve" approved="no">
+      <trans-unit id="By using SimpleX Chat you agree to:&#10;- send only legal content in public groups.&#10;- respect other users – no spam." xml:space="preserve">
         <source>By using SimpleX Chat you agree to:
 - send only legal content in public groups.
 - respect other users – no spam.</source>
-        <target state="translated">Door SimpleX Chat te gebruiken, gaat u ermee akkoord:
+        <target>Door SimpleX Chat te gebruiken, gaat u ermee akkoord:
 - alleen legale content te versturen in openbare groepen.
 - andere gebruikers te respecteren – geen spam.</target>
         <note>No comment provided by engineer.</note>
@@ -1742,9 +1742,9 @@ set passcode view</note>
         <target>ICE servers configureren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Configure server operators" xml:space="preserve" approved="no">
+      <trans-unit id="Configure server operators" xml:space="preserve">
         <source>Configure server operators</source>
-        <target state="translated">Serveroperators configureren</target>
+        <target>Serveroperators configureren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm" xml:space="preserve">
@@ -2918,9 +2918,9 @@ chat item action</note>
         <target>Inschakelen (overschrijvingen behouden)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable Flux in Network &amp; servers settings for better metadata privacy." xml:space="preserve" approved="no">
+      <trans-unit id="Enable Flux in Network &amp; servers settings for better metadata privacy." xml:space="preserve">
         <source>Enable Flux in Network &amp; servers settings for better metadata privacy.</source>
-        <target state="translated">Schakel Flux in bij Netwerk- en serverinstellingen voor betere privacy van metagegevens.</target>
+        <target>Schakel Flux in bij Netwerk- en serverinstellingen voor betere privacy van metagegevens.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
@@ -5899,9 +5899,9 @@ Fout: %@</target>
         <target>Privacy voor uw klanten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Privacy policy and conditions of use." xml:space="preserve" approved="no">
+      <trans-unit id="Privacy policy and conditions of use." xml:space="preserve">
         <source>Privacy policy and conditions of use.</source>
-        <target state="translated">Privacybeleid en gebruiksvoorwaarden.</target>
+        <target>Privacybeleid en gebruiksvoorwaarden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Privacy redefined" xml:space="preserve">
@@ -5909,9 +5909,9 @@ Fout: %@</target>
         <target>Privacy opnieuw gedefinieerd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Private chats, groups and your contacts are not accessible to server operators." xml:space="preserve" approved="no">
+      <trans-unit id="Private chats, groups and your contacts are not accessible to server operators." xml:space="preserve">
         <source>Private chats, groups and your contacts are not accessible to server operators.</source>
-        <target state="translated">Privéchats, groepen en uw contacten zijn niet toegankelijk voor serverbeheerders.</target>
+        <target>Privéchats, groepen en uw contacten zijn niet toegankelijk voor serverbeheerders.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private filenames" xml:space="preserve">
@@ -7199,6 +7199,10 @@ chat item action</note>
         <target>Delen met contacten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Short link" xml:space="preserve">
+        <source>Short link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Show QR code" xml:space="preserve">
         <source>Show QR code</source>
         <target>Toon QR-code</target>
@@ -7298,6 +7302,10 @@ chat item action</note>
         <source>SimpleX address or 1-time link?</source>
         <target>SimpleX adres of eenmalige link?</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX channel link" xml:space="preserve">
+        <source>SimpleX channel link</source>
+        <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="SimpleX contact address" xml:space="preserve">
         <source>SimpleX contact address</source>
@@ -7889,6 +7897,10 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
         <target>Dit is uw eigen eenmalige link!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." xml:space="preserve">
+        <source>This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="This link was used with another mobile device, please create a new link on the desktop." xml:space="preserve">
         <source>This link was used with another mobile device, please create a new link on the desktop.</source>
         <target>Deze link is gebruikt met een ander mobiel apparaat. Maak een nieuwe link op de desktop.</target>
@@ -8188,6 +8200,10 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Ongelezen</target>
         <note>swipe action</note>
       </trans-unit>
+      <trans-unit id="Unsupported connection link" xml:space="preserve">
+        <source>Unsupported connection link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve">
         <source>Up to 100 last messages are sent to new members.</source>
         <target>Er worden maximaal 100 laatste berichten naar nieuwe leden verzonden.</target>
@@ -8346,6 +8362,10 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
       <trans-unit id="Use servers" xml:space="preserve">
         <source>Use servers</source>
         <target>Gebruik servers</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use short links (BETA)" xml:space="preserve">
+        <source>Use short links (BETA)</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use the app while in the call." xml:space="preserve">
