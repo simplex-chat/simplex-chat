@@ -143,7 +143,7 @@
 "%@, %@ and %lld members" = "%@, %@ и %lld членов группы";
 
 /* No comment provided by engineer. */
-"%@, %@ and %lld other members connected" = "установлено соединение с %@, %@ и %lld других членов группы";
+"%@, %@ and %lld other members connected" = "установлено соединение с %@, %@ и %lld другими членами группы";
 
 /* copied message info */
 "%@:" = "%@:";
