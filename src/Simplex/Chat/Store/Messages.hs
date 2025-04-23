@@ -779,7 +779,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
           WHERE user_id = ? AND group_id IS NOT NULL
             AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0
           GROUP BY group_id
-        ) ReportCount ON ReportCount.group_id = g.group_id,
+        ) ReportCount ON ReportCount.group_id = g.group_id
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS Count
           FROM chat_items
