@@ -25,13 +25,16 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.item.ItemAction
+import chat.simplex.common.views.chatlist.setGroupMembers
 import chat.simplex.common.views.chatlist.unreadCountStr
+import chat.simplex.common.views.newchat.AddContactLearnMore
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.launch
 
 @Composable
 fun ModalData.MemberSupportView(
+  rhId: Long?,
   chat: Chat,
   groupInfo: GroupInfo,
   scrollToItemId: MutableState<Long?>,
@@ -40,11 +43,37 @@ fun ModalData.MemberSupportView(
   KeyChangeEffect(chatModel.chatId.value) {
     ModalManager.end.closeModals()
   }
-  ModalView(close = close) {
+  LaunchedEffect(Unit) {
+    setGroupMembers(rhId, groupInfo, chatModel)
+  }
+  ModalView(
+    close = close,
+    endButtons = { RefreshMembersButton(rhId, groupInfo) }
+  ) {
     MemberSupportViewLayout(
       chat,
       groupInfo,
       scrollToItemId
+    )
+  }
+}
+
+@Composable
+fun RefreshMembersButton(
+  rhId: Long?,
+  groupInfo: GroupInfo
+) {
+  IconButton(
+    onClick = {
+      withBGApi {
+        setGroupMembers(rhId, groupInfo, chatModel)
+      }
+    }
+  ) {
+    Icon(
+      painterResource(MR.images.ic_refresh),
+      contentDescription = null,
+      tint = MaterialTheme.colors.primary
     )
   }
 }

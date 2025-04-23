@@ -144,6 +144,7 @@ fun ModalData.GroupChatInfoView(
       openMemberSupport = {
         ModalManager.end.showCustomModal { close ->
           MemberSupportView(
+            rhId,
             chat,
             groupInfo,
             scrollToItemId,
