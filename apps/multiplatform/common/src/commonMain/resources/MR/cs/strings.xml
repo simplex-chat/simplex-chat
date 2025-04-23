@@ -1373,9 +1373,7 @@
     <string name="v5_3_simpler_incognito_mode">Zjednodušený režim inkognito</string>
     <string name="v5_3_new_desktop_app_descr">Vytvořit nový profil v desktopové aplikaci. 💻</string>
     <string name="v5_3_simpler_incognito_mode_descr">Změnit inkognito při připojování.</string>
-    <string name="v5_3_discover_join_groups_descr">- připojit k adresáři skupin (BETA)!
-\n- doručenky (až 20 členů).
-\n- rychlejší a stabilnější.</string>
+    <string name="v5_3_discover_join_groups_descr">- připojení k adresáři skupin (BETA)!\n- doručenky (až 20 členů).\n- rychlejší a stabilnější.</string>
     <string name="member_contact_send_direct_message">odeslat přímou zprávu</string>
     <string name="rcv_direct_event_contact_deleted">smazaný kontakt</string>
     <string name="error_alert_title">Chyba</string>
@@ -2113,7 +2111,7 @@
     <string name="operator_conditions_will_be_applied"><![CDATA[Tyto podmínky budou také platit pro: <b>%s</b>.]]></string>
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[Podmínky budou přijaty pro operátor(y): <b>%s</b>.]]></string>
     <string name="operator_added_xftp_servers">Přidány servery pro média &amp; soubory</string>
-    <string name="v6_2_network_decentralization_enable_flux">Povolit flux</string>
+    <string name="v6_2_network_decentralization_enable_flux">Povolte Flux v nastavení sítě a serverů pro lepší ochranu metadat.</string>
     <string name="servers_info_proxied_servers_section_header">Servery přes proxy</string>
     <string name="v6_2_business_chats_descr">Soukromí pro vaše zákazníky.</string>
     <string name="group_member_role_moderator">moderátor</string>
@@ -2367,4 +2365,9 @@
     <string name="members_will_be_removed_from_group_cannot_be_undone">Členové budou odstraněny ze skupiny - toto nelze zvrátit!</string>
     <string name="button_remove_members_question">Odebrat členy?</string>
     <string name="members_will_be_removed_from_chat_cannot_be_undone">Členové budou odstraněny z chatu - toto nelze zvrátit!</string>
+    <string name="onboarding_conditions_by_using_you_agree">Použitím SimpleX chatu souhlasíte že:\n- ve veřejných skupinách budete zasílat pouze legální obsah.\n- budete respektovat ostatní uživatele – žádný spam.</string>
+    <string name="onboarding_conditions_accept">Přijmout</string>
+    <string name="onboarding_conditions_configure_server_operators">Nastavit operátora serveru</string>
+    <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Zásady ochrany soukromí a podmínky používání.</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">Soukromé konverzace, skupiny a kontakty nejsou přístupné provozovatelům serverů.</string>
 </resources>

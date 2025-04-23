@@ -864,6 +864,9 @@ marked deleted chat item preview text */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Via chatprofiel (standaard) of [via verbinding](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
 
 /* No comment provided by engineer. */
+"By using SimpleX Chat you agree to:\n- send only legal content in public groups.\n- respect other users – no spam." = "Door SimpleX Chat te gebruiken, gaat u ermee akkoord:\n- alleen legale content te versturen in openbare groepen.\n- andere gebruikers te respecteren – geen spam.";
+
+/* No comment provided by engineer. */
 "call" = "bellen";
 
 /* No comment provided by engineer. */
@@ -1140,6 +1143,9 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Configure ICE servers" = "ICE servers configureren";
+
+/* No comment provided by engineer. */
+"Configure server operators" = "Serveroperators configureren";
 
 /* No comment provided by engineer. */
 "Confirm" = "Bevestigen";
@@ -1938,6 +1944,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Enable camera access" = "Schakel cameratoegang in";
+
+/* No comment provided by engineer. */
+"Enable Flux in Network & servers settings for better metadata privacy." = "Schakel Flux in bij Netwerk- en serverinstellingen voor betere privacy van metagegevens.";
 
 /* No comment provided by engineer. */
 "Enable for all" = "Inschakelen voor iedereen";
@@ -3903,7 +3912,13 @@ time to disappear */
 "Privacy for your customers." = "Privacy voor uw klanten.";
 
 /* No comment provided by engineer. */
+"Privacy policy and conditions of use." = "Privacybeleid en gebruiksvoorwaarden.";
+
+/* No comment provided by engineer. */
 "Privacy redefined" = "Privacy opnieuw gedefinieerd";
+
+/* No comment provided by engineer. */
+"Private chats, groups and your contacts are not accessible to server operators." = "Privéchats, groepen en uw contacten zijn niet toegankelijk voor serverbeheerders.";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Privé bestandsnamen";

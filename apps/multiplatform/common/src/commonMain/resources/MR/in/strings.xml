@@ -1696,7 +1696,7 @@
     <string name="conn_event_ratchet_sync_allowed">negosiasi ulang enkripsi diperbolehkan</string>
     <string name="conn_event_ratchet_sync_required">negosiasi ulang enkripsi diperlukan</string>
     <string name="snd_conn_event_ratchet_sync_allowed">negosiasi ulang enkripsi diizinkan untuk %s</string>
-    <string name="v6_2_network_decentralization_enable_flux">Aktifkan flux</string>
+    <string name="v6_2_network_decentralization_enable_flux">Aktifkan Flux di pengaturan Jaringan dan server untuk privasi metadata yang lebih baik.</string>
     <string name="v6_2_network_decentralization_enable_flux_reason">untuk privasi metadata lebih baik.</string>
     <string name="v6_2_improved_chat_navigation">Navigasi obrolan ditingkatkan</string>
     <string name="error">Galat</string>
@@ -2337,4 +2337,16 @@
     <string name="v6_3_set_message_expiration_in_chats">Atur pesan kedaluwarsa obrolan.</string>
     <string name="v6_3_private_media_file_names">Nama berkas media pribadi.</string>
     <string name="group_preview_rejected">ditolak</string>
+    <string name="members_will_be_removed_from_group_cannot_be_undone">Anggota akan dihapus dari grup - tindakan ini tidak dapat dibatalkan!</string>
+    <string name="feature_roles_moderators">moderator</string>
+    <string name="unblock_members_desc">Pesan dari anggota ini akan ditampilkan!</string>
+    <string name="v6_3_mentions">Sebutkan anggota 👋</string>
+    <string name="v6_3_organize_chat_lists">Atur obrolan ke dalam daftar</string>
+    <string name="restore_passphrase_can_not_be_read_desc">Frasa sandi di Keystore tidak dapat dibaca. Hal ini mungkin terjadi setelah pembaruan sistem yang tidak kompatibel dengan aplikasi. Jika tidak demikian, silakan hubungi pengembang.</string>
+    <string name="onboarding_conditions_accept">Terima</string>
+    <string name="onboarding_conditions_by_using_you_agree">Dengan menggunakan SimpleX Chat, Anda setuju untuk:\n- hanya mengirim konten legal di grup publik.\n- hormati pengguna lain – tidak ada spam.</string>
+    <string name="onboarding_conditions_configure_server_operators">Konfigurasikan operator server</string>
+    <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Kebijakan privasi dan ketentuan penggunaan.</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">Obrolan pribadi, grup, dan kontak Anda tidak dapat diakses oleh operator server.</string>
+    <string name="restore_passphrase_can_not_be_read_enter_manually_desc">Frasa sandi di Keystore tidak dapat dibaca, silakan masukkan secara manual. Hal ini mungkin terjadi setelah pembaruan sistem yang tidak kompatibel dengan aplikasi. Jika tidak demikian, silakan hubungi pengembang.</string>
 </resources>

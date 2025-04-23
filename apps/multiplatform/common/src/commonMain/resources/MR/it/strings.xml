@@ -2353,7 +2353,7 @@
     <string name="v6_3_mentions_descr">Ricevi una notifica quando menzionato.</string>
     <string name="v6_3_reports_descr">Aiuta gli amministratori a moderare i loro gruppi.</string>
     <string name="v6_3_mentions">Menziona i membri 👋</string>
-    <string name="v6_3_better_privacy_and_security">Privacy e sicurezza migliorate</string>
+    <string name="v6_3_better_privacy_and_security">Privacy e sicurezza migliori</string>
     <string name="v6_3_faster_sending_messages">Invio dei messaggi più veloce.</string>
     <string name="v6_3_better_groups_performance">Prestazioni dei gruppi migliorate</string>
     <string name="v6_3_organize_chat_lists">Organizza le chat in elenchi</string>
@@ -2381,4 +2381,10 @@
     <string name="onboarding_conditions_accept">Accetta</string>
     <string name="onboarding_conditions_configure_server_operators">Configura gli operatori dei server</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Informativa sulla privacy e condizioni d\'uso.</string>
+    <string name="link_requires_newer_app_version_please_upgrade">Questo link richiede una versione più recente dell\'app. Aggiornala o chiedi al tuo contatto di inviare un link compatibile.</string>
+    <string name="full_link_button_text">Link completo</string>
+    <string name="short_link_button_text">Link breve</string>
+    <string name="simplex_link_channel">Link del canale SimpleX</string>
+    <string name="unsupported_connection_link">Link di connessione non supportato</string>
+    <string name="privacy_short_links">Usa link brevi (BETA)</string>
 </resources>

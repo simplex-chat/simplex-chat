@@ -2183,7 +2183,7 @@
     <string name="v6_2_network_decentralization">Netwerk decentralisatie</string>
     <string name="v6_2_network_decentralization_descr">De tweede vooraf ingestelde operator in de app!</string>
     <string name="onboarding_network_operators_app_will_use_for_routing">Als uw contactpersoon bijvoorbeeld berichten ontvangt via een SimpleX Chat-server, worden deze door uw app via een Flux-server verzonden.</string>
-    <string name="v6_2_network_decentralization_enable_flux">Flux inschakelen</string>
+    <string name="v6_2_network_decentralization_enable_flux">Schakel Flux in bij Netwerk- en serverinstellingen voor betere privacy van metagegevens.</string>
     <string name="message_deleted_or_not_received_error_title">Geen bericht</string>
     <string name="appearance_app_toolbars">App-werkbalken</string>
     <string name="appearance_bars_blur_radius">Vervagen</string>
@@ -2373,4 +2373,15 @@
     <string name="operator_updated_conditions">Bijgewerkte voorwaarden</string>
     <string name="restore_passphrase_can_not_be_read_desc">Wachtwoord in Keystore kan niet worden gelezen. Dit kan zijn gebeurd na een systeemupdate die niet compatibel is met de app. Als dit niet het geval is, neem dan contact op met de ontwikkelaars.</string>
     <string name="group_member_status_pending_approval_short">in behandeling</string>
+    <string name="onboarding_conditions_accept">Accepteer</string>
+    <string name="onboarding_conditions_by_using_you_agree">Door SimpleX Chat te gebruiken, gaat u ermee akkoord:\n- alleen legale content te versturen in openbare groepen.\n- andere gebruikers te respecteren – geen spam.</string>
+    <string name="simplex_link_channel">SimpleX channel link</string>
+    <string name="link_requires_newer_app_version_please_upgrade">Voor deze link is een nieuwere app-versie vereist. Werk de app bij of vraag je contactpersoon om een compatibele link te sturen.</string>
+    <string name="full_link_button_text">Volledige link</string>
+    <string name="unsupported_connection_link">Niet-ondersteunde verbindingslink</string>
+    <string name="privacy_short_links">Gebruik korte links (BETA)</string>
+    <string name="short_link_button_text">Korte link</string>
+    <string name="onboarding_conditions_configure_server_operators">Serveroperators configureren</string>
+    <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Privacybeleid en gebruiksvoorwaarden.</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">Privéchats, groepen en uw contacten zijn niet toegankelijk voor serverbeheerders.</string>
 </resources>
