@@ -1603,19 +1603,19 @@ To reproduce the build you must have:
 1. Download script:
 
    ```sh
-   curl -LO 'https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/master/scripts/reproduce-builds.sh'
+   curl -LO 'https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/master/scripts/simplexmq-reproduce-builds.sh'
    ```
 
 2. Make it executable:
 
    ```sh
-   chmod +x reproduce-builds.sh
+   chmod +x simplexmq-reproduce-builds.sh
    ```
 
 3. Execute the script with the required tag:
 
    ```sh
-   ./reproduce-builds.sh 'v6.3.1'
+   ./simplexmq-reproduce-builds.sh 'v6.3.1'
    ```
 
    The script executes these steps (please review the script to confirm):

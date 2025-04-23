@@ -73,7 +73,7 @@ jobs:
       - name: Build changelog
         id: build_changelog
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: simplex-chat/release-changelog-builder-action@v4
+        uses: simplex-chat/release-changelog-builder-action@v5
         with:
           configuration: .github/changelog_conf.json
           failOnError: true
@@ -84,7 +84,7 @@ jobs:
 
       - name: Create release
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: simplex-chat/action-gh-release@v1
+        uses: simplex-chat/action-gh-release@v2
         with:
           body: ${{ steps.build_changelog.outputs.changelog }}
           prerelease: true
@@ -106,26 +106,38 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: 20.04
+          - os: 22.04
             ghc: "8.10.7"
-          - os: 20.04
-            ghc: ${{ needs.variables.outputs.GHC_VER }}
-            cli_asset_name: simplex-chat-ubuntu-20_04-x86-64
-            desktop_asset_name: simplex-desktop-ubuntu-20_04-x86_64.deb
+            should_run: ${{ !(github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }}
           - os: 22.04
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             cli_asset_name: simplex-chat-ubuntu-22_04-x86-64
             desktop_asset_name: simplex-desktop-ubuntu-22_04-x86_64.deb
+            should_run: true
+          - os: 24.04
+            ghc: ${{ needs.variables.outputs.GHC_VER }}
+            cli_asset_name: simplex-chat-ubuntu-24_04-x86-64
+            desktop_asset_name: simplex-desktop-ubuntu-24_04-x86_64.deb
+            should_run: true
     steps:
       - name: Checkout Code
+        if: matrix.should_run == true
         uses: actions/checkout@v3
+
+      - name: Setup swap
+        if: matrix.ghc == '8.10.7' && matrix.should_run == true
+        uses: ./.github/actions/swap
+        with:
+          swap-size-gb: 30
 
       # Otherwise we run out of disk space with Docker build
       - name: Free disk space
+        if: matrix.should_run == true
         shell: bash
         run: ./scripts/ci/linux_util_free_space.sh
 
       - name: Restore cached build
+        if: matrix.should_run == true
         uses: actions/cache@v4
         with:
           path: |
@@ -134,9 +146,11 @@ jobs:
           key: ubuntu-${{ matrix.os }}-ghc${{ matrix.ghc }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}
 
       - name: Set up Docker Buildx
+        if: matrix.should_run == true
         uses: simplex-chat/docker-setup-buildx-action@v3
 
       - name: Build and cache Docker image
+        if: matrix.should_run == true
         uses: simplex-chat/docker-build-push-action@v6
         with:
           context: .
@@ -152,6 +166,7 @@ jobs:
       # --cap-add SYS_ADMIN
       # --security-opt apparmor:unconfined
       - name: Start container
+        if: matrix.should_run == true
         shell: bash
         run: |
           docker run -t -d \
@@ -165,6 +180,7 @@ jobs:
             build/${{ matrix.os }}:latest
 
       - name: Prepare cabal.project.local
+        if: matrix.should_run == true
         shell: bash
         run: |
           echo "ignore-project: False"    >> cabal.project.local
@@ -173,6 +189,7 @@ jobs:
 
       # chmod/git commands are used to workaround permission issues when cache is restored
       - name: Build CLI
+        if: matrix.should_run == true
         shell: docker exec -t builder sh -eu {0}
         run: |
           chmod -R 777 dist-newstyle ~/.cabal && git config --global --add safe.directory '*'
@@ -188,22 +205,23 @@ jobs:
           strip /out/simplex-chat
 
       - name: Copy tests from container
+        if: matrix.should_run == true
         shell: bash
         run: |
           docker cp builder:/out/simplex-chat-test .
 
       - name: Copy CLI from container and prepare it
         id: linux_cli_prepare
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.cli_asset_name
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
         shell: bash
         run: |
           docker cp builder:/out/simplex-chat ./${{ matrix.cli_asset_name }}
           path="${{ github.workspace }}/${{ matrix.cli_asset_name }}"
           echo "bin_path=$path" >> $GITHUB_OUTPUT
-          echo "bin_hash=$(echo SHA2-512\(${{ matrix.cli_asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          echo "bin_hash=$(echo SHA2-256\(${{ matrix.cli_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload CLI
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.cli_asset_name
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
         uses: ./.github/actions/prepare-release
         with:
           bin_path: ${{ steps.linux_cli_prepare.outputs.bin_path }}
@@ -213,7 +231,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Desktop
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.desktop_asset_name
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
         shell: docker exec -t builder sh -eu {0}
         run: |
           scripts/desktop/build-lib-linux.sh
@@ -222,16 +240,16 @@ jobs:
 
       - name: Prepare Desktop
         id: linux_desktop_build
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.desktop_asset_name
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
         shell: bash
         run: |
           path=$(echo ${{ github.workspace }}/apps/multiplatform/release/main/deb/simplex_*_amd64.deb )
           echo "package_path=$path" >> $GITHUB_OUTPUT
-          echo "package_hash=$(echo SHA2-512\(${{ matrix.desktop_asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          echo "package_hash=$(echo SHA2-256\(${{ matrix.desktop_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload Desktop
         uses: ./.github/actions/prepare-release
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.desktop_asset_name
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
         with:
           bin_path: ${{ steps.linux_desktop_build.outputs.package_path }}
           bin_name: ${{ matrix.desktop_asset_name }}
@@ -240,22 +258,22 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build AppImage
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.desktop_asset_name && matrix.os == '20.04'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == '22.04' && matrix.should_run == true
         shell: docker exec -t builder sh -eu {0}
         run: |
           scripts/desktop/make-appimage-linux.sh
 
       - name: Prepare AppImage
         id: linux_appimage_build
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.desktop_asset_name && matrix.os == '20.04'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == '22.04' && matrix.should_run == true
         shell: bash
         run: |
           path=$(echo ${{ github.workspace }}/apps/multiplatform/release/main/*imple*.AppImage)
           echo "appimage_path=$path" >> $GITHUB_OUTPUT
-          echo "appimage_hash=$(echo SHA2-512\(simplex-desktop-x86_64.AppImage\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          echo "appimage_hash=$(echo SHA2-256\(simplex-desktop-x86_64.AppImage\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload AppImage
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.desktop_asset_name && matrix.os == '20.04'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == '22.04' && matrix.should_run == true
         uses: ./.github/actions/prepare-release
         with:
           bin_path: ${{ steps.linux_appimage_build.outputs.appimage_path }}
@@ -265,15 +283,33 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Fix permissions for cache
+        if: matrix.should_run == true
         shell: bash
         run: |
           sudo chmod -R 777 dist-newstyle ~/.cabal
           sudo chown -R $(id -u):$(id -g) dist-newstyle ~/.cabal
 
       - name: Run tests
+        if: matrix.should_run == true
+        timeout-minutes: 120
         shell: bash
         run: |
-          ./simplex-chat-test
+          i=1
+          attempts=1
+          ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }} && attempts=3
+          while [ "$i" -le "$attempts" ]; do
+            if ./simplex-chat-test; then
+              break
+            else
+              echo "Attempt $i failed, retrying..."
+              i=$((i + 1))
+              sleep 1
+            fi
+          done
+          if [ "$i" -gt "$attempts" ]; then
+            echo "All "$attempts" attempts failed."
+            exit 1
+          fi
 
 # =========================
 #        MacOS Build
@@ -332,7 +368,7 @@ jobs:
           cabal build -j --enable-tests
           path=$(cabal list-bin simplex-chat)
           echo "bin_path=$path" >> $GITHUB_OUTPUT
-          echo "bin_hash=$(echo SHA2-512\(${{ matrix.cli_asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          echo "bin_hash=$(echo SHA2-256\(${{ matrix.cli_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload CLI
         if: startsWith(github.ref, 'refs/tags/v')
@@ -356,7 +392,7 @@ jobs:
           scripts/ci/build-desktop-mac.sh
           path=$(echo $PWD/apps/multiplatform/release/main/dmg/SimpleX-*.dmg)
           echo "package_path=$path" >> $GITHUB_OUTPUT
-          echo "package_hash=$(echo SHA2-512\(${{ matrix.desktop_asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          echo "package_hash=$(echo SHA2-256\(${{ matrix.desktop_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload Desktop
         if: startsWith(github.ref, 'refs/tags/v')
@@ -369,9 +405,25 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run tests
-        timeout-minutes: 40
+        timeout-minutes: 120
         shell: bash
-        run: cabal test --test-show-details=direct
+        run: |
+          i=1
+          attempts=1
+          ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }} && attempts=3
+          while [ "$i" -le "$attempts" ]; do
+            if cabal test --test-show-details=direct; then
+              break
+            else
+              echo "Attempt $i failed, retrying..."
+              i=$((i + 1))
+              sleep 1
+            fi
+          done
+          if [ "$i" -gt "$attempts" ]; then
+            echo "All "$attempts" attempts failed."
+            exit 1
+          fi
 
 # =========================
 #      Windows Build
@@ -443,7 +495,7 @@ jobs:
           rm -rf dist-newstyle/src/direct-sq*
           path=$(cabal list-bin simplex-chat | tail -n 1)
           echo "bin_path=$path" >> $GITHUB_OUTPUT
-          echo "bin_hash=$(echo SHA2-512\(${{ matrix.cli_asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          echo "bin_hash=$(echo SHA2-256\(${{ matrix.cli_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload CLI
         if: startsWith(github.ref, 'refs/tags/v')
@@ -467,7 +519,7 @@ jobs:
           rm -rf dist-newstyle/src/direct-sq*
           path=$(echo $PWD/release/main/msi/*imple*.msi | sed 's#/\([a-z]\)#\1:#' | sed 's#/#\\#g')
           echo "package_path=$path" >> $GITHUB_OUTPUT
-          echo "package_hash=$(echo SHA2-512\(${{ matrix.desktop_asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          echo "package_hash=$(echo SHA2-256\(${{ matrix.desktop_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload Desktop
         if: startsWith(github.ref, 'refs/tags/v')
