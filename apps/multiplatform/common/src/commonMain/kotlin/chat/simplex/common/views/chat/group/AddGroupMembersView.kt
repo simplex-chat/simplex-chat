@@ -25,8 +25,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatModel.withChats
-import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.ChatInfoToolbarTitle
 import chat.simplex.common.views.helpers.*
@@ -35,6 +33,7 @@ import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
+import kotlinx.coroutines.*
 
 @Composable
 fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolean = false, chatModel: ChatModel, close: () -> Unit) {
@@ -62,11 +61,11 @@ fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolea
         for (contactId in selectedContacts) {
           val member = chatModel.controller.apiAddMember(rhId, groupInfo.groupId, contactId, selectedRole.value)
           if (member != null) {
-            withChats {
-              upsertGroupMember(rhId, groupInfo, member)
+            withContext(Dispatchers.Main) {
+              chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, member)
             }
-            withReportsChatsIfOpen {
-              upsertGroupMember(rhId, groupInfo, member)
+            withContext(Dispatchers.Main) {
+              chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, groupInfo, member)
             }
           } else {
             break

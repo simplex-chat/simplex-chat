@@ -23,7 +23,7 @@ struct AddGroupView: View {
     @State private var showTakePhoto = false
     @State private var chosenImage: UIImage? = nil
     @State private var showInvalidNameAlert = false
-    @State private var groupLink: String?
+    @State private var groupLink: CreatedConnLink?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
 
     var body: some View {

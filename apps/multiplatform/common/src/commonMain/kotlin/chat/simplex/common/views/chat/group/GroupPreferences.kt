@@ -15,9 +15,10 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.PreferenceToggleWithIcon
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.ColumnWithScrollBar
+import chat.simplex.common.platform.chatModel
 import chat.simplex.res.MR
+import kotlinx.coroutines.*
 
 private val featureRoles: List<Pair<GroupMemberRole?, String>> = listOf(
   null to generalGetString(MR.strings.feature_roles_all_members),
@@ -42,12 +43,12 @@ fun GroupPreferencesView(m: ChatModel, rhId: Long?, chatId: String, close: () ->
       val gp = gInfo.groupProfile.copy(groupPreferences = preferences.toGroupPreferences())
       val g = m.controller.apiUpdateGroup(rhId, gInfo.groupId, gp)
       if (g != null) {
-        withChats {
-          updateGroup(rhId, g)
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.updateGroup(rhId, g)
           currentPreferences = preferences
         }
-        withChats {
-          updateGroup(rhId, g)
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.updateGroup(rhId, g)
         }
       }
       afterSave()

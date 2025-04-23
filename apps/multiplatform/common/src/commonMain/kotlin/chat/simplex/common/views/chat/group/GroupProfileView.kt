@@ -17,8 +17,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatModel.withChats
-import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.*
@@ -27,8 +25,7 @@ import chat.simplex.common.views.onboarding.ReadableText
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import java.net.URI
 
 @Composable
@@ -40,8 +37,8 @@ fun GroupProfileView(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, cl
       withBGApi {
         val gInfo = chatModel.controller.apiUpdateGroup(rhId, groupInfo.groupId, p)
         if (gInfo != null) {
-          withChats {
-            updateGroup(rhId, gInfo)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateGroup(rhId, gInfo)
           }
           close.invoke()
         }

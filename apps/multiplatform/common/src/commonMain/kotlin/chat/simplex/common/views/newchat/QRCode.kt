@@ -12,12 +12,32 @@ import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.stringResource
 import boofcv.alg.drawing.FiducialImageEngine
 import boofcv.alg.fiducial.qrcode.*
-import chat.simplex.common.model.CryptoFile
+import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.launch
+
+@Composable
+fun SimpleXCreatedLinkQRCode(
+  connLink: CreatedConnLink,
+  short: Boolean,
+  modifier: Modifier = Modifier,
+  padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING * 2f, vertical = DEFAULT_PADDING_HALF),
+  tintColor: Color = Color(0xff062d56),
+  withLogo: Boolean = true,
+  onShare: (() -> Unit)? = null,
+) {
+  QRCode(
+    connLink.simplexChatUri(short),
+    modifier,
+    padding,
+    tintColor,
+    withLogo,
+    onShare,
+  )
+}
 
 @Composable
 fun SimpleXLinkQRCode(
@@ -36,14 +56,6 @@ fun SimpleXLinkQRCode(
     withLogo,
     onShare,
   )
-}
-
-fun simplexChatLink(uri: String): String {
-  return if (uri.startsWith("simplex:/")) {
-    uri.replace("simplex:/", "https://simplex.chat/")
-  } else {
-    uri
-  }
 }
 
 @Composable

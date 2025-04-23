@@ -91,12 +91,14 @@
   <string name="simplex_link_contact">SimpleX contact address</string>
   <string name="simplex_link_invitation">SimpleX one-time invitation</string>
   <string name="simplex_link_group">SimpleX group link</string>
+  <string name="simplex_link_channel">SimpleX channel link</string>
   <string name="simplex_link_connection">via %1$s</string>
   <string name="simplex_link_mode">SimpleX links</string>
   <string name="simplex_link_mode_description">Description</string>
   <string name="simplex_link_mode_full">Full link</string>
   <string name="simplex_link_mode_browser">Via browser</string>
   <string name="simplex_link_mode_browser_warning">Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.</string>
+  <string name="privacy_short_links">Use short links (BETA)</string>
 
   <!-- Reports - ChatModel.kt -->
   <string name="report_reason_spam">Spam</string>
@@ -168,6 +170,8 @@
   <string name="you_are_already_connected_to_vName_via_this_link">You are already connected to %1$s.</string>
   <string name="invalid_connection_link">Invalid connection link</string>
   <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Please check that you used the correct link or ask your contact to send you another one.</string>
+  <string name="unsupported_connection_link">Unsupported connection link</string>
+  <string name="link_requires_newer_app_version_please_upgrade">This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.</string>
   <string name="connection_error_auth">Connection error (AUTH)</string>
   <string name="connection_error_auth_desc">Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection.</string>
   <string name="connection_error_blocked">Connection blocked</string>
@@ -795,6 +799,8 @@
   <string name="one_time_link_short">1-time link</string>
   <string name="simplex_address">SimpleX address</string>
   <string name="or_show_this_qr_code">Or show this code</string>
+  <string name="full_link_button_text">Full link</string>
+  <string name="short_link_button_text">Short link</string>
   <string name="new_chat_share_profile">Share profile</string>
   <string name="select_chat_profile">Select chat profile</string>
   <string name="switching_profile_error_title">Error switching profile</string>
