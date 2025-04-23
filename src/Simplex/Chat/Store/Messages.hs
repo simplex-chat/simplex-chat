@@ -632,15 +632,17 @@ data ChatPreviewData (c :: ChatType) where
 
 data AChatPreviewData = forall c. ChatTypeI c => ACPD (SChatType c) (ChatPreviewData c)
 
-type ChatStatsRow = (Int, Int, ChatItemId, BoolInt)
+type ChatStatsRow = (Int, ChatItemId, BoolInt)
 
 toChatStats :: ChatStatsRow -> ChatStats
-toChatStats (unreadCount, reportsCount, minUnreadItemId, BI unreadChat) = ChatStats {unreadCount, unreadMentions = 0, reportsCount, minUnreadItemId, unreadChat}
+toChatStats (unreadCount, minUnreadItemId, BI unreadChat) =
+  ChatStats {unreadCount, unreadMentions = 0, reportsCount = 0, supportChatsUnreadCount = 0, minUnreadItemId, unreadChat}
 
-type GroupStatsRow = (Int, Int, Int, ChatItemId, BoolInt)
+type GroupStatsRow = (Int, Int, Int, Int, ChatItemId, BoolInt)
 
 toGroupStats :: GroupStatsRow -> ChatStats
-toGroupStats (unreadCount, unreadMentions, reportsCount, minUnreadItemId, BI unreadChat) = ChatStats {unreadCount, unreadMentions, reportsCount, minUnreadItemId, unreadChat}
+toGroupStats (unreadCount, unreadMentions, reportsCount, supportChatsUnreadCount, minUnreadItemId, BI unreadChat) =
+  ChatStats {unreadCount, unreadMentions, reportsCount, supportChatsUnreadCount, minUnreadItemId, unreadChat}
 
 findDirectChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
 findDirectChatPreviews_ db User {userId} pagination clq =
@@ -662,7 +664,6 @@ findDirectChatPreviews_ db User {userId} pagination clq =
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
-          0,
           COALESCE(ChatStats.MinUnread, 0),
           ct.unread_chat
         FROM contacts ct
@@ -762,6 +763,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
+          COALESCE(SupportChatsUnreadCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
@@ -777,9 +779,17 @@ findGroupChatPreviews_ db User {userId} pagination clq =
           WHERE user_id = ? AND group_id IS NOT NULL
             AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0
           GROUP BY group_id
-        ) ReportCount ON ReportCount.group_id = g.group_id
+        ) ReportCount ON ReportCount.group_id = g.group_id,
+        LEFT JOIN (
+          SELECT group_id, COUNT(1) AS Count
+          FROM chat_items
+          WHERE user_id = ? AND group_id IS NOT NULL
+            AND group_scope_tag IS NOT NULL
+            AND item_status = ?
+          GROUP BY group_id
+        ) SupportChatsUnreadCount ON SupportChatsUnreadCount.group_id = g.group_id
       |]
-    baseParams = (userId, userId, CISRcvNew, userId, MCReport_, BI False)
+    baseParams = (userId, userId, CISRcvNew, userId, MCReport_, BI False, userId, CISRcvNew)
     getPreviews = case clq of
       CLQFilters {favorite = False, unread = False} -> do
         let q = baseQuery <> " WHERE g.user_id = ?"
@@ -866,7 +876,6 @@ findLocalChatPreviews_ db User {userId} pagination clq =
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
-          0,
           COALESCE(ChatStats.MinUnread, 0),
           nf.unread_chat
         FROM note_folders nf
@@ -1485,14 +1494,16 @@ getGroupChatInitial_ db user g scopeInfo_ contentFilter count = do
   where
     getStats minUnreadItemId (unreadCount, unreadMentions) = do
       reportsCount <- getGroupReportsCount_ db user g False
-      pure ChatStats {unreadCount, unreadMentions, reportsCount, minUnreadItemId, unreadChat = False}
+      supportChatsUnreadCount <- getGroupSupportChatsUnreadCount_ db user g
+      pure ChatStats {unreadCount, unreadMentions, reportsCount, supportChatsUnreadCount, minUnreadItemId, unreadChat = False}
 
 getGroupStats_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> ExceptT StoreError IO ChatStats
 getGroupStats_ db user g scopeInfo_ = do
   minUnreadItemId <- fromMaybe 0 <$> getGroupMinUnreadId_ db user g scopeInfo_ Nothing
   (unreadCount, unreadMentions) <- getGroupUnreadCount_ db user g scopeInfo_ Nothing
   reportsCount <- liftIO $ getGroupReportsCount_ db user g False
-  pure ChatStats {unreadCount, unreadMentions, reportsCount, minUnreadItemId, unreadChat = False}
+  supportChatsUnreadCount <- liftIO $ getGroupSupportChatsUnreadCount_ db user g
+  pure ChatStats {unreadCount, unreadMentions, reportsCount, supportChatsUnreadCount, minUnreadItemId, unreadChat = False}
 
 getGroupMinUnreadId_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> ExceptT StoreError IO (Maybe ChatItemId)
 getGroupMinUnreadId_ db user g scopeInfo_ contentFilter =
@@ -1515,6 +1526,14 @@ getGroupReportsCount_ db User {userId} GroupInfo {groupId} archived =
       db
       "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ? AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0"
       (userId, groupId, MCReport_, BI archived)
+
+getGroupSupportChatsUnreadCount_ :: DB.Connection -> User -> GroupInfo -> IO Int
+getGroupSupportChatsUnreadCount_ db User {userId} GroupInfo {groupId} =
+  fromOnly . head
+    <$> DB.query
+      db
+      "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ? AND group_scope_tag IS NOT NULL AND item_status = ?"
+      (userId, groupId, CISRcvNew)
 
 queryUnreadGroupItems :: FromRow r => DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> Query -> Query -> ExceptT StoreError IO [r]
 queryUnreadGroupItems db User {userId} GroupInfo {groupId} scopeInfo_ contentFilter baseQuery orderLimit =
