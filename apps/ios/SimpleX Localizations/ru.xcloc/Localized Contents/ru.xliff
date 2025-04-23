@@ -127,12 +127,12 @@
       </trans-unit>
       <trans-unit id="%@, %@ and %lld members" xml:space="preserve">
         <source>%@, %@ and %lld members</source>
-        <target>%@, %@ и %lld участников</target>
+        <target>%@, %@ и %lld членов группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@, %@ and %lld other members connected" xml:space="preserve">
         <source>%@, %@ and %lld other members connected</source>
-        <target>установлено соединение с %@, %@ и %lld других участников</target>
+        <target>установлено соединение с %@, %@ и %lld другими членами группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@:" xml:space="preserve">
@@ -232,7 +232,7 @@
       </trans-unit>
       <trans-unit id="%lld members" xml:space="preserve">
         <source>%lld members</source>
-        <target>%lld участников</target>
+        <target>%lld членов</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld messages blocked" xml:space="preserve">
@@ -524,7 +524,7 @@ time interval</note>
       <trans-unit id="A separate TCP connection will be used **for each contact and group member**.&#10;**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." xml:space="preserve">
         <source>A separate TCP connection will be used **for each contact and group member**.
 **Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.</source>
-        <target>Будет использовано отдельное TCP соединение **для каждого контакта и участника группы**.
+        <target>Будет использовано отдельное TCP соединение **для каждого контакта и члена группы**.
 **Примечание**: Чем больше подключений, тем быстрее разряжается батарея и расходуется трафик, а некоторые соединения могут отваливаться.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -713,7 +713,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Admins can block a member for all." xml:space="preserve">
         <source>Admins can block a member for all.</source>
-        <target>Админы могут заблокировать участника группы.</target>
+        <target>Админы могут заблокировать члена группы.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
@@ -763,7 +763,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="All group members will remain connected." xml:space="preserve">
         <source>All group members will remain connected.</source>
-        <target>Все участники группы останутся соединены.</target>
+        <target>Все члены группы останутся соединены.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages." xml:space="preserve">
@@ -853,7 +853,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Allow sending direct messages to members." xml:space="preserve">
         <source>Allow sending direct messages to members.</source>
-        <target>Разрешить личные сообщения участникам группы.</target>
+        <target>Разрешить личные сообщения членам группы.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow sending disappearing messages." xml:space="preserve">
@@ -1248,12 +1248,12 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Block group members" xml:space="preserve">
         <source>Block group members</source>
-        <target>Заблокировать участников группы</target>
+        <target>Заблокировать членов группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block member" xml:space="preserve">
         <source>Block member</source>
-        <target>Заблокировать участника</target>
+        <target>Заблокировать члена группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block member for all?" xml:space="preserve">
@@ -1263,7 +1263,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Block member?" xml:space="preserve">
         <source>Block member?</source>
-        <target>Заблокировать участника?</target>
+        <target>Заблокировать члена группы?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Blocked by admin" xml:space="preserve">
@@ -1367,7 +1367,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Can't call member" xml:space="preserve">
         <source>Can't call member</source>
-        <target>Не удаётся позвонить участнику группы</target>
+        <target>Не удаётся позвонить члену группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
@@ -1382,7 +1382,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Can't message member" xml:space="preserve">
         <source>Can't message member</source>
-        <target>Не удаётся отправить сообщение участнику</target>
+        <target>Не удаётся отправить сообщение члену группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cancel" xml:space="preserve">
@@ -1448,7 +1448,7 @@ alert button</note>
       </trans-unit>
       <trans-unit id="Change member role?" xml:space="preserve">
         <source>Change member role?</source>
-        <target>Поменять роль участника?</target>
+        <target>Поменять роль члена группы?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change passcode" xml:space="preserve">
@@ -2349,7 +2349,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Delete %lld messages of members?" xml:space="preserve">
         <source>Delete %lld messages of members?</source>
-        <target>Удалить %lld сообщений участников?</target>
+        <target>Удалить %lld сообщений членов группы?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete %lld messages?" xml:space="preserve">
