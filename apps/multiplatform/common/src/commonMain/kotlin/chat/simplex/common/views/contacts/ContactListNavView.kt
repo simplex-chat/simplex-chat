@@ -5,7 +5,6 @@ import androidx.compose.ui.graphics.Color
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.item.ItemAction
@@ -56,13 +55,13 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, showDel
                     when (contactType) {
                         ContactType.RECENT -> {
                             withApi {
-                                openChat(rhId, chat.chatInfo)
+                                openChat(secondaryChatsCtx = null, rhId, chat.chatInfo)
                                 ModalManager.start.closeModals()
                             }
                         }
                         ContactType.CHAT_DELETED -> {
                             withApi {
-                                openChat(rhId, chat.chatInfo)
+                                openChat(secondaryChatsCtx = null, rhId, chat.chatInfo)
                                 ModalManager.start.closeModals()
                             }
                         }

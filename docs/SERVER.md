@@ -531,7 +531,7 @@ To verify server binaries after you downloaded them:
 
 3. Import the key with `gpg --import FB44AF81A45BDE327319797C85107E357D4A17FC`. Key filename should be the same as its fingerprint, but please change it if necessary.
 
-4. Run `gpg --verify --trusted-key  _sha256sums.asc _sha256sums`. It should print:
+4. Run `gpg --verify _sha256sums.asc _sha256sums`. It should print:
 
 > Good signature from "SimpleX Chat <chat@simplex.chat>"
 

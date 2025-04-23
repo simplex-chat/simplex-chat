@@ -20,8 +20,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
-import chat.simplex.common.model.ChatModel.withChats
-import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
@@ -191,7 +189,7 @@ fun ErrorChatListItem() {
 suspend fun directChatAction(rhId: Long?, contact: Contact, chatModel: ChatModel) {
   when {
     contact.activeConn == null && contact.profile.contactLink != null && contact.active -> askCurrentOrIncognitoProfileConnectContactViaAddress(chatModel, rhId, contact, close = null, openChat = true)
-    else -> openChat(rhId, ChatInfo.Direct(contact))
+    else -> openDirectChat(rhId, contact.contactId)
   }
 }
 
@@ -199,30 +197,33 @@ suspend fun groupChatAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
   when (groupInfo.membership.memberStatus) {
     GroupMemberStatus.MemInvited -> acceptGroupInvitationAlertDialog(rhId, groupInfo, chatModel, inProgress)
     GroupMemberStatus.MemAccepted -> groupInvitationAcceptedAlert(rhId)
-    else -> openChat(rhId, ChatInfo.Group(groupInfo))
+    else -> openGroupChat(rhId, groupInfo.groupId)
   }
 }
 
-suspend fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) = openChat(rhId, ChatInfo.Local(noteFolder))
+suspend fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) = openChat(secondaryChatsCtx = null, rhId, ChatInfo.Local(noteFolder))
 
-suspend fun openDirectChat(rhId: Long?, contactId: Long) = openChat(rhId, ChatType.Direct, contactId)
+suspend fun openDirectChat(rhId: Long?, contactId: Long) = openChat(secondaryChatsCtx = null, rhId, ChatType.Direct, contactId)
 
-suspend fun openGroupChat(rhId: Long?, groupId: Long, contentTag: MsgContentTag? = null) = openChat(rhId, ChatType.Group, groupId, contentTag)
+suspend fun openGroupChat(rhId: Long?, groupId: Long) = openChat(secondaryChatsCtx = null, rhId, ChatType.Group, groupId)
 
-suspend fun openChat(rhId: Long?, chatInfo: ChatInfo, contentTag: MsgContentTag? = null) = openChat(rhId, chatInfo.chatType, chatInfo.apiId, contentTag)
+suspend fun openChat(secondaryChatsCtx: ChatModel.ChatsContext?, rhId: Long?, chatInfo: ChatInfo) = openChat(secondaryChatsCtx, rhId, chatInfo.chatType, chatInfo.apiId)
 
 suspend fun openChat(
+  secondaryChatsCtx: ChatModel.ChatsContext?,
   rhId: Long?,
   chatType: ChatType,
   apiId: Long,
-  contentTag: MsgContentTag? = null,
   openAroundItemId: Long? = null
-) =
+) {
+  if (secondaryChatsCtx != null) {
+    chatModel.secondaryChatsContext.value = secondaryChatsCtx
+  }
   apiLoadMessages(
+    chatsCtx = secondaryChatsCtx ?: chatModel.chatsContext,
     rhId,
     chatType,
     apiId,
-    contentTag,
     if (openAroundItemId != null) {
       ChatPagination.Around(openAroundItemId, ChatPagination.INITIAL_COUNT)
     } else {
@@ -231,21 +232,22 @@ suspend fun openChat(
     "",
     openAroundItemId
   )
+}
 
-suspend fun openLoadedChat(chat: Chat, contentTag: MsgContentTag? = null) {
-  withChats(contentTag) {
-    chatItemStatuses.clear()
-    chatItems.replaceAll(chat.chatItems)
+suspend fun openLoadedChat(chat: Chat) {
+  withContext(Dispatchers.Main) {
+    chatModel.chatsContext.chatItemStatuses.clear()
+    chatModel.chatsContext.chatItems.replaceAll(chat.chatItems)
     chatModel.chatId.value = chat.chatInfo.id
-    chatModel.chatStateForContent(contentTag).clear()
+    chatModel.chatsContext.chatState.clear()
   }
 }
 
-suspend fun apiFindMessages(ch: Chat, search: String, contentTag: MsgContentTag?) {
-  withChats(contentTag) {
-    chatItems.clearAndNotify()
+suspend fun apiFindMessages(chatsCtx: ChatModel.ChatsContext, ch: Chat, search: String) {
+  withContext(Dispatchers.Main) {
+    chatsCtx.chatItems.clearAndNotify()
   }
-  apiLoadMessages(ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, contentTag, pagination = if (search.isNotEmpty()) ChatPagination.Last(ChatPagination.INITIAL_COUNT) else ChatPagination.Initial(ChatPagination.INITIAL_COUNT), search = search)
+  apiLoadMessages(chatsCtx, ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, pagination = if (search.isNotEmpty()) ChatPagination.Last(ChatPagination.INITIAL_COUNT) else ChatPagination.Initial(ChatPagination.INITIAL_COUNT), search = search)
 }
 
 suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) = coroutineScope {
@@ -547,7 +549,7 @@ fun ContactConnectionMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactConnection
       ModalManager.center.closeModals()
       ModalManager.end.closeModals()
       ModalManager.center.showModalCloseable(true, showClose = appPlatform.isAndroid) { close ->
-        ContactConnectionInfoView(chatModel, rhId, chatInfo.contactConnection.connReqInv, chatInfo.contactConnection, true, close)
+        ContactConnectionInfoView(chatModel, rhId, chatInfo.contactConnection.connLinkInv, chatInfo.contactConnection, true, close)
       }
       showMenu.value = false
     },
@@ -604,11 +606,11 @@ fun markChatRead(c: Chat) {
   var chat = c
   withApi {
     if (chat.chatStats.unreadCount > 0) {
-      withChats {
-        markChatItemsRead(chat.remoteHostId, chat.chatInfo.id)
+      withContext(Dispatchers.Main) {
+        chatModel.chatsContext.markChatItemsRead(chat.remoteHostId, chat.chatInfo.id)
       }
-      withReportsChatsIfOpen {
-        markChatItemsRead(chat.remoteHostId, chat.chatInfo.id)
+      withContext(Dispatchers.Main) {
+        chatModel.secondaryChatsContext.value?.markChatItemsRead(chat.remoteHostId, chat.chatInfo.id)
       }
       chatModel.controller.apiChatRead(
         chat.remoteHostId,
@@ -625,9 +627,9 @@ fun markChatRead(c: Chat) {
         false
       )
       if (success) {
-        withChats {
-          replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
-          markChatTagRead(chat)
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
+          chatModel.chatsContext.markChatTagRead(chat)
         }
       }
     }
@@ -647,9 +649,9 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
       true
     )
     if (success) {
-      withChats {
-        replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
-        updateChatTagReadNoContentTag(chat, wasUnread)
+      withContext(Dispatchers.Main) {
+        chatModel.chatsContext.replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
+        chatModel.chatsContext.updateChatTagReadNoContentTag(chat, wasUnread)
       }
     }
   }
@@ -690,8 +692,8 @@ fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRe
     val contact = chatModel.controller.apiAcceptContactRequest(rhId, incognito, apiId)
     if (contact != null && isCurrentUser && contactRequest != null) {
       val chat = Chat(remoteHostId = rhId, ChatInfo.Direct(contact), listOf())
-      withChats {
-        replaceChat(rhId, contactRequest.id, chat)
+      withContext(Dispatchers.Main) {
+        chatModel.chatsContext.replaceChat(rhId, contactRequest.id, chat)
       }
       chatModel.setContactNetworkStatus(contact, NetworkStatus.Connected())
       close?.invoke(chat)
@@ -702,8 +704,8 @@ fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRe
 fun rejectContactRequest(rhId: Long?, contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
   withBGApi {
     chatModel.controller.apiRejectContactRequest(rhId, contactRequest.apiId)
-    withChats {
-      removeChat(rhId, contactRequest.id)
+    withContext(Dispatchers.Main) {
+      chatModel.chatsContext.removeChat(rhId, contactRequest.id)
     }
   }
 }
@@ -720,8 +722,8 @@ fun deleteContactConnectionAlert(rhId: Long?, connection: PendingContactConnecti
       withBGApi {
         AlertManager.shared.hideAlert()
         if (chatModel.controller.apiDeleteChat(rhId, ChatType.ContactConnection, connection.apiId)) {
-          withChats {
-            removeChat(rhId, connection.id)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.removeChat(rhId, connection.id)
           }
           onSuccess()
         }
@@ -741,8 +743,8 @@ fun pendingContactAlertDialog(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatMo
       withBGApi {
         val r = chatModel.controller.apiDeleteChat(rhId, chatInfo.chatType, chatInfo.apiId)
         if (r) {
-          withChats {
-            removeChat(rhId, chatInfo.id)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.removeChat(rhId, chatInfo.id)
           }
           if (chatModel.chatId.value == chatInfo.id) {
             chatModel.chatId.value = null
@@ -805,8 +807,8 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
 suspend fun connectContactViaAddress(chatModel: ChatModel, rhId: Long?, contactId: Long, incognito: Boolean): Boolean {
   val contact = chatModel.controller.apiConnectContactViaAddress(rhId, incognito, contactId)
   if (contact != null) {
-    withChats {
-      updateContact(rhId, contact)
+    withContext(Dispatchers.Main) {
+      chatModel.chatsContext.updateContact(rhId, contact)
     }
     AlertManager.privacySensitive.showAlertMsg(
       title = generalGetString(MR.strings.connection_request_sent),
@@ -848,8 +850,8 @@ fun deleteGroup(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) {
   withBGApi {
     val r = chatModel.controller.apiDeleteChat(rhId, ChatType.Group, groupInfo.apiId)
     if (r) {
-      withChats {
-        removeChat(rhId, groupInfo.id)
+      withContext(Dispatchers.Main) {
+        chatModel.chatsContext.removeChat(rhId, groupInfo.id)
       }
       if (chatModel.chatId.value == groupInfo.id) {
         chatModel.chatId.value = null
@@ -903,16 +905,16 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       val wasUnread = chat?.unreadTag ?: false
       val wasFavorite = chatInfo.chatSettings?.favorite ?: false
       chatModel.updateChatFavorite(favorite = chatSettings.favorite, wasFavorite)
-      withChats {
-        updateChatInfo(remoteHostId, newChatInfo)
+      withContext(Dispatchers.Main) {
+        chatModel.chatsContext.updateChatInfo(remoteHostId, newChatInfo)
       }
       if (chatSettings.enableNtfs == MsgFilter.None) {
         ntfManager.cancelNotificationsForChat(chatInfo.id)
       }
       val updatedChat = chatModel.getChat(chatInfo.id)
       if (updatedChat != null) {
-        withChats {
-          updateChatTagReadNoContentTag(updatedChat, wasUnread)
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.updateChatTagReadNoContentTag(updatedChat, wasUnread)
         }
       }
       val current = currentState?.value

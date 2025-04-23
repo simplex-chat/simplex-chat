@@ -1853,7 +1853,7 @@ public struct PendingContactConnection: Decodable, NamedChat, Hashable {
     public var viaContactUri: Bool
     public var groupLinkId: String?
     public var customUserProfileId: Int64?
-    public var connReqInv: String?
+    public var connLinkInv: CreatedConnLink?
     public var localAlias: String
     var createdAt: Date
     public var updatedAt: Date
@@ -4063,12 +4063,14 @@ public enum SimplexLinkType: String, Decodable, Hashable {
     case contact
     case invitation
     case group
+    case channel
 
     public var description: String {
         switch self {
         case .contact: return NSLocalizedString("SimpleX contact address", comment: "simplex link type")
         case .invitation: return NSLocalizedString("SimpleX one-time invitation", comment: "simplex link type")
         case .group: return NSLocalizedString("SimpleX group link", comment: "simplex link type")
+        case .channel: return NSLocalizedString("SimpleX channel link", comment: "simplex link type")
         }
     }
 }
