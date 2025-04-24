@@ -446,7 +446,7 @@
     <string name="integrity_msg_bad_id">špatné ID zprávy</string>
     <string name="integrity_msg_duplicate">duplicitní zpráva</string>
     <string name="alert_title_skipped_messages">Přeskočené zprávy</string>
-    <string name="privacy_and_security">Ochrana osobních údajů a zabezpečení</string>
+    <string name="privacy_and_security">Soukromí a zabezpečení</string>
     <string name="your_privacy">Vaše soukromí</string>
     <string name="protect_app_screen">Skrývat aplikaci</string>
     <string name="send_link_previews">Odesílat náhledy odkazů</string>
@@ -2251,7 +2251,7 @@
     <string name="one_hand_ui_card_title">Přepnout chat seznam:</string>
     <string name="change_automatic_chat_deletion_message">Tuto akci nelze zrušit - zprávy odeslané a přijaté v tomto chatu dříve než vybraná, budou smazány.</string>
     <string name="servers_info_reset_stats_alert_message">Statistiky serverů budou obnoveny - nemůže být vráceno!</string>
-    <string name="v6_3_reports">Odeslat soukromý report</string>
+    <string name="v6_3_reports">Odešlete soukromý report</string>
     <string name="v6_3_reports_descr">Pomozte administrátorům moderovat své skupiny.</string>
     <string name="v6_3_faster_deletion_of_groups">Rychlejší mazání skupin.</string>
     <string name="servers_info_starting_from">Od %s.</string>
@@ -2335,7 +2335,7 @@
     <string name="moderate_messages_will_be_deleted_warning">Zprávy budou smazány pro všechny členy.</string>
     <string name="app_will_ask_to_confirm_unknown_file_servers">Aplikace vyžaduje potvrzení stahování z neznámých serverů (s výjimkou .onion nebo při aktivaci SOCKS proxy).</string>
     <string name="you_need_to_allow_calls">Musíte povolit kontaktům volání, abyste jim mohli zavolat.</string>
-    <string name="v6_3_set_message_expiration_in_chats">Nastavit expirace zpráv.</string>
+    <string name="v6_3_set_message_expiration_in_chats">Nastavení expirace zpráv.</string>
     <string name="subscription_percentage">Zobrazit procenta</string>
     <string name="migrate_from_device_uploaded_archive_will_be_removed">Nahraný archiv databáze bude ze serverů trvale odstraněn.</string>
     <string name="to_protect_against_your_link_replaced_compare_codes">Pro ochranu před záměnou odkazů, můžete porovnat bezpečnostní kódy.</string>
@@ -2370,4 +2370,10 @@
     <string name="onboarding_conditions_configure_server_operators">Nastavit operátora serveru</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Zásady ochrany soukromí a podmínky používání.</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Soukromé konverzace, skupiny a kontakty nejsou přístupné provozovatelům serverů.</string>
+    <string name="unsupported_connection_link">Nepodporovaný odkaz k připojení</string>
+    <string name="privacy_short_links">Používejte krátké odkazy (BETA)</string>
+    <string name="link_requires_newer_app_version_please_upgrade">Tento odkaz vyžaduje novější verzi aplikace. Prosím aktualizujte aplikaci nebo požádejte kontakt o odeslání kompatibilního odkazu.</string>
+    <string name="simplex_link_channel">odkaz SimpleX kanálu</string>
+    <string name="full_link_button_text">Úplný odkaz</string>
+    <string name="short_link_button_text">Krátký odkaz</string>
 </resources>
