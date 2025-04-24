@@ -88,18 +88,7 @@ class AppPreferences {
   val backgroundServiceBatteryNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN, false)
   val autoRestartWorkerVersion = mkIntPreference(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
   val webrtcPolicyRelay = mkBoolPreference(SHARED_PREFS_WEBRTC_POLICY_RELAY, true)
-  private val _callOnLockScreen = mkStrPreference(SHARED_PREFS_WEBRTC_CALLS_ON_LOCK_SCREEN, CallOnLockScreen.default.name)
-  val callOnLockScreen: SharedPreference<CallOnLockScreen> = SharedPreference(
-    get = fun(): CallOnLockScreen {
-      val value = _callOnLockScreen.get() ?: return CallOnLockScreen.default
-      return try {
-        CallOnLockScreen.valueOf(value)
-      } catch (e: Throwable) {
-        CallOnLockScreen.default
-      }
-    },
-    set = fun(action: CallOnLockScreen) { _callOnLockScreen.set(action.name) }
-  )
+  val callOnLockScreen: SharedPreference<CallOnLockScreen> = mkSafeEnumPreference(SHARED_PREFS_WEBRTC_CALLS_ON_LOCK_SCREEN, CallOnLockScreen.default)
   val performLA = mkBoolPreference(SHARED_PREFS_PERFORM_LA, false)
   val laMode = mkEnumPreference(SHARED_PREFS_LA_MODE, LAMode.default) { LAMode.values().firstOrNull { it.name == this } }
   val laLockDelay = mkIntPreference(SHARED_PREFS_LA_LOCK_DELAY, 30)
@@ -109,18 +98,7 @@ class AppPreferences {
   val privacyAcceptImages = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_IMAGES, true)
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
   val privacyChatListOpenLinks = mkEnumPreference(SHARED_PREFS_PRIVACY_CHAT_LIST_OPEN_LINKS, PrivacyChatListOpenLinksMode.ASK) { PrivacyChatListOpenLinksMode.values().firstOrNull { it.name == this } }
-  private val _simplexLinkMode = mkStrPreference(SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE, SimplexLinkMode.default.name)
-  val simplexLinkMode: SharedPreference<SimplexLinkMode> = SharedPreference(
-    get = fun(): SimplexLinkMode {
-      val value = _simplexLinkMode.get() ?: return SimplexLinkMode.default
-      return try {
-        SimplexLinkMode.valueOf(value)
-      } catch (e: Throwable) {
-        SimplexLinkMode.default
-      }
-    },
-    set = fun(mode: SimplexLinkMode) { _simplexLinkMode.set(mode.name) }
-  )
+  val simplexLinkMode: SharedPreference<SimplexLinkMode> = mkSafeEnumPreference(SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE, SimplexLinkMode.default)
   val privacyShowChatPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS, true)
   val privacySaveLastDraft = mkBoolPreference(SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT, true)
   val privacyShortLinks = mkBoolPreference(SHARED_PREFS_PRIVACY_SHORT_LINKS, false)
@@ -160,67 +138,12 @@ class AppPreferences {
     },
     set = fun(proxy: NetworkProxy) { _networkProxy.set(json.encodeToString(proxy)) }
   )
-  private val _networkSessionMode = mkStrPreference(SHARED_PREFS_NETWORK_SESSION_MODE, TransportSessionMode.default.name)
-  val networkSessionMode: SharedPreference<TransportSessionMode> = SharedPreference(
-    get = fun(): TransportSessionMode {
-      val value = _networkSessionMode.get() ?: return TransportSessionMode.default
-      return try {
-        TransportSessionMode.valueOf(value)
-      } catch (e: Throwable) {
-        TransportSessionMode.default
-      }
-    },
-    set = fun(mode: TransportSessionMode) { _networkSessionMode.set(mode.name) }
-  )
-  private val _networkSMPProxyMode = mkStrPreference(SHARED_PREFS_NETWORK_SMP_PROXY_MODE, SMPProxyMode.default.name)
-  val networkSMPProxyMode: SharedPreference<SMPProxyMode> = SharedPreference(
-    get = fun(): SMPProxyMode {
-      val value = _networkSMPProxyMode.get() ?: return SMPProxyMode.default
-      return try {
-        SMPProxyMode.valueOf(value)
-      } catch (e: Throwable) {
-        SMPProxyMode.default
-      }
-    },
-    set = fun(mode: SMPProxyMode) { _networkSMPProxyMode.set(mode.name) }
-  )
-  private val _networkSMPProxyFallback = mkStrPreference(SHARED_PREFS_NETWORK_SMP_PROXY_FALLBACK, SMPProxyFallback.default.name)
-  val networkSMPProxyFallback: SharedPreference<SMPProxyFallback> = SharedPreference(
-    get = fun(): SMPProxyFallback {
-      val value = _networkSMPProxyFallback.get() ?: return SMPProxyFallback.default
-      return try {
-        SMPProxyFallback.valueOf(value)
-      } catch (e: Throwable) {
-        SMPProxyFallback.default
-      }
-    },
-    set = fun(mode: SMPProxyFallback) { _networkSMPProxyFallback.set(mode.name) }
-  )
-  private val _networkHostMode = mkStrPreference(SHARED_PREFS_NETWORK_HOST_MODE, HostMode.default.name)
-  val networkHostMode: SharedPreference<HostMode> = SharedPreference(
-    get = fun(): HostMode {
-      val value = _networkHostMode.get() ?: return HostMode.default
-      return try {
-        HostMode.valueOf(value)
-      } catch (e: Throwable) {
-        HostMode.default
-      }
-    },
-    set = fun(mode: HostMode) { _networkHostMode.set(mode.name) }
-  )
+  val networkSessionMode: SharedPreference<TransportSessionMode> = mkSafeEnumPreference(SHARED_PREFS_NETWORK_SESSION_MODE, TransportSessionMode.default)
+  val networkSMPProxyMode: SharedPreference<SMPProxyMode> = mkSafeEnumPreference(SHARED_PREFS_NETWORK_SMP_PROXY_MODE, SMPProxyMode.default)
+  val networkSMPProxyFallback: SharedPreference<SMPProxyFallback> = mkSafeEnumPreference(SHARED_PREFS_NETWORK_SMP_PROXY_FALLBACK, SMPProxyFallback.default)
+  val networkHostMode: SharedPreference<HostMode> = mkSafeEnumPreference(SHARED_PREFS_NETWORK_HOST_MODE, HostMode.default)
   val networkRequiredHostMode = mkBoolPreference(SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE, false)
-  private val _networkSMPWebPortServers = mkStrPreference(SHARED_PREFS_NETWORK_SMP_WEB_PORT_SERVERS, SMPWebPortServers.default.name)
-  val networkSMPWebPortServers: SharedPreference<SMPWebPortServers> = SharedPreference(
-    get = fun(): SMPWebPortServers {
-      val value = _networkSMPWebPortServers.get() ?: return SMPWebPortServers.default
-      return try {
-        SMPWebPortServers.valueOf(value)
-      } catch (e: Throwable) {
-        SMPWebPortServers.default
-      }
-    },
-    set = fun(mode: SMPWebPortServers) { _networkSMPWebPortServers.set(mode.name) }
-  )
+  val networkSMPWebPortServers: SharedPreference<SMPWebPortServers> = mkSafeEnumPreference(SHARED_PREFS_NETWORK_SMP_WEB_PORT_SERVERS, SMPWebPortServers.default)
   val networkTCPConnectTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT, NetCfg.defaults.tcpConnectTimeout, NetCfg.proxyDefaults.tcpConnectTimeout)
   val networkTCPTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_TIMEOUT, NetCfg.defaults.tcpTimeout, NetCfg.proxyDefaults.tcpTimeout)
   val networkTCPTimeoutPerKb = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_TIMEOUT_PER_KB, NetCfg.defaults.tcpTimeoutPerKb, NetCfg.proxyDefaults.tcpTimeoutPerKb)
@@ -375,7 +298,19 @@ class AppPreferences {
       set = fun(value) = settings.putString(prefName, value.toString())
     )
 
-  // LALAL
+  private inline fun <reified T : Enum<T>> mkSafeEnumPreference(key: String, default: T): SharedPreference<T> = SharedPreference(
+    get = {
+      val value = settings.getString(key, "")
+      if (value == "") return@SharedPreference default
+      try {
+        enumValueOf<T>(value)
+      } catch (e: IllegalArgumentException) {
+        default
+      }
+    },
+    set = { value -> settings.putString(key, value.name) }
+  )
+
   private fun mkDatePreference(prefName: String, default: Instant?): SharedPreference<Instant?> =
     SharedPreference(
       get = {
