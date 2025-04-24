@@ -20,6 +20,8 @@ import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.ChatController.setNetCfg
 import chat.simplex.common.model.ChatModel.changingActiveUserMutex
 import chat.simplex.common.model.MsgContent.MCUnknown
+import chat.simplex.common.model.SMPProxyFallback.AllowProtected
+import chat.simplex.common.model.SMPProxyMode.Always
 import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -170,11 +172,55 @@ class AppPreferences {
     },
     set = fun(mode: TransportSessionMode) { _networkSessionMode.set(mode.name) }
   )
-  val networkSMPProxyMode = mkStrPreference(SHARED_PREFS_NETWORK_SMP_PROXY_MODE, NetCfg.defaults.smpProxyMode.name)
-  val networkSMPProxyFallback = mkStrPreference(SHARED_PREFS_NETWORK_SMP_PROXY_FALLBACK, NetCfg.defaults.smpProxyFallback.name)
-  val networkHostMode = mkStrPreference(SHARED_PREFS_NETWORK_HOST_MODE, HostMode.OnionViaSocks.name)
+  private val _networkSMPProxyMode = mkStrPreference(SHARED_PREFS_NETWORK_SMP_PROXY_MODE, SMPProxyMode.default.name)
+  val networkSMPProxyMode: SharedPreference<SMPProxyMode> = SharedPreference(
+    get = fun(): SMPProxyMode {
+      val value = _networkSMPProxyMode.get() ?: return SMPProxyMode.default
+      return try {
+        SMPProxyMode.valueOf(value)
+      } catch (e: Throwable) {
+        SMPProxyMode.default
+      }
+    },
+    set = fun(mode: SMPProxyMode) { _networkSMPProxyMode.set(mode.name) }
+  )
+  private val _networkSMPProxyFallback = mkStrPreference(SHARED_PREFS_NETWORK_SMP_PROXY_FALLBACK, SMPProxyFallback.default.name)
+  val networkSMPProxyFallback: SharedPreference<SMPProxyFallback> = SharedPreference(
+    get = fun(): SMPProxyFallback {
+      val value = _networkSMPProxyFallback.get() ?: return SMPProxyFallback.default
+      return try {
+        SMPProxyFallback.valueOf(value)
+      } catch (e: Throwable) {
+        SMPProxyFallback.default
+      }
+    },
+    set = fun(mode: SMPProxyFallback) { _networkSMPProxyFallback.set(mode.name) }
+  )
+  private val _networkHostMode = mkStrPreference(SHARED_PREFS_NETWORK_HOST_MODE, HostMode.default.name)
+  val networkHostMode: SharedPreference<HostMode> = SharedPreference(
+    get = fun(): HostMode {
+      val value = _networkHostMode.get() ?: return HostMode.default
+      return try {
+        HostMode.valueOf(value)
+      } catch (e: Throwable) {
+        HostMode.default
+      }
+    },
+    set = fun(mode: HostMode) { _networkHostMode.set(mode.name) }
+  )
   val networkRequiredHostMode = mkBoolPreference(SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE, false)
-  val networkSMPWebPort = mkBoolPreference(SHARED_PREFS_NETWORK_SMP_WEB_PORT, false)
+  private val _networkSMPWebPortServers = mkStrPreference(SHARED_PREFS_NETWORK_SMP_WEB_PORT_SERVERS, SMPWebPortServers.default.name)
+  val networkSMPWebPortServers: SharedPreference<SMPWebPortServers> = SharedPreference(
+    get = fun(): SMPWebPortServers {
+      val value = _networkSMPWebPortServers.get() ?: return SMPWebPortServers.default
+      return try {
+        SMPWebPortServers.valueOf(value)
+      } catch (e: Throwable) {
+        SMPWebPortServers.default
+      }
+    },
+    set = fun(mode: SMPWebPortServers) { _networkSMPWebPortServers.set(mode.name) }
+  )
   val networkTCPConnectTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT, NetCfg.defaults.tcpConnectTimeout, NetCfg.proxyDefaults.tcpConnectTimeout)
   val networkTCPTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_TIMEOUT, NetCfg.defaults.tcpTimeout, NetCfg.proxyDefaults.tcpTimeout)
   val networkTCPTimeoutPerKb = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_TIMEOUT_PER_KB, NetCfg.defaults.tcpTimeoutPerKb, NetCfg.proxyDefaults.tcpTimeoutPerKb)
@@ -414,7 +460,7 @@ class AppPreferences {
     private const val SHARED_PREFS_NETWORK_SMP_PROXY_FALLBACK = "NetworkSMPProxyFallback"
     private const val SHARED_PREFS_NETWORK_HOST_MODE = "NetworkHostMode"
     private const val SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE = "NetworkRequiredHostMode"
-    private const val SHARED_PREFS_NETWORK_SMP_WEB_PORT = "NetworkSMPWebPort"
+    private const val SHARED_PREFS_NETWORK_SMP_WEB_PORT_SERVERS = "NetworkSMPWebPortServers"
     private const val SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT = "NetworkTCPConnectTimeout"
     private const val SHARED_PREFS_NETWORK_TCP_TIMEOUT = "NetworkTCPTimeout"
     private const val SHARED_PREFS_NETWORK_TCP_TIMEOUT_PER_KB = "networkTCPTimeoutPerKb"
@@ -3309,12 +3355,12 @@ object ChatController {
     } else {
       null
     }
-    val hostMode = HostMode.valueOf(appPrefs.networkHostMode.get()!!)
+    val hostMode = appPrefs.networkHostMode.get()
     val requiredHostMode = appPrefs.networkRequiredHostMode.get()
     val sessionMode = appPrefs.networkSessionMode.get()
-    val smpProxyMode = SMPProxyMode.valueOf(appPrefs.networkSMPProxyMode.get()!!)
-    val smpProxyFallback = SMPProxyFallback.valueOf(appPrefs.networkSMPProxyFallback.get()!!)
-    val smpWebPort = appPrefs.networkSMPWebPort.get()
+    val smpProxyMode = appPrefs.networkSMPProxyMode.get()
+    val smpProxyFallback = appPrefs.networkSMPProxyFallback.get()
+    val smpWebPortServers = appPrefs.networkSMPWebPortServers.get()
     val tcpConnectTimeout = appPrefs.networkTCPConnectTimeout.get()
     val tcpTimeout = appPrefs.networkTCPTimeout.get()
     val tcpTimeoutPerKb = appPrefs.networkTCPTimeoutPerKb.get()
@@ -3337,7 +3383,7 @@ object ChatController {
       sessionMode = sessionMode,
       smpProxyMode = smpProxyMode,
       smpProxyFallback = smpProxyFallback,
-      smpWebPort = smpWebPort,
+      smpWebPortServers = smpWebPortServers,
       tcpConnectTimeout = tcpConnectTimeout,
       tcpTimeout = tcpTimeout,
       tcpTimeoutPerKb = tcpTimeoutPerKb,
@@ -3353,12 +3399,12 @@ object ChatController {
    * */
   fun setNetCfg(cfg: NetCfg) {
     appPrefs.networkUseSocksProxy.set(cfg.useSocksProxy)
-    appPrefs.networkHostMode.set(cfg.hostMode.name)
+    appPrefs.networkHostMode.set(cfg.hostMode)
     appPrefs.networkRequiredHostMode.set(cfg.requiredHostMode)
     appPrefs.networkSessionMode.set(cfg.sessionMode)
-    appPrefs.networkSMPProxyMode.set(cfg.smpProxyMode.name)
-    appPrefs.networkSMPProxyFallback.set(cfg.smpProxyFallback.name)
-    appPrefs.networkSMPWebPort.set(cfg.smpWebPort)
+    appPrefs.networkSMPProxyMode.set(cfg.smpProxyMode)
+    appPrefs.networkSMPProxyFallback.set(cfg.smpProxyFallback)
+    appPrefs.networkSMPWebPortServers.set(cfg.smpWebPortServers)
     appPrefs.networkTCPConnectTimeout.set(cfg.tcpConnectTimeout)
     appPrefs.networkTCPTimeout.set(cfg.tcpTimeout)
     appPrefs.networkTCPTimeoutPerKb.set(cfg.tcpTimeoutPerKb)
@@ -4460,13 +4506,13 @@ data class ParsedServerAddress (
 @Serializable
 data class NetCfg(
   val socksProxy: String?,
-  val socksMode: SocksMode = SocksMode.Always,
-  val hostMode: HostMode = HostMode.OnionViaSocks,
+  val socksMode: SocksMode = SocksMode.default,
+  val hostMode: HostMode = HostMode.default,
   val requiredHostMode: Boolean = false,
   val sessionMode: TransportSessionMode = TransportSessionMode.default,
-  val smpProxyMode: SMPProxyMode = SMPProxyMode.Always,
-  val smpProxyFallback: SMPProxyFallback = SMPProxyFallback.AllowProtected,
-  val smpWebPort: Boolean = false,
+  val smpProxyMode: SMPProxyMode = SMPProxyMode.default,
+  val smpProxyFallback: SMPProxyFallback = SMPProxyFallback.default,
+  val smpWebPortServers: SMPWebPortServers = SMPWebPortServers.default,
   val tcpConnectTimeout: Long, // microseconds
   val tcpTimeout: Long, // microseconds
   val tcpTimeoutPerKb: Long, // microseconds
@@ -4564,12 +4610,20 @@ enum class HostMode {
   @SerialName("onionViaSocks") OnionViaSocks,
   @SerialName("onion") Onion,
   @SerialName("public") Public;
+
+  companion object {
+    val default = OnionViaSocks
+  }
 }
 
 @Serializable
 enum class SocksMode {
   @SerialName("always") Always,
   @SerialName("onion") Onion;
+
+  companion object {
+    val default = Always
+  }
 }
 
 @Serializable
@@ -4578,6 +4632,10 @@ enum class SMPProxyMode {
   @SerialName("unknown") Unknown,
   @SerialName("unprotected") Unprotected,
   @SerialName("never") Never;
+
+  companion object {
+    val default = Always
+  }
 }
 
 @Serializable
@@ -4585,6 +4643,27 @@ enum class SMPProxyFallback {
   @SerialName("allow") Allow,
   @SerialName("allowProtected") AllowProtected,
   @SerialName("prohibit") Prohibit;
+
+  companion object {
+    val default = AllowProtected
+  }
+}
+
+@Serializable
+enum class SMPWebPortServers {
+  @SerialName("all") All,
+  @SerialName("preset") Preset,
+  @SerialName("off") Off;
+
+  val text get(): StringResource = when (this) {
+    All -> MR.strings.network_smp_web_port_all
+    Preset -> MR.strings.network_smp_web_port_preset
+    Off -> MR.strings.network_smp_web_port_off
+  }
+
+  companion object {
+    val default = Preset
+  }
 }
 
 @Serializable
