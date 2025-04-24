@@ -5650,6 +5650,10 @@ Query: SELECT COUNT(1) FROM contacts WHERE user_id = ? AND chat_item_ttl > 0
 Plan:
 SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
 
+Query: SELECT COUNT(1) FROM group_members WHERE group_id = ? AND user_id = ?
+Plan:
+SEARCH group_members USING COVERING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+
 Query: SELECT COUNT(1) FROM groups WHERE user_id = ? AND chat_item_ttl > 0
 Plan:
 SEARCH groups USING INDEX idx_groups_chat_ts (user_id=?)
