@@ -56,6 +56,7 @@ module Simplex.Chat.Store.Groups
     getGroupMembers,
     getGroupModerators,
     getGroupMembersForExpiration,
+    getGroupMembersCount,
     getGroupCurrentMembersCount,
     deleteGroupChatItems,
     deleteGroupMembers,
@@ -943,6 +944,11 @@ getGroupMembersForExpiration db vr user@User {userId, userContactId} GroupInfo {
 toContactMember :: VersionRangeChat -> User -> (GroupMemberRow :. MaybeConnectionRow) -> GroupMember
 toContactMember vr User {userContactId} (memberRow :. connRow) =
   (toGroupMember userContactId memberRow) {activeConn = toMaybeConnection vr connRow}
+
+getGroupMembersCount :: DB.Connection -> User -> GroupInfo -> IO Int
+getGroupMembersCount db User {userId} GroupInfo {groupId} =
+  fromOnly . head
+    <$> DB.query db "SELECT COUNT(1) FROM group_members WHERE group_id = ? AND user_id = ?" (groupId, userId)
 
 getGroupCurrentMembersCount :: DB.Connection -> User -> GroupInfo -> IO Int
 getGroupCurrentMembersCount db User {userId} GroupInfo {groupId} = do

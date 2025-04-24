@@ -2478,7 +2478,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 Nothing -> messageError "x.grp.mem.intro: member chat version range incompatible"
                 Just (ChatVersionRange mcvr)
                   | maxVersion mcvr >= groupDirectInvVersion -> do
-                      when (memberPending membership) $ do
+                      memCount <- withStore' $ \db -> getGroupMembersCount db user gInfo
+                      -- only create SGEUserPendingReview item on the first introduction - when only 2 members are user and host
+                      when (memberPending membership && memCount == 2) $ do
                         (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
                         createInternalChatItem user (CDGroupSnd gInfo' scopeInfo) (CISndGroupEvent SGEUserPendingReview) Nothing
                       subMode <- chatReadVar subscriptionMode
