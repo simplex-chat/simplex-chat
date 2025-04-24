@@ -110,8 +110,9 @@
         <target>%@ servery</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ uploaded" xml:space="preserve">
+      <trans-unit id="%@ uploaded" xml:space="preserve" approved="no">
         <source>%@ uploaded</source>
+        <target state="needs-translation">%@ nahrán</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ wants to connect!" xml:space="preserve">
@@ -124,8 +125,9 @@
         <target>%1$@, %2$@</target>
         <note>format for date separator in chat</note>
       </trans-unit>
-      <trans-unit id="%@, %@ and %lld members" xml:space="preserve">
+      <trans-unit id="%@, %@ and %lld members" xml:space="preserve" approved="no">
         <source>%@, %@ and %lld members</source>
+        <target state="needs-translation">%@, %@ a %lld člěnů</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@, %@ and %lld other members connected" xml:space="preserve">
@@ -143,20 +145,24 @@
         <target>%d dní</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d file(s) are still being downloaded." xml:space="preserve">
+      <trans-unit id="%d file(s) are still being downloaded." xml:space="preserve" approved="no">
         <source>%d file(s) are still being downloaded.</source>
+        <target state="translated">%d soubor(y) stále stahován(y).</target>
         <note>forward confirmation reason</note>
       </trans-unit>
-      <trans-unit id="%d file(s) failed to download." xml:space="preserve">
+      <trans-unit id="%d file(s) failed to download." xml:space="preserve" approved="no">
         <source>%d file(s) failed to download.</source>
+        <target state="translated">%d soubor(y) se nepodařilo stáhnout.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
-      <trans-unit id="%d file(s) were deleted." xml:space="preserve">
+      <trans-unit id="%d file(s) were deleted." xml:space="preserve" approved="no">
         <source>%d file(s) were deleted.</source>
+        <target state="translated">%d soubor(y) smazán(y).</target>
         <note>forward confirmation reason</note>
       </trans-unit>
-      <trans-unit id="%d file(s) were not downloaded." xml:space="preserve">
+      <trans-unit id="%d file(s) were not downloaded." xml:space="preserve" approved="no">
         <source>%d file(s) were not downloaded.</source>
+        <target state="translated">%d soubor(y) nestažen(y).</target>
         <note>forward confirmation reason</note>
       </trans-unit>
       <trans-unit id="%d hours" xml:space="preserve">
