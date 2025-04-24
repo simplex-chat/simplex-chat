@@ -2569,7 +2569,7 @@ data class ChatItem (
         else -> CIMergeCategory.RcvGroupEvent
       }
       is CIContent.SndGroupEventContent -> when (content.sndGroupEvent) {
-        is SndGroupEvent.UserRole, is SndGroupEvent.UserLeft -> null
+        is SndGroupEvent.UserRole, is SndGroupEvent.UserLeft, is SndGroupEvent.UserPendingReview -> null
         else -> CIMergeCategory.SndGroupEvent
       }
       else -> {
