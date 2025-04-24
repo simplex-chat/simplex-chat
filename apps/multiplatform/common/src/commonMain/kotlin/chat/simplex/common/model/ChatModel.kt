@@ -4349,6 +4349,7 @@ sealed class SndGroupEvent() {
   @Serializable @SerialName("memberDeleted") class MemberDeleted(val groupMemberId: Long, val profile: Profile): SndGroupEvent()
   @Serializable @SerialName("userLeft") class UserLeft(): SndGroupEvent()
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val groupProfile: GroupProfile): SndGroupEvent()
+  @Serializable @SerialName("userPendingReview") class UserPendingReview(): SndGroupEvent()
 
   val text: String get() = when (this) {
     is MemberRole -> String.format(generalGetString(MR.strings.snd_group_event_changed_member_role), profile.profileViewName, role.text)
@@ -4361,6 +4362,7 @@ sealed class SndGroupEvent() {
     is MemberDeleted -> String.format(generalGetString(MR.strings.snd_group_event_member_deleted), profile.profileViewName)
     is UserLeft -> generalGetString(MR.strings.snd_group_event_user_left)
     is GroupUpdated -> generalGetString(MR.strings.snd_group_event_group_profile_updated)
+    is UserPendingReview -> generalGetString(MR.strings.snd_group_event_user_pending_review)
   }
 }
 
