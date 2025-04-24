@@ -796,9 +796,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             when (connChatVersion < batchSend2Version) sendGroupAutoReply
             case mStatus of
               GSMemPendingApproval -> pure ()
-              -- edge case: reviews were turned off mid connection;
-              -- options: proceed to review as declared, or introduce to group and send XGrpLinkAcpt;
-              -- choosing first option for simplicity, same edge case for approval is also not considered
               GSMemPendingReview -> introduceToModerators vr user gInfo' m'
               _ -> do
                 introduceToAll vr user gInfo' m'
@@ -2470,7 +2467,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             pure (announcedMember', Just scopeInfo)
 
     xGrpMemIntro :: GroupInfo -> GroupMember -> MemberInfo -> Maybe MemberRestrictions -> CM ()
-    xGrpMemIntro gInfo@GroupInfo {chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memChatVRange _) memRestrictions = do
+    xGrpMemIntro gInfo@GroupInfo {membership, chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memChatVRange _) memRestrictions = do
       case memberCategory m of
         GCHostMember ->
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
@@ -2481,6 +2478,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 Nothing -> messageError "x.grp.mem.intro: member chat version range incompatible"
                 Just (ChatVersionRange mcvr)
                   | maxVersion mcvr >= groupDirectInvVersion -> do
+                      memCount <- withStore' $ \db -> getGroupMembersCount db user gInfo
+                      -- only create SGEUserPendingReview item on the first introduction - when only 2 members are user and host
+                      when (memberPending membership && memCount == 2) $ do
+                        (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
+                        createInternalChatItem user (CDGroupSnd gInfo' scopeInfo) (CISndGroupEvent SGEUserPendingReview) Nothing
                       subMode <- chatReadVar subscriptionMode
                       -- [async agent commands] commands should be asynchronous, continuation is to send XGrpMemInv - have to remember one has completed and process on second
                       groupConnIds <- createConn subMode

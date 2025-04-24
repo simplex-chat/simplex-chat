@@ -1594,6 +1594,7 @@
   <string name="snd_group_event_member_deleted">you removed %1$s</string>
   <string name="snd_group_event_user_left">you left</string>
   <string name="snd_group_event_group_profile_updated">group profile updated</string>
+  <string name="snd_group_event_user_pending_review">Please wait for group moderators to review your request to join the group.</string>
 
   <string name="rcv_group_event_1_member_connected">%s connected</string>
   <string name="rcv_group_event_2_members_connected">%s and %s connected</string>

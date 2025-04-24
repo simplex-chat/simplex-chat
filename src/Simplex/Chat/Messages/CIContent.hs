@@ -341,6 +341,12 @@ sndGroupEventToText = \case
   SGEMemberDeleted _ p -> "removed " <> profileToText p
   SGEUserLeft -> "left"
   SGEGroupUpdated _ -> "group profile updated"
+  SGEUserPendingReview -> "please wait for group moderators to review your request to join the group"
+
+-- used to send to members with old version
+pendingReviewMessage :: Text
+pendingReviewMessage =
+  "Please wait for group moderators to review your request to join the group."
 
 rcvConnEventToText :: RcvConnEvent -> Text
 rcvConnEventToText = \case

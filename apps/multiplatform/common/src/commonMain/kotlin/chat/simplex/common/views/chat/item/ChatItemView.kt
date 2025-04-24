@@ -636,6 +636,15 @@ fun ChatItemView(
               CIEventView(eventItemViewText(reversedChatItems))
             }
 
+            @Composable fun UserPendingReviewEventItemView() {
+              Text(
+                buildAnnotatedString {
+                  withStyle(chatEventStyle.copy(fontWeight = FontWeight.Bold)) { append(cItem.content.text) }
+                },
+                Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
+              )
+            }
+
             @Composable
             fun DeletedItem() {
               MarkedDeletedItemView(chatsCtx, cItem, cInfo, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
@@ -717,7 +726,10 @@ fun ChatItemView(
                 MsgContentItemDropdownMenu()
               }
               is CIContent.SndGroupEventContent -> {
-                EventItemView()
+                when (c.sndGroupEvent) {
+                  is SndGroupEvent.UserPendingReview -> UserPendingReviewEventItemView()
+                  else -> EventItemView()
+                }
                 MsgContentItemDropdownMenu()
               }
               is CIContent.RcvConnEventContent -> {
