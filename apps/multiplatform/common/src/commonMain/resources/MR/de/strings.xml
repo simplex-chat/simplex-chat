@@ -2453,7 +2453,7 @@
     <string name="onboarding_conditions_configure_server_operators">Server-Betreiber konfigurieren</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Private Chats, Gruppen und Ihre Kontakte sind für Server-Betreiber nicht zugänglich.</string>
     <string name="unsupported_connection_link">Verbindungs-Link wird nicht unterstützt</string>
-    <string name="privacy_short_links">Verkürzte Links verwenden (BETA)</string>
+    <string name="privacy_short_links">Kurze Links verwenden (BETA)</string>
     <string name="short_link_button_text">Verkürzter Link</string>
     <string name="full_link_button_text">Vollständiger Link</string>
     <string name="simplex_link_channel">SimpleX-Kanal-Link</string>
