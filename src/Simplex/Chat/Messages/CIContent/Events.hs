@@ -40,6 +40,7 @@ data SndGroupEvent
   | SGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRUserDeletedMembers
   | SGEUserLeft -- CRLeftMemberUser
   | SGEGroupUpdated {groupProfile :: GroupProfile} -- CRGroupUpdated
+  | SGEUserPendingReview
   deriving (Show)
 
 data RcvConnEvent
