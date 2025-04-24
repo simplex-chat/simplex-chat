@@ -46,7 +46,7 @@ operatorFlux =
 -- so that option used for restoring links is updated earlier, for backward/forward compatibility.
 allPresetServers :: NonEmpty SMPServer
 allPresetServers = enabledSimplexChatSMPServers <> disabledSimplexChatSMPServers <> fluxSMPServers_
-  -- TODO [short links] remove, added for testing
+  -- added for testing, not preset in the clients
   <> ["smp://8Af90NX2TTkKEJAF1RCg69P_Odg2Z-6_J6DOKUqK3rQ=@smp7.simplex.im,dbxqutskmmbkbrs7ofi7pmopeyhgi5cxbjbh4ummgmep4r6bz4cbrcid.onion"]
 
 simplexChatSMPServers :: [NewUserServer 'PSMP]
@@ -87,7 +87,7 @@ disabledSimplexChatSMPServers =
   ]
 
 fluxSMPServers :: [NewUserServer 'PSMP]
-fluxSMPServers = map (presetServer' True) $ L.toList fluxSMPServers_
+fluxSMPServers = map (presetServer' True) (L.toList fluxSMPServers_)
 
 -- Please note: if any servers are removed from this list, they MUST be added to allPresetServers.
 -- Otherwise previously created short links won't work.
