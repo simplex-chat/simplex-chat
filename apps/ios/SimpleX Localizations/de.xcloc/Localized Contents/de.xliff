@@ -7199,8 +7199,9 @@ chat item action</note>
         <target>Mit Kontakten teilen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Short link" xml:space="preserve">
+      <trans-unit id="Short link" xml:space="preserve" approved="no">
         <source>Short link</source>
+        <target state="translated">Verkürzter Link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show QR code" xml:space="preserve">
@@ -7303,8 +7304,9 @@ chat item action</note>
         <target>SimpleX-Adresse oder Einmal-Link?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX channel link" xml:space="preserve">
+      <trans-unit id="SimpleX channel link" xml:space="preserve" approved="no">
         <source>SimpleX channel link</source>
+        <target state="translated">SimpleX-Kanal-Link</target>
         <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="SimpleX contact address" xml:space="preserve">
@@ -7897,8 +7899,9 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
         <target>Das ist Ihr eigener Einmal-Link!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." xml:space="preserve">
+      <trans-unit id="This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." xml:space="preserve" approved="no">
         <source>This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.</source>
+        <target state="translated">Für diesen Link wird eine neuere App-Version benötigt. Bitte aktualisieren Sie die App oder bitten Sie Ihren Kontakt einen kompatiblen Link zu senden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This link was used with another mobile device, please create a new link on the desktop." xml:space="preserve">
@@ -8200,8 +8203,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Ungelesen</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Unsupported connection link" xml:space="preserve">
+      <trans-unit id="Unsupported connection link" xml:space="preserve" approved="no">
         <source>Unsupported connection link</source>
+        <target state="translated">Verbindungs-Link wird nicht unterstützt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve">
@@ -8364,8 +8368,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Verwende Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use short links (BETA)" xml:space="preserve">
+      <trans-unit id="Use short links (BETA)" xml:space="preserve" approved="no">
         <source>Use short links (BETA)</source>
+        <target state="translated">Kurze Links verwenden (BETA)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use the app while in the call." xml:space="preserve">
