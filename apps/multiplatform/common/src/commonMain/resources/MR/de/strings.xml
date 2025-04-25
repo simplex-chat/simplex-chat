@@ -2458,4 +2458,8 @@
     <string name="full_link_button_text">Vollständiger Link</string>
     <string name="simplex_link_channel">SimpleX-Kanal-Link</string>
     <string name="link_requires_newer_app_version_please_upgrade">Für diesen Link wird eine neuere App-Version benötigt. Bitte aktualisieren Sie die App oder bitten Sie Ihren Kontakt einen kompatiblen Link zu senden.</string>
+    <string name="network_smp_web_port_all">Alle Server</string>
+    <string name="network_smp_web_port_off">Aus</string>
+    <string name="network_smp_web_port_preset_footer">Für voreingestellte Server nur TCP-Port 443 verwenden .</string>
+    <string name="network_smp_web_port_preset">Voreingestellte Server</string>
 </resources>
