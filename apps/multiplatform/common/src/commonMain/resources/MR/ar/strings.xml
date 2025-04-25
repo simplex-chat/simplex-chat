@@ -2372,8 +2372,8 @@
     <string name="short_link_button_text">رابط قصير</string>
     <string name="simplex_link_channel">رابط قناة SimpleX</string>
     <string name="unsupported_connection_link">رابط اتصال غير مدعوم</string>
-    <string name="network_smp_web_port_preset_footer">استخدم منفذ TCP 443 لخوادم محددة مسبقاً فقط.</string>
+    <string name="network_smp_web_port_preset_footer">استخدم منفذ TCP 443 للخوادم المُعدة مسبقًا فقط.</string>
     <string name="network_smp_web_port_off">إيقاف التشغيل</string>
-    <string name="network_smp_web_port_preset">خوادم محددة مسبقاً</string>
+    <string name="network_smp_web_port_preset">الخوادم المُعدة مسبقًا</string>
     <string name="network_smp_web_port_all">جميع الخوادم</string>
 </resources>
