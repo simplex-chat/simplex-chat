@@ -67,6 +67,7 @@ func apiSendMessages(
         : .apiSendMessages(
             type: chatInfo.chatType,
             id: chatInfo.apiId,
+            scope: chatInfo.groupChatScope(),
             live: false,
             ttl: nil,
             composedMessages: composedMessages

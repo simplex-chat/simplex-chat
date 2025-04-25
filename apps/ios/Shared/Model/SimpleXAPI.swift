@@ -328,8 +328,8 @@ func apiGetChatTagsAsync() async throws -> [ChatTag] {
 
 let loadItemsPerPage = 50
 
-func apiGetChat(chatId: ChatId, pagination: ChatPagination, search: String = "") async throws -> (Chat, NavigationInfo) {
-    let r = await chatSendCmd(.apiGetChat(chatId: chatId, pagination: pagination, search: search))
+func apiGetChat(chatId: ChatId, scope: GroupChatScope?, contentTag: MsgContentTag? = nil, pagination: ChatPagination, search: String = "") async throws -> (Chat, NavigationInfo) {
+    let r = await chatSendCmd(.apiGetChat(chatId: chatId, scope: scope, contentTag: contentTag, pagination: pagination, search: search))
     if case let .apiChat(_, chat, navInfo) = r { return (Chat.init(chat), navInfo ?? NavigationInfo()) }
     throw r
 }
@@ -351,20 +351,20 @@ func loadChat(chatId: ChatId, search: String = "", openAroundItemId: ChatItem.ID
     await apiLoadMessages(chatId, openAroundItemId != nil ? .around(chatItemId: openAroundItemId!, count: loadItemsPerPage)  : (search == "" ? .initial(count: loadItemsPerPage) : .last(count: loadItemsPerPage)), im.chatState, search, openAroundItemId, { 0...0 })
 }
 
-func apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64) async throws -> ChatItemInfo {
-    let r = await chatSendCmd(.apiGetChatItemInfo(type: type, id: id, itemId: itemId))
+func apiGetChatItemInfo(type: ChatType, id: Int64, scope: GroupChatScope?, itemId: Int64) async throws -> ChatItemInfo {
+    let r = await chatSendCmd(.apiGetChatItemInfo(type: type, id: id, scope: scope, itemId: itemId))
     if case let .chatItemInfo(_, _, chatItemInfo) = r { return chatItemInfo }
     throw r
 }
 
-func apiPlanForwardChatItems(type: ChatType, id: Int64, itemIds: [Int64]) async throws -> ([Int64], ForwardConfirmation?) {
-    let r = await chatSendCmd(.apiPlanForwardChatItems(toChatType: type, toChatId: id, itemIds: itemIds))
+func apiPlanForwardChatItems(type: ChatType, id: Int64, scope: GroupChatScope?, itemIds: [Int64]) async throws -> ([Int64], ForwardConfirmation?) {
+    let r = await chatSendCmd(.apiPlanForwardChatItems(fromChatType: type, fromChatId: id, fromScope: scope, itemIds: itemIds))
     if case let .forwardPlan(_, chatItemIds, forwardConfimation) = r { return (chatItemIds, forwardConfimation) }
     throw r
 }
 
-func apiForwardChatItems(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemIds: [Int64], ttl: Int?) async -> [ChatItem]? {
-    let cmd: ChatCommand = .apiForwardChatItems(toChatType: toChatType, toChatId: toChatId, fromChatType: fromChatType, fromChatId: fromChatId, itemIds: itemIds, ttl: ttl)
+func apiForwardChatItems(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64], ttl: Int?) async -> [ChatItem]? {
+    let cmd: ChatCommand = .apiForwardChatItems(toChatType: toChatType, toChatId: toChatId, toScope: toScope, fromChatType: fromChatType, fromChatId: fromChatId, fromScope: fromScope, itemIds: itemIds, ttl: ttl)
     return await processSendMessageCmd(toChatType: toChatType, cmd: cmd)
 }
 
@@ -396,8 +396,8 @@ func apiReorderChatTags(tagIds: [Int64]) async throws {
     try await sendCommandOkResp(.apiReorderChatTags(tagIds: tagIds))
 }
 
-func apiSendMessages(type: ChatType, id: Int64, live: Bool = false, ttl: Int? = nil, composedMessages: [ComposedMessage]) async -> [ChatItem]? {
-    let cmd: ChatCommand = .apiSendMessages(type: type, id: id, live: live, ttl: ttl, composedMessages: composedMessages)
+func apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, live: Bool = false, ttl: Int? = nil, composedMessages: [ComposedMessage]) async -> [ChatItem]? {
+    let cmd: ChatCommand = .apiSendMessages(type: type, id: id, scope: scope, live: live, ttl: ttl, composedMessages: composedMessages)
     return await processSendMessageCmd(toChatType: type, cmd: cmd)
 }
 
@@ -474,14 +474,14 @@ private func createChatItemsErrorAlert(_ r: ChatResponse) {
     )
 }
 
-func apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, updatedMessage: UpdatedMessage, live: Bool = false) async throws -> ChatItem {
-    let r = await chatSendCmd(.apiUpdateChatItem(type: type, id: id, itemId: itemId, updatedMessage: updatedMessage, live: live), bgDelay: msgDelay)
+func apiUpdateChatItem(type: ChatType, id: Int64, scope: GroupChatScope?, itemId: Int64, updatedMessage: UpdatedMessage, live: Bool = false) async throws -> ChatItem {
+    let r = await chatSendCmd(.apiUpdateChatItem(type: type, id: id, scope: scope, itemId: itemId, updatedMessage: updatedMessage, live: live), bgDelay: msgDelay)
     if case let .chatItemUpdated(_, aChatItem) = r { return aChatItem.chatItem }
     throw r
 }
 
-func apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, reaction: MsgReaction) async throws -> ChatItem {
-    let r = await chatSendCmd(.apiChatItemReaction(type: type, id: id, itemId: itemId, add: add, reaction: reaction), bgDelay: msgDelay)
+func apiChatItemReaction(type: ChatType, id: Int64, scope: GroupChatScope?, itemId: Int64, add: Bool, reaction: MsgReaction) async throws -> ChatItem {
+    let r = await chatSendCmd(.apiChatItemReaction(type: type, id: id, scope: scope, itemId: itemId, add: add, reaction: reaction), bgDelay: msgDelay)
     if case let .chatItemReaction(_, _, reaction) = r { return reaction.chatReaction.chatItem }
     throw r
 }
@@ -493,8 +493,8 @@ func apiGetReactionMembers(groupId: Int64, itemId: Int64, reaction: MsgReaction)
     throw r
 }
 
-func apiDeleteChatItems(type: ChatType, id: Int64, itemIds: [Int64], mode: CIDeleteMode) async throws -> [ChatItemDeletion] {
-    let r = await chatSendCmd(.apiDeleteChatItem(type: type, id: id, itemIds: itemIds, mode: mode), bgDelay: msgDelay)
+func apiDeleteChatItems(type: ChatType, id: Int64, scope: GroupChatScope?, itemIds: [Int64], mode: CIDeleteMode) async throws -> [ChatItemDeletion] {
+    let r = await chatSendCmd(.apiDeleteChatItem(type: type, id: id, scope: scope, itemIds: itemIds, mode: mode), bgDelay: msgDelay)
     if case let .chatItemsDeleted(_, items, _) = r { return items }
     throw r
 }
@@ -1212,12 +1212,12 @@ func apiRejectContactRequest(contactReqId: Int64) async throws {
     throw r
 }
 
-func apiChatRead(type: ChatType, id: Int64) async throws {
-    try await sendCommandOkResp(.apiChatRead(type: type, id: id))
+func apiChatRead(type: ChatType, id: Int64, scope: GroupChatScope?) async throws {
+    try await sendCommandOkResp(.apiChatRead(type: type, id: id, scope: scope))
 }
 
-func apiChatItemsRead(type: ChatType, id: Int64, itemIds: [Int64]) async throws {
-    try await sendCommandOkResp(.apiChatItemsRead(type: type, id: id, itemIds: itemIds))
+func apiChatItemsRead(type: ChatType, id: Int64, scope: GroupChatScope?, itemIds: [Int64]) async throws {
+    try await sendCommandOkResp(.apiChatItemsRead(type: type, id: id, scope: scope, itemIds: itemIds))
 }
 
 func apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool) async throws {
@@ -1523,7 +1523,7 @@ func markChatRead(_ chat: Chat) async {
     do {
         if chat.chatStats.unreadCount > 0 {
             let cInfo = chat.chatInfo
-            try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId)
+            try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, scope: cInfo.groupChatScope())
             await MainActor.run {
                 withAnimation { ChatModel.shared.markAllChatItemsRead(cInfo) }
             }
@@ -1550,7 +1550,7 @@ func markChatUnread(_ chat: Chat, unreadChat: Bool = true) async {
 
 func apiMarkChatItemsRead(_ cInfo: ChatInfo, _ itemIds: [ChatItem.ID], mentionsRead: Int) async {
     do {
-        try await apiChatItemsRead(type: cInfo.chatType, id: cInfo.apiId, itemIds: itemIds)
+        try await apiChatItemsRead(type: cInfo.chatType, id: cInfo.apiId, scope: cInfo.groupChatScope(), itemIds: itemIds)
         DispatchQueue.main.async {
             ChatModel.shared.markChatItemsRead(cInfo, itemIds, mentionsRead)
         }
@@ -1598,6 +1598,12 @@ func apiJoinGroup(_ groupId: Int64) async throws -> JoinGroupResult {
     case .chatCmdError(_, .errorStore(.groupNotFound)): return .groupNotFound
     default: throw r
     }
+}
+
+func apiAcceptMember(_ groupId: Int64, _ groupMemberId: Int64, _ memberRole: GroupMemberRole) async throws -> GroupMember {
+    let r = await chatSendCmd(.apiAcceptMember(groupId: groupId, groupMemberId: groupMemberId, memberRole: memberRole))
+    if case let .memberAccepted(_, _, member) = r { return member }
+    throw r
 }
 
 func apiRemoveMembers(_ groupId: Int64, _ memberIds: [Int64], _ withMessages: Bool = false) async throws -> [GroupMember] {
@@ -2077,6 +2083,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
         }
     case let .newChatItems(user, chatItems):
+        // TODO [knocking] add items to secondary scope (modify model methods to check both scopes, instead of calling per scope? (do opposite of kotlin));
+        // TODO            other apis: chatItemsStatusesUpdated, chatItemReaction, chatItemsDeleted, etc. (see kotlin)
         for chatItem in chatItems {
             let cInfo = chatItem.chatInfo
             let cItem = chatItem.chatItem
@@ -2200,6 +2208,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 _ = m.upsertGroupMember(groupInfo, member)
             }
         }
+    case let .memberAcceptedByOther(user, groupInfo, _, member):
+        if active(user) {
+            await MainActor.run {
+                _ = m.upsertGroupMember(groupInfo, member)
+            }
+        }
     case let .deletedMemberUser(user, groupInfo, member, withMessages): // TODO update user member
         if active(user) {
             await MainActor.run {
@@ -2231,6 +2245,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
         }
     case let .userJoinedGroup(user, groupInfo):
+        // TODO [knocking] close support scope for this group if it's currently opened
         if active(user) {
             await MainActor.run {
                 m.updateGroup(groupInfo)
@@ -2495,6 +2510,7 @@ func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
     let cInfo = aChatItem.chatInfo
     let cItem = aChatItem.chatItem
     if active(user) {
+        // TODO [knocking] upsert to secondary scope (same approach as for newChatItems event)
         if await MainActor.run(body: { m.upsertChatItem(cInfo, cItem) }) {
             if cItem.showNotification {
                 NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
@@ -2517,7 +2533,7 @@ func groupChatItemsDeleted(_ user: UserRef, _ groupInfo: GroupInfo, _ chatItemID
         return
     }
     let im = ItemsModel.shared
-    let cInfo = ChatInfo.group(groupInfo: groupInfo)
+    let cInfo = ChatInfo.group(groupInfo: groupInfo, groupChatScope: nil)
     await MainActor.run {
         m.decreaseGroupReportsCounter(cInfo.id, by: chatItemIDs.count)
     }

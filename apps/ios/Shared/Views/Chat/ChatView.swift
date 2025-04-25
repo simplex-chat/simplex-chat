@@ -120,7 +120,7 @@ struct ChatView: View {
                             showArchiveSelectedReports = true
                         },
                         moderateItems: {
-                            if case let .group(groupInfo) = chat.chatInfo {
+                            if case let .group(groupInfo, _) = chat.chatInfo {
                                 showModerateSelectedMessagesAlert(groupInfo)
                             }
                         },
@@ -163,7 +163,7 @@ struct ChatView: View {
                     archiveReports(chat.chatInfo, selected.sorted(), false, deletedSelectedMessages)
                 }
             }
-            if case let ChatInfo.group(groupInfo) = chat.chatInfo, groupInfo.membership.memberActive {
+            if case let ChatInfo.group(groupInfo, _) = chat.chatInfo, groupInfo.membership.memberActive {
                 Button("For all moderators", role: .destructive) {
                     if let selected = selectedChatItems {
                         archiveReports(chat.chatInfo, selected.sorted(), true, deletedSelectedMessages)
@@ -173,7 +173,7 @@ struct ChatView: View {
         }
         .appSheet(item: $selectedMember) { member in
             Group {
-                if case let .group(groupInfo) = chat.chatInfo {
+                if case let .group(groupInfo, _) = chat.chatInfo {
                     GroupMemberInfoView(
                         groupInfo: groupInfo,
                         chat: chat,
@@ -186,7 +186,7 @@ struct ChatView: View {
         // it should be presented on top level in order to prevent a bug in SwiftUI on iOS 16 related to .focused() modifier in AddGroupMembersView's search field
         .appSheet(isPresented: $showAddMembersSheet) {
             Group {
-                if case let .group(groupInfo) = cInfo {
+                if case let .group(groupInfo, _) = cInfo {
                     AddGroupMembersView(chat: chat, groupInfo: groupInfo)
                 }
             }
@@ -314,7 +314,7 @@ struct ChatView: View {
                             onSearch: { focusSearch() }
                         )
                     }
-                } else if case let .group(groupInfo) = cInfo {
+                } else if case let .group(groupInfo, _) = cInfo {
                     Button {
                         Task { await chatModel.loadGroupMembers(groupInfo) { showChatInfoSheet = true } }
                     } label: {
@@ -327,7 +327,7 @@ struct ChatView: View {
                             groupInfo: Binding(
                                 get: { groupInfo },
                                 set: { gInfo in
-                                    chat.chatInfo = .group(groupInfo: gInfo)
+                                    chat.chatInfo = .group(groupInfo: gInfo, groupChatScope: nil)
                                     chat.created = Date.now
                                 }
                             ),
@@ -377,7 +377,7 @@ struct ChatView: View {
                                 Image(systemName: "ellipsis")
                             }
                         }
-                    case let .group(groupInfo):
+                    case let .group(groupInfo, _):
                         HStack {
                             if groupInfo.canAddMembers {
                                 if (chat.chatInfo.incognito) {
@@ -938,7 +938,7 @@ struct ChatView: View {
 
     private func addMembersButton() -> some View {
         Button {
-            if case let .group(gInfo) = chat.chatInfo {
+            if case let .group(gInfo, _) = chat.chatInfo {
                 Task { await chatModel.loadGroupMembers(gInfo) { showAddMembersSheet = true } }
             }
         } label: {
@@ -948,7 +948,7 @@ struct ChatView: View {
 
     private func groupLinkButton() -> some View {
         Button {
-            if case let .group(gInfo) = chat.chatInfo {
+            if case let .group(gInfo, _) = chat.chatInfo {
                 Task {
                     do {
                         if let link = try apiGetGroupLink(gInfo.groupId) {
@@ -999,6 +999,7 @@ struct ChatView: View {
                     let (validItems, confirmation) = try await apiPlanForwardChatItems(
                         type: chat.chatInfo.chatType,
                         id: chat.chatInfo.apiId,
+                        scope: chat.chatInfo.groupChatScope(),
                         itemIds: Array(selectedChatItems)
                     )
                     if let confirmation {
@@ -1578,7 +1579,7 @@ struct ChatView: View {
                             self.archivingReports = []
                         }
                     }
-                    if case let ChatInfo.group(groupInfo) = chat.chatInfo, groupInfo.membership.memberActive {
+                    if case let ChatInfo.group(groupInfo, _) = chat.chatInfo, groupInfo.membership.memberActive {
                         Button("For all moderators", role: .destructive) {
                             if let reports = self.archivingReports {
                                 archiveReports(chat.chatInfo, reports.sorted(), true)
@@ -1627,7 +1628,7 @@ struct ChatView: View {
                         }
                     }
                     switch chat.chatInfo {
-                    case let .group(groupInfo):
+                    case let .group(groupInfo, _):
                         v.contextMenu {
                             ReactionContextMenu(
                                 groupInfo: groupInfo,
@@ -1650,7 +1651,7 @@ struct ChatView: View {
 
         @ViewBuilder
         private func menu(_ ci: ChatItem, _ range: ClosedRange<Int>?, live: Bool) -> some View {
-            if case let .group(gInfo) = chat.chatInfo, ci.isReport, ci.meta.itemDeleted == nil {
+            if case let .group(gInfo, _) = chat.chatInfo, ci.isReport, ci.meta.itemDeleted == nil {
                 if ci.chatDir != .groupSnd, gInfo.membership.memberRole >= .moderator {
                     archiveReportButton(ci)
                 }
@@ -1709,7 +1710,7 @@ struct ChatView: View {
                     if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo) {
                         moderateButton(ci, groupInfo)
                     } else if ci.meta.itemDeleted == nil && chat.groupFeatureEnabled(.reports),
-                              case let .group(gInfo) = chat.chatInfo,
+                              case let .group(gInfo, _) = chat.chatInfo,
                               gInfo.membership.memberRole == .member
                                 && !live
                                 && composeState.voiceMessageRecordingState == .noRecording {
@@ -1820,6 +1821,7 @@ struct ChatView: View {
                     let chatItem = try await apiChatItemReaction(
                         type: cInfo.chatType,
                         id: cInfo.apiId,
+                        scope: cInfo.groupChatScope(),
                         itemId: ci.id,
                         add: add,
                         reaction: reaction
@@ -1933,11 +1935,11 @@ struct ChatView: View {
                 Task {
                     do {
                         let cInfo = chat.chatInfo
-                        let ciInfo = try await apiGetChatItemInfo(type: cInfo.chatType, id: cInfo.apiId, itemId: ci.id)
+                        let ciInfo = try await apiGetChatItemInfo(type: cInfo.chatType, id: cInfo.apiId, scope: cInfo.groupChatScope(), itemId: ci.id)
                         await MainActor.run {
                             chatItemInfo = ciInfo
                         }
-                        if case let .group(gInfo) = chat.chatInfo {
+                        if case let .group(gInfo, _) = chat.chatInfo {
                             await m.loadGroupMembers(gInfo)
                         }
                     } catch let error {
@@ -2174,6 +2176,7 @@ struct ChatView: View {
                             try await apiDeleteChatItems(
                                 type: chat.chatInfo.chatType,
                                 id: chat.chatInfo.apiId,
+                                scope: chat.chatInfo.groupChatScope(),
                                 itemIds: [di.id],
                                 mode: mode
                             )
@@ -2286,6 +2289,7 @@ private func deleteMessages(_ chat: Chat, _ deletingItems: [Int64], _ mode: CIDe
                     try await apiDeleteChatItems(
                         type: chatInfo.chatType,
                         id: chatInfo.apiId,
+                        scope: chatInfo.groupChatScope(),
                         itemIds: itemIds,
                         mode: mode
                     )
@@ -2347,7 +2351,7 @@ private func buildTheme() -> AppTheme {
     if let cId = ChatModel.shared.chatId, let chat = ChatModel.shared.getChat(cId) {
         let perChatTheme = if case let .direct(contact) = chat.chatInfo {
             contact.uiThemes?.preferredMode(!AppTheme.shared.colors.isLight)
-        } else if case let .group(groupInfo) = chat.chatInfo {
+        } else if case let .group(groupInfo, _) = chat.chatInfo {
             groupInfo.uiThemes?.preferredMode(!AppTheme.shared.colors.isLight)
         } else {
             nil as ThemeModeOverride?
@@ -2500,7 +2504,7 @@ func updateChatSettings(_ chat: Chat, chatSettings: ChatSettings) {
                 case var .direct(contact):
                     contact.chatSettings = chatSettings
                     ChatModel.shared.updateContact(contact)
-                case var .group(groupInfo):
+                case var .group(groupInfo, _):
                     groupInfo.chatSettings = chatSettings
                     ChatModel.shared.updateGroup(groupInfo)
                 default: ()

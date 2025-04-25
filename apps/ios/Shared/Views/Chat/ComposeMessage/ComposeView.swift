@@ -396,7 +396,7 @@ struct ComposeView: View {
                 .padding(.bottom, 16)
                 .padding(.leading, 12)
                 .tint(theme.colors.primary)
-                if case let .group(g) = chat.chatInfo,
+                if case let .group(g, _) = chat.chatInfo,
                    !g.fullGroupPreferences.files.on(for: g.membership) {
                     b.disabled(true).onTapGesture {
                         AlertManager.shared.showAlertMsg(
@@ -944,6 +944,7 @@ struct ComposeView: View {
                         let chatItem = try await apiUpdateChatItem(
                             type: chat.chatInfo.chatType,
                             id: chat.chatInfo.apiId,
+                            scope: chat.chatInfo.groupChatScope(),
                             itemId: ei.id,
                             updatedMessage: UpdatedMessage(msgContent: mc, mentions: composeState.memberMentions),
                             live: live
@@ -1031,6 +1032,7 @@ struct ComposeView: View {
                 : await apiSendMessages(
                     type: chat.chatInfo.chatType,
                     id: chat.chatInfo.apiId,
+                    scope: chat.chatInfo.groupChatScope(),
                     live: live,
                     ttl: ttl,
                     composedMessages: msgs
@@ -1055,8 +1057,10 @@ struct ComposeView: View {
             if let chatItems = await apiForwardChatItems(
                 toChatType: chat.chatInfo.chatType,
                 toChatId: chat.chatInfo.apiId,
+                toScope: chat.chatInfo.groupChatScope(),
                 fromChatType: fromChatInfo.chatType,
                 fromChatId: fromChatInfo.apiId,
+                fromScope: fromChatInfo.groupChatScope(),
                 itemIds: forwardedItems.map { $0.id },
                 ttl: ttl
             ) {

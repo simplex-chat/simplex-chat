@@ -116,7 +116,7 @@ struct SelectedItemsBottomToolbar: View {
         deleteCountProhibited = count == 0 || count > 200
         forwardCountProhibited = count == 0 || count > 20
         canModerate = possibleToModerate(chatInfo)
-        let groupInfo: GroupInfo? = if case let ChatInfo.group(groupInfo: info) = chatInfo {
+        let groupInfo: GroupInfo? = if case let ChatInfo.group(groupInfo: info, _) = chatInfo {
             info
         } else {
              nil
@@ -145,7 +145,7 @@ struct SelectedItemsBottomToolbar: View {
 
     private func possibleToModerate(_ chatInfo: ChatInfo) -> Bool {
         return switch chatInfo {
-        case let .group(groupInfo):
+        case let .group(groupInfo, _):
             groupInfo.membership.memberRole >= .admin
         default: false
         }

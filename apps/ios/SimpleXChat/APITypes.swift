@@ -42,9 +42,9 @@ public enum ChatCommand {
     case apiGetSettings(settings: AppSettings)
     case apiGetChatTags(userId: Int64)
     case apiGetChats(userId: Int64)
-    case apiGetChat(chatId: ChatId, pagination: ChatPagination, search: String)
-    case apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64)
-    case apiSendMessages(type: ChatType, id: Int64, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
+    case apiGetChat(chatId: ChatId, scope: GroupChatScope?, contentTag: MsgContentTag?, pagination: ChatPagination, search: String)
+    case apiGetChatItemInfo(type: ChatType, id: Int64, scope: GroupChatScope?, itemId: Int64)
+    case apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
     case apiCreateChatTag(tag: ChatTagData)
     case apiSetChatTags(type: ChatType, id: Int64, tagIds: [Int64])
     case apiDeleteChatTag(tagId: Int64)
@@ -52,15 +52,15 @@ public enum ChatCommand {
     case apiReorderChatTags(tagIds: [Int64])
     case apiCreateChatItems(noteFolderId: Int64, composedMessages: [ComposedMessage])
     case apiReportMessage(groupId: Int64, chatItemId: Int64, reportReason: ReportReason, reportText: String)
-    case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, updatedMessage: UpdatedMessage, live: Bool)
-    case apiDeleteChatItem(type: ChatType, id: Int64, itemIds: [Int64], mode: CIDeleteMode)
+    case apiUpdateChatItem(type: ChatType, id: Int64, scope: GroupChatScope?, itemId: Int64, updatedMessage: UpdatedMessage, live: Bool)
+    case apiDeleteChatItem(type: ChatType, id: Int64, scope: GroupChatScope?, itemIds: [Int64], mode: CIDeleteMode)
     case apiDeleteMemberChatItem(groupId: Int64, itemIds: [Int64])
     case apiArchiveReceivedReports(groupId: Int64)
     case apiDeleteReceivedReports(groupId: Int64, itemIds: [Int64], mode: CIDeleteMode)
-    case apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, reaction: MsgReaction)
+    case apiChatItemReaction(type: ChatType, id: Int64, scope: GroupChatScope?, itemId: Int64, add: Bool, reaction: MsgReaction)
     case apiGetReactionMembers(userId: Int64, groupId: Int64, itemId: Int64, reaction: MsgReaction)
-    case apiPlanForwardChatItems(toChatType: ChatType, toChatId: Int64, itemIds: [Int64])
-    case apiForwardChatItems(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemIds: [Int64], ttl: Int?)
+    case apiPlanForwardChatItems(fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64])
+    case apiForwardChatItems(toChatType: ChatType, toChatId: Int64, toScope: GroupChatScope?, fromChatType: ChatType, fromChatId: Int64, fromScope: GroupChatScope?, itemIds: [Int64], ttl: Int?)
     case apiGetNtfToken
     case apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
@@ -71,6 +71,7 @@ public enum ChatCommand {
     case apiNewGroup(userId: Int64, incognito: Bool, groupProfile: GroupProfile)
     case apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole)
     case apiJoinGroup(groupId: Int64)
+    case apiAcceptMember(groupId: Int64, groupMemberId: Int64, memberRole: GroupMemberRole)
     case apiMembersRole(groupId: Int64, memberIds: [Int64], memberRole: GroupMemberRole)
     case apiBlockMembersForAll(groupId: Int64, memberIds: [Int64], blocked: Bool)
     case apiRemoveMembers(groupId: Int64, memberIds: [Int64], withMessages: Bool)
@@ -150,8 +151,8 @@ public enum ChatCommand {
     case apiCallStatus(contact: Contact, callStatus: WebRTCCallStatus)
     // WebRTC calls /
     case apiGetNetworkStatuses
-    case apiChatRead(type: ChatType, id: Int64)
-    case apiChatItemsRead(type: ChatType, id: Int64, itemIds: [Int64])
+    case apiChatRead(type: ChatType, id: Int64, scope: GroupChatScope?)
+    case apiChatItemsRead(type: ChatType, id: Int64, scope: GroupChatScope?, itemIds: [Int64])
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
     case receiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool?, inline: Bool?)
     case setFileToReceive(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool?)
@@ -212,15 +213,16 @@ public enum ChatCommand {
             case let .apiGetSettings(settings): return "/_get app settings \(encodeJSON(settings))"
             case let .apiGetChatTags(userId): return "/_get tags \(userId)"
             case let .apiGetChats(userId): return "/_get chats \(userId) pcc=on"
-            case let .apiGetChat(chatId, pagination, search): return "/_get chat \(chatId) \(pagination.cmdString)" +
-                (search == "" ? "" : " search=\(search)")
-            case let .apiGetChatItemInfo(type, id, itemId): return "/_get item info \(ref(type, id)) \(itemId)"
-            case let .apiSendMessages(type, id, live, ttl, composedMessages):
+            case let .apiGetChat(chatId, scope, contentTag, pagination, search):
+                let tag = contentTag != nil ? " content=\(contentTag!.rawValue)" : ""
+                return "/_get chat \(chatId)\(scopeRef(scope: scope))\(tag) \(pagination.cmdString)" + (search == "" ? "" : " search=\(search)")
+            case let .apiGetChatItemInfo(type, id, scope, itemId): return "/_get item info \(ref(type, id, scope: scope)) \(itemId)"
+            case let .apiSendMessages(type, id, scope, live, ttl, composedMessages):
                 let msgs = encodeJSON(composedMessages)
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"
-                return "/_send \(ref(type, id)) live=\(onOff(live)) ttl=\(ttlStr) json \(msgs)"
+                return "/_send \(ref(type, id, scope: scope)) live=\(onOff(live)) ttl=\(ttlStr) json \(msgs)"
             case let .apiCreateChatTag(tag): return "/_create tag \(encodeJSON(tag))"
-            case let .apiSetChatTags(type, id, tagIds): return "/_tags \(ref(type, id)) \(tagIds.map({ "\($0)" }).joined(separator: ","))"
+            case let .apiSetChatTags(type, id, tagIds): return "/_tags \(ref(type, id, scope: nil)) \(tagIds.map({ "\($0)" }).joined(separator: ","))"
             case let .apiDeleteChatTag(tagId): return "/_delete tag \(tagId)"
             case let .apiUpdateChatTag(tagId, tagData): return "/_update tag \(tagId) \(encodeJSON(tagData))"
             case let .apiReorderChatTags(tagIds): return "/_reorder tags \(tagIds.map({ "\($0)" }).joined(separator: ","))"
@@ -229,17 +231,17 @@ public enum ChatCommand {
                 return "/_create *\(noteFolderId) json \(msgs)"
             case let .apiReportMessage(groupId, chatItemId, reportReason, reportText):
                 return "/_report #\(groupId) \(chatItemId) reason=\(reportReason) \(reportText)"
-            case let .apiUpdateChatItem(type, id, itemId, um, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(um.cmdString)"
-            case let .apiDeleteChatItem(type, id, itemIds, mode): return "/_delete item \(ref(type, id)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) \(mode.rawValue)"
+            case let .apiUpdateChatItem(type, id, scope, itemId, um, live): return "/_update item \(ref(type, id, scope: scope)) \(itemId) live=\(onOff(live)) \(um.cmdString)"
+            case let .apiDeleteChatItem(type, id, scope, itemIds, mode): return "/_delete item \(ref(type, id, scope: scope)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) \(mode.rawValue)"
             case let .apiDeleteMemberChatItem(groupId, itemIds): return "/_delete member item #\(groupId) \(itemIds.map({ "\($0)" }).joined(separator: ","))"
             case let .apiArchiveReceivedReports(groupId): return "/_archive reports #\(groupId)"
             case let .apiDeleteReceivedReports(groupId, itemIds, mode): return "/_delete reports #\(groupId) \(itemIds.map({ "\($0)" }).joined(separator: ",")) \(mode.rawValue)"
-            case let .apiChatItemReaction(type, id, itemId, add, reaction): return "/_reaction \(ref(type, id)) \(itemId) \(onOff(add)) \(encodeJSON(reaction))"
+            case let .apiChatItemReaction(type, id, scope, itemId, add, reaction): return "/_reaction \(ref(type, id, scope: scope)) \(itemId) \(onOff(add)) \(encodeJSON(reaction))"
             case let .apiGetReactionMembers(userId, groupId, itemId, reaction): return "/_reaction members \(userId) #\(groupId) \(itemId) \(encodeJSON(reaction))"
-            case let .apiPlanForwardChatItems(type, id, itemIds): return "/_forward plan \(ref(type, id)) \(itemIds.map({ "\($0)" }).joined(separator: ","))"
-            case let .apiForwardChatItems(toChatType, toChatId, fromChatType, fromChatId, itemIds, ttl):
+            case let .apiPlanForwardChatItems(type, id, scope, itemIds): return "/_forward plan \(ref(type, id, scope: scope)) \(itemIds.map({ "\($0)" }).joined(separator: ","))"
+            case let .apiForwardChatItems(toChatType, toChatId, toScope, fromChatType, fromChatId, fromScope, itemIds, ttl):
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"
-                return "/_forward \(ref(toChatType, toChatId)) \(ref(fromChatType, fromChatId)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) ttl=\(ttlStr)"
+                return "/_forward \(ref(toChatType, toChatId, scope: toScope)) \(ref(fromChatType, fromChatId, scope: fromScope)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) ttl=\(ttlStr)"
             case .apiGetNtfToken: return "/_ntf get "
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
@@ -250,6 +252,7 @@ public enum ChatCommand {
             case let .apiNewGroup(userId, incognito, groupProfile): return "/_group \(userId) incognito=\(onOff(incognito)) \(encodeJSON(groupProfile))"
             case let .apiAddMember(groupId, contactId, memberRole): return "/_add #\(groupId) \(contactId) \(memberRole)"
             case let .apiJoinGroup(groupId): return "/_join #\(groupId)"
+            case let .apiAcceptMember(groupId, groupMemberId, memberRole): return "/_accept member #\(groupId) \(groupMemberId) \(memberRole.rawValue)"
             case let .apiMembersRole(groupId, memberIds, memberRole): return "/_member role #\(groupId) \(memberIds.map({ "\($0)" }).joined(separator: ",")) \(memberRole.rawValue)"
             case let .apiBlockMembersForAll(groupId, memberIds, blocked): return "/_block #\(groupId) \(memberIds.map({ "\($0)" }).joined(separator: ",")) blocked=\(onOff(blocked))"
             case let .apiRemoveMembers(groupId, memberIds, withMessages): return "/_remove #\(groupId) \(memberIds.map({ "\($0)" }).joined(separator: ",")) messages=\(onOff(withMessages))"
@@ -273,13 +276,13 @@ public enum ChatCommand {
             case let .apiAcceptConditions(conditionsId, operatorIds): return "/_accept_conditions \(conditionsId) \(joinedIds(operatorIds))"
             case let .apiSetChatItemTTL(userId, seconds): return "/_ttl \(userId) \(chatItemTTLStr(seconds: seconds))"
             case let .apiGetChatItemTTL(userId): return "/_ttl \(userId)"
-            case let .apiSetChatTTL(userId, type, id, seconds): return "/_ttl \(userId) \(ref(type, id)) \(chatItemTTLStr(seconds: seconds))"
+            case let .apiSetChatTTL(userId, type, id, seconds): return "/_ttl \(userId) \(ref(type, id, scope: nil)) \(chatItemTTLStr(seconds: seconds))"
             case let .apiSetNetworkConfig(networkConfig): return "/_network \(encodeJSON(networkConfig))"
             case .apiGetNetworkConfig: return "/network"
             case let .apiSetNetworkInfo(networkInfo): return "/_network info \(encodeJSON(networkInfo))"
             case .reconnectAllServers: return "/reconnect"
             case let .reconnectServer(userId, smpServer): return "/reconnect \(userId) \(smpServer)"
-            case let .apiSetChatSettings(type, id, chatSettings): return "/_settings \(ref(type, id)) \(encodeJSON(chatSettings))"
+            case let .apiSetChatSettings(type, id, chatSettings): return "/_settings \(ref(type, id, scope: nil)) \(encodeJSON(chatSettings))"
             case let .apiSetMemberSettings(groupId, groupMemberId, memberSettings): return "/_member settings #\(groupId) \(groupMemberId) \(encodeJSON(memberSettings))"
             case let .apiContactInfo(contactId): return "/_info @\(contactId)"
             case let .apiGroupMemberInfo(groupId, groupMemberId): return "/_info #\(groupId) \(groupMemberId)"
@@ -311,8 +314,8 @@ public enum ChatCommand {
             case let .apiConnectPlan(userId, connLink): return "/_connect plan \(userId) \(connLink)"
             case let .apiConnect(userId, incognito, connLink): return "/_connect \(userId) incognito=\(onOff(incognito)) \(connLink.connFullLink) \(connLink.connShortLink ?? "")"
             case let .apiConnectContactViaAddress(userId, incognito, contactId): return "/_connect contact \(userId) incognito=\(onOff(incognito)) \(contactId)"
-            case let .apiDeleteChat(type, id, chatDeleteMode): return "/_delete \(ref(type, id)) \(chatDeleteMode.cmdString)"
-            case let .apiClearChat(type, id): return "/_clear chat \(ref(type, id))"
+            case let .apiDeleteChat(type, id, chatDeleteMode): return "/_delete \(ref(type, id, scope: nil)) \(chatDeleteMode.cmdString)"
+            case let .apiClearChat(type, id): return "/_clear chat \(ref(type, id, scope: nil))"
             case let .apiListContacts(userId): return "/_contacts \(userId)"
             case let .apiUpdateProfile(userId, profile): return "/_profile \(userId) \(encodeJSON(profile))"
             case let .apiSetContactPrefs(contactId, preferences): return "/_set prefs @\(contactId) \(encodeJSON(preferences))"
@@ -337,9 +340,9 @@ public enum ChatCommand {
             case .apiGetCallInvitations: return "/_call get"
             case let .apiCallStatus(contact, callStatus): return "/_call status @\(contact.apiId) \(callStatus.rawValue)"
             case .apiGetNetworkStatuses: return "/_network_statuses"
-            case let .apiChatRead(type, id): return "/_read chat \(ref(type, id))"
-            case let .apiChatItemsRead(type, id, itemIds): return "/_read chat items \(ref(type, id)) \(joinedIds(itemIds))"
-            case let .apiChatUnread(type, id, unreadChat): return "/_unread chat \(ref(type, id)) \(onOff(unreadChat))"
+            case let .apiChatRead(type, id, scope): return "/_read chat \(ref(type, id, scope: scope))"
+            case let .apiChatItemsRead(type, id, scope, itemIds): return "/_read chat items \(ref(type, id, scope: scope)) \(joinedIds(itemIds))"
+            case let .apiChatUnread(type, id, unreadChat): return "/_unread chat \(ref(type, id, scope: nil)) \(onOff(unreadChat))"
             case let .receiveFile(fileId, userApprovedRelays, encrypt, inline): return "/freceive \(fileId)\(onOffParam("approved_relays", userApprovedRelays))\(onOffParam("encrypt", encrypt))\(onOffParam("inline", inline))"
             case let .setFileToReceive(fileId, userApprovedRelays, encrypt): return "/_set_file_to_receive \(fileId)\(onOffParam("approved_relays", userApprovedRelays))\(onOffParam("encrypt", encrypt))"
             case let .cancelFile(fileId): return "/fcancel \(fileId)"
@@ -424,6 +427,7 @@ public enum ChatCommand {
             case .apiNewGroup: return "apiNewGroup"
             case .apiAddMember: return "apiAddMember"
             case .apiJoinGroup: return "apiJoinGroup"
+            case .apiAcceptMember: return "apiAcceptMember"
             case .apiMembersRole: return "apiMembersRole"
             case .apiBlockMembersForAll: return "apiBlockMembersForAll"
             case .apiRemoveMembers: return "apiRemoveMembers"
@@ -526,8 +530,20 @@ public enum ChatCommand {
         }
     }
 
-    func ref(_ type: ChatType, _ id: Int64) -> String {
-        "\(type.rawValue)\(id)"
+    func ref(_ type: ChatType, _ id: Int64, scope: GroupChatScope?) -> String {
+        "\(type.rawValue)\(id)\(scopeRef(scope: scope))"
+    }
+
+    func scopeRef(scope: GroupChatScope?) -> String {
+        switch (scope) {
+        case .none: ""
+        case let .memberSupport(groupMemberId_):
+            if let groupMemberId = groupMemberId_ {
+                "(_support:\(groupMemberId))"
+            } else {
+                "(_support)"
+            }
+        }
     }
 
     func joinedIds(_ ids: [Int64]) -> String {
@@ -687,6 +703,8 @@ public enum ChatResponse: Decodable, Error {
     case receivedGroupInvitation(user: UserRef, groupInfo: GroupInfo, contact: Contact, memberRole: GroupMemberRole)
     case groupDeletedUser(user: UserRef, groupInfo: GroupInfo)
     case joinedGroupMemberConnecting(user: UserRef, groupInfo: GroupInfo, hostMember: GroupMember, member: GroupMember)
+    case memberAccepted(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
+    case memberAcceptedByOther(user: UserRef, groupInfo: GroupInfo, acceptingMember: GroupMember, member: GroupMember)
     case memberRole(user: UserRef, groupInfo: GroupInfo, byMember: GroupMember, member: GroupMember, fromRole: GroupMemberRole, toRole: GroupMemberRole)
     case membersRoleUser(user: UserRef, groupInfo: GroupInfo, members: [GroupMember], toRole: GroupMemberRole)
     case memberBlockedForAll(user: UserRef, groupInfo: GroupInfo, byMember: GroupMember, member: GroupMember, blocked: Bool)
@@ -867,6 +885,8 @@ public enum ChatResponse: Decodable, Error {
             case .receivedGroupInvitation: return "receivedGroupInvitation"
             case .groupDeletedUser: return "groupDeletedUser"
             case .joinedGroupMemberConnecting: return "joinedGroupMemberConnecting"
+            case .memberAccepted: return "memberAccepted"
+            case .memberAcceptedByOther: return "memberAcceptedByOther"
             case .memberRole: return "memberRole"
             case .membersRoleUser: return "membersRoleUser"
             case .memberBlockedForAll: return "memberBlockedForAll"
@@ -1054,6 +1074,8 @@ public enum ChatResponse: Decodable, Error {
             case let .receivedGroupInvitation(u, groupInfo, contact, memberRole): return withUser(u, "groupInfo: \(groupInfo)\ncontact: \(contact)\nmemberRole: \(memberRole)")
             case let .groupDeletedUser(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .joinedGroupMemberConnecting(u, groupInfo, hostMember, member): return withUser(u, "groupInfo: \(groupInfo)\nhostMember: \(hostMember)\nmember: \(member)")
+            case let .memberAccepted(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
+            case let .memberAcceptedByOther(u, groupInfo, acceptingMember, member): return withUser(u, "groupInfo: \(groupInfo)\nacceptingMember: \(acceptingMember)\nmember: \(member)")
             case let .memberRole(u, groupInfo, byMember, member, fromRole, toRole): return withUser(u, "groupInfo: \(groupInfo)\nbyMember: \(byMember)\nmember: \(member)\nfromRole: \(fromRole)\ntoRole: \(toRole)")
             case let .membersRoleUser(u, groupInfo, members, toRole): return withUser(u, "groupInfo: \(groupInfo)\nmembers: \(members)\ntoRole: \(toRole)")
             case let .memberBlockedForAll(u, groupInfo, byMember, member, blocked): return withUser(u, "groupInfo: \(groupInfo)\nbyMember: \(byMember)\nmember: \(member)\nblocked: \(blocked)")

@@ -11,6 +11,7 @@ import SwiftUI
 
 let TRIM_KEEP_COUNT = 200
 
+// TODO [knocking] this function should have chat context as parameter, pass scope and contentTag to apiGetChat
 func apiLoadMessages(
     _ chatId: ChatId,
     _ pagination: ChatPagination,
@@ -22,7 +23,7 @@ func apiLoadMessages(
     let chat: Chat
     let navInfo: NavigationInfo
     do {
-        (chat, navInfo) = try await apiGetChat(chatId: chatId, pagination: pagination, search: search)
+        (chat, navInfo) = try await apiGetChat(chatId: chatId, scope: nil, contentTag: nil, pagination: pagination, search: search)
     } catch let error {
         logger.error("apiLoadMessages error: \(responseError(error))")
         return
@@ -130,7 +131,7 @@ func apiLoadMessages(
             if let openAroundItemId {
                 chatState.unreadAfterNewestLoaded = navInfo.afterUnread
                 ChatModel.shared.openAroundItemId = openAroundItemId
-                ChatModel.shared.chatId = chatId
+                ChatModel.shared.chatId = chat.id
             } else {
                 // no need to set it, count will be wrong
                 // chatState.unreadAfterNewestLoaded = navInfo.afterUnread

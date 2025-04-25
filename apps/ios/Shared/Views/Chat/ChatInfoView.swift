@@ -938,7 +938,7 @@ struct ChatWallpaperEditorSheet: View {
         self.chat = chat
         self.themes = if case let ChatInfo.direct(contact) = chat.chatInfo, let uiThemes = contact.uiThemes {
             uiThemes
-        } else if case let ChatInfo.group(groupInfo) = chat.chatInfo, let uiThemes = groupInfo.uiThemes {
+        } else if case let ChatInfo.group(groupInfo, _) = chat.chatInfo, let uiThemes = groupInfo.uiThemes {
             uiThemes
         } else {
             ThemeModeOverrides()
@@ -974,7 +974,7 @@ struct ChatWallpaperEditorSheet: View {
     private func themesFromChat(_ chat: Chat) -> ThemeModeOverrides {
         if case let ChatInfo.direct(contact) = chat.chatInfo, let uiThemes = contact.uiThemes {
             uiThemes
-        } else if case let ChatInfo.group(groupInfo) = chat.chatInfo, let uiThemes = groupInfo.uiThemes {
+        } else if case let ChatInfo.group(groupInfo, _) = chat.chatInfo, let uiThemes = groupInfo.uiThemes {
             uiThemes
         } else {
             ThemeModeOverrides()
@@ -1052,12 +1052,12 @@ struct ChatWallpaperEditorSheet: View {
                             chat.wrappedValue = Chat.init(chatInfo: ChatInfo.direct(contact: contact))
                             themes = themesFromChat(chat.wrappedValue)
                         }
-                    } else if case var ChatInfo.group(groupInfo) = chat.wrappedValue.chatInfo {
+                    } else if case var ChatInfo.group(groupInfo, _) = chat.wrappedValue.chatInfo {
                         groupInfo.uiThemes = changedThemesConstant
 
                         await MainActor.run {
-                            ChatModel.shared.updateChatInfo(ChatInfo.group(groupInfo: groupInfo))
-                            chat.wrappedValue = Chat.init(chatInfo: ChatInfo.group(groupInfo: groupInfo))
+                            ChatModel.shared.updateChatInfo(ChatInfo.group(groupInfo: groupInfo, groupChatScope: nil))
+                            chat.wrappedValue = Chat.init(chatInfo: ChatInfo.group(groupInfo: groupInfo, groupChatScope: nil))
                             themes = themesFromChat(chat.wrappedValue)
                         }
                     }

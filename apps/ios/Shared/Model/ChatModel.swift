@@ -386,7 +386,7 @@ final class ChatModel: ObservableObject {
 
     func getGroupChat(_ groupId: Int64) -> Chat? {
         chats.first { chat in
-            if case let .group(groupInfo) = chat.chatInfo {
+            if case let .group(groupInfo, _) = chat.chatInfo {
                 return groupInfo.groupId == groupId
             } else {
                 return false
@@ -461,7 +461,7 @@ final class ChatModel: ObservableObject {
     }
 
     func updateGroup(_ groupInfo: GroupInfo) {
-        updateChat(.group(groupInfo: groupInfo))
+        updateChat(.group(groupInfo: groupInfo, groupChatScope: nil))
     }
 
     private func updateChat(_ cInfo: ChatInfo, addMissing: Bool = true) {
@@ -1093,7 +1093,7 @@ final class ChatModel: ObservableObject {
     func removeWallpaperFilesFromChat(_ chat: Chat) {
         if case let .direct(contact) = chat.chatInfo {
             removeWallpaperFilesFromTheme(contact.uiThemes)
-        } else if case let .group(groupInfo) = chat.chatInfo {
+        } else if case let .group(groupInfo, _) = chat.chatInfo {
             removeWallpaperFilesFromTheme(groupInfo.uiThemes)
         }
     }
@@ -1148,9 +1148,9 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
     var userCanSend: Bool {
         switch chatInfo {
         case .direct: return true
-        case let .group(groupInfo):
+        case let .group(groupInfo, groupChatScope):
             let m = groupInfo.membership
-            return m.memberActive && m.memberRole >= .member
+            return (m.memberActive && m.memberRole >= .member && !m.memberPending) || groupChatScope != nil
         case .local:
             return true
         default: return false
@@ -1159,10 +1159,17 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
 
     var userIsObserver: Bool {
         switch chatInfo {
-        case let .group(groupInfo):
+        case let .group(groupInfo, _):
             let m = groupInfo.membership
             return m.memberActive && m.memberRole == .observer
         default: return false
+        }
+    }
+
+    var userIsPending: Bool {
+        switch chatInfo {
+        case let .group(groupInfo, _): groupInfo.membership.memberPending
+        default: false
         }
     }
 
@@ -1230,4 +1237,9 @@ enum UIRemoteCtrlSessionState {
     case connecting(remoteCtrl_: RemoteCtrlInfo?)
     case pendingConfirmation(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
     case connected(remoteCtrl: RemoteCtrlInfo, sessionCode: String)
+}
+
+enum SecondaryContextFilter {
+    case groupChatScopeContext(groupScopeInfo: GroupChatScopeInfo)
+    case msgContentTagContext(contentTag: MsgContentTag)
 }

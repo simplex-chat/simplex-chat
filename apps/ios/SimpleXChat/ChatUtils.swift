@@ -16,7 +16,7 @@ public protocol ChatLike {
 
 extension ChatLike {
     public func groupFeatureEnabled(_ feature: GroupFeature) -> Bool {
-        if case let .group(groupInfo) = self.chatInfo {
+        if case let .group(groupInfo, _) = self.chatInfo {
             let p = groupInfo.fullGroupPreferences
             return switch feature {
             case .timedMessages: p.timedMessages.on
@@ -83,7 +83,7 @@ public func foundChat(_ chat: ChatLike, _ searchStr: String) -> Bool {
 private func canForwardToChat(_ cInfo: ChatInfo) -> Bool {
     switch cInfo {
     case let .direct(contact): contact.sendMsgEnabled && !contact.nextSendGrpInv
-    case let .group(groupInfo): groupInfo.sendMsgEnabled
+    case let .group(groupInfo, _): groupInfo.sendMsgEnabled
     case let .local(noteFolder): noteFolder.sendMsgEnabled
     case .contactRequest: false
     case .contactConnection: false
@@ -94,7 +94,7 @@ private func canForwardToChat(_ cInfo: ChatInfo) -> Bool {
 public func chatIconName(_ cInfo: ChatInfo) -> String {
     switch cInfo {
     case .direct: "person.crop.circle.fill"
-    case let .group(groupInfo):
+    case let .group(groupInfo, _):
         switch groupInfo.businessChat?.chatType {
         case .none: "person.2.circle.fill"
         case .business: "briefcase.circle.fill"

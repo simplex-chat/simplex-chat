@@ -141,7 +141,7 @@ struct ChatPreviewView: View {
             } else {
                 EmptyView()
             }
-        case let .group(groupInfo):
+        case let .group(groupInfo, _):
             switch (groupInfo.membership.memberStatus) {
             case .memRejected: inactiveIcon()
             case .memLeft: inactiveIcon()
@@ -165,7 +165,7 @@ struct ChatPreviewView: View {
         switch chat.chatInfo {
         case let .direct(contact):
             previewTitle(contact.verified == true ? verifiedIcon + t : t).foregroundColor(deleting ? Color.secondary : nil)
-        case let .group(groupInfo):
+        case let .group(groupInfo, _):
             let v = previewTitle(t)
             switch (groupInfo.membership.memberStatus) {
             case .memInvited: v.foregroundColor(deleting ? theme.colors.secondary : chat.chatInfo.incognito ? .indigo : theme.colors.primary)
@@ -335,7 +335,7 @@ struct ChatPreviewView: View {
                         chatPreviewInfoText("connecting…")
                     }
                 }
-            case let .group(groupInfo):
+            case let .group(groupInfo, _):
                 switch (groupInfo.membership.memberStatus) {
                 case .memRejected: chatPreviewInfoText("rejected")
                 case .memInvited: groupInvitationPreviewText(groupInfo)
