@@ -165,7 +165,7 @@
     "copy-the-command-below-text": "másolja be az alábbi parancsot, és használja a csevegésben:",
     "privacy-matters-section-header": "Miért <span class='gradient-text'>számít</span> az adatvédelem",
     "privacy-matters-section-subheader": "A metaadatok védelmének megőrzése &mdash; <span class='text-active-blue'>kivel beszélget</span> &mdash; megvédi a következőktől:",
-    "privacy-matters-section-label": "Győződjön meg arról, hogy az üzenetváltó-alkalmazás amit használ nem fér hozzá az adataidhoz!",
+    "privacy-matters-section-label": "Győződjön meg arról, hogy az üzenetváltó-alkalmazás amit használ nem fér hozzá az adataihoz!",
     "simplex-private-section-header": "Mitől lesz a SimpleX <span class='gradient-text'>privát</span>",
     "simplex-network-section-header": "SimpleX-<span class='gradient-text'>hálózat</span>",
     "simplex-network-section-desc": "A Simplex Chat a P2P- és a föderált hálózatok előnyeinek kombinálásával biztosítja a legjobb adatvédelmet.",
