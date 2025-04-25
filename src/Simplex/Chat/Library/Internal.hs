@@ -967,17 +967,16 @@ profileToSendOnAccept user ip = userProfileToSend user (getIncognitoProfile <$> 
       ExistingIncognito lp -> fromLocalProfile lp
 
 introduceToModerators :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
-introduceToModerators vr user gInfo@GroupInfo {groupId} m = do
-  when (maxVersion (memberChatVRange m) < groupKnockingVersion) $ sendPendingReviewMessage
+introduceToModerators vr user gInfo@GroupInfo {groupId} m@GroupMember {memberRole, memberId} = do
+  forM_ (memberConn m) $ \mConn -> do
+    let msg =
+          if (maxVersion (memberChatVRange m) >= groupKnockingVersion)
+            then XGrpLinkAcpt GAPendingReview memberRole memberId
+            else XMsgNew $ MCSimple $ extMsgContent (MCText pendingReviewMessage) Nothing
+    void $ sendDirectMemberMessage mConn msg groupId
   modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
   let rcpModMs = filter memberCurrent modMs
   introduceMember vr user gInfo m rcpModMs (Just $ MSMember $ memberId' m)
-  where
-    sendPendingReviewMessage = case memberConn m of
-      Just conn -> do
-        let event = XMsgNew $ MCSimple $ extMsgContent (MCText pendingReviewMessage) Nothing
-        sendGroupMemberMessages user conn [event] groupId
-      Nothing -> pure ()
 
 introduceToAll :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceToAll vr user gInfo m = do
