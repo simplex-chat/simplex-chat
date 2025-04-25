@@ -34,9 +34,28 @@
             "enabled": true
         },
         {
+            "label": "fi",
+            "name": "Suomi",
+            "flag": "/img/flags/fi.svg",
+            "enabled": true
+        },
+        {
             "label": "fr",
             "name": "Français",
             "flag": "/img/flags/fr.svg",
+            "enabled": true
+        },
+        {
+            "label": "he",
+            "name": "עִברִית",
+            "flag": "/img/flags/il.svg",
+            "enabled": true,
+            "rtl": true
+        },
+        {
+            "label": "hu",
+            "name": "Magyar",
+            "flag": "/img/flags/hu.svg",
             "enabled": true
         },
         {
@@ -89,9 +108,9 @@
         },
         {
             "label": "ru",
-            "name": "Russian",
+            "name": "Русский",
             "flag": "/img/flags/ru.svg",
-            "enabled": false
+            "enabled": true
         }
-    ]
+   ]
 }
