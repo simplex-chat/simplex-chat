@@ -2353,5 +2353,5 @@
     <string name="network_smp_web_port_all">Összes kiszolgáló</string>
     <string name="network_smp_web_port_off">Kikapcsolva</string>
     <string name="network_smp_web_port_preset">Előre beállított kiszolgálók</string>
-    <string name="network_smp_web_port_preset_footer">Csak a 443-as TCP-port használata az előre beállított kiszolgálokhoz.</string>
+    <string name="network_smp_web_port_preset_footer">A 443-as TCP-port használata kizárólag az előre beállított kiszolgálokhoz.</string>
 </resources>
