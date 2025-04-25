@@ -2440,6 +2440,10 @@
     <string name="report_compose_reason_header_other">Пожаловаться: увидят только модераторы группы.</string>
     <string name="mute_all_chat">Выключить уведомления для всех</string>
     <string name="network_smp_web_port_footer">Использовать TCP-порт %1$s, когда порт не указан.</string>
+    <string name="network_smp_web_port_preset_footer">Использовать TCP-порт 443 только для серверов по умолчанию.</string>
+    <string name="network_smp_web_port_all">Все серверы</string>
+    <string name="network_smp_web_port_preset">Серверы по умолчанию</string>
+    <string name="network_smp_web_port_off">Нет</string>
     <string name="network_smp_web_port_toggle">Использовать веб-порт</string>
     <string name="privacy_chat_list_open_links_no">Нет</string>
     <string name="report_compose_reason_header_illegal">Пожаловаться на сообщение: увидят только модераторы группы.</string>
