@@ -1218,7 +1218,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Better privacy and security" xml:space="preserve">
         <source>Better privacy and security</source>
-        <target>Privacy e sicurezza migliorate</target>
+        <target>Privacy e sicurezza migliori</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better security ✅" xml:space="preserve">
@@ -2920,6 +2920,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Enable Flux in Network &amp; servers settings for better metadata privacy." xml:space="preserve">
         <source>Enable Flux in Network &amp; servers settings for better metadata privacy.</source>
+        <target>Attiva Flux nelle impostazioni "Rete e server" per una migliore privacy dei metadati.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
@@ -7198,6 +7199,10 @@ chat item action</note>
         <target>Condividi con i contatti</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Short link" xml:space="preserve">
+        <source>Short link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Show QR code" xml:space="preserve">
         <source>Show QR code</source>
         <target>Mostra codice QR</target>
@@ -7297,6 +7302,10 @@ chat item action</note>
         <source>SimpleX address or 1-time link?</source>
         <target>Indirizzo SimpleX o link una tantum?</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX channel link" xml:space="preserve">
+        <source>SimpleX channel link</source>
+        <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="SimpleX contact address" xml:space="preserve">
         <source>SimpleX contact address</source>
@@ -7888,6 +7897,10 @@ Può accadere a causa di qualche bug o quando la connessione è compromessa.</ta
         <target>Questo è il tuo link una tantum!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." xml:space="preserve">
+        <source>This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="This link was used with another mobile device, please create a new link on the desktop." xml:space="preserve">
         <source>This link was used with another mobile device, please create a new link on the desktop.</source>
         <target>Questo link è stato usato con un altro dispositivo mobile, creane uno nuovo sul desktop.</target>
@@ -8187,6 +8200,10 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
         <target>Non letto</target>
         <note>swipe action</note>
       </trans-unit>
+      <trans-unit id="Unsupported connection link" xml:space="preserve">
+        <source>Unsupported connection link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve">
         <source>Up to 100 last messages are sent to new members.</source>
         <target>Vengono inviati ai nuovi membri fino a 100 ultimi messaggi.</target>
@@ -8345,6 +8362,10 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
       <trans-unit id="Use servers" xml:space="preserve">
         <source>Use servers</source>
         <target>Usa i server</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use short links (BETA)" xml:space="preserve">
+        <source>Use short links (BETA)</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use the app while in the call." xml:space="preserve">

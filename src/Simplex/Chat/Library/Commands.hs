@@ -3235,9 +3235,9 @@ processChatCommand' vr = \case
         hash :: ConnReqContact -> ConnReqUriHash
         hash = ConnReqUriHash . C.sha256Hash . strEncode
     getShortLinkConnReq :: User -> ConnShortLink m -> CM (ConnectionRequestUri m)
-    getShortLinkConnReq User {userId} l = do
+    getShortLinkConnReq user l = do
       l' <- restoreShortLink' l
-      (cReq, cData) <- withAgent (\a -> getConnShortLink a userId l')
+      (cReq, cData) <- withAgent (\a -> getConnShortLink a (aUserId user) l')
       case cData of
         ContactLinkData {direct} | not direct -> throwChatError CEUnsupportedConnReq
         _ -> pure ()

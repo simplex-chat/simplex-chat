@@ -782,7 +782,7 @@ swipe action */
 "Better notifications" = "Notifiche migliorate";
 
 /* No comment provided by engineer. */
-"Better privacy and security" = "Privacy e sicurezza migliorate";
+"Better privacy and security" = "Privacy e sicurezza migliori";
 
 /* No comment provided by engineer. */
 "Better security ✅" = "Sicurezza migliorata ✅";
@@ -1944,6 +1944,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Enable camera access" = "Attiva l'accesso alla fotocamera";
+
+/* No comment provided by engineer. */
+"Enable Flux in Network & servers settings for better metadata privacy." = "Attiva Flux nelle impostazioni \"Rete e server\" per una migliore privacy dei metadati.";
 
 /* No comment provided by engineer. */
 "Enable for all" = "Attiva per tutti";

@@ -597,8 +597,8 @@
     <string name="restart_the_app_to_create_a_new_chat_profile">Starten Sie die App neu, um ein neues Chat-Profil zu erstellen.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Sie dürfen die neueste Version Ihrer Chat-Datenbank NUR auf einem Gerät verwenden, andernfalls erhalten Sie möglicherweise keine Nachrichten mehr von einigen Ihrer Kontakte.</string>
     <string name="delete_files_and_media_question">Dateien und Medien löschen?</string>
-    <string name="delete_files_and_media_desc">Es werden alle herunter- und hochgeladene Dateien und Medien gelöscht. Bilder mit niedriger Auflösung bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden!</string>
-    <string name="no_received_app_files">Keine herunter- oder hochgeladene Dateien</string>
+    <string name="delete_files_and_media_desc">Es werden alle herunter- und hochgeladenen Dateien und Medien gelöscht. Bilder mit niedriger Auflösung bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden!</string>
+    <string name="no_received_app_files">Keine herunter- oder hochgeladenen Dateien</string>
     <string name="total_files_count_and_size">%d Datei(en) mit einem Gesamtspeicherverbrauch von %s</string>
     <string name="chat_item_ttl_none">nie</string>
     <string name="chat_item_ttl_day">Älter als ein Tag</string>
@@ -1714,8 +1714,8 @@
     <string name="migrate_from_device_confirm_you_remember_passphrase">Bitte bestätigen Sie für die Migration, dass Sie sich an Ihr Datenbank-Passwort erinnern.</string>
     <string name="migrate_from_device_confirm_upload">Hochladen bestätigen</string>
     <string name="migrate_to_device_download_failed">Herunterladen fehlgeschlagen</string>
-    <string name="e2ee_info_no_pq"><![CDATA[Nachrichten, Dateien und Anrufe sind durch <b>Ende-zu-Ende-Verschlüsselung</b> mit Perfect Forward Secrecy, Ablehnung und Einbruchs-Wiederherstellung geschützt.]]></string>
-    <string name="e2ee_info_pq"><![CDATA[Nachrichten, Dateien und Anrufe sind durch <b>Quantum-resistente E2E-Verschlüsselung</b> mit Perfect Forward Secrecy, Ablehnung und Einbruchs-Wiederherstellung geschützt.]]></string>
+    <string name="e2ee_info_no_pq"><![CDATA[Nachrichten, Dateien und Anrufe sind durch <b>Ende-zu-Ende-Verschlüsselung</b> mit Perfect Forward Secrecy, Abstreitbarkeit und Wiederherstellung nach einer Kompromittierung geschützt.]]></string>
+    <string name="e2ee_info_pq"><![CDATA[Nachrichten, Dateien und Anrufe sind durch <b>Quantum-resistente E2E-Verschlüsselung</b> mit Perfect Forward Secrecy, Abstreitbarkeit und Wiederherstellung nach einer Kompromittierung geschützt.]]></string>
     <string name="e2ee_info_no_pq_short">Dieser Chat ist durch Ende-zu-Ende-Verschlüsselung geschützt.</string>
     <string name="e2ee_info_pq_short">Dieser Chat ist durch Quantum-resistente Ende-zu-Ende-Verschlüsselung geschützt.</string>
     <string name="auth_open_migration_to_another_device">Migrationsansicht öffnen</string>
@@ -2448,8 +2448,14 @@
     <string name="block_members_for_all_question">Mitglieder für Alle blockieren?</string>
     <string name="block_members_desc">Alle neuen Nachrichten dieser Mitglieder werden nicht angezeigt!</string>
     <string name="onboarding_conditions_by_using_you_agree">Durch die Nutzung von SimpleX Chat erklären Sie sich damit einverstanden:\n- nur legale Inhalte in öffentlichen Gruppen zu versenden.\n- andere Nutzer zu respektieren - kein Spam.</string>
-    <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Datenschutzbestimmungen und Nutzungsbedingungen.</string>
+    <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Datenschutz- und Nutzungsbedingungen.</string>
     <string name="onboarding_conditions_accept">Akzeptieren</string>
     <string name="onboarding_conditions_configure_server_operators">Server-Betreiber konfigurieren</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Private Chats, Gruppen und Ihre Kontakte sind für Server-Betreiber nicht zugänglich.</string>
+    <string name="unsupported_connection_link">Verbindungs-Link wird nicht unterstützt</string>
+    <string name="privacy_short_links">Verkürzte Links verwenden (BETA)</string>
+    <string name="short_link_button_text">Verkürzter Link</string>
+    <string name="full_link_button_text">Vollständiger Link</string>
+    <string name="simplex_link_channel">SimpleX-Kanal-Link</string>
+    <string name="link_requires_newer_app_version_please_upgrade">Für diesen Link wird eine neuere App-Version benötigt. Bitte aktualisieren Sie die App oder bitten Sie Ihren Kontakt einen kompatiblen Link zu senden.</string>
 </resources>

@@ -1946,6 +1946,9 @@ chat item action */
 "Enable camera access" = "Kamera-Zugriff aktivieren";
 
 /* No comment provided by engineer. */
+"Enable Flux in Network & servers settings for better metadata privacy." = "Für einen besseren Metadatenschutz Flux in den Netzwerk- und Servereinstellungen aktivieren.";
+
+/* No comment provided by engineer. */
 "Enable for all" = "Für Alle aktivieren";
 
 /* No comment provided by engineer. */
@@ -3271,10 +3274,10 @@ snd error text */
 "Messages were deleted after you selected them." = "Die Nachrichten wurden gelöscht, nachdem Sie sie ausgewählt hatten.";
 
 /* No comment provided by engineer. */
-"Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Nachrichten, Dateien und Anrufe sind durch **Ende-zu-Ende-Verschlüsselung** mit Perfect Forward Secrecy, Ablehnung und Einbruchs-Wiederherstellung geschützt.";
+"Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Nachrichten, Dateien und Anrufe sind durch **Ende-zu-Ende-Verschlüsselung** mit Perfect Forward Secrecy, Abstreitbarkeit und Wiederherstellung nach einer Kompromittierung geschützt.";
 
 /* No comment provided by engineer. */
-"Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Nachrichten, Dateien und Anrufe sind durch **Quantum-resistente E2E-Verschlüsselung** mit Perfect Forward Secrecy, Ablehnung und Einbruchs-Wiederherstellung geschützt.";
+"Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Nachrichten, Dateien und Anrufe sind durch **Quantum-resistente E2E-Verschlüsselung** mit Perfect Forward Secrecy, Abstreitbarkeit und Wiederherstellung nach einer Kompromittierung geschützt.";
 
 /* No comment provided by engineer. */
 "Migrate device" = "Gerät migrieren";
@@ -3523,7 +3526,7 @@ snd error text */
 "No push server" = "Lokal";
 
 /* No comment provided by engineer. */
-"No received or sent files" = "Keine herunter- oder hochgeladene Dateien";
+"No received or sent files" = "Keine herunter- oder hochgeladenen Dateien";
 
 /* servers error */
 "No servers for private message routing." = "Keine Server für privates Nachrichten-Routing.";
@@ -3909,7 +3912,7 @@ time to disappear */
 "Privacy for your customers." = "Schutz der Privatsphäre Ihrer Kunden.";
 
 /* No comment provided by engineer. */
-"Privacy policy and conditions of use." = "Datenschutzbestimmungen und Nutzungsbedingungen.";
+"Privacy policy and conditions of use." = "Datenschutz- und Nutzungsbedingungen.";
 
 /* No comment provided by engineer. */
 "Privacy redefined" = "Datenschutz neu definiert";
@@ -5140,7 +5143,7 @@ report reason */
 "They can be overridden in contact and group settings." = "Sie können in den Kontakteinstellungen überschrieben werden.";
 
 /* No comment provided by engineer. */
-"This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Es werden alle herunter- und hochgeladene Dateien und Medien gelöscht. Bilder mit niedriger Auflösung bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden!";
+"This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Es werden alle herunter- und hochgeladenen Dateien und Medien gelöscht. Bilder mit niedriger Auflösung bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden!";
 
 /* No comment provided by engineer. */
 "This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." = "Es werden alle empfangenen und gesendeten Nachrichten, die über den ausgewählten Zeitraum hinaus gehen, gelöscht. Dieser Vorgang kann mehrere Minuten dauern. Diese Aktion kann nicht rückgängig gemacht werden!";
