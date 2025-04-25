@@ -2350,4 +2350,8 @@
     <string name="full_link_button_text">Teljes hivatkozás</string>
     <string name="link_requires_newer_app_version_please_upgrade">Ez a hivatkozás újabb alkalmazásverziót igényel. Frissítse az alkalmazást vagy kérjen egy kompatibilis hivatkozást a partnerétől.</string>
     <string name="simplex_link_channel">SimpleX-csatornahivatkozás</string>
+    <string name="network_smp_web_port_all">Összes kiszolgáló</string>
+    <string name="network_smp_web_port_off">Kikapcsolva</string>
+    <string name="network_smp_web_port_preset">Előre beállított kiszolgálók</string>
+    <string name="network_smp_web_port_preset_footer">Csak a 443-as TCP-port használata az előre beállított kiszolgálokhoz.</string>
 </resources>
