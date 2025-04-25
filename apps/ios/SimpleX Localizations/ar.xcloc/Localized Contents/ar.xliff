@@ -814,8 +814,9 @@
         <target state="translated">جهة الاتصال مخفية:</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Contact is connected" xml:space="preserve">
+      <trans-unit id="Contact is connected" xml:space="preserve" approved="no">
         <source>Contact is connected</source>
+        <target state="translated">تم الاتصال</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Contact is not connected yet!" xml:space="preserve">
@@ -850,8 +851,9 @@
         <source>Core built at: %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Core version: v%@" xml:space="preserve">
+      <trans-unit id="Core version: v%@" xml:space="preserve" approved="no">
         <source>Core version: v%@</source>
+        <target state="translated">الإصدار الأساسي: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create" xml:space="preserve" approved="no">
@@ -901,8 +903,9 @@
         <target state="translated">عبارة المرور الحالية…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve">
+      <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve" approved="no">
         <source>Currently maximum supported file size is %@.</source>
+        <target state="translated">الحد الأقصى لحجم الملف المدعوم حاليًا هو %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Dark" xml:space="preserve" approved="no">
@@ -920,9 +923,11 @@
         <target state="translated">قاعدة البيانات مُعمّاة!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database encryption passphrase will be updated and stored in the keychain.&#10;" xml:space="preserve">
+      <trans-unit id="Database encryption passphrase will be updated and stored in the keychain.&#10;" xml:space="preserve" approved="no">
         <source>Database encryption passphrase will be updated and stored in the keychain.
 </source>
+        <target state="translated">سيتم تحديث عبارة المرور الخاصة بتشفير قاعدة البيانات وتخزينها في سلسلة المفاتيح.
+</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database encryption passphrase will be updated.&#10;" xml:space="preserve" approved="no">
@@ -957,8 +962,9 @@
         <target state="translated">عبارة مرور قاعدة البيانات وتصديرها</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve">
+      <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve" approved="no">
         <source>Database passphrase is different from saved in the keychain.</source>
+        <target state="translated">عبارة المرور الخاصة بقاعدة البيانات مختلفة عن تلك المحفوظة في سلسلة المفاتيح.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database passphrase is required to open chat." xml:space="preserve" approved="no">
@@ -966,9 +972,11 @@
         <target state="translated">عبارة مرور قاعدة البيانات مطلوبة لفتح الدردشة.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database will be encrypted and the passphrase stored in the keychain.&#10;" xml:space="preserve">
+      <trans-unit id="Database will be encrypted and the passphrase stored in the keychain.&#10;" xml:space="preserve" approved="no">
         <source>Database will be encrypted and the passphrase stored in the keychain.
 </source>
+        <target state="translated">سيتم تشفير قاعدة البيانات وتخزين عبارة المرور في سلسلة المفاتيح.
+</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database will be encrypted.&#10;" xml:space="preserve" approved="no">
@@ -978,8 +986,9 @@
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database will be migrated when the app restarts" xml:space="preserve">
+      <trans-unit id="Database will be migrated when the app restarts" xml:space="preserve" approved="no">
         <source>Database will be migrated when the app restarts</source>
+        <target state="translated">سيتم نقل قاعدة البيانات عند إعادة تشغيل التطبيق</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Decentralized" xml:space="preserve" approved="no">
@@ -1079,36 +1088,44 @@
         <target state="translated">حذف المجموعة؟</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete invitation" xml:space="preserve">
+      <trans-unit id="Delete invitation" xml:space="preserve" approved="no">
         <source>Delete invitation</source>
+        <target state="translated">حذف الدعوة</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete link" xml:space="preserve">
+      <trans-unit id="Delete link" xml:space="preserve" approved="no">
         <source>Delete link</source>
+        <target state="translated">حذف الرابط</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete link?" xml:space="preserve">
+      <trans-unit id="Delete link?" xml:space="preserve" approved="no">
         <source>Delete link?</source>
+        <target state="translated">حذف الرابط؟</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete message?" xml:space="preserve">
+      <trans-unit id="Delete message?" xml:space="preserve" approved="no">
         <source>Delete message?</source>
+        <target state="translated">حذف الرسالة؟</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete messages" xml:space="preserve">
+      <trans-unit id="Delete messages" xml:space="preserve" approved="no">
         <source>Delete messages</source>
+        <target state="translated">حذف الرسائل</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete messages after" xml:space="preserve">
+      <trans-unit id="Delete messages after" xml:space="preserve" approved="no">
         <source>Delete messages after</source>
+        <target state="translated">حذف الرسائل بعد</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete old database" xml:space="preserve">
+      <trans-unit id="Delete old database" xml:space="preserve" approved="no">
         <source>Delete old database</source>
+        <target state="translated">حذف قاعدة البيانات القديمة</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete old database?" xml:space="preserve">
+      <trans-unit id="Delete old database?" xml:space="preserve" approved="no">
         <source>Delete old database?</source>
+        <target state="translated">حذف قاعدة البيانات القديمة؟</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete pending connection" xml:space="preserve">
@@ -1125,8 +1142,9 @@
         <target state="translated">حذف قائمة الانتظار</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Delete user profile?" xml:space="preserve">
+      <trans-unit id="Delete user profile?" xml:space="preserve" approved="no">
         <source>Delete user profile?</source>
+        <target state="translated">حذف ملف تعريف المستخدم؟</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Description" xml:space="preserve" approved="no">
@@ -1134,8 +1152,9 @@
         <target state="translated">الوصف</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Develop" xml:space="preserve">
+      <trans-unit id="Develop" xml:space="preserve" approved="no">
         <source>Develop</source>
+        <target state="translated">يطور</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Developer tools" xml:space="preserve" approved="no">
@@ -1168,28 +1187,34 @@
         <target state="translated">رسائل مباشرة</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Direct messages between members are prohibited." xml:space="preserve">
+      <trans-unit id="Direct messages between members are prohibited." xml:space="preserve" approved="no">
         <source>Direct messages between members are prohibited.</source>
+        <target state="translated">الرسائل المباشرة بين الأعضاء ممنوعة.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
+      <trans-unit id="Disable SimpleX Lock" xml:space="preserve" approved="no">
         <source>Disable SimpleX Lock</source>
+        <target state="translated">تعطيل قفل SimpleX</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Disappearing messages" xml:space="preserve">
+      <trans-unit id="Disappearing messages" xml:space="preserve" approved="no">
         <source>Disappearing messages</source>
+        <target state="translated">الرسائل المختفية</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Disappearing messages are prohibited in this chat." xml:space="preserve">
+      <trans-unit id="Disappearing messages are prohibited in this chat." xml:space="preserve" approved="no">
         <source>Disappearing messages are prohibited in this chat.</source>
+        <target state="translated">يُحظر اختفاء الرسائل في هذه الدردشة.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappearing messages are prohibited." xml:space="preserve">
+      <trans-unit id="Disappearing messages are prohibited." xml:space="preserve" approved="no">
         <source>Disappearing messages are prohibited.</source>
+        <target state="translated">الرسائل المختفية ممنوعة.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disconnect" xml:space="preserve">
+      <trans-unit id="Disconnect" xml:space="preserve" approved="no">
         <source>Disconnect</source>
+        <target state="translated">قطع الاتصال</target>
         <note>server test step</note>
       </trans-unit>
       <trans-unit id="Display name" xml:space="preserve">
@@ -1200,12 +1225,14 @@
         <source>Display name:</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve">
+      <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve" approved="no">
         <source>Do NOT use SimpleX for emergency calls.</source>
+        <target state="translated">لا تستخدم SimpleX لإجراء مكالمات الطوارئ.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Do it later" xml:space="preserve">
+      <trans-unit id="Do it later" xml:space="preserve" approved="no">
         <source>Do it later</source>
+        <target state="translated">افعل ذلك لاحقا</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Duplicate display name!" xml:space="preserve" approved="no">
@@ -1258,76 +1285,93 @@
         <target state="translated">تفعيل الإشعارات دورية؟</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Encrypt" xml:space="preserve">
+      <trans-unit id="Encrypt" xml:space="preserve" approved="no">
         <source>Encrypt</source>
+        <target state="translated">التشفير</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Encrypt database?" xml:space="preserve">
+      <trans-unit id="Encrypt database?" xml:space="preserve" approved="no">
         <source>Encrypt database?</source>
+        <target state="translated">تشفير قاعدة البيانات؟</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Encrypted database" xml:space="preserve">
+      <trans-unit id="Encrypted database" xml:space="preserve" approved="no">
         <source>Encrypted database</source>
+        <target state="translated">قاعدة بيانات مشفرة</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Encrypted message or another event" xml:space="preserve">
+      <trans-unit id="Encrypted message or another event" xml:space="preserve" approved="no">
         <source>Encrypted message or another event</source>
+        <target state="translated">رسالة مشفرة أو حدث آخر</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: database error" xml:space="preserve">
+      <trans-unit id="Encrypted message: database error" xml:space="preserve" approved="no">
         <source>Encrypted message: database error</source>
+        <target state="translated">رسالة مشفرة: خطأ في قاعدة البيانات</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: keychain error" xml:space="preserve">
+      <trans-unit id="Encrypted message: keychain error" xml:space="preserve" approved="no">
         <source>Encrypted message: keychain error</source>
+        <target state="translated">رسالة مشفرة: خطأ في سلسلة المفاتيح</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: no passphrase" xml:space="preserve">
+      <trans-unit id="Encrypted message: no passphrase" xml:space="preserve" approved="no">
         <source>Encrypted message: no passphrase</source>
+        <target state="translated">الرسالة المشفرة: لا توجد عبارة مرور</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: unexpected error" xml:space="preserve">
+      <trans-unit id="Encrypted message: unexpected error" xml:space="preserve" approved="no">
         <source>Encrypted message: unexpected error</source>
+        <target state="translated">رسالة مشفرة: خطأ غير متوقع</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Enter correct passphrase." xml:space="preserve">
+      <trans-unit id="Enter correct passphrase." xml:space="preserve" approved="no">
         <source>Enter correct passphrase.</source>
+        <target state="translated">أدخل عبارة المرور الصحيحة.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enter passphrase…" xml:space="preserve">
+      <trans-unit id="Enter passphrase…" xml:space="preserve" approved="no">
         <source>Enter passphrase…</source>
+        <target state="translated">أدخل عبارة المرور…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enter server manually" xml:space="preserve">
+      <trans-unit id="Enter server manually" xml:space="preserve" approved="no">
         <source>Enter server manually</source>
+        <target state="translated">أدخل الخادم يدوياً</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error" xml:space="preserve">
+      <trans-unit id="Error" xml:space="preserve" approved="no">
         <source>Error</source>
+        <target state="translated">خطأ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error accepting contact request" xml:space="preserve">
+      <trans-unit id="Error accepting contact request" xml:space="preserve" approved="no">
         <source>Error accepting contact request</source>
+        <target state="translated">خطأ في قبول طلب الاتصال</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error accessing database file" xml:space="preserve">
         <source>Error accessing database file</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error adding member(s)" xml:space="preserve">
+      <trans-unit id="Error adding member(s)" xml:space="preserve" approved="no">
         <source>Error adding member(s)</source>
+        <target state="translated">خطأ في إضافة عضو (أعضاء)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error changing address" xml:space="preserve">
+      <trans-unit id="Error changing address" xml:space="preserve" approved="no">
         <source>Error changing address</source>
+        <target state="translated">خطأ في تغيير العنوان</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error changing role" xml:space="preserve">
+      <trans-unit id="Error changing role" xml:space="preserve" approved="no">
         <source>Error changing role</source>
+        <target state="translated">خطأ في تغيير الدور المتغير</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error changing setting" xml:space="preserve">
+      <trans-unit id="Error changing setting" xml:space="preserve" approved="no">
         <source>Error changing setting</source>
+        <target state="translated">خطأ في تغيير الإعدادات</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error creating address" xml:space="preserve">
@@ -5476,6 +5520,242 @@ This is your own one-time link!</source>
       <trans-unit id="Conditions will be automatically accepted for enabled operators on: %@." xml:space="preserve" approved="no">
         <source>Conditions will be automatically accepted for enabled operators on: %@.</source>
         <target state="translated">سيتم قبول الشروط تلقائيًا للمشغلين الممكّنين على: %@.</target>
+      </trans-unit>
+      <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve" approved="no">
+        <source>Create new profile in [desktop app](https://simplex.chat/downloads/). 💻</source>
+        <target state="translated">أنشئ ملفًا شخصيًا جديدًا في [تطبيق سطح المكتب](https://simplex.chat/downloads/). 💻</target>
+      </trans-unit>
+      <trans-unit id="Error adding server" xml:space="preserve" approved="no">
+        <source>Error adding server</source>
+        <target state="translated">خطأ في إضافة الخادم</target>
+      </trans-unit>
+      <trans-unit id="Created at: %@" xml:space="preserve" approved="no">
+        <source>Created at: %@</source>
+        <target state="translated">تم الإنشاء في: %@</target>
+      </trans-unit>
+      <trans-unit id="Delete %lld messages of members?" xml:space="preserve" approved="no">
+        <source>Delete %lld messages of members?</source>
+        <target state="translated">حذف %lld الرسائل القديمة للأعضاء؟</target>
+      </trans-unit>
+      <trans-unit id="Disappearing message" xml:space="preserve" approved="no">
+        <source>Disappearing message</source>
+        <target state="translated">رسالة اختفاء</target>
+      </trans-unit>
+      <trans-unit id="Enabled" xml:space="preserve" approved="no">
+        <source>Enabled</source>
+        <target state="translated">ممكّنة</target>
+      </trans-unit>
+      <trans-unit id="Encrypted message: database migration error" xml:space="preserve" approved="no">
+        <source>Encrypted message: database migration error</source>
+        <target state="translated">رسالة مشفرة: خطأ في ترحيل قاعدة البيانات</target>
+      </trans-unit>
+      <trans-unit id="Delete list?" xml:space="preserve" approved="no">
+        <source>Delete list?</source>
+        <target state="translated">Delete list?</target>
+      </trans-unit>
+      <trans-unit id="Delivered even when Apple drops them." xml:space="preserve" approved="no">
+        <source>Delivered even when Apple drops them.</source>
+        <target state="translated">يتم تسليمها حتى عندما تسقطها شركة Apple.</target>
+      </trans-unit>
+      <trans-unit id="Destination server address of %@ is incompatible with forwarding server %@ settings." xml:space="preserve" approved="no">
+        <source>Destination server address of %@ is incompatible with forwarding server %@ settings.</source>
+        <target state="translated">عنوان خادم الوجهة %@ غير متوافق مع إعدادات خادم التوجيه %@.</target>
+      </trans-unit>
+      <trans-unit id="Destination server version of %@ is incompatible with forwarding server %@." xml:space="preserve" approved="no">
+        <source>Destination server version of %@ is incompatible with forwarding server %@.</source>
+        <target state="translated">إصدار خادم الوجهة لـ %@ غير متوافق مع خادم التوجيه %@.</target>
+      </trans-unit>
+      <trans-unit id="Don't create address" xml:space="preserve" approved="no">
+        <source>Don't create address</source>
+        <target state="translated">لا تنشئ عنوان</target>
+      </trans-unit>
+      <trans-unit id="Done" xml:space="preserve" approved="no">
+        <source>Done</source>
+        <target state="translated">تم</target>
+      </trans-unit>
+      <trans-unit id="Duration" xml:space="preserve" approved="no">
+        <source>Duration</source>
+        <target state="translated">المدة</target>
+      </trans-unit>
+      <trans-unit id="Encrypt local files" xml:space="preserve" approved="no">
+        <source>Encrypt local files</source>
+        <target state="translated">تشفير الملفات المحلية</target>
+      </trans-unit>
+      <trans-unit id="Encryption renegotiation in progress." xml:space="preserve" approved="no">
+        <source>Encryption renegotiation in progress.</source>
+        <target state="translated">إعادة التفاوض على التشفير قيد التنفيذ.</target>
+      </trans-unit>
+      <trans-unit id="Enter Passcode" xml:space="preserve" approved="no">
+        <source>Enter Passcode</source>
+        <target state="translated">أدخل رمز المرور</target>
+      </trans-unit>
+      <trans-unit id="Enter passphrase" xml:space="preserve" approved="no">
+        <source>Enter passphrase</source>
+        <target state="translated">قم بأدخل عبارة المرور</target>
+      </trans-unit>
+      <trans-unit id="Enter welcome message…" xml:space="preserve" approved="no">
+        <source>Enter welcome message…</source>
+        <target state="translated">أدخل رسالة ترحيب…</target>
+      </trans-unit>
+      <trans-unit id="Enter your name…" xml:space="preserve" approved="no">
+        <source>Enter your name…</source>
+        <target state="translated">أدخل اسمك…</target>
+      </trans-unit>
+      <trans-unit id="Error changing to incognito!" xml:space="preserve" approved="no">
+        <source>Error changing to incognito!</source>
+        <target state="translated">خطأ في التغيير إلى التصفح المتخفي!</target>
+      </trans-unit>
+      <trans-unit id="Delete %lld messages?" xml:space="preserve" approved="no">
+        <source>Delete %lld messages?</source>
+        <target state="translated">حذف %lld رسائل؟</target>
+      </trans-unit>
+      <trans-unit id="Error aborting address change" xml:space="preserve" approved="no">
+        <source>Error aborting address change</source>
+        <target state="translated">خطأ في إجهاض تغيير العنوان</target>
+      </trans-unit>
+      <trans-unit id="Disappears at" xml:space="preserve" approved="no">
+        <source>Disappears at</source>
+        <target state="translated">يختفي عند</target>
+      </trans-unit>
+      <trans-unit id="Do not use credentials with proxy." xml:space="preserve" approved="no">
+        <source>Do not use credentials with proxy.</source>
+        <target state="translated">لا تستخدم بيانات الاعتماد مع البروكسي.</target>
+      </trans-unit>
+      <trans-unit id="Error accepting conditions" xml:space="preserve" approved="no">
+        <source>Error accepting conditions</source>
+        <target state="translated">خطأ في قبول الشروط</target>
+      </trans-unit>
+      <trans-unit id="Enter password above to show!" xml:space="preserve" approved="no">
+        <source>Enter password above to show!</source>
+        <target state="translated">أدخل كلمة المرور أعلاه للعرض!</target>
+      </trans-unit>
+      <trans-unit id="Error changing connection profile" xml:space="preserve" approved="no">
+        <source>Error changing connection profile</source>
+        <target state="translated">خطأ في تغيير ملف تعريف الاتصال</target>
+      </trans-unit>
+      <trans-unit id="Desktop app version %@ is not compatible with this app." xml:space="preserve" approved="no">
+        <source>Desktop app version %@ is not compatible with this app.</source>
+        <target state="translated">إصدار تطبيق سطح المكتب %@ غير متوافق مع هذا التطبيق.</target>
+      </trans-unit>
+      <trans-unit id="Encrypt stored files &amp; media" xml:space="preserve" approved="no">
+        <source>Encrypt stored files &amp; media</source>
+        <target state="translated">تشفير الملفات والوسائط المخزنة</target>
+      </trans-unit>
+      <trans-unit id="Enter this device name…" xml:space="preserve" approved="no">
+        <source>Enter this device name…</source>
+        <target state="translated">أدخل اسم الجهاز…</target>
+      </trans-unit>
+      <trans-unit id="Enter welcome message… (optional)" xml:space="preserve" approved="no">
+        <source>Enter welcome message… (optional)</source>
+        <target state="translated">أدخل رسالة ترحيب... (اختياري)</target>
+      </trans-unit>
+      <trans-unit id="Correct name to %@?" xml:space="preserve" approved="no">
+        <source>Correct name to %@?</source>
+        <target state="translated">الاسم الصحيح ل %@؟</target>
+      </trans-unit>
+      <trans-unit id="Delete member message?" xml:space="preserve" approved="no">
+        <source>Delete member message?</source>
+        <target state="translated">حذف رسالة العضو؟</target>
+      </trans-unit>
+      <trans-unit id="Disable automatic message deletion?" xml:space="preserve" approved="no">
+        <source>Disable automatic message deletion?</source>
+        <target state="translated">تعطيل حذف الرسائل التلقائي؟</target>
+      </trans-unit>
+      <trans-unit id="Disable delete messages" xml:space="preserve" approved="no">
+        <source>Disable delete messages</source>
+        <target state="translated">تعطيل حذف الرسائل</target>
+      </trans-unit>
+      <trans-unit id="Disable for all" xml:space="preserve" approved="no">
+        <source>Disable for all</source>
+        <target state="translated">تعطيل للجميع</target>
+      </trans-unit>
+      <trans-unit id="Disabled" xml:space="preserve" approved="no">
+        <source>Disabled</source>
+        <target state="translated">عاجز</target>
+      </trans-unit>
+      <trans-unit id="Documents:" xml:space="preserve" approved="no">
+        <source>Documents:</source>
+        <target state="translated">المستندات:</target>
+      </trans-unit>
+      <trans-unit id="By using SimpleX Chat you agree to:&#10;- send only legal content in public groups.&#10;- respect other users – no spam." xml:space="preserve" approved="no">
+        <source>By using SimpleX Chat you agree to:
+- send only legal content in public groups.
+- respect other users – no spam.</source>
+        <target state="translated">باستخدامك SimpleX Chat، فإنك توافق على:
+- إرسال محتوى قانوني فقط في المجموعات العامة.
+- احترام المستخدمين الآخرين - ممنوع إرسال رسائل مزعجة.</target>
+      </trans-unit>
+      <trans-unit id="Configure server operators" xml:space="preserve" approved="no">
+        <source>Configure server operators</source>
+        <target state="translated">تكوين مشغلي الخادم</target>
+      </trans-unit>
+      <trans-unit id="Enable Flux in Network &amp; servers settings for better metadata privacy." xml:space="preserve" approved="no">
+        <source>Enable Flux in Network &amp; servers settings for better metadata privacy.</source>
+        <target state="translated">تمكين التدفق في إعدادات الشبكة والخوادم لتحسين خصوصية البيانات الوصفية.</target>
+      </trans-unit>
+      <trans-unit id="Discover and join groups" xml:space="preserve" approved="no">
+        <source>Discover and join groups</source>
+        <target state="translated">اكتشف المجموعات وانضم إليها</target>
+      </trans-unit>
+      <trans-unit id="Discover via local network" xml:space="preserve" approved="no">
+        <source>Discover via local network</source>
+        <target state="translated">اكتشف عبر الشبكة المحلية</target>
+      </trans-unit>
+      <trans-unit id="Enabled for" xml:space="preserve" approved="no">
+        <source>Enabled for</source>
+        <target state="translated">ممكّن ل</target>
+      </trans-unit>
+      <trans-unit id="Encrypted message: app is stopped" xml:space="preserve" approved="no">
+        <source>Encrypted message: app is stopped</source>
+        <target state="translated">رسالة مشفرة: تم إيقاف التطبيق</target>
+      </trans-unit>
+      <trans-unit id="Enter group name…" xml:space="preserve" approved="no">
+        <source>Enter group name…</source>
+        <target state="translated">أدخل اسم المجموعة…</target>
+      </trans-unit>
+      <trans-unit id="Do NOT use private routing." xml:space="preserve" approved="no">
+        <source>Do NOT use private routing.</source>
+        <target state="translated">لا تستخدم التوجيه الخاص.</target>
+      </trans-unit>
+      <trans-unit id="Encryption re-negotiation error" xml:space="preserve" approved="no">
+        <source>Encryption re-negotiation error</source>
+        <target state="translated">خطأ في إعادة تفاوض التشفير</target>
+      </trans-unit>
+      <trans-unit id="Connection with desktop stopped" xml:space="preserve" approved="no">
+        <source>Connection with desktop stopped</source>
+        <target state="translated">تم إيقاف الاتصال بسطح المكتب</target>
+      </trans-unit>
+      <trans-unit id="Destination server error: %@" xml:space="preserve" approved="no">
+        <source>Destination server error: %@</source>
+        <target state="translated">خطأ خادم الوجهة: %@</target>
+      </trans-unit>
+      <trans-unit id="Do NOT send messages directly, even if your or destination server does not support private routing." xml:space="preserve" approved="no">
+        <source>Do NOT send messages directly, even if your or destination server does not support private routing.</source>
+        <target state="translated">لا ترسل الرسائل بشكل مباشر، حتى لو كان خادمك أو خادم الوجهة لا يدعم التوجيه الخاص.</target>
+      </trans-unit>
+      <trans-unit id="Direct messages between members are prohibited in this chat." xml:space="preserve" approved="no">
+        <source>Direct messages between members are prohibited in this chat.</source>
+        <target state="translated">يُحظر إرسال الرسائل المباشرة بين الأعضاء في هذه الدردشة.</target>
+      </trans-unit>
+      <trans-unit id="Disconnect desktop?" xml:space="preserve" approved="no">
+        <source>Disconnect desktop?</source>
+        <target state="translated">فصل سطح المكتب؟</target>
+      </trans-unit>
+      <trans-unit id="Disable (keep overrides)" xml:space="preserve" approved="no">
+        <source>Disable (keep overrides)</source>
+        <target state="translated">تعطيل (الاحتفاظ بالتجاوزات)</target>
+      </trans-unit>
+      <trans-unit id="Disappears at: %@" xml:space="preserve" approved="no">
+        <source>Disappears at: %@</source>
+        <target state="translated">يختفي عند: %@</target>
+      </trans-unit>
+      <trans-unit id="Do not send history to new members." xml:space="preserve" approved="no">
+        <source>Do not send history to new members.</source>
+        <target state="translated">لا ترسل التاريخ إلى الأعضاء الجدد.</target>
+      </trans-unit>
+      <trans-unit id="Encryption re-negotiation failed." xml:space="preserve" approved="no">
+        <source>Encryption re-negotiation failed.</source>
+        <target state="translated">فشل إعادة التفاوض على التشفير.</target>
       </trans-unit>
     </body>
   </file>
