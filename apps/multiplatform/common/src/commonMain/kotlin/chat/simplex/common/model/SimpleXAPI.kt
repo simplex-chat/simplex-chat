@@ -6744,64 +6744,79 @@ sealed class StoreError {
   val string: String
     get() = when (this) {
       is DuplicateName -> "duplicateName"
-      is UserNotFound -> "userNotFound"
-      is UserNotFoundByName -> "userNotFoundByName"
-      is UserNotFoundByContactId -> "userNotFoundByContactId"
-      is UserNotFoundByGroupId -> "userNotFoundByGroupId"
-      is UserNotFoundByFileId -> "userNotFoundByFileId"
-      is UserNotFoundByContactRequestId -> "userNotFoundByContactRequestId"
-      is ContactNotFound -> "contactNotFound"
-      is ContactNotFoundByName -> "contactNotFoundByName"
-      is ContactNotFoundByMemberId -> "contactNotFoundByMemberId"
-      is ContactNotReady -> "contactNotReady"
+      is UserNotFound -> "userNotFound $userId"
+      is UserNotFoundByName -> "userNotFoundByName $contactName"
+      is UserNotFoundByContactId -> "userNotFoundByContactId $contactId"
+      is UserNotFoundByGroupId -> "userNotFoundByGroupId $groupId"
+      is UserNotFoundByFileId -> "userNotFoundByFileId $fileId"
+      is UserNotFoundByContactRequestId -> "userNotFoundByContactRequestId $contactRequestId"
+      is ContactNotFound -> "contactNotFound $contactId"
+      is ContactNotFoundByName -> "contactNotFoundByName $contactName"
+      is ContactNotFoundByMemberId -> "contactNotFoundByMemberId $groupMemberId"
+      is ContactNotReady -> "contactNotReady $contactName"
       is DuplicateContactLink -> "duplicateContactLink"
       is UserContactLinkNotFound -> "userContactLinkNotFound"
-      is ContactRequestNotFound -> "contactRequestNotFound"
-      is ContactRequestNotFoundByName -> "contactRequestNotFoundByName"
-      is GroupNotFound -> "groupNotFound"
-      is GroupNotFoundByName -> "groupNotFoundByName"
-      is GroupMemberNameNotFound -> "groupMemberNameNotFound"
-      is GroupMemberNotFound -> "groupMemberNotFound"
-      is GroupMemberNotFoundByMemberId -> "groupMemberNotFoundByMemberId"
-      is MemberContactGroupMemberNotFound -> "memberContactGroupMemberNotFound"
+      is ContactRequestNotFound -> "contactRequestNotFound $contactRequestId"
+      is ContactRequestNotFoundByName -> "contactRequestNotFoundByName $contactName"
+      is GroupNotFound -> "groupNotFound $groupId"
+      is GroupNotFoundByName -> "groupNotFoundByName $groupName"
+      is GroupMemberNameNotFound -> "groupMemberNameNotFound $groupId $groupMemberName"
+      is GroupMemberNotFound -> "groupMemberNotFound $groupMemberId"
+      is GroupMemberNotFoundByMemberId -> "groupMemberNotFoundByMemberId $memberId"
+      is MemberContactGroupMemberNotFound -> "memberContactGroupMemberNotFound $contactId"
       is GroupWithoutUser -> "groupWithoutUser"
       is DuplicateGroupMember -> "duplicateGroupMember"
       is GroupAlreadyJoined -> "groupAlreadyJoined"
       is GroupInvitationNotFound -> "groupInvitationNotFound"
-      is SndFileNotFound -> "sndFileNotFound"
-      is SndFileInvalid -> "sndFileInvalid"
-      is RcvFileNotFound -> "rcvFileNotFound"
-      is RcvFileDescrNotFound -> "rcvFileDescrNotFound"
-      is FileNotFound -> "fileNotFound"
-      is RcvFileInvalid -> "rcvFileInvalid"
+      is NoteFolderAlreadyExists -> "noteFolderAlreadyExists $noteFolderId"
+      is NoteFolderNotFound -> "noteFolderNotFound $noteFolderId"
+      is UserNoteFolderNotFound -> "userNoteFolderNotFound"
+      is SndFileNotFound -> "sndFileNotFound $fileId"
+      is SndFileInvalid -> "sndFileInvalid $fileId"
+      is RcvFileNotFound -> "rcvFileNotFound $fileId"
+      is RcvFileDescrNotFound -> "rcvFileDescrNotFound $fileId"
+      is FileNotFound -> "fileNotFound $fileId"
+      is RcvFileInvalid -> "rcvFileInvalid $fileId"
       is RcvFileInvalidDescrPart -> "rcvFileInvalidDescrPart"
-      is SharedMsgIdNotFoundByFileId -> "sharedMsgIdNotFoundByFileId"
-      is FileIdNotFoundBySharedMsgId -> "fileIdNotFoundBySharedMsgId"
-      is SndFileNotFoundXFTP -> "sndFileNotFoundXFTP"
-      is RcvFileNotFoundXFTP -> "rcvFileNotFoundXFTP"
-      is ExtraFileDescrNotFoundXFTP -> "extraFileDescrNotFoundXFTP"
-      is ConnectionNotFound -> "connectionNotFound"
-      is ConnectionNotFoundById -> "connectionNotFoundById"
-      is ConnectionNotFoundByMemberId -> "connectionNotFoundByMemberId"
-      is PendingConnectionNotFound -> "pendingConnectionNotFound"
+      is LocalFileNoTransfer -> "localFileNoTransfer $fileId"
+      is SharedMsgIdNotFoundByFileId -> "sharedMsgIdNotFoundByFileId $fileId"
+      is FileIdNotFoundBySharedMsgId -> "fileIdNotFoundBySharedMsgId $sharedMsgId"
+      is SndFileNotFoundXFTP -> "sndFileNotFoundXFTP $agentSndFileId"
+      is RcvFileNotFoundXFTP -> "rcvFileNotFoundXFTP $agentRcvFileId"
+      is ConnectionNotFound -> "connectionNotFound $agentConnId"
+      is ConnectionNotFoundById -> "connectionNotFoundById $connId"
+      is ConnectionNotFoundByMemberId -> "connectionNotFoundByMemberId $groupMemberId"
+      is PendingConnectionNotFound -> "pendingConnectionNotFound $connId"
       is IntroNotFound -> "introNotFound"
       is UniqueID -> "uniqueID"
-      is InternalError -> "internalError"
-      is NoMsgDelivery -> "noMsgDelivery"
-      is BadChatItem -> "badChatItem"
-      is ChatItemNotFound -> "chatItemNotFound"
-      is ChatItemNotFoundByText -> "chatItemNotFoundByText"
-      is ChatItemSharedMsgIdNotFound -> "chatItemSharedMsgIdNotFound"
-      is ChatItemNotFoundByFileId -> "chatItemNotFoundByFileId"
-      is ChatItemNotFoundByGroupId -> "chatItemNotFoundByGroupId"
-      is ProfileNotFound -> "profileNotFound"
-      is DuplicateGroupLink -> "duplicateGroupLink"
-      is GroupLinkNotFound -> "groupLinkNotFound"
-      is HostMemberIdNotFound -> "hostMemberIdNotFound"
-      is ContactNotFoundByFileId -> "contactNotFoundByFileId"
-      is NoGroupSndStatus -> "noGroupSndStatus"
       is LargeMsg -> "largeMsg"
-      is DBException -> "dBException"
+      is InternalError -> "internalError $message"
+      is DBException -> "dBException $message"
+      is DBBusyError -> "dBBusyError $message"
+      is BadChatItem -> "badChatItem $itemId"
+      is ChatItemNotFound -> "chatItemNotFound $itemId"
+      is ChatItemNotFoundByText -> "chatItemNotFoundByText $text"
+      is ChatItemSharedMsgIdNotFound -> "chatItemSharedMsgIdNotFound $sharedMsgId"
+      is ChatItemNotFoundByFileId -> "chatItemNotFoundByFileId $fileId"
+      is ChatItemNotFoundByContactId -> "chatItemNotFoundByContactId $contactId"
+      is ChatItemNotFoundByGroupId -> "chatItemNotFoundByGroupId $groupId"
+      is ProfileNotFound -> "profileNotFound $profileId"
+      is DuplicateGroupLink -> "duplicateGroupLink ${groupInfo.groupId}"
+      is GroupLinkNotFound -> "groupLinkNotFound ${groupInfo.groupId}"
+      is HostMemberIdNotFound -> "hostMemberIdNotFound $groupId"
+      is ContactNotFoundByFileId -> "contactNotFoundByFileId $fileId"
+      is NoGroupSndStatus -> "noGroupSndStatus $itemId $groupMemberId"
+      is DuplicateGroupMessage -> "duplicateGroupMessage $groupId $sharedMsgId $authorGroupMemberId $authorGroupMemberId"
+      is RemoteHostNotFound -> "remoteHostNotFound $remoteHostId"
+      is RemoteHostUnknown -> "remoteHostUnknown"
+      is RemoteHostDuplicateCA -> "remoteHostDuplicateCA"
+      is RemoteCtrlNotFound -> "remoteCtrlNotFound $remoteCtrlId"
+      is RemoteCtrlDuplicateCA -> "remoteCtrlDuplicateCA"
+      is ProhibitedDeleteUser -> "prohibitedDeleteUser $userId $contactId"
+      is OperatorNotFound -> "operatorNotFound $serverOperatorId"
+      is UsageConditionsNotFound -> "usageConditionsNotFound"
+      is InvalidQuote -> "invalidQuote"
+      is InvalidMention -> "invalidMention"
     }
 
   @Serializable @SerialName("duplicateName") object DuplicateName: StoreError()
@@ -6829,6 +6844,9 @@ sealed class StoreError {
   @Serializable @SerialName("duplicateGroupMember") object DuplicateGroupMember: StoreError()
   @Serializable @SerialName("groupAlreadyJoined") object GroupAlreadyJoined: StoreError()
   @Serializable @SerialName("groupInvitationNotFound") object GroupInvitationNotFound: StoreError()
+  @Serializable @SerialName("noteFolderAlreadyExists") class NoteFolderAlreadyExists(val noteFolderId: Long): StoreError()
+  @Serializable @SerialName("noteFolderNotFound") class NoteFolderNotFound(val noteFolderId: Long): StoreError()
+  @Serializable @SerialName("userNoteFolderNotFound") object UserNoteFolderNotFound: StoreError()
   @Serializable @SerialName("sndFileNotFound") class SndFileNotFound(val fileId: Long): StoreError()
   @Serializable @SerialName("sndFileInvalid") class SndFileInvalid(val fileId: Long): StoreError()
   @Serializable @SerialName("rcvFileNotFound") class RcvFileNotFound(val fileId: Long): StoreError()
@@ -6836,24 +6854,27 @@ sealed class StoreError {
   @Serializable @SerialName("fileNotFound") class FileNotFound(val fileId: Long): StoreError()
   @Serializable @SerialName("rcvFileInvalid") class RcvFileInvalid(val fileId: Long): StoreError()
   @Serializable @SerialName("rcvFileInvalidDescrPart") object RcvFileInvalidDescrPart: StoreError()
+  @Serializable @SerialName("localFileNoTransfer") class LocalFileNoTransfer(val fileId: Long): StoreError()
   @Serializable @SerialName("sharedMsgIdNotFoundByFileId") class SharedMsgIdNotFoundByFileId(val fileId: Long): StoreError()
   @Serializable @SerialName("fileIdNotFoundBySharedMsgId") class FileIdNotFoundBySharedMsgId(val sharedMsgId: String): StoreError()
   @Serializable @SerialName("sndFileNotFoundXFTP") class SndFileNotFoundXFTP(val agentSndFileId: String): StoreError()
   @Serializable @SerialName("rcvFileNotFoundXFTP") class RcvFileNotFoundXFTP(val agentRcvFileId: String): StoreError()
-  @Serializable @SerialName("extraFileDescrNotFoundXFTP") class ExtraFileDescrNotFoundXFTP(val fileId: Long): StoreError()
   @Serializable @SerialName("connectionNotFound") class ConnectionNotFound(val agentConnId: String): StoreError()
   @Serializable @SerialName("connectionNotFoundById") class ConnectionNotFoundById(val connId: Long): StoreError()
   @Serializable @SerialName("connectionNotFoundByMemberId") class ConnectionNotFoundByMemberId(val groupMemberId: Long): StoreError()
   @Serializable @SerialName("pendingConnectionNotFound") class PendingConnectionNotFound(val connId: Long): StoreError()
   @Serializable @SerialName("introNotFound") object IntroNotFound: StoreError()
   @Serializable @SerialName("uniqueID") object UniqueID: StoreError()
+  @Serializable @SerialName("largeMsg") object LargeMsg: StoreError()
   @Serializable @SerialName("internalError") class InternalError(val message: String): StoreError()
-  @Serializable @SerialName("noMsgDelivery") class NoMsgDelivery(val connId: Long, val agentMsgId: String): StoreError()
+  @Serializable @SerialName("dBException") class DBException(val message: String): StoreError()
+  @Serializable @SerialName("dBBusyError") class DBBusyError(val message: String): StoreError()
   @Serializable @SerialName("badChatItem") class BadChatItem(val itemId: Long): StoreError()
   @Serializable @SerialName("chatItemNotFound") class ChatItemNotFound(val itemId: Long): StoreError()
   @Serializable @SerialName("chatItemNotFoundByText") class ChatItemNotFoundByText(val text: String): StoreError()
   @Serializable @SerialName("chatItemSharedMsgIdNotFound") class ChatItemSharedMsgIdNotFound(val sharedMsgId: String): StoreError()
   @Serializable @SerialName("chatItemNotFoundByFileId") class ChatItemNotFoundByFileId(val fileId: Long): StoreError()
+  @Serializable @SerialName("chatItemNotFoundByContactId") class ChatItemNotFoundByContactId(val contactId: Long): StoreError()
   @Serializable @SerialName("chatItemNotFoundByGroupId") class ChatItemNotFoundByGroupId(val groupId: Long): StoreError()
   @Serializable @SerialName("profileNotFound") class ProfileNotFound(val profileId: Long): StoreError()
   @Serializable @SerialName("duplicateGroupLink") class DuplicateGroupLink(val groupInfo: GroupInfo): StoreError()
@@ -6861,8 +6882,17 @@ sealed class StoreError {
   @Serializable @SerialName("hostMemberIdNotFound") class HostMemberIdNotFound(val groupId: Long): StoreError()
   @Serializable @SerialName("contactNotFoundByFileId") class ContactNotFoundByFileId(val fileId: Long): StoreError()
   @Serializable @SerialName("noGroupSndStatus") class NoGroupSndStatus(val itemId: Long, val groupMemberId: Long): StoreError()
-  @Serializable @SerialName("largeMsg") object LargeMsg: StoreError()
-  @Serializable @SerialName("dBException") class DBException(val message: String): StoreError()
+  @Serializable @SerialName("duplicateGroupMessage") class DuplicateGroupMessage(val groupId: Long, val sharedMsgId: String, val authorGroupMemberId: Long?, val forwardedByGroupMemberId: Long?): StoreError()
+  @Serializable @SerialName("remoteHostNotFound") class RemoteHostNotFound(val remoteHostId: Long): StoreError()
+  @Serializable @SerialName("remoteHostUnknown") object RemoteHostUnknown: StoreError()
+  @Serializable @SerialName("remoteHostDuplicateCA") object RemoteHostDuplicateCA: StoreError()
+  @Serializable @SerialName("remoteCtrlNotFound") class RemoteCtrlNotFound(val remoteCtrlId: Long): StoreError()
+  @Serializable @SerialName("remoteCtrlDuplicateCA") class RemoteCtrlDuplicateCA: StoreError()
+  @Serializable @SerialName("prohibitedDeleteUser") class ProhibitedDeleteUser(val userId: Long, val contactId: Long): StoreError()
+  @Serializable @SerialName("operatorNotFound") class OperatorNotFound(val serverOperatorId: Long): StoreError()
+  @Serializable @SerialName("usageConditionsNotFound") object UsageConditionsNotFound: StoreError()
+  @Serializable @SerialName("invalidQuote") object InvalidQuote: StoreError()
+  @Serializable @SerialName("invalidMention") object InvalidMention: StoreError()
 }
 
 @Serializable
