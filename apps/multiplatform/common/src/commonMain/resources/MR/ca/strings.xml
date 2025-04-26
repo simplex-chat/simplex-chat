@@ -2349,4 +2349,8 @@
     <string name="privacy_short_links">Emprar enllaços curts (BETA)</string>
     <string name="full_link_button_text">Enllaç complet</string>
     <string name="short_link_button_text">Enllaç curt</string>
+    <string name="network_smp_web_port_all">Tots els servidors</string>
+    <string name="network_smp_web_port_off">Apagat</string>
+    <string name="network_smp_web_port_preset_footer">Feu servir el port TCP 443 només per a servidors predefinits.</string>
+    <string name="network_smp_web_port_preset">Servidors predefinits</string>
 </resources>
