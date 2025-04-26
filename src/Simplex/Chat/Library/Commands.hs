@@ -1888,7 +1888,7 @@ processChatCommand' vr = \case
     withSendRef chatRef $ \sendRef -> do
       let mc = MCText msg
       processChatCommand $ APISendMessages sendRef True Nothing [ComposedMessage Nothing Nothing mc mentions]
-  SendMessageBroadcast msg -> withUser $ \user -> do
+  SendMessageBroadcast mc -> withUser $ \user -> do
     contacts <- withFastStore' $ \db -> getUserContacts db vr user
     withChatLock "sendMessageBroadcast" . procCmd $ do
       let ctConns_ = L.nonEmpty $ foldr addContactConn [] contacts
@@ -1912,7 +1912,6 @@ processChatCommand' vr = \case
           lift . void $ withStoreBatch' $ \db -> map (createCI db user timestamp) ctSndMsgs
           pure CRBroadcastSent {user, msgContent = mc, successes = length ctSndMsgs, failures = length errs, timestamp}
     where
-      mc = MCText msg
       addContactConn :: Contact -> [(Contact, Connection)] -> [(Contact, Connection)]
       addContactConn ct ctConns = case contactSendConn_ ct of
         Right conn | directOrUsed ct -> (ct, conn) : ctConns
@@ -4150,7 +4149,7 @@ chatCommandP =
       ("\\\\ #" <|> "\\\\#") *> (DeleteMemberMessage <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <* A.space <*> textP),
       ("! " <|> "!") *> (EditMessage <$> chatNameP <* A.space <*> (quotedMsg <|> pure "") <*> msgTextP),
       ReactToMessage <$> (("+" $> True) <|> ("-" $> False)) <*> reactionP <* A.space <*> chatNameP' <* A.space <*> textP,
-      "/feed " *> (SendMessageBroadcast <$> msgTextP),
+      "/feed " *> (SendMessageBroadcast . MCText <$> msgTextP),
       ("/chats" <|> "/cs") *> (LastChats <$> (" all" $> Nothing <|> Just <$> (A.space *> A.decimal <|> pure 20))),
       ("/tail" <|> "/t") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP <*> pure Nothing),
       ("/search" <|> "/?") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP <*> (Just <$> (A.space *> stringP))),
