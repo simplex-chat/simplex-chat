@@ -4053,9 +4053,9 @@ Hiba: %2$@</target>
         <target>Profil elrejtése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Hide:" xml:space="preserve">
+      <trans-unit id="Hide:" xml:space="preserve" approved="no">
         <source>Hide:</source>
-        <target>Elrejtés:</target>
+        <target state="translated">Elrejtve:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="History" xml:space="preserve">
@@ -7244,9 +7244,9 @@ chat item action</note>
         <target>Egy „→” jel megjelenítése a privát útválasztáson keresztül küldött üzeneteknél.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show:" xml:space="preserve">
+      <trans-unit id="Show:" xml:space="preserve" approved="no">
         <source>Show:</source>
-        <target>Megjelenítés:</target>
+        <target state="translated">Megjelenítve:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX" xml:space="preserve">
