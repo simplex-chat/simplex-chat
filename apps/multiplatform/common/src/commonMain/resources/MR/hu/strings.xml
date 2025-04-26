@@ -658,7 +658,7 @@
     <string name="image_descr">Kép</string>
     <string name="files_are_prohibited_in_group">A fájlok- és a médiatartalmak küldése le van tiltva.</string>
     <string name="how_it_works">Hogyan működik</string>
-    <string name="hide_dev_options">Elrejtés:</string>
+    <string name="hide_dev_options">Elrejtve:</string>
     <string name="error_creating_member_contact">Hiba történt a partnerrel történő kapcsolat létrehozásában</string>
     <string name="enter_one_ICE_server_per_line">ICE-kiszolgálók (soronként egy)</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Ha nem tud személyesen találkozni, <b>beolvashatja a QR-kódot a videohívásban</b>, vagy a partnere megoszthat egy meghívási hivatkozást.]]></string>
@@ -1122,7 +1122,7 @@
     <string name="verify_security_code">Biztonsági kód hitelesítése</string>
     <string name="rcv_group_event_user_deleted">eltávolította Önt</string>
     <string name="simplex_address">SimpleX-cím</string>
-    <string name="show_dev_options">Megjelenítés:</string>
+    <string name="show_dev_options">Megjelenítve:</string>
     <string name="callstate_received_answer">válasz fogadása…</string>
     <string name="restore_database_alert_title">Visszaállítja az adatbázismentést?</string>
     <string name="simplex_service_notification_text">Üzenetek fogadása…</string>
