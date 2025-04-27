@@ -699,11 +699,6 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       DCListUserGroups ->
         getUserGroupRegs st (contactId' ct) >>= \grs -> do
           sendReply $ tshow (length grs) <> " registered group(s)"
-          -- debug how it can be that user has 0 registered groups
-          when (length grs == 0) $ do
-            total <- length <$> readTVarIO (groupRegs st)
-            withSuperUsers $ \ctId -> sendMessage' cc ctId $
-              "0 registered groups for " <> localDisplayName' ct <> " (" <> tshow (contactId' ct) <> ") out of " <> tshow total <> " registrations"
           void . forkIO $ forM_ (reverse grs) $ \gr@GroupReg {userGroupRegId} ->
             sendGroupInfo ct gr userGroupRegId Nothing
       DCDeleteGroup gId gName ->
