@@ -2376,4 +2376,8 @@
     <string name="simplex_link_channel">odkaz SimpleX kanálu</string>
     <string name="full_link_button_text">Úplný odkaz</string>
     <string name="short_link_button_text">Krátký odkaz</string>
+    <string name="network_smp_web_port_all">Všechny servery</string>
+    <string name="network_smp_web_port_off">Vypnut</string>
+    <string name="network_smp_web_port_preset">Přednastavené servery</string>
+    <string name="network_smp_web_port_preset_footer">Použít TCP port 443 jen pro přednastavené servery.</string>
 </resources>
