@@ -50,7 +50,6 @@ func apiLoadMessages(
             chatModel.addChat(chat)
         }
         await MainActor.run {
-            chatModel.chatItemStatuses.removeAll()
             ItemsModel.shared.reversedChatItems = chat.chatItems.reversed()
             chatModel.updateChatInfo(chat.chatInfo)
             chatState.splits = newSplits

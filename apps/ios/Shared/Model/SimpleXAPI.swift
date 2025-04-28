@@ -342,7 +342,6 @@ func loadChat(chatId: ChatId, search: String = "", openAroundItemId: ChatItem.ID
     let m = ChatModel.shared
     let im = ItemsModel.shared
     await MainActor.run {
-        m.chatItemStatuses = [:]
         if clearItems {
             im.reversedChatItems = []
             ItemsModel.shared.chatItemsChangesListener.cleared()
@@ -2112,7 +2111,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
             let cInfo = chatItem.chatInfo
             let cItem = chatItem.chatItem
             if !cItem.isDeletedContent && active(user) {
-                await MainActor.run { m.updateChatItem(cInfo, cItem, status: cItem.meta.itemStatus) }
+                _ = await MainActor.run { m.upsertChatItem(cInfo, cItem) }
             }
             if let endTask = m.messageDelivery[cItem.id] {
                 switch cItem.meta.itemStatus {

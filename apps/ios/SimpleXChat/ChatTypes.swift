@@ -3247,7 +3247,7 @@ public enum CIStatus: Decodable, Hashable {
     }
 }
 
-func shouldKeepOldSndCIStatus(oldStatus: CIStatus, newStatus: CIStatus) -> Bool {
+public func shouldKeepOldSndCIStatus(oldStatus: CIStatus, newStatus: CIStatus) -> Bool {
     switch (oldStatus, newStatus) {
     case (.sndRcvd, let new) where !new.isSndRcvd:
         return true

@@ -279,7 +279,6 @@ struct ChatView: View {
             if chatModel.chatId == cInfo.id && !presentationMode.wrappedValue.isPresented {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     if chatModel.chatId == nil {
-                        chatModel.chatItemStatuses = [:]
                         ItemsModel.shared.reversedChatItems = []
                         ItemsModel.shared.chatItemsChangesListener.cleared()
                         chatModel.groupMembers = []

@@ -280,7 +280,6 @@ final class ChatModel: ObservableObject {
     // current chat
     @Published var chatId: String?
     @Published var openAroundItemId: ChatItem.ID? = nil
-    var chatItemStatuses: Dictionary<Int64, CIStatus> = [:]
     @Published var chatToTop: String?
     @Published var groupMembers: [GMember] = []
     @Published var groupMembersIndexes: Dictionary<Int64, Int> = [:] // groupMemberId to index in groupMembers list
@@ -564,16 +563,18 @@ final class ChatModel: ObservableObject {
 
     private func _upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
         if let i = getChatItemIndex(cItem) {
-            _updateChatItem(at: i, with: cItem)
+            let oldStatus = im.reversedChatItems[i].meta.itemStatus
+            let newStatus = cItem.meta.itemStatus
+            var ci = cItem
+            if shouldKeepOldSndCIStatus(oldStatus: oldStatus, newStatus: newStatus) {
+                ci.meta.itemStatus = oldStatus
+            }
+            _updateChatItem(at: i, with: ci)
             ChatItemDummyModel.shared.sendUpdate()
             return false
         } else {
-            var ci = cItem
-            if let status = chatItemStatuses.removeValue(forKey: ci.id), case .sndNew = ci.meta.itemStatus {
-                ci.meta.itemStatus = status
-            }
-            im.reversedChatItems.insert(ci, at: hasLiveDummy ? 1 : 0)
-            im.chatItemsChangesListener.added((ci.id, ci.isRcvNew), hasLiveDummy ? 1 : 0)
+            im.reversedChatItems.insert(cItem, at: hasLiveDummy ? 1 : 0)
+            im.chatItemsChangesListener.added((cItem.id, cItem.isRcvNew), hasLiveDummy ? 1 : 0)
             im.itemAdded = true
             ChatItemDummyModel.shared.sendUpdate()
             return true
@@ -592,8 +593,6 @@ final class ChatModel: ObservableObject {
             withConditionalAnimation {
                 _updateChatItem(at: i, with: cItem)
             }
-        } else if let status = status {
-            chatItemStatuses.updateValue(status, forKey: cItem.id)
         }
     }
 
@@ -765,7 +764,6 @@ final class ChatModel: ObservableObject {
         }
         // clear current chat
         if chatId == cInfo.id {
-            chatItemStatuses = [:]
             im.reversedChatItems = []
             im.chatItemsChangesListener.cleared()
         }
