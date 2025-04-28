@@ -2565,7 +2565,12 @@ data class ChatItem (
       is CIContent.RcvGroupFeature,
       is CIContent.SndGroupFeature -> CIMergeCategory.ChatFeature
       is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
-        is RcvGroupEvent.UserRole, is RcvGroupEvent.UserDeleted, is RcvGroupEvent.GroupDeleted, is RcvGroupEvent.MemberCreatedContact -> null
+        is RcvGroupEvent.UserRole,
+        is RcvGroupEvent.UserDeleted,
+        is RcvGroupEvent.GroupDeleted,
+        is RcvGroupEvent.MemberCreatedContact,
+        is RcvGroupEvent.NewMemberPendingReview ->
+          null
         else -> CIMergeCategory.RcvGroupEvent
       }
       is CIContent.SndGroupEventContent -> when (content.sndGroupEvent) {
@@ -2653,6 +2658,7 @@ data class ChatItem (
         is RcvGroupEvent.InvitedViaGroupLink -> false
         is RcvGroupEvent.MemberCreatedContact -> false
         is RcvGroupEvent.MemberProfileUpdated -> false
+        is RcvGroupEvent.NewMemberPendingReview -> true
       }
       is CIContent.SndGroupEventContent -> false
       is CIContent.RcvConnEventContent -> false
@@ -4306,6 +4312,7 @@ sealed class RcvGroupEvent() {
   @Serializable @SerialName("invitedViaGroupLink") class InvitedViaGroupLink(): RcvGroupEvent()
   @Serializable @SerialName("memberCreatedContact") class MemberCreatedContact(): RcvGroupEvent()
   @Serializable @SerialName("memberProfileUpdated") class MemberProfileUpdated(val fromProfile: Profile, val toProfile: Profile): RcvGroupEvent()
+  @Serializable @SerialName("newMemberPendingReview") class NewMemberPendingReview(): RcvGroupEvent()
 
   val text: String get() = when (this) {
     is MemberAdded -> String.format(generalGetString(MR.strings.rcv_group_event_member_added), profile.profileViewName)
@@ -4327,6 +4334,7 @@ sealed class RcvGroupEvent() {
     is InvitedViaGroupLink -> generalGetString(MR.strings.rcv_group_event_invited_via_your_group_link)
     is MemberCreatedContact -> generalGetString(MR.strings.rcv_group_event_member_created_contact)
     is MemberProfileUpdated -> profileUpdatedText(fromProfile, toProfile)
+    is NewMemberPendingReview -> generalGetString(MR.strings.rcv_group_event_new_member_pending_review)
   }
 
   private fun profileUpdatedText(from: Profile, to: Profile): String =
