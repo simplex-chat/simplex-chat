@@ -636,7 +636,7 @@ fun ChatItemView(
               CIEventView(eventItemViewText(reversedChatItems))
             }
 
-            @Composable fun UserPendingReviewEventItemView() {
+            @Composable fun PendingReviewEventItemView() {
               Text(
                 buildAnnotatedString {
                   withStyle(chatEventStyle.copy(fontWeight = FontWeight.Bold)) { append(cItem.content.text) }
@@ -721,14 +721,14 @@ fun ChatItemView(
               is CIContent.RcvGroupEventContent -> {
                 when (c.rcvGroupEvent) {
                   is RcvGroupEvent.MemberCreatedContact -> CIMemberCreatedContactView(cItem, openDirectChat)
-                  is RcvGroupEvent.NewMemberPendingReview -> UserPendingReviewEventItemView()
+                  is RcvGroupEvent.NewMemberPendingReview -> PendingReviewEventItemView()
                   else -> EventItemView()
                 }
                 MsgContentItemDropdownMenu()
               }
               is CIContent.SndGroupEventContent -> {
                 when (c.sndGroupEvent) {
-                  is SndGroupEvent.UserPendingReview -> UserPendingReviewEventItemView()
+                  is SndGroupEvent.UserPendingReview -> PendingReviewEventItemView()
                   else -> EventItemView()
                 }
                 MsgContentItemDropdownMenu()
