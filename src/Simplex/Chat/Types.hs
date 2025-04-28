@@ -1050,7 +1050,8 @@ instance ToJSON GroupMemberStatus where
 
 acceptanceToStatus :: Maybe GroupMemberAdmission -> GroupAcceptance -> GroupMemberStatus
 acceptanceToStatus memberAdmission groupAcceptance
-  | groupAcceptance == GAPending = GSMemPendingApproval
+  | groupAcceptance == GAPendingApproval = GSMemPendingApproval
+  | groupAcceptance == GAPendingReview = GSMemPendingReview
   | (memberAdmission >>= review) == Just MCAll = GSMemPendingReview
   | otherwise = GSMemAccepted
 

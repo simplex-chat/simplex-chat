@@ -1121,7 +1121,10 @@ viewMemberAccepted g m@GroupMember {memberStatus} = case memberStatus of
   _ -> [ttyGroup' g <> ": " <> ttyMember m <> " accepted"]
 
 viewMemberAcceptedByOther :: GroupInfo -> GroupMember -> GroupMember -> [StyledString]
-viewMemberAcceptedByOther g acceptingMember m@GroupMember {memberCategory} = case memberCategory of
+viewMemberAcceptedByOther g acceptingMember m@GroupMember {memberCategory, memberStatus} = case memberCategory of
+  GCUserMember -> case memberStatus of
+    GSMemPendingReview -> [ttyGroup' g <> ": " <> ttyMember acceptingMember <> " accepted you to the group, pending review"]
+    _ -> [ttyGroup' g <> ": " <> ttyMember acceptingMember <> " accepted you to the group [warning - unexpected]"]
   GCInviteeMember -> [ttyGroup' g <> ": " <> ttyMember acceptingMember <> " accepted " <> ttyMember m <> " to the group (will introduce remaining members)"]
   _ -> [ttyGroup' g <> ": " <> ttyMember acceptingMember <> " accepted " <> ttyMember m <> " to the group"]
 

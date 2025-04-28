@@ -790,6 +790,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 else pure $ memberStatus m
             (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
             memberConnectedChatItem gInfo' scopeInfo m'
+            case scopeInfo of
+              Just (GCSIMemberSupport _) -> do
+                createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvGroupEvent RGENewMemberPendingReview) Nothing
+              _ -> pure ()
             toView $ CRJoinedGroupMember user gInfo' m' {memberStatus = mStatus}
             let Connection {viaUserContactLink} = conn
             when (isJust viaUserContactLink && isNothing (memberContactId m')) $ sendXGrpLinkMem gInfo'
@@ -872,7 +876,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XFileAcptInv sharedMsgId fileConnReq_ fName -> xFileAcptInvGroup gInfo' m'' sharedMsgId fileConnReq_ fName
               XInfo p -> xInfoMember gInfo' m'' p brokerTs
               XGrpLinkMem p -> xGrpLinkMem gInfo' m'' conn' p
-              XGrpLinkAcpt role memberId -> xGrpLinkAcpt gInfo' m'' role memberId msg brokerTs
+              XGrpLinkAcpt acceptance role memberId -> xGrpLinkAcpt gInfo' m'' acceptance role memberId msg brokerTs
               XGrpMemNew memInfo msgScope -> xGrpMemNew gInfo' m'' memInfo msgScope msg brokerTs
               XGrpMemIntro memInfo memRestrictions_ -> xGrpMemIntro gInfo' m'' memInfo memRestrictions_
               XGrpMemInv memId introInv -> xGrpMemInv gInfo' m'' memId introInv
@@ -2083,8 +2087,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           probeMatchingMemberContact m' connectedIncognito
         else messageError "x.grp.link.mem error: invalid group link host profile update"
 
-    xGrpLinkAcpt :: GroupInfo -> GroupMember -> GroupMemberRole -> MemberId -> RcvMessage -> UTCTime -> CM ()
-    xGrpLinkAcpt gInfo@GroupInfo {membership} m role memberId msg brokerTs
+    xGrpLinkAcpt :: GroupInfo -> GroupMember -> GroupAcceptance -> GroupMemberRole -> MemberId -> RcvMessage -> UTCTime -> CM ()
+    xGrpLinkAcpt gInfo@GroupInfo {membership} m acceptance role memberId msg brokerTs
       | sameMemberId memberId membership = processUserAccepted
       | otherwise =
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memberId) >>= \case
@@ -2102,16 +2106,24 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   Just c | connReady c -> GSMemConnected
                   _ -> GSMemAnnounced
       where
-        processUserAccepted = do
-          membership' <- withStore' $ \db -> updateGroupMemberAccepted db user membership GSMemConnected role
-          let scopeInfo = Just $ GCSIMemberSupport {groupMember_ = Nothing}
-          ci <- saveRcvChatItemNoParse user (CDGroupRcv gInfo scopeInfo m) msg brokerTs (CIRcvGroupEvent RGEUserAccepted)
-          groupMsgToView gInfo scopeInfo ci
-          toView $ CRUserJoinedGroup user gInfo {membership = membership'} m
-          let cd = CDGroupRcv gInfo Nothing m
-          createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
-          createGroupFeatureItems user cd CIRcvGroupFeature gInfo
-          maybeCreateGroupDescrLocal gInfo m
+        processUserAccepted = case acceptance of
+          GAAccepted -> do
+            membership' <- withStore' $ \db -> updateGroupMemberAccepted db user membership GSMemConnected role
+            let scopeInfo = Just $ GCSIMemberSupport {groupMember_ = Nothing}
+            ci <- saveRcvChatItemNoParse user (CDGroupRcv gInfo scopeInfo m) msg brokerTs (CIRcvGroupEvent RGEUserAccepted)
+            groupMsgToView gInfo scopeInfo ci
+            toView $ CRUserJoinedGroup user gInfo {membership = membership'} m
+            let cd = CDGroupRcv gInfo Nothing m
+            createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
+            createGroupFeatureItems user cd CIRcvGroupFeature gInfo
+            maybeCreateGroupDescrLocal gInfo m
+          GAPendingReview -> do
+            membership' <- withStore' $ \db -> updateGroupMemberAccepted db user membership GSMemPendingReview role
+            let scopeInfo = Just $ GCSIMemberSupport {groupMember_ = Nothing}
+            createInternalChatItem user (CDGroupSnd gInfo scopeInfo) (CISndGroupEvent SGEUserPendingReview) Nothing
+            toView $ CRMemberAcceptedByOther user gInfo m membership'
+          GAPendingApproval ->
+            messageWarning "x.grp.link.acpt: unexpected group acceptance - pending approval"
         introduceToRemainingMembers acceptedMember = do
           introduceToRemaining vr user gInfo acceptedMember
           when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo acceptedMember
@@ -2459,6 +2471,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           let event = RGEMemberAdded groupMemberId (fromLocalProfile memberProfile)
           ci <- saveRcvChatItemNoParse user (CDGroupRcv gInfo scopeInfo m) msg brokerTs (CIRcvGroupEvent event)
           groupMsgToView gInfo scopeInfo ci
+          case scopeInfo of
+            Just (GCSIMemberSupport _) -> do
+              createInternalChatItem user (CDGroupRcv gInfo scopeInfo m) (CIRcvGroupEvent RGENewMemberPendingReview) (Just brokerTs)
+            _ -> pure ()
           toView $ CRJoinedGroupMemberConnecting user gInfo m announcedMember'
         getMemNewChatScope announcedMember = case msgScope_ of
           Nothing -> pure (announcedMember, Nothing)
@@ -2467,7 +2483,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             pure (announcedMember', Just scopeInfo)
 
     xGrpMemIntro :: GroupInfo -> GroupMember -> MemberInfo -> Maybe MemberRestrictions -> CM ()
-    xGrpMemIntro gInfo@GroupInfo {membership, chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memChatVRange _) memRestrictions = do
+    xGrpMemIntro gInfo@GroupInfo {chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memChatVRange _) memRestrictions = do
       case memberCategory m of
         GCHostMember ->
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
@@ -2478,11 +2494,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 Nothing -> messageError "x.grp.mem.intro: member chat version range incompatible"
                 Just (ChatVersionRange mcvr)
                   | maxVersion mcvr >= groupDirectInvVersion -> do
-                      memCount <- withStore' $ \db -> getGroupMembersCount db user gInfo
-                      -- only create SGEUserPendingReview item on the first introduction - when only 2 members are user and host
-                      when (memberPending membership && memCount == 2) $ do
-                        (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
-                        createInternalChatItem user (CDGroupSnd gInfo' scopeInfo) (CISndGroupEvent SGEUserPendingReview) Nothing
                       subMode <- chatReadVar subscriptionMode
                       -- [async agent commands] commands should be asynchronous, continuation is to send XGrpMemInv - have to remember one has completed and process on second
                       groupConnIds <- createConn subMode

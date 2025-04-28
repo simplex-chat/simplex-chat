@@ -2062,7 +2062,7 @@ processChatCommand' vr = \case
                 let m' = m {memberStatus = GSMemPendingReview}
                 pure $ CRMemberAccepted user gInfo m'
               Nothing -> do
-                let msg = XGrpLinkAcpt role (memberId' m)
+                let msg = XGrpLinkAcpt GAAccepted role (memberId' m)
                 void $ sendDirectMemberMessage mConn msg groupId
                 introduceToRemaining vr user gInfo m {memberRole = role}
                 when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo m
@@ -2073,7 +2073,7 @@ processChatCommand' vr = \case
         let scope = Just $ GCSMemberSupport $ Just (groupMemberId' m)
         modMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
         let rcpModMs' = filter memberCurrent modMs
-            msg = XGrpLinkAcpt role (memberId' m)
+            msg = XGrpLinkAcpt GAAccepted role (memberId' m)
         void $ sendGroupMessage user gInfo scope ([m] <> rcpModMs') msg
         m' <- withFastStore' $ \db -> updateGroupMemberAccepted db user m newMemberStatus role
         pure $ CRMemberAccepted user gInfo m'
