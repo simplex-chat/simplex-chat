@@ -2465,8 +2465,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         memberAnnouncedToView announcedMember@GroupMember {groupMemberId, memberProfile} = do
           (announcedMember', scopeInfo) <- getMemNewChatScope announcedMember
           let event = RGEMemberAdded groupMemberId (fromLocalProfile memberProfile)
-          ci <- saveRcvChatItemNoParse user (CDGroupRcv gInfo scopeInfo m) msg brokerTs (CIRcvGroupEvent event)
-          groupMsgToView gInfo scopeInfo ci
+          createInternalChatItem user (CDGroupRcv gInfo scopeInfo m) (CIRcvGroupEvent event) (Just brokerTs)
+          case scopeInfo of
+            Just (GCSIMemberSupport _) -> do
+              ci' <- saveRcvChatItemNoParse user (CDGroupRcv gInfo scopeInfo m) msg brokerTs (CIRcvGroupEvent RGENewMemberPendingReview)
+              groupMsgToView gInfo scopeInfo ci'
+            _ -> pure ()
           toView $ CRJoinedGroupMemberConnecting user gInfo m announcedMember'
         getMemNewChatScope announcedMember = case msgScope_ of
           Nothing -> pure (announcedMember, Nothing)

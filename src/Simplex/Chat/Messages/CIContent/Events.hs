@@ -31,6 +31,7 @@ data RcvGroupEvent
   | RGEInvitedViaGroupLink -- CRSentGroupInvitationViaLink
   | RGEMemberCreatedContact -- CRNewMemberContactReceivedInv
   | RGEMemberProfileUpdated {fromProfile :: Profile, toProfile :: Profile} -- CRGroupMemberUpdated
+  | RGENewMemberPendingReview
   deriving (Show)
 
 data SndGroupEvent
