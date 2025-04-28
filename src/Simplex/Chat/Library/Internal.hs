@@ -975,7 +975,7 @@ introduceToModerators vr user gInfo@GroupInfo {groupId} m@GroupMember {memberRol
             else XMsgNew $ MCSimple $ extMsgContent (MCText pendingReviewMessage) Nothing
     void $ sendDirectMemberMessage mConn msg groupId
   modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
-  let rcpModMs = filter memberCurrent modMs
+  let rcpModMs = filter (\mem -> memberCurrent mem && maxVersion (memberChatVRange mem) >= groupKnockingVersion) modMs
   introduceMember vr user gInfo m rcpModMs (Just $ MSMember $ memberId' m)
 
 introduceToAll :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
