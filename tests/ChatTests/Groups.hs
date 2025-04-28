@@ -3032,7 +3032,7 @@ testGLinkApproveMember =
       cath #> "#team hi group"
       [alice, bob] *<# "#team cath> hi group"
   where
-    cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAPending, GRObserver))}}
+    cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAPendingApproval, GRObserver))}}
 
 testGLinkReviewMember :: HasCallStack => TestParams -> IO ()
 testGLinkReviewMember =
@@ -3062,7 +3062,8 @@ testGLinkReviewMember =
       concurrentlyN_
         [ alice <## "#team: eve connected and pending review",
           eve
-            <### [ "#team: joining the group...",
+            <### [ "#team: alice accepted you to the group, pending review",
+                   "#team: joining the group...",
                    "#team: you joined the group, connecting to group moderators for admission to group",
                    "#team: member cath (Catherine) is connected",
                    "#team: member dan (Daniel) is connected"
@@ -3219,7 +3220,8 @@ testGLinkApproveThenReviewMember =
       concurrentlyN_
         [ alice <## "#team: eve accepted and pending review (will introduce moderators)",
           eve
-            <### [ "#team: member cath (Catherine) is connected",
+            <### [ "#team: alice accepted you to the group, pending review",
+                   "#team: member cath (Catherine) is connected",
                    "#team: member dan (Daniel) is connected"
                  ],
           do
@@ -3309,7 +3311,7 @@ testGLinkApproveThenReviewMember =
       eve #> "#team 19"
       [alice, bob, cath, dan] *<# "#team eve> 19"
   where
-    cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAPending, GRObserver))}}
+    cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAPendingApproval, GRObserver))}}
 
 testGLinkDeletePendingApprovalMember :: HasCallStack => TestParams -> IO ()
 testGLinkDeletePendingApprovalMember =
@@ -3334,7 +3336,7 @@ testGLinkDeletePendingApprovalMember =
       cath <## "#team: alice removed you from the group"
       cath <## "use /d #team to delete the group"
   where
-    cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAPending, GRObserver))}}
+    cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAPendingApproval, GRObserver))}}
 
 testPlanGroupLinkKnown :: HasCallStack => TestParams -> IO ()
 testPlanGroupLinkKnown =
