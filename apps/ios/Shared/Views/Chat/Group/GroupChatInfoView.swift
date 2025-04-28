@@ -87,7 +87,19 @@ struct GroupChatInfoView: View {
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                    
+
+                    Section {
+                        if groupInfo.membership.supportChat != nil {
+                            userSupportChatButton()
+                        }
+                        if groupInfo.businessChat == nil && groupInfo.membership.memberRole >= .moderator {
+                            memberSupportButton()
+                        }
+                        if groupInfo.canModerate {
+                            groupReportsButton()
+                        }
+                    }
+
                     Section {
                         if groupInfo.isOwner && groupInfo.businessChat == nil {
                             editGroupButton()
@@ -96,17 +108,6 @@ struct GroupChatInfoView: View {
                             addOrEditWelcomeMessage()
                         }
                         GroupPreferencesButton(groupInfo: $groupInfo, preferences: groupInfo.fullGroupPreferences, currentPreferences: groupInfo.fullGroupPreferences)
-                        if members.filter({ $0.wrapped.memberCurrent }).count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
-                            sendReceiptsOption()
-                        } else {
-                            sendReceiptsOptionDisabled()
-                        }
-                                                
-                        NavigationLink {
-                            ChatWallpaperEditorSheet(chat: chat)
-                        } label: {
-                            Label("Chat theme", systemImage: "photo")
-                        }
                     } header: {
                         Text("")
                     } footer: {
@@ -120,6 +121,16 @@ struct GroupChatInfoView: View {
                     }
                     
                     Section {
+                        if members.filter({ $0.wrapped.memberCurrent }).count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
+                            sendReceiptsOption()
+                        } else {
+                            sendReceiptsOptionDisabled()
+                        }
+                        NavigationLink {
+                            ChatWallpaperEditorSheet(chat: chat)
+                        } label: {
+                            Label("Chat theme", systemImage: "photo")
+                        }
                         ChatTTLOption(chat: chat, progressIndicator: $progressIndicator)
                     } footer: {
                         Text("Delete chat messages from your device.")
@@ -517,6 +528,33 @@ struct GroupChatInfoView: View {
         .navigationBarTitle("Group link")
         .modifier(ThemedBackground(grouped: true))
         .navigationBarTitleDisplayMode(.large)
+    }
+
+    // TODO [knocking] support chat
+    private func userSupportChatButton() -> some View {
+        NavigationLink {
+
+        } label: {
+            Label("Support chat", systemImage: "flag")
+        }
+    }
+
+    // TODO [knocking] member support chats view
+    private func memberSupportButton() -> some View {
+        NavigationLink {
+
+        } label: {
+            Label("Member support", systemImage: "flag")
+        }
+    }
+
+    // TODO [knocking] reports view
+    private func groupReportsButton() -> some View {
+        NavigationLink {
+
+        } label: {
+            Label("Member reports", systemImage: "flag")
+        }
     }
 
     private func editGroupButton() -> some View {

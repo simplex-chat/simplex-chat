@@ -2053,6 +2053,10 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
         return membership.memberRole >= .admin && membership.memberActive
     }
 
+    public var canModerate: Bool {
+        return membership.memberRole >= .moderator && membership.memberActive
+    }
+
     public static let sampleData = GroupInfo(
         groupId: 1,
         localDisplayName: "team",
@@ -2073,12 +2077,20 @@ public struct GroupRef: Decodable, Hashable {
 }
 
 public struct GroupProfile: Codable, NamedChat, Hashable {
-    public init(displayName: String, fullName: String, description: String? = nil, image: String? = nil, groupPreferences: GroupPreferences? = nil) {
+    public init(
+        displayName: String,
+        fullName: String,
+        description: String? = nil,
+        image: String? = nil,
+        groupPreferences: GroupPreferences? = nil,
+        memberAdmission: GroupMemberAdmission? = nil
+    ) {
         self.displayName = displayName
         self.fullName = fullName
         self.description = description
         self.image = image
         self.groupPreferences = groupPreferences
+        self.memberAdmission = memberAdmission
     }
 
     public var displayName: String
@@ -2086,6 +2098,7 @@ public struct GroupProfile: Codable, NamedChat, Hashable {
     public var description: String?
     public var image: String?
     public var groupPreferences: GroupPreferences?
+    public var memberAdmission: GroupMemberAdmission?
     public var localAlias: String { "" }
 
     public static let sampleData = GroupProfile(
