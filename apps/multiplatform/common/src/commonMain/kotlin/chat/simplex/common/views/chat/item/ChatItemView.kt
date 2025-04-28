@@ -721,6 +721,7 @@ fun ChatItemView(
               is CIContent.RcvGroupEventContent -> {
                 when (c.rcvGroupEvent) {
                   is RcvGroupEvent.MemberCreatedContact -> CIMemberCreatedContactView(cItem, openDirectChat)
+                  is RcvGroupEvent.NewMemberPendingReview -> UserPendingReviewEventItemView()
                   else -> EventItemView()
                 }
                 MsgContentItemDropdownMenu()

@@ -790,6 +790,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 else pure $ memberStatus m
             (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
             memberConnectedChatItem gInfo' scopeInfo m'
+            case scopeInfo of
+              Just (GCSIMemberSupport _) -> do
+                createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvGroupEvent RGENewMemberPendingReview) Nothing
+              _ -> pure ()
             toView $ CRJoinedGroupMember user gInfo' m' {memberStatus = mStatus}
             let Connection {viaUserContactLink} = conn
             when (isJust viaUserContactLink && isNothing (memberContactId m')) $ sendXGrpLinkMem gInfo'
@@ -2467,6 +2471,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           let event = RGEMemberAdded groupMemberId (fromLocalProfile memberProfile)
           ci <- saveRcvChatItemNoParse user (CDGroupRcv gInfo scopeInfo m) msg brokerTs (CIRcvGroupEvent event)
           groupMsgToView gInfo scopeInfo ci
+          case scopeInfo of
+            Just (GCSIMemberSupport _) -> do
+              createInternalChatItem user (CDGroupRcv gInfo scopeInfo m) (CIRcvGroupEvent RGENewMemberPendingReview) (Just brokerTs)
+            _ -> pure ()
           toView $ CRJoinedGroupMemberConnecting user gInfo m announcedMember'
         getMemNewChatScope announcedMember = case msgScope_ of
           Nothing -> pure (announcedMember, Nothing)

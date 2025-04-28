@@ -1587,6 +1587,7 @@
   <string name="rcv_group_event_updated_group_profile">updated group profile</string>
   <string name="rcv_group_event_invited_via_your_group_link">invited via your group link</string>
   <string name="rcv_group_event_member_created_contact">connected directly</string>
+  <string name="rcv_group_event_new_member_pending_review">New member wants to join the group.</string>
   <string name="snd_group_event_changed_member_role">you changed role of %s to %s</string>
   <string name="snd_group_event_changed_role_for_yourself">you changed role for yourself to %s</string>
   <string name="snd_group_event_member_blocked">you blocked %s</string>
