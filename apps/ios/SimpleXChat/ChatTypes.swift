@@ -2657,6 +2657,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
             case .userDeleted: nil
             case .groupDeleted: nil
             case .memberCreatedContact: nil
+            case .newMemberPendingReview: nil
             default: .rcvGroupEvent
             }
         case let .sndGroupEvent(event):
@@ -2709,6 +2710,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
             case .invitedViaGroupLink: return false
             case .memberCreatedContact: return false
             case .memberProfileUpdated: return false
+            case .newMemberPendingReview: return true
             }
         case .sndGroupEvent: return false
         case .rcvConnEvent: return false
@@ -4496,6 +4498,7 @@ public enum RcvGroupEvent: Decodable, Hashable {
     case invitedViaGroupLink
     case memberCreatedContact
     case memberProfileUpdated(fromProfile: Profile, toProfile: Profile)
+    case newMemberPendingReview
 
     var text: String {
         switch self {
@@ -4524,6 +4527,7 @@ public enum RcvGroupEvent: Decodable, Hashable {
         case .invitedViaGroupLink: return NSLocalizedString("invited via your group link", comment: "rcv group event chat item")
         case .memberCreatedContact: return NSLocalizedString("connected directly", comment: "rcv group event chat item")
         case let .memberProfileUpdated(fromProfile, toProfile): return profileUpdatedText(fromProfile, toProfile)
+        case .newMemberPendingReview: return NSLocalizedString("New member wants to join the group.", comment: "rcv group event chat item")
         }
     }
 
