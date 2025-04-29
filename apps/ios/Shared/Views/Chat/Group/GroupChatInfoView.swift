@@ -539,10 +539,12 @@ struct GroupChatInfoView: View {
         }
     }
 
-    // TODO [knocking] member support chats view
     private func memberSupportButton() -> some View {
         NavigationLink {
-
+            MemberSupportView(groupInfo: groupInfo)
+                .navigationBarTitle("Member support")
+                .modifier(ThemedBackground())
+                .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Member support", systemImage: "flag")
         }
@@ -717,23 +719,31 @@ struct GroupChatInfoView: View {
             title: Text("Remove member?"),
             message: Text(messageLabel),
             primaryButton: .destructive(Text("Remove")) {
-                Task {
-                    do {
-                        let updatedMembers = try await apiRemoveMembers(groupInfo.groupId, [mem.groupMemberId])
-                        await MainActor.run {
-                            updatedMembers.forEach { updatedMember in
-                                _ = chatModel.upsertGroupMember(groupInfo, updatedMember)
-                            }
-                        }
-                    } catch let error {
-                        logger.error("apiRemoveMembers error: \(responseError(error))")
-                        let a = getErrorAlert(error, "Error removing member")
-                        alert = .error(title: a.title, error: a.message)
-                    }
-                }
+                removeMember(chatModel, groupInfo, mem)
             },
             secondaryButton: .cancel()
         )
+    }
+}
+
+func removeMember(_ chatModel: ChatModel, _ groupInfo: GroupInfo, _ mem: GroupMember) {
+    Task {
+        do {
+            let updatedMembers = try await apiRemoveMembers(groupInfo.groupId, [mem.groupMemberId])
+            await MainActor.run {
+                updatedMembers.forEach { updatedMember in
+                    _ = chatModel.upsertGroupMember(groupInfo, updatedMember)
+                }
+            }
+        } catch let error {
+            logger.error("apiRemoveMembers error: \(responseError(error))")
+            await MainActor.run {
+                showAlert(
+                    NSLocalizedString("Error removing member", comment: "alert title"),
+                    message: responseError(error)
+                )
+            }
+        }
     }
 }
 
