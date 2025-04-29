@@ -33,7 +33,7 @@ struct MemberSupportView: View {
                 ForEach(filteredMembersWithChats) { memberWithChat in
                     ZStack {
                         NavigationLink {
-                            // TODO [knocking] open MemberSupportChatView
+                            MemberSupportChatView()
                         } label: {
                             EmptyView()
                         }
