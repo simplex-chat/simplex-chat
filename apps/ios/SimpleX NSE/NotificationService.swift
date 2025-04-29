@@ -169,23 +169,30 @@ class NotificationService: UNNotificationServiceExtension {
     var expectedMessages: Dictionary<String, ExpectedMessage> = [:] // key is receiveEntityId
     var appSubscriber: AppSubscriber?
     var returnedSuspension = false
-
+    
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("DEBUGGING: NotificationService.didReceive")
-        let ntf = if let ntf_ = request.content.mutableCopy() as? UNMutableNotificationContent { ntf_ } else { UNMutableNotificationContent() }
-        setServiceBestAttemptNtf(ntf)
+        let receivedNtf = if let ntf_ = request.content.mutableCopy() as? UNMutableNotificationContent { ntf_ } else { UNMutableNotificationContent() }
+        setServiceBestAttemptNtf(receivedNtf)
         self.contentHandler = contentHandler
         registerGroupDefaults()
         let appState = appStateGroupDefault.get()
         logger.debug("NotificationService: app is \(appState.rawValue)")
         switch appState {
         case .stopped:
+//            Use this block to debug notificaitons delivery in CLI, with "ejected" database and stopped chat
+//            if let nrData = ntfRequestData(request) {
+//                logger.debug("NotificationService get notification connections: /_ntf conns \(nrData.nonce) \(nrData.encNtfInfo)")
+//                contentHandler(receivedNtf)
+//                return;
+//            }
             setBadgeCount()
-            setServiceBestAttemptNtf(createAppStoppedNtf(badgeCount))
-            deliverBestAttemptNtf()
+            contentHandler(createAppStoppedNtf(badgeCount))
         case .suspended:
-            receiveNtfMessages(request, contentHandler)
+            setExpirationTimer()
+            receiveNtfMessages(request)
         case .suspending:
+            setExpirationTimer()
             Task {
                 let state: AppState = await withCheckedContinuation { cont in
                     appSubscriber = appStateSubscriber { s in
@@ -206,36 +213,50 @@ class NotificationService: UNNotificationServiceExtension {
                     }
                 }
                 logger.debug("NotificationService: app state is now \(state.rawValue)")
-                if state.inactive {
-                    receiveNtfMessages(request, contentHandler)
+                if state.inactive && self.contentHandler != nil {
+                    receiveNtfMessages(request)
                 } else {
-                    deliverBestAttemptNtf()
+                    contentHandler(receivedNtf)
                 }
             }
-        case .active: contentHandler(UNMutableNotificationContent())
-        case .activating: contentHandler(UNMutableNotificationContent())
-        case .bgRefresh: contentHandler(UNMutableNotificationContent())
+        case .active: contentHandler(receivedNtf)
+        case .activating: contentHandler(receivedNtf)
+        case .bgRefresh: contentHandler(receivedNtf)
         }
     }
 
-    func receiveNtfMessages(_ request: UNNotificationRequest, _ contentHandler: @escaping (UNNotificationContent) -> Void) {
+    private func setExpirationTimer() -> Void {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
+            self.deliverBestAttemptNtf(urgent: true)
+        }
+    }
+    
+    private func ntfRequestData(_ request: UNNotificationRequest) -> (nonce: String, encNtfInfo: String)? {
+        if let ntfData = request.content.userInfo["notificationData"] as? [AnyHashable : Any],
+           let nonce = ntfData["nonce"] as? String,
+           let encNtfInfo = ntfData["message"] as? String {
+            (nonce, encNtfInfo)
+        } else {
+            nil
+        }
+    }
+    
+    func receiveNtfMessages(_ request: UNNotificationRequest) {
         logger.debug("NotificationService: receiveNtfMessages")
         if case .documents = dbContainerGroupDefault.get() {
             deliverBestAttemptNtf()
             return
         }
-        let userInfo = request.content.userInfo
-        if let ntfData = userInfo["notificationData"] as? [AnyHashable : Any],
-           let nonce = ntfData["nonce"] as? String,
-           let encNtfInfo = ntfData["message"] as? String,
+        if let nrData = ntfRequestData(request),
            // check it here again
            appStateGroupDefault.get().inactive {
             // thread is added to activeThreads tracking set here - if thread started chat it needs to be suspended
             if let t = threadId { NSEThreads.shared.startThread(t, self) }
             let dbStatus = startChat()
             if case .ok = dbStatus,
-               let ntfConns = apiGetNtfConns(nonce: nonce, encNtfInfo: encNtfInfo) {
+               let ntfConns = apiGetNtfConns(nonce: nrData.nonce, encNtfInfo: nrData.encNtfInfo) {
                 logger.debug("NotificationService: receiveNtfMessages: apiGetNtfConns ntfConns count = \(ntfConns.count)")
+//                logger.debug("NotificationService: receiveNtfMessages: apiGetNtfConns ntfConns \(String(describing: ntfConns.map { $0.connEntity_?.id }))")
 
                 for ntfConn in ntfConns {
                     addExpectedMessage(ntfConn: ntfConn)
@@ -406,7 +427,11 @@ class NotificationService: UNNotificationServiceExtension {
     }
 
     private func deliverBestAttemptNtf(urgent: Bool = false) {
-        if (urgent || !expectingMoreMessages) {
+        logger.debug("NotificationService.deliverBestAttemptNtf urgent: \(urgent) expectingMoreMessages: \(self.expectingMoreMessages)")
+        if let handler = contentHandler, urgent || !expectingMoreMessages {
+            if urgent {
+                contentHandler = nil
+            }
             logger.debug("NotificationService.deliverBestAttemptNtf")
             // stop processing other messages
             for (key, _) in expectedMessages {
@@ -420,18 +445,18 @@ class NotificationService: UNNotificationServiceExtension {
             } else {
                 suspend = false
             }
-            deliverCallkitOrNotification(urgent: urgent, suspend: suspend)
+            deliverCallkitOrNotification(urgent: urgent, suspend: suspend, handler: handler)
         }
     }
 
-    private func deliverCallkitOrNotification(urgent: Bool, suspend: Bool = false) {
+    private func deliverCallkitOrNotification(urgent: Bool, suspend: Bool = false, handler: @escaping (UNNotificationContent) -> Void) {
         if useCallKit() && expectedMessages.contains(where: { $0.value.msgBestAttemptNtf?.callInvitation != nil }) {
             logger.debug("NotificationService.deliverCallkitOrNotification: will suspend, callkit")
             if urgent {
                 // suspending NSE even though there may be other notifications
                 // to allow the app to process callkit call
                 suspendChat(0)
-                deliverNotification()
+                deliverNotification(handler: handler)
             } else {
                 // suspending NSE with delay and delivering after the suspension
                 // because pushkit notification must be processed without delay
@@ -439,7 +464,7 @@ class NotificationService: UNNotificationServiceExtension {
                 DispatchQueue.global().asyncAfter(deadline: .now() + fastNSESuspendSchedule.delay) {
                     suspendChat(fastNSESuspendSchedule.timeout)
                     DispatchQueue.global().asyncAfter(deadline: .now() + Double(fastNSESuspendSchedule.timeout)) {
-                        self.deliverNotification()
+                        self.deliverNotification(handler: handler)
                     }
                 }
             }
@@ -458,12 +483,12 @@ class NotificationService: UNNotificationServiceExtension {
                     }
                 }
             }
-            deliverNotification()
+            deliverNotification(handler: handler)
         }
     }
 
-    private func deliverNotification() {
-        if let handler = contentHandler, let ntf = prepareNotification() {
+    private func deliverNotification(handler: @escaping (UNNotificationContent) -> Void) {
+        if serviceBestAttemptNtf != nil, let ntf = prepareNotification() {
             contentHandler = nil
             serviceBestAttemptNtf = nil
             switch ntf {
@@ -654,7 +679,7 @@ func doStartChat() -> DBMigrationResult? {
     let state = NSEChatState.shared.value
     NSEChatState.shared.set(.starting)
     if let user = apiGetActiveUser() {
-        logger.debug("NotificationService active user \(String(describing: user))")
+        logger.debug("NotificationService active user \(user.displayName)")
         do {
             try setNetworkConfig(networkConfig)
             try apiSetAppFilePaths(filesFolder: getAppFilesDirectory().path, tempFolder: getTempFilesDirectory().path, assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path)
