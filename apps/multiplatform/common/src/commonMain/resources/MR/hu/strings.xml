@@ -1175,7 +1175,7 @@
     <string name="icon_descr_sent_msg_status_sent">elküldve</string>
     <string name="network_socks_toggle_use_socks_proxy">SOCKS-proxy használata</string>
     <string name="send_live_message">Élő üzenet küldése</string>
-    <string name="privacy_redefined">Adatvédelem újraértelmezve</string>
+    <string name="privacy_redefined">Újraértelmezett adatvédelem</string>
     <string name="voice_message_send_text">Hangüzenet…</string>
     <string name="protect_app_screen">Alkalmazás képernyőjének védelme</string>
     <string name="show_QR_code">QR-kód megjelenítése</string>
