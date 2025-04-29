@@ -20,6 +20,8 @@ import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.ChatController.setNetCfg
 import chat.simplex.common.model.ChatModel.changingActiveUserMutex
 import chat.simplex.common.model.MsgContent.MCUnknown
+import chat.simplex.common.model.SMPProxyFallback.AllowProtected
+import chat.simplex.common.model.SMPProxyMode.Always
 import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -86,18 +88,7 @@ class AppPreferences {
   val backgroundServiceBatteryNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN, false)
   val autoRestartWorkerVersion = mkIntPreference(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
   val webrtcPolicyRelay = mkBoolPreference(SHARED_PREFS_WEBRTC_POLICY_RELAY, true)
-  private val _callOnLockScreen = mkStrPreference(SHARED_PREFS_WEBRTC_CALLS_ON_LOCK_SCREEN, CallOnLockScreen.default.name)
-  val callOnLockScreen: SharedPreference<CallOnLockScreen> = SharedPreference(
-    get = fun(): CallOnLockScreen {
-      val value = _callOnLockScreen.get() ?: return CallOnLockScreen.default
-      return try {
-        CallOnLockScreen.valueOf(value)
-      } catch (e: Throwable) {
-        CallOnLockScreen.default
-      }
-    },
-    set = fun(action: CallOnLockScreen) { _callOnLockScreen.set(action.name) }
-  )
+  val callOnLockScreen: SharedPreference<CallOnLockScreen> = mkSafeEnumPreference(SHARED_PREFS_WEBRTC_CALLS_ON_LOCK_SCREEN, CallOnLockScreen.default)
   val performLA = mkBoolPreference(SHARED_PREFS_PERFORM_LA, false)
   val laMode = mkEnumPreference(SHARED_PREFS_LA_MODE, LAMode.default) { LAMode.values().firstOrNull { it.name == this } }
   val laLockDelay = mkIntPreference(SHARED_PREFS_LA_LOCK_DELAY, 30)
@@ -107,18 +98,7 @@ class AppPreferences {
   val privacyAcceptImages = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_IMAGES, true)
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
   val privacyChatListOpenLinks = mkEnumPreference(SHARED_PREFS_PRIVACY_CHAT_LIST_OPEN_LINKS, PrivacyChatListOpenLinksMode.ASK) { PrivacyChatListOpenLinksMode.values().firstOrNull { it.name == this } }
-  private val _simplexLinkMode = mkStrPreference(SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE, SimplexLinkMode.default.name)
-  val simplexLinkMode: SharedPreference<SimplexLinkMode> = SharedPreference(
-    get = fun(): SimplexLinkMode {
-      val value = _simplexLinkMode.get() ?: return SimplexLinkMode.default
-      return try {
-        SimplexLinkMode.valueOf(value)
-      } catch (e: Throwable) {
-        SimplexLinkMode.default
-      }
-    },
-    set = fun(mode: SimplexLinkMode) { _simplexLinkMode.set(mode.name) }
-  )
+  val simplexLinkMode: SharedPreference<SimplexLinkMode> = mkSafeEnumPreference(SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE, SimplexLinkMode.default)
   val privacyShowChatPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS, true)
   val privacySaveLastDraft = mkBoolPreference(SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT, true)
   val privacyShortLinks = mkBoolPreference(SHARED_PREFS_PRIVACY_SHORT_LINKS, false)
@@ -158,23 +138,12 @@ class AppPreferences {
     },
     set = fun(proxy: NetworkProxy) { _networkProxy.set(json.encodeToString(proxy)) }
   )
-  private val _networkSessionMode = mkStrPreference(SHARED_PREFS_NETWORK_SESSION_MODE, TransportSessionMode.default.name)
-  val networkSessionMode: SharedPreference<TransportSessionMode> = SharedPreference(
-    get = fun(): TransportSessionMode {
-      val value = _networkSessionMode.get() ?: return TransportSessionMode.default
-      return try {
-        TransportSessionMode.valueOf(value)
-      } catch (e: Throwable) {
-        TransportSessionMode.default
-      }
-    },
-    set = fun(mode: TransportSessionMode) { _networkSessionMode.set(mode.name) }
-  )
-  val networkSMPProxyMode = mkStrPreference(SHARED_PREFS_NETWORK_SMP_PROXY_MODE, NetCfg.defaults.smpProxyMode.name)
-  val networkSMPProxyFallback = mkStrPreference(SHARED_PREFS_NETWORK_SMP_PROXY_FALLBACK, NetCfg.defaults.smpProxyFallback.name)
-  val networkHostMode = mkStrPreference(SHARED_PREFS_NETWORK_HOST_MODE, HostMode.OnionViaSocks.name)
+  val networkSessionMode: SharedPreference<TransportSessionMode> = mkSafeEnumPreference(SHARED_PREFS_NETWORK_SESSION_MODE, TransportSessionMode.default)
+  val networkSMPProxyMode: SharedPreference<SMPProxyMode> = mkSafeEnumPreference(SHARED_PREFS_NETWORK_SMP_PROXY_MODE, SMPProxyMode.default)
+  val networkSMPProxyFallback: SharedPreference<SMPProxyFallback> = mkSafeEnumPreference(SHARED_PREFS_NETWORK_SMP_PROXY_FALLBACK, SMPProxyFallback.default)
+  val networkHostMode: SharedPreference<HostMode> = mkSafeEnumPreference(SHARED_PREFS_NETWORK_HOST_MODE, HostMode.default)
   val networkRequiredHostMode = mkBoolPreference(SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE, false)
-  val networkSMPWebPort = mkBoolPreference(SHARED_PREFS_NETWORK_SMP_WEB_PORT, false)
+  val networkSMPWebPortServers: SharedPreference<SMPWebPortServers> = mkSafeEnumPreference(SHARED_PREFS_NETWORK_SMP_WEB_PORT_SERVERS, SMPWebPortServers.default)
   val networkTCPConnectTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT, NetCfg.defaults.tcpConnectTimeout, NetCfg.proxyDefaults.tcpConnectTimeout)
   val networkTCPTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_TIMEOUT, NetCfg.defaults.tcpTimeout, NetCfg.proxyDefaults.tcpTimeout)
   val networkTCPTimeoutPerKb = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_TIMEOUT_PER_KB, NetCfg.defaults.tcpTimeoutPerKb, NetCfg.proxyDefaults.tcpTimeoutPerKb)
@@ -331,7 +300,19 @@ class AppPreferences {
       set = fun(value) = settings.putString(prefName, value.toString())
     )
 
-  // LALAL
+  private inline fun <reified T : Enum<T>> mkSafeEnumPreference(key: String, default: T): SharedPreference<T> = SharedPreference(
+    get = {
+      val value = settings.getString(key, "")
+      if (value == "") return@SharedPreference default
+      try {
+        enumValueOf<T>(value)
+      } catch (e: IllegalArgumentException) {
+        default
+      }
+    },
+    set = { value -> settings.putString(key, value.name) }
+  )
+
   private fun mkDatePreference(prefName: String, default: Instant?): SharedPreference<Instant?> =
     SharedPreference(
       get = {
@@ -416,7 +397,7 @@ class AppPreferences {
     private const val SHARED_PREFS_NETWORK_SMP_PROXY_FALLBACK = "NetworkSMPProxyFallback"
     private const val SHARED_PREFS_NETWORK_HOST_MODE = "NetworkHostMode"
     private const val SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE = "NetworkRequiredHostMode"
-    private const val SHARED_PREFS_NETWORK_SMP_WEB_PORT = "NetworkSMPWebPort"
+    private const val SHARED_PREFS_NETWORK_SMP_WEB_PORT_SERVERS = "NetworkSMPWebPortServers"
     private const val SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT = "NetworkTCPConnectTimeout"
     private const val SHARED_PREFS_NETWORK_TCP_TIMEOUT = "NetworkTCPTimeout"
     private const val SHARED_PREFS_NETWORK_TCP_TIMEOUT_PER_KB = "networkTCPTimeoutPerKb"
@@ -3336,12 +3317,12 @@ object ChatController {
     } else {
       null
     }
-    val hostMode = HostMode.valueOf(appPrefs.networkHostMode.get()!!)
+    val hostMode = appPrefs.networkHostMode.get()
     val requiredHostMode = appPrefs.networkRequiredHostMode.get()
     val sessionMode = appPrefs.networkSessionMode.get()
-    val smpProxyMode = SMPProxyMode.valueOf(appPrefs.networkSMPProxyMode.get()!!)
-    val smpProxyFallback = SMPProxyFallback.valueOf(appPrefs.networkSMPProxyFallback.get()!!)
-    val smpWebPort = appPrefs.networkSMPWebPort.get()
+    val smpProxyMode = appPrefs.networkSMPProxyMode.get()
+    val smpProxyFallback = appPrefs.networkSMPProxyFallback.get()
+    val smpWebPortServers = appPrefs.networkSMPWebPortServers.get()
     val tcpConnectTimeout = appPrefs.networkTCPConnectTimeout.get()
     val tcpTimeout = appPrefs.networkTCPTimeout.get()
     val tcpTimeoutPerKb = appPrefs.networkTCPTimeoutPerKb.get()
@@ -3364,7 +3345,7 @@ object ChatController {
       sessionMode = sessionMode,
       smpProxyMode = smpProxyMode,
       smpProxyFallback = smpProxyFallback,
-      smpWebPort = smpWebPort,
+      smpWebPortServers = smpWebPortServers,
       tcpConnectTimeout = tcpConnectTimeout,
       tcpTimeout = tcpTimeout,
       tcpTimeoutPerKb = tcpTimeoutPerKb,
@@ -3380,12 +3361,12 @@ object ChatController {
    * */
   fun setNetCfg(cfg: NetCfg) {
     appPrefs.networkUseSocksProxy.set(cfg.useSocksProxy)
-    appPrefs.networkHostMode.set(cfg.hostMode.name)
+    appPrefs.networkHostMode.set(cfg.hostMode)
     appPrefs.networkRequiredHostMode.set(cfg.requiredHostMode)
     appPrefs.networkSessionMode.set(cfg.sessionMode)
-    appPrefs.networkSMPProxyMode.set(cfg.smpProxyMode.name)
-    appPrefs.networkSMPProxyFallback.set(cfg.smpProxyFallback.name)
-    appPrefs.networkSMPWebPort.set(cfg.smpWebPort)
+    appPrefs.networkSMPProxyMode.set(cfg.smpProxyMode)
+    appPrefs.networkSMPProxyFallback.set(cfg.smpProxyFallback)
+    appPrefs.networkSMPWebPortServers.set(cfg.smpWebPortServers)
     appPrefs.networkTCPConnectTimeout.set(cfg.tcpConnectTimeout)
     appPrefs.networkTCPTimeout.set(cfg.tcpTimeout)
     appPrefs.networkTCPTimeoutPerKb.set(cfg.tcpTimeoutPerKb)
@@ -4496,13 +4477,13 @@ data class ParsedServerAddress (
 @Serializable
 data class NetCfg(
   val socksProxy: String?,
-  val socksMode: SocksMode = SocksMode.Always,
-  val hostMode: HostMode = HostMode.OnionViaSocks,
+  val socksMode: SocksMode = SocksMode.default,
+  val hostMode: HostMode = HostMode.default,
   val requiredHostMode: Boolean = false,
   val sessionMode: TransportSessionMode = TransportSessionMode.default,
-  val smpProxyMode: SMPProxyMode = SMPProxyMode.Always,
-  val smpProxyFallback: SMPProxyFallback = SMPProxyFallback.AllowProtected,
-  val smpWebPort: Boolean = false,
+  val smpProxyMode: SMPProxyMode = SMPProxyMode.default,
+  val smpProxyFallback: SMPProxyFallback = SMPProxyFallback.default,
+  val smpWebPortServers: SMPWebPortServers = SMPWebPortServers.default,
   val tcpConnectTimeout: Long, // microseconds
   val tcpTimeout: Long, // microseconds
   val tcpTimeoutPerKb: Long, // microseconds
@@ -4600,12 +4581,20 @@ enum class HostMode {
   @SerialName("onionViaSocks") OnionViaSocks,
   @SerialName("onion") Onion,
   @SerialName("public") Public;
+
+  companion object {
+    val default = OnionViaSocks
+  }
 }
 
 @Serializable
 enum class SocksMode {
   @SerialName("always") Always,
   @SerialName("onion") Onion;
+
+  companion object {
+    val default = Always
+  }
 }
 
 @Serializable
@@ -4614,6 +4603,10 @@ enum class SMPProxyMode {
   @SerialName("unknown") Unknown,
   @SerialName("unprotected") Unprotected,
   @SerialName("never") Never;
+
+  companion object {
+    val default = Always
+  }
 }
 
 @Serializable
@@ -4621,6 +4614,27 @@ enum class SMPProxyFallback {
   @SerialName("allow") Allow,
   @SerialName("allowProtected") AllowProtected,
   @SerialName("prohibit") Prohibit;
+
+  companion object {
+    val default = AllowProtected
+  }
+}
+
+@Serializable
+enum class SMPWebPortServers {
+  @SerialName("all") All,
+  @SerialName("preset") Preset,
+  @SerialName("off") Off;
+
+  val text get(): StringResource = when (this) {
+    All -> MR.strings.network_smp_web_port_all
+    Preset -> MR.strings.network_smp_web_port_preset
+    Off -> MR.strings.network_smp_web_port_off
+  }
+
+  companion object {
+    val default = Preset
+  }
 }
 
 @Serializable
@@ -6772,64 +6786,79 @@ sealed class StoreError {
   val string: String
     get() = when (this) {
       is DuplicateName -> "duplicateName"
-      is UserNotFound -> "userNotFound"
-      is UserNotFoundByName -> "userNotFoundByName"
-      is UserNotFoundByContactId -> "userNotFoundByContactId"
-      is UserNotFoundByGroupId -> "userNotFoundByGroupId"
-      is UserNotFoundByFileId -> "userNotFoundByFileId"
-      is UserNotFoundByContactRequestId -> "userNotFoundByContactRequestId"
-      is ContactNotFound -> "contactNotFound"
-      is ContactNotFoundByName -> "contactNotFoundByName"
-      is ContactNotFoundByMemberId -> "contactNotFoundByMemberId"
-      is ContactNotReady -> "contactNotReady"
+      is UserNotFound -> "userNotFound $userId"
+      is UserNotFoundByName -> "userNotFoundByName $contactName"
+      is UserNotFoundByContactId -> "userNotFoundByContactId $contactId"
+      is UserNotFoundByGroupId -> "userNotFoundByGroupId $groupId"
+      is UserNotFoundByFileId -> "userNotFoundByFileId $fileId"
+      is UserNotFoundByContactRequestId -> "userNotFoundByContactRequestId $contactRequestId"
+      is ContactNotFound -> "contactNotFound $contactId"
+      is ContactNotFoundByName -> "contactNotFoundByName $contactName"
+      is ContactNotFoundByMemberId -> "contactNotFoundByMemberId $groupMemberId"
+      is ContactNotReady -> "contactNotReady $contactName"
       is DuplicateContactLink -> "duplicateContactLink"
       is UserContactLinkNotFound -> "userContactLinkNotFound"
-      is ContactRequestNotFound -> "contactRequestNotFound"
-      is ContactRequestNotFoundByName -> "contactRequestNotFoundByName"
-      is GroupNotFound -> "groupNotFound"
-      is GroupNotFoundByName -> "groupNotFoundByName"
-      is GroupMemberNameNotFound -> "groupMemberNameNotFound"
-      is GroupMemberNotFound -> "groupMemberNotFound"
-      is GroupMemberNotFoundByMemberId -> "groupMemberNotFoundByMemberId"
-      is MemberContactGroupMemberNotFound -> "memberContactGroupMemberNotFound"
+      is ContactRequestNotFound -> "contactRequestNotFound $contactRequestId"
+      is ContactRequestNotFoundByName -> "contactRequestNotFoundByName $contactName"
+      is GroupNotFound -> "groupNotFound $groupId"
+      is GroupNotFoundByName -> "groupNotFoundByName $groupName"
+      is GroupMemberNameNotFound -> "groupMemberNameNotFound $groupId $groupMemberName"
+      is GroupMemberNotFound -> "groupMemberNotFound $groupMemberId"
+      is GroupMemberNotFoundByMemberId -> "groupMemberNotFoundByMemberId $memberId"
+      is MemberContactGroupMemberNotFound -> "memberContactGroupMemberNotFound $contactId"
       is GroupWithoutUser -> "groupWithoutUser"
       is DuplicateGroupMember -> "duplicateGroupMember"
       is GroupAlreadyJoined -> "groupAlreadyJoined"
       is GroupInvitationNotFound -> "groupInvitationNotFound"
-      is SndFileNotFound -> "sndFileNotFound"
-      is SndFileInvalid -> "sndFileInvalid"
-      is RcvFileNotFound -> "rcvFileNotFound"
-      is RcvFileDescrNotFound -> "rcvFileDescrNotFound"
-      is FileNotFound -> "fileNotFound"
-      is RcvFileInvalid -> "rcvFileInvalid"
+      is NoteFolderAlreadyExists -> "noteFolderAlreadyExists $noteFolderId"
+      is NoteFolderNotFound -> "noteFolderNotFound $noteFolderId"
+      is UserNoteFolderNotFound -> "userNoteFolderNotFound"
+      is SndFileNotFound -> "sndFileNotFound $fileId"
+      is SndFileInvalid -> "sndFileInvalid $fileId"
+      is RcvFileNotFound -> "rcvFileNotFound $fileId"
+      is RcvFileDescrNotFound -> "rcvFileDescrNotFound $fileId"
+      is FileNotFound -> "fileNotFound $fileId"
+      is RcvFileInvalid -> "rcvFileInvalid $fileId"
       is RcvFileInvalidDescrPart -> "rcvFileInvalidDescrPart"
-      is SharedMsgIdNotFoundByFileId -> "sharedMsgIdNotFoundByFileId"
-      is FileIdNotFoundBySharedMsgId -> "fileIdNotFoundBySharedMsgId"
-      is SndFileNotFoundXFTP -> "sndFileNotFoundXFTP"
-      is RcvFileNotFoundXFTP -> "rcvFileNotFoundXFTP"
-      is ExtraFileDescrNotFoundXFTP -> "extraFileDescrNotFoundXFTP"
-      is ConnectionNotFound -> "connectionNotFound"
-      is ConnectionNotFoundById -> "connectionNotFoundById"
-      is ConnectionNotFoundByMemberId -> "connectionNotFoundByMemberId"
-      is PendingConnectionNotFound -> "pendingConnectionNotFound"
+      is LocalFileNoTransfer -> "localFileNoTransfer $fileId"
+      is SharedMsgIdNotFoundByFileId -> "sharedMsgIdNotFoundByFileId $fileId"
+      is FileIdNotFoundBySharedMsgId -> "fileIdNotFoundBySharedMsgId $sharedMsgId"
+      is SndFileNotFoundXFTP -> "sndFileNotFoundXFTP $agentSndFileId"
+      is RcvFileNotFoundXFTP -> "rcvFileNotFoundXFTP $agentRcvFileId"
+      is ConnectionNotFound -> "connectionNotFound $agentConnId"
+      is ConnectionNotFoundById -> "connectionNotFoundById $connId"
+      is ConnectionNotFoundByMemberId -> "connectionNotFoundByMemberId $groupMemberId"
+      is PendingConnectionNotFound -> "pendingConnectionNotFound $connId"
       is IntroNotFound -> "introNotFound"
       is UniqueID -> "uniqueID"
-      is InternalError -> "internalError"
-      is NoMsgDelivery -> "noMsgDelivery"
-      is BadChatItem -> "badChatItem"
-      is ChatItemNotFound -> "chatItemNotFound"
-      is ChatItemNotFoundByText -> "chatItemNotFoundByText"
-      is ChatItemSharedMsgIdNotFound -> "chatItemSharedMsgIdNotFound"
-      is ChatItemNotFoundByFileId -> "chatItemNotFoundByFileId"
-      is ChatItemNotFoundByGroupId -> "chatItemNotFoundByGroupId"
-      is ProfileNotFound -> "profileNotFound"
-      is DuplicateGroupLink -> "duplicateGroupLink"
-      is GroupLinkNotFound -> "groupLinkNotFound"
-      is HostMemberIdNotFound -> "hostMemberIdNotFound"
-      is ContactNotFoundByFileId -> "contactNotFoundByFileId"
-      is NoGroupSndStatus -> "noGroupSndStatus"
       is LargeMsg -> "largeMsg"
-      is DBException -> "dBException"
+      is InternalError -> "internalError $message"
+      is DBException -> "dBException $message"
+      is DBBusyError -> "dBBusyError $message"
+      is BadChatItem -> "badChatItem $itemId"
+      is ChatItemNotFound -> "chatItemNotFound $itemId"
+      is ChatItemNotFoundByText -> "chatItemNotFoundByText $text"
+      is ChatItemSharedMsgIdNotFound -> "chatItemSharedMsgIdNotFound $sharedMsgId"
+      is ChatItemNotFoundByFileId -> "chatItemNotFoundByFileId $fileId"
+      is ChatItemNotFoundByContactId -> "chatItemNotFoundByContactId $contactId"
+      is ChatItemNotFoundByGroupId -> "chatItemNotFoundByGroupId $groupId"
+      is ProfileNotFound -> "profileNotFound $profileId"
+      is DuplicateGroupLink -> "duplicateGroupLink ${groupInfo.groupId}"
+      is GroupLinkNotFound -> "groupLinkNotFound ${groupInfo.groupId}"
+      is HostMemberIdNotFound -> "hostMemberIdNotFound $groupId"
+      is ContactNotFoundByFileId -> "contactNotFoundByFileId $fileId"
+      is NoGroupSndStatus -> "noGroupSndStatus $itemId $groupMemberId"
+      is DuplicateGroupMessage -> "duplicateGroupMessage $groupId $sharedMsgId $authorGroupMemberId $authorGroupMemberId"
+      is RemoteHostNotFound -> "remoteHostNotFound $remoteHostId"
+      is RemoteHostUnknown -> "remoteHostUnknown"
+      is RemoteHostDuplicateCA -> "remoteHostDuplicateCA"
+      is RemoteCtrlNotFound -> "remoteCtrlNotFound $remoteCtrlId"
+      is RemoteCtrlDuplicateCA -> "remoteCtrlDuplicateCA"
+      is ProhibitedDeleteUser -> "prohibitedDeleteUser $userId $contactId"
+      is OperatorNotFound -> "operatorNotFound $serverOperatorId"
+      is UsageConditionsNotFound -> "usageConditionsNotFound"
+      is InvalidQuote -> "invalidQuote"
+      is InvalidMention -> "invalidMention"
     }
 
   @Serializable @SerialName("duplicateName") object DuplicateName: StoreError()
@@ -6857,6 +6886,9 @@ sealed class StoreError {
   @Serializable @SerialName("duplicateGroupMember") object DuplicateGroupMember: StoreError()
   @Serializable @SerialName("groupAlreadyJoined") object GroupAlreadyJoined: StoreError()
   @Serializable @SerialName("groupInvitationNotFound") object GroupInvitationNotFound: StoreError()
+  @Serializable @SerialName("noteFolderAlreadyExists") class NoteFolderAlreadyExists(val noteFolderId: Long): StoreError()
+  @Serializable @SerialName("noteFolderNotFound") class NoteFolderNotFound(val noteFolderId: Long): StoreError()
+  @Serializable @SerialName("userNoteFolderNotFound") object UserNoteFolderNotFound: StoreError()
   @Serializable @SerialName("sndFileNotFound") class SndFileNotFound(val fileId: Long): StoreError()
   @Serializable @SerialName("sndFileInvalid") class SndFileInvalid(val fileId: Long): StoreError()
   @Serializable @SerialName("rcvFileNotFound") class RcvFileNotFound(val fileId: Long): StoreError()
@@ -6864,24 +6896,27 @@ sealed class StoreError {
   @Serializable @SerialName("fileNotFound") class FileNotFound(val fileId: Long): StoreError()
   @Serializable @SerialName("rcvFileInvalid") class RcvFileInvalid(val fileId: Long): StoreError()
   @Serializable @SerialName("rcvFileInvalidDescrPart") object RcvFileInvalidDescrPart: StoreError()
+  @Serializable @SerialName("localFileNoTransfer") class LocalFileNoTransfer(val fileId: Long): StoreError()
   @Serializable @SerialName("sharedMsgIdNotFoundByFileId") class SharedMsgIdNotFoundByFileId(val fileId: Long): StoreError()
   @Serializable @SerialName("fileIdNotFoundBySharedMsgId") class FileIdNotFoundBySharedMsgId(val sharedMsgId: String): StoreError()
   @Serializable @SerialName("sndFileNotFoundXFTP") class SndFileNotFoundXFTP(val agentSndFileId: String): StoreError()
   @Serializable @SerialName("rcvFileNotFoundXFTP") class RcvFileNotFoundXFTP(val agentRcvFileId: String): StoreError()
-  @Serializable @SerialName("extraFileDescrNotFoundXFTP") class ExtraFileDescrNotFoundXFTP(val fileId: Long): StoreError()
   @Serializable @SerialName("connectionNotFound") class ConnectionNotFound(val agentConnId: String): StoreError()
   @Serializable @SerialName("connectionNotFoundById") class ConnectionNotFoundById(val connId: Long): StoreError()
   @Serializable @SerialName("connectionNotFoundByMemberId") class ConnectionNotFoundByMemberId(val groupMemberId: Long): StoreError()
   @Serializable @SerialName("pendingConnectionNotFound") class PendingConnectionNotFound(val connId: Long): StoreError()
   @Serializable @SerialName("introNotFound") object IntroNotFound: StoreError()
   @Serializable @SerialName("uniqueID") object UniqueID: StoreError()
+  @Serializable @SerialName("largeMsg") object LargeMsg: StoreError()
   @Serializable @SerialName("internalError") class InternalError(val message: String): StoreError()
-  @Serializable @SerialName("noMsgDelivery") class NoMsgDelivery(val connId: Long, val agentMsgId: String): StoreError()
+  @Serializable @SerialName("dBException") class DBException(val message: String): StoreError()
+  @Serializable @SerialName("dBBusyError") class DBBusyError(val message: String): StoreError()
   @Serializable @SerialName("badChatItem") class BadChatItem(val itemId: Long): StoreError()
   @Serializable @SerialName("chatItemNotFound") class ChatItemNotFound(val itemId: Long): StoreError()
   @Serializable @SerialName("chatItemNotFoundByText") class ChatItemNotFoundByText(val text: String): StoreError()
   @Serializable @SerialName("chatItemSharedMsgIdNotFound") class ChatItemSharedMsgIdNotFound(val sharedMsgId: String): StoreError()
   @Serializable @SerialName("chatItemNotFoundByFileId") class ChatItemNotFoundByFileId(val fileId: Long): StoreError()
+  @Serializable @SerialName("chatItemNotFoundByContactId") class ChatItemNotFoundByContactId(val contactId: Long): StoreError()
   @Serializable @SerialName("chatItemNotFoundByGroupId") class ChatItemNotFoundByGroupId(val groupId: Long): StoreError()
   @Serializable @SerialName("profileNotFound") class ProfileNotFound(val profileId: Long): StoreError()
   @Serializable @SerialName("duplicateGroupLink") class DuplicateGroupLink(val groupInfo: GroupInfo): StoreError()
@@ -6889,8 +6924,17 @@ sealed class StoreError {
   @Serializable @SerialName("hostMemberIdNotFound") class HostMemberIdNotFound(val groupId: Long): StoreError()
   @Serializable @SerialName("contactNotFoundByFileId") class ContactNotFoundByFileId(val fileId: Long): StoreError()
   @Serializable @SerialName("noGroupSndStatus") class NoGroupSndStatus(val itemId: Long, val groupMemberId: Long): StoreError()
-  @Serializable @SerialName("largeMsg") object LargeMsg: StoreError()
-  @Serializable @SerialName("dBException") class DBException(val message: String): StoreError()
+  @Serializable @SerialName("duplicateGroupMessage") class DuplicateGroupMessage(val groupId: Long, val sharedMsgId: String, val authorGroupMemberId: Long?, val forwardedByGroupMemberId: Long?): StoreError()
+  @Serializable @SerialName("remoteHostNotFound") class RemoteHostNotFound(val remoteHostId: Long): StoreError()
+  @Serializable @SerialName("remoteHostUnknown") object RemoteHostUnknown: StoreError()
+  @Serializable @SerialName("remoteHostDuplicateCA") object RemoteHostDuplicateCA: StoreError()
+  @Serializable @SerialName("remoteCtrlNotFound") class RemoteCtrlNotFound(val remoteCtrlId: Long): StoreError()
+  @Serializable @SerialName("remoteCtrlDuplicateCA") class RemoteCtrlDuplicateCA: StoreError()
+  @Serializable @SerialName("prohibitedDeleteUser") class ProhibitedDeleteUser(val userId: Long, val contactId: Long): StoreError()
+  @Serializable @SerialName("operatorNotFound") class OperatorNotFound(val serverOperatorId: Long): StoreError()
+  @Serializable @SerialName("usageConditionsNotFound") object UsageConditionsNotFound: StoreError()
+  @Serializable @SerialName("invalidQuote") object InvalidQuote: StoreError()
+  @Serializable @SerialName("invalidMention") object InvalidMention: StoreError()
 }
 
 @Serializable

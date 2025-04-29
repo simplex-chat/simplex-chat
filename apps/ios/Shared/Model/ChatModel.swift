@@ -54,9 +54,7 @@ class ItemsModel: ObservableObject {
         willSet { publisher.send() }
     }
 
-    // set listener here that will be notified on every add/delete of a chat item
     let chatState = ActiveChatState()
-    var chatItemsChangesListener: RecalculatePositions = RecalculatePositions()
 
     // Publishes directly to `objectWillChange` publisher,
     // this will cause reversedChatItems to be rendered without throttling
@@ -573,7 +571,7 @@ final class ChatModel: ObservableObject {
                 ci.meta.itemStatus = status
             }
             im.reversedChatItems.insert(ci, at: hasLiveDummy ? 1 : 0)
-            im.chatItemsChangesListener.added((ci.id, ci.isRcvNew), hasLiveDummy ? 1 : 0)
+            im.chatState.itemAdded((ci.id, ci.isRcvNew), hasLiveDummy ? 1 : 0)
             im.itemAdded = true
             ChatItemDummyModel.shared.sendUpdate()
             return true
@@ -621,7 +619,7 @@ final class ChatModel: ObservableObject {
             if let i = getChatItemIndex(cItem) {
                 withAnimation {
                     let item = im.reversedChatItems.remove(at: i)
-                    im.chatItemsChangesListener.removed([(item.id, i, item.isRcvNew)], im.reversedChatItems.reversed())
+                    im.chatState.itemsRemoved([(item.id, i, item.isRcvNew)], im.reversedChatItems.reversed())
                 }
             }
         }
@@ -709,7 +707,7 @@ final class ChatModel: ObservableObject {
         let cItem = ChatItem.liveDummy(chatInfo.chatType)
         withAnimation {
             im.reversedChatItems.insert(cItem, at: 0)
-            im.chatItemsChangesListener.added((cItem.id, cItem.isRcvNew), 0)
+            im.chatState.itemAdded((cItem.id, cItem.isRcvNew), 0)
             im.itemAdded = true
         }
         return cItem
@@ -743,7 +741,7 @@ final class ChatModel: ObservableObject {
                 markChatItemRead_(i)
                 i += 1
             }
-            im.chatItemsChangesListener.read(nil, im.reversedChatItems.reversed())
+            im.chatState.itemsRead(nil, im.reversedChatItems.reversed())
         }
     }
     func markChatUnread(_ cInfo: ChatInfo, unreadChat: Bool = true) {
@@ -767,7 +765,7 @@ final class ChatModel: ObservableObject {
         if chatId == cInfo.id {
             chatItemStatuses = [:]
             im.reversedChatItems = []
-            im.chatItemsChangesListener.cleared()
+            im.chatState.clear()
         }
     }
 
@@ -785,7 +783,7 @@ final class ChatModel: ObservableObject {
                 }
                 i += 1
             }
-            im.chatItemsChangesListener.read(unreadItemIds, im.reversedChatItems.reversed())
+            im.chatState.itemsRead(unreadItemIds, im.reversedChatItems.reversed())
         }
         self.unreadCollector.changeUnreadCounter(cInfo.id, by: -itemIds.count, unreadMentions: -mentionsRead)
     }

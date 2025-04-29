@@ -91,7 +91,7 @@ import Simplex.Messaging.Agent.Store.Interface (execSQL)
 import Simplex.Messaging.Agent.Store.Shared (upMigration)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface (getCurrentMigrations)
-import Simplex.Messaging.Client (NetworkConfig (..), SocksMode (SMAlways), textToHostMode)
+import Simplex.Messaging.Client (NetworkConfig (..), SMPWebPortServers (..), SocksMode (SMAlways), textToHostMode)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -255,11 +255,11 @@ stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles,
       atomically $ writeTVar files M.empty
 
 updateNetworkConfig :: NetworkConfig -> SimpleNetCfg -> NetworkConfig
-updateNetworkConfig cfg SimpleNetCfg {socksProxy, socksMode, hostMode, requiredHostMode, smpProxyMode_, smpProxyFallback_, smpWebPort, tcpTimeout_, logTLSErrors} =
+updateNetworkConfig cfg SimpleNetCfg {socksProxy, socksMode, hostMode, requiredHostMode, smpProxyMode_, smpProxyFallback_, smpWebPortServers, tcpTimeout_, logTLSErrors} =
   let cfg1 = maybe cfg (\smpProxyMode -> cfg {smpProxyMode}) smpProxyMode_
       cfg2 = maybe cfg1 (\smpProxyFallback -> cfg1 {smpProxyFallback}) smpProxyFallback_
       cfg3 = maybe cfg2 (\tcpTimeout -> cfg2 {tcpTimeout, tcpConnectTimeout = (tcpTimeout * 3) `div` 2}) tcpTimeout_
-   in cfg3 {socksProxy, socksMode, hostMode, requiredHostMode, smpWebPort, logTLSErrors}
+   in cfg3 {socksProxy, socksMode, hostMode, requiredHostMode, smpWebPortServers, logTLSErrors}
 
 useServers :: Foldable f => RandomAgentServers -> [(Text, ServerOperator)] -> f UserOperatorServers -> (NonEmpty (ServerCfg 'PSMP), NonEmpty (ServerCfg 'PXFTP))
 useServers as opDomains uss =
@@ -1907,7 +1907,7 @@ processChatCommand' vr = \case
     withSendRef chatRef $ \sendRef -> do
       let mc = MCText msg
       processChatCommand $ APISendMessages sendRef True Nothing [ComposedMessage Nothing Nothing mc mentions]
-  SendMessageBroadcast msg -> withUser $ \user -> do
+  SendMessageBroadcast mc -> withUser $ \user -> do
     contacts <- withFastStore' $ \db -> getUserContacts db vr user
     withChatLock "sendMessageBroadcast" . procCmd $ do
       let ctConns_ = L.nonEmpty $ foldr addContactConn [] contacts
@@ -1931,7 +1931,6 @@ processChatCommand' vr = \case
           lift . void $ withStoreBatch' $ \db -> map (createCI db user timestamp) ctSndMsgs
           pure CRBroadcastSent {user, msgContent = mc, successes = length ctSndMsgs, failures = length errs, timestamp}
     where
-      mc = MCText msg
       addContactConn :: Contact -> [(Contact, Connection)] -> [(Contact, Connection)]
       addContactConn ct ctConns = case contactSendConn_ ct of
         Right conn | directOrUsed ct -> (ct, conn) : ctConns
@@ -4228,7 +4227,7 @@ chatCommandP =
       ("\\\\ #" <|> "\\\\#") *> (DeleteMemberMessage <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <* A.space <*> textP),
       ("! " <|> "!") *> (EditMessage <$> chatNameP <* A.space <*> (quotedMsg <|> pure "") <*> msgTextP),
       ReactToMessage <$> (("+" $> True) <|> ("-" $> False)) <*> reactionP <* A.space <*> chatNameP' <* A.space <*> textP,
-      "/feed " *> (SendMessageBroadcast <$> msgTextP),
+      "/feed " *> (SendMessageBroadcast . MCText <$> msgTextP),
       ("/chats" <|> "/cs") *> (LastChats <$> (" all" $> Nothing <|> Just <$> (A.space *> A.decimal <|> pure 20))),
       ("/tail" <|> "/t") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP <*> pure Nothing),
       ("/search" <|> "/?") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP <*> (Just <$> (A.space *> stringP))),
@@ -4469,11 +4468,11 @@ chatCommandP =
       requiredHostMode <- (" required-host-mode" $> True) <|> pure False
       smpProxyMode_ <- optional $ " smp-proxy=" *> strP
       smpProxyFallback_ <- optional $ " smp-proxy-fallback=" *> strP
-      smpWebPort <- (" smp-web-port" $> True) <|> pure False
+      smpWebPortServers <- (" smp-web-port-servers=" *> strP) <|> (" smp-web-port" $> SWPAll) <|> pure SWPPreset
       t_ <- optional $ " timeout=" *> A.decimal
       logTLSErrors <- " log=" *> onOffP <|> pure False
       let tcpTimeout_ = (1000000 *) <$> t_
-      pure $ SimpleNetCfg {socksProxy, socksMode, hostMode, requiredHostMode, smpProxyMode_, smpProxyFallback_, smpWebPort, tcpTimeout_, logTLSErrors}
+      pure $ SimpleNetCfg {socksProxy, socksMode, hostMode, requiredHostMode, smpProxyMode_, smpProxyFallback_, smpWebPortServers, tcpTimeout_, logTLSErrors}
 #if !defined(dbPostgres)
     dbKeyP = nonEmptyKey <$?> strP
     nonEmptyKey k@(DBEncryptionKey s) = if BA.null s then Left "empty key" else Right k

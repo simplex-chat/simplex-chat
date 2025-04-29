@@ -50,6 +50,7 @@ import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Data.Version (showVersion)
 import Data.Word (Word16)
 import Language.Haskell.TH (Exp, Q, runIO)
+import Network.Socket (HostName)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
 import Simplex.Chat.AppSettings
@@ -77,7 +78,7 @@ import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction, withTransactionPriority)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation, UpMigration)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyMode (..), SocksMode (..))
+import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyMode (..), SMPWebPortServers (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -139,6 +140,7 @@ data ChatConfig = ChatConfig
     confirmMigrations :: MigrationConfirmation,
     presetServers :: PresetServers,
     shortLinkPresetServers :: NonEmpty SMPServer,
+    presetDomains :: [HostName],
     tbqSize :: Natural,
     fileChunkSize :: Integer,
     xftpDescrPartSize :: Int,
@@ -472,7 +474,7 @@ data ChatCommand
   | SendMemberContactMessage GroupName ContactName Text
   | SendLiveMessage ChatName Text
   | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: Text, message :: Text}
-  | SendMessageBroadcast Text -- UserId (not used in UI)
+  | SendMessageBroadcast MsgContent -- UserId (not used in UI)
   | DeleteMessage ChatName Text
   | DeleteMemberMessage GroupName ContactName Text
   | EditMessage {chatName :: ChatName, editedMsg :: Text, message :: Text}
@@ -1061,7 +1063,7 @@ data SimpleNetCfg = SimpleNetCfg
     requiredHostMode :: Bool,
     smpProxyMode_ :: Maybe SMPProxyMode,
     smpProxyFallback_ :: Maybe SMPProxyFallback,
-    smpWebPort :: Bool,
+    smpWebPortServers :: SMPWebPortServers,
     tcpTimeout_ :: Maybe Int,
     logTLSErrors :: Bool
   }
@@ -1076,7 +1078,7 @@ defaultSimpleNetCfg =
       requiredHostMode = False,
       smpProxyMode_ = Nothing,
       smpProxyFallback_ = Nothing,
-      smpWebPort = False,
+      smpWebPortServers = SWPPreset,
       tcpTimeout_ = Nothing,
       logTLSErrors = False
     }

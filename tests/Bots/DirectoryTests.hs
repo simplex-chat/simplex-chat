@@ -299,10 +299,12 @@ testDeleteGroupAdmin ps =
         superUser #> "@SimpleX-Directory /delete 2:security"
         superUser <# "SimpleX-Directory> > /delete 2:security"
         superUser <## "      The group security is deleted from the directory"
-        groupFound bob "privacy"
+        groupFound cath "privacy"
+        listUserGroup bob "privacy" "Privacy"
         groupNotFound bob "security"
+        sendListCommand cath 0
         -- another user can register the group with the same name
-        registerGroupId superUser bob "security" "Security" 4 1
+        registerGroupId superUser bob "security" "Security" 4 2
 
 testSetRole :: HasCallStack => TestParams -> IO ()
 testSetRole ps =
