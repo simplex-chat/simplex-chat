@@ -89,6 +89,7 @@ defaultChatConfig =
       -- to have a different set of servers on the receiving end and on the sending end.
       -- To preserve backward compatibility receiving end should update before the sending.
       shortLinkPresetServers = allPresetServers,
+      presetDomains = [".simplex.im", ".simplexonflux.com"],
       tbqSize = 1024,
       fileChunkSize = 15780, -- do not change
       xftpDescrPartSize = 14000,
@@ -240,12 +241,12 @@ newChatController
       randomServerCfgs name p opDomains rndSrvs =
         toJustOrError name $ L.nonEmpty $ agentServerCfgs p opDomains $ concatMap (pServers p) rndSrvs
       agentServers :: DB.Connection -> ChatConfig -> NonEmpty PresetOperator -> RandomAgentServers -> IO InitialAgentServers
-      agentServers db ChatConfig {presetServers = PresetServers {ntf, netCfg}} presetOps as = do
+      agentServers db ChatConfig {presetServers = PresetServers {ntf, netCfg}, presetDomains} presetOps as = do
         users <- getUsers db
         ops <- getUpdateServerOperators db presetOps (null users)
         let opDomains = operatorDomains $ mapMaybe snd ops
         (smp', xftp') <- unzip <$> mapM (getServers ops opDomains) users
-        pure InitialAgentServers {smp = M.fromList (optServers smp' smpServers), xftp = M.fromList (optServers xftp' xftpServers), ntf, netCfg}
+        pure InitialAgentServers {smp = M.fromList (optServers smp' smpServers), xftp = M.fromList (optServers xftp' xftpServers), ntf, netCfg, presetDomains}
         where
           optServers :: [(UserId, NonEmpty (ServerCfg p))] -> [ProtoServerWithAuth p] -> [(UserId, NonEmpty (ServerCfg p))]
           optServers srvs overrides_ = case L.nonEmpty overrides_ of

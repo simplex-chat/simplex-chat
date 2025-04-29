@@ -280,7 +280,7 @@ struct ChatView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     if chatModel.chatId == nil {
                         ItemsModel.shared.reversedChatItems = []
-                        ItemsModel.shared.chatItemsChangesListener.cleared()
+                        ItemsModel.shared.chatState.clear()
                         chatModel.groupMembers = []
                         chatModel.groupMembersIndexes.removeAll()
                         chatModel.membersLoaded = false

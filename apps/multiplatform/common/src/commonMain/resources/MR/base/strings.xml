@@ -970,6 +970,10 @@
   <string name="network_smp_web_port_section_title">TCP port for messaging</string>
   <string name="network_smp_web_port_toggle">Use web port</string>
   <string name="network_smp_web_port_footer">Use TCP port %1$s when no port is specified.</string>
+  <string name="network_smp_web_port_preset_footer">Use TCP port 443 for preset servers only.</string>
+  <string name="network_smp_web_port_all">All servers</string>
+  <string name="network_smp_web_port_preset">Preset servers</string>
+  <string name="network_smp_web_port_off">Off</string>
   <string name="appearance_settings">Appearance</string>
   <string name="customize_theme_title">Customize theme</string>
   <string name="theme_colors_section_title">INTERFACE COLORS</string>

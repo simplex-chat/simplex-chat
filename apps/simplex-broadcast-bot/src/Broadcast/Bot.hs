@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Broadcast.Bot where
@@ -10,6 +11,7 @@ import Control.Concurrent (forkIO)
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
+import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Text as T
 import Broadcast.Options
 import Simplex.Chat.Bot
@@ -47,9 +49,10 @@ broadcastBot BroadcastBotOpts {publishers, welcomeMessage, prohibitedMessage} _u
             then do
               sendChatCmd cc ListContacts >>= \case
                 CRContactsList _ cts -> void . forkIO $ do
-                  let cts' = filter broadcastTo cts
-                  forM_ cts' $ \ct' -> sendComposedMessage cc ct' Nothing mc
-                  sendReply $ "Forwarded to " <> tshow (length cts') <> " contact(s)"
+                  sendChatCmd cc (SendMessageBroadcast mc) >>= \case
+                    CRBroadcastSent {successes, failures} ->
+                      sendReply $ "Forwarded to " <> tshow successes <> " contact(s), " <> tshow failures <> " errors"
+                    r -> putStrLn $ "Error broadcasting message: " <> show r
                 r -> putStrLn $ "Error getting contacts list: " <> show r
             else sendReply "!1 Message is not supported!"
         | otherwise -> do

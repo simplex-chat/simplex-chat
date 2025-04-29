@@ -1818,7 +1818,7 @@ public struct NetCfg: Codable, Equatable {
     public var sessionMode = TransportSessionMode.user
     public var smpProxyMode: SMPProxyMode = .always
     public var smpProxyFallback: SMPProxyFallback = .allowProtected
-    public var smpWebPort = false
+    public var smpWebPortServers: SMPWebPortServers = .preset
     public var tcpConnectTimeout: Int // microseconds
     public var tcpTimeout: Int // microseconds
     public var tcpTimeoutPerKb: Int // microseconds
@@ -1912,6 +1912,20 @@ public enum SMPProxyFallback: String, Codable, SelectableItem {
     public var id: SMPProxyFallback { self }
 
     public static let values: [SMPProxyFallback] = [.allow, .allowProtected, .prohibit]
+}
+
+public enum SMPWebPortServers: String, Codable, CaseIterable {
+    case all = "all"
+    case preset = "preset"
+    case off = "off"
+    
+    public var text: LocalizedStringKey {
+        switch self {
+        case .all: "All servers"
+        case .preset: "Preset servers"
+        case .off: "Off"
+        }
+    }
 }
 
 public enum OnionHosts: String, Identifiable {
