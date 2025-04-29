@@ -5904,9 +5904,9 @@ Hiba: %@</target>
         <target>Adatvédelmi szabályzat és felhasználási feltételek.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Privacy redefined" xml:space="preserve">
+      <trans-unit id="Privacy redefined" xml:space="preserve" approved="no">
         <source>Privacy redefined</source>
-        <target>Adatvédelem újraértelmezve</target>
+        <target state="translated">Újraértelmezett adatvédelem</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private chats, groups and your contacts are not accessible to server operators." xml:space="preserve">
