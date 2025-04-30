@@ -14,7 +14,13 @@ struct MemberSupportChatView: View {
     var body: some View {
         if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
             // TODO [knocking] open scoped chat
-            ChatView(chat: chat)
+            let im = ItemsModel.shared
+            ChatView(
+                chat: chat,
+                im: im,
+                mergedItems: BoxedValue(MergedItems.create(im, [])),
+                floatingButtonModel: FloatingButtonModel(im: im)
+            )
         }
     }
 }

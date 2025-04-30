@@ -452,7 +452,13 @@ struct ChatListView: View {
     
     @ViewBuilder private func chatView() -> some View {
         if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
-            ChatView(chat: chat)
+            let im = ItemsModel.shared
+            ChatView(
+                chat: chat,
+                im: im,
+                mergedItems: BoxedValue(MergedItems.create(im, [])),
+                floatingButtonModel: FloatingButtonModel(im: im)
+            )
         }
     }
     

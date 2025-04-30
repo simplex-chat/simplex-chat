@@ -43,8 +43,21 @@ private func addTermItem(_ items: inout [TerminalItem], _ item: TerminalItem) {
     items.append(item)
 }
 
+// analogue for SecondaryContextFilter in Kotlin
+enum SecondaryItemsModelFilter {
+    case groupChatScopeContext(groupScopeInfo: GroupChatScopeInfo)
+    case msgContentTagContext(contentTag: MsgContentTag)
+}
+
+// analogue for ChatsContext in Kotlin
 class ItemsModel: ObservableObject {
-    static let shared = ItemsModel()
+    public var secondaryIMFilter: SecondaryItemsModelFilter?
+
+    public init(secondaryIMFilter: SecondaryItemsModelFilter?) {
+        self.secondaryIMFilter = secondaryIMFilter
+    }
+
+    static let shared = ItemsModel(secondaryIMFilter: nil)
     private let publisher = ObservableObjectPublisher()
     private var bag = Set<AnyCancellable>()
     var reversedChatItems: [ChatItem] = [] {
@@ -325,6 +338,9 @@ final class ChatModel: ObservableObject {
     static let shared = ChatModel()
 
     let im = ItemsModel.shared
+
+    // ItemsModel for secondary chat view (such as support scope chat), as opposed to ItemsModel.shared used for primary chat
+    @Published var secondaryIM: ItemsModel? = nil
 
     static var ok: Bool { ChatModel.shared.chatDbStatus == .ok }
 
@@ -1233,9 +1249,4 @@ enum UIRemoteCtrlSessionState {
     case connecting(remoteCtrl_: RemoteCtrlInfo?)
     case pendingConfirmation(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
     case connected(remoteCtrl: RemoteCtrlInfo, sessionCode: String)
-}
-
-enum SecondaryContextFilter {
-    case groupChatScopeContext(groupScopeInfo: GroupChatScopeInfo)
-    case msgContentTagContext(contentTag: MsgContentTag)
 }

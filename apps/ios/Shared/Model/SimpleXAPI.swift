@@ -344,10 +344,24 @@ func loadChat(chatId: ChatId, search: String = "", openAroundItemId: ChatItem.ID
     await MainActor.run {
         if clearItems {
             im.reversedChatItems = []
-            ItemsModel.shared.chatState.clear()
+            im.chatState.clear()
         }
     }
-    await apiLoadMessages(chatId, openAroundItemId != nil ? .around(chatItemId: openAroundItemId!, count: loadItemsPerPage)  : (search == "" ? .initial(count: loadItemsPerPage) : .last(count: loadItemsPerPage)), im.chatState, search, openAroundItemId, { 0...0 })
+    await apiLoadMessages(
+        chatId,
+        im,
+        ( // pagination
+            openAroundItemId != nil
+            ? .around(chatItemId: openAroundItemId!, count: loadItemsPerPage)
+            : (
+                search == ""
+                ? .initial(count: loadItemsPerPage) : .last(count: loadItemsPerPage)
+            )
+        ),
+        search,
+        openAroundItemId,
+        { 0...0 }
+    )
 }
 
 func apiGetChatItemInfo(type: ChatType, id: Int64, scope: GroupChatScope?, itemId: Int64) async throws -> ChatItemInfo {

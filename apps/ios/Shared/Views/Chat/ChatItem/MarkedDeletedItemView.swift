@@ -14,6 +14,7 @@ struct MarkedDeletedItemView: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.revealed) var revealed: Bool
     @ObservedObject var chat: Chat
+    @ObservedObject var im: ItemsModel
     var chatItem: ChatItem
 
     var body: some View {
@@ -35,8 +36,8 @@ struct MarkedDeletedItemView: View {
             var blockedByAdmin = 0
             var deleted = 0
             var moderatedBy: Set<String> = []
-            while i < ItemsModel.shared.reversedChatItems.count,
-                  let ci = .some(ItemsModel.shared.reversedChatItems[i]),
+            while i < im.reversedChatItems.count,
+                  let ci = .some(im.reversedChatItems[i]),
                   ci.mergeCategory == ciCategory,
                   let itemDeleted = ci.meta.itemDeleted {
                 switch itemDeleted {
@@ -85,6 +86,7 @@ struct MarkedDeletedItemView_Previews: PreviewProvider {
         Group {
             MarkedDeletedItemView(
                 chat: Chat.sampleData,
+                im: ItemsModel.shared,
                 chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now))
             ).environment(\.revealed, true)
         }
