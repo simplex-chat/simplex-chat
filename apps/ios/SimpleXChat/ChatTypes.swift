@@ -2399,14 +2399,14 @@ public enum ConnectionEntity: Decodable, Hashable {
 
     public var id: String? {
         switch self {
-        case let .rcvDirectMsgConnection(_, contact):
-            return contact?.id
+        case let .rcvDirectMsgConnection(conn, contact):
+            contact?.id ?? conn.id
         case let .rcvGroupMsgConnection(_, _, groupMember):
-            return groupMember.id
+            groupMember.id
         case let .userContactConnection(_, userContact):
-            return userContact.id
+            userContact.id
         default:
-            return nil
+            nil
         }
     }
 
@@ -2422,15 +2422,30 @@ public enum ConnectionEntity: Decodable, Hashable {
 }
 
 public struct NtfConn: Decodable, Hashable {
-    public var user_: User?
-    public var connEntity_: ConnectionEntity?
+    public var user: User
+    public var agentConnId: String
+    public var connEntity: ConnectionEntity
     public var expectedMsg_: NtfMsgInfo?
-
 }
 
 public struct NtfMsgInfo: Decodable, Hashable {
     public var msgId: String
     public var msgTs: Date
+}
+
+// used in apiGetConnNtfMessages
+public struct ConnMsgReq {
+    public var msgConnId: String
+    public var msgTs: Date // SystemTime encodes as a number, should be taken from NtfMsgInfo
+
+    public init(msgConnId: String, msgTs: Date) {
+        self.msgConnId = msgConnId
+        self.msgTs = msgTs
+    }
+
+    public var cmdString: String {
+        "\(msgConnId):\(msgTs)"
+    }
 }
 
 public struct NtfMsgAckInfo: Decodable, Hashable {

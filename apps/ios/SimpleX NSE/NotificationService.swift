@@ -143,8 +143,7 @@ class NSEThreads {
 }
 
 struct ExpectedMessage {
-    var ntfConn: UserNtfConn
-    var receiveConnId: String?
+    var ntfConn: NtfConn
     var expectedMsgId: String?
     var allowedGetNextAttempts: Int
     var msgBestAttemptNtf: NSENotificationData?
@@ -152,6 +151,14 @@ struct ExpectedMessage {
     var shouldProcessNtf: Bool
     var startedProcessingNewMsgs: Bool
     var semaphore: DispatchSemaphore
+    
+    var connMsgReq: ConnMsgReq? {
+        if let msgTs = ntfConn.expectedMsg_?.msgTs {
+            ConnMsgReq(msgConnId: ntfConn.agentConnId, msgTs: msgTs)
+        } else {
+            nil
+        }
+    }
 }
 
 // Notification service extension creates a new instance of the class and calls didReceive for each notification.
@@ -169,7 +176,7 @@ class NotificationService: UNNotificationServiceExtension {
     var expectedMessages: Dictionary<String, ExpectedMessage> = [:] // key is receiveEntityId
     var appSubscriber: AppSubscriber?
     var returnedSuspension = false
-    
+
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("DEBUGGING: NotificationService.didReceive")
         let receivedNtf = if let ntf_ = request.content.mutableCopy() as? UNMutableNotificationContent { ntf_ } else { UNMutableNotificationContent() }
@@ -226,11 +233,11 @@ class NotificationService: UNNotificationServiceExtension {
     }
 
     private func setExpirationTimer() -> Void {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
             self.deliverBestAttemptNtf(urgent: true)
         }
     }
-    
+
     private func ntfRequestData(_ request: UNNotificationRequest) -> (nonce: String, encNtfInfo: String)? {
         if let ntfData = request.content.userInfo["notificationData"] as? [AnyHashable : Any],
            let nonce = ntfData["nonce"] as? String,
@@ -256,13 +263,12 @@ class NotificationService: UNNotificationServiceExtension {
             if case .ok = dbStatus,
                let ntfConns = apiGetNtfConns(nonce: nrData.nonce, encNtfInfo: nrData.encNtfInfo) {
                 logger.debug("NotificationService: receiveNtfMessages: apiGetNtfConns ntfConns count = \(ntfConns.count)")
-//                logger.debug("NotificationService: receiveNtfMessages: apiGetNtfConns ntfConns \(String(describing: ntfConns.map { $0.connEntity_?.id }))")
-
+//                logger.debug("NotificationService: receiveNtfMessages: apiGetNtfConns ntfConns \(String(describing: ntfConns.map { $0.connEntity.id }))")
                 for ntfConn in ntfConns {
                     addExpectedMessage(ntfConn: ntfConn)
                 }
 
-                let connIdsToGet = expectedMessages.compactMap { (id, _) in
+                let connMsgReqs = expectedMessages.compactMap { (id, _) in
                     let started = NSEThreads.queue.sync {
                         let canStart = checkCanStart(id)
                         if let t = threadId { logger.debug("NotificationService thread \(t, privacy: .private): receiveNtfMessages: can start: \(canStart)") }
@@ -274,7 +280,7 @@ class NotificationService: UNNotificationServiceExtension {
                         return canStart
                     }
                     if started {
-                        return expectedMessages[id]?.receiveConnId
+                        return expectedMessages[id]?.connMsgReq
                     } else {
                         if let t = threadId { logger.debug("NotificationService thread \(t, privacy: .private): receiveNtfMessages: entity \(id, privacy: .private) waiting on semaphore") }
                         expectedMessages[id]?.semaphore.wait()
@@ -285,16 +291,16 @@ class NotificationService: UNNotificationServiceExtension {
                                 expectedMessages[id]?.startedProcessingNewMsgs = true
                                 expectedMessages[id]?.shouldProcessNtf = true
                             }
-                            if let connId = expectedMessages[id]?.receiveConnId {
-                                let _ = getConnNtfMessage(connId: connId)
+                            if let connMsgReq = expectedMessages[id]?.connMsgReq {
+                                let _ = getConnNtfMessage(connMsgReq: connMsgReq)
                             }
                         }
                         return nil
                     }
                 }
 
-                if !connIdsToGet.isEmpty {
-                    if let r = apiGetConnNtfMessages(connIds: connIdsToGet) {
+                if !connMsgReqs.isEmpty {
+                    if let r = apiGetConnNtfMessages(connMsgReqs: connMsgReqs) {
                         logger.debug("NotificationService: receiveNtfMessages: apiGetConnNtfMessages count = \(r.count)")
                     }
                     return
@@ -306,18 +312,16 @@ class NotificationService: UNNotificationServiceExtension {
         deliverBestAttemptNtf()
     }
 
-    func addExpectedMessage(ntfConn: UserNtfConn) {
-        if let connEntity = ntfConn.connEntity_,
-           let receiveEntityId = connEntity.id, ntfConn.expectedMsg_ != nil {
-            let expectedMsgId = ntfConn.expectedMsg_?.msgId
+    func addExpectedMessage(ntfConn: NtfConn) {
+        let expectedMsgId = ntfConn.expectedMsg_?.msgId
+        if let receiveEntityId = ntfConn.connEntity.id {
             logger.debug("NotificationService: addExpectedMessage: expectedMsgId = \(expectedMsgId ?? "nil", privacy: .private)")
             expectedMessages[receiveEntityId] = ExpectedMessage(
                 ntfConn: ntfConn,
-                receiveConnId: connEntity.conn.agentConnId,
                 expectedMsgId: expectedMsgId,
                 allowedGetNextAttempts: 3,
-                msgBestAttemptNtf: ntfConn.defaultBestAttemptNtf,
-                ready: false,
+                msgBestAttemptNtf: defaultBestAttemptNtf(ntfConn),
+                ready: ntfConn.expectedMsg_ == nil, // show defaultBestAttemptNtf(ntfConn) if there is no expected message
                 shouldProcessNtf: false,
                 startedProcessingNewMsgs: false,
                 semaphore: DispatchSemaphore(value: 0)
@@ -371,10 +375,10 @@ class NotificationService: UNNotificationServiceExtension {
                 NSEThreads.shared.droppedNotifications.append((id, ntf))
                 if signalReady { entityReady(id) }
                 self.deliverBestAttemptNtf()
-            } else if (expectedMessages[id]?.allowedGetNextAttempts ?? 0) > 0, let receiveConnId = expectedMessages[id]?.receiveConnId {
+            } else if (expectedMessages[id]?.allowedGetNextAttempts ?? 0) > 0, let connMsgReq = expectedMessages[id]?.connMsgReq {
                 logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unexpected msgInfo, get next message")
                 expectedMessages[id]?.allowedGetNextAttempts -= 1
-                if let receivedMsg = getConnNtfMessage(connId: receiveConnId) {
+                if let receivedMsg = getConnNtfMessage(connMsgReq: connMsgReq) {
                     logger.debug("NotificationService processNtf, on getConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .private), receivedMsg msgId = \(receivedMsg.msgId, privacy: .private)")
                 } else {
                     logger.debug("NotificationService processNtf, on getConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .private): no next message, deliver best attempt")
@@ -521,7 +525,9 @@ class NotificationService: UNNotificationServiceExtension {
                   let callNtf = callNtfKV.value.msgBestAttemptNtf {
             return useCallKit() ? .callkit(callInv) : .nse(callNtf.notificationContent(badgeCount))
         } else {
+            logger.debug("NotificationService prepareNotification \(String(describing: self.expectedMessages.map { $0.key }))")
             let ntfEvents = expectedMessages.compactMap { $0.value.msgBestAttemptNtf?.notificationEvent }
+            logger.debug("NotificationService prepareNotification \(String(describing: ntfEvents.map { $0.description }))")
             if ntfEvents.isEmpty {
                 return .empty
             } else if let ntfEvent = ntfEvents.count == 1 ? ntfEvents.first : nil {
@@ -918,7 +924,7 @@ func apiSetEncryptLocalFiles(_ enable: Bool) throws {
     throw r
 }
 
-func apiGetNtfConns(nonce: String, encNtfInfo: String) -> [UserNtfConn]? {
+func apiGetNtfConns(nonce: String, encNtfInfo: String) -> [NtfConn]? {
     guard apiGetActiveUser() != nil else {
         logger.debug("no active user")
         return nil
@@ -926,7 +932,7 @@ func apiGetNtfConns(nonce: String, encNtfInfo: String) -> [UserNtfConn]? {
     let r = sendSimpleXCmd(.apiGetNtfConns(nonce: nonce, encNtfInfo: encNtfInfo))
     if case let .ntfConns(ntfConns) = r {
         logger.debug("apiGetNtfConns response ntfConns: \(ntfConns.count)")
-        return ntfConns.compactMap { toUserNtfConn($0) }
+        return ntfConns
     } else if case let .chatCmdError(_, error) = r {
         logger.debug("apiGetNtfMessage error response: \(String.init(describing: error))")
     } else {
@@ -935,20 +941,12 @@ func apiGetNtfConns(nonce: String, encNtfInfo: String) -> [UserNtfConn]? {
     return nil
 }
 
-func toUserNtfConn(_ ntfConn: NtfConn) -> UserNtfConn? {
-    if let user = ntfConn.user_ {
-        return UserNtfConn(user: user, connEntity_: ntfConn.connEntity_, expectedMsg_: ntfConn.expectedMsg_)
-    } else {
-        return nil
-    }
-}
-
-func apiGetConnNtfMessages(connIds: [String]) -> [NtfMsgInfo?]? {
+func apiGetConnNtfMessages(connMsgReqs: [ConnMsgReq]) -> [NtfMsgInfo?]? {
     guard apiGetActiveUser() != nil else {
         logger.debug("no active user")
         return nil
     }
-    let r = sendSimpleXCmd(.apiGetConnNtfMessages(connIds: connIds))
+    let r = sendSimpleXCmd(.apiGetConnNtfMessages(connMsgReqs: connMsgReqs))
     if case let .connNtfMessages(receivedMsgs) = r {
         logger.debug("apiGetConnNtfMessages response receivedMsgs: \(receivedMsgs.count)")
         return receivedMsgs
@@ -957,8 +955,8 @@ func apiGetConnNtfMessages(connIds: [String]) -> [NtfMsgInfo?]? {
     return nil
 }
 
-func getConnNtfMessage(connId: String) -> NtfMsgInfo? {
-    let r_ = apiGetConnNtfMessages(connIds: [connId])
+func getConnNtfMessage(connMsgReq: ConnMsgReq) -> NtfMsgInfo? {
+    let r_ = apiGetConnNtfMessages(connMsgReqs: [connMsgReq])
     if let r = r_, let receivedMsg = r.count == 1 ? r.first : nil {
         return receivedMsg
     }
@@ -999,33 +997,28 @@ func setNetworkConfig(_ cfg: NetCfg) throws {
     throw r
 }
 
-struct UserNtfConn {
-    var user: User
-    var connEntity_: ConnectionEntity?
-    var expectedMsg_: NtfMsgInfo?
-
-    var defaultBestAttemptNtf: NSENotificationData {
-        return if !user.showNotifications {
-            .noNtf
-        } else if let connEntity = connEntity_ {
-            switch connEntity {
-            case let .rcvDirectMsgConnection(_, contact):
-                contact?.chatSettings.enableNtfs == .all
-                ? .connectionEvent(user, connEntity)
-                : .noNtf
-            case let .rcvGroupMsgConnection(_, groupInfo, _):
-                groupInfo.chatSettings.enableNtfs == .all
-                ? .connectionEvent(user, connEntity)
-                : .noNtf
-            case .sndFileConnection: .noNtf
-            case .rcvFileConnection: .noNtf
-            case let .userContactConnection(_, userContact):
-                userContact.groupId == nil
-                ? .connectionEvent(user, connEntity)
-                : .noNtf
-            }
-        } else {
-            .noNtf
+func defaultBestAttemptNtf(_ ntfConn: NtfConn) -> NSENotificationData {
+    let user = ntfConn.user
+    let connEntity = ntfConn.connEntity
+    return if !user.showNotifications {
+        .noNtf
+    } else {
+        switch ntfConn.connEntity {
+        case let .rcvDirectMsgConnection(_, contact):
+            contact?.chatSettings.enableNtfs == .all
+            ? .connectionEvent(user, connEntity)
+            : .noNtf
+        case let .rcvGroupMsgConnection(_, groupInfo, _):
+            groupInfo.chatSettings.enableNtfs == .all
+            ? .connectionEvent(user, connEntity)
+            : .noNtf
+        case .sndFileConnection: .noNtf
+        case .rcvFileConnection: .noNtf
+        case let .userContactConnection(_, userContact):
+            userContact.groupId == nil
+            ? .connectionEvent(user, connEntity)
+            : .noNtf
         }
     }
 }
+
