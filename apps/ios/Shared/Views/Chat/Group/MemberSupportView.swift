@@ -33,7 +33,11 @@ struct MemberSupportView: View {
                 ForEach(filteredMembersWithChats) { memberWithChat in
                     ZStack {
                         NavigationLink {
-                            MemberSupportChatView()
+                            let scopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: memberWithChat.wrapped)
+                            MemberSupportChatView(
+                                chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()),
+                                im: ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: scopeInfo))
+                            )
                         } label: {
                             EmptyView()
                         }

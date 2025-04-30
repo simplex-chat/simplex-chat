@@ -1647,7 +1647,7 @@ func sameChatScope(_ scope1: GroupChatScope, _ scope2: GroupChatScope) -> Bool {
 public enum GroupChatScopeInfo: Decodable, Hashable {
     case memberSupport(groupMember_: GroupMember?)
 
-    func toChatScope() -> GroupChatScope {
+    public func toChatScope() -> GroupChatScope {
         switch self {
         case let .memberSupport(groupMember_):
             if let groupMember = groupMember_ {

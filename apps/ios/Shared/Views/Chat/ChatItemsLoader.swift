@@ -22,7 +22,7 @@ func apiLoadMessages(
     let chat: Chat
     let navInfo: NavigationInfo
     do {
-        (chat, navInfo) = try await apiGetChat(chatId: chatId, scope: nil, contentTag: nil, pagination: pagination, search: search)
+        (chat, navInfo) = try await apiGetChat(chatId: chatId, scope: im.groupScopeInfo?.toChatScope(), contentTag: im.contentTag, pagination: pagination, search: search)
     } catch let error {
         logger.error("apiLoadMessages error: \(responseError(error))")
         return

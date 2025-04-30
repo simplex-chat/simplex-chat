@@ -7,24 +7,39 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct MemberSupportChatView: View {
     @EnvironmentObject var chatModel: ChatModel
+    var chat: Chat
+    var im: ItemsModel
 
     var body: some View {
-        if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
-            // TODO [knocking] open scoped chat
-            let im = ItemsModel.shared
-            ChatView(
-                chat: chat,
-                im: im,
-                mergedItems: BoxedValue(MergedItems.create(im, [])),
-                floatingButtonModel: FloatingButtonModel(im: im)
-            )
+        ChatView(
+            chat: chat,
+            im: im,
+            mergedItems: BoxedValue(MergedItems.create(im, [])),
+            floatingButtonModel: FloatingButtonModel(im: im)
+        )
+        .onAppear {
+            Task {
+                await MainActor.run {
+                    // TODO [knocking] clear chatModel.secondaryIM on close
+                    chatModel.secondaryIM = im
+                }
+                await loadChat(chat: chat, im: im)
+            }
         }
     }
 }
 
 #Preview {
-    MemberSupportChatView()
+    MemberSupportChatView(
+        chat: Chat(
+            chatInfo: .group(groupInfo: GroupInfo.sampleData, groupChatScope: .memberSupport(groupMember_: GroupMember.sampleData)),
+            chatItems: [],
+            chatStats: ChatStats()
+        ),
+        im: ItemsModel.shared
+    )
 }

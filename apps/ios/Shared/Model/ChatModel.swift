@@ -128,6 +128,22 @@ class ItemsModel: ObservableObject {
             }
         }
     }
+
+    public var contentTag: MsgContentTag? {
+        switch secondaryIMFilter {
+        case nil: nil
+        case .groupChatScopeContext: nil
+        case let .msgContentTagContext(contentTag): contentTag
+        }
+    }
+
+    public var groupScopeInfo: GroupChatScopeInfo? {
+        switch secondaryIMFilter {
+        case nil: nil
+        case let .groupChatScopeContext(scopeInfo): scopeInfo
+        case .msgContentTagContext: nil
+        }
+    }
 }
 
 class ChatTagsModel: ObservableObject {

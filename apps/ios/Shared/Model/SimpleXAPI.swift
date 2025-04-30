@@ -339,7 +339,6 @@ func loadChat(chat: Chat, im: ItemsModel, search: String = "", clearItems: Bool 
 }
 
 func loadChat(chatId: ChatId, im: ItemsModel, search: String = "", openAroundItemId: ChatItem.ID? = nil, clearItems: Bool = true) async {
-    let m = ChatModel.shared
     await MainActor.run {
         if clearItems {
             im.reversedChatItems = []
