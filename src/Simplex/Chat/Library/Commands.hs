@@ -1294,26 +1294,17 @@ processChatCommand' vr = \case
     ntfInfos <- withAgent $ \a -> getNotificationConns a nonce encNtfInfo
     (errs, ntfMsgs) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (getMsgConn db) (L.toList ntfInfos))
     unless (null errs) $ toView $ CRChatErrors (Just user) errs
-    pure $ CRNtfConns ntfMsgs
+    pure $ CRNtfConns $ catMaybes ntfMsgs
     where
-      getMsgConn :: DB.Connection -> NotificationInfo -> IO NtfConn
+      getMsgConn :: DB.Connection -> NotificationInfo -> IO (Maybe NtfConn)
       getMsgConn db NotificationInfo {ntfConnId, ntfMsgMeta = nMsgMeta} = do
         let agentConnId = AgentConnId ntfConnId
-        user_ <- getUserByAConnId db agentConnId
-        connEntity_ <-
-          pure user_ $>>= \user ->
-            eitherToMaybe <$> runExceptT (getConnectionEntity db vr user agentConnId)
-        pure $
-          NtfConn
-            { user_,
-              connEntity_,
-              -- Decrypted ntf meta of the expected message (the one notification was sent for)
-              expectedMsg_ = expectedMsgInfo <$> nMsgMeta
-            }
-  ApiGetConnNtfMessages connIds -> withUser $ \_ -> do
-    let acIds = L.map (\(AgentConnId acId) -> acId) connIds
-    msgs <- lift $ withAgent' $ \a -> getConnectionMessages a acIds
-    let ntfMsgs = L.map (\msg -> receivedMsgInfo <$> msg) msgs
+            mkNtfConn user connEntity = NtfConn {user, agentConnId, connEntity, expectedMsg_ = expectedMsgInfo <$> nMsgMeta}
+        getUserByAConnId db agentConnId
+          $>>= \user -> fmap (mkNtfConn user) . eitherToMaybe <$> runExceptT (getConnectionEntity db vr user agentConnId)
+  APIGetConnNtfMessages connMsgs -> withUser $ \_ -> do
+    msgs <- lift $ withAgent' (`getConnectionMessages` connMsgs)
+    let ntfMsgs = L.map (receivedMsgInfo <$>) msgs
     pure $ CRConnNtfMessages ntfMsgs
   GetUserProtoServers (AProtocolType p) -> withUser $ \user -> withServerProtocol p $ do
     srvs <- withFastStore (`getUserServers` user)
@@ -4005,7 +3996,7 @@ chatCommandP =
       "/_ntf check " *> (APICheckToken <$> strP),
       "/_ntf delete " *> (APIDeleteToken <$> strP),
       "/_ntf conns " *> (APIGetNtfConns <$> strP <* A.space <*> strP),
-      "/_ntf conn messages " *> (ApiGetConnNtfMessages <$> strP),
+      "/_ntf conn messages " *> (APIGetConnNtfMessages <$> connMsgsP),
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_join #" *> (APIJoinGroup <$> A.decimal <*> pure MFAll), -- needs to be changed to support in UI
       "/_accept member #" *> (APIAcceptMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
@@ -4320,6 +4311,11 @@ chatCommandP =
       cfArgs <- optional $ CFArgs <$> (" key=" *> strP <* A.space) <*> (" nonce=" *> strP)
       path <- filePath
       pure $ CryptoFile path cfArgs
+    connMsgsP = L.fromList <$> connMsgP `A.sepBy1'` A.char ','
+    connMsgP = do
+      AgentConnId msgConnId <- strP <* A.char ':'
+      ts <- strP
+      pure ConnMsgReq {msgConnId, msgTs = Just ts}
     memberRole =
       A.choice
         [ " owner" $> GROwner,
