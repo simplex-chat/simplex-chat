@@ -638,7 +638,7 @@ struct ChatView: View {
 
     private func searchTextChanged(_ s: String) {
         Task {
-            await loadChat(chat: chat, search: s)
+            await loadChat(chat: chat, im: im, search: s)
             mergedItems.boxedValue = MergedItems.create(im, revealedItems)
             await MainActor.run {
                 scrollView.updateItems(mergedItems.boxedValue.items)
@@ -757,7 +757,7 @@ struct ChatView: View {
             Task {
                 if !im.chatState.splits.isEmpty {
                     await MainActor.run { loadingMoreItems = true }
-                    await loadChat(chatId: chat.id, openAroundItemId: nil, clearItems: false)
+                    await loadChat(chatId: chat.id, im: im, openAroundItemId: nil, clearItems: false)
                     await MainActor.run { reloadItems() }
                     if let index = listState.items.lastIndex(where: { $0.hasUnread() }) {
                         await MainActor.run { animatedScrollingInProgress = true }

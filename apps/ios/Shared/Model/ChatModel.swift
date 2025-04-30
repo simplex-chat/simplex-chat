@@ -103,7 +103,7 @@ class ItemsModel: ObservableObject {
         loadChatTask = Task {
             await MainActor.run { self.isLoading = true }
 //            try? await Task.sleep(nanoseconds: 1000_000000)
-            await loadChat(chatId: chatId)
+            await loadChat(chatId: chatId, im: self)
             if !Task.isCancelled {
                 await MainActor.run {
                     self.isLoading = false
@@ -118,7 +118,7 @@ class ItemsModel: ObservableObject {
         loadChatTask?.cancel()
         loadChatTask = Task {
             //            try? await Task.sleep(nanoseconds: 1000_000000)
-            await loadChat(chatId: chatId, openAroundItemId: openAroundItemId, clearItems: openAroundItemId == nil)
+            await loadChat(chatId: chatId, im: self, openAroundItemId: openAroundItemId, clearItems: openAroundItemId == nil)
             if !Task.isCancelled {
                 await MainActor.run {
                     if openAroundItemId == nil {

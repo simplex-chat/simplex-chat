@@ -334,13 +334,12 @@ func apiGetChat(chatId: ChatId, scope: GroupChatScope?, contentTag: MsgContentTa
     throw r
 }
 
-func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async {
-    await loadChat(chatId: chat.chatInfo.id, search: search, clearItems: clearItems)
+func loadChat(chat: Chat, im: ItemsModel, search: String = "", clearItems: Bool = true) async {
+    await loadChat(chatId: chat.chatInfo.id, im: im, search: search, clearItems: clearItems)
 }
 
-func loadChat(chatId: ChatId, search: String = "", openAroundItemId: ChatItem.ID? = nil, clearItems: Bool = true) async {
+func loadChat(chatId: ChatId, im: ItemsModel, search: String = "", openAroundItemId: ChatItem.ID? = nil, clearItems: Bool = true) async {
     let m = ChatModel.shared
-    let im = ItemsModel.shared
     await MainActor.run {
         if clearItems {
             im.reversedChatItems = []

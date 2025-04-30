@@ -11,7 +11,6 @@ import SwiftUI
 
 let TRIM_KEEP_COUNT = 200
 
-// TODO [knocking] this function should have chat context as parameter, pass scope and contentTag to apiGetChat
 func apiLoadMessages(
     _ chatId: ChatId,
     _ im: ItemsModel,
