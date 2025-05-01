@@ -301,7 +301,7 @@ class NotificationService: UNNotificationServiceExtension {
 
                 if !connMsgReqs.isEmpty {
                     if let r = apiGetConnNtfMessages(connMsgReqs: connMsgReqs) {
-                        logger.debug("NotificationService: receiveNtfMessages: apiGetConnNtfMessages count = \(r.count)")
+                        logger.debug("NotificationService: receiveNtfMessages: apiGetConnNtfMessages count = \(r.count), expecting messages \(r.count { $0 != nil })")
                     }
                     return
                 }
@@ -945,7 +945,7 @@ func apiGetConnNtfMessages(connMsgReqs: [ConnMsgReq]) -> [NtfMsgInfo?]? {
     logger.debug("apiGetConnNtfMessages command: \(ChatCommand.apiGetConnNtfMessages(connMsgReqs: connMsgReqs).cmdString)")
     let r = sendSimpleXCmd(.apiGetConnNtfMessages(connMsgReqs: connMsgReqs))
     if case let .connNtfMessages(receivedMsgs) = r {
-        logger.debug("apiGetConnNtfMessages response receivedMsgs: \(receivedMsgs.count)")
+        logger.debug("apiGetConnNtfMessages response receivedMsgs: total \(receivedMsgs.count), expecting messages \(receivedMsgs.count { $0 != nil })")
         return receivedMsgs
     }
     logger.debug("apiGetConnNtfMessages error: \(responseError(r))")
