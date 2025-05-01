@@ -54,24 +54,13 @@ struct MemberSupportView: View {
         var body: some View {
             ZStack {
                 Button {
-//                    Task {
-//                        await MainActor.run {
-//                            // TODO [knocking] clear chatModel.secondaryIM on close
-//                            chatModel.secondaryIM = im
-//                        }
-                        im.loadOpenChat(chat.id)
-                        memberSupportChatNavLinkActive = true
-//                    }
+                    im.loadOpenChat(chat.id)
+                    memberSupportChatNavLinkActive = true
                 } label: {
                     SupportChatRowView(groupMember: memberWithChat, groupInfo: groupInfo)
                 }
 
                 NavigationLink(isActive: $memberSupportChatNavLinkActive) {
-//                    let scopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: memberWithChat.wrapped)
-//                    MemberSupportChatView(
-//                        chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()),
-//                        im: ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: scopeInfo))
-//                    )
                     MemberSupportChatView(
                         chat: chat,
                         im: im
@@ -84,22 +73,6 @@ struct MemberSupportView: View {
             }
         }
     }
-
-//    func memberSupportChatLink(_ memberWithChat: GMember) -> some View {
-//        ZStack {
-//            NavigationLink {
-//                let scopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: memberWithChat.wrapped)
-//                MemberSupportChatView(
-//                    chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()),
-//                    im: ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: scopeInfo))
-//                )
-//            } label: {
-//                EmptyView()
-//            }
-//            .opacity(0)
-//            SupportChatRowView(groupMember: memberWithChat, groupInfo: groupInfo)
-//        }
-//    }
 
     func sortedMembersWithChats() -> [GMember] {
         chatModel.groupMembers

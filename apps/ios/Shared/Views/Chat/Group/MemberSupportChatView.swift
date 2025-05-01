@@ -21,15 +21,9 @@ struct MemberSupportChatView: View {
             mergedItems: BoxedValue(MergedItems.create(im, [])),
             floatingButtonModel: FloatingButtonModel(im: im)
         )
-//        .onAppear {
-//            Task {
-//                await MainActor.run {
-//                    // TODO [knocking] clear chatModel.secondaryIM on close
-//                    chatModel.secondaryIM = im
-//                }
-//                im.loadOpenChat(chat.id)
-//            }
-//        }
+        .onDisappear {
+            chatModel.secondaryIM = nil
+        }
     }
 }
 

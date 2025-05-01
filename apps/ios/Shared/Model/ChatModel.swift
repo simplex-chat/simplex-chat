@@ -94,7 +94,6 @@ class ItemsModel: ObservableObject {
                 await MainActor.run {
                     ChatModel.shared.chatId = chatId
                     if secondaryIMFilter != nil {
-                        // TODO [knocking] clear chatModel.secondaryIM on close
                         ChatModel.shared.secondaryIM = self
                     }
                     willNavigate()
