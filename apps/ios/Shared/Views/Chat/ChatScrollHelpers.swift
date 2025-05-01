@@ -10,7 +10,6 @@ import SwiftUI
 import SimpleXChat
 
 func loadLastItems(_ loadingMoreItems: Binding<Bool>, loadingBottomItems: Binding<Bool>, _ chat: Chat, _ im: ItemsModel) async {
-    logger.error("##### KNOCKING loadLastItems")
     await MainActor.run {
         loadingMoreItems.wrappedValue = true
         loadingBottomItems.wrappedValue = true
@@ -23,7 +22,6 @@ func loadLastItems(_ loadingMoreItems: Binding<Bool>, loadingBottomItems: Bindin
         }
         return
     }
-    logger.error("##### KNOCKING loadLastItems -> apiLoadMessages")
     await apiLoadMessages(chat.chatInfo.id, im, ChatPagination.last(count: 50))
     await MainActor.run {
         loadingMoreItems.wrappedValue = false
@@ -40,19 +38,13 @@ func preloadIfNeeded(
     loadItems: @escaping (Bool, ChatPagination) async -> Bool,
     loadLastItems: @escaping () async -> Void
 ) {
-    logger.error("##### KNOCKING preloadIfNeeded 1")
     let state = im.preloadState
-    logger.error("##### KNOCKING preloadIfNeeded 1 listState.isScrolling = \(listState.isScrolling)")
-    logger.error("##### KNOCKING preloadIfNeeded 1 listState.isAnimatedScrolling = \(listState.isAnimatedScrolling)")
-    logger.error("##### KNOCKING preloadIfNeeded 1 state.preloading = \(state.preloading)")
-    logger.error("##### KNOCKING preloadIfNeeded 1 listState.totalItemsCount = \(listState.totalItemsCount)")
     guard !listState.isScrolling && !listState.isAnimatedScrolling,
           !state.preloading,
           listState.totalItemsCount > 0
     else {
         return
     }
-    logger.error("##### KNOCKING preloadIfNeeded 2")
     if state.prevFirstVisible != listState.firstVisibleItemId as! Int64 || state.prevItemsCount != mergedItems.boxedValue.indexInParentItems.count {
         state.preloading = true
         let allowLoadMore = allowLoadMoreItems.wrappedValue
@@ -60,7 +52,6 @@ func preloadIfNeeded(
             defer { state.preloading = false }
             var triedToLoad = true
             await preloadItems(im, mergedItems.boxedValue, allowLoadMore, listState, ignoreLoadingRequests) { pagination in
-                logger.error("##### KNOCKING preloadIfNeeded 3 loadItems")
                 triedToLoad = await loadItems(false, pagination)
                 return triedToLoad
             }
@@ -71,7 +62,6 @@ func preloadIfNeeded(
             // it's important to ask last items when the view is fully covered with items. Otherwise, visible items from one
             // split will be merged with last items and position of scroll will change unexpectedly.
             if listState.itemsCanCoverScreen && !im.lastItemsLoaded {
-                logger.error("##### KNOCKING preloadIfNeeded 4 loadLastItems 1")
                 await loadLastItems()
             }
         }
@@ -79,7 +69,6 @@ func preloadIfNeeded(
         state.preloading = true
         Task {
             defer { state.preloading = false }
-            logger.error("##### KNOCKING preloadIfNeeded 5 loadLastItems 2")
             await loadLastItems()
         }
     }

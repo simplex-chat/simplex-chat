@@ -159,7 +159,6 @@ struct SimpleXApp: App {
             if let id = chatModel.chatId,
                let chat = chatModel.getChat(id),
                !NtfManager.shared.navigatingToChat {
-                logger.error("##### KNOCKING updateChats -> loadChat")
                 Task { await loadChat(chat: chat, im: ItemsModel.shared, clearItems: false) }
             }
             if let ncr = chatModel.ntfContactRequest {

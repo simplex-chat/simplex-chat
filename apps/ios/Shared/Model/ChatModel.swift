@@ -104,7 +104,6 @@ class ItemsModel: ObservableObject {
         loadChatTask = Task {
             await MainActor.run { self.isLoading = true }
 //            try? await Task.sleep(nanoseconds: 1000_000000)
-            logger.error("##### KNOCKING loadOpenChat -> loadChat")
             await loadChat(chatId: chatId, im: self)
             if !Task.isCancelled {
                 await MainActor.run {
@@ -120,7 +119,6 @@ class ItemsModel: ObservableObject {
         loadChatTask?.cancel()
         loadChatTask = Task {
             //            try? await Task.sleep(nanoseconds: 1000_000000)
-            logger.error("##### KNOCKING loadOpenChatNoWait -> loadChat")
             await loadChat(chatId: chatId, im: self, openAroundItemId: openAroundItemId, clearItems: openAroundItemId == nil)
             if !Task.isCancelled {
                 await MainActor.run {

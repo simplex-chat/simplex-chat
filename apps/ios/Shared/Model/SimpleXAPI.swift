@@ -345,7 +345,6 @@ func loadChat(chatId: ChatId, im: ItemsModel, search: String = "", openAroundIte
             im.chatState.clear()
         }
     }
-    logger.error("##### KNOCKING loadChat -> apiLoadMessages")
     await apiLoadMessages(
         chatId,
         im,

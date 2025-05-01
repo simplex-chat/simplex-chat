@@ -18,7 +18,6 @@ struct NavLinkPlain<Label: View>: View {
     var body: some View {
         ZStack {
             Button("") {
-                logger.error("##### KNOCKING NavLinkPlain -> loadOpenChat")
                 ItemsModel.shared.loadOpenChat(chatId)
             }
             .disabled(disabled)
