@@ -303,7 +303,8 @@ class ShareModel: ObservableObject {
                     }
                 }
             }
-            switch recvSimpleXMsg(messageTimeout: 1_000_000) {
+            let r: SEChatResponse? = recvSimpleXMsg(messageTimeout: 1_000_000)
+            switch r {
             case let .sndFileProgressXFTP(_, ci, _, sentSize, totalSize):
                 guard isMessage(for: ci) else { continue }
                 networkTimeout = CFAbsoluteTimeGetCurrent()

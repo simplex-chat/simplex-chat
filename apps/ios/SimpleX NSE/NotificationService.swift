@@ -789,9 +789,9 @@ func receiveMessages() async {
     }
 }
 
-func chatRecvMsg() async -> ChatResponse? {
+func chatRecvMsg() async -> NSEChatResponse? {
     await withCheckedContinuation { cont in
-        let resp = recvSimpleXMsg()
+        let resp: NSEChatResponse? = recvSimpleXMsg()
         cont.resume(returning: resp)
     }
 }
@@ -799,7 +799,7 @@ func chatRecvMsg() async -> ChatResponse? {
 private let isInChina = SKStorefront().countryCode == "CHN"
 private func useCallKit() -> Bool { !isInChina && callKitEnabledGroupDefault.get() }
 
-func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotificationData)? {
+func receivedMsgNtf(_ res: NSEChatResponse) async -> (String, NSENotificationData)? {
     logger.debug("NotificationService receivedMsgNtf: \(res.responseType)")
     switch res {
     case let .contactConnected(user, contact, _):
@@ -868,7 +868,7 @@ func updateNetCfg() {
 }
 
 func apiGetActiveUser() -> User? {
-    let r = sendSimpleXCmd(.showActiveUser)
+    let r: NSEChatResponse = sendSimpleXCmd(NSEChatCommand.showActiveUser)
     logger.debug("apiGetActiveUser sendSimpleXCmd response: \(r.responseType)")
     switch r {
     case let .activeUser(user): return user
@@ -885,7 +885,7 @@ func apiGetActiveUser() -> User? {
 }
 
 func apiStartChat() throws -> Bool {
-    let r = sendSimpleXCmd(.startChat(mainApp: false, enableSndFiles: false))
+    let r: NSEChatResponse = sendSimpleXCmd(NSEChatCommand.startChat(mainApp: false, enableSndFiles: false))
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false
@@ -895,27 +895,27 @@ func apiStartChat() throws -> Bool {
 
 func apiActivateChat() -> Bool {
     chatReopenStore()
-    let r = sendSimpleXCmd(.apiActivateChat(restoreChat: false))
+    let r: NSEChatResponse = sendSimpleXCmd(NSEChatCommand.apiActivateChat(restoreChat: false))
     if case .cmdOk = r { return true }
     logger.error("NotificationService apiActivateChat error: \(String(describing: r))")
     return false
 }
 
 func apiSuspendChat(timeoutMicroseconds: Int) -> Bool {
-    let r = sendSimpleXCmd(.apiSuspendChat(timeoutMicroseconds: timeoutMicroseconds))
+    let r: NSEChatResponse = sendSimpleXCmd(NSEChatCommand.apiSuspendChat(timeoutMicroseconds: timeoutMicroseconds))
     if case .cmdOk = r { return true }
     logger.error("NotificationService apiSuspendChat error: \(String(describing: r))")
     return false
 }
 
 func apiSetAppFilePaths(filesFolder: String, tempFolder: String, assetsFolder: String) throws {
-    let r = sendSimpleXCmd(.apiSetAppFilePaths(filesFolder: filesFolder, tempFolder: tempFolder, assetsFolder: assetsFolder))
+    let r: NSEChatResponse = sendSimpleXCmd(NSEChatCommand.apiSetAppFilePaths(filesFolder: filesFolder, tempFolder: tempFolder, assetsFolder: assetsFolder))
     if case .cmdOk = r { return }
     throw r
 }
 
 func apiSetEncryptLocalFiles(_ enable: Bool) throws {
-    let r = sendSimpleXCmd(.apiSetEncryptLocalFiles(enable: enable))
+    let r: NSEChatResponse = sendSimpleXCmd(NSEChatCommand.apiSetEncryptLocalFiles(enable: enable))
     if case .cmdOk = r { return }
     throw r
 }
@@ -925,7 +925,7 @@ func apiGetNtfConns(nonce: String, encNtfInfo: String) -> [NtfConn]? {
         logger.debug("no active user")
         return nil
     }
-    let r = sendSimpleXCmd(.apiGetNtfConns(nonce: nonce, encNtfInfo: encNtfInfo))
+    let r: NSEChatResponse = sendSimpleXCmd(NSEChatCommand.apiGetNtfConns(nonce: nonce, encNtfInfo: encNtfInfo))
     if case let .ntfConns(ntfConns) = r {
         logger.debug("apiGetNtfConns response ntfConns: \(ntfConns.count)")
         return ntfConns
@@ -942,8 +942,8 @@ func apiGetConnNtfMessages(connMsgReqs: [ConnMsgReq]) -> [NtfMsgInfo?]? {
         logger.debug("no active user")
         return nil
     }
-    logger.debug("apiGetConnNtfMessages command: \(ChatCommand.apiGetConnNtfMessages(connMsgReqs: connMsgReqs).cmdString)")
-    let r = sendSimpleXCmd(.apiGetConnNtfMessages(connMsgReqs: connMsgReqs))
+    logger.debug("apiGetConnNtfMessages command: \(NSEChatCommand.apiGetConnNtfMessages(connMsgReqs: connMsgReqs).cmdString)")
+    let r: NSEChatResponse = sendSimpleXCmd(NSEChatCommand.apiGetConnNtfMessages(connMsgReqs: connMsgReqs))
     if case let .connNtfMessages(receivedMsgs) = r {
         logger.debug("apiGetConnNtfMessages response receivedMsgs: total \(receivedMsgs.count), expecting messages \(receivedMsgs.count { $0 != nil })")
         return receivedMsgs
@@ -962,7 +962,7 @@ func getConnNtfMessage(connMsgReq: ConnMsgReq) -> NtfMsgInfo? {
 
 func apiReceiveFile(fileId: Int64, encrypted: Bool, inline: Bool? = nil) -> AChatItem? {
     let userApprovedRelays = !privacyAskToApproveRelaysGroupDefault.get()
-    let r = sendSimpleXCmd(.receiveFile(fileId: fileId, userApprovedRelays: userApprovedRelays, encrypted: encrypted, inline: inline))
+    let r: NSEChatResponse = sendSimpleXCmd(NSEChatCommand.receiveFile(fileId: fileId, userApprovedRelays: userApprovedRelays, encrypted: encrypted, inline: inline))
     if case let .rcvFileAccepted(_, chatItem) = r { return chatItem }
     logger.error("receiveFile error: \(responseError(r))")
     return nil
@@ -970,7 +970,7 @@ func apiReceiveFile(fileId: Int64, encrypted: Bool, inline: Bool? = nil) -> ACha
 
 func apiSetFileToReceive(fileId: Int64, encrypted: Bool) {
     let userApprovedRelays = !privacyAskToApproveRelaysGroupDefault.get()
-    let r = sendSimpleXCmd(.setFileToReceive(fileId: fileId, userApprovedRelays: userApprovedRelays, encrypted: encrypted))
+    let r: NSEChatResponse = sendSimpleXCmd(NSEChatCommand.setFileToReceive(fileId: fileId, userApprovedRelays: userApprovedRelays, encrypted: encrypted))
     if case .cmdOk = r { return }
     logger.error("setFileToReceive error: \(responseError(r))")
 }
@@ -989,7 +989,7 @@ func autoReceiveFile(_ file: CIFile) -> ChatItem? {
 }
 
 func setNetworkConfig(_ cfg: NetCfg) throws {
-    let r = sendSimpleXCmd(.apiSetNetworkConfig(networkConfig: cfg))
+    let r: NSEChatResponse = sendSimpleXCmd(NSEChatCommand.apiSetNetworkConfig(networkConfig: cfg))
     if case .cmdOk = r { return }
     throw r
 }
