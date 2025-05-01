@@ -80,7 +80,7 @@ struct ChatView: View {
             let backgroundColor = theme.wallpaper.background ?? wallpaperType.defaultBackgroundColor(theme.base, theme.colors.background)
             let tintColor = theme.wallpaper.tint ?? wallpaperType.defaultTintColor(theme.base)
             Color.clear.ignoresSafeArea(.all)
-                .if(wallpaperImage != nil) { view in
+                .if(wallpaperImage != nil && im.secondaryIMFilter == nil) { view in
                     view.modifier(
                         ChatViewBackground(image: wallpaperImage!, imageType: wallpaperType, background: backgroundColor, tint: tintColor)
                     )
