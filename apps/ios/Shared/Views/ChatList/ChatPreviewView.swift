@@ -445,6 +445,8 @@ struct ChatPreviewView: View {
                 ProgressView()
             } else if chat.chatStats.reportsCount > 0 {
                 groupReportsIcon(size: size * 0.8)
+            } else if chat.chatStats.supportChatsUnreadCount > 0 {
+                GroupSupportUnreadIcon(size: size * 0.8)
             } else {
                 incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
             }
@@ -496,6 +498,19 @@ struct ChatPreviewView: View {
         .scaledToFit()
         .frame(width: size, height: size)
         .foregroundColor(.red)
+}
+
+struct GroupSupportUnreadIcon: View {
+    @EnvironmentObject var theme: AppTheme
+    var size: CGFloat
+
+    var body: some View {
+        Image(systemName: "flag")
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .foregroundColor(theme.colors.primary)
+    }
 }
 
 func smallContentPreview(size: CGFloat, _ view: @escaping () -> some View) -> some View {
