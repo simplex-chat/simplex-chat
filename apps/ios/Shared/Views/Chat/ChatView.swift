@@ -224,6 +224,7 @@ struct ChatView: View {
             }
         }
         .onChange(of: chatModel.chatId) { cId in
+            logger.error("##### KNOCKING ChatView .onChange(of: chatModel.chatId)")
             showChatInfoSheet = false
             selectedChatItems = nil
             revealedItems = Set()
@@ -638,6 +639,7 @@ struct ChatView: View {
 
     private func searchTextChanged(_ s: String) {
         Task {
+            logger.error("##### KNOCKING searchTextChanged -> loadChat")
             await loadChat(chat: chat, im: im, search: s)
             mergedItems.boxedValue = MergedItems.create(im, revealedItems)
             await MainActor.run {
@@ -757,6 +759,7 @@ struct ChatView: View {
             Task {
                 if !im.chatState.splits.isEmpty {
                     await MainActor.run { loadingMoreItems = true }
+                    logger.error("##### KNOCKING scrollToTopUnread -> loadChat")
                     await loadChat(chatId: chat.id, im: im, openAroundItemId: nil, clearItems: false)
                     await MainActor.run { reloadItems() }
                     if let index = listState.items.lastIndex(where: { $0.hasUnread() }) {
@@ -1032,6 +1035,7 @@ struct ChatView: View {
     }
 
     private func loadChatItems(_ chat: Chat, _ pagination: ChatPagination) async -> Bool {
+        logger.error("##### KNOCKING loadChatItems")
         if loadingMoreItems { return false }
         await MainActor.run {
             loadingMoreItems = true
@@ -1054,6 +1058,7 @@ struct ChatView: View {
     }
 
     private func loadChatItemsUnchecked(_ chat: Chat, _ pagination: ChatPagination) async -> Bool {
+        logger.error("##### KNOCKING loadChatItemsUnchecked -> apiLoadMessages")
         await apiLoadMessages(
             chat.chatInfo.id,
             im,
@@ -1071,11 +1076,14 @@ struct ChatView: View {
     }
 
     func onChatItemsUpdated() {
+        logger.error("##### KNOCKING ChatView onChatItemsUpdated 1")
         if !mergedItems.boxedValue.isActualState() {
             //logger.debug("Items are not actual, waiting for the next update: \(String(describing: mergedItems.boxedValue.splits))  \(im.chatState.splits), \(mergedItems.boxedValue.indexInParentItems.count) vs \(im.reversedChatItems.count)")
             return
         }
+        logger.error("##### KNOCKING ChatView onChatItemsUpdated 2")
         floatingButtonModel.updateOnListChange(scrollView.listState)
+        logger.error("##### KNOCKING ChatView onChatItemsUpdated 3 before preloadIfNeeded")
         preloadIfNeeded(
             im,
             $allowLoadMoreItems,

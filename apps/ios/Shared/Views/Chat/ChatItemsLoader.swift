@@ -27,6 +27,7 @@ func apiLoadMessages(
         logger.error("apiLoadMessages error: \(responseError(error))")
         return
     }
+    logger.error("##### KNOCKING apiLoadMessages apiGetChat chatItems.count = \(chat.chatItems.count)")
 
     let chatModel = ChatModel.shared
 
@@ -50,10 +51,12 @@ func apiLoadMessages(
         }
         await MainActor.run {
             im.reversedChatItems = chat.chatItems.reversed()
+            logger.error("##### KNOCKING apiLoadMessages 1 reversedChatItems.count = \(im.reversedChatItems.count)")
             if im.secondaryIMFilter == nil {
                 chatModel.updateChatInfo(chat.chatInfo)
             }
             im.chatState.splits = newSplits
+            logger.error("##### KNOCKING apiLoadMessages 2")
             if !chat.chatItems.isEmpty {
                 im.chatState.unreadAfterItemId = chat.chatItems.last!.id
             }
@@ -61,8 +64,10 @@ func apiLoadMessages(
             im.chatState.unreadTotal = chat.chatStats.unreadCount
             im.chatState.unreadAfter = navInfo.afterUnread
             im.chatState.unreadAfterNewestLoaded = navInfo.afterUnread
+            logger.error("##### KNOCKING apiLoadMessages 3")
 
-            PreloadState.shared.clear()
+            im.preloadState.clear()
+            logger.error("##### KNOCKING apiLoadMessages 4")
         }
     case let .before(paginationChatItemId, _):
         newItems.append(contentsOf: oldItems)
@@ -138,7 +143,7 @@ func apiLoadMessages(
                 // no need to set it, count will be wrong
                 // chatState.unreadAfterNewestLoaded = navInfo.afterUnread
             }
-            PreloadState.shared.clear()
+            im.preloadState.clear()
         }
     case .last:
         newItems.append(contentsOf: oldItems)

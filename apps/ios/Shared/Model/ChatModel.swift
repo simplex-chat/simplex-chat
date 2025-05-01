@@ -51,13 +51,9 @@ enum SecondaryItemsModelFilter {
 
 // analogue for ChatsContext in Kotlin
 class ItemsModel: ObservableObject {
-    public var secondaryIMFilter: SecondaryItemsModelFilter?
-
-    public init(secondaryIMFilter: SecondaryItemsModelFilter?) {
-        self.secondaryIMFilter = secondaryIMFilter
-    }
-
     static let shared = ItemsModel(secondaryIMFilter: nil)
+    public var secondaryIMFilter: SecondaryItemsModelFilter?
+    public var preloadState = PreloadState()
     private let publisher = ObservableObjectPublisher()
     private var bag = Set<AnyCancellable>()
     var reversedChatItems: [ChatItem] = [] {
@@ -81,7 +77,8 @@ class ItemsModel: ObservableObject {
         chatState.splits.isEmpty || chatState.splits.first != reversedChatItems.first?.id
     }
 
-    init() {
+    init(secondaryIMFilter: SecondaryItemsModelFilter? = nil) {
+        self.secondaryIMFilter = secondaryIMFilter
         publisher
             .throttle(for: 0.2, scheduler: DispatchQueue.main, latest: true)
             .sink { self.objectWillChange.send() }
@@ -96,6 +93,10 @@ class ItemsModel: ObservableObject {
                 try await Task.sleep(nanoseconds: 250_000000)
                 await MainActor.run {
                     ChatModel.shared.chatId = chatId
+                    if secondaryIMFilter != nil {
+                        // TODO [knocking] clear chatModel.secondaryIM on close
+                        ChatModel.shared.secondaryIM = self
+                    }
                     willNavigate()
                 }
             } catch {}
@@ -103,6 +104,7 @@ class ItemsModel: ObservableObject {
         loadChatTask = Task {
             await MainActor.run { self.isLoading = true }
 //            try? await Task.sleep(nanoseconds: 1000_000000)
+            logger.error("##### KNOCKING loadOpenChat -> loadChat")
             await loadChat(chatId: chatId, im: self)
             if !Task.isCancelled {
                 await MainActor.run {
@@ -118,6 +120,7 @@ class ItemsModel: ObservableObject {
         loadChatTask?.cancel()
         loadChatTask = Task {
             //            try? await Task.sleep(nanoseconds: 1000_000000)
+            logger.error("##### KNOCKING loadOpenChatNoWait -> loadChat")
             await loadChat(chatId: chatId, im: self, openAroundItemId: openAroundItemId, clearItems: openAroundItemId == nil)
             if !Task.isCancelled {
                 await MainActor.run {
@@ -143,6 +146,18 @@ class ItemsModel: ObservableObject {
         case let .groupChatScopeContext(scopeInfo): scopeInfo
         case .msgContentTagContext: nil
         }
+    }
+}
+
+class PreloadState {
+    var prevFirstVisible: Int64 = Int64.min
+    var prevItemsCount: Int = 0
+    var preloading: Bool = false
+
+    func clear() {
+        prevFirstVisible = Int64.min
+        prevItemsCount = 0
+        preloading = false
     }
 }
 
