@@ -4313,7 +4313,7 @@ chatCommandP =
       pure $ CryptoFile path cfArgs
     connMsgsP = L.fromList <$> connMsgP `A.sepBy1'` A.char ','
     connMsgP = do
-      AgentConnId msgConnId <- strP <* A.char ':'
+      msgConnId <- A.takeTill (== ':') <* A.char ':'
       ts <- strP
       pure ConnMsgReq {msgConnId, msgTs = Just ts}
     memberRole =
