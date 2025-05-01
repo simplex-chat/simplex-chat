@@ -334,20 +334,32 @@ func apiGetChat(chatId: ChatId, scope: GroupChatScope?, contentTag: MsgContentTa
     throw r
 }
 
-func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async {
-    await loadChat(chatId: chat.chatInfo.id, search: search, clearItems: clearItems)
+func loadChat(chat: Chat, im: ItemsModel, search: String = "", clearItems: Bool = true) async {
+    await loadChat(chatId: chat.chatInfo.id, im: im, search: search, clearItems: clearItems)
 }
 
-func loadChat(chatId: ChatId, search: String = "", openAroundItemId: ChatItem.ID? = nil, clearItems: Bool = true) async {
-    let m = ChatModel.shared
-    let im = ItemsModel.shared
+func loadChat(chatId: ChatId, im: ItemsModel, search: String = "", openAroundItemId: ChatItem.ID? = nil, clearItems: Bool = true) async {
     await MainActor.run {
         if clearItems {
             im.reversedChatItems = []
-            ItemsModel.shared.chatState.clear()
+            im.chatState.clear()
         }
     }
-    await apiLoadMessages(chatId, openAroundItemId != nil ? .around(chatItemId: openAroundItemId!, count: loadItemsPerPage)  : (search == "" ? .initial(count: loadItemsPerPage) : .last(count: loadItemsPerPage)), im.chatState, search, openAroundItemId, { 0...0 })
+    await apiLoadMessages(
+        chatId,
+        im,
+        ( // pagination
+            openAroundItemId != nil
+            ? .around(chatItemId: openAroundItemId!, count: loadItemsPerPage)
+            : (
+                search == ""
+                ? .initial(count: loadItemsPerPage) : .last(count: loadItemsPerPage)
+            )
+        ),
+        search,
+        openAroundItemId,
+        { 0...0 }
+    )
 }
 
 func apiGetChatItemInfo(type: ChatType, id: Int64, scope: GroupChatScope?, itemId: Int64) async throws -> ChatItemInfo {

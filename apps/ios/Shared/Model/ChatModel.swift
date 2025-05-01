@@ -43,8 +43,17 @@ private func addTermItem(_ items: inout [TerminalItem], _ item: TerminalItem) {
     items.append(item)
 }
 
+// analogue for SecondaryContextFilter in Kotlin
+enum SecondaryItemsModelFilter {
+    case groupChatScopeContext(groupScopeInfo: GroupChatScopeInfo)
+    case msgContentTagContext(contentTag: MsgContentTag)
+}
+
+// analogue for ChatsContext in Kotlin
 class ItemsModel: ObservableObject {
-    static let shared = ItemsModel()
+    static let shared = ItemsModel(secondaryIMFilter: nil)
+    public var secondaryIMFilter: SecondaryItemsModelFilter?
+    public var preloadState = PreloadState()
     private let publisher = ObservableObjectPublisher()
     private var bag = Set<AnyCancellable>()
     var reversedChatItems: [ChatItem] = [] {
@@ -68,7 +77,8 @@ class ItemsModel: ObservableObject {
         chatState.splits.isEmpty || chatState.splits.first != reversedChatItems.first?.id
     }
 
-    init() {
+    init(secondaryIMFilter: SecondaryItemsModelFilter? = nil) {
+        self.secondaryIMFilter = secondaryIMFilter
         publisher
             .throttle(for: 0.2, scheduler: DispatchQueue.main, latest: true)
             .sink { self.objectWillChange.send() }
@@ -83,6 +93,9 @@ class ItemsModel: ObservableObject {
                 try await Task.sleep(nanoseconds: 250_000000)
                 await MainActor.run {
                     ChatModel.shared.chatId = chatId
+                    if secondaryIMFilter != nil {
+                        ChatModel.shared.secondaryIM = self
+                    }
                     willNavigate()
                 }
             } catch {}
@@ -90,7 +103,7 @@ class ItemsModel: ObservableObject {
         loadChatTask = Task {
             await MainActor.run { self.isLoading = true }
 //            try? await Task.sleep(nanoseconds: 1000_000000)
-            await loadChat(chatId: chatId)
+            await loadChat(chatId: chatId, im: self)
             if !Task.isCancelled {
                 await MainActor.run {
                     self.isLoading = false
@@ -105,7 +118,7 @@ class ItemsModel: ObservableObject {
         loadChatTask?.cancel()
         loadChatTask = Task {
             //            try? await Task.sleep(nanoseconds: 1000_000000)
-            await loadChat(chatId: chatId, openAroundItemId: openAroundItemId, clearItems: openAroundItemId == nil)
+            await loadChat(chatId: chatId, im: self, openAroundItemId: openAroundItemId, clearItems: openAroundItemId == nil)
             if !Task.isCancelled {
                 await MainActor.run {
                     if openAroundItemId == nil {
@@ -114,6 +127,34 @@ class ItemsModel: ObservableObject {
                 }
             }
         }
+    }
+
+    public var contentTag: MsgContentTag? {
+        switch secondaryIMFilter {
+        case nil: nil
+        case .groupChatScopeContext: nil
+        case let .msgContentTagContext(contentTag): contentTag
+        }
+    }
+
+    public var groupScopeInfo: GroupChatScopeInfo? {
+        switch secondaryIMFilter {
+        case nil: nil
+        case let .groupChatScopeContext(scopeInfo): scopeInfo
+        case .msgContentTagContext: nil
+        }
+    }
+}
+
+class PreloadState {
+    var prevFirstVisible: Int64 = Int64.min
+    var prevItemsCount: Int = 0
+    var preloading: Bool = false
+
+    func clear() {
+        prevFirstVisible = Int64.min
+        prevItemsCount = 0
+        preloading = false
     }
 }
 
@@ -325,6 +366,9 @@ final class ChatModel: ObservableObject {
     static let shared = ChatModel()
 
     let im = ItemsModel.shared
+
+    // ItemsModel for secondary chat view (such as support scope chat), as opposed to ItemsModel.shared used for primary chat
+    @Published var secondaryIM: ItemsModel? = nil
 
     static var ok: Bool { ChatModel.shared.chatDbStatus == .ok }
 
@@ -1233,9 +1277,4 @@ enum UIRemoteCtrlSessionState {
     case connecting(remoteCtrl_: RemoteCtrlInfo?)
     case pendingConfirmation(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
     case connected(remoteCtrl: RemoteCtrlInfo, sessionCode: String)
-}
-
-enum SecondaryContextFilter {
-    case groupChatScopeContext(groupScopeInfo: GroupChatScopeInfo)
-    case msgContentTagContext(contentTag: MsgContentTag)
 }

@@ -12,8 +12,8 @@ import SimpleXChat
 struct CIChatFeatureView: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.revealed) var revealed: Bool
-    @ObservedObject var im = ItemsModel.shared
     @ObservedObject var chat: Chat
+    @ObservedObject var im: ItemsModel
     @EnvironmentObject var theme: AppTheme
     var chatItem: ChatItem
     var feature: Feature
@@ -108,6 +108,7 @@ struct CIChatFeatureView_Previews: PreviewProvider {
         let enabled = FeatureEnabled(forUser: false, forContact: false)
         CIChatFeatureView(
             chat: Chat.sampleData,
+            im: ItemsModel.shared,
             chatItem: ChatItem.getChatFeatureSample(.fullDelete, enabled), feature: ChatFeature.fullDelete, iconColor: enabled.iconColor(.secondary)
         ).environment(\.revealed, true)
     }

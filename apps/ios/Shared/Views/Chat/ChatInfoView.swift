@@ -687,7 +687,7 @@ struct ChatTTLOption: View {
                     let m = ChatModel.shared
                     do {
                         try await setChatTTL(chatType: chat.chatInfo.chatType, id: chat.chatInfo.apiId, ttl)
-                        await loadChat(chat: chat, clearItems: true)
+                        await loadChat(chat: chat, im: ItemsModel.shared, clearItems: true)
                         await MainActor.run {
                             progressIndicator = false
                             currentChatItemTTL = chatItemTTL
@@ -700,7 +700,7 @@ struct ChatTTLOption: View {
                     }
                     catch let error {
                         logger.error("setChatTTL error \(responseError(error))")
-                        await loadChat(chat: chat, clearItems: true)
+                        await loadChat(chat: chat, im: ItemsModel.shared, clearItems: true)
                         await MainActor.run {
                             chatItemTTL = currentChatItemTTL
                             progressIndicator = false
