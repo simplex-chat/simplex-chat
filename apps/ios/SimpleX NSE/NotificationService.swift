@@ -527,7 +527,7 @@ class NotificationService: UNNotificationServiceExtension {
         } else {
             logger.debug("NotificationService prepareNotification \(String(describing: self.expectedMessages.map { $0.key }))")
             let ntfEvents = expectedMessages.compactMap { $0.value.msgBestAttemptNtf?.notificationEvent }
-            logger.debug("NotificationService prepareNotification \(String(describing: ntfEvents.map { $0.description }))")
+            logger.debug("NotificationService prepareNotification \(ntfEvents.count)")
             if ntfEvents.isEmpty {
                 return .empty
             } else if let ntfEvent = ntfEvents.count == 1 ? ntfEvents.first : nil {
