@@ -2433,6 +2433,12 @@ public struct NtfMsgInfo: Decodable, Hashable {
     public var msgTs: Date
 }
 
+let iso8601DateFormatter = {
+    let f = ISO8601DateFormatter()
+    f.formatOptions = [.withInternetDateTime]
+    return f
+}()
+
 // used in apiGetConnNtfMessages
 public struct ConnMsgReq {
     public var msgConnId: String
@@ -2444,7 +2450,7 @@ public struct ConnMsgReq {
     }
 
     public var cmdString: String {
-        "\(msgConnId):\(msgTs)"
+        "\(msgConnId):\(iso8601DateFormatter.string(from: msgTs))"
     }
 }
 
