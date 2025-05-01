@@ -22,11 +22,26 @@ struct ChatInfoToolbar: View {
                 Image(systemName: "theatermasks").frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(.indigo)
                 Spacer().frame(width: 16)
             }
-            ChatInfoImage(
-                chat: chat,
-                size: imageSize,
-                color: Color(uiColor: .tertiaryLabel)
-            )
+            ZStack(alignment: .bottomTrailing) {
+                ChatInfoImage(
+                    chat: chat,
+                    size: imageSize,
+                    color: Color(uiColor: .tertiaryLabel)
+                )
+                if chat.chatStats.reportsCount > 0 {
+                    Image(systemName: "flag.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 12, height: 12)
+                        .foregroundColor(.red)
+                } else if chat.chatStats.supportChatsUnreadCount > 0 {
+                    Image(systemName: "flag.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 12, height: 12)
+                        .foregroundColor(theme.colors.primary)
+                }
+            }
             .padding(.trailing, 4)
             let t = Text(cInfo.displayName).font(.headline)
             (cInfo.contact?.verified == true ? contactVerifiedShield + t : t)
