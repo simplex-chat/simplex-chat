@@ -44,7 +44,6 @@ struct MemberSupportView: View {
     }
 
     struct MemberSupportChatNavLink: View {
-        @EnvironmentObject var chatModel: ChatModel
         @State private var memberSupportChatNavLinkActive = false
         var groupInfo: GroupInfo
         var memberWithChat: GMember
@@ -61,7 +60,7 @@ struct MemberSupportView: View {
                 }
 
                 NavigationLink(isActive: $memberSupportChatNavLinkActive) {
-                    MemberSupportChatView(
+                    SecondaryChatView(
                         chat: chat,
                         im: im
                     )

@@ -170,7 +170,7 @@
 		649BCDA22805D6EF00C3A862 /* CIImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 649BCDA12805D6EF00C3A862 /* CIImageView.swift */; };
 		64A779F62DBFB9F200FDEF2F /* MemberAdmissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A779F52DBFB9F200FDEF2F /* MemberAdmissionView.swift */; };
 		64A779F82DBFDBF200FDEF2F /* MemberSupportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A779F72DBFDBF200FDEF2F /* MemberSupportView.swift */; };
-		64A779FC2DC1040000FDEF2F /* MemberSupportChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A779FB2DC1040000FDEF2F /* MemberSupportChatView.swift */; };
+		64A779FC2DC1040000FDEF2F /* SecondaryChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A779FB2DC1040000FDEF2F /* SecondaryChatView.swift */; };
 		64A779FE2DC3AFF200FDEF2F /* MemberSupportChatToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A779FD2DC3AFF200FDEF2F /* MemberSupportChatToolbar.swift */; };
 		64AA1C6927EE10C800AC7277 /* ContextItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6827EE10C800AC7277 /* ContextItemView.swift */; };
 		64AA1C6C27F3537400AC7277 /* DeletedItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */; };
@@ -531,7 +531,7 @@
 		649BCDA12805D6EF00C3A862 /* CIImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIImageView.swift; sourceTree = "<group>"; };
 		64A779F52DBFB9F200FDEF2F /* MemberAdmissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberAdmissionView.swift; sourceTree = "<group>"; };
 		64A779F72DBFDBF200FDEF2F /* MemberSupportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberSupportView.swift; sourceTree = "<group>"; };
-		64A779FB2DC1040000FDEF2F /* MemberSupportChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberSupportChatView.swift; sourceTree = "<group>"; };
+		64A779FB2DC1040000FDEF2F /* SecondaryChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecondaryChatView.swift; sourceTree = "<group>"; };
 		64A779FD2DC3AFF200FDEF2F /* MemberSupportChatToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberSupportChatToolbar.swift; sourceTree = "<group>"; };
 		64AA1C6827EE10C800AC7277 /* ContextItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextItemView.swift; sourceTree = "<group>"; };
 		64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeletedItemView.swift; sourceTree = "<group>"; };
@@ -1121,7 +1121,7 @@
 				B70CE9E52D4BE5930080F36D /* GroupMentions.swift */,
 				64A779F52DBFB9F200FDEF2F /* MemberAdmissionView.swift */,
 				64A779F72DBFDBF200FDEF2F /* MemberSupportView.swift */,
-				64A779FB2DC1040000FDEF2F /* MemberSupportChatView.swift */,
+				64A779FB2DC1040000FDEF2F /* SecondaryChatView.swift */,
 				64A779FD2DC3AFF200FDEF2F /* MemberSupportChatToolbar.swift */,
 			);
 			path = Group;
@@ -1475,7 +1475,7 @@
 				5CB634AF29E4BB7D0066AD6B /* SetAppPasscodeView.swift in Sources */,
 				5C10D88828EED12E00E58BF0 /* ContactConnectionInfo.swift in Sources */,
 				5CBE6C12294487F7002D9531 /* VerifyCodeView.swift in Sources */,
-				64A779FC2DC1040000FDEF2F /* MemberSupportChatView.swift in Sources */,
+				64A779FC2DC1040000FDEF2F /* SecondaryChatView.swift in Sources */,
 				3CDBCF4227FAE51000354CDD /* ComposeLinkView.swift in Sources */,
 				648679AB2BC96A74006456E7 /* ChatItemForwardingView.swift in Sources */,
 				3CDBCF4827FF621E00354CDD /* CILinkView.swift in Sources */,

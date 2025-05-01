@@ -90,13 +90,20 @@ struct GroupChatInfoView: View {
 
                     Section {
                         if groupInfo.membership.supportChat != nil {
-                            userSupportChatButton()
+                            let scopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
+                            UserSupportChatNavLink(
+                                chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()),
+                                im: ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: scopeInfo))
+                            )
                         }
                         if groupInfo.businessChat == nil && groupInfo.membership.memberRole >= .moderator {
                             memberSupportButton()
                         }
                         if groupInfo.canModerate {
-                            groupReportsButton()
+                            GroupReportsChatNavLink(
+                                chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil), chatItems: [], chatStats: ChatStats()),
+                                im: ItemsModel(secondaryIMFilter: .msgContentTagContext(contentTag: .report))
+                            )
                         }
                     }
 
@@ -530,12 +537,31 @@ struct GroupChatInfoView: View {
         .navigationBarTitleDisplayMode(.large)
     }
 
-    // TODO [knocking] support chat
-    private func userSupportChatButton() -> some View {
-        NavigationLink {
+    struct UserSupportChatNavLink: View {
+        @State private var userSupportChatNavLinkActive = false
+        var chat: Chat
+        var im: ItemsModel
 
-        } label: {
-            Label("Support chat", systemImage: "flag")
+        var body: some View {
+            ZStack {
+                Button {
+                    im.loadOpenChat(chat.id)
+                    userSupportChatNavLinkActive = true
+                } label: {
+                    Label("Support chat", systemImage: "flag")
+                }
+
+                NavigationLink(isActive: $userSupportChatNavLinkActive) {
+                    SecondaryChatView(
+                        chat: chat,
+                        im: im
+                    )
+                } label: {
+                    EmptyView()
+                }
+                .frame(width: 1, height: 1)
+                .hidden()
+            }
         }
     }
 
@@ -550,12 +576,31 @@ struct GroupChatInfoView: View {
         }
     }
 
-    // TODO [knocking] reports view
-    private func groupReportsButton() -> some View {
-        NavigationLink {
+    struct GroupReportsChatNavLink: View {
+        @State private var groupReportsChatNavLinkActive = false
+        var chat: Chat
+        var im: ItemsModel
 
-        } label: {
-            Label("Member reports", systemImage: "flag")
+        var body: some View {
+            ZStack {
+                Button {
+                    im.loadOpenChat(chat.id)
+                    groupReportsChatNavLinkActive = true
+                } label: {
+                    Label("Member reports", systemImage: "flag")
+                }
+
+                NavigationLink(isActive: $groupReportsChatNavLinkActive) {
+                    SecondaryChatView(
+                        chat: chat,
+                        im: im
+                    )
+                } label: {
+                    EmptyView()
+                }
+                .frame(width: 1, height: 1)
+                .hidden()
+            }
         }
     }
 

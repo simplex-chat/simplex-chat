@@ -1,5 +1,5 @@
 //
-//  MemberSupportChatView.swift
+//  SecondaryChatView.swift
 //  SimpleX (iOS)
 //
 //  Created by spaced4ndy on 29.04.2025.
@@ -9,7 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
-struct MemberSupportChatView: View {
+struct SecondaryChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     var chat: Chat
     var im: ItemsModel
@@ -28,7 +28,7 @@ struct MemberSupportChatView: View {
 }
 
 #Preview {
-    MemberSupportChatView(
+    SecondaryChatView(
         chat: Chat(
             chatInfo: .group(groupInfo: GroupInfo.sampleData, groupChatScope: .memberSupport(groupMember_: GroupMember.sampleData)),
             chatItems: [],
