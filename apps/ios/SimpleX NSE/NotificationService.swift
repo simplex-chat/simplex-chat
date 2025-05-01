@@ -233,7 +233,7 @@ class NotificationService: UNNotificationServiceExtension {
     }
 
     private func setExpirationTimer() -> Void {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
             self.deliverBestAttemptNtf(urgent: true)
         }
     }
@@ -398,13 +398,9 @@ class NotificationService: UNNotificationServiceExtension {
                 setBadgeCount()
             }
             let prevBestAttempt = expectedMessages[id]?.msgBestAttemptNtf
-            if prevBestAttempt?.callInvitation != nil {
-                if ntf.callInvitation != nil { // replace with newer call
-                    expectedMessages[id]?.msgBestAttemptNtf = ntf
-                } // otherwise keep call as best attempt
-            } else {
+            if prevBestAttempt?.callInvitation == nil || ntf.callInvitation != nil {
                 expectedMessages[id]?.msgBestAttemptNtf = ntf
-            }
+            } // otherwise keep call as best attempt
         } else {
             NSEThreads.shared.droppedNotifications.append((id, ntf))
             if signalReady { entityReady(id) }
@@ -946,6 +942,7 @@ func apiGetConnNtfMessages(connMsgReqs: [ConnMsgReq]) -> [NtfMsgInfo?]? {
         logger.debug("no active user")
         return nil
     }
+    logger.debug("apiGetConnNtfMessages command: \(ChatCommand.apiGetConnNtfMessages(connMsgReqs: connMsgReqs).cmdString)")
     let r = sendSimpleXCmd(.apiGetConnNtfMessages(connMsgReqs: connMsgReqs))
     if case let .connNtfMessages(receivedMsgs) = r {
         logger.debug("apiGetConnNtfMessages response receivedMsgs: \(receivedMsgs.count)")
