@@ -363,8 +363,6 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtGroupMemberSwitch u g m progress -> ttyUser u $ viewGroupMemberSwitch g m progress
   CEvtContactRatchetSync u ct progress -> ttyUser u $ viewContactRatchetSync ct progress
   CEvtGroupMemberRatchetSync u g m progress -> ttyUser u $ viewGroupMemberRatchetSync g m progress
-  CEvtContactVerificationReset u ct -> ttyUser u $ viewContactVerificationReset ct
-  CEvtGroupMemberVerificationReset u g m -> ttyUser u $ viewGroupMemberVerificationReset g m
   CEvtNewChatItems u chatItems -> viewChatItems ttyUser unmuted u chatItems ts tz
   CEvtChatItemsStatusesUpdated u chatItems
     | length chatItems <= 20 ->
@@ -446,7 +444,6 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
       (groupLinkErrors, groupLinksSubscribed) = partition (isJust . userContactError) groupLinks
   CEvtNetworkStatus status conns -> if testView then [plain $ show (length conns) <> " connections " <> netStatusStr status] else []
   CEvtNetworkStatuses u statuses -> if testView then ttyUser' u $ viewNetworkStatuses statuses else []
-  CEvtGroupInvitation u g -> ttyUser u [groupInvitationSub g]
   CEvtReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
   CEvtUserJoinedGroup u g _ -> ttyUser u $ viewUserJoinedGroup g
   CEvtJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
@@ -459,21 +456,12 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtDeletedMemberUser u g by wm -> ttyUser u $ [ttyGroup' g <> ": " <> ttyMember by <> " removed you from the group" <> withMessages wm] <> groupPreserved g
   CEvtDeletedMember u g by m wm -> ttyUser u [ttyGroup' g <> ": " <> ttyMember by <> " removed " <> ttyMember m <> " from the group" <> withMessages wm]
   CEvtLeftMember u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " left the group"]
-  CEvtGroupEmpty u ShortGroupInfo {groupName = g} -> ttyUser u [ttyGroup g <> ": group is empty"]
   CEvtGroupDeleted u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> viewGroupName g) <> " to delete the local copy of the group"]
   CEvtGroupUpdated u g g' m -> ttyUser u $ viewGroupUpdated g g' m
   CEvtAcceptingGroupJoinRequestMember _ g m -> [ttyFullMember m <> ": accepting request to join group " <> ttyGroup' g <> "..."]
   CEvtNoMemberContactCreating u g m -> ttyUser u ["member " <> ttyGroup' g <> " " <> ttyMember m <> " does not have direct connection, creating"]
   CEvtNewMemberContactReceivedInv u ct g m -> ttyUser u [ttyGroup' g <> " " <> ttyMember m <> " is creating direct contact " <> ttyContact' ct <> " with you"]
   CEvtContactAndMemberAssociated u ct g m ct' -> ttyUser u $ viewContactAndMemberAssociated ct g m ct'
-  CEvtMemberSubError u ShortGroupInfo {groupName = g} ShortGroupMember {memberName = n} e -> ttyUser u [ttyGroup g <> " member " <> ttyContact n <> " error: " <> sShow e]
-  CEvtMemberSubSummary u summary -> ttyUser u $ viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
-  CEvtGroupSubscribed u ShortGroupInfo {groupName = g} -> ttyUser u $ viewGroupSubscribed g
-  CEvtPendingSubSummary u _ -> ttyUser u []
-  CEvtSndFileSubError u SndFileTransfer {fileId, fileName} e ->
-    ttyUser u ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
-  CEvtRcvFileSubError u RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e ->
-    ttyUser u ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
   CEvtCallInvitation RcvCallInvitation {user, contact, callType, sharedKey} -> ttyUser user $ viewCallInvitation contact callType sharedKey
   CEvtCallOffer {user = u, contact, callType, offer, sharedKey} -> ttyUser u $ viewCallOffer contact callType offer sharedKey
   CEvtCallAnswer {user = u, contact, answer} -> ttyUser u $ viewCallAnswer contact answer
@@ -518,6 +506,18 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
     TERejectingGroupJoinRequestMember _ g m reason -> [ttyFullMember m <> ": rejecting request to join group " <> ttyGroup' g <> ", reason: " <> sShow reason]
     TEGroupLinkRejected u g reason -> ttyUser u [ttyGroup' g <> ": join rejected, reason: " <> sShow reason]
     TENewMemberContact u _ g m -> ttyUser u ["contact for member " <> ttyGroup' g <> " " <> ttyMember m <> " is created"]
+    TEContactVerificationReset u ct -> ttyUser u $ viewContactVerificationReset ct
+    TEGroupMemberVerificationReset u g m -> ttyUser u $ viewGroupMemberVerificationReset g m
+    TEGroupSubscribed u ShortGroupInfo {groupName = g} -> ttyUser u $ viewGroupSubscribed g
+    TEGroupInvitation u g -> ttyUser u [groupInvitationSub g]
+    TEGroupEmpty u ShortGroupInfo {groupName = g} -> ttyUser u [ttyGroup g <> ": group is empty"]
+    TEMemberSubError u ShortGroupInfo {groupName = g} ShortGroupMember {memberName = n} e -> ttyUser u [ttyGroup g <> " member " <> ttyContact n <> " error: " <> sShow e]
+    TEMemberSubSummary u summary -> ttyUser u $ viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
+    TEPendingSubSummary u _ -> ttyUser u []
+    TESndFileSubError u SndFileTransfer {fileId, fileName} e ->
+      ttyUser u ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
+    TERcvFileSubError u RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e ->
+      ttyUser u ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
   where
     ttyUser :: User -> [StyledString] -> [StyledString]
     ttyUser user@User {showNtfs, activeUser, viewPwdHash} ss

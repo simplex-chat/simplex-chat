@@ -930,7 +930,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             withStore' $ \db -> setConnectionVerified db user connId Nothing
             let m' = m {activeConn = Just (conn {connectionCode = Nothing} :: Connection)} :: GroupMember
             ratchetSyncEventItem m'
-            toView $ CEvtGroupMemberVerificationReset user gInfo m'
+            toViewTE $ TEGroupMemberVerificationReset user gInfo m'
             createInternalChatItem user (CDGroupRcv gInfo m') (CIRcvConnEvent RCEVerificationCodeReset) Nothing
           _ -> ratchetSyncEventItem m
         where
@@ -2706,7 +2706,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     securityCodeChanged :: Contact -> CM ()
     securityCodeChanged ct = do
-      toView $ CEvtContactVerificationReset user ct
+      toViewTE $ TEContactVerificationReset user ct
       createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent RCEVerificationCodeReset) Nothing
 
     xGrpMsgForward :: GroupInfo -> GroupMember -> MemberId -> ChatMessage 'Json -> UTCTime -> CM ()

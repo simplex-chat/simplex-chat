@@ -639,6 +639,7 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
     case groupChatItemsDeleted(user: UserRef, groupInfo: GroupInfo, chatItemIDs: Set<Int64>, byUser: Bool, member_: GroupMember?)
     case forwardPlan(user: UserRef, chatItemIds: [Int64], forwardConfirmation: ForwardConfirmation?)
     case chatItemUpdated(user: UserRef, chatItem: AChatItem)
+    case chatItemNotChanged(user: UserRef, chatItem: AChatItem)
     case chatItemReaction(user: UserRef, added: Bool, reaction: ACIReaction)
     case reactionMembers(user: UserRef, memberReactions: [MemberReaction])
     case chatItemsDeleted(user: UserRef, chatItemDeletions: [ChatItemDeletion], byUser: Bool)
@@ -754,6 +755,7 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
             case .groupChatItemsDeleted: return "groupChatItemsDeleted"
             case .forwardPlan: return "forwardPlan"
             case .chatItemUpdated: return "chatItemUpdated"
+            case .chatItemNotChanged: return "chatItemNotChanged"
             case .chatItemReaction: return "chatItemReaction"
             case .reactionMembers: return "reactionMembers"
             case .chatItemsDeleted: return "chatItemsDeleted"
@@ -870,6 +872,7 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
                 return withUser(u, "chatItemIDs: \(String(describing: chatItemIDs))\ngroupInfo: \(String(describing: gInfo))\nbyUser: \(byUser)\nmember_: \(String(describing: member_))")
             case let .forwardPlan(u, chatItemIds, forwardConfirmation): return withUser(u, "items: \(chatItemIds) forwardConfirmation: \(String(describing: forwardConfirmation))")
             case let .chatItemUpdated(u, chatItem): return withUser(u, String(describing: chatItem))
+            case let .chatItemNotChanged(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .chatItemReaction(u, added, reaction): return withUser(u, "added: \(added)\n\(String(describing: reaction))")
             case let .reactionMembers(u, reaction): return withUser(u, "memberReactions: \(String(describing: reaction))")
             case let .chatItemsDeleted(u, items, byUser):
@@ -1226,9 +1229,9 @@ enum ChatEvent: Decodable, ChatEventProtocol {
         //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
         //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
         do {
-            let r = try callWithLargeStack {
+            let r = // try callWithLargeStack {
                 try jsonDecoder.decode(APIResponse<ChatEvent>.self, from: d)
-            }
+//            }
             return r.resp
         } catch {
             logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")

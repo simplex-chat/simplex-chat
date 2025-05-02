@@ -296,16 +296,10 @@ chatRecvMsg :: ChatController -> IO JSONByteString
 chatRecvMsg ChatController {outputQ} = json <$> readChatResponse
   where
     json (remoteHostId, resp) = J.encode APIEvent {remoteHostId, resp}
-    readChatResponse = do
-      out@(_, cEvt) <- atomically $ readTBQueue outputQ
-      if filterEvent cEvt then pure out else readChatResponse
-    filterEvent = \case
-      CEvtGroupSubscribed {} -> False
-      CEvtGroupEmpty {} -> False
-      CEvtMemberSubSummary {} -> False
-      CEvtPendingSubSummary {} -> False
-      CEvtTerminalEvent {} -> False
-      _ -> True
+    readChatResponse =
+      atomically (readTBQueue outputQ) >>= \case
+        (_, CEvtTerminalEvent {}) -> readChatResponse
+        out -> pure out
 
 chatRecvMsgWait :: ChatController -> Int -> IO JSONByteString
 chatRecvMsgWait cc time = fromMaybe "" <$> timeout time (chatRecvMsg cc)

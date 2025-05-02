@@ -3707,37 +3707,37 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
     groupSubsToView rs gs ms ce = do
       mapM_ groupSub $
         sortOn (\(ShortGroup ShortGroupInfo {groupName = g} _) -> g) gs
-      toView . CEvtMemberSubSummary user $ map (uncurry MemberSubStatus) mRs
+      toViewTE . TEMemberSubSummary user $ map (uncurry MemberSubStatus) mRs
       where
         mRs = resultsFor rs ms
         groupSub :: ShortGroup -> CM ()
         groupSub (ShortGroup g@ShortGroupInfo {groupId = gId, membershipStatus} members) = do
-          when ce $ mapM_ (toView . uncurry (CEvtMemberSubError user g)) mErrors
-          toView groupEvent
+          when ce $ mapM_ (toViewTE . uncurry (TEMemberSubError user g)) mErrors
+          toViewTE groupEvent
           where
             mErrors :: [(ShortGroupMember, ChatError)]
             mErrors =
               sortOn (\(ShortGroupMember {memberName = n}, _) -> n)
                 . filterErrors
                 $ filter (\(ShortGroupMember {groupId}, _) -> groupId == gId) mRs
-            groupEvent :: ChatEvent
+            groupEvent :: TerminalEvent
             groupEvent
-              | membershipStatus == GSMemInvited = CEvtGroupInvitation user g
-              | null members = CEvtGroupEmpty user g
-              | otherwise = CEvtGroupSubscribed user g
+              | membershipStatus == GSMemInvited = TEGroupInvitation user g
+              | null members = TEGroupEmpty user g
+              | otherwise = TEGroupSubscribed user g
     sndFileSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId SndFileTransfer -> CM ()
     sndFileSubsToView rs sfts = do
       let sftRs = resultsFor rs sfts
       forM_ sftRs $ \(ft@SndFileTransfer {fileId, fileStatus}, err_) -> do
-        forM_ err_ $ toView . CEvtSndFileSubError user ft
+        forM_ err_ $ toViewTE . TESndFileSubError user ft
         void . forkIO $ do
           threadDelay 1000000
           when (fileStatus == FSConnected) . unlessM (isFileActive fileId sndFiles) . withChatLock "subscribe sendFileChunk" $
             sendFileChunk user ft
     rcvFileSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId RcvFileTransfer -> CM ()
-    rcvFileSubsToView rs = mapM_ (toView . uncurry (CEvtRcvFileSubError user)) . filterErrors . resultsFor rs
+    rcvFileSubsToView rs = mapM_ (toViewTE . uncurry (TERcvFileSubError user)) . filterErrors . resultsFor rs
     pendingConnSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId PendingContactConnection -> CM ()
-    pendingConnSubsToView rs = toView . CEvtPendingSubSummary user . map (uncurry PendingSubStatus) . resultsFor rs
+    pendingConnSubsToView rs = toViewTE . TEPendingSubSummary user . map (uncurry PendingSubStatus) . resultsFor rs
     withStore_ :: (DB.Connection -> User -> IO [a]) -> CM [a]
     withStore_ a = withStore' (`a` user) `catchChatError` \e -> toView (CEvtChatError (Just user) e) $> []
     filterErrors :: [(a, Maybe ChatError)] -> [(a, ChatError)]

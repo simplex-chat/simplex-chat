@@ -742,8 +742,6 @@ data ChatEvent
   | CEvtGroupMemberSwitch {user :: User, groupInfo :: GroupInfo, member :: GroupMember, switchProgress :: SwitchProgress}
   | CEvtContactRatchetSync {user :: User, contact :: Contact, ratchetSyncProgress :: RatchetSyncProgress}
   | CEvtGroupMemberRatchetSync {user :: User, groupInfo :: GroupInfo, member :: GroupMember, ratchetSyncProgress :: RatchetSyncProgress}
-  | CEvtContactVerificationReset {user :: User, contact :: Contact}
-  | CEvtGroupMemberVerificationReset {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CEvtNewChatItems {user :: User, chatItems :: [AChatItem]} -- there is the same command response
   | CEvtChatItemsStatusesUpdated {user :: User, chatItems :: [AChatItem]}
   | CEvtChatItemUpdated {user :: User, chatItem :: AChatItem} -- there is the same command response
@@ -801,7 +799,6 @@ data ChatEvent
   | CEvtNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]} -- there is the same command response
   | CEvtHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
-  | CEvtGroupInvitation {user :: User, shortGroupInfo :: ShortGroupInfo}
   | CEvtReceivedGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
   | CEvtUserJoinedGroup {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | CEvtJoinedGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember} -- there is the same command response
@@ -815,19 +812,12 @@ data ChatEvent
   | CEvtUnknownMemberCreated {user :: User, groupInfo :: GroupInfo, forwardedByMember :: GroupMember, member :: GroupMember}
   | CEvtUnknownMemberBlocked {user :: User, groupInfo :: GroupInfo, blockedByMember :: GroupMember, member :: GroupMember}
   | CEvtUnknownMemberAnnounced {user :: User, groupInfo :: GroupInfo, announcingMember :: GroupMember, unknownMember :: GroupMember, announcedMember :: GroupMember}
-  | CEvtGroupEmpty {user :: User, shortGroupInfo :: ShortGroupInfo}
   | CEvtGroupDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CEvtGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember} -- there is the same command response
   | CEvtAcceptingGroupJoinRequestMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CEvtNoMemberContactCreating {user :: User, groupInfo :: GroupInfo, member :: GroupMember} -- only used in CLI
   | CEvtNewMemberContactReceivedInv {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | CEvtContactAndMemberAssociated {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember, updatedContact :: Contact}
-  | CEvtMemberSubError {user :: User, shortGroupInfo :: ShortGroupInfo, memberToSubscribe :: ShortGroupMember, chatError :: ChatError}
-  | CEvtMemberSubSummary {user :: User, memberSubscriptions :: [MemberSubStatus]}
-  | CEvtGroupSubscribed {user :: User, shortGroupInfo :: ShortGroupInfo}
-  | CEvtPendingSubSummary {user :: User, pendingSubscriptions :: [PendingSubStatus]}
-  | CEvtSndFileSubError {user :: User, sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
-  | CEvtRcvFileSubError {user :: User, rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
   | CEvtCallInvitation {callInvitation :: RcvCallInvitation}
   | CEvtCallOffer {user :: User, contact :: Contact, callType :: CallType, offer :: WebRTCSession, sharedKey :: Maybe C.Key, askConfirmation :: Bool}
   | CEvtCallAnswer {user :: User, contact :: Contact, answer :: WebRTCSession}
@@ -859,6 +849,16 @@ data TerminalEvent
   = TEGroupLinkRejected {user :: User, groupInfo :: GroupInfo, groupRejectionReason :: GroupRejectionReason}
   | TERejectingGroupJoinRequestMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember, groupRejectionReason :: GroupRejectionReason}
   | TENewMemberContact {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
+  | TEContactVerificationReset {user :: User, contact :: Contact}
+  | TEGroupMemberVerificationReset {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
+  | TEGroupEmpty {user :: User, shortGroupInfo :: ShortGroupInfo}
+  | TEGroupSubscribed {user :: User, shortGroupInfo :: ShortGroupInfo}
+  | TEGroupInvitation {user :: User, shortGroupInfo :: ShortGroupInfo}
+  | TEMemberSubError {user :: User, shortGroupInfo :: ShortGroupInfo, memberToSubscribe :: ShortGroupMember, chatError :: ChatError}
+  | TEMemberSubSummary {user :: User, memberSubscriptions :: [MemberSubStatus]}
+  | TEPendingSubSummary {user :: User, pendingSubscriptions :: [PendingSubStatus]}
+  | TESndFileSubError {user :: User, sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
+  | TERcvFileSubError {user :: User, rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
   deriving (Show)
 
 data DeletedRcvQueue = DeletedRcvQueue
@@ -887,9 +887,6 @@ logEventToFile = \case
   CEvtContactsDisconnected {} -> True
   CEvtContactsSubscribed {} -> True
   CEvtContactSubError {} -> True
-  CEvtMemberSubError {} -> True
-  CEvtSndFileSubError {} -> True
-  CEvtRcvFileSubError {} -> True
   CEvtHostConnected {} -> True
   CEvtHostDisconnected {} -> True
   CEvtConnectionDisabled {} -> True
@@ -899,6 +896,11 @@ logEventToFile = \case
   -- CEvtChatCmdError {} -> True -- TODO this should be separately logged to file
   CEvtChatError {} -> True
   CEvtMessageError {} -> True
+  CEvtTerminalEvent te -> case te of
+    TEMemberSubError {} -> True
+    TESndFileSubError {} -> True
+    TERcvFileSubError {} -> True
+    _ -> False
   _ -> False
 
 -- (Maybe GroupMemberId) can later be changed to GroupSndScope = GSSAll | GSSAdmins | GSSMember GroupMemberId
