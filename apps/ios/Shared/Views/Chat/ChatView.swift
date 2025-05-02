@@ -110,7 +110,7 @@ struct ChatView: View {
                     .disabled(!cInfo.sendMsgEnabled)
                 } else {
                     SelectedItemsBottomToolbar(
-                        chatItems: im.reversedChatItems,
+                        im: im,
                         selectedChatItems: $selectedChatItems,
                         chatInfo: chat.chatInfo,
                         deleteItems: { forAll in
