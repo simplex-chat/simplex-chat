@@ -172,6 +172,7 @@
 		64A779F82DBFDBF200FDEF2F /* MemberSupportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A779F72DBFDBF200FDEF2F /* MemberSupportView.swift */; };
 		64A779FC2DC1040000FDEF2F /* SecondaryChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A779FB2DC1040000FDEF2F /* SecondaryChatView.swift */; };
 		64A779FE2DC3AFF200FDEF2F /* MemberSupportChatToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A779FD2DC3AFF200FDEF2F /* MemberSupportChatToolbar.swift */; };
+		64A77A022DC4AD6100FDEF2F /* ContextPendingMemberActionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A77A012DC4AD6100FDEF2F /* ContextPendingMemberActionsView.swift */; };
 		64AA1C6927EE10C800AC7277 /* ContextItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6827EE10C800AC7277 /* ContextItemView.swift */; };
 		64AA1C6C27F3537400AC7277 /* DeletedItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */; };
 		64C06EB52A0A4A7C00792D4D /* ChatItemInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C06EB42A0A4A7C00792D4D /* ChatItemInfoView.swift */; };
@@ -533,6 +534,7 @@
 		64A779F72DBFDBF200FDEF2F /* MemberSupportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberSupportView.swift; sourceTree = "<group>"; };
 		64A779FB2DC1040000FDEF2F /* SecondaryChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecondaryChatView.swift; sourceTree = "<group>"; };
 		64A779FD2DC3AFF200FDEF2F /* MemberSupportChatToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberSupportChatToolbar.swift; sourceTree = "<group>"; };
+		64A77A012DC4AD6100FDEF2F /* ContextPendingMemberActionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextPendingMemberActionsView.swift; sourceTree = "<group>"; };
 		64AA1C6827EE10C800AC7277 /* ContextItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextItemView.swift; sourceTree = "<group>"; };
 		64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeletedItemView.swift; sourceTree = "<group>"; };
 		64C06EB42A0A4A7C00792D4D /* ChatItemInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemInfoView.swift; sourceTree = "<group>"; };
@@ -1078,6 +1080,7 @@
 				644EFFDD292BCD9D00525D5B /* ComposeVoiceView.swift */,
 				D72A9087294BD7A70047C86D /* NativeTextEditor.swift */,
 				6419EC552AB8BC8B004A607A /* ContextInvitingContactMemberView.swift */,
+				64A77A012DC4AD6100FDEF2F /* ContextPendingMemberActionsView.swift */,
 			);
 			path = ComposeMessage;
 			sourceTree = "<group>";
@@ -1518,6 +1521,7 @@
 				5CB346E72868D76D001FD2EF /* NotificationsView.swift in Sources */,
 				647F090E288EA27B00644C40 /* GroupMemberInfoView.swift in Sources */,
 				646BB38E283FDB6D001CE359 /* LocalAuthenticationUtils.swift in Sources */,
+				64A77A022DC4AD6100FDEF2F /* ContextPendingMemberActionsView.swift in Sources */,
 				8C74C3EA2C1B90AF00039E77 /* ThemeManager.swift in Sources */,
 				5C7505A227B65FDB00BE3227 /* CIMetaView.swift in Sources */,
 				5C35CFC827B2782E00FB6C6D /* BGManager.swift in Sources */,

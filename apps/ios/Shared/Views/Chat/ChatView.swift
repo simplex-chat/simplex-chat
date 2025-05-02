@@ -101,6 +101,7 @@ struct ChatView: View {
                 if selectedChatItems == nil {
                     ComposeView(
                         chat: chat,
+                        im: im,
                         composeState: $composeState,
                         keyboardVisible: $keyboardVisible,
                         keyboardHiddenDate: $keyboardHiddenDate,

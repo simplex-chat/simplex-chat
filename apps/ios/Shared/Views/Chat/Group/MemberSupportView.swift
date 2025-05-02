@@ -144,26 +144,24 @@ struct MemberSupportView: View {
                     SupportChatUnreadIndicator(supportChat: supportChat)
                 }
             }
-            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                Button {
-                    // TODO [knocking] accept member dialogue
-                } label: {
-                    Label("Accept", systemImage: "checkmark")
-                }
-                .tint(theme.colors.primary)
-
-                Button {
-                    showAlert(
-                        title: NSLocalizedString("Remove member?", comment: "alert title"),
-                        buttonTitle: "Remove",
-                        buttonAction: { removeMember(chatModel, groupInfo, member) },
-                        cancelButton: true
-                    )
-                } label: {
-                    Label("Remove", systemImage: "trash")
-                }
-                .tint(.red)
-            }
+            // TODO [knocking] swipe actions are broken
+//            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+//                if member.memberPending {
+//                    Button {
+//                        showAcceptMemberAlert(groupInfo, member)
+//                    } label: {
+//                        Label("Accept", systemImage: "checkmark")
+//                    }
+//                    .tint(theme.colors.primary)
+//                }
+//
+//                Button {
+//                    showRemoveMemberAlert(groupInfo, member)
+//                } label: {
+//                    Label("Remove", systemImage: "trash")
+//                }
+//                .tint(.red)
+//            }
         }
 
         private func memberStatus(_ member: GroupMember) -> LocalizedStringKey {
@@ -227,6 +225,15 @@ struct MemberSupportView: View {
                 .foregroundColor(theme.colors.secondary)
         }
     }
+}
+
+func showRemoveMemberAlert(_ groupInfo: GroupInfo, _ member: GroupMember) {
+    showAlert(
+        title: NSLocalizedString("Remove member?", comment: "alert title"),
+        buttonTitle: "Remove",
+        buttonAction: { removeMember(groupInfo, member) },
+        cancelButton: true
+    )
 }
 
 #Preview {

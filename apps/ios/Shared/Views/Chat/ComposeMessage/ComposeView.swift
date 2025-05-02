@@ -323,6 +323,7 @@ struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
+    @ObservedObject var im: ItemsModel
     @Binding var composeState: ComposeState
     @Binding var keyboardVisible: Bool
     @Binding var keyboardHiddenDate: Date
@@ -355,6 +356,20 @@ struct ComposeView: View {
     var body: some View {
         VStack(spacing: 0) {
             Divider()
+            if let groupInfo = chat.chatInfo.groupInfo,
+               case let .groupChatScopeContext(groupScopeInfo) = im.secondaryIMFilter,
+               case let .memberSupport(member) = groupScopeInfo,
+               let member = member,
+               member.memberPending,
+               composeState.contextItem == .noContextItem,
+               composeState.noPreview {
+                ContextPendingMemberActionsView(
+                    groupInfo: groupInfo,
+                    member: member
+                )
+                Divider()
+            }
+
             if chat.chatInfo.contact?.nextSendGrpInv ?? false {
                 ContextInvitingContactMemberView()
                 Divider()
@@ -1278,12 +1293,14 @@ struct ComposeView: View {
 struct ComposeView_Previews: PreviewProvider {
     static var previews: some View {
         let chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
+        let im = ItemsModel.shared
         @State var composeState = ComposeState(message: "hello")
         @State var selectedRange = NSRange()
 
         return Group {
             ComposeView(
                 chat: chat,
+                im: im,
                 composeState: $composeState,
                 keyboardVisible: Binding.constant(true),
                 keyboardHiddenDate: Binding.constant(Date.now),
@@ -1292,6 +1309,7 @@ struct ComposeView_Previews: PreviewProvider {
             .environmentObject(ChatModel())
             ComposeView(
                 chat: chat,
+                im: im,
                 composeState: $composeState,
                 keyboardVisible: Binding.constant(true),
                 keyboardHiddenDate: Binding.constant(Date.now),

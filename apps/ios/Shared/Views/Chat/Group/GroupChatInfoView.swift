@@ -764,20 +764,20 @@ struct GroupChatInfoView: View {
             title: Text("Remove member?"),
             message: Text(messageLabel),
             primaryButton: .destructive(Text("Remove")) {
-                removeMember(chatModel, groupInfo, mem)
+                removeMember(groupInfo, mem)
             },
             secondaryButton: .cancel()
         )
     }
 }
 
-func removeMember(_ chatModel: ChatModel, _ groupInfo: GroupInfo, _ mem: GroupMember) {
+func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember) {
     Task {
         do {
             let updatedMembers = try await apiRemoveMembers(groupInfo.groupId, [mem.groupMemberId])
             await MainActor.run {
                 updatedMembers.forEach { updatedMember in
-                    _ = chatModel.upsertGroupMember(groupInfo, updatedMember)
+                    _ = ChatModel.shared.upsertGroupMember(groupInfo, updatedMember)
                 }
             }
         } catch let error {
