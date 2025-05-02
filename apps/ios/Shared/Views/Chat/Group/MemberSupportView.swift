@@ -17,11 +17,20 @@ struct MemberSupportView: View {
     var groupInfo: GroupInfo
 
     var body: some View {
+        viewBody()
+            .onAppear {
+                Task {
+                    await chatModel.loadGroupMembers(groupInfo)
+                }
+            }
+    }
+
+    @ViewBuilder private func viewBody() -> some View {
         let membersWithChats = sortedMembersWithChats()
         let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
         let filteredMembersWithChats = s == ""
-            ? membersWithChats
-            : membersWithChats.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
+        ? membersWithChats
+        : membersWithChats.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
 
         if membersWithChats.isEmpty {
             Text("No support chats")
