@@ -9,6 +9,7 @@
 import SimpleXChat
 import SwiftUI
 
+// some constructors are used in SEChatCommand or NSEChatCommand types as well - they must be syncronised
 enum ChatCommand: ChatCmdProtocol {
     case showActiveUser
     case createActiveUser(profile: Profile?, pastTimestamp: Bool)
