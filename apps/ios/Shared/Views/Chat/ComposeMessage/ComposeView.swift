@@ -458,17 +458,30 @@ struct ComposeView: View {
                     .padding(.trailing, 12)
                     .disabled(!chat.userCanSend)
 
-                    if chat.userIsObserver {
-                        Text("you are observer")
-                            .italic()
-                            .foregroundColor(theme.colors.secondary)
-                            .padding(.horizontal, 12)
-                            .onTapGesture {
-                                AlertManager.shared.showAlertMsg(
-                                    title: "You can't send messages!",
-                                    message: "Please contact group admin."
-                                )
-                            }
+                    if im.secondaryIMFilter == nil {
+                        if chat.userIsPending {
+                            Text("reviewed by moderators")
+                                .italic()
+                                .foregroundColor(theme.colors.secondary)
+                                .padding(.horizontal, 12)
+                                .onTapGesture {
+                                    AlertManager.shared.showAlertMsg(
+                                        title: "You can't send messages!",
+                                        message: "Please contact group admin."
+                                    )
+                                }
+                        } else if chat.userIsObserver {
+                            Text("you are observer")
+                                .italic()
+                                .foregroundColor(theme.colors.secondary)
+                                .padding(.horizontal, 12)
+                                .onTapGesture {
+                                    AlertManager.shared.showAlertMsg(
+                                        title: "You can't send messages!",
+                                        message: "Please contact group admin."
+                                    )
+                                }
+                        }
                     }
                 }
             }
