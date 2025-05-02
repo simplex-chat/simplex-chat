@@ -29,14 +29,14 @@ struct ChatInfoToolbar: View {
                     color: Color(uiColor: .tertiaryLabel)
                 )
                 if chat.chatStats.reportsCount > 0 {
-                    Image(systemName: "exclamationmark.circle.fill")
+                    Image(systemName: "flag.circle.fill")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 14, height: 14)
                         .symbolRenderingMode(.palette)
                         .foregroundStyle(.white, .red)
                 } else if chat.chatStats.supportChatsUnreadCount > 0 {
-                    Image(systemName: "exclamationmark.circle.fill")
+                    Image(systemName: "flag.circle.fill")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 14, height: 14)
