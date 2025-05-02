@@ -110,19 +110,19 @@ public func resetChatCtrl() {
     migrationResult = nil
 }
 
-public func sendSimpleXCmd(_ cmd: ChatCommand, _ ctrl: chat_ctrl? = nil) -> ChatResponse {
+public func sendSimpleXCmd<CR: ChatRespProtocol>(_ cmd: ChatCmdProtocol, _ ctrl: chat_ctrl? = nil) -> CR {
     var c = cmd.cmdString.cString(using: .utf8)!
     let cjson  = chat_send_cmd(ctrl ?? getChatCtrl(), &c)!
-    return chatResponse(fromCString(cjson))
+    return CR.chatResponse(fromCString(cjson))
 }
 
 // in microseconds
 public let MESSAGE_TIMEOUT: Int32 = 15_000_000
 
-public func recvSimpleXMsg(_ ctrl: chat_ctrl? = nil, messageTimeout: Int32 = MESSAGE_TIMEOUT) -> ChatResponse? {
+public func recvSimpleXMsg<CR: ChatRespProtocol>(_ ctrl: chat_ctrl? = nil, messageTimeout: Int32 = MESSAGE_TIMEOUT) -> CR? {
     if let cjson = chat_recv_msg_wait(ctrl ?? getChatCtrl(), messageTimeout) {
         let s = fromCString(cjson)
-        return s == "" ? nil : chatResponse(s)
+        return s == "" ? nil : CR.chatResponse(s)
     }
     return nil
 }
@@ -177,89 +177,7 @@ public func fromCString(_ c: UnsafeMutablePointer<CChar>) -> String {
     return s
 }
 
-public func chatResponse(_ s: String) -> ChatResponse {
-    let d = s.data(using: .utf8)!
-    // TODO is there a way to do it without copying the data? e.g:
-    //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
-    //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
-    do {
-        let r = try callWithLargeStack {
-            try jsonDecoder.decode(APIResponse.self, from: d)
-        }
-        return r.resp
-    } catch {
-        logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
-    }
-    
-    var type: String?
-    var json: String?
-    if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {
-        if let jResp = j["resp"] as? NSDictionary, jResp.count == 1 || jResp.count == 2 {
-            type = jResp.allKeys[0] as? String
-            if jResp.count == 2 && type == "_owsf" {
-                type = jResp.allKeys[1] as? String
-            }
-            if type == "apiChats" {
-                if let jApiChats = jResp["apiChats"] as? NSDictionary,
-                   let user: UserRef = try? decodeObject(jApiChats["user"] as Any),
-                   let jChats = jApiChats["chats"] as? NSArray {
-                    let chats = jChats.map { jChat in
-                        if let chatData = try? parseChatData(jChat) {
-                            return chatData.0
-                        }
-                        return ChatData.invalidJSON(serializeJSON(jChat, options: .prettyPrinted) ?? "")
-                    }
-                    return .apiChats(user: user, chats: chats)
-                }
-            } else if type == "apiChat" {
-                if let jApiChat = jResp["apiChat"] as? NSDictionary,
-                   let user: UserRef = try? decodeObject(jApiChat["user"] as Any),
-                   let jChat = jApiChat["chat"] as? NSDictionary,
-                   let (chat, navInfo) = try? parseChatData(jChat, jApiChat["navInfo"] as? NSDictionary) {
-                    return .apiChat(user: user, chat: chat, navInfo: navInfo)
-                }
-            } else if type == "chatCmdError" {
-                if let jError = jResp["chatCmdError"] as? NSDictionary {
-                    return .chatCmdError(user_: decodeUser_(jError), chatError: .invalidJSON(json: errorJson(jError) ?? ""))
-                }
-            } else if type == "chatError" {
-                if let jError = jResp["chatError"] as? NSDictionary {
-                    return .chatError(user_: decodeUser_(jError), chatError: .invalidJSON(json: errorJson(jError) ?? ""))
-                }
-            }
-        }
-        json = serializeJSON(j, options: .prettyPrinted)
-    }
-    return ChatResponse.response(type: type ?? "invalid", json: json ?? s)
-}
-
-private let largeStackSize: Int = 2 * 1024 * 1024
-
-private func callWithLargeStack<T>(_ f: @escaping () throws -> T) throws -> T {
-    let semaphore = DispatchSemaphore(value: 0)
-    var result: Result<T, Error>?
-    let thread = Thread {
-        do {
-            result = .success(try f())
-        } catch {
-            result = .failure(error)
-        }
-        semaphore.signal()
-    }
-
-    thread.stackSize = largeStackSize
-    thread.qualityOfService = Thread.current.qualityOfService
-    thread.start()
-
-    semaphore.wait()
-
-    switch result! {
-    case let .success(r): return r
-    case let .failure(e): throw e
-    }
-}
-
-private func decodeUser_(_ jDict: NSDictionary) -> UserRef? {
+public func decodeUser_(_ jDict: NSDictionary) -> UserRef? {
     if let user_ = jDict["user_"] {
         try? decodeObject(user_ as Any)
     } else {
@@ -267,7 +185,7 @@ private func decodeUser_(_ jDict: NSDictionary) -> UserRef? {
     }
 }
 
-private func errorJson(_ jDict: NSDictionary) -> String? {
+public func errorJson(_ jDict: NSDictionary) -> String? {
     if let chatError = jDict["chatError"] {
         serializeJSON(chatError)
     } else {
@@ -275,7 +193,7 @@ private func errorJson(_ jDict: NSDictionary) -> String? {
     }
 }
 
-func parseChatData(_ jChat: Any, _ jNavInfo: Any? = nil) throws -> (ChatData, NavigationInfo) {
+public func parseChatData(_ jChat: Any, _ jNavInfo: Any? = nil) throws -> (ChatData, NavigationInfo) {
     let jChatDict = jChat as! NSDictionary
     let chatInfo: ChatInfo = try decodeObject(jChatDict["chatInfo"]!)
     let chatStats: ChatStats = try decodeObject(jChatDict["chatStats"]!)
@@ -294,7 +212,7 @@ func parseChatData(_ jChat: Any, _ jNavInfo: Any? = nil) throws -> (ChatData, Na
     return (ChatData(chatInfo: chatInfo, chatItems: chatItems, chatStats: chatStats), navInfo)
 }
 
-func decodeObject<T: Decodable>(_ obj: Any) throws -> T {
+public func decodeObject<T: Decodable>(_ obj: Any) throws -> T {
     try jsonDecoder.decode(T.self, from: JSONSerialization.data(withJSONObject: obj))
 }
 
@@ -305,7 +223,7 @@ func decodeProperty<T: Decodable>(_ obj: Any, _ prop: NSString) -> T? {
     return nil
 }
 
-func serializeJSON(_ obj: Any, options: JSONSerialization.WritingOptions = []) -> String? {
+public func serializeJSON(_ obj: Any, options: JSONSerialization.WritingOptions = []) -> String? {
     if let d = try? JSONSerialization.data(withJSONObject: obj, options: options) {
         return String(decoding: d, as: UTF8.self)
     }
@@ -313,14 +231,14 @@ func serializeJSON(_ obj: Any, options: JSONSerialization.WritingOptions = []) -
 }
 
 public func responseError(_ err: Error) -> String {
-    if let r = err as? ChatResponse {
-        switch r {
-        case let .chatCmdError(_, chatError): return chatErrorString(chatError)
-        case let .chatError(_, chatError): return chatErrorString(chatError)
-        default: return "\(String(describing: r.responseType)), details: \(String(describing: r.details))"
+    if let r = err as? ChatRespProtocol {
+        if let e = r.chatError {
+            chatErrorString(e)
+        } else {
+            "\(String(describing: r.responseType)), details: \(String(describing: r.details))"
         }
     } else {
-        return String(describing: err)
+        String(describing: err)
     }
 }
 

@@ -179,7 +179,7 @@ class ShareModel: ObservableObject {
                 resetChatCtrl() // Clears retained migration result
                 registerGroupDefaults()
                 haskell_init_se()
-                let (_, result) = chatMigrateInit(dbKey, confirmMigrations: defaultMigrationConfirmation())
+                let (_, result) = chatMigrateInit(dbKey, confirmMigrations: defaultMigrationConfirmation(), backgroundMode: false)
                 if let e = migrationError(result) { return e }
                 try apiSetAppFilePaths(
                     filesFolder: getAppFilesDirectory().path,
@@ -303,7 +303,8 @@ class ShareModel: ObservableObject {
                     }
                 }
             }
-            switch recvSimpleXMsg(messageTimeout: 1_000_000) {
+            let r: SEChatResponse? = recvSimpleXMsg(messageTimeout: 1_000_000)
+            switch r {
             case let .sndFileProgressXFTP(_, ci, _, sentSize, totalSize):
                 guard isMessage(for: ci) else { continue }
                 networkTimeout = CFAbsoluteTimeGetCurrent()

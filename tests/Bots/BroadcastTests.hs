@@ -78,10 +78,11 @@ testBroadcastMessages ps = do
           bob <## "I broadcast messages to all connected users from @alice."
           cath `connectVia` botLink
           alice #> "@broadcast_bot hello all!"
+          alice <# "broadcast_bot> hello all!" -- we broadcast to the sender too, /feed is used by bot
           bob <# "broadcast_bot> hello all!"
           cath <# "broadcast_bot> hello all!"
           alice <# "broadcast_bot> > hello all!"
-          alice <## "      Forwarded to 2 contact(s)"
+          alice <## "      Forwarded to 3 contact(s), 0 errors"
   where
     cc `connectVia` botLink = do
       cc ##> ("/c " <> botLink)
