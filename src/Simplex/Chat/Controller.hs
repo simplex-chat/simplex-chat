@@ -357,7 +357,7 @@ data ChatCommand
   | APICheckToken DeviceToken
   | APIDeleteToken DeviceToken
   | APIGetNtfConns {nonce :: C.CbNonce, encNtfInfo :: ByteString}
-  | ApiGetConnNtfMessages {connIds :: NonEmpty AgentConnId}
+  | APIGetConnNtfMessages (NonEmpty ConnMsgReq)
   | APIAddMember GroupId ContactId GroupMemberRole
   | APIJoinGroup {groupId :: GroupId, enableNtfs :: MsgFilter}
   | APIAcceptMember GroupId GroupMemberId GroupMemberRole
@@ -1139,12 +1139,18 @@ instance FromJSON ChatTagData where
   parseJSON invalid = JT.prependFailure "bad ChatTagData, " (JT.typeMismatch "Object" invalid)
 
 data NtfConn = NtfConn
-  { user_ :: Maybe User,
-    connEntity_ :: Maybe ConnectionEntity,
+  { user :: User,
+    agentConnId :: AgentConnId,
+    agentDbQueueId :: Int64,
+    connEntity :: ConnectionEntity,
+    -- Decrypted ntf meta of the expected message (the one notification was sent for).
+    -- Nothing means it failed to decrypt or to decode, we can still show event for entity
     expectedMsg_ :: Maybe NtfMsgInfo
   }
   deriving (Show)
 
+-- brokerTs is the same msgTs, it is used in ConnMsgReq / APIGetConnNtfMessages
+-- to set it as last connection message in case queue is empty
 data NtfMsgInfo = NtfMsgInfo {msgId :: Text, msgTs :: UTCTime}
   deriving (Show)
 

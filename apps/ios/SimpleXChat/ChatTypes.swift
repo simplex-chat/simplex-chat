@@ -2504,14 +2504,14 @@ public enum ConnectionEntity: Decodable, Hashable {
 
     public var id: String? {
         switch self {
-        case let .rcvDirectMsgConnection(_, contact):
-            return contact?.id
+        case let .rcvDirectMsgConnection(conn, contact):
+            contact?.id ?? conn.id
         case let .rcvGroupMsgConnection(_, _, groupMember):
-            return groupMember.id
+            groupMember.id
         case let .userContactConnection(_, userContact):
-            return userContact.id
+            userContact.id
         default:
-            return nil
+            nil
         }
     }
 
@@ -2527,15 +2527,39 @@ public enum ConnectionEntity: Decodable, Hashable {
 }
 
 public struct NtfConn: Decodable, Hashable {
-    public var user_: User?
-    public var connEntity_: ConnectionEntity?
+    public var user: User
+    public var agentConnId: String
+    public var agentDbQueueId: Int64
+    public var connEntity: ConnectionEntity
     public var expectedMsg_: NtfMsgInfo?
-
 }
 
 public struct NtfMsgInfo: Decodable, Hashable {
     public var msgId: String
     public var msgTs: Date
+}
+
+let iso8601DateFormatter = {
+    let f = ISO8601DateFormatter()
+    f.formatOptions = [.withInternetDateTime]
+    return f
+}()
+
+// used in apiGetConnNtfMessages
+public struct ConnMsgReq {
+    public var msgConnId: String
+    public var msgDbQueueId: Int64
+    public var msgTs: Date // SystemTime encodes as a number, should be taken from NtfMsgInfo
+
+    public init(msgConnId: String, msgDbQueueId: Int64, msgTs: Date) {
+        self.msgConnId = msgConnId
+        self.msgDbQueueId = msgDbQueueId
+        self.msgTs = msgTs
+    }
+
+    public var cmdString: String {
+        "\(msgConnId):\(msgDbQueueId):\(iso8601DateFormatter.string(from: msgTs))"
+    }
 }
 
 public struct NtfMsgAckInfo: Decodable, Hashable {
@@ -4047,7 +4071,7 @@ public enum MsgContent: Equatable, Hashable {
         }
     }
 
-    var cmdString: String {
+    public var cmdString: String {
         "json \(encodeJSON(self))"
     }
 

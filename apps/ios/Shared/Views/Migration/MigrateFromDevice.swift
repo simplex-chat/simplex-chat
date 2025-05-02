@@ -752,7 +752,7 @@ private class MigrationChatReceiver {
 
     func receiveMsgLoop() async {
         // TODO use function that has timeout
-        if let msg = await chatRecvMsg(ctrl) {
+        if let msg: ChatResponse = await chatRecvMsg(ctrl) {
             Task {
                 await TerminalItems.shared.add(.resp(.now, msg))
             }

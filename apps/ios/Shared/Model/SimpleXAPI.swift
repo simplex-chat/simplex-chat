@@ -11,7 +11,7 @@ import UIKit
 import Dispatch
 import BackgroundTasks
 import SwiftUI
-import SimpleXChat
+@preconcurrency import SimpleXChat
 
 private var chatController: chat_ctrl?
 
@@ -91,7 +91,7 @@ func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? =
         logger.debug("chatSendCmd \(cmd.cmdType)")
     }
     let start = Date.now
-    let resp = bgTask
+    let resp: ChatResponse = bgTask
                 ? withBGTask(bgDelay: bgDelay) { sendSimpleXCmd(cmd, ctrl) }
                 : sendSimpleXCmd(cmd, ctrl)
     if log {
@@ -115,7 +115,7 @@ func chatSendCmd(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil
 func chatRecvMsg(_ ctrl: chat_ctrl? = nil) async -> ChatResponse? {
     await withCheckedContinuation { cont in
         _  = withBGTask(bgDelay: msgDelay) { () -> ChatResponse? in
-            let resp = recvSimpleXMsg(ctrl)
+            let resp: ChatResponse? = recvSimpleXMsg(ctrl)
             cont.resume(returning: resp)
             return resp
         }
@@ -123,7 +123,7 @@ func chatRecvMsg(_ ctrl: chat_ctrl? = nil) async -> ChatResponse? {
 }
 
 func apiGetActiveUser(ctrl: chat_ctrl? = nil) throws -> User? {
-    let r = chatSendCmdSync(.showActiveUser, ctrl)
+    let r: ChatResponse = chatSendCmdSync(.showActiveUser, ctrl)
     switch r {
     case let .activeUser(user): return user
     case .chatCmdError(_, .error(.noActiveUser)): return nil
@@ -132,7 +132,7 @@ func apiGetActiveUser(ctrl: chat_ctrl? = nil) throws -> User? {
 }
 
 func apiCreateActiveUser(_ p: Profile?, pastTimestamp: Bool = false, ctrl: chat_ctrl? = nil) throws -> User {
-    let r = chatSendCmdSync(.createActiveUser(profile: p, pastTimestamp: pastTimestamp), ctrl)
+    let r: ChatResponse = chatSendCmdSync(.createActiveUser(profile: p, pastTimestamp: pastTimestamp), ctrl)
     if case let .activeUser(user) = r { return user }
     throw r
 }
@@ -199,19 +199,19 @@ func apiUnmuteUser(_ userId: Int64) async throws -> User {
 }
 
 func setUserPrivacy_(_ cmd: ChatCommand) async throws -> User {
-    let r = await chatSendCmd(cmd)
+    let r: ChatResponse = await chatSendCmd(cmd)
     if case let .userPrivacy(_, updatedUser) = r { return updatedUser }
     throw r
 }
 
 func apiDeleteUser(_ userId: Int64, _ delSMPQueues: Bool, viewPwd: String?) async throws {
-    let r = await chatSendCmd(.apiDeleteUser(userId: userId, delSMPQueues: delSMPQueues, viewPwd: viewPwd))
+    let r: ChatResponse = await chatSendCmd(.apiDeleteUser(userId: userId, delSMPQueues: delSMPQueues, viewPwd: viewPwd))
     if case .cmdOk = r { return }
     throw r
 }
 
 func apiStartChat(ctrl: chat_ctrl? = nil) throws -> Bool {
-    let r = chatSendCmdSync(.startChat(mainApp: true, enableSndFiles: true), ctrl)
+    let r: ChatResponse = chatSendCmdSync(.startChat(mainApp: true, enableSndFiles: true), ctrl)
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false
@@ -901,7 +901,7 @@ func apiConnect_(incognito: Bool, connLink: CreatedConnLink) async -> ((ConnReqT
         logger.error("apiConnect: no current user")
         return (nil, nil)
     }
-    let r = await chatSendCmd(.apiConnect(userId: userId, incognito: incognito, connLink: connLink))
+    let r: ChatResponse = await chatSendCmd(.apiConnect(userId: userId, incognito: incognito, connLink: connLink))
     let m = ChatModel.shared
     switch r {
     case let .sentConfirmation(_, connection):
@@ -1292,7 +1292,7 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
         case let .rcvFileAccepted(_, chatItem):
             await chatItemSimpleUpdate(user, chatItem)
         default:
-            if let chatError = chatError(r) {
+            if let chatError = r.chatErrorType {
                 switch chatError {
                 case let .fileNotApproved(fileId, unknownServers):
                     fileIdsToApprove.append(fileId)
@@ -1359,7 +1359,7 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
                     )
                 }
             default:
-                if let chatError = chatError(errorResponse) {
+                if let chatError = errorResponse.chatErrorType {
                     switch chatError {
                     case .fileCancelled, .fileAlreadyReceiving:
                         logger.debug("receiveFiles ignoring FileCancelled or FileAlreadyReceiving error")
@@ -1652,7 +1652,7 @@ func apiLeaveGroup(_ groupId: Int64) async throws -> GroupInfo {
 
 // use ChatModel's loadGroupMembers from views
 func apiListMembers(_ groupId: Int64) async -> [GroupMember] {
-    let r = await chatSendCmd(.apiListMembers(groupId: groupId))
+    let r: ChatResponse = await chatSendCmd(.apiListMembers(groupId: groupId))
     if case let .groupMembers(_, group) = r { return group.members }
     return []
 }
