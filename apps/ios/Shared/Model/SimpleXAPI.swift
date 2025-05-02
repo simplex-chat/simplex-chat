@@ -20,12 +20,14 @@ private let networkStatusesLock = DispatchQueue(label: "chat.simplex.app.network
 enum TerminalItem: Identifiable {
     case cmd(Date, ChatCommand)
     case resp(Date, ChatResponse)
+    case event(Date, ChatEvent)
 
     var id: Date {
         get {
             switch self {
-            case let .cmd(id, _): return id
-            case let .resp(id, _): return id
+            case let .cmd(d, _): return d
+            case let .resp(d, _): return d
+            case let .event(d, _): return d
             }
         }
     }
@@ -35,6 +37,7 @@ enum TerminalItem: Identifiable {
             switch self {
             case let .cmd(_, cmd): return "> \(cmd.cmdString.prefix(30))"
             case let .resp(_, resp): return "< \(resp.responseType)"
+            case let .event(_, evt): return "< \(evt.eventType)"
             }
         }
     }
@@ -44,6 +47,7 @@ enum TerminalItem: Identifiable {
             switch self {
             case let .cmd(_, cmd): return cmd.cmdString
             case let .resp(_, resp): return resp.details
+            case let .event(_, evt): return evt.details
             }
         }
     }
@@ -112,12 +116,12 @@ func chatSendCmd(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil
     }
 }
 
-func chatRecvMsg(_ ctrl: chat_ctrl? = nil) async -> ChatResponse? {
+func chatRecvMsg(_ ctrl: chat_ctrl? = nil) async -> ChatEvent? {
     await withCheckedContinuation { cont in
-        _  = withBGTask(bgDelay: msgDelay) { () -> ChatResponse? in
-            let resp: ChatResponse? = recvSimpleXMsg(ctrl)
-            cont.resume(returning: resp)
-            return resp
+        _  = withBGTask(bgDelay: msgDelay) { () -> ChatEvent? in
+            let evt: ChatEvent? = recvSimpleXMsg(ctrl)
+            cont.resume(returning: evt)
+            return evt
         }
     }
 }
@@ -1280,6 +1284,10 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
         switch r {
         case let .rcvFileAccepted(_, chatItem):
             await chatItemSimpleUpdate(user, chatItem)
+// TODO when aChatItem added
+//        case let .rcvFileAcceptedSndCancelled(user, aChatItem, _):
+//            await chatItemSimpleUpdate(user, aChatItem)
+//            Task { cleanupFile(aChatItem) }
         default:
             if let chatError = r.chatErrorType {
                 switch chatError {
@@ -1925,7 +1933,7 @@ class ChatReceiver {
     private var receiveMessages = true
     private var _lastMsgTime = Date.now
 
-    var messagesChannel: ((ChatResponse) -> Void)? = nil
+    var messagesChannel: ((ChatEvent) -> Void)? = nil
 
     static let shared = ChatReceiver()
 
@@ -1960,13 +1968,13 @@ class ChatReceiver {
     }
 }
 
-func processReceivedMsg(_ res: ChatResponse) async {
+func processReceivedMsg(_ res: ChatEvent) async {
     Task {
-        await TerminalItems.shared.add(.resp(.now, res))
+        await TerminalItems.shared.add(.event(.now, res))
     }
     let m = ChatModel.shared
     let n = NetworkModel.shared
-    logger.debug("processReceivedMsg: \(res.responseType)")
+    logger.debug("processReceivedMsg: \(res.eventType)")
     switch res {
     case let .contactDeletedByContact(user, contact):
         if active(user) && contact.directOrUsed {
@@ -2281,6 +2289,10 @@ func processReceivedMsg(_ res: ChatResponse) async {
         }
     case let .rcvFileAccepted(user, aChatItem): // usually rcvFileAccepted is a response, but it's also an event for XFTP files auto-accepted from NSE
         await chatItemSimpleUpdate(user, aChatItem)
+// TODO when aChatItem added
+//    case let .rcvFileAcceptedSndCancelled(user, aChatItem, _): // usually rcvFileAcceptedSndCancelled is a response, but it's also an event for XFTP files auto-accepted from NSE
+//        await chatItemSimpleUpdate(user, aChatItem)
+//        Task { cleanupFile(aChatItem) }
     case let .rcvFileStart(user, aChatItem):
         await chatItemSimpleUpdate(user, aChatItem)
     case let .rcvFileComplete(user, aChatItem):
@@ -2460,14 +2472,14 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
         }
     default:
-        logger.debug("unsupported event: \(res.responseType)")
+        logger.debug("unsupported event: \(res.eventType)")
     }
 
     func withCall(_ contact: Contact, _ perform: (Call) async -> Void) async {
         if let call = m.activeCall, call.contact.apiId == contact.apiId {
             await perform(call)
         } else {
-            logger.debug("processReceivedMsg: ignoring \(res.responseType), not in call with the contact \(contact.id)")
+            logger.debug("processReceivedMsg: ignoring \(res.eventType), not in call with the contact \(contact.id)")
         }
     }
 }

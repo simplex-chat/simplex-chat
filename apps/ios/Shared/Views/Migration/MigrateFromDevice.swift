@@ -550,7 +550,7 @@ struct MigrateFromDevice: View {
                         alert = .error(title: "Upload failed", error: "Check your internet connection and try again")
                         migrationState = .uploadFailed(totalBytes: totalBytes, archivePath: archivePath)
                     default:
-                        logger.debug("unsupported event: \(msg.responseType)")
+                        logger.debug("unsupported event: \(msg.eventType)")
                     }
                 }
             }
@@ -733,11 +733,11 @@ func chatStoppedView() -> some View {
 private class MigrationChatReceiver {
     let ctrl: chat_ctrl
     let databaseUrl: URL
-    let processReceivedMsg: (ChatResponse) async -> Void
+    let processReceivedMsg: (ChatEvent) async -> Void
     private var receiveLoop: Task<Void, Never>?
     private var receiveMessages = true
 
-    init(ctrl: chat_ctrl, databaseUrl: URL, _ processReceivedMsg: @escaping (ChatResponse) async -> Void) {
+    init(ctrl: chat_ctrl, databaseUrl: URL, _ processReceivedMsg: @escaping (ChatEvent) async -> Void) {
         self.ctrl = ctrl
         self.databaseUrl = databaseUrl
         self.processReceivedMsg = processReceivedMsg
@@ -752,11 +752,11 @@ private class MigrationChatReceiver {
 
     func receiveMsgLoop() async {
         // TODO use function that has timeout
-        if let msg: ChatResponse = await chatRecvMsg(ctrl) {
+        if let msg: ChatEvent = await chatRecvMsg(ctrl) {
             Task {
-                await TerminalItems.shared.add(.resp(.now, msg))
+                await TerminalItems.shared.add(.event(.now, msg))
             }
-            logger.debug("processReceivedMsg: \(msg.responseType)")
+            logger.debug("processReceivedMsg: \(msg.eventType)")
             await processReceivedMsg(msg)
         }
         if self.receiveMessages {

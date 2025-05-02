@@ -679,6 +679,7 @@ data ChatResponse
   | CRGroupDeletedUser {user :: User, groupInfo :: GroupInfo}
   | CRForwardPlan {user :: User, itemsCount :: Int, chatItemIds :: [ChatItemId], forwardConfirmation :: Maybe ForwardConfirmation}
   | CRRcvFileAccepted {user :: User, chatItem :: AChatItem}
+  -- TODO add chatItem :: AChatItem
   | CRRcvFileAcceptedSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
   | CRStandaloneFileInfo {fileMeta :: Maybe J.Value}
   | CRRcvStandaloneFileCreated {user :: User, rcvFileTransfer :: RcvFileTransfer} -- returned by _download
@@ -766,6 +767,7 @@ data ChatEvent
   | CEvtBusinessRequestAlreadyAccepted {user :: User, groupInfo :: GroupInfo}
   | CEvtRcvFileDescrReady {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer, rcvFileDescr :: RcvFileDescr}
   | CEvtRcvFileAccepted {user :: User, chatItem :: AChatItem} -- there is the same command response
+  -- TODO add chatItem :: AChatItem
   | CEvtRcvFileAcceptedSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer} -- there is the same command response
   | CEvtRcvFileStart {user :: User, chatItem :: AChatItem} -- sent by chats
   | CEvtRcvFileProgressXFTP {user :: User, chatItem_ :: Maybe AChatItem, receivedSize :: Int64, totalSize :: Int64, rcvFileTransfer :: RcvFileTransfer}
