@@ -153,8 +153,8 @@ struct ExpectedMessage {
     var semaphore: DispatchSemaphore
     
     var connMsgReq: ConnMsgReq? {
-        if let msgTs = ntfConn.expectedMsg_?.msgTs {
-            ConnMsgReq(msgConnId: ntfConn.agentConnId, msgTs: msgTs)
+        if let expectedMsg_ = ntfConn.expectedMsg_ {
+            ConnMsgReq(msgConnId: ntfConn.agentConnId, msgDbQueueId: ntfConn.agentDbQueueId, msgTs: expectedMsg_.msgTs)
         } else {
             nil
         }

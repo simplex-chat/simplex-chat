@@ -2424,6 +2424,7 @@ public enum ConnectionEntity: Decodable, Hashable {
 public struct NtfConn: Decodable, Hashable {
     public var user: User
     public var agentConnId: String
+    public var agentDbQueueId: Int64
     public var connEntity: ConnectionEntity
     public var expectedMsg_: NtfMsgInfo?
 }
@@ -2442,15 +2443,17 @@ let iso8601DateFormatter = {
 // used in apiGetConnNtfMessages
 public struct ConnMsgReq {
     public var msgConnId: String
+    public var msgDbQueueId: Int64
     public var msgTs: Date // SystemTime encodes as a number, should be taken from NtfMsgInfo
 
-    public init(msgConnId: String, msgTs: Date) {
+    public init(msgConnId: String, msgDbQueueId: Int64, msgTs: Date) {
         self.msgConnId = msgConnId
+        self.msgDbQueueId = msgDbQueueId
         self.msgTs = msgTs
     }
 
     public var cmdString: String {
-        "\(msgConnId):\(iso8601DateFormatter.string(from: msgTs))"
+        "\(msgConnId):\(msgDbQueueId):\(iso8601DateFormatter.string(from: msgTs))"
     }
 }
 

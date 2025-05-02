@@ -1297,9 +1297,9 @@ processChatCommand' vr = \case
     pure $ CRNtfConns $ catMaybes ntfMsgs
     where
       getMsgConn :: DB.Connection -> NotificationInfo -> IO (Maybe NtfConn)
-      getMsgConn db NotificationInfo {ntfConnId, ntfMsgMeta = nMsgMeta} = do
+      getMsgConn db NotificationInfo {ntfConnId, ntfDbQueueId, ntfMsgMeta = nMsgMeta} = do
         let agentConnId = AgentConnId ntfConnId
-            mkNtfConn user connEntity = NtfConn {user, agentConnId, connEntity, expectedMsg_ = expectedMsgInfo <$> nMsgMeta}
+            mkNtfConn user connEntity = NtfConn {user, agentConnId, agentDbQueueId = ntfDbQueueId, connEntity, expectedMsg_ = expectedMsgInfo <$> nMsgMeta}
         getUserByAConnId db agentConnId
           $>>= \user -> fmap (mkNtfConn user) . eitherToMaybe <$> runExceptT (getConnectionEntity db vr user agentConnId)
   APIGetConnNtfMessages connMsgs -> withUser $ \_ -> do
@@ -4314,8 +4314,9 @@ chatCommandP =
     connMsgsP = L.fromList <$> connMsgP `A.sepBy1'` A.char ','
     connMsgP = do
       AgentConnId msgConnId <- strP <* A.char ':'
+      msgDbQueueId <- strP <* A.char ':'
       ts <- strP
-      pure ConnMsgReq {msgConnId, msgTs = Just ts}
+      pure ConnMsgReq {msgConnId, msgDbQueueId, msgTs = Just ts}
     memberRole =
       A.choice
         [ " owner" $> GROwner,

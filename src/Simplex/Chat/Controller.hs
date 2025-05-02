@@ -1133,6 +1133,7 @@ instance FromJSON ChatTagData where
 data NtfConn = NtfConn
   { user :: User,
     agentConnId :: AgentConnId,
+    agentDbQueueId :: Int64,
     connEntity :: ConnectionEntity,
     -- Decrypted ntf meta of the expected message (the one notification was sent for).
     -- Nothing means it failed to decrypt or to decode, we can still show event for entity
