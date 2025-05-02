@@ -23,6 +23,17 @@ struct MemberSupportView: View {
                     await chatModel.loadGroupMembers(groupInfo)
                 }
             }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        Task {
+                            await chatModel.loadGroupMembers(groupInfo)
+                        }
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                }
+            }
     }
 
     @ViewBuilder private func viewBody() -> some View {
