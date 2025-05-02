@@ -141,7 +141,7 @@
     <string name="allow_verb">Engedélyezés</string>
     <string name="bad_desktop_address">Érvénytelen számítógépcím</string>
     <string name="users_add">Profil hozzáadása</string>
-    <string name="attach">Csatolás</string>
+    <string name="attach">Mellékelés</string>
     <string name="v5_0_app_passcode">Alkalmazás jelkód</string>
     <string name="icon_descr_asked_to_receive">Felkérték a kép fogadására</string>
     <string name="use_camera_button">Kamera</string>
