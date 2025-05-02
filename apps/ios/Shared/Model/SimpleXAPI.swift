@@ -2103,6 +2103,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
                     if cItem.isActiveReport {
                         m.increaseGroupReportsCounter(cInfo.id)
                     }
+                    if cInfo.groupChatScope() != nil && cItem.isRcvNew && cInfo.ntfsEnabled(chatItem: cItem) {
+                        m.increaseGroupSupportChatsUnreadCounter(cInfo.id)
+                    }
                 } else if cItem.isRcvNew && cInfo.ntfsEnabled(chatItem: cItem) {
                     m.increaseUnreadCounter(user: user)
                 }

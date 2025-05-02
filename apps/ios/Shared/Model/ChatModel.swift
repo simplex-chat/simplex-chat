@@ -1019,6 +1019,23 @@ final class ChatModel: ObservableObject {
         return unread
     }
 
+    func increaseGroupSupportChatsUnreadCounter(_ chatId: ChatId) {
+        changeGroupSupportChatsUnreadCounter(chatId, 1)
+    }
+
+    func decreaseGroupSupportChatsUnreadCounter(_ chatId: ChatId, by: Int = 1) {
+        changeGroupSupportChatsUnreadCounter(chatId, -by)
+    }
+
+    private func changeGroupSupportChatsUnreadCounter(_ chatId: ChatId, _ by: Int = 0) {
+        if by == 0 { return }
+
+        if let i = getChatIndex(chatId) {
+            let chat = chats[i]
+            chat.chatStats.supportChatsUnreadCount = max(0, chat.chatStats.supportChatsUnreadCount + by)
+        }
+    }
+
     func increaseGroupReportsCounter(_ chatId: ChatId) {
         changeGroupReportsCounter(chatId, 1)
     }

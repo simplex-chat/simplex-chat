@@ -1282,11 +1282,17 @@ struct ChatView: View {
                     if !itemIds.isEmpty {
                         waitToMarkRead {
                             await apiMarkChatItemsRead(chat.chatInfo, itemIds, mentionsRead: unreadMentions)
+                            if (im.secondaryIMFilter != nil) {
+                                m.decreaseGroupSupportChatsUnreadCounter(chat.chatInfo.id, by: itemIds.count )
+                            }
                         }
                     }
                 } else if chatItem.isRcvNew  {
                     waitToMarkRead {
                         await apiMarkChatItemsRead(chat.chatInfo, [chatItem.id], mentionsRead: chatItem.meta.userMention ? 1 : 0)
+                        if (im.secondaryIMFilter != nil) {
+                            m.decreaseGroupSupportChatsUnreadCounter(chat.chatInfo.id)
+                        }
                     }
                 }
             }
