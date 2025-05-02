@@ -1119,9 +1119,9 @@ Query: UPDATE rcv_messages SET user_ack = ? WHERE conn_id = ? AND internal_id = 
 Plan:
 SEARCH rcv_messages USING COVERING INDEX idx_rcv_messages_conn_id_internal_id (conn_id=? AND internal_id=?)
 
-Query: UPDATE rcv_queues SET last_broker_ts = ? WHERE conn_id = ? AND last_broker_ts < ?
+Query: UPDATE rcv_queues SET last_broker_ts = ? WHERE conn_id = ? AND rcv_queue_id = ? AND last_broker_ts < ?
 Plan:
-SEARCH rcv_queues USING INDEX idx_rcv_queue_id (conn_id=?)
+SEARCH rcv_queues USING INDEX idx_rcv_queue_id (conn_id=? AND rcv_queue_id=?)
 
 Query: UPDATE rcv_queues SET rcv_primary = ? WHERE conn_id = ?
 Plan:
