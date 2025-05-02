@@ -136,7 +136,9 @@ struct ChatItemContentView<Content: View>: View {
         case let .sndGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
         case .rcvDirectEvent: eventItemView()
         case .rcvGroupEvent(.memberCreatedContact): CIMemberCreatedContactView(chatItem: chatItem)
+        case .rcvGroupEvent(.newMemberPendingReview): CIEventView(eventText: pendingReviewEventItemText())
         case .rcvGroupEvent: eventItemView()
+        case .sndGroupEvent(.userPendingReview): CIEventView(eventText: pendingReviewEventItemText())
         case .sndGroupEvent: eventItemView()
         case .rcvConnEvent: eventItemView()
         case .sndConnEvent: eventItemView()
@@ -175,6 +177,13 @@ struct ChatItemContentView<Content: View>: View {
 
     private func eventItemView() -> some View {
         CIEventView(eventText: eventItemViewText(theme.colors.secondary))
+    }
+
+    private func pendingReviewEventItemText() -> Text {
+        Text(chatItem.content.text)
+            .font(.caption)
+            .foregroundColor(theme.colors.secondary)
+            .fontWeight(.bold)
     }
 
     private func eventItemViewText(_ secondaryColor: Color) -> Text {
