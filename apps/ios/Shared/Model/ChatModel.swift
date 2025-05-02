@@ -47,6 +47,15 @@ private func addTermItem(_ items: inout [TerminalItem], _ item: TerminalItem) {
 enum SecondaryItemsModelFilter {
     case groupChatScopeContext(groupScopeInfo: GroupChatScopeInfo)
     case msgContentTagContext(contentTag: MsgContentTag)
+
+    func descr() -> String {
+        switch self {
+        case let .groupChatScopeContext(groupScopeInfo):
+            return "groupChatScopeContext \(groupScopeInfo.toChatScope())"
+        case let .msgContentTagContext(contentTag):
+            return "msgContentTagContext \(contentTag.rawValue)"
+        }
+    }
 }
 
 // analogue for ChatsContext in Kotlin
@@ -630,6 +639,7 @@ final class ChatModel: ObservableObject {
     }
 
     private func _upsertChatItem(_ ciIM: ItemsModel, _ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
+        logger.error("##### KNOCKING _upsertChatItem ciIM.secondaryIMFilter = \(ciIM.secondaryIMFilter?.descr() ?? "nil")")
         if let i = getChatItemIndex(ciIM, cItem) {
             let oldStatus = ciIM.reversedChatItems[i].meta.itemStatus
             let newStatus = cItem.meta.itemStatus

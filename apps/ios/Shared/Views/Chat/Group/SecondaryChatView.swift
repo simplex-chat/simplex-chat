@@ -11,8 +11,8 @@ import SimpleXChat
 
 struct SecondaryChatView: View {
     @EnvironmentObject var chatModel: ChatModel
-    var chat: Chat
-    var im: ItemsModel
+    @ObservedObject var chat: Chat
+    @ObservedObject var im: ItemsModel
 
     var body: some View {
         ChatView(

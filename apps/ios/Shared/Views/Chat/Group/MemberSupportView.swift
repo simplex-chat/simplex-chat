@@ -44,26 +44,30 @@ struct MemberSupportView: View {
     }
 
     struct MemberSupportChatNavLink: View {
+        @EnvironmentObject var chatModel: ChatModel
         @State private var memberSupportChatNavLinkActive = false
         var groupInfo: GroupInfo
         var memberWithChat: GMember
-        var chat: Chat
+        @ObservedObject var chat: Chat
         var im: ItemsModel
 
         var body: some View {
             ZStack {
                 Button {
-                    im.loadOpenChat(chat.id)
-                    memberSupportChatNavLinkActive = true
+                    im.loadOpenChat(chat.id) {
+                        memberSupportChatNavLinkActive = true
+                    }
                 } label: {
                     SupportChatRowView(groupMember: memberWithChat, groupInfo: groupInfo)
                 }
 
                 NavigationLink(isActive: $memberSupportChatNavLinkActive) {
-                    SecondaryChatView(
-                        chat: chat,
-                        im: im
-                    )
+                    if let secondaryIM = chatModel.secondaryIM {
+                        SecondaryChatView(
+                            chat: chat,
+                            im: secondaryIM
+                        )
+                    }
                 } label: {
                     EmptyView()
                 }
