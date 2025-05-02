@@ -192,7 +192,7 @@ startRemoteHost rh_ rcAddrPrefs_ port_ = do
         RHSessionConnecting _inv rhs' -> Right ((), RHSessionPendingConfirmation sessionCode tls rhs')
         _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
       let rh_' = (\rh -> (rh :: RemoteHostInfo) {sessionState = Just RHSPendingConfirmation {sessionCode}}) <$> remoteHost_
-      toView CRRemoteHostSessionCode {remoteHost_ = rh_', sessionCode}
+      toView CEvtRemoteHostSessionCode {remoteHost_ = rh_', sessionCode}
       (RCHostSession {sessionKeys}, rhHello, pairing') <- timeoutThrow (ChatErrorRemoteHost rhKey RHETimeout) 60000000 $ takeRCStep vars'
       hostInfo@HostAppInfo {deviceName = hostDeviceName} <-
         liftError (ChatErrorRemoteHost rhKey) $ parseHostAppInfo rhHello
@@ -203,7 +203,7 @@ startRemoteHost rh_ rcAddrPrefs_ port_ = do
       let rhKey' = RHId remoteHostId -- rhKey may be invalid after upserting on RHNew
       when (rhKey' /= rhKey) $ do
         atomically $ writeTVar rhKeyVar rhKey'
-        toView $ CRNewRemoteHost rhi
+        toView $ CEvtNewRemoteHost rhi
       -- set up HTTP transport and remote profile protocol
       disconnected <- toIO $ onDisconnected rhKey' sseq
       httpClient <- liftError' (httpError remoteHostId) $ attachRevHTTP2Client disconnected tls
@@ -213,7 +213,7 @@ startRemoteHost rh_ rcAddrPrefs_ port_ = do
         RHSessionConfirmed _ RHPendingSession {rchClient} -> Right ((), RHSessionConnected {rchClient, tls, rhClient, pollAction, storePath})
         _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
       chatWriteVar currentRemoteHost $ Just remoteHostId -- this is required for commands to be passed to remote host
-      toView $ CRRemoteHostConnected rhi {sessionState = Just RHSConnected {sessionCode}}
+      toView $ CEvtRemoteHostConnected rhi {sessionState = Just RHSConnected {sessionCode}}
     upsertRemoteHost :: RCHostPairing -> Maybe RemoteHostInfo -> Maybe RCCtrlAddress -> Text -> SessionSeq -> RemoteHostSessionState -> CM RemoteHostInfo
     upsertRemoteHost pairing'@RCHostPairing {knownHost = kh_} rhi_ rcAddr_ hostDeviceName sseq state = do
       KnownHostPairing {hostDhPubKey = hostDhPubKey'} <- maybe (throwError . ChatError $ CEInternalError "KnownHost is known after verification") pure kh_
@@ -235,7 +235,7 @@ startRemoteHost rh_ rcAddrPrefs_ port_ = do
       oq <- asks outputQ
       forever $ do
         r_ <- liftRH rhId $ remoteRecv rhClient 10000000
-        forM r_ $ \r -> atomically $ writeTBQueue oq (Nothing, Just rhId, r)
+        forM r_ $ \r -> atomically $ writeTBQueue oq (Just rhId, r)
     httpError :: RemoteHostId -> HTTP2ClientError -> ChatError
     httpError rhId = ChatErrorRemoteHost (RHId rhId) . RHEProtocolError . RPEHTTP2 . tshow
 
@@ -271,7 +271,7 @@ cancelRemoteHostSession handlerInfo_ rhKey = do
   forM_ deregistered $ \session -> do
     liftIO $ cancelRemoteHost handlingError session `catchAny` (logError . tshow)
     forM_ (snd <$> handlerInfo_) $ \rhStopReason ->
-      toView CRRemoteHostStopped {remoteHostId_, rhsState = rhsSessionState session, rhStopReason}
+      toView CEvtRemoteHostStopped {remoteHostId_, rhsState = rhsSessionState session, rhStopReason}
   where
     handlingError = isJust handlerInfo_
     remoteHostId_ = case rhKey of
@@ -417,7 +417,7 @@ findKnownRemoteCtrl = do
         Just rc -> pure rc
     atomically $ putTMVar foundCtrl (rc, inv)
     let compatible = isJust $ compatibleAppVersion hostAppVersionRange . appVersionRange =<< ctrlAppInfo_
-    toView CRRemoteCtrlFound {remoteCtrl = remoteCtrlInfo rc (Just RCSSearching), ctrlAppInfo_, appVersion = currentAppVersion, compatible}
+    toView CEvtRemoteCtrlFound {remoteCtrl = remoteCtrlInfo rc (Just RCSSearching), ctrlAppInfo_, appVersion = currentAppVersion, compatible}
   updateRemoteCtrlSession sseq $ \case
     RCSessionStarting -> Right RCSessionSearching {action, foundCtrl}
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
@@ -482,7 +482,7 @@ connectRemoteCtrl verifiedInv@(RCVerifiedInvitation inv@RCInvitation {ca, app}) 
           let remoteCtrlId_ = remoteCtrlId' <$> rc_
            in Right RCSessionPendingConfirmation {remoteCtrlId_, ctrlDeviceName = ctrlName, rcsClient, tls, sessionCode, rcsWaitSession, rcsWaitConfirmation}
         _ -> Left $ ChatErrorRemoteCtrl RCEBadState
-      toView CRRemoteCtrlSessionCode {remoteCtrl_ = (`remoteCtrlInfo` Just RCSPendingConfirmation {sessionCode}) <$> rc_, sessionCode}
+      toView CEvtRemoteCtrlSessionCode {remoteCtrl_ = (`remoteCtrlInfo` Just RCSPendingConfirmation {sessionCode}) <$> rc_, sessionCode}
     checkAppVersion CtrlAppInfo {appVersionRange} =
       case compatibleAppVersion hostAppVersionRange appVersionRange of
         Just (AppCompatible v) -> pure v
@@ -496,7 +496,7 @@ parseCtrlAppInfo :: JT.Value -> CM CtrlAppInfo
 parseCtrlAppInfo ctrlAppInfo = do
   liftEitherWith (const $ ChatErrorRemoteCtrl RCEBadInvitation) $ JT.parseEither J.parseJSON ctrlAppInfo
 
-handleRemoteCommand :: (ByteString -> CM' ChatResponse) -> RemoteCrypto -> TBQueue ChatResponse -> HTTP2Request -> CM' ()
+handleRemoteCommand :: (ByteString -> CM' ChatResponse) -> RemoteCrypto -> TBQueue ChatEvent -> HTTP2Request -> CM' ()
 handleRemoteCommand execChatCommand encryption remoteOutputQ HTTP2Request {request, reqBody, sendResponse} = do
   logDebug "handleRemoteCommand"
   liftIO (tryRemoteError' parseRequest) >>= \case
@@ -527,7 +527,7 @@ handleRemoteCommand execChatCommand encryption remoteOutputQ HTTP2Request {reque
           send resp
           attach sfKN send
           flush
-        Left e -> toView' . CRChatError Nothing . ChatErrorRemoteCtrl $ RCEProtocolError e
+        Left e -> toView' . CEvtChatError Nothing . ChatErrorRemoteCtrl $ RCEProtocolError e
 
 takeRCStep :: RCStepTMVar a -> CM a
 takeRCStep = liftError' (\e -> ChatErrorAgent {agentError = RCP e, connectionEntity_ = Nothing}) . atomically . takeTMVar
@@ -556,7 +556,7 @@ handleSend execChatCommand command = do
   -- convert errors thrown in execChatCommand into error responses to prevent aborting the protocol wrapper
   RRChatResponse <$> execChatCommand (encodeUtf8 command)
 
-handleRecv :: Int -> TBQueue ChatResponse -> IO RemoteResponse
+handleRecv :: Int -> TBQueue ChatEvent -> IO RemoteResponse
 handleRecv time events = do
   logDebug $ "Recv: " <> tshow time
   RRChatEvent <$> (timeout time . atomically $ readTBQueue events)
@@ -675,7 +675,7 @@ cancelActiveRemoteCtrl handlerInfo_ = handleAny (logError . tshow) $ do
   forM_ session_ $ \session -> do
     liftIO $ cancelRemoteCtrl handlingError session
     forM_ (snd <$> handlerInfo_) $ \rcStopReason ->
-      toView CRRemoteCtrlStopped {rcsState = rcsSessionState session, rcStopReason}
+      toView CEvtRemoteCtrlStopped {rcsState = rcsSessionState session, rcStopReason}
   where
     handlingError = isJust handlerInfo_
 

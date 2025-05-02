@@ -33,12 +33,12 @@ chatBotRepl :: String -> (Contact -> String -> IO String) -> User -> ChatControl
 chatBotRepl welcome answer _user cc = do
   initializeBotAddress cc
   race_ (forever $ void getLine) . forever $ do
-    (_, _, resp) <- atomically . readTBQueue $ outputQ cc
-    case resp of
-      CRContactConnected _ contact _ -> do
+    (_, event) <- atomically . readTBQueue $ outputQ cc
+    case event of
+      CEvtContactConnected _ contact _ -> do
         contactConnected contact
         void $ sendMessage cc contact $ T.pack welcome
-      CRNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content = mc@CIRcvMsgContent {}}) : _} -> do
+      CEvtNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content = mc@CIRcvMsgContent {}}) : _} -> do
         let msg = T.unpack $ ciContentToText mc
         void $ sendMessage cc contact . T.pack =<< answer contact msg
       _ -> pure ()

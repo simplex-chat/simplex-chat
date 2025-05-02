@@ -51,7 +51,7 @@ import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), Migrati
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), CorrId (..), ProtoServerWithAuth (..), ProtocolServer (..))
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..))
 import Simplex.Messaging.Util (catchAll, liftEitherWith, safeDecodeUtf8)
 import System.IO (utf8)
 import System.Timeout (timeout)
@@ -72,9 +72,13 @@ data DBMigrationResult
 
 $(JQ.deriveToJSON (sumTypeJSON $ dropPrefix "DBM") ''DBMigrationResult)
 
-data APIResponse = APIResponse {corr :: Maybe CorrId, remoteHostId :: Maybe RemoteHostId, resp :: ChatResponse}
+data APIResponse = APIResponse {remoteHostId :: Maybe RemoteHostId, resp :: ChatResponse}
+
+data APIEvent = APIEvent {remoteHostId :: Maybe RemoteHostId, resp :: ChatEvent}
 
 $(JQ.deriveToJSON defaultJSON ''APIResponse)
+
+$(JQ.deriveToJSON defaultJSON ''APIEvent)
 
 foreign export ccall "chat_migrate_init" cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
 
@@ -286,20 +290,21 @@ chatSendCmd :: ChatController -> B.ByteString -> IO JSONByteString
 chatSendCmd cc = chatSendRemoteCmd cc Nothing
 
 chatSendRemoteCmd :: ChatController -> Maybe RemoteHostId -> B.ByteString -> IO JSONByteString
-chatSendRemoteCmd cc rh s = J.encode . APIResponse Nothing rh <$> runReaderT (execChatCommand rh s) cc
+chatSendRemoteCmd cc rh s = J.encode . APIResponse rh <$> runReaderT (execChatCommand rh s) cc
 
 chatRecvMsg :: ChatController -> IO JSONByteString
 chatRecvMsg ChatController {outputQ} = json <$> readChatResponse
   where
-    json (corr, remoteHostId, resp) = J.encode APIResponse {corr, remoteHostId, resp}
+    json (remoteHostId, resp) = J.encode APIEvent {remoteHostId, resp}
     readChatResponse = do
-      out@(_, _, cr) <- atomically $ readTBQueue outputQ
-      if filterEvent cr then pure out else readChatResponse
+      out@(_, cEvt) <- atomically $ readTBQueue outputQ
+      if filterEvent cEvt then pure out else readChatResponse
     filterEvent = \case
-      CRGroupSubscribed {} -> False
-      CRGroupEmpty {} -> False
-      CRMemberSubSummary {} -> False
-      CRPendingSubSummary {} -> False
+      CEvtGroupSubscribed {} -> False
+      CEvtGroupEmpty {} -> False
+      CEvtMemberSubSummary {} -> False
+      CEvtPendingSubSummary {} -> False
+      CEvtTerminalEvent {} -> False
       _ -> True
 
 chatRecvMsgWait :: ChatController -> Int -> IO JSONByteString

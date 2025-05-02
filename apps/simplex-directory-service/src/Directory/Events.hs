@@ -63,41 +63,40 @@ data DirectoryEvent
   | DELogChatResponse Text
   deriving (Show)
 
-crDirectoryEvent :: ChatResponse -> Maybe DirectoryEvent
+crDirectoryEvent :: ChatEvent -> Maybe DirectoryEvent
 crDirectoryEvent = \case
-  CRContactConnected {contact} -> Just $ DEContactConnected contact
-  CRReceivedGroupInvitation {contact, groupInfo, fromMemberRole, memberRole} -> Just $ DEGroupInvitation {contact, groupInfo, fromMemberRole, memberRole}
-  CRUserJoinedGroup {groupInfo, hostMember} -> (\contactId -> DEServiceJoinedGroup {contactId, groupInfo, hostMember}) <$> memberContactId hostMember
-  CRGroupUpdated {fromGroup, toGroup, member_} -> (\member -> DEGroupUpdated {member, fromGroup, toGroup}) <$> member_
-  CRJoinedGroupMember {groupInfo, member = m}
+  CEvtContactConnected {contact} -> Just $ DEContactConnected contact
+  CEvtReceivedGroupInvitation {contact, groupInfo, fromMemberRole, memberRole} -> Just $ DEGroupInvitation {contact, groupInfo, fromMemberRole, memberRole}
+  CEvtUserJoinedGroup {groupInfo, hostMember} -> (\contactId -> DEServiceJoinedGroup {contactId, groupInfo, hostMember}) <$> memberContactId hostMember
+  CEvtGroupUpdated {fromGroup, toGroup, member_} -> (\member -> DEGroupUpdated {member, fromGroup, toGroup}) <$> member_
+  CEvtJoinedGroupMember {groupInfo, member = m}
     | pending m -> Just $ DEPendingMember groupInfo m
     | otherwise -> Nothing
-  CRNewChatItems {chatItems = AChatItem _ _ (GroupChat g) ci : _} -> case ci of
+  CEvtNewChatItems {chatItems = AChatItem _ _ (GroupChat g) ci : _} -> case ci of
     ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent (MCText t)} | pending m -> Just $ DEPendingMemberMsg g m (chatItemId' ci) t
     _ -> Nothing
-  CRMemberRole {groupInfo, member, toRole}
+  CEvtMemberRole {groupInfo, member, toRole}
     | groupMemberId' member == groupMemberId' (membership groupInfo) -> Just $ DEServiceRoleChanged groupInfo toRole
     | otherwise -> (\ctId -> DEContactRoleChanged groupInfo ctId toRole) <$> memberContactId member
-  CRDeletedMember {groupInfo, deletedMember} -> (`DEContactRemovedFromGroup` groupInfo) <$> memberContactId deletedMember
-  CRLeftMember {groupInfo, member} -> (`DEContactLeftGroup` groupInfo) <$> memberContactId member
-  CRDeletedMemberUser {groupInfo} -> Just $ DEServiceRemovedFromGroup groupInfo
-  CRGroupDeleted {groupInfo} -> Just $ DEGroupDeleted groupInfo
-  CRChatItemUpdated {chatItem = AChatItem _ SMDRcv (DirectChat ct) _} -> Just $ DEItemEditIgnored ct
-  CRChatItemsDeleted {chatItemDeletions = ((ChatItemDeletion (AChatItem _ SMDRcv (DirectChat ct) _) _) : _), byUser = False} -> Just $ DEItemDeleteIgnored ct
-  CRNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat ct) ci@ChatItem {content = CIRcvMsgContent mc, meta = CIMeta {itemLive}}) : _} ->
+  CEvtDeletedMember {groupInfo, deletedMember} -> (`DEContactRemovedFromGroup` groupInfo) <$> memberContactId deletedMember
+  CEvtLeftMember {groupInfo, member} -> (`DEContactLeftGroup` groupInfo) <$> memberContactId member
+  CEvtDeletedMemberUser {groupInfo} -> Just $ DEServiceRemovedFromGroup groupInfo
+  CEvtGroupDeleted {groupInfo} -> Just $ DEGroupDeleted groupInfo
+  CEvtChatItemUpdated {chatItem = AChatItem _ SMDRcv (DirectChat ct) _} -> Just $ DEItemEditIgnored ct
+  CEvtChatItemsDeleted {chatItemDeletions = ((ChatItemDeletion (AChatItem _ SMDRcv (DirectChat ct) _) _) : _), byUser = False} -> Just $ DEItemDeleteIgnored ct
+  CEvtNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat ct) ci@ChatItem {content = CIRcvMsgContent mc, meta = CIMeta {itemLive}}) : _} ->
     Just $ case (mc, itemLive) of
       (MCText t, Nothing) -> DEContactCommand ct ciId $ fromRight err $ A.parseOnly (directoryCmdP <* A.endOfInput) $ T.dropWhileEnd isSpace t
       _ -> DEUnsupportedMessage ct ciId
     where
       ciId = chatItemId' ci
       err = ADC SDRUser DCUnknownCommand
-  CRMessageError {severity, errorMessage} -> Just $ DELogChatResponse $ "message error: " <> severity <> ", " <> errorMessage
-  CRChatCmdError {chatError} -> Just $ DELogChatResponse $ "chat cmd error: " <> tshow chatError
-  CRChatError {chatError} -> case chatError of
+  CEvtMessageError {severity, errorMessage} -> Just $ DELogChatResponse $ "message error: " <> severity <> ", " <> errorMessage
+  CEvtChatError {chatError} -> case chatError of
     ChatErrorAgent {agentError = BROKER _ NETWORK} -> Nothing
     ChatErrorAgent {agentError = BROKER _ TIMEOUT} -> Nothing
     _ -> Just $ DELogChatResponse $ "chat error: " <> tshow chatError
-  CRChatErrors {chatErrors} -> Just $ DELogChatResponse $ "chat errors: " <> T.intercalate ", " (map tshow chatErrors)
+  CEvtChatErrors {chatErrors} -> Just $ DELogChatResponse $ "chat errors: " <> T.intercalate ", " (map tshow chatErrors)
   _ -> Nothing
   where
     pending m = memberStatus m == GSMemPendingApproval

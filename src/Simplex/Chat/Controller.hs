@@ -55,7 +55,6 @@ import Numeric.Natural
 import qualified Paths_simplex_chat as SC
 import Simplex.Chat.AppSettings
 import Simplex.Chat.Call
-import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Operators
@@ -86,7 +85,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, simplexMQVersion)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
@@ -176,7 +175,7 @@ data ChatHooks = ChatHooks
     preCmdHook :: Maybe (ChatController -> ChatCommand -> IO (Either ChatResponse ChatCommand)),
     -- eventHook can be used to additionally process or modify events,
     -- it is called before the event is sent to the user (or to the UI).
-    eventHook :: Maybe (ChatController -> ChatResponse -> IO ChatResponse),
+    eventHook :: Maybe (ChatController -> ChatEvent -> IO ChatEvent),
     -- acceptMember hook can be used to accept or reject member connecting via group link without API calls
     acceptMember :: Maybe (GroupInfo -> GroupLinkInfo -> Profile -> IO (Either GroupRejectionReason (GroupAcceptance, GroupMemberRole)))
   }
@@ -224,7 +223,7 @@ data ChatController = ChatController
     random :: TVar ChaChaDRG,
     eventSeq :: TVar Int,
     inputQ :: TBQueue String,
-    outputQ :: TBQueue (Maybe CorrId, Maybe RemoteHostId, ChatResponse),
+    outputQ :: TBQueue (Maybe RemoteHostId, ChatEvent),
     connNetworkStatuses :: TMap AgentConnId NetworkStatus,
     subscriptionMode :: TVar SubscriptionMode,
     chatLock :: Lock,
@@ -548,7 +547,7 @@ data ChatCommand
   | QuitChat
   | ShowVersion
   | DebugLocks
-  | DebugEvent ChatResponse
+  | DebugEvent ChatEvent
   | GetAgentSubsTotal UserId
   | GetAgentServersSummary UserId
   | ResetAgentServersStats
@@ -608,7 +607,6 @@ data ChatResponse
   | CRChatStarted
   | CRChatRunning
   | CRChatStopped
-  | CRChatSuspended
   | CRApiChats {user :: User, chats :: [AChat]}
   | CRChats {chats :: [AChat]}
   | CRApiChat {user :: User, chat :: AChat, navInfo :: Maybe NavigationInfo}
@@ -616,7 +614,6 @@ data ChatResponse
   | CRChatItems {user :: User, chatName_ :: Maybe ChatName, chatItems :: [AChatItem]}
   | CRChatItemInfo {user :: User, chatItem :: AChatItem, chatItemInfo :: ChatItemInfo}
   | CRChatItemId User (Maybe ChatItemId)
-  | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
   | CRServerOperatorConditions {conditions :: ServerOperatorConditions}
   | CRUserServers {user :: User, userServers :: [UserOperatorServers]}
@@ -632,30 +629,20 @@ data ChatResponse
   | CRGroupMemberSwitchStarted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
   | CRContactSwitchAborted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
   | CRGroupMemberSwitchAborted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
-  | CRContactSwitch {user :: User, contact :: Contact, switchProgress :: SwitchProgress}
-  | CRGroupMemberSwitch {user :: User, groupInfo :: GroupInfo, member :: GroupMember, switchProgress :: SwitchProgress}
   | CRContactRatchetSyncStarted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
   | CRGroupMemberRatchetSyncStarted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
-  | CRContactRatchetSync {user :: User, contact :: Contact, ratchetSyncProgress :: RatchetSyncProgress}
-  | CRGroupMemberRatchetSync {user :: User, groupInfo :: GroupInfo, member :: GroupMember, ratchetSyncProgress :: RatchetSyncProgress}
-  | CRContactVerificationReset {user :: User, contact :: Contact}
-  | CRGroupMemberVerificationReset {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRContactCode {user :: User, contact :: Contact, connectionCode :: Text}
   | CRGroupMemberCode {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
   | CRConnectionVerified {user :: User, verified :: Bool, expectedCode :: Text}
   | CRTagsUpdated {user :: User, userTags :: [ChatTag], chatTags :: [ChatTagId]}
   | CRNewChatItems {user :: User, chatItems :: [AChatItem]}
-  | CRChatItemsStatusesUpdated {user :: User, chatItems :: [AChatItem]}
   | CRChatItemUpdated {user :: User, chatItem :: AChatItem}
   | CRChatItemNotChanged {user :: User, chatItem :: AChatItem}
   | CRChatItemReaction {user :: User, added :: Bool, reaction :: ACIReaction}
   | CRReactionMembers {user :: User, memberReactions :: [MemberReaction]}
   | CRChatItemsDeleted {user :: User, chatItemDeletions :: [ChatItemDeletion], byUser :: Bool, timed :: Bool}
   | CRGroupChatItemsDeleted {user :: User, groupInfo :: GroupInfo, chatItemIDs :: [ChatItemId], byUser :: Bool, member_ :: Maybe GroupMember}
-  | CRChatItemDeletedNotFound {user :: User, contact :: Contact, sharedMsgId :: SharedMsgId}
   | CRBroadcastSent {user :: User, msgContent :: MsgContent, successes :: Int, failures :: Int, timestamp :: UTCTime}
-  | CRMsgIntegrityError {user :: User, msgError :: MsgErrorType}
-  | CRCmdAccepted {corr :: CorrId}
   | CRCmdOk {user_ :: Maybe User}
   | CRChatHelp {helpSection :: HelpSection}
   | CRWelcome {user :: User}
@@ -666,8 +653,6 @@ data ChatResponse
   | CRUserContactLinkUpdated {user :: User, contactLink :: UserContactLink}
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
-  | CRGroupLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
-  | CRBusinessLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, fromContact :: Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool}
   | CRGroupsList {user :: User, groups :: [(GroupInfo, GroupSummary)]}
   | CRSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
@@ -684,134 +669,53 @@ data ChatResponse
   | CRSentConfirmation {user :: User, connection :: PendingContactConnection}
   | CRSentInvitation {user :: User, connection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRSentInvitationToContact {user :: User, contact :: Contact, customUserProfile :: Maybe Profile}
-  | CRContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
-  | CRGroupMemberUpdated {user :: User, groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
-  | CRContactsMerged {user :: User, intoContact :: Contact, mergedContact :: Contact, updatedContact :: Contact}
   | CRContactDeleted {user :: User, contact :: Contact}
-  | CRContactDeletedByContact {user :: User, contact :: Contact}
   | CRChatCleared {user :: User, chatInfo :: AChatInfo}
   | CRUserContactLinkCreated {user :: User, connLinkContact :: CreatedLinkContact}
   | CRUserContactLinkDeleted {user :: User}
-  | CRReceivedContactRequest {user :: User, contactRequest :: UserContactRequest}
   | CRAcceptingContactRequest {user :: User, contact :: Contact}
-  | CRAcceptingBusinessRequest {user :: User, groupInfo :: GroupInfo}
   | CRContactAlreadyExists {user :: User, contact :: Contact}
-  | CRContactRequestAlreadyAccepted {user :: User, contact :: Contact}
-  | CRBusinessRequestAlreadyAccepted {user :: User, groupInfo :: GroupInfo}
   | CRLeftMemberUser {user :: User, groupInfo :: GroupInfo}
   | CRGroupDeletedUser {user :: User, groupInfo :: GroupInfo}
   | CRForwardPlan {user :: User, itemsCount :: Int, chatItemIds :: [ChatItemId], forwardConfirmation :: Maybe ForwardConfirmation}
-  | CRRcvFileDescrReady {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer, rcvFileDescr :: RcvFileDescr}
   | CRRcvFileAccepted {user :: User, chatItem :: AChatItem}
   | CRRcvFileAcceptedSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer}
   | CRStandaloneFileInfo {fileMeta :: Maybe J.Value}
   | CRRcvStandaloneFileCreated {user :: User, rcvFileTransfer :: RcvFileTransfer} -- returned by _download
-  | CRRcvFileStart {user :: User, chatItem :: AChatItem} -- sent by chats
-  | CRRcvFileProgressXFTP {user :: User, chatItem_ :: Maybe AChatItem, receivedSize :: Int64, totalSize :: Int64, rcvFileTransfer :: RcvFileTransfer}
-  | CRRcvFileComplete {user :: User, chatItem :: AChatItem}
-  | CRRcvStandaloneFileComplete {user :: User, targetPath :: FilePath, rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileCancelled {user :: User, chatItem_ :: Maybe AChatItem, rcvFileTransfer :: RcvFileTransfer}
-  | CRRcvFileSndCancelled {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer}
-  | CRRcvFileError {user :: User, chatItem_ :: Maybe AChatItem, agentError :: AgentErrorType, rcvFileTransfer :: RcvFileTransfer}
-  | CRRcvFileWarning {user :: User, chatItem_ :: Maybe AChatItem, agentError :: AgentErrorType, rcvFileTransfer :: RcvFileTransfer}
-  | CRSndFileStart {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
-  | CRSndFileComplete {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
-  | CRSndFileRcvCancelled {user :: User, chatItem_ :: Maybe AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileCancelled {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
   | CRSndStandaloneFileCreated {user :: User, fileTransferMeta :: FileTransferMeta} -- returned by _upload
-  | CRSndFileStartXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta} -- not used
-  | CRSndFileProgressXFTP {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta, sentSize :: Int64, totalSize :: Int64}
-  | CRSndFileRedirectStartXFTP {user :: User, fileTransferMeta :: FileTransferMeta, redirectMeta :: FileTransferMeta}
-  | CRSndFileCompleteXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
-  | CRSndStandaloneFileComplete {user :: User, fileTransferMeta :: FileTransferMeta, rcvURIs :: [Text]}
-  | CRSndFileCancelledXFTP {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta}
-  | CRSndFileError {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta, errorMessage :: Text}
-  | CRSndFileWarning {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta, errorMessage :: Text}
   | CRUserProfileUpdated {user :: User, fromProfile :: Profile, toProfile :: Profile, updateSummary :: UserProfileUpdateSummary}
   | CRUserProfileImage {user :: User, profile :: Profile}
   | CRContactAliasUpdated {user :: User, toContact :: Contact}
   | CRGroupAliasUpdated {user :: User, toGroup :: GroupInfo}
   | CRConnectionAliasUpdated {user :: User, toConnection :: PendingContactConnection}
   | CRContactPrefsUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
-  | CRContactConnecting {user :: User, contact :: Contact}
-  | CRContactConnected {user :: User, contact :: Contact, userCustomProfile :: Maybe Profile}
-  | CRContactSndReady {user :: User, contact :: Contact}
-  | CRContactAnotherClient {user :: User, contact :: Contact}
-  | CRSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
-  | CRContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
-  | CRContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
-  | CRContactSubError {user :: User, contact :: Contact, chatError :: ChatError}
-  | CRContactSubSummary {user :: User, contactSubscriptions :: [ContactSubStatus]}
-  | CRUserContactSubSummary {user :: User, userContactSubscriptions :: [UserContactSubStatus]}
-  | CRNetworkStatus {networkStatus :: NetworkStatus, connections :: [AgentConnId]}
   | CRNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]}
-  | CRHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
-  | CRHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
-  | CRGroupInvitation {user :: User, shortGroupInfo :: ShortGroupInfo}
-  | CRReceivedGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
-  | CRUserJoinedGroup {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | CRJoinedGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
-  | CRJoinedGroupMemberConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
-  | CRMemberRole {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, fromRole :: GroupMemberRole, toRole :: GroupMemberRole}
   | CRMembersRoleUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], toRole :: GroupMemberRole}
-  | CRMemberBlockedForAll {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, blocked :: Bool}
   | CRMembersBlockedForAllUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], blocked :: Bool}
-  | CRConnectedToGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember, memberContact :: Maybe Contact}
-  | CRDeletedMember {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, deletedMember :: GroupMember, withMessages :: Bool}
-  | CRDeletedMemberUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember, withMessages :: Bool}
-  | CRLeftMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
-  | CRUnknownMemberCreated {user :: User, groupInfo :: GroupInfo, forwardedByMember :: GroupMember, member :: GroupMember}
-  | CRUnknownMemberBlocked {user :: User, groupInfo :: GroupInfo, blockedByMember :: GroupMember, member :: GroupMember}
-  | CRUnknownMemberAnnounced {user :: User, groupInfo :: GroupInfo, announcingMember :: GroupMember, unknownMember :: GroupMember, announcedMember :: GroupMember}
-  | CRGroupEmpty {user :: User, shortGroupInfo :: ShortGroupInfo}
-  | CRGroupDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
   | CRGroupProfile {user :: User, groupInfo :: GroupInfo}
   | CRGroupDescription {user :: User, groupInfo :: GroupInfo} -- only used in CLI
   | CRGroupLinkCreated {user :: User, groupInfo :: GroupInfo, connLinkContact :: CreatedLinkContact, memberRole :: GroupMemberRole}
   | CRGroupLink {user :: User, groupInfo :: GroupInfo, connLinkContact :: CreatedLinkContact, memberRole :: GroupMemberRole}
   | CRGroupLinkDeleted {user :: User, groupInfo :: GroupInfo}
-  | CRAcceptingGroupJoinRequestMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
-  | CRNoMemberContactCreating {user :: User, groupInfo :: GroupInfo, member :: GroupMember} -- only used in CLI
   | CRNewMemberContact {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | CRNewMemberContactSentInv {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
-  | CRNewMemberContactReceivedInv {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
-  | CRContactAndMemberAssociated {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember, updatedContact :: Contact}
-  | CRMemberSubError {user :: User, shortGroupInfo :: ShortGroupInfo, memberToSubscribe :: ShortGroupMember, chatError :: ChatError}
-  | CRMemberSubSummary {user :: User, memberSubscriptions :: [MemberSubStatus]}
-  | CRGroupSubscribed {user :: User, shortGroupInfo :: ShortGroupInfo}
-  | CRPendingSubSummary {user :: User, pendingSubscriptions :: [PendingSubStatus]}
-  | CRSndFileSubError {user :: User, sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
-  | CRRcvFileSubError {user :: User, rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
-  | CRCallInvitation {callInvitation :: RcvCallInvitation}
-  | CRCallOffer {user :: User, contact :: Contact, callType :: CallType, offer :: WebRTCSession, sharedKey :: Maybe C.Key, askConfirmation :: Bool}
-  | CRCallAnswer {user :: User, contact :: Contact, answer :: WebRTCSession}
-  | CRCallExtraInfo {user :: User, contact :: Contact, extraInfo :: WebRTCExtraInfo}
-  | CRCallEnded {user :: User, contact :: Contact}
   | CRCallInvitations {callInvitations :: [RcvCallInvitation]}
-  | CRUserContactLinkSubscribed -- TODO delete
-  | CRUserContactLinkSubError {chatError :: ChatError} -- TODO delete
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode, ntfServer :: NtfServer}
   | CRNtfConns {ntfConns :: [NtfConn]}
   | CRConnNtfMessages {receivedMsgs :: NonEmpty (Maybe NtfMsgInfo)}
-  | CRNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgAckInfo}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
   | CRCurrentRemoteHost {remoteHost_ :: Maybe RemoteHostInfo}
   | CRRemoteHostStarted {remoteHost_ :: Maybe RemoteHostInfo, invitation :: Text, ctrlPort :: String, localAddrs :: NonEmpty RCCtrlAddress}
-  | CRRemoteHostSessionCode {remoteHost_ :: Maybe RemoteHostInfo, sessionCode :: Text}
-  | CRNewRemoteHost {remoteHost :: RemoteHostInfo}
-  | CRRemoteHostConnected {remoteHost :: RemoteHostInfo}
-  | CRRemoteHostStopped {remoteHostId_ :: Maybe RemoteHostId, rhsState :: RemoteHostSessionState, rhStopReason :: RemoteHostStopReason}
   | CRRemoteFileStored {remoteHostId :: RemoteHostId, remoteFileSource :: CryptoFile}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
-  | CRRemoteCtrlFound {remoteCtrl :: RemoteCtrlInfo, ctrlAppInfo_ :: Maybe CtrlAppInfo, appVersion :: AppVersion, compatible :: Bool}
   | CRRemoteCtrlConnecting {remoteCtrl_ :: Maybe RemoteCtrlInfo, ctrlAppInfo :: CtrlAppInfo, appVersion :: AppVersion}
-  | CRRemoteCtrlSessionCode {remoteCtrl_ :: Maybe RemoteCtrlInfo, sessionCode :: Text}
   | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo}
-  | CRRemoteCtrlStopped {rcsState :: RemoteCtrlSessionState, rcStopReason :: RemoteCtrlStopReason}
-  | CRContactPQEnabled {user :: User, contact :: Contact, pqEnabled :: PQEncryption}
   | CRSQLResult {rows :: [Text]}
 #if !defined(dbPostgres)
   | CRArchiveExported {archiveErrors :: [ArchiveError]}
@@ -826,25 +730,133 @@ data ChatResponse
   | CRAgentSubs {activeSubs :: Map Text Int, pendingSubs :: Map Text Int, removedSubs :: Map Text [String]}
   | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
   | CRAgentQueuesInfo {agentQueuesInfo :: AgentQueuesInfo}
-  | CRContactDisabled {user :: User, contact :: Contact}
-  | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
-  | CRConnectionInactive {connectionEntity :: ConnectionEntity, inactive :: Bool}
-  | CRAgentRcvQueuesDeleted {deletedRcvQueues :: NonEmpty DeletedRcvQueue}
-  | CRAgentConnsDeleted {agentConnIds :: NonEmpty AgentConnId}
-  | CRAgentUserDeleted {agentUserId :: Int64}
-  | CRMessageError {user :: User, severity :: Text, errorMessage :: Text}
   | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
-  | CRChatError {user_ :: Maybe User, chatError :: ChatError}
-  | CRChatErrors {user_ :: Maybe User, chatErrors :: [ChatError]}
   | CRAppSettings {appSettings :: AppSettings}
-  | CRTimedAction {action :: String, durationMilliseconds :: Int64}
   | CRCustomChatResponse {user_ :: Maybe User, response :: Text}
-  | CRTerminalEvent TerminalEvent
+  deriving (Show)
+
+data ChatEvent
+  = CEvtChatSuspended
+  | CEvtContactSwitch {user :: User, contact :: Contact, switchProgress :: SwitchProgress}
+  | CEvtGroupMemberSwitch {user :: User, groupInfo :: GroupInfo, member :: GroupMember, switchProgress :: SwitchProgress}
+  | CEvtContactRatchetSync {user :: User, contact :: Contact, ratchetSyncProgress :: RatchetSyncProgress}
+  | CEvtGroupMemberRatchetSync {user :: User, groupInfo :: GroupInfo, member :: GroupMember, ratchetSyncProgress :: RatchetSyncProgress}
+  | CEvtContactVerificationReset {user :: User, contact :: Contact}
+  | CEvtGroupMemberVerificationReset {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
+  | CEvtNewChatItems {user :: User, chatItems :: [AChatItem]} -- there is the same command response
+  | CEvtChatItemsStatusesUpdated {user :: User, chatItems :: [AChatItem]}
+  | CEvtChatItemUpdated {user :: User, chatItem :: AChatItem} -- there is the same command response
+  | CEvtChatItemNotChanged {user :: User, chatItem :: AChatItem} -- there is the same command response
+  | CEvtChatItemReaction {user :: User, added :: Bool, reaction :: ACIReaction} -- there is the same command response
+  | CEvtGroupChatItemsDeleted {user :: User, groupInfo :: GroupInfo, chatItemIDs :: [ChatItemId], byUser :: Bool, member_ :: Maybe GroupMember} -- there is the same command response
+  | CEvtChatItemsDeleted {user :: User, chatItemDeletions :: [ChatItemDeletion], byUser :: Bool, timed :: Bool} -- there is the same command response
+  | CEvtChatItemDeletedNotFound {user :: User, contact :: Contact, sharedMsgId :: SharedMsgId}
+  | CEvtUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact} -- there is the same command response
+  | CEvtGroupLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
+  | CEvtBusinessLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, fromContact :: Contact}
+  | CEvtSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember} -- there is the same command response
+  | CEvtContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
+  | CEvtGroupMemberUpdated {user :: User, groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
+  | CEvtContactsMerged {user :: User, intoContact :: Contact, mergedContact :: Contact, updatedContact :: Contact}
+  | CEvtContactDeletedByContact {user :: User, contact :: Contact}
+  | CEvtReceivedContactRequest {user :: User, contactRequest :: UserContactRequest}
+  | CEvtAcceptingContactRequest {user :: User, contact :: Contact} -- there is the same command response
+  | CEvtAcceptingBusinessRequest {user :: User, groupInfo :: GroupInfo}
+  | CEvtContactRequestAlreadyAccepted {user :: User, contact :: Contact}
+  | CEvtBusinessRequestAlreadyAccepted {user :: User, groupInfo :: GroupInfo}
+  | CEvtRcvFileDescrReady {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer, rcvFileDescr :: RcvFileDescr}
+  | CEvtRcvFileAccepted {user :: User, chatItem :: AChatItem} -- there is the same command response
+  | CEvtRcvFileAcceptedSndCancelled {user :: User, rcvFileTransfer :: RcvFileTransfer} -- there is the same command response
+  | CEvtRcvFileStart {user :: User, chatItem :: AChatItem} -- sent by chats
+  | CEvtRcvFileProgressXFTP {user :: User, chatItem_ :: Maybe AChatItem, receivedSize :: Int64, totalSize :: Int64, rcvFileTransfer :: RcvFileTransfer}
+  | CEvtRcvFileComplete {user :: User, chatItem :: AChatItem}
+  | CEvtRcvStandaloneFileComplete {user :: User, targetPath :: FilePath, rcvFileTransfer :: RcvFileTransfer}
+  | CEvtRcvFileSndCancelled {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer}
+  | CEvtRcvFileError {user :: User, chatItem_ :: Maybe AChatItem, agentError :: AgentErrorType, rcvFileTransfer :: RcvFileTransfer}
+  | CEvtRcvFileWarning {user :: User, chatItem_ :: Maybe AChatItem, agentError :: AgentErrorType, rcvFileTransfer :: RcvFileTransfer}
+  | CEvtSndFileStart {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
+  | CEvtSndFileComplete {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
+  | CEvtSndFileRcvCancelled {user :: User, chatItem_ :: Maybe AChatItem, sndFileTransfer :: SndFileTransfer}
+  | CEvtSndFileStartXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta} -- not used
+  | CEvtSndFileProgressXFTP {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta, sentSize :: Int64, totalSize :: Int64}
+  | CEvtSndFileRedirectStartXFTP {user :: User, fileTransferMeta :: FileTransferMeta, redirectMeta :: FileTransferMeta}
+  | CEvtSndFileCompleteXFTP {user :: User, chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta}
+  | CEvtSndStandaloneFileComplete {user :: User, fileTransferMeta :: FileTransferMeta, rcvURIs :: [Text]}
+  | CEvtSndFileCancelledXFTP {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta}
+  | CEvtSndFileError {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta, errorMessage :: Text}
+  | CEvtSndFileWarning {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta, errorMessage :: Text}
+  | CEvtContactConnecting {user :: User, contact :: Contact}
+  | CEvtContactConnected {user :: User, contact :: Contact, userCustomProfile :: Maybe Profile}
+  | CEvtContactSndReady {user :: User, contact :: Contact}
+  | CEvtContactAnotherClient {user :: User, contact :: Contact}
+  | CEvtSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
+  | CEvtContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
+  | CEvtContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
+  | CEvtContactSubError {user :: User, contact :: Contact, chatError :: ChatError}
+  | CEvtContactSubSummary {user :: User, contactSubscriptions :: [ContactSubStatus]}
+  | CEvtUserContactSubSummary {user :: User, userContactSubscriptions :: [UserContactSubStatus]}
+  | CEvtNetworkStatus {networkStatus :: NetworkStatus, connections :: [AgentConnId]}
+  | CEvtNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]} -- there is the same command response
+  | CEvtHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
+  | CEvtHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
+  | CEvtGroupInvitation {user :: User, shortGroupInfo :: ShortGroupInfo}
+  | CEvtReceivedGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
+  | CEvtUserJoinedGroup {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
+  | CEvtJoinedGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember} -- there is the same command response
+  | CEvtJoinedGroupMemberConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
+  | CEvtMemberRole {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, fromRole :: GroupMemberRole, toRole :: GroupMemberRole}
+  | CEvtMemberBlockedForAll {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, blocked :: Bool}
+  | CEvtConnectedToGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember, memberContact :: Maybe Contact}
+  | CEvtDeletedMember {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, deletedMember :: GroupMember, withMessages :: Bool}
+  | CEvtDeletedMemberUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember, withMessages :: Bool}
+  | CEvtLeftMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
+  | CEvtUnknownMemberCreated {user :: User, groupInfo :: GroupInfo, forwardedByMember :: GroupMember, member :: GroupMember}
+  | CEvtUnknownMemberBlocked {user :: User, groupInfo :: GroupInfo, blockedByMember :: GroupMember, member :: GroupMember}
+  | CEvtUnknownMemberAnnounced {user :: User, groupInfo :: GroupInfo, announcingMember :: GroupMember, unknownMember :: GroupMember, announcedMember :: GroupMember}
+  | CEvtGroupEmpty {user :: User, shortGroupInfo :: ShortGroupInfo}
+  | CEvtGroupDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
+  | CEvtGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember} -- there is the same command response
+  | CEvtAcceptingGroupJoinRequestMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
+  | CEvtNoMemberContactCreating {user :: User, groupInfo :: GroupInfo, member :: GroupMember} -- only used in CLI
+  | CEvtNewMemberContactReceivedInv {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
+  | CEvtContactAndMemberAssociated {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember, updatedContact :: Contact}
+  | CEvtMemberSubError {user :: User, shortGroupInfo :: ShortGroupInfo, memberToSubscribe :: ShortGroupMember, chatError :: ChatError}
+  | CEvtMemberSubSummary {user :: User, memberSubscriptions :: [MemberSubStatus]}
+  | CEvtGroupSubscribed {user :: User, shortGroupInfo :: ShortGroupInfo}
+  | CEvtPendingSubSummary {user :: User, pendingSubscriptions :: [PendingSubStatus]}
+  | CEvtSndFileSubError {user :: User, sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
+  | CEvtRcvFileSubError {user :: User, rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
+  | CEvtCallInvitation {callInvitation :: RcvCallInvitation}
+  | CEvtCallOffer {user :: User, contact :: Contact, callType :: CallType, offer :: WebRTCSession, sharedKey :: Maybe C.Key, askConfirmation :: Bool}
+  | CEvtCallAnswer {user :: User, contact :: Contact, answer :: WebRTCSession}
+  | CEvtCallExtraInfo {user :: User, contact :: Contact, extraInfo :: WebRTCExtraInfo}
+  | CEvtCallEnded {user :: User, contact :: Contact}
+  | CEvtNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgAckInfo}
+  | CEvtRemoteHostSessionCode {remoteHost_ :: Maybe RemoteHostInfo, sessionCode :: Text}
+  | CEvtNewRemoteHost {remoteHost :: RemoteHostInfo}
+  | CEvtRemoteHostConnected {remoteHost :: RemoteHostInfo}
+  | CEvtRemoteHostStopped {remoteHostId_ :: Maybe RemoteHostId, rhsState :: RemoteHostSessionState, rhStopReason :: RemoteHostStopReason}
+  | CEvtRemoteCtrlFound {remoteCtrl :: RemoteCtrlInfo, ctrlAppInfo_ :: Maybe CtrlAppInfo, appVersion :: AppVersion, compatible :: Bool}
+  | CEvtRemoteCtrlSessionCode {remoteCtrl_ :: Maybe RemoteCtrlInfo, sessionCode :: Text}  
+  | CEvtRemoteCtrlStopped {rcsState :: RemoteCtrlSessionState, rcStopReason :: RemoteCtrlStopReason}
+  | CEvtContactPQEnabled {user :: User, contact :: Contact, pqEnabled :: PQEncryption}
+  | CEvtContactDisabled {user :: User, contact :: Contact}
+  | CEvtConnectionDisabled {connectionEntity :: ConnectionEntity}
+  | CEvtConnectionInactive {connectionEntity :: ConnectionEntity, inactive :: Bool}
+  | CEvtAgentRcvQueuesDeleted {deletedRcvQueues :: NonEmpty DeletedRcvQueue}
+  | CEvtAgentConnsDeleted {agentConnIds :: NonEmpty AgentConnId}
+  | CEvtAgentUserDeleted {agentUserId :: Int64}
+  | CEvtMessageError {user :: User, severity :: Text, errorMessage :: Text}
+  | CEvtChatError {user_ :: Maybe User, chatError :: ChatError}
+  | CEvtChatErrors {user_ :: Maybe User, chatErrors :: [ChatError]}
+  | CEvtTimedAction {action :: String, durationMilliseconds :: Int64}
+  | CEvtTerminalEvent TerminalEvent
   deriving (Show)
 
 data TerminalEvent
   = TEGroupLinkRejected {user :: User, groupInfo :: GroupInfo, groupRejectionReason :: GroupRejectionReason}
   | TERejectingGroupJoinRequestMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember, groupRejectionReason :: GroupRejectionReason}
+  | TENewMemberContact {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   deriving (Show)
 
 data DeletedRcvQueue = DeletedRcvQueue
@@ -856,49 +868,35 @@ data DeletedRcvQueue = DeletedRcvQueue
   deriving (Show)
 
 -- some of these can only be used as command responses
-allowRemoteEvent :: ChatResponse -> Bool
+allowRemoteEvent :: ChatEvent -> Bool
 allowRemoteEvent = \case
-  CRChatStarted -> False
-  CRChatRunning -> False
-  CRChatStopped -> False
-  CRChatSuspended -> False
-  CRRemoteHostList _ -> False
-  CRCurrentRemoteHost _ -> False
-  CRRemoteHostStarted {} -> False
-  CRRemoteHostSessionCode {} -> False
-  CRNewRemoteHost _ -> False
-  CRRemoteHostConnected _ -> False
-  CRRemoteHostStopped {} -> False
-  CRRemoteFileStored {} -> False
-  CRRemoteCtrlList _ -> False
-  CRRemoteCtrlFound {} -> False
-  CRRemoteCtrlConnecting {} -> False
-  CRRemoteCtrlSessionCode {} -> False
-  CRRemoteCtrlConnected _ -> False
-  CRRemoteCtrlStopped {} -> False
-  CRSQLResult _ -> False
-#if !defined(dbPostgres)
-  CRSlowSQLQueries {} -> False
-#endif
+  CEvtChatSuspended -> False
+  CEvtRemoteHostSessionCode {} -> False
+  CEvtNewRemoteHost _ -> False
+  CEvtRemoteHostConnected _ -> False
+  CEvtRemoteHostStopped {} -> False
+  CEvtRemoteCtrlFound {} -> False
+  CEvtRemoteCtrlSessionCode {} -> False
+  CEvtRemoteCtrlStopped {} -> False
   _ -> True
 
-logResponseToFile :: ChatResponse -> Bool
-logResponseToFile = \case
-  CRContactsDisconnected {} -> True
-  CRContactsSubscribed {} -> True
-  CRContactSubError {} -> True
-  CRMemberSubError {} -> True
-  CRSndFileSubError {} -> True
-  CRRcvFileSubError {} -> True
-  CRHostConnected {} -> True
-  CRHostDisconnected {} -> True
-  CRConnectionDisabled {} -> True
-  CRAgentRcvQueuesDeleted {} -> True
-  CRAgentConnsDeleted {} -> True
-  CRAgentUserDeleted {} -> True
-  CRChatCmdError {} -> True
-  CRChatError {} -> True
-  CRMessageError {} -> True
+logEventToFile :: ChatEvent -> Bool
+logEventToFile = \case
+  CEvtContactsDisconnected {} -> True
+  CEvtContactsSubscribed {} -> True
+  CEvtContactSubError {} -> True
+  CEvtMemberSubError {} -> True
+  CEvtSndFileSubError {} -> True
+  CEvtRcvFileSubError {} -> True
+  CEvtHostConnected {} -> True
+  CEvtHostDisconnected {} -> True
+  CEvtConnectionDisabled {} -> True
+  CEvtAgentRcvQueuesDeleted {} -> True
+  CEvtAgentConnsDeleted {} -> True
+  CEvtAgentUserDeleted {} -> True
+  -- CEvtChatCmdError {} -> True -- TODO this should be separately logged to file
+  CEvtChatError {} -> True
+  CEvtMessageError {} -> True
   _ -> False
 
 -- (Maybe GroupMemberId) can later be changed to GroupSndScope = GSSAll | GSSAdmins | GSSMember GroupMemberId
@@ -1406,7 +1404,7 @@ data RemoteCtrlSession
         tls :: TLS,
         rcsSession :: RCCtrlSession,
         http2Server :: Async (),
-        remoteOutputQ :: TBQueue ChatResponse
+        remoteOutputQ :: TBQueue ChatEvent
       }
 
 data RemoteCtrlSessionState
@@ -1512,15 +1510,15 @@ throwChatError :: ChatErrorType -> CM a
 throwChatError = throwError . ChatError
 
 toViewTE :: TerminalEvent -> CM ()
-toViewTE = toView . CRTerminalEvent
+toViewTE = toView . CEvtTerminalEvent
 {-# INLINE toViewTE #-}
 
 -- | Emit local events.
-toView :: ChatResponse -> CM ()
+toView :: ChatEvent -> CM ()
 toView = lift . toView'
 {-# INLINE toView #-}
 
-toView' :: ChatResponse -> CM' ()
+toView' :: ChatEvent -> CM' ()
 toView' ev = do
   cc@ChatController {outputQ = localQ, remoteCtrlSession = session, config = ChatConfig {chatHooks}} <- ask
   event <- case eventHook chatHooks of
@@ -1531,7 +1529,7 @@ toView' ev = do
       Just (_, RCSessionConnected {remoteOutputQ})
         | allowRemoteEvent event -> writeTBQueue remoteOutputQ event
       -- TODO potentially, it should hold some events while connecting
-      _ -> writeTBQueue localQ (Nothing, Nothing, event)
+      _ -> writeTBQueue localQ (Nothing, event)
 
 withStore' :: (DB.Connection -> IO a) -> CM a
 withStore' action = withStore $ liftIO . action
@@ -1659,6 +1657,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHSR") ''RemoteHostStopReason)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "TE") ''TerminalEvent)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CEvt") ''ChatEvent)
 
 $(JQ.deriveFromJSON defaultJSON ''ArchiveConfig)
 
