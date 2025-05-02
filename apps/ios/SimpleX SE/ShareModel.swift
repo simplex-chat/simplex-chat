@@ -179,7 +179,7 @@ class ShareModel: ObservableObject {
                 resetChatCtrl() // Clears retained migration result
                 registerGroupDefaults()
                 haskell_init_se()
-                let (_, result) = chatMigrateInit(dbKey, confirmMigrations: defaultMigrationConfirmation())
+                let (_, result) = chatMigrateInit(dbKey, confirmMigrations: defaultMigrationConfirmation(), backgroundMode: false)
                 if let e = migrationError(result) { return e }
                 try apiSetAppFilePaths(
                     filesFolder: getAppFilesDirectory().path,

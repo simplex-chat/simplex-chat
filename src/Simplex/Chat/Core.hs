@@ -34,7 +34,7 @@ import Text.Read (readMaybe)
 import UnliftIO.Async
 
 simplexChatCore :: ChatConfig -> ChatOpts -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = CoreChatOpts {dbOptions, logAgent, yesToUpMigrations}} chat =
+simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = CoreChatOpts {dbOptions, logAgent, yesToUpMigrations}, maintenance} chat =
   case logAgent of
     Just level -> do
       setLogLevel level
@@ -48,7 +48,8 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {core
       exitFailure
     run db@ChatDatabase {chatStore} = do
       u_ <- getSelectActiveUser chatStore
-      cc <- newChatController db u_ cfg opts False
+      let backgroundMode = not maintenance
+      cc <- newChatController db u_ cfg opts backgroundMode
       u <- maybe (createActiveUser cc) pure u_
       unless testView $ putStrLn $ "Current user: " <> userStr u
       runSimplexChat opts u cc chat
