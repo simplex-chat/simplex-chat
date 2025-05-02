@@ -37,22 +37,6 @@ enum NSEChatCommand: ChatCmdProtocol {
         case let .setFileToReceive(fileId, userApprovedRelays, encrypt): return "/_set_file_to_receive \(fileId)\(onOffParam("approved_relays", userApprovedRelays))\(onOffParam("encrypt", encrypt))"
         }
     }
-    
-    var cmdType: String {
-        switch self {
-        case .showActiveUser: "showActiveUser"
-        case .startChat: "startChat"
-        case .apiActivateChat: "apiActivateChat"
-        case .apiSuspendChat: "apiSuspendChat"
-        case .apiSetNetworkConfig: "apiSetNetworkConfig"
-        case .apiSetAppFilePaths: "apiSetAppFilePaths"
-        case .apiSetEncryptLocalFiles: "apiSetEncryptLocalFiles"
-        case .apiGetNtfConns: "apiGetNtfConns"
-        case .apiGetConnNtfMessages: "apiGetConnNtfMessages"
-        case .receiveFile: "receiveFile"
-        case .setFileToReceive: "setFileToReceive"
-        }
-    }
 
     private func onOffParam(_ param: String, _ b: Bool?) -> String {
         if let b = b {

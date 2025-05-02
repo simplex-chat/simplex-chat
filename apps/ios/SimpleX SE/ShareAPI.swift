@@ -106,7 +106,7 @@ func apiSuspendChat(expired: Bool) {
         }
     }
     if !suspended {
-        let r1: SEChatResponse = sendSimpleXCmd(SEChatCommand.apiSuspendChat(timeoutMicroseconds: 0))
+        let _r1: SEChatResponse = sendSimpleXCmd(SEChatCommand.apiSuspendChat(timeoutMicroseconds: 0))
     }
     logger.debug("close store")
     chatCloseStore()
@@ -143,21 +143,6 @@ enum SEChatCommand: ChatCmdProtocol {
             let msgs = encodeJSON(composedMessages)
             let ttlStr = ttl != nil ? "\(ttl!)" : "default"
             return "/_send \(ref(type, id)) live=\(onOff(live)) ttl=\(ttlStr) json \(msgs)"
-        }
-    }
-    
-    var cmdType: String {
-        switch self {
-        case .showActiveUser: "showActiveUser"
-        case .startChat: "startChat"
-        case .apiActivateChat: "apiActivateChat"
-        case .apiSuspendChat: "apiSuspendChat"
-        case .apiSetNetworkConfig: "apiSetNetworkConfig"
-        case .apiSetAppFilePaths: "apiSetAppFilePaths"
-        case .apiSetEncryptLocalFiles: "apiSetEncryptLocalFiles"
-        case .apiGetChats: "apiGetChats"
-        case .apiCreateChatItems: "apiCreateChatItems"
-        case .apiSendMessages: "apiSendMessages"
         }
     }
     

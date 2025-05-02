@@ -171,7 +171,7 @@ enum ChatCommand: ChatCmdProtocol {
     case resetAgentServersStats
     case string(String)
 
-    public var cmdString: String {
+    var cmdString: String {
         get {
             switch self {
             case .showActiveUser: return "/u"
@@ -359,7 +359,7 @@ enum ChatCommand: ChatCmdProtocol {
         }
     }
 
-    public var cmdType: String {
+    var cmdType: String {
         get {
             switch self {
             case .showActiveUser: return "showActiveUser"
@@ -538,7 +538,7 @@ enum ChatCommand: ChatCmdProtocol {
         }
     }
 
-    public var obfuscated: ChatCommand {
+    var obfuscated: ChatCommand {
         switch self {
         case let .apiStorageEncryption(cfg):
             return .apiStorageEncryption(config: DBEncryptionConfig(currentKey: obfuscate(cfg.currentKey), newKey: obfuscate(cfg.newKey)))
@@ -1242,63 +1242,6 @@ enum ChatPagination {
     }
 }
 
-struct UpdatedMessage: Encodable {
-    var msgContent: MsgContent
-    var mentions: [String: Int64]
-    
-    var cmdString: String {
-        "json \(encodeJSON(self))"
-    }
-}
-
-enum ChatDeleteMode: Codable {
-    case full(notify: Bool)
-    case entity(notify: Bool)
-    case messages
-
-    var cmdString: String {
-        switch self {
-        case let .full(notify): "full notify=\(onOff(notify))"
-        case let .entity(notify): "entity notify=\(onOff(notify))"
-        case .messages: "messages"
-        }
-    }
-
-    var isEntity: Bool {
-        switch self {
-        case .entity: return true
-        default: return false
-        }
-    }
-}
-
-struct UserContactLink: Decodable, Hashable {
-    var connLinkContact: CreatedConnLink
-    var autoAccept: AutoAccept?
-
-    var responseDetails: String {
-        "connLinkContact: \(connLinkContact)\nautoAccept: \(AutoAccept.cmdString(autoAccept))"
-    }
-}
-
-struct AutoAccept: Codable, Hashable {
-    var businessAddress: Bool
-    var acceptIncognito: Bool
-    var autoReply: MsgContent?
-
-    static func cmdString(_ autoAccept: AutoAccept?) -> String {
-        guard let autoAccept = autoAccept else { return "off" }
-        var s = "on"
-        if autoAccept.acceptIncognito {
-            s += " incognito=on"
-        } else if autoAccept.businessAddress {
-            s += " business"
-        }
-        guard let msg = autoAccept.autoReply else { return s }
-        return s + " " + msg.cmdString
-    }
-}
-
 enum ConnectionPlan: Decodable, Hashable {
     case invitationLink(invitationLinkPlan: InvitationLinkPlan)
     case contactAddress(contactAddressPlan: ContactAddressPlan)
@@ -1335,6 +1278,224 @@ struct ChatTagData: Encodable {
     var text: String
 }
 
+struct UpdatedMessage: Encodable {
+    var msgContent: MsgContent
+    var mentions: [String: Int64]
+    
+    var cmdString: String {
+        "json \(encodeJSON(self))"
+    }
+}
+
+enum ChatDeleteMode: Codable {
+    case full(notify: Bool)
+    case entity(notify: Bool)
+    case messages
+
+    var cmdString: String {
+        switch self {
+        case let .full(notify): "full notify=\(onOff(notify))"
+        case let .entity(notify): "entity notify=\(onOff(notify))"
+        case .messages: "messages"
+        }
+    }
+
+    var isEntity: Bool {
+        switch self {
+        case .entity: return true
+        default: return false
+        }
+    }
+}
+
+enum NetworkStatus: Decodable, Equatable {
+    case unknown
+    case connected
+    case disconnected
+    case error(connectionError: String)
+
+    var statusString: LocalizedStringKey {
+        switch self {
+        case .connected: "connected"
+        case .error: "error"
+        default: "connecting"
+        }
+    }
+
+    var statusExplanation: LocalizedStringKey {
+        switch self {
+        case .connected: "You are connected to the server used to receive messages from this contact."
+        case let .error(err): "Trying to connect to the server used to receive messages from this contact (error: \(err))."
+        default: "Trying to connect to the server used to receive messages from this contact."
+        }
+    }
+
+    var imageName: String {
+        switch self {
+        case .unknown: "circle.dotted"
+        case .connected: "circle.fill"
+        case .disconnected: "ellipsis.circle.fill"
+        case .error: "exclamationmark.circle.fill"
+        }
+    }
+}
+
+enum ForwardConfirmation: Decodable, Hashable {
+    case filesNotAccepted(fileIds: [Int64])
+    case filesInProgress(filesCount: Int)
+    case filesMissing(filesCount: Int)
+    case filesFailed(filesCount: Int)
+}
+
+struct ConnNetworkStatus: Decodable {
+    var agentConnId: String
+    var networkStatus: NetworkStatus
+}
+
+struct UserMsgReceiptSettings: Codable {
+    var enable: Bool
+    var clearOverrides: Bool
+}
+
+
+struct UserContactLink: Decodable, Hashable {
+    var connLinkContact: CreatedConnLink
+    var autoAccept: AutoAccept?
+
+    var responseDetails: String {
+        "connLinkContact: \(connLinkContact)\nautoAccept: \(AutoAccept.cmdString(autoAccept))"
+    }
+}
+
+struct AutoAccept: Codable, Hashable {
+    var businessAddress: Bool
+    var acceptIncognito: Bool
+    var autoReply: MsgContent?
+
+    static func cmdString(_ autoAccept: AutoAccept?) -> String {
+        guard let autoAccept = autoAccept else { return "off" }
+        var s = "on"
+        if autoAccept.acceptIncognito {
+            s += " incognito=on"
+        } else if autoAccept.businessAddress {
+            s += " business"
+        }
+        guard let msg = autoAccept.autoReply else { return s }
+        return s + " " + msg.cmdString
+    }
+}
+
+struct DeviceToken: Decodable {
+    var pushProvider: PushProvider
+    var token: String
+
+    var cmdString: String {
+        "\(pushProvider) \(token)"
+    }
+}
+
+enum PushEnvironment: String {
+    case development
+    case production
+}
+
+enum PushProvider: String, Decodable {
+    case apns_dev
+    case apns_prod
+
+    init(env: PushEnvironment) {
+        switch env {
+        case .development: self = .apns_dev
+        case .production: self = .apns_prod
+        }
+    }
+}
+
+// This notification mode is for app core, UI uses AppNotificationsMode.off to mean completely disable,
+// and .local for periodic background checks
+enum NotificationsMode: String, Decodable, SelectableItem {
+    case off = "OFF"
+    case periodic = "PERIODIC"
+    case instant = "INSTANT"
+
+    var label: LocalizedStringKey {
+        switch self {
+        case .off: "No push server"
+        case .periodic: "Periodic"
+        case .instant: "Instant"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .off: return "arrow.clockwise"
+        case .periodic: return "timer"
+        case .instant: return "bolt"
+        }
+    }
+
+    var id: String { self.rawValue }
+
+    static var values: [NotificationsMode] = [.instant, .periodic, .off]
+}
+
+enum PrivacyChatListOpenLinksMode: String, CaseIterable, Codable, RawRepresentable, Identifiable {
+    case yes
+    case no
+    case ask
+
+    var id: Self { self }
+
+    var text: LocalizedStringKey {
+        switch self {
+        case .yes: return "Yes"
+        case .no: return "No"
+        case .ask: return "Ask"
+        }
+    }
+}
+
+struct RemoteCtrlInfo: Decodable {
+    var remoteCtrlId: Int64
+    var ctrlDeviceName: String
+    var sessionState: RemoteCtrlSessionState?
+
+    var deviceViewName: String {
+        ctrlDeviceName == "" ? "\(remoteCtrlId)" : ctrlDeviceName
+    }
+}
+
+enum RemoteCtrlSessionState: Decodable {
+    case starting
+    case searching
+    case connecting
+    case pendingConfirmation(sessionCode: String)
+    case connected(sessionCode: String)
+}
+
+enum RemoteCtrlStopReason: Decodable {
+    case discoveryFailed(chatError: ChatError)
+    case connectionFailed(chatError: ChatError)
+    case setupFailed(chatError: ChatError)
+    case disconnected
+}
+
+struct CtrlAppInfo: Decodable {
+    var appVersionRange: AppVersionRange
+    var deviceName: String
+}
+
+struct AppVersionRange: Decodable {
+    var minVersion: String
+    var maxVersion: String
+}
+
+struct CoreVersionInfo: Decodable {
+    var version: String
+    var simplexmqVersion: String
+    var simplexmqCommit: String
+}
+
 struct ArchiveConfig: Encodable {
     var archivePath: String
     var disableCompression: Bool?
@@ -1345,22 +1506,22 @@ struct DBEncryptionConfig: Codable {
     var newKey: String
 }
 
-public enum OperatorTag: String, Codable {
+enum OperatorTag: String, Codable {
     case simplex = "simplex"
     case flux = "flux"
 }
 
-public struct ServerOperatorInfo {
-    public var description: [String]
-    public var website: URL
-    public var selfhost: (text: String, link: URL)? = nil
-    public var logo: String
-    public var largeLogo: String
-    public var logoDarkMode: String
-    public var largeLogoDarkMode: String
+struct ServerOperatorInfo {
+    var description: [String]
+    var website: URL
+    var selfhost: (text: String, link: URL)? = nil
+    var logo: String
+    var largeLogo: String
+    var logoDarkMode: String
+    var largeLogoDarkMode: String
 }
 
-public let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
+let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
     .simplex: ServerOperatorInfo(
         description: [
             "SimpleX Chat is the first communication network that has no user profile IDs of any kind, not even random numbers or identity keys.",
@@ -1387,13 +1548,13 @@ public let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
     ),
 ]
 
-public struct UsageConditions: Decodable {
-    public var conditionsId: Int64
-    public var conditionsCommit: String
-    public var notifiedAt: Date?
-    public var createdAt: Date
+struct UsageConditions: Decodable {
+    var conditionsId: Int64
+    var conditionsCommit: String
+    var notifiedAt: Date?
+    var createdAt: Date
 
-    public static var sampleData = UsageConditions(
+    static var sampleData = UsageConditions(
         conditionsId: 1,
         conditionsCommit: "11a44dc1fd461a93079f897048b46998db55da5c",
         notifiedAt: nil,
@@ -1401,11 +1562,11 @@ public struct UsageConditions: Decodable {
     )
 }
 
-public enum UsageConditionsAction: Decodable {
+enum UsageConditionsAction: Decodable {
     case review(operators: [ServerOperator], deadline: Date?, showNotice: Bool)
     case accepted(operators: [ServerOperator])
 
-    public var showNotice: Bool {
+    var showNotice: Bool {
         switch self {
         case let .review(_, _, showNotice): showNotice
         case .accepted: false
@@ -1413,32 +1574,32 @@ public enum UsageConditionsAction: Decodable {
     }
 }
 
-public struct ServerOperatorConditions: Decodable {
-    public var serverOperators: [ServerOperator]
-    public var currentConditions: UsageConditions
-    public var conditionsAction: UsageConditionsAction?
+struct ServerOperatorConditions: Decodable {
+    var serverOperators: [ServerOperator]
+    var currentConditions: UsageConditions
+    var conditionsAction: UsageConditionsAction?
 
-    public static var empty = ServerOperatorConditions(
+    static var empty = ServerOperatorConditions(
         serverOperators: [],
         currentConditions: UsageConditions(conditionsId: 0, conditionsCommit: "empty", notifiedAt: nil, createdAt: .now),
         conditionsAction: nil
     )
 }
 
-public enum ConditionsAcceptance: Equatable, Codable, Hashable {
+enum ConditionsAcceptance: Equatable, Codable, Hashable {
     case accepted(acceptedAt: Date?, autoAccepted: Bool)
     // If deadline is present, it means there's a grace period to review and accept conditions during which user can continue to use the operator.
     // No deadline indicates it's required to accept conditions for the operator to start using it.
     case required(deadline: Date?)
 
-    public var conditionsAccepted: Bool {
+    var conditionsAccepted: Bool {
         switch self {
         case .accepted: true
         case .required: false
         }
     }
 
-    public var usageAllowed: Bool {
+    var usageAllowed: Bool {
         switch self {
         case .accepted: true
         case let .required(deadline): deadline != nil
@@ -1446,30 +1607,30 @@ public enum ConditionsAcceptance: Equatable, Codable, Hashable {
     }
 }
 
-public struct ServerOperator: Identifiable, Equatable, Codable {
-    public var operatorId: Int64
-    public var operatorTag: OperatorTag?
-    public var tradeName: String
-    public var legalName: String?
-    public var serverDomains: [String]
-    public var conditionsAcceptance: ConditionsAcceptance
-    public var enabled: Bool
-    public var smpRoles: ServerRoles
-    public var xftpRoles: ServerRoles
+struct ServerOperator: Identifiable, Equatable, Codable {
+    var operatorId: Int64
+    var operatorTag: OperatorTag?
+    var tradeName: String
+    var legalName: String?
+    var serverDomains: [String]
+    var conditionsAcceptance: ConditionsAcceptance
+    var enabled: Bool
+    var smpRoles: ServerRoles
+    var xftpRoles: ServerRoles
 
-    public var id: Int64 { operatorId }
+    var id: Int64 { operatorId }
 
-    public static func == (l: ServerOperator, r: ServerOperator) -> Bool {
+    static func == (l: ServerOperator, r: ServerOperator) -> Bool {
         l.operatorId == r.operatorId && l.operatorTag == r.operatorTag && l.tradeName == r.tradeName && l.legalName == r.legalName &&
         l.serverDomains == r.serverDomains && l.conditionsAcceptance == r.conditionsAcceptance && l.enabled == r.enabled &&
         l.smpRoles == r.smpRoles && l.xftpRoles == r.xftpRoles
     }
 
-    public var legalName_: String {
+    var legalName_: String {
         legalName ?? tradeName
     }
 
-    public var info: ServerOperatorInfo {
+    var info: ServerOperatorInfo {
         return if let operatorTag = operatorTag {
             operatorsInfo[operatorTag] ?? ServerOperator.dummyOperatorInfo
         } else {
@@ -1477,7 +1638,7 @@ public struct ServerOperator: Identifiable, Equatable, Codable {
         }
     }
 
-    public static let dummyOperatorInfo = ServerOperatorInfo(
+    static let dummyOperatorInfo = ServerOperatorInfo(
         description: ["Default"],
         website: URL(string: "https://simplex.chat")!,
         logo: "decentralized",
@@ -1486,15 +1647,15 @@ public struct ServerOperator: Identifiable, Equatable, Codable {
         largeLogoDarkMode: "logo-light"
     )
 
-    public func logo(_ colorScheme: ColorScheme) -> String {
+    func logo(_ colorScheme: ColorScheme) -> String {
         colorScheme == .light ? info.logo : info.logoDarkMode
     }
 
-    public func largeLogo(_ colorScheme: ColorScheme) -> String {
+    func largeLogo(_ colorScheme: ColorScheme) -> String {
         colorScheme == .light ? info.largeLogo : info.largeLogoDarkMode
     }
 
-    public static var sampleData1 = ServerOperator(
+    static var sampleData1 = ServerOperator(
         operatorId: 1,
         operatorTag: .simplex,
         tradeName: "SimpleX Chat",
@@ -1507,17 +1668,17 @@ public struct ServerOperator: Identifiable, Equatable, Codable {
     )
 }
 
-public struct ServerRoles: Equatable, Codable {
-    public var storage: Bool
-    public var proxy: Bool
+struct ServerRoles: Equatable, Codable {
+    var storage: Bool
+    var proxy: Bool
 }
 
-public struct UserOperatorServers: Identifiable, Equatable, Codable {
-    public var `operator`: ServerOperator?
-    public var smpServers: [UserServer]
-    public var xftpServers: [UserServer]
+struct UserOperatorServers: Identifiable, Equatable, Codable {
+    var `operator`: ServerOperator?
+    var smpServers: [UserServer]
+    var xftpServers: [UserServer]
 
-    public var id: String {
+    var id: String {
         if let op = self.operator {
             "\(op.operatorId)"
         } else {
@@ -1525,7 +1686,7 @@ public struct UserOperatorServers: Identifiable, Equatable, Codable {
         }
     }
 
-    public var operator_: ServerOperator {
+    var operator_: ServerOperator {
         get {
             self.operator ?? ServerOperator(
                 operatorId: 0,
@@ -1542,26 +1703,26 @@ public struct UserOperatorServers: Identifiable, Equatable, Codable {
         set { `operator` = newValue }
     }
 
-    public static var sampleData1 = UserOperatorServers(
+    static var sampleData1 = UserOperatorServers(
         operator: ServerOperator.sampleData1,
         smpServers: [UserServer.sampleData.preset],
         xftpServers: [UserServer.sampleData.xftpPreset]
     )
 
-    public static var sampleDataNilOperator = UserOperatorServers(
+    static var sampleDataNilOperator = UserOperatorServers(
         operator: nil,
         smpServers: [UserServer.sampleData.preset],
         xftpServers: [UserServer.sampleData.xftpPreset]
     )
 }
 
-public enum UserServersError: Decodable {
+enum UserServersError: Decodable {
     case noServers(protocol: ServerProtocol, user: UserRef?)
     case storageMissing(protocol: ServerProtocol, user: UserRef?)
     case proxyMissing(protocol: ServerProtocol, user: UserRef?)
     case duplicateServer(protocol: ServerProtocol, duplicateServer: String, duplicateHost: String)
 
-    public var globalError: String? {
+    var globalError: String? {
         switch self {
         case let .noServers(`protocol`, _):
             switch `protocol` {
@@ -1582,7 +1743,7 @@ public enum UserServersError: Decodable {
         }
     }
 
-    public var globalSMPError: String? {
+    var globalSMPError: String? {
         switch self {
         case let .noServers(.smp, user):
             let text = NSLocalizedString("No message servers.", comment: "servers error")
@@ -1610,7 +1771,7 @@ public enum UserServersError: Decodable {
         }
     }
 
-    public var globalXFTPError: String? {
+    var globalXFTPError: String? {
         switch self {
         case let .noServers(.xftp, user):
             let text = NSLocalizedString("No media & file servers.", comment: "servers error")
@@ -1643,45 +1804,36 @@ public enum UserServersError: Decodable {
     }
 }
 
-public struct UserServer: Identifiable, Equatable, Codable, Hashable {
-    public var serverId: Int64?
-    public var server: String
-    public var preset: Bool
-    public var tested: Bool?
-    public var enabled: Bool
-    public var deleted: Bool
+struct UserServer: Identifiable, Equatable, Codable, Hashable {
+    var serverId: Int64?
+    var server: String
+    var preset: Bool
+    var tested: Bool?
+    var enabled: Bool
+    var deleted: Bool
     var createdAt = Date()
 
-    public init(serverId: Int64?, server: String, preset: Bool, tested: Bool?, enabled: Bool, deleted: Bool) {
-        self.serverId = serverId
-        self.server = server
-        self.preset = preset
-        self.tested = tested
-        self.enabled = enabled
-        self.deleted = deleted
-    }
-
-    public static func == (l: UserServer, r: UserServer) -> Bool {
+    static func == (l: UserServer, r: UserServer) -> Bool {
         l.serverId == r.serverId && l.server == r.server && l.preset == r.preset && l.tested == r.tested &&
         l.enabled == r.enabled && l.deleted == r.deleted
     }
 
-    public var id: String { "\(server) \(createdAt)" }
+    var id: String { "\(server) \(createdAt)" }
 
-    public static var empty = UserServer(serverId: nil, server: "", preset: false, tested: nil, enabled: false, deleted: false)
+    static var empty = UserServer(serverId: nil, server: "", preset: false, tested: nil, enabled: false, deleted: false)
 
-    public var isEmpty: Bool {
+    var isEmpty: Bool {
         server.trimmingCharacters(in: .whitespaces) == ""
     }
 
-    public struct SampleData {
-        public var preset: UserServer
-        public var custom: UserServer
-        public var untested: UserServer
-        public var xftpPreset: UserServer
+    struct SampleData {
+        var preset: UserServer
+        var custom: UserServer
+        var untested: UserServer
+        var xftpPreset: UserServer
     }
 
-    public static var sampleData = SampleData(
+    static var sampleData = SampleData(
         preset: UserServer(
             serverId: 1,
             server: "smp://abcd@smp8.simplex.im",
@@ -1726,7 +1878,7 @@ public struct UserServer: Identifiable, Equatable, Codable, Hashable {
     }
 }
 
-public enum ProtocolTestStep: String, Decodable, Equatable {
+enum ProtocolTestStep: String, Decodable, Equatable {
     case connect
     case disconnect
     case createQueue
@@ -1754,15 +1906,15 @@ public enum ProtocolTestStep: String, Decodable, Equatable {
     }
 }
 
-public struct ProtocolTestFailure: Decodable, Error, Equatable {
-    public var testStep: ProtocolTestStep
-    public var testError: AgentErrorType
+struct ProtocolTestFailure: Decodable, Error, Equatable {
+    var testStep: ProtocolTestStep
+    var testError: AgentErrorType
 
-    public static func == (l: ProtocolTestFailure, r: ProtocolTestFailure) -> Bool {
+    static func == (l: ProtocolTestFailure, r: ProtocolTestFailure) -> Bool {
         l.testStep == r.testStep
     }
 
-    public var localizedDescription: String {
+    var localizedDescription: String {
         let err = String.localizedStringWithFormat(NSLocalizedString("Test failed at step %@.", comment: "server test failure"), testStep.text)
         switch testError {
         case .SMP(_, .AUTH):
@@ -1775,4 +1927,400 @@ public struct ProtocolTestFailure: Decodable, Error, Equatable {
             return err
         }
     }
+}
+
+struct MigrationFileLinkData: Codable {
+    let networkConfig: NetworkConfig?
+
+    struct NetworkConfig: Codable {
+        let socksProxy: String?
+        let networkProxy: NetworkProxy?
+        let hostMode: HostMode?
+        let requiredHostMode: Bool?
+
+        func transformToPlatformSupported() -> NetworkConfig {
+            return if let hostMode, let requiredHostMode {
+                NetworkConfig(
+                    socksProxy: nil,
+                    networkProxy: nil,
+                    hostMode: hostMode == .onionViaSocks ? .onionHost : hostMode,
+                    requiredHostMode: requiredHostMode
+                )
+            } else { self }
+        }
+    }
+
+    func addToLink(link: String) -> String {
+        "\(link)&data=\(encodeJSON(self).addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!)"
+    }
+
+    static func readFromLink(link: String) -> MigrationFileLinkData? {
+//        standaloneFileInfo(link)
+        nil
+    }
+}
+
+struct AppSettings: Codable, Equatable {
+    var networkConfig: NetCfg? = nil
+    var networkProxy: NetworkProxy? = nil
+    var privacyEncryptLocalFiles: Bool? = nil
+    var privacyAskToApproveRelays: Bool? = nil
+    var privacyAcceptImages: Bool? = nil
+    var privacyLinkPreviews: Bool? = nil
+    var privacyChatListOpenLinks: PrivacyChatListOpenLinksMode? = nil
+    var privacyShowChatPreviews: Bool? = nil
+    var privacySaveLastDraft: Bool? = nil
+    var privacyProtectScreen: Bool? = nil
+    var privacyMediaBlurRadius: Int? = nil
+    var notificationMode: AppSettingsNotificationMode? = nil
+    var notificationPreviewMode: NotificationPreviewMode? = nil
+    var webrtcPolicyRelay: Bool? = nil
+    var webrtcICEServers: [String]? = nil
+    var confirmRemoteSessions: Bool? = nil
+    var connectRemoteViaMulticast: Bool? = nil
+    var connectRemoteViaMulticastAuto: Bool? = nil
+    var developerTools: Bool? = nil
+    var confirmDBUpgrades: Bool? = nil
+    var androidCallOnLockScreen: AppSettingsLockScreenCalls? = nil
+    var iosCallKitEnabled: Bool? = nil
+    var iosCallKitCallsInRecents: Bool? = nil
+    var uiProfileImageCornerRadius: Double? = nil
+    var uiChatItemRoundness: Double? = nil
+    var uiChatItemTail: Bool? = nil
+    var uiColorScheme: String? = nil
+    var uiDarkColorScheme: String? = nil
+    var uiCurrentThemeIds: [String: String]? = nil
+    var uiThemes: [ThemeOverrides]? = nil
+    var oneHandUI: Bool? = nil
+    var chatBottomBar: Bool? = nil
+
+    func prepareForExport() -> AppSettings {
+        var empty = AppSettings()
+        let def = AppSettings.defaults
+        if networkConfig != def.networkConfig { empty.networkConfig = networkConfig }
+        if networkProxy != def.networkProxy { empty.networkProxy = networkProxy }
+        if privacyEncryptLocalFiles != def.privacyEncryptLocalFiles { empty.privacyEncryptLocalFiles = privacyEncryptLocalFiles }
+        if privacyAskToApproveRelays != def.privacyAskToApproveRelays { empty.privacyAskToApproveRelays = privacyAskToApproveRelays }
+        if privacyAcceptImages != def.privacyAcceptImages { empty.privacyAcceptImages = privacyAcceptImages }
+        if privacyLinkPreviews != def.privacyLinkPreviews { empty.privacyLinkPreviews = privacyLinkPreviews }
+        if privacyChatListOpenLinks != def.privacyChatListOpenLinks { empty.privacyChatListOpenLinks = privacyChatListOpenLinks }
+        if privacyShowChatPreviews != def.privacyShowChatPreviews { empty.privacyShowChatPreviews = privacyShowChatPreviews }
+        if privacySaveLastDraft != def.privacySaveLastDraft { empty.privacySaveLastDraft = privacySaveLastDraft }
+        if privacyProtectScreen != def.privacyProtectScreen { empty.privacyProtectScreen = privacyProtectScreen }
+        if privacyMediaBlurRadius != def.privacyMediaBlurRadius { empty.privacyMediaBlurRadius = privacyMediaBlurRadius }
+        if notificationMode != def.notificationMode { empty.notificationMode = notificationMode }
+        if notificationPreviewMode != def.notificationPreviewMode { empty.notificationPreviewMode = notificationPreviewMode }
+        if webrtcPolicyRelay != def.webrtcPolicyRelay { empty.webrtcPolicyRelay = webrtcPolicyRelay }
+        if webrtcICEServers != def.webrtcICEServers { empty.webrtcICEServers = webrtcICEServers }
+        if confirmRemoteSessions != def.confirmRemoteSessions { empty.confirmRemoteSessions = confirmRemoteSessions }
+        if connectRemoteViaMulticast != def.connectRemoteViaMulticast {empty.connectRemoteViaMulticast = connectRemoteViaMulticast }
+        if connectRemoteViaMulticastAuto != def.connectRemoteViaMulticastAuto { empty.connectRemoteViaMulticastAuto = connectRemoteViaMulticastAuto }
+        if developerTools != def.developerTools { empty.developerTools = developerTools }
+        if confirmDBUpgrades != def.confirmDBUpgrades { empty.confirmDBUpgrades = confirmDBUpgrades }
+        if androidCallOnLockScreen != def.androidCallOnLockScreen { empty.androidCallOnLockScreen = androidCallOnLockScreen }
+        if iosCallKitEnabled != def.iosCallKitEnabled { empty.iosCallKitEnabled = iosCallKitEnabled }
+        if iosCallKitCallsInRecents != def.iosCallKitCallsInRecents { empty.iosCallKitCallsInRecents = iosCallKitCallsInRecents }
+        if uiProfileImageCornerRadius != def.uiProfileImageCornerRadius { empty.uiProfileImageCornerRadius = uiProfileImageCornerRadius }
+        if uiChatItemRoundness != def.uiChatItemRoundness { empty.uiChatItemRoundness = uiChatItemRoundness }
+        if uiChatItemTail != def.uiChatItemTail { empty.uiChatItemTail = uiChatItemTail }
+        if uiColorScheme != def.uiColorScheme { empty.uiColorScheme = uiColorScheme }
+        if uiDarkColorScheme != def.uiDarkColorScheme { empty.uiDarkColorScheme = uiDarkColorScheme }
+        if uiCurrentThemeIds != def.uiCurrentThemeIds { empty.uiCurrentThemeIds = uiCurrentThemeIds }
+        if uiThemes != def.uiThemes { empty.uiThemes = uiThemes }
+        if oneHandUI != def.oneHandUI { empty.oneHandUI = oneHandUI }
+        if chatBottomBar != def.chatBottomBar { empty.chatBottomBar = chatBottomBar }
+        return empty
+    }
+
+    static var defaults: AppSettings {
+        AppSettings (
+            networkConfig: NetCfg.defaults,
+            networkProxy: NetworkProxy.def,
+            privacyEncryptLocalFiles: true,
+            privacyAskToApproveRelays: true,
+            privacyAcceptImages: true,
+            privacyLinkPreviews: true,
+            privacyChatListOpenLinks: .ask,
+            privacyShowChatPreviews: true,
+            privacySaveLastDraft: true,
+            privacyProtectScreen: false,
+            privacyMediaBlurRadius: 0,
+            notificationMode: AppSettingsNotificationMode.instant,
+            notificationPreviewMode: NotificationPreviewMode.message,
+            webrtcPolicyRelay: true,
+            webrtcICEServers: [],
+            confirmRemoteSessions: false,
+            connectRemoteViaMulticast: true,
+            connectRemoteViaMulticastAuto: true,
+            developerTools: false,
+            confirmDBUpgrades: false,
+            androidCallOnLockScreen: AppSettingsLockScreenCalls.show,
+            iosCallKitEnabled: true,
+            iosCallKitCallsInRecents: false,
+            uiProfileImageCornerRadius: 22.5,
+            uiChatItemRoundness: 0.75,
+            uiChatItemTail: true,
+            uiColorScheme: DefaultTheme.SYSTEM_THEME_NAME,
+            uiDarkColorScheme: DefaultTheme.SIMPLEX.themeName,
+            uiCurrentThemeIds: nil as [String: String]?,
+            uiThemes: nil as [ThemeOverrides]?,
+            oneHandUI: true,
+            chatBottomBar: true
+        )
+    }
+}
+
+enum AppSettingsNotificationMode: String, Codable {
+    case off
+    case periodic
+    case instant
+
+    func toNotificationsMode() -> NotificationsMode {
+        switch self {
+        case .instant: .instant
+        case .periodic: .periodic
+        case .off: .off
+        }
+    }
+
+    static func from(_ mode: NotificationsMode) -> AppSettingsNotificationMode {
+        switch mode {
+        case .instant: .instant
+        case .periodic: .periodic
+        case .off: .off
+        }
+    }
+}
+
+//enum NotificationPreviewMode: Codable {
+//    case hidden
+//    case contact
+//    case message
+//}
+
+enum AppSettingsLockScreenCalls: String, Codable {
+    case disable
+    case show
+    case accept
+}
+
+struct UserNetworkInfo: Codable, Equatable {
+    let networkType: UserNetworkType
+    let online: Bool
+}
+
+enum UserNetworkType: String, Codable {
+    case none
+    case cellular
+    case wifi
+    case ethernet
+    case other
+
+    var text: LocalizedStringKey {
+        switch self {
+        case .none: "No network connection"
+        case .cellular: "Cellular"
+        case .wifi: "WiFi"
+        case .ethernet: "Wired ethernet"
+        case .other: "Other"
+        }
+    }
+}
+
+struct RcvMsgInfo: Codable {
+    var msgId: Int64
+    var msgDeliveryId: Int64
+    var msgDeliveryStatus: String
+    var agentMsgId: Int64
+    var agentMsgMeta: String
+}
+
+struct ServerQueueInfo: Codable {
+    var server: String
+    var rcvId: String
+    var sndId: String
+    var ntfId: String?
+    var status: String
+    var info: QueueInfo
+}
+
+struct QueueInfo: Codable {
+    var qiSnd: Bool
+    var qiNtf: Bool
+    var qiSub: QSub?
+    var qiSize: Int
+    var qiMsg: MsgInfo?
+}
+
+struct QSub: Codable {
+    var qSubThread: QSubThread
+    var qDelivered: String?
+}
+
+enum QSubThread: String, Codable {
+    case noSub
+    case subPending
+    case subThread
+    case prohibitSub
+}
+
+struct MsgInfo: Codable {
+    var msgId: String
+    var msgTs: Date
+    var msgType: MsgType
+}
+
+enum MsgType: String, Codable {
+    case message
+    case quota
+}
+
+struct PresentedServersSummary: Codable {
+    var statsStartedAt: Date
+    var allUsersSMP: SMPServersSummary
+    var allUsersXFTP: XFTPServersSummary
+    var currentUserSMP: SMPServersSummary
+    var currentUserXFTP: XFTPServersSummary
+}
+
+struct SMPServersSummary: Codable {
+    var smpTotals: SMPTotals
+    var currentlyUsedSMPServers: [SMPServerSummary]
+    var previouslyUsedSMPServers: [SMPServerSummary]
+    var onlyProxiedSMPServers: [SMPServerSummary]
+}
+
+struct SMPTotals: Codable {
+    var sessions: ServerSessions
+    var subs: SMPServerSubs
+    var stats: AgentSMPServerStatsData
+}
+
+struct SMPServerSummary: Codable, Identifiable {
+    var smpServer: String
+    var known: Bool?
+    var sessions: ServerSessions?
+    var subs: SMPServerSubs?
+    var stats: AgentSMPServerStatsData?
+
+    var id: String { smpServer }
+
+    var hasSubs: Bool { subs != nil }
+
+    var sessionsOrNew: ServerSessions { sessions ?? ServerSessions.newServerSessions }
+
+    var subsOrNew: SMPServerSubs { subs ?? SMPServerSubs.newSMPServerSubs }
+}
+
+struct ServerSessions: Codable {
+    var ssConnected: Int
+    var ssErrors: Int
+    var ssConnecting: Int
+
+    static var newServerSessions = ServerSessions(
+        ssConnected: 0,
+        ssErrors: 0,
+        ssConnecting: 0
+    )
+
+    var hasSess: Bool { ssConnected > 0 }
+}
+
+struct SMPServerSubs: Codable {
+    var ssActive: Int
+    var ssPending: Int
+
+    static var newSMPServerSubs = SMPServerSubs(
+        ssActive: 0,
+        ssPending: 0
+    )
+
+    var total: Int { ssActive + ssPending }
+
+    var shareOfActive: Double {
+        guard total != 0 else { return 0.0 }
+        return Double(ssActive) / Double(total)
+    }
+}
+
+struct AgentSMPServerStatsData: Codable {
+    var _sentDirect: Int
+    var _sentViaProxy: Int
+    var _sentProxied: Int
+    var _sentDirectAttempts: Int
+    var _sentViaProxyAttempts: Int
+    var _sentProxiedAttempts: Int
+    var _sentAuthErrs: Int
+    var _sentQuotaErrs: Int
+    var _sentExpiredErrs: Int
+    var _sentOtherErrs: Int
+    var _recvMsgs: Int
+    var _recvDuplicates: Int
+    var _recvCryptoErrs: Int
+    var _recvErrs: Int
+    var _ackMsgs: Int
+    var _ackAttempts: Int
+    var _ackNoMsgErrs: Int
+    var _ackOtherErrs: Int
+    var _connCreated: Int
+    var _connSecured: Int
+    var _connCompleted: Int
+    var _connDeleted: Int
+    var _connDelAttempts: Int
+    var _connDelErrs: Int
+    var _connSubscribed: Int
+    var _connSubAttempts: Int
+    var _connSubIgnored: Int
+    var _connSubErrs: Int
+    var _ntfKey: Int
+    var _ntfKeyAttempts: Int
+    var _ntfKeyDeleted: Int
+    var _ntfKeyDeleteAttempts: Int
+}
+
+struct XFTPServersSummary: Codable {
+    var xftpTotals: XFTPTotals
+    var currentlyUsedXFTPServers: [XFTPServerSummary]
+    var previouslyUsedXFTPServers: [XFTPServerSummary]
+}
+
+struct XFTPTotals: Codable {
+    var sessions: ServerSessions
+    var stats: AgentXFTPServerStatsData
+}
+
+struct XFTPServerSummary: Codable, Identifiable {
+    var xftpServer: String
+    var known: Bool?
+    var sessions: ServerSessions?
+    var stats: AgentXFTPServerStatsData?
+    var rcvInProgress: Bool
+    var sndInProgress: Bool
+    var delInProgress: Bool
+
+    var id: String { xftpServer }
+}
+
+struct AgentXFTPServerStatsData: Codable {
+    var _uploads: Int
+    var _uploadsSize: Int64
+    var _uploadAttempts: Int
+    var _uploadErrs: Int
+    var _downloads: Int
+    var _downloadsSize: Int64
+    var _downloadAttempts: Int
+    var _downloadAuthErrs: Int
+    var _downloadErrs: Int
+    var _deletions: Int
+    var _deleteAttempts: Int
+    var _deleteErrs: Int
+}
+
+struct AgentNtfServerStatsData: Codable {
+    var _ntfCreated: Int
+    var _ntfCreateAttempts: Int
+    var _ntfChecked: Int
+    var _ntfCheckAttempts: Int
+    var _ntfDeleted: Int
+    var _ntfDelAttempts: Int
 }
