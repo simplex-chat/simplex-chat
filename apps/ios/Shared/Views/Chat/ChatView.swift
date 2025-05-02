@@ -1976,7 +1976,7 @@ struct ChatView: View {
         private func deleteButton(_ ci: ChatItem, label: LocalizedStringKey = "Delete") -> Button<some View> {
             Button(role: .destructive) {
                 if !revealed,
-                   let currIndex = m.getChatItemIndex(ci),
+                   let currIndex = m.getChatItemIndex(im, ci),
                    let ciCategory = ci.mergeCategory {
                     let (prevHidden, _) = m.getPrevShownChatItem(currIndex, ciCategory)
                     if let range = itemsRange(currIndex, prevHidden) {
@@ -2120,7 +2120,7 @@ struct ChatView: View {
             selectedChatItems = selectedChatItems ?? []
             var itemIds: [Int64] = []
             if !revealed,
-               let currIndex = m.getChatItemIndex(ci),
+               let currIndex = m.getChatItemIndex(im, ci),
                let ciCategory = ci.mergeCategory {
                 let (prevHidden, _) = m.getPrevShownChatItem(currIndex, ciCategory)
                 if let range = itemsRange(currIndex, prevHidden) {

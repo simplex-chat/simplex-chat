@@ -2094,8 +2094,6 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
         }
     case let .newChatItems(user, chatItems):
-        // TODO [knocking] add items to secondary scope (modify model methods to check both scopes, instead of calling per scope? (do opposite of kotlin));
-        // TODO            other apis: chatItemsStatusesUpdated, chatItemReaction, chatItemsDeleted, etc. (see kotlin)
         for chatItem in chatItems {
             let cInfo = chatItem.chatInfo
             let cItem = chatItem.chatItem
@@ -2521,7 +2519,6 @@ func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
     let cInfo = aChatItem.chatInfo
     let cItem = aChatItem.chatItem
     if active(user) {
-        // TODO [knocking] upsert to secondary scope (same approach as for newChatItems event)
         if await MainActor.run(body: { m.upsertChatItem(cInfo, cItem) }) {
             if cItem.showNotification {
                 NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)

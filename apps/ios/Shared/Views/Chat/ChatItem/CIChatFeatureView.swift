@@ -53,7 +53,7 @@ struct CIChatFeatureView: View {
     private func mergedFeatures() -> [FeatureInfo]? {
         var fs: [FeatureInfo] = []
         var icons: Set<String> = []
-        if var i = m.getChatItemIndex(chatItem) {
+        if var i = m.getChatItemIndex(im, chatItem) {
             while i < im.reversedChatItems.count,
                   let f = featureInfo(im.reversedChatItems[i]) {
                 if !icons.contains(f.icon) {

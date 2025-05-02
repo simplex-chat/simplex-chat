@@ -30,7 +30,7 @@ struct MarkedDeletedItemView: View {
     var mergedMarkedDeletedText: LocalizedStringKey {
         if !revealed,
            let ciCategory = chatItem.mergeCategory,
-           var i = m.getChatItemIndex(chatItem) {
+           var i = m.getChatItemIndex(im, chatItem) {
             var moderated = 0
             var blocked = 0
             var blockedByAdmin = 0

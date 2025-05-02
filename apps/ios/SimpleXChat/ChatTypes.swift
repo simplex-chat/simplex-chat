@@ -1637,7 +1637,7 @@ public enum GroupChatScope: Decodable {
     case memberSupport(groupMemberId_: Int64?)
 }
 
-func sameChatScope(_ scope1: GroupChatScope, _ scope2: GroupChatScope) -> Bool {
+public func sameChatScope(_ scope1: GroupChatScope, _ scope2: GroupChatScope) -> Bool {
     switch (scope1, scope2) {
     case let (.memberSupport(groupMemberId1_), .memberSupport(groupMemberId2_)):
         return groupMemberId1_ == groupMemberId2_
