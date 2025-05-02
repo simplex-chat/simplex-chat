@@ -538,24 +538,28 @@ struct GroupChatInfoView: View {
     }
 
     struct UserSupportChatNavLink: View {
+        @EnvironmentObject var chatModel: ChatModel
         @State private var userSupportChatNavLinkActive = false
-        var chat: Chat
+        @ObservedObject var chat: Chat
         var im: ItemsModel
 
         var body: some View {
             ZStack {
                 Button {
-                    im.loadOpenChat(chat.id)
-                    userSupportChatNavLinkActive = true
+                    im.loadOpenChat(chat.id) {
+                        userSupportChatNavLinkActive = true
+                    }
                 } label: {
                     Label("Support chat", systemImage: "flag")
                 }
 
                 NavigationLink(isActive: $userSupportChatNavLinkActive) {
-                    SecondaryChatView(
-                        chat: chat,
-                        im: im
-                    )
+                    if let secondaryIM = chatModel.secondaryIM {
+                        SecondaryChatView(
+                            chat: chat,
+                            im: secondaryIM
+                        )
+                    }
                 } label: {
                     EmptyView()
                 }
@@ -577,24 +581,28 @@ struct GroupChatInfoView: View {
     }
 
     struct GroupReportsChatNavLink: View {
+        @EnvironmentObject var chatModel: ChatModel
         @State private var groupReportsChatNavLinkActive = false
-        var chat: Chat
+        @ObservedObject var chat: Chat
         var im: ItemsModel
 
         var body: some View {
             ZStack {
                 Button {
-                    im.loadOpenChat(chat.id)
-                    groupReportsChatNavLinkActive = true
+                    im.loadOpenChat(chat.id) {
+                        groupReportsChatNavLinkActive = true
+                    }
                 } label: {
                     Label("Member reports", systemImage: "flag")
                 }
 
                 NavigationLink(isActive: $groupReportsChatNavLinkActive) {
-                    SecondaryChatView(
-                        chat: chat,
-                        im: im
-                    )
+                    if let secondaryIM = chatModel.secondaryIM {
+                        SecondaryChatView(
+                            chat: chat,
+                            im: secondaryIM
+                        )
+                    }
                 } label: {
                     EmptyView()
                 }

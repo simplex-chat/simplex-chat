@@ -639,7 +639,6 @@ final class ChatModel: ObservableObject {
     }
 
     private func _upsertChatItem(_ ciIM: ItemsModel, _ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
-        logger.error("##### KNOCKING _upsertChatItem ciIM.secondaryIMFilter = \(ciIM.secondaryIMFilter?.descr() ?? "nil")")
         if let i = getChatItemIndex(ciIM, cItem) {
             let oldStatus = ciIM.reversedChatItems[i].meta.itemStatus
             let newStatus = cItem.meta.itemStatus
