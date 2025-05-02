@@ -3935,7 +3935,7 @@ public enum MsgContent: Equatable, Hashable {
         }
     }
 
-    var cmdString: String {
+    public var cmdString: String {
         "json \(encodeJSON(self))"
     }
 

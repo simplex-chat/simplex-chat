@@ -37,7 +37,7 @@ public struct ErrorAlert: Error {
     }
 
     public init(_ error: any Error) {
-        self = if let chatResponse = error as? ChatResponse {
+        self = if let chatResponse = error as? ChatRespProtocol {
             ErrorAlert(chatResponse)
         } else {
             ErrorAlert("\(error.localizedDescription)")
@@ -48,7 +48,7 @@ public struct ErrorAlert: Error {
         self = ErrorAlert("\(chatErrorString(chatError))")
     }
 
-    public init(_ chatResponse: ChatResponse) {
+    public init(_ chatResponse: ChatRespProtocol) {
         self = if let networkErrorAlert = getNetworkErrorAlert(chatResponse) {
             networkErrorAlert
         } else {
@@ -94,22 +94,21 @@ extension View {
     }
 }
 
-public func getNetworkErrorAlert(_ r: ChatResponse) -> ErrorAlert? {
-    switch r {
-    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .TIMEOUT))):
-        return ErrorAlert(title: "Connection timeout", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
-    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .NETWORK))):
-        return ErrorAlert(title: "Connection error", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
-    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .HOST))):
-        return ErrorAlert(title: "Connection error", message: "Server address is incompatible with network settings: \(serverHostname(addr)).")
-    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .TRANSPORT(.version)))):
-        return ErrorAlert(title: "Connection error", message: "Server version is incompatible with your app: \(serverHostname(addr)).")
-    case let .chatCmdError(_, .errorAgent(.SMP(serverAddress, .PROXY(proxyErr)))):
-        return smpProxyErrorAlert(proxyErr, serverAddress)
-    case let .chatCmdError(_, .errorAgent(.PROXY(proxyServer, relayServer, .protocolError(.PROXY(proxyErr))))):
-        return proxyDestinationErrorAlert(proxyErr, proxyServer, relayServer)
-    default:
-        return nil
+public func getNetworkErrorAlert(_ r: ChatRespProtocol) -> ErrorAlert? {
+    switch r.chatError {
+    case let .errorAgent(.BROKER(addr, .TIMEOUT)):
+        ErrorAlert(title: "Connection timeout", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
+    case let .errorAgent(.BROKER(addr, .NETWORK)):
+        ErrorAlert(title: "Connection error", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
+    case let .errorAgent(.BROKER(addr, .HOST)):
+        ErrorAlert(title: "Connection error", message: "Server address is incompatible with network settings: \(serverHostname(addr)).")
+    case let .errorAgent(.BROKER(addr, .TRANSPORT(.version))):
+        ErrorAlert(title: "Connection error", message: "Server version is incompatible with your app: \(serverHostname(addr)).")
+    case let .errorAgent(.SMP(serverAddress, .PROXY(proxyErr))):
+        smpProxyErrorAlert(proxyErr, serverAddress)
+    case let .errorAgent(.PROXY(proxyServer, relayServer, .protocolError(.PROXY(proxyErr)))):
+        proxyDestinationErrorAlert(proxyErr, proxyServer, relayServer)
+    default: nil
     }
 }
 
