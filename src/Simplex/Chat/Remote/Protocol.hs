@@ -16,11 +16,11 @@ import Control.Monad.Except
 import Control.Monad.Reader
 import Crypto.Hash (SHA512)
 import qualified Crypto.Hash as CH
-import Data.Aeson ((.=))
+import Data.Aeson (FromJSON (..), ToJSON (..), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Key as JK
 import qualified Data.Aeson.KeyMap as JM
-import Data.Aeson.TH (deriveJSON)
+import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import qualified Data.ByteArray as BA
 import Data.ByteString (ByteString)
@@ -64,16 +64,38 @@ data RemoteCommand
   deriving (Show)
 
 data RemoteResponse
-  = RRChatResponse {chatResponse :: ChatResponse}
-  | RRChatEvent {chatEvent :: Maybe ChatEvent} -- 'Nothing' on poll timeout
+  = RRChatResponse {chatResponse :: RRResult ChatResponse}
+  | RRChatEvent {chatEvent :: Maybe (RRResult ChatEvent)} -- 'Nothing' on poll timeout
   | RRFileStored {filePath :: String}
   | RRFile {fileSize :: Word32, fileDigest :: FileDigest} -- provides attachment , fileDigest :: FileDigest
   | RRProtocolError {remoteProcotolError :: RemoteProtocolError} -- The protocol error happened on the server side
   deriving (Show)
 
+data RRResult r = RRResult r | RRError ChatError
+  deriving (Show)
+
+resultToEither :: RRResult r -> Either ChatError r
+resultToEither = \case
+  RRResult r -> Right r
+  RRError e -> Left e
+{-# INLINE resultToEither #-}
+
+eitherToResult :: Either ChatError r -> RRResult r
+eitherToResult = either RRError RRResult
+{-# INLINE eitherToResult #-}
+
+$(pure [])
+
 -- Force platform-independent encoding as the types aren't UI-visible
-$(deriveJSON (taggedObjectJSON $ dropPrefix "RC") ''RemoteCommand)
-$(deriveJSON (taggedObjectJSON $ dropPrefix "RR") ''RemoteResponse)
+instance ToJSON r => ToJSON (RRResult r) where
+  toEncoding = $(JQ.mkToEncoding (taggedObjectJSON $ dropPrefix "RR") ''RRResult)
+  toJSON = $(JQ.mkToJSON (taggedObjectJSON $ dropPrefix "RR") ''RRResult)
+
+instance FromJSON r => FromJSON (RRResult r) where
+  parseJSON = $(JQ.mkParseJSON (taggedObjectJSON $ dropPrefix "RR") ''RRResult)
+
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "RC") ''RemoteCommand)
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "RR") ''RemoteResponse)
 
 -- * Client side / desktop
 
@@ -109,16 +131,16 @@ closeRemoteHostClient RemoteHostClient {httpClient} = closeHTTP2Client httpClien
 
 -- ** Commands
 
-remoteSend :: RemoteHostClient -> ByteString -> ExceptT RemoteProtocolError IO ChatResponse
+remoteSend :: RemoteHostClient -> ByteString -> ExceptT RemoteProtocolError IO (Either ChatError ChatResponse)
 remoteSend c cmd =
   sendRemoteCommand' c Nothing RCSend {command = decodeUtf8 cmd} >>= \case
-    RRChatResponse cr -> pure cr
+    RRChatResponse cr -> pure $ resultToEither cr
     r -> badResponse r
 
-remoteRecv :: RemoteHostClient -> Int -> ExceptT RemoteProtocolError IO (Maybe ChatEvent)
+remoteRecv :: RemoteHostClient -> Int -> ExceptT RemoteProtocolError IO (Maybe (Either ChatError ChatEvent))
 remoteRecv c ms =
   sendRemoteCommand' c Nothing RCRecv {wait = ms} >>= \case
-    RRChatEvent cEvt_ -> pure cEvt_
+    RRChatEvent cEvt_ -> pure $ resultToEither <$> cEvt_
     r -> badResponse r
 
 remoteStoreFile :: RemoteHostClient -> FilePath -> FilePath -> ExceptT RemoteProtocolError IO FilePath

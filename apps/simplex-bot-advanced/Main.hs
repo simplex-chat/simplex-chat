@@ -45,10 +45,10 @@ mySquaringBot _user cc = do
   race_ (forever $ void getLine) . forever $ do
     (_, evt) <- atomically . readTBQueue $ outputQ cc
     case evt of
-      CEvtContactConnected _ contact _ -> do
+      Right (CEvtContactConnected _ contact _) -> do
         contactConnected contact
         sendMessage cc contact welcomeMessage
-      CEvtNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content = mc@CIRcvMsgContent {}}) : _} -> do
+      Right CEvtNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content = mc@CIRcvMsgContent {}}) : _} -> do
         let msg = ciContentToText mc
             number_ = readMaybe (T.unpack msg) :: Maybe Integer
         sendMessage cc contact $ case number_ of
