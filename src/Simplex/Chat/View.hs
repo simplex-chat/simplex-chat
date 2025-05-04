@@ -297,7 +297,6 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
     [ "agent queues info:",
       plain . LB.unpack $ J.encode agentQueuesInfo
     ]
-  -- CRChatCmdError u e -> ttyUserPrefix' u $ viewChatError True logLevel testView e
   CRAppSettings as -> ["app settings: " <> viewJSON as]
   CRCustomChatResponse u r -> ttyUser' u $ map plain $ T.lines r
   where
@@ -508,7 +507,6 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtAgentConnsDeleted acIds -> ["completed deleting connections: " <> sShow (length acIds) | logLevel <= CLLInfo]
   CEvtAgentUserDeleted auId -> ["completed deleting user" <> if logLevel <= CLLInfo then ", agent user id: " <> sShow auId else ""]
   CEvtMessageError u prefix err -> ttyUser u [plain prefix <> ": " <> plain err | prefix == "error" || logLevel <= CLLWarning]
-  -- CEvtChatError u e -> ttyUser' u $ viewChatError False logLevel testView e
   CEvtChatErrors errs -> concatMap (viewChatError False logLevel testView) errs
   CEvtTimedAction _ _ -> []
   CEvtTerminalEvent te -> case te of

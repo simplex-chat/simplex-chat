@@ -731,7 +731,6 @@ data ChatResponse
   | CRAgentSubs {activeSubs :: Map Text Int, pendingSubs :: Map Text Int, removedSubs :: Map Text [String]}
   | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
   | CRAgentQueuesInfo {agentQueuesInfo :: AgentQueuesInfo}
-  -- | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
   | CRAppSettings {appSettings :: AppSettings}
   | CRCustomChatResponse {user_ :: Maybe User, response :: Text}
   deriving (Show)
@@ -839,7 +838,6 @@ data ChatEvent
   | CEvtAgentConnsDeleted {agentConnIds :: NonEmpty AgentConnId}
   | CEvtAgentUserDeleted {agentUserId :: Int64}
   | CEvtMessageError {user :: User, severity :: Text, errorMessage :: Text}
-  -- | CEvtChatError {user_ :: Maybe User, chatError :: ChatError}
   | CEvtChatErrors {chatErrors :: [ChatError]}
   | CEvtTimedAction {action :: String, durationMilliseconds :: Int64}
   | CEvtTerminalEvent TerminalEvent
@@ -892,8 +890,7 @@ logEventToFile = \case
   CEvtAgentRcvQueuesDeleted {} -> True
   CEvtAgentConnsDeleted {} -> True
   CEvtAgentUserDeleted {} -> True
-  -- CEvtChatCmdError {} -> True -- TODO this should be separately logged to file
-  -- CEvtChatError {} -> True
+  -- CRChatCmdError {} -> True -- TODO this should be separately logged to file as command error
   CEvtMessageError {} -> True
   CEvtTerminalEvent te -> case te of
     TEMemberSubError {} -> True

@@ -42,7 +42,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import Simplex.Messaging.Crypto.Lazy (LazyByteString)
 import Simplex.Messaging.Encoding
-import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON, pattern SingleFieldJSONTag, pattern TaggedObjectJSONData, pattern TaggedObjectJSONTag)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON, pattern SingleFieldJSONTag, pattern TaggedObjectJSONData, pattern TaggedObjectJSONTag)
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport (TSbChainKeys)
 import Simplex.Messaging.Transport.Buffer (getBuffered)
@@ -71,7 +71,9 @@ data RemoteResponse
   | RRProtocolError {remoteProcotolError :: RemoteProtocolError} -- The protocol error happened on the server side
   deriving (Show)
 
-data RRResult r = RRResult r | RRError ChatError
+data RRResult r
+  = RRResult {result :: r}
+  | RRError {error :: ChatError}
   deriving (Show)
 
 resultToEither :: RRResult r -> Either ChatError r
@@ -88,11 +90,11 @@ $(pure [])
 
 -- Force platform-independent encoding as the types aren't UI-visible
 instance ToJSON r => ToJSON (RRResult r) where
-  toEncoding = $(JQ.mkToEncoding (taggedObjectJSON $ dropPrefix "RR") ''RRResult)
-  toJSON = $(JQ.mkToJSON (taggedObjectJSON $ dropPrefix "RR") ''RRResult)
+  toEncoding = $(JQ.mkToEncoding (defaultJSON {J.sumEncoding = J.UntaggedValue}) ''RRResult)
+  toJSON = $(JQ.mkToJSON (defaultJSON {J.sumEncoding = J.UntaggedValue}) ''RRResult)
 
 instance FromJSON r => FromJSON (RRResult r) where
-  parseJSON = $(JQ.mkParseJSON (taggedObjectJSON $ dropPrefix "RR") ''RRResult)
+  parseJSON = $(JQ.mkParseJSON (defaultJSON {J.sumEncoding = J.UntaggedValue}) ''RRResult)
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "RC") ''RemoteCommand)
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "RR") ''RemoteResponse)
@@ -194,7 +196,7 @@ convertJSON :: PlatformEncoding -> PlatformEncoding -> J.Value -> J.Value
 convertJSON _remote@PEKotlin _local@PEKotlin = id
 convertJSON PESwift PESwift = id
 convertJSON PESwift PEKotlin = owsf2tagged
-convertJSON PEKotlin PESwift = error "unsupported convertJSON: K/S" -- guarded by handshake
+convertJSON PEKotlin PESwift = Prelude.error "unsupported convertJSON: K/S" -- guarded by handshake
 
 -- | Convert swift single-field sum encoding into tagged/discriminator-field
 owsf2tagged :: J.Value -> J.Value
