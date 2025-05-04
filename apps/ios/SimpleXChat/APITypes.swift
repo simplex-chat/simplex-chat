@@ -33,6 +33,14 @@ public protocol ChatRespProtocol: Decodable, Error {
     var chatErrorType: ChatErrorType? { get }
 }
 
+public protocol ChatEventProtocol: Decodable, Error {
+    var eventType: String { get }
+    var details: String { get }
+    static func chatEvent(_ s: String) -> Self
+    var chatError: ChatError? { get }
+    var chatErrorType: ChatErrorType? { get }
+}
+
 public func parseApiChats(_ jResp: NSDictionary) -> (user: UserRef, chats: [ChatData])? {
     if let jApiChats = jResp["apiChats"] as? NSDictionary,
        let user: UserRef = try? decodeObject(jApiChats["user"] as Any),

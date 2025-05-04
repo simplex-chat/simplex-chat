@@ -146,19 +146,19 @@ withTermLock ChatTerminal {termLock} action = do
 runTerminalOutput :: ChatTerminal -> ChatController -> ChatOpts -> IO ()
 runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} ChatOpts {markRead} = do
   forever $ do
-    (_, outputRH, r) <- atomically $ readTBQueue outputQ
+    (outputRH, r) <- atomically $ readTBQueue outputQ
     case r of
-      CRNewChatItems u (ci : _) -> when markRead $ markChatItemRead u ci -- At the moment of writing received items are created one at a time
-      CRChatItemUpdated u ci -> when markRead $ markChatItemRead u ci
-      CRRemoteHostConnected {remoteHost = RemoteHostInfo {remoteHostId}} -> getRemoteUser remoteHostId
-      CRRemoteHostStopped {remoteHostId_} -> mapM_ removeRemoteUser remoteHostId_
+      CEvtNewChatItems u (ci : _) -> when markRead $ markChatItemRead u ci -- At the moment of writing received items are created one at a time
+      CEvtChatItemUpdated u ci -> when markRead $ markChatItemRead u ci
+      CEvtRemoteHostConnected {remoteHost = RemoteHostInfo {remoteHostId}} -> getRemoteUser remoteHostId
+      CEvtRemoteHostStopped {remoteHostId_} -> mapM_ removeRemoteUser remoteHostId_
       _ -> pure ()
-    let printResp = case logFilePath of
-          Just path -> if logResponseToFile r then logResponse path else printToTerminal ct
+    let printEvent = case logFilePath of
+          Just path -> if logEventToFile r then logResponse path else printToTerminal ct
           _ -> printToTerminal ct
     liveItems <- readTVarIO showLiveItems
-    responseString ct cc liveItems outputRH r >>= printResp
-    responseNotification ct cc r
+    responseString ct cc liveItems outputRH r >>= printEvent
+    chatEventNotification ct cc r
   where
     markChatItemRead u (AChatItem _ _ chat ci@ChatItem {chatDir, meta = CIMeta {itemStatus}}) =
       case (chatDirNtf u chat chatDir (isUserMention ci), itemStatus) of
@@ -174,10 +174,10 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} Cha
         cr -> logError $ "Unexpected reply while getting remote user: " <> tshow cr
     removeRemoteUser rhId = atomically $ TM.delete rhId (currentRemoteUsers ct)
 
-responseNotification :: ChatTerminal -> ChatController -> ChatResponse -> IO ()
-responseNotification t@ChatTerminal {sendNotification} cc = \case
+chatEventNotification :: ChatTerminal -> ChatController -> ChatEvent -> IO ()
+chatEventNotification t@ChatTerminal {sendNotification} cc = \case
   -- At the moment of writing received items are created one at a time
-  CRNewChatItems u ((AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText}) : _) ->
+  CEvtNewChatItems u ((AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText}) : _) ->
     when (chatDirNtf u cInfo chatDir $ isUserMention ci) $ do
       whenCurrUser cc u $ setActiveChat t cInfo
       case (cInfo, chatDir) of
@@ -186,29 +186,29 @@ responseNotification t@ChatTerminal {sendNotification} cc = \case
         _ -> pure ()
     where
       text = msgText mc formattedText
-  CRChatItemUpdated u (AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent _}) ->
+  CEvtChatItemUpdated u (AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent _}) ->
     whenCurrUser cc u $ when (chatDirNtf u cInfo chatDir $ isUserMention ci) $ setActiveChat t cInfo
-  CRContactConnected u ct _ -> when (contactNtf u ct False) $ do
+  CEvtContactConnected u ct _ -> when (contactNtf u ct False) $ do
     whenCurrUser cc u $ setActiveContact t ct
     sendNtf (viewContactName ct <> "> ", "connected")
-  CRContactSndReady u ct ->
+  CEvtContactSndReady u ct ->
     whenCurrUser cc u $ setActiveContact t ct
-  CRContactAnotherClient u ct -> do
+  CEvtContactAnotherClient u ct -> do
     whenCurrUser cc u $ unsetActiveContact t ct
     when (contactNtf u ct False) $ sendNtf (viewContactName ct <> "> ", "connected to another client")
-  CRContactsDisconnected srv _ -> serverNtf srv "disconnected"
-  CRContactsSubscribed srv _ -> serverNtf srv "connected"
-  CRReceivedGroupInvitation u g ct _ _ ->
+  CEvtContactsDisconnected srv _ -> serverNtf srv "disconnected"
+  CEvtContactsSubscribed srv _ -> serverNtf srv "connected"
+  CEvtReceivedGroupInvitation u g ct _ _ ->
     when (contactNtf u ct False) $
       sendNtf ("#" <> viewGroupName g <> " " <> viewContactName ct <> "> ", "invited you to join the group")
-  CRUserJoinedGroup u g _ -> when (groupNtf u g False) $ do
+  CEvtUserJoinedGroup u g _ -> when (groupNtf u g False) $ do
     whenCurrUser cc u $ setActiveGroup t g
     sendNtf ("#" <> viewGroupName g, "you are connected to group")
-  CRJoinedGroupMember u g m ->
+  CEvtJoinedGroupMember u g m ->
     when (groupNtf u g False) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
-  CRConnectedToGroupMember u g m _ ->
+  CEvtConnectedToGroupMember u g m _ ->
     when (groupNtf u g False) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
-  CRReceivedContactRequest u UserContactRequest {localDisplayName = n} ->
+  CEvtReceivedContactRequest u UserContactRequest {localDisplayName = n} ->
     when (userNtf u) $ sendNtf (viewName n <> ">", "wants to connect to you")
   _ -> pure ()
   where
@@ -274,7 +274,7 @@ whenCurrUser cc u a = do
 printRespToTerminal :: ChatTerminal -> ChatController -> Bool -> Maybe RemoteHostId -> ChatResponse -> IO ()
 printRespToTerminal ct cc liveItems outputRH r = responseString ct cc liveItems outputRH r >>= printToTerminal ct
 
-responseString :: ChatTerminal -> ChatController -> Bool -> Maybe RemoteHostId -> ChatResponse -> IO [StyledString]
+responseString :: ChatResponseEvent r => ChatTerminal -> ChatController -> Bool -> Maybe RemoteHostId -> r -> IO [StyledString]
 responseString ct cc liveItems outputRH r = do
   cu <- getCurrentUser ct cc
   ts <- getCurrentTime

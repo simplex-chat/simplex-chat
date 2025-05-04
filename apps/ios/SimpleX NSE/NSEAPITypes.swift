@@ -52,21 +52,12 @@ enum NSEChatResponse: Decodable, Error, ChatRespProtocol {
     case activeUser(user: User)
     case chatStarted
     case chatRunning
-    case chatSuspended
-    case contactConnected(user: UserRef, contact: Contact, userCustomProfile: Profile?)
-    case receivedContactRequest(user: UserRef, contactRequest: UserContactRequest)
-    case newChatItems(user: UserRef, chatItems: [AChatItem])
     case rcvFileAccepted(user: UserRef, chatItem: AChatItem)
-    case rcvFileSndCancelled(user: UserRef, chatItem: AChatItem, rcvFileTransfer: RcvFileTransfer)
-    case sndFileComplete(user: UserRef, chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
-    case sndFileRcvCancelled(user: UserRef, chatItem_: AChatItem?, sndFileTransfer: SndFileTransfer)
-    case callInvitation(callInvitation: RcvCallInvitation)
     case ntfConns(ntfConns: [NtfConn])
     case connNtfMessages(receivedMsgs: [NtfMsgInfo?])
     case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgAckInfo)
     case cmdOk(user_: UserRef?)
     case chatCmdError(user_: UserRef?, chatError: ChatError)
-    case chatError(user_: UserRef?, chatError: ChatError)
     
     var responseType: String {
         switch self {
@@ -74,21 +65,12 @@ enum NSEChatResponse: Decodable, Error, ChatRespProtocol {
         case .activeUser: "activeUser"
         case .chatStarted: "chatStarted"
         case .chatRunning: "chatRunning"
-        case .chatSuspended: "chatSuspended"
-        case .contactConnected: "contactConnected"
-        case .receivedContactRequest: "receivedContactRequest"
-        case .newChatItems: "newChatItems"
         case .rcvFileAccepted: "rcvFileAccepted"
-        case .rcvFileSndCancelled: "rcvFileSndCancelled"
-        case .sndFileComplete: "sndFileComplete"
-        case .sndFileRcvCancelled: "sndFileRcvCancelled"
-        case .callInvitation: "callInvitation"
         case .ntfConns: "ntfConns"
         case .connNtfMessages: "connNtfMessages"
         case .ntfMessage: "ntfMessage"
         case .cmdOk: "cmdOk"
         case .chatCmdError: "chatCmdError"
-        case .chatError: "chatError"
         }
     }
     
@@ -98,23 +80,12 @@ enum NSEChatResponse: Decodable, Error, ChatRespProtocol {
         case let .activeUser(user): return String(describing: user)
         case .chatStarted: return noDetails
         case .chatRunning: return noDetails
-        case .chatSuspended: return noDetails
-        case let .contactConnected(u, contact, _): return withUser(u, String(describing: contact))
-        case let .receivedContactRequest(u, contactRequest): return withUser(u, String(describing: contactRequest))
-        case let .newChatItems(u, chatItems):
-            let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
-            return withUser(u, itemsString)
         case let .rcvFileAccepted(u, chatItem): return withUser(u, String(describing: chatItem))
-        case let .rcvFileSndCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
-        case let .sndFileComplete(u, chatItem, _): return withUser(u, String(describing: chatItem))
-        case let .sndFileRcvCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
-        case let .callInvitation(inv): return String(describing: inv)
         case let .ntfConns(ntfConns): return String(describing: ntfConns)
         case let .connNtfMessages(receivedMsgs): return "receivedMsgs: \(String(describing: receivedMsgs))"
         case let .ntfMessage(u, connEntity, ntfMessage): return withUser(u, "connEntity: \(String(describing: connEntity))\nntfMessage: \(String(describing: ntfMessage))")
         case .cmdOk: return noDetails
         case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
-        case let .chatError(u, chatError): return withUser(u, String(describing: chatError))
         }
     }
     
@@ -144,10 +115,6 @@ enum NSEChatResponse: Decodable, Error, ChatRespProtocol {
                     if let jError = jResp["chatCmdError"] as? NSDictionary {
                         return .chatCmdError(user_: decodeUser_(jError), chatError: .invalidJSON(json: errorJson(jError) ?? ""))
                     }
-                } else if type == "chatError" {
-                    if let jError = jResp["chatError"] as? NSDictionary {
-                        return .chatError(user_: decodeUser_(jError), chatError: .invalidJSON(json: errorJson(jError) ?? ""))
-                    }
                 }
             }
             json = serializeJSON(j, options: .prettyPrinted)
@@ -158,7 +125,6 @@ enum NSEChatResponse: Decodable, Error, ChatRespProtocol {
     var chatError: ChatError? {
         switch self {
         case let .chatCmdError(_, error): error
-        case let .chatError(_, error): error
         default: nil
         }
     }
@@ -166,6 +132,100 @@ enum NSEChatResponse: Decodable, Error, ChatRespProtocol {
     var chatErrorType: ChatErrorType? {
         switch self {
         case let .chatCmdError(_, .error(error)): error
+        default: nil
+        }
+    }
+}
+
+enum NSEChatEvent: Decodable, Error, ChatEventProtocol {
+    case event(type: String, json: String)
+    case chatSuspended
+    case contactConnected(user: UserRef, contact: Contact, userCustomProfile: Profile?)
+    case receivedContactRequest(user: UserRef, contactRequest: UserContactRequest)
+    case newChatItems(user: UserRef, chatItems: [AChatItem])
+    case rcvFileSndCancelled(user: UserRef, chatItem: AChatItem, rcvFileTransfer: RcvFileTransfer)
+    case sndFileComplete(user: UserRef, chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
+    case sndFileRcvCancelled(user: UserRef, chatItem_: AChatItem?, sndFileTransfer: SndFileTransfer)
+    case callInvitation(callInvitation: RcvCallInvitation)
+    case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgAckInfo)
+    case chatError(user_: UserRef?, chatError: ChatError)
+    
+    var eventType: String {
+        switch self {
+        case let .event(type, _): "* \(type)"
+        case .chatSuspended: "chatSuspended"
+        case .contactConnected: "contactConnected"
+        case .receivedContactRequest: "receivedContactRequest"
+        case .newChatItems: "newChatItems"
+        case .rcvFileSndCancelled: "rcvFileSndCancelled"
+        case .sndFileComplete: "sndFileComplete"
+        case .sndFileRcvCancelled: "sndFileRcvCancelled"
+        case .callInvitation: "callInvitation"
+        case .ntfMessage: "ntfMessage"
+        case .chatError: "chatError"
+        }
+    }
+    
+    var details: String {
+        switch self {
+        case let .event(_, json): return json
+        case .chatSuspended: return noDetails
+        case let .contactConnected(u, contact, _): return withUser(u, String(describing: contact))
+        case let .receivedContactRequest(u, contactRequest): return withUser(u, String(describing: contactRequest))
+        case let .newChatItems(u, chatItems):
+            let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
+            return withUser(u, itemsString)
+        case let .rcvFileSndCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
+        case let .sndFileComplete(u, chatItem, _): return withUser(u, String(describing: chatItem))
+        case let .sndFileRcvCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
+        case let .callInvitation(inv): return String(describing: inv)
+        case let .ntfMessage(u, connEntity, ntfMessage): return withUser(u, "connEntity: \(String(describing: connEntity))\nntfMessage: \(String(describing: ntfMessage))")
+        case let .chatError(u, chatError): return withUser(u, String(describing: chatError))
+        }
+    }
+    
+    var noDetails: String { "\(eventType): no details" }
+
+    static func chatEvent(_ s: String) -> NSEChatEvent {
+        let d = s.data(using: .utf8)!
+        // TODO is there a way to do it without copying the data? e.g:
+        //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
+        //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
+        do {
+            let r = try jsonDecoder.decode(APIResponse<NSEChatEvent>.self, from: d)
+            return r.resp
+        } catch {
+            logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
+        }
+        
+        var type: String?
+        var json: String?
+        if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {
+            if let jResp = j["resp"] as? NSDictionary, jResp.count == 1 || jResp.count == 2 {
+                type = jResp.allKeys[0] as? String
+                if jResp.count == 2 && type == "_owsf" {
+                    type = jResp.allKeys[1] as? String
+                }
+                if type == "chatError" {
+                    if let jError = jResp["chatError"] as? NSDictionary {
+                        return .chatError(user_: decodeUser_(jError), chatError: .invalidJSON(json: errorJson(jError) ?? ""))
+                    }
+                }
+            }
+            json = serializeJSON(j, options: .prettyPrinted)
+        }
+        return NSEChatEvent.event(type: type ?? "invalid", json: json ?? s)
+    }
+    
+    var chatError: ChatError? {
+        switch self {
+        case let .chatError(_, error): error
+        default: nil
+        }
+    }
+    
+    var chatErrorType: ChatErrorType? {
+        switch self {
         case let .chatError(_, .error(error)): error
         default: nil
         }

@@ -119,10 +119,10 @@ public func sendSimpleXCmd<CR: ChatRespProtocol>(_ cmd: ChatCmdProtocol, _ ctrl:
 // in microseconds
 public let MESSAGE_TIMEOUT: Int32 = 15_000_000
 
-public func recvSimpleXMsg<CR: ChatRespProtocol>(_ ctrl: chat_ctrl? = nil, messageTimeout: Int32 = MESSAGE_TIMEOUT) -> CR? {
+public func recvSimpleXMsg<CEvt: ChatEventProtocol>(_ ctrl: chat_ctrl? = nil, messageTimeout: Int32 = MESSAGE_TIMEOUT) -> CEvt? {
     if let cjson = chat_recv_msg_wait(ctrl ?? getChatCtrl(), messageTimeout) {
         let s = fromCString(cjson)
-        return s == "" ? nil : CR.chatResponse(s)
+        return s == "" ? nil : CEvt.chatEvent(s)
     }
     return nil
 }

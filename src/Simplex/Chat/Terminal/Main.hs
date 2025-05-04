@@ -10,12 +10,12 @@ import Data.Maybe (fromMaybe)
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import Network.Socket
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatResponse (..), PresetServers (..), SimpleNetCfg (..), currentRemoteHost, versionNumber, versionString)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatEvent (..), PresetServers (..), SimpleNetCfg (..), currentRemoteHost, versionNumber, versionString)
 import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Options.DB
 import Simplex.Chat.Terminal
-import Simplex.Chat.View (serializeChatResponse, smpProxyModeStr)
+import Simplex.Chat.View (ChatResponseEvent, serializeChatResponse, smpProxyModeStr)
 import Simplex.Messaging.Client (NetworkConfig (..), SocksMode (..))
 import System.Directory (getAppUserDataDirectory)
 import System.Exit (exitFailure)
@@ -43,13 +43,14 @@ simplexChatCLI' cfg opts@ChatOpts {chatCmd, chatCmdLog, chatCmdDelay, chatServer
       simplexChatTerminal cfg opts t
     runCommand user cc = do
       when (chatCmdLog /= CCLNone) . void . forkIO . forever $ do
-        (_, _, r') <- atomically . readTBQueue $ outputQ cc
-        case r' of
-          CRNewChatItems {} -> printResponse r'
-          _ -> when (chatCmdLog == CCLAll) $ printResponse r'
+        (_, r) <- atomically . readTBQueue $ outputQ cc
+        case r of
+          CEvtNewChatItems {} -> printResponse r
+          _ -> when (chatCmdLog == CCLAll) $ printResponse r
       sendChatCmdStr cc chatCmd >>= printResponse
       threadDelay $ chatCmdDelay * 1000000
       where
+        printResponse :: ChatResponseEvent r => r -> IO ()
         printResponse r = do
           ts <- getCurrentTime
           tz <- getCurrentTimeZone
