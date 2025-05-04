@@ -3103,6 +3103,7 @@ sealed class CIStatus {
   @Serializable @SerialName("rcvRead") class RcvRead: CIStatus()
   @Serializable @SerialName("invalid") class Invalid(val text: String): CIStatus()
 
+  // as in corresponds to SENT response from agent
   fun isSent(): Boolean = when(this) {
     is SndNew -> false
     is SndSent -> true

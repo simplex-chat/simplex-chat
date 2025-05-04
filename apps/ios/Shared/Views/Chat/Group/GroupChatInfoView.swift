@@ -87,7 +87,26 @@ struct GroupChatInfoView: View {
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                    
+
+                    Section {
+                        if groupInfo.membership.supportChat != nil {
+                            let scopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
+                            UserSupportChatNavLink(
+                                chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()),
+                                im: ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: scopeInfo))
+                            )
+                        }
+                        if groupInfo.businessChat == nil && groupInfo.membership.memberRole >= .moderator {
+                            memberSupportButton()
+                        }
+                        if groupInfo.canModerate {
+                            GroupReportsChatNavLink(
+                                chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil), chatItems: [], chatStats: ChatStats()),
+                                im: ItemsModel(secondaryIMFilter: .msgContentTagContext(contentTag: .report))
+                            )
+                        }
+                    }
+
                     Section {
                         if groupInfo.isOwner && groupInfo.businessChat == nil {
                             editGroupButton()
@@ -96,17 +115,6 @@ struct GroupChatInfoView: View {
                             addOrEditWelcomeMessage()
                         }
                         GroupPreferencesButton(groupInfo: $groupInfo, preferences: groupInfo.fullGroupPreferences, currentPreferences: groupInfo.fullGroupPreferences)
-                        if members.filter({ $0.wrapped.memberCurrent }).count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
-                            sendReceiptsOption()
-                        } else {
-                            sendReceiptsOptionDisabled()
-                        }
-                                                
-                        NavigationLink {
-                            ChatWallpaperEditorSheet(chat: chat)
-                        } label: {
-                            Label("Chat theme", systemImage: "photo")
-                        }
                     } header: {
                         Text("")
                     } footer: {
@@ -120,6 +128,16 @@ struct GroupChatInfoView: View {
                     }
                     
                     Section {
+                        if members.filter({ $0.wrapped.memberCurrent }).count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
+                            sendReceiptsOption()
+                        } else {
+                            sendReceiptsOptionDisabled()
+                        }
+                        NavigationLink {
+                            ChatWallpaperEditorSheet(chat: chat)
+                        } label: {
+                            Label("Chat theme", systemImage: "photo")
+                        }
                         ChatTTLOption(chat: chat, progressIndicator: $progressIndicator)
                     } footer: {
                         Text("Delete chat messages from your device.")
@@ -519,6 +537,81 @@ struct GroupChatInfoView: View {
         .navigationBarTitleDisplayMode(.large)
     }
 
+    struct UserSupportChatNavLink: View {
+        @EnvironmentObject var chatModel: ChatModel
+        @State private var userSupportChatNavLinkActive = false
+        @ObservedObject var chat: Chat
+        var im: ItemsModel
+
+        var body: some View {
+            ZStack {
+                Button {
+                    im.loadOpenChat(chat.id) {
+                        userSupportChatNavLinkActive = true
+                    }
+                } label: {
+                    Label("Support chat", systemImage: "flag")
+                }
+
+                NavigationLink(isActive: $userSupportChatNavLinkActive) {
+                    if let secondaryIM = chatModel.secondaryIM {
+                        SecondaryChatView(
+                            chat: chat,
+                            im: secondaryIM
+                        )
+                    }
+                } label: {
+                    EmptyView()
+                }
+                .frame(width: 1, height: 1)
+                .hidden()
+            }
+        }
+    }
+
+    private func memberSupportButton() -> some View {
+        NavigationLink {
+            MemberSupportView(groupInfo: groupInfo)
+                .navigationBarTitle("Member support")
+                .modifier(ThemedBackground())
+                .navigationBarTitleDisplayMode(.large)
+        } label: {
+            Label("Member support", systemImage: "flag")
+        }
+    }
+
+    struct GroupReportsChatNavLink: View {
+        @EnvironmentObject var chatModel: ChatModel
+        @State private var groupReportsChatNavLinkActive = false
+        @ObservedObject var chat: Chat
+        var im: ItemsModel
+
+        var body: some View {
+            ZStack {
+                Button {
+                    im.loadOpenChat(chat.id) {
+                        groupReportsChatNavLinkActive = true
+                    }
+                } label: {
+                    Label("Member reports", systemImage: "flag")
+                }
+
+                NavigationLink(isActive: $groupReportsChatNavLinkActive) {
+                    if let secondaryIM = chatModel.secondaryIM {
+                        SecondaryChatView(
+                            chat: chat,
+                            im: secondaryIM
+                        )
+                    }
+                } label: {
+                    EmptyView()
+                }
+                .frame(width: 1, height: 1)
+                .hidden()
+            }
+        }
+    }
+
     private func editGroupButton() -> some View {
         NavigationLink {
             GroupProfileView(
@@ -679,23 +772,31 @@ struct GroupChatInfoView: View {
             title: Text("Remove member?"),
             message: Text(messageLabel),
             primaryButton: .destructive(Text("Remove")) {
-                Task {
-                    do {
-                        let updatedMembers = try await apiRemoveMembers(groupInfo.groupId, [mem.groupMemberId])
-                        await MainActor.run {
-                            updatedMembers.forEach { updatedMember in
-                                _ = chatModel.upsertGroupMember(groupInfo, updatedMember)
-                            }
-                        }
-                    } catch let error {
-                        logger.error("apiRemoveMembers error: \(responseError(error))")
-                        let a = getErrorAlert(error, "Error removing member")
-                        alert = .error(title: a.title, error: a.message)
-                    }
-                }
+                removeMember(groupInfo, mem)
             },
             secondaryButton: .cancel()
         )
+    }
+}
+
+func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember) {
+    Task {
+        do {
+            let updatedMembers = try await apiRemoveMembers(groupInfo.groupId, [mem.groupMemberId])
+            await MainActor.run {
+                updatedMembers.forEach { updatedMember in
+                    _ = ChatModel.shared.upsertGroupMember(groupInfo, updatedMember)
+                }
+            }
+        } catch let error {
+            logger.error("apiRemoveMembers error: \(responseError(error))")
+            await MainActor.run {
+                showAlert(
+                    NSLocalizedString("Error removing member", comment: "alert title"),
+                    message: responseError(error)
+                )
+            }
+        }
     }
 }
 

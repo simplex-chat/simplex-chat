@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct MergedItems: Hashable, Equatable {
+    let im: ItemsModel
     let items: [MergedItem]
     let splits: [SplitRange]
     // chat item id, index in list
@@ -23,15 +24,15 @@ struct MergedItems: Hashable, Equatable {
         hasher.combine("\(items.hashValue)")
     }
 
-    static func create(_ items: [ChatItem], _ revealedItems: Set<Int64>, _ chatState: ActiveChatState) -> MergedItems {
-        if items.isEmpty {
-            return MergedItems(items: [], splits: [], indexInParentItems: [:])
+    static func create(_ im: ItemsModel, _ revealedItems: Set<Int64>) -> MergedItems {
+        if im.reversedChatItems.isEmpty {
+            return MergedItems(im: im, items: [], splits: [], indexInParentItems: [:])
         }
 
-        let unreadCount = chatState.unreadTotal
+        let unreadCount = im.chatState.unreadTotal
 
-        let unreadAfterItemId = chatState.unreadAfterItemId
-        let itemSplits = chatState.splits
+        let unreadAfterItemId = im.chatState.unreadAfterItemId
+        let itemSplits = im.chatState.splits
         var mergedItems: [MergedItem] = []
         // Indexes of splits here will be related to reversedChatItems, not chatModel.chatItems
         var splitRanges: [SplitRange] = []
@@ -40,19 +41,19 @@ struct MergedItems: Hashable, Equatable {
         var unclosedSplitIndex: Int? = nil
         var unclosedSplitIndexInParent: Int? = nil
         var visibleItemIndexInParent = -1
-        var unreadBefore = unreadCount - chatState.unreadAfterNewestLoaded
+        var unreadBefore = unreadCount - im.chatState.unreadAfterNewestLoaded
         var lastRevealedIdsInMergedItems: BoxedValue<[Int64]>? = nil
         var lastRangeInReversedForMergedItems: BoxedValue<ClosedRange<Int>>? = nil
         var recent: MergedItem? = nil
-        while index < items.count {
-            let item = items[index]
-            let prev = index >= 1 ? items[index - 1] : nil
-            let next = index + 1 < items.count ? items[index + 1] : nil
+        while index < im.reversedChatItems.count {
+            let item = im.reversedChatItems[index]
+            let prev = index >= 1 ? im.reversedChatItems[index - 1] : nil
+            let next = index + 1 < im.reversedChatItems.count ? im.reversedChatItems[index + 1] : nil
             let category = item.mergeCategory
             let itemIsSplit = itemSplits.contains(item.id)
 
             if item.id == unreadAfterItemId {
-                unreadBefore = unreadCount - chatState.unreadAfter
+                unreadBefore = unreadCount - im.chatState.unreadAfter
             }
             if item.isRcvNew {
                 unreadBefore -= 1
@@ -106,18 +107,19 @@ struct MergedItems: Hashable, Equatable {
                 // found item that is considered as a split
                 if let unclosedSplitIndex, let unclosedSplitIndexInParent {
                     // it was at least second split in the list
-                    splitRanges.append(SplitRange(itemId: items[unclosedSplitIndex].id, indexRangeInReversed: unclosedSplitIndex ... index - 1, indexRangeInParentItems: unclosedSplitIndexInParent ... visibleItemIndexInParent - 1))
+                    splitRanges.append(SplitRange(itemId: im.reversedChatItems[unclosedSplitIndex].id, indexRangeInReversed: unclosedSplitIndex ... index - 1, indexRangeInParentItems: unclosedSplitIndexInParent ... visibleItemIndexInParent - 1))
                 }
                 unclosedSplitIndex = index
                 unclosedSplitIndexInParent = visibleItemIndexInParent
-            } else if index + 1 == items.count, let unclosedSplitIndex, let unclosedSplitIndexInParent {
+            } else if index + 1 == im.reversedChatItems.count, let unclosedSplitIndex, let unclosedSplitIndexInParent {
                 // just one split for the whole list, there will be no more, it's the end
-                splitRanges.append(SplitRange(itemId: items[unclosedSplitIndex].id, indexRangeInReversed: unclosedSplitIndex ... index, indexRangeInParentItems: unclosedSplitIndexInParent ... visibleItemIndexInParent))
+                splitRanges.append(SplitRange(itemId: im.reversedChatItems[unclosedSplitIndex].id, indexRangeInReversed: unclosedSplitIndex ... index, indexRangeInParentItems: unclosedSplitIndexInParent ... visibleItemIndexInParent))
             }
             indexInParentItems[item.id] = visibleItemIndexInParent
             index += 1
         }
         return MergedItems(
+            im: im,
             items: mergedItems,
             splits: splitRanges,
             indexInParentItems: indexInParentItems
@@ -127,7 +129,6 @@ struct MergedItems: Hashable, Equatable {
     // Use this check to ensure that mergedItems state based on currently actual state of global
     // splits and reversedChatItems
     func isActualState() -> Bool {
-        let im = ItemsModel.shared
         // do not load anything if global splits state is different than in merged items because it
         // will produce undefined results in terms of loading and placement of items. 
         // Same applies to reversedChatItems
@@ -434,7 +435,7 @@ class BoxedValue<T: Hashable>: Equatable, Hashable {
 }
 
 @MainActor
-func visibleItemIndexesNonReversed(_ listState: EndlessScrollView<MergedItem>.ListState, _ mergedItems: MergedItems) -> ClosedRange<Int> {
+func visibleItemIndexesNonReversed(_ im: ItemsModel, _ listState: EndlessScrollView<MergedItem>.ListState, _ mergedItems: MergedItems) -> ClosedRange<Int> {
     let zero = 0 ... 0
     let items = mergedItems.items
     if items.isEmpty {
@@ -445,12 +446,12 @@ func visibleItemIndexesNonReversed(_ listState: EndlessScrollView<MergedItem>.Li
     guard let newest, let oldest else {
         return zero
     }
-    let size = ItemsModel.shared.reversedChatItems.count
+    let size = im.reversedChatItems.count
     let range = size - oldest ... size - newest
     if range.lowerBound < 0 || range.upperBound < 0 {
         return zero
     }
 
-    // visible items mapped to their underlying data structure which is ItemsModel.shared.reversedChatItems.reversed()
+    // visible items mapped to their underlying data structure which is im.reversedChatItems.reversed()
     return range
 }

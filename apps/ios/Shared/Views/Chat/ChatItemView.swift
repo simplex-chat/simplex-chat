@@ -31,6 +31,7 @@ extension EnvironmentValues {
 
 struct ChatItemView: View {
     @ObservedObject var chat: Chat
+    @ObservedObject var im: ItemsModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.showTimestamp) var showTimestamp: Bool
     @Environment(\.revealed) var revealed: Bool
@@ -41,6 +42,7 @@ struct ChatItemView: View {
 
     init(
         chat: Chat,
+        im: ItemsModel,
         chatItem: ChatItem,
         scrollToItemId: @escaping (ChatItem.ID) -> Void,
         showMember: Bool = false,
@@ -48,6 +50,7 @@ struct ChatItemView: View {
         allowMenu: Binding<Bool> = .constant(false)
     ) {
         self.chat = chat
+        self.im = im
         self.chatItem = chatItem
         self.scrollToItemId = scrollToItemId
         self.maxWidth = maxWidth
@@ -57,14 +60,14 @@ struct ChatItemView: View {
     var body: some View {
         let ci = chatItem
         if chatItem.meta.itemDeleted != nil && (!revealed || chatItem.isDeletedContent) {
-            MarkedDeletedItemView(chat: chat, chatItem: chatItem)
+            MarkedDeletedItemView(chat: chat, im: im, chatItem: chatItem)
         } else if ci.quotedItem == nil && ci.meta.itemForwarded == nil && ci.meta.itemDeleted == nil && !ci.meta.isLive {
             if let mc = ci.content.msgContent, mc.isText && isShortEmoji(ci.content.text) {
                 EmojiItemView(chat: chat, chatItem: ci)
             } else if ci.content.text.isEmpty, case let .voice(_, duration) = ci.content.msgContent {
                 CIVoiceView(chat: chat, chatItem: ci, recordingFile: ci.file, duration: duration, allowMenu: $allowMenu)
             } else if ci.content.msgContent == nil {
-                ChatItemContentView(chat: chat, chatItem: chatItem, msgContentView: { Text(ci.text) }) // msgContent is unreachable branch in this case
+                ChatItemContentView(chat: chat, im: im, chatItem: chatItem, msgContentView: { Text(ci.text) }) // msgContent is unreachable branch in this case
             } else {
                 framedItemView()
             }
@@ -92,6 +95,7 @@ struct ChatItemView: View {
         }()
         return FramedItemView(
             chat: chat,
+            im: im,
             chatItem: chatItem,
             scrollToItemId: scrollToItemId,
             preview: preview,
@@ -108,6 +112,7 @@ struct ChatItemContentView<Content: View>: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.revealed) var revealed: Bool
     @ObservedObject var chat: Chat
+    @ObservedObject var im: ItemsModel
     var chatItem: ChatItem
     var msgContentView: () -> Content
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
@@ -131,7 +136,9 @@ struct ChatItemContentView<Content: View>: View {
         case let .sndGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
         case .rcvDirectEvent: eventItemView()
         case .rcvGroupEvent(.memberCreatedContact): CIMemberCreatedContactView(chatItem: chatItem)
+        case .rcvGroupEvent(.newMemberPendingReview): CIEventView(eventText: pendingReviewEventItemText())
         case .rcvGroupEvent: eventItemView()
+        case .sndGroupEvent(.userPendingReview): CIEventView(eventText: pendingReviewEventItemText())
         case .sndGroupEvent: eventItemView()
         case .rcvConnEvent: eventItemView()
         case .sndConnEvent: eventItemView()
@@ -140,7 +147,7 @@ struct ChatItemContentView<Content: View>: View {
         case let .rcvChatPreference(feature, allowed, param):
             CIFeaturePreferenceView(chat: chat, chatItem: chatItem, feature: feature, allowed: allowed, param: param)
         case let .sndChatPreference(feature, _, _):
-            CIChatFeatureView(chat: chat, chatItem: chatItem, feature: feature, icon: feature.icon, iconColor: theme.colors.secondary)
+            CIChatFeatureView(chat: chat, im: im, chatItem: chatItem, feature: feature, icon: feature.icon, iconColor: theme.colors.secondary)
         case let .rcvGroupFeature(feature, preference, _, role): chatFeatureView(feature, preference.enabled(role, for: chat.chatInfo.groupInfo?.membership).iconColor(theme.colors.secondary))
         case let .sndGroupFeature(feature, preference, _, role): chatFeatureView(feature, preference.enabled(role, for: chat.chatInfo.groupInfo?.membership).iconColor(theme.colors.secondary))
         case let .rcvChatFeatureRejected(feature): chatFeatureView(feature, .red)
@@ -172,6 +179,13 @@ struct ChatItemContentView<Content: View>: View {
         CIEventView(eventText: eventItemViewText(theme.colors.secondary))
     }
 
+    private func pendingReviewEventItemText() -> Text {
+        Text(chatItem.content.text)
+            .font(.caption)
+            .foregroundColor(theme.colors.secondary)
+            .fontWeight(.bold)
+    }
+
     private func eventItemViewText(_ secondaryColor: Color) -> Text {
         if !revealed, let t = mergedGroupEventText {
             return chatEventText(t + textSpace + chatItem.timestampText, secondaryColor)
@@ -187,7 +201,7 @@ struct ChatItemContentView<Content: View>: View {
     }
 
     private func chatFeatureView(_ feature: Feature, _ iconColor: Color) -> some View {
-        CIChatFeatureView(chat: chat, chatItem: chatItem, feature: feature, iconColor: iconColor)
+        CIChatFeatureView(chat: chat, im: im, chatItem: chatItem, feature: feature, iconColor: iconColor)
     }
 
     private var mergedGroupEventText: Text? {
@@ -247,16 +261,17 @@ func chatEventText(_ ci: ChatItem, _ secondaryColor: Color) -> Text {
 
 struct ChatItemView_Previews: PreviewProvider {
     static var previews: some View {
+        let im = ItemsModel.shared
         Group{
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"), scrollToItemId: { _ in })
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too"), scrollToItemId: { _ in })
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂"), scrollToItemId: { _ in })
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂"), scrollToItemId: { _ in })
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂🙂"), scrollToItemId: { _ in })
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getDeletedContentSample(), scrollToItemId: { _ in })
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now)), scrollToItemId: { _ in })
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂", .sndSent(sndProgress: .complete), itemLive: true), scrollToItemId: { _ in }).environment(\.revealed, true)
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemLive: true), scrollToItemId: { _ in }).environment(\.revealed, true)
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"), scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too"), scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂"), scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂"), scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂🙂"), scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getDeletedContentSample(), scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now)), scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂", .sndSent(sndProgress: .complete), itemLive: true), scrollToItemId: { _ in }).environment(\.revealed, true)
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemLive: true), scrollToItemId: { _ in }).environment(\.revealed, true)
         }
         .environment(\.revealed, false)
         .previewLayout(.fixed(width: 360, height: 70))
@@ -266,10 +281,12 @@ struct ChatItemView_Previews: PreviewProvider {
 
 struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
     static var previews: some View {
+        let im = ItemsModel.shared
         let ciFeatureContent = CIContent.rcvChatFeature(feature: .fullDelete, enabled: FeatureEnabled(forUser: false, forContact: false), param: nil)
         Group{
             ChatItemView(
                 chat: Chat.sampleData,
+                im: im,
                 chatItem: ChatItem(
                     chatDir: .directRcv,
                     meta: CIMeta.getSample(1, .now, "1 skipped message", .rcvRead, itemDeleted: .deleted(deletedTs: .now)),
@@ -281,6 +298,7 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
             )
             ChatItemView(
                 chat: Chat.sampleData,
+                im: im,
                 chatItem: ChatItem(
                     chatDir: .directRcv,
                     meta: CIMeta.getSample(1, .now, "1 skipped message", .rcvRead),
@@ -292,6 +310,7 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
             )
             ChatItemView(
                 chat: Chat.sampleData,
+                im: im,
                 chatItem: ChatItem(
                     chatDir: .directRcv,
                     meta: CIMeta.getSample(1, .now, "received invitation to join group team as admin", .rcvRead, itemDeleted: .deleted(deletedTs: .now)),
@@ -303,6 +322,7 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
             )
             ChatItemView(
                 chat: Chat.sampleData,
+                im: im,
                 chatItem: ChatItem(
                     chatDir: .directRcv,
                     meta: CIMeta.getSample(1, .now, "group event text", .rcvRead, itemDeleted: .deleted(deletedTs: .now)),
@@ -314,6 +334,7 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
             )
             ChatItemView(
                 chat: Chat.sampleData,
+                im: im,
                 chatItem: ChatItem(
                     chatDir: .directRcv,
                     meta: CIMeta.getSample(1, .now, ciFeatureContent.text, .rcvRead, itemDeleted: .deleted(deletedTs: .now)),

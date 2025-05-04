@@ -165,7 +165,7 @@ fun SupportChatRow(member: GroupMember) {
   fun memberStatus(): String {
     return if (member.activeConn?.connDisabled == true) {
       generalGetString(MR.strings.member_info_member_disabled)
-    } else if (member.activeConn?.connDisabled == true) {
+    } else if (member.activeConn?.connInactive == true) {
       generalGetString(MR.strings.member_info_member_inactive)
     } else if (member.memberPending) {
       member.memberStatus.text
