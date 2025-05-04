@@ -580,8 +580,7 @@ enum ChatCommand: ChatCmdProtocol {
     }
 }
 
-enum ChatResponse: Decodable, Error, ChatRespProtocol {
-    case response(type: String, json: String)
+enum ChatResponse0: Decodable, ChatAPIResult {
     case activeUser(user: User)
     case usersList(users: [UserInfo])
     case chatStarted
@@ -590,6 +589,65 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
     case apiChats(user: UserRef, chats: [ChatData])
     case apiChat(user: UserRef, chat: ChatData, navInfo: NavigationInfo?)
     case chatTags(user: UserRef, userTags: [ChatTag])
+
+    var resultType: String {
+        get {
+            switch self {
+            case .activeUser: return "activeUser"
+            case .usersList: return "usersList"
+            case .chatStarted: return "chatStarted"
+            case .chatRunning: return "chatRunning"
+            case .chatStopped: return "chatStopped"
+            case .apiChats: return "apiChats"
+            case .apiChat: return "apiChat"
+            case .chatTags: return "chatTags"
+            }
+        }
+    }
+    
+    var details: String {
+        get {
+            switch self {
+            case let .activeUser(user): return String(describing: user)
+            case let .usersList(users): return String(describing: users)
+            case .chatStarted: return noDetails
+            case .chatRunning: return noDetails
+            case .chatStopped: return noDetails
+            case let .apiChats(u, chats): return withUser(u, String(describing: chats))
+            case let .apiChat(u, chat, navInfo): return withUser(u, "chat: \(String(describing: chat))\nnavInfo: \(String(describing: navInfo))")
+            case let .chatTags(u, userTags): return withUser(u, "userTags: \(String(describing: userTags))")
+            }
+        }
+    }
+
+    private var noDetails: String { get { "\(resultType): no details" } }
+
+    static func fallbackResult(_ type: String, _ json: NSDictionary) -> ChatResponse0? {
+        if type == "apiChats" {
+            if let r = parseApiChats(json) {
+                return .apiChats(user: r.user, chats: r.chats)
+            }
+        } else if type == "apiChat" {
+            if let jApiChat = json["apiChat"] as? NSDictionary,
+               let user: UserRef = try? decodeObject(jApiChat["user"] as Any),
+               let jChat = jApiChat["chat"] as? NSDictionary,
+               let (chat, navInfo) = try? parseChatData(jChat, jApiChat["navInfo"] as? NSDictionary) {
+                return .apiChat(user: user, chat: chat, navInfo: navInfo)
+            }
+        }
+        return nil
+    }
+}
+
+enum ChatResponse: Decodable, ChatAPIResult {
+//    case activeUser(user: User)
+//    case usersList(users: [UserInfo])
+//    case chatStarted
+//    case chatRunning
+//    case chatStopped
+//    case apiChats(user: UserRef, chats: [ChatData])
+//    case apiChat(user: UserRef, chat: ChatData, navInfo: NavigationInfo?)
+//    case chatTags(user: UserRef, userTags: [ChatTag])
     case chatItemInfo(user: UserRef, chatItem: AChatItem, chatItemInfo: ChatItemInfo)
     case serverTestResult(user: UserRef, testServer: String, testFailure: ProtocolTestFailure?)
     case serverOperatorConditions(conditions: ServerOperatorConditions)
@@ -689,23 +747,21 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
     case agentSubsTotal(user: UserRef, subsTotal: SMPServerSubs, hasSession: Bool)
     case agentServersSummary(user: UserRef, serversSummary: PresentedServersSummary)
     case agentSubsSummary(user: UserRef, subsSummary: SMPServerSubs)
-    case chatCmdError(user_: UserRef?, chatError: ChatError)
     case archiveExported(archiveErrors: [ArchiveError])
     case archiveImported(archiveErrors: [ArchiveError])
     case appSettings(appSettings: AppSettings)
 
-    var responseType: String {
+    var resultType: String {
         get {
             switch self {
-            case let .response(type, _): return "* \(type)"
-            case .activeUser: return "activeUser"
-            case .usersList: return "usersList"
-            case .chatStarted: return "chatStarted"
-            case .chatRunning: return "chatRunning"
-            case .chatStopped: return "chatStopped"
-            case .apiChats: return "apiChats"
-            case .apiChat: return "apiChat"
-            case .chatTags: return "chatTags"
+//            case .activeUser: return "activeUser"
+//            case .usersList: return "usersList"
+//            case .chatStarted: return "chatStarted"
+//            case .chatRunning: return "chatRunning"
+//            case .chatStopped: return "chatStopped"
+//            case .apiChats: return "apiChats"
+//            case .apiChat: return "apiChat"
+//            case .chatTags: return "chatTags"
             case .chatItemInfo: return "chatItemInfo"
             case .serverTestResult: return "serverTestResult"
             case .serverOperatorConditions: return "serverOperators"
@@ -798,7 +854,6 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
             case .agentSubsTotal: return "agentSubsTotal"
             case .agentServersSummary: return "agentServersSummary"
             case .agentSubsSummary: return "agentSubsSummary"
-            case .chatCmdError: return "chatCmdError"
             case .archiveExported: return "archiveExported"
             case .archiveImported: return "archiveImported"
             case .appSettings: return "appSettings"
@@ -809,15 +864,14 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
     var details: String {
         get {
             switch self {
-            case let .response(_, json): return json
-            case let .activeUser(user): return String(describing: user)
-            case let .usersList(users): return String(describing: users)
-            case .chatStarted: return noDetails
-            case .chatRunning: return noDetails
-            case .chatStopped: return noDetails
-            case let .apiChats(u, chats): return withUser(u, String(describing: chats))
-            case let .apiChat(u, chat, navInfo): return withUser(u, "chat: \(String(describing: chat))\nnavInfo: \(String(describing: navInfo))")
-            case let .chatTags(u, userTags): return withUser(u, "userTags: \(String(describing: userTags))")
+//            case let .activeUser(user): return String(describing: user)
+//            case let .usersList(users): return String(describing: users)
+//            case .chatStarted: return noDetails
+//            case .chatRunning: return noDetails
+//            case .chatStopped: return noDetails
+//            case let .apiChats(u, chats): return withUser(u, String(describing: chats))
+//            case let .apiChat(u, chat, navInfo): return withUser(u, "chat: \(String(describing: chat))\nnavInfo: \(String(describing: navInfo))")
+//            case let .chatTags(u, userTags): return withUser(u, "userTags: \(String(describing: userTags))")
             case let .chatItemInfo(u, chatItem, chatItemInfo): return withUser(u, "chatItem: \(String(describing: chatItem))\nchatItemInfo: \(String(describing: chatItemInfo))")
             case let .serverTestResult(u, server, testFailure): return withUser(u, "server: \(server)\nresult: \(String(describing: testFailure))")
             case let .serverOperatorConditions(conditions): return "conditions: \(String(describing: conditions))"
@@ -918,7 +972,6 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
             case let .agentSubsTotal(u, subsTotal, hasSession): return withUser(u, "subsTotal: \(String(describing: subsTotal))\nhasSession: \(hasSession)")
             case let .agentServersSummary(u, serversSummary): return withUser(u, String(describing: serversSummary))
             case let .agentSubsSummary(u, subsSummary): return withUser(u, String(describing: subsSummary))
-            case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
             case let .archiveExported(archiveErrors): return String(describing: archiveErrors)
             case let .archiveImported(archiveErrors): return String(describing: archiveErrors)
             case let .appSettings(appSettings): return String(describing: appSettings)
@@ -926,69 +979,14 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
         }
     }
 
-    private var noDetails: String { get { "\(responseType): no details" } }
+    private var noDetails: String { get { "\(resultType): no details" } }
 
-    static func chatResponse(_ s: String) -> ChatResponse {
-        let d = s.data(using: .utf8)!
-        // TODO is there a way to do it without copying the data? e.g:
-        //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
-        //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
-        do {
-            let r = try callWithLargeStack {
-                try jsonDecoder.decode(APIResponse<ChatResponse>.self, from: d)
-            }
-            return r.resp
-        } catch {
-            logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
-        }
-        
-        var type: String?
-        var json: String?
-        if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {
-            if let jResp = j["resp"] as? NSDictionary, jResp.count == 1 || jResp.count == 2 {
-                type = jResp.allKeys[0] as? String
-                if jResp.count == 2 && type == "_owsf" {
-                    type = jResp.allKeys[1] as? String
-                }
-                if type == "apiChats" {
-                    if let r = parseApiChats(jResp) {
-                        return .apiChats(user: r.user, chats: r.chats)
-                    }
-                } else if type == "apiChat" {
-                    if let jApiChat = jResp["apiChat"] as? NSDictionary,
-                       let user: UserRef = try? decodeObject(jApiChat["user"] as Any),
-                       let jChat = jApiChat["chat"] as? NSDictionary,
-                       let (chat, navInfo) = try? parseChatData(jChat, jApiChat["navInfo"] as? NSDictionary) {
-                        return .apiChat(user: user, chat: chat, navInfo: navInfo)
-                    }
-                } else if type == "chatCmdError" {
-                    if let jError = jResp["chatCmdError"] as? NSDictionary {
-                        return .chatCmdError(user_: decodeUser_(jError), chatError: .invalidJSON(json: errorJson(jError) ?? ""))
-                    }
-                }
-            }
-            json = serializeJSON(j, options: .prettyPrinted)
-        }
-        return ChatResponse.response(type: type ?? "invalid", json: json ?? s)
-    }
-    
-    var chatError: ChatError? {
-        switch self {
-        case let .chatCmdError(_, error): error
-        default: nil
-        }
-    }
-    
-    var chatErrorType: ChatErrorType? {
-        switch self {
-        case let .chatCmdError(_, .error(error)): error
-        default: nil
-        }
+    static func fallbackResult(_ type: String, _ json: NSDictionary) -> ChatResponse? {
+        nil
     }
 }
 
-enum ChatEvent: Decodable, ChatEventProtocol {
-    case event(type: String, json: String)
+enum ChatEvent: Decodable, ChatAPIResult {
     case chatSuspended
     case contactSwitch(user: UserRef, contact: Contact, switchProgress: SwitchProgress)
     case groupMemberSwitch(user: UserRef, groupInfo: GroupInfo, member: GroupMember, switchProgress: SwitchProgress)
@@ -1063,11 +1061,9 @@ enum ChatEvent: Decodable, ChatEventProtocol {
     case remoteCtrlStopped(rcsState: RemoteCtrlSessionState, rcStopReason: RemoteCtrlStopReason)
     // pq
     case contactPQEnabled(user: UserRef, contact: Contact, pqEnabled: Bool)
-    case chatError(user_: UserRef?, chatError: ChatError)
     
-    var eventType: String {
+    var resultType: String {
         switch self {
-        case let .event(type, _): "* \(type)"
         case .chatSuspended: "chatSuspended"
         case .contactSwitch: "contactSwitch"
         case .groupMemberSwitch: "groupMemberSwitch"
@@ -1135,13 +1131,11 @@ enum ChatEvent: Decodable, ChatEventProtocol {
         case .remoteCtrlConnected: "remoteCtrlConnected"
         case .remoteCtrlStopped: "remoteCtrlStopped"
         case .contactPQEnabled: "contactPQEnabled"
-        case .chatError: "chatError"
         }
     }
     
     var details: String {
         switch self {
-        case let .event(_, json): return json
         case .chatSuspended: return noDetails
         case let .contactSwitch(u, contact, switchProgress): return withUser(u, "contact: \(String(describing: contact))\nswitchProgress: \(String(describing: switchProgress))")
         case let .groupMemberSwitch(u, groupInfo, member, switchProgress): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nswitchProgress: \(String(describing: switchProgress))")
@@ -1217,83 +1211,13 @@ enum ChatEvent: Decodable, ChatEventProtocol {
         case let .remoteCtrlConnected(remoteCtrl): return String(describing: remoteCtrl)
         case let .remoteCtrlStopped(rcsState, rcStopReason): return "rcsState: \(String(describing: rcsState))\nrcStopReason: \(String(describing: rcStopReason))"
         case let .contactPQEnabled(u, contact, pqEnabled): return withUser(u, "contact: \(String(describing: contact))\npqEnabled: \(pqEnabled)")
-        case let .chatError(u, chatError): return withUser(u, String(describing: chatError))
-        }
-    }
-
-    private var noDetails: String { "\(eventType): no details" }
-
-    static func chatEvent(_ s: String) -> ChatEvent {
-        let d = s.data(using: .utf8)!
-        // TODO is there a way to do it without copying the data? e.g:
-        //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
-        //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
-        do {
-            let r = // try callWithLargeStack {
-                try jsonDecoder.decode(APIResponse<ChatEvent>.self, from: d)
-//            }
-            return r.resp
-        } catch {
-            logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
-        }
-        
-        var type: String?
-        var json: String?
-        if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {
-            if let jResp = j["resp"] as? NSDictionary, jResp.count == 1 || jResp.count == 2 {
-                type = jResp.allKeys[0] as? String
-                if jResp.count == 2 && type == "_owsf" {
-                    type = jResp.allKeys[1] as? String
-                }
-                if type == "chatError" {
-                    if let jError = jResp["chatError"] as? NSDictionary {
-                        return .chatError(user_: decodeUser_(jError), chatError: .invalidJSON(json: errorJson(jError) ?? ""))
-                    }
-                }
-            }
-            json = serializeJSON(j, options: .prettyPrinted)
-        }
-        return ChatEvent.event(type: type ?? "invalid", json: json ?? s)
-    }
-
-    var chatError: ChatError? {
-        switch self {
-        case let .chatError(_, error): error
-        default: nil
         }
     }
     
-    var chatErrorType: ChatErrorType? {
-        switch self {
-        case let .chatError(_, .error(error)): error
-        default: nil
-        }
-    }
-}
+    private var noDetails: String { "\(resultType): no details" }
 
-private let largeStackSize: Int = 2 * 1024 * 1024
-
-private func callWithLargeStack<T>(_ f: @escaping () throws -> T) throws -> T {
-    let semaphore = DispatchSemaphore(value: 0)
-    var result: Result<T, Error>?
-    let thread = Thread {
-        do {
-            result = .success(try f())
-        } catch {
-            result = .failure(error)
-        }
-        semaphore.signal()
-    }
-
-    thread.stackSize = largeStackSize
-    thread.qualityOfService = Thread.current.qualityOfService
-    thread.start()
-
-    semaphore.wait()
-
-    switch result! {
-    case let .success(r): return r
-    case let .failure(e): throw e
+    static func fallbackResult(_ type: String, _ json: NSDictionary) -> ChatEvent? {
+        nil
     }
 }
 

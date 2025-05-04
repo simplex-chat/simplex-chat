@@ -17,28 +17,103 @@ public protocol ChatCmdProtocol {
     var cmdString: String { get }
 }
 
+@inline(__always)
 public func onOff(_ b: Bool) -> String {
     b ? "on" : "off"
 }
 
-public struct APIResponse<ChatRespProtocol: Decodable>: Decodable {
-    public var resp: ChatRespProtocol
+public enum APIResult<R>: Decodable where R: Decodable, R: ChatAPIResult {
+    case result(R)
+    case error(ChatError)
+    case invalid(type: String, json: Data)
+    
+    public var resultType: String {
+        switch self {
+        case let .result(r): r.resultType
+        case let .error(e): "error \(e.errorType)"
+        case let .invalid(type, _): "* \(type)"
+        }
+    }
+    
+    public var unexpected: ChatError {
+        switch self {
+        case let .result(r): .unexpectedResult(type: r.resultType)
+        case let .error(e): e
+        case let .invalid(type, _): .unexpectedResult(type: "* \(type)")
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if container.contains(.result) {
+            let result = try container.decode(R.self, forKey: .result)
+            self = .result(result)
+        } else {
+            let error = try container.decode(ChatError.self, forKey: .error)
+            self = .error(error)
+        }
+    }
+    
+    private enum CodingKeys: String, CodingKey {
+        case result, error
+    }
 }
 
-public protocol ChatRespProtocol: Decodable, Error {
-    var responseType: String { get }
+public protocol ChatAPIResult: Decodable {
+    var resultType: String { get }
     var details: String { get }
-    static func chatResponse(_ s: String) -> Self
-    var chatError: ChatError? { get }
-    var chatErrorType: ChatErrorType? { get }
+    static func fallbackResult(_ type: String, _ json: NSDictionary) -> Self?
 }
 
-public protocol ChatEventProtocol: Decodable, Error {
-    var eventType: String { get }
-    var details: String { get }
-    static func chatEvent(_ s: String) -> Self
-    var chatError: ChatError? { get }
-    var chatErrorType: ChatErrorType? { get }
+extension ChatAPIResult {
+    @inline(__always)
+    public var unexpected: ChatError {
+        .unexpectedResult(type: self.resultType)
+    }
+}
+
+public func decodeAPIResult<R: ChatAPIResult>(_ d: Data) -> APIResult<R> {
+    do {
+        return try callWithLargeStack { try jsonDecoder.decode(APIResult<R>.self, from: d) }
+    } catch {}
+    if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {
+        if let (_, jErr) = getOWSF(j, "error") {
+            return APIResult.error(.invalidJSON(json: errorJson(jErr))) as APIResult<R>
+        } else if let (type, jRes) = getOWSF(j, "result") {
+            return if let r = R.fallbackResult(type, jRes) {
+                APIResult.result(r)
+            } else {
+                APIResult.invalid(type: type, json: dataPrefix(d))
+            }
+        }
+    }
+    return APIResult.invalid(type: "invalid", json: dataPrefix(d))
+}
+
+private let largeStackSize: Int = 768 * 1024
+
+private func callWithLargeStack<T>(_ f: @escaping () throws -> T) throws -> T {
+    let semaphore = DispatchSemaphore(value: 0)
+    var result: Result<T, Error>?
+    let thread = Thread {
+        do {
+            result = .success(try f())
+        } catch {
+            result = .failure(error)
+        }
+        semaphore.signal()
+    }
+
+    thread.stackSize = largeStackSize
+    thread.qualityOfService = Thread.current.qualityOfService
+    thread.start()
+
+    semaphore.wait()
+
+    switch result! {
+    case let .success(r): return r
+    case let .failure(e): throw e
+    }
 }
 
 public func parseApiChats(_ jResp: NSDictionary) -> (user: UserRef, chats: [ChatData])? {
@@ -49,7 +124,7 @@ public func parseApiChats(_ jResp: NSDictionary) -> (user: UserRef, chats: [Chat
             if let chatData = try? parseChatData(jChat) {
                 return chatData.0
             }
-            return ChatData.invalidJSON(serializeJSON(jChat, options: .prettyPrinted) ?? "")
+            return ChatData.invalidJSON(serializeJSON(jChat, options: .prettyPrinted))
         }
         return (user, chats)
     } else {
@@ -553,13 +628,26 @@ private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {
     encodeJSON(value).cString(using: .utf8)!
 }
 
-public enum ChatError: Decodable, Hashable {
+public enum ChatError: Decodable, Hashable, Error {
     case error(errorType: ChatErrorType)
     case errorAgent(agentError: AgentErrorType)
     case errorStore(storeError: StoreError)
     case errorDatabase(databaseError: DatabaseError)
     case errorRemoteCtrl(remoteCtrlError: RemoteCtrlError)
-    case invalidJSON(json: String)
+    case invalidJSON(json: Data?) // additional case used to pass errors that failed to parse
+    case unexpectedResult(type: String) // additional case used to pass unexpected responses
+    
+    public var errorType: String {
+        switch self {
+        case .error: "chat"
+        case .errorAgent: "agent"
+        case .errorStore: "store"
+        case .errorDatabase: "database"
+        case .errorRemoteCtrl: "remoteCtrl"
+        case .invalidJSON: "invalid"
+        case let .unexpectedResult(type): "! \(type)"
+        }
+    }
 }
 
 public enum ChatErrorType: Decodable, Hashable {

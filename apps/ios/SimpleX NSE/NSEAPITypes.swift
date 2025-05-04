@@ -47,8 +47,7 @@ enum NSEChatCommand: ChatCmdProtocol {
     }
 }
 
-enum NSEChatResponse: Decodable, Error, ChatRespProtocol {
-    case response(type: String, json: String)
+enum NSEChatResponse: Decodable, ChatAPIResult {
     case activeUser(user: User)
     case chatStarted
     case chatRunning
@@ -57,11 +56,9 @@ enum NSEChatResponse: Decodable, Error, ChatRespProtocol {
     case connNtfMessages(receivedMsgs: [NtfMsgInfo?])
     case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgAckInfo)
     case cmdOk(user_: UserRef?)
-    case chatCmdError(user_: UserRef?, chatError: ChatError)
     
-    var responseType: String {
+    var resultType: String {
         switch self {
-        case let .response(type, _): "* \(type)"
         case .activeUser: "activeUser"
         case .chatStarted: "chatStarted"
         case .chatRunning: "chatRunning"
@@ -70,13 +67,11 @@ enum NSEChatResponse: Decodable, Error, ChatRespProtocol {
         case .connNtfMessages: "connNtfMessages"
         case .ntfMessage: "ntfMessage"
         case .cmdOk: "cmdOk"
-        case .chatCmdError: "chatCmdError"
         }
     }
     
     var details: String {
         switch self {
-        case let .response(_, json): return json
         case let .activeUser(user): return String(describing: user)
         case .chatStarted: return noDetails
         case .chatRunning: return noDetails
@@ -85,60 +80,17 @@ enum NSEChatResponse: Decodable, Error, ChatRespProtocol {
         case let .connNtfMessages(receivedMsgs): return "receivedMsgs: \(String(describing: receivedMsgs))"
         case let .ntfMessage(u, connEntity, ntfMessage): return withUser(u, "connEntity: \(String(describing: connEntity))\nntfMessage: \(String(describing: ntfMessage))")
         case .cmdOk: return noDetails
-        case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
         }
     }
     
-    var noDetails: String { "\(responseType): no details" }
+    var noDetails: String { "\(resultType): no details" }
 
-    static func chatResponse(_ s: String) -> NSEChatResponse {
-        let d = s.data(using: .utf8)!
-        // TODO is there a way to do it without copying the data? e.g:
-        //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
-        //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
-        do {
-            let r = try jsonDecoder.decode(APIResponse<NSEChatResponse>.self, from: d)
-            return r.resp
-        } catch {
-            logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
-        }
-        
-        var type: String?
-        var json: String?
-        if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {
-            if let jResp = j["resp"] as? NSDictionary, jResp.count == 1 || jResp.count == 2 {
-                type = jResp.allKeys[0] as? String
-                if jResp.count == 2 && type == "_owsf" {
-                    type = jResp.allKeys[1] as? String
-                }
-                if type == "chatCmdError" {
-                    if let jError = jResp["chatCmdError"] as? NSDictionary {
-                        return .chatCmdError(user_: decodeUser_(jError), chatError: .invalidJSON(json: errorJson(jError) ?? ""))
-                    }
-                }
-            }
-            json = serializeJSON(j, options: .prettyPrinted)
-        }
-        return NSEChatResponse.response(type: type ?? "invalid", json: json ?? s)
-    }
-    
-    var chatError: ChatError? {
-        switch self {
-        case let .chatCmdError(_, error): error
-        default: nil
-        }
-    }
-    
-    var chatErrorType: ChatErrorType? {
-        switch self {
-        case let .chatCmdError(_, .error(error)): error
-        default: nil
-        }
+    static func fallbackResult(_ type: String, _ json: NSDictionary) -> NSEChatResponse? {
+        nil
     }
 }
 
-enum NSEChatEvent: Decodable, Error, ChatEventProtocol {
-    case event(type: String, json: String)
+enum NSEChatEvent: Decodable, ChatAPIResult {
     case chatSuspended
     case contactConnected(user: UserRef, contact: Contact, userCustomProfile: Profile?)
     case receivedContactRequest(user: UserRef, contactRequest: UserContactRequest)
@@ -148,11 +100,9 @@ enum NSEChatEvent: Decodable, Error, ChatEventProtocol {
     case sndFileRcvCancelled(user: UserRef, chatItem_: AChatItem?, sndFileTransfer: SndFileTransfer)
     case callInvitation(callInvitation: RcvCallInvitation)
     case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgAckInfo)
-    case chatError(user_: UserRef?, chatError: ChatError)
     
-    var eventType: String {
+    var resultType: String {
         switch self {
-        case let .event(type, _): "* \(type)"
         case .chatSuspended: "chatSuspended"
         case .contactConnected: "contactConnected"
         case .receivedContactRequest: "receivedContactRequest"
@@ -162,13 +112,11 @@ enum NSEChatEvent: Decodable, Error, ChatEventProtocol {
         case .sndFileRcvCancelled: "sndFileRcvCancelled"
         case .callInvitation: "callInvitation"
         case .ntfMessage: "ntfMessage"
-        case .chatError: "chatError"
         }
     }
     
     var details: String {
         switch self {
-        case let .event(_, json): return json
         case .chatSuspended: return noDetails
         case let .contactConnected(u, contact, _): return withUser(u, String(describing: contact))
         case let .receivedContactRequest(u, contactRequest): return withUser(u, String(describing: contactRequest))
@@ -180,54 +128,12 @@ enum NSEChatEvent: Decodable, Error, ChatEventProtocol {
         case let .sndFileRcvCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
         case let .callInvitation(inv): return String(describing: inv)
         case let .ntfMessage(u, connEntity, ntfMessage): return withUser(u, "connEntity: \(String(describing: connEntity))\nntfMessage: \(String(describing: ntfMessage))")
-        case let .chatError(u, chatError): return withUser(u, String(describing: chatError))
         }
     }
     
-    var noDetails: String { "\(eventType): no details" }
+    var noDetails: String { "\(resultType): no details" }
 
-    static func chatEvent(_ s: String) -> NSEChatEvent {
-        let d = s.data(using: .utf8)!
-        // TODO is there a way to do it without copying the data? e.g:
-        //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
-        //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
-        do {
-            let r = try jsonDecoder.decode(APIResponse<NSEChatEvent>.self, from: d)
-            return r.resp
-        } catch {
-            logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
-        }
-        
-        var type: String?
-        var json: String?
-        if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {
-            if let jResp = j["resp"] as? NSDictionary, jResp.count == 1 || jResp.count == 2 {
-                type = jResp.allKeys[0] as? String
-                if jResp.count == 2 && type == "_owsf" {
-                    type = jResp.allKeys[1] as? String
-                }
-                if type == "chatError" {
-                    if let jError = jResp["chatError"] as? NSDictionary {
-                        return .chatError(user_: decodeUser_(jError), chatError: .invalidJSON(json: errorJson(jError) ?? ""))
-                    }
-                }
-            }
-            json = serializeJSON(j, options: .prettyPrinted)
-        }
-        return NSEChatEvent.event(type: type ?? "invalid", json: json ?? s)
-    }
-    
-    var chatError: ChatError? {
-        switch self {
-        case let .chatError(_, error): error
-        default: nil
-        }
-    }
-    
-    var chatErrorType: ChatErrorType? {
-        switch self {
-        case let .chatError(_, .error(error)): error
-        default: nil
-        }
+    static func fallbackResult(_ type: String, _ json: NSDictionary) -> NSEChatEvent? {
+        nil
     }
 }
