@@ -153,7 +153,7 @@ directoryService :: DirectoryStore -> DirectoryOpts -> ServiceState -> User -> C
 directoryService st opts@DirectoryOpts {testing} env user cc = do
   initializeBotAddress' (not testing) cc
   race_ (forever $ void getLine) . forever $ do
-    (_, _, resp) <- atomically . readTBQueue $ outputQ cc
+    (_, resp) <- atomically . readTBQueue $ outputQ cc
     directoryServiceEvent st opts env user cc resp
 
 acceptMemberHook :: DirectoryOpts -> ServiceState -> GroupInfo -> GroupLinkInfo -> Profile -> IO (Either GroupRejectionReason (GroupAcceptance, GroupMemberRole))
@@ -197,7 +197,7 @@ readBlockedWordsConfig DirectoryOpts {blockedFragmentsFile, blockedWordsFile, na
   unless testing $ putStrLn $ "Blocked fragments: " <> show (length blockedFragments) <> ", blocked words: " <> show (length blockedWords) <> ", spelling rules: " <> show (M.size spelling)
   pure BlockedWordsConfig {blockedFragments, blockedWords, extensionRules, spelling}
 
-directoryServiceEvent :: DirectoryStore -> DirectoryOpts -> ServiceState -> User -> ChatController -> ChatResponse -> IO ()
+directoryServiceEvent :: DirectoryStore -> DirectoryOpts -> ServiceState -> User -> ChatController -> ChatEvent -> IO ()
 directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults} env@ServiceState {searchRequests} user@User {userId} cc event =
   forM_ (crDirectoryEvent event) $ \case
     DEContactConnected ct -> deContactConnected ct

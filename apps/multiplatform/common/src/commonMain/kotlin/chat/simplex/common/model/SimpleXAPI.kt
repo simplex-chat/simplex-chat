@@ -5828,8 +5828,6 @@ sealed class CR {
   @Serializable @SerialName("groupMemberRatchetSyncStarted") class GroupMemberRatchetSyncStarted(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats: ConnectionStats): CR()
   @Serializable @SerialName("contactRatchetSync") class ContactRatchetSync(val user: UserRef, val contact: Contact, val ratchetSyncProgress: RatchetSyncProgress): CR()
   @Serializable @SerialName("groupMemberRatchetSync") class GroupMemberRatchetSync(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val ratchetSyncProgress: RatchetSyncProgress): CR()
-  @Serializable @SerialName("contactVerificationReset") class ContactVerificationReset(val user: UserRef, val contact: Contact): CR()
-  @Serializable @SerialName("groupMemberVerificationReset") class GroupMemberVerificationReset(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("contactCode") class ContactCode(val user: UserRef, val contact: Contact, val connectionCode: String): CR()
   @Serializable @SerialName("groupMemberCode") class GroupMemberCode(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val connectionCode: String): CR()
   @Serializable @SerialName("connectionVerified") class ConnectionVerified(val user: UserRef, val verified: Boolean, val expectedCode: String): CR()
@@ -5871,10 +5869,6 @@ sealed class CR {
   // TODO remove above
   @Serializable @SerialName("networkStatus") class NetworkStatusResp(val networkStatus: NetworkStatus, val connections: List<String>): CR()
   @Serializable @SerialName("networkStatuses") class NetworkStatuses(val user_: UserRef?, val networkStatuses: List<ConnNetworkStatus>): CR()
-  @Serializable @SerialName("groupSubscribed") class GroupSubscribed(val user: UserRef, val group: GroupRef): CR()
-  @Serializable @SerialName("memberSubErrors") class MemberSubErrors(val user: UserRef, val memberSubErrors: List<MemberSubError>): CR()
-  @Serializable @SerialName("groupEmpty") class GroupEmpty(val user: UserRef, val group: GroupInfo): CR()
-  @Serializable @SerialName("userContactLinkSubscribed") class UserContactLinkSubscribed: CR()
   @Serializable @SerialName("newChatItems") class NewChatItems(val user: UserRef, val chatItems: List<AChatItem>): CR()
   @Serializable @SerialName("chatItemsStatusesUpdated") class ChatItemsStatusesUpdated(val user: UserRef, val chatItems: List<AChatItem>): CR()
   @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: UserRef, val chatItem: AChatItem): CR()
@@ -5907,11 +5901,9 @@ sealed class CR {
   @Serializable @SerialName("leftMember") class LeftMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("groupDeleted") class GroupDeleted(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("contactsMerged") class ContactsMerged(val user: UserRef, val intoContact: Contact, val mergedContact: Contact): CR()
-  @Serializable @SerialName("groupInvitation") class GroupInvitation(val user: UserRef, val groupInfo: GroupInfo): CR() // unused
   @Serializable @SerialName("userJoinedGroup") class UserJoinedGroup(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("joinedGroupMember") class JoinedGroupMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("connectedToGroupMember") class ConnectedToGroupMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val memberContact: Contact? = null): CR()
-  @Serializable @SerialName("groupRemoved") class GroupRemoved(val user: UserRef, val groupInfo: GroupInfo): CR() // unused
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val user: UserRef, val toGroup: GroupInfo): CR()
   @Serializable @SerialName("groupLinkCreated") class GroupLinkCreated(val user: UserRef, val groupInfo: GroupInfo, val connLinkContact: CreatedConnLink, val memberRole: GroupMemberRole): CR()
   @Serializable @SerialName("groupLink") class GroupLink(val user: UserRef, val groupInfo: GroupInfo, val connLinkContact: CreatedConnLink, val memberRole: GroupMemberRole): CR()
@@ -6018,8 +6010,6 @@ sealed class CR {
     is GroupMemberRatchetSyncStarted -> "groupMemberRatchetSyncStarted"
     is ContactRatchetSync -> "contactRatchetSync"
     is GroupMemberRatchetSync -> "groupMemberRatchetSync"
-    is ContactVerificationReset -> "contactVerificationReset"
-    is GroupMemberVerificationReset -> "groupMemberVerificationReset"
     is ContactCode -> "contactCode"
     is GroupMemberCode -> "groupMemberCode"
     is ConnectionVerified -> "connectionVerified"
@@ -6059,10 +6049,6 @@ sealed class CR {
     is ContactSubSummary -> "contactSubSummary"
     is NetworkStatusResp -> "networkStatus"
     is NetworkStatuses -> "networkStatuses"
-    is GroupSubscribed -> "groupSubscribed"
-    is MemberSubErrors -> "memberSubErrors"
-    is GroupEmpty -> "groupEmpty"
-    is UserContactLinkSubscribed -> "userContactLinkSubscribed"
     is NewChatItems -> "newChatItems"
     is ChatItemsStatusesUpdated -> "chatItemsStatusesUpdated"
     is ChatItemUpdated -> "chatItemUpdated"
@@ -6094,11 +6080,9 @@ sealed class CR {
     is LeftMember -> "leftMember"
     is GroupDeleted -> "groupDeleted"
     is ContactsMerged -> "contactsMerged"
-    is GroupInvitation -> "groupInvitation"
     is UserJoinedGroup -> "userJoinedGroup"
     is JoinedGroupMember -> "joinedGroupMember"
     is ConnectedToGroupMember -> "connectedToGroupMember"
-    is GroupRemoved -> "groupRemoved"
     is GroupUpdated -> "groupUpdated"
     is GroupLinkCreated -> "groupLinkCreated"
     is GroupLink -> "groupLink"
@@ -6198,8 +6182,6 @@ sealed class CR {
     is GroupMemberRatchetSyncStarted -> withUser(user, "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
     is ContactRatchetSync -> withUser(user, "contact: ${json.encodeToString(contact)}\nratchetSyncProgress: ${json.encodeToString(ratchetSyncProgress)}")
     is GroupMemberRatchetSync -> withUser(user, "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nratchetSyncProgress: ${json.encodeToString(ratchetSyncProgress)}")
-    is ContactVerificationReset -> withUser(user, "contact: ${json.encodeToString(contact)}")
-    is GroupMemberVerificationReset -> withUser(user, "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}")
     is ContactCode -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionCode: $connectionCode")
     is GroupMemberCode -> withUser(user, "groupInfo: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionCode: $connectionCode")
     is ConnectionVerified -> withUser(user, "verified: $verified\nconnectionCode: $expectedCode")
@@ -6239,10 +6221,6 @@ sealed class CR {
     is ContactSubSummary -> withUser(user, json.encodeToString(contactSubscriptions))
     is NetworkStatusResp -> "networkStatus $networkStatus\nconnections: $connections"
     is NetworkStatuses -> withUser(user_, json.encodeToString(networkStatuses))
-    is GroupSubscribed -> withUser(user, json.encodeToString(group))
-    is MemberSubErrors -> withUser(user, json.encodeToString(memberSubErrors))
-    is GroupEmpty -> withUser(user, json.encodeToString(group))
-    is UserContactLinkSubscribed -> noDetails()
     is NewChatItems -> withUser(user, chatItems.joinToString("\n") { json.encodeToString(it) })
     is ChatItemsStatusesUpdated -> withUser(user, chatItems.joinToString("\n") { json.encodeToString(it) })
     is ChatItemUpdated -> withUser(user, json.encodeToString(chatItem))
@@ -6274,11 +6252,9 @@ sealed class CR {
     is LeftMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
     is GroupDeleted -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
     is ContactsMerged -> withUser(user, "intoContact: $intoContact\nmergedContact: $mergedContact")
-    is GroupInvitation -> withUser(user, json.encodeToString(groupInfo))
     is UserJoinedGroup -> withUser(user, json.encodeToString(groupInfo))
     is JoinedGroupMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
     is ConnectedToGroupMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member\nmemberContact: $memberContact")
-    is GroupRemoved -> withUser(user, json.encodeToString(groupInfo))
     is GroupUpdated -> withUser(user, json.encodeToString(toGroup))
     is GroupLinkCreated -> withUser(user, "groupInfo: $groupInfo\nconnLinkContact: $connLinkContact\nmemberRole: $memberRole")
     is GroupLink -> withUser(user, "groupInfo: $groupInfo\nconnLinkContact: $connLinkContact\nmemberRole: $memberRole")

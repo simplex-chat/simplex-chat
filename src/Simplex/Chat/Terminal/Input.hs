@@ -81,7 +81,6 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
       CRGroupDeletedUser u g -> whenCurrUser cc u $ unsetActiveGroup ct g
       CRSentGroupInvitation u g _ _ -> whenCurrUser cc u $ setActiveGroup ct g
       CRChatCmdError _ _ -> when (isMessage cmd) $ echo s
-      CRChatError _ _ -> when (isMessage cmd) $ echo s
       CRCmdOk _ -> case cmd of
         Right APIDeleteUser {} -> setActive ct ""
         _ -> pure ()

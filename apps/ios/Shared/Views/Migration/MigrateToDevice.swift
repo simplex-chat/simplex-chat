@@ -516,7 +516,7 @@ struct MigrateToDevice: View {
                         alert = .error(title: "Download failed", error: "File was deleted or link is invalid")
                         migrationState = .downloadFailed(totalBytes: totalBytes, link: link, archivePath: archivePath)
                     default:
-                        logger.debug("unsupported event: \(msg.responseType)")
+                        logger.debug("unsupported event: \(msg.eventType)")
                     }
                 }
             }
@@ -751,11 +751,11 @@ private func progressView() -> some View {
 private class MigrationChatReceiver {
     let ctrl: chat_ctrl
     let databaseUrl: URL
-    let processReceivedMsg: (ChatResponse) async -> Void
+    let processReceivedMsg: (ChatEvent) async -> Void
     private var receiveLoop: Task<Void, Never>?
     private var receiveMessages = true
 
-    init(ctrl: chat_ctrl, databaseUrl: URL, _ processReceivedMsg: @escaping (ChatResponse) async -> Void) {
+    init(ctrl: chat_ctrl, databaseUrl: URL, _ processReceivedMsg: @escaping (ChatEvent) async -> Void) {
         self.ctrl = ctrl
         self.databaseUrl = databaseUrl
         self.processReceivedMsg = processReceivedMsg
@@ -772,9 +772,9 @@ private class MigrationChatReceiver {
         // TODO use function that has timeout
         if let msg = await chatRecvMsg(ctrl) {
             Task {
-                await TerminalItems.shared.add(.resp(.now, msg))
+                await TerminalItems.shared.add(.event(.now, msg))
             }
-            logger.debug("processReceivedMsg: \(msg.responseType)")
+            logger.debug("processReceivedMsg: \(msg.eventType)")
             await processReceivedMsg(msg)
         }
         if self.receiveMessages {

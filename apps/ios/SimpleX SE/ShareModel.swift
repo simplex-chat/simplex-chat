@@ -303,7 +303,7 @@ class ShareModel: ObservableObject {
                     }
                 }
             }
-            let r: SEChatResponse? = recvSimpleXMsg(messageTimeout: 1_000_000)
+            let r: SEChatEvent? = recvSimpleXMsg(messageTimeout: 1_000_000)
             switch r {
             case let .sndFileProgressXFTP(_, ci, _, sentSize, totalSize):
                 guard isMessage(for: ci) else { continue }
@@ -352,8 +352,6 @@ class ShareModel: ObservableObject {
                 if let ci { cleanupFile(ci) }
                 return ErrorAlert(title: "File error", message: "\(fileErrorInfo(ci) ?? errorMessage)")
             case let .chatError(_, chatError):
-                return ErrorAlert(chatError)
-            case let .chatCmdError(_, chatError):
                 return ErrorAlert(chatError)
             default: continue
             }

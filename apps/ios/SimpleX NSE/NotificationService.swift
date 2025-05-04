@@ -789,9 +789,9 @@ func receiveMessages() async {
     }
 }
 
-func chatRecvMsg() async -> NSEChatResponse? {
+func chatRecvMsg() async -> NSEChatEvent? {
     await withCheckedContinuation { cont in
-        let resp: NSEChatResponse? = recvSimpleXMsg()
+        let resp: NSEChatEvent? = recvSimpleXMsg()
         cont.resume(returning: resp)
     }
 }
@@ -799,8 +799,8 @@ func chatRecvMsg() async -> NSEChatResponse? {
 private let isInChina = SKStorefront().countryCode == "CHN"
 private func useCallKit() -> Bool { !isInChina && callKitEnabledGroupDefault.get() }
 
-func receivedMsgNtf(_ res: NSEChatResponse) async -> (String, NSENotificationData)? {
-    logger.debug("NotificationService receivedMsgNtf: \(res.responseType)")
+func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)? {
+    logger.debug("NotificationService receivedMsgNtf: \(res.eventType)")
     switch res {
     case let .contactConnected(user, contact, _):
         return (contact.id, .contactConnected(user, contact))
@@ -849,7 +849,7 @@ func receivedMsgNtf(_ res: NSEChatResponse) async -> (String, NSENotificationDat
         logger.error("NotificationService receivedMsgNtf error: \(String(describing: err))")
         return nil
     default:
-        logger.debug("NotificationService receivedMsgNtf ignored event: \(res.responseType)")
+        logger.debug("NotificationService receivedMsgNtf ignored event: \(res.eventType)")
         return nil
     }
 }

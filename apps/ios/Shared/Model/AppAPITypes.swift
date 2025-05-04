@@ -603,7 +603,6 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
     case chatStarted
     case chatRunning
     case chatStopped
-    case chatSuspended
     case apiChats(user: UserRef, chats: [ChatData])
     case apiChat(user: UserRef, chat: ChatData, navInfo: NavigationInfo?)
     case chatTags(user: UserRef, userTags: [ChatTag])
@@ -622,14 +621,8 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
     case groupMemberSwitchStarted(user: UserRef, groupInfo: GroupInfo, member: GroupMember, connectionStats: ConnectionStats)
     case contactSwitchAborted(user: UserRef, contact: Contact, connectionStats: ConnectionStats)
     case groupMemberSwitchAborted(user: UserRef, groupInfo: GroupInfo, member: GroupMember, connectionStats: ConnectionStats)
-    case contactSwitch(user: UserRef, contact: Contact, switchProgress: SwitchProgress)
-    case groupMemberSwitch(user: UserRef, groupInfo: GroupInfo, member: GroupMember, switchProgress: SwitchProgress)
     case contactRatchetSyncStarted(user: UserRef, contact: Contact, connectionStats: ConnectionStats)
     case groupMemberRatchetSyncStarted(user: UserRef, groupInfo: GroupInfo, member: GroupMember, connectionStats: ConnectionStats)
-    case contactRatchetSync(user: UserRef, contact: Contact, ratchetSyncProgress: RatchetSyncProgress)
-    case groupMemberRatchetSync(user: UserRef, groupInfo: GroupInfo, member: GroupMember, ratchetSyncProgress: RatchetSyncProgress)
-    case contactVerificationReset(user: UserRef, contact: Contact)
-    case groupMemberVerificationReset(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
     case contactCode(user: UserRef, contact: Contact, connectionCode: String)
     case groupMemberCode(user: UserRef, groupInfo: GroupInfo, member: GroupMember, connectionCode: String)
     case connectionVerified(user: UserRef, verified: Bool, expectedCode: String)
@@ -643,7 +636,6 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
     case sentInvitationToContact(user: UserRef, contact: Contact, customUserProfile: Profile?)
     case contactAlreadyExists(user: UserRef, contact: Contact)
     case contactDeleted(user: UserRef, contact: Contact)
-    case contactDeletedByContact(user: UserRef, contact: Contact)
     case chatCleared(user: UserRef, chatInfo: ChatInfo)
     case userProfileNoChange(user: User)
     case userProfileUpdated(user: User, fromProfile: Profile, toProfile: Profile, updateSummary: UserProfileUpdateSummary)
@@ -656,115 +648,58 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
     case userContactLinkUpdated(user: User, contactLink: UserContactLink)
     case userContactLinkCreated(user: User, connLinkContact: CreatedConnLink)
     case userContactLinkDeleted(user: User)
-    case contactConnected(user: UserRef, contact: Contact, userCustomProfile: Profile?)
-    case contactConnecting(user: UserRef, contact: Contact)
-    case contactSndReady(user: UserRef, contact: Contact)
-    case receivedContactRequest(user: UserRef, contactRequest: UserContactRequest)
     case acceptingContactRequest(user: UserRef, contact: Contact)
     case contactRequestRejected(user: UserRef)
-    case contactUpdated(user: UserRef, toContact: Contact)
-    case groupMemberUpdated(user: UserRef, groupInfo: GroupInfo, fromMember: GroupMember, toMember: GroupMember)
-    case networkStatus(networkStatus: NetworkStatus, connections: [String])
     case networkStatuses(user_: UserRef?, networkStatuses: [ConnNetworkStatus])
-    case groupSubscribed(user: UserRef, groupInfo: GroupRef)
-    case memberSubErrors(user: UserRef, memberSubErrors: [MemberSubError])
-    case groupEmpty(user: UserRef, groupInfo: GroupInfo)
-    case userContactLinkSubscribed
     case newChatItems(user: UserRef, chatItems: [AChatItem])
     case groupChatItemsDeleted(user: UserRef, groupInfo: GroupInfo, chatItemIDs: Set<Int64>, byUser: Bool, member_: GroupMember?)
     case forwardPlan(user: UserRef, chatItemIds: [Int64], forwardConfirmation: ForwardConfirmation?)
-    case chatItemsStatusesUpdated(user: UserRef, chatItems: [AChatItem])
     case chatItemUpdated(user: UserRef, chatItem: AChatItem)
     case chatItemNotChanged(user: UserRef, chatItem: AChatItem)
     case chatItemReaction(user: UserRef, added: Bool, reaction: ACIReaction)
     case reactionMembers(user: UserRef, memberReactions: [MemberReaction])
     case chatItemsDeleted(user: UserRef, chatItemDeletions: [ChatItemDeletion], byUser: Bool)
     case contactsList(user: UserRef, contacts: [Contact])
-    // group events
+    // group responses
     case groupCreated(user: UserRef, groupInfo: GroupInfo)
     case sentGroupInvitation(user: UserRef, groupInfo: GroupInfo, contact: Contact, member: GroupMember)
     case userAcceptedGroupSent(user: UserRef, groupInfo: GroupInfo, hostContact: Contact?)
-    case groupLinkConnecting(user: UserRef, groupInfo: GroupInfo, hostMember: GroupMember)
-    case businessLinkConnecting(user: UserRef, groupInfo: GroupInfo, hostMember: GroupMember, fromContact: Contact)
     case userDeletedMembers(user: UserRef, groupInfo: GroupInfo, members: [GroupMember], withMessages: Bool)
     case leftMemberUser(user: UserRef, groupInfo: GroupInfo)
     case groupMembers(user: UserRef, group: SimpleXChat.Group)
-    case receivedGroupInvitation(user: UserRef, groupInfo: GroupInfo, contact: Contact, memberRole: GroupMemberRole)
     case groupDeletedUser(user: UserRef, groupInfo: GroupInfo)
-    case joinedGroupMemberConnecting(user: UserRef, groupInfo: GroupInfo, hostMember: GroupMember, member: GroupMember)
     case memberAccepted(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
-    case memberAcceptedByOther(user: UserRef, groupInfo: GroupInfo, acceptingMember: GroupMember, member: GroupMember)
-    case memberRole(user: UserRef, groupInfo: GroupInfo, byMember: GroupMember, member: GroupMember, fromRole: GroupMemberRole, toRole: GroupMemberRole)
     case membersRoleUser(user: UserRef, groupInfo: GroupInfo, members: [GroupMember], toRole: GroupMemberRole)
-    case memberBlockedForAll(user: UserRef, groupInfo: GroupInfo, byMember: GroupMember, member: GroupMember, blocked: Bool)
     case membersBlockedForAllUser(user: UserRef, groupInfo: GroupInfo, members: [GroupMember], blocked: Bool)
-    case deletedMemberUser(user: UserRef, groupInfo: GroupInfo, member: GroupMember, withMessages: Bool)
-    case deletedMember(user: UserRef, groupInfo: GroupInfo, byMember: GroupMember, deletedMember: GroupMember, withMessages: Bool)
-    case leftMember(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
-    case groupDeleted(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
-    case contactsMerged(user: UserRef, intoContact: Contact, mergedContact: Contact)
-    case groupInvitation(user: UserRef, groupInfo: GroupInfo) // unused
-    case userJoinedGroup(user: UserRef, groupInfo: GroupInfo)
-    case joinedGroupMember(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
-    case connectedToGroupMember(user: UserRef, groupInfo: GroupInfo, member: GroupMember, memberContact: Contact?)
-    case groupRemoved(user: UserRef, groupInfo: GroupInfo) // unused
     case groupUpdated(user: UserRef, toGroup: GroupInfo)
     case groupLinkCreated(user: UserRef, groupInfo: GroupInfo, connLinkContact: CreatedConnLink, memberRole: GroupMemberRole)
     case groupLink(user: UserRef, groupInfo: GroupInfo, connLinkContact: CreatedConnLink, memberRole: GroupMemberRole)
     case groupLinkDeleted(user: UserRef, groupInfo: GroupInfo)
     case newMemberContact(user: UserRef, contact: Contact, groupInfo: GroupInfo, member: GroupMember)
     case newMemberContactSentInv(user: UserRef, contact: Contact, groupInfo: GroupInfo, member: GroupMember)
-    case newMemberContactReceivedInv(user: UserRef, contact: Contact, groupInfo: GroupInfo, member: GroupMember)
-    // receiving file events
+    // receiving file responses
     case rcvFileAccepted(user: UserRef, chatItem: AChatItem)
     case rcvFileAcceptedSndCancelled(user: UserRef, rcvFileTransfer: RcvFileTransfer)
     case standaloneFileInfo(fileMeta: MigrationFileLinkData?)
     case rcvStandaloneFileCreated(user: UserRef, rcvFileTransfer: RcvFileTransfer)
-    case rcvFileStart(user: UserRef, chatItem: AChatItem) // send by chats
-    case rcvFileProgressXFTP(user: UserRef, chatItem_: AChatItem?, receivedSize: Int64, totalSize: Int64, rcvFileTransfer: RcvFileTransfer)
-    case rcvFileComplete(user: UserRef, chatItem: AChatItem)
-    case rcvStandaloneFileComplete(user: UserRef, targetPath: String, rcvFileTransfer: RcvFileTransfer)
     case rcvFileCancelled(user: UserRef, chatItem_: AChatItem?, rcvFileTransfer: RcvFileTransfer)
-    case rcvFileSndCancelled(user: UserRef, chatItem: AChatItem, rcvFileTransfer: RcvFileTransfer)
-    case rcvFileError(user: UserRef, chatItem_: AChatItem?, agentError: AgentErrorType, rcvFileTransfer: RcvFileTransfer)
-    case rcvFileWarning(user: UserRef, chatItem_: AChatItem?, agentError: AgentErrorType, rcvFileTransfer: RcvFileTransfer)
-    // sending file events
-    case sndFileStart(user: UserRef, chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
-    case sndFileComplete(user: UserRef, chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
-    case sndFileRcvCancelled(user: UserRef, chatItem_: AChatItem?, sndFileTransfer: SndFileTransfer)
+    // sending file responses
     case sndFileCancelled(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta, sndFileTransfers: [SndFileTransfer])
     case sndStandaloneFileCreated(user: UserRef, fileTransferMeta: FileTransferMeta) // returned by _upload
     case sndFileStartXFTP(user: UserRef, chatItem: AChatItem, fileTransferMeta: FileTransferMeta) // not used
-    case sndFileProgressXFTP(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta, sentSize: Int64, totalSize: Int64)
-    case sndFileRedirectStartXFTP(user: UserRef, fileTransferMeta: FileTransferMeta, redirectMeta: FileTransferMeta)
-    case sndFileCompleteXFTP(user: UserRef, chatItem: AChatItem, fileTransferMeta: FileTransferMeta)
-    case sndStandaloneFileComplete(user: UserRef, fileTransferMeta: FileTransferMeta, rcvURIs: [String])
     case sndFileCancelledXFTP(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta)
-    case sndFileError(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta, errorMessage: String)
-    case sndFileWarning(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta, errorMessage: String)
-    // call events
-    case callInvitation(callInvitation: RcvCallInvitation)
-    case callOffer(user: UserRef, contact: Contact, callType: CallType, offer: WebRTCSession, sharedKey: String?, askConfirmation: Bool)
-    case callAnswer(user: UserRef, contact: Contact, answer: WebRTCSession)
-    case callExtraInfo(user: UserRef, contact: Contact, extraInfo: WebRTCExtraInfo)
-    case callEnded(user: UserRef, contact: Contact)
+    // call invitations
     case callInvitations(callInvitations: [RcvCallInvitation])
+    // notifications
     case ntfTokenStatus(status: NtfTknStatus)
     case ntfToken(token: DeviceToken, status: NtfTknStatus, ntfMode: NotificationsMode, ntfServer: String)
     case ntfConns(ntfConns: [NtfConn])
     case connNtfMessages(receivedMsgs: [NtfMsgInfo?])
-    case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgAckInfo)
     case contactConnectionDeleted(user: UserRef, connection: PendingContactConnection)
-    case contactDisabled(user: UserRef, contact: Contact)
-    // remote desktop responses/events
+    // remote desktop responses
     case remoteCtrlList(remoteCtrls: [RemoteCtrlInfo])
-    case remoteCtrlFound(remoteCtrl: RemoteCtrlInfo, ctrlAppInfo_: CtrlAppInfo?, appVersion: String, compatible: Bool)
     case remoteCtrlConnecting(remoteCtrl_: RemoteCtrlInfo?, ctrlAppInfo: CtrlAppInfo, appVersion: String)
-    case remoteCtrlSessionCode(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
     case remoteCtrlConnected(remoteCtrl: RemoteCtrlInfo)
-    case remoteCtrlStopped(rcsState: RemoteCtrlSessionState, rcStopReason: RemoteCtrlStopReason)
-    // pq
-    case contactPQEnabled(user: UserRef, contact: Contact, pqEnabled: Bool)
     // misc
     case versionInfo(versionInfo: CoreVersionInfo, chatMigrations: [UpMigration], agentMigrations: [UpMigration])
     case cmdOk(user_: UserRef?)
@@ -772,7 +707,6 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
     case agentServersSummary(user: UserRef, serversSummary: PresentedServersSummary)
     case agentSubsSummary(user: UserRef, subsSummary: SMPServerSubs)
     case chatCmdError(user_: UserRef?, chatError: ChatError)
-    case chatError(user_: UserRef?, chatError: ChatError)
     case archiveExported(archiveErrors: [ArchiveError])
     case archiveImported(archiveErrors: [ArchiveError])
     case appSettings(appSettings: AppSettings)
@@ -786,7 +720,6 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
             case .chatStarted: return "chatStarted"
             case .chatRunning: return "chatRunning"
             case .chatStopped: return "chatStopped"
-            case .chatSuspended: return "chatSuspended"
             case .apiChats: return "apiChats"
             case .apiChat: return "apiChat"
             case .chatTags: return "chatTags"
@@ -805,14 +738,8 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
             case .groupMemberSwitchStarted: return "groupMemberSwitchStarted"
             case .contactSwitchAborted: return "contactSwitchAborted"
             case .groupMemberSwitchAborted: return "groupMemberSwitchAborted"
-            case .contactSwitch: return "contactSwitch"
-            case .groupMemberSwitch: return "groupMemberSwitch"
             case .contactRatchetSyncStarted: return "contactRatchetSyncStarted"
             case .groupMemberRatchetSyncStarted: return "groupMemberRatchetSyncStarted"
-            case .contactRatchetSync: return "contactRatchetSync"
-            case .groupMemberRatchetSync: return "groupMemberRatchetSync"
-            case .contactVerificationReset: return "contactVerificationReset"
-            case .groupMemberVerificationReset: return "groupMemberVerificationReset"
             case .contactCode: return "contactCode"
             case .groupMemberCode: return "groupMemberCode"
             case .connectionVerified: return "connectionVerified"
@@ -826,7 +753,6 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
             case .sentInvitationToContact: return "sentInvitationToContact"
             case .contactAlreadyExists: return "contactAlreadyExists"
             case .contactDeleted: return "contactDeleted"
-            case .contactDeletedByContact: return "contactDeletedByContact"
             case .chatCleared: return "chatCleared"
             case .userProfileNoChange: return "userProfileNoChange"
             case .userProfileUpdated: return "userProfileUpdated"
@@ -839,24 +765,12 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
             case .userContactLinkUpdated: return "userContactLinkUpdated"
             case .userContactLinkCreated: return "userContactLinkCreated"
             case .userContactLinkDeleted: return "userContactLinkDeleted"
-            case .contactConnected: return "contactConnected"
-            case .contactConnecting: return "contactConnecting"
-            case .contactSndReady: return "contactSndReady"
-            case .receivedContactRequest: return "receivedContactRequest"
             case .acceptingContactRequest: return "acceptingContactRequest"
             case .contactRequestRejected: return "contactRequestRejected"
-            case .contactUpdated: return "contactUpdated"
-            case .groupMemberUpdated: return "groupMemberUpdated"
-            case .networkStatus: return "networkStatus"
             case .networkStatuses: return "networkStatuses"
-            case .groupSubscribed: return "groupSubscribed"
-            case .memberSubErrors: return "memberSubErrors"
-            case .groupEmpty: return "groupEmpty"
-            case .userContactLinkSubscribed: return "userContactLinkSubscribed"
             case .newChatItems: return "newChatItems"
             case .groupChatItemsDeleted: return "groupChatItemsDeleted"
             case .forwardPlan: return "forwardPlan"
-            case .chatItemsStatusesUpdated: return "chatItemsStatusesUpdated"
             case .chatItemUpdated: return "chatItemUpdated"
             case .chatItemNotChanged: return "chatItemNotChanged"
             case .chatItemReaction: return "chatItemReaction"
@@ -866,89 +780,43 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
             case .groupCreated: return "groupCreated"
             case .sentGroupInvitation: return "sentGroupInvitation"
             case .userAcceptedGroupSent: return "userAcceptedGroupSent"
-            case .groupLinkConnecting: return "groupLinkConnecting"
-            case .businessLinkConnecting: return "businessLinkConnecting"
             case .userDeletedMembers: return "userDeletedMembers"
             case .leftMemberUser: return "leftMemberUser"
             case .groupMembers: return "groupMembers"
-            case .receivedGroupInvitation: return "receivedGroupInvitation"
             case .groupDeletedUser: return "groupDeletedUser"
-            case .joinedGroupMemberConnecting: return "joinedGroupMemberConnecting"
             case .memberAccepted: return "memberAccepted"
-            case .memberAcceptedByOther: return "memberAcceptedByOther"
-            case .memberRole: return "memberRole"
             case .membersRoleUser: return "membersRoleUser"
-            case .memberBlockedForAll: return "memberBlockedForAll"
             case .membersBlockedForAllUser: return "membersBlockedForAllUser"
-            case .deletedMemberUser: return "deletedMemberUser"
-            case .deletedMember: return "deletedMember"
-            case .leftMember: return "leftMember"
-            case .groupDeleted: return "groupDeleted"
-            case .contactsMerged: return "contactsMerged"
-            case .groupInvitation: return "groupInvitation"
-            case .userJoinedGroup: return "userJoinedGroup"
-            case .joinedGroupMember: return "joinedGroupMember"
-            case .connectedToGroupMember: return "connectedToGroupMember"
-            case .groupRemoved: return "groupRemoved"
             case .groupUpdated: return "groupUpdated"
             case .groupLinkCreated: return "groupLinkCreated"
             case .groupLink: return "groupLink"
             case .groupLinkDeleted: return "groupLinkDeleted"
             case .newMemberContact: return "newMemberContact"
             case .newMemberContactSentInv: return "newMemberContactSentInv"
-            case .newMemberContactReceivedInv: return "newMemberContactReceivedInv"
             case .rcvFileAccepted: return "rcvFileAccepted"
             case .rcvFileAcceptedSndCancelled: return "rcvFileAcceptedSndCancelled"
             case .standaloneFileInfo: return "standaloneFileInfo"
             case .rcvStandaloneFileCreated: return "rcvStandaloneFileCreated"
-            case .rcvFileStart: return "rcvFileStart"
-            case .rcvFileProgressXFTP: return "rcvFileProgressXFTP"
-            case .rcvFileComplete: return "rcvFileComplete"
-            case .rcvStandaloneFileComplete: return "rcvStandaloneFileComplete"
             case .rcvFileCancelled: return "rcvFileCancelled"
-            case .rcvFileSndCancelled: return "rcvFileSndCancelled"
-            case .rcvFileError: return "rcvFileError"
-            case .rcvFileWarning: return "rcvFileWarning"
-            case .sndFileStart: return "sndFileStart"
-            case .sndFileComplete: return "sndFileComplete"
             case .sndFileCancelled: return "sndFileCancelled"
             case .sndStandaloneFileCreated: return "sndStandaloneFileCreated"
             case .sndFileStartXFTP: return "sndFileStartXFTP"
-            case .sndFileProgressXFTP: return "sndFileProgressXFTP"
-            case .sndFileRedirectStartXFTP: return "sndFileRedirectStartXFTP"
-            case .sndFileRcvCancelled: return "sndFileRcvCancelled"
-            case .sndFileCompleteXFTP: return "sndFileCompleteXFTP"
-            case .sndStandaloneFileComplete: return "sndStandaloneFileComplete"
             case .sndFileCancelledXFTP: return "sndFileCancelledXFTP"
-            case .sndFileError: return "sndFileError"
-            case .sndFileWarning: return "sndFileWarning"
-            case .callInvitation: return "callInvitation"
-            case .callOffer: return "callOffer"
-            case .callAnswer: return "callAnswer"
-            case .callExtraInfo: return "callExtraInfo"
-            case .callEnded: return "callEnded"
             case .callInvitations: return "callInvitations"
             case .ntfTokenStatus: return "ntfTokenStatus"
             case .ntfToken: return "ntfToken"
             case .ntfConns: return "ntfConns"
             case .connNtfMessages: return "connNtfMessages"
-            case .ntfMessage: return "ntfMessage"
             case .contactConnectionDeleted: return "contactConnectionDeleted"
-            case .contactDisabled: return "contactDisabled"
             case .remoteCtrlList: return "remoteCtrlList"
-            case .remoteCtrlFound: return "remoteCtrlFound"
             case .remoteCtrlConnecting: return "remoteCtrlConnecting"
-            case .remoteCtrlSessionCode: return "remoteCtrlSessionCode"
             case .remoteCtrlConnected: return "remoteCtrlConnected"
-            case .remoteCtrlStopped: return "remoteCtrlStopped"
-            case .contactPQEnabled: return "contactPQEnabled"
             case .versionInfo: return "versionInfo"
             case .cmdOk: return "cmdOk"
             case .agentSubsTotal: return "agentSubsTotal"
             case .agentServersSummary: return "agentServersSummary"
             case .agentSubsSummary: return "agentSubsSummary"
             case .chatCmdError: return "chatCmdError"
-            case .chatError: return "chatError"
             case .archiveExported: return "archiveExported"
             case .archiveImported: return "archiveImported"
             case .appSettings: return "appSettings"
@@ -965,7 +833,6 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
             case .chatStarted: return noDetails
             case .chatRunning: return noDetails
             case .chatStopped: return noDetails
-            case .chatSuspended: return noDetails
             case let .apiChats(u, chats): return withUser(u, String(describing: chats))
             case let .apiChat(u, chat, navInfo): return withUser(u, "chat: \(String(describing: chat))\nnavInfo: \(String(describing: navInfo))")
             case let .chatTags(u, userTags): return withUser(u, "userTags: \(String(describing: userTags))")
@@ -986,14 +853,8 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
             case let .groupMemberSwitchStarted(u, groupInfo, member, connectionStats): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats: \(String(describing: connectionStats))")
             case let .contactSwitchAborted(u, contact, connectionStats): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))")
             case let .groupMemberSwitchAborted(u, groupInfo, member, connectionStats): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats: \(String(describing: connectionStats))")
-            case let .contactSwitch(u, contact, switchProgress): return withUser(u, "contact: \(String(describing: contact))\nswitchProgress: \(String(describing: switchProgress))")
-            case let .groupMemberSwitch(u, groupInfo, member, switchProgress): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nswitchProgress: \(String(describing: switchProgress))")
             case let .contactRatchetSyncStarted(u, contact, connectionStats): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))")
             case let .groupMemberRatchetSyncStarted(u, groupInfo, member, connectionStats): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats: \(String(describing: connectionStats))")
-            case let .contactRatchetSync(u, contact, ratchetSyncProgress): return withUser(u, "contact: \(String(describing: contact))\nratchetSyncProgress: \(String(describing: ratchetSyncProgress))")
-            case let .groupMemberRatchetSync(u, groupInfo, member, ratchetSyncProgress): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nratchetSyncProgress: \(String(describing: ratchetSyncProgress))")
-            case let .contactVerificationReset(u, contact): return withUser(u, "contact: \(String(describing: contact))")
-            case let .groupMemberVerificationReset(u, groupInfo, member): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))")
             case let .contactCode(u, contact, connectionCode): return withUser(u, "contact: \(String(describing: contact))\nconnectionCode: \(connectionCode)")
             case let .groupMemberCode(u, groupInfo, member, connectionCode): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionCode: \(connectionCode)")
             case let .connectionVerified(u, verified, expectedCode): return withUser(u, "verified: \(verified)\nconnectionCode: \(expectedCode)")
@@ -1007,7 +868,6 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
             case let .sentInvitationToContact(u, contact, _): return withUser(u, String(describing: contact))
             case let .contactAlreadyExists(u, contact): return withUser(u, String(describing: contact))
             case let .contactDeleted(u, contact): return withUser(u, String(describing: contact))
-            case let .contactDeletedByContact(u, contact): return withUser(u, String(describing: contact))
             case let .chatCleared(u, chatInfo): return withUser(u, String(describing: chatInfo))
             case .userProfileNoChange: return noDetails
             case let .userProfileUpdated(u, _, toProfile, _): return withUser(u, String(describing: toProfile))
@@ -1020,29 +880,15 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
             case let .userContactLinkUpdated(u, contactLink): return withUser(u, contactLink.responseDetails)
             case let .userContactLinkCreated(u, connLink): return withUser(u, String(describing: connLink))
             case .userContactLinkDeleted: return noDetails
-            case let .contactConnected(u, contact, _): return withUser(u, String(describing: contact))
-            case let .contactConnecting(u, contact): return withUser(u, String(describing: contact))
-            case let .contactSndReady(u, contact): return withUser(u, String(describing: contact))
-            case let .receivedContactRequest(u, contactRequest): return withUser(u, String(describing: contactRequest))
             case let .acceptingContactRequest(u, contact): return withUser(u, String(describing: contact))
             case .contactRequestRejected: return noDetails
-            case let .contactUpdated(u, toContact): return withUser(u, String(describing: toContact))
-            case let .groupMemberUpdated(u, groupInfo, fromMember, toMember): return withUser(u, "groupInfo: \(groupInfo)\nfromMember: \(fromMember)\ntoMember: \(toMember)")
-            case let .networkStatus(status, conns): return "networkStatus: \(String(describing: status))\nconnections: \(String(describing: conns))"
             case let .networkStatuses(u, statuses): return withUser(u, String(describing: statuses))
-            case let .groupSubscribed(u, groupInfo): return withUser(u, String(describing: groupInfo))
-            case let .memberSubErrors(u, memberSubErrors): return withUser(u, String(describing: memberSubErrors))
-            case let .groupEmpty(u, groupInfo): return withUser(u, String(describing: groupInfo))
-            case .userContactLinkSubscribed: return noDetails
             case let .newChatItems(u, chatItems):
                 let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
                 return withUser(u, itemsString)
             case let .groupChatItemsDeleted(u, gInfo, chatItemIDs, byUser, member_):
                 return withUser(u, "chatItemIDs: \(String(describing: chatItemIDs))\ngroupInfo: \(String(describing: gInfo))\nbyUser: \(byUser)\nmember_: \(String(describing: member_))")
             case let .forwardPlan(u, chatItemIds, forwardConfirmation): return withUser(u, "items: \(chatItemIds) forwardConfirmation: \(String(describing: forwardConfirmation))")
-            case let .chatItemsStatusesUpdated(u, chatItems):
-                let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
-                return withUser(u, itemsString)
             case let .chatItemUpdated(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .chatItemNotChanged(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .chatItemReaction(u, added, reaction): return withUser(u, "added: \(added)\n\(String(describing: reaction))")
@@ -1055,89 +901,43 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
             case let .groupCreated(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .sentGroupInvitation(u, groupInfo, contact, member): return withUser(u, "groupInfo: \(groupInfo)\ncontact: \(contact)\nmember: \(member)")
             case let .userAcceptedGroupSent(u, groupInfo, hostContact): return withUser(u, "groupInfo: \(groupInfo)\nhostContact: \(String(describing: hostContact))")
-            case let .groupLinkConnecting(u, groupInfo, hostMember): return withUser(u, "groupInfo: \(groupInfo)\nhostMember: \(String(describing: hostMember))")
-            case let .businessLinkConnecting(u, groupInfo, hostMember, fromContact): return withUser(u, "groupInfo: \(groupInfo)\nhostMember: \(String(describing: hostMember))\nfromContact: \(String(describing: fromContact))")
             case let .userDeletedMembers(u, groupInfo, members, withMessages): return withUser(u, "groupInfo: \(groupInfo)\nmembers: \(members)\nwithMessages: \(withMessages)")
             case let .leftMemberUser(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .groupMembers(u, group): return withUser(u, String(describing: group))
-            case let .receivedGroupInvitation(u, groupInfo, contact, memberRole): return withUser(u, "groupInfo: \(groupInfo)\ncontact: \(contact)\nmemberRole: \(memberRole)")
             case let .groupDeletedUser(u, groupInfo): return withUser(u, String(describing: groupInfo))
-            case let .joinedGroupMemberConnecting(u, groupInfo, hostMember, member): return withUser(u, "groupInfo: \(groupInfo)\nhostMember: \(hostMember)\nmember: \(member)")
             case let .memberAccepted(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
-            case let .memberAcceptedByOther(u, groupInfo, acceptingMember, member): return withUser(u, "groupInfo: \(groupInfo)\nacceptingMember: \(acceptingMember)\nmember: \(member)")
-            case let .memberRole(u, groupInfo, byMember, member, fromRole, toRole): return withUser(u, "groupInfo: \(groupInfo)\nbyMember: \(byMember)\nmember: \(member)\nfromRole: \(fromRole)\ntoRole: \(toRole)")
             case let .membersRoleUser(u, groupInfo, members, toRole): return withUser(u, "groupInfo: \(groupInfo)\nmembers: \(members)\ntoRole: \(toRole)")
-            case let .memberBlockedForAll(u, groupInfo, byMember, member, blocked): return withUser(u, "groupInfo: \(groupInfo)\nbyMember: \(byMember)\nmember: \(member)\nblocked: \(blocked)")
             case let .membersBlockedForAllUser(u, groupInfo, members, blocked): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(members)\nblocked: \(blocked)")
-            case let .deletedMemberUser(u, groupInfo, member, withMessages): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)\nwithMessages: \(withMessages)")
-            case let .deletedMember(u, groupInfo, byMember, deletedMember, withMessages): return withUser(u, "groupInfo: \(groupInfo)\nbyMember: \(byMember)\ndeletedMember: \(deletedMember)\nwithMessages: \(withMessages)")
-            case let .leftMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
-            case let .groupDeleted(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
-            case let .contactsMerged(u, intoContact, mergedContact): return withUser(u, "intoContact: \(intoContact)\nmergedContact: \(mergedContact)")
-            case let .groupInvitation(u, groupInfo): return withUser(u, String(describing: groupInfo))
-            case let .userJoinedGroup(u, groupInfo): return withUser(u, String(describing: groupInfo))
-            case let .joinedGroupMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
-            case let .connectedToGroupMember(u, groupInfo, member, memberContact): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)\nmemberContact: \(String(describing: memberContact))")
-            case let .groupRemoved(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .groupUpdated(u, toGroup): return withUser(u, String(describing: toGroup))
             case let .groupLinkCreated(u, groupInfo, connLinkContact, memberRole): return withUser(u, "groupInfo: \(groupInfo)\nconnLinkContact: \(connLinkContact)\nmemberRole: \(memberRole)")
             case let .groupLink(u, groupInfo, connLinkContact, memberRole): return withUser(u, "groupInfo: \(groupInfo)\nconnLinkContact: \(connLinkContact)\nmemberRole: \(memberRole)")
             case let .groupLinkDeleted(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .newMemberContact(u, contact, groupInfo, member): return withUser(u, "contact: \(contact)\ngroupInfo: \(groupInfo)\nmember: \(member)")
             case let .newMemberContactSentInv(u, contact, groupInfo, member): return withUser(u, "contact: \(contact)\ngroupInfo: \(groupInfo)\nmember: \(member)")
-            case let .newMemberContactReceivedInv(u, contact, groupInfo, member): return withUser(u, "contact: \(contact)\ngroupInfo: \(groupInfo)\nmember: \(member)")
             case let .rcvFileAccepted(u, chatItem): return withUser(u, String(describing: chatItem))
             case .rcvFileAcceptedSndCancelled: return noDetails
             case let .standaloneFileInfo(fileMeta): return String(describing: fileMeta)
             case .rcvStandaloneFileCreated: return noDetails
-            case let .rcvFileStart(u, chatItem): return withUser(u, String(describing: chatItem))
-            case let .rcvFileProgressXFTP(u, chatItem, receivedSize, totalSize, _): return withUser(u, "chatItem: \(String(describing: chatItem))\nreceivedSize: \(receivedSize)\ntotalSize: \(totalSize)")
-            case let .rcvStandaloneFileComplete(u, targetPath, _): return withUser(u, targetPath)
-            case let .rcvFileComplete(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .rcvFileCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
-            case let .rcvFileSndCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
-            case let .rcvFileError(u, chatItem, agentError, _): return withUser(u, "agentError: \(String(describing: agentError))\nchatItem: \(String(describing: chatItem))")
-            case let .rcvFileWarning(u, chatItem, agentError, _): return withUser(u, "agentError: \(String(describing: agentError))\nchatItem: \(String(describing: chatItem))")
-            case let .sndFileStart(u, chatItem, _): return withUser(u, String(describing: chatItem))
-            case let .sndFileComplete(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .sndFileCancelled(u, chatItem, _, _): return withUser(u, String(describing: chatItem))
             case .sndStandaloneFileCreated: return noDetails
             case let .sndFileStartXFTP(u, chatItem, _): return withUser(u, String(describing: chatItem))
-            case let .sndFileRcvCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
-            case let .sndFileProgressXFTP(u, chatItem, _, sentSize, totalSize): return withUser(u, "chatItem: \(String(describing: chatItem))\nsentSize: \(sentSize)\ntotalSize: \(totalSize)")
-            case let .sndFileRedirectStartXFTP(u, _, redirectMeta): return withUser(u, String(describing: redirectMeta))
-            case let .sndFileCompleteXFTP(u, chatItem, _): return withUser(u, String(describing: chatItem))
-            case let .sndStandaloneFileComplete(u, _, rcvURIs): return withUser(u, String(rcvURIs.count))
             case let .sndFileCancelledXFTP(u, chatItem, _): return withUser(u, String(describing: chatItem))
-            case let .sndFileError(u, chatItem, _, err): return withUser(u, "error: \(String(describing: err))\nchatItem: \(String(describing: chatItem))")
-            case let .sndFileWarning(u, chatItem, _, err): return withUser(u, "error: \(String(describing: err))\nchatItem: \(String(describing: chatItem))")
-            case let .callInvitation(inv): return String(describing: inv)
-            case let .callOffer(u, contact, callType, offer, sharedKey, askConfirmation): return withUser(u, "contact: \(contact.id)\ncallType: \(String(describing: callType))\nsharedKey: \(sharedKey ?? "")\naskConfirmation: \(askConfirmation)\noffer: \(String(describing: offer))")
-            case let .callAnswer(u, contact, answer): return withUser(u, "contact: \(contact.id)\nanswer: \(String(describing: answer))")
-            case let .callExtraInfo(u, contact, extraInfo): return withUser(u, "contact: \(contact.id)\nextraInfo: \(String(describing: extraInfo))")
-            case let .callEnded(u, contact): return withUser(u, "contact: \(contact.id)")
             case let .callInvitations(invs): return String(describing: invs)
             case let .ntfTokenStatus(status): return String(describing: status)
             case let .ntfToken(token, status, ntfMode, ntfServer): return "token: \(token)\nstatus: \(status.rawValue)\nntfMode: \(ntfMode.rawValue)\nntfServer: \(ntfServer)"
             case let .ntfConns(ntfConns): return String(describing: ntfConns)
             case let .connNtfMessages(receivedMsgs): return "receivedMsgs: \(String(describing: receivedMsgs))"
-            case let .ntfMessage(u, connEntity, ntfMessage): return withUser(u, "connEntity: \(String(describing: connEntity))\nntfMessage: \(String(describing: ntfMessage))")
             case let .contactConnectionDeleted(u, connection): return withUser(u, String(describing: connection))
-            case let .contactDisabled(u, contact): return withUser(u, String(describing: contact))
             case let .remoteCtrlList(remoteCtrls): return String(describing: remoteCtrls)
-            case let .remoteCtrlFound(remoteCtrl, ctrlAppInfo_, appVersion, compatible): return "remoteCtrl:\n\(String(describing: remoteCtrl))\nctrlAppInfo_:\n\(String(describing: ctrlAppInfo_))\nappVersion: \(appVersion)\ncompatible: \(compatible)"
             case let .remoteCtrlConnecting(remoteCtrl_, ctrlAppInfo, appVersion): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nctrlAppInfo:\n\(String(describing: ctrlAppInfo))\nappVersion: \(appVersion)"
-            case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nsessionCode: \(sessionCode)"
             case let .remoteCtrlConnected(remoteCtrl): return String(describing: remoteCtrl)
-            case let .remoteCtrlStopped(rcsState, rcStopReason): return "rcsState: \(String(describing: rcsState))\nrcStopReason: \(String(describing: rcStopReason))"
-            case let .contactPQEnabled(u, contact, pqEnabled): return withUser(u, "contact: \(String(describing: contact))\npqEnabled: \(pqEnabled)")
             case let .versionInfo(versionInfo, chatMigrations, agentMigrations): return "\(String(describing: versionInfo))\n\nchat migrations: \(chatMigrations.map(\.upName))\n\nagent migrations: \(agentMigrations.map(\.upName))"
             case .cmdOk: return noDetails
             case let .agentSubsTotal(u, subsTotal, hasSession): return withUser(u, "subsTotal: \(String(describing: subsTotal))\nhasSession: \(hasSession)")
             case let .agentServersSummary(u, serversSummary): return withUser(u, String(describing: serversSummary))
             case let .agentSubsSummary(u, subsSummary): return withUser(u, String(describing: subsSummary))
             case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
-            case let .chatError(u, chatError): return withUser(u, String(describing: chatError))
             case let .archiveExported(archiveErrors): return String(describing: archiveErrors)
             case let .archiveImported(archiveErrors): return String(describing: archiveErrors)
             case let .appSettings(appSettings): return String(describing: appSettings)
@@ -1184,10 +984,6 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
                     if let jError = jResp["chatCmdError"] as? NSDictionary {
                         return .chatCmdError(user_: decodeUser_(jError), chatError: .invalidJSON(json: errorJson(jError) ?? ""))
                     }
-                } else if type == "chatError" {
-                    if let jError = jResp["chatError"] as? NSDictionary {
-                        return .chatError(user_: decodeUser_(jError), chatError: .invalidJSON(json: errorJson(jError) ?? ""))
-                    }
                 }
             }
             json = serializeJSON(j, options: .prettyPrinted)
@@ -1198,7 +994,6 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
     var chatError: ChatError? {
         switch self {
         case let .chatCmdError(_, error): error
-        case let .chatError(_, error): error
         default: nil
         }
     }
@@ -1206,6 +1001,292 @@ enum ChatResponse: Decodable, Error, ChatRespProtocol {
     var chatErrorType: ChatErrorType? {
         switch self {
         case let .chatCmdError(_, .error(error)): error
+        default: nil
+        }
+    }
+}
+
+enum ChatEvent: Decodable, ChatEventProtocol {
+    case event(type: String, json: String)
+    case chatSuspended
+    case contactSwitch(user: UserRef, contact: Contact, switchProgress: SwitchProgress)
+    case groupMemberSwitch(user: UserRef, groupInfo: GroupInfo, member: GroupMember, switchProgress: SwitchProgress)
+    case contactRatchetSync(user: UserRef, contact: Contact, ratchetSyncProgress: RatchetSyncProgress)
+    case groupMemberRatchetSync(user: UserRef, groupInfo: GroupInfo, member: GroupMember, ratchetSyncProgress: RatchetSyncProgress)
+    case contactDeletedByContact(user: UserRef, contact: Contact)
+    case contactConnected(user: UserRef, contact: Contact, userCustomProfile: Profile?)
+    case contactConnecting(user: UserRef, contact: Contact)
+    case contactSndReady(user: UserRef, contact: Contact)
+    case receivedContactRequest(user: UserRef, contactRequest: UserContactRequest)
+    case contactUpdated(user: UserRef, toContact: Contact)
+    case groupMemberUpdated(user: UserRef, groupInfo: GroupInfo, fromMember: GroupMember, toMember: GroupMember)
+    case contactsMerged(user: UserRef, intoContact: Contact, mergedContact: Contact)
+    case networkStatus(networkStatus: NetworkStatus, connections: [String])
+    case networkStatuses(user_: UserRef?, networkStatuses: [ConnNetworkStatus])
+    case newChatItems(user: UserRef, chatItems: [AChatItem])
+    case chatItemsStatusesUpdated(user: UserRef, chatItems: [AChatItem])
+    case chatItemUpdated(user: UserRef, chatItem: AChatItem)
+    case chatItemReaction(user: UserRef, added: Bool, reaction: ACIReaction)
+    case chatItemsDeleted(user: UserRef, chatItemDeletions: [ChatItemDeletion], byUser: Bool)
+    // group events
+    case groupChatItemsDeleted(user: UserRef, groupInfo: GroupInfo, chatItemIDs: Set<Int64>, byUser: Bool, member_: GroupMember?)
+    case receivedGroupInvitation(user: UserRef, groupInfo: GroupInfo, contact: Contact, memberRole: GroupMemberRole)
+    case userAcceptedGroupSent(user: UserRef, groupInfo: GroupInfo, hostContact: Contact?)
+    case groupLinkConnecting(user: UserRef, groupInfo: GroupInfo, hostMember: GroupMember)
+    case businessLinkConnecting(user: UserRef, groupInfo: GroupInfo, hostMember: GroupMember, fromContact: Contact)
+    case joinedGroupMemberConnecting(user: UserRef, groupInfo: GroupInfo, hostMember: GroupMember, member: GroupMember)
+    case memberAcceptedByOther(user: UserRef, groupInfo: GroupInfo, acceptingMember: GroupMember, member: GroupMember)
+    case memberRole(user: UserRef, groupInfo: GroupInfo, byMember: GroupMember, member: GroupMember, fromRole: GroupMemberRole, toRole: GroupMemberRole)
+    case memberBlockedForAll(user: UserRef, groupInfo: GroupInfo, byMember: GroupMember, member: GroupMember, blocked: Bool)
+    case deletedMemberUser(user: UserRef, groupInfo: GroupInfo, member: GroupMember, withMessages: Bool)
+    case deletedMember(user: UserRef, groupInfo: GroupInfo, byMember: GroupMember, deletedMember: GroupMember, withMessages: Bool)
+    case leftMember(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
+    case groupDeleted(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
+    case userJoinedGroup(user: UserRef, groupInfo: GroupInfo)
+    case joinedGroupMember(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
+    case connectedToGroupMember(user: UserRef, groupInfo: GroupInfo, member: GroupMember, memberContact: Contact?)
+    case groupUpdated(user: UserRef, toGroup: GroupInfo)
+    case newMemberContactReceivedInv(user: UserRef, contact: Contact, groupInfo: GroupInfo, member: GroupMember)
+    // receiving file events
+    case rcvFileAccepted(user: UserRef, chatItem: AChatItem)
+    case rcvFileAcceptedSndCancelled(user: UserRef, rcvFileTransfer: RcvFileTransfer)
+    case rcvFileStart(user: UserRef, chatItem: AChatItem) // send by chats
+    case rcvFileProgressXFTP(user: UserRef, chatItem_: AChatItem?, receivedSize: Int64, totalSize: Int64, rcvFileTransfer: RcvFileTransfer)
+    case rcvFileComplete(user: UserRef, chatItem: AChatItem)
+    case rcvStandaloneFileComplete(user: UserRef, targetPath: String, rcvFileTransfer: RcvFileTransfer)
+    case rcvFileSndCancelled(user: UserRef, chatItem: AChatItem, rcvFileTransfer: RcvFileTransfer)
+    case rcvFileError(user: UserRef, chatItem_: AChatItem?, agentError: AgentErrorType, rcvFileTransfer: RcvFileTransfer)
+    case rcvFileWarning(user: UserRef, chatItem_: AChatItem?, agentError: AgentErrorType, rcvFileTransfer: RcvFileTransfer)
+    // sending file events
+    case sndFileStart(user: UserRef, chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
+    case sndFileComplete(user: UserRef, chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
+    case sndFileRcvCancelled(user: UserRef, chatItem_: AChatItem?, sndFileTransfer: SndFileTransfer)
+    case sndFileProgressXFTP(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta, sentSize: Int64, totalSize: Int64)
+    case sndFileRedirectStartXFTP(user: UserRef, fileTransferMeta: FileTransferMeta, redirectMeta: FileTransferMeta)
+    case sndFileCompleteXFTP(user: UserRef, chatItem: AChatItem, fileTransferMeta: FileTransferMeta)
+    case sndStandaloneFileComplete(user: UserRef, fileTransferMeta: FileTransferMeta, rcvURIs: [String])
+    case sndFileError(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta, errorMessage: String)
+    case sndFileWarning(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta, errorMessage: String)
+    // call events
+    case callInvitation(callInvitation: RcvCallInvitation)
+    case callOffer(user: UserRef, contact: Contact, callType: CallType, offer: WebRTCSession, sharedKey: String?, askConfirmation: Bool)
+    case callAnswer(user: UserRef, contact: Contact, answer: WebRTCSession)
+    case callExtraInfo(user: UserRef, contact: Contact, extraInfo: WebRTCExtraInfo)
+    case callEnded(user: UserRef, contact: Contact)
+    case contactDisabled(user: UserRef, contact: Contact)
+    // notification marker
+    case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgAckInfo)
+    // remote desktop responses
+    case remoteCtrlFound(remoteCtrl: RemoteCtrlInfo, ctrlAppInfo_: CtrlAppInfo?, appVersion: String, compatible: Bool)
+    case remoteCtrlSessionCode(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
+    case remoteCtrlConnected(remoteCtrl: RemoteCtrlInfo)
+    case remoteCtrlStopped(rcsState: RemoteCtrlSessionState, rcStopReason: RemoteCtrlStopReason)
+    // pq
+    case contactPQEnabled(user: UserRef, contact: Contact, pqEnabled: Bool)
+    case chatError(user_: UserRef?, chatError: ChatError)
+    
+    var eventType: String {
+        switch self {
+        case let .event(type, _): "* \(type)"
+        case .chatSuspended: "chatSuspended"
+        case .contactSwitch: "contactSwitch"
+        case .groupMemberSwitch: "groupMemberSwitch"
+        case .contactRatchetSync: "contactRatchetSync"
+        case .groupMemberRatchetSync: "groupMemberRatchetSync"
+        case .contactDeletedByContact: "contactDeletedByContact"
+        case .contactConnected: "contactConnected"
+        case .contactConnecting: "contactConnecting"
+        case .contactSndReady: "contactSndReady"
+        case .receivedContactRequest: "receivedContactRequest"
+        case .contactUpdated: "contactUpdated"
+        case .groupMemberUpdated: "groupMemberUpdated"
+        case .contactsMerged: "contactsMerged"
+        case .networkStatus: "networkStatus"
+        case .networkStatuses: "networkStatuses"
+        case .newChatItems: "newChatItems"
+        case .chatItemsStatusesUpdated: "chatItemsStatusesUpdated"
+        case .chatItemUpdated: "chatItemUpdated"
+        case .chatItemReaction: "chatItemReaction"
+        case .chatItemsDeleted: "chatItemsDeleted"
+        case .groupChatItemsDeleted: "groupChatItemsDeleted"
+        case .receivedGroupInvitation: "receivedGroupInvitation"
+        case .userAcceptedGroupSent: "userAcceptedGroupSent"
+        case .groupLinkConnecting: "groupLinkConnecting"
+        case .businessLinkConnecting: "businessLinkConnecting"
+        case .joinedGroupMemberConnecting: "joinedGroupMemberConnecting"
+        case .memberAcceptedByOther: "memberAcceptedByOther"
+        case .memberRole: "memberRole"
+        case .memberBlockedForAll: "memberBlockedForAll"
+        case .deletedMemberUser: "deletedMemberUser"
+        case .deletedMember: "deletedMember"
+        case .leftMember: "leftMember"
+        case .groupDeleted: "groupDeleted"
+        case .userJoinedGroup: "userJoinedGroup"
+        case .joinedGroupMember: "joinedGroupMember"
+        case .connectedToGroupMember: "connectedToGroupMember"
+        case .groupUpdated: "groupUpdated"
+        case .newMemberContactReceivedInv: "newMemberContactReceivedInv"
+        case .rcvFileAccepted: "rcvFileAccepted"
+        case .rcvFileAcceptedSndCancelled: "rcvFileAcceptedSndCancelled"
+        case .rcvFileStart: "rcvFileStart"
+        case .rcvFileProgressXFTP: "rcvFileProgressXFTP"
+        case .rcvFileComplete: "rcvFileComplete"
+        case .rcvStandaloneFileComplete: "rcvStandaloneFileComplete"
+        case .rcvFileSndCancelled: "rcvFileSndCancelled"
+        case .rcvFileError: "rcvFileError"
+        case .rcvFileWarning: "rcvFileWarning"
+        case .sndFileStart: "sndFileStart"
+        case .sndFileComplete: "sndFileComplete"
+        case .sndFileRcvCancelled: "sndFileRcvCancelled"
+        case .sndFileProgressXFTP: "sndFileProgressXFTP"
+        case .sndFileRedirectStartXFTP: "sndFileRedirectStartXFTP"
+        case .sndFileCompleteXFTP: "sndFileCompleteXFTP"
+        case .sndStandaloneFileComplete: "sndStandaloneFileComplete"
+        case .sndFileError: "sndFileError"
+        case .sndFileWarning: "sndFileWarning"
+        case .callInvitation: "callInvitation"
+        case .callOffer: "callOffer"
+        case .callAnswer: "callAnswer"
+        case .callExtraInfo: "callExtraInfo"
+        case .callEnded: "callEnded"
+        case .contactDisabled: "contactDisabled"
+        case .ntfMessage: "ntfMessage"
+        case .remoteCtrlFound: "remoteCtrlFound"
+        case .remoteCtrlSessionCode: "remoteCtrlSessionCode"
+        case .remoteCtrlConnected: "remoteCtrlConnected"
+        case .remoteCtrlStopped: "remoteCtrlStopped"
+        case .contactPQEnabled: "contactPQEnabled"
+        case .chatError: "chatError"
+        }
+    }
+    
+    var details: String {
+        switch self {
+        case let .event(_, json): return json
+        case .chatSuspended: return noDetails
+        case let .contactSwitch(u, contact, switchProgress): return withUser(u, "contact: \(String(describing: contact))\nswitchProgress: \(String(describing: switchProgress))")
+        case let .groupMemberSwitch(u, groupInfo, member, switchProgress): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nswitchProgress: \(String(describing: switchProgress))")
+        case let .contactRatchetSync(u, contact, ratchetSyncProgress): return withUser(u, "contact: \(String(describing: contact))\nratchetSyncProgress: \(String(describing: ratchetSyncProgress))")
+        case let .groupMemberRatchetSync(u, groupInfo, member, ratchetSyncProgress): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nratchetSyncProgress: \(String(describing: ratchetSyncProgress))")
+        case let .contactDeletedByContact(u, contact): return withUser(u, String(describing: contact))
+        case let .contactConnected(u, contact, _): return withUser(u, String(describing: contact))
+        case let .contactConnecting(u, contact): return withUser(u, String(describing: contact))
+        case let .contactSndReady(u, contact): return withUser(u, String(describing: contact))
+        case let .receivedContactRequest(u, contactRequest): return withUser(u, String(describing: contactRequest))
+        case let .contactUpdated(u, toContact): return withUser(u, String(describing: toContact))
+        case let .groupMemberUpdated(u, groupInfo, fromMember, toMember): return withUser(u, "groupInfo: \(groupInfo)\nfromMember: \(fromMember)\ntoMember: \(toMember)")
+        case let .contactsMerged(u, intoContact, mergedContact): return withUser(u, "intoContact: \(intoContact)\nmergedContact: \(mergedContact)")
+        case let .networkStatus(status, conns): return "networkStatus: \(String(describing: status))\nconnections: \(String(describing: conns))"
+        case let .networkStatuses(u, statuses): return withUser(u, String(describing: statuses))
+        case let .newChatItems(u, chatItems):
+            let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
+            return withUser(u, itemsString)
+        case let .chatItemsStatusesUpdated(u, chatItems):
+            let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
+            return withUser(u, itemsString)
+        case let .chatItemUpdated(u, chatItem): return withUser(u, String(describing: chatItem))
+        case let .chatItemReaction(u, added, reaction): return withUser(u, "added: \(added)\n\(String(describing: reaction))")
+        case let .chatItemsDeleted(u, items, byUser):
+            let itemsString = items.map { item in
+                "deletedChatItem:\n\(String(describing: item.deletedChatItem))\ntoChatItem:\n\(String(describing: item.toChatItem))" }.joined(separator: "\n")
+            return withUser(u, itemsString + "\nbyUser: \(byUser)")
+        case let .groupChatItemsDeleted(u, gInfo, chatItemIDs, byUser, member_):
+            return withUser(u, "chatItemIDs: \(String(describing: chatItemIDs))\ngroupInfo: \(String(describing: gInfo))\nbyUser: \(byUser)\nmember_: \(String(describing: member_))")
+        case let .receivedGroupInvitation(u, groupInfo, contact, memberRole): return withUser(u, "groupInfo: \(groupInfo)\ncontact: \(contact)\nmemberRole: \(memberRole)")
+        case let .userAcceptedGroupSent(u, groupInfo, hostContact): return withUser(u, "groupInfo: \(groupInfo)\nhostContact: \(String(describing: hostContact))")
+        case let .groupLinkConnecting(u, groupInfo, hostMember): return withUser(u, "groupInfo: \(groupInfo)\nhostMember: \(String(describing: hostMember))")
+        case let .businessLinkConnecting(u, groupInfo, hostMember, fromContact): return withUser(u, "groupInfo: \(groupInfo)\nhostMember: \(String(describing: hostMember))\nfromContact: \(String(describing: fromContact))")
+        case let .joinedGroupMemberConnecting(u, groupInfo, hostMember, member): return withUser(u, "groupInfo: \(groupInfo)\nhostMember: \(hostMember)\nmember: \(member)")
+        case let .memberAcceptedByOther(u, groupInfo, acceptingMember, member): return withUser(u, "groupInfo: \(groupInfo)\nacceptingMember: \(acceptingMember)\nmember: \(member)")
+        case let .memberRole(u, groupInfo, byMember, member, fromRole, toRole): return withUser(u, "groupInfo: \(groupInfo)\nbyMember: \(byMember)\nmember: \(member)\nfromRole: \(fromRole)\ntoRole: \(toRole)")
+        case let .memberBlockedForAll(u, groupInfo, byMember, member, blocked): return withUser(u, "groupInfo: \(groupInfo)\nbyMember: \(byMember)\nmember: \(member)\nblocked: \(blocked)")
+        case let .deletedMemberUser(u, groupInfo, member, withMessages): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)\nwithMessages: \(withMessages)")
+        case let .deletedMember(u, groupInfo, byMember, deletedMember, withMessages): return withUser(u, "groupInfo: \(groupInfo)\nbyMember: \(byMember)\ndeletedMember: \(deletedMember)\nwithMessages: \(withMessages)")
+        case let .leftMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
+        case let .groupDeleted(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
+        case let .userJoinedGroup(u, groupInfo): return withUser(u, String(describing: groupInfo))
+        case let .joinedGroupMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
+        case let .connectedToGroupMember(u, groupInfo, member, memberContact): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)\nmemberContact: \(String(describing: memberContact))")
+        case let .groupUpdated(u, toGroup): return withUser(u, String(describing: toGroup))
+        case let .newMemberContactReceivedInv(u, contact, groupInfo, member): return withUser(u, "contact: \(contact)\ngroupInfo: \(groupInfo)\nmember: \(member)")
+        case let .rcvFileAccepted(u, chatItem): return withUser(u, String(describing: chatItem))
+        case .rcvFileAcceptedSndCancelled: return noDetails
+        case let .rcvFileStart(u, chatItem): return withUser(u, String(describing: chatItem))
+        case let .rcvFileProgressXFTP(u, chatItem, receivedSize, totalSize, _): return withUser(u, "chatItem: \(String(describing: chatItem))\nreceivedSize: \(receivedSize)\ntotalSize: \(totalSize)")
+        case let .rcvStandaloneFileComplete(u, targetPath, _): return withUser(u, targetPath)
+        case let .rcvFileComplete(u, chatItem): return withUser(u, String(describing: chatItem))
+        case let .rcvFileSndCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
+        case let .rcvFileError(u, chatItem, agentError, _): return withUser(u, "agentError: \(String(describing: agentError))\nchatItem: \(String(describing: chatItem))")
+        case let .rcvFileWarning(u, chatItem, agentError, _): return withUser(u, "agentError: \(String(describing: agentError))\nchatItem: \(String(describing: chatItem))")
+        case let .sndFileStart(u, chatItem, _): return withUser(u, String(describing: chatItem))
+        case let .sndFileComplete(u, chatItem, _): return withUser(u, String(describing: chatItem))
+        case let .sndFileRcvCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
+        case let .sndFileProgressXFTP(u, chatItem, _, sentSize, totalSize): return withUser(u, "chatItem: \(String(describing: chatItem))\nsentSize: \(sentSize)\ntotalSize: \(totalSize)")
+        case let .sndFileRedirectStartXFTP(u, _, redirectMeta): return withUser(u, String(describing: redirectMeta))
+        case let .sndFileCompleteXFTP(u, chatItem, _): return withUser(u, String(describing: chatItem))
+        case let .sndStandaloneFileComplete(u, _, rcvURIs): return withUser(u, String(rcvURIs.count))
+        case let .sndFileError(u, chatItem, _, err): return withUser(u, "error: \(String(describing: err))\nchatItem: \(String(describing: chatItem))")
+        case let .sndFileWarning(u, chatItem, _, err): return withUser(u, "error: \(String(describing: err))\nchatItem: \(String(describing: chatItem))")
+        case let .callInvitation(inv): return String(describing: inv)
+        case let .callOffer(u, contact, callType, offer, sharedKey, askConfirmation): return withUser(u, "contact: \(contact.id)\ncallType: \(String(describing: callType))\nsharedKey: \(sharedKey ?? "")\naskConfirmation: \(askConfirmation)\noffer: \(String(describing: offer))")
+        case let .callAnswer(u, contact, answer): return withUser(u, "contact: \(contact.id)\nanswer: \(String(describing: answer))")
+        case let .callExtraInfo(u, contact, extraInfo): return withUser(u, "contact: \(contact.id)\nextraInfo: \(String(describing: extraInfo))")
+        case let .callEnded(u, contact): return withUser(u, "contact: \(contact.id)")
+        case let .contactDisabled(u, contact): return withUser(u, String(describing: contact))
+        case let .ntfMessage(u, connEntity, ntfMessage): return withUser(u, "connEntity: \(String(describing: connEntity))\nntfMessage: \(String(describing: ntfMessage))")
+        case let .remoteCtrlFound(remoteCtrl, ctrlAppInfo_, appVersion, compatible): return "remoteCtrl:\n\(String(describing: remoteCtrl))\nctrlAppInfo_:\n\(String(describing: ctrlAppInfo_))\nappVersion: \(appVersion)\ncompatible: \(compatible)"
+        case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nsessionCode: \(sessionCode)"
+        case let .remoteCtrlConnected(remoteCtrl): return String(describing: remoteCtrl)
+        case let .remoteCtrlStopped(rcsState, rcStopReason): return "rcsState: \(String(describing: rcsState))\nrcStopReason: \(String(describing: rcStopReason))"
+        case let .contactPQEnabled(u, contact, pqEnabled): return withUser(u, "contact: \(String(describing: contact))\npqEnabled: \(pqEnabled)")
+        case let .chatError(u, chatError): return withUser(u, String(describing: chatError))
+        }
+    }
+
+    private var noDetails: String { "\(eventType): no details" }
+
+    static func chatEvent(_ s: String) -> ChatEvent {
+        let d = s.data(using: .utf8)!
+        // TODO is there a way to do it without copying the data? e.g:
+        //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
+        //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
+        do {
+            let r = // try callWithLargeStack {
+                try jsonDecoder.decode(APIResponse<ChatEvent>.self, from: d)
+//            }
+            return r.resp
+        } catch {
+            logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
+        }
+        
+        var type: String?
+        var json: String?
+        if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {
+            if let jResp = j["resp"] as? NSDictionary, jResp.count == 1 || jResp.count == 2 {
+                type = jResp.allKeys[0] as? String
+                if jResp.count == 2 && type == "_owsf" {
+                    type = jResp.allKeys[1] as? String
+                }
+                if type == "chatError" {
+                    if let jError = jResp["chatError"] as? NSDictionary {
+                        return .chatError(user_: decodeUser_(jError), chatError: .invalidJSON(json: errorJson(jError) ?? ""))
+                    }
+                }
+            }
+            json = serializeJSON(j, options: .prettyPrinted)
+        }
+        return ChatEvent.event(type: type ?? "invalid", json: json ?? s)
+    }
+
+    var chatError: ChatError? {
+        switch self {
+        case let .chatError(_, error): error
+        default: nil
+        }
+    }
+    
+    var chatErrorType: ChatErrorType? {
+        switch self {
         case let .chatError(_, .error(error)): error
         default: nil
         }

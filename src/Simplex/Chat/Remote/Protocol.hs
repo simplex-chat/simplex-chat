@@ -65,7 +65,7 @@ data RemoteCommand
 
 data RemoteResponse
   = RRChatResponse {chatResponse :: ChatResponse}
-  | RRChatEvent {chatEvent :: Maybe ChatResponse} -- 'Nothing' on poll timeout
+  | RRChatEvent {chatEvent :: Maybe ChatEvent} -- 'Nothing' on poll timeout
   | RRFileStored {filePath :: String}
   | RRFile {fileSize :: Word32, fileDigest :: FileDigest} -- provides attachment , fileDigest :: FileDigest
   | RRProtocolError {remoteProcotolError :: RemoteProtocolError} -- The protocol error happened on the server side
@@ -115,10 +115,10 @@ remoteSend c cmd =
     RRChatResponse cr -> pure cr
     r -> badResponse r
 
-remoteRecv :: RemoteHostClient -> Int -> ExceptT RemoteProtocolError IO (Maybe ChatResponse)
+remoteRecv :: RemoteHostClient -> Int -> ExceptT RemoteProtocolError IO (Maybe ChatEvent)
 remoteRecv c ms =
   sendRemoteCommand' c Nothing RCRecv {wait = ms} >>= \case
-    RRChatEvent cr_ -> pure cr_
+    RRChatEvent cEvt_ -> pure cEvt_
     r -> badResponse r
 
 remoteStoreFile :: RemoteHostClient -> FilePath -> FilePath -> ExceptT RemoteProtocolError IO FilePath

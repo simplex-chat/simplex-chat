@@ -14,7 +14,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 
 data RcvGroupEvent
   = RGEMemberAdded {groupMemberId :: GroupMemberId, profile :: Profile} -- CRJoinedGroupMemberConnecting
-  | RGEMemberConnected -- CRUserJoinedGroup, CRJoinedGroupMember, CRConnectedToGroupMember
+  | RGEMemberConnected -- CEvtUserJoinedGroup, CRJoinedGroupMember, CEvtConnectedToGroupMember
   | RGEMemberAccepted {groupMemberId :: GroupMemberId, profile :: Profile}
   | RGEUserAccepted
   | RGEMemberLeft -- CRLeftMember
