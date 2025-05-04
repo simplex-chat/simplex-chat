@@ -233,7 +233,11 @@ public func parseChatData(_ jChat: Any, _ jNavInfo: Any? = nil) throws -> (ChatD
     let jChatDict = jChat as! NSDictionary
     let chatInfo: ChatInfo = try decodeObject(jChatDict["chatInfo"]!)
     let chatStats: ChatStats = try decodeObject(jChatDict["chatStats"]!)
-    let navInfo: NavigationInfo = jNavInfo == nil ? NavigationInfo() : try decodeObject((jNavInfo as! NSDictionary)["navInfo"]!)
+    let navInfo: NavigationInfo = if let jNavInfo = jNavInfo as? NSDictionary, let jNav = jNavInfo["navInfo"] {
+        try decodeObject(jNav)
+    } else {
+        NavigationInfo()
+    }
     let jChatItems = jChatDict["chatItems"] as! NSArray
     let chatItems = jChatItems.map { jCI in
         if let ci: ChatItem = try? decodeObject(jCI) {
