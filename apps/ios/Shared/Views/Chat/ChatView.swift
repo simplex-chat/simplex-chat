@@ -755,7 +755,7 @@ struct ChatView: View {
                             .contextMenu {
                                 Button {
                                     Task {
-                                        await markChatRead(chat)
+                                        await markChatRead(im, chat)
                                     }
                                 } label: {
                                     Label("Mark read", systemImage: "checkmark")
@@ -1281,7 +1281,7 @@ struct ChatView: View {
                     let (itemIds, unreadMentions) = unreadItemIds(range)
                     if !itemIds.isEmpty {
                         waitToMarkRead {
-                            await apiMarkChatItemsRead(chat.chatInfo, itemIds, mentionsRead: unreadMentions)
+                            await apiMarkChatItemsRead(im, chat.chatInfo, itemIds, mentionsRead: unreadMentions)
                             if (im.secondaryIMFilter != nil) {
                                 m.decreaseGroupSupportChatsUnreadCounter(chat.chatInfo.id, by: itemIds.count )
                             }
@@ -1289,7 +1289,7 @@ struct ChatView: View {
                     }
                 } else if chatItem.isRcvNew  {
                     waitToMarkRead {
-                        await apiMarkChatItemsRead(chat.chatInfo, [chatItem.id], mentionsRead: chatItem.meta.userMention ? 1 : 0)
+                        await apiMarkChatItemsRead(im, chat.chatInfo, [chatItem.id], mentionsRead: chatItem.meta.userMention ? 1 : 0)
                         if (im.secondaryIMFilter != nil) {
                             m.decreaseGroupSupportChatsUnreadCounter(chat.chatInfo.id)
                         }

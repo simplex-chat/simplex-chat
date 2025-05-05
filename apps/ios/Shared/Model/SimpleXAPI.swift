@@ -1541,13 +1541,13 @@ func apiGetNetworkStatuses() throws -> [ConnNetworkStatus] {
     throw r
 }
 
-func markChatRead(_ chat: Chat) async {
+func markChatRead(_ im: ItemsModel, _ chat: Chat) async {
     do {
         if chat.chatStats.unreadCount > 0 {
             let cInfo = chat.chatInfo
             try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, scope: cInfo.groupChatScope())
             await MainActor.run {
-                withAnimation { ChatModel.shared.markAllChatItemsRead(cInfo) }
+                withAnimation { ChatModel.shared.markAllChatItemsRead(im, cInfo) }
             }
         }
         if chat.chatStats.unreadChat {
@@ -1570,11 +1570,11 @@ func markChatUnread(_ chat: Chat, unreadChat: Bool = true) async {
     }
 }
 
-func apiMarkChatItemsRead(_ cInfo: ChatInfo, _ itemIds: [ChatItem.ID], mentionsRead: Int) async {
+func apiMarkChatItemsRead(_ im: ItemsModel, _ cInfo: ChatInfo, _ itemIds: [ChatItem.ID], mentionsRead: Int) async {
     do {
         try await apiChatItemsRead(type: cInfo.chatType, id: cInfo.apiId, scope: cInfo.groupChatScope(), itemIds: itemIds)
-        DispatchQueue.main.async {
-            ChatModel.shared.markChatItemsRead(cInfo, itemIds, mentionsRead)
+        await MainActor.run {
+            ChatModel.shared.markChatItemsRead(im, cInfo, itemIds, mentionsRead)
         }
     } catch {
         logger.error("apiChatItemsRead error: \(responseError(error))")
