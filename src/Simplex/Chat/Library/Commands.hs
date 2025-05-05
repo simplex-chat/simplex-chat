@@ -1304,7 +1304,7 @@ processChatCommand' vr = \case
           $>>= \user -> fmap (mkNtfConn user) . eitherToMaybe <$> runExceptT (getConnectionEntity db vr user agentConnId)
   APIGetConnNtfMessages connMsgs -> withUser $ \_ -> do
     msgs <- lift $ withAgent' (`getConnectionMessages` connMsgs)
-    let ntfMsgs = L.map (receivedMsgInfo <$>) msgs
+    let ntfMsgs = L.map receivedMsgInfo msgs
     pure $ CRConnNtfMessages ntfMsgs
   GetUserProtoServers (AProtocolType p) -> withUser $ \user -> withServerProtocol p $ do
     srvs <- withFastStore (`getUserServers` user)
