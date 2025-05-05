@@ -56,10 +56,13 @@ struct ChatView: View {
     @State private var allowLoadMoreItems: Bool = false
     @State private var ignoreLoadingRequests: Int64? = nil
     @State private var animatedScrollingInProgress: Bool = false
+    @State private var userSupportChatNavLinkActive = false
 
     @State private var scrollView: EndlessScrollView<MergedItem> = EndlessScrollView(frame: .zero)
 
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
+
+    let userSupportScopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
 
     var body: some View {
         if #available(iOS 16.0, *) {
@@ -75,6 +78,20 @@ struct ChatView: View {
     private var viewBody: some View {
         let cInfo = chat.chatInfo
         ZStack {
+            NavigationLink(isActive: $userSupportChatNavLinkActive) {
+                if let secondaryIM = chatModel.secondaryIM, case let .group(groupInfo, nil) = chat.chatInfo {
+                    let secChat = Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: userSupportScopeInfo), chatItems: [], chatStats: ChatStats())
+                    SecondaryChatView(
+                        chat: secChat,
+                        im: secondaryIM
+                    )
+                }
+            } label: {
+                EmptyView()
+            }
+            .frame(width: 1, height: 1)
+            .hidden()
+
             let wallpaperImage = theme.wallpaper.type.image
             let wallpaperType = theme.wallpaper.type
             let backgroundColor = theme.wallpaper.background ?? wallpaperType.defaultBackgroundColor(theme.base, theme.colors.background)
@@ -221,6 +238,13 @@ struct ChatView: View {
                             im.showLoadingProgress = chat.id
                         }
                     }
+                }
+            }
+            if case let .group(groupInfo, nil) = chat.chatInfo,
+               groupInfo.membership.memberPending {
+                let secIM = ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: userSupportScopeInfo))
+                secIM.loadOpenChat(chat.id) {
+                    userSupportChatNavLinkActive = true
                 }
             }
         }
