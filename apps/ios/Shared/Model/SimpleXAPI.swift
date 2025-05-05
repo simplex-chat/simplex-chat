@@ -35,7 +35,7 @@ enum TerminalItem: Identifiable {
     var label: String {
         switch self {
         case let .cmd(_, cmd): "> \(cmd.cmdString.prefix(30))"
-        case let .res(_, res): "< \(res.resultType)"
+        case let .res(_, res): "< \(res.responseType)"
         case let .err(_, err): "< error \(err.errorType)"
         case let .bad(_, type, _): "< * \(type)"
         }
@@ -103,7 +103,7 @@ func chatApiSendCmdSync<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = tru
                 ? withBGTask(bgDelay: bgDelay) { sendSimpleXCmd(cmd, ctrl) }
                 : sendSimpleXCmd(cmd, ctrl)
     if log {
-        logger.debug("chatSendCmd \(cmd.cmdType): \(resp.resultType)")
+        logger.debug("chatSendCmd \(cmd.cmdType): \(resp.responseType)")
         if case let .invalid(_, json) = resp {
             logger.debug("chatSendCmd \(cmd.cmdType) response: \(dataToString(json))")
         }
@@ -1994,7 +1994,7 @@ class ChatReceiver {
 func processReceivedMsg(_ res: ChatEvent) async {
     let m = ChatModel.shared
     let n = NetworkModel.shared
-    logger.debug("processReceivedMsg: \(res.resultType)")
+    logger.debug("processReceivedMsg: \(res.responseType)")
     switch res {
     case let .contactDeletedByContact(user, contact):
         if active(user) && contact.directOrUsed {
@@ -2492,14 +2492,14 @@ func processReceivedMsg(_ res: ChatEvent) async {
             }
         }
     default:
-        logger.debug("unsupported event: \(res.resultType)")
+        logger.debug("unsupported event: \(res.responseType)")
     }
 
     func withCall(_ contact: Contact, _ perform: (Call) async -> Void) async {
         if let call = m.activeCall, call.contact.apiId == contact.apiId {
             await perform(call)
         } else {
-            logger.debug("processReceivedMsg: ignoring \(res.resultType), not in call with the contact \(contact.id)")
+            logger.debug("processReceivedMsg: ignoring \(res.responseType), not in call with the contact \(contact.id)")
         }
     }
 }

@@ -57,7 +57,7 @@ enum NSEChatResponse: Decodable, ChatAPIResult {
     case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgAckInfo)
     case cmdOk(user_: UserRef?)
     
-    var resultType: String {
+    var responseType: String {
         switch self {
         case .activeUser: "activeUser"
         case .chatStarted: "chatStarted"
@@ -95,7 +95,7 @@ enum NSEChatEvent: Decodable, ChatAPIResult {
     case callInvitation(callInvitation: RcvCallInvitation)
     case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgAckInfo)
     
-    var resultType: String {
+    var responseType: String {
         switch self {
         case .chatSuspended: "chatSuspended"
         case .contactConnected: "contactConnected"

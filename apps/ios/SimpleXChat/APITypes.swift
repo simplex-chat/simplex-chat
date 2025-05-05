@@ -27,9 +27,9 @@ public enum APIResult<R>: Decodable where R: Decodable, R: ChatAPIResult {
     case error(ChatError)
     case invalid(type: String, json: Data)
     
-    public var resultType: String {
+    public var responseType: String {
         switch self {
-        case let .result(r): r.resultType
+        case let .result(r): r.responseType
         case let .error(e): "error \(e.errorType)"
         case let .invalid(type, _): "* \(type)"
         }
@@ -37,7 +37,7 @@ public enum APIResult<R>: Decodable where R: Decodable, R: ChatAPIResult {
     
     public var unexpected: ChatError {
         switch self {
-        case let .result(r): .unexpectedResult(type: r.resultType)
+        case let .result(r): .unexpectedResult(type: r.responseType)
         case let .error(e): e
         case let .invalid(type, _): .unexpectedResult(type: "* \(type)")
         }
@@ -60,13 +60,13 @@ public enum APIResult<R>: Decodable where R: Decodable, R: ChatAPIResult {
 }
 
 public protocol ChatAPIResult: Decodable {
-    var resultType: String { get }
+    var responseType: String { get }
     var details: String { get }
     static func fallbackResult(_ type: String, _ json: NSDictionary) -> Self?
 }
 
 extension ChatAPIResult {
-    public var noDetails: String { "\(self.resultType): no details" }
+    public var noDetails: String { "\(self.responseType): no details" }
     
     @inline(__always)
     public static func fallbackResult(_ type: String, _ json: NSDictionary) -> Self? {
@@ -75,7 +75,7 @@ extension ChatAPIResult {
     
     @inline(__always)
     public var unexpected: ChatError {
-        .unexpectedResult(type: self.resultType)
+        .unexpectedResult(type: self.responseType)
     }
 }
 

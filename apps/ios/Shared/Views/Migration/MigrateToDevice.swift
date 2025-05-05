@@ -516,7 +516,7 @@ struct MigrateToDevice: View {
                         alert = .error(title: "Download failed", error: "File was deleted or link is invalid")
                         migrationState = .downloadFailed(totalBytes: totalBytes, link: link, archivePath: archivePath)
                     default:
-                        logger.debug("unsupported event: \(msg.resultType)")
+                        logger.debug("unsupported event: \(msg.responseType)")
                     }
                 }
             }
@@ -774,7 +774,7 @@ private class MigrationChatReceiver {
             Task {
                 await TerminalItems.shared.addResult(msg)
             }
-            logger.debug("processReceivedMsg: \(msg.resultType)")
+            logger.debug("processReceivedMsg: \(msg.responseType)")
             await processReceivedMsg(msg)
         }
         if self.receiveMessages {

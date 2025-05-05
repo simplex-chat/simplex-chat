@@ -612,7 +612,7 @@ enum ChatResponse0: Decodable, ChatAPIResult {
     case connectionVerified(user: UserRef, verified: Bool, expectedCode: String)
     case tagsUpdated(user: UserRef, userTags: [ChatTag], chatTags: [Int64])
 
-    var resultType: String {
+    var responseType: String {
         switch self {
         case .activeUser: "activeUser"
         case .usersList: "usersList"
@@ -736,7 +736,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
     case chatItemsDeleted(user: UserRef, chatItemDeletions: [ChatItemDeletion], byUser: Bool)
     case contactsList(user: UserRef, contacts: [Contact])
 
-    var resultType: String {
+    var responseType: String {
         switch self {
         case .invitation: "invitation"
         case .connectionIncognitoUpdated: "connectionIncognitoUpdated"
@@ -871,7 +871,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     case archiveImported(archiveErrors: [ArchiveError])
     case appSettings(appSettings: AppSettings)
 
-    var resultType: String {
+    var responseType: String {
         switch self {
         case .groupCreated: "groupCreated"
         case .sentGroupInvitation: "sentGroupInvitation"
@@ -1036,7 +1036,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
     // pq
     case contactPQEnabled(user: UserRef, contact: Contact, pqEnabled: Bool)
     
-    var resultType: String {
+    var responseType: String {
         switch self {
         case .chatSuspended: "chatSuspended"
         case .contactSwitch: "contactSwitch"

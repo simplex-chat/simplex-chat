@@ -806,7 +806,7 @@ private let isInChina = SKStorefront().countryCode == "CHN"
 private func useCallKit() -> Bool { !isInChina && callKitEnabledGroupDefault.get() }
 
 func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)? {
-    logger.debug("NotificationService receivedMsgNtf: \(res.resultType)")
+    logger.debug("NotificationService receivedMsgNtf: \(res.responseType)")
     switch res {
     case let .contactConnected(user, contact, _):
         return (contact.id, .contactConnected(user, contact))
@@ -852,7 +852,7 @@ func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)?
         chatSuspended()
         return nil
     default:
-        logger.debug("NotificationService receivedMsgNtf ignored event: \(res.resultType)")
+        logger.debug("NotificationService receivedMsgNtf ignored event: \(res.responseType)")
         return nil
     }
 }
@@ -872,7 +872,7 @@ func updateNetCfg() {
 
 func apiGetActiveUser() -> User? {
     let r: APIResult<NSEChatResponse> = sendSimpleXCmd(NSEChatCommand.showActiveUser)
-    logger.debug("apiGetActiveUser sendSimpleXCmd response: \(r.resultType)")
+    logger.debug("apiGetActiveUser sendSimpleXCmd response: \(r.responseType)")
     switch r {
     case let .result(.activeUser(user)): return user
     case .error(.error(.noActiveUser)):
@@ -935,7 +935,7 @@ func apiGetNtfConns(nonce: String, encNtfInfo: String) -> [NtfConn]? {
     } else if case let .error(error) = r {
         logger.debug("apiGetNtfMessage error response: \(String.init(describing: error))")
     } else {
-        logger.debug("apiGetNtfMessage ignored response: \(r.resultType) \(String.init(describing: r))")
+        logger.debug("apiGetNtfMessage ignored response: \(r.responseType) \(String.init(describing: r))")
     }
     return nil
 }

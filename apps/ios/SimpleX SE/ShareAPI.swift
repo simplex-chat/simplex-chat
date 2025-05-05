@@ -159,7 +159,7 @@ enum SEChatResponse: Decodable, ChatAPIResult {
     case newChatItems(user: UserRef, chatItems: [AChatItem])
     case cmdOk(user_: UserRef?)
     
-    var resultType: String {
+    var responseType: String {
         switch self {
         case .activeUser: "activeUser"
         case .chatStarted: "chatStarted"
@@ -200,7 +200,7 @@ enum SEChatEvent: Decodable, ChatAPIResult {
     case sndFileError(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta, errorMessage: String)
     case sndFileWarning(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta, errorMessage: String)
     
-    var resultType: String {
+    var responseType: String {
         switch self {
         case .chatSuspended: "chatSuspended"
         case .sndFileProgressXFTP: "sndFileProgressXFTP"

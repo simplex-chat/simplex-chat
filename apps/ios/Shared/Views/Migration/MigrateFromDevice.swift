@@ -550,7 +550,7 @@ struct MigrateFromDevice: View {
                         alert = .error(title: "Upload failed", error: "Check your internet connection and try again")
                         migrationState = .uploadFailed(totalBytes: totalBytes, archivePath: archivePath)
                     default:
-                        logger.debug("unsupported event: \(msg.resultType)")
+                        logger.debug("unsupported event: \(msg.responseType)")
                     }
                 }
             }
@@ -756,7 +756,7 @@ private class MigrationChatReceiver {
             Task {
                 await TerminalItems.shared.addResult(msg)
             }
-            logger.debug("processReceivedMsg: \(msg.resultType)")
+            logger.debug("processReceivedMsg: \(msg.responseType)")
             await processReceivedMsg(msg)
         }
         if self.receiveMessages {
