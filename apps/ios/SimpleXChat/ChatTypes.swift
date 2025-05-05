@@ -1201,7 +1201,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
     case local(noteFolder: NoteFolder)
     case contactRequest(contactRequest: UserContactRequest)
     case contactConnection(contactConnection: PendingContactConnection)
-    case invalidJSON(json: String)
+    case invalidJSON(json: Data?)
 
     private static let invalidChatName = NSLocalizedString("invalid chat", comment: "invalid chat data")
 
@@ -1589,7 +1589,7 @@ public struct ChatData: Decodable, Identifiable, Hashable, ChatLike {
         self.chatStats = chatStats
     }
     
-    public static func invalidJSON(_ json: String) -> ChatData {
+    public static func invalidJSON(_ json: Data?) -> ChatData {
         ChatData(
             chatInfo: .invalidJSON(json: json),
             chatItems: [],
@@ -2905,7 +2905,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         return item
     }
 
-    public static func invalidJSON(chatDir: CIDirection?, meta: CIMeta?, json: String) -> ChatItem {
+    public static func invalidJSON(chatDir: CIDirection?, meta: CIMeta?, json: Data?) -> ChatItem {
         ChatItem(
             chatDir: chatDir ?? .directSnd,
             meta: meta ?? .invalidJSON,
@@ -3352,7 +3352,7 @@ public enum CIContent: Decodable, ItemContent, Hashable {
     case rcvDirectE2EEInfo(e2eeInfo: E2EEInfo)
     case sndGroupE2EEInfo(e2eeInfo: E2EEInfo)
     case rcvGroupE2EEInfo(e2eeInfo: E2EEInfo)
-    case invalidJSON(json: String)
+    case invalidJSON(json: Data?)
 
     public var text: String {
         get {

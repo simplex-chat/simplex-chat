@@ -46,7 +46,7 @@ public func chatMigrateInit(_ useKey: String? = nil, confirmMigrations: Migratio
     var cConfirm = confirm.rawValue.cString(using: .utf8)!
     // the last parameter of chat_migrate_init is used to return the pointer to chat controller
     let cjson = chat_migrate_init_key(&cPath, &cKey, 1, &cConfirm, backgroundMode ? 1 : 0, &chatController)!
-    let dbRes = dbMigrationResult(fromCString(cjson))
+    let dbRes = dbMigrationResult(dataFromCString(cjson))
     let encrypted = dbKey != ""
     let keychainErr = dbRes == .ok && useKeychain && encrypted && !kcDatabasePassword.set(dbKey)
     let result = (encrypted, keychainErr ? .errorKeychain : dbRes)
@@ -63,7 +63,7 @@ public func chatInitTemporaryDatabase(url: URL, key: String? = nil, confirmation
     var cKey = dbKey.cString(using: .utf8)!
     var cConfirm = confirmation.rawValue.cString(using: .utf8)!
     let cjson = chat_migrate_init_key(&cPath, &cKey, 1, &cConfirm, 0, &temporaryController)!
-    return (dbMigrationResult(fromCString(cjson)), temporaryController)
+    return (dbMigrationResult(dataFromCString(cjson)), temporaryController)
 }
 
 public func chatInitControllerRemovingDatabases() {
@@ -110,27 +110,42 @@ public func resetChatCtrl() {
     migrationResult = nil
 }
 
-public func sendSimpleXCmd<CR: ChatRespProtocol>(_ cmd: ChatCmdProtocol, _ ctrl: chat_ctrl? = nil) -> CR {
-    var c = cmd.cmdString.cString(using: .utf8)!
-    let cjson  = chat_send_cmd(ctrl ?? getChatCtrl(), &c)!
-    return CR.chatResponse(fromCString(cjson))
+@inline(__always)
+public func sendSimpleXCmd<R: ChatAPIResult>(_ cmd: ChatCmdProtocol, _ ctrl: chat_ctrl? = nil) -> APIResult<R> {
+    if let d = sendSimpleXCmdStr(cmd.cmdString, ctrl) {    
+        decodeAPIResult(d)
+    } else {
+        APIResult.error(.invalidJSON(json: nil))
+    }
+}
+
+@inline(__always)
+public func sendSimpleXCmdStr(_ cmd: String, _ ctrl: chat_ctrl? = nil) -> Data? {
+    var c = cmd.cString(using: .utf8)!
+    return if let cjson = chat_send_cmd(ctrl ?? getChatCtrl(), &c) {
+        dataFromCString(cjson)
+    } else {
+        nil
+    }
 }
 
 // in microseconds
 public let MESSAGE_TIMEOUT: Int32 = 15_000_000
 
-public func recvSimpleXMsg<CEvt: ChatEventProtocol>(_ ctrl: chat_ctrl? = nil, messageTimeout: Int32 = MESSAGE_TIMEOUT) -> CEvt? {
-    if let cjson = chat_recv_msg_wait(ctrl ?? getChatCtrl(), messageTimeout) {
-        let s = fromCString(cjson)
-        return s == "" ? nil : CEvt.chatEvent(s)
+@inline(__always)
+public func recvSimpleXMsg<R: ChatAPIResult>(_ ctrl: chat_ctrl? = nil, messageTimeout: Int32 = MESSAGE_TIMEOUT) -> APIResult<R>? {
+    if let cjson = chat_recv_msg_wait(ctrl ?? getChatCtrl(), messageTimeout),
+       let d = dataFromCString(cjson) {
+        decodeAPIResult(d)
+    } else {
+        nil
     }
-    return nil
 }
 
 public func parseSimpleXMarkdown(_ s: String) -> [FormattedText]? {
     var c = s.cString(using: .utf8)!
     if let cjson = chat_parse_markdown(&c) {
-        if let d = fromCString(cjson).data(using: .utf8) {
+        if let d = dataFromCString(cjson) {
             do {
                 let r = try jsonDecoder.decode(ParsedMarkdown.self, from: d)
                 return r.formattedText
@@ -154,7 +169,7 @@ struct ParsedMarkdown: Decodable {
 public func parseServerAddress(_ s: String) -> ServerAddress? {
     var c = s.cString(using: .utf8)!
     if let cjson = chat_parse_server(&c) {
-         if let d = fromCString(cjson).data(using: .utf8) {
+         if let d = dataFromCString(cjson) {
             do {
                 let r = try jsonDecoder.decode(ParsedServerAddress.self, from: d)
                 return r.serverAddress
@@ -171,10 +186,31 @@ struct ParsedServerAddress: Decodable {
     var parseError: String
 }
 
+@inline(__always)
 public func fromCString(_ c: UnsafeMutablePointer<CChar>) -> String {
     let s = String.init(cString: c)
     free(c)
     return s
+}
+
+@inline(__always)
+public func dataFromCString(_ c: UnsafeMutablePointer<CChar>) -> Data? {
+    let len = strlen(c)
+    if len > 0 {
+        return Data(bytesNoCopy: c, count: len, deallocator: .free)
+    } else {
+        free(c)
+        return nil
+    }
+}
+
+@inline(__always)
+public func dataToString(_ d: Data?) -> String {
+    if let d {
+        String(data: d, encoding: .utf8) ?? "invalid string"
+    } else {
+        "no data"
+    }
 }
 
 public func decodeUser_(_ jDict: NSDictionary) -> UserRef? {
@@ -185,7 +221,7 @@ public func decodeUser_(_ jDict: NSDictionary) -> UserRef? {
     }
 }
 
-public func errorJson(_ jDict: NSDictionary) -> String? {
+public func errorJson(_ jDict: NSDictionary) -> Data? {
     if let chatError = jDict["chatError"] {
         serializeJSON(chatError)
     } else {
@@ -197,7 +233,11 @@ public func parseChatData(_ jChat: Any, _ jNavInfo: Any? = nil) throws -> (ChatD
     let jChatDict = jChat as! NSDictionary
     let chatInfo: ChatInfo = try decodeObject(jChatDict["chatInfo"]!)
     let chatStats: ChatStats = try decodeObject(jChatDict["chatStats"]!)
-    let navInfo: NavigationInfo = jNavInfo == nil ? NavigationInfo() : try decodeObject((jNavInfo as! NSDictionary)["navInfo"]!)
+    let navInfo: NavigationInfo = if let jNavInfo = jNavInfo as? NSDictionary, let jNav = jNavInfo["navInfo"] {
+        try decodeObject(jNav)
+    } else {
+        NavigationInfo()
+    }
     let jChatItems = jChatDict["chatItems"] as! NSArray
     let chatItems = jChatItems.map { jCI in
         if let ci: ChatItem = try? decodeObject(jCI) {
@@ -206,16 +246,18 @@ public func parseChatData(_ jChat: Any, _ jNavInfo: Any? = nil) throws -> (ChatD
         return ChatItem.invalidJSON(
             chatDir: decodeProperty(jCI, "chatDir"),
             meta: decodeProperty(jCI, "meta"),
-            json: serializeJSON(jCI, options: .prettyPrinted) ?? ""
+            json: serializeJSON(jCI, options: .prettyPrinted)
         )
     }
     return (ChatData(chatInfo: chatInfo, chatItems: chatItems, chatStats: chatStats), navInfo)
 }
 
+@inline(__always)
 public func decodeObject<T: Decodable>(_ obj: Any) throws -> T {
     try jsonDecoder.decode(T.self, from: JSONSerialization.data(withJSONObject: obj))
 }
 
+@inline(__always)
 func decodeProperty<T: Decodable>(_ obj: Any, _ prop: NSString) -> T? {
     if let jProp = (obj as? NSDictionary)?[prop] {
         return try? decodeObject(jProp)
@@ -223,28 +265,52 @@ func decodeProperty<T: Decodable>(_ obj: Any, _ prop: NSString) -> T? {
     return nil
 }
 
-public func serializeJSON(_ obj: Any, options: JSONSerialization.WritingOptions = []) -> String? {
-    if let d = try? JSONSerialization.data(withJSONObject: obj, options: options) {
-        return String(decoding: d, as: UTF8.self)
+@inline(__always)
+func getOWSF(_ obj: NSDictionary, _ prop: NSString) -> (type: String, object: NSDictionary)? {
+    if let j = obj[prop] as? NSDictionary, j.count == 1 || j.count == 2 {
+        var type = j.allKeys[0] as? String
+        if j.count == 2 && type == "_owsf" {
+            type = j.allKeys[1] as? String
+        }
+        if let type {
+            return (type, j)
+        }
     }
     return nil
 }
 
+@inline(__always)
+public func serializeJSON(_ obj: Any, options: JSONSerialization.WritingOptions = []) -> Data? {
+    if let d = try? JSONSerialization.data(withJSONObject: obj, options: options) {
+        dataPrefix(d)
+    } else {
+        nil
+    }
+}
+
+let MAX_JSON_VIEW_LENGTH = 2048
+
+@inline(__always)
+public func dataPrefix(_ d: Data) -> Data {
+    d.count > MAX_JSON_VIEW_LENGTH
+    ? Data(d.prefix(MAX_JSON_VIEW_LENGTH))
+    : d
+}
+
 public func responseError(_ err: Error) -> String {
-    if let r = err as? ChatRespProtocol {
-        if let e = r.chatError {
-            chatErrorString(e)
-        } else {
-            "\(String(describing: r.responseType)), details: \(String(describing: r.details))"
-        }
+    if let e = err as? ChatError {
+        chatErrorString(e)
     } else {
         String(describing: err)
     }
 }
 
 public func chatErrorString(_ err: ChatError) -> String {
-    if case let .invalidJSON(json) = err { return json }
-    return String(describing: err)
+    switch err {
+    case let .invalidJSON(json): dataToString(json)
+    case let .unexpectedResult(type): "unexpected result: \(type)"
+    default: String(describing: err)
+    }
 }
 
 public enum DBMigrationResult: Decodable, Equatable {
@@ -283,15 +349,15 @@ public enum MTRError: Decodable, Equatable {
     case different(appMigration: String, dbMigration: String)
 }
 
-func dbMigrationResult(_ s: String) -> DBMigrationResult {
-    let d = s.data(using: .utf8)!
-// TODO is there a way to do it without copying the data? e.g:
-//    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
-//    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
-    do {
-        return try jsonDecoder.decode(DBMigrationResult.self, from: d)
-    } catch let error {
-        logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
-        return .unknown(json: s)
+func dbMigrationResult(_ d: Data?) -> DBMigrationResult {
+    if let d {
+        do {
+            return try jsonDecoder.decode(DBMigrationResult.self, from: d)
+        } catch let error {
+            logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
+            return .unknown(json: dataToString(d))
+        }
+    } else {
+        return .unknown(json: "no data")
     }
 }

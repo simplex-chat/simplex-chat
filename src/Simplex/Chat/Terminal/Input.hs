@@ -64,12 +64,14 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
       rh' = if either (const False) allowRemoteCommand cmd then rh else Nothing
   unless (isMessage cmd) $ echo s
   r <- runReaderT (execChatCommand rh' bs) cc
-  processResp s cmd rh r
+  case r of
+    Right r' -> processResp cmd rh r'
+    Left _ -> when (isMessage cmd) $ echo s
   printRespToTerminal ct cc False rh r
-  startLiveMessage cmd r
+  mapM_ (startLiveMessage cmd) r
   where
     echo s = printToTerminal ct [plain s]
-    processResp s cmd rh = \case
+    processResp cmd rh = \case
       CRActiveUser u -> case rh of
         Nothing -> setActive ct ""
         Just rhId -> updateRemoteUser ct u rhId
@@ -80,7 +82,6 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
       CRContactDeleted u c -> whenCurrUser cc u $ unsetActiveContact ct c
       CRGroupDeletedUser u g -> whenCurrUser cc u $ unsetActiveGroup ct g
       CRSentGroupInvitation u g _ _ -> whenCurrUser cc u $ setActiveGroup ct g
-      CRChatCmdError _ _ -> when (isMessage cmd) $ echo s
       CRCmdOk _ -> case cmd of
         Right APIDeleteUser {} -> setActive ct ""
         _ -> pure ()
@@ -132,7 +133,7 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
         updateLiveMessage typedMsg lm = case liveMessageToSend typedMsg lm of
           Just sentMsg ->
             sendUpdatedLiveMessage cc sentMsg lm True >>= \case
-              CRChatItemUpdated {} -> setLiveMessage lm {sentMsg, typedMsg}
+              Right CRChatItemUpdated {} -> setLiveMessage lm {sentMsg, typedMsg}
               _ -> do
                 -- TODO print error
                 setLiveMessage lm {typedMsg}
@@ -146,10 +147,10 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
               | otherwise = (s <> reverse (c : w), "")
     startLiveMessage _ _ = pure ()
 
-sendUpdatedLiveMessage :: ChatController -> String -> LiveMessage -> Bool -> IO ChatResponse
+sendUpdatedLiveMessage :: ChatController -> String -> LiveMessage -> Bool -> IO (Either ChatError ChatResponse)
 sendUpdatedLiveMessage cc sentMsg LiveMessage {chatName, chatItemId} live = do
   let cmd = UpdateLiveMessage chatName chatItemId live $ T.pack sentMsg
-  either (CRChatCmdError Nothing) id <$> runExceptT (processChatCommand cmd) `runReaderT` cc
+  runExceptT (processChatCommand cmd) `runReaderT` cc
 
 runTerminalInput :: ChatTerminal -> ChatController -> IO ()
 runTerminalInput ct cc = withChatTerm ct $ do

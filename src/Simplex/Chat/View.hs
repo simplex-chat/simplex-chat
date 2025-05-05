@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -38,7 +39,6 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Version as V
 import qualified Network.HTTP.Types as Q
 import Numeric (showFFloat)
-import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Help
@@ -87,15 +87,26 @@ data WCallCommand
 
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "WCCall") ''WCallCommand)
 
-serializeChatResponse :: ChatResponseEvent r => (Maybe RemoteHostId, Maybe User) -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> r -> String
-serializeChatResponse user_ ts tz remoteHost_ = unlines . map unStyle . responseToView user_ defaultChatConfig False ts tz remoteHost_
+serializeChatError :: Bool -> ChatConfig -> ChatError -> String
+serializeChatError isCmd cfg = unlines . map unStyle . chatErrorToView isCmd cfg
+
+serializeChatResponse :: ChatResponseEvent r => (Maybe RemoteHostId, Maybe User) -> ChatConfig -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> r -> String
+serializeChatResponse hu cfg ts tz remoteHost_ = unlines . map unStyle . responseToView hu cfg False ts tz remoteHost_
 
 class ChatResponseEvent r where
   responseToView :: (Maybe RemoteHostId, Maybe User) -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> r -> [StyledString]
+  isCommandResponse :: Bool
 
-instance ChatResponseEvent ChatResponse where responseToView = chatResponseToView
+instance ChatResponseEvent ChatResponse where
+  responseToView = chatResponseToView
+  isCommandResponse = True
 
-instance ChatResponseEvent ChatEvent where responseToView = chatEventToView
+instance ChatResponseEvent ChatEvent where
+  responseToView = chatEventToView
+  isCommandResponse = False
+
+chatErrorToView :: Bool -> ChatConfig -> ChatError -> [StyledString]
+chatErrorToView isCmd ChatConfig {logLevel, testView} = viewChatError isCmd logLevel testView
 
 chatResponseToView :: (Maybe RemoteHostId, Maybe User) -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatResponse -> [StyledString]
 chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveItems ts tz outputRH = \case
@@ -286,7 +297,6 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
     [ "agent queues info:",
       plain . LB.unpack $ J.encode agentQueuesInfo
     ]
-  CRChatCmdError u e -> ttyUserPrefix' u $ viewChatError True logLevel testView e
   CRAppSettings as -> ["app settings: " <> viewJSON as]
   CRCustomChatResponse u r -> ttyUser' u $ map plain $ T.lines r
   where
@@ -296,8 +306,6 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
       | otherwise = []
     ttyUser' :: Maybe User -> [StyledString] -> [StyledString]
     ttyUser' = maybe id ttyUser
-    ttyUserPrefix' :: Maybe User -> [StyledString] -> [StyledString]
-    ttyUserPrefix' = maybe id $ ttyUserPrefix hu outputRH
     testViewChats :: [AChat] -> [StyledString]
     testViewChats chats = [sShow $ map toChatView chats]
       where
@@ -499,8 +507,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtAgentConnsDeleted acIds -> ["completed deleting connections: " <> sShow (length acIds) | logLevel <= CLLInfo]
   CEvtAgentUserDeleted auId -> ["completed deleting user" <> if logLevel <= CLLInfo then ", agent user id: " <> sShow auId else ""]
   CEvtMessageError u prefix err -> ttyUser u [plain prefix <> ": " <> plain err | prefix == "error" || logLevel <= CLLWarning]
-  CEvtChatError u e -> ttyUser' u $ viewChatError False logLevel testView e
-  CEvtChatErrors u errs -> ttyUser' u $ concatMap (viewChatError False logLevel testView) errs
+  CEvtChatErrors errs -> concatMap (viewChatError False logLevel testView) errs
   CEvtTimedAction _ _ -> []
   CEvtTerminalEvent te -> case te of
     TERejectingGroupJoinRequestMember _ g m reason -> [ttyFullMember m <> ": rejecting request to join group " <> ttyGroup' g <> ", reason: " <> sShow reason]

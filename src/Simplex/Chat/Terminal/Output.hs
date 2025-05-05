@@ -7,6 +7,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Simplex.Chat.Terminal.Output where
 
@@ -146,19 +147,19 @@ withTermLock ChatTerminal {termLock} action = do
 runTerminalOutput :: ChatTerminal -> ChatController -> ChatOpts -> IO ()
 runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} ChatOpts {markRead} = do
   forever $ do
-    (outputRH, r) <- atomically $ readTBQueue outputQ
-    case r of
+    (outputRH, r_) <- atomically $ readTBQueue outputQ
+    forM_ r_ $ \case
       CEvtNewChatItems u (ci : _) -> when markRead $ markChatItemRead u ci -- At the moment of writing received items are created one at a time
       CEvtChatItemUpdated u ci -> when markRead $ markChatItemRead u ci
       CEvtRemoteHostConnected {remoteHost = RemoteHostInfo {remoteHostId}} -> getRemoteUser remoteHostId
       CEvtRemoteHostStopped {remoteHostId_} -> mapM_ removeRemoteUser remoteHostId_
       _ -> pure ()
     let printEvent = case logFilePath of
-          Just path -> if logEventToFile r then logResponse path else printToTerminal ct
+          Just path -> if either (const True) logEventToFile r_ then logResponse path else printToTerminal ct
           _ -> printToTerminal ct
     liveItems <- readTVarIO showLiveItems
-    responseString ct cc liveItems outputRH r >>= printEvent
-    chatEventNotification ct cc r
+    responseString ct cc liveItems outputRH r_ >>= printEvent
+    mapM_ (chatEventNotification ct cc) r_
   where
     markChatItemRead u (AChatItem _ _ chat ci@ChatItem {chatDir, meta = CIMeta {itemStatus}}) =
       case (chatDirNtf u chat chatDir (isUserMention ci), itemStatus) of
@@ -170,7 +171,7 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} Cha
     logResponse path s = withFile path AppendMode $ \h -> mapM_ (hPutStrLn h . unStyle) s
     getRemoteUser rhId =
       runReaderT (execChatCommand (Just rhId) "/user") cc >>= \case
-        CRActiveUser {user} -> updateRemoteUser ct user rhId
+        Right CRActiveUser {user} -> updateRemoteUser ct user rhId
         cr -> logError $ "Unexpected reply while getting remote user: " <> tshow cr
     removeRemoteUser rhId = atomically $ TM.delete rhId (currentRemoteUsers ct)
 
@@ -271,15 +272,17 @@ whenCurrUser cc u a = do
   where
     sameUser User {userId = uId} = maybe False $ \User {userId} -> userId == uId
 
-printRespToTerminal :: ChatTerminal -> ChatController -> Bool -> Maybe RemoteHostId -> ChatResponse -> IO ()
+printRespToTerminal :: ChatTerminal -> ChatController -> Bool -> Maybe RemoteHostId -> Either ChatError ChatResponse -> IO ()
 printRespToTerminal ct cc liveItems outputRH r = responseString ct cc liveItems outputRH r >>= printToTerminal ct
 
-responseString :: ChatResponseEvent r => ChatTerminal -> ChatController -> Bool -> Maybe RemoteHostId -> r -> IO [StyledString]
-responseString ct cc liveItems outputRH r = do
-  cu <- getCurrentUser ct cc
-  ts <- getCurrentTime
-  tz <- getCurrentTimeZone
-  pure $ responseToView cu (config cc) liveItems ts tz outputRH r
+responseString :: forall r. ChatResponseEvent r => ChatTerminal -> ChatController -> Bool -> Maybe RemoteHostId -> Either ChatError r -> IO [StyledString]
+responseString ct cc liveItems outputRH = \case
+  Right r -> do
+    cu <- getCurrentUser ct cc
+    ts <- getCurrentTime
+    tz <- getCurrentTimeZone
+    pure $ responseToView cu (config cc) liveItems ts tz outputRH r
+  Left e -> pure $ chatErrorToView (isCommandResponse @r) (config cc) e
 
 updateRemoteUser :: ChatTerminal -> User -> RemoteHostId -> IO ()
 updateRemoteUser ct user rhId = atomically $ TM.insert rhId user (currentRemoteUsers ct)

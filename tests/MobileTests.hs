@@ -29,7 +29,7 @@ import Foreign.Storable (peek)
 import GHC.IO.Encoding (setLocaleEncoding, setFileSystemEncoding, setForeignEncoding)
 import JSONFixtures
 import Simplex.Chat.Controller (ChatController (..))
-import Simplex.Chat.Mobile
+import Simplex.Chat.Mobile hiding (error)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Mobile.WebRTC

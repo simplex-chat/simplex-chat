@@ -579,14 +579,14 @@ struct ChatListNavLink: View {
         )
     }
 
-    private func invalidJSONPreview(_ json: String) -> some View {
+    private func invalidJSONPreview(_ json: Data?) -> some View {
         Text("invalid chat data")
             .foregroundColor(.red)
             .padding(4)
             .frame(height: dynamicRowHeight)
             .onTapGesture { showInvalidJSON = true }
             .appSheet(isPresented: $showInvalidJSON) {
-                invalidJSONView(json)
+                invalidJSONView(dataToString(json))
                     .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
             }
     }
@@ -689,7 +689,7 @@ func joinGroup(_ groupId: Int64, _ onComplete: @escaping () async -> Void) {
 }
 
 func getErrorAlert(_ error: Error, _ title: LocalizedStringKey) -> ErrorAlert {
-    if let r = error as? ChatResponse,
+    if let r = error as? ChatError,
        let alert = getNetworkErrorAlert(r) {
         return alert
     } else {

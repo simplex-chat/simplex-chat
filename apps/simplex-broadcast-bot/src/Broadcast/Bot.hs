@@ -39,17 +39,17 @@ broadcastBot BroadcastBotOpts {publishers, welcomeMessage, prohibitedMessage} _u
   race_ (forever $ void getLine) . forever $ do
     (_, evt) <- atomically . readTBQueue $ outputQ cc
     case evt of
-      CEvtContactConnected _ ct _ -> do
+      Right (CEvtContactConnected _ ct _) -> do
         contactConnected ct
         sendMessage cc ct welcomeMessage
-      CEvtNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat ct) ci@ChatItem {content = CIRcvMsgContent mc}) : _}
+      Right CEvtNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat ct) ci@ChatItem {content = CIRcvMsgContent mc}) : _}
         | sender `notElem` publishers -> do
             sendReply prohibitedMessage
             deleteMessage cc ct $ chatItemId' ci
         | allowContent mc ->
             void $ forkIO $
               sendChatCmd cc (SendMessageBroadcast mc) >>= \case
-                CRBroadcastSent {successes, failures} ->
+                Right CRBroadcastSent {successes, failures} ->
                   sendReply $ "Forwarded to " <> tshow successes <> " contact(s), " <> tshow failures <> " errors"
                 r -> putStrLn $ "Error broadcasting message: " <> show r
         | otherwise ->

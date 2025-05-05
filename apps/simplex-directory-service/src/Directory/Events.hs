@@ -63,8 +63,16 @@ data DirectoryEvent
   | DELogChatResponse Text
   deriving (Show)
 
-crDirectoryEvent :: ChatEvent -> Maybe DirectoryEvent
+crDirectoryEvent :: Either ChatError ChatEvent -> Maybe DirectoryEvent
 crDirectoryEvent = \case
+  Right evt -> crDirectoryEvent_ evt
+  Left e -> case e of
+    ChatErrorAgent {agentError = BROKER _ NETWORK} -> Nothing
+    ChatErrorAgent {agentError = BROKER _ TIMEOUT} -> Nothing
+    _ -> Just $ DELogChatResponse $ "chat error: " <> tshow e
+
+crDirectoryEvent_ :: ChatEvent -> Maybe DirectoryEvent
+crDirectoryEvent_ = \case
   CEvtContactConnected {contact} -> Just $ DEContactConnected contact
   CEvtReceivedGroupInvitation {contact, groupInfo, fromMemberRole, memberRole} -> Just $ DEGroupInvitation {contact, groupInfo, fromMemberRole, memberRole}
   CEvtUserJoinedGroup {groupInfo, hostMember} -> (\contactId -> DEServiceJoinedGroup {contactId, groupInfo, hostMember}) <$> memberContactId hostMember
@@ -92,10 +100,6 @@ crDirectoryEvent = \case
       ciId = chatItemId' ci
       err = ADC SDRUser DCUnknownCommand
   CEvtMessageError {severity, errorMessage} -> Just $ DELogChatResponse $ "message error: " <> severity <> ", " <> errorMessage
-  CEvtChatError {chatError} -> case chatError of
-    ChatErrorAgent {agentError = BROKER _ NETWORK} -> Nothing
-    ChatErrorAgent {agentError = BROKER _ TIMEOUT} -> Nothing
-    _ -> Just $ DELogChatResponse $ "chat error: " <> tshow chatError
   CEvtChatErrors {chatErrors} -> Just $ DELogChatResponse $ "chat errors: " <> T.intercalate ", " (map tshow chatErrors)
   _ -> Nothing
   where
