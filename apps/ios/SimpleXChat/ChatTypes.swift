@@ -2409,6 +2409,19 @@ public enum ConnectionEntity: Decodable, Hashable {
             nil
         }
     }
+    
+    // public var localDisplayName: String? {
+    //     switch self {
+    //     case let .rcvDirectMsgConnection(conn, contact):
+    //         if let name = contact?.localDisplayName { "@\(name)" } else { conn.id }
+    //     case let .rcvGroupMsgConnection(_, g, m):
+    //         "#\(g.localDisplayName) @\(m.localDisplayName)"
+    //     case let .userContactConnection(_, userContact):
+    //         userContact.id
+    //     default:
+    //         nil
+    //     }
+    // }
 
     public var conn: Connection {
         switch self {
@@ -2432,6 +2445,21 @@ public struct NtfConn: Decodable, Hashable {
 public struct NtfMsgInfo: Decodable, Hashable {
     public var msgId: String
     public var msgTs: Date
+}
+
+public enum RcvNtfMsgInfo: Decodable {
+    case info(ntfMsgInfo: NtfMsgInfo?)
+    case error(ntfMsgError: AgentErrorType)
+    
+    @inline(__always)
+    public var noMsg: Bool {
+        if case let .info(msg) = self { msg == nil } else { true }
+    }
+
+    @inline(__always)
+    public var isError: Bool {
+        if case .error = self { true } else { false }
+    }
 }
 
 let iso8601DateFormatter = {
