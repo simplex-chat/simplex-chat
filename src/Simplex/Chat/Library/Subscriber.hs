@@ -96,14 +96,14 @@ processAgentMessage _ _ (DEL_RCVQS delQs) =
 processAgentMessage _ _ (DEL_CONNS connIds) =
   toView $ CEvtAgentConnsDeleted $ L.map AgentConnId connIds
 processAgentMessage _ "" (ERR e) =
-  toView $ CEvtChatError Nothing $ ChatErrorAgent e Nothing
+  eToView $ ChatErrorAgent e Nothing
 processAgentMessage corrId connId msg = do
   lockEntity <- critical (withStore (`getChatLockEntity` AgentConnId connId))
   withEntityLock "processAgentMessage" lockEntity $ do
     vr <- chatVersionRange
     -- getUserByAConnId never throws logical errors, only SEDBBusyError can be thrown here
     critical (withStore' (`getUserByAConnId` AgentConnId connId)) >>= \case
-      Just user -> processAgentMessageConn vr user corrId connId msg `catchChatError` (toView . CEvtChatError (Just user))
+      Just user -> processAgentMessageConn vr user corrId connId msg `catchChatError` eToView
       _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
 
 -- CRITICAL error will be shown to the user as alert with restart button in Android/desktop apps.
@@ -144,7 +144,7 @@ processAgentMessageNoConn = \case
     errsEvent cErrs = do
       vr <- chatVersionRange
       errs <- lift $ rights <$> withStoreBatch' (\db -> map (getChatErr vr db) cErrs)
-      toView $ CEvtChatErrors Nothing errs
+      toView $ CEvtChatErrors errs
       where
         getChatErr :: VersionRangeChat -> DB.Connection -> (ConnId, AgentErrorType) -> IO ChatError
         getChatErr vr db (connId, err) =
@@ -156,7 +156,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
   (cRef_, fileId) <- withStore (`getXFTPSndFileDBIds` AgentSndFileId aFileId)
   withEntityLock_ cRef_ . withFileLock "processAgentMsgSndFile" fileId $
     withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
-      Just user -> process user fileId `catchChatError` (toView . CEvtChatError (Just user))
+      Just user -> process user fileId `catchChatError` eToView
       _ -> do
         lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
         throwChatError $ CENoSndFileUser $ AgentSndFileId aFileId
@@ -208,9 +208,9 @@ processAgentMsgSndFile _corrId aFileId msg = do
                         Just rs -> case L.last rs of
                           Right ([msgDeliveryId], _) ->
                             withStore' $ \db -> updateSndFTDeliveryXFTP db sft msgDeliveryId
-                          Right (deliveryIds, _) -> toView $ CEvtChatError (Just user) $ ChatError $ CEInternalError $ "SFDONE, sendFileDescriptions: expected 1 delivery id, got " <> show (length deliveryIds)
-                          Left e -> toView $ CEvtChatError (Just user) e
-                        Nothing -> toView $ CEvtChatError (Just user) $ ChatError $ CEInternalError "SFDONE, sendFileDescriptions: expected at least 1 result"
+                          Right (deliveryIds, _) -> eToView $ ChatError $ CEInternalError $ "SFDONE, sendFileDescriptions: expected 1 delivery id, got " <> show (length deliveryIds)
+                          Left e -> eToView e
+                        Nothing -> eToView $ ChatError $ CEInternalError "SFDONE, sendFileDescriptions: expected at least 1 result"
                       lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
                     (_, _, SMDSnd, GroupChat g@GroupInfo {groupId} _scope) -> do
                       ms <- withStore' $ \db -> getGroupMembers db vr user g
@@ -259,7 +259,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
           let (errs, msgReqs) = partitionEithers . L.toList $ L.zipWith (fmap . toMsgReq) connsIdsEvts sndMsgs_
           delivered <- mapM deliverMessages (L.nonEmpty msgReqs)
           let errs' = errs <> maybe [] (lefts . L.toList) delivered
-          unless (null errs') $ toView $ CEvtChatErrors (Just user) errs'
+          unless (null errs') $ toView $ CEvtChatErrors errs'
           pure delivered
           where
             connDescrEvents :: Int -> NonEmpty (Connection, (ConnOrGroupId, ChatMsgEvent 'Json))
@@ -298,7 +298,7 @@ processAgentMsgRcvFile _corrId aFileId msg = do
   (cRef_, fileId) <- withStore (`getXFTPRcvFileDBIds` AgentRcvFileId aFileId)
   withEntityLock_ cRef_ . withFileLock "processAgentMsgRcvFile" fileId $
     withStore' (`getUserByARcvFileId` AgentRcvFileId aFileId) >>= \case
-      Just user -> process user fileId `catchChatError` (toView . CEvtChatError (Just user))
+      Just user -> process user fileId `catchChatError` eToView
       _ -> do
         lift $ withAgent' (`xftpDeleteRcvFile` aFileId)
         throwChatError $ CENoRcvFileUser $ AgentRcvFileId aFileId
@@ -438,13 +438,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         MWARN _ err ->
           processConnMWARN connEntity conn err
         MERR _ err -> do
-          toView $ CEvtChatError (Just user) (ChatErrorAgent err $ Just connEntity)
+          eToView (ChatErrorAgent err $ Just connEntity)
           processConnMERR connEntity conn err
         MERRS _ err -> do
           -- error cannot be AUTH error here
-          toView $ CEvtChatError (Just user) (ChatErrorAgent err $ Just connEntity)
+          eToView (ChatErrorAgent err $ Just connEntity)
         ERR err -> do
-          toView $ CEvtChatError (Just user) (ChatErrorAgent err $ Just connEntity)
+          eToView (ChatErrorAgent err $ Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -468,11 +468,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             checkIntegrityCreateItem (CDDirectRcv ct') msgMeta `catchChatError` \_ -> pure ()
             forM_ aChatMsgs $ \case
               Right (ACMsg _ chatMsg) ->
-                processEvent ct' conn' tags eInfo chatMsg `catchChatError` \e -> toView $ CEvtChatError (Just user) e
+                processEvent ct' conn' tags eInfo chatMsg `catchChatError` \e -> eToView e
               Left e -> do
                 atomically $ modifyTVar' tags ("error" :)
                 logInfo $ "contact msg=error " <> eInfo <> " " <> tshow e
-                toView $ CEvtChatError (Just user) (ChatError . CEException $ "error parsing chat message: " <> e)
+                eToView (ChatError . CEException $ "error parsing chat message: " <> e)
             checkSendRcpt ct' $ rights aChatMsgs -- not crucial to use ct'' from processEvent
           where
             aChatMsgs = parseChatMessages msgBody
@@ -655,14 +655,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           processConnMWARN connEntity conn err
         MERR msgId err -> do
           updateDirectItemStatus ct conn msgId (CISSndError $ agentSndError err)
-          toView $ CEvtChatError (Just user) (ChatErrorAgent err $ Just connEntity)
+          eToView (ChatErrorAgent err $ Just connEntity)
           processConnMERR connEntity conn err
         MERRS msgIds err -> do
           -- error cannot be AUTH error here
           updateDirectItemsStatusMsgs ct conn (L.toList msgIds) (CISSndError $ agentSndError err)
-          toView $ CEvtChatError (Just user) (ChatErrorAgent err $ Just connEntity)
+          eToView (ChatErrorAgent err $ Just connEntity)
         ERR err -> do
-          toView $ CEvtChatError (Just user) (ChatErrorAgent err $ Just connEntity)
+          eToView (ChatErrorAgent err $ Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -757,7 +757,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           XInfo _ ->
             -- TODO Keep rejected member to allow them to appeal against rejection.
             when (memberStatus m == GSMemRejected) $ do
-              deleteMemberConnection' user m True
+              deleteMemberConnection' m True
               withStore' $ \db -> deleteGroupMember db user m
           XOk -> pure ()
           _ -> messageError "INFO from member must have x.grp.mem.info, x.info or x.ok"
@@ -848,12 +848,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchChatError` \_ -> pure ()
           forM_ aChatMsgs $ \case
             Right (ACMsg _ chatMsg) ->
-              processEvent gInfo' m' tags eInfo chatMsg `catchChatError` \e -> toView $ CEvtChatError (Just user) e
+              processEvent gInfo' m' tags eInfo chatMsg `catchChatError` \e -> eToView e
             Left e -> do
               atomically $ modifyTVar' tags ("error" :)
               logInfo $ "group msg=error " <> eInfo <> " " <> tshow e
-              toView $ CEvtChatError (Just user) (ChatError . CEException $ "error parsing chat message: " <> e)
-          forwardMsgs (rights aChatMsgs) `catchChatError` (toView . CEvtChatError (Just user))
+              eToView (ChatError . CEException $ "error parsing chat message: " <> e)
+          forwardMsgs (rights aChatMsgs) `catchChatError` eToView
           checkSendRcpt $ rights aChatMsgs
         where
           aChatMsgs = parseChatMessages msgBody
@@ -985,16 +985,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       MERR msgId err -> do
         withStore' $ \db -> updateGroupItemsErrorStatus db msgId (groupMemberId' m) (GSSError $ agentSndError err)
         -- group errors are silenced to reduce load on UI event log
-        -- toView $ CEvtChatError (Just user) (ChatErrorAgent err $ Just connEntity)
+        -- eToView (ChatErrorAgent err $ Just connEntity)
         processConnMERR connEntity conn err
       MERRS msgIds err -> do
         let newStatus = GSSError $ agentSndError err
         -- error cannot be AUTH error here
         withStore' $ \db -> forM_ msgIds $ \msgId ->
           updateGroupItemsErrorStatus db msgId (groupMemberId' m) newStatus `catchAll_` pure ()
-        toView $ CEvtChatError (Just user) (ChatErrorAgent err $ Just connEntity)
+        eToView (ChatErrorAgent err $ Just connEntity)
       ERR err -> do
-        toView $ CEvtChatError (Just user) (ChatErrorAgent err $ Just connEntity)
+        eToView (ChatErrorAgent err $ Just connEntity)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       -- TODO add debugging output
       _ -> pure ()
@@ -1071,7 +1071,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           withStore' $ \db -> updateSndFileChunkSent db ft msgId
           unless (fileStatus == FSCancelled) $ sendFileChunk user ft
         MERR _ err -> do
-          cancelSndFileTransfer user ft True >>= mapM_ (deleteAgentConnectionAsync user)
+          cancelSndFileTransfer user ft True >>= mapM_ deleteAgentConnectionAsync
           case err of
             SMP _ SMP.AUTH -> unless (fileStatus == FSCancelled) $ do
               ci <- withStore $ \db -> do
@@ -1090,7 +1090,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- [async agent commands] continuation on receiving JOINED
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         ERR err -> do
-          toView $ CEvtChatError (Just user) (ChatErrorAgent err $ Just connEntity)
+          eToView (ChatErrorAgent err $ Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -1139,10 +1139,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- [async agent commands] continuation on receiving JOINED
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         MERR _ err -> do
-          toView $ CEvtChatError (Just user) (ChatErrorAgent err $ Just connEntity)
+          eToView (ChatErrorAgent err $ Just connEntity)
           processConnMERR connEntity conn err
         ERR err -> do
-          toView $ CEvtChatError (Just user) (ChatErrorAgent err $ Just connEntity)
+          eToView (ChatErrorAgent err $ Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -1151,7 +1151,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     receiveFileChunk ft@RcvFileTransfer {fileId, chunkSize} conn_ meta@MsgMeta {recipient = (msgId, _), integrity} = \case
       FileChunkCancel ->
         unless (rcvFileCompleteOrCancelled ft) $ do
-          cancelRcvFileTransfer user ft >>= mapM_ (deleteAgentConnectionAsync user)
+          cancelRcvFileTransfer user ft >>= mapM_ deleteAgentConnectionAsync
           ci <- withStore $ \db -> getChatItemByFileId db vr user fileId
           toView $ CEvtRcvFileSndCancelled user ci ft
       FileChunk {chunkNo, chunkBytes = chunk} -> do
@@ -1177,7 +1177,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     deleteRcvFileChunks db ft
                   getChatItemByFileId db vr user fileId
                 toView $ CEvtRcvFileComplete user ci
-                forM_ conn_ $ \conn -> deleteAgentConnectionAsync user (aConnId conn)
+                mapM_ (deleteAgentConnectionAsync . aConnId) conn_
           RcvChunkDuplicate -> withAckMessage' "file msg" agentConnId meta $ pure ()
           RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
 
@@ -1191,10 +1191,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- TODO show/log error, other events in contact request
           _ -> pure ()
       MERR _ err -> do
-        toView $ CEvtChatError (Just user) (ChatErrorAgent err $ Just connEntity)
+        eToView (ChatErrorAgent err $ Just connEntity)
         processConnMERR connEntity conn err
       ERR err -> do
-        toView $ CEvtChatError (Just user) (ChatErrorAgent err $ Just connEntity)
+        eToView (ChatErrorAgent err $ Just connEntity)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       -- TODO add debugging output
       _ -> pure ()
@@ -1369,7 +1369,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     badRcvFileChunk :: RcvFileTransfer -> String -> CM ()
     badRcvFileChunk ft err =
       unless (rcvFileCompleteOrCancelled ft) $ do
-        cancelRcvFileTransfer user ft >>= mapM_ (deleteAgentConnectionAsync user)
+        cancelRcvFileTransfer user ft >>= mapM_ deleteAgentConnectionAsync
         throwChatError $ CEFileRcvChunk err
 
     memberConnectedChatItem :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> CM ()
@@ -1839,7 +1839,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       fileId <- withStore $ \db -> getFileIdBySharedMsgId db userId contactId sharedMsgId
       ft <- withStore (\db -> getRcvFileTransfer db user fileId)
       unless (rcvFileCompleteOrCancelled ft) $ do
-        cancelRcvFileTransfer user ft >>= mapM_ (deleteAgentConnectionAsync user)
+        cancelRcvFileTransfer user ft >>= mapM_ deleteAgentConnectionAsync
         ci <- withStore $ \db -> getChatItemByFileId db vr user fileId
         toView $ CEvtRcvFileSndCancelled user ci ft
 
@@ -1933,7 +1933,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             then do
               ft <- withStore (\db -> getRcvFileTransfer db user fileId)
               unless (rcvFileCompleteOrCancelled ft) $ do
-                cancelRcvFileTransfer user ft >>= mapM_ (deleteAgentConnectionAsync user)
+                cancelRcvFileTransfer user ft >>= mapM_ deleteAgentConnectionAsync
                 ci <- withStore $ \db -> getChatItemByFileId db vr user fileId
                 toView $ CEvtRcvFileSndCancelled user ci ft
             else messageError "x.file.cancel: group member attempted to cancel file of another member" -- shouldn't happen now that query includes group member id
@@ -2020,7 +2020,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         then do
           ct' <- withStore' $ \db -> updateContactStatus db user c CSDeleted
           contactConns <- withStore' $ \db -> getContactConnections db vr userId ct'
-          deleteAgentConnectionsAsync user $ map aConnId contactConns
+          deleteAgentConnectionsAsync $ map aConnId contactConns
           forM_ contactConns $ \conn -> withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
           activeConn' <- forM (contactConn ct') $ \conn -> pure conn {connStatus = ConnDeleted}
           let ct'' = ct' {activeConn = activeConn'} :: Contact
@@ -2029,7 +2029,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           toView $ CEvtContactDeletedByContact user ct''
         else do
           contactConns <- withStore' $ \db -> getContactConnections db vr userId c
-          deleteAgentConnectionsAsync user $ map aConnId contactConns
+          deleteAgentConnectionsAsync $ map aConnId contactConns
           withStore $ \db -> deleteContact db user c
       where
         brokerTs = metaBrokerTs msgMeta
@@ -2521,7 +2521,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Left _ -> messageError "x.grp.mem.inv error: referenced member does not exist"
             Right reMember -> do
               GroupMemberIntro {introId} <- withStore $ \db -> saveIntroInvitation db reMember m introInv
-              sendGroupMemberMessage user gInfo reMember (XGrpMemFwd (memberInfo m) introInv) (Just introId) $
+              sendGroupMemberMessage gInfo reMember (XGrpMemFwd (memberInfo m) introInv) (Just introId) $
                 withStore' $
                   \db -> updateIntroStatus db introId GMIntroInvForwarded
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
@@ -2597,7 +2597,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 | senderRole < GRModerator || senderRole < memberRole -> messageError "x.grp.mem.restrict with insufficient member permissions"
                 | otherwise -> do
                     bm' <- setMemberBlocked bm
-                    toggleNtf user bm' (not blocked)
+                    toggleNtf bm' (not blocked)
                     let ciContent = CIRcvGroupEvent $ RGEMemberBlocked bmId (fromLocalProfile bmp) blocked
                     (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
                     ci <- saveRcvChatItemNoParse user (CDGroupRcv gInfo' scopeInfo m') msg brokerTs ciContent
@@ -2672,7 +2672,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Right member@GroupMember {groupMemberId, memberProfile} ->
               checkRole member $ do
                 -- ? prohibit deleting member if it's the sender - sender should use x.grp.leave
-                deleteMemberConnection user member
+                deleteMemberConnection member
                 -- undeleted "member connected" chat item will prevent deletion of member record
                 deleteOrUpdateMemberRecord user member
                 when withMessages $ deleteMessages member SMDRcv
@@ -2694,7 +2694,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     xGrpLeave :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> CM ()
     xGrpLeave gInfo m msg brokerTs = do
-      deleteMemberConnection user m
+      deleteMemberConnection m
       -- member record is not deleted to allow creation of "member left" chat item
       withStore' $ \db -> updateGroupMemberStatus db userId m GSMemLeft
       (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m

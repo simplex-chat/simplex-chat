@@ -60,7 +60,7 @@ import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Terminal.Main (simplexChatCLI')
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared
-import Simplex.Chat.View (serializeChatResponse, simplexChatContact, viewContactName, viewGroupName)
+import Simplex.Chat.View (serializeChatError, serializeChatResponse, simplexChatContact, viewContactName, viewGroupName)
 import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnectionLink (..), CreatedConnLink (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Agent.Protocol (SConnectionMode (..), sameConnReqContact, sameShortLinkContact)
@@ -197,7 +197,7 @@ readBlockedWordsConfig DirectoryOpts {blockedFragmentsFile, blockedWordsFile, na
   unless testing $ putStrLn $ "Blocked fragments: " <> show (length blockedFragments) <> ", blocked words: " <> show (length blockedWords) <> ", spelling rules: " <> show (M.size spelling)
   pure BlockedWordsConfig {blockedFragments, blockedWords, extensionRules, spelling}
 
-directoryServiceEvent :: DirectoryStore -> DirectoryOpts -> ServiceState -> User -> ChatController -> ChatEvent -> IO ()
+directoryServiceEvent :: DirectoryStore -> DirectoryOpts -> ServiceState -> User -> ChatController -> Either ChatError ChatEvent -> IO ()
 directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults} env@ServiceState {searchRequests} user@User {userId} cc event =
   forM_ (crDirectoryEvent event) $ \case
     DEContactConnected ct -> deContactConnected ct
@@ -249,7 +249,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     getGroups_ :: Maybe Text -> IO (Maybe [(GroupInfo, GroupSummary)])
     getGroups_ search_ =
       sendChatCmd cc (APIListGroups userId Nothing $ T.unpack <$> search_) >>= \case
-        CRGroupsList {groups} -> pure $ Just groups
+        Right CRGroupsList {groups} -> pure $ Just groups
         _ -> pure Nothing
 
     getDuplicateGroup :: GroupInfo -> IO (Maybe DuplicateGroup)
@@ -281,7 +281,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       void $ addGroupReg st ct g GRSProposed
       r <- sendChatCmd cc $ APIJoinGroup groupId MFNone
       sendMessage cc ct $ case r of
-        CRUserAcceptedGroupSent {} -> "Joining the group " <> displayName <> "…"
+        Right  CRUserAcceptedGroupSent {} -> "Joining the group " <> displayName <> "…"
         _ -> "Error joining group " <> displayName <> ", please re-send the invitation!"
 
     deContactConnected :: Contact -> IO ()
@@ -337,7 +337,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         $>>= \mId -> resp <$> sendChatCmd cc (APIGroupMemberInfo dbGroupId mId)
       where
         resp = \case
-          CRGroupMemberInfo {member} -> Just member
+          Right CRGroupMemberInfo {member} -> Just member
           _ -> Nothing
 
     deServiceJoinedGroup :: ContactId -> GroupInfo -> GroupMember -> IO ()
@@ -349,7 +349,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           let GroupInfo {groupId, groupProfile = GroupProfile {displayName}} = g
           notifyOwner gr $ "Joined the group " <> displayName <> ", creating the link…"
           sendChatCmd cc (APICreateGroupLink groupId GRMember False) >>= \case
-            CRGroupLinkCreated {connLinkContact = CCLink gLink _} -> do
+            Right CRGroupLinkCreated {connLinkContact = CCLink gLink _} -> do
               setGroupStatus st gr GRSPendingUpdate
               notifyOwner
                 gr
@@ -357,7 +357,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                 \Please add it to the group welcome message.\n\
                 \For example, add:"
               notifyOwner gr $ "Link to join the group " <> displayName <> ": " <> strEncodeTxt (simplexChatContact gLink)
-            CRChatCmdError _ (ChatError e) -> case e of
+            Left (ChatError e) -> case e of
               CEGroupUserRole {} -> notifyOwner gr "Failed creating group link, as service is no longer an admin."
               CEGroupMemberUserRemoved -> notifyOwner gr "Failed creating group link, as service is removed from the group."
               CEGroupNotJoined _ -> notifyOwner gr $ unexpectedError "group not joined"
@@ -446,7 +446,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         groupProfileUpdate = profileUpdate <$> sendChatCmd cc (APIGetGroupLink groupId)
           where
             profileUpdate = \case
-              CRGroupLink {connLinkContact = CCLink cr sl_} ->
+              Right CRGroupLink {connLinkContact = CCLink cr sl_} ->
                 let hadLinkBefore = profileHasGroupLink fromGroup
                     hasLinkNow = profileHasGroupLink toGroup
                     profileHasGroupLink GroupInfo {groupProfile = gp} =
@@ -503,7 +503,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       let role = if useMemberFilter image (makeObserver a) then GRObserver else maybe GRMember (\GroupLinkInfo {memberRole} -> memberRole) gli_
           gmId = groupMemberId' m
       sendChatCmd cc (APIAcceptMember groupId gmId role) >>= \case
-        CRMemberAccepted {member} -> do
+        Right CRMemberAccepted {member} -> do
           atomically $ TM.delete gmId $ pendingCaptchas env
           if memberStatus member == GSMemPendingReview
             then logInfo $ "Member " <> viewName displayName <> " accepted and pending review, group " <> tshow groupId <> ":" <> viewGroupName g
@@ -530,7 +530,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           let gmId = groupMemberId' m
           sendComposedMessages cc (SRGroup groupId $ Just $ GCSMemberSupport (Just gmId)) [MCText rjctNotice]
           sendChatCmd cc (APIRemoveMembers groupId [gmId] False) >>= \case
-            CRUserDeletedMembers _ _ (_ : _) _ -> do
+            Right (CRUserDeletedMembers _ _ (_ : _) _) -> do
               atomically $ TM.delete gmId $ pendingCaptchas env
               logInfo $ "Member " <> viewName displayName <> " rejected, group " <> tshow groupId <> ":" <> viewGroupName g
             r -> logError $ "unexpected remove member response: " <> tshow r
@@ -893,18 +893,21 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             let groupRef = groupReference' groupId gName
             withGroupAndReg sendReply groupId gName $ \_ _ ->
               sendChatCmd cc (APIGetGroupLink groupId) >>= \case
-                CRGroupLink {connLinkContact = CCLink cReq _, memberRole} ->
+                Right CRGroupLink {connLinkContact = CCLink cReq _, memberRole} ->
                   sendReply $ T.unlines
                     [ "The link to join the group " <> groupRef <> ":",
                       strEncodeTxt $ simplexChatContact cReq,
                       "New member role: " <> strEncodeTxt memberRole
                     ]
-                CRChatCmdError _ (ChatErrorStore (SEGroupLinkNotFound _)) ->
+                Left (ChatErrorStore (SEGroupLinkNotFound _)) ->
                   sendReply $ "The group " <> groupRef <> " has no public link."
-                r -> do
+                Right r -> do
                   ts <- getCurrentTime
                   tz <- getCurrentTimeZone
-                  let resp = T.pack $ serializeChatResponse (Nothing, Just user) ts tz Nothing r
+                  let resp = T.pack $ serializeChatResponse (Nothing, Just user) (config cc) ts tz Nothing r
+                  sendReply $ "Unexpected error:\n" <> resp
+                Left e -> do
+                  let resp = T.pack $ serializeChatError True (config cc) e
                   sendReply $ "Unexpected error:\n" <> resp
           DCSendToGroupOwner groupId gName msg -> do
             let groupRef = groupReference' groupId gName
@@ -946,11 +949,11 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         inviteToOwnersGroup :: KnownGroup -> GroupReg -> (Either Text () -> IO a) -> IO a
         inviteToOwnersGroup KnownGroup {groupId = ogId} GroupReg {dbContactId = ctId} cont =
           sendChatCmd cc (APIListMembers ogId) >>= \case
-            CRGroupMembers _ (Group _ ms)
+            Right (CRGroupMembers _ (Group _ ms))
               | alreadyMember ms -> cont $ Left "Owner is already a member of owners' group"
               | otherwise -> do
                   sendChatCmd cc (APIAddMember ogId ctId GRMember) >>= \case
-                    CRSentGroupInvitation {} -> do
+                    Right CRSentGroupInvitation {} -> do
                       printLog cc CLLInfo $ "invited contact ID " <> show ctId <> " to owners' group"
                       cont $ Right ()
                     r -> contErr r
@@ -971,10 +974,13 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     deSuperUserCommand ct ciId cmd
       | knownContact ct `elem` superUsers = case cmd of
           DCExecuteCommand cmdStr ->
-            sendChatCmdStr cc cmdStr >>= \r -> do
-              ts <- getCurrentTime
-              tz <- getCurrentTimeZone
-              sendReply $ T.pack $ serializeChatResponse (Nothing, Just user) ts tz Nothing r
+            sendChatCmdStr cc cmdStr >>= \case
+              Right r -> do
+                ts <- getCurrentTime
+                tz <- getCurrentTimeZone
+                sendReply $ T.pack $ serializeChatResponse (Nothing, Just user) (config cc) ts tz Nothing r
+              Left e ->
+                sendReply $ T.pack $ serializeChatError True (config cc) e
           DCCommandError tag -> sendReply $ "Command error: " <> tshow tag
       | otherwise = sendReply "You are not allowed to use this command"
       where
@@ -1047,7 +1053,7 @@ setGroupLinkRole :: ChatController -> GroupInfo -> GroupMemberRole -> IO (Maybe 
 setGroupLinkRole cc GroupInfo {groupId} mRole = resp <$> sendChatCmd cc (APIGroupLinkMemberRole groupId mRole)
   where
     resp = \case
-      CRGroupLink _ _ (CCLink gLink _) _ -> Just gLink
+      Right (CRGroupLink _ _ (CCLink gLink _) _) -> Just gLink
       _ -> Nothing
 
 unexpectedError :: Text -> Text

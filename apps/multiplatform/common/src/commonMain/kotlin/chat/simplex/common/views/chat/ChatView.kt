@@ -600,11 +600,11 @@ fun ChatView(
                   ChatItemInfoView(chatRh, cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get(), chatInfo)
                   LaunchedEffect(cItem.id) {
                     withContext(Dispatchers.Default) {
-                      for (apiResp in controller.messagesChannel) {
-                        val msg = apiResp.resp
-                        if (apiResp.remoteHostId == chatRh &&
-                          msg is CR.ChatItemsStatusesUpdated &&
-                          msg.chatItems.any { it.chatItem.id == cItem.id }
+                      for (msg in controller.messagesChannel) {
+                        if (msg.rhId == chatRh &&
+                          msg is API.Result &&
+                          msg.res is CR.ChatItemsStatusesUpdated &&
+                          msg.res.chatItems.any { it.chatItem.id == cItem.id }
                         ) {
                           ciInfo = loadChatItemInfo() ?: return@withContext
                           initialCiInfo = ciInfo

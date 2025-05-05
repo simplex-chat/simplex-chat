@@ -468,6 +468,8 @@ executable simplex-directory-service
       , text >=1.2.4.0 && <1.3
 
 test-suite simplex-chat-test
+  if flag(swift)
+    cpp-options: -DswiftJSON
   if flag(client_library)
       buildable: False
   type: exitcode-stdio-1.0

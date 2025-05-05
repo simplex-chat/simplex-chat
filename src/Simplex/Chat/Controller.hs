@@ -172,10 +172,10 @@ data ChatHooks = ChatHooks
   { -- preCmdHook can be used to process or modify the commands before they are processed.
     -- This hook should be used to process CustomChatCommand.
     -- if this hook returns ChatResponse, the command processing will be skipped.
-    preCmdHook :: Maybe (ChatController -> ChatCommand -> IO (Either ChatResponse ChatCommand)),
+    preCmdHook :: Maybe (ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)),
     -- eventHook can be used to additionally process or modify events,
     -- it is called before the event is sent to the user (or to the UI).
-    eventHook :: Maybe (ChatController -> ChatEvent -> IO ChatEvent),
+    eventHook :: Maybe (ChatController -> Either ChatError ChatEvent -> IO (Either ChatError ChatEvent)),
     -- acceptMember hook can be used to accept or reject member connecting via group link without API calls
     acceptMember :: Maybe (GroupInfo -> GroupLinkInfo -> Profile -> IO (Either GroupRejectionReason (GroupAcceptance, GroupMemberRole)))
   }
@@ -223,7 +223,7 @@ data ChatController = ChatController
     random :: TVar ChaChaDRG,
     eventSeq :: TVar Int,
     inputQ :: TBQueue String,
-    outputQ :: TBQueue (Maybe RemoteHostId, ChatEvent),
+    outputQ :: TBQueue (Maybe RemoteHostId, Either ChatError ChatEvent),
     connNetworkStatuses :: TMap AgentConnId NetworkStatus,
     subscriptionMode :: TVar SubscriptionMode,
     chatLock :: Lock,
@@ -739,7 +739,6 @@ data ChatResponse
   | CRAgentSubs {activeSubs :: Map Text Int, pendingSubs :: Map Text Int, removedSubs :: Map Text [String]}
   | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
   | CRAgentQueuesInfo {agentQueuesInfo :: AgentQueuesInfo}
-  | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
   | CRAppSettings {appSettings :: AppSettings}
   | CRCustomChatResponse {user_ :: Maybe User, response :: Text}
   deriving (Show)
@@ -848,8 +847,7 @@ data ChatEvent
   | CEvtAgentConnsDeleted {agentConnIds :: NonEmpty AgentConnId}
   | CEvtAgentUserDeleted {agentUserId :: Int64}
   | CEvtMessageError {user :: User, severity :: Text, errorMessage :: Text}
-  | CEvtChatError {user_ :: Maybe User, chatError :: ChatError}
-  | CEvtChatErrors {user_ :: Maybe User, chatErrors :: [ChatError]}
+  | CEvtChatErrors {chatErrors :: [ChatError]}
   | CEvtTimedAction {action :: String, durationMilliseconds :: Int64}
   | CEvtTerminalEvent TerminalEvent
   deriving (Show)
@@ -878,7 +876,6 @@ data DeletedRcvQueue = DeletedRcvQueue
   }
   deriving (Show)
 
--- some of these can only be used as command responses
 allowRemoteEvent :: ChatEvent -> Bool
 allowRemoteEvent = \case
   CEvtChatSuspended -> False
@@ -902,8 +899,7 @@ logEventToFile = \case
   CEvtAgentRcvQueuesDeleted {} -> True
   CEvtAgentConnsDeleted {} -> True
   CEvtAgentUserDeleted {} -> True
-  -- CEvtChatCmdError {} -> True -- TODO this should be separately logged to file
-  CEvtChatError {} -> True
+  -- CRChatCmdError {} -> True -- TODO this should be separately logged to file as command error
   CEvtMessageError {} -> True
   CEvtTerminalEvent te -> case te of
     TEMemberSubError {} -> True
@@ -1416,7 +1412,7 @@ data RemoteCtrlSession
         tls :: TLS,
         rcsSession :: RCCtrlSession,
         http2Server :: Async (),
-        remoteOutputQ :: TBQueue ChatEvent
+        remoteOutputQ :: TBQueue (Either ChatError ChatEvent)
       }
 
 data RemoteCtrlSessionState
@@ -1515,11 +1511,17 @@ mkStoreError :: SomeException -> StoreError
 mkStoreError = SEInternalError . show
 {-# INLINE mkStoreError #-}
 
-chatCmdError :: Maybe User -> String -> ChatResponse
-chatCmdError user = CRChatCmdError user . ChatError . CECommandError
+throwCmdError :: String -> CM a
+throwCmdError = throwError . ChatError . CECommandError
+{-# INLINE throwCmdError #-}
+
+chatCmdError :: String -> Either ChatError ChatResponse
+chatCmdError = Left . ChatError . CECommandError
+{-# INLINE chatCmdError #-}
 
 throwChatError :: ChatErrorType -> CM a
 throwChatError = throwError . ChatError
+{-# INLINE throwChatError #-}
 
 toViewTE :: TerminalEvent -> CM ()
 toViewTE = toView . CEvtTerminalEvent
@@ -1531,7 +1533,19 @@ toView = lift . toView'
 {-# INLINE toView #-}
 
 toView' :: ChatEvent -> CM' ()
-toView' ev = do
+toView' = toView_ . Right
+{-# INLINE toView' #-}
+
+eToView :: ChatError -> CM ()
+eToView = lift . eToView'
+{-# INLINE eToView #-}
+
+eToView' :: ChatError -> CM' ()
+eToView' = toView_ . Left
+{-# INLINE eToView' #-}
+
+toView_ :: Either ChatError ChatEvent -> CM' ()
+toView_ ev = do
   cc@ChatController {outputQ = localQ, remoteCtrlSession = session, config = ChatConfig {chatHooks}} <- ask
   event <- case eventHook chatHooks of
     Just hook -> liftIO $ hook cc ev
@@ -1539,7 +1553,7 @@ toView' ev = do
   atomically $
     readTVar session >>= \case
       Just (_, RCSessionConnected {remoteOutputQ})
-        | allowRemoteEvent event -> writeTBQueue remoteOutputQ event
+        | either (const True) allowRemoteEvent event -> writeTBQueue remoteOutputQ event
       -- TODO potentially, it should hold some events while connecting
       _ -> writeTBQueue localQ (Nothing, event)
 

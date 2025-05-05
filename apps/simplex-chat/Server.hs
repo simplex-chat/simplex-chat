@@ -2,20 +2,23 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Server where
 
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson (FromJSON, ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
+import Data.Bifunctor (first)
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import GHC.Generics (Generic)
@@ -26,7 +29,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Options
-import Simplex.Messaging.Parsers (defaultJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
 import Simplex.Messaging.Transport.Server (runLocalTCPServer)
 import Simplex.Messaging.Util (raceAny_)
 import UnliftIO.Exception
@@ -35,13 +38,32 @@ import UnliftIO.STM
 data ChatSrvRequest = ChatSrvRequest {corrId :: Text, cmd :: Text}
   deriving (Generic, FromJSON)
 
-data ChatSrvResponse r = ChatSrvResponse {corrId :: Maybe Text, resp :: r}
+data ChatSrvResponse r = ChatSrvResponse {corrId :: Maybe Text, resp :: CSRBody r}
+
+data CSRBody r = CSRBody {csrBody :: Either ChatError r}
+
+-- backwards compatible encoding, to avoid breaking any chat bots
+data ObjChatCmdError = ObjChatCmdError {chatError :: ChatError}
+
+data ObjChatError = ObjChatError {chatError :: ChatError}
+
+$(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "Obj") ''ObjChatCmdError)
+
+$(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "Obj") ''ObjChatError)
+
+instance ToJSON (CSRBody ChatResponse) where
+  toJSON = toJSON . first ObjChatCmdError . csrBody
+  toEncoding = toEncoding . first ObjChatCmdError . csrBody
+
+instance ToJSON (CSRBody ChatEvent) where
+  toJSON = toJSON . first ObjChatError . csrBody
+  toEncoding = toEncoding . first ObjChatError . csrBody
 
 data AChatSrvResponse = forall r. ToJSON (ChatSrvResponse r) => ACR (ChatSrvResponse r)
 
 $(pure [])
 
-instance ToJSON r => ToJSON (ChatSrvResponse r) where
+instance ToJSON (CSRBody r) => ToJSON (ChatSrvResponse r) where
   toEncoding = $(JQ.mkToEncoding defaultJSON ''ChatSrvResponse)
   toJSON = $(JQ.mkToJSON defaultJSON ''ChatSrvResponse)
 
@@ -91,8 +113,8 @@ runChatServer ChatServerConfig {chatPort, clientQSize} cc = do
         >>= processCommand
         >>= atomically . writeTBQueue sndQ . ACR
     output ChatClient {sndQ} = forever $ do
-      (_, resp) <- atomically . readTBQueue $ outputQ cc
-      atomically $ writeTBQueue sndQ $ ACR ChatSrvResponse {corrId = Nothing, resp}
+      (_, r) <- atomically . readTBQueue $ outputQ cc
+      atomically $ writeTBQueue sndQ $ ACR ChatSrvResponse {corrId = Nothing, resp = CSRBody r}
     receive ws ChatClient {rcvQ, sndQ} = forever $ do
       s <- WS.receiveData ws
       case J.decodeStrict' s of
@@ -103,11 +125,9 @@ runChatServer ChatServerConfig {chatPort, clientQSize} cc = do
             Left e -> sendError (Just corrId) e
         Nothing -> sendError Nothing "invalid request"
       where
-        sendError corrId e = atomically $ writeTBQueue sndQ $ ACR ChatSrvResponse {corrId, resp = chatCmdError Nothing e}
+        sendError corrId e = atomically $ writeTBQueue sndQ $ ACR ChatSrvResponse {corrId, resp = CSRBody $ chatCmdError e}
     processCommand (corrId, cmd) =
-      runReaderT (runExceptT $ processChatCommand cmd) cc >>= \case
-        Right resp -> response resp
-        Left e -> response $ CRChatCmdError Nothing e
+      response <$> runReaderT (runExceptT $ processChatCommand cmd) cc
       where
-        response resp = pure ChatSrvResponse {corrId = Just corrId, resp}
+        response r = ChatSrvResponse {corrId = Just corrId, resp = CSRBody r}
     clientDisconnected _ = pure ()

@@ -184,11 +184,11 @@ callTimed ct aciContent =
     aciContentCallStatus (ACIContent _ (CIRcvCall st _)) = Just st
     aciContentCallStatus _ = Nothing
 
-toggleNtf :: User -> GroupMember -> Bool -> CM ()
-toggleNtf user m ntfOn =
+toggleNtf :: GroupMember -> Bool -> CM ()
+toggleNtf m ntfOn =
   when (memberActive m) $
     forM_ (memberConnId m) $ \connId ->
-      withAgent (\a -> toggleConnectionNtfs a connId ntfOn) `catchChatError` (toView . CEvtChatError (Just user))
+      withAgent (\a -> toggleConnectionNtfs a connId ntfOn) `catchChatError` eToView
 
 prepareGroupMsg :: DB.Connection -> User -> GroupInfo -> Maybe MsgScope -> MsgContent -> Map MemberName MsgMention -> Maybe ChatItemId -> Maybe CIForwardedFrom -> Maybe FileInvitation -> Maybe CITimed -> Bool -> ExceptT StoreError IO (ChatMsgEvent 'Json, Maybe (CIQuote 'CTGroup))
 prepareGroupMsg db user g@GroupInfo {membership} msgScope mc mentions quotedItemId_ itemForwarded fInv_ timed_ live = case (quotedItemId_, itemForwarded) of
@@ -388,8 +388,8 @@ cancelFilesInProgress user filesInfo = do
   lift $ agentXFTPDeleteRcvFiles xrfIds
   let smpSFConnIds = concatMap (\(ft, sfts) -> mapMaybe (smpSndFileConnId ft) sfts) sfs
       smpRFConnIds = mapMaybe smpRcvFileConnId rfs
-  deleteAgentConnectionsAsync user smpSFConnIds
-  deleteAgentConnectionsAsync user smpRFConnIds
+  deleteAgentConnectionsAsync smpSFConnIds
+  deleteAgentConnectionsAsync smpRFConnIds
   where
     fileEnded CIFileInfo {fileStatus} = case fileStatus of
       Just (AFS _ status) -> ciFileEnded status
@@ -446,7 +446,7 @@ deleteDirectCIs user ct items = do
   let ciFilesInfo = mapMaybe (\(CChatItem _ ChatItem {file}) -> mkCIFileInfo <$> file) items
   deleteCIFiles user ciFilesInfo
   (errs, deletions) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (deleteItem db) items)
-  unless (null errs) $ toView $ CEvtChatErrors (Just user) errs
+  unless (null errs) $ toView $ CEvtChatErrors errs
   pure deletions
   where
     deleteItem db (CChatItem md ci) = do
@@ -458,7 +458,7 @@ deleteGroupCIs user gInfo chatScopeInfo items byGroupMember_ deletedTs = do
   let ciFilesInfo = mapMaybe (\(CChatItem _ ChatItem {file}) -> mkCIFileInfo <$> file) items
   deleteCIFiles user ciFilesInfo
   (errs, deletions) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (deleteItem db) items)
-  unless (null errs) $ toView $ CEvtChatErrors (Just user) errs
+  unless (null errs) $ toView $ CEvtChatErrors errs
   pure deletions
   where
     deleteItem :: DB.Connection -> CChatItem 'CTGroup -> IO ChatItemDeletion
@@ -491,7 +491,7 @@ deleteLocalCIs user nf items byUser timed = do
   let ciFilesInfo = mapMaybe (\(CChatItem _ ChatItem {file}) -> mkCIFileInfo <$> file) items
   deleteFilesLocally ciFilesInfo
   (errs, deletions) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (deleteItem db) items)
-  unless (null errs) $ toView $ CEvtChatErrors (Just user) errs
+  unless (null errs) $ toView $ CEvtChatErrors errs
   pure $ CRChatItemsDeleted user deletions byUser timed
   where
     deleteItem db (CChatItem md ci) = do
@@ -510,7 +510,7 @@ markDirectCIsDeleted user ct items deletedTs = do
   let ciFilesInfo = mapMaybe (\(CChatItem _ ChatItem {file}) -> mkCIFileInfo <$> file) items
   cancelFilesInProgress user ciFilesInfo
   (errs, deletions) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (markDeleted db) items)
-  unless (null errs) $ toView $ CEvtChatErrors (Just user) errs
+  unless (null errs) $ toView $ CEvtChatErrors errs
   pure deletions
   where
     markDeleted db (CChatItem md ci) = do
@@ -522,7 +522,7 @@ markGroupCIsDeleted user gInfo chatScopeInfo items byGroupMember_ deletedTs = do
   let ciFilesInfo = mapMaybe (\(CChatItem _ ChatItem {file}) -> mkCIFileInfo <$> file) items
   cancelFilesInProgress user ciFilesInfo
   (errs, deletions) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (markDeleted db) items)
-  unless (null errs) $ toView $ CEvtChatErrors (Just user) errs
+  unless (null errs) $ toView $ CEvtChatErrors errs
   pure deletions
   -- pure $ CRChatItemsDeleted user deletions byUser False
   where
@@ -1026,7 +1026,7 @@ introduceMember vr user gInfo@GroupInfo {groupId} m@GroupMember {activeConn = Ju
           forM_ (L.nonEmpty events) $ \events' ->
             sendGroupMemberMessages user conn events' groupId
         else forM_ shuffledIntros $ \intro ->
-          processIntro intro `catchChatError` (toView . CEvtChatError (Just user))
+          processIntro intro `catchChatError` eToView
     memberIntro :: GroupMember -> ChatMsgEvent 'Json
     memberIntro reMember =
       let mInfo = memberInfo reMember
@@ -1052,7 +1052,7 @@ sendHistory user gInfo@GroupInfo {groupId, membership} m@GroupMember {activeConn
     (errs, items) <- partitionEithers <$> withStore' (\db -> getGroupHistoryItems db user gInfo m 100)
     (errs', events) <- partitionEithers <$> mapM (tryChatError . itemForwardEvents) items
     let errors = map ChatErrorStore errs <> errs'
-    unless (null errors) $ toView $ CEvtChatErrors (Just user) errors
+    unless (null errors) $ toView $ CEvtChatErrors errors
     let events' = maybe (concat events) (\x -> concat events <> [x]) descrEvent_
     forM_ (L.nonEmpty events') $ \events'' ->
       sendGroupMemberMessages user conn events'' groupId
@@ -1154,7 +1154,7 @@ deleteGroupLinkIfExists user gInfo = do
 
 deleteGroupLink_ :: User -> GroupInfo -> Connection -> CM ()
 deleteGroupLink_ user gInfo conn = do
-  deleteAgentConnectionAsync user $ aConnId conn
+  deleteAgentConnectionAsync $ aConnId conn
   withStore' $ \db -> deleteGroupLink db user gInfo
 
 startProximateTimedItemThread :: User -> (ChatRef, ChatItemId) -> UTCTime -> CM ()
@@ -1196,7 +1196,7 @@ deleteTimedItem user (ChatRef cType chatId scope, itemId) deleteAt = do
       chatScopeInfo <- mapM (getChatScopeInfo vr user) scope
       deletions <- deleteGroupCIs user gInfo chatScopeInfo [ci] Nothing deletedTs
       toView $ CEvtChatItemsDeleted user deletions True True
-    _ -> toView . CEvtChatError (Just user) . ChatError $ CEInternalError "bad deleteTimedItem cType"
+    _ -> eToView $ ChatError $ CEInternalError "bad deleteTimedItem cType"
 
 startUpdatedTimedItemThread :: User -> ChatRef -> ChatItem c d -> ChatItem c d -> CM ()
 startUpdatedTimedItemThread user chatRef ci ci' =
@@ -1420,7 +1420,7 @@ sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentCo
           updateDirectCIFileStatus db vr user fileId CIFSSndComplete
         toView $ CEvtSndFileComplete user ci ft
         lift $ closeFileHandle fileId sndFiles
-        deleteAgentConnectionAsync user acId
+        deleteAgentConnectionAsync acId
 
 sendFileChunkNo :: SndFileTransfer -> Integer -> CM ()
 sendFileChunkNo ft@SndFileTransfer {agentConnId = AgentConnId acId} chunkNo = do
@@ -1468,7 +1468,7 @@ appendFileChunk ft@RcvFileTransfer {fileId, fileStatus, cryptoArgs, fileInvitati
               removeFile fsFilePath `catchChatError` \_ -> pure ()
               renameFile tmpFile fsFilePath
             Left e -> do
-              toView $ CEvtChatError Nothing e
+              eToView e
               removeFile tmpFile `catchChatError` \_ -> pure ()
               withStore' (`removeFileCryptoArgs` fileId)
       where
@@ -1493,7 +1493,7 @@ isFileActive fileId files = do
 
 cancelRcvFileTransfer :: User -> RcvFileTransfer -> CM (Maybe ConnId)
 cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, xftpRcvFile, rcvFileInline} =
-  cancel' `catchChatError` (\e -> toView (CEvtChatError (Just user) e) $> fileConnId)
+  cancel' `catchChatError` (\e -> eToView e $> fileConnId)
   where
     cancel' = do
       lift $ closeFileHandle fileId rcvFiles
@@ -1511,13 +1511,13 @@ cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, xftpRcvFile, rcvFileInlin
 cancelSndFile :: User -> FileTransferMeta -> [SndFileTransfer] -> Bool -> CM [ConnId]
 cancelSndFile user FileTransferMeta {fileId, xftpSndFile} fts sendCancel = do
   withStore' (\db -> updateFileCancelled db user fileId CIFSSndCancelled)
-    `catchChatError` (toView . CEvtChatError (Just user))
+    `catchChatError` eToView
   case xftpSndFile of
     Nothing ->
       catMaybes <$> forM fts (\ft -> cancelSndFileTransfer user ft sendCancel)
     Just xsf -> do
       forM_ fts (\ft -> cancelSndFileTransfer user ft False)
-      lift (agentXFTPDeleteSndFileRemote user xsf fileId) `catchChatError` (toView . CEvtChatError (Just user))
+      lift (agentXFTPDeleteSndFileRemote user xsf fileId) `catchChatError` eToView
       pure []
 
 -- TODO v6.0 remove
@@ -1525,7 +1525,7 @@ cancelSndFileTransfer :: User -> SndFileTransfer -> Bool -> CM (Maybe ConnId)
 cancelSndFileTransfer user@User {userId} ft@SndFileTransfer {fileId, connId, agentConnId = AgentConnId acId, fileStatus, fileInline} sendCancel =
   if fileStatus == FSCancelled || fileStatus == FSComplete
     then pure Nothing
-    else cancel' `catchChatError` (\e -> toView (CEvtChatError (Just user) e) $> fileConnId)
+    else cancel' `catchChatError` (\e -> eToView e $> fileConnId)
   where
     cancel' = do
       withStore' $ \db -> do
@@ -1552,16 +1552,16 @@ deleteMembersConnections user members = deleteMembersConnections' user members F
 deleteMembersConnections' :: User -> [GroupMember] -> Bool -> CM ()
 deleteMembersConnections' user members waitDelivery = do
   let memberConns = mapMaybe (\GroupMember {activeConn} -> activeConn) members
-  deleteAgentConnectionsAsync' user (map aConnId memberConns) waitDelivery
+  deleteAgentConnectionsAsync' (map aConnId memberConns) waitDelivery
   lift . void . withStoreBatch' $ \db -> map (\Connection {connId} -> deleteConnectionRecord db user connId) memberConns
 
-deleteMemberConnection :: User -> GroupMember -> CM ()
-deleteMemberConnection user mem = deleteMemberConnection' user mem False
+deleteMemberConnection :: GroupMember -> CM ()
+deleteMemberConnection mem = deleteMemberConnection' mem False
 
-deleteMemberConnection' :: User -> GroupMember -> Bool -> CM ()
-deleteMemberConnection' user GroupMember {activeConn} waitDelivery = do
+deleteMemberConnection' :: GroupMember -> Bool -> CM ()
+deleteMemberConnection' GroupMember {activeConn} waitDelivery = do
   forM_ activeConn $ \conn -> do
-    deleteAgentConnectionAsync' user (aConnId conn) waitDelivery
+    deleteAgentConnectionAsync' (aConnId conn) waitDelivery
     withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
 
 deleteOrUpdateMemberRecord :: User -> GroupMember -> CM ()
@@ -1646,7 +1646,7 @@ sendGroupMemberMessages user conn events groupId = do
   when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
   let idsEvts = L.map (GroupId groupId,) events
   (errs, msgs) <- lift $ partitionEithers . L.toList <$> createSndMessages idsEvts
-  unless (null errs) $ toView $ CEvtChatErrors (Just user) errs
+  unless (null errs) $ toView $ CEvtChatErrors errs
   forM_ (L.nonEmpty msgs) $ \msgs' ->
     batchSendConnMessages user conn MsgFlags {notification = True} msgs'
 
@@ -1775,7 +1775,7 @@ sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope
 sendGroupMessages user gInfo scope members events = do
   -- TODO [knocking] send current profile to pending member after approval?
   when shouldSendProfileUpdate $
-    sendProfileUpdate `catchChatError` (toView . CEvtChatError (Just user))
+    sendProfileUpdate `catchChatError` eToView
   sendGroupMessages_ user gInfo members events
   where
     User {profile = p, userMemberProfileUpdatedAt} = user
@@ -1929,10 +1929,10 @@ memberSendAction gInfo events members m@GroupMember {memberRole, memberStatus} =
               XGrpMsgForward {} -> True
               _ -> False
 
-sendGroupMemberMessage :: MsgEncodingI e => User -> GroupInfo -> GroupMember -> ChatMsgEvent e -> Maybe Int64 -> CM () -> CM ()
-sendGroupMemberMessage user gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} chatMsgEvent introId_ postDeliver = do
+sendGroupMemberMessage :: MsgEncodingI e => GroupInfo -> GroupMember -> ChatMsgEvent e -> Maybe Int64 -> CM () -> CM ()
+sendGroupMemberMessage gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} chatMsgEvent introId_ postDeliver = do
   msg <- createSndMessage chatMsgEvent (GroupId groupId)
-  messageMember msg `catchChatError` (toView . CEvtChatError (Just user))
+  messageMember msg `catchChatError` eToView
   where
     messageMember :: SndMessage -> CM ()
     messageMember SndMessage {msgId, msgBody} = forM_ (memberSendAction gInfo (chatMsgEvent :| []) [m] m) $ \case
@@ -2121,20 +2121,22 @@ agentAcceptContactAsync user enableNtfs invId msg subMode pqSup chatV = do
   connId <- withAgent $ \a -> acceptContactAsync a (aCorrId cmdId) enableNtfs invId dm pqSup subMode
   pure (cmdId, connId)
 
-deleteAgentConnectionAsync :: User -> ConnId -> CM ()
-deleteAgentConnectionAsync user acId = deleteAgentConnectionAsync' user acId False
+deleteAgentConnectionAsync :: ConnId -> CM ()
+deleteAgentConnectionAsync acId = deleteAgentConnectionAsync' acId False
+{-# INLINE deleteAgentConnectionAsync #-}
 
-deleteAgentConnectionAsync' :: User -> ConnId -> Bool -> CM ()
-deleteAgentConnectionAsync' user acId waitDelivery = do
-  withAgent (\a -> deleteConnectionAsync a waitDelivery acId) `catchChatError` (toView . CEvtChatError (Just user))
+deleteAgentConnectionAsync' :: ConnId -> Bool -> CM ()
+deleteAgentConnectionAsync' acId waitDelivery = do
+  withAgent (\a -> deleteConnectionAsync a waitDelivery acId) `catchChatError` eToView
 
-deleteAgentConnectionsAsync :: User -> [ConnId] -> CM ()
-deleteAgentConnectionsAsync user acIds = deleteAgentConnectionsAsync' user acIds False
+deleteAgentConnectionsAsync :: [ConnId] -> CM ()
+deleteAgentConnectionsAsync acIds = deleteAgentConnectionsAsync' acIds False
+{-# INLINE deleteAgentConnectionsAsync #-}
 
-deleteAgentConnectionsAsync' :: User -> [ConnId] -> Bool -> CM ()
-deleteAgentConnectionsAsync' _ [] _ = pure ()
-deleteAgentConnectionsAsync' user acIds waitDelivery = do
-  withAgent (\a -> deleteConnectionsAsync a waitDelivery acIds) `catchChatError` (toView . CEvtChatError (Just user))
+deleteAgentConnectionsAsync' :: [ConnId] -> Bool -> CM ()
+deleteAgentConnectionsAsync' [] _ = pure ()
+deleteAgentConnectionsAsync' acIds waitDelivery = do
+  withAgent (\a -> deleteConnectionsAsync a waitDelivery acIds) `catchChatError` eToView
 
 agentXFTPDeleteRcvFile :: RcvFileId -> FileTransferId -> CM ()
 agentXFTPDeleteRcvFile aFileId fileId = do
@@ -2235,7 +2237,7 @@ createContactsFeatureItems ::
 createContactsFeatureItems user cts chatDir ciFeature ciOffer getPref = do
   let dirsCIContents = map contactChangedFeatures cts
   (errs, acis) <- partitionEithers <$> createInternalItemsForChats user Nothing dirsCIContents
-  unless (null errs) $ toView' $ CEvtChatErrors (Just user) errs
+  unless (null errs) $ toView' $ CEvtChatErrors errs
   toView' $ CEvtNewChatItems user acis
   where
     contactChangedFeatures :: (Contact, Contact) -> (ChatDirection 'CTDirect d, [CIContent d])
@@ -2331,7 +2333,7 @@ createLocalChatItems ::
 createLocalChatItems user cd itemsData createdAt = do
   withStore' $ \db -> updateChatTsStats db user cd createdAt Nothing
   (errs, items) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (createItem db) $ L.toList itemsData)
-  unless (null errs) $ toView $ CEvtChatErrors (Just user) errs
+  unless (null errs) $ toView $ CEvtChatErrors errs
   pure items
   where
     createItem :: DB.Connection -> (CIContent 'MDSnd, Maybe (CIFile 'MDSnd), Maybe CIForwardedFrom, (Text, Maybe MarkdownList)) -> IO (ChatItem 'CTLocal 'MDSnd)
@@ -2344,9 +2346,7 @@ withUser' :: (User -> CM ChatResponse) -> CM ChatResponse
 withUser' action =
   asks currentUser
     >>= readTVarIO
-    >>= maybe (throwChatError CENoActiveUser) run
-  where
-    run u = action u `catchChatError` (pure . CRChatCmdError (Just u))
+    >>= maybe (throwChatError CENoActiveUser) action
 
 withUser :: (User -> CM ChatResponse) -> CM ChatResponse
 withUser action = withUser' $ \user ->

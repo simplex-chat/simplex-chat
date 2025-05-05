@@ -17,29 +17,116 @@ public protocol ChatCmdProtocol {
     var cmdString: String { get }
 }
 
+@inline(__always)
 public func onOff(_ b: Bool) -> String {
     b ? "on" : "off"
 }
 
-public struct APIResponse<ChatRespProtocol: Decodable>: Decodable {
-    public var resp: ChatRespProtocol
+public enum APIResult<R>: Decodable where R: Decodable, R: ChatAPIResult {
+    case result(R)
+    case error(ChatError)
+    case invalid(type: String, json: Data)
+    
+    public var responseType: String {
+        switch self {
+        case let .result(r): r.responseType
+        case let .error(e): "error \(e.errorType)"
+        case let .invalid(type, _): "* \(type)"
+        }
+    }
+    
+    public var unexpected: ChatError {
+        switch self {
+        case let .result(r): .unexpectedResult(type: r.responseType)
+        case let .error(e): e
+        case let .invalid(type, _): .unexpectedResult(type: "* \(type)")
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if container.contains(.result) {
+            let result = try container.decode(R.self, forKey: .result)
+            self = .result(result)
+        } else {
+            let error = try container.decode(ChatError.self, forKey: .error)
+            self = .error(error)
+        }
+    }
+    
+    private enum CodingKeys: String, CodingKey {
+        case result, error
+    }
 }
 
-public protocol ChatRespProtocol: Decodable, Error {
+public protocol ChatAPIResult: Decodable {
     var responseType: String { get }
     var details: String { get }
-    static func chatResponse(_ s: String) -> Self
-    var chatError: ChatError? { get }
-    var chatErrorType: ChatErrorType? { get }
+    static func fallbackResult(_ type: String, _ json: NSDictionary) -> Self?
 }
 
-public protocol ChatEventProtocol: Decodable, Error {
-    var eventType: String { get }
-    var details: String { get }
-    static func chatEvent(_ s: String) -> Self
-    var chatError: ChatError? { get }
-    var chatErrorType: ChatErrorType? { get }
+extension ChatAPIResult {
+    public var noDetails: String { "\(self.responseType): no details" }
+    
+    @inline(__always)
+    public static func fallbackResult(_ type: String, _ json: NSDictionary) -> Self? {
+        nil
+    }
+    
+    @inline(__always)
+    public var unexpected: ChatError {
+        .unexpectedResult(type: self.responseType)
+    }
 }
+
+public func decodeAPIResult<R: ChatAPIResult>(_ d: Data) -> APIResult<R> {
+//    print("decodeAPIResult \(String(describing: R.self))")
+    do {
+//        return try withStackSizeLimit { try jsonDecoder.decode(APIResult<R>.self, from: d) }
+        return try jsonDecoder.decode(APIResult<R>.self, from: d)
+    } catch {}
+    if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {
+        if let (_, jErr) = getOWSF(j, "error") {
+            return APIResult.error(.invalidJSON(json: errorJson(jErr))) as APIResult<R>
+        } else if let (type, jRes) = getOWSF(j, "result") {
+            return if let r = R.fallbackResult(type, jRes) {
+                APIResult.result(r)
+            } else {
+                APIResult.invalid(type: type, json: dataPrefix(d))
+            }
+        }
+    }
+    return APIResult.invalid(type: "invalid", json: dataPrefix(d))
+}
+
+// Default stack size for the main thread is 1mb, for secondary threads - 512 kb.
+// This function can be used to test what size is used (or to increase available stack size).
+// Stack size must be a multiple of system page size (16kb).
+//private let stackSizeLimit: Int = 256 * 1024
+//
+//private func withStackSizeLimit<T>(_ f: @escaping () throws -> T) throws -> T {
+//    let semaphore = DispatchSemaphore(value: 0)
+//    var result: Result<T, Error>?
+//    let thread = Thread {
+//        do {
+//            result = .success(try f())
+//        } catch {
+//            result = .failure(error)
+//        }
+//        semaphore.signal()
+//    }
+//
+//    thread.stackSize = stackSizeLimit
+//    thread.qualityOfService = Thread.current.qualityOfService
+//    thread.start()
+//
+//    semaphore.wait()
+//
+//    switch result! {
+//    case let .success(r): return r
+//    case let .failure(e): throw e
+//    }
+//}
 
 public func parseApiChats(_ jResp: NSDictionary) -> (user: UserRef, chats: [ChatData])? {
     if let jApiChats = jResp["apiChats"] as? NSDictionary,
@@ -49,7 +136,7 @@ public func parseApiChats(_ jResp: NSDictionary) -> (user: UserRef, chats: [Chat
             if let chatData = try? parseChatData(jChat) {
                 return chatData.0
             }
-            return ChatData.invalidJSON(serializeJSON(jChat, options: .prettyPrinted) ?? "")
+            return ChatData.invalidJSON(serializeJSON(jChat, options: .prettyPrinted))
         }
         return (user, chats)
     } else {
@@ -553,13 +640,26 @@ private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {
     encodeJSON(value).cString(using: .utf8)!
 }
 
-public enum ChatError: Decodable, Hashable {
+public enum ChatError: Decodable, Hashable, Error {
     case error(errorType: ChatErrorType)
     case errorAgent(agentError: AgentErrorType)
     case errorStore(storeError: StoreError)
     case errorDatabase(databaseError: DatabaseError)
     case errorRemoteCtrl(remoteCtrlError: RemoteCtrlError)
-    case invalidJSON(json: String)
+    case invalidJSON(json: Data?) // additional case used to pass errors that failed to parse
+    case unexpectedResult(type: String) // additional case used to pass unexpected responses
+    
+    public var errorType: String {
+        switch self {
+        case .error: "chat"
+        case .errorAgent: "agent"
+        case .errorStore: "store"
+        case .errorDatabase: "database"
+        case .errorRemoteCtrl: "remoteCtrl"
+        case .invalidJSON: "invalid"
+        case let .unexpectedResult(type): "! \(type)"
+        }
+    }
 }
 
 public enum ChatErrorType: Decodable, Hashable {

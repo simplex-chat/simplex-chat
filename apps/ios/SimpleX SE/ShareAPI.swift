@@ -13,52 +13,52 @@ import SimpleXChat
 let logger = Logger()
 
 func apiGetActiveUser() throws -> User? {
-    let r: SEChatResponse = sendSimpleXCmd(SEChatCommand.showActiveUser)
+    let r: APIResult<SEChatResponse> = sendSimpleXCmd(SEChatCommand.showActiveUser)
     switch r {
-    case let .activeUser(user): return user
-    case .chatCmdError(_, .error(.noActiveUser)): return nil
-    default: throw r
+    case let .result(.activeUser(user)): return user
+    case .error(.error(.noActiveUser)): return nil
+    default: throw r.unexpected
     }
 }
 
 func apiStartChat() throws -> Bool {
-    let r: SEChatResponse = sendSimpleXCmd(SEChatCommand.startChat(mainApp: false, enableSndFiles: true))
+    let r: APIResult<SEChatResponse> = sendSimpleXCmd(SEChatCommand.startChat(mainApp: false, enableSndFiles: true))
     switch r {
-    case .chatStarted: return true
-    case .chatRunning: return false
-    default: throw r
+    case .result(.chatStarted): return true
+    case .result(.chatRunning): return false
+    default: throw r.unexpected
     }
 }
 
 func apiSetNetworkConfig(_ cfg: NetCfg) throws {
-    let r: SEChatResponse = sendSimpleXCmd(SEChatCommand.apiSetNetworkConfig(networkConfig: cfg))
-    if case .cmdOk = r { return }
-    throw r
+    let r: APIResult<SEChatResponse> = sendSimpleXCmd(SEChatCommand.apiSetNetworkConfig(networkConfig: cfg))
+    if case .result(.cmdOk) = r { return }
+    throw r.unexpected
 }
 
 func apiSetAppFilePaths(filesFolder: String, tempFolder: String, assetsFolder: String) throws {
-    let r: SEChatResponse = sendSimpleXCmd(SEChatCommand.apiSetAppFilePaths(filesFolder: filesFolder, tempFolder: tempFolder, assetsFolder: assetsFolder))
-    if case .cmdOk = r { return }
-    throw r
+    let r: APIResult<SEChatResponse> = sendSimpleXCmd(SEChatCommand.apiSetAppFilePaths(filesFolder: filesFolder, tempFolder: tempFolder, assetsFolder: assetsFolder))
+    if case .result(.cmdOk) = r { return }
+    throw r.unexpected
 }
 
 func apiSetEncryptLocalFiles(_ enable: Bool) throws {
-    let r: SEChatResponse = sendSimpleXCmd(SEChatCommand.apiSetEncryptLocalFiles(enable: enable))
-    if case .cmdOk = r { return }
-    throw r
+    let r: APIResult<SEChatResponse> = sendSimpleXCmd(SEChatCommand.apiSetEncryptLocalFiles(enable: enable))
+    if case .result(.cmdOk) = r { return }
+    throw r.unexpected
 }
 
 func apiGetChats(userId: User.ID) throws -> Array<ChatData> {
-    let r: SEChatResponse = sendSimpleXCmd(SEChatCommand.apiGetChats(userId: userId))
-    if case let .apiChats(user: _, chats: chats) = r { return chats }
-    throw r
+    let r: APIResult<SEChatResponse> = sendSimpleXCmd(SEChatCommand.apiGetChats(userId: userId))
+    if case let .result(.apiChats(user: _, chats: chats)) = r { return chats }
+    throw r.unexpected
 }
 
 func apiSendMessages(
     chatInfo: ChatInfo,
     composedMessages: [ComposedMessage]
 ) throws -> [AChatItem] {
-    let r: SEChatResponse = sendSimpleXCmd(
+    let r: APIResult<SEChatResponse> = sendSimpleXCmd(
         chatInfo.chatType == .local
         ? SEChatCommand.apiCreateChatItems(
             noteFolderId: chatInfo.apiId,
@@ -73,33 +73,33 @@ func apiSendMessages(
             composedMessages: composedMessages
         )
     )
-    if case let .newChatItems(_, chatItems) = r {
+    if case let .result(.newChatItems(_, chatItems)) = r {
         return chatItems
     } else {
         for composedMessage in composedMessages {
             if let filePath = composedMessage.fileSource?.filePath { removeFile(filePath) }
         }
-        throw r
+        throw r.unexpected
     }
 }
 
 func apiActivateChat() throws {
     chatReopenStore()
-    let r: SEChatResponse = sendSimpleXCmd(SEChatCommand.apiActivateChat(restoreChat: false))
-    if case .cmdOk = r { return }
-    throw r
+    let r: APIResult<SEChatResponse> = sendSimpleXCmd(SEChatCommand.apiActivateChat(restoreChat: false))
+    if case .result(.cmdOk) = r { return }
+    throw r.unexpected
 }
 
 func apiSuspendChat(expired: Bool) {
-    let r: SEChatResponse = sendSimpleXCmd(SEChatCommand.apiSuspendChat(timeoutMicroseconds: expired ? 0 : 3_000000))
+    let r: APIResult<SEChatResponse> = sendSimpleXCmd(SEChatCommand.apiSuspendChat(timeoutMicroseconds: expired ? 0 : 3_000000))
     // Block until `chatSuspended` received or 3 seconds has passed
     var suspended = false
-    if case .cmdOk = r, !expired {
+    if case .result(.cmdOk) = r, !expired {
         let startTime = CFAbsoluteTimeGetCurrent()
         while CFAbsoluteTimeGetCurrent() - startTime < 3 {
-            let msg: SEChatEvent? = recvSimpleXMsg(messageTimeout: 3_500000)
+            let msg: APIResult<SEChatEvent>? = recvSimpleXMsg(messageTimeout: 3_500000)
             switch msg {
-            case .chatSuspended:
+            case .result(.chatSuspended):
                 suspended = false
                 break
             default: continue
@@ -107,7 +107,7 @@ func apiSuspendChat(expired: Bool) {
         }
     }
     if !suspended {
-        let _r1: SEChatResponse = sendSimpleXCmd(SEChatCommand.apiSuspendChat(timeoutMicroseconds: 0))
+        let _r1: APIResult<SEChatResponse> = sendSimpleXCmd(SEChatCommand.apiSuspendChat(timeoutMicroseconds: 0))
     }
     logger.debug("close store")
     chatCloseStore()
@@ -164,32 +164,27 @@ enum SEChatCommand: ChatCmdProtocol {
     }
 }
 
-enum SEChatResponse: Decodable, Error, ChatRespProtocol {
-    case response(type: String, json: String)
+enum SEChatResponse: Decodable, ChatAPIResult {
     case activeUser(user: User)
     case chatStarted
     case chatRunning
     case apiChats(user: UserRef, chats: [ChatData])
     case newChatItems(user: UserRef, chatItems: [AChatItem])
     case cmdOk(user_: UserRef?)
-    case chatCmdError(user_: UserRef?, chatError: ChatError)
     
     var responseType: String {
         switch self {
-        case let .response(type, _): "* \(type)"
         case .activeUser: "activeUser"
         case .chatStarted: "chatStarted"
         case .chatRunning: "chatRunning"
         case .apiChats: "apiChats"
         case .newChatItems: "newChatItems"
         case .cmdOk: "cmdOk"
-        case .chatCmdError: "chatCmdError"
         }
     }
     
     var details: String {
         switch self {
-        case let .response(_, json): return json
         case let .activeUser(user): return String(describing: user)
         case .chatStarted: return noDetails
         case .chatRunning: return noDetails
@@ -198,88 +193,39 @@ enum SEChatResponse: Decodable, Error, ChatRespProtocol {
             let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
             return withUser(u, itemsString)
         case .cmdOk: return noDetails
-        case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
         }
     }
 
-    var noDetails: String { "\(responseType): no details" }
-
-    static func chatResponse(_ s: String) -> SEChatResponse {
-        let d = s.data(using: .utf8)!
-        // TODO is there a way to do it without copying the data? e.g:
-        //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
-        //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
-        do {
-            let r = try jsonDecoder.decode(APIResponse<SEChatResponse>.self, from: d)
-            return r.resp
-        } catch {
-            logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
-        }
-        
-        var type: String?
-        var json: String?
-        if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {
-            if let jResp = j["resp"] as? NSDictionary, jResp.count == 1 || jResp.count == 2 {
-                type = jResp.allKeys[0] as? String
-                if jResp.count == 2 && type == "_owsf" {
-                    type = jResp.allKeys[1] as? String
-                }
-                if type == "apiChats" {
-                    if let r = parseApiChats(jResp) {
-                        return .apiChats(user: r.user, chats: r.chats)
-                    }
-                } else if type == "chatCmdError" {
-                    if let jError = jResp["chatCmdError"] as? NSDictionary {
-                        return .chatCmdError(user_: decodeUser_(jError), chatError: .invalidJSON(json: errorJson(jError) ?? ""))
-                    }
-                }
-            }
-            json = serializeJSON(j, options: .prettyPrinted)
-        }
-        return SEChatResponse.response(type: type ?? "invalid", json: json ?? s)
-    }
-    
-    var chatError: ChatError? {
-        switch self {
-        case let .chatCmdError(_, error): error
-        default: nil
-        }
-    }
-    
-    var chatErrorType: ChatErrorType? {
-        switch self {
-        case let .chatCmdError(_, .error(error)): error
-        default: nil
+    static func fallbackResult(_ type: String, _ json: NSDictionary) -> SEChatResponse? {
+        if type == "apiChats", let r = parseApiChats(json) {
+            .apiChats(user: r.user, chats: r.chats)
+        } else {
+            nil
         }
     }
 }
 
-enum SEChatEvent: Decodable, Error, ChatEventProtocol {
-    case event(type: String, json: String)
+enum SEChatEvent: Decodable, ChatAPIResult {
     case chatSuspended
     case sndFileProgressXFTP(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta, sentSize: Int64, totalSize: Int64)
     case sndFileCompleteXFTP(user: UserRef, chatItem: AChatItem, fileTransferMeta: FileTransferMeta)
     case chatItemsStatusesUpdated(user: UserRef, chatItems: [AChatItem])
     case sndFileError(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta, errorMessage: String)
     case sndFileWarning(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta, errorMessage: String)
-    case chatError(user_: UserRef?, chatError: ChatError)
     
-    var eventType: String {
+    var responseType: String {
         switch self {
-        case let .event(type, _): "* \(type)"
         case .chatSuspended: "chatSuspended"
         case .sndFileProgressXFTP: "sndFileProgressXFTP"
         case .sndFileCompleteXFTP: "sndFileCompleteXFTP"
         case .chatItemsStatusesUpdated: "chatItemsStatusesUpdated"
         case .sndFileError: "sndFileError"
         case .sndFileWarning: "sndFileWarning"
-        case .chatError: "chatError"
         }
     }
     
     var details: String {
         switch self {
-        case let .event(_, json): return json
         case .chatSuspended: return noDetails
         case let .sndFileProgressXFTP(u, chatItem, _, sentSize, totalSize): return withUser(u, "chatItem: \(String(describing: chatItem))\nsentSize: \(sentSize)\ntotalSize: \(totalSize)")
         case let .sndFileCompleteXFTP(u, chatItem, _): return withUser(u, String(describing: chatItem))
@@ -288,53 +234,6 @@ enum SEChatEvent: Decodable, Error, ChatEventProtocol {
             return withUser(u, itemsString)
         case let .sndFileError(u, chatItem, _, err): return withUser(u, "error: \(String(describing: err))\nchatItem: \(String(describing: chatItem))")
         case let .sndFileWarning(u, chatItem, _, err): return withUser(u, "error: \(String(describing: err))\nchatItem: \(String(describing: chatItem))")
-        case let .chatError(u, chatError): return withUser(u, String(describing: chatError))
         }
-    }
-
-    var noDetails: String { "\(eventType): no details" }
-
-    static func chatEvent(_ s: String) -> SEChatEvent {
-        let d = s.data(using: .utf8)!
-        // TODO is there a way to do it without copying the data? e.g:
-        //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
-        //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
-        do {
-            let r = try jsonDecoder.decode(APIResponse<SEChatEvent>.self, from: d)
-            return r.resp
-        } catch {
-            logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
-        }
-        
-        var type: String?
-        var json: String?
-        if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {
-            if let jResp = j["resp"] as? NSDictionary, jResp.count == 1 || jResp.count == 2 {
-                type = jResp.allKeys[0] as? String
-                if jResp.count == 2 && type == "_owsf" {
-                    type = jResp.allKeys[1] as? String
-                }
-                if type == "chatError" {
-                    if let jError = jResp["chatError"] as? NSDictionary {
-                        return .chatError(user_: decodeUser_(jError), chatError: .invalidJSON(json: errorJson(jError) ?? ""))
-                    }
-                }
-            }
-            json = serializeJSON(j, options: .prettyPrinted)
-        }
-        return SEChatEvent.event(type: type ?? "invalid", json: json ?? s)
-    }
-    var chatError: ChatError? {
-        switch self {
-        case let .chatError(_, error): error
-        default: nil
-        }
-    }
-    
-    var chatErrorType: ChatErrorType? {
-        switch self {
-        case let .chatError(_, .error(error)): error
-        default: nil
-        }
-    }
+    }    
 }

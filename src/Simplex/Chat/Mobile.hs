@@ -13,6 +13,7 @@ import Control.Concurrent.STM
 import Control.Exception (SomeException, catch)
 import Control.Monad.Except
 import Control.Monad.Reader
+import Data.Aeson (ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.Bifunctor (first)
@@ -72,13 +73,19 @@ data DBMigrationResult
 
 $(JQ.deriveToJSON (sumTypeJSON $ dropPrefix "DBM") ''DBMigrationResult)
 
-data APIResponse = APIResponse {remoteHostId :: Maybe RemoteHostId, resp :: ChatResponse}
+data APIResult r
+  = APIResult  {remoteHostId :: Maybe RemoteHostId, result :: r}
+  | APIError {remoteHostId :: Maybe RemoteHostId, error :: ChatError}
 
-data APIEvent = APIEvent {remoteHostId :: Maybe RemoteHostId, resp :: ChatEvent}
+eitherToResult :: Maybe RemoteHostId -> Either ChatError r -> APIResult r
+eitherToResult rhId = either (APIError rhId) (APIResult rhId)
+{-# INLINE eitherToResult #-}
 
-$(JQ.deriveToJSON defaultJSON ''APIResponse)
+$(pure [])
 
-$(JQ.deriveToJSON defaultJSON ''APIEvent)
+instance ToJSON r => ToJSON (APIResult r) where
+  toEncoding = $(JQ.mkToEncoding (defaultJSON {J.sumEncoding = J.UntaggedValue}) ''APIResult)
+  toJSON = $(JQ.mkToJSON (defaultJSON {J.sumEncoding = J.UntaggedValue}) ''APIResult)
 
 foreign export ccall "chat_migrate_init" cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
 
@@ -290,15 +297,14 @@ chatSendCmd :: ChatController -> B.ByteString -> IO JSONByteString
 chatSendCmd cc = chatSendRemoteCmd cc Nothing
 
 chatSendRemoteCmd :: ChatController -> Maybe RemoteHostId -> B.ByteString -> IO JSONByteString
-chatSendRemoteCmd cc rh s = J.encode . APIResponse rh <$> runReaderT (execChatCommand rh s) cc
+chatSendRemoteCmd cc rh s = J.encode . eitherToResult rh <$> runReaderT (execChatCommand rh s) cc
 
 chatRecvMsg :: ChatController -> IO JSONByteString
-chatRecvMsg ChatController {outputQ} = json <$> readChatResponse
+chatRecvMsg ChatController {outputQ} = J.encode . uncurry eitherToResult <$> readChatResponse
   where
-    json (remoteHostId, resp) = J.encode APIEvent {remoteHostId, resp}
     readChatResponse =
       atomically (readTBQueue outputQ) >>= \case
-        (_, CEvtTerminalEvent {}) -> readChatResponse
+        (_, Right CEvtTerminalEvent {}) -> readChatResponse
         out -> pure out
 
 chatRecvMsgWait :: ChatController -> Int -> IO JSONByteString

@@ -37,22 +37,18 @@ public struct ErrorAlert: Error {
     }
 
     public init(_ error: any Error) {
-        self = if let chatResponse = error as? ChatRespProtocol {
-            ErrorAlert(chatResponse)
+        self = if let e = error as? ChatError {
+            ErrorAlert(e)
         } else {
             ErrorAlert("\(error.localizedDescription)")
         }
     }
 
     public init(_ chatError: ChatError) {
-        self = ErrorAlert("\(chatErrorString(chatError))")
-    }
-
-    public init(_ chatResponse: ChatRespProtocol) {
-        self = if let networkErrorAlert = getNetworkErrorAlert(chatResponse) {
+        self = if let networkErrorAlert = getNetworkErrorAlert(chatError) {
             networkErrorAlert
         } else {
-            ErrorAlert("\(responseError(chatResponse))")
+            ErrorAlert("\(chatErrorString(chatError))")
         }
     }
 }
@@ -94,8 +90,8 @@ extension View {
     }
 }
 
-public func getNetworkErrorAlert(_ r: ChatRespProtocol) -> ErrorAlert? {
-    switch r.chatError {
+public func getNetworkErrorAlert(_ e: ChatError) -> ErrorAlert? {
+    switch e {
     case let .errorAgent(.BROKER(addr, .TIMEOUT)):
         ErrorAlert(title: "Connection timeout", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
     case let .errorAgent(.BROKER(addr, .NETWORK)):

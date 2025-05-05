@@ -38,6 +38,7 @@ import java.net.URI
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.*
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.collections.ArrayList
 import kotlin.random.Random
 import kotlin.time.*
@@ -1479,19 +1480,21 @@ sealed class ChatInfo: SomeChat, NamedChat {
   }
 
   @Serializable @SerialName("invalidJSON")
-  class InvalidJSON(val json: String): ChatInfo() {
+  class InvalidJSON(
+    val json: String,
+    override val apiId: Long = -idGenerator.getAndIncrement(),
+    override val createdAt: Instant = Clock.System.now(),
+    override val updatedAt: Instant = Clock.System.now()
+  ): ChatInfo() {
     override val chatType get() = ChatType.Direct
     override val localDisplayName get() = invalidChatName
-    override val id get() = ""
-    override val apiId get() = 0L
+    override val id get() = "?$apiId"
     override val ready get() = false
     override val chatDeleted get() = false
     override val sendMsgEnabled get() = false
     override val incognito get() = false
     override fun featureEnabled(feature: ChatFeature) = false
     override val timedMessagesTTL: Int? get() = null
-    override val createdAt get() = Clock.System.now()
-    override val updatedAt get() = Clock.System.now()
     override val displayName get() = invalidChatName
     override val fullName get() = invalidChatName
     override val image get() = null
@@ -1499,6 +1502,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
 
     companion object {
       private val invalidChatName = generalGetString(MR.strings.invalid_chat)
+      private val idGenerator = AtomicLong(0)
     }
   }
 
