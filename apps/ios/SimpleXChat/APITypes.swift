@@ -80,7 +80,7 @@ extension ChatAPIResult {
 }
 
 public func decodeAPIResult<R: ChatAPIResult>(_ d: Data) -> APIResult<R> {
-    print("decodeAPIResult \(String(describing: R.self))")
+//    print("decodeAPIResult \(String(describing: R.self))")
     do {
 //        return try withStackSizeLimit { try jsonDecoder.decode(APIResult<R>.self, from: d) }
         return try jsonDecoder.decode(APIResult<R>.self, from: d)

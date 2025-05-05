@@ -197,11 +197,7 @@ class NotificationService: UNNotificationServiceExtension {
             contentHandler(createAppStoppedNtf(badgeCount))
         case .suspended:
             setExpirationTimer()
-            do {
-                try receiveNtfMessages(request)
-            } catch let error {
-                // TODO call handler with error
-            }
+            receiveNtfMessages(request)
         case .suspending:
             setExpirationTimer()
             Task {
@@ -225,11 +221,7 @@ class NotificationService: UNNotificationServiceExtension {
                 }
                 logger.debug("NotificationService: app state is now \(state.rawValue)")
                 if state.inactive && self.contentHandler != nil {
-                    do {
-                        try receiveNtfMessages(request)
-                    } catch let error {
-                        // TODO call handler with error
-                    }
+                    receiveNtfMessages(request)
                 } else {
                     contentHandler(receivedNtf)
                 }
@@ -256,7 +248,7 @@ class NotificationService: UNNotificationServiceExtension {
         }
     }
     
-    func receiveNtfMessages(_ request: UNNotificationRequest) throws {
+    func receiveNtfMessages(_ request: UNNotificationRequest) {
         logger.debug("NotificationService: receiveNtfMessages")
         if case .documents = dbContainerGroupDefault.get() {
             deliverBestAttemptNtf()
@@ -267,7 +259,7 @@ class NotificationService: UNNotificationServiceExtension {
            appStateGroupDefault.get().inactive {
             // thread is added to activeThreads tracking set here - if thread started chat it needs to be suspended
             if let t = threadId { NSEThreads.shared.startThread(t, self) }
-            let dbStatus = try startChat()
+            let dbStatus = startChat()
             if case .ok = dbStatus,
                let ntfConns = apiGetNtfConns(nonce: nrData.nonce, encNtfInfo: nrData.encNtfInfo) {
                 logger.debug("NotificationService: receiveNtfMessages: apiGetNtfConns ntfConns count = \(ntfConns.count)")
@@ -652,7 +644,7 @@ var networkConfig: NetCfg = getNetCfg()
 
 // startChat uses semaphore startLock to ensure that only one didReceive thread can start chat controller
 // Subsequent calls to didReceive will be waiting on semaphore and won't start chat again, as it will be .active
-func startChat() throws -> DBMigrationResult? {
+func startChat() -> DBMigrationResult? {
     logger.debug("NotificationService: startChat")
     // only skip creating if there is chat controller
     if case .active = NSEChatState.shared.value, hasChatCtrl() { return .ok }
@@ -665,8 +657,8 @@ func startChat() throws -> DBMigrationResult? {
         case .created: doStartChat()
         case .starting: .ok // it should never get to this branch, as it would be waiting for start on startLock
         case .active: .ok
-        case .suspending: try activateChat()
-        case .suspended: try activateChat()
+        case .suspending: activateChat()
+        case .suspended: activateChat()
         }
     } else {
         // Ignore state in preference if there is no chat controller.
@@ -722,11 +714,11 @@ func doStartChat() -> DBMigrationResult? {
     return nil
 }
 
-func activateChat() throws -> DBMigrationResult? {
+func activateChat() -> DBMigrationResult? {
     logger.debug("NotificationService: activateChat")
     let state = NSEChatState.shared.value
     NSEChatState.shared.set(.active)
-    if try apiActivateChat() {
+    if apiActivateChat() {
         logger.debug("NotificationService: activateChat: after apiActivateChat")
         return .ok
     } else {
@@ -904,7 +896,7 @@ func apiStartChat() throws -> Bool {
     }
 }
 
-func apiActivateChat() throws -> Bool {
+func apiActivateChat() -> Bool {
     chatReopenStore()
     let r: APIResult<NSEChatResponse> = sendSimpleXCmd(NSEChatCommand.apiActivateChat(restoreChat: false))
     if case .result(.cmdOk) = r { return true }
