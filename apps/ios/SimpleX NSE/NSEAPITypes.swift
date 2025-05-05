@@ -82,12 +82,6 @@ enum NSEChatResponse: Decodable, ChatAPIResult {
         case .cmdOk: return noDetails
         }
     }
-    
-    var noDetails: String { "\(resultType): no details" }
-
-    static func fallbackResult(_ type: String, _ json: NSDictionary) -> NSEChatResponse? {
-        nil
-    }
 }
 
 enum NSEChatEvent: Decodable, ChatAPIResult {
@@ -129,11 +123,5 @@ enum NSEChatEvent: Decodable, ChatAPIResult {
         case let .callInvitation(inv): return String(describing: inv)
         case let .ntfMessage(u, connEntity, ntfMessage): return withUser(u, "connEntity: \(String(describing: connEntity))\nntfMessage: \(String(describing: ntfMessage))")
         }
-    }
-    
-    var noDetails: String { "\(resultType): no details" }
-
-    static func fallbackResult(_ type: String, _ json: NSDictionary) -> NSEChatEvent? {
-        nil
-    }
+    }    
 }

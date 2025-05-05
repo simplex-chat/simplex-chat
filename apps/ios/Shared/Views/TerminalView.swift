@@ -146,7 +146,7 @@ struct TerminalView: View {
     
     func consoleSendMessage() {
         if composeState.message.starts(with: "/sql") && (!prefPerformLA || !developerTools) {
-            let resp: APIResult<ChatResponse> = APIResult.error(ChatError.error(errorType: ChatErrorType.commandError(message: "Failed reading: empty")))
+            let resp: APIResult<ChatResponse2> = APIResult.error(ChatError.error(errorType: ChatErrorType.commandError(message: "Failed reading: empty")))
             Task {
                 await TerminalItems.shared.addCommand(.now, .string(composeState.message), resp)
             }
@@ -169,24 +169,24 @@ func sendTerminalCmd(_ cmd: String) async {
     await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
         let d = sendSimpleXCmdStr(cmd)
         Task {
-            if let d {
-                let r0: APIResult<ChatResponse0> = decodeAPIResult(d)
-                if case .invalid = r0 {
-                    let r: APIResult<ChatResponse> = decodeAPIResult(d)
-                    await TerminalItems.shared.addCommand(start, .string(cmd), r)
-                } else {
-                    await TerminalItems.shared.addCommand(start, .string(cmd), r0)
-                }
-            } else {
-                await TerminalItems.shared.addCommand(start, ChatCommand.string(cmd), APIResult<ChatResponse>.error(.invalidJSON(json: nil)))
+            guard let d else {
+                await TerminalItems.shared.addCommand(start, ChatCommand.string(cmd), APIResult<ChatResponse2>.error(.invalidJSON(json: nil)))
+                return
             }
+            let r0: APIResult<ChatResponse0> = decodeAPIResult(d)
+            guard case .invalid = r0 else {
+                await TerminalItems.shared.addCommand(start, .string(cmd), r0)
+                return
+            }
+            let r1: APIResult<ChatResponse1> = decodeAPIResult(d)
+            guard case .invalid = r1 else {
+                await TerminalItems.shared.addCommand(start, .string(cmd), r1)
+                return
+            }
+            let r2: APIResult<ChatResponse2> = decodeAPIResult(d)
+            await TerminalItems.shared.addCommand(start, .string(cmd), r2)
         }
         cont.resume(returning: ())
-    }
-    
-    func isInvalid<T: ChatAPIResult>(_ r: APIResult<T>) -> Bool {
-        if case .invalid = r { return true }
-        return false
     }
 }
 
@@ -194,8 +194,8 @@ struct TerminalView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
         chatModel.terminalItems = [
-            .err(.now, APIResult<ChatResponse>.invalid(type: "contactSubscribed", json: "{}".data(using: .utf8)!).unexpected),
-            .err(.now, APIResult<ChatResponse>.invalid(type: "newChatItems", json: "{}".data(using: .utf8)!).unexpected)
+            .err(.now, APIResult<ChatResponse2>.invalid(type: "contactSubscribed", json: "{}".data(using: .utf8)!).unexpected),
+            .err(.now, APIResult<ChatResponse2>.invalid(type: "newChatItems", json: "{}".data(using: .utf8)!).unexpected)
         ]
         return NavigationView {
             TerminalView()

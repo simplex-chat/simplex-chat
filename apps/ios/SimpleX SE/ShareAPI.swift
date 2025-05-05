@@ -183,8 +183,6 @@ enum SEChatResponse: Decodable, ChatAPIResult {
         }
     }
 
-    var noDetails: String { "\(resultType): no details" }
-
     static func fallbackResult(_ type: String, _ json: NSDictionary) -> SEChatResponse? {
         if type == "apiChats", let r = parseApiChats(json) {
             .apiChats(user: r.user, chats: r.chats)
@@ -224,11 +222,5 @@ enum SEChatEvent: Decodable, ChatAPIResult {
         case let .sndFileError(u, chatItem, _, err): return withUser(u, "error: \(String(describing: err))\nchatItem: \(String(describing: chatItem))")
         case let .sndFileWarning(u, chatItem, _, err): return withUser(u, "error: \(String(describing: err))\nchatItem: \(String(describing: chatItem))")
         }
-    }
-    
-    var noDetails: String { "\(resultType): no details" }
-
-    static func fallbackResult(_ type: String, _ json: NSDictionary) -> SEChatEvent? {
-        nil
-    }
+    }    
 }

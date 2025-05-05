@@ -66,6 +66,13 @@ public protocol ChatAPIResult: Decodable {
 }
 
 extension ChatAPIResult {
+    public var noDetails: String { "\(self.resultType): no details" }
+    
+    @inline(__always)
+    public static func fallbackResult(_ type: String, _ json: NSDictionary) -> Self? {
+        nil
+    }
+    
     @inline(__always)
     public var unexpected: ChatError {
         .unexpectedResult(type: self.resultType)
@@ -73,8 +80,10 @@ extension ChatAPIResult {
 }
 
 public func decodeAPIResult<R: ChatAPIResult>(_ d: Data) -> APIResult<R> {
+//    print("decodeAPIResult \(String(describing: R.self))")
     do {
-        return try callWithLargeStack { try jsonDecoder.decode(APIResult<R>.self, from: d) }
+//        return try withStackSizeLimit { try jsonDecoder.decode(APIResult<R>.self, from: d) }
+        return try jsonDecoder.decode(APIResult<R>.self, from: d)
     } catch {}
     if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {
         if let (_, jErr) = getOWSF(j, "error") {
@@ -90,31 +99,34 @@ public func decodeAPIResult<R: ChatAPIResult>(_ d: Data) -> APIResult<R> {
     return APIResult.invalid(type: "invalid", json: dataPrefix(d))
 }
 
-private let largeStackSize: Int = 768 * 1024
-
-private func callWithLargeStack<T>(_ f: @escaping () throws -> T) throws -> T {
-    let semaphore = DispatchSemaphore(value: 0)
-    var result: Result<T, Error>?
-    let thread = Thread {
-        do {
-            result = .success(try f())
-        } catch {
-            result = .failure(error)
-        }
-        semaphore.signal()
-    }
-
-    thread.stackSize = largeStackSize
-    thread.qualityOfService = Thread.current.qualityOfService
-    thread.start()
-
-    semaphore.wait()
-
-    switch result! {
-    case let .success(r): return r
-    case let .failure(e): throw e
-    }
-}
+// Default size for main thread stack is 1mb, for secondary threads - 512 kb.
+// This function can be used to increase stack size for JSON decoding, and to test what size is used.
+// Stack size must be a multiple of system page size (16kb).
+//private let stackSizeLimit: Int = 288 * 1024
+//
+//private func withStackSizeLimit<T>(_ f: @escaping () throws -> T) throws -> T {
+//    let semaphore = DispatchSemaphore(value: 0)
+//    var result: Result<T, Error>?
+//    let thread = Thread {
+//        do {
+//            result = .success(try f())
+//        } catch {
+//            result = .failure(error)
+//        }
+//        semaphore.signal()
+//    }
+//
+//    thread.stackSize = stackSizeLimit
+//    thread.qualityOfService = Thread.current.qualityOfService
+//    thread.start()
+//
+//    semaphore.wait()
+//
+//    switch result! {
+//    case let .success(r): return r
+//    case let .failure(e): throw e
+//    }
+//}
 
 public func parseApiChats(_ jResp: NSDictionary) -> (user: UserRef, chats: [ChatData])? {
     if let jApiChats = jResp["apiChats"] as? NSDictionary,
