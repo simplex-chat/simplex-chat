@@ -80,7 +80,7 @@ extension ChatAPIResult {
 }
 
 public func decodeAPIResult<R: ChatAPIResult>(_ d: Data) -> APIResult<R> {
-//    print("decodeAPIResult \(String(describing: R.self))")
+    print("decodeAPIResult \(String(describing: R.self))")
     do {
 //        return try withStackSizeLimit { try jsonDecoder.decode(APIResult<R>.self, from: d) }
         return try jsonDecoder.decode(APIResult<R>.self, from: d)
@@ -99,10 +99,10 @@ public func decodeAPIResult<R: ChatAPIResult>(_ d: Data) -> APIResult<R> {
     return APIResult.invalid(type: "invalid", json: dataPrefix(d))
 }
 
-// Default size for main thread stack is 1mb, for secondary threads - 512 kb.
-// This function can be used to increase stack size for JSON decoding, and to test what size is used.
+// Default stack size for the main thread is 1mb, for secondary threads - 512 kb.
+// This function can be used to test what size is used (or to increase available stack size).
 // Stack size must be a multiple of system page size (16kb).
-//private let stackSizeLimit: Int = 288 * 1024
+//private let stackSizeLimit: Int = 256 * 1024
 //
 //private func withStackSizeLimit<T>(_ f: @escaping () throws -> T) throws -> T {
 //    let semaphore = DispatchSemaphore(value: 0)

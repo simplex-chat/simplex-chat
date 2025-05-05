@@ -611,14 +611,6 @@ enum ChatResponse0: Decodable, ChatAPIResult {
     case groupMemberCode(user: UserRef, groupInfo: GroupInfo, member: GroupMember, connectionCode: String)
     case connectionVerified(user: UserRef, verified: Bool, expectedCode: String)
     case tagsUpdated(user: UserRef, userTags: [ChatTag], chatTags: [Int64])
-    case invitation(user: UserRef, connLinkInvitation: CreatedConnLink, connection: PendingContactConnection)
-    case connectionIncognitoUpdated(user: UserRef, toConnection: PendingContactConnection)
-    case connectionUserChanged(user: UserRef, fromConnection: PendingContactConnection, toConnection: PendingContactConnection, newUser: UserRef)
-    case connectionPlan(user: UserRef, connLink: CreatedConnLink, connectionPlan: ConnectionPlan)
-    case sentConfirmation(user: UserRef, connection: PendingContactConnection)
-    case sentInvitation(user: UserRef, connection: PendingContactConnection)
-    case sentInvitationToContact(user: UserRef, contact: Contact, customUserProfile: Profile?)
-    case contactAlreadyExists(user: UserRef, contact: Contact)
 
     var resultType: String {
         switch self {
@@ -651,14 +643,6 @@ enum ChatResponse0: Decodable, ChatAPIResult {
         case .groupMemberCode: "groupMemberCode"
         case .connectionVerified: "connectionVerified"
         case .tagsUpdated: "tagsUpdated"
-        case .invitation: "invitation"
-        case .connectionIncognitoUpdated: "connectionIncognitoUpdated"
-        case .connectionUserChanged: "connectionUserChanged"
-        case .connectionPlan: "connectionPlan"
-        case .sentConfirmation: "sentConfirmation"
-        case .sentInvitation: "sentInvitation"
-        case .sentInvitationToContact: "sentInvitationToContact"
-        case .contactAlreadyExists: "contactAlreadyExists"
         }
     }
     
@@ -695,14 +679,6 @@ enum ChatResponse0: Decodable, ChatAPIResult {
         case let .groupMemberCode(u, groupInfo, member, connectionCode): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionCode: \(connectionCode)")
         case let .connectionVerified(u, verified, expectedCode): return withUser(u, "verified: \(verified)\nconnectionCode: \(expectedCode)")
         case let .tagsUpdated(u, userTags, chatTags): return withUser(u, "userTags: \(String(describing: userTags))\nchatTags: \(String(describing: chatTags))")
-        case let .invitation(u, connLinkInvitation, connection): return withUser(u, "connLinkInvitation: \(connLinkInvitation)\nconnection: \(connection)")
-        case let .connectionIncognitoUpdated(u, toConnection): return withUser(u, String(describing: toConnection))
-        case let .connectionUserChanged(u, fromConnection, toConnection, newUser): return withUser(u, "fromConnection: \(String(describing: fromConnection))\ntoConnection: \(String(describing: toConnection))\nnewUserId: \(String(describing: newUser.userId))")
-        case let .connectionPlan(u, connLink, connectionPlan): return withUser(u, "connLink: \(String(describing: connLink))\nconnectionPlan: \(String(describing: connectionPlan))")
-        case let .sentConfirmation(u, connection): return withUser(u, String(describing: connection))
-        case let .sentInvitation(u, connection): return withUser(u, String(describing: connection))
-        case let .sentInvitationToContact(u, contact, _): return withUser(u, String(describing: contact))
-        case let .contactAlreadyExists(u, contact): return withUser(u, String(describing: contact))
         }
     }
 
@@ -724,6 +700,14 @@ enum ChatResponse0: Decodable, ChatAPIResult {
 }
 
 enum ChatResponse1: Decodable, ChatAPIResult {
+    case invitation(user: UserRef, connLinkInvitation: CreatedConnLink, connection: PendingContactConnection)
+    case connectionIncognitoUpdated(user: UserRef, toConnection: PendingContactConnection)
+    case connectionUserChanged(user: UserRef, fromConnection: PendingContactConnection, toConnection: PendingContactConnection, newUser: UserRef)
+    case connectionPlan(user: UserRef, connLink: CreatedConnLink, connectionPlan: ConnectionPlan)
+    case sentConfirmation(user: UserRef, connection: PendingContactConnection)
+    case sentInvitation(user: UserRef, connection: PendingContactConnection)
+    case sentInvitationToContact(user: UserRef, contact: Contact, customUserProfile: Profile?)
+    case contactAlreadyExists(user: UserRef, contact: Contact)
     case contactDeleted(user: UserRef, contact: Contact)
     case contactConnectionDeleted(user: UserRef, connection: PendingContactConnection)
     case groupDeletedUser(user: UserRef, groupInfo: GroupInfo)
@@ -754,6 +738,14 @@ enum ChatResponse1: Decodable, ChatAPIResult {
 
     var resultType: String {
         switch self {
+        case .invitation: "invitation"
+        case .connectionIncognitoUpdated: "connectionIncognitoUpdated"
+        case .connectionUserChanged: "connectionUserChanged"
+        case .connectionPlan: "connectionPlan"
+        case .sentConfirmation: "sentConfirmation"
+        case .sentInvitation: "sentInvitation"
+        case .sentInvitationToContact: "sentInvitationToContact"
+        case .contactAlreadyExists: "contactAlreadyExists"
         case .contactDeleted: "contactDeleted"
         case .contactConnectionDeleted: "contactConnectionDeleted"
         case .groupDeletedUser: "groupDeletedUser"
@@ -819,6 +811,14 @@ enum ChatResponse1: Decodable, ChatAPIResult {
                 "deletedChatItem:\n\(String(describing: item.deletedChatItem))\ntoChatItem:\n\(String(describing: item.toChatItem))" }.joined(separator: "\n")
             return withUser(u, itemsString + "\nbyUser: \(byUser)")
         case let .contactsList(u, contacts): return withUser(u, String(describing: contacts))
+        case let .invitation(u, connLinkInvitation, connection): return withUser(u, "connLinkInvitation: \(connLinkInvitation)\nconnection: \(connection)")
+        case let .connectionIncognitoUpdated(u, toConnection): return withUser(u, String(describing: toConnection))
+        case let .connectionUserChanged(u, fromConnection, toConnection, newUser): return withUser(u, "fromConnection: \(String(describing: fromConnection))\ntoConnection: \(String(describing: toConnection))\nnewUserId: \(String(describing: newUser.userId))")
+        case let .connectionPlan(u, connLink, connectionPlan): return withUser(u, "connLink: \(String(describing: connLink))\nconnectionPlan: \(String(describing: connectionPlan))")
+        case let .sentConfirmation(u, connection): return withUser(u, String(describing: connection))
+        case let .sentInvitation(u, connection): return withUser(u, String(describing: connection))
+        case let .sentInvitationToContact(u, contact, _): return withUser(u, String(describing: contact))
+        case let .contactAlreadyExists(u, contact): return withUser(u, String(describing: contact))
         }
     }
 }

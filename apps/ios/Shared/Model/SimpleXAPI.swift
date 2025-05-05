@@ -864,20 +864,20 @@ func apiAddContact(incognito: Bool) async -> ((CreatedConnLink, PendingContactCo
         return (nil, nil)
     }
     let short = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_SHORT_LINKS)
-    let r: APIResult<ChatResponse0> = await chatApiSendCmd(.apiAddContact(userId: userId, short: short, incognito: incognito), bgTask: false)
+    let r: APIResult<ChatResponse1> = await chatApiSendCmd(.apiAddContact(userId: userId, short: short, incognito: incognito), bgTask: false)
     if case let .result(.invitation(_, connLinkInv, connection)) = r { return ((connLinkInv, connection), nil) }
     let alert = connectionErrorAlert(r)
     return (nil, alert)
 }
 
 func apiSetConnectionIncognito(connId: Int64, incognito: Bool) async throws -> PendingContactConnection? {
-    let r: ChatResponse0 = try await chatSendCmd(.apiSetConnectionIncognito(connId: connId, incognito: incognito))
+    let r: ChatResponse1 = try await chatSendCmd(.apiSetConnectionIncognito(connId: connId, incognito: incognito))
     if case let .connectionIncognitoUpdated(_, toConnection) = r { return toConnection }
     throw r.unexpected
 }
 
 func apiChangeConnectionUser(connId: Int64, userId: Int64) async throws -> PendingContactConnection {
-    let r: ChatResponse0 = try await chatSendCmd(.apiChangeConnectionUser(connId: connId, userId: userId))
+    let r: ChatResponse1 = try await chatSendCmd(.apiChangeConnectionUser(connId: connId, userId: userId))
 
     if case let .connectionUserChanged(_, _, toConnection, _) = r {return toConnection}
     throw r.unexpected
@@ -888,7 +888,7 @@ func apiConnectPlan(connLink: String) async -> ((CreatedConnLink, ConnectionPlan
         logger.error("apiConnectPlan: no current user")
         return (nil, nil)
     }
-    let r: APIResult<ChatResponse0> = await chatApiSendCmd(.apiConnectPlan(userId: userId, connLink: connLink))
+    let r: APIResult<ChatResponse1> = await chatApiSendCmd(.apiConnectPlan(userId: userId, connLink: connLink))
     if case let .result(.connectionPlan(_, connLink, connPlan)) = r { return ((connLink, connPlan), nil) }
     let alert = apiConnectResponseAlert(r.unexpected) ?? connectionErrorAlert(r)
     return (nil, alert)
@@ -909,7 +909,7 @@ func apiConnect_(incognito: Bool, connLink: CreatedConnLink) async -> ((ConnReqT
         logger.error("apiConnect: no current user")
         return (nil, nil)
     }
-    let r: APIResult<ChatResponse0> = await chatApiSendCmd(.apiConnect(userId: userId, incognito: incognito, connLink: connLink))
+    let r: APIResult<ChatResponse1> = await chatApiSendCmd(.apiConnect(userId: userId, incognito: incognito, connLink: connLink))
     let m = ChatModel.shared
     switch r {
     case let .result(.sentConfirmation(_, connection)):
@@ -997,7 +997,7 @@ func apiConnectContactViaAddress(incognito: Bool, contactId: Int64) async -> (Co
         logger.error("apiConnectContactViaAddress: no current user")
         return (nil, nil)
     }
-    let r: APIResult<ChatResponse0> = await chatApiSendCmd(.apiConnectContactViaAddress(userId: userId, incognito: incognito, contactId: contactId))
+    let r: APIResult<ChatResponse1> = await chatApiSendCmd(.apiConnectContactViaAddress(userId: userId, incognito: incognito, contactId: contactId))
     if case let .result(.sentInvitationToContact(_, contact, _)) = r { return (contact, nil) }
     logger.error("apiConnectContactViaAddress error: \(responseError(r.unexpected))")
     let alert = connectionErrorAlert(r)
