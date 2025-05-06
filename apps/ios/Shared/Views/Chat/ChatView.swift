@@ -357,8 +357,12 @@ struct ChatView: View {
                                 localAlias: groupInfo.localAlias
                             )
                         }
-                        .appSheet(isPresented: $showUserSupportChatSheet, onDismiss: { theme = buildTheme() }) {
-                            userSupportChat(groupInfo)
+                        .appSheet(isPresented: $showUserSupportChatSheet) {
+                            NavigationView {
+                                userSupportChat(groupInfo)
+                                    .navigationTitle("Support")
+                                    .navigationBarTitleDisplayMode(.inline)
+                            }
                         }
                     } else if case .local = cInfo {
                         ChatInfoToolbar(chat: chat)
