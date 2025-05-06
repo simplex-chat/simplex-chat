@@ -81,20 +81,22 @@ public enum NSENotificationData {
 // or when background notification is received.
 class NSEThreads {
     static let shared = NSEThreads()
-    static let queue = DispatchQueue(label: "chat.simplex.app.SimpleX-NSE.notification-threads.lock")
+    private let queue = DispatchQueue(label: "chat.simplex.app.SimpleX-NSE.notification-threads.lock")
     private var allThreads: Set<UUID> = []
-    var activeThreads: [(UUID, NotificationService)] = []
-    var droppedNotifications: [(ChatId, NSENotificationData)] = []
+    private var activeThreads: [(threadId: UUID, nse: NotificationService)] = []
+    private var droppedNotifications: [(entityId: ChatId, ntf: NSENotificationData)] = []
 
+    private init() {} // only shared instance can be used
+    
     func newThread() -> UUID {
-        NSEThreads.queue.sync {
+        queue.sync {
             let (_, t) = allThreads.insert(UUID())
             return t
         }
     }
 
     func startThread(_ t: UUID, _ service: NotificationService) {
-        NSEThreads.queue.sync {
+        queue.sync {
             if allThreads.contains(t) {
                 activeThreads.append((t, service))
             } else {
@@ -103,24 +105,96 @@ class NSEThreads {
         }
     }
 
+    // atomically:
+    // - check that passed NSE instances can start processing passed notification entity,
+    // - adds it to the passed NSE instance,
+    // - marks as started, if no other is processing.
+    // Making all these steps atomic prevents a race condition between threads when both will be added and none will be started
+    func startEntity(_ nse: NotificationService, for ntfEntity: NotificationEntity) -> Bool {
+        queue.sync {
+            // checking that none of activeThreads with another NSE instance processes the same entity and is not ready
+            let canStart = !activeThreads.contains(where: { other in
+                other.threadId != nse.threadId
+                && other.nse.notificationEntities.contains(where: { (id, otherEntity) in
+                    id == ntfEntity.entityId
+                    && !otherEntity.ready
+                })
+            })
+            // atomically add entity to passed NSE instance
+            let id = ntfEntity.entityId
+            nse.notificationEntities[id] = ntfEntity
+            if canStart {
+                // and set as started, so it cannot be chosen to start by another NSE entity in nextThread
+                nse.notificationEntities[id]?.startedProcessingNewMsgs = true
+            }
+            return canStart
+        }
+    }
+    
+    @inline(__always)
+    func addDroppedNtf(_ id: ChatId, _ ntf: NSENotificationData) {
+        queue.sync { droppedNotifications.append((id, ntf)) }
+    }
+    
+    // atomically remove and return first dropped notification for the passed entity
+    func takeDroppedNtf(for ntfEntity: NotificationEntity) -> (entityId: ChatId, ntf: NSENotificationData)? {
+        queue.sync {
+            if droppedNotifications.isEmpty {
+                nil
+            } else if let i = droppedNotifications.firstIndex(where: { (id, _) in id == ntfEntity.entityId }) {
+                droppedNotifications.remove(at: i)
+            } else {
+                nil
+            }
+        }
+    }
+    
+    // passes notification for processing to NSE instance chosen by rcvEntityThread
     func processNotification(_ id: ChatId, _ ntf: NSENotificationData) async -> Void {
-        if let (_, nse) = rcvEntityThread(id),
-           nse.expectedMessages[id]?.shouldProcessNtf ?? false {
-            nse.processReceivedNtf(id, ntf, signalReady: true)
+        if let (nse, ntfEntity, expectedMsg) = rcvEntityThread(id, ntf) {
+            logger.debug("NotificationService processNotification \(id): found nse thread expecting message")
+            _ = nse.processReceivedNtf(ntfEntity, expectedMsg, ntf)
         }
     }
 
-    private func rcvEntityThread(_ id: ChatId) -> (UUID, NotificationService)? {
-        NSEThreads.queue.sync {
+    // atomically:
+    // - chooses active NSE instance that is ready to process notifications and expects message for passed entity ID
+    // - returns all dependencies for processing (notification entity and expected message)
+    // - adds notification in droppedNotifications if no ready NSE instance is found for the entity
+    private func rcvEntityThread(_ id: ChatId, _ ntf: NSENotificationData) -> (NotificationService, NotificationEntity, NtfMsgInfo)? {
+        queue.sync {
             // this selects the earliest thread that:
-            // 1) has this connection entity in nse.expectedMessages
+            // 1) has this connection entity in nse.notificationEntitites
             // 2) has not completed processing messages for this connection entity (not ready)
-            activeThreads.first(where: { (_, nse) in nse.expectedMessages[id]?.ready == false })
+            let r = activeThreads.lazy.compactMap({ (_, nse) in
+                let ntfEntity = nse.notificationEntities[id]
+                return if let ntfEntity, let expectedMsg = ntfEntity.expectedMsg, ntfEntity.shouldProcessNtf {
+                    (nse, ntfEntity, expectedMsg)
+                } else {
+                    nil
+                }
+            }).first
+            if r == nil { droppedNotifications.append((id, ntf)) }
+            return r
+        }
+    }
+    
+    // Atomically mark entity in the passed NSE instance as not expecting messages,
+    // and signal the next NSE instance with this entity too start its processing.
+    func signalNextThread(_ nse: NotificationService, _ id: ChatId) {
+        queue.sync {
+            nse.notificationEntities[id]?.expectedMsg = nil
+            nse.notificationEntities[id]?.shouldProcessNtf = false
+            if let (tNext, nseNext) = activeThreads.first(where: { (_, next) in next.notificationEntities[id]?.startedProcessingNewMsgs == false }) {
+                if let t = nse.threadId { logger.debug("NotificationService thread \(t): signalNextThread: signal next thread \(tNext) for entity \(id)") }
+                nseNext.notificationEntities[id]?.startedProcessingNewMsgs = true
+                nseNext.notificationEntities[id]?.semaphore.signal()
+            }
         }
     }
 
     func endThread(_ t: UUID) -> Bool {
-        NSEThreads.queue.sync {
+        queue.sync {
             let tActive: UUID? = if let index = activeThreads.firstIndex(where: { $0.0 == t }) {
                 activeThreads.remove(at: index).0
             } else {
@@ -142,19 +216,41 @@ class NSEThreads {
     }
 }
 
-struct ExpectedMessage {
+// ExpectedMessage is a bad name, because it containes expectedMsg inside.
+// It is the state for a processor for connection entity that expects a message.
+// Single NSE instance may have several of them.
+struct NotificationEntity {
     var ntfConn: NtfConn
-    var expectedMsgId: String?
-    var allowedGetNextAttempts: Int
+    var entityId: ChatId
+    var expectedMsg: NtfMsgInfo?
+    var allowedGetNextAttempts: Int = 3
     var msgBestAttemptNtf: NSENotificationData?
-    var ready: Bool
-    var shouldProcessNtf: Bool
-    var startedProcessingNewMsgs: Bool
-    var semaphore: DispatchSemaphore
+
+    // startedProcessingNewMsgs determines that the entity stared processing events once it processed dropped notifications.
+    // It remains true when shouldProcessNtf is set to false, to prevent NSE from being chosen as the next for the entity.
+    // It is atomically set to true by startThead or by nextThread
+    var startedProcessingNewMsgs: Bool = false
+
+    // shouldProcessNtf determines that NSE should process events for this entity,
+    // it is atomically set:
+    // - to true in processDroppedNotifications in case dropped notification is not delivered, and more messages needed
+    // - to false in nextThread
+    var shouldProcessNtf: Bool = false
+
+    // this semaphone is used to wait for another NSE instance processing events for the same entity
+    var semaphore: DispatchSemaphore = DispatchSemaphore(value: 0)
+    
+    // Ready: true means that entity has best attempt to deliver that shouldn't be further imroved.
+    // It is ready when:
+    // - the user is muted
+    // - core sees from notification that there are no new messages (msgId in notification matches previously received).
+    // - messaging server fails to respond or reports that there are no messages.
+    // - the message is received with the correct ID or timestamp.
+    var ready: Bool { expectedMsg == nil }
     
     var connMsgReq: ConnMsgReq? {
-        if let expectedMsg_ = ntfConn.expectedMsg_ {
-            ConnMsgReq(msgConnId: ntfConn.agentConnId, msgDbQueueId: ntfConn.agentDbQueueId, msgTs: expectedMsg_.msgTs)
+        if let expectedMsg {
+            ConnMsgReq(msgConnId: ntfConn.agentConnId, msgDbQueueId: ntfConn.agentDbQueueId, msgTs: expectedMsg.msgTs)
         } else {
             nil
         }
@@ -173,7 +269,7 @@ class NotificationService: UNNotificationServiceExtension {
     // thread is added to allThreads here - if thread did not start chat,
     // chat does not need to be suspended but NSE state still needs to be set to "suspended".
     var threadId: UUID? = NSEThreads.shared.newThread()
-    var expectedMessages: Dictionary<String, ExpectedMessage> = [:] // key is receiveEntityId
+    var notificationEntities: Dictionary<String, NotificationEntity> = [:] // key is entityId
     var appSubscriber: AppSubscriber?
     var returnedSuspension = false
 
@@ -259,7 +355,24 @@ class NotificationService: UNNotificationServiceExtension {
     // Notification may reference multiple connection entities (message queues) in order to compensate for Apple servers
     // only delivering the latest notification, so it allows receiving messages from up to 6 contacts and groups from a
     // single notification. This aggregation is handled by a notification server and is delivered via APNS servers in
-    // e2e encrypted envelope.
+    // e2e encrypted envelope, and the app core prevents duplicate processing by keeping track of the last processed message.
+
+    // The process steps:
+    // 0. apiGetConnNtfMessages or getConnNtfMessage get messages from the server for passed connection entities.
+    // We don't know in advance which chat events will be delivered from app core for a given notification,
+    // it may be a message, but it can also be contact request, various protocol confirmations, calls, etc.,
+    // this function only returns metadata for the expected chat events.
+    // This metadata is correlated with .msgInfo core event - this marker allows determining when some message completed processing.
+    // 1. receiveMessages: singleton loop receiving events from core.
+    // 2. receivedMsgNtf: maps core events to notification events.
+    // 3. NSEThreads.shared.processNotification: chooses which notification service instance in the current process should process notification.
+    // While most of the time we observe that notifications are delivered sequentially, nothing in the documentation confirms it is sequential,
+    // and from various sources it follows that each instance executes in its own thread, so concurrency is expected.
+    // 4. processReceivedNtf: one of the instances of NSE processes notification event, deciding whether to request further messages
+    // for a given connection entity (via getConnNtfMessage) or that the correct message was received and notification can be deliverd (deliverBestAttemptNtf).
+    // It is based on .msgInfo markers that indicate that message with a given timestamp was processed.
+    // 5. deliverBestAttemptNtf: is called multiple times, once each connection receives enough messages (based on .msgInfo marker).
+    // If further messages are expected, this function does nothing (unless it is called with urgent flag from timeout/expiration handlers).
     func receiveNtfMessages(_ request: UNNotificationRequest) {
         logger.debug("NotificationService: receiveNtfMessages")
         if case .documents = dbContainerGroupDefault.get() {
@@ -270,78 +383,61 @@ class NotificationService: UNNotificationServiceExtension {
            // Check that the app is still inactive before starting the core.
            appStateGroupDefault.get().inactive {
             // thread is added to activeThreads tracking set here - if thread started chat it needs to be suspended
-            if let t = threadId { NSEThreads.shared.startThread(t, self) }
+            guard let t = threadId else { return }
+            NSEThreads.shared.startThread(t, self)
             let dbStatus = startChat()
-            // If databaase is opened successfully, get the list of connection entities (group members, contacts)
+            // If database is opened successfully, get the list of connection entities (group members, contacts)
             // that are referenced in the encrypted notification metadata.
             if case .ok = dbStatus,
                let ntfConns = apiGetNtfConns(nonce: nrData.nonce, encNtfInfo: nrData.encNtfInfo) {
                 logger.debug("NotificationService: receiveNtfMessages: apiGetNtfConns ntfConns count = \(ntfConns.count)")
                 // uncomment localDisplayName in ConnectionEntity
                 // logger.debug("NotificationService: receiveNtfMessages: apiGetNtfConns ntfConns \(String(describing: ntfConns.map { $0.connEntity.localDisplayName }))")
-                for ntfConn in ntfConns {
-                    // keep track of expected messages - they will be delivered to the reception loop in this chain:
-                    // 1. receiveMessages: singleton loop receiving events from core.
-                    // 2. receivedMsgNtf: maps core events to notification events.
-                    // 3. NSEThreads.shared.processNotification: chooses which notification service instance in the current process should process notification.
-                    // While most of the time we observe that notifications are delivered sequentially, nothing in the documentation confirms it is sequential,
-                    // and from various sources it follows that each instance executes in its own thread, so concurrency is expected.
-                    // 4. processReceivedNtf: one of the instances of NSE processes notification event, deciding whether to request further messages
-                    // for a given connection entity (via getConnNtfMessage) or that the correct message was received and notification can be deliverd (deliverBestAttemptNtf).
-                    // It is based on .msgInfo markers that indicate that message with a given timestamp was processed.
-                    // The problem it solves that we don't know in advance which core event will be delivered for a given notification,
-                    // it may be a message, but it can also be contact request, various protocol confirmations, calls, etc. -
-                    // this .msgInfo marker creates a correlation between notification and server message processing.
-                    // 5. deliverBestAttemptNtf: is called multiple times, once each connection receives enough messages (based on .msgInfo marker).
-                    // If further messages are expected, this function does nothing (unless it is called with urgent flag from timeout/expiration handlers).
-                    
-                    addExpectedMessage(ntfConn: ntfConn)
-                }
 
+                // Prepare expected messages - they will be delivered to the reception loop in this chain:
+                // They are atomically added to the instance notificationEntities inside msgReqs loop, to avoid any race conditions.
+                let ntfEntities = ntfConns.compactMap(mkNotificationEntity)
+                
                 // collect notification message requests for all connection entities
-                let msgReqs: [(chatId: String, connMsgReq: ConnMsgReq)] = expectedMessages.compactMap { (id, _) in
-                    // check that the connection entity can be processed (no other instance handles it)
-                    let started = NSEThreads.queue.sync {
-                        let canStart = checkCanStart(id)
-                        if let t = threadId { logger.debug("NotificationService thread \(t, privacy: .private): receiveNtfMessages: can start: \(canStart)") }
-                        if canStart {
+                let msgReqs: [(chatId: String, connMsgReq: ConnMsgReq)] = ntfEntities.compactMap { ntfEntity -> (chatId: String, connMsgReq: ConnMsgReq)? in
+                    // No need to request messages for connection entities that are "ready",
+                    // e.g. for muted users or when the message is not expected based on notification.
+                    let id = ntfEntity.entityId
+                    if let expectedMsg = ntfEntity.expectedMsg {
+                        if NSEThreads.shared.startEntity(self, for: ntfEntity) { // atomically checks and adds ntfEntity to NSE
                             // process any notifications "postponed" by the previous instance
-                            processDroppedNotifications(id)
-                            expectedMessages[id]?.startedProcessingNewMsgs = true
-                            expectedMessages[id]?.shouldProcessNtf = true
-                        }
-                        return canStart
-                    }
-                    if started {
-                        return if let connMsgReq = expectedMessages[id]?.connMsgReq {
-                            (id, connMsgReq)
+                            let completed = processDroppedNotifications(ntfEntity, expectedMsg)
+                            return if !completed, let connMsgReq = notificationEntities[id]?.connMsgReq {
+                                (id, connMsgReq)
+                            } else {
+                                nil
+                            }
                         } else {
-                            nil
-                        }
-                    } else {
-                        // wait for another instance processing the same connection entity
-                        if let t = threadId { logger.debug("NotificationService thread \(t, privacy: .private): receiveNtfMessages: entity \(id, privacy: .private) waiting on semaphore") }
-                        // this semaphore will be released by entityReady function, that looks up the instance
-                        // waiting for the connection entity via activeThreads in NSEThreads
-                        expectedMessages[id]?.semaphore.wait()
-                        if let t = threadId { logger.debug("NotificationService thread \(t, privacy: .private): receiveNtfMessages: entity \(id, privacy: .private) proceeding after semaphore") }
-                        Task {
-                            NSEThreads.queue.sync {
+                            // wait for another instance processing the same connection entity
+                            logger.debug("NotificationService thread \(t, privacy: .private): receiveNtfMessages: entity \(id, privacy: .private) waiting on semaphore")
+                            // this semaphore will be released by entityReady function, that looks up the instance
+                            // waiting for the connection entity via activeThreads in NSEThreads
+                            notificationEntities[id]?.semaphore.wait()
+                            logger.debug("NotificationService thread \(t, privacy: .private): receiveNtfMessages: entity \(id, privacy: .private) proceeding after semaphore")
+                            Task {
                                 // process any notifications "postponed" by the previous instance
-                                processDroppedNotifications(id)
-                                expectedMessages[id]?.startedProcessingNewMsgs = true
-                                expectedMessages[id]?.shouldProcessNtf = true
+                                let completed = processDroppedNotifications(ntfEntity, expectedMsg)
+                                // Request messages from the server for this connection entity.
+                                // It triggers event delivery to receiveMessages loop (see above).
+                                if !completed, let connMsgReq = notificationEntities[id]?.connMsgReq,
+                                   let rcvMsg = getConnNtfMessage(connMsgReq: connMsgReq),
+                                   rcvMsg.noMsg {
+                                    // if server returns error or "no message", deliver what we have for this connection entity.
+                                    finalizeEntity(id) // also releases any waiting threads for this entity
+                                }
                             }
-                            // Request messages from the server for this connection entity.
-                            // It triggers event delivery to receiveMessages loop (see above).
-                            if let connMsgReq = expectedMessages[id]?.connMsgReq,
-                               let rcvMsg = getConnNtfMessage(connMsgReq: connMsgReq),
-                               rcvMsg.noMsg {
-                                // if server returns error or "no message", deliver what we have for this connection entity.
-                                entityReady(id) // also releases any waiting threads for this entity
-                                deliverBestAttemptNtf()
-                            }
+                            return nil
                         }
+                    } else { // no expected message
+                        var updatedNtfEntity = ntfEntity
+                        // marking as started before inserting, so it cannot be chosen to be started by some other NSE instance
+                        updatedNtfEntity.startedProcessingNewMsgs = true
+                        notificationEntities[id] = updatedNtfEntity
                         return nil
                     }
                 }
@@ -353,51 +449,48 @@ class NotificationService: UNNotificationServiceExtension {
                     for i in 0 ..< min(msgReqs.count, rcvMsgs.count) { // a sanity check, API always returns the same size
                         if rcvMsgs[i].noMsg {
                             // mark entity as ready if there are no message on the server (or on error)
-                            entityReady(msgReqs[i].chatId)
+                            finalizeEntity(msgReqs[i].chatId)
                         }
                     }
                 }
-                // falling through to deliverBestAttemptNtf, e.g. in case no messages are expected
             } else if let dbStatus = dbStatus {
                 setServiceBestAttemptNtf(createErrorNtf(dbStatus, badgeCount))
             }
         }
+        // try to deliver the best attempt before exiting
         deliverBestAttemptNtf()
     }
 
-    func addExpectedMessage(ntfConn: NtfConn) {
-        let expectedMsgId = ntfConn.expectedMsg_?.msgId
-        if let receiveEntityId = ntfConn.connEntity.id {
-            logger.debug("NotificationService: addExpectedMessage: expectedMsgId = \(expectedMsgId ?? "nil", privacy: .private)")
-            expectedMessages[receiveEntityId] = ExpectedMessage(
+    func mkNotificationEntity(ntfConn: NtfConn) -> NotificationEntity? {
+        if let rcvEntityId = ntfConn.connEntity.id {
+            // don't receive messages for muted user profile
+            let expectedMsg: NtfMsgInfo? = if ntfConn.user.showNotifications { ntfConn.expectedMsg_ } else { nil }
+            return NotificationEntity(
                 ntfConn: ntfConn,
-                expectedMsgId: expectedMsgId,
-                allowedGetNextAttempts: 3,
-                msgBestAttemptNtf: defaultBestAttemptNtf(ntfConn),
-                // show defaultBestAttemptNtf(ntfConn) if user is muted or if there is no expected message
-                ready: ntfConn.user.showNotifications ||  ntfConn.expectedMsg_ == nil,
-                shouldProcessNtf: false,
-                startedProcessingNewMsgs: false,
-                semaphore: DispatchSemaphore(value: 0)
+                entityId: rcvEntityId,
+                expectedMsg: expectedMsg,
+                msgBestAttemptNtf: defaultBestAttemptNtf(ntfConn)
             )
         }
+        return nil
     }
 
-    func checkCanStart(_ entityId: String) -> Bool {
-        return !NSEThreads.shared.activeThreads.contains(where: {
-            (tId, nse) in tId != threadId && nse.expectedMessages.contains(where: { $0.key == entityId })
-        })
-    }
-
-    func processDroppedNotifications(_ entityId: String) {
-        if !NSEThreads.shared.droppedNotifications.isEmpty {
-            let messagesToProcess = NSEThreads.shared.droppedNotifications.filter { (eId, _) in eId == entityId }
-            NSEThreads.shared.droppedNotifications.removeAll(where: { (eId, _) in eId == entityId })
-            for (index, (_, ntf)) in messagesToProcess.enumerated() {
-                if let t = threadId { logger.debug("NotificationService thread \(t, privacy: .private): entity \(entityId, privacy: .private): processing dropped notification \(index, privacy: .private)") }
-                processReceivedNtf(entityId, ntf, signalReady: false)
+    // Processes notifications received and postponed by the previous NSE instance
+    func processDroppedNotifications(_ ntfEntity: NotificationEntity, _ expectedMsg: NtfMsgInfo) -> Bool {
+        // TODO process them one by one, locking on each one, to do it atomically
+        // probably this function should move to NSEThreads for better concurrency control to avoid making its queue public
+        var completed = false
+        while !completed {
+            if let dropped = NSEThreads.shared.takeDroppedNtf(for: ntfEntity) {
+                completed = processReceivedNtf(ntfEntity, expectedMsg, dropped.ntf)
+            } else {
+                break
             }
         }
+        if !completed {
+            notificationEntities[ntfEntity.entityId]?.shouldProcessNtf = true
+        }
+        return completed
     }
 
     override func serviceExtensionTimeWillExpire() {
@@ -406,41 +499,35 @@ class NotificationService: UNNotificationServiceExtension {
     }
 
     var expectingMoreMessages: Bool {
-        !expectedMessages.allSatisfy { $0.value.ready }
+        !notificationEntities.allSatisfy { $0.value.ready }
     }
 
     // NOTE: it is not clear why signalReady flag is needed.
     // It is set to false when processing postponed (dropped) notifications, but
     // why cannot processing postponed notification signal that the connection entity became ready just from posponed processing,
     // in case it needs no further notifications?
-    func processReceivedNtf(_ id: ChatId, _ ntf: NSENotificationData, signalReady: Bool) {
-        guard let expectedMessage = expectedMessages[id] else {
-            return
-        }
-        guard let expectedMsgTs = expectedMessage.ntfConn.expectedMsg_?.msgTs else {
-            NSEThreads.shared.droppedNotifications.append((id, ntf))
-            if signalReady { entityReady(id) }
-            self.deliverBestAttemptNtf()
-            return
-        }
+
+    // processReceivedNtf should return true when no more messages will be processed by this instance
+    // this can be used by processDropped to decide if further processing is needed
+    func processReceivedNtf(_ ntfEntity: NotificationEntity, _ expectedMsg: NtfMsgInfo, _ ntf: NSENotificationData) -> Bool {
+        let id = ntfEntity.entityId
         if case let .msgInfo(info) = ntf {
-            if info.msgId == expectedMessage.expectedMsgId {
+            if info.msgId == expectedMsg.msgId {
                 // The message for this instance is processed, no more expected, deliver.
                 logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): expected")
-                expectedMessages[id]?.expectedMsgId = nil
-                if signalReady { entityReady(id) }
-                self.deliverBestAttemptNtf()
-            } else if let msgTs = info.msgTs_, msgTs > expectedMsgTs {
+                finalizeEntity(id)
+                return true
+            } else if let msgTs = info.msgTs_, msgTs > expectedMsg.msgTs {
                 // Otherwise check timestamp - if it is after the currently expected timestamp, preserve .msgInfo marker for the next instance.
                 logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unexpected msgInfo, let other instance to process it, stopping this one")
-                NSEThreads.shared.droppedNotifications.append((id, ntf))
-                if signalReady { entityReady(id) }
-                self.deliverBestAttemptNtf()
-            } else if (expectedMessages[id]?.allowedGetNextAttempts ?? 0) > 0, let connMsgReq = expectedMessages[id]?.connMsgReq {
+                NSEThreads.shared.addDroppedNtf(id, ntf)
+                finalizeEntity(id)
+                return true
+            } else if (notificationEntities[id]?.allowedGetNextAttempts ?? 0) > 0, let connMsgReq = notificationEntities[id]?.connMsgReq {
                 // Otherwise this instance expects more messages, and still has allowed attempts -
                 // request more messages with getConnNtfMessage.
                 logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unexpected msgInfo, get next message")
-                expectedMessages[id]?.allowedGetNextAttempts -= 1
+                notificationEntities[id]?.allowedGetNextAttempts -= 1
                 let receivedMsg = getConnNtfMessage(connMsgReq: connMsgReq)
                 if case let .info(msg) = receivedMsg, let msg {
                     // Server delivered message, it will be processed in the loop - see the comments in receiveNtfMessages.
@@ -448,44 +535,42 @@ class NotificationService: UNNotificationServiceExtension {
                 } else {
                     // Server reported no messages or error, deliver what we have.
                     logger.debug("NotificationService processNtf, on getConnNtfMessage: msgInfo msgId = \(info.msgId, privacy: .private): no next message, deliver best attempt")
-                    if signalReady { entityReady(id) }
-                    self.deliverBestAttemptNtf()
+                    finalizeEntity(id)
+                    return true
                 }
             } else {
                 // Current instance needs more messages, but ran out of attempts - deliver what we have.
                 logger.debug("NotificationService processNtf: msgInfo msgId = \(info.msgId, privacy: .private): unknown message, let other instance to process it")
-                if signalReady { entityReady(id) }
-                self.deliverBestAttemptNtf()
+                finalizeEntity(id)
+                return true
             }
-        } else if expectedMessage.ntfConn.user.showNotifications {
+        } else if ntfEntity.ntfConn.user.showNotifications {
             // This is the notification event for the user with enabled notifications.
             logger.debug("NotificationService processNtf: setting best attempt")
             if ntf.notificationEvent != nil {
                 setBadgeCount()
             }
-            let prevBestAttempt = expectedMessages[id]?.msgBestAttemptNtf
+            let prevBestAttempt = notificationEntities[id]?.msgBestAttemptNtf
             // If previous "best attempt" is not a call, or if the current notification is a call, replace best attempt.
             // NOTE: we are delaying it until notification marker to make sure we are not delivering stale calls that can't be connected.
             // A better logic could be to check whether we have a call in the best attempt while processing .msgInfo marker above.
             // If the best attempt is a call, and its marker is received, and the call is recent (e.g., the last 30 seconds), it would deliver at once,
             // instead of requesting further messages.
             if prevBestAttempt?.callInvitation == nil || ntf.callInvitation != nil {
-                expectedMessages[id]?.msgBestAttemptNtf = ntf
+                notificationEntities[id]?.msgBestAttemptNtf = ntf
             } // otherwise keep call as best attempt
         } else {
             // We don't postpone notifications for muted users, as they would never be delivered.
-            if signalReady { entityReady(id) }
-            self.deliverBestAttemptNtf()
+            finalizeEntity(id)
+            return true
         }
+        return false
     }
 
-    func entityReady(_ entityId: ChatId) {
-        if let t = threadId { logger.debug("NotificationService thread \(t, privacy: .private): entityReady: entity \(entityId, privacy: .private)") }
-        expectedMessages[entityId]?.ready = true
-        if let (tNext, nse) = NSEThreads.shared.activeThreads.first(where: { (_, nse) in nse.expectedMessages[entityId]?.startedProcessingNewMsgs == false }) {
-            if let t = threadId { logger.debug("NotificationService thread \(t, privacy: .private): entityReady: signal next thread \(tNext, privacy: .private) for entity \(entityId, privacy: .private)") }
-            nse.expectedMessages[entityId]?.semaphore.signal()
-        }
+    func finalizeEntity(_ entityId: ChatId) {
+        if let t = threadId { logger.debug("NotificationService thread \(t): entityReady: entity \(entityId)") }
+        NSEThreads.shared.signalNextThread(self, entityId)
+        deliverBestAttemptNtf()
     }
 
     func setBadgeCount() {
@@ -506,8 +591,8 @@ class NotificationService: UNNotificationServiceExtension {
             }
             logger.debug("NotificationService.deliverBestAttemptNtf")
             // stop processing other messages
-            for (key, _) in expectedMessages {
-                expectedMessages[key]?.shouldProcessNtf = false
+            for (key, _) in notificationEntities {
+                notificationEntities[key]?.shouldProcessNtf = false
             }
 
             let suspend: Bool
@@ -522,7 +607,7 @@ class NotificationService: UNNotificationServiceExtension {
     }
 
     private func deliverCallkitOrNotification(urgent: Bool, suspend: Bool = false, handler: @escaping (UNNotificationContent) -> Void) {
-        if useCallKit() && expectedMessages.contains(where: { $0.value.msgBestAttemptNtf?.callInvitation != nil }) {
+        if useCallKit() && notificationEntities.contains(where: { $0.value.msgBestAttemptNtf?.callInvitation != nil }) {
             logger.debug("NotificationService.deliverCallkitOrNotification: will suspend, callkit")
             // suspending NSE even though there may be other notifications
             // to allow the app to process callkit call
@@ -586,17 +671,17 @@ class NotificationService: UNNotificationServiceExtension {
     }
 
     private func prepareNotification() -> NSENotification? {
-        if expectedMessages.isEmpty {
+        if notificationEntities.isEmpty {
             return serviceBestAttemptNtf
-        } else if let callNtfKV = expectedMessages.first(where: { $0.value.msgBestAttemptNtf?.callInvitation != nil }),
+        } else if let callNtfKV = notificationEntities.first(where: { $0.value.msgBestAttemptNtf?.callInvitation != nil }),
                   let callInv = callNtfKV.value.msgBestAttemptNtf?.callInvitation,
                   let callNtf = callNtfKV.value.msgBestAttemptNtf {
             return useCallKit() ? .callkit(callInv) : .nse(callNtf.notificationContent(badgeCount))
         } else {
             // uncomment localDisplayName in ConnectionEntity
-            // let conns = self.expectedMessages.compactMap { $0.value.ntfConn.connEntity.localDisplayName }
+            // let conns = self.notificationEntities.compactMap { $0.value.ntfConn.connEntity.localDisplayName }
             // logger.debug("NotificationService prepareNotification for \(String(describing: conns))")
-            let ntfEvents = expectedMessages.compactMap { $0.value.msgBestAttemptNtf?.notificationEvent }
+            let ntfEvents = notificationEntities.compactMap { $0.value.msgBestAttemptNtf?.notificationEvent }
             logger.debug("NotificationService prepareNotification: \(ntfEvents.count) events")
             if ntfEvents.isEmpty {
                 return .empty
