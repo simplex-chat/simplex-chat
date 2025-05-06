@@ -56,7 +56,7 @@ struct ChatView: View {
     @State private var allowLoadMoreItems: Bool = false
     @State private var ignoreLoadingRequests: Int64? = nil
     @State private var animatedScrollingInProgress: Bool = false
-    @State private var userSupportChatNavLinkActive = false
+    @State private var showUserSupportChatSheet = false
 
     @State private var scrollView: EndlessScrollView<MergedItem> = EndlessScrollView(frame: .zero)
 
@@ -74,24 +74,21 @@ struct ChatView: View {
         }
     }
 
+    @ViewBuilder private func userSupportChat(_ groupInfo: GroupInfo) -> some View {
+        if let secondaryIM = chatModel.secondaryIM {
+            SecondaryChatView(
+                chat: Chat(chatInfo: .group(groupInfo: GroupInfo.sampleData, groupChatScope: userSupportScopeInfo), chatItems: [], chatStats: ChatStats()),
+                im: secondaryIM
+            )
+        } else {
+            EmptyView()
+        }
+    }
+
     @ViewBuilder
     private var viewBody: some View {
         let cInfo = chat.chatInfo
         ZStack {
-            NavigationLink(isActive: $userSupportChatNavLinkActive) {
-                if let secondaryIM = chatModel.secondaryIM, case let .group(groupInfo, nil) = chat.chatInfo {
-                    let secChat = Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: userSupportScopeInfo), chatItems: [], chatStats: ChatStats())
-                    SecondaryChatView(
-                        chat: secChat,
-                        im: secondaryIM
-                    )
-                }
-            } label: {
-                EmptyView()
-            }
-            .frame(width: 1, height: 1)
-            .hidden()
-
             let wallpaperImage = theme.wallpaper.type.image
             let wallpaperType = theme.wallpaper.type
             let backgroundColor = theme.wallpaper.background ?? wallpaperType.defaultBackgroundColor(theme.base, theme.colors.background)
@@ -244,7 +241,7 @@ struct ChatView: View {
                groupInfo.membership.memberPending {
                 let secIM = ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: userSupportScopeInfo))
                 secIM.loadOpenChat(chat.id) {
-                    userSupportChatNavLinkActive = true
+                    showUserSupportChatSheet = true
                 }
             }
         }
@@ -359,6 +356,9 @@ struct ChatView: View {
                                 onSearch: { focusSearch() },
                                 localAlias: groupInfo.localAlias
                             )
+                        }
+                        .appSheet(isPresented: $showUserSupportChatSheet, onDismiss: { theme = buildTheme() }) {
+                            userSupportChat(GroupInfo.sampleData)
                         }
                     } else if case .local = cInfo {
                         ChatInfoToolbar(chat: chat)
