@@ -65,9 +65,9 @@ public enum NSENotificationData {
     }
 
     @inline(__always)
-    var newMsgData: (any UserLike, ChatInfo)? {
+    var newMsgNtf: NSENotificationData? {
         switch self {
-        case let .messageReceived(user, cInfo, _): (user, cInfo)
+        case .messageReceived: self
         default: nil
         }
     }
@@ -690,12 +690,18 @@ class NotificationService: UNNotificationServiceExtension {
         // uncomment localDisplayName in ConnectionEntity
         // let conns = self.notificationEntities.compactMap { $0.value.ntfConn.connEntity.localDisplayName }
         // logger.debug("NotificationService prepareNotification for \(String(describing: conns))")
-        let ntfEvents = notificationEntities.compactMap { $0.value.msgBestAttemptNtf.notificationEvent }
-        logger.debug("NotificationService prepareNotification: \(ntfEvents.count) events")
-        return switch ntfEvents.count {
-        case 0: UNMutableNotificationContent() // used to mute notifications that did not unsubscribe yet
-        case 1: ntfEvents[0].notificationContent(badgeCount)
-        default: createJointNtf(ntfEvents)
+        let ntfs = notificationEntities.compactMap { $0.value.msgBestAttemptNtf.notificationEvent }
+        let newMsgNtfs = ntfs.compactMap({ $0.newMsgNtf })
+        let useNtfs = if newMsgNtfs.isEmpty { ntfs } else { newMsgNtfs }
+        return createNtf(useNtfs)
+        
+        func createNtf(_ ntfs: [NSENotificationData]) -> UNMutableNotificationContent {
+            logger.debug("NotificationService prepareNotification: \(ntfs.count) events")
+            return switch ntfs.count {
+            case 0: UNMutableNotificationContent() // used to mute notifications that did not unsubscribe yet
+            case 1: ntfs[0].notificationContent(badgeCount)
+            default: createJointNtf(ntfs)
+            }
         }
     }
 
@@ -703,17 +709,15 @@ class NotificationService: UNNotificationServiceExtension {
     // Possibly, it is better to postpone this improvement until message priority is added to prevent notifications in muted groups,
     // unless it is a mention, a reply or some other high priority message marked for notification delivery.
     @inline(__always)
-    private func createJointNtf(_ ntfEvents: [NSENotificationData]) -> UNMutableNotificationContent {
+    private func createJointNtf(_ ntfs: [NSENotificationData]) -> UNMutableNotificationContent {
         let previewMode = ntfPreviewModeGroupDefault.get()
-        let newMsgsData: [(any UserLike, ChatInfo)] = ntfEvents.compactMap { $0.newMsgData }
-        if !newMsgsData.isEmpty, let userId = newMsgsData.first?.0.userId {
-            let newMsgsChats: [ChatInfo] = newMsgsData.map { $0.1 }
-            let uniqueChatsNames = uniqueNewMsgsChatsNames(newMsgsChats)
-            var body: String
-            if previewMode == .hidden {
-                body = String.localizedStringWithFormat(NSLocalizedString("New messages in %d chats", comment: "notification body"), uniqueChatsNames.count)
+        logger.debug("NotificationService.createJointNtf ntfs: \(ntfs.count)")
+        let (userId, chatsNames) = newMsgsChatsNames(ntfs)
+        if !chatsNames.isEmpty, let userId {
+            let body = if previewMode == .hidden {
+                String.localizedStringWithFormat(NSLocalizedString("From %d chat(s)", comment: "notification body"), chatsNames.count)
             } else {
-                body = String.localizedStringWithFormat(NSLocalizedString("From: %@", comment: "notification body"), newMsgsChatsNamesStr(uniqueChatsNames))
+                String.localizedStringWithFormat(NSLocalizedString("From: %@", comment: "notification body"), newMsgsChatsNamesStr(chatsNames))
             }
             return createNotification(
                 categoryIdentifier: ntfCategoryManyEvents,
@@ -726,23 +730,29 @@ class NotificationService: UNNotificationServiceExtension {
             return createNotification(
                 categoryIdentifier: ntfCategoryManyEvents,
                 title: NSLocalizedString("New events", comment: "notification"),
-                body: String.localizedStringWithFormat(NSLocalizedString("%d new events", comment: "notification body"), ntfEvents.count),
+                body: String.localizedStringWithFormat(NSLocalizedString("%d new events", comment: "notification body"), ntfs.count),
                 badgeCount: badgeCount
             )
         }
     }
 
     @inline(__always)
-    private func uniqueNewMsgsChatsNames(_ newMsgsChats: [ChatInfo]) -> [String] {
+    private func newMsgsChatsNames(_ ntfs: [NSENotificationData]) ->  (Int64?, [String]) {
         var seenChatIds = Set<ChatId>()
-        var uniqueChatsNames: [String] = []
-        for chat in newMsgsChats {
-            if !seenChatIds.contains(chat.id) {
-                seenChatIds.insert(chat.id)
-                uniqueChatsNames.append(chat.chatViewName)
+        var chatsNames: [String] = []
+        var userId: Int64?
+        for ntf in ntfs {
+            switch ntf {
+            case let .messageReceived(user, chat, _):
+                if seenChatIds.isEmpty { userId = user.userId }
+                if !seenChatIds.contains(chat.id) {
+                    seenChatIds.insert(chat.id)
+                    chatsNames.append(chat.chatViewName)
+                }
+            default: ()
             }
         }
-        return uniqueChatsNames
+        return (userId, chatsNames)
     }
 
     @inline(__always)
@@ -1096,17 +1106,17 @@ func apiSetEncryptLocalFiles(_ enable: Bool) throws {
 
 func apiGetNtfConns(nonce: String, encNtfInfo: String) -> [NtfConn]? {
     guard apiGetActiveUser() != nil else {
-        logger.debug("no active user")
+        logger.debug("NotificationService: no active user")
         return nil
     }
     let r: APIResult<NSEChatResponse> = sendSimpleXCmd(NSEChatCommand.apiGetNtfConns(nonce: nonce, encNtfInfo: encNtfInfo))
     if case let .result(.ntfConns(ntfConns)) = r {
-        logger.debug("apiGetNtfConns response ntfConns: \(ntfConns.count)")
+        logger.debug("NotificationService apiGetNtfConns response ntfConns: \(ntfConns.count) conections")
         return ntfConns
     } else if case let .error(error) = r {
-        logger.debug("apiGetNtfMessage error response: \(String.init(describing: error))")
+        logger.debug("NotificationService apiGetNtfMessage error response: \(String.init(describing: error))")
     } else {
-        logger.debug("apiGetNtfMessage ignored response: \(r.responseType) \(String.init(describing: r))")
+        logger.debug("NotificationService apiGetNtfMessage ignored response: \(r.responseType) \(String.init(describing: r))")
     }
     return nil
 }
@@ -1116,10 +1126,12 @@ func apiGetConnNtfMessages(connMsgReqs: [ConnMsgReq]) -> [RcvNtfMsgInfo]? {
         logger.debug("no active user")
         return nil
     }
-    logger.debug("apiGetConnNtfMessages command: \(NSEChatCommand.apiGetConnNtfMessages(connMsgReqs: connMsgReqs).cmdString)")
+//    logger.debug("NotificationService apiGetConnNtfMessages command: \(NSEChatCommand.apiGetConnNtfMessages(connMsgReqs: connMsgReqs).cmdString)")
+    logger.debug("NotificationService apiGetConnNtfMessages requests: \(connMsgReqs.count)")
     let r: APIResult<NSEChatResponse> = sendSimpleXCmd(NSEChatCommand.apiGetConnNtfMessages(connMsgReqs: connMsgReqs))
     if case let .result(.connNtfMessages(msgs)) = r {
-        logger.debug("NotificationService apiGetConnNtfMessages response: total responses \(msgs.count), expecting messages \(msgs.count { !$0.noMsg }), errors \(msgs.count { $0.isError })")
+//        logger.debug("NotificationService apiGetConnNtfMessages responses: \(String(describing: msgs))")
+        logger.debug("NotificationService apiGetConnNtfMessages responses: total \(msgs.count), expecting messages \(msgs.count { !$0.noMsg }), errors \(msgs.count { $0.isError })")
         return msgs
     }
     logger.debug("NotificationService apiGetConnNtfMessages error: \(responseError(r.unexpected))")
