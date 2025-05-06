@@ -91,7 +91,7 @@ struct ChatView: View {
             }
             VStack(spacing: 0) {
                 if onSheet {
-                    userSupportChatTitle()
+                    customUserSupportChatNavigationBar()
                 }
                 ZStack(alignment: .bottomTrailing) {
                     chatItemsList()
@@ -493,7 +493,7 @@ struct ChatView: View {
         }
     }
 
-    private func userSupportChatTitle() -> some View {
+    private func customUserSupportChatNavigationBar() -> some View {
         VStack(spacing: 0) {
             HStack {
                 Text("Support")
