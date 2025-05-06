@@ -557,7 +557,8 @@ struct GroupChatInfoView: View {
                     if let secondaryIM = chatModel.secondaryIM {
                         SecondaryChatView(
                             chat: chat,
-                            im: secondaryIM
+                            im: secondaryIM,
+                            onSheet: false
                         )
                     }
                 } label: {
@@ -600,7 +601,8 @@ struct GroupChatInfoView: View {
                     if let secondaryIM = chatModel.secondaryIM {
                         SecondaryChatView(
                             chat: chat,
-                            im: secondaryIM
+                            im: secondaryIM,
+                            onSheet: false
                         )
                     }
                 } label: {

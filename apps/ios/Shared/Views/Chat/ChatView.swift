@@ -25,6 +25,7 @@ struct ChatView: View {
     @ObservedObject var im: ItemsModel
     @State var mergedItems: BoxedValue<MergedItems>
     @State var floatingButtonModel: FloatingButtonModel
+    var onSheet: Bool
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -56,10 +57,13 @@ struct ChatView: View {
     @State private var allowLoadMoreItems: Bool = false
     @State private var ignoreLoadingRequests: Int64? = nil
     @State private var animatedScrollingInProgress: Bool = false
+    @State private var showUserSupportChatSheet = false
 
     @State private var scrollView: EndlessScrollView<MergedItem> = EndlessScrollView(frame: .zero)
 
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
+
+    let userSupportScopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
 
     var body: some View {
         if #available(iOS 16.0, *) {
@@ -86,6 +90,9 @@ struct ChatView: View {
                     )
             }
             VStack(spacing: 0) {
+                if onSheet {
+                    customUserSupportChatNavigationBar()
+                }
                 ZStack(alignment: .bottomTrailing) {
                     chatItemsList()
                     if let groupInfo = chat.chatInfo.groupInfo, !composeState.message.isEmpty {
@@ -223,6 +230,13 @@ struct ChatView: View {
                     }
                 }
             }
+            if case let .group(groupInfo, nil) = chat.chatInfo,
+               groupInfo.membership.memberPending {
+                let secIM = ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: userSupportScopeInfo))
+                secIM.loadOpenChat(chat.id) {
+                    showUserSupportChatSheet = true
+                }
+            }
         }
         .onChange(of: chatModel.chatId) { cId in
             showChatInfoSheet = false
@@ -335,6 +349,16 @@ struct ChatView: View {
                                 onSearch: { focusSearch() },
                                 localAlias: groupInfo.localAlias
                             )
+                        }
+                        .appSheet(
+                            isPresented: $showUserSupportChatSheet,
+                            onDismiss: {
+                                if groupInfo.membership.memberPending {
+                                    chatModel.chatId = nil
+                                }
+                            }
+                        ) {
+                            userSupportChat(groupInfo)
                         }
                     } else if case .local = cInfo {
                         ChatInfoToolbar(chat: chat)
@@ -454,6 +478,33 @@ struct ChatView: View {
                     }
                 }
             }
+        }
+    }
+
+    @ViewBuilder private func userSupportChat(_ groupInfo: GroupInfo) -> some View {
+        if let secondaryIM = chatModel.secondaryIM {
+            SecondaryChatView(
+                chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: userSupportScopeInfo), chatItems: [], chatStats: ChatStats()),
+                im: secondaryIM,
+                onSheet: true
+            )
+        } else {
+            EmptyView()
+        }
+    }
+
+    private func customUserSupportChatNavigationBar() -> some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Support")
+                    .font(.headline)
+                    .foregroundColor(theme.colors.onBackground)
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity)
+            .background(.thinMaterial)
+            Divider()
         }
     }
 
@@ -2605,7 +2656,8 @@ struct ChatView_Previews: PreviewProvider {
             chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []),
             im: im,
             mergedItems: BoxedValue(MergedItems.create(im, [])),
-            floatingButtonModel: FloatingButtonModel(im: im)
+            floatingButtonModel: FloatingButtonModel(im: im),
+            onSheet: false
         )
         .environmentObject(chatModel)
     }
