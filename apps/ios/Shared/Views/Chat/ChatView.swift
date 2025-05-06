@@ -77,7 +77,7 @@ struct ChatView: View {
     @ViewBuilder private func userSupportChat(_ groupInfo: GroupInfo) -> some View {
         if let secondaryIM = chatModel.secondaryIM {
             SecondaryChatView(
-                chat: Chat(chatInfo: .group(groupInfo: GroupInfo.sampleData, groupChatScope: userSupportScopeInfo), chatItems: [], chatStats: ChatStats()),
+                chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: userSupportScopeInfo), chatItems: [], chatStats: ChatStats()),
                 im: secondaryIM
             )
         } else {
@@ -358,7 +358,7 @@ struct ChatView: View {
                             )
                         }
                         .appSheet(isPresented: $showUserSupportChatSheet, onDismiss: { theme = buildTheme() }) {
-                            userSupportChat(GroupInfo.sampleData)
+                            userSupportChat(groupInfo)
                         }
                     } else if case .local = cInfo {
                         ChatInfoToolbar(chat: chat)
