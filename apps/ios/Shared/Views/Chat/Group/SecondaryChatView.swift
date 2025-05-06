@@ -13,13 +13,15 @@ struct SecondaryChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var chat: Chat
     @ObservedObject var im: ItemsModel
+    var onSheet: Bool
 
     var body: some View {
         ChatView(
             chat: chat,
             im: im,
             mergedItems: BoxedValue(MergedItems.create(im, [])),
-            floatingButtonModel: FloatingButtonModel(im: im)
+            floatingButtonModel: FloatingButtonModel(im: im),
+            onSheet: onSheet
         )
         .onDisappear {
             chatModel.secondaryIM = nil
@@ -34,6 +36,7 @@ struct SecondaryChatView: View {
             chatItems: [],
             chatStats: ChatStats()
         ),
-        im: ItemsModel.shared
+        im: ItemsModel.shared,
+        onSheet: false
     )
 }

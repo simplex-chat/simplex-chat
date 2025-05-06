@@ -25,6 +25,7 @@ struct ChatView: View {
     @ObservedObject var im: ItemsModel
     @State var mergedItems: BoxedValue<MergedItems>
     @State var floatingButtonModel: FloatingButtonModel
+    var onSheet: Bool
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -74,17 +75,6 @@ struct ChatView: View {
         }
     }
 
-    @ViewBuilder private func userSupportChat(_ groupInfo: GroupInfo) -> some View {
-        if let secondaryIM = chatModel.secondaryIM {
-            SecondaryChatView(
-                chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: userSupportScopeInfo), chatItems: [], chatStats: ChatStats()),
-                im: secondaryIM
-            )
-        } else {
-            EmptyView()
-        }
-    }
-
     @ViewBuilder
     private var viewBody: some View {
         let cInfo = chat.chatInfo
@@ -100,6 +90,9 @@ struct ChatView: View {
                     )
             }
             VStack(spacing: 0) {
+                if onSheet {
+                    userSupportChatTitle()
+                }
                 ZStack(alignment: .bottomTrailing) {
                     chatItemsList()
                     if let groupInfo = chat.chatInfo.groupInfo, !composeState.message.isEmpty {
@@ -357,12 +350,15 @@ struct ChatView: View {
                                 localAlias: groupInfo.localAlias
                             )
                         }
-                        .appSheet(isPresented: $showUserSupportChatSheet) {
-                            NavigationView {
-                                userSupportChat(groupInfo)
-                                    .navigationTitle("Support")
-                                    .navigationBarTitleDisplayMode(.inline)
+                        .appSheet(
+                            isPresented: $showUserSupportChatSheet,
+                            onDismiss: {
+                                if groupInfo.membership.memberPending {
+                                    chatModel.chatId = nil
+                                }
                             }
+                        ) {
+                            userSupportChat(groupInfo)
                         }
                     } else if case .local = cInfo {
                         ChatInfoToolbar(chat: chat)
@@ -482,6 +478,33 @@ struct ChatView: View {
                     }
                 }
             }
+        }
+    }
+
+    @ViewBuilder private func userSupportChat(_ groupInfo: GroupInfo) -> some View {
+        if let secondaryIM = chatModel.secondaryIM {
+            SecondaryChatView(
+                chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: userSupportScopeInfo), chatItems: [], chatStats: ChatStats()),
+                im: secondaryIM,
+                onSheet: true
+            )
+        } else {
+            EmptyView()
+        }
+    }
+
+    private func userSupportChatTitle() -> some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Support")
+                    .font(.headline)
+                    .foregroundColor(theme.colors.onBackground)
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity)
+            .background(.thinMaterial)
+            Divider()
         }
     }
 
@@ -2633,7 +2656,8 @@ struct ChatView_Previews: PreviewProvider {
             chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []),
             im: im,
             mergedItems: BoxedValue(MergedItems.create(im, [])),
-            floatingButtonModel: FloatingButtonModel(im: im)
+            floatingButtonModel: FloatingButtonModel(im: im),
+            onSheet: false
         )
         .environmentObject(chatModel)
     }
