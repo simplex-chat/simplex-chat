@@ -112,9 +112,9 @@ class NSEThreads {
     }
 
     // atomically:
-    // - check that passed NSE instances can start processing passed notification entity,
+    // - checks that passed NSE instance can start processing passed notification entity,
     // - adds it to the passed NSE instance,
-    // - marks as started, if no other is processing.
+    // - marks as started, if no other NSE instance is processing it.
     // Making all these steps atomic prevents a race condition between threads when both will be added and none will be started
     @inline(__always)
     func startEntity(_ nse: NotificationService, _ ntfEntity: NotificationEntity) -> Bool {
@@ -169,7 +169,7 @@ class NSEThreads {
     // atomically:
     // - chooses active NSE instance that is ready to process notifications and expects message for passed entity ID
     // - returns all dependencies for processing (notification entity and expected message)
-    // - adds notification in droppedNotifications if no ready NSE instance is found for the entity
+    // - adds notification to droppedNotifications if no ready NSE instance is found for the entity
     @inline(__always)
     private func rcvEntityThread(_ id: ChatId, _ ntf: NSENotificationData) -> (NotificationService, NotificationEntity, NtfMsgInfo)? {
         queue.sync {
@@ -190,7 +190,7 @@ class NSEThreads {
     }
     
     // Atomically mark entity in the passed NSE instance as not expecting messages,
-    // and signal the next NSE instance with this entity too start its processing.
+    // and signal the next NSE instance with this entity to start its processing.
     @inline(__always)
     func signalNextThread(_ nse: NotificationService, _ id: ChatId) {
         queue.sync {
@@ -229,9 +229,12 @@ class NSEThreads {
     }
 }
 
-// ExpectedMessage is a bad name, because it containes expectedMsg inside.
-// It is the state for a processor for connection entity that expects a message.
-// Single NSE instance may have several of them.
+// NotificationEntity is a processing state for notifications from a single connection entity (message queue).
+// Each NSE instance within NSE process can have more than one NotificationEntity.
+// NotificationEntities of an NSE instance are processed concurrently, as messages arrive in any order.
+// NotificationEntities for the same connection across multiple NSE instances (NSEThreads) are processed sequentially, so that the earliest NSE instance receives the earliest messages.
+// The reason for this complexity is to process all required messages within allotted 30 seconds,
+// accounting for the possibility that multiple notifications may be delivered concurrently. 
 struct NotificationEntity {
     var ntfConn: NtfConn
     var entityId: ChatId
@@ -246,7 +249,7 @@ struct NotificationEntity {
 
     // shouldProcessNtf determines that NSE should process events for this entity,
     // it is atomically set:
-    // - to true in processDroppedNotifications in case dropped notification is not delivered, and more messages needed
+    // - to true in processDroppedNotifications in case dropped notification is not chosen for delivery, and more messages are needed.
     // - to false in nextThread
     var shouldProcessNtf: Bool = false
 
@@ -378,14 +381,15 @@ class NotificationService: UNNotificationServiceExtension {
     // We don't know in advance which chat events will be delivered from app core for a given notification,
     // it may be a message, but it can also be contact request, various protocol confirmations, calls, etc.,
     // this function only returns metadata for the expected chat events.
-    // This metadata is correlated with .msgInfo core event - this marker allows determining when some message completed processing.
+    // This metadata is correlated with .ntfMessage core event / .msgInfo notification marker -
+    // this marker allows determining when some message completed processing.
     // 1. receiveMessages: singleton loop receiving events from core.
     // 2. receivedMsgNtf: maps core events to notification events.
     // 3. NSEThreads.shared.processNotification: chooses which notification service instance in the current process should process notification.
     // While most of the time we observe that notifications are delivered sequentially, nothing in the documentation confirms it is sequential,
     // and from various sources it follows that each instance executes in its own thread, so concurrency is expected.
     // 4. processReceivedNtf: one of the instances of NSE processes notification event, deciding whether to request further messages
-    // for a given connection entity (via getConnNtfMessage) or that the correct message was received and notification can be deliverd (deliverBestAttemptNtf).
+    // for a given connection entity (via getConnNtfMessage) or that the correct message was received and notification can be delivered (deliverBestAttemptNtf).
     // It is based on .msgInfo markers that indicate that message with a given timestamp was processed.
     // 5. deliverBestAttemptNtf: is called multiple times, once each connection receives enough messages (based on .msgInfo marker).
     // If further messages are expected, this function does nothing (unless it is called with urgent flag from timeout/expiration handlers).
@@ -431,7 +435,7 @@ class NotificationService: UNNotificationServiceExtension {
                         } else {
                             // wait for another instance processing the same connection entity
                             logger.debug("NotificationService thread \(t, privacy: .private): receiveNtfMessages: entity \(id, privacy: .private) waiting on semaphore")
-                            // this semaphore will be released by entityReady function, that looks up the instance
+                            // this semaphore will be released by signalNextThread function, that looks up the instance
                             // waiting for the connection entity via activeThreads in NSEThreads
                             notificationEntities[id]?.semaphore.wait()
                             logger.debug("NotificationService thread \(t, privacy: .private): receiveNtfMessages: entity \(id, privacy: .private) proceeding after semaphore")
@@ -494,8 +498,6 @@ class NotificationService: UNNotificationServiceExtension {
 
     // Processes notifications received and postponed by the previous NSE instance
     func processDroppedNotifications(_ ntfEntity: NotificationEntity, _ expectedMsg: NtfMsgInfo) -> Bool {
-        // TODO process them one by one, locking on each one, to do it atomically
-        // probably this function should move to NSEThreads for better concurrency control to avoid making its queue public
         var completed = false
         while !completed {
             if let dropped = NSEThreads.shared.takeDroppedNtf(ntfEntity) {
