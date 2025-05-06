@@ -387,6 +387,7 @@ final class ChatModel: ObservableObject {
 
     // ItemsModel for secondary chat view (such as support scope chat), as opposed to ItemsModel.shared used for primary chat
     @Published var secondaryIM: ItemsModel? = nil
+    @Published var secondaryPendingInviteeChatOpened = false
 
     static var ok: Bool { ChatModel.shared.chatDbStatus == .ok }
 

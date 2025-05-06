@@ -2290,6 +2290,11 @@ func processReceivedMsg(_ res: ChatEvent) async {
             await MainActor.run {
                 m.updateGroup(groupInfo)
             }
+            if m.chatId == groupInfo.id,
+               case .memberSupport(nil) = m.secondaryIM?.groupScopeInfo {
+                m.secondaryIM = nil
+                m.secondaryPendingInviteeChatOpened = false
+            }
         }
     case let .joinedGroupMember(user, groupInfo, member):
         if active(user) {
