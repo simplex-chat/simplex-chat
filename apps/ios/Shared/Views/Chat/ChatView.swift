@@ -234,6 +234,7 @@ struct ChatView: View {
                groupInfo.membership.memberPending {
                 let secIM = ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: userSupportScopeInfo))
                 secIM.loadOpenChat(chat.id) {
+                    chatModel.secondaryPendingInviteeChatOpened = true
                     showUserSupportChatSheet = true
                 }
             }
@@ -265,6 +266,11 @@ struct ChatView: View {
                     chatModel.openAroundItemId = nil
                 }
             } else {
+                dismiss()
+            }
+        }
+        .onChange(of: chatModel.secondaryPendingInviteeChatOpened) { opened in
+            if im.secondaryIMFilter != nil && !opened {
                 dismiss()
             }
         }

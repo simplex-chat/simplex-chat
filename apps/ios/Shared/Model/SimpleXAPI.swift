@@ -2285,10 +2285,16 @@ func processReceivedMsg(_ res: ChatEvent) async {
             }
         }
     case let .userJoinedGroup(user, groupInfo):
-        // TODO [knocking] close support scope for this group if it's currently opened
         if active(user) {
             await MainActor.run {
                 m.updateGroup(groupInfo)
+            }
+            if m.chatId == groupInfo.id,
+               case .memberSupport(nil) = m.secondaryIM?.groupScopeInfo {
+                await MainActor.run {
+                    m.secondaryPendingInviteeChatOpened = false
+                    m.secondaryIM = nil
+                }
             }
         }
     case let .joinedGroupMember(user, groupInfo, member):
