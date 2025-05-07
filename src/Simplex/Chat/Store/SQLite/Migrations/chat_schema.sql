@@ -1038,3 +1038,11 @@ CREATE INDEX idx_chat_items_group_scope_item_ts ON chat_items(
   group_scope_group_member_id,
   item_ts
 );
+CREATE INDEX idx_chat_items_group_scope_item_status ON chat_items(
+  user_id,
+  group_id,
+  group_scope_tag,
+  group_scope_group_member_id,
+  item_status,
+  item_ts
+);
