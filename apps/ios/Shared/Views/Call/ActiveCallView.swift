@@ -243,7 +243,7 @@ struct ActiveCallView: View {
                 ChatReceiver.shared.messagesChannel = nil
                 return
             }
-            if case let .chatItemsStatusesUpdated(_, chatItems) = msg,
+            if case let .result(.chatItemsStatusesUpdated(_, chatItems)) = msg,
                chatItems.contains(where: { ci in
                    ci.chatInfo.id == call.contact.id &&
                    ci.chatItem.content.isSndCall &&

@@ -291,7 +291,7 @@ private fun DeliveryReceiptsSection(
   SectionView(stringResource(MR.strings.settings_section_title_delivery_receipts)) {
     SettingsActionItemWithContent(painterResource(MR.images.ic_person), stringResource(MR.strings.receipts_section_contacts)) {
       DefaultSwitch(
-        checked = currentUser.sendRcptsContacts ?: false,
+        checked = currentUser.sendRcptsContacts,
         onCheckedChange = { enable ->
           setOrAskSendReceiptsContacts(enable)
         }
@@ -299,7 +299,7 @@ private fun DeliveryReceiptsSection(
     }
     SettingsActionItemWithContent(painterResource(MR.images.ic_group), stringResource(MR.strings.receipts_section_groups)) {
       DefaultSwitch(
-        checked = currentUser.sendRcptsSmallGroups ?: false,
+        checked = currentUser.sendRcptsSmallGroups,
         onCheckedChange = { enable ->
           setOrAskSendReceiptsGroups(enable)
         }

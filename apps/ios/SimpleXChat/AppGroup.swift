@@ -40,7 +40,7 @@ let GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS = "networkUseOnionHosts"
 let GROUP_DEFAULT_NETWORK_SESSION_MODE = "networkSessionMode"
 let GROUP_DEFAULT_NETWORK_SMP_PROXY_MODE = "networkSMPProxyMode"
 let GROUP_DEFAULT_NETWORK_SMP_PROXY_FALLBACK = "networkSMPProxyFallback"
-let GROUP_DEFAULT_NETWORK_SMP_WEB_PORT = "networkSMPWebPort"
+let GROUP_DEFAULT_NETWORK_SMP_WEB_PORT_SERVERS = "networkSMPWebPortServers"
 let GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT = "networkTCPConnectTimeout"
 let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT = "networkTCPTimeout"
 let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB = "networkTCPTimeoutPerKb"
@@ -72,7 +72,7 @@ public func registerGroupDefaults() {
         GROUP_DEFAULT_NETWORK_SESSION_MODE: TransportSessionMode.session.rawValue,
         GROUP_DEFAULT_NETWORK_SMP_PROXY_MODE: SMPProxyMode.unknown.rawValue,
         GROUP_DEFAULT_NETWORK_SMP_PROXY_FALLBACK: SMPProxyFallback.allowProtected.rawValue,
-        GROUP_DEFAULT_NETWORK_SMP_WEB_PORT: false,
+        GROUP_DEFAULT_NETWORK_SMP_WEB_PORT_SERVERS: SMPWebPortServers.preset.rawValue,
         GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT: NetCfg.defaults.tcpConnectTimeout,
         GROUP_DEFAULT_NETWORK_TCP_TIMEOUT: NetCfg.defaults.tcpTimeout,
         GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB: NetCfg.defaults.tcpTimeoutPerKb,
@@ -251,6 +251,12 @@ public let networkSMPProxyFallbackGroupDefault = EnumDefault<SMPProxyFallback>(
     withDefault: .allowProtected
 )
 
+public let networkSMPWebPortServersDefault = EnumDefault<SMPWebPortServers>(
+    defaults: groupDefaults,
+    forKey: GROUP_DEFAULT_NETWORK_SMP_WEB_PORT_SERVERS,
+    withDefault: .preset
+)
+
 public let storeDBPassphraseGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_STORE_DB_PASSPHRASE)
 
 public let initialRandomDBPassphraseGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE)
@@ -305,12 +311,14 @@ public class EnumDefault<T: RawRepresentable> where T.RawValue == String {
 }
 
 public class BoolDefault: Default<Bool> {
+    @inline(__always)
     public func get() -> Bool {
         self.defaults.bool(forKey: self.key)
     }
 }
 
 public class IntDefault: Default<Int> {
+    @inline(__always)
     public func get() -> Int {
         self.defaults.integer(forKey: self.key)
     }
@@ -320,11 +328,13 @@ public class Default<T> {
     var defaults: UserDefaults
     var key: String
 
+    @inline(__always)
     public init(defaults: UserDefaults = UserDefaults.standard, forKey: String) {
         self.defaults = defaults
         self.key = forKey
     }
 
+    @inline(__always)
     public func set(_ value: T) {
         defaults.set(value, forKey: key)
         defaults.synchronize()
@@ -338,7 +348,7 @@ public func getNetCfg() -> NetCfg {
     let sessionMode = networkSessionModeGroupDefault.get()
     let smpProxyMode = networkSMPProxyModeGroupDefault.get()
     let smpProxyFallback = networkSMPProxyFallbackGroupDefault.get()
-    let smpWebPort = groupDefaults.bool(forKey: GROUP_DEFAULT_NETWORK_SMP_WEB_PORT)
+    let smpWebPortServers = networkSMPWebPortServersDefault.get()
     let tcpConnectTimeout = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
     let tcpTimeout = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)
     let tcpTimeoutPerKb = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB)
@@ -362,7 +372,7 @@ public func getNetCfg() -> NetCfg {
         sessionMode: sessionMode,
         smpProxyMode: smpProxyMode,
         smpProxyFallback: smpProxyFallback,
-        smpWebPort: smpWebPort,
+        smpWebPortServers: smpWebPortServers,
         tcpConnectTimeout: tcpConnectTimeout,
         tcpTimeout: tcpTimeout,
         tcpTimeoutPerKb: tcpTimeoutPerKb,
@@ -381,7 +391,7 @@ public func setNetCfg(_ cfg: NetCfg, networkProxy: NetworkProxy?) {
     networkSMPProxyFallbackGroupDefault.set(cfg.smpProxyFallback)
     let socksProxy = networkProxy?.toProxyString()
     groupDefaults.set(socksProxy, forKey: GROUP_DEFAULT_NETWORK_SOCKS_PROXY)
-    groupDefaults.set(cfg.smpWebPort, forKey: GROUP_DEFAULT_NETWORK_SMP_WEB_PORT)
+    networkSMPWebPortServersDefault.set(cfg.smpWebPortServers)
     groupDefaults.set(cfg.tcpConnectTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
     groupDefaults.set(cfg.tcpTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)
     groupDefaults.set(cfg.tcpTimeoutPerKb, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB)

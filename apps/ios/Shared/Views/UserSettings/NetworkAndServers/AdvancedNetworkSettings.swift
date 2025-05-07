@@ -209,11 +209,16 @@ struct AdvancedNetworkSettings: View {
                 }
 
                 Section {
-                    Toggle("Use web port", isOn: $netCfg.smpWebPort)
+                    Picker("Use web port", selection: $netCfg.smpWebPortServers) {
+                        ForEach(SMPWebPortServers.allCases, id: \.self) { Text($0.text) }
+                    }
+                    .frame(height: 36)
                 } header: {
                     Text("TCP port for messaging")
                 } footer: {
-                    Text("Use TCP port \(netCfg.smpWebPort ? "443" : "5223") when no port is specified.")
+                    netCfg.smpWebPortServers == .preset
+                    ? Text("Use TCP port 443 for preset servers only.")
+                    : Text("Use TCP port \(netCfg.smpWebPortServers == .all ? "443" : "5223") when no port is specified.")
                 }
                 
                 Section("TCP connection") {

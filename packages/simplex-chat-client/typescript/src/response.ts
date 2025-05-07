@@ -84,7 +84,6 @@ export type ChatResponse =
   | CRGroupRemoved
   | CRGroupDeleted
   | CRGroupUpdated
-  | CRUserContactLinkSubscribed
   | CRUserContactLinkSubError
   | CRContactConnectionDeleted
   | CRMessageError
@@ -182,7 +181,6 @@ type ChatResponseTag =
   | "groupRemoved"
   | "groupDeleted"
   | "groupUpdated"
-  | "userContactLinkSubscribed"
   | "userContactLinkSubError"
   | "newContactConnection"
   | "contactConnectionDeleted"
@@ -719,10 +717,6 @@ export interface CRGroupUpdated extends CR {
   fromGroup: GroupInfo
   toGroup: GroupInfo
   member_?: GroupMember
-}
-
-export interface CRUserContactLinkSubscribed extends CR {
-  type: "userContactLinkSubscribed"
 }
 
 export interface CRUserContactLinkSubError extends CR {

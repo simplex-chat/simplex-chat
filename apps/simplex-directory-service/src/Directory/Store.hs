@@ -212,7 +212,7 @@ delGroupReg st GroupReg {dbGroupId = gId, groupRegStatus} = do
   logGDelete st gId
   atomically $ writeTVar groupRegStatus GRSRemoved
   atomically $ unlistGroup st gId
-  atomically $ modifyTVar' (groupRegs st) $ filter ((gId ==) . dbGroupId)
+  atomically $ modifyTVar' (groupRegs st) $ filter ((gId /=) . dbGroupId)
 
 setGroupStatus :: DirectoryStore -> GroupReg -> GroupRegStatus -> IO ()
 setGroupStatus st gr grStatus = do

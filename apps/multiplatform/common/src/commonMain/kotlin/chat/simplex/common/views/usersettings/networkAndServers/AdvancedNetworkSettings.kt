@@ -19,6 +19,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.*
@@ -45,7 +46,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
   val sessionMode = remember { mutableStateOf(currentCfgVal.sessionMode) }
   val smpProxyMode = remember { mutableStateOf(currentCfgVal.smpProxyMode) }
   val smpProxyFallback = remember { mutableStateOf(currentCfgVal.smpProxyFallback) }
-  val smpWebPort = remember { mutableStateOf(currentCfgVal.smpWebPort) }
+  val smpWebPortServers = remember { mutableStateOf(currentCfgVal.smpWebPortServers) }
 
   val networkTCPConnectTimeout = remember { mutableStateOf(currentCfgVal.tcpConnectTimeout) }
   val networkTCPTimeout = remember { mutableStateOf(currentCfgVal.tcpTimeout) }
@@ -84,7 +85,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
       sessionMode = sessionMode.value,
       smpProxyMode = smpProxyMode.value,
       smpProxyFallback = smpProxyFallback.value,
-      smpWebPort = smpWebPort.value,
+      smpWebPortServers = smpWebPortServers.value,
       tcpConnectTimeout = networkTCPConnectTimeout.value,
       tcpTimeout = networkTCPTimeout.value,
       tcpTimeoutPerKb = networkTCPTimeoutPerKb.value,
@@ -99,7 +100,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
     sessionMode.value = cfg.sessionMode
     smpProxyMode.value = cfg.smpProxyMode
     smpProxyFallback.value = cfg.smpProxyFallback
-    smpWebPort.value = cfg.smpWebPort
+    smpWebPortServers.value = cfg.smpWebPortServers
     networkTCPConnectTimeout.value = cfg.tcpConnectTimeout
     networkTCPTimeout.value = cfg.tcpTimeout
     networkTCPTimeoutPerKb.value = cfg.tcpTimeoutPerKb
@@ -154,7 +155,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
       sessionMode = sessionMode,
       smpProxyMode = smpProxyMode,
       smpProxyFallback = smpProxyFallback,
-      smpWebPort,
+      smpWebPortServers,
       networkTCPConnectTimeout,
       networkTCPTimeout,
       networkTCPTimeoutPerKb,
@@ -187,7 +188,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
   sessionMode: MutableState<TransportSessionMode>,
   smpProxyMode: MutableState<SMPProxyMode>,
   smpProxyFallback: MutableState<SMPProxyFallback>,
-  smpWebPort: MutableState<Boolean>,
+  smpWebPortServers: MutableState<SMPWebPortServers>,
   networkTCPConnectTimeout: MutableState<Long>,
   networkTCPTimeout: MutableState<Long>,
   networkTCPTimeoutPerKb: MutableState<Long>,
@@ -226,11 +227,16 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
       }
       SectionDividerSpaced()
       SectionView(stringResource(MR.strings.network_smp_web_port_section_title).uppercase()) {
-        PreferenceToggle(stringResource(MR.strings.network_smp_web_port_toggle), checked = smpWebPort.value) {
-          smpWebPort.value = it
-        }
+        ExposedDropDownSettingRow(
+          stringResource(MR.strings.network_smp_web_port_toggle),
+          SMPWebPortServers.entries.map { it to stringResource(it.text) },
+          smpWebPortServers
+        ) { smpWebPortServers.value = it }
       }
-      SectionTextFooter(String.format(stringResource(MR.strings.network_smp_web_port_footer), if (smpWebPort.value) "443" else "5223"))
+      SectionTextFooter(
+        if (smpWebPortServers.value == SMPWebPortServers.Preset) stringResource(MR.strings.network_smp_web_port_preset_footer)
+        else String.format(stringResource(MR.strings.network_smp_web_port_footer), if (smpWebPortServers.value == SMPWebPortServers.All) "443" else "5223")
+      )
       SectionDividerSpaced(maxTopPadding = true)
 
       SectionView(stringResource(MR.strings.network_option_tcp_connection).uppercase()) {
@@ -320,7 +326,7 @@ private fun SMPProxyModePicker(
 ) {
   val density = LocalDensity.current
   val values = remember {
-    SMPProxyMode.values().map {
+    SMPProxyMode.entries.map {
       when (it) {
         SMPProxyMode.Always -> ValueTitleDesc(SMPProxyMode.Always, generalGetString(MR.strings.network_smp_proxy_mode_always), escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_smp_proxy_mode_always_description), density))
         SMPProxyMode.Unknown -> ValueTitleDesc(SMPProxyMode.Unknown, generalGetString(MR.strings.network_smp_proxy_mode_unknown), escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_smp_proxy_mode_unknown_description), density))
@@ -355,7 +361,7 @@ private fun SMPProxyFallbackPicker(
 ) {
   val density = LocalDensity.current
   val values = remember {
-    SMPProxyFallback.values().map {
+    SMPProxyFallback.entries.map {
       when (it) {
         SMPProxyFallback.Allow -> ValueTitleDesc(SMPProxyFallback.Allow, generalGetString(MR.strings.network_smp_proxy_fallback_allow), escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_smp_proxy_fallback_allow_description), density))
         SMPProxyFallback.AllowProtected -> ValueTitleDesc(SMPProxyFallback.AllowProtected, generalGetString(MR.strings.network_smp_proxy_fallback_allow_protected), escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_smp_proxy_fallback_allow_protected_description), density))
@@ -548,7 +554,7 @@ fun PreviewAdvancedNetworkSettingsLayout() {
       sessionMode = remember { mutableStateOf(TransportSessionMode.User) },
       smpProxyMode = remember { mutableStateOf(SMPProxyMode.Never) },
       smpProxyFallback = remember { mutableStateOf(SMPProxyFallback.Allow) },
-      smpWebPort = remember { mutableStateOf(false) },
+      smpWebPortServers = remember { mutableStateOf(SMPWebPortServers.Preset) },
       networkTCPConnectTimeout = remember { mutableStateOf(10_000000) },
       networkTCPTimeout = remember { mutableStateOf(10_000000) },
       networkTCPTimeoutPerKb = remember { mutableStateOf(10_000) },
