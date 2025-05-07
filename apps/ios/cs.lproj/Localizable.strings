@@ -124,6 +124,18 @@
 /* time interval */
 "%d days" = "%d dní";
 
+/* forward confirmation reason */
+"%d file(s) are still being downloaded." = "%d soubor(y) stále stahován(y).";
+
+/* forward confirmation reason */
+"%d file(s) failed to download." = "%d soubor(y) se nepodařilo stáhnout.";
+
+/* forward confirmation reason */
+"%d file(s) were deleted." = "%d soubor(y) smazán(y).";
+
+/* forward confirmation reason */
+"%d file(s) were not downloaded." = "%d soubor(y) nestažen(y).";
+
 /* time interval */
 "%d hours" = "%d hodin";
 

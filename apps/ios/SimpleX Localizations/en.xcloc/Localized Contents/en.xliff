@@ -796,6 +796,11 @@ swipe action</note>
         <target>All reports will be archived for you.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="All servers" xml:space="preserve">
+        <source>All servers</source>
+        <target>All servers</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
         <source>All your contacts will remain connected.</source>
         <target>All your contacts will remain connected.</target>
@@ -8303,6 +8308,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>Use TCP port %@ when no port is specified.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve">
+        <source>Use TCP port 443 for preset servers only.</source>
+        <target>Use TCP port 443 for preset servers only.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Use chat" xml:space="preserve">
         <source>Use chat</source>
         <target>Use chat</target>
@@ -10196,6 +10206,11 @@ last received msg: %2$@</target>
         <target>%d new events</target>
         <note>notification body</note>
       </trans-unit>
+      <trans-unit id="From %d chat(s)" xml:space="preserve">
+        <source>From %d chat(s)</source>
+        <target>From %d chat(s)</target>
+        <note>notification body</note>
+      </trans-unit>
       <trans-unit id="From: %@" xml:space="preserve">
         <source>From: %@</source>
         <target>From: %@</target>
@@ -10210,11 +10225,6 @@ last received msg: %2$@</target>
         <source>New messages</source>
         <target>New messages</target>
         <note>notification</note>
-      </trans-unit>
-      <trans-unit id="New messages in %d chats" xml:space="preserve">
-        <source>New messages in %d chats</source>
-        <target>New messages in %d chats</target>
-        <note>notification body</note>
       </trans-unit>
     </body>
   </file>

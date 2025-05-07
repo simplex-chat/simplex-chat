@@ -110,9 +110,8 @@
         <target>%@ servery</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ uploaded" xml:space="preserve" approved="no">
+      <trans-unit id="%@ uploaded" xml:space="preserve">
         <source>%@ uploaded</source>
-        <target state="needs-translation">%@ nahrán</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ wants to connect!" xml:space="preserve">
@@ -125,9 +124,8 @@
         <target>%1$@, %2$@</target>
         <note>format for date separator in chat</note>
       </trans-unit>
-      <trans-unit id="%@, %@ and %lld members" xml:space="preserve" approved="no">
+      <trans-unit id="%@, %@ and %lld members" xml:space="preserve">
         <source>%@, %@ and %lld members</source>
-        <target state="needs-translation">%@, %@ a %lld člěnů</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@, %@ and %lld other members connected" xml:space="preserve">
@@ -145,24 +143,24 @@
         <target>%d dní</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d file(s) are still being downloaded." xml:space="preserve" approved="no">
+      <trans-unit id="%d file(s) are still being downloaded." xml:space="preserve">
         <source>%d file(s) are still being downloaded.</source>
-        <target state="translated">%d soubor(y) stále stahován(y).</target>
+        <target>%d soubor(y) stále stahován(y).</target>
         <note>forward confirmation reason</note>
       </trans-unit>
-      <trans-unit id="%d file(s) failed to download." xml:space="preserve" approved="no">
+      <trans-unit id="%d file(s) failed to download." xml:space="preserve">
         <source>%d file(s) failed to download.</source>
-        <target state="translated">%d soubor(y) se nepodařilo stáhnout.</target>
+        <target>%d soubor(y) se nepodařilo stáhnout.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
-      <trans-unit id="%d file(s) were deleted." xml:space="preserve" approved="no">
+      <trans-unit id="%d file(s) were deleted." xml:space="preserve">
         <source>%d file(s) were deleted.</source>
-        <target state="translated">%d soubor(y) smazán(y).</target>
+        <target>%d soubor(y) smazán(y).</target>
         <note>forward confirmation reason</note>
       </trans-unit>
-      <trans-unit id="%d file(s) were not downloaded." xml:space="preserve" approved="no">
+      <trans-unit id="%d file(s) were not downloaded." xml:space="preserve">
         <source>%d file(s) were not downloaded.</source>
-        <target state="translated">%d soubor(y) nestažen(y).</target>
+        <target>%d soubor(y) nestažen(y).</target>
         <note>forward confirmation reason</note>
       </trans-unit>
       <trans-unit id="%d hours" xml:space="preserve">
@@ -747,6 +745,10 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="All reports will be archived for you." xml:space="preserve">
         <source>All reports will be archived for you.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="All servers" xml:space="preserve">
+        <source>All servers</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
@@ -7566,6 +7568,10 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
         <source>Use TCP port %@ when no port is specified.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve">
+        <source>Use TCP port 443 for preset servers only.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Use chat" xml:space="preserve">
         <source>Use chat</source>
         <target>Použijte chat</target>
@@ -9329,6 +9335,10 @@ last received msg: %2$@</source>
         <source>%d new events</source>
         <note>notification body</note>
       </trans-unit>
+      <trans-unit id="From %d chat(s)" xml:space="preserve">
+        <source>From %d chat(s)</source>
+        <note>notification body</note>
+      </trans-unit>
       <trans-unit id="From: %@" xml:space="preserve">
         <source>From: %@</source>
         <note>notification body</note>
@@ -9340,10 +9350,6 @@ last received msg: %2$@</source>
       <trans-unit id="New messages" xml:space="preserve">
         <source>New messages</source>
         <note>notification</note>
-      </trans-unit>
-      <trans-unit id="New messages in %d chats" xml:space="preserve">
-        <source>New messages in %d chats</source>
-        <note>notification body</note>
       </trans-unit>
     </body>
   </file>
