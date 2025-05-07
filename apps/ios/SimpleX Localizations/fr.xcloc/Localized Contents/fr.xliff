@@ -796,6 +796,10 @@ swipe action</note>
         <target>Tous les rapports seront archivés pour vous.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="All servers" xml:space="preserve">
+        <source>All servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
         <source>All your contacts will remain connected.</source>
         <target>Tous vos contacts resteront connectés.</target>
@@ -8227,6 +8231,10 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <source>Use TCP port %@ when no port is specified.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve">
+        <source>Use TCP port 443 for preset servers only.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Use chat" xml:space="preserve">
         <source>Use chat</source>
         <target>Utiliser le chat</target>
@@ -10111,6 +10119,10 @@ dernier message reçu : %2$@</target>
         <target>%d nouveaux événements</target>
         <note>notification body</note>
       </trans-unit>
+      <trans-unit id="From %d chat(s)" xml:space="preserve">
+        <source>From %d chat(s)</source>
+        <note>notification body</note>
+      </trans-unit>
       <trans-unit id="From: %@" xml:space="preserve">
         <source>From: %@</source>
         <target>De : %@</target>
@@ -10125,11 +10137,6 @@ dernier message reçu : %2$@</target>
         <source>New messages</source>
         <target>Nouveaux messages</target>
         <note>notification</note>
-      </trans-unit>
-      <trans-unit id="New messages in %d chats" xml:space="preserve">
-        <source>New messages in %d chats</source>
-        <target>Nouveaux messages dans %d chats</target>
-        <note>notification body</note>
       </trans-unit>
     </body>
   </file>

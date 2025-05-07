@@ -768,6 +768,10 @@ swipe action</note>
         <source>All reports will be archived for you.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="All servers" xml:space="preserve">
+        <source>All servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
         <source>All your contacts will remain connected.</source>
         <target>あなたの連絡先が繋がったまま継続します。</target>
@@ -7607,6 +7611,10 @@ To connect, please ask your contact to create another connection link and check 
         <source>Use TCP port %@ when no port is specified.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve">
+        <source>Use TCP port 443 for preset servers only.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Use chat" xml:space="preserve">
         <source>Use chat</source>
         <target>チャット</target>
@@ -9369,6 +9377,10 @@ last received msg: %2$@</source>
         <source>%d new events</source>
         <note>notification body</note>
       </trans-unit>
+      <trans-unit id="From %d chat(s)" xml:space="preserve">
+        <source>From %d chat(s)</source>
+        <note>notification body</note>
+      </trans-unit>
       <trans-unit id="From: %@" xml:space="preserve">
         <source>From: %@</source>
         <note>notification body</note>
@@ -9380,10 +9392,6 @@ last received msg: %2$@</source>
       <trans-unit id="New messages" xml:space="preserve">
         <source>New messages</source>
         <note>notification</note>
-      </trans-unit>
-      <trans-unit id="New messages in %d chats" xml:space="preserve">
-        <source>New messages in %d chats</source>
-        <note>notification body</note>
       </trans-unit>
     </body>
   </file>

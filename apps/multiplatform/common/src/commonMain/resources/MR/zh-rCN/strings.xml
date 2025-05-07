@@ -2371,4 +2371,8 @@
     <string name="short_link_button_text">短链接</string>
     <string name="link_requires_newer_app_version_please_upgrade">此链接需要更新的应用版本。请升级应用或请求你的联系人发送相容的链接。</string>
     <string name="full_link_button_text">完整链接</string>
+    <string name="network_smp_web_port_all">全部服务器</string>
+    <string name="network_smp_web_port_off">关闭</string>
+    <string name="network_smp_web_port_preset">预设服务器</string>
+    <string name="network_smp_web_port_preset_footer">仅预设服务器使用 TCP 协议 443 端口。</string>
 </resources>

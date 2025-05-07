@@ -10,6 +10,3 @@
 /* notification */
 "New messages" = "Новые сообщения";
 
-/* notification body */
-"New messages in %d chats" = "Новые сообщения в %d разговоре(ах)";
-
