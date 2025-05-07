@@ -236,15 +236,15 @@ private func showCreateProfileAlert(
     _ error: Error
 ) {
     let m = ChatModel.shared
-    switch error as? ChatResponse {
-    case .chatCmdError(_, .errorStore(.duplicateName)),
-         .chatCmdError(_, .error(.userExists)):
+    switch error as? ChatError {
+    case .errorStore(.duplicateName),
+         .error(.userExists):
         if m.currentUser == nil {
             AlertManager.shared.showAlert(duplicateUserAlert)
         } else {
             showAlert(.duplicateUserError)
         }
-    case .chatCmdError(_, .error(.invalidDisplayName)):
+    case .error(.invalidDisplayName):
         if m.currentUser == nil {
             AlertManager.shared.showAlert(invalidDisplayNameAlert)
         } else {

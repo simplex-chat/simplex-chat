@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Broadcast.Bot where
@@ -36,38 +37,31 @@ broadcastBot :: BroadcastBotOpts -> User -> ChatController -> IO ()
 broadcastBot BroadcastBotOpts {publishers, welcomeMessage, prohibitedMessage} _user cc = do
   initializeBotAddress cc
   race_ (forever $ void getLine) . forever $ do
-    (_, _, resp) <- atomically . readTBQueue $ outputQ cc
-    case resp of
-      CRContactConnected _ ct _ -> do
+    (_, evt) <- atomically . readTBQueue $ outputQ cc
+    case evt of
+      Right (CEvtContactConnected _ ct _) -> do
         contactConnected ct
         sendMessage cc ct welcomeMessage
-      CRNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat ct) ci@ChatItem {content = CIRcvMsgContent mc}) : _}
-        | publisher `elem` publishers ->
-          if allowContent mc
-            then do
-              sendChatCmd cc ListContacts >>= \case
-                CRContactsList _ cts -> void . forkIO $ do
-                  let cts' = filter broadcastTo cts
-                  forM_ cts' $ \ct' -> sendComposedMessage cc ct' Nothing mc
-                  sendReply $ "Forwarded to " <> tshow (length cts') <> " contact(s)"
-                r -> putStrLn $ "Error getting contacts list: " <> show r
-            else sendReply "!1 Message is not supported!"
-        | otherwise -> do
-          sendReply prohibitedMessage
-          deleteMessage cc ct $ chatItemId' ci
+      Right CEvtNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat ct) ci@ChatItem {content = CIRcvMsgContent mc}) : _}
+        | sender `notElem` publishers -> do
+            sendReply prohibitedMessage
+            deleteMessage cc ct $ chatItemId' ci
+        | allowContent mc ->
+            void $ forkIO $
+              sendChatCmd cc (SendMessageBroadcast mc) >>= \case
+                Right CRBroadcastSent {successes, failures} ->
+                  sendReply $ "Forwarded to " <> tshow successes <> " contact(s), " <> tshow failures <> " errors"
+                r -> putStrLn $ "Error broadcasting message: " <> show r
+        | otherwise ->
+            sendReply "!1 Message is not supported!"
         where
           sendReply = sendComposedMessage cc ct (Just $ chatItemId' ci) . MCText
-          publisher = KnownContact {contactId = contactId' ct, localDisplayName = localDisplayName' ct}
+          sender = KnownContact {contactId = contactId' ct, localDisplayName = localDisplayName' ct}
           allowContent = \case
             MCText _ -> True
             MCLink {} -> True
             MCImage {} -> True
             _ -> False
-          broadcastTo Contact {activeConn = Nothing} = False
-          broadcastTo ct'@Contact {activeConn = Just conn@Connection {connStatus}} =
-            (connStatus == ConnSndReady || connStatus == ConnReady)
-              && not (connDisabled conn)
-              && contactId' ct' /= contactId' ct
       _ -> pure ()
   where
     contactConnected ct = putStrLn $ T.unpack (localDisplayName' ct) <> " connected"

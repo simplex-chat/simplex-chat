@@ -1201,7 +1201,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
     case local(noteFolder: NoteFolder)
     case contactRequest(contactRequest: UserContactRequest)
     case contactConnection(contactConnection: PendingContactConnection)
-    case invalidJSON(json: String)
+    case invalidJSON(json: Data?)
 
     private static let invalidChatName = NSLocalizedString("invalid chat", comment: "invalid chat data")
 
@@ -1589,7 +1589,7 @@ public struct ChatData: Decodable, Identifiable, Hashable, ChatLike {
         self.chatStats = chatStats
     }
     
-    public static func invalidJSON(_ json: String) -> ChatData {
+    public static func invalidJSON(_ json: Data?) -> ChatData {
         ChatData(
             chatInfo: .invalidJSON(json: json),
             chatItems: [],
@@ -2399,16 +2399,29 @@ public enum ConnectionEntity: Decodable, Hashable {
 
     public var id: String? {
         switch self {
-        case let .rcvDirectMsgConnection(_, contact):
-            return contact?.id
+        case let .rcvDirectMsgConnection(conn, contact):
+            contact?.id ?? conn.id
         case let .rcvGroupMsgConnection(_, _, groupMember):
-            return groupMember.id
+            groupMember.id
         case let .userContactConnection(_, userContact):
-            return userContact.id
+            userContact.id
         default:
-            return nil
+            nil
         }
     }
+    
+    // public var localDisplayName: String? {
+    //     switch self {
+    //     case let .rcvDirectMsgConnection(conn, contact):
+    //         if let name = contact?.localDisplayName { "@\(name)" } else { conn.id }
+    //     case let .rcvGroupMsgConnection(_, g, m):
+    //         "#\(g.localDisplayName) @\(m.localDisplayName)"
+    //     case let .userContactConnection(_, userContact):
+    //         userContact.id
+    //     default:
+    //         nil
+    //     }
+    // }
 
     public var conn: Connection {
         switch self {
@@ -2422,15 +2435,54 @@ public enum ConnectionEntity: Decodable, Hashable {
 }
 
 public struct NtfConn: Decodable, Hashable {
-    public var user_: User?
-    public var connEntity_: ConnectionEntity?
+    public var user: User
+    public var agentConnId: String
+    public var agentDbQueueId: Int64
+    public var connEntity: ConnectionEntity
     public var expectedMsg_: NtfMsgInfo?
-
 }
 
 public struct NtfMsgInfo: Decodable, Hashable {
     public var msgId: String
     public var msgTs: Date
+}
+
+public enum RcvNtfMsgInfo: Decodable {
+    case info(ntfMsgInfo: NtfMsgInfo?)
+    case error(ntfMsgError: AgentErrorType)
+    
+    @inline(__always)
+    public var noMsg: Bool {
+        if case let .info(msg) = self { msg == nil } else { true }
+    }
+
+    @inline(__always)
+    public var isError: Bool {
+        if case .error = self { true } else { false }
+    }
+}
+
+let iso8601DateFormatter = {
+    let f = ISO8601DateFormatter()
+    f.formatOptions = [.withInternetDateTime]
+    return f
+}()
+
+// used in apiGetConnNtfMessages
+public struct ConnMsgReq {
+    public var msgConnId: String
+    public var msgDbQueueId: Int64
+    public var msgTs: Date // SystemTime encodes as a number, should be taken from NtfMsgInfo
+
+    public init(msgConnId: String, msgDbQueueId: Int64, msgTs: Date) {
+        self.msgConnId = msgConnId
+        self.msgDbQueueId = msgDbQueueId
+        self.msgTs = msgTs
+    }
+
+    public var cmdString: String {
+        "\(msgConnId):\(msgDbQueueId):\(iso8601DateFormatter.string(from: msgTs))"
+    }
 }
 
 public struct NtfMsgAckInfo: Decodable, Hashable {
@@ -2881,7 +2933,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         return item
     }
 
-    public static func invalidJSON(chatDir: CIDirection?, meta: CIMeta?, json: String) -> ChatItem {
+    public static func invalidJSON(chatDir: CIDirection?, meta: CIMeta?, json: Data?) -> ChatItem {
         ChatItem(
             chatDir: chatDir ?? .directSnd,
             meta: meta ?? .invalidJSON,
@@ -3328,7 +3380,7 @@ public enum CIContent: Decodable, ItemContent, Hashable {
     case rcvDirectE2EEInfo(e2eeInfo: E2EEInfo)
     case sndGroupE2EEInfo(e2eeInfo: E2EEInfo)
     case rcvGroupE2EEInfo(e2eeInfo: E2EEInfo)
-    case invalidJSON(json: String)
+    case invalidJSON(json: Data?)
 
     public var text: String {
         get {
@@ -3911,7 +3963,7 @@ public enum MsgContent: Equatable, Hashable {
         }
     }
 
-    var cmdString: String {
+    public var cmdString: String {
         "json \(encodeJSON(self))"
     }
 

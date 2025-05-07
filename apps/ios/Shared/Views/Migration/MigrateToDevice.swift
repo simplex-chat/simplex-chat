@@ -496,10 +496,10 @@ struct MigrateToDevice: View {
             chatReceiver = MigrationChatReceiver(ctrl: ctrl, databaseUrl: tempDatabaseUrl) { msg in
                 await MainActor.run {
                     switch msg {
-                    case let .rcvFileProgressXFTP(_, _, receivedSize, totalSize, rcvFileTransfer):
+                    case let .result(.rcvFileProgressXFTP(_, _, receivedSize, totalSize, rcvFileTransfer)):
                         migrationState = .downloadProgress(downloadedBytes: receivedSize, totalBytes: totalSize, fileId: rcvFileTransfer.fileId, link: link, archivePath: archivePath, ctrl: ctrl)
                         MigrationToDeviceState.save(.downloadProgress(link: link, archiveName: URL(fileURLWithPath: archivePath).lastPathComponent))
-                    case .rcvStandaloneFileComplete:
+                    case .result(.rcvStandaloneFileComplete):
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                             // User closed the whole screen before new state was saved
                             if migrationState == nil {
@@ -509,10 +509,10 @@ struct MigrateToDevice: View {
                                 MigrationToDeviceState.save(.archiveImport(archiveName: URL(fileURLWithPath: archivePath).lastPathComponent))
                             }
                         }
-                    case .rcvFileError:
+                    case .result(.rcvFileError):
                         alert = .error(title: "Download failed", error: "File was deleted or link is invalid")
                         migrationState = .downloadFailed(totalBytes: totalBytes, link: link, archivePath: archivePath)
-                    case .chatError(_, .error(.noRcvFileUser)):
+                    case .error(.error(.noRcvFileUser)):
                         alert = .error(title: "Download failed", error: "File was deleted or link is invalid")
                         migrationState = .downloadFailed(totalBytes: totalBytes, link: link, archivePath: archivePath)
                     default:
@@ -751,11 +751,11 @@ private func progressView() -> some View {
 private class MigrationChatReceiver {
     let ctrl: chat_ctrl
     let databaseUrl: URL
-    let processReceivedMsg: (ChatResponse) async -> Void
+    let processReceivedMsg: (APIResult<ChatEvent>) async -> Void
     private var receiveLoop: Task<Void, Never>?
     private var receiveMessages = true
 
-    init(ctrl: chat_ctrl, databaseUrl: URL, _ processReceivedMsg: @escaping (ChatResponse) async -> Void) {
+    init(ctrl: chat_ctrl, databaseUrl: URL, _ processReceivedMsg: @escaping (APIResult<ChatEvent>) async -> Void) {
         self.ctrl = ctrl
         self.databaseUrl = databaseUrl
         self.processReceivedMsg = processReceivedMsg
@@ -772,7 +772,7 @@ private class MigrationChatReceiver {
         // TODO use function that has timeout
         if let msg = await chatRecvMsg(ctrl) {
             Task {
-                await TerminalItems.shared.add(.resp(.now, msg))
+                await TerminalItems.shared.addResult(msg)
             }
             logger.debug("processReceivedMsg: \(msg.responseType)")
             await processReceivedMsg(msg)

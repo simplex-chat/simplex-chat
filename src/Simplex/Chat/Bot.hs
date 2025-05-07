@@ -33,12 +33,12 @@ chatBotRepl :: String -> (Contact -> String -> IO String) -> User -> ChatControl
 chatBotRepl welcome answer _user cc = do
   initializeBotAddress cc
   race_ (forever $ void getLine) . forever $ do
-    (_, _, resp) <- atomically . readTBQueue $ outputQ cc
-    case resp of
-      CRContactConnected _ contact _ -> do
+    (_, event) <- atomically . readTBQueue $ outputQ cc
+    case event of
+      Right (CEvtContactConnected _ contact _) -> do
         contactConnected contact
         void $ sendMessage cc contact $ T.pack welcome
-      CRNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content = mc@CIRcvMsgContent {}}) : _} -> do
+      Right CEvtNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content = mc@CIRcvMsgContent {}}) : _} -> do
         let msg = T.unpack $ ciContentToText mc
         void $ sendMessage cc contact . T.pack =<< answer contact msg
       _ -> pure ()
@@ -51,12 +51,12 @@ initializeBotAddress = initializeBotAddress' True
 initializeBotAddress' :: Bool -> ChatController -> IO ()
 initializeBotAddress' logAddress cc = do
   sendChatCmd cc ShowMyAddress >>= \case
-    CRUserContactLink _ UserContactLink {connLinkContact} -> showBotAddress connLinkContact
-    CRChatCmdError _ (ChatErrorStore SEUserContactLinkNotFound) -> do
+    Right (CRUserContactLink _ UserContactLink {connLinkContact}) -> showBotAddress connLinkContact
+    Left (ChatErrorStore SEUserContactLinkNotFound) -> do
       when logAddress $ putStrLn "No bot address, creating..."
       -- TODO [short links] create short link by default
       sendChatCmd cc (CreateMyAddress False) >>= \case
-        CRUserContactLinkCreated _ ccLink -> showBotAddress ccLink
+        Right (CRUserContactLinkCreated _ ccLink) -> showBotAddress ccLink
         _ -> putStrLn "can't create bot address" >> exitFailure
     _ -> putStrLn "unexpected response" >> exitFailure
   where
@@ -84,14 +84,14 @@ sendComposedMessages_ :: ChatController -> SendRef -> NonEmpty (Maybe ChatItemId
 sendComposedMessages_ cc sendRef qmcs = do
   let cms = L.map (\(qiId, mc) -> ComposedMessage {fileSource = Nothing, quotedItemId = qiId, msgContent = mc, mentions = M.empty}) qmcs
   sendChatCmd cc (APISendMessages sendRef False Nothing cms) >>= \case
-    CRNewChatItems {} -> printLog cc CLLInfo $ "sent " <> show (length cms) <> " messages to " <> show sendRef
+    Right (CRNewChatItems {}) -> printLog cc CLLInfo $ "sent " <> show (length cms) <> " messages to " <> show sendRef
     r -> putStrLn $ "unexpected send message response: " <> show r
 
 deleteMessage :: ChatController -> Contact -> ChatItemId -> IO ()
 deleteMessage cc ct chatItemId = do
   let cmd = APIDeleteChatItem (contactRef ct) [chatItemId] CIDMInternal
   sendChatCmd cc cmd >>= \case
-    CRChatItemsDeleted {} -> printLog cc CLLInfo $ "deleted message(s) from " <> contactInfo ct
+    Right (CRChatItemsDeleted {}) -> printLog cc CLLInfo $ "deleted message(s) from " <> contactInfo ct
     r -> putStrLn $ "unexpected delete message response: " <> show r
 
 contactRef :: Contact -> ChatRef
