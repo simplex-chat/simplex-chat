@@ -353,7 +353,7 @@ struct ChatView: View {
                         .appSheet(
                             isPresented: $showUserSupportChatSheet,
                             onDismiss: {
-                                if groupInfo.membership.memberPending {
+                                if chat.chatInfo.groupInfo?.membership.memberPending ?? false {
                                     chatModel.chatId = nil
                                 }
                             }
