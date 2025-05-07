@@ -1,22 +1,24 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.SQLite.Migrations.M20250403_group_scope where
+module Simplex.Chat.Store.Postgres.Migrations.M20250403_group_scope where
 
-import Database.SQLite.Simple (Query)
-import Database.SQLite.Simple.QQ (sql)
+import Data.Text (Text)
+import qualified Data.Text as T
+import Text.RawString.QQ (r)
 
-m20250403_group_scope :: Query
+m20250403_group_scope :: Text
 m20250403_group_scope =
-  [sql|
+  T.pack
+    [r|
 ALTER TABLE group_profiles ADD COLUMN member_admission TEXT;
 
-ALTER TABLE group_members ADD COLUMN support_chat_ts TEXT;
-ALTER TABLE group_members ADD COLUMN support_chat_items_unread INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE group_members ADD COLUMN support_chat_items_member_attention INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE group_members ADD COLUMN support_chat_items_mentions INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE group_members ADD COLUMN support_chat_ts TIMESTAMPTZ;
+ALTER TABLE group_members ADD COLUMN support_chat_items_unread BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE group_members ADD COLUMN support_chat_items_member_attention BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE group_members ADD COLUMN support_chat_items_mentions BIGINT NOT NULL DEFAULT 0;
 
 ALTER TABLE chat_items ADD COLUMN group_scope_tag TEXT;
-ALTER TABLE chat_items ADD COLUMN group_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE;
+ALTER TABLE chat_items ADD COLUMN group_scope_group_member_id BIGINT REFERENCES group_members(group_member_id) ON DELETE CASCADE;
 
 CREATE INDEX idx_chat_items_group_scope_group_member_id ON chat_items(group_scope_group_member_id);
 
@@ -38,9 +40,10 @@ CREATE INDEX idx_chat_items_group_scope_item_status ON chat_items(
 );
 |]
 
-down_m20250403_group_scope :: Query
+down_m20250403_group_scope :: Text
 down_m20250403_group_scope =
-  [sql|
+  T.pack
+    [r|
 DROP INDEX idx_chat_items_group_scope_item_status;
 
 DROP INDEX idx_chat_items_group_scope_item_ts;
