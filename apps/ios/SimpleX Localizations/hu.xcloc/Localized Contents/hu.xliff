@@ -796,6 +796,10 @@ swipe action</note>
         <target>Az összes jelentés archiválva lesz az Ön számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="All servers" xml:space="preserve">
+        <source>All servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
         <source>All your contacts will remain connected.</source>
         <target>Az összes partnerével kapcsolatban marad.</target>
@@ -1093,7 +1097,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Attach" xml:space="preserve">
         <source>Attach</source>
-        <target>Csatolás</target>
+        <target>Mellékelés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Audio &amp; video calls" xml:space="preserve">
@@ -4055,7 +4059,7 @@ Hiba: %2$@</target>
       </trans-unit>
       <trans-unit id="Hide:" xml:space="preserve">
         <source>Hide:</source>
-        <target>Elrejtés:</target>
+        <target>Elrejtve:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="History" xml:space="preserve">
@@ -5906,7 +5910,7 @@ Hiba: %@</target>
       </trans-unit>
       <trans-unit id="Privacy redefined" xml:space="preserve">
         <source>Privacy redefined</source>
-        <target>Adatvédelem újraértelmezve</target>
+        <target>Újraértelmezett adatvédelem</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private chats, groups and your contacts are not accessible to server operators." xml:space="preserve">
@@ -7201,6 +7205,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Short link" xml:space="preserve">
         <source>Short link</source>
+        <target>Rövid hivatkozás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show QR code" xml:space="preserve">
@@ -7245,7 +7250,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Show:" xml:space="preserve">
         <source>Show:</source>
-        <target>Megjelenítés:</target>
+        <target>Megjelenítve:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX" xml:space="preserve">
@@ -7305,6 +7310,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="SimpleX channel link" xml:space="preserve">
         <source>SimpleX channel link</source>
+        <target>SimpleX-csatornahivatkozás</target>
         <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="SimpleX contact address" xml:space="preserve">
@@ -7899,6 +7905,7 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
       </trans-unit>
       <trans-unit id="This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." xml:space="preserve">
         <source>This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.</source>
+        <target>Ez a hivatkozás újabb alkalmazásverziót igényel. Frissítse az alkalmazást vagy kérjen egy kompatibilis hivatkozást a partnerétől.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This link was used with another mobile device, please create a new link on the desktop." xml:space="preserve">
@@ -8202,6 +8209,7 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
       </trans-unit>
       <trans-unit id="Unsupported connection link" xml:space="preserve">
         <source>Unsupported connection link</source>
+        <target>Nem támogatott kapcsolattartási hivatkozás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve">
@@ -8299,6 +8307,10 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
         <target>A következő TCP-port használata, amikor nincs port megadva: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve">
+        <source>Use TCP port 443 for preset servers only.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Use chat" xml:space="preserve">
         <source>Use chat</source>
         <target>SimpleX Chat használata</target>
@@ -8366,6 +8378,7 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
       </trans-unit>
       <trans-unit id="Use short links (BETA)" xml:space="preserve">
         <source>Use short links (BETA)</source>
+        <target>Rövid hivatkozások használata (béta)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use the app while in the call." xml:space="preserve">
@@ -10191,6 +10204,10 @@ utoljára fogadott üzenet: %2$@</target>
         <target>%d új esemény</target>
         <note>notification body</note>
       </trans-unit>
+      <trans-unit id="From %d chat(s)" xml:space="preserve">
+        <source>From %d chat(s)</source>
+        <note>notification body</note>
+      </trans-unit>
       <trans-unit id="From: %@" xml:space="preserve">
         <source>From: %@</source>
         <target>Tőle: %@</target>
@@ -10205,11 +10222,6 @@ utoljára fogadott üzenet: %2$@</target>
         <source>New messages</source>
         <target>Új üzenetek</target>
         <note>notification</note>
-      </trans-unit>
-      <trans-unit id="New messages in %d chats" xml:space="preserve">
-        <source>New messages in %d chats</source>
-        <target>Új üzenetek %d csevegésben</target>
-        <note>notification body</note>
       </trans-unit>
     </body>
   </file>

@@ -716,7 +716,7 @@ data ChatResponse
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode, ntfServer :: NtfServer}
   | CRNtfConns {ntfConns :: [NtfConn]}
-  | CRConnNtfMessages {receivedMsgs :: NonEmpty (Maybe NtfMsgInfo)}
+  | CRConnNtfMessages {receivedMsgs :: NonEmpty RcvNtfMsgInfo}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
   | CRCurrentRemoteHost {remoteHost_ :: Maybe RemoteHostInfo}
@@ -1147,13 +1147,20 @@ data NtfConn = NtfConn
   }
   deriving (Show)
 
--- brokerTs is the same msgTs, it is used in ConnMsgReq / APIGetConnNtfMessages
+-- msgTs is broker message timestamp, it is used in ConnMsgReq / APIGetConnNtfMessages
 -- to set it as last connection message in case queue is empty
 data NtfMsgInfo = NtfMsgInfo {msgId :: Text, msgTs :: UTCTime}
   deriving (Show)
 
-receivedMsgInfo :: SMPMsgMeta -> NtfMsgInfo
-receivedMsgInfo SMPMsgMeta {msgId, msgTs} = ntfMsgInfo_ msgId msgTs
+data RcvNtfMsgInfo
+  = RNMInfo {ntfMsgInfo :: Maybe NtfMsgInfo}
+  | RNMError {ntfMsgError :: AgentErrorType}
+  deriving (Show)
+
+receivedMsgInfo :: Either AgentErrorType (Maybe SMPMsgMeta) -> RcvNtfMsgInfo
+receivedMsgInfo = \case
+  Right msgMeta_ -> RNMInfo $ (\SMPMsgMeta {msgId, msgTs} -> ntfMsgInfo_ msgId msgTs) <$> msgMeta_
+  Left e -> RNMError e
 
 expectedMsgInfo :: NMsgMeta -> NtfMsgInfo
 expectedMsgInfo NMsgMeta {msgId, msgTs} = ntfMsgInfo_ msgId msgTs
@@ -1649,6 +1656,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "AE") ''ArchiveError)
 $(JQ.deriveJSON defaultJSON ''UserProfileUpdateSummary)
 
 $(JQ.deriveJSON defaultJSON ''NtfMsgInfo)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RNM") ''RcvNtfMsgInfo)
 
 $(JQ.deriveJSON defaultJSON ''NtfConn)
 

@@ -4752,6 +4752,9 @@ chat item action */
 "Share with contacts" = "Compartir con contactos";
 
 /* No comment provided by engineer. */
+"Short link" = "Enlace corto";
+
+/* No comment provided by engineer. */
 "Show → on messages sent via private routing." = "Mostrar → en mensajes con enrutamiento privado.";
 
 /* No comment provided by engineer. */
@@ -4792,6 +4795,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "SimpleX address or 1-time link?" = "¿Dirección SimpleX o enlace de un uso?";
+
+/* simplex link type */
+"SimpleX channel link" = "Enlace de canal SimpleX";
 
 /* No comment provided by engineer. */
 "SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." = "Simplex Chat y Flux han acordado incluir en la aplicación servidores operados por Flux.";
@@ -5182,6 +5188,9 @@ report reason */
 "This is your own SimpleX address!" = "¡Esta es tu propia dirección SimpleX!";
 
 /* No comment provided by engineer. */
+"This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." = "Este enlace requiere una versión más reciente de la aplicación. Por favor, actualiza la aplicación o pide a tu contacto un enlace compatible.";
+
+/* No comment provided by engineer. */
 "This link was used with another mobile device, please create a new link on the desktop." = "Este enlace ha sido usado en otro dispositivo móvil, por favor crea un enlace nuevo en el ordenador.";
 
 /* No comment provided by engineer. */
@@ -5374,6 +5383,9 @@ report reason */
 "Unread" = "No leído";
 
 /* No comment provided by engineer. */
+"Unsupported connection link" = "Enlace de conexión no compatible";
+
+/* No comment provided by engineer. */
 "Up to 100 last messages are sent to new members." = "Hasta 100 últimos mensajes son enviados a los miembros nuevos.";
 
 /* No comment provided by engineer. */
@@ -5465,6 +5477,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "Use servers" = "Usar servidores";
+
+/* No comment provided by engineer. */
+"Use short links (BETA)" = "Usar enlaces cortos (BETA)";
 
 /* No comment provided by engineer. */
 "Use SimpleX Chat servers?" = "¿Usar servidores SimpleX Chat?";

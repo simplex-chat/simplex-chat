@@ -4752,6 +4752,9 @@ chat item action */
 "Share with contacts" = "Mit Kontakten teilen";
 
 /* No comment provided by engineer. */
+"Short link" = "Verkürzter Link";
+
+/* No comment provided by engineer. */
 "Show → on messages sent via private routing." = "Bei Nachrichten, die über privates Routing versendet wurden, → anzeigen.";
 
 /* No comment provided by engineer. */
@@ -4792,6 +4795,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "SimpleX address or 1-time link?" = "SimpleX-Adresse oder Einmal-Link?";
+
+/* simplex link type */
+"SimpleX channel link" = "SimpleX-Kanal-Link";
 
 /* No comment provided by engineer. */
 "SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." = "SimpleX-Chat und Flux haben vereinbart, die von Flux betriebenen Server in die App aufzunehmen.";
@@ -5182,6 +5188,9 @@ report reason */
 "This is your own SimpleX address!" = "Das ist Ihre eigene SimpleX-Adresse!";
 
 /* No comment provided by engineer. */
+"This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." = "Für diesen Link wird eine neuere App-Version benötigt. Bitte aktualisieren Sie die App oder bitten Sie Ihren Kontakt einen kompatiblen Link zu senden.";
+
+/* No comment provided by engineer. */
 "This link was used with another mobile device, please create a new link on the desktop." = "Dieser Link wurde schon mit einem anderen Mobiltelefon genutzt. Bitte erstellen sie einen neuen Link in der Desktop-App.";
 
 /* No comment provided by engineer. */
@@ -5374,6 +5383,9 @@ report reason */
 "Unread" = "Ungelesen";
 
 /* No comment provided by engineer. */
+"Unsupported connection link" = "Verbindungs-Link wird nicht unterstützt";
+
+/* No comment provided by engineer. */
 "Up to 100 last messages are sent to new members." = "Bis zu 100 der letzten Nachrichten werden an neue Mitglieder gesendet.";
 
 /* No comment provided by engineer. */
@@ -5465,6 +5477,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "Use servers" = "Verwende Server";
+
+/* No comment provided by engineer. */
+"Use short links (BETA)" = "Kurze Links verwenden (BETA)";
 
 /* No comment provided by engineer. */
 "Use SimpleX Chat servers?" = "Verwenden Sie SimpleX-Chat-Server?";

@@ -2383,4 +2383,8 @@
     <string name="link_requires_newer_app_version_please_upgrade">Este enlace requiere una versión más reciente de la aplicación. Por favor, actualiza la aplicación o pide a tu contacto un enlace compatible.</string>
     <string name="unsupported_connection_link">Enlace de conexión no compatible</string>
     <string name="privacy_short_links">Usar enlaces cortos (BETA)</string>
+    <string name="network_smp_web_port_preset_footer">Usar puerto TCP 443 solo en servidores predefinidos.</string>
+    <string name="network_smp_web_port_all">Todos los servidores</string>
+    <string name="network_smp_web_port_preset">Servidores predefinidos</string>
+    <string name="network_smp_web_port_off">No</string>
 </resources>

@@ -10,6 +10,3 @@
 /* notification */
 "New messages" = "Nieuwe berichten";
 
-/* notification body */
-"New messages in %d chats" = "Nieuwe berichten in %d chats";
-

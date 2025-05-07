@@ -311,12 +311,14 @@ public class EnumDefault<T: RawRepresentable> where T.RawValue == String {
 }
 
 public class BoolDefault: Default<Bool> {
+    @inline(__always)
     public func get() -> Bool {
         self.defaults.bool(forKey: self.key)
     }
 }
 
 public class IntDefault: Default<Int> {
+    @inline(__always)
     public func get() -> Int {
         self.defaults.integer(forKey: self.key)
     }
@@ -326,11 +328,13 @@ public class Default<T> {
     var defaults: UserDefaults
     var key: String
 
+    @inline(__always)
     public init(defaults: UserDefaults = UserDefaults.standard, forKey: String) {
         self.defaults = defaults
         self.key = forKey
     }
 
+    @inline(__always)
     public func set(_ value: T) {
         defaults.set(value, forKey: key)
         defaults.synchronize()
