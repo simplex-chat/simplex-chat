@@ -28,11 +28,21 @@ CREATE INDEX idx_chat_items_group_scope_item_ts ON chat_items(
   group_scope_group_member_id,
   item_ts
 );
+
+CREATE INDEX idx_chat_items_group_scope_item_status ON chat_items(
+  user_id,
+  group_id,
+  group_scope_tag,
+  group_scope_group_member_id,
+  item_status
+);
 |]
 
 down_m20250403_group_scope :: Query
 down_m20250403_group_scope =
   [sql|
+DROP INDEX idx_chat_items_group_scope_item_status;
+
 DROP INDEX idx_chat_items_group_scope_item_ts;
 
 DROP INDEX idx_chat_items_group_scope_group_member_id;
