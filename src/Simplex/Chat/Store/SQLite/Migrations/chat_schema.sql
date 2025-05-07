@@ -1043,5 +1043,6 @@ CREATE INDEX idx_chat_items_group_scope_item_status ON chat_items(
   group_id,
   group_scope_tag,
   group_scope_group_member_id,
-  item_status
+  item_status,
+  item_ts
 );

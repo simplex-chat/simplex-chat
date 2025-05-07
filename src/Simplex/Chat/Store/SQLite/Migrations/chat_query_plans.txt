@@ -470,7 +470,7 @@ Query:
             LIMIT ?
           
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_status (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_ts (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -481,8 +481,16 @@ Query:
             LIMIT ?
           
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_status (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_ts (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
+
+Query: 
+            SELECT conn_req_contact, group_id
+            FROM user_contact_links
+            WHERE user_id = ? AND short_link_contact = ?
+          
+Plan:
+SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
 
 Query: 
             SELECT conn_req_contact, group_id
@@ -1022,7 +1030,7 @@ Query:
           LIMIT ?
         
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_status (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_ts (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -4843,7 +4851,7 @@ Query:
     JOIN files f ON f.chat_item_id = i.chat_item_id
    WHERE i.user_id = ?
 Plan:
-SEARCH i USING COVERING INDEX idx_chat_items_group_scope_item_status (user_id=?)
+SEARCH i USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=?)
 SEARCH f USING INDEX idx_files_chat_item_id (chat_item_id=?)
 
 Query: 
@@ -5485,7 +5493,7 @@ SEARCH protocol_servers USING COVERING INDEX idx_smp_servers_user_id (user_id=?)
 SEARCH settings USING COVERING INDEX idx_settings_user_id (user_id=?)
 SEARCH commands USING COVERING INDEX idx_commands_user_id (user_id=?)
 SEARCH calls USING COVERING INDEX idx_calls_user_id (user_id=?)
-SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_status (user_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=?)
 SEARCH contact_requests USING COVERING INDEX sqlite_autoindex_contact_requests_2 (user_id=?)
 SEARCH user_contact_links USING COVERING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
 SEARCH connections USING COVERING INDEX idx_connections_group_member (user_id=?)
@@ -5676,7 +5684,7 @@ SEARCH chat_items USING INDEX idx_chat_items_direct_shared_msg_id (user_id=? AND
 
 Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_status = ?  ORDER BY item_ts ASC, chat_item_id ASC LIMIT 1
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_status (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
 
 Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AND group_member_id = ? LIMIT 1
 Plan:
