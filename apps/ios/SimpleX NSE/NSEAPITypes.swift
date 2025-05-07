@@ -53,7 +53,7 @@ enum NSEChatResponse: Decodable, ChatAPIResult {
     case chatRunning
     case rcvFileAccepted(user: UserRef, chatItem: AChatItem)
     case ntfConns(ntfConns: [NtfConn])
-    case connNtfMessages(receivedMsgs: [NtfMsgInfo?])
+    case connNtfMessages(receivedMsgs: [RcvNtfMsgInfo])
     case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgAckInfo)
     case cmdOk(user_: UserRef?)
     

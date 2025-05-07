@@ -856,7 +856,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     case ntfTokenStatus(status: NtfTknStatus)
     case ntfToken(token: DeviceToken, status: NtfTknStatus, ntfMode: NotificationsMode, ntfServer: String)
     case ntfConns(ntfConns: [NtfConn])
-    case connNtfMessages(receivedMsgs: [NtfMsgInfo?])
+    case connNtfMessages(receivedMsgs: [RcvNtfMsgInfo])
     // remote desktop responses
     case remoteCtrlList(remoteCtrls: [RemoteCtrlInfo])
     case remoteCtrlConnecting(remoteCtrl_: RemoteCtrlInfo?, ctrlAppInfo: CtrlAppInfo, appVersion: String)
