@@ -9,9 +9,9 @@
 import SwiftUI
 import SimpleXChat
 
-// TODO [knocking] go back (close secondary ChatView) on actions
 struct ContextPendingMemberActionsView: View {
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.dismiss) var dismiss
     var groupInfo: GroupInfo
     var member: GroupMember
 
@@ -24,7 +24,7 @@ struct ContextPendingMemberActionsView: View {
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
             .onTapGesture {
-                showRemoveMemberAlert(groupInfo, member)
+                showRemoveMemberAlert(groupInfo, member, dismiss: dismiss)
             }
 
             ZStack {
@@ -34,7 +34,7 @@ struct ContextPendingMemberActionsView: View {
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
             .onTapGesture {
-                showAcceptMemberAlert(groupInfo, member)
+                showAcceptMemberAlert(groupInfo, member, dismiss: dismiss)
             }
         }
         .frame(minHeight: 54)
@@ -43,7 +43,7 @@ struct ContextPendingMemberActionsView: View {
     }
 }
 
-func showAcceptMemberAlert(_ groupInfo: GroupInfo, _ member: GroupMember) {
+func showAcceptMemberAlert(_ groupInfo: GroupInfo, _ member: GroupMember, dismiss: DismissAction? = nil) {
     showAlert(
         NSLocalizedString("Accept member", comment: "alert title"),
         message: NSLocalizedString("Member will join the group, accept member?", comment: "alert message"),
@@ -52,14 +52,14 @@ func showAcceptMemberAlert(_ groupInfo: GroupInfo, _ member: GroupMember) {
                 title: NSLocalizedString("Accept as member", comment: "alert action"),
                 style: .default,
                 handler: { _ in
-                    acceptMember(groupInfo, member, .member)
+                    acceptMember(groupInfo, member, .member, dismiss: dismiss)
                 }
             ),
             UIAlertAction(
                 title: NSLocalizedString("Accept as observer", comment: "alert action"),
                 style: .default,
                 handler: { _ in
-                    acceptMember(groupInfo, member, .observer)
+                    acceptMember(groupInfo, member, .observer, dismiss: dismiss)
                 }
             ),
             UIAlertAction(
@@ -70,12 +70,13 @@ func showAcceptMemberAlert(_ groupInfo: GroupInfo, _ member: GroupMember) {
     )
 }
 
-func acceptMember(_ groupInfo: GroupInfo, _ member: GroupMember, _ role: GroupMemberRole) {
+func acceptMember(_ groupInfo: GroupInfo, _ member: GroupMember, _ role: GroupMemberRole, dismiss: DismissAction? = nil) {
     Task {
         do {
             let acceptedMember = try await apiAcceptMember(groupInfo.groupId, member.groupMemberId, role)
             await MainActor.run {
                 _ = ChatModel.shared.upsertGroupMember(groupInfo, acceptedMember)
+                dismiss?()
             }
         } catch let error {
             logger.error("apiAcceptMember error: \(responseError(error))")

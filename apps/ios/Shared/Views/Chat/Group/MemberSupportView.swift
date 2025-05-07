@@ -252,11 +252,11 @@ struct MemberSupportView: View {
     }
 }
 
-func showRemoveMemberAlert(_ groupInfo: GroupInfo, _ member: GroupMember) {
+func showRemoveMemberAlert(_ groupInfo: GroupInfo, _ member: GroupMember, dismiss: DismissAction? = nil) {
     showAlert(
         title: NSLocalizedString("Remove member?", comment: "alert title"),
         buttonTitle: "Remove",
-        buttonAction: { removeMember(groupInfo, member) },
+        buttonAction: { removeMember(groupInfo, member, dismiss: dismiss) },
         cancelButton: true
     )
 }

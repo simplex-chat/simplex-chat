@@ -781,7 +781,7 @@ struct GroupChatInfoView: View {
     }
 }
 
-func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember) {
+func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction? = nil) {
     Task {
         do {
             let updatedMembers = try await apiRemoveMembers(groupInfo.groupId, [mem.groupMemberId])
@@ -789,6 +789,7 @@ func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember) {
                 updatedMembers.forEach { updatedMember in
                     _ = ChatModel.shared.upsertGroupMember(groupInfo, updatedMember)
                 }
+                dismiss?()
             }
         } catch let error {
             logger.error("apiRemoveMembers error: \(responseError(error))")
