@@ -169,6 +169,7 @@ It is possible to donate via:
 - ETH: 0xD9ee7Db0AD0dc1Dfa7eD53290199ED06beA04692
 - USDT (Ethereum): 0xD9ee7Db0AD0dc1Dfa7eD53290199ED06beA04692
 - ZEC: t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg
+- ZEC shielded: u16rnvkflumf5uw9frngc2lymvmzgdr2mmc9unyu0l44unwfmdcpfm0axujd2w34ct3ye709azxsqge45705lpvvqu264ltzvfay55ygyq
 - DOGE: D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf
 - SOL: 7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu
 - please ask if you want to donate any other coins.
