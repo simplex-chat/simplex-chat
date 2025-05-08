@@ -2101,6 +2101,11 @@ public struct GroupProfile: Codable, NamedChat, Hashable {
     public var memberAdmission: GroupMemberAdmission?
     public var localAlias: String { "" }
 
+    public var memberAdmission_: GroupMemberAdmission {
+        get { self.memberAdmission ?? GroupMemberAdmission() }
+        set { memberAdmission = newValue }
+    }
+
     public static let sampleData = GroupProfile(
         displayName: "team",
         fullName: "My Team"

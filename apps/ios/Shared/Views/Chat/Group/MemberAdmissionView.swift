@@ -30,8 +30,8 @@ struct MemberAdmissionView: View {
         VStack {
             List {
                 admissionSection(
-                    NSLocalizedString("Review", comment: "admission stage"),
-                    NSLocalizedString("Review new members before admitting to group.", comment: "admission stage description"),
+                    NSLocalizedString("Review members", comment: "admission stage"),
+                    NSLocalizedString("Review members before admitting (\"knocking\").", comment: "admission stage description"),
                     $admission.review
                 )
 
