@@ -429,18 +429,18 @@ object ChatModel {
     }
 
     suspend fun addChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
+      // mark chat non deleted
+      if (cInfo is ChatInfo.Direct && cInfo.chatDeleted) {
+        val updatedContact = cInfo.contact.copy(chatDeleted = false)
+        updateContact(rhId, updatedContact)
+      }
       // update chat list
-      if (cInfo.groupChatScope() == null) {
-        // mark chat non deleted
-        if (cInfo is ChatInfo.Direct && cInfo.chatDeleted) {
-          val updatedContact = cInfo.contact.copy(chatDeleted = false)
-          updateContact(rhId, updatedContact)
-        }
+      val i = getChatIndex(rhId, cInfo.id)
+      val chat: Chat
+      if (i >= 0) {
+        chat = chats[i]
         // update preview
-        val i = getChatIndex(rhId, cInfo.id)
-        val chat: Chat
-        if (i >= 0) {
-          chat = chats[i]
+        if (cInfo.groupChatScope() == null) {
           val newPreviewItem = when (cInfo) {
             is ChatInfo.Group -> {
               val currentPreviewItem = chat.chatItems.firstOrNull()
@@ -468,14 +468,18 @@ object ChatModel {
               chat.chatStats
           )
           updateChatTagReadInPrimaryContext(chats[i], wasUnread)
-
-          if (appPlatform.isDesktop && cItem.chatDir.sent) {
-            reorderChat(chats[i], 0)
-          } else {
-            popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = i)
-          }
+        }
+        // pop chat
+        if (appPlatform.isDesktop && cItem.chatDir.sent) {
+          reorderChat(chats[i], 0)
         } else {
+          popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = i)
+        }
+      } else {
+        if (cInfo.groupChatScope() == null) {
           addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
+        } else {
+          addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = emptyList()))
         }
       }
       // add to current scope
