@@ -31,7 +31,7 @@ struct CIImageView: View {
                 .if(!smallView) { view in
                     view.modifier(PrivacyBlur(blurred: $blurred))
                 }
-                .onTapGesture { showFullScreenImage = true }
+                .simultaneousGesture(TapGesture().onEnded { showFullScreenImage = true })
                 .onChange(of: m.activeCallViewIsCollapsed) { _ in
                     showFullScreenImage = false
                 }
@@ -43,7 +43,7 @@ struct CIImageView: View {
                         imageView(preview).modifier(PrivacyBlur(blurred: $blurred))
                     }
                 }
-                    .onTapGesture {
+                    .simultaneousGesture(TapGesture().onEnded {
                         if let file = file {
                             switch file.fileStatus {
                             case .rcvInvitation, .rcvAborted:
@@ -80,7 +80,7 @@ struct CIImageView: View {
                             default: ()
                             }
                         }
-                    }
+                    })
             }
         }
         .onDisappear {

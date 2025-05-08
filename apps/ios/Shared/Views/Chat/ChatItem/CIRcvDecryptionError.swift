@@ -133,7 +133,7 @@ struct CIRcvDecryptionError: View {
             CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
                 .padding(.horizontal, 12)
         }
-        .onTapGesture(perform: { onClick() })
+        .simultaneousGesture(TapGesture().onEnded(onClick))
         .padding(.vertical, 6)
         .textSelection(.disabled)
     }
@@ -151,7 +151,7 @@ struct CIRcvDecryptionError: View {
             CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
                 .padding(.horizontal, 12)
         }
-        .onTapGesture(perform: { onClick() })
+        .simultaneousGesture(TapGesture().onEnded(onClick))
         .padding(.vertical, 6)
         .textSelection(.disabled)
     }

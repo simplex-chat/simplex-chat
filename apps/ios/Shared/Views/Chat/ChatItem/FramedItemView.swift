@@ -57,7 +57,7 @@ struct FramedItemView: View {
 
                 if let qi = chatItem.quotedItem {
                     ciQuoteView(qi)
-                        .onTapGesture {
+                        .simultaneousGesture(TapGesture().onEnded {
                             if let ci = ItemsModel.shared.reversedChatItems.first(where: { $0.id == qi.itemId }) {
                                 withAnimation {
                                     scrollToItemId(ci.id)
@@ -67,7 +67,7 @@ struct FramedItemView: View {
                             } else {
                                 showQuotedItemDoesNotExistAlert()
                             }
-                        }
+                        })
                 } else if let itemForwarded = chatItem.meta.itemForwarded {
                     framedItemHeader(icon: "arrowshape.turn.up.forward", caption: Text(itemForwarded.text(chat.chatInfo.chatType)).italic(), pad: true)
                 }
@@ -94,14 +94,14 @@ struct FramedItemView: View {
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
 
         if let (title, text) = chatItem.meta.itemStatus.statusInfo {
-            v.onTapGesture {
+            v.simultaneousGesture(TapGesture().onEnded {
                 AlertManager.shared.showAlert(
                     Alert(
                         title: Text(title),
                         message: Text(text)
                     )
                 )
-            }
+            })
         } else {
             v
         }
@@ -353,7 +353,7 @@ struct FramedItemView: View {
 
 @ViewBuilder func toggleSecrets<V: View>(_ ft: [FormattedText]?, _ showSecrets: Binding<Bool>, _ v: V) -> some View {
     if let ft = ft, ft.contains(where: { $0.isSecret }) {
-        v.onTapGesture { showSecrets.wrappedValue.toggle() }
+        v.simultaneousGesture(TapGesture().onEnded { showSecrets.wrappedValue.toggle() })
     } else {
         v
     }

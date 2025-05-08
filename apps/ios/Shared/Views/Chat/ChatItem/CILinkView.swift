@@ -38,7 +38,33 @@ struct CILinkView: View {
             .padding(.horizontal, 12)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .simultaneousGesture(TapGesture().onEnded {
+            switch privacyChatListOpenLinksDefault.get() {
+            case .yes:  UIApplication.shared.open(linkPreview.uri)
+            case .no: ()
+            case .ask: openBrowserAlert(uri: linkPreview.uri)
+            }
+        })
     }
+}
+
+func openBrowserAlert(uri: URL) {
+    showAlert(
+        NSLocalizedString("Open in browser?", comment: "alert title"),
+        message: uri.absoluteString,
+        actions: {[
+            UIAlertAction(
+                title: NSLocalizedString("Cancel", comment: "alert action"),
+                style: .default,
+                handler: { _ in }
+            ),
+            UIAlertAction(
+                title: NSLocalizedString("Open", comment: "alert action"),
+                style: .default,
+                handler: { _ in UIApplication.shared.open(uri) }
+            )
+        ]}
+    )
 }
 
 struct LargeLinkPreview_Previews: PreviewProvider {

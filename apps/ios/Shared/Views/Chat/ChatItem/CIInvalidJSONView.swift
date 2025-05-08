@@ -24,7 +24,7 @@ struct CIInvalidJSONView: View {
         .padding(.vertical, 6)
         .background(Color(uiColor: .tertiarySystemGroupedBackground))
         .textSelection(.disabled)
-        .onTapGesture { showJSON = true }
+        .simultaneousGesture(TapGesture().onEnded { showJSON = true })
         .appSheet(isPresented: $showJSON) {
             invalidJSONView(dataToString(json))
         }
