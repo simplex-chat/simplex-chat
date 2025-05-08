@@ -376,43 +376,43 @@ updateChatTsStats db User {userId} chatDirection chatTs chatStats_ = case toChat
       db
       "UPDATE contacts SET chat_ts = ?, chat_deleted = 0 WHERE user_id = ? AND contact_id = ?"
       (chatTs, userId, contactId)
-  GroupChat GroupInfo {groupId} Nothing ->
+  GroupChat GroupInfo {groupId, membership} scopeInfo -> do
     DB.execute
       db
       "UPDATE groups SET chat_ts = ? WHERE user_id = ? AND group_id = ?"
       (chatTs, userId, groupId)
-  GroupChat GroupInfo {membership} (Just GCSIMemberSupport {groupMember_}) -> do
-    let gmId = groupMemberId' $ fromMaybe membership groupMember_
-    case chatStats_ of
-      Nothing ->
-        DB.execute
-          db
-          "UPDATE group_members SET support_chat_ts = ? WHERE group_member_id = ?"
-          (chatTs, gmId)
-      Just (unread, MAInc unanswered, mentions) ->
-        DB.execute
-          db
-          [sql|
-            UPDATE group_members
-            SET support_chat_ts = ?,
-                support_chat_items_unread = support_chat_items_unread + ?,
-                support_chat_items_member_attention = support_chat_items_member_attention + ?,
-                support_chat_items_mentions = support_chat_items_mentions + ?
-            WHERE group_member_id = ?
-          |]
-          (chatTs, unread, unanswered, mentions, gmId)
-      Just (unread, MAReset, mentions) ->
-        DB.execute
-          db
-          [sql|
-            UPDATE group_members
-            SET support_chat_ts = ?,
-                support_chat_items_unread = support_chat_items_unread + ?,
-                support_chat_items_member_attention = 0,
-                support_chat_items_mentions = support_chat_items_mentions + ?
-            WHERE group_member_id = ?
-          |]
-          (chatTs, unread, mentions, gmId)
+    forM_ scopeInfo $ \GCSIMemberSupport {groupMember_} -> do
+      let gmId = groupMemberId' $ fromMaybe membership groupMember_
+      case chatStats_ of
+        Nothing ->
+          DB.execute
+            db
+            "UPDATE group_members SET support_chat_ts = ? WHERE group_member_id = ?"
+            (chatTs, gmId)
+        Just (unread, MAInc unanswered, mentions) ->
+          DB.execute
+            db
+            [sql|
+              UPDATE group_members
+              SET support_chat_ts = ?,
+                  support_chat_items_unread = support_chat_items_unread + ?,
+                  support_chat_items_member_attention = support_chat_items_member_attention + ?,
+                  support_chat_items_mentions = support_chat_items_mentions + ?
+              WHERE group_member_id = ?
+            |]
+            (chatTs, unread, unanswered, mentions, gmId)
+        Just (unread, MAReset, mentions) ->
+          DB.execute
+            db
+            [sql|
+              UPDATE group_members
+              SET support_chat_ts = ?,
+                  support_chat_items_unread = support_chat_items_unread + ?,
+                  support_chat_items_member_attention = 0,
+                  support_chat_items_mentions = support_chat_items_mentions + ?
+              WHERE group_member_id = ?
+            |]
+            (chatTs, unread, mentions, gmId)
   LocalChat NoteFolder {noteFolderId} ->
     DB.execute
       db
