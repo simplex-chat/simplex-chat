@@ -455,7 +455,7 @@ struct ChatView: View {
                                 if let groupMember = groupMember_ {
                                     MemberSupportChatToolbar(groupMember: groupMember)
                                 } else {
-                                    textChatToolbar("Support")
+                                    textChatToolbar("Chat with admins")
                                 }
                             }
                         case let .msgContentTagContext(contentTag):
@@ -502,7 +502,7 @@ struct ChatView: View {
     private func customUserSupportChatNavigationBar() -> some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Support")
+                Text("Chat with admins")
                     .font(.headline)
                     .foregroundColor(theme.colors.onBackground)
             }

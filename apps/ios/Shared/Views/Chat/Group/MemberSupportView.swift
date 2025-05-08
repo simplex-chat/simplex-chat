@@ -44,7 +44,7 @@ struct MemberSupportView: View {
         : membersWithChats.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
 
         if membersWithChats.isEmpty {
-            Text("No support chats")
+            Text("No chats with members")
                 .foregroundColor(.secondary)
         } else {
             List {
