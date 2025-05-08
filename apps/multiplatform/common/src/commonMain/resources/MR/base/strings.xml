@@ -2044,6 +2044,7 @@
   <string name="contact_preferences">Contact preferences</string>
   <string name="group_preferences">Group preferences</string>
   <string name="set_group_preferences">Set group preferences</string>
+  <string name="set_member_admission">Set member admission</string>
   <string name="your_preferences">Your preferences</string>
   <string name="timed_messages">Disappearing messages</string>
   <string name="direct_messages">Direct messages</string>
@@ -2163,8 +2164,8 @@
 
   <!-- MemberAdmission.kt -->
   <string name="member_admission">Member admission</string>
-  <string name="admission_stage_review">Review</string>
-  <string name="admission_stage_review_descr">Review new members before admitting to group.</string>
+  <string name="admission_stage_review">Review members</string>
+  <string name="admission_stage_review_descr">Review members before admitting ("knocking").</string>
   <string name="member_criteria_off">off</string>
   <string name="member_criteria_all">all</string>
 
