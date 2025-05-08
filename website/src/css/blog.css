@@ -217,6 +217,10 @@ h6 {
     float: right;
     margin-left: 3rem;
   }
+
+  #article .float-right{
+    margin-left: 3rem;
+  }
 }
 
 @media (max-width:768px) {
