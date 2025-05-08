@@ -342,7 +342,7 @@ fun ChatView(
                 }
               }
             },
-            showReportsOrSupportChats = {
+            showReports = {
               val info = activeChatInfo.value ?: return@ChatLayout
               if (ModalManager.end.hasModalsOpen()) {
                 ModalManager.end.closeModals()
@@ -350,9 +350,18 @@ fun ChatView(
               }
               hideKeyboard(view)
               scope.launch {
-                if (reportsCount > 0) {
-                  showGroupReportsView(staleChatId, scrollToItemId, info)
-                } else if (info is ChatInfo.Group && info.groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
+                showGroupReportsView(staleChatId, scrollToItemId, info)
+              }
+            },
+            showSupportChats = {
+              val info = activeChatInfo.value ?: return@ChatLayout
+              if (ModalManager.end.hasModalsOpen()) {
+                ModalManager.end.closeModals()
+                return@ChatLayout
+              }
+              hideKeyboard(view)
+              scope.launch {
+                if (info is ChatInfo.Group && info.groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
                   ModalManager.end.showCustomModal { close ->
                     MemberSupportView(
                       chatRh,
@@ -733,7 +742,8 @@ fun ChatLayout(
   selectedChatItems: MutableState<Set<Long>?>,
   back: () -> Unit,
   info: () -> Unit,
-  showReportsOrSupportChats: () -> Unit,
+  showReports: () -> Unit,
+  showSupportChats: () -> Unit,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   loadMessages: suspend (ChatId, ChatPagination, visibleItemIndexesNonReversed: () -> IntRange) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
@@ -887,7 +897,7 @@ fun ChatLayout(
         val supportChatsUnreadCount = supportChatsUnreadCount(chatInfo?.id)
         if (oneHandUI.value && chatBottomBar.value) {
           if (chatsCtx.secondaryContextFilter == null && (reportsCount > 0 || supportChatsUnreadCount > 0)) {
-            SupportChatsCountToolbar(reportsCount, supportChatsUnreadCount, withStatusBar = true, showReportsOrSupportChats)
+            SupportChatsCountToolbar(reportsCount, supportChatsUnreadCount, withStatusBar = true, showReports, showSupportChats)
           } else {
             StatusBarBackground()
           }
@@ -944,7 +954,7 @@ fun ChatLayout(
                 }
               }
               if ((reportsCount > 0 || supportChatsUnreadCount > 0) && (!oneHandUI.value || !chatBottomBar.value)) {
-                SupportChatsCountToolbar(reportsCount, supportChatsUnreadCount, withStatusBar = false, showReportsOrSupportChats)
+                SupportChatsCountToolbar(reportsCount, supportChatsUnreadCount, withStatusBar = false, showReports, showSupportChats)
               }
             }
           }
@@ -1180,37 +1190,64 @@ private fun SupportChatsCountToolbar(
   reportsCount: Int,
   supportChatsUnreadCount: Int,
   withStatusBar: Boolean,
-  showReportsOrSupportChats: () -> Unit
+  showReports: () -> Unit,
+  showSupportChats: () -> Unit
 ) {
   Box {
     val statusBarPadding = if (withStatusBar) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else 0.dp
     Row(
       Modifier
-        .fillMaxWidth()
-        .height(AppBarHeight * fontSizeSqrtMultiplier + statusBarPadding)
-        .background(MaterialTheme.colors.background)
-        .clickable(onClick = showReportsOrSupportChats)
-        .padding(top = statusBarPadding),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.Center
+        .fillMaxWidth(),
+      horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
-      val iconColor = if (reportsCount == 0) MaterialTheme.colors.primary else MaterialTheme.colors.error
-      Icon(painterResource(MR.images.ic_flag), null, Modifier.size(22.dp), tint = iconColor)
-      Spacer(Modifier.width(4.dp))
-      Text(
-        if (supportChatsUnreadCount == 0) {
-          if (reportsCount == 1) {
-            stringResource(MR.strings.group_reports_active_one)
-          } else {
-            stringResource(MR.strings.group_reports_active).format(reportsCount)
-          }
-        } else if (reportsCount == 0) {
-          stringResource(MR.strings.group_new_support_messages).format(supportChatsUnreadCount)
-        } else {
-          String.format(generalGetString(MR.strings.group_reports_active_new_support_messages), reportsCount, supportChatsUnreadCount)
-        },
-        style = MaterialTheme.typography.button
-      )
+      if (reportsCount > 0) {
+        Row(
+          Modifier
+            .fillMaxWidth()
+            .weight(1F)
+            .height(AppBarHeight * fontSizeSqrtMultiplier + statusBarPadding)
+            .background(MaterialTheme.colors.background)
+            .clickable(onClick = showReports)
+            .padding(top = statusBarPadding),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.Center
+        ) {
+          Icon(painterResource(MR.images.ic_flag), null, Modifier.size(22.dp), tint = MaterialTheme.colors.error)
+          Spacer(Modifier.width(4.dp))
+          Text(
+            if (reportsCount == 1) {
+              stringResource(MR.strings.group_reports_active_one)
+            } else {
+              stringResource(MR.strings.group_reports_active).format(reportsCount)
+            },
+            style = MaterialTheme.typography.button
+          )
+        }
+      }
+
+      if (supportChatsUnreadCount > 0) {
+        Row(
+          Modifier
+            .fillMaxWidth()
+            .weight(1F)
+            .height(AppBarHeight * fontSizeSqrtMultiplier + statusBarPadding)
+            .background(MaterialTheme.colors.background)
+            .clickable(onClick = showSupportChats)
+            .padding(top = statusBarPadding),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.Center
+        ) {
+          Icon(painterResource(MR.images.ic_flag), null, Modifier.size(22.dp), tint = MaterialTheme.colors.primary)
+          Spacer(Modifier.width(4.dp))
+          Text(
+            if (appPlatform.isAndroid)
+              stringResource(MR.strings.group_new_support_messages_short).format(supportChatsUnreadCount)
+            else
+              stringResource(MR.strings.group_new_support_messages).format(supportChatsUnreadCount),
+            style = MaterialTheme.typography.button
+          )
+        }
+      }
     }
     Divider(Modifier.align(Alignment.BottomStart))
   }
@@ -3027,7 +3064,8 @@ fun PreviewChatLayout() {
       selectedChatItems = remember { mutableStateOf(setOf()) },
       back = {},
       info = {},
-      showReportsOrSupportChats = {},
+      showReports = {},
+      showSupportChats = {},
       showMemberInfo = { _, _ -> },
       loadMessages = { _, _, _ -> },
       deleteMessage = { _, _ -> },
@@ -3105,7 +3143,8 @@ fun PreviewGroupChatLayout() {
       selectedChatItems = remember { mutableStateOf(setOf()) },
       back = {},
       info = {},
-      showReportsOrSupportChats = {},
+      showReports = {},
+      showSupportChats = {},
       showMemberInfo = { _, _ -> },
       loadMessages = { _, _, _ -> },
       deleteMessage = { _, _ -> },

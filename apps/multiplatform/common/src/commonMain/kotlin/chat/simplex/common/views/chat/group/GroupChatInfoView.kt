@@ -463,21 +463,29 @@ fun ModalData.GroupChatInfoLayout(
 
       var anyTopSectionRowShow = false
       SectionView {
-        if (groupInfo.membership.supportChat != null) {
+        if (groupInfo.canAddMembers && groupInfo.businessChat == null) {
           anyTopSectionRowShow = true
-          UserSupportChatButton(groupInfo, scrollToItemId)
+          if (groupLink == null) {
+            CreateGroupLinkButton(manageGroupLink)
+          } else {
+            GroupLinkButton(manageGroupLink)
+          }
         }
         if (groupInfo.businessChat == null && groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
           anyTopSectionRowShow = true
-          MemberSupportButton(openMemberSupport)
+          MemberSupportButton(chat, openMemberSupport)
         }
         if (groupInfo.canModerate) {
           anyTopSectionRowShow = true
-          GroupReportsButton {
+          GroupReportsButton(chat) {
             scope.launch {
               showGroupReportsView(chatModel.chatId, scrollToItemId, chat.chatInfo)
             }
           }
+        }
+        if (groupInfo.membership.supportChat != null) {
+          anyTopSectionRowShow = true
+          UserSupportChatButton(groupInfo, scrollToItemId)
         }
       }
       if (anyTopSectionRowShow) {
@@ -520,13 +528,6 @@ fun ModalData.GroupChatInfoLayout(
 
       SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), activeSortedMembers.count() + 1)) {
         if (groupInfo.canAddMembers) {
-          if (groupInfo.businessChat == null) {
-            if (groupLink == null) {
-              CreateGroupLinkButton(manageGroupLink)
-            } else {
-              GroupLinkButton(manageGroupLink)
-            }
-          }
           val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
           val tint = if (chat.chatInfo.incognito) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
           val addMembersTitleId = when (groupInfo.businessChat?.chatType) {
@@ -738,11 +739,12 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
 }
 
 @Composable
-private fun MemberSupportButton(onClick: () -> Unit) {
+private fun MemberSupportButton(chat: Chat, onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_flag),
+    painterResource(if (chat.chatStats.supportChatsUnreadCount > 0) MR.images.ic_flag_filled else MR.images.ic_flag),
     stringResource(MR.strings.member_support),
-    click = onClick
+    click = onClick,
+    iconColor = (if (chat.chatStats.supportChatsUnreadCount > 0) MaterialTheme.colors.primary else MaterialTheme.colors.secondary)
   )
 }
 
@@ -756,11 +758,12 @@ private fun GroupPreferencesButton(titleId: StringResource, onClick: () -> Unit)
 }
 
 @Composable
-private fun GroupReportsButton(onClick: () -> Unit) {
+private fun GroupReportsButton(chat: Chat, onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_flag),
+    painterResource(if (chat.chatStats.reportsCount > 0) MR.images.ic_flag_filled else MR.images.ic_flag),
     stringResource(MR.strings.group_reports_member_reports),
-    click = onClick
+    click = onClick,
+    iconColor = (if (chat.chatStats.reportsCount > 0) Color.Red else MaterialTheme.colors.secondary)
   )
 }
 

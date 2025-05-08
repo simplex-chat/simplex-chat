@@ -89,6 +89,18 @@ struct GroupChatInfoView: View {
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
 
                     Section {
+                        if groupInfo.canAddMembers && groupInfo.businessChat == nil {
+                            groupLinkButton()
+                        }
+                        if groupInfo.businessChat == nil && groupInfo.membership.memberRole >= .moderator {
+                            memberSupportButton()
+                        }
+                        if groupInfo.canModerate {
+                            GroupReportsChatNavLink(
+                                chat: chat,
+                                im: ItemsModel(secondaryIMFilter: .msgContentTagContext(contentTag: .report))
+                            )
+                        }
                         if groupInfo.membership.supportChat != nil {
                             let scopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
                             UserSupportChatNavLink(
@@ -96,15 +108,8 @@ struct GroupChatInfoView: View {
                                 im: ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: scopeInfo))
                             )
                         }
-                        if groupInfo.businessChat == nil && groupInfo.membership.memberRole >= .moderator {
-                            memberSupportButton()
-                        }
-                        if groupInfo.canModerate {
-                            GroupReportsChatNavLink(
-                                chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil), chatItems: [], chatStats: ChatStats()),
-                                im: ItemsModel(secondaryIMFilter: .msgContentTagContext(contentTag: .report))
-                            )
-                        }
+                    } header: {
+                        Text("")
                     }
 
                     Section {
@@ -115,8 +120,6 @@ struct GroupChatInfoView: View {
                             addOrEditWelcomeMessage()
                         }
                         GroupPreferencesButton(groupInfo: $groupInfo, preferences: groupInfo.fullGroupPreferences, currentPreferences: groupInfo.fullGroupPreferences)
-                    } header: {
-                        Text("")
                     } footer: {
                         let label: LocalizedStringKey = (
                             groupInfo.businessChat == nil
@@ -145,9 +148,6 @@ struct GroupChatInfoView: View {
                     
                     Section(header: Text("\(members.count + 1) members").foregroundColor(theme.colors.secondary)) {
                         if groupInfo.canAddMembers {
-                            if groupInfo.businessChat == nil {
-                                groupLinkButton()
-                            }
                             if (chat.chatInfo.incognito) {
                                 Label("Invite members", systemImage: "plus")
                                     .foregroundColor(Color(uiColor: .tertiaryLabel))
@@ -550,7 +550,7 @@ struct GroupChatInfoView: View {
                         userSupportChatNavLinkActive = true
                     }
                 } label: {
-                    Label("Support chat", systemImage: "flag")
+                    Label("Chat with admins", systemImage: "flag")
                 }
 
                 NavigationLink(isActive: $userSupportChatNavLinkActive) {
@@ -573,16 +573,20 @@ struct GroupChatInfoView: View {
     private func memberSupportButton() -> some View {
         NavigationLink {
             MemberSupportView(groupInfo: groupInfo)
-                .navigationBarTitle("Member support")
+                .navigationBarTitle("Chats with members")
                 .modifier(ThemedBackground())
                 .navigationBarTitleDisplayMode(.large)
         } label: {
-            Label("Member support", systemImage: "flag")
+            Label(
+                "Chats with members",
+                systemImage: chat.chatStats.supportChatsUnreadCount > 0 ? "flag.fill" : "flag"
+            )
         }
     }
 
     struct GroupReportsChatNavLink: View {
         @EnvironmentObject var chatModel: ChatModel
+        @EnvironmentObject var theme: AppTheme
         @State private var groupReportsChatNavLinkActive = false
         @ObservedObject var chat: Chat
         var im: ItemsModel
@@ -594,7 +598,11 @@ struct GroupChatInfoView: View {
                         groupReportsChatNavLinkActive = true
                     }
                 } label: {
-                    Label("Member reports", systemImage: "flag")
+                    Label(
+                        "Member reports",
+                        systemImage: chat.chatStats.reportsCount > 0 ? "flag.fill" : "flag"
+                    )
+                    .foregroundColor(chat.chatStats.reportsCount > 0 ? .red : theme.colors.primary)
                 }
 
                 NavigationLink(isActive: $groupReportsChatNavLinkActive) {
