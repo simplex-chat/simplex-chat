@@ -564,16 +564,16 @@ final class ChatModel: ObservableObject {
 //    }
 
     func addChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+        // mark chat non deleted
+        if case let .direct(contact) = cInfo, contact.chatDeleted {
+            var updatedContact = contact
+            updatedContact.chatDeleted = false
+            updateContact(updatedContact)
+        }
         // update chat list
-        if cInfo.groupChatScope() == nil {
-            // mark chat non deleted
-            if case let .direct(contact) = cInfo, contact.chatDeleted {
-                var updatedContact = contact
-                updatedContact.chatDeleted = false
-                updateContact(updatedContact)
-            }
+        if let i = getChatIndex(cInfo.id) {
             // update preview
-            if let i = getChatIndex(cInfo.id) {
+            if cInfo.groupChatScope() == nil {
                 chats[i].chatItems = switch cInfo {
                 case .group:
                     if let currentPreviewItem = chats[i].chatItems.first {
@@ -591,9 +591,14 @@ final class ChatModel: ObservableObject {
                 if case .rcvNew = cItem.meta.itemStatus {
                     unreadCollector.changeUnreadCounter(cInfo.id, by: 1, unreadMentions: cItem.meta.userMention ? 1 : 0)
                 }
-                popChatCollector.throttlePopChat(cInfo.id, currentPosition: i)
-            } else {
+            }
+            // pop chat
+            popChatCollector.throttlePopChat(cInfo.id, currentPosition: i)
+        } else {
+            if cInfo.groupChatScope() == nil {
                 addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
+            } else {
+                addChat(Chat(chatInfo: cInfo, chatItems: []))
             }
         }
         // add to current scope
