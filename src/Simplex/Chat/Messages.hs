@@ -350,7 +350,7 @@ data ChatStats = ChatStats
   { unreadCount :: Int, -- returned both in /_get chat initial API and in /_get chats API
     unreadMentions :: Int, -- returned both in /_get chat initial API and in /_get chats API
     reportsCount :: Int, -- returned both in /_get chat initial API and in /_get chats API
-    supportChatsUnreadCount :: Int, -- returned both in /_get chat initial API and in /_get chats API
+    membersRequireAttention :: Int, -- returned both in /_get chat initial API and in /_get chats API
     minUnreadItemId :: ChatItemId,
     unreadChat :: Bool
   }

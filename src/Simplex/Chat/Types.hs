@@ -854,6 +854,13 @@ data GroupSupportChat = GroupSupportChat
   }
   deriving (Eq, Show)
 
+gmRequiresAttention :: GroupMember -> Bool
+gmRequiresAttention m@GroupMember {supportChat} =
+  memberPending m || maybe False supportChatAttention supportChat
+  where
+    supportChatAttention GroupSupportChat {memberAttention, mentions} =
+      memberAttention > 0 || mentions > 0
+
 data GroupMemberRef = GroupMemberRef {groupMemberId :: Int64, profile :: Profile}
   deriving (Eq, Show)
 
