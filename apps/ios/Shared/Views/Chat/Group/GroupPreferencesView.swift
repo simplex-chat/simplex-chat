@@ -30,6 +30,14 @@ struct GroupPreferencesView: View {
         let saveText: LocalizedStringKey = creatingGroup ? "Save" : "Save and notify group members"
         VStack {
             List {
+                Section {
+                    MemberAdmissionButton(
+                        groupInfo: $groupInfo,
+                        admission: groupInfo.groupProfile.memberAdmission_,
+                        currentAdmission: groupInfo.groupProfile.memberAdmission_,
+                        creatingGroup: creatingGroup
+                    )
+                }
                 featureSection(.timedMessages, $preferences.timedMessages.enable)
                 featureSection(.fullDelete, $preferences.fullDelete.enable)
                 featureSection(.directMessages, $preferences.directMessages.enable, $preferences.directMessages.role)
@@ -135,6 +143,66 @@ struct GroupPreferencesView: View {
         .onChange(of: enableFeature.wrappedValue) { enabled in
             if case .off = enabled {
                 enableForRole?.wrappedValue = nil
+            }
+        }
+    }
+}
+
+struct MemberAdmissionButton: View {
+    @Binding var groupInfo: GroupInfo
+    @State var admission: GroupMemberAdmission
+    @State var currentAdmission: GroupMemberAdmission
+    var creatingGroup: Bool = false
+
+    var body: some View {
+        NavigationLink {
+            MemberAdmissionView(
+                groupInfo: $groupInfo,
+                admission: $admission,
+                currentAdmission: currentAdmission,
+                creatingGroup: creatingGroup,
+                saveAdmission: saveAdmission
+            )
+            .navigationBarTitle("Member admission")
+            .modifier(ThemedBackground(grouped: true))
+            .navigationBarTitleDisplayMode(.large)
+            .onDisappear {
+                let saveText = NSLocalizedString(
+                    creatingGroup ? "Save" : "Save and notify group members",
+                    comment: "alert button"
+                )
+
+                if groupInfo.groupProfile.memberAdmission_ != admission {
+                    showAlert(
+                        title: NSLocalizedString("Save admission settings?", comment: "alert title"),
+                        buttonTitle: saveText,
+                        buttonAction: { saveAdmission() },
+                        cancelButton: true
+                    )
+                }
+            }
+        } label: {
+            if creatingGroup {
+                Text("Set member admission")
+            } else {
+                Label("Member admission", systemImage: "switch.2")
+            }
+        }
+    }
+
+    private func saveAdmission() {
+        Task {
+            do {
+                var gp = groupInfo.groupProfile
+                gp.memberAdmission = admission
+                let gInfo = try await apiUpdateGroup(groupInfo.groupId, gp)
+                await MainActor.run {
+                    groupInfo = gInfo
+                    ChatModel.shared.updateGroup(gInfo)
+                    currentAdmission = admission
+                }
+            } catch {
+                logger.error("MemberAdmissionView apiUpdateGroup error: \(responseError(error))")
             }
         }
     }

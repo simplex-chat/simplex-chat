@@ -278,7 +278,7 @@ struct GroupMemberInfoView: View {
             }
         }
         .onChange(of: chat.chatInfo) { c in
-            if case let .group(gI) = chat.chatInfo {
+            if case let .group(gI, _) = chat.chatInfo {
                 groupInfo = gI
             }
         }

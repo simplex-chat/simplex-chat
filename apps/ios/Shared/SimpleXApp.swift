@@ -159,7 +159,7 @@ struct SimpleXApp: App {
             if let id = chatModel.chatId,
                let chat = chatModel.getChat(id),
                !NtfManager.shared.navigatingToChat {
-                Task { await loadChat(chat: chat, clearItems: false) }
+                Task { await loadChat(chat: chat, im: ItemsModel.shared, clearItems: false) }
             }
             if let ncr = chatModel.ntfContactRequest {
                 await MainActor.run { chatModel.ntfContactRequest = nil }

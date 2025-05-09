@@ -15,9 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
@@ -46,6 +44,7 @@ fun SendMsgView(
   needToAllowVoiceToContact: Boolean,
   allowedVoiceByPrefs: Boolean,
   userIsObserver: Boolean,
+  userIsPending: Boolean,
   userCanSend: Boolean,
   sendButtonColor: Color = MaterialTheme.colors.primary,
   allowVoiceToContact: () -> Unit,
@@ -90,6 +89,7 @@ fun SendMsgView(
       textStyle,
       showDeleteTextButton,
       userIsObserver,
+      userIsPending,
       if (clicksOnTextFieldDisabled) "" else placeholder,
       showVoiceButton,
       onMessageChange,
@@ -581,6 +581,7 @@ fun PreviewSendMsgView() {
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
       userIsObserver = false,
+      userIsPending = false,
       userCanSend = true,
       allowVoiceToContact = {},
       timedMessageAllowed = false,
@@ -617,6 +618,7 @@ fun PreviewSendMsgViewEditing() {
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
       userIsObserver = false,
+      userIsPending = false,
       userCanSend = true,
       allowVoiceToContact = {},
       timedMessageAllowed = false,
@@ -653,6 +655,7 @@ fun PreviewSendMsgViewInProgress() {
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
       userIsObserver = false,
+      userIsPending = false,
       userCanSend = true,
       allowVoiceToContact = {},
       timedMessageAllowed = false,

@@ -17,6 +17,7 @@ let MAX_VISIBLE_MEMBER_ROWS: CGFloat = 4.8
 struct GroupMentionsView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
+    var im: ItemsModel
     var groupInfo: GroupInfo
     @Binding var composeState: ComposeState
     @Binding var selectedRange: NSRange
@@ -93,12 +94,31 @@ struct GroupMentionsView: View {
             currentMessage = composeState.message
         }
     }
-    
+
+    func contextMemberFilter(_ member: GroupMember) -> Bool {
+        switch im.secondaryIMFilter {
+        case nil:
+            return true
+        case let .groupChatScopeContext(groupScopeInfo):
+            switch (groupScopeInfo) {
+            case let .memberSupport(groupMember_):
+                if let scopeMember = groupMember_ {
+                    return member.memberRole >= .moderator || member.groupMemberId == scopeMember.groupMemberId
+                } else {
+                    return member.memberRole >= .moderator
+                }
+            }
+        case .msgContentTagContext:
+            return false
+        }
+    }
+
     private func filteredMembers() -> [GMember] {
         let s = mentionName.lowercased()
-        return s.isEmpty
-        ? sortedMembers
-        : sortedMembers.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
+        return sortedMembers.filter {
+            contextMemberFilter($0.wrapped)
+            && (s.isEmpty || $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s))
+        }
     }
 
     private func messageChanged(_ msg: String, _ parsedMsg: [FormattedText], _ range: NSRange) {

@@ -108,7 +108,8 @@ CREATE TABLE group_profiles(
   image TEXT,
   user_id INTEGER DEFAULT NULL REFERENCES users ON DELETE CASCADE,
   preferences TEXT,
-  description TEXT NULL
+  description TEXT NULL,
+  member_admission TEXT
 );
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID
@@ -133,7 +134,8 @@ CREATE TABLE groups(
   business_xcontact_id BLOB NULL,
   customer_member_id BLOB NULL,
   chat_item_ttl INTEGER,
-  local_alias TEXT DEFAULT '', -- received
+  local_alias TEXT DEFAULT '',
+  members_require_attention INTEGER NOT NULL DEFAULT 0, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -166,6 +168,10 @@ CREATE TABLE group_members(
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   member_restriction TEXT,
+  support_chat_ts TEXT,
+  support_chat_items_unread INTEGER NOT NULL DEFAULT 0,
+  support_chat_items_member_attention INTEGER NOT NULL DEFAULT 0,
+  support_chat_items_mentions INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -410,7 +416,9 @@ CREATE TABLE chat_items(
   via_proxy INTEGER,
   msg_content_tag TEXT,
   include_in_history INTEGER NOT NULL DEFAULT 0,
-  user_mention INTEGER NOT NULL DEFAULT 0
+  user_mention INTEGER NOT NULL DEFAULT 0,
+  group_scope_tag TEXT,
+  group_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE
 );
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(
@@ -1020,4 +1028,22 @@ CREATE INDEX idx_connections_group_member_id ON connections(group_member_id);
 CREATE INDEX idx_chat_items_group_id_shared_msg_id ON chat_items(
   group_id,
   shared_msg_id
+);
+CREATE INDEX idx_chat_items_group_scope_group_member_id ON chat_items(
+  group_scope_group_member_id
+);
+CREATE INDEX idx_chat_items_group_scope_item_ts ON chat_items(
+  user_id,
+  group_id,
+  group_scope_tag,
+  group_scope_group_member_id,
+  item_ts
+);
+CREATE INDEX idx_chat_items_group_scope_item_status ON chat_items(
+  user_id,
+  group_id,
+  group_scope_tag,
+  group_scope_group_member_id,
+  item_status,
+  item_ts
 );

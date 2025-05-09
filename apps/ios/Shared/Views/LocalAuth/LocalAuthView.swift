@@ -66,6 +66,8 @@ struct LocalAuthView: View {
                 m.chatId = nil
                 ItemsModel.shared.reversedChatItems = []
                 ItemsModel.shared.chatState.clear()
+                ChatModel.shared.secondaryIM?.reversedChatItems = []
+                ChatModel.shared.secondaryIM?.chatState.clear()
                 m.updateChats([])
                 m.users = []
                 _ = kcAppPassword.set(password)
