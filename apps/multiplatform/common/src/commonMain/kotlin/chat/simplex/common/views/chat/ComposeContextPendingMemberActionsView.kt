@@ -102,13 +102,14 @@ fun acceptMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
 
 private fun acceptMember(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, role: GroupMemberRole, close: (() -> Unit)?) {
   withBGApi {
-    val acceptedMember = chatModel.controller.apiAcceptMember(rhId, groupInfo.groupId, member.groupMemberId, role)
-    if (acceptedMember != null) {
+    val r = chatModel.controller.apiAcceptMember(rhId, groupInfo.groupId, member.groupMemberId, role)
+    if (r != null) {
       withContext(Dispatchers.Main) {
-        chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, acceptedMember)
+        chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, r.second)
+        chatModel.chatsContext.updateGroup(rhId, r.first)
       }
       withContext(Dispatchers.Main) {
-        chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, groupInfo, acceptedMember)
+        chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, groupInfo, r.second)
       }
     }
     close?.invoke()

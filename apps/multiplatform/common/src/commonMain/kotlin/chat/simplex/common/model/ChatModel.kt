@@ -429,6 +429,8 @@ object ChatModel {
     }
 
     suspend fun addChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
+      // updates membersRequireAttention
+      updateChatInfo(rhId, cInfo)
       // mark chat non deleted
       if (cInfo is ChatInfo.Direct && cInfo.chatDeleted) {
         val updatedContact = cInfo.contact.copy(chatDeleted = false)
@@ -903,28 +905,6 @@ object ChatModel {
       }
     }
 
-    fun increaseGroupSupportChatsUnreadCounter(rhId: Long?, chatId: ChatId) {
-      changeGroupSupportChatsUnreadCounter(rhId, chatId, 1)
-    }
-
-    fun decreaseGroupSupportChatsUnreadCounter(rhId: Long?, chatId: ChatId, by: Int = 1) {
-      changeGroupSupportChatsUnreadCounter(rhId, chatId, -by)
-    }
-
-    private fun changeGroupSupportChatsUnreadCounter(rhId: Long?, chatId: ChatId, by: Int = 0) {
-      if (by == 0) return
-
-      val i = getChatIndex(rhId, chatId)
-      if (i >= 0) {
-        val chat = chats.value[i]
-        chats[i] = chat.copy(
-          chatStats = chat.chatStats.copy(
-            supportChatsUnreadCount = (chat.chatStats.supportChatsUnreadCount + by).coerceAtLeast(0),
-          )
-        )
-      }
-    }
-
     fun increaseGroupReportsCounter(rhId: Long?, chatId: ChatId) {
       changeGroupReportsCounter(rhId, chatId, 1)
     }
@@ -1329,6 +1309,16 @@ data class Chat(
 
   val id: String get() = chatInfo.id
 
+  val supportUnreadCount: Int get() = when (chatInfo) {
+    is ChatInfo.Group ->
+      if (chatInfo.groupInfo.canModerate) {
+        chatInfo.groupInfo.membersRequireAttention
+      } else {
+        chatInfo.groupInfo.membership.supportChat?.unread ?: 0
+      }
+    else -> 0
+  }
+
   fun groupFeatureEnabled(feature: GroupFeature): Boolean =
     if (chatInfo is ChatInfo.Group) {
       chatInfo.groupInfo.groupFeatureEnabled(feature)
@@ -1342,8 +1332,6 @@ data class Chat(
     val unreadMentions: Int = 0,
     // actual only via getChats() and getChat(.initial), otherwise, zero
     val reportsCount: Int = 0,
-    // actual only via getChats() and getChat(.initial), otherwise, zero
-    val supportChatsUnreadCount: Int = 0,
     val minUnreadItemId: Long = 0,
     // actual only via getChats(), otherwise, false
     val unreadChat: Boolean = false
@@ -1853,6 +1841,7 @@ data class GroupInfo (
   override val updatedAt: Instant,
   val chatTs: Instant?,
   val uiThemes: ThemeModeOverrides? = null,
+  val membersRequireAttention: Int,
   val chatTags: List<Long>,
   val chatItemTTL: Long?,
   override val localAlias: String,
@@ -1915,6 +1904,7 @@ data class GroupInfo (
       updatedAt = Clock.System.now(),
       chatTs = Clock.System.now(),
       uiThemes = null,
+      membersRequireAttention = 0,
       chatTags = emptyList(),
       localAlias = "",
       chatItemTTL = null
