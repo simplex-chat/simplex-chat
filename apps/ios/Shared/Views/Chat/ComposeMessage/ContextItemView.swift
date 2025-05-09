@@ -71,7 +71,7 @@ struct ContextItemView: View {
     }
 
     private func contextMsgPreview(_ contextItem: ChatItem) -> Text {
-        return attachment() + Text(AttributedString(messageText(contextItem.text, contextItem.formattedText, sender: nil, preview: true, mentions: contextItem.mentions, userMemberId: nil, showSecrets: false, secondaryColor: theme.colors.secondary)))
+        return attachment() + Text(AttributedString(messageText(contextItem.text, contextItem.formattedText, sender: nil, preview: true, mentions: contextItem.mentions, userMemberId: nil, showSecrets: nil, secondaryColor: theme.colors.secondary)))
 
         func attachment() -> Text {
             let isFileLoaded = if let fileSource = getLoadedFileSource(contextItem.file) {

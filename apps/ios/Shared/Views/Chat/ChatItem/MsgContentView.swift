@@ -35,19 +35,20 @@ struct MsgContentView: View {
     var mentions: [String: CIMention]? = nil
     var userMemberId: String? = nil
     var rightToLeft = false
-    var showSecrets: Bool
     var prefix: NSAttributedString? = nil
+    @State private var showSecrets: Set<Int> = []
     @State private var typingIdx = 0
     @State private var timer: Timer?
     @State private var typingIndicators: [NSAttributedString] = []
     @State private var noTyping = NSAttributedString(string: "   ")
+    @State private var phase: CGFloat = 0
 
     @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
 
     var body: some View {
+        let v = msgContentView()
         if meta?.isLive == true {
-            msgContentView()
-            .onAppear {
+            v.onAppear {
                 let descr = UIFontDescriptor.preferredFontDescriptor(withTextStyle: .body)
                 noTyping = NSAttributedString(string: "   ", attributes: [
                     .font: UIFont.monospacedSystemFont(ofSize: descr.pointSize, weight: .regular),
@@ -60,7 +61,7 @@ struct MsgContentView: View {
             .onChange(of: meta?.isLive, perform: switchTyping)
             .onChange(of: meta?.recent, perform: switchTyping)
         } else {
-            msgContentView()
+            v
         }
     }
 
@@ -89,38 +90,95 @@ struct MsgContentView: View {
         typingIdx = 0
     }
 
-    private func msgContentView() -> Text {
+    @inline(__always)
+    private func msgContentView() -> some View {
         let s = messageText(text, formattedText, textStyle: textStyle, sender: sender, mentions: mentions, userMemberId: userMemberId, showSecrets: showSecrets, secondaryColor: theme.colors.secondary, prefix: prefix)
+        let t: Text
         if let mt = meta {
             if mt.isLive {
                 s.append(typingIndicator(mt.recent))
             }
-            return Text(AttributedString(s)) + reserveSpaceForMeta(mt)
+            t = Text(AttributedString(s)) + reserveSpaceForMeta(mt)
         } else {
-            return Text(AttributedString(s))
+            t = Text(AttributedString(s))
         }
+        return t.overlay(handleTextLinks(s, showSecrets: $showSecrets))
     }
 
+    @inline(__always)
     private func typingIndicator(_ recent: Bool) -> NSAttributedString {
         recent && !typingIndicators.isEmpty
         ? typingIndicators[typingIdx % 4]
         : noTyping
     }
 
-    private func reserveSpaceForMetaAttr(_ mt: CIMeta) -> NSAttributedString {
-        let font = UIFont.preferredFont(forTextStyle: .body)
-        let res = NSMutableAttributedString()
-        res.append(NSAttributedString(string: rightToLeft ? "\n" : "   ", attributes: [.font: font]))
-        res.append(ciMetaTextAttributed(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp))
-        return res
-    }
-
+    @inline(__always)
     private func reserveSpaceForMeta(_ mt: CIMeta) -> Text {
         (rightToLeft ? textNewLine : Text(verbatim: "   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
     }
 }
 
-func messageText(_ text: String, _ formattedText: [FormattedText]?, textStyle: UIFont.TextStyle = .body, sender: String?, preview: Bool = false, mentions: [String: CIMention]?, userMemberId: String?, showSecrets: Bool, secondaryColor: Color, prefix: NSAttributedString? = nil) -> NSMutableAttributedString {
+func handleTextLinks(_ s: NSAttributedString, showSecrets: Binding<Set<Int>>? = nil) -> some View {
+    return GeometryReader { g in
+        Rectangle()
+            .fill(Color.clear)
+            .contentShape(Rectangle())
+            .simultaneousGesture(DragGesture(minimumDistance: 0).onEnded { event in
+                let t = event.translation
+                if t.width * t.width + t.height * t.height > 100 { return }
+                let framesetter = CTFramesetterCreateWithAttributedString(s as CFAttributedString)
+                let path = CGPath(rect: CGRect(origin: .zero, size: g.size), transform: nil)
+                let frame = CTFramesetterCreateFrame(framesetter, CFRangeMake(0, s.length), path, nil)
+                let point = CGPoint(x: event.location.x, y: g.size.height - event.location.y) // Flip y for UIKit
+                var index: CFIndex?
+                if let lines = CTFrameGetLines(frame) as? [CTLine] {
+                    var origins = [CGPoint](repeating: .zero, count: lines.count)
+                    CTFrameGetLineOrigins(frame, CFRangeMake(0, 0), &origins)
+                    for i in 0 ..< lines.count {
+                        let bounds = CTLineGetBoundsWithOptions(lines[i], .useOpticalBounds)
+                        if bounds.offsetBy(dx: origins[i].x, dy: origins[i].y).contains(point) {
+                            index = CTLineGetStringIndexForPosition(lines[i], point)
+                            break
+                        }
+                    }
+                }
+                if let index, let (url, browser) = attributedStringLink(s, for: index) {
+                    if browser {
+                        openBrowserAlert(uri: url)
+                    } else {
+                        UIApplication.shared.open(url)
+                    }
+                }
+            })
+    }
+
+    func attributedStringLink(_ s: NSAttributedString, for index: CFIndex) -> (URL, Bool)? {
+        var linkURL: URL?
+        var browser: Bool = false
+        s.enumerateAttributes(in: NSRange(location: 0, length: s.length)) { attrs, range, stop in
+            if index >= range.location && index < range.location + range.length {
+                if let url = attrs[.link] as? NSURL {
+                    linkURL = url.absoluteURL
+                    browser = attrs[webLinkAttr] != nil
+                } else if let showSecrets, let i = attrs[secretAttr] as? Int {
+                    if showSecrets.wrappedValue.contains(i) {
+                        showSecrets.wrappedValue.remove(i)
+                    } else {
+                        showSecrets.wrappedValue.insert(i)
+                    }
+                }
+                stop.pointee = true
+            }
+        }
+        return if let linkURL { (linkURL, browser) } else { nil }
+    }
+}
+
+private let webLinkAttr = NSAttributedString.Key("web")
+
+private let secretAttr = NSAttributedString.Key("secret")
+
+func messageText(_ text: String, _ formattedText: [FormattedText]?, textStyle: UIFont.TextStyle = .body, sender: String?, preview: Bool = false, mentions: [String: CIMention]?, userMemberId: String?, showSecrets: Set<Int>?, secondaryColor: Color, prefix: NSAttributedString? = nil) -> NSMutableAttributedString {
     let res = NSMutableAttributedString()
     let descr = UIFontDescriptor.preferredFontDescriptor(withTextStyle: textStyle)
     let font = UIFont.preferredFont(forTextStyle: textStyle)
@@ -150,6 +208,7 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, textStyle: U
         var italic: UIFont?
         var snippet: UIFont?
         var mention: UIFont?
+        var secretIdx: Int = 0
         for ft in fts {
             var t = ft.text
             var attrs = plain
@@ -166,7 +225,14 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, textStyle: U
                 snippet = snippet ?? UIFont.monospacedSystemFont(ofSize: descr.pointSize, weight: .regular)
                 attrs[.font] = snippet
             case .secret:
-                if !showSecrets {
+                if let showSecrets {
+                    if !showSecrets.contains(secretIdx) {
+                        attrs[.foregroundColor] = UIColor.clear
+                        attrs[.backgroundColor] = UIColor.secondarySystemFill // secretColor
+                    }
+                    attrs[secretAttr] = secretIdx
+                    secretIdx += 1
+                } else {
                     attrs[.foregroundColor] = UIColor.clear
                     attrs[.backgroundColor] = UIColor.secondarySystemFill
                 }
@@ -178,6 +244,7 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, textStyle: U
                 attrs = linkAttrs()
                 if !preview {
                     attrs[.link] = NSURL(string: ft.text)
+                    attrs[webLinkAttr] = true
                 }
             case let .simplexLink(linkType, simplexUri, smpHosts):
                 attrs = linkAttrs()
@@ -248,8 +315,7 @@ struct MsgContentView_Previews: PreviewProvider {
             formattedText: chatItem.formattedText,
             textStyle: .body,
             sender: chatItem.memberDisplayName,
-            meta: chatItem.meta,
-            showSecrets: false
+            meta: chatItem.meta
         )
         .environmentObject(Chat.sampleData)
     }

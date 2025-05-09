@@ -39,11 +39,7 @@ struct CILinkView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .simultaneousGesture(TapGesture().onEnded {
-            switch privacyChatListOpenLinksDefault.get() {
-            case .yes:  UIApplication.shared.open(linkPreview.uri)
-            case .no: ()
-            case .ask: openBrowserAlert(uri: linkPreview.uri)
-            }
+            openBrowserAlert(uri: linkPreview.uri)
         })
     }
 }

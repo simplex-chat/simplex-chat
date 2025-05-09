@@ -420,15 +420,15 @@ public enum CustomTimeUnit: Hashable {
         }
     }
 
-    public static func toShortText(seconds: Int) -> String {
+    public static func toShortText(seconds: Int) -> LocalizedStringKey {
         let (unit, value) = toTimeUnit(seconds: seconds)
-        return switch unit {
-        case .second: String.localizedStringWithFormat(NSLocalizedString("%llds", comment: "abbreviated time to disappear, seconds"))
-        case .minute: String.localizedStringWithFormat(NSLocalizedString("%lldm", comment: "abbreviated time to disappear, minutes"))
-        case .hour: String.localizedStringWithFormat(NSLocalizedString("%lldh", comment: "abbreviated time to disappear, hours"))
-        case .day: String.localizedStringWithFormat(NSLocalizedString("%lldd", comment: "abbreviated time to disappear, days"))
-        case .week: String.localizedStringWithFormat(NSLocalizedString("%lldw", comment: "abbreviated time to disappear, weeks"))
-        case .month: String.localizedStringWithFormat(NSLocalizedString("%lldmth", comment: "abbreviated time to disappear, months"))
+        switch unit {
+        case .second: return "\(value)s"
+        case .minute: return "\(value)m"
+        case .hour: return "\(value)h"
+        case .day: return "\(value)d"
+        case .week: return "\(value)w"
+        case .month: return "\(value)mth"
         }
     }
 }
@@ -440,9 +440,9 @@ public func timeText(_ seconds: Int?) -> String {
     return CustomTimeUnit.toText(seconds: seconds)
 }
 
-public func shortTimeText(_ seconds: Int?) -> String {
-    guard let seconds = seconds else { return NSLocalizedString("off", comment: "") }
-    if seconds == 0 { return NSLocalizedString("0s", comment: "abbreviation for 0 seconds") }
+public func shortTimeText(_ seconds: Int?) -> LocalizedStringKey {
+    guard let seconds = seconds else { return "off" }
+    if seconds == 0 { return "0s" }
     return CustomTimeUnit.toShortText(seconds: seconds)
 }
 
@@ -3138,45 +3138,6 @@ public enum CIStatus: Decodable, Hashable {
         case .rcvRead: nil
         case .invalid: (Image(systemName: "questionmark"), metaColor)
         }
-    }
-
-    public func statusIconAttr(_ metaColor: UIColor, _ paleMetaColor: UIColor, _ primaryColor: UIColor = .tintColor) -> (UIImage, UIColor)? {
-        switch self {
-        case .sndNew: return nil
-        case let .sndSent(sndProgress):
-            if let image = UIImage(named: "checkmark.wide") {
-                return (image,  sndProgress == .partial ? paleMetaColor : metaColor)
-            }
-        case let .sndRcvd(msgRcptStatus, sndProgress):
-            if let image = UIImage(named: "checkmark.2") {
-                return switch msgRcptStatus {
-                case .ok: (image, sndProgress == .partial ? paleMetaColor : metaColor)
-                case .badMsgHash: (image, .red)
-                }
-            }
-        case .sndErrorAuth:
-            if let image = UIImage(systemName: "multiply") {
-                return (image, .red)
-            }
-        case .sndError:
-            if let image = UIImage(systemName: "multiply") {
-                return (image, .red)
-            }
-        case .sndWarning:
-            if let image = UIImage(systemName: "exclamationmark.triangle.fill") {
-                return (image, .orange)
-            }
-        case .rcvNew:
-            if let image = UIImage(systemName: "circlebadge.fill") {
-                return (image, primaryColor)
-            }
-        case .rcvRead: return nil
-        case .invalid:
-            if let image = UIImage(systemName: "questionmark") {
-                return (image, metaColor)
-            }
-        }
-        return nil
     }
 
     public var statusInfo: (String, String)? {

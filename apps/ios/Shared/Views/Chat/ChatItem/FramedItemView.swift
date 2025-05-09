@@ -23,8 +23,6 @@ struct FramedItemView: View {
     @State private var useWhiteMetaColor: Bool = false
     @State var showFullScreenImage = false
     @Binding var allowMenu: Bool
-    @State private var showSecrets = false
-    @State private var showQuoteSecrets = false
     @State private var showFullscreenGallery: Bool = false
 
     var body: some View {
@@ -270,13 +268,12 @@ struct FramedItemView: View {
         .padding(.top, 6)
         .padding(.horizontal, 12)
     }
-    
+
+    @inline(__always)
     private func ciQuotedMsgTextView(_ qi: CIQuote, lines: Int) -> some View {
-        toggleSecrets(qi.formattedText, $showQuoteSecrets,
-            MsgContentView(chat: chat, text: qi.text, formattedText: qi.formattedText, textStyle: .subheadline, showSecrets: showQuoteSecrets)
-                .lineLimit(lines)
-                .padding(.bottom, 6)
-        )
+        MsgContentView(chat: chat, text: qi.text, formattedText: qi.formattedText, textStyle: .subheadline)
+            .lineLimit(lines)
+            .padding(.bottom, 6)
     }
 
     private func ciQuoteIconView(_ image: String) -> some View {
@@ -300,7 +297,7 @@ struct FramedItemView: View {
         let text = ci.meta.isLive ? ci.content.msgContent?.text ?? ci.text : ci.text
         let rtl = isRightToLeft(text)
         let ft = text == "" ? [] : ci.formattedText
-        let v = toggleSecrets(ft, $showSecrets, MsgContentView(
+        let v = MsgContentView(
             chat: chat,
             text: text,
             formattedText: ft,
@@ -309,9 +306,8 @@ struct FramedItemView: View {
             mentions: ci.mentions,
             userMemberId: chat.chatInfo.groupInfo?.membership.memberId,
             rightToLeft: rtl,
-            showSecrets: showSecrets,
             prefix: txtPrefix
-        ))
+        )
         .multilineTextAlignment(rtl ? .trailing : .leading)
         .padding(.vertical, 6)
         .padding(.horizontal, 12)
@@ -348,14 +344,6 @@ struct FramedItemView: View {
             title: "No message",
             message: "This message was deleted or not received yet."
         )
-    }
-}
-
-@ViewBuilder func toggleSecrets<V: View>(_ ft: [FormattedText]?, _ showSecrets: Binding<Bool>, _ v: V) -> some View {
-    if let ft = ft, ft.contains(where: { $0.isSecret }) {
-        v.simultaneousGesture(TapGesture().onEnded { showSecrets.wrappedValue.toggle() })
-    } else {
-        v
     }
 }
 
