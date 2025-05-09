@@ -421,7 +421,8 @@ data GroupInfo = GroupInfo
     chatTags :: [ChatTagId],
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
-    customData :: Maybe CustomData
+    customData :: Maybe CustomData,
+    membersRequireAttention :: Int
   }
   deriving (Eq, Show)
 

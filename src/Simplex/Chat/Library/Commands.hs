@@ -1017,22 +1017,26 @@ processChatCommand' vr = \case
     CTContactConnection -> throwCmdError "not supported"
   APIChatItemsRead chatRef@(ChatRef cType chatId scope) itemIds -> withUser $ \_ -> case cType of
     CTDirect -> do
-      user <- withFastStore $ \db -> getUserByContactId db chatId
+      (user, ct) <- withFastStore $ \db -> do
+        user <- getUserByContactId db chatId
+        ct <- getContact db vr user chatId
+        pure (user, ct)
       timedItems <- withFastStore' $ \db -> do
         timedItems <- updateDirectChatItemsReadList db user chatId itemIds
         setDirectChatItemsDeleteAt db user chatId timedItems =<< getCurrentTime
       forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
-      ok user
+      pure $ CRItemsReadForChat user (AChatInfo SCTDirect $ DirectChat ct)
     CTGroup -> do
       (user, gInfo) <- withFastStore $ \db -> do
         user <- getUserByGroupId db chatId
         gInfo <- getGroupInfo db vr user chatId
         pure (user, gInfo)
-      timedItems <- withFastStore' $ \db -> do
-        timedItems <- updateGroupChatItemsReadList db user gInfo scope itemIds
-        setGroupChatItemsDeleteAt db user chatId timedItems =<< getCurrentTime
+      (timedItems, gInfo') <- withFastStore $ \db -> do
+        (timedItems, gInfo') <- updateGroupChatItemsReadList db vr user gInfo scope itemIds
+        timedItems' <- liftIO $ setGroupChatItemsDeleteAt db user chatId timedItems =<< getCurrentTime
+        pure (timedItems', gInfo')
       forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
-      ok user
+      pure $ CRItemsReadForChat user (AChatInfo SCTGroup $ GroupChat gInfo' Nothing)
     CTLocal -> throwCmdError "not supported"
     CTContactRequest -> throwCmdError "not supported"
     CTContactConnection -> throwCmdError "not supported"
