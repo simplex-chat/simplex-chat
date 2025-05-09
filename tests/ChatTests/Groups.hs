@@ -371,7 +371,7 @@ testMarkReadGroup = testChat2 aliceProfile bobProfile $ \alice bob -> do
   bob ##> "/last_item_id"
   i :: ChatItemId <- read <$> getTermLine bob
   let itemIds = intercalate "," $ map show [i - 3 .. i]
-  bob #$> ("/_read chat items #1 " <> itemIds, id, "ok")
+  bob #$> ("/_read chat items #1 " <> itemIds, id, "items read for chat")
 
 testChatPaginationInitial :: HasCallStack => TestParams -> IO ()
 testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> do
@@ -392,7 +392,7 @@ testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice 
 
   -- Read next 2 items
   let itemIds = intercalate "," $ map groupItemId [1 .. 2]
-  bob #$> ("/_read chat items #1 " <> itemIds, id, "ok")
+  bob #$> ("/_read chat items #1 " <> itemIds, id, "items read for chat")
   bob #$> ("/_get chat #1 initial=2", chat, [(0, "1"), (0, "2"), (0, "3"), (0, "4"), (0, "5")])
 
   -- Read all items
@@ -7072,12 +7072,12 @@ testScopedSupportUnreadStats =
     bob ##> "/member support chats #team"
     bob <## "support: unread: 3, require attention: 0, mentions: 0"
 
-    alice #$> ("/_read chat items #1(_support:2) " <> aliceMentionedByDanItemId, id, "ok")
+    alice #$> ("/_read chat items #1(_support:2) " <> aliceMentionedByDanItemId, id, "items read for chat")
 
     alice ##> "/member support chats #team"
     alice <## "bob (Bob) (id 2): unread: 4, require attention: 2, mentions: 1"
 
-    alice #$> ("/_read chat items #1(_support:2) " <> aliceMentionedByBobItemId, id, "ok")
+    alice #$> ("/_read chat items #1(_support:2) " <> aliceMentionedByBobItemId, id, "items read for chat")
 
     alice ##> "/member support chats #team"
     alice <## "bob (Bob) (id 2): unread: 3, require attention: 1, mentions: 0"

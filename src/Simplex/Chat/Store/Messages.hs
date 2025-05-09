@@ -369,56 +369,103 @@ type NewQuoteRow = (Maybe SharedMsgId, Maybe UTCTime, Maybe MsgContent, Maybe Bo
 data MemberAttention = MAInc Int | MAReset
   deriving (Show)
 
-updateChatTsStats :: DB.Connection -> User -> ChatDirection c d -> UTCTime -> Maybe (Int, MemberAttention, Int) -> IO ()
-updateChatTsStats db User {userId} chatDirection chatTs chatStats_ = case toChatInfo chatDirection of
-  DirectChat Contact {contactId} ->
+updateChatTsStats :: DB.Connection -> VersionRangeChat -> User -> ChatDirection c d -> UTCTime -> Maybe (Int, MemberAttention, Int) -> IO (ChatInfo c)
+updateChatTsStats db vr user@User {userId} chatDirection chatTs chatStats_ = case toChatInfo chatDirection of
+  DirectChat ct@Contact {contactId} -> do
     DB.execute
       db
       "UPDATE contacts SET chat_ts = ?, chat_deleted = 0 WHERE user_id = ? AND contact_id = ?"
       (chatTs, userId, contactId)
-  GroupChat GroupInfo {groupId, membership} scopeInfo -> do
+    pure $ DirectChat ct {chatTs = Just chatTs}
+  GroupChat g@GroupInfo {groupId} Nothing -> do
     DB.execute
       db
       "UPDATE groups SET chat_ts = ? WHERE user_id = ? AND group_id = ?"
       (chatTs, userId, groupId)
-    forM_ scopeInfo $ \GCSIMemberSupport {groupMember_} -> do
-      let gmId = groupMemberId' $ fromMaybe membership groupMember_
-      case chatStats_ of
-        Nothing ->
-          DB.execute
-            db
-            "UPDATE group_members SET support_chat_ts = ? WHERE group_member_id = ?"
-            (chatTs, gmId)
-        Just (unread, MAInc unanswered, mentions) ->
-          DB.execute
-            db
-            [sql|
-              UPDATE group_members
-              SET support_chat_ts = ?,
-                  support_chat_items_unread = support_chat_items_unread + ?,
-                  support_chat_items_member_attention = support_chat_items_member_attention + ?,
-                  support_chat_items_mentions = support_chat_items_mentions + ?
-              WHERE group_member_id = ?
-            |]
-            (chatTs, unread, unanswered, mentions, gmId)
-        Just (unread, MAReset, mentions) ->
-          DB.execute
-            db
-            [sql|
-              UPDATE group_members
-              SET support_chat_ts = ?,
-                  support_chat_items_unread = support_chat_items_unread + ?,
-                  support_chat_items_member_attention = 0,
-                  support_chat_items_mentions = support_chat_items_mentions + ?
-              WHERE group_member_id = ?
-            |]
-            (chatTs, unread, mentions, gmId)
-  LocalChat NoteFolder {noteFolderId} ->
+    pure $ GroupChat g {chatTs = Just chatTs} Nothing
+  GroupChat g@GroupInfo {groupId, membership, membersRequireAttention} (Just GCSIMemberSupport {groupMember_}) ->
+    case groupMember_ of
+      Nothing -> do
+        membership' <- updateGMStats membership
+        DB.execute
+          db
+          "UPDATE groups SET chat_ts = ? WHERE user_id = ? AND group_id = ?"
+          (chatTs, userId, groupId)
+        pure $ GroupChat g {membership = membership', chatTs = Just chatTs} (Just $ GCSIMemberSupport Nothing)
+      Just member -> do
+        member' <- updateGMStats member
+        let didRequire = gmRequiresAttention member
+            nowRequires = gmRequiresAttention member'
+        if
+          | nowRequires && not didRequire -> do
+              DB.execute
+                db
+                [sql|
+                  UPDATE groups
+                  SET chat_ts = ?,
+                      members_require_attention = members_require_attention + 1
+                  WHERE user_id = ? AND group_id = ?
+                |]
+                (chatTs, userId, groupId)
+              pure $ GroupChat g {membersRequireAttention = membersRequireAttention + 1, chatTs = Just chatTs} (Just $ GCSIMemberSupport (Just member'))
+          | not nowRequires && didRequire -> do
+              DB.execute
+                db
+                [sql|
+                  UPDATE groups
+                  SET chat_ts = ?,
+                      members_require_attention = members_require_attention - 1
+                  WHERE user_id = ? AND group_id = ?
+                |]
+                (chatTs, userId, groupId)
+              pure $ GroupChat g {membersRequireAttention = membersRequireAttention - 1, chatTs = Just chatTs} (Just $ GCSIMemberSupport (Just member'))
+          | otherwise -> do
+              DB.execute
+                db
+                "UPDATE groups SET chat_ts = ? WHERE user_id = ? AND group_id = ?"
+                (chatTs, userId, groupId)
+              pure $ GroupChat g {chatTs = Just chatTs} (Just $ GCSIMemberSupport (Just member'))
+    where
+      updateGMStats m@GroupMember {groupMemberId} = do
+        case chatStats_ of
+          Nothing ->
+            DB.execute
+              db
+              "UPDATE group_members SET support_chat_ts = ? WHERE group_member_id = ?"
+              (chatTs, groupMemberId)
+          Just (unread, MAInc unanswered, mentions) ->
+            DB.execute
+              db
+              [sql|
+                UPDATE group_members
+                SET support_chat_ts = ?,
+                    support_chat_items_unread = support_chat_items_unread + ?,
+                    support_chat_items_member_attention = support_chat_items_member_attention + ?,
+                    support_chat_items_mentions = support_chat_items_mentions + ?
+                WHERE group_member_id = ?
+              |]
+              (chatTs, unread, unanswered, mentions, groupMemberId)
+          Just (unread, MAReset, mentions) ->
+            DB.execute
+              db
+              [sql|
+                UPDATE group_members
+                SET support_chat_ts = ?,
+                    support_chat_items_unread = support_chat_items_unread + ?,
+                    support_chat_items_member_attention = 0,
+                    support_chat_items_mentions = support_chat_items_mentions + ?
+                WHERE group_member_id = ?
+              |]
+              (chatTs, unread, mentions, groupMemberId)
+        m_ <- runExceptT $ getGroupMemberById db vr user groupMemberId
+        pure $ either (const m) id m_ -- Left shouldn't happen, but types require it
+  LocalChat nf@NoteFolder {noteFolderId} -> do
     DB.execute
       db
       "UPDATE note_folders SET chat_ts = ? WHERE user_id = ? AND note_folder_id = ?"
       (chatTs, userId, noteFolderId)
-  _ -> pure ()
+    pure $ LocalChat nf {chatTs = chatTs}
+  cInfo -> pure cInfo
 
 setSupportChatTs :: DB.Connection -> GroupMemberId -> UTCTime -> IO ()
 setSupportChatTs db groupMemberId chatTs =
@@ -636,13 +683,13 @@ type ChatStatsRow = (Int, ChatItemId, BoolInt)
 
 toChatStats :: ChatStatsRow -> ChatStats
 toChatStats (unreadCount, minUnreadItemId, BI unreadChat) =
-  ChatStats {unreadCount, unreadMentions = 0, reportsCount = 0, supportChatsUnreadCount = 0, minUnreadItemId, unreadChat}
+  ChatStats {unreadCount, unreadMentions = 0, reportsCount = 0, minUnreadItemId, unreadChat}
 
-type GroupStatsRow = (Int, Int, Int, Int, ChatItemId, BoolInt)
+type GroupStatsRow = (Int, Int, Int, ChatItemId, BoolInt)
 
 toGroupStats :: GroupStatsRow -> ChatStats
-toGroupStats (unreadCount, unreadMentions, reportsCount, supportChatsUnreadCount, minUnreadItemId, BI unreadChat) =
-  ChatStats {unreadCount, unreadMentions, reportsCount, supportChatsUnreadCount, minUnreadItemId, unreadChat}
+toGroupStats (unreadCount, unreadMentions, reportsCount, minUnreadItemId, BI unreadChat) =
+  ChatStats {unreadCount, unreadMentions, reportsCount, minUnreadItemId, unreadChat}
 
 findDirectChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
 findDirectChatPreviews_ db User {userId} pagination clq =
@@ -763,7 +810,6 @@ findGroupChatPreviews_ db User {userId} pagination clq =
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
-          COALESCE(SupportChatsUnreadCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
@@ -780,16 +826,8 @@ findGroupChatPreviews_ db User {userId} pagination clq =
             AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0
           GROUP BY group_id
         ) ReportCount ON ReportCount.group_id = g.group_id
-        LEFT JOIN (
-          SELECT group_id, COUNT(1) AS Count
-          FROM chat_items
-          WHERE user_id = ? AND group_id IS NOT NULL
-            AND group_scope_tag IS NOT NULL
-            AND item_status = ?
-          GROUP BY group_id
-        ) SupportChatsUnreadCount ON SupportChatsUnreadCount.group_id = g.group_id
       |]
-    baseParams = (userId, userId, CISRcvNew, userId, MCReport_, BI False, userId, CISRcvNew)
+    baseParams = (userId, userId, CISRcvNew, userId, MCReport_, BI False)
     getPreviews = case clq of
       CLQFilters {favorite = False, unread = False} -> do
         let q = baseQuery <> " WHERE g.user_id = ?"
@@ -1494,16 +1532,14 @@ getGroupChatInitial_ db user g scopeInfo_ contentFilter count = do
   where
     getStats minUnreadItemId (unreadCount, unreadMentions) = do
       reportsCount <- getGroupReportsCount_ db user g False
-      supportChatsUnreadCount <- getGroupSupportChatsUnreadCount_ db user g
-      pure ChatStats {unreadCount, unreadMentions, reportsCount, supportChatsUnreadCount, minUnreadItemId, unreadChat = False}
+      pure ChatStats {unreadCount, unreadMentions, reportsCount, minUnreadItemId, unreadChat = False}
 
 getGroupStats_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> ExceptT StoreError IO ChatStats
 getGroupStats_ db user g scopeInfo_ = do
   minUnreadItemId <- fromMaybe 0 <$> getGroupMinUnreadId_ db user g scopeInfo_ Nothing
   (unreadCount, unreadMentions) <- getGroupUnreadCount_ db user g scopeInfo_ Nothing
   reportsCount <- liftIO $ getGroupReportsCount_ db user g False
-  supportChatsUnreadCount <- liftIO $ getGroupSupportChatsUnreadCount_ db user g
-  pure ChatStats {unreadCount, unreadMentions, reportsCount, supportChatsUnreadCount, minUnreadItemId, unreadChat = False}
+  pure ChatStats {unreadCount, unreadMentions, reportsCount, minUnreadItemId, unreadChat = False}
 
 getGroupMinUnreadId_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> ExceptT StoreError IO (Maybe ChatItemId)
 getGroupMinUnreadId_ db user g scopeInfo_ contentFilter =
@@ -1526,14 +1562,6 @@ getGroupReportsCount_ db User {userId} GroupInfo {groupId} archived =
       db
       "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ? AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0"
       (userId, groupId, MCReport_, BI archived)
-
-getGroupSupportChatsUnreadCount_ :: DB.Connection -> User -> GroupInfo -> IO Int
-getGroupSupportChatsUnreadCount_ db User {userId} GroupInfo {groupId} =
-  fromOnly . head
-    <$> DB.query
-      db
-      "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ? AND group_scope_tag IS NOT NULL AND item_status = ?"
-      (userId, groupId, CISRcvNew)
 
 queryUnreadGroupItems :: FromRow r => DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> Query -> Query -> ExceptT StoreError IO [r]
 queryUnreadGroupItems db User {userId} GroupInfo {groupId} scopeInfo_ contentFilter baseQuery orderLimit =
@@ -1954,14 +1982,14 @@ getGroupUnreadTimedItems db User {userId} groupId =
     |]
     (userId, groupId, CISRcvNew)
 
-updateGroupChatItemsReadList :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScope -> NonEmpty ChatItemId -> IO [(ChatItemId, Int)]
-updateGroupChatItemsReadList db User {userId} GroupInfo {groupId, membership} scope itemIds = do
-  currentTs <- getCurrentTime
+updateGroupChatItemsReadList :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Maybe GroupChatScope -> NonEmpty ChatItemId -> ExceptT StoreError IO ([(ChatItemId, Int)], GroupInfo)
+updateGroupChatItemsReadList db vr user@User {userId} g@GroupInfo {groupId, membership, membersRequireAttention} scope itemIds = do
+  currentTs <- liftIO getCurrentTime
   -- Possible improvement is to differentiate retrieval queries for each scope,
   -- but we rely on UI to not pass item IDs from incorrect scope.
-  readItemsData <- catMaybes . L.toList <$> mapM (getUpdateGroupItem currentTs) itemIds
-  updateChatStats readItemsData
-  pure $ timedItems readItemsData
+  readItemsData <- liftIO $ catMaybes . L.toList <$> mapM (getUpdateGroupItem currentTs) itemIds
+  g' <- updateChatStats readItemsData
+  pure (timedItems readItemsData, g')
   where
     getUpdateGroupItem :: UTCTime -> ChatItemId -> IO (Maybe (ChatItemId, Maybe Int, Maybe UTCTime, Maybe GroupMemberId, Maybe BoolInt))
     getUpdateGroupItem currentTs itemId =
@@ -1974,36 +2002,61 @@ updateGroupChatItemsReadList db User {userId} GroupInfo {groupId, membership} sc
             RETURNING chat_item_id, timed_ttl, timed_delete_at, group_member_id, user_mention
           |]
           (CISRcvRead, currentTs, userId, groupId, CISRcvNew, itemId)
-    updateChatStats :: [(ChatItemId, Maybe Int, Maybe UTCTime, Maybe GroupMemberId, Maybe BoolInt)] -> IO ()
+    updateChatStats :: [(ChatItemId, Maybe Int, Maybe UTCTime, Maybe GroupMemberId, Maybe BoolInt)] -> ExceptT StoreError IO GroupInfo
     updateChatStats readItemsData = case scope of
-      Nothing -> pure ()
-      Just GCSMemberSupport {groupMemberId_} -> do
-        let unread = length readItemsData
-            (unanswered, mentions) = decStats
-            gmId = fromMaybe (groupMemberId' membership) groupMemberId_
-        DB.execute
-          db
-          [sql|
-            UPDATE group_members
-            SET support_chat_items_unread = support_chat_items_unread - ?,
-                support_chat_items_member_attention = support_chat_items_member_attention - ?,
-                support_chat_items_mentions = support_chat_items_mentions - ?
-            WHERE group_member_id = ?
-          |]
-          (unread, unanswered, mentions, gmId)
+      Nothing -> pure g
+      Just GCSMemberSupport {groupMemberId_} -> case groupMemberId_ of
+        Nothing -> do
+          membership' <- updateGMStats membership
+          pure g {membership = membership'}
+        Just groupMemberId -> do
+          member <- getGroupMemberById db vr user groupMemberId
+          member' <- updateGMStats member
+          let didRequire = gmRequiresAttention member
+              nowRequires = gmRequiresAttention member'
+          if (not nowRequires && didRequire)
+            then do
+              liftIO $
+                DB.execute
+                  db
+                  [sql|
+                    UPDATE groups
+                    SET members_require_attention = members_require_attention - 1
+                    WHERE user_id = ? AND group_id = ?
+                  |]
+                  (userId, groupId)
+              pure g {membersRequireAttention = membersRequireAttention - 1}
+            else
+              pure g
         where
-          decStats :: (Int, Int)
-          decStats = foldl' countItem (0, 0) readItemsData
+          updateGMStats GroupMember {groupMemberId} = do
+            let unread = length readItemsData
+                (unanswered, mentions) = decStats
+            liftIO $
+              DB.execute
+                db
+                [sql|
+                  UPDATE group_members
+                  SET support_chat_items_unread = support_chat_items_unread - ?,
+                      support_chat_items_member_attention = support_chat_items_member_attention - ?,
+                      support_chat_items_mentions = support_chat_items_mentions - ?
+                  WHERE group_member_id = ?
+                |]
+              (unread, unanswered, mentions, groupMemberId)
+            getGroupMemberById db vr user groupMemberId
             where
-              countItem :: (Int, Int) -> (ChatItemId, Maybe Int, Maybe UTCTime, Maybe GroupMemberId, Maybe BoolInt) -> (Int, Int)
-              countItem (!unanswered, !mentions) (_, _, _, itemGMId_, userMention_) =
-                let unanswered' = case (groupMemberId_, itemGMId_) of
-                      (Just scopeGMId, Just itemGMId) | itemGMId == scopeGMId -> unanswered + 1
-                      _ -> unanswered
-                    mentions' = case userMention_ of
-                      Just (BI True) -> mentions + 1
-                      _ -> mentions
-                 in (unanswered', mentions')
+              decStats :: (Int, Int)
+              decStats = foldl' countItem (0, 0) readItemsData
+                where
+                  countItem :: (Int, Int) -> (ChatItemId, Maybe Int, Maybe UTCTime, Maybe GroupMemberId, Maybe BoolInt) -> (Int, Int)
+                  countItem (!unanswered, !mentions) (_, _, _, itemGMId_, userMention_) =
+                    let unanswered' = case (groupMemberId_, itemGMId_) of
+                          (Just scopeGMId, Just itemGMId) | itemGMId == scopeGMId -> unanswered + 1
+                          _ -> unanswered
+                        mentions' = case userMention_ of
+                          Just (BI True) -> mentions + 1
+                          _ -> mentions
+                    in (unanswered', mentions')
     timedItems :: [(ChatItemId, Maybe Int, Maybe UTCTime, Maybe GroupMemberId, Maybe BoolInt)] -> [(ChatItemId, Int)]
     timedItems = foldl' addTimedItem []
       where

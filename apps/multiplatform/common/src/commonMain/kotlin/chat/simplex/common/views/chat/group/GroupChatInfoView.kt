@@ -741,10 +741,10 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
 @Composable
 private fun MemberSupportButton(chat: Chat, onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(if (chat.chatStats.supportChatsUnreadCount > 0) MR.images.ic_flag_filled else MR.images.ic_flag),
+    painterResource(if (chat.supportUnreadCount > 0) MR.images.ic_flag_filled else MR.images.ic_flag),
     stringResource(MR.strings.member_support),
     click = onClick,
-    iconColor = (if (chat.chatStats.supportChatsUnreadCount > 0) MaterialTheme.colors.primary else MaterialTheme.colors.secondary)
+    iconColor = (if (chat.supportUnreadCount > 0) MaterialTheme.colors.primary else MaterialTheme.colors.secondary)
   )
 }
 

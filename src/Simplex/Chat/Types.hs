@@ -421,7 +421,8 @@ data GroupInfo = GroupInfo
     chatTags :: [ChatTagId],
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
-    customData :: Maybe CustomData
+    customData :: Maybe CustomData,
+    membersRequireAttention :: Int
   }
   deriving (Eq, Show)
 
@@ -853,6 +854,13 @@ data GroupSupportChat = GroupSupportChat
     mentions :: Int64
   }
   deriving (Eq, Show)
+
+gmRequiresAttention :: GroupMember -> Bool
+gmRequiresAttention m@GroupMember {supportChat} =
+  memberPending m || maybe False supportChatAttention supportChat
+  where
+    supportChatAttention GroupSupportChat {memberAttention, mentions} =
+      memberAttention > 0 || mentions > 0
 
 data GroupMemberRef = GroupMemberRef {groupMemberId :: Int64, profile :: Profile}
   deriving (Eq, Show)

@@ -1252,8 +1252,10 @@ func apiChatRead(type: ChatType, id: Int64, scope: GroupChatScope?) async throws
     try await sendCommandOkResp(.apiChatRead(type: type, id: id, scope: scope))
 }
 
-func apiChatItemsRead(type: ChatType, id: Int64, scope: GroupChatScope?, itemIds: [Int64]) async throws {
-    try await sendCommandOkResp(.apiChatItemsRead(type: type, id: id, scope: scope, itemIds: itemIds))
+func apiChatItemsRead(type: ChatType, id: Int64, scope: GroupChatScope?, itemIds: [Int64]) async throws -> ChatInfo {
+    let r: ChatResponse1 = try await chatSendCmd(.apiChatItemsRead(type: type, id: id, scope: scope, itemIds: itemIds))
+    if case let .itemsReadForChat(_, updatedChatInfo) = r { return updatedChatInfo }
+    throw r.unexpected
 }
 
 func apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool) async throws {
@@ -1587,8 +1589,9 @@ func markChatUnread(_ chat: Chat, unreadChat: Bool = true) async {
 
 func apiMarkChatItemsRead(_ im: ItemsModel, _ cInfo: ChatInfo, _ itemIds: [ChatItem.ID], mentionsRead: Int) async {
     do {
-        try await apiChatItemsRead(type: cInfo.chatType, id: cInfo.apiId, scope: cInfo.groupChatScope(), itemIds: itemIds)
+        let updatedChatInfo = try await apiChatItemsRead(type: cInfo.chatType, id: cInfo.apiId, scope: cInfo.groupChatScope(), itemIds: itemIds)
         await MainActor.run {
+            ChatModel.shared.updateChatInfo(updatedChatInfo)
             ChatModel.shared.markChatItemsRead(im, cInfo, itemIds, mentionsRead)
         }
     } catch {
@@ -1637,9 +1640,9 @@ func apiJoinGroup(_ groupId: Int64) async throws -> JoinGroupResult {
     }
 }
 
-func apiAcceptMember(_ groupId: Int64, _ groupMemberId: Int64, _ memberRole: GroupMemberRole) async throws -> GroupMember {
+func apiAcceptMember(_ groupId: Int64, _ groupMemberId: Int64, _ memberRole: GroupMemberRole) async throws -> (GroupInfo, GroupMember) {
     let r: ChatResponse2 = try await chatSendCmd(.apiAcceptMember(groupId: groupId, groupMemberId: groupMemberId, memberRole: memberRole))
-    if case let .memberAccepted(_, _, member) = r { return member }
+    if case let .memberAccepted(_, groupInfo, member) = r { return (groupInfo, member) }
     throw r.unexpected
 }
 
@@ -2131,9 +2134,6 @@ func processReceivedMsg(_ res: ChatEvent) async {
                     if cItem.isActiveReport {
                         m.increaseGroupReportsCounter(cInfo.id)
                     }
-                    if cInfo.groupChatScope() != nil && cItem.isRcvNew && cInfo.ntfsEnabled(chatItem: cItem) {
-                        m.increaseGroupSupportChatsUnreadCounter(cInfo.id)
-                    }
                 } else if cItem.isRcvNew && cInfo.ntfsEnabled(chatItem: cItem) {
                     m.increaseUnreadCounter(user: user)
                 }
@@ -2252,6 +2252,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
         if active(user) {
             await MainActor.run {
                 _ = m.upsertGroupMember(groupInfo, member)
+                m.updateGroup(groupInfo)
             }
         }
     case let .deletedMemberUser(user, groupInfo, member, withMessages): // TODO update user member

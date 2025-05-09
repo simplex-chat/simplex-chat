@@ -633,17 +633,17 @@ fun ChatView(
               withBGApi {
                 withContext(Dispatchers.Main) {
                   chatModel.chatsContext.markChatItemsRead(chatRh, chatInfo.id, itemsIds)
-                  if (chatsCtx.secondaryContextFilter != null) {
-                    chatModel.chatsContext.decreaseGroupSupportChatsUnreadCounter(chatRh, chatInfo.id)
-                  }
                   ntfManager.cancelNotificationsForChat(chatInfo.id)
-                  chatModel.controller.apiChatItemsRead(
+                  val updatedChatInfo = chatModel.controller.apiChatItemsRead(
                     chatRh,
                     chatInfo.chatType,
                     chatInfo.apiId,
                     chatInfo.groupChatScope(),
                     itemsIds
                   )
+                  if (updatedChatInfo != null) {
+                    chatModel.chatsContext.updateChatInfo(chatRh, updatedChatInfo)
+                  }
                 }
                 withContext(Dispatchers.Main) {
                   chatModel.secondaryChatsContext.value?.markChatItemsRead(chatRh, chatInfo.id, itemsIds)
@@ -894,10 +894,10 @@ fun ChatLayout(
           }
         }
         val reportsCount = reportsCount(chatInfo?.id)
-        val supportChatsUnreadCount = supportChatsUnreadCount(chatInfo?.id)
+        val supportUnreadCount = supportUnreadCount(chatInfo?.id)
         if (oneHandUI.value && chatBottomBar.value) {
-          if (chatsCtx.secondaryContextFilter == null && (reportsCount > 0 || supportChatsUnreadCount > 0)) {
-            SupportChatsCountToolbar(reportsCount, supportChatsUnreadCount, withStatusBar = true, showReports, showSupportChats)
+          if (chatInfo != null && chatsCtx.secondaryContextFilter == null && (reportsCount > 0 || supportUnreadCount > 0)) {
+            SupportChatsCountToolbar(chatInfo, reportsCount, supportUnreadCount, withStatusBar = true, showReports, showSupportChats)
           } else {
             StatusBarBackground()
           }
@@ -953,8 +953,8 @@ fun ChatLayout(
                   SelectedItemsCounterToolbar(selectedChatItems, !oneHandUI.value || !chatBottomBar.value)
                 }
               }
-              if ((reportsCount > 0 || supportChatsUnreadCount > 0) && (!oneHandUI.value || !chatBottomBar.value)) {
-                SupportChatsCountToolbar(reportsCount, supportChatsUnreadCount, withStatusBar = false, showReports, showSupportChats)
+              if (chatInfo != null && (reportsCount > 0 || supportUnreadCount > 0) && (!oneHandUI.value || !chatBottomBar.value)) {
+                SupportChatsCountToolbar(chatInfo, reportsCount, supportUnreadCount, withStatusBar = false, showReports, showSupportChats)
               }
             }
           }
@@ -1187,8 +1187,9 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
 
 @Composable
 private fun SupportChatsCountToolbar(
+  chatInfo: ChatInfo,
   reportsCount: Int,
-  supportChatsUnreadCount: Int,
+  supportUnreadCount: Int,
   withStatusBar: Boolean,
   showReports: () -> Unit,
   showSupportChats: () -> Unit
@@ -1225,7 +1226,7 @@ private fun SupportChatsCountToolbar(
         }
       }
 
-      if (supportChatsUnreadCount > 0) {
+      if (supportUnreadCount > 0) {
         Row(
           Modifier
             .fillMaxWidth()
@@ -1240,10 +1241,13 @@ private fun SupportChatsCountToolbar(
           Icon(painterResource(MR.images.ic_flag), null, Modifier.size(22.dp), tint = MaterialTheme.colors.primary)
           Spacer(Modifier.width(4.dp))
           Text(
-            if (appPlatform.isAndroid)
-              stringResource(MR.strings.group_new_support_messages_short).format(supportChatsUnreadCount)
+            if (chatInfo is ChatInfo.Group && chatInfo.groupInfo.canModerate)
+              if (appPlatform.isAndroid)
+                stringResource(MR.strings.group_new_support_chats_short).format(supportUnreadCount)
+              else
+                stringResource(MR.strings.group_new_support_chats).format(supportUnreadCount)
             else
-              stringResource(MR.strings.group_new_support_messages).format(supportChatsUnreadCount),
+              stringResource(MR.strings.group_new_support_messages).format(supportUnreadCount),
             style = MaterialTheme.typography.button
           )
         }
@@ -1329,10 +1333,10 @@ fun BoxScope.ChatItemsList(
   }
   val reversedChatItems = remember { derivedStateOf { chatsCtx.chatItems.value.asReversed() } }
   val reportsCount = reportsCount(chatInfo.id)
-  val supportChatsUnreadCount = supportChatsUnreadCount(chatInfo.id)
+  val supportUnreadCount = supportUnreadCount(chatInfo.id)
   val topPaddingToContent = topPaddingToContent(
     chatView = chatsCtx.secondaryContextFilter == null,
-    additionalTopBar = chatsCtx.secondaryContextFilter == null && (reportsCount > 0 || supportChatsUnreadCount > 0)
+    additionalTopBar = chatsCtx.secondaryContextFilter == null && (reportsCount > 0 || supportUnreadCount > 0)
   )
   val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent.roundToPx() })
   val numberOfBottomAppBars = numberOfBottomAppBars()
@@ -1672,7 +1676,7 @@ fun BoxScope.ChatItemsList(
     ),
     reverseLayout = true,
     additionalBarOffset = composeViewHeight,
-    additionalTopBar = rememberUpdatedState(chatsCtx.secondaryContextFilter == null && (reportsCount > 0 || supportChatsUnreadCount > 0)),
+    additionalTopBar = rememberUpdatedState(chatsCtx.secondaryContextFilter == null && (reportsCount > 0 || supportUnreadCount > 0)),
     chatBottomBar = remember { appPrefs.chatBottomBar.state }
   ) {
     val mergedItemsValue = mergedItems.value
@@ -2358,11 +2362,11 @@ fun reportsCount(staleChatId: String?): Int {
 }
 
 @Composable
-fun supportChatsUnreadCount(staleChatId: String?): Int {
+fun supportUnreadCount(staleChatId: String?): Int {
   return if (staleChatId?.startsWith("#") != true) {
     0
   } else {
-    remember(staleChatId) { derivedStateOf { chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId }?.chatStats } }.value?.supportChatsUnreadCount ?: 0
+    remember(staleChatId) { derivedStateOf { chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId } } }.value?.supportUnreadCount ?: 0
   }
 }
 

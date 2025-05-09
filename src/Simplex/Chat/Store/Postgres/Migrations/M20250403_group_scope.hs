@@ -17,6 +17,8 @@ ALTER TABLE group_members ADD COLUMN support_chat_items_unread BIGINT NOT NULL D
 ALTER TABLE group_members ADD COLUMN support_chat_items_member_attention BIGINT NOT NULL DEFAULT 0;
 ALTER TABLE group_members ADD COLUMN support_chat_items_mentions BIGINT NOT NULL DEFAULT 0;
 
+ALTER TABLE groups ADD COLUMN members_require_attention BIGINT NOT NULL DEFAULT 0;
+
 ALTER TABLE chat_items ADD COLUMN group_scope_tag TEXT;
 ALTER TABLE chat_items ADD COLUMN group_scope_group_member_id BIGINT REFERENCES group_members(group_member_id) ON DELETE CASCADE;
 
@@ -52,6 +54,8 @@ DROP INDEX idx_chat_items_group_scope_group_member_id;
 
 ALTER TABLE chat_items DROP COLUMN group_scope_tag;
 ALTER TABLE chat_items DROP COLUMN group_scope_group_member_id;
+
+ALTER TABLE groups DROP COLUMN members_require_attention;
 
 ALTER TABLE group_members DROP COLUMN support_chat_ts;
 ALTER TABLE group_members DROP COLUMN support_chat_items_unread;

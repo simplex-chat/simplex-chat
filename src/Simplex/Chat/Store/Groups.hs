@@ -80,6 +80,8 @@ module Simplex.Chat.Store.Groups
     updateGroupMemberStatus,
     updateGroupMemberStatusById,
     updateGroupMemberAccepted,
+    updateGroupMembersRequireAttention,
+    increaseGroupMembersRequireAttention,
     createNewGroupMember,
     checkGroupMemberHasItems,
     deleteGroupMember,
@@ -279,7 +281,8 @@ getGroupAndMember db User {userId, userContactId} groupMemberId vr = do
             -- GroupInfo
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id,
+            g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
             mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -362,7 +365,8 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
           chatTags = [],
           chatItemTTL = Nothing,
           uiThemes = Nothing,
-          customData = Nothing
+          customData = Nothing,
+          membersRequireAttention = 0
         }
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
@@ -432,7 +436,8 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                   chatTags = [],
                   chatItemTTL = Nothing,
                   uiThemes = Nothing,
-                  customData = Nothing
+                  customData = Nothing,
+                  membersRequireAttention = 0
                 },
               groupMemberId
             )
@@ -768,7 +773,8 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
           SELECT
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id,
+            g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
             mu.group_member_id, g.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category, mu.member_status, mu.show_messages, mu.member_restriction,
             mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id, pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
             mu.created_at, mu.updated_at,
@@ -1224,6 +1230,37 @@ updateGroupMemberAccepted db User {userId} m@GroupMember {groupMemberId} status 
     (status, role, currentTs, userId, groupMemberId)
   pure m {memberStatus = status, memberRole = role, updatedAt = currentTs}
 
+updateGroupMembersRequireAttention :: DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> IO GroupInfo
+updateGroupMembersRequireAttention db user@User {userId} g@GroupInfo {groupId, membersRequireAttention} member member'
+  | nowRequires && not didRequire =
+      increaseGroupMembersRequireAttention db user g
+  | not nowRequires && didRequire = do
+      DB.execute
+        db
+        [sql|
+          UPDATE groups
+          SET members_require_attention = members_require_attention - 1
+          WHERE user_id = ? AND group_id = ?
+        |]
+        (userId, groupId)
+      pure g {membersRequireAttention = membersRequireAttention - 1}
+  | otherwise = pure g
+  where
+    didRequire = gmRequiresAttention member
+    nowRequires = gmRequiresAttention member'
+
+increaseGroupMembersRequireAttention :: DB.Connection -> User -> GroupInfo -> IO GroupInfo
+increaseGroupMembersRequireAttention db User {userId} g@GroupInfo {groupId, membersRequireAttention} = do
+  DB.execute
+    db
+    [sql|
+      UPDATE groups
+      SET members_require_attention = members_require_attention + 1
+      WHERE user_id = ? AND group_id = ?
+    |]
+    (userId, groupId)
+  pure g {membersRequireAttention = membersRequireAttention + 1}
+
 -- | add new member with profile
 createNewGroupMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberInfo -> GroupMemberCategory -> GroupMemberStatus -> ExceptT StoreError IO GroupMember
 createNewGroupMember db user gInfo invitingMember memInfo@MemberInfo {profile} memCategory memStatus = do
@@ -1561,7 +1598,8 @@ getViaGroupMember db vr User {userId, userContactId} Contact {contactId} = do
             -- GroupInfo
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id,
+            g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
             mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,

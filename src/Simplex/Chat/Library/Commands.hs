@@ -1017,22 +1017,26 @@ processChatCommand' vr = \case
     CTContactConnection -> throwCmdError "not supported"
   APIChatItemsRead chatRef@(ChatRef cType chatId scope) itemIds -> withUser $ \_ -> case cType of
     CTDirect -> do
-      user <- withFastStore $ \db -> getUserByContactId db chatId
+      (user, ct) <- withFastStore $ \db -> do
+        user <- getUserByContactId db chatId
+        ct <- getContact db vr user chatId
+        pure (user, ct)
       timedItems <- withFastStore' $ \db -> do
         timedItems <- updateDirectChatItemsReadList db user chatId itemIds
         setDirectChatItemsDeleteAt db user chatId timedItems =<< getCurrentTime
       forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
-      ok user
+      pure $ CRItemsReadForChat user (AChatInfo SCTDirect $ DirectChat ct)
     CTGroup -> do
       (user, gInfo) <- withFastStore $ \db -> do
         user <- getUserByGroupId db chatId
         gInfo <- getGroupInfo db vr user chatId
         pure (user, gInfo)
-      timedItems <- withFastStore' $ \db -> do
-        timedItems <- updateGroupChatItemsReadList db user gInfo scope itemIds
-        setGroupChatItemsDeleteAt db user chatId timedItems =<< getCurrentTime
+      (timedItems, gInfo') <- withFastStore $ \db -> do
+        (timedItems, gInfo') <- updateGroupChatItemsReadList db vr user gInfo scope itemIds
+        timedItems' <- liftIO $ setGroupChatItemsDeleteAt db user chatId timedItems =<< getCurrentTime
+        pure (timedItems', gInfo')
       forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
-      ok user
+      pure $ CRItemsReadForChat user (AChatInfo SCTGroup $ GroupChat gInfo' Nothing)
     CTLocal -> throwCmdError "not supported"
     CTContactRequest -> throwCmdError "not supported"
     CTContactConnection -> throwCmdError "not supported"
@@ -2054,8 +2058,11 @@ processChatCommand' vr = \case
                 void $ sendDirectMemberMessage mConn msg groupId
                 introduceToRemaining vr user gInfo m {memberRole = role}
                 when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo m
-                m' <- withFastStore' $ \db -> updateGroupMemberAccepted db user m GSMemConnected role
-                pure $ CRMemberAccepted user gInfo m'
+                (m', gInfo') <- withFastStore' $ \db -> do
+                  m' <- updateGroupMemberAccepted db user m GSMemConnected role
+                  gInfo' <- updateGroupMembersRequireAttention db user gInfo m m'
+                  pure (m', gInfo')
+                pure $ CRMemberAccepted user gInfo' m'
           Nothing -> throwChatError CEGroupMemberNotActive
       GSMemPendingReview -> do
         let scope = Just $ GCSMemberSupport $ Just (groupMemberId' m)
@@ -2063,8 +2070,11 @@ processChatCommand' vr = \case
         let rcpModMs' = filter memberCurrent modMs
             msg = XGrpLinkAcpt GAAccepted role (memberId' m)
         void $ sendGroupMessage user gInfo scope ([m] <> rcpModMs') msg
-        m' <- withFastStore' $ \db -> updateGroupMemberAccepted db user m newMemberStatus role
-        pure $ CRMemberAccepted user gInfo m'
+        (m', gInfo') <- withFastStore' $ \db -> do
+          m' <- updateGroupMemberAccepted db user m newMemberStatus role
+          gInfo' <- updateGroupMembersRequireAttention db user gInfo m m'
+          pure (m', gInfo')
+        pure $ CRMemberAccepted user gInfo' m'
         where
           newMemberStatus = case memberConn m of
             Just c | connReady c -> GSMemConnected

@@ -1669,11 +1669,11 @@ object ChatController {
     return false
   }
 
-  suspend fun apiChatItemsRead(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?, itemIds: List<Long>): Boolean {
+  suspend fun apiChatItemsRead(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?, itemIds: List<Long>): ChatInfo? {
     val r = sendCmd(rh, CC.ApiChatItemsRead(type, id, scope, itemIds))
-    if (r.result is CR.CmdOk) return true
+    if (r is API.Result && r.res is CR.ItemsReadForChat) return r.res.chatInfo
     Log.e(TAG, "apiChatItemsRead bad response: ${r.responseType} ${r.details}")
-    return false
+    return null
   }
 
   suspend fun apiChatUnread(rh: Long?, type: ChatType, id: Long, unreadChat: Boolean): Boolean {
@@ -1902,9 +1902,9 @@ object ChatController {
     }
   }
 
-  suspend fun apiAcceptMember(rh: Long?, groupId: Long, groupMemberId: Long, memberRole: GroupMemberRole): GroupMember? {
+  suspend fun apiAcceptMember(rh: Long?, groupId: Long, groupMemberId: Long, memberRole: GroupMemberRole): Pair<GroupInfo, GroupMember>? {
     val r = sendCmd(rh, CC.ApiAcceptMember(groupId, groupMemberId, memberRole))
-    if (r is API.Result && r.res is CR.MemberAccepted) return r.res.member
+    if (r is API.Result && r.res is CR.MemberAccepted) return r.res.groupInfo to r.res.member
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiAcceptMember", generalGetString(MR.strings.error_accepting_member), r)
     }
@@ -2430,9 +2430,6 @@ object ChatController {
               if (cItem.isActiveReport) {
                 chatModel.chatsContext.increaseGroupReportsCounter(rhId, cInfo.id)
               }
-              if (cInfo.groupChatScope() != null && cItem.isRcvNew && cInfo.ntfsEnabled(cItem)) {
-                chatModel.chatsContext.increaseGroupSupportChatsUnreadCounter(rhId, cInfo.id)
-              }
             }
             withContext(Dispatchers.Main) {
               chatModel.secondaryChatsContext.value?.addChatItem(rhId, cInfo, cItem)
@@ -2586,6 +2583,7 @@ object ChatController {
         if (active(r.user)) {
           withContext(Dispatchers.Main) {
             chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
+            chatModel.chatsContext.updateGroup(rhId, r.groupInfo)
           }
         }
       is CR.DeletedMemberUser -> // TODO update user member
@@ -5796,6 +5794,7 @@ sealed class CR {
   @Serializable @SerialName("contactAlreadyExists") class ContactAlreadyExists(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactDeleted") class ContactDeleted(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactDeletedByContact") class ContactDeletedByContact(val user: UserRef, val contact: Contact): CR()
+  @Serializable @SerialName("itemsReadForChat") class ItemsReadForChat(val user: UserRef, val chatInfo: ChatInfo): CR()
   @Serializable @SerialName("chatCleared") class ChatCleared(val user: UserRef, val chatInfo: ChatInfo): CR()
   @Serializable @SerialName("userProfileNoChange") class UserProfileNoChange(val user: User): CR()
   @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val user: User, val fromProfile: Profile, val toProfile: Profile, val updateSummary: UserProfileUpdateSummary): CR()
@@ -5976,6 +5975,7 @@ sealed class CR {
     is ContactAlreadyExists -> "contactAlreadyExists"
     is ContactDeleted -> "contactDeleted"
     is ContactDeletedByContact -> "contactDeletedByContact"
+    is ItemsReadForChat -> "itemsReadForChat"
     is ChatCleared -> "chatCleared"
     is UserProfileNoChange -> "userProfileNoChange"
     is UserProfileUpdated -> "userProfileUpdated"
@@ -6146,6 +6146,7 @@ sealed class CR {
     is ContactAlreadyExists -> withUser(user, json.encodeToString(contact))
     is ContactDeleted -> withUser(user, json.encodeToString(contact))
     is ContactDeletedByContact -> withUser(user, json.encodeToString(contact))
+    is ItemsReadForChat -> withUser(user, json.encodeToString(chatInfo))
     is ChatCleared -> withUser(user, json.encodeToString(chatInfo))
     is UserProfileNoChange -> withUser(user, noDetails())
     is UserProfileUpdated -> withUser(user, json.encodeToString(toProfile))

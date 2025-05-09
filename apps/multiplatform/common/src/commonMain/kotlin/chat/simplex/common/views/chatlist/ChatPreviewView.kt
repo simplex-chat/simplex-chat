@@ -364,7 +364,7 @@ fun ChatPreviewView(
         progressView()
       } else if (chat.chatStats.reportsCount > 0) {
         GroupReportsIcon()
-      } else if (chat.chatStats.supportChatsUnreadCount > 0) {
+      } else if (chat.supportUnreadCount > 0) {
         GroupSupportUnreadIcon()
       } else {
         IncognitoIcon(chat.chatInfo.incognito)
