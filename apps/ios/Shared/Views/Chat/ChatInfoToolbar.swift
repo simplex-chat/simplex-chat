@@ -35,7 +35,7 @@ struct ChatInfoToolbar: View {
                         .frame(width: 14, height: 14)
                         .symbolRenderingMode(.palette)
                         .foregroundStyle(.white, .red)
-                } else if chat.chatStats.supportChatsUnreadCount > 0 {
+                } else if chat.supportUnreadCount > 0 {
                     Image(systemName: "flag.circle.fill")
                         .resizable()
                         .scaledToFit()

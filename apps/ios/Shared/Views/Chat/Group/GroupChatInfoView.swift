@@ -579,7 +579,7 @@ struct GroupChatInfoView: View {
         } label: {
             Label(
                 "Chats with members",
-                systemImage: chat.chatStats.supportChatsUnreadCount > 0 ? "flag.fill" : "flag"
+                systemImage: chat.supportUnreadCount > 0 ? "flag.fill" : "flag"
             )
         }
     }

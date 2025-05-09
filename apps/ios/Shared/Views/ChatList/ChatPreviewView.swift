@@ -445,7 +445,7 @@ struct ChatPreviewView: View {
                 ProgressView()
             } else if chat.chatStats.reportsCount > 0 {
                 groupReportsIcon(size: size * 0.8)
-            } else if chat.chatStats.supportChatsUnreadCount > 0 {
+            } else if chat.supportUnreadCount > 0 {
                 GroupSupportUnreadIcon(size: size * 0.8)
             } else {
                 incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)

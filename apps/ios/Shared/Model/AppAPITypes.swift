@@ -727,6 +727,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
     case contactDeleted(user: UserRef, contact: Contact)
     case contactConnectionDeleted(user: UserRef, connection: PendingContactConnection)
     case groupDeletedUser(user: UserRef, groupInfo: GroupInfo)
+    case itemsReadForChat(user: UserRef, chatInfo: ChatInfo)
     case chatCleared(user: UserRef, chatInfo: ChatInfo)
     case userProfileNoChange(user: User)
     case userProfileUpdated(user: User, fromProfile: Profile, toProfile: Profile, updateSummary: UserProfileUpdateSummary)
@@ -765,6 +766,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
         case .contactDeleted: "contactDeleted"
         case .contactConnectionDeleted: "contactConnectionDeleted"
         case .groupDeletedUser: "groupDeletedUser"
+        case .itemsReadForChat: "itemsReadForChat"
         case .chatCleared: "chatCleared"
         case .userProfileNoChange: "userProfileNoChange"
         case .userProfileUpdated: "userProfileUpdated"
@@ -797,6 +799,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
         case let .contactDeleted(u, contact): return withUser(u, String(describing: contact))
         case let .contactConnectionDeleted(u, connection): return withUser(u, String(describing: connection))
         case let .groupDeletedUser(u, groupInfo): return withUser(u, String(describing: groupInfo))
+        case let .itemsReadForChat(u, chatInfo): return withUser(u, String(describing: chatInfo))
         case let .chatCleared(u, chatInfo): return withUser(u, String(describing: chatInfo))
         case .userProfileNoChange: return noDetails
         case let .userProfileUpdated(u, _, toProfile, _): return withUser(u, String(describing: toProfile))

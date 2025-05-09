@@ -73,9 +73,10 @@ func showAcceptMemberAlert(_ groupInfo: GroupInfo, _ member: GroupMember, dismis
 func acceptMember(_ groupInfo: GroupInfo, _ member: GroupMember, _ role: GroupMemberRole, dismiss: DismissAction? = nil) {
     Task {
         do {
-            let acceptedMember = try await apiAcceptMember(groupInfo.groupId, member.groupMemberId, role)
+            let (gInfo, acceptedMember) = try await apiAcceptMember(groupInfo.groupId, member.groupMemberId, role)
             await MainActor.run {
                 _ = ChatModel.shared.upsertGroupMember(groupInfo, acceptedMember)
+                ChatModel.shared.updateGroup(groupInfo)
                 dismiss?()
             }
         } catch let error {

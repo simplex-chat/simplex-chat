@@ -1610,14 +1610,12 @@ public struct ChatStats: Decodable, Hashable {
         unreadCount: Int = 0,
         unreadMentions: Int = 0,
         reportsCount: Int = 0,
-        supportChatsUnreadCount: Int = 0,
         minUnreadItemId: Int64 = 0,
         unreadChat: Bool = false
     ) {
         self.unreadCount = unreadCount
         self.unreadMentions = unreadMentions
         self.reportsCount = reportsCount
-        self.supportChatsUnreadCount = supportChatsUnreadCount
         self.minUnreadItemId = minUnreadItemId
         self.unreadChat = unreadChat
     }
@@ -1626,8 +1624,6 @@ public struct ChatStats: Decodable, Hashable {
     public var unreadMentions: Int = 0
     // actual only via getChats() and getChat(.initial), otherwise, zero
     public var reportsCount: Int = 0
-    // actual only via getChats() and getChat(.initial), otherwise, zero
-    public var supportChatsUnreadCount: Int = 0
     public var minUnreadItemId: Int64 = 0
     // actual only via getChats(), otherwise, false
     public var unreadChat: Bool = false
@@ -2029,6 +2025,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     var updatedAt: Date
     var chatTs: Date?
     public var uiThemes: ThemeModeOverrides?
+    public var membersRequireAttention: Int
 
     public var id: ChatId { get { "#\(groupId)" } }
     public var apiId: Int64 { get { groupId } }
@@ -2066,6 +2063,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
         chatSettings: ChatSettings.defaults,
         createdAt: .now,
         updatedAt: .now,
+        membersRequireAttention: 0,
         chatTags: [],
         localAlias: ""
     )
