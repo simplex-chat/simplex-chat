@@ -15,7 +15,7 @@ struct CIMetaView: View {
     @Environment(\.showTimestamp) var showTimestamp: Bool
     var chatItem: ChatItem
     var metaColor: Color
-    var paleMetaColor = Color(UIColor.tertiaryLabel)
+    var paleMetaColor = Color(uiColor: .tertiaryLabel)
     var showStatus = true
     var showEdited = true
     var invertedMaterial = false
@@ -75,6 +75,14 @@ enum MetaColorMode {
         }
     }
 
+    func resolveAttr(_ c: UIColor?) -> UIColor? {
+        switch self {
+        case .normal: c
+        case .transparent: .clear
+        case .invertedMaterial: nil
+        }
+    }
+
     func statusSpacer(_ sent: Bool) -> Text {
         switch self {
         case .normal, .transparent:
@@ -86,6 +94,88 @@ enum MetaColorMode {
         case .invertedMaterial: textSpace.kerning(13)
         }
     }
+
+    func statusSpacerAttr(_ sent: Bool, _ font: UIFont) -> NSAttributedString {
+        switch self {
+        case .normal, .transparent:
+            if let image = sent ? UIImage(named: "checkmark.wide") : UIImage(systemName: "circlebadge.fill") {
+                attachedImage(image, font, .clear)
+            } else {
+                NSAttributedString("")
+            }
+        case .invertedMaterial:
+            NSAttributedString(string: " ", attributes: [
+                .font: font,
+                .kern: 13
+            ])
+        }
+    }
+}
+
+func ciMetaTextAttributed(
+    _ meta: CIMeta,
+    chatTTL: Int?,
+    encrypted: Bool?,
+    color: UIColor = .clear, // we use this function to reserve space without rendering meta
+    paleColor: UIColor? = nil,
+    primaryColor: UIColor = .tintColor,
+    colorMode: MetaColorMode = .normal,
+    onlyOverrides: Bool = false, // only render colors that differ from base
+    showStatus: Bool = true,
+    showEdited: Bool = true,
+    showViaProxy: Bool,
+    showTimesamp: Bool
+) -> NSMutableAttributedString {
+    let r = NSMutableAttributedString()
+    var space: NSAttributedString? = nil
+    let font = UIFont.preferredFont(forTextStyle: .caption1)
+    let attrSpace = NSAttributedString(string: " ", attributes: [.font: font])
+    let appendSpace = {
+        if let sp = space {
+            r.append(sp)
+            space = nil
+        }
+    }
+    let resolved = colorMode.resolveAttr(color)
+    if showEdited, meta.itemEdited {
+        r.append(attachedSystemImage("pencil", font, resolved))
+    }
+    if meta.disappearing {
+        r.append(attachedSystemImage("timer", UIFont.preferredFont(forTextStyle: .caption2), resolved))
+        let ttl = meta.itemTimed?.ttl
+        if ttl != chatTTL {
+            r.append(coloredAttributed(shortTimeText(ttl), font, resolved))
+        }
+        space = attrSpace
+    }
+    if showViaProxy, meta.sentViaProxy == true {
+        appendSpace()
+        r.append(attachedSystemImage("arrow.forward", UIFont.preferredFont(forTextStyle: .caption2), resolved?.withAlphaComponent(0.67)))
+    }
+    if showStatus {
+        appendSpace()
+        if let (image, statusColor) = meta.itemStatus.statusIconAttr(color, paleColor ?? color, primaryColor) {
+            let metaColor = if onlyOverrides && statusColor == color {
+                UIColor.clear
+            } else {
+                colorMode.resolveAttr(statusColor)
+            }
+            r.append(attachedImage(image, font, metaColor))
+        } else if !meta.disappearing {
+            r.append(colorMode.statusSpacerAttr(meta.itemStatus.sent, font))
+        }
+        space = attrSpace
+    }
+    if let enc = encrypted {
+        appendSpace()
+        r.append(attachedSystemImage(enc ? "lock" : "lock.open", font, resolved))
+        space = attrSpace
+    }
+    if showTimesamp {
+        appendSpace()
+        r.append(coloredAttributed(formatTimestampMeta(meta.itemTs), font, resolved))
+    }
+    return r
 }
 
 func ciMetaText(
@@ -156,6 +246,32 @@ private func statusIconText(_ icon: String, _ color: Color?) -> Text {
     colored(Text(Image(systemName: icon)), color)
 }
 
+//private func statusIconTextAttributed(_ icon: String, _ color: UIColor) -> NSMutableAttributedString {
+//    colored(Text(Image(systemName: icon)), color)
+//}
+
+func attachedSystemImage(_ systemName: String, _ font: UIFont, _ color: UIColor?) -> NSAttributedString {
+    if let image = UIImage(systemName: systemName) {
+        print("attachedSystemImage \(systemName)")
+        return attachedImage(image, font, color)
+    } else {
+        return NSAttributedString("")
+    }
+}
+
+func attachedImage(_ image: UIImage, _ font: UIFont, _ color: UIColor?) -> NSAttributedString {
+    let attachment = NSTextAttachment()
+    attachment.image = image.withTintColor(UIColor.label, renderingMode: .automatic) // coloredImage(image, color)
+//    let scale = font.capHeight / max(image.size.height, 1)
+//    attachment.bounds = CGRect(x: 0, y: (font.capHeight - image.size.height * scale) / 2, width: image.size.width * scale, height: image.size.height * scale)
+//    attachment.bounds = CGRect(x: 0, y: -font.descender, width: image.size.width * scale, height: image.size.height * scale)
+//    let result = NSMutableAttributedString(attachment: attachment)
+//    result.addAttributes([.font: font, .baselineOffset: 0], range: NSRange(location: 0, length: result.length))
+    let res = NSMutableAttributedString(attachment: attachment)
+    res.addAttributes([.font: font, .foregroundColor: UIColor.label], range: NSRange(location: 0, length: res.length))
+    return res
+}
+
 // Applying `foregroundColor(nil)` breaks `.invertedForegroundStyle` modifier
 private func colored(_ t: Text, _ color: Color?) -> Text {
     if let color {
@@ -163,6 +279,23 @@ private func colored(_ t: Text, _ color: Color?) -> Text {
     } else {
         t
     }
+}
+
+@inline(__always)
+private func coloredImage(_ img: UIImage, _ color: UIColor?) -> UIImage {
+    if let color {
+        img.withTintColor(color, renderingMode: .alwaysOriginal)
+    } else {
+        img
+    }
+}
+
+private func coloredAttributed(_ s: String, _ font: UIFont, _ color: UIColor?) -> NSAttributedString {
+    var attrs: [NSAttributedString.Key: Any] = [.font: font]
+    if let color {
+        attrs[.foregroundColor] = color
+    }
+    return NSAttributedString(string: s, attributes: attrs)
 }
 
 struct CIMetaView_Previews: PreviewProvider {

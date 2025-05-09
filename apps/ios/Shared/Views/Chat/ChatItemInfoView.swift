@@ -277,7 +277,11 @@ struct ChatItemInfoView: View {
         @State private var showSecrets = false
 
         var body: some View {
-            toggleSecrets(formattedText, $showSecrets, messageText(text, formattedText, sender, mentions: mentions, userMemberId: userMemberId, showSecrets: showSecrets, secondaryColor: theme.colors.secondary))
+            toggleSecrets(
+                formattedText,
+                $showSecrets,
+                Text(AttributedString(messageText(text, formattedText, sender: sender, mentions: mentions, userMemberId: userMemberId, showSecrets: showSecrets, secondaryColor: theme.colors.secondary)))
+            )
         }
     }
 

@@ -159,7 +159,7 @@ struct FramedItemView: View {
             case let .file(text):
                 ciFileView(chatItem, text)
             case let .report(text, reason):
-                ciMsgContentView(chatItem, Text(text.isEmpty ? reason.text : "\(reason.text): ").italic().foregroundColor(.red))
+                ciMsgContentView(chatItem, txtPrefix: reason.attrString)
             case let .link(_, preview):
                 CILinkView(linkPreview: preview)
                 ciMsgContentView(chatItem)
@@ -273,9 +273,8 @@ struct FramedItemView: View {
     
     private func ciQuotedMsgTextView(_ qi: CIQuote, lines: Int) -> some View {
         toggleSecrets(qi.formattedText, $showQuoteSecrets,
-            MsgContentView(chat: chat, text: qi.text, formattedText: qi.formattedText, showSecrets: showQuoteSecrets)
+            MsgContentView(chat: chat, text: qi.text, formattedText: qi.formattedText, textStyle: .subheadline, showSecrets: showQuoteSecrets)
                 .lineLimit(lines)
-                .font(.subheadline)
                 .padding(.bottom, 6)
         )
     }
@@ -297,7 +296,7 @@ struct FramedItemView: View {
         }
     }
     
-    @ViewBuilder private func ciMsgContentView(_ ci: ChatItem, _ txtPrefix: Text? = nil) -> some View {
+    @ViewBuilder private func ciMsgContentView(_ ci: ChatItem, txtPrefix: NSAttributedString? = nil) -> some View {
         let text = ci.meta.isLive ? ci.content.msgContent?.text ?? ci.text : ci.text
         let rtl = isRightToLeft(text)
         let ft = text == "" ? [] : ci.formattedText
@@ -305,6 +304,7 @@ struct FramedItemView: View {
             chat: chat,
             text: text,
             formattedText: ft,
+            textStyle: .body,
             meta: ci.meta,
             mentions: ci.mentions,
             userMemberId: chat.chatInfo.groupInfo?.membership.memberId,
