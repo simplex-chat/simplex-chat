@@ -377,7 +377,7 @@ updateChatTsStats db vr user@User {userId} chatDirection chatTs chatStats_ = cas
       "UPDATE contacts SET chat_ts = ?, chat_deleted = 0 WHERE user_id = ? AND contact_id = ?"
       (chatTs, userId, contactId)
     pure $ DirectChat ct {chatTs = Just chatTs}
-  GroupChat g@GroupInfo {groupId, membership} Nothing -> do
+  GroupChat g@GroupInfo {groupId} Nothing -> do
     DB.execute
       db
       "UPDATE groups SET chat_ts = ? WHERE user_id = ? AND group_id = ?"
@@ -2025,7 +2025,7 @@ updateGroupChatItemsReadList db vr user@User {userId} g@GroupInfo {groupId, memb
             else
               pure g
         where
-          updateGMStats m@GroupMember {groupMemberId} = do
+          updateGMStats GroupMember {groupMemberId} = do
             let unread = length readItemsData
                 (unanswered, mentions) = decStats
             liftIO $

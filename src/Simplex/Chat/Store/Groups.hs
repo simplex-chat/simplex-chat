@@ -80,6 +80,8 @@ module Simplex.Chat.Store.Groups
     updateGroupMemberStatus,
     updateGroupMemberStatusById,
     updateGroupMemberAccepted,
+    updateGroupMembersRequireAttention,
+    increaseGroupMembersRequireAttention,
     createNewGroupMember,
     checkGroupMemberHasItems,
     deleteGroupMember,
@@ -1227,6 +1229,34 @@ updateGroupMemberAccepted db User {userId} m@GroupMember {groupMemberId} status 
     |]
     (status, role, currentTs, userId, groupMemberId)
   pure m {memberStatus = status, memberRole = role, updatedAt = currentTs}
+
+updateGroupMembersRequireAttention :: DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> IO GroupInfo
+updateGroupMembersRequireAttention db user@User {userId} g@GroupInfo {groupId, membersRequireAttention} member member'
+  | gmRequiresAttention member' && not (gmRequiresAttention member) =
+      increaseGroupMembersRequireAttention db user g
+  | not (gmRequiresAttention member') && gmRequiresAttention member = do
+      DB.execute
+        db
+        [sql|
+          UPDATE groups
+          SET members_require_attention = members_require_attention - 1
+          WHERE user_id = ? AND group_id = ?
+        |]
+        (userId, groupId)
+      pure g {membersRequireAttention = membersRequireAttention - 1}
+  | otherwise = pure g
+
+increaseGroupMembersRequireAttention :: DB.Connection -> User -> GroupInfo -> IO GroupInfo
+increaseGroupMembersRequireAttention db User {userId} g@GroupInfo {groupId, membersRequireAttention} = do
+  DB.execute
+    db
+    [sql|
+      UPDATE groups
+      SET members_require_attention = members_require_attention + 1
+      WHERE user_id = ? AND group_id = ?
+    |]
+    (userId, groupId)
+  pure g {membersRequireAttention = membersRequireAttention + 1}
 
 -- | add new member with profile
 createNewGroupMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberInfo -> GroupMemberCategory -> GroupMemberStatus -> ExceptT StoreError IO GroupMember

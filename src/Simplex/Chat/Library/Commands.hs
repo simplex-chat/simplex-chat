@@ -2058,8 +2058,11 @@ processChatCommand' vr = \case
                 void $ sendDirectMemberMessage mConn msg groupId
                 introduceToRemaining vr user gInfo m {memberRole = role}
                 when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo m
-                m' <- withFastStore' $ \db -> updateGroupMemberAccepted db user m GSMemConnected role
-                pure $ CRMemberAccepted user gInfo m'
+                (m', gInfo') <- withFastStore' $ \db -> do
+                  m' <- updateGroupMemberAccepted db user m GSMemConnected role
+                  gInfo' <- updateGroupMembersRequireAttention db user gInfo m m'
+                  pure (m', gInfo')
+                pure $ CRMemberAccepted user gInfo' m'
           Nothing -> throwChatError CEGroupMemberNotActive
       GSMemPendingReview -> do
         let scope = Just $ GCSMemberSupport $ Just (groupMemberId' m)
@@ -2067,8 +2070,11 @@ processChatCommand' vr = \case
         let rcpModMs' = filter memberCurrent modMs
             msg = XGrpLinkAcpt GAAccepted role (memberId' m)
         void $ sendGroupMessage user gInfo scope ([m] <> rcpModMs') msg
-        m' <- withFastStore' $ \db -> updateGroupMemberAccepted db user m newMemberStatus role
-        pure $ CRMemberAccepted user gInfo m'
+        (m', gInfo') <- withFastStore' $ \db -> do
+          m' <- updateGroupMemberAccepted db user m newMemberStatus role
+          gInfo' <- updateGroupMembersRequireAttention db user gInfo m m'
+          pure (m', gInfo')
+        pure $ CRMemberAccepted user gInfo' m'
         where
           newMemberStatus = case memberConn m of
             Just c | connReady c -> GSMemConnected

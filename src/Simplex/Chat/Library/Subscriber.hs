@@ -784,29 +784,33 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             memberConnectedChatItem gInfo' scopeInfo m'
             unless (memberPending membership) $ maybeCreateGroupDescrLocal gInfo' m'
           GCInviteeMember -> do
-            mStatus <-
+            (gInfo', mStatus) <-
               if not (memberPending m)
-                then withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected $> GSMemConnected
-                else pure $ memberStatus m
-            (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
-            memberConnectedChatItem gInfo' scopeInfo m'
+                then do
+                  mStatus <- withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected $> GSMemConnected
+                  pure (gInfo, mStatus)
+                else do
+                  gInfo' <- withStore' $ \db -> increaseGroupMembersRequireAttention db user gInfo
+                  pure (gInfo', memberStatus m)
+            (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m
+            memberConnectedChatItem gInfo'' scopeInfo m'
             case scopeInfo of
               Just (GCSIMemberSupport _) -> do
-                createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvGroupEvent RGENewMemberPendingReview) Nothing
+                createInternalChatItem user (CDGroupRcv gInfo'' scopeInfo m') (CIRcvGroupEvent RGENewMemberPendingReview) Nothing
               _ -> pure ()
-            toView $ CEvtJoinedGroupMember user gInfo' m' {memberStatus = mStatus}
+            toView $ CEvtJoinedGroupMember user gInfo'' m' {memberStatus = mStatus}
             let Connection {viaUserContactLink} = conn
-            when (isJust viaUserContactLink && isNothing (memberContactId m')) $ sendXGrpLinkMem gInfo'
+            when (isJust viaUserContactLink && isNothing (memberContactId m')) $ sendXGrpLinkMem gInfo''
             when (connChatVersion < batchSend2Version) sendGroupAutoReply
             case mStatus of
               GSMemPendingApproval -> pure ()
-              GSMemPendingReview -> introduceToModerators vr user gInfo' m'
+              GSMemPendingReview -> introduceToModerators vr user gInfo'' m'
               _ -> do
-                introduceToAll vr user gInfo' m'
-                when (groupFeatureAllowed SGFHistory gInfo') $ sendHistory user gInfo' m'
+                introduceToAll vr user gInfo'' m'
+                when (groupFeatureAllowed SGFHistory gInfo'') $ sendHistory user gInfo'' m'
             where
-              sendXGrpLinkMem gInfo' = do
-                let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo'
+              sendXGrpLinkMem gInfo'' = do
+                let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo''
                     profileToSend = profileToSendOnAccept user profileMode True
                 void $ sendDirectMemberMessage conn (XGrpLinkMem profileToSend) groupId
           _ -> do
@@ -2095,13 +2099,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memberId) >>= \case
             Left _ -> messageError "x.grp.link.acpt error: referenced member does not exist"
             Right referencedMember -> do
-              referencedMember' <- withFastStore' $ \db -> updateGroupMemberAccepted db user referencedMember (newMemberStatus referencedMember) role
+              (referencedMember', gInfo') <- withFastStore' $ \db -> do
+                referencedMember' <- updateGroupMemberAccepted db user referencedMember (newMemberStatus referencedMember) role
+                gInfo' <- updateGroupMembersRequireAttention db user gInfo referencedMember referencedMember'
+                pure (referencedMember', gInfo')
               when (memberCategory referencedMember == GCInviteeMember) $ introduceToRemainingMembers referencedMember'
               let scopeInfo = Just $ GCSIMemberSupport {groupMember_ = Just referencedMember'}
                   gEvent = RGEMemberAccepted (groupMemberId' referencedMember') (fromLocalProfile $ memberProfile referencedMember')
-              (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo scopeInfo m) msg brokerTs (CIRcvGroupEvent gEvent)
+              (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo' scopeInfo m) msg brokerTs (CIRcvGroupEvent gEvent)
               groupMsgToView cInfo ci
-              toView $ CEvtMemberAcceptedByOther user gInfo m referencedMember'
+              toView $ CEvtMemberAcceptedByOther user gInfo' m referencedMember'
               where
                 newMemberStatus refMem = case memberConn refMem of
                   Just c | connReady c -> GSMemConnected
@@ -2456,27 +2463,37 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       unless (sameMemberId memId $ membership gInfo) $
         withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
           Right unknownMember@GroupMember {memberStatus = GSMemUnknown} -> do
-            updatedMember <- withStore $ \db -> updateUnknownMemberAnnounced db vr user m unknownMember memInfo initialStatus
-            toView $ CEvtUnknownMemberAnnounced user gInfo m unknownMember updatedMember
-            memberAnnouncedToView updatedMember
+            (updatedMember, gInfo') <- withStore $ \db -> do
+              updatedMember <- updateUnknownMemberAnnounced db vr user m unknownMember memInfo initialStatus
+              gInfo' <- if memberPending updatedMember
+                then liftIO $ increaseGroupMembersRequireAttention db user gInfo
+                else pure gInfo
+              pure (updatedMember, gInfo')
+            toView $ CEvtUnknownMemberAnnounced user gInfo' m unknownMember updatedMember
+            memberAnnouncedToView updatedMember gInfo'
           Right _ -> messageError "x.grp.mem.new error: member already exists"
           Left _ -> do
-            newMember <- withStore $ \db -> createNewGroupMember db user gInfo m memInfo GCPostMember initialStatus
-            memberAnnouncedToView newMember
+            (newMember, gInfo') <- withStore $ \db -> do
+              newMember <- createNewGroupMember db user gInfo m memInfo GCPostMember initialStatus
+              gInfo' <- if memberPending newMember
+                then liftIO $ increaseGroupMembersRequireAttention db user gInfo
+                else pure gInfo
+              pure (newMember, gInfo')
+            memberAnnouncedToView newMember gInfo'
       where
         initialStatus = case msgScope_ of
           Just (MSMember _) -> GSMemPendingReview
           _ -> GSMemAnnounced
-        memberAnnouncedToView announcedMember@GroupMember {groupMemberId, memberProfile} = do
+        memberAnnouncedToView announcedMember@GroupMember {groupMemberId, memberProfile} gInfo' = do
           (announcedMember', scopeInfo) <- getMemNewChatScope announcedMember
           let event = RGEMemberAdded groupMemberId (fromLocalProfile memberProfile)
-          (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo scopeInfo m) msg brokerTs (CIRcvGroupEvent event)
+          (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo' scopeInfo m) msg brokerTs (CIRcvGroupEvent event)
           groupMsgToView cInfo ci
           case scopeInfo of
             Just (GCSIMemberSupport _) -> do
-              createInternalChatItem user (CDGroupRcv gInfo scopeInfo m) (CIRcvGroupEvent RGENewMemberPendingReview) (Just brokerTs)
+              createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m) (CIRcvGroupEvent RGENewMemberPendingReview) (Just brokerTs)
             _ -> pure ()
-          toView $ CEvtJoinedGroupMemberConnecting user gInfo m announcedMember'
+          toView $ CEvtJoinedGroupMemberConnecting user gInfo' m announcedMember'
         getMemNewChatScope announcedMember = case msgScope_ of
           Nothing -> pure (announcedMember, Nothing)
           Just (MSMember _) -> do
