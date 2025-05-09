@@ -394,8 +394,10 @@ updateChatTsStats db vr user@User {userId} chatDirection chatTs chatStats_ = cas
         pure $ GroupChat g {membership = membership', chatTs = Just chatTs} (Just $ GCSIMemberSupport Nothing)
       Just member -> do
         member' <- updateGMStats member
+        let didRequire = gmRequiresAttention member
+            nowRequires = gmRequiresAttention member'
         if
-          | gmRequiresAttention member' && not (gmRequiresAttention member) -> do
+          | nowRequires && not didRequire -> do
               DB.execute
                 db
                 [sql|
@@ -406,7 +408,7 @@ updateChatTsStats db vr user@User {userId} chatDirection chatTs chatStats_ = cas
                 |]
                 (chatTs, userId, groupId)
               pure $ GroupChat g {membersRequireAttention = membersRequireAttention + 1, chatTs = Just chatTs} (Just $ GCSIMemberSupport (Just member'))
-          | not (gmRequiresAttention member') && gmRequiresAttention member -> do
+          | not nowRequires && didRequire -> do
               DB.execute
                 db
                 [sql|
@@ -2010,7 +2012,9 @@ updateGroupChatItemsReadList db vr user@User {userId} g@GroupInfo {groupId, memb
         Just groupMemberId -> do
           member <- getGroupMemberById db vr user groupMemberId
           member' <- updateGMStats member
-          if (not (gmRequiresAttention member') && gmRequiresAttention member)
+          let didRequire = gmRequiresAttention member
+              nowRequires = gmRequiresAttention member'
+          if (not nowRequires && didRequire)
             then do
               liftIO $
                 DB.execute

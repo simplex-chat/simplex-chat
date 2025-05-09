@@ -1232,9 +1232,9 @@ updateGroupMemberAccepted db User {userId} m@GroupMember {groupMemberId} status 
 
 updateGroupMembersRequireAttention :: DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> IO GroupInfo
 updateGroupMembersRequireAttention db user@User {userId} g@GroupInfo {groupId, membersRequireAttention} member member'
-  | gmRequiresAttention member' && not (gmRequiresAttention member) =
+  | nowRequires && not didRequire =
       increaseGroupMembersRequireAttention db user g
-  | not (gmRequiresAttention member') && gmRequiresAttention member = do
+  | not nowRequires && didRequire = do
       DB.execute
         db
         [sql|
@@ -1245,6 +1245,9 @@ updateGroupMembersRequireAttention db user@User {userId} g@GroupInfo {groupId, m
         (userId, groupId)
       pure g {membersRequireAttention = membersRequireAttention - 1}
   | otherwise = pure g
+  where
+    didRequire = gmRequiresAttention member
+    nowRequires = gmRequiresAttention member'
 
 increaseGroupMembersRequireAttention :: DB.Connection -> User -> GroupInfo -> IO GroupInfo
 increaseGroupMembersRequireAttention db User {userId} g@GroupInfo {groupId, membersRequireAttention} = do
