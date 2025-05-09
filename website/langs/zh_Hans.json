@@ -49,7 +49,7 @@
     "simplex-explained": "SimpleX 简述",
     "simplex-explained-tab-3-text": "3. 服务器能看到什么",
     "hero-header": "重新定义隐私",
-    "simplex-explained-tab-1-p-2": "它是如何在单向消息队列与没有用户识别符的情况下工作的？",
+    "simplex-explained-tab-1-p-2": "它是如何利用单向消息队列并不利用用户识别符工作的？",
     "simplex-explained-tab-2-p-2": "服务器只会单向传输消息，而无法掌握用户的对话或连接的全貌。",
     "simplex-explained-tab-3-p-1": "服务器对每个队列都有单独的匿名凭证，并且不知道这些凭证属于哪些用户。",
     "donate": "捐赠",
