@@ -1,4 +1,22 @@
 Query: 
+                    UPDATE groups
+                    SET members_require_attention = members_require_attention - 1
+                    WHERE user_id = ? AND group_id = ?
+                  
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+                  UPDATE group_members
+                  SET support_chat_items_unread = support_chat_items_unread - ?,
+                      support_chat_items_member_attention = support_chat_items_member_attention - ?,
+                      support_chat_items_mentions = support_chat_items_mentions - ?
+                  WHERE group_member_id = ?
+                
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
                   UPDATE groups
                   SET chat_ts = ?,
                       members_require_attention = members_require_attention + 1
@@ -54,7 +72,8 @@ Query:
                   -- GroupInfo
                   g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
                   g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-                  g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
+                  g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id,
+                  g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
                   -- GroupInfo {membership}
                   mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
                   mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -662,16 +681,6 @@ Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-            UPDATE group_members
-            SET support_chat_items_unread = support_chat_items_unread - ?,
-                support_chat_items_member_attention = support_chat_items_member_attention - ?,
-                support_chat_items_mentions = support_chat_items_mentions - ?
-            WHERE group_member_id = ?
-          
-Plan:
-SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
           DELETE FROM chat_item_reactions
           WHERE contact_id = ? AND shared_msg_id = ? AND reaction_sent = ? AND reaction = ?
         
@@ -858,7 +867,8 @@ Query:
             -- GroupInfo
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id,
+            g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
             mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -905,7 +915,8 @@ Query:
           SELECT
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id,
+            g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
             mu.group_member_id, g.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category, mu.member_status, mu.show_messages, mu.member_restriction,
             mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id, pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
             mu.created_at, mu.updated_at,
@@ -1289,16 +1300,6 @@ Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-          UPDATE group_members
-          SET support_chat_items_unread = 0,
-              support_chat_items_member_attention = 0,
-              support_chat_items_mentions = 0
-          WHERE group_member_id = ?
-        
-Plan:
-SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
           UPDATE group_profiles
           SET display_name = ?, full_name = ?, description = ?, image = ?, preferences = ?, member_admission = ?, updated_at = ?
           WHERE group_profile_id IN (
@@ -1310,6 +1311,14 @@ Query:
 Plan:
 SEARCH group_profiles USING INTEGER PRIMARY KEY (rowid=?)
 LIST SUBQUERY 1
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+          UPDATE groups
+          SET members_require_attention = members_require_attention - 1
+          WHERE user_id = ? AND group_id = ?
+        
+Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
@@ -1966,7 +1975,6 @@ Query:
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
-          g.members_require_attention,
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
@@ -2019,7 +2027,6 @@ Query:
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
-          g.members_require_attention,
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
@@ -2066,7 +2073,6 @@ Query:
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
-          g.members_require_attention,
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
@@ -2112,7 +2118,6 @@ Query:
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
-          g.members_require_attention,
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
@@ -2158,7 +2163,6 @@ Query:
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
-          g.members_require_attention,
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
@@ -2204,7 +2208,6 @@ Query:
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
-          g.members_require_attention,
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
@@ -2250,7 +2253,6 @@ Query:
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
-          g.members_require_attention,
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
@@ -2296,7 +2298,6 @@ Query:
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
-          g.members_require_attention,
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
@@ -2342,7 +2343,6 @@ Query:
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
-          g.members_require_attention,
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
@@ -2385,7 +2385,6 @@ Query:
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
-          g.members_require_attention,
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
@@ -2428,7 +2427,6 @@ Query:
           COALESCE(ChatStats.UnreadCount, 0),
           COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
-          g.members_require_attention,
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
@@ -4425,6 +4423,14 @@ SEARCH group_snd_item_statuses USING INDEX idx_group_snd_item_statuses_chat_item
 
 Query: 
       UPDATE groups
+      SET members_require_attention = members_require_attention + 1
+      WHERE user_id = ? AND group_id = ?
+    
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+      UPDATE groups
       SET via_group_link_uri_hash = (SELECT via_contact_uri_hash FROM connections WHERE connection_id = ?)
       WHERE group_id = ?
     
@@ -4522,7 +4528,8 @@ Query:
       -- GroupInfo
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
       g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id,
+      g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
       mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -4545,7 +4552,8 @@ Query:
       -- GroupInfo
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
       g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id,
+      g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
       mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -5718,10 +5726,6 @@ SCAN CONSTANT ROW
 Query: SELECT max(active_order) FROM users
 Plan:
 SEARCH users
-
-Query: SELECT members_require_attention FROM groups WHERE group_id = ?
-Plan:
-SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: SELECT note_folder_id FROM note_folders WHERE user_id = ?
 Plan:
