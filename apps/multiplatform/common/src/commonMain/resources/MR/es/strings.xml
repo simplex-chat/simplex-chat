@@ -1068,7 +1068,7 @@
     <string name="alert_title_msg_bad_hash">Hash de mensaje incorrecto</string>
     <string name="alert_title_msg_bad_id">ID de mensaje incorrecto</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Puede ocurrir si tu contacto o tu usáis una copia de seguridad antigua de la base de datos.</string>
-    <string name="alert_text_msg_bad_hash">El hash del mensaje anterior es diferente.\"</string>
+    <string name="alert_text_msg_bad_hash">El hash del mensaje anterior es diferente.</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d mensaje(s) no ha(n) podido ser descifrado(s).</string>
     <string name="stop_file__action">Detener archivo</string>
     <string name="revoke_file__message">El archivo será eliminado de los servidores.</string>
@@ -1552,7 +1552,7 @@
     <string name="block_for_all_question">¿Bloqear miembro para todos?</string>
     <string name="share_text_created_at">Creado: %s</string>
     <string name="block_for_all">Bloquear para todos</string>
-    <string name="unblock_for_all_question">¿Desbloquear miembro para todos?</string>
+    <string name="unblock_for_all_question">¿Desbloquear el miembro para todos?</string>
     <string name="unblock_for_all">Desbloquear para todos</string>
     <string name="member_info_member_blocked">bloqueado</string>
     <string name="member_blocked_by_admin">bloqueado por administrador</string>
@@ -2360,7 +2360,7 @@
     <string name="group_member_status_rejected">rechazado</string>
     <string name="button_remove_members_question">¿Expulsar miembros?</string>
     <string name="unblock_members_desc">¡Los mensajes de estos miembros serán mostrados!</string>
-    <string name="unblock_members_for_all_question">¿Desbloquear miembros para todos?</string>
+    <string name="unblock_members_for_all_question">¿Desbloquear los miembros para todos?</string>
     <string name="block_members_desc">¡Todos los mensajes nuevos de estos miembros estarán ocultos!</string>
     <string name="block_members_for_all_question">¿Bloquear miembros para todos?</string>
     <string name="members_will_be_removed_from_chat_cannot_be_undone">Los miembros serán expulsados del chat. ¡No puede deshacerse!</string>
