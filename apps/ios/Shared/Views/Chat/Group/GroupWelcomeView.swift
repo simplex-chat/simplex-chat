@@ -58,7 +58,9 @@ struct GroupWelcomeView: View {
     }
 
     private func textPreview() -> some View {
-        messageText(welcomeText, parseSimpleXMarkdown(welcomeText), nil, mentions: nil, userMemberId: nil, showSecrets: false, secondaryColor: theme.colors.secondary)
+        let s = messageText(welcomeText, parseSimpleXMarkdown(welcomeText), sender: nil, mentions: nil, userMemberId: nil, showSecrets: nil, secondaryColor: theme.colors.secondary)
+        return Text(AttributedString(s))
+            .overlay(handleTextLinks(s))
             .frame(minHeight: 130, alignment: .topLeading)
             .frame(maxWidth: .infinity, alignment: .leading)
     }

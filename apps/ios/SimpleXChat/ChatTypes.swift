@@ -4137,18 +4137,16 @@ public enum FormatColor: String, Decodable, Hashable {
     case black = "black"
     case white = "white"
 
-    public var uiColor: Color {
-        get {
-            switch (self) {
-            case .red: return .red
-            case .green: return .green
-            case .blue: return .blue
-            case .yellow: return .yellow
-            case .cyan: return .cyan
-            case .magenta: return .purple
-            case .black: return .primary
-            case .white: return .primary
-            }
+    public var uiColor: Color? {
+        switch (self) {
+        case .red: .red
+        case .green: .green
+        case .blue: .blue
+        case .yellow: .yellow
+        case .cyan: .cyan
+        case .magenta: .purple
+        case .black: nil
+        case .white: nil
         }
     }
 }
@@ -4172,6 +4170,14 @@ public enum ReportReason: Hashable {
         case .other: return NSLocalizedString("Another reason", comment: "report reason")
         case let .unknown(type): return type
         }
+    }
+    
+    public var attrString: NSAttributedString {
+        let descr = UIFontDescriptor.preferredFontDescriptor(withTextStyle: .body)
+        return NSAttributedString(string: text.isEmpty ? self.text : "\(self.text): ", attributes: [
+            .font: UIFont(descriptor: descr.withSymbolicTraits(.traitItalic) ?? descr, size: 0),
+            .foregroundColor: UIColor(Color.red)
+        ])
     }
 }
 

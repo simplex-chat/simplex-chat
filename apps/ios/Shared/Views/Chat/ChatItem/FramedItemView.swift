@@ -23,8 +23,6 @@ struct FramedItemView: View {
     @State private var useWhiteMetaColor: Bool = false
     @State var showFullScreenImage = false
     @Binding var allowMenu: Bool
-    @State private var showSecrets = false
-    @State private var showQuoteSecrets = false
     @State private var showFullscreenGallery: Bool = false
 
     var body: some View {
@@ -57,7 +55,7 @@ struct FramedItemView: View {
 
                 if let qi = chatItem.quotedItem {
                     ciQuoteView(qi)
-                        .onTapGesture {
+                        .simultaneousGesture(TapGesture().onEnded {
                             if let ci = ItemsModel.shared.reversedChatItems.first(where: { $0.id == qi.itemId }) {
                                 withAnimation {
                                     scrollToItemId(ci.id)
@@ -67,7 +65,7 @@ struct FramedItemView: View {
                             } else {
                                 showQuotedItemDoesNotExistAlert()
                             }
-                        }
+                        })
                 } else if let itemForwarded = chatItem.meta.itemForwarded {
                     framedItemHeader(icon: "arrowshape.turn.up.forward", caption: Text(itemForwarded.text(chat.chatInfo.chatType)).italic(), pad: true)
                 }
@@ -94,14 +92,14 @@ struct FramedItemView: View {
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
 
         if let (title, text) = chatItem.meta.itemStatus.statusInfo {
-            v.onTapGesture {
+            v.simultaneousGesture(TapGesture().onEnded {
                 AlertManager.shared.showAlert(
                     Alert(
                         title: Text(title),
                         message: Text(text)
                     )
                 )
-            }
+            })
         } else {
             v
         }
@@ -159,7 +157,7 @@ struct FramedItemView: View {
             case let .file(text):
                 ciFileView(chatItem, text)
             case let .report(text, reason):
-                ciMsgContentView(chatItem, Text(text.isEmpty ? reason.text : "\(reason.text): ").italic().foregroundColor(.red))
+                ciMsgContentView(chatItem, txtPrefix: reason.attrString)
             case let .link(_, preview):
                 CILinkView(linkPreview: preview)
                 ciMsgContentView(chatItem)
@@ -270,14 +268,12 @@ struct FramedItemView: View {
         .padding(.top, 6)
         .padding(.horizontal, 12)
     }
-    
+
+    @inline(__always)
     private func ciQuotedMsgTextView(_ qi: CIQuote, lines: Int) -> some View {
-        toggleSecrets(qi.formattedText, $showQuoteSecrets,
-            MsgContentView(chat: chat, text: qi.text, formattedText: qi.formattedText, showSecrets: showQuoteSecrets)
-                .lineLimit(lines)
-                .font(.subheadline)
-                .padding(.bottom, 6)
-        )
+        MsgContentView(chat: chat, text: qi.text, formattedText: qi.formattedText, textStyle: .subheadline)
+            .lineLimit(lines)
+            .padding(.bottom, 6)
     }
 
     private func ciQuoteIconView(_ image: String) -> some View {
@@ -297,21 +293,21 @@ struct FramedItemView: View {
         }
     }
     
-    @ViewBuilder private func ciMsgContentView(_ ci: ChatItem, _ txtPrefix: Text? = nil) -> some View {
+    @ViewBuilder private func ciMsgContentView(_ ci: ChatItem, txtPrefix: NSAttributedString? = nil) -> some View {
         let text = ci.meta.isLive ? ci.content.msgContent?.text ?? ci.text : ci.text
         let rtl = isRightToLeft(text)
         let ft = text == "" ? [] : ci.formattedText
-        let v = toggleSecrets(ft, $showSecrets, MsgContentView(
+        let v = MsgContentView(
             chat: chat,
             text: text,
             formattedText: ft,
+            textStyle: .body,
             meta: ci.meta,
             mentions: ci.mentions,
             userMemberId: chat.chatInfo.groupInfo?.membership.memberId,
             rightToLeft: rtl,
-            showSecrets: showSecrets,
             prefix: txtPrefix
-        ))
+        )
         .multilineTextAlignment(rtl ? .trailing : .leading)
         .padding(.vertical, 6)
         .padding(.horizontal, 12)
@@ -348,14 +344,6 @@ struct FramedItemView: View {
             title: "No message",
             message: "This message was deleted or not received yet."
         )
-    }
-}
-
-@ViewBuilder func toggleSecrets<V: View>(_ ft: [FormattedText]?, _ showSecrets: Binding<Bool>, _ v: V) -> some View {
-    if let ft = ft, ft.contains(where: { $0.isSecret }) {
-        v.onTapGesture { showSecrets.wrappedValue.toggle() }
-    } else {
-        v
     }
 }
 

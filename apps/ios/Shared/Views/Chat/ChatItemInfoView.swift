@@ -274,10 +274,11 @@ struct ChatItemInfoView: View {
         var sender: String? = nil
         var mentions: [String: CIMention]?
         var userMemberId: String?
-        @State private var showSecrets = false
+        @State private var showSecrets: Set<Int> = []
 
         var body: some View {
-            toggleSecrets(formattedText, $showSecrets, messageText(text, formattedText, sender, mentions: mentions, userMemberId: userMemberId, showSecrets: showSecrets, secondaryColor: theme.colors.secondary))
+            let s = messageText(text, formattedText, sender: sender, mentions: mentions, userMemberId: userMemberId, showSecrets: showSecrets, secondaryColor: theme.colors.secondary)
+            Text(AttributedString(s)).overlay(handleTextLinks(s, showSecrets: $showSecrets))
         }
     }
 
