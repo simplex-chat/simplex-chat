@@ -47,12 +47,23 @@ data Format
   | Snippet
   | Secret
   | Colored {color :: FormatColor}
-  | Uri
+  | WebLink {text :: WLText, scheme :: Text, originalUri :: Text, sanitizedUri :: Text}
   | SimplexLink {linkType :: SimplexLinkType, simplexUri :: AConnectionLink, smpHosts :: NonEmpty Text}
   | Mention {memberName :: Text}
   | Email
   | Phone
   deriving (Eq, Show)
+
+-- This type provides support for descriptive markdown links, such as [click here](https://example.com),
+-- with detection of any potentially malicious links, such as:
+-- - tracking parameters (tracked via difference between originalUri and sanitizedUri in WebLink)
+-- - WLBadPath: different path in link text from the path in the link, e.g. [example.com/hello](https://example.com/goodbuy), except query string parameters
+-- - WLBadHost: different domain in the link text from the domain in the link, e.g [example.com](https://error.com)
+-- Sending clients should reject such links, receiving clients should warn before opening links with bad path or host and show them in red.
+data WLText
+  = WLText {linkText :: Maybe Text} -- the text is Nothing if it's the same as the link, it should be used to decide whether to show alert before opening.
+  | WLBadPath {badLink :: Text}
+  | WLBadHost {badLink :: Text}
 
 mentionedNames :: MarkdownList -> [Text]
 mentionedNames = mapMaybe (\(FormattedText f _) -> mentionedName =<< f)
@@ -306,8 +317,11 @@ markdownText (FormattedText f_ t) = case f_ of
         Black -> Nothing
         White -> Nothing
 
+-- This parser allows mentions like "hello @name." that are commonly used and currently fail.
+-- UI should qoute any names that are terminated by punctuation, such as "@'S.C.'"
+-- The alternative would be to quote all names, but it looks ugly.
 displayNameTextP :: Parser Text
-displayNameTextP = quoted '\'' <|> takeNameTill (== ' ')
+displayNameTextP = quoted '\'' <|> takeNameTill (\c -> isSpace c || isPunctuation c)
   where
     takeNameTill p =
       A.peekChar' >>= \c ->
@@ -315,8 +329,9 @@ displayNameTextP = quoted '\'' <|> takeNameTill (== ' ')
     quoted c = A.char c *> takeNameTill (== c) <* A.char c
     refChar c = c > ' ' && c /= '#' && c /= '@' && c /= '\''
 
+-- quotes names that contain spaces or end on punctuation
 viewName :: Text -> Text
-viewName s = if T.any isSpace s then "'" <> s <> "'" else s
+viewName s = if T.any isSpace s || maybe False (isPunctuation . snd) (T.unsnoc s) then "'" <> s <> "'" else s
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "XL") ''SimplexLinkType)
 
