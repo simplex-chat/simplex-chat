@@ -1068,10 +1068,10 @@
     <string name="stop_rcv_file__title">停止接收文件？</string>
     <string name="stop_rcv_file__message">即将停止接收文件。</string>
     <string name="stop_file__confirm">停止</string>
-    <string name="revoke_file__action">撤销文件</string>
-    <string name="revoke_file__title">撤销文件？</string>
+    <string name="revoke_file__action">吊销文件</string>
+    <string name="revoke_file__title">吊销文件？</string>
     <string name="revoke_file__message">文件将从服务器中删除。</string>
-    <string name="revoke_file__confirm">撤销</string>
+    <string name="revoke_file__confirm">吊销</string>
     <string name="audio_video_calls">音频/视频通话</string>
     <string name="available_in_v51">"
 \n在 v5.1 版本中可用"</string>
