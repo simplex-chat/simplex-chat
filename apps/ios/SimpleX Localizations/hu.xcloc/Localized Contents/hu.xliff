@@ -796,8 +796,9 @@ swipe action</note>
         <target>Az összes jelentés archiválva lesz az Ön számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All servers" xml:space="preserve">
+      <trans-unit id="All servers" xml:space="preserve" approved="no">
         <source>All servers</source>
+        <target state="translated">Összes kiszolgáló</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
@@ -8291,8 +8292,9 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
         <target>A következő TCP-port használata, amikor nincs port megadva: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve">
+      <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve" approved="no">
         <source>Use TCP port 443 for preset servers only.</source>
+        <target state="translated">A 443-as TCP-port használata kizárólag az előre beállított kiszolgálokhoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use chat" xml:space="preserve">
