@@ -796,8 +796,9 @@ swipe action</note>
         <target>Todos los informes serán archivados para ti.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All servers" xml:space="preserve">
+      <trans-unit id="All servers" xml:space="preserve" approved="no">
         <source>All servers</source>
+        <target state="translated">Todos los servidores</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
@@ -8084,9 +8085,9 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
         <target>Desbloquear miembro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unblock member for all?" xml:space="preserve">
+      <trans-unit id="Unblock member for all?" xml:space="preserve" approved="no">
         <source>Unblock member for all?</source>
-        <target>¿Desbloquear miembro para todos?</target>
+        <target state="translated">¿Desbloquear el miembro para todos?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unblock member?" xml:space="preserve">
@@ -8291,8 +8292,9 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
         <target>Se usa el puerto TCP %@ cuando no se ha especificado otro.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve">
+      <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve" approved="no">
         <source>Use TCP port 443 for preset servers only.</source>
+        <target state="translated">Usar puerto TCP 443 solo en servidores predefinidos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use chat" xml:space="preserve">
@@ -10183,8 +10185,9 @@ last received msg: %2$@</source>
         <target>%d evento(s) nuevo(s)</target>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="From %d chat(s)" xml:space="preserve">
+      <trans-unit id="From %d chat(s)" xml:space="preserve" approved="no">
         <source>From %d chat(s)</source>
+        <target state="translated">De %d chat(s)</target>
         <note>notification body</note>
       </trans-unit>
       <trans-unit id="From: %@" xml:space="preserve">
