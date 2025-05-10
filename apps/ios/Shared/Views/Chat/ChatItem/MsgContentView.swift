@@ -157,10 +157,10 @@ func handleTextLinks(_ s: NSAttributedString, showSecrets: Binding<Set<Int>>? = 
         var browser: Bool = false
         s.enumerateAttributes(in: NSRange(location: 0, length: s.length)) { attrs, range, stop in
             if index >= range.location && index < range.location + range.length {
-                if let url = attrs[.link] as? NSURL {
+                if let url = attrs[linkAttrKey] as? NSURL {
                     linkURL = url.absoluteURL
-                    browser = attrs[webLinkAttr] != nil
-                } else if let showSecrets, let i = attrs[secretAttr] as? Int {
+                    browser = attrs[webLinkAttrKey] != nil
+                } else if let showSecrets, let i = attrs[secretAttrKey] as? Int {
                     if showSecrets.wrappedValue.contains(i) {
                         showSecrets.wrappedValue.remove(i)
                     } else {
@@ -174,9 +174,11 @@ func handleTextLinks(_ s: NSAttributedString, showSecrets: Binding<Set<Int>>? = 
     }
 }
 
-private let webLinkAttr = NSAttributedString.Key("web")
+private let linkAttrKey = NSAttributedString.Key("chat.simplex.app.link")
 
-private let secretAttr = NSAttributedString.Key("secret")
+private let webLinkAttrKey = NSAttributedString.Key("chat.simplex.app.webLink")
+
+private let secretAttrKey = NSAttributedString.Key("chat.simplex.app.secret")
 
 func messageText(_ text: String, _ formattedText: [FormattedText]?, textStyle: UIFont.TextStyle = .body, sender: String?, preview: Bool = false, mentions: [String: CIMention]?, userMemberId: String?, showSecrets: Set<Int>?, secondaryColor: Color, prefix: NSAttributedString? = nil) -> NSMutableAttributedString {
     let res = NSMutableAttributedString()
@@ -230,7 +232,7 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, textStyle: U
                         attrs[.foregroundColor] = UIColor.clear
                         attrs[.backgroundColor] = UIColor.secondarySystemFill // secretColor
                     }
-                    attrs[secretAttr] = secretIdx
+                    attrs[secretAttrKey] = secretIdx
                     secretIdx += 1
                 } else {
                     attrs[.foregroundColor] = UIColor.clear
@@ -243,13 +245,13 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, textStyle: U
             case .uri:
                 attrs = linkAttrs()
                 if !preview {
-                    attrs[.link] = NSURL(string: ft.text)
-                    attrs[webLinkAttr] = true
+                    attrs[linkAttrKey] = NSURL(string: ft.text)
+                    attrs[webLinkAttrKey] = true
                 }
             case let .simplexLink(linkType, simplexUri, smpHosts):
                 attrs = linkAttrs()
                 if !preview {
-                    attrs[.link] = NSURL(string: simplexUri)
+                    attrs[linkAttrKey] = NSURL(string: simplexUri)
                 }
                 if case .description = privacySimplexLinkModeDefault.get() {
                     t = simplexLinkText(linkType, smpHosts)
@@ -275,12 +277,12 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, textStyle: U
             case .email:
                 attrs = linkAttrs()
                 if !preview {
-                    attrs[.link] = NSURL(string: "mailto:" + ft.text)
+                    attrs[linkAttrKey] = NSURL(string: "mailto:" + ft.text)
                 }
             case .phone:
                 attrs = linkAttrs()
                 if !preview {
-                    attrs[.link] = NSURL(string: "tel:" + t.replacingOccurrences(of: " ", with: ""))
+                    attrs[linkAttrKey] = NSURL(string: "tel:" + t.replacingOccurrences(of: " ", with: ""))
                 }
             case .none: ()
             }
