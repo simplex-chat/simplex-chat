@@ -1063,10 +1063,6 @@ swipe action</note>
         <target>Архивиране на база данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Ask" xml:space="preserve">
-        <source>Ask</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Attach" xml:space="preserve">
         <source>Attach</source>
         <target>Прикачи</target>
@@ -5264,7 +5260,7 @@ Requires compatible VPN.</source>
       <trans-unit id="Open" xml:space="preserve">
         <source>Open</source>
         <target>Отвори</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert action</note>
       </trans-unit>
       <trans-unit id="Open Settings" xml:space="preserve">
         <source>Open Settings</source>
@@ -5294,22 +5290,14 @@ Requires compatible VPN.</source>
         <target>Отвори група</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open link" xml:space="preserve">
-        <source>Open link</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Open links from chat list" xml:space="preserve">
-        <source>Open links from chat list</source>
-        <note>No comment provided by engineer.</note>
+      <trans-unit id="Open in browser?" xml:space="preserve">
+        <source>Open in browser?</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Open migration to another device" xml:space="preserve">
         <source>Open migration to another device</source>
         <target>Отвори миграцията към друго устройство</target>
         <note>authentication reason</note>
-      </trans-unit>
-      <trans-unit id="Open web link?" xml:space="preserve">
-        <source>Open web link?</source>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Opening app…" xml:space="preserve">
         <source>Opening app…</source>
@@ -8183,10 +8171,6 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="XFTP server" xml:space="preserve">
         <source>XFTP server</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Yes" xml:space="preserve">
-        <source>Yes</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You **must not** use the same database on two devices." xml:space="preserve">
