@@ -1059,7 +1059,7 @@
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">当你或你的连接使用旧数据库备份时，可能会发生这种情况。</string>
     <string name="decryption_error">解密错误</string>
     <string name="alert_text_fragment_please_report_to_developers">请向开发者报告。</string>
-    <string name="alert_text_msg_bad_hash">上一条消息的散列不同。\"</string>
+    <string name="alert_text_msg_bad_hash">上条消息的哈希值不同。</string>
     <string name="alert_text_msg_bad_id">下一条消息的 ID 不正确（小于或等于上一条）。
 \n它可能是由于某些错误或连接被破坏才发生。</string>
     <string name="stop_file__action">停止文件</string>
