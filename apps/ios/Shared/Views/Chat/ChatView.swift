@@ -71,10 +71,9 @@ struct ChatView: View {
         }
     }
 
-    @ViewBuilder
     private var viewBody: some View {
         let cInfo = chat.chatInfo
-        ZStack {
+        return ZStack {
             let wallpaperImage = theme.wallpaper.type.image
             let wallpaperType = theme.wallpaper.type
             let backgroundColor = theme.wallpaper.background ?? wallpaperType.defaultBackgroundColor(theme.base, theme.colors.background)
@@ -1528,9 +1527,9 @@ struct ChatView: View {
             }
         }
 
-        @ViewBuilder func chatItemWithMenu(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ maxWidth: CGFloat, _ itemSeparation: ItemSeparation) -> some View {
+        func chatItemWithMenu(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ maxWidth: CGFloat, _ itemSeparation: ItemSeparation) -> some View {
             let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
-            VStack(alignment: alignment.horizontal, spacing: 3) {
+            return VStack(alignment: alignment.horizontal, spacing: 3) {
                 HStack {
                     if ci.chatDir.sent {
                         goToItemButton(true)

@@ -46,7 +46,7 @@ struct CILinkView: View {
 
 func openBrowserAlert(uri: URL) {
     showAlert(
-        NSLocalizedString("Open in browser?", comment: "alert title"),
+        NSLocalizedString("Open link?", comment: "alert title"),
         message: uri.absoluteString,
         actions: {[
             UIAlertAction(

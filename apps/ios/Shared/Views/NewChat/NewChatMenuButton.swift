@@ -85,7 +85,7 @@ struct NewChatSheet: View {
         }
     }
 
-    @ViewBuilder private func viewBody(_ showArchive: Bool) -> some View {
+    private func viewBody(_ showArchive: Bool) -> some View {
         List {
             HStack {
                 ContactsListSearchBar(
@@ -258,7 +258,7 @@ struct ContactsList: View {
         }
     }
     
-    @ViewBuilder private func noResultSection(text: String) -> some View {
+    private func noResultSection(text: String) -> some View {
         Section {
             Text(text)
                 .foregroundColor(theme.colors.secondary)

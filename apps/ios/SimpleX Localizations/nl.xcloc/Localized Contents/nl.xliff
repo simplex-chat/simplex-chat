@@ -5572,8 +5572,8 @@ Vereist het inschakelen van VPN.</target>
         <target>Open groep</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open in browser?" xml:space="preserve">
-        <source>Open in browser?</source>
+      <trans-unit id="Open link?" xml:space="preserve">
+        <source>Open link?</source>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Open migration to another device" xml:space="preserve">
