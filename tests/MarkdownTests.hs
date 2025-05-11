@@ -245,6 +245,9 @@ textWithHyperlink = describe "text with WebLink without link text" do
   it "correct markdown" do
     "[click here](https://example.com)" <==> weblink "https://example.com" "click here"
     "For details [click here](https://example.com)" <==> "For details " <> weblink "https://example.com" "click here"
+    let inv = "/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D"
+    ("[Connect to me](https://simplex.chat" <> inv <> ")") ==> simplexLink XLInvitation ("simplex:" <> inv) ["smp.simplex.im"] "Connect to me"
+    ("[Connect to me](simplex:" <> inv <> ")") <==> simplexLink XLInvitation ("simplex:" <> inv) ["smp.simplex.im"] "Connect to me"
   it "spoofed link" do
     "[https://example.com](https://another.com)" <==> spoofedLink "https://another.com" "https://example.com"
     "[example.com/page](https://another.com/page)" <==> spoofedLink "https://another.com/page" "example.com/page"
@@ -253,8 +256,6 @@ textWithHyperlink = describe "text with WebLink without link text" do
   it "ignored as markdown" do
     "[click here](example.com)" <==> "[click here](example.com)"
     "[click here](https://example.com )" <==> "[click here](https://example.com )"
-    let inv = "/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D"
-    ("[Connect to me](https://simplex.chat" <> inv <> ")") <==> ("[Connect to me](https://simplex.chat" <> unmarked inv <> ")")
 
 email :: Text -> Markdown
 email = Markdown $ Just Email

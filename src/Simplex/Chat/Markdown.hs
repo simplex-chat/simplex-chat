@@ -31,7 +31,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..), simplexConnReqUri, simplexShortLink)
+import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..), qAddress, sameQAddress, simplexChat, simplexConnReqUri, simplexShortLink)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..), sameSrvAddr)
@@ -233,9 +233,6 @@ markdownP = mconcat <$> A.many' fragmentP
       t <- A.char '[' *> A.takeWhile1 (/= ']') <* A.char ']'
       uri <- A.char '(' *> A.takeWhile1 (/= ')') <* A.char ')'
       sowLink <- either fail pure $ parseLinkUri uri
-      case sowLink of
-        SOWSimplex _ -> fail "SimpleX links with link text not supported"
-        SOWWeb _ -> pure ()
       let t' = T.dropAround isPunctuation $ T.filter (not . isSpace) t
           (linkUri, spoofed) = case either (\_ -> parseLinkUri ("https://" <> t')) Right $ parseLinkUri t' of
             Right _
@@ -345,7 +342,25 @@ markdownText (FormattedText f_ t) = case f_ of
       Just uri | uri /= t && uri /= ("https://" <> t) ->
         "[" <> t <> "](" <> uri <> ")"
       _ -> t
-    SimplexLink {simplexUri} -> t
+    SimplexLink {simplexUri}
+      | sameUri -> t
+      | otherwise -> "[" <> t <> "](" <> safeDecodeUtf8 (strEncode simplexUri) <> ")"
+      where
+        sameUri = case (strDecode $ encodeUtf8 t, simplexUri) of
+          (Left _, _) -> False
+          (Right (ACL _ cLink), ACL _ cLink') -> case (cLink, cLink') of
+            (CLFull (CRContactUri cData), CLFull (CRContactUri cData')) ->
+              sameQueues (crSmpQueues cData) (crSmpQueues cData')
+            (CLFull (CRInvitationUri cData e2e), CLFull (CRInvitationUri cData' e2e')) ->
+              sameQueues (crSmpQueues cData) (crSmpQueues cData') && e2e == e2e'
+            (CLShort (CSLContact _ ct srv lKey), CLShort (CSLContact _ ct' srv' lKey')) ->
+              sameSrvAddr srv srv' && ct == ct' && lKey == lKey'
+            (CLShort (CSLInvitation _ srv lId lKey), CLShort (CSLInvitation _ srv' lId' lKey')) ->
+              sameSrvAddr srv srv' && lId == lId' && lKey == lKey'
+            _ -> False
+        sameQueues qs qs' = L.length qs == L.length qs' && all same (L.zip qs qs')
+          where
+            same (q, q') = sameQAddress (qAddress q) (qAddress q')
     Mention _ -> t
     Email -> t
     Phone -> t
