@@ -160,7 +160,7 @@ struct ShareView: View {
         }
     }
 
-    @ViewBuilder private func linkPreview(_ linkPreview: LinkPreview) -> some View {
+    private func linkPreview(_ linkPreview: LinkPreview) -> some View {
         previewArea {
             HStack(alignment: .center, spacing: 8) {
                 if let uiImage = imageFromBase64(linkPreview.image) {

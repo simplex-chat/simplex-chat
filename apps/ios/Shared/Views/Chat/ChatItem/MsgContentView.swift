@@ -26,6 +26,7 @@ private func typing(_ theme: AppTheme, _ descr: UIFontDescriptor, _ ws: [UIFont.
 struct MsgContentView: View {
     @ObservedObject var chat: Chat
     @Environment(\.showTimestamp) var showTimestamp: Bool
+    @Environment(\.containerBackground) var containerBackground: UIColor
     @EnvironmentObject var theme: AppTheme
     var text: String
     var formattedText: [FormattedText]? = nil
@@ -92,7 +93,8 @@ struct MsgContentView: View {
 
     @inline(__always)
     private func msgContentView() -> some View {
-        let s = messageText(text, formattedText, textStyle: textStyle, sender: sender, mentions: mentions, userMemberId: userMemberId, showSecrets: showSecrets, secondaryColor: theme.colors.secondary, prefix: prefix)
+        let r = messageText(text, formattedText, textStyle: textStyle, sender: sender, mentions: mentions, userMemberId: userMemberId, showSecrets: showSecrets, backgroundColor: containerBackground, prefix: prefix)
+        let s = r.string
         let t: Text
         if let mt = meta {
             if mt.isLive {
@@ -102,7 +104,7 @@ struct MsgContentView: View {
         } else {
             t = Text(AttributedString(s))
         }
-        return t.overlay(handleTextLinks(s, showSecrets: $showSecrets))
+        return msgTextResultView(r, t, showSecrets: $showSecrets)
     }
 
     @inline(__always)
@@ -118,7 +120,13 @@ struct MsgContentView: View {
     }
 }
 
-func handleTextLinks(_ s: NSAttributedString, showSecrets: Binding<Set<Int>>? = nil) -> some View {
+func msgTextResultView(_ r: MsgTextResult, _ t: Text, showSecrets: Binding<Set<Int>>? = nil) -> some View {
+    t.if(r.hasSecrets, transform: hiddenSecretsView)
+        .if(r.handleTaps) { $0.overlay(handleTextTaps(r.string, showSecrets: showSecrets)) }
+}
+
+@inline(__always)
+private func handleTextTaps(_ s: NSAttributedString, showSecrets: Binding<Set<Int>>? = nil) -> some View {
     return GeometryReader { g in
         Rectangle()
             .fill(Color.clear)
@@ -174,13 +182,43 @@ func handleTextLinks(_ s: NSAttributedString, showSecrets: Binding<Set<Int>>? = 
     }
 }
 
+func hiddenSecretsView<V: View>(_ v: V) -> some View {
+    v.overlay(
+        GeometryReader { g in
+            let size = (g.size.width + g.size.height) / 1.4142
+            Image("vertical_logo")
+                .resizable(resizingMode: .tile)
+                .frame(width: size, height: size)
+                .rotationEffect(.degrees(45), anchor: .center)
+                .position(x: g.size.width / 2, y: g.size.height / 2)
+                .clipped()
+                .saturation(0.65)
+                .opacity(0.35)
+        }
+        .mask(v)
+    )
+}
+
 private let linkAttrKey = NSAttributedString.Key("chat.simplex.app.link")
 
 private let webLinkAttrKey = NSAttributedString.Key("chat.simplex.app.webLink")
 
 private let secretAttrKey = NSAttributedString.Key("chat.simplex.app.secret")
 
-func messageText(_ text: String, _ formattedText: [FormattedText]?, textStyle: UIFont.TextStyle = .body, sender: String?, preview: Bool = false, mentions: [String: CIMention]?, userMemberId: String?, showSecrets: Set<Int>?, secondaryColor: Color, prefix: NSAttributedString? = nil) -> NSMutableAttributedString {
+typealias MsgTextResult = (string: NSMutableAttributedString, hasSecrets: Bool, handleTaps: Bool)
+
+func messageText(
+    _ text: String,
+    _ formattedText: [FormattedText]?,
+    textStyle: UIFont.TextStyle = .body,
+    sender: String?,
+    preview: Bool = false,
+    mentions: [String: CIMention]?,
+    userMemberId: String?,
+    showSecrets: Set<Int>?,
+    backgroundColor: UIColor,
+    prefix: NSAttributedString? = nil
+) -> MsgTextResult {
     let res = NSMutableAttributedString()
     let descr = UIFontDescriptor.preferredFontDescriptor(withTextStyle: textStyle)
     let font = UIFont.preferredFont(forTextStyle: textStyle)
@@ -188,7 +226,10 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, textStyle: U
         .font: font,
         .foregroundColor: UIColor.label
     ]
+    let secretColor = backgroundColor.withAlphaComponent(1)
     var link: [NSAttributedString.Key: Any]?
+    var hasSecrets = false
+    var handleTaps = false
 
     if let sender {
         if preview {
@@ -230,14 +271,16 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, textStyle: U
                 if let showSecrets {
                     if !showSecrets.contains(secretIdx) {
                         attrs[.foregroundColor] = UIColor.clear
-                        attrs[.backgroundColor] = UIColor.secondarySystemFill // secretColor
+                        attrs[.backgroundColor] = secretColor
                     }
                     attrs[secretAttrKey] = secretIdx
                     secretIdx += 1
+                    handleTaps = true
                 } else {
                     attrs[.foregroundColor] = UIColor.clear
-                    attrs[.backgroundColor] = UIColor.secondarySystemFill
+                    attrs[.backgroundColor] = secretColor
                 }
+                hasSecrets = true
             case let .colored(color):
                 if let c = color.uiColor {
                     attrs[.foregroundColor] = UIColor(c)
@@ -247,11 +290,13 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, textStyle: U
                 if !preview {
                     attrs[linkAttrKey] = NSURL(string: ft.text)
                     attrs[webLinkAttrKey] = true
+                    handleTaps = true
                 }
             case let .simplexLink(linkType, simplexUri, smpHosts):
                 attrs = linkAttrs()
                 if !preview {
                     attrs[linkAttrKey] = NSURL(string: simplexUri)
+                    handleTaps = true
                 }
                 if case .description = privacySimplexLinkModeDefault.get() {
                     t = simplexLinkText(linkType, smpHosts)
@@ -278,11 +323,13 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, textStyle: U
                 attrs = linkAttrs()
                 if !preview {
                     attrs[linkAttrKey] = NSURL(string: "mailto:" + ft.text)
+                    handleTaps = true
                 }
             case .phone:
                 attrs = linkAttrs()
                 if !preview {
                     attrs[linkAttrKey] = NSURL(string: "tel:" + t.replacingOccurrences(of: " ", with: ""))
+                    handleTaps = true
                 }
             case .none: ()
             }
@@ -292,7 +339,7 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, textStyle: U
         res.append(NSMutableAttributedString(string: text, attributes: plain))
     }
     
-    return res
+    return (string: res, hasSecrets: hasSecrets, handleTaps: handleTaps)
 
     func linkAttrs() -> [NSAttributedString.Key: Any] {
         link = link ?? [

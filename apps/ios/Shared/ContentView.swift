@@ -74,7 +74,7 @@ struct ContentView: View {
         }
     }
 
-    @ViewBuilder func allViews() -> some View {
+    func allViews() -> some View {
         ZStack {
             let showCallArea = chatModel.activeCall != nil && chatModel.activeCall?.callState != .waitCapabilities && chatModel.activeCall?.callState != .invitationAccepted
             // contentView() has to be in a single branch, so that enabling authentication doesn't trigger re-rendering and close settings.
@@ -209,7 +209,7 @@ struct ContentView: View {
         }
     }
 
-    @ViewBuilder private func activeCallInteractiveArea(_ call: Call) -> some View {
+    private func activeCallInteractiveArea(_ call: Call) -> some View {
         HStack {
             Text(call.contact.displayName).font(.body).foregroundColor(.white)
             Spacer()

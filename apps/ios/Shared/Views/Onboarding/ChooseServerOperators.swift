@@ -304,11 +304,11 @@ struct ChooseServerOperators: View {
         }
     }
 
-    @ViewBuilder private func operatorCheckView(_ serverOperator: ServerOperator) -> some View {
+    private func operatorCheckView(_ serverOperator: ServerOperator) -> some View {
         let checked = selectedOperatorIds.contains(serverOperator.operatorId)
         let icon = checked ? "checkmark.circle.fill" : "circle"
         let iconColor = checked ? theme.colors.primary : Color(uiColor: .tertiaryLabel).asAnotherColorFromSecondary(theme)
-        HStack(spacing: 10) {
+        return HStack(spacing: 10) {
             Image(serverOperator.largeLogo(colorScheme))
                 .resizable()
                 .scaledToFit()

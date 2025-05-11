@@ -87,7 +87,7 @@ struct FramedItemView: View {
                 .overlay(DetermineWidth())
                 .accessibilityLabel("")
             }
-        }   
+        }
             .background { chatItemFrameColorMaybeImageOrVideo(chatItem, theme).modifier(ChatTailPadding()) }
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
 
@@ -201,6 +201,7 @@ struct FramedItemView: View {
     }
 
     @ViewBuilder private func ciQuoteView(_ qi: CIQuote) -> some View {
+        let backgroundColor = chatItemFrameContextColor(chatItem, theme)
         let v = ZStack(alignment: .topTrailing) {
             switch (qi.content) {
             case let .image(_, image):
@@ -242,7 +243,8 @@ struct FramedItemView: View {
             // if enable this always, size of the framed voice message item will be incorrect after end of playback
             .overlay { if case .voice = chatItem.content.msgContent {} else { DetermineWidth() } }
             .frame(minWidth: msgWidth, alignment: .leading)
-            .background(chatItemFrameContextColor(chatItem, theme))
+            .background(backgroundColor)
+            .environment(\.containerBackground, UIColor(backgroundColor))
         if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
             v.frame(maxWidth: mediaWidth, alignment: .leading)
         } else {
@@ -308,6 +310,7 @@ struct FramedItemView: View {
             rightToLeft: rtl,
             prefix: txtPrefix
         )
+        .environment(\.containerBackground, UIColor(chatItemFrameColor(ci, theme)))
         .multilineTextAlignment(rtl ? .trailing : .leading)
         .padding(.vertical, 6)
         .padding(.horizontal, 12)
