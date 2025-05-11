@@ -796,8 +796,9 @@ swipe action</note>
         <target>Alle Meldungen werden für Sie archiviert.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All servers" xml:space="preserve">
+      <trans-unit id="All servers" xml:space="preserve" approved="no">
         <source>All servers</source>
+        <target state="translated">Alle Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
@@ -2192,9 +2193,9 @@ Das ist Ihr eigener Einmal-Link!</target>
         <target>Aktuelles Passwort…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Current profile" xml:space="preserve">
+      <trans-unit id="Current profile" xml:space="preserve" approved="no">
         <source>Current profile</source>
-        <target>Aktueller Profil</target>
+        <target state="translated">Aktuelles Profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve">
@@ -8291,8 +8292,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Solange kein Port konfiguriert ist, wird TCP-Port %@ genutzt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve">
+      <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve" approved="no">
         <source>Use TCP port 443 for preset servers only.</source>
+        <target state="translated">TCP-Port 443 nur für voreingestellte Server verwenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use chat" xml:space="preserve">
@@ -10183,8 +10185,9 @@ Zuletzt empfangene Nachricht: %2$@</target>
         <target>%d neue Ereignisse</target>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="From %d chat(s)" xml:space="preserve">
+      <trans-unit id="From %d chat(s)" xml:space="preserve" approved="no">
         <source>From %d chat(s)</source>
+        <target state="translated">Von %d Chat(s)</target>
         <note>notification body</note>
       </trans-unit>
       <trans-unit id="From: %@" xml:space="preserve">
