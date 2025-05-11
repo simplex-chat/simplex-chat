@@ -20,6 +20,7 @@ markdownTests = do
   secretText
   textColor
   textWithUri
+  textWithHyperlink
   textWithEmail
   textWithPhone
   textWithMentions
@@ -168,23 +169,35 @@ textColor = describe "text color (red)" do
       <==> "snippet: " <> markdown Snippet "this is !1 red text!"
 
 uri :: Text -> Markdown
-uri = Markdown $ Just Uri
+uri = Markdown $ Just baseUriFormat
+
+httpUri :: Text -> Markdown
+httpUri = Markdown $ Just baseUriFormat {scheme = "http"}
+
+weblink :: Text -> Text -> Markdown
+weblink u = Markdown $ Just baseUriFormat {linkUri = Just u}
+
+sanitizedWebLink :: Text -> Text -> Markdown
+sanitizedWebLink u = Markdown $ Just baseUriFormat {sanitizedUri = Just u}
+
+baseUriFormat :: Format
+baseUriFormat = WebLink {scheme = "https", linkUri = Nothing, sanitizedUri = Nothing, spoofed = False}
 
 simplexLink :: SimplexLinkType -> Text -> NonEmpty Text -> Text -> Markdown
 simplexLink linkType uriText smpHosts t = Markdown (simplexLinkFormat linkType uriText smpHosts) t
 
 simplexLinkFormat :: SimplexLinkType -> Text -> NonEmpty Text -> Maybe Format
 simplexLinkFormat linkType uriText smpHosts = case strDecode $ encodeUtf8 uriText of
-  Right simplexUri -> Just SimplexLink {linkType, simplexUri, smpHosts}
+  Right simplexUri -> Just SimplexLink {linkType, simplexUri, smpHosts, spoofed = False}
   Left e -> error e
 
 textWithUri :: Spec
-textWithUri = describe "text with Uri" do
+textWithUri = describe "text with WebLink without link text" do
   it "correct markdown" do
     "https://simplex.chat" <==> uri "https://simplex.chat"
     "https://simplex.chat." <==> uri "https://simplex.chat" <> "."
     "https://simplex.chat, hello" <==> uri "https://simplex.chat" <> ", hello"
-    "http://simplex.chat" <==> uri "http://simplex.chat"
+    "http://simplex.chat" <==> httpUri "http://simplex.chat"
     "this is https://simplex.chat" <==> "this is " <> uri "https://simplex.chat"
     "https://simplex.chat site" <==> uri "https://simplex.chat" <> " site"
     "SimpleX on GitHub: https://github.com/simplex-chat/" <==> "SimpleX on GitHub: " <> uri "https://github.com/simplex-chat/"
@@ -192,10 +205,26 @@ textWithUri = describe "text with Uri" do
     "https://github.com/simplex-chat/ - SimpleX on GitHub" <==> uri "https://github.com/simplex-chat/" <> " - SimpleX on GitHub"
     -- "SimpleX on GitHub (https://github.com/simplex-chat/)" <==> "SimpleX on GitHub (" <> uri "https://github.com/simplex-chat/" <> ")"
     "https://en.m.wikipedia.org/wiki/Servo_(software)" <==> uri "https://en.m.wikipedia.org/wiki/Servo_(software)"
+    "example.com" <==> weblink "https://example.com" "example.com"
+    "www.example.com" <==> weblink "https://www.example.com" "www.example.com"
+    "example.academy" <==> weblink "https://example.academy" "example.academy"
+    "this is example.com" <==> "this is " <> weblink "https://example.com" "example.com"
+    "x.com" <==> weblink "https://x.com" "x.com"
+    "https://example.com/?ref=123" <==> sanitizedWebLink "https://example.com/" "https://example.com/?ref=123"
+    "https://example.com/?ref=123#anchor" <==> sanitizedWebLink "https://example.com/#anchor" "https://example.com/?ref=123#anchor"
+    "https://example.com/#anchor?ref=123" <==> uri "https://example.com/#anchor?ref=123"
+    "https://duckduckgo.com/?q=search+string" <==> uri "https://duckduckgo.com/?q=search+string"
+    "https://duckduckgo.com/?t=h_&q=search+string&ia=web" <==> sanitizedWebLink "https://duckduckgo.com/?q=search%20string" "https://duckduckgo.com/?t=h_&q=search+string&ia=web"
   it "ignored as markdown" do
     "_https://simplex.chat" <==> "_https://simplex.chat"
     "this is _https://simplex.chat" <==> "this is _https://simplex.chat"
     "this is https://" <==> "this is https://"
+    "example.c" <==> "example.c"
+    "www.www.example.com" <==> "www.www.example.com"
+    "www.example1.com" <==> "www.example1.com"
+    "www." <==> "www."
+    ".com" <==> ".com"
+    "example.academytoolong" <==> "example.academytoolong"
   it "SimpleX links" do
     let inv = "/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D"
     ("https://simplex.chat" <> inv) <==> simplexLink XLInvitation ("simplex:" <> inv) ["smp.simplex.im"] ("https://simplex.chat" <> inv)
@@ -207,6 +236,25 @@ textWithUri = describe "text with Uri" do
     let gr = "/contact#/?v=2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FWHV0YU1sYlU7NqiEHkHDB6gxO1ofTync%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAWbebOqVYuBXaiqHcXYjEHCpYi6VzDlu6CVaijDTmsQU%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22mL-7Divb94GGmGmRBef5Dg%3D%3D%22%7D"
     ("https://simplex.chat" <> gr) <==> simplexLink XLGroup ("simplex:" <> gr) ["smp4.simplex.im", "o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion"] ("https://simplex.chat" <> gr)
     ("simplex:" <> gr) <==> simplexLink XLGroup ("simplex:" <> gr) ["smp4.simplex.im", "o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion"] ("simplex:" <> gr)
+
+spoofedLink :: Text -> Text -> Markdown
+spoofedLink u = Markdown $ Just baseUriFormat {linkUri = Just u, spoofed = True}
+
+textWithHyperlink :: Spec
+textWithHyperlink = describe "text with WebLink without link text" do
+  it "correct markdown" do
+    "[click here](https://example.com)" <==> weblink "https://example.com" "click here"
+    "For details [click here](https://example.com)" <==> "For details " <> weblink "https://example.com" "click here"
+  it "spoofed link" do
+    "[https://example.com](https://another.com)" <==> spoofedLink "https://another.com" "https://example.com"
+    "[example.com/page](https://another.com/page)" <==> spoofedLink "https://another.com/page" "example.com/page"
+    "[  example.com/page!. ](https://another.com/page)" <==> spoofedLink "https://another.com/page" "  example.com/page!. "
+    "[  example . com/page !. ](https://another.com/page)" <==> spoofedLink "https://another.com/page" "  example . com/page !. "
+  it "ignored as markdown" do
+    "[click here](example.com)" <==> "[click here](example.com)"
+    "[click here](https://example.com )" <==> "[click here](https://example.com )"
+    let inv = "/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D"
+    ("[Connect to me](https://simplex.chat" <> inv <> ")") <==> ("[Connect to me](https://simplex.chat" <> unmarked inv <> ")")
 
 email :: Text -> Markdown
 email = Markdown $ Just Email
@@ -221,11 +269,11 @@ textWithEmail = describe "text with Email" do
     "chat@simplex.chat test" <==> email "chat@simplex.chat" <> " test"
     "test1 chat@simplex.chat test2" <==> "test1 " <> email "chat@simplex.chat" <> " test2"
   it "ignored as markdown" do
-    "chat @simplex.chat" <==> "chat " <> mention "simplex.chat" "@simplex.chat"
-    "this is chat @simplex.chat" <==> "this is chat " <> mention "simplex.chat" "@simplex.chat"
-    "this is chat@ simplex.chat" <==> "this is chat@ simplex.chat"
-    "this is chat @ simplex.chat" <==> "this is chat @ simplex.chat"
-    "*this* is chat @ simplex.chat" <==> bold "this" <> " is chat @ simplex.chat"
+    "chat @'simplex.chat'" <==> "chat " <> mention "simplex.chat" "@'simplex.chat'"
+    "this is chat @'simplex.chat'" <==> "this is chat " <> mention "simplex.chat" "@'simplex.chat'"
+    "this is chat@ simplex.chat" <==> "this is chat@ " <> weblink "https://simplex.chat" "simplex.chat"
+    "this is chat @ simplex.chat" <==> "this is chat @ " <> weblink "https://simplex.chat" "simplex.chat"
+    "*this* is chat @ simplex.chat" <==> bold "this" <> " is chat @ " <> weblink "https://simplex.chat" "simplex.chat"
 
 phone :: Text -> Markdown
 phone = Markdown $ Just Phone
@@ -268,14 +316,17 @@ textWithMentions = describe "text with mentions" do
     "hello @bob @" <==> "hello " <> mention "bob" "@bob" <> " @"
 
 uri' :: Text -> FormattedText
-uri' = FormattedText $ Just Uri
+uri' = FormattedText $ Just baseUriFormat
+
+httpUri' :: Text -> FormattedText
+httpUri' = FormattedText $ Just baseUriFormat {scheme = "http"}
 
 multilineMarkdownList :: Spec
 multilineMarkdownList = describe "multiline markdown" do
   it "correct markdown" do
-    "http://simplex.chat\nhttp://app.simplex.chat" <<==>> [uri' "http://simplex.chat", "\n", uri' "http://app.simplex.chat"]
+    "http://simplex.chat\nhttp://app.simplex.chat" <<==>> [httpUri' "http://simplex.chat", "\n", httpUri' "http://app.simplex.chat"]
   it "combines the same formats" do
-    "http://simplex.chat\ntext 1\ntext 2\nhttp://app.simplex.chat" <<==>> [uri' "http://simplex.chat", "\ntext 1\ntext 2\n", uri' "http://app.simplex.chat"]
+    "http://simplex.chat\ntext 1\ntext 2\nhttp://app.simplex.chat" <<==>> [httpUri' "http://simplex.chat", "\ntext 1\ntext 2\n", httpUri' "http://app.simplex.chat"]
   it "no markdown" do
     parseMaybeMarkdownList "not a\nmarkdown" `shouldBe` Nothing
   let inv = "/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D"

@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -16,7 +17,8 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
-import Data.Char (isDigit, isPunctuation, isSpace)
+import qualified Data.ByteString.Char8 as B
+import Data.Char (isAlpha, isAscii, isDigit, isPunctuation, isSpace)
 import Data.Either (fromRight)
 import Data.Functor (($>))
 import Data.List (foldl', intercalate)
@@ -32,10 +34,11 @@ import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..), simplexConnReqUri, simplexShortLink)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, sumTypeJSON)
-import Simplex.Messaging.Protocol (ProtocolServer (..))
+import Simplex.Messaging.Protocol (ProtocolServer (..), sameSrvAddr)
 import Simplex.Messaging.Util (decodeJSON, safeDecodeUtf8)
 import System.Console.ANSI.Types
 import qualified Text.Email.Validate as Email
+import qualified URI.ByteString as U
 
 data Markdown = Markdown (Maybe Format) Text | Markdown :|: Markdown
   deriving (Eq, Show)
@@ -47,23 +50,30 @@ data Format
   | Snippet
   | Secret
   | Colored {color :: FormatColor}
-  | WebLink {text :: WLText, scheme :: Text, originalUri :: Text, sanitizedUri :: Text}
-  | SimplexLink {linkType :: SimplexLinkType, simplexUri :: AConnectionLink, smpHosts :: NonEmpty Text}
+  -- linkUri is Nothing when there is no link text or it is the same as URI, in which case the text of the fragment is URI.
+  -- sanitizedUri is Nothing when original URI is already sanitized.
+  -- spoofed is True when link text is a valid URI, and it is different from link URI.
+  | WebLink {scheme :: Text, linkUri :: Maybe Text, sanitizedUri :: Maybe Text, spoofed :: Bool}
+  | SimplexLink {linkType :: SimplexLinkType, simplexUri :: AConnectionLink, smpHosts :: NonEmpty Text, spoofed :: Bool}
   | Mention {memberName :: Text}
   | Email
   | Phone
   deriving (Eq, Show)
 
--- This type provides support for descriptive markdown links, such as [click here](https://example.com),
--- with detection of any potentially malicious links, such as:
--- - tracking parameters (tracked via difference between originalUri and sanitizedUri in WebLink)
--- - WLBadPath: different path in link text from the path in the link, e.g. [example.com/hello](https://example.com/goodbuy), except query string parameters
--- - WLBadHost: different domain in the link text from the domain in the link, e.g [example.com](https://error.com)
--- Sending clients should reject such links, receiving clients should warn before opening links with bad path or host and show them in red.
-data WLText
-  = WLText {linkText :: Maybe Text} -- the text is Nothing if it's the same as the link, it should be used to decide whether to show alert before opening.
-  | WLBadPath {badLink :: Text}
-  | WLBadHost {badLink :: Text}
+data SimplexOrWebLink = SOWSimplex AConnectionLink | SOWWeb U.URI
+
+parseLinkUri :: Text -> Either String SimplexOrWebLink
+parseLinkUri t = case strDecode s of
+  Right cLink -> Right $ SOWSimplex cLink
+  Left _ -> case U.parseURI U.laxURIParserOptions s of
+    Right uri@U.URI {uriAuthority} -> case uriAuthority of
+      Just U.Authority {authorityHost = U.Host h}
+        | B.elem '.' h -> Right $ SOWWeb uri
+        | otherwise -> Left "Invalid URI host"
+      Nothing -> Left "No URI host"
+    Left e -> Left $ "Invalid URI: " <> show e
+  where
+    s = encodeUtf8 t
 
 mentionedNames :: MarkdownList -> [Text]
 mentionedNames = mapMaybe (\(FormattedText f _) -> mentionedName =<< f)
@@ -184,6 +194,7 @@ markdownP = mconcat <$> A.many' fragmentP
           '#' -> A.char '#' *> secretP
           '!' -> coloredP <|> wordP
           '@' -> mentionP <|> wordP
+          '[' -> webLinkP <|> wordP
           _
             | isDigit c -> phoneP <|> wordP
             | otherwise -> wordP
@@ -218,6 +229,20 @@ markdownP = mconcat <$> A.many' fragmentP
       name <- displayNameTextP
       let sName = if c == '\'' then '\'' `T.cons` name `T.snoc` '\'' else name
       pure $ markdown (Mention name) ('@' `T.cons` sName)
+    webLinkP = do
+      t <- A.char '[' *> A.takeWhile1 (/= ']') <* A.char ']'
+      uri <- A.char '(' *> A.takeWhile1 (/= ')') <* A.char ')'
+      sowLink <- either fail pure $ parseLinkUri uri
+      case sowLink of
+        SOWSimplex _ -> fail "SimpleX links with link text not supported"
+        SOWWeb _ -> pure ()
+      let t' = T.dropAround isPunctuation $ T.filter (not . isSpace) t
+          (linkUri, spoofed) = case either (\_ -> parseLinkUri ("https://" <> t')) Right $ parseLinkUri t' of
+            Right _
+              | t == uri -> (Nothing, False)
+              | otherwise -> (Just uri, True)
+            Left _ -> (Just uri, False)
+      pure $ markdown (sowLinkFormat linkUri spoofed sowLink) t
     colorP =
       A.anyChar >>= \case
         'r' -> "ed" $> Red <|> pure Red
@@ -251,23 +276,42 @@ markdownP = mconcat <$> A.many' fragmentP
           let t = T.takeWhileEnd isPunctuation' s
               uri = uriMarkdown $ T.dropWhileEnd isPunctuation' s
            in if T.null t then uri else uri :|: unmarked t
+      | isDomain s = markdown (WebLink "https" (Just $ "https://" <> s) Nothing False) s
       | isEmail s = markdown Email s
       | otherwise = unmarked s
     isPunctuation' = \case
       '/' -> False
       ')' -> False
       c -> isPunctuation c
-    uriMarkdown s = case strDecode $ encodeUtf8 s of
-      Right cLink -> markdown (simplexUriFormat cLink) s
-      _ -> markdown Uri s
+    uriMarkdown s = case parseLinkUri s of
+      Right sowLink -> markdown (sowLinkFormat Nothing False sowLink) s
+      Left _ -> unmarked s
     isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:/"]
+    isDomain s = case T.splitOn "." s of
+      [name, tld] -> validDomain name tld
+      [sub, name, tld] -> T.length sub > 0 && T.length sub <= 8 && validDomain name tld
+      _ -> False
+      where
+        validDomain name tld =
+          (let n = T.length name in n >= 1 && n <= 24)
+            && (let n = T.length tld in n >= 2 && n <= 8)
+            && (let p c = isAscii c && isAlpha c in T.all p name && T.all p tld)
     isEmail s = T.any (== '@') s && Email.isValid (encodeUtf8 s)
     noFormat = pure . unmarked
-    simplexUriFormat :: AConnectionLink -> Format
-    simplexUriFormat = \case
+    sowLinkFormat :: Maybe Text -> Bool -> SimplexOrWebLink -> Format
+    sowLinkFormat linkUri spoofed = \case
+      SOWSimplex cLink -> simplexUriFormat spoofed cLink
+      SOWWeb uri@U.URI {uriScheme = U.Scheme sch, uriQuery = U.Query originalQS} ->
+        let sanitizedQS = filter (\(p, _) -> p == "q" || p == "search") originalQS
+            sanitizedUri
+              | length sanitizedQS == length originalQS = Nothing
+              | otherwise = Just $ safeDecodeUtf8 $ U.serializeURIRef' uri {U.uriQuery = U.Query sanitizedQS}
+          in WebLink {scheme = safeDecodeUtf8 sch, linkUri, sanitizedUri, spoofed}
+    simplexUriFormat :: Bool -> AConnectionLink -> Format
+    simplexUriFormat spoofed = \case
       ACL m (CLFull cReq) -> case cReq of
-        CRContactUri crData -> SimplexLink (linkType' crData) cLink $ uriHosts crData
-        CRInvitationUri crData _ -> SimplexLink XLInvitation cLink $ uriHosts crData
+        CRContactUri crData -> SimplexLink (linkType' crData) cLink (uriHosts crData) spoofed
+        CRInvitationUri crData _ -> SimplexLink XLInvitation cLink (uriHosts crData) spoofed
         where
           cLink = ACL m $ CLFull $ simplexConnReqUri cReq
           uriHosts ConnReqUriData {crSmpQueues} = L.map strEncodeText $ sconcat $ L.map (host . qServer) crSmpQueues
@@ -275,8 +319,8 @@ markdownP = mconcat <$> A.many' fragmentP
             Just (CRDataGroup _) -> XLGroup
             Nothing -> XLContact
       ACL m (CLShort sLnk) -> case sLnk of
-        CSLContact _ ct srv _ -> SimplexLink (linkType' ct) cLink $ uriHosts srv
-        CSLInvitation _ srv _ _ -> SimplexLink XLInvitation cLink $ uriHosts srv
+        CSLContact _ ct srv _ -> SimplexLink (linkType' ct) cLink (uriHosts srv) spoofed
+        CSLInvitation _ srv _ _ -> SimplexLink XLInvitation cLink (uriHosts srv) spoofed
         where
           cLink = ACL m $ CLShort $ simplexShortLink sLnk
           uriHosts srv = L.map strEncodeText $ host srv
@@ -297,8 +341,11 @@ markdownText (FormattedText f_ t) = case f_ of
     Snippet -> around '`'
     Secret -> around '#'
     Colored (FormatColor c) -> color c
-    Uri -> t
-    SimplexLink {} -> t
+    WebLink {linkUri} -> case linkUri of
+      Just uri | uri /= t && uri /= ("https://" <> t) ->
+        "[" <> t <> "](" <> uri <> ")"
+      _ -> t
+    SimplexLink {simplexUri} -> t
     Mention _ -> t
     Email -> t
     Phone -> t

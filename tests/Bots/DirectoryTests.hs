@@ -14,7 +14,6 @@ import Control.Exception (finally)
 import Control.Monad (forM_, when)
 import qualified Data.Text as T
 import Directory.Captcha
-import qualified Directory.Events as DE
 import Directory.Options
 import Directory.Service
 import Directory.Store
@@ -22,6 +21,7 @@ import GHC.IO.Handle (hClose)
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), defaultChatHooks)
 import Simplex.Chat.Core
+import qualified Simplex.Chat.Markdown as Markdown
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.Types (Profile (..))
@@ -111,7 +111,7 @@ serviceDbPrefix :: FilePath
 serviceDbPrefix = "directory_service"
 
 viewName :: String -> String
-viewName = T.unpack . DE.viewName . T.pack
+viewName = T.unpack . Markdown.viewName . T.pack
 
 testDirectoryService :: HasCallStack => TestParams -> IO ()
 testDirectoryService ps =
