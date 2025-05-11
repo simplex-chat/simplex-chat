@@ -5573,9 +5573,9 @@ Requires compatible VPN.</target>
         <target>Open group</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open in browser?" xml:space="preserve">
-        <source>Open in browser?</source>
-        <target>Open in browser?</target>
+      <trans-unit id="Open link?" xml:space="preserve">
+        <source>Open link?</source>
+        <target>Open link?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Open migration to another device" xml:space="preserve">
