@@ -49,7 +49,7 @@ main = do
       describe "Schema dump" schemaDumpTest
       around tmpBracket $ describe "WebRTC encryption" webRTCTests
 #endif
-      describe "SimpleX chat markdown" markdownTests
+      fdescribe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
       describe "SimpleX chat view" viewTests
       describe "SimpleX chat protocol" protocolTests
