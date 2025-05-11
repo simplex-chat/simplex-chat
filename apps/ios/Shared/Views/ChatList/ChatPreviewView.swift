@@ -405,7 +405,7 @@ struct ChatPreviewView: View {
         : chatPreviewInfoText("you are invited to group")
     }
 
-    @ViewBuilder private func chatPreviewInfoText(_ text: LocalizedStringKey) -> some View {
+    private func chatPreviewInfoText(_ text: LocalizedStringKey) -> some View {
         Text(text)
             .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
             .padding([.leading, .trailing], 8)
@@ -485,7 +485,7 @@ struct ChatPreviewView: View {
     }
 }
 
-@ViewBuilder func groupReportsIcon(size: CGFloat) -> some View {
+func groupReportsIcon(size: CGFloat) -> some View {
     Image(systemName: "flag")
         .resizable()
         .scaledToFit()

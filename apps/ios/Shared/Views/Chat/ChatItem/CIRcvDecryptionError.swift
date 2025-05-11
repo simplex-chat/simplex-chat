@@ -68,7 +68,7 @@ struct CIRcvDecryptionError: View {
             }
     }
 
-    @ViewBuilder private func viewBody() -> some View {
+    private func viewBody() -> some View {
         Group {
             if case let .direct(contact) = chat.chatInfo,
                let contactStats = contact.activeConn?.connectionStats {

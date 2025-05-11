@@ -140,9 +140,9 @@ struct ContactListNavLink: View {
         }
     }
 
-    @ViewBuilder private func previewTitle(_ contact: Contact, titleColor: Color) -> some View {
+    private func previewTitle(_ contact: Contact, titleColor: Color) -> some View {
         let t = Text(chat.chatInfo.chatViewName).foregroundColor(titleColor)
-        (
+        return (
             contact.verified == true
             ? verifiedIcon + t
             : t
