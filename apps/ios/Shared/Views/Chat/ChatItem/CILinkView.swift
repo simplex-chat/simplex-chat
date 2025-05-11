@@ -21,15 +21,15 @@ struct CILinkView: View {
                     .resizable()
                     .scaledToFit()
                     .modifier(PrivacyBlur(blurred: $blurred))
+                    .if(!blurred) { v in
+                        v.simultaneousGesture(TapGesture().onEnded {
+                            openBrowserAlert(uri: linkPreview.uri)
+                        })
+                    }
             }
             VStack(alignment: .leading, spacing: 6) {
                 Text(linkPreview.title)
                     .lineLimit(3)
-//                if linkPreview.description != "" {
-//                    Text(linkPreview.description)
-//                        .font(.subheadline)
-//                        .lineLimit(12)
-//                }
                 Text(linkPreview.uri.absoluteString)
                     .font(.caption)
                     .lineLimit(1)
@@ -37,10 +37,10 @@ struct CILinkView: View {
             }
             .padding(.horizontal, 12)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .simultaneousGesture(TapGesture().onEnded {
+                openBrowserAlert(uri: linkPreview.uri)
+            })
         }
-        .simultaneousGesture(TapGesture().onEnded {
-            openBrowserAlert(uri: linkPreview.uri)
-        })
     }
 }
 

@@ -31,7 +31,9 @@ struct CIImageView: View {
                 .if(!smallView) { view in
                     view.modifier(PrivacyBlur(blurred: $blurred))
                 }
-                .simultaneousGesture(TapGesture().onEnded { showFullScreenImage = true })
+                .if(!blurred) { v in
+                    v.simultaneousGesture(TapGesture().onEnded { showFullScreenImage = true })
+                }
                 .onChange(of: m.activeCallViewIsCollapsed) { _ in
                     showFullScreenImage = false
                 }
