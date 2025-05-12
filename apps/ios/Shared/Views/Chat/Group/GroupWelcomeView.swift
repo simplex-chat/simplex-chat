@@ -18,6 +18,7 @@ struct GroupWelcomeView: View {
     @State private var editMode = true
     @FocusState private var keyboardVisible: Bool
     @State private var showSaveDialog = false
+    @State private var showSecrets: Set<Int> = []
 
     let maxByteCount = 1200
 
@@ -58,9 +59,8 @@ struct GroupWelcomeView: View {
     }
 
     private func textPreview() -> some View {
-        let s = messageText(welcomeText, parseSimpleXMarkdown(welcomeText), sender: nil, mentions: nil, userMemberId: nil, showSecrets: nil, secondaryColor: theme.colors.secondary)
-        return Text(AttributedString(s))
-            .overlay(handleTextLinks(s))
+        let r = messageText(welcomeText, parseSimpleXMarkdown(welcomeText), sender: nil, mentions: nil, userMemberId: nil, showSecrets: showSecrets, backgroundColor: UIColor(theme.colors.background))
+        return msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets)
             .frame(minHeight: 130, alignment: .topLeading)
             .frame(maxWidth: .infinity, alignment: .leading)
     }

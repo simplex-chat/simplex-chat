@@ -138,7 +138,7 @@ struct TagListView: View {
         }
     }
     
-    @ViewBuilder private func radioButton(selected: Bool) -> some View {
+    private func radioButton(selected: Bool) -> some View {
         Image(systemName: selected ? "checkmark.circle.fill" : "circle")
             .imageScale(.large)
             .foregroundStyle(selected ? Color.accentColor : Color(.tertiaryLabel))

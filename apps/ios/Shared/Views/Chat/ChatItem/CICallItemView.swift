@@ -50,7 +50,7 @@ struct CICallItemView: View {
         Image(systemName: "phone.connection").foregroundColor(.green)
     }
 
-    @ViewBuilder private func endedCallIcon(_ sent: Bool) -> some View {
+    private func endedCallIcon(_ sent: Bool) -> some View {
         HStack {
             Image(systemName: "phone.down")
             Text(durationText(duration)).foregroundColor(theme.colors.secondary)

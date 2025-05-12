@@ -193,18 +193,20 @@ struct CIVideoView: View {
                     }
                 }
                 .modifier(PrivacyBlur(enabled: !videoPlaying, blurred: $blurred))
-                .simultaneousGesture(TapGesture().onEnded {
-                    switch player.timeControlStatus {
-                    case .playing:
-                        player.pause()
-                        videoPlaying = false
-                    case .paused:
-                        if canBePlayed {
-                            showFullScreenPlayer = true
+                .if(!blurred) { v in
+                    v.simultaneousGesture(TapGesture().onEnded {
+                        switch player.timeControlStatus {
+                        case .playing:
+                            player.pause()
+                            videoPlaying = false
+                        case .paused:
+                            if canBePlayed {
+                                showFullScreenPlayer = true
+                            }
+                        default: ()
                         }
-                    default: ()
-                    }
-                })
+                    })
+                }
                 .onChange(of: m.activeCallViewIsCollapsed) { _ in
                     showFullScreenPlayer = false
                 }

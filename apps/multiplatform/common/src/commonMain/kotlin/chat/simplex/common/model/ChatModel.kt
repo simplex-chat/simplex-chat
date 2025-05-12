@@ -3902,7 +3902,7 @@ enum class MsgContentTag {
 class FormattedText(val text: String, val format: Format? = null) {
   // TODO make it dependent on simplexLinkMode preference
   fun link(mode: SimplexLinkMode): String? = when (format) {
-    is Format.Uri -> text
+    is Format.Uri -> if (text.startsWith("http://", ignoreCase = true) || text.startsWith("https://", ignoreCase = true)) text else "https://$text"
     is Format.SimplexLink -> if (mode == SimplexLinkMode.BROWSER) text else format.simplexUri
     is Format.Email -> "mailto:$text"
     is Format.Phone -> "tel:$text"

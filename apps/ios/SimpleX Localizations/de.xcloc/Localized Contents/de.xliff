@@ -798,6 +798,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="All servers" xml:space="preserve">
         <source>All servers</source>
+        <target>Alle Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
@@ -2194,7 +2195,7 @@ Das ist Ihr eigener Einmal-Link!</target>
       </trans-unit>
       <trans-unit id="Current profile" xml:space="preserve">
         <source>Current profile</source>
-        <target>Aktueller Profil</target>
+        <target>Aktuelles Profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve">
@@ -5572,8 +5573,8 @@ Dies erfordert die Aktivierung eines VPNs.</target>
         <target>Gruppe öffnen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open in browser?" xml:space="preserve">
-        <source>Open in browser?</source>
+      <trans-unit id="Open link?" xml:space="preserve">
+        <source>Open link?</source>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Open migration to another device" xml:space="preserve">
@@ -8293,6 +8294,7 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       </trans-unit>
       <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve">
         <source>Use TCP port 443 for preset servers only.</source>
+        <target>TCP-Port 443 nur für voreingestellte Server verwenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use chat" xml:space="preserve">
@@ -10185,6 +10187,7 @@ Zuletzt empfangene Nachricht: %2$@</target>
       </trans-unit>
       <trans-unit id="From %d chat(s)" xml:space="preserve">
         <source>From %d chat(s)</source>
+        <target>Von %d Chat(s)</target>
         <note>notification body</note>
       </trans-unit>
       <trans-unit id="From: %@" xml:space="preserve">

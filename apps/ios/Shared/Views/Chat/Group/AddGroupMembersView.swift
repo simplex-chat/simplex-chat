@@ -145,9 +145,9 @@ struct AddGroupMembersViewCommon: View {
         return dummy
     }()
 
-    @ViewBuilder private func inviteMembersButton() -> some View {
+    private func inviteMembersButton() -> some View {
         let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Invite to group" : "Invite to chat"
-        Button {
+        return Button {
             inviteMembers()
         } label: {
             HStack {

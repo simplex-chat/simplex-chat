@@ -18,7 +18,7 @@ struct ComposeLinkView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
-            if let linkPreview = linkPreview {
+            if let linkPreview {
                 linkPreviewView(linkPreview)
             } else {
                 ProgressView()

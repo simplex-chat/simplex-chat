@@ -506,6 +506,9 @@ swipe action */
 "All reports will be archived for you." = "Alle Meldungen werden für Sie archiviert.";
 
 /* No comment provided by engineer. */
+"All servers" = "Alle Server";
+
+/* No comment provided by engineer. */
 "All your contacts will remain connected." = "Alle Ihre Kontakte bleiben verbunden.";
 
 /* No comment provided by engineer. */
@@ -687,9 +690,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Archiving database" = "Datenbank wird archiviert";
-
-/* No comment provided by engineer. */
-"Ask" = "Fragen";
 
 /* No comment provided by engineer. */
 "Attach" = "Anhängen";
@@ -1460,7 +1460,7 @@ set passcode view */
 "Current passphrase…" = "Aktuelles Passwort…";
 
 /* No comment provided by engineer. */
-"Current profile" = "Aktueller Profil";
+"Current profile" = "Aktuelles Profil";
 
 /* No comment provided by engineer. */
 "Currently maximum supported file size is %@." = "Die derzeit maximal unterstützte Dateigröße beträgt %@.";
@@ -3677,7 +3677,7 @@ time to disappear */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Nur Ihr Kontakt kann Sprachnachrichten versenden.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Open" = "Öffnen";
 
 /* No comment provided by engineer. */
@@ -3695,20 +3695,11 @@ time to disappear */
 /* No comment provided by engineer. */
 "Open group" = "Gruppe öffnen";
 
-/* No comment provided by engineer. */
-"Open link" = "Web-Link öffnen";
-
-/* No comment provided by engineer. */
-"Open links from chat list" = "Web-Links aus der Chat-Liste öffnen";
-
 /* authentication reason */
 "Open migration to another device" = "Migration auf ein anderes Gerät öffnen";
 
 /* No comment provided by engineer. */
 "Open Settings" = "Geräte-Einstellungen öffnen";
-
-/* No comment provided by engineer. */
-"Open web link?" = "Web-Link öffnen?";
 
 /* No comment provided by engineer. */
 "Opening app…" = "App wird geöffnet…";
@@ -5491,6 +5482,9 @@ report reason */
 "Use TCP port %@ when no port is specified." = "Solange kein Port konfiguriert ist, wird TCP-Port %@ genutzt.";
 
 /* No comment provided by engineer. */
+"Use TCP port 443 for preset servers only." = "TCP-Port 443 nur für voreingestellte Server verwenden.";
+
+/* No comment provided by engineer. */
 "Use the app while in the call." = "Die App kann während eines Anrufs genutzt werden.";
 
 /* No comment provided by engineer. */
@@ -5708,9 +5702,6 @@ report reason */
 
 /* pref value */
 "yes" = "Ja";
-
-/* No comment provided by engineer. */
-"Yes" = "Ja";
 
 /* No comment provided by engineer. */
 "you" = "Profil";

@@ -506,6 +506,9 @@ swipe action */
 "All reports will be archived for you." = "Todos los informes serán archivados para ti.";
 
 /* No comment provided by engineer. */
+"All servers" = "Todos los servidores";
+
+/* No comment provided by engineer. */
 "All your contacts will remain connected." = "Todos tus contactos permanecerán conectados.";
 
 /* No comment provided by engineer. */
@@ -687,9 +690,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Archiving database" = "Archivando base de datos";
-
-/* No comment provided by engineer. */
-"Ask" = "Preguntar";
 
 /* No comment provided by engineer. */
 "Attach" = "Adjuntar";
@@ -3677,7 +3677,7 @@ time to disappear */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Sólo tu contacto puede enviar mensajes de voz.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Open" = "Abrir";
 
 /* No comment provided by engineer. */
@@ -3695,20 +3695,11 @@ time to disappear */
 /* No comment provided by engineer. */
 "Open group" = "Grupo abierto";
 
-/* No comment provided by engineer. */
-"Open link" = "Abrir enlace";
-
-/* No comment provided by engineer. */
-"Open links from chat list" = "Abrir enlaces desde listado de chats";
-
 /* authentication reason */
 "Open migration to another device" = "Abrir menú migración a otro dispositivo";
 
 /* No comment provided by engineer. */
 "Open Settings" = "Abrir Configuración";
-
-/* No comment provided by engineer. */
-"Open web link?" = "¿Abrir enlace web?";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Iniciando aplicación…";
@@ -5305,7 +5296,7 @@ report reason */
 "Unblock member" = "Desbloquear miembro";
 
 /* No comment provided by engineer. */
-"Unblock member for all?" = "¿Desbloquear miembro para todos?";
+"Unblock member for all?" = "¿Desbloquear el miembro para todos?";
 
 /* No comment provided by engineer. */
 "Unblock member?" = "¿Desbloquear miembro?";
@@ -5489,6 +5480,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "Use TCP port %@ when no port is specified." = "Se usa el puerto TCP %@ cuando no se ha especificado otro.";
+
+/* No comment provided by engineer. */
+"Use TCP port 443 for preset servers only." = "Usar puerto TCP 443 solo en servidores predefinidos.";
 
 /* No comment provided by engineer. */
 "Use the app while in the call." = "Usar la aplicación durante la llamada.";
@@ -5708,9 +5702,6 @@ report reason */
 
 /* pref value */
 "yes" = "sí";
-
-/* No comment provided by engineer. */
-"Yes" = "Si";
 
 /* No comment provided by engineer. */
 "you" = "tu";

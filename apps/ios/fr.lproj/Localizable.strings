@@ -683,9 +683,6 @@ swipe action */
 "Archiving database" = "Archivage de la base de données";
 
 /* No comment provided by engineer. */
-"Ask" = "Demander";
-
-/* No comment provided by engineer. */
 "Attach" = "Attacher";
 
 /* No comment provided by engineer. */
@@ -3566,7 +3563,7 @@ time to disappear */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Seul votre contact peut envoyer des messages vocaux.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Open" = "Ouvrir";
 
 /* No comment provided by engineer. */
