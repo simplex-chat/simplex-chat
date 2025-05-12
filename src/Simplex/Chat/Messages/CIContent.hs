@@ -350,6 +350,11 @@ pendingReviewMessage :: Text
 pendingReviewMessage =
   "Please wait for group moderators to review your request to join the group."
 
+-- used to send to members with old version
+acceptedToGroupMessage :: Text
+acceptedToGroupMessage =
+  "You are accepted to the group."
+
 rcvConnEventToText :: RcvConnEvent -> Text
 rcvConnEventToText = \case
   RCESwitchQueue phase -> case phase of
