@@ -506,6 +506,9 @@ swipe action */
 "All reports will be archived for you." = "Tutte le segnalazioni verranno archiviate per te.";
 
 /* No comment provided by engineer. */
+"All servers" = "Tutti i server";
+
+/* No comment provided by engineer. */
 "All your contacts will remain connected." = "Tutti i tuoi contatti resteranno connessi.";
 
 /* No comment provided by engineer. */
@@ -687,9 +690,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Archiving database" = "Archiviazione del database";
-
-/* No comment provided by engineer. */
-"Ask" = "Chiedi";
 
 /* No comment provided by engineer. */
 "Attach" = "Allega";
@@ -3677,7 +3677,7 @@ time to disappear */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Solo il tuo contatto può inviare messaggi vocali.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Open" = "Apri";
 
 /* No comment provided by engineer. */
@@ -3695,20 +3695,11 @@ time to disappear */
 /* No comment provided by engineer. */
 "Open group" = "Apri gruppo";
 
-/* No comment provided by engineer. */
-"Open link" = "Apri link";
-
-/* No comment provided by engineer. */
-"Open links from chat list" = "Apri i link dall'elenco delle chat";
-
 /* authentication reason */
 "Open migration to another device" = "Apri migrazione ad un altro dispositivo";
 
 /* No comment provided by engineer. */
 "Open Settings" = "Apri le impostazioni";
-
-/* No comment provided by engineer. */
-"Open web link?" = "Aprire il link?";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Apertura dell'app…";
@@ -4752,6 +4743,9 @@ chat item action */
 "Share with contacts" = "Condividi con i contatti";
 
 /* No comment provided by engineer. */
+"Short link" = "Link breve";
+
+/* No comment provided by engineer. */
 "Show → on messages sent via private routing." = "Mostra → nei messaggi inviati via instradamento privato.";
 
 /* No comment provided by engineer. */
@@ -4792,6 +4786,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "SimpleX address or 1-time link?" = "Indirizzo SimpleX o link una tantum?";
+
+/* simplex link type */
+"SimpleX channel link" = "Link del canale SimpleX";
 
 /* No comment provided by engineer. */
 "SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." = "SimpleX Chat e Flux hanno concluso un accordo per includere server gestiti da Flux nell'app.";
@@ -5182,6 +5179,9 @@ report reason */
 "This is your own SimpleX address!" = "Questo è il tuo indirizzo SimpleX!";
 
 /* No comment provided by engineer. */
+"This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." = "Questo link richiede una versione più recente dell'app. Aggiornala o chiedi al tuo contatto di inviare un link compatibile.";
+
+/* No comment provided by engineer. */
 "This link was used with another mobile device, please create a new link on the desktop." = "Questo link è stato usato con un altro dispositivo mobile, creane uno nuovo sul desktop.";
 
 /* No comment provided by engineer. */
@@ -5374,6 +5374,9 @@ report reason */
 "Unread" = "Non letto";
 
 /* No comment provided by engineer. */
+"Unsupported connection link" = "Link di connessione non supportato";
+
+/* No comment provided by engineer. */
 "Up to 100 last messages are sent to new members." = "Vengono inviati ai nuovi membri fino a 100 ultimi messaggi.";
 
 /* No comment provided by engineer. */
@@ -5467,6 +5470,9 @@ report reason */
 "Use servers" = "Usa i server";
 
 /* No comment provided by engineer. */
+"Use short links (BETA)" = "Usa link brevi (BETA)";
+
+/* No comment provided by engineer. */
 "Use SimpleX Chat servers?" = "Usare i server di SimpleX Chat?";
 
 /* No comment provided by engineer. */
@@ -5474,6 +5480,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "Use TCP port %@ when no port is specified." = "Usa la porta TCP %@ quando non è specificata alcuna porta.";
+
+/* No comment provided by engineer. */
+"Use TCP port 443 for preset servers only." = "Usa la porta TCP 443 solo per i server preimpostati.";
 
 /* No comment provided by engineer. */
 "Use the app while in the call." = "Usa l'app mentre sei in chiamata.";
@@ -5693,9 +5702,6 @@ report reason */
 
 /* pref value */
 "yes" = "sì";
-
-/* No comment provided by engineer. */
-"Yes" = "Sì";
 
 /* No comment provided by engineer. */
 "you" = "tu";

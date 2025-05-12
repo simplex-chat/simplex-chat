@@ -796,6 +796,10 @@ swipe action</note>
         <target>Alle rapporten worden voor u gearchiveerd.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="All servers" xml:space="preserve">
+        <source>All servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
         <source>All your contacts will remain connected.</source>
         <target>Al uw contacten blijven verbonden.</target>
@@ -1084,11 +1088,6 @@ swipe action</note>
       <trans-unit id="Archiving database" xml:space="preserve">
         <source>Archiving database</source>
         <target>Database archiveren</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Ask" xml:space="preserve">
-        <source>Ask</source>
-        <target>Vragen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Attach" xml:space="preserve">
@@ -5541,7 +5540,7 @@ Vereist het inschakelen van VPN.</target>
       <trans-unit id="Open" xml:space="preserve">
         <source>Open</source>
         <target>Open</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert action</note>
       </trans-unit>
       <trans-unit id="Open Settings" xml:space="preserve">
         <source>Open Settings</source>
@@ -5573,25 +5572,14 @@ Vereist het inschakelen van VPN.</target>
         <target>Open groep</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open link" xml:space="preserve">
-        <source>Open link</source>
-        <target>Link openen</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Open links from chat list" xml:space="preserve">
-        <source>Open links from chat list</source>
-        <target>Open links van chatlijst</target>
-        <note>No comment provided by engineer.</note>
+      <trans-unit id="Open link?" xml:space="preserve">
+        <source>Open link?</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Open migration to another device" xml:space="preserve">
         <source>Open migration to another device</source>
         <target>Open de migratie naar een ander apparaat</target>
         <note>authentication reason</note>
-      </trans-unit>
-      <trans-unit id="Open web link?" xml:space="preserve">
-        <source>Open web link?</source>
-        <target>Weblink openen?</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Opening app…" xml:space="preserve">
         <source>Opening app…</source>
@@ -8299,6 +8287,10 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Gebruik TCP-poort %@ als er geen poort is opgegeven.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve">
+        <source>Use TCP port 443 for preset servers only.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Use chat" xml:space="preserve">
         <source>Use chat</source>
         <target>Gebruik chat</target>
@@ -8661,11 +8653,6 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
       <trans-unit id="XFTP server" xml:space="preserve">
         <source>XFTP server</source>
         <target>XFTP server</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Yes" xml:space="preserve">
-        <source>Yes</source>
-        <target>Ja</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You **must not** use the same database on two devices." xml:space="preserve">
@@ -10191,6 +10178,10 @@ laatst ontvangen bericht: %2$@</target>
         <target>‐%d nieuwe gebeurtenissen</target>
         <note>notification body</note>
       </trans-unit>
+      <trans-unit id="From %d chat(s)" xml:space="preserve">
+        <source>From %d chat(s)</source>
+        <note>notification body</note>
+      </trans-unit>
       <trans-unit id="From: %@" xml:space="preserve">
         <source>From: %@</source>
         <target>Van: %@</target>
@@ -10205,11 +10196,6 @@ laatst ontvangen bericht: %2$@</target>
         <source>New messages</source>
         <target>Nieuwe berichten</target>
         <note>notification</note>
-      </trans-unit>
-      <trans-unit id="New messages in %d chats" xml:space="preserve">
-        <source>New messages in %d chats</source>
-        <target>Nieuwe berichten in %d chats</target>
-        <note>notification body</note>
       </trans-unit>
     </body>
   </file>

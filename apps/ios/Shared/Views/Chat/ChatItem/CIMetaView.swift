@@ -15,7 +15,7 @@ struct CIMetaView: View {
     @Environment(\.showTimestamp) var showTimestamp: Bool
     var chatItem: ChatItem
     var metaColor: Color
-    var paleMetaColor = Color(UIColor.tertiaryLabel)
+    var paleMetaColor = Color(uiColor: .tertiaryLabel)
     var showStatus = true
     var showEdited = true
     var invertedMaterial = false
@@ -152,11 +152,13 @@ func ciMetaText(
     return r.font(.caption)
 }
 
+@inline(__always)
 private func statusIconText(_ icon: String, _ color: Color?) -> Text {
     colored(Text(Image(systemName: icon)), color)
 }
 
 // Applying `foregroundColor(nil)` breaks `.invertedForegroundStyle` modifier
+@inline(__always)
 private func colored(_ t: Text, _ color: Color?) -> Text {
     if let color {
         t.foregroundColor(color)

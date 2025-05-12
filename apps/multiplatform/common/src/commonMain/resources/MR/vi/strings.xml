@@ -1263,7 +1263,7 @@
     <string name="servers_info_subscriptions_connections_pending">Đang chờ xử lý</string>
     <string name="icon_descr_server_status_pending">Đang chờ xử lý</string>
     <string name="restore_passphrase_not_found_desc">Không tìm thấy mật khẩu trong Keystore, vui lòng nhập thủ công. Điều này có thể xảy ra nếu bạn khôi phục dữ liệu ứng dụng bằng một công cụ sao lưu. Nếu không phải như vậy, xin vui lòng liên hệ với nhà phát triển.</string>
-    <string name="past_member_vName">Thành viên cũ %1$s</string>
+    <string name="past_member_vName">Thành viên trước đây %1$s</string>
     <string name="v5_5_simpler_connect_ui">Dán đường dẫn để kết nối!</string>
     <string name="periodic_notifications">Thông báo định kỳ</string>
     <string name="paste_the_link_you_received">Dán đường dẫn mà bạn nhận được</string>
@@ -2358,4 +2358,8 @@
     <string name="privacy_short_links">Sử dụng đường dẫn ngắn (BETA)</string>
     <string name="full_link_button_text">Toàn bộ đường dẫn</string>
     <string name="short_link_button_text">Đường dẫn ngắn</string>
+    <string name="network_smp_web_port_off">Tắt</string>
+    <string name="network_smp_web_port_preset">Các máy chủ cài sẵn</string>
+    <string name="network_smp_web_port_preset_footer">Chỉ sử dụng cổng TCP 443 cho các máy chủ cài sẵn.</string>
+    <string name="network_smp_web_port_all">Tất cả máy chủ</string>
 </resources>

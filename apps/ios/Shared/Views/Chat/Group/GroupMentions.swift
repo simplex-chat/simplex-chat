@@ -196,7 +196,9 @@ struct GroupMentionsView: View {
             newName = composeState.mentionMemberName(member.wrapped.memberProfile.displayName)
         }
         mentions[newName] = CIMention(groupMember: member.wrapped)
-        var msgMention = "@" + (newName.contains(" ") ? "'\(newName)'" : newName)
+        var msgMention = newName.contains(" ") || newName.last?.isPunctuation == true
+                        ? "@'\(newName)'"
+                        : "@\(newName)"
         var newPos = r.location + msgMention.count
         let newMsgLength = composeState.message.count + msgMention.count - r.length
         print(newPos)

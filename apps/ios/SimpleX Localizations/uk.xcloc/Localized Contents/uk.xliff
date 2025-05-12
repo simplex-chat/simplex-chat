@@ -788,6 +788,10 @@ swipe action</note>
         <source>All reports will be archived for you.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="All servers" xml:space="preserve">
+        <source>All servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
         <source>All your contacts will remain connected.</source>
         <target>Всі ваші контакти залишаться на зв'язку.</target>
@@ -1067,10 +1071,6 @@ swipe action</note>
       <trans-unit id="Archiving database" xml:space="preserve">
         <source>Archiving database</source>
         <target>Архівування бази даних</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Ask" xml:space="preserve">
-        <source>Ask</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Attach" xml:space="preserve">
@@ -5447,7 +5447,7 @@ Requires compatible VPN.</source>
       <trans-unit id="Open" xml:space="preserve">
         <source>Open</source>
         <target>Відкрито</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert action</note>
       </trans-unit>
       <trans-unit id="Open Settings" xml:space="preserve">
         <source>Open Settings</source>
@@ -5479,22 +5479,14 @@ Requires compatible VPN.</source>
         <target>Відкрита група</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open link" xml:space="preserve">
-        <source>Open link</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Open links from chat list" xml:space="preserve">
-        <source>Open links from chat list</source>
-        <note>No comment provided by engineer.</note>
+      <trans-unit id="Open link?" xml:space="preserve">
+        <source>Open link?</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Open migration to another device" xml:space="preserve">
         <source>Open migration to another device</source>
         <target>Відкрита міграція на інший пристрій</target>
         <note>authentication reason</note>
-      </trans-unit>
-      <trans-unit id="Open web link?" xml:space="preserve">
-        <source>Open web link?</source>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Opening app…" xml:space="preserve">
         <source>Opening app…</source>
@@ -8168,6 +8160,10 @@ To connect, please ask your contact to create another connection link and check 
         <source>Use TCP port %@ when no port is specified.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve">
+        <source>Use TCP port 443 for preset servers only.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Use chat" xml:space="preserve">
         <source>Use chat</source>
         <target>Використовуйте чат</target>
@@ -8529,10 +8525,6 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="XFTP server" xml:space="preserve">
         <source>XFTP server</source>
         <target>XFTP-сервер</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Yes" xml:space="preserve">
-        <source>Yes</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You **must not** use the same database on two devices." xml:space="preserve">
@@ -10052,6 +10044,10 @@ last received msg: %2$@</source>
         <target>%d нових подій</target>
         <note>notification body</note>
       </trans-unit>
+      <trans-unit id="From %d chat(s)" xml:space="preserve">
+        <source>From %d chat(s)</source>
+        <note>notification body</note>
+      </trans-unit>
       <trans-unit id="From: %@" xml:space="preserve">
         <source>From: %@</source>
         <target>Від: %@</target>
@@ -10066,11 +10062,6 @@ last received msg: %2$@</source>
         <source>New messages</source>
         <target>Нові повідомлення</target>
         <note>notification</note>
-      </trans-unit>
-      <trans-unit id="New messages in %d chats" xml:space="preserve">
-        <source>New messages in %d chats</source>
-        <target>Нові повідомлення в чатах %d</target>
-        <note>notification body</note>
       </trans-unit>
     </body>
   </file>

@@ -335,9 +335,9 @@ struct ChatListView: View {
         }
     }
     
-    @ViewBuilder private var chatList: some View {
+    private var chatList: some View {
         let cs = filteredChats()
-        ZStack {
+        return ZStack {
             ScrollViewReader { scrollProxy in
                 List {
                     if !chatModel.chats.isEmpty {
@@ -804,7 +804,7 @@ struct TagsView: View {
         }
     }
 
-    @ViewBuilder private func expandedPresetTagsFiltersView() -> some View {
+    private func expandedPresetTagsFiltersView() -> some View {
         ForEach(PresetTag.allCases, id: \.id) { tag in
             if (chatTagsModel.presetTags[tag] ?? 0) > 0 {
                 expandedTagFilterView(tag)

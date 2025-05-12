@@ -689,9 +689,6 @@ swipe action */
 "Archiving database" = "Database archiveren";
 
 /* No comment provided by engineer. */
-"Ask" = "Vragen";
-
-/* No comment provided by engineer. */
 "Attach" = "Bijvoegen";
 
 /* No comment provided by engineer. */
@@ -3677,7 +3674,7 @@ time to disappear */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Alleen uw contact kan spraak berichten verzenden.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Open" = "Open";
 
 /* No comment provided by engineer. */
@@ -3695,20 +3692,11 @@ time to disappear */
 /* No comment provided by engineer. */
 "Open group" = "Open groep";
 
-/* No comment provided by engineer. */
-"Open link" = "Link openen";
-
-/* No comment provided by engineer. */
-"Open links from chat list" = "Open links van chatlijst";
-
 /* authentication reason */
 "Open migration to another device" = "Open de migratie naar een ander apparaat";
 
 /* No comment provided by engineer. */
 "Open Settings" = "Open instellingen";
-
-/* No comment provided by engineer. */
-"Open web link?" = "Weblink openen?";
 
 /* No comment provided by engineer. */
 "Opening app…" = "App openen…";
@@ -5693,9 +5681,6 @@ report reason */
 
 /* pref value */
 "yes" = "Ja";
-
-/* No comment provided by engineer. */
-"Yes" = "Ja";
 
 /* No comment provided by engineer. */
 "you" = "jij";

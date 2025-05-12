@@ -796,6 +796,10 @@ swipe action</note>
         <target>Все сообщения о нарушениях будут заархивированы для вас.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="All servers" xml:space="preserve">
+        <source>All servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
         <source>All your contacts will remain connected.</source>
         <target>Все контакты, которые соединились через этот адрес, сохранятся.</target>
@@ -1084,11 +1088,6 @@ swipe action</note>
       <trans-unit id="Archiving database" xml:space="preserve">
         <source>Archiving database</source>
         <target>Подготовка архива</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Ask" xml:space="preserve">
-        <source>Ask</source>
-        <target>Спросить</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Attach" xml:space="preserve">
@@ -5507,7 +5506,7 @@ Requires compatible VPN.</source>
       <trans-unit id="Open" xml:space="preserve">
         <source>Open</source>
         <target>Открыть</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert action</note>
       </trans-unit>
       <trans-unit id="Open Settings" xml:space="preserve">
         <source>Open Settings</source>
@@ -5539,25 +5538,14 @@ Requires compatible VPN.</source>
         <target>Открыть группу</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open link" xml:space="preserve">
-        <source>Open link</source>
-        <target>Открыть ссылку</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Open links from chat list" xml:space="preserve">
-        <source>Open links from chat list</source>
-        <target>Открыть ссылку из списка чатов</target>
-        <note>No comment provided by engineer.</note>
+      <trans-unit id="Open link?" xml:space="preserve">
+        <source>Open link?</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Open migration to another device" xml:space="preserve">
         <source>Open migration to another device</source>
         <target>Открытие миграции на другое устройство</target>
         <note>authentication reason</note>
-      </trans-unit>
-      <trans-unit id="Open web link?" xml:space="preserve">
-        <source>Open web link?</source>
-        <target>Открыть веб-ссылку?</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Opening app…" xml:space="preserve">
         <source>Opening app…</source>
@@ -8249,6 +8237,10 @@ To connect, please ask your contact to create another connection link and check 
         <target>Использовать TCP-порт %@, когда порт не указан.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve">
+        <source>Use TCP port 443 for preset servers only.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Use chat" xml:space="preserve">
         <source>Use chat</source>
         <target>Использовать чат</target>
@@ -8611,11 +8603,6 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="XFTP server" xml:space="preserve">
         <source>XFTP server</source>
         <target>XFTP сервер</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Yes" xml:space="preserve">
-        <source>Yes</source>
-        <target>Да</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You **must not** use the same database on two devices." xml:space="preserve">
@@ -10135,6 +10122,10 @@ last received msg: %2$@</source>
         <target>%d новых сообщений</target>
         <note>notification body</note>
       </trans-unit>
+      <trans-unit id="From %d chat(s)" xml:space="preserve">
+        <source>From %d chat(s)</source>
+        <note>notification body</note>
+      </trans-unit>
       <trans-unit id="From: %@" xml:space="preserve">
         <source>From: %@</source>
         <target>От: %@</target>
@@ -10149,11 +10140,6 @@ last received msg: %2$@</source>
         <source>New messages</source>
         <target>Новые сообщения</target>
         <note>notification</note>
-      </trans-unit>
-      <trans-unit id="New messages in %d chats" xml:space="preserve">
-        <source>New messages in %d chats</source>
-        <target>Новые сообщения в %d разговоре(ах)</target>
-        <note>notification body</note>
       </trans-unit>
     </body>
   </file>

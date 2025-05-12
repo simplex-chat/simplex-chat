@@ -2349,4 +2349,14 @@
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Kebijakan privasi dan ketentuan penggunaan.</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Obrolan pribadi, grup, dan kontak Anda tidak dapat diakses oleh operator server.</string>
     <string name="restore_passphrase_can_not_be_read_enter_manually_desc">Frasa sandi di Keystore tidak dapat dibaca, silakan masukkan secara manual. Hal ini mungkin terjadi setelah pembaruan sistem yang tidak kompatibel dengan aplikasi. Jika tidak demikian, silakan hubungi pengembang.</string>
+    <string name="network_smp_web_port_preset_footer">Gunakan port TCP 443 hanya untuk presetel server.</string>
+    <string name="network_smp_web_port_all">Semua server</string>
+    <string name="network_smp_web_port_off">Mati</string>
+    <string name="network_smp_web_port_preset">Presetel server</string>
+    <string name="full_link_button_text">Tautan lengkap</string>
+    <string name="link_requires_newer_app_version_please_upgrade">Tautan ini perlu versi aplikasi yang baru. Harap perbarui aplikasi atau minta kontak untuk kirim tautan kompatibel.</string>
+    <string name="simplex_link_channel">Tautan saluran SimpleX</string>
+    <string name="privacy_short_links">Gunakan tautan singkat (BETA)</string>
+    <string name="unsupported_connection_link">Tautan koneksi tidak didukung</string>
+    <string name="short_link_button_text">Tautan singkat</string>
 </resources>

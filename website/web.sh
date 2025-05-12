@@ -5,6 +5,7 @@ set -e
 cp -R docs website/src
 rm -rf website/src/docs/rfcs
 rm website/src/docs/lang/*/README.md
+rm -rf website/src/docs/dependencies
 cp -R blog website/src
 cp -R images website/src
 rm website/src/blog/README.md

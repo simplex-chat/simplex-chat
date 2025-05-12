@@ -506,7 +506,7 @@ private struct ActiveProfilePicker: View {
         }
     }
     
-    @ViewBuilder private func profilerPickerUserOption(_ user: User) -> some View {
+    private func profilerPickerUserOption(_ user: User) -> some View {
         Button {
             if selectedProfile == user && incognitoEnabled {
                 incognitoEnabled = false

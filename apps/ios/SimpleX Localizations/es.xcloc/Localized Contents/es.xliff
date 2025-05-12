@@ -796,6 +796,11 @@ swipe action</note>
         <target>Todos los informes serán archivados para ti.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="All servers" xml:space="preserve">
+        <source>All servers</source>
+        <target>Todos los servidores</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
         <source>All your contacts will remain connected.</source>
         <target>Todos tus contactos permanecerán conectados.</target>
@@ -1084,11 +1089,6 @@ swipe action</note>
       <trans-unit id="Archiving database" xml:space="preserve">
         <source>Archiving database</source>
         <target>Archivando base de datos</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Ask" xml:space="preserve">
-        <source>Ask</source>
-        <target>Preguntar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Attach" xml:space="preserve">
@@ -5541,7 +5541,7 @@ Requiere activación de la VPN.</target>
       <trans-unit id="Open" xml:space="preserve">
         <source>Open</source>
         <target>Abrir</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert action</note>
       </trans-unit>
       <trans-unit id="Open Settings" xml:space="preserve">
         <source>Open Settings</source>
@@ -5573,25 +5573,14 @@ Requiere activación de la VPN.</target>
         <target>Grupo abierto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open link" xml:space="preserve">
-        <source>Open link</source>
-        <target>Abrir enlace</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Open links from chat list" xml:space="preserve">
-        <source>Open links from chat list</source>
-        <target>Abrir enlaces desde listado de chats</target>
-        <note>No comment provided by engineer.</note>
+      <trans-unit id="Open link?" xml:space="preserve">
+        <source>Open link?</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Open migration to another device" xml:space="preserve">
         <source>Open migration to another device</source>
         <target>Abrir menú migración a otro dispositivo</target>
         <note>authentication reason</note>
-      </trans-unit>
-      <trans-unit id="Open web link?" xml:space="preserve">
-        <source>Open web link?</source>
-        <target>¿Abrir enlace web?</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Opening app…" xml:space="preserve">
         <source>Opening app…</source>
@@ -7201,6 +7190,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Short link" xml:space="preserve">
         <source>Short link</source>
+        <target>Enlace corto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show QR code" xml:space="preserve">
@@ -7305,6 +7295,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="SimpleX channel link" xml:space="preserve">
         <source>SimpleX channel link</source>
+        <target>Enlace de canal SimpleX</target>
         <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="SimpleX contact address" xml:space="preserve">
@@ -7899,6 +7890,7 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
       </trans-unit>
       <trans-unit id="This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." xml:space="preserve">
         <source>This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.</source>
+        <target>Este enlace requiere una versión más reciente de la aplicación. Por favor, actualiza la aplicación o pide a tu contacto un enlace compatible.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This link was used with another mobile device, please create a new link on the desktop." xml:space="preserve">
@@ -8095,7 +8087,7 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
       </trans-unit>
       <trans-unit id="Unblock member for all?" xml:space="preserve">
         <source>Unblock member for all?</source>
-        <target>¿Desbloquear miembro para todos?</target>
+        <target>¿Desbloquear el miembro para todos?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unblock member?" xml:space="preserve">
@@ -8202,6 +8194,7 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
       </trans-unit>
       <trans-unit id="Unsupported connection link" xml:space="preserve">
         <source>Unsupported connection link</source>
+        <target>Enlace de conexión no compatible</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve">
@@ -8299,6 +8292,11 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
         <target>Se usa el puerto TCP %@ cuando no se ha especificado otro.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve">
+        <source>Use TCP port 443 for preset servers only.</source>
+        <target>Usar puerto TCP 443 solo en servidores predefinidos.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Use chat" xml:space="preserve">
         <source>Use chat</source>
         <target>Usar Chat</target>
@@ -8366,6 +8364,7 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
       </trans-unit>
       <trans-unit id="Use short links (BETA)" xml:space="preserve">
         <source>Use short links (BETA)</source>
+        <target>Usar enlaces cortos (BETA)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use the app while in the call." xml:space="preserve">
@@ -8661,11 +8660,6 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
       <trans-unit id="XFTP server" xml:space="preserve">
         <source>XFTP server</source>
         <target>Servidor XFTP</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Yes" xml:space="preserve">
-        <source>Yes</source>
-        <target>Si</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You **must not** use the same database on two devices." xml:space="preserve">
@@ -10191,6 +10185,11 @@ last received msg: %2$@</source>
         <target>%d evento(s) nuevo(s)</target>
         <note>notification body</note>
       </trans-unit>
+      <trans-unit id="From %d chat(s)" xml:space="preserve">
+        <source>From %d chat(s)</source>
+        <target>De %d chat(s)</target>
+        <note>notification body</note>
+      </trans-unit>
       <trans-unit id="From: %@" xml:space="preserve">
         <source>From: %@</source>
         <target>De: %@</target>
@@ -10205,11 +10204,6 @@ last received msg: %2$@</source>
         <source>New messages</source>
         <target>Mensajes nuevos</target>
         <note>notification</note>
-      </trans-unit>
-      <trans-unit id="New messages in %d chats" xml:space="preserve">
-        <source>New messages in %d chats</source>
-        <target>Mensajes nuevos en %d chat(s)</target>
-        <note>notification body</note>
       </trans-unit>
     </body>
   </file>
