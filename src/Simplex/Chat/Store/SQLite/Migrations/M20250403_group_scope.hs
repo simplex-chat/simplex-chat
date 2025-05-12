@@ -14,6 +14,7 @@ ALTER TABLE group_members ADD COLUMN support_chat_ts TEXT;
 ALTER TABLE group_members ADD COLUMN support_chat_items_unread INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE group_members ADD COLUMN support_chat_items_member_attention INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE group_members ADD COLUMN support_chat_items_mentions INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE group_members ADD COLUMN support_chat_last_msg_from_member_ts TEXT;
 
 ALTER TABLE groups ADD COLUMN members_require_attention INTEGER NOT NULL DEFAULT 0;
 
@@ -58,6 +59,7 @@ ALTER TABLE group_members DROP COLUMN support_chat_ts;
 ALTER TABLE group_members DROP COLUMN support_chat_items_unread;
 ALTER TABLE group_members DROP COLUMN support_chat_items_member_attention;
 ALTER TABLE group_members DROP COLUMN support_chat_items_mentions;
+ALTER TABLE group_members DROP COLUMN support_chat_last_msg_from_member_ts;
 
 ALTER TABLE group_profiles DROP COLUMN member_admission;
 |]

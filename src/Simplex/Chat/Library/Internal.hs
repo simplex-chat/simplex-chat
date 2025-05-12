@@ -1387,7 +1387,7 @@ mkGroupSupportChatInfo gInfo@GroupInfo {membership} =
     Nothing -> do
       chatTs <- liftIO getCurrentTime
       withStore' $ \db -> setSupportChatTs db (groupMemberId' membership) chatTs
-      let gInfo' = gInfo {membership = membership {supportChat = Just $ GroupSupportChat chatTs 0 0 0}}
+      let gInfo' = gInfo {membership = membership {supportChat = Just $ GroupSupportChat chatTs 0 0 0 Nothing}}
           scopeInfo = GCSIMemberSupport {groupMember_ = Nothing}
       pure (gInfo', scopeInfo)
     Just _supportChat ->
@@ -1400,7 +1400,7 @@ mkMemberSupportChatInfo m@GroupMember {groupMemberId, supportChat} =
     Nothing -> do
       chatTs <- liftIO getCurrentTime
       withStore' $ \db -> setSupportChatTs db groupMemberId chatTs
-      let m' = m {supportChat = Just $ GroupSupportChat chatTs 0 0 0}
+      let m' = m {supportChat = Just $ GroupSupportChat chatTs 0 0 0 Nothing}
           scopeInfo = GCSIMemberSupport {groupMember_ = Just m'}
       pure (m', scopeInfo)
     Just _supportChat ->
@@ -2071,7 +2071,7 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, forwardedByMember} shared
          in pure (mentions', userMention')
       CDDirectRcv _ -> pure (M.empty, False)
     cInfo' <- if (ciRequiresAttention content || contactChatDeleted cd)
-      then updateChatTsStats db vr user cd createdAt (chatStatsCounts userMention)
+      then updateChatTsStats db vr user cd createdAt (memberChatStats userMention)
       else pure $ toChatInfo cd
     (ciId, quotedItem, itemForwarded) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live userMention brokerTs createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
@@ -2081,11 +2081,11 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, forwardedByMember} shared
       _ -> pure ci
     pure (ci', cInfo')
   where
-    chatStatsCounts :: Bool -> Maybe (Int, MemberAttention, Int)
-    chatStatsCounts userMention = case cd of
+    memberChatStats :: Bool -> Maybe (Int, MemberAttention, Int)
+    memberChatStats userMention = case cd of
       CDGroupRcv _g (Just scope) m -> do
         let unread = fromEnum $ ciCreateStatus content == CISRcvNew
-         in Just (unread, memberAttentionChange unread m scope, fromEnum userMention)
+         in Just (unread, memberAttentionChange unread (Just brokerTs) m scope, fromEnum userMention)
       _ -> Nothing
 
 -- TODO [mentions] optimize by avoiding unnecessary parsing
@@ -2308,14 +2308,14 @@ createInternalItemsForChats user itemTs_ dirsCIContents = do
   where
     updateChat :: DB.Connection -> VersionRangeChat -> UTCTime -> ChatDirection c d -> [CIContent d] -> IO ()
     updateChat db vr createdAt cd contents
-      | any ciRequiresAttention contents || contactChatDeleted cd = void $ updateChatTsStats db vr user cd createdAt chatStatsCounts
+      | any ciRequiresAttention contents || contactChatDeleted cd = void $ updateChatTsStats db vr user cd createdAt memberChatStats
       | otherwise = pure ()
       where
-        chatStatsCounts :: Maybe (Int, MemberAttention, Int)
-        chatStatsCounts = case cd of
+        memberChatStats :: Maybe (Int, MemberAttention, Int)
+        memberChatStats = case cd of
           CDGroupRcv _g (Just scope) m -> do
             let unread = length $ filter ciRequiresAttention contents
-             in Just (unread, memberAttentionChange unread m scope, 0)
+             in Just (unread, memberAttentionChange unread itemTs_ m scope, 0)
           _ -> Nothing
     createACIs :: DB.Connection -> UTCTime -> UTCTime -> ChatDirection c d -> [CIContent d] -> [IO AChatItem]
     createACIs db itemTs createdAt cd = map $ \content -> do
@@ -2323,12 +2323,17 @@ createInternalItemsForChats user itemTs_ dirsCIContents = do
       let ci = mkChatItem cd ciId content Nothing Nothing Nothing Nothing Nothing False False itemTs Nothing createdAt
       pure $ AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci
 
-memberAttentionChange :: Int -> GroupMember -> GroupChatScopeInfo -> MemberAttention
-memberAttentionChange unread m = \case
-  GCSIMemberSupport (Just m')
-    | groupMemberId' m' == groupMemberId' m -> MAInc unread
-    | otherwise -> MAReset
-  GCSIMemberSupport Nothing -> MAInc 0
+memberAttentionChange :: Int -> (Maybe UTCTime) -> GroupMember -> GroupChatScopeInfo -> MemberAttention
+memberAttentionChange unread brokerTs_ rcvMem = \case
+  GCSIMemberSupport (Just suppMem)
+    | groupMemberId' suppMem == groupMemberId' rcvMem -> MAInc unread brokerTs_
+    | msgIsNewerThanLast -> MAReset
+    | otherwise -> MAInc 0 Nothing
+    where
+      msgIsNewerThanLast = case (supportChat suppMem >>= lastMsgFromMemberTs, brokerTs_) of
+        (Just lastMsgTs, Just brokerTs) -> lastMsgTs < brokerTs
+        _ -> False
+  GCSIMemberSupport Nothing -> MAInc 0 Nothing
 
 createLocalChatItems ::
   User ->
