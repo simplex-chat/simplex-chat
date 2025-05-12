@@ -462,7 +462,7 @@ updateChatTsStats db vr user@User {userId} chatDirection chatTs chatStats_ = cas
                 SET support_chat_ts = ?,
                     support_chat_items_unread = support_chat_items_unread + ?,
                     support_chat_items_member_attention = support_chat_items_member_attention + ?,
-                    support_chat_items_mentions = support_chat_items_mentions + ?
+                    support_chat_items_mentions = support_chat_items_mentions + ?,
                     support_chat_last_msg_from_member_ts = ?
                 WHERE group_member_id = ?
               |]
