@@ -459,7 +459,7 @@
     <string name="create_profile_button">Створити</string>
     <string name="status_no_e2e_encryption">без зашифрування e2e</string>
     <string name="status_contact_has_e2e_encryption">контакт має зашифрування e2e</string>
-    <string name="alert_text_msg_bad_hash">Хеш попереднього повідомлення інший.\"</string>
+    <string name="alert_text_msg_bad_hash">Хеш попереднього повідомлення інший.</string>
     <string name="confirm_passcode">Підтвердити пароль</string>
     <string name="new_passcode">Новий пароль</string>
     <string name="settings_restart_app">Перезапустити</string>
