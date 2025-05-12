@@ -4290,7 +4290,7 @@ chatCommandP =
                 { directMessages = Just DirectMessagesGroupPreference {enable = FEOn, role = Nothing},
                   history = Just HistoryGroupPreference {enable = FEOn}
                 }
-      pure GroupProfile {displayName = gName, fullName, description = Nothing, image = Nothing, groupPreferences}
+      pure GroupProfile {displayName = gName, fullName, description = Nothing, image = Nothing, groupPreferences, memberAdmission = Nothing}
     fullNameP = A.space *> textP <|> pure ""
     textP = safeDecodeUtf8 <$> A.takeByteString
     pwdP = jsonP <|> (UserPwd . safeDecodeUtf8 <$> A.takeTill (== ' '))

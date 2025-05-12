@@ -1680,10 +1680,10 @@ countactUserPrefText cup = case cup of
 
 viewGroupUpdated :: GroupInfo -> GroupInfo -> Maybe GroupMember -> [StyledString]
 viewGroupUpdated
-  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, description, image, groupPreferences = gps}}
-  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', description = description', image = image', groupPreferences = gps'}}
+  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, description, image, groupPreferences = gps, memberAdmission = ma}}
+  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', description = description', image = image', groupPreferences = gps', memberAdmission = ma'}}
   m = do
-    let update = groupProfileUpdated <> groupPrefsUpdated
+    let update = groupProfileUpdated <> groupPrefsUpdated <> memberAdmissionUpdated
     if null update
       then []
       else memberUpdated <> update
@@ -1704,6 +1704,9 @@ viewGroupUpdated
             | otherwise = Just . plain $ groupPreferenceText (pref gps')
             where
               pref = getGroupPreference f . mergeGroupPreferences
+      memberAdmissionUpdated
+        | ma == ma' = []
+        | otherwise = ["changed member admission rules"]
 
 viewGroupProfile :: GroupInfo -> [StyledString]
 viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, groupPreferences = gps}} =

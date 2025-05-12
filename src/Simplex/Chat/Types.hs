@@ -57,7 +57,7 @@ import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
-import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
+import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 #if defined(dbPostgres)
@@ -616,9 +616,23 @@ data GroupProfile = GroupProfile
     fullName :: Text,
     description :: Maybe Text,
     image :: Maybe ImageData,
-    groupPreferences :: Maybe GroupPreferences
+    groupPreferences :: Maybe GroupPreferences,
+    memberAdmission :: Maybe GroupMemberAdmission
   }
   deriving (Eq, Show)
+
+data GroupMemberAdmission = GroupMemberAdmission
+  { -- names :: Maybe MemberCriteria,
+    -- captcha :: Maybe MemberCriteria,
+    review :: Maybe MemberCriteria
+  }
+  deriving (Eq, Show)
+
+data MemberCriteria = MCAll
+  deriving (Eq, Show)
+
+emptyGroupMemberAdmission :: GroupMemberAdmission
+emptyGroupMemberAdmission = GroupMemberAdmission Nothing
 
 newtype ImageData = ImageData Text
   deriving (Eq, Show)
@@ -1815,6 +1829,16 @@ $(JQ.deriveJSON defaultJSON ''Profile)
 $(JQ.deriveJSON defaultJSON ''LocalProfile)
 
 $(JQ.deriveJSON defaultJSON ''UserContactRequest)
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "MC") ''MemberCriteria)
+
+$(JQ.deriveJSON defaultJSON ''GroupMemberAdmission)
+
+instance ToField GroupMemberAdmission where
+  toField = toField . encodeJSON
+
+instance FromField GroupMemberAdmission where
+  fromField = fromTextField_ decodeJSON
 
 $(JQ.deriveJSON defaultJSON ''GroupProfile)
 

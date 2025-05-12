@@ -972,7 +972,7 @@ acceptBusinessJoinRequestAsync
     where
       businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
       businessGroupProfile Profile {displayName, fullName, image} groupPreferences =
-        GroupProfile {displayName, fullName, description = Nothing, image, groupPreferences = Just groupPreferences}
+        GroupProfile {displayName, fullName, description = Nothing, image, groupPreferences = Just groupPreferences, memberAdmission = Nothing}
 
 profileToSendOnAccept :: User -> Maybe IncognitoProfile -> Bool -> Profile
 profileToSendOnAccept user ip = userProfileToSend user (getIncognitoProfile <$> ip) Nothing
