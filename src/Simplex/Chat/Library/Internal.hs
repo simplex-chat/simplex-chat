@@ -2327,10 +2327,10 @@ memberAttentionChange :: Int -> (Maybe UTCTime) -> GroupMember -> GroupChatScope
 memberAttentionChange unread brokerTs_ rcvMem = \case
   GCSIMemberSupport (Just suppMem)
     | groupMemberId' suppMem == groupMemberId' rcvMem -> MAInc unread brokerTs_
-    | msgIsNewerThanLast -> MAReset
+    | msgIsNewerThanLastUnanswered -> MAReset
     | otherwise -> MAInc 0 Nothing
     where
-      msgIsNewerThanLast = case (supportChat suppMem >>= lastMsgFromMemberTs, brokerTs_) of
+      msgIsNewerThanLastUnanswered = case (supportChat suppMem >>= lastMsgFromMemberTs, brokerTs_) of
         (Just lastMsgTs, Just brokerTs) -> lastMsgTs < brokerTs
         _ -> False
   GCSIMemberSupport Nothing -> MAInc 0 Nothing
