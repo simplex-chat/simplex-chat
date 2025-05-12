@@ -275,6 +275,8 @@ textWithMentions = describe "text with mentions" do
     "hello @alice !" <==> "hello " <> mention "alice" "@alice" <> " !"
     "hello @alice!" <==> "hello " <> mention "alice" "@alice" <> "!"
     "hello @alice..." <==> "hello " <> mention "alice" "@alice" <> "..."
+    "hello @alice@example.com" <==> "hello " <> mention "alice@example.com" "@alice@example.com"
+    "hello @'alice @ example.com'" <==> "hello " <> mention "alice @ example.com" "@'alice @ example.com'"
     "@'alice jones'" <==> mention "alice jones" "@'alice jones'"
     "hello @'alice jones'!" <==> "hello " <> mention "alice jones" "@'alice jones'" <> "!"
     "hello @'a.j.'!" <==> "hello " <> mention "a.j." "@'a.j.'" <> "!"

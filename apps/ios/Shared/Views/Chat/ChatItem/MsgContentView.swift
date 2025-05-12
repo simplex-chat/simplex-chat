@@ -288,7 +288,11 @@ func messageText(
             case .uri:
                 attrs = linkAttrs()
                 if !preview {
-                    attrs[linkAttrKey] = NSURL(string: ft.text)
+                    let s = t.lowercased()
+                    let link = s.hasPrefix("http://") || s.hasPrefix("https://")
+                                ? t
+                                : "https://" + t
+                    attrs[linkAttrKey] = NSURL(string: link)
                     attrs[webLinkAttrKey] = true
                     handleTaps = true
                 }
@@ -314,9 +318,9 @@ func messageText(
                         if m.memberId == userMemberId {
                             attrs[.foregroundColor] = UIColor.tintColor
                         }
-                        t = "@'\(name)'"
+                        t = mentionText(name)
                     } else {
-                        t = "@'\(memberName)'"
+                        t = mentionText(memberName)
                     }
                 }
             case .email:
@@ -349,6 +353,11 @@ func messageText(
         ]
         return link!
     }
+}
+
+@inline(__always)
+private func mentionText(_ name: String) -> String {
+    name.contains(" @") ? "@'\(name)'" : "@\(name)"
 }
 
 func simplexLinkText(_ linkType: SimplexLinkType, _ smpHosts: [String]) -> String {
