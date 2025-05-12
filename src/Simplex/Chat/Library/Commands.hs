@@ -2070,6 +2070,10 @@ processChatCommand' vr = \case
         let rcpModMs' = filter memberCurrent modMs
             msg = XGrpLinkAcpt GAAccepted role (memberId' m)
         void $ sendGroupMessage user gInfo scope ([m] <> rcpModMs') msg
+        when (maxVersion (memberChatVRange m) < groupKnockingVersion) $
+          forM_ (memberConn m) $ \mConn -> do
+            let msg = XMsgNew $ MCSimple $ extMsgContent (MCText acceptedToGroupMessage) Nothing
+            void $ sendDirectMemberMessage mConn msg groupId
         (m', gInfo') <- withFastStore' $ \db -> do
           m' <- updateGroupMemberAccepted db user m newMemberStatus role
           gInfo' <- updateGroupMembersRequireAttention db user gInfo m m'
