@@ -833,7 +833,7 @@ fun ChatLayout(
         }
         val reportsCount = reportsCount(chatInfo?.id)
         if (oneHandUI.value && chatBottomBar.value) {
-          if (chatsCtx.contentTag == null && reportsCount > 0) {
+          if (chatInfo is ChatInfo.Group && chatInfo.groupInfo.canModerate && chatsCtx.contentTag == null && reportsCount > 0) {
             ReportedCountToolbar(reportsCount, withStatusBar = true, showGroupReports)
           } else {
             StatusBarBackground()
@@ -865,7 +865,7 @@ fun ChatLayout(
                 SelectedItemsCounterToolbar(selectedChatItems, !oneHandUI.value || !chatBottomBar.value)
               }
             }
-            if (chatsCtx.contentTag == null && reportsCount > 0 && (!oneHandUI.value || !chatBottomBar.value)) {
+            if (chatInfo is ChatInfo.Group && chatInfo.groupInfo.canModerate && chatsCtx.contentTag == null && reportsCount > 0 && (!oneHandUI.value || !chatBottomBar.value)) {
               ReportedCountToolbar(reportsCount, withStatusBar = false, showGroupReports)
             }
           }
