@@ -796,9 +796,9 @@ swipe action</note>
         <target>Tutte le segnalazioni verranno archiviate per te.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All servers" xml:space="preserve" approved="no">
+      <trans-unit id="All servers" xml:space="preserve">
         <source>All servers</source>
-        <target state="translated">Tutti i server</target>
+        <target>Tutti i server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
@@ -8292,9 +8292,9 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
         <target>Usa la porta TCP %@ quando non è specificata alcuna porta.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve" approved="no">
+      <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve">
         <source>Use TCP port 443 for preset servers only.</source>
-        <target state="translated">Usa la porta TCP 443 solo per i server preimpostati.</target>
+        <target>Usa la porta TCP 443 solo per i server preimpostati.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use chat" xml:space="preserve">
@@ -10185,9 +10185,9 @@ ultimo msg ricevuto: %2$@</target>
         <target>%d nuovi eventi</target>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="From %d chat(s)" xml:space="preserve" approved="no">
+      <trans-unit id="From %d chat(s)" xml:space="preserve">
         <source>From %d chat(s)</source>
-        <target state="translated">Da %d chat</target>
+        <target>Da %d chat</target>
         <note>notification body</note>
       </trans-unit>
       <trans-unit id="From: %@" xml:space="preserve">

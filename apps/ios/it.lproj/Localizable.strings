@@ -506,6 +506,9 @@ swipe action */
 "All reports will be archived for you." = "Tutte le segnalazioni verranno archiviate per te.";
 
 /* No comment provided by engineer. */
+"All servers" = "Tutti i server";
+
+/* No comment provided by engineer. */
 "All your contacts will remain connected." = "Tutti i tuoi contatti resteranno connessi.";
 
 /* No comment provided by engineer. */
@@ -687,9 +690,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Archiving database" = "Archiviazione del database";
-
-/* No comment provided by engineer. */
-"Ask" = "Chiedi";
 
 /* No comment provided by engineer. */
 "Attach" = "Allega";
@@ -3677,7 +3677,7 @@ time to disappear */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Solo il tuo contatto può inviare messaggi vocali.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Open" = "Apri";
 
 /* No comment provided by engineer. */
@@ -3695,20 +3695,11 @@ time to disappear */
 /* No comment provided by engineer. */
 "Open group" = "Apri gruppo";
 
-/* No comment provided by engineer. */
-"Open link" = "Apri link";
-
-/* No comment provided by engineer. */
-"Open links from chat list" = "Apri i link dall'elenco delle chat";
-
 /* authentication reason */
 "Open migration to another device" = "Apri migrazione ad un altro dispositivo";
 
 /* No comment provided by engineer. */
 "Open Settings" = "Apri le impostazioni";
-
-/* No comment provided by engineer. */
-"Open web link?" = "Aprire il link?";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Apertura dell'app…";
@@ -5491,6 +5482,9 @@ report reason */
 "Use TCP port %@ when no port is specified." = "Usa la porta TCP %@ quando non è specificata alcuna porta.";
 
 /* No comment provided by engineer. */
+"Use TCP port 443 for preset servers only." = "Usa la porta TCP 443 solo per i server preimpostati.";
+
+/* No comment provided by engineer. */
 "Use the app while in the call." = "Usa l'app mentre sei in chiamata.";
 
 /* No comment provided by engineer. */
@@ -5708,9 +5702,6 @@ report reason */
 
 /* pref value */
 "yes" = "sì";
-
-/* No comment provided by engineer. */
-"Yes" = "Sì";
 
 /* No comment provided by engineer. */
 "you" = "tu";
