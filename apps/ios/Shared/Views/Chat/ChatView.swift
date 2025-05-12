@@ -1276,10 +1276,10 @@ struct ChatView: View {
                         if let selected = selectedChatItems, chatItem.canBeDeletedForSelf {
                             Color.clear
                                 .contentShape(Rectangle())
-                                .onTapGesture {
+                                .simultaneousGesture(TapGesture().onEnded {
                                     let checked = selected.contains(chatItem.id)
                                     selectUnselectChatItem(select: !checked, chatItem)
-                                }
+                                })
                         }
                     }
                 if let date = itemSeparation.date {
@@ -1468,7 +1468,7 @@ struct ChatView: View {
                             }
                             HStack(alignment: .top, spacing: 10) {
                                 MemberProfileImage(member, size: memberImageSize, backgroundColor: theme.colors.background)
-                                    .onTapGesture {
+                                    .simultaneousGesture(TapGesture().onEnded {
                                         if let mem = m.getGroupMember(member.groupMemberId) {
                                             selectedMember = mem
                                         } else {
@@ -1477,7 +1477,7 @@ struct ChatView: View {
                                             m.groupMembersIndexes[member.groupMemberId] = m.groupMembers.count - 1
                                             selectedMember = mem
                                         }
-                                    }
+                                    })
                                 chatItemWithMenu(ci, range, maxWidth, itemSeparation)
                                     .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
                             }
@@ -1621,9 +1621,9 @@ struct ChatView: View {
                     .padding(.horizontal, 6)
                     .padding(.vertical, 4)
                     .if(chat.chatInfo.featureEnabled(.reactions) && (ci.allowAddReaction || r.userReacted)) { v in
-                        v.onTapGesture {
+                        v.simultaneousGesture(TapGesture().onEnded {
                             setReaction(ci, add: !r.userReacted, reaction: r.reaction)
-                        }
+                        })
                     }
                     switch chat.chatInfo {
                     case let .group(groupInfo):
@@ -2213,15 +2213,12 @@ struct ChatView: View {
         }
 
         func goToItemInnerButton(_ alignStart: Bool, _ image: String, touchInProgress: Bool, _ onClick: @escaping () -> Void) -> some View {
-            Button {
-                onClick()
-            } label: {
-                Image(systemName: image)
-                    .resizable()
-                    .frame(width: 13, height: 13)
-                    .padding([alignStart ? .trailing : .leading], 10)
-                    .tint(theme.colors.secondary.opacity(touchInProgress ? 1.0 : 0.4))
-            }
+            Image(systemName: image)
+                .resizable()
+                .frame(width: 13, height: 13)
+                .padding([alignStart ? .trailing : .leading], 10)
+                .tint(theme.colors.secondary.opacity(touchInProgress ? 1.0 : 0.4))
+                .simultaneousGesture(TapGesture().onEnded(onClick))
         }
 
         @ViewBuilder
