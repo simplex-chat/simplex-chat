@@ -7015,6 +7015,8 @@ testScopedSupportUnreadStats =
     bob ##> "/member support chats #team"
     bob <## "support: unread: 1, require attention: 0, mentions: 0"
 
+    threadDelay 1000000
+
     dan ##> "/_send #1(_support:3) text 5"
     dan <# "#team (support: bob) 5"
     alice <# "#team (support: bob) dan> 5"
@@ -7081,6 +7083,8 @@ testScopedSupportUnreadStats =
 
     alice ##> "/member support chats #team"
     alice <## "bob (Bob) (id 2): unread: 3, require attention: 1, mentions: 0"
+
+    threadDelay 1000000
 
     dan ##> "/_send #1(_support:3) json [{\"msgContent\": {\"type\": \"text\", \"text\": \"@bob 9\"}, \"mentions\": {\"bob\": 3}}]"
     dan <# "#team (support: bob) @bob 9"
