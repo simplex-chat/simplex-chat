@@ -1,44 +1,29 @@
 /* No comment provided by engineer. */
-"\n" = "\n";
-
-/* No comment provided by engineer. */
-" (" = " (";
-
-/* No comment provided by engineer. */
 " (can be copied)" = " (コピー可能)";
 
 /* No comment provided by engineer. */
 "_italic_" = "\\_斜体_";
 
 /* No comment provided by engineer. */
+"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- [ディレクトリサービス](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) に接続 (ベータ)!\n- 配信証明を送信する (最大 20 人まで)。\n- より速く、より安定。";
+
+/* No comment provided by engineer. */
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- より安定したメッセージ配信。\n- 改良されたグループ。\n- などなど！";
+
+/* No comment provided by engineer. */
+"- optionally notify deleted contacts.\n- profile names with spaces.\n- and more!" = "- 任意で削除された連絡先へ通知します。\n- プロフィール名に空白を含めることができます。\n- and more!";
 
 /* No comment provided by engineer. */
 "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- 最長 5 分間の音声メッセージ。\n- 消えるまでのカスタム時間。\n- 編集履歴。";
 
 /* No comment provided by engineer. */
-", " = ", ";
-
-/* No comment provided by engineer. */
-": " = ": ";
-
-/* No comment provided by engineer. */
 "!1 colored!" = "!1 色付き!";
-
-/* No comment provided by engineer. */
-"." = ".";
-
-/* No comment provided by engineer. */
-"(" = "(";
 
 /* No comment provided by engineer. */
 "(new)" = "(新規)";
 
 /* No comment provided by engineer. */
 "(this device v%@)" = "(このデバイス v%@)";
-
-/* No comment provided by engineer. */
-")" = ")";
 
 /* No comment provided by engineer. */
 "[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[貢献する](https://github.com/simplex-chat/simplex-chat#contribute)";
@@ -77,6 +62,9 @@
 "**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from." = "**推奨**: デバイス トークンと通知は SimpleX Chat 通知サーバーに送信されますが、メッセージの内容、サイズ、送信者は送信されません。";
 
 /* No comment provided by engineer. */
+"**Scan / Paste link**: to connect via a link you received." = "**QRスキャン / リンクの貼り付け**: 受け取ったリンクで接続する。";
+
+/* No comment provided by engineer. */
 "**Warning**: Instant push notifications require passphrase saved in Keychain." = "**警告**: 即時の プッシュ通知には、キーチェーンに保存されたパスフレーズが必要です。";
 
 /* No comment provided by engineer. */
@@ -101,7 +89,7 @@
 "%@" = "%@";
 
 /* No comment provided by engineer. */
-"%@ (current)" = "%@ （現在）";
+"%@ (current)" = "%@ (現在)";
 
 /* copied message info */
 "%@ (current):" = "%@ (現在):";
@@ -137,10 +125,19 @@
 "%@ is verified" = "%@ は検証されています";
 
 /* No comment provided by engineer. */
+"%@ server" = "%@ サーバー";
+
+/* No comment provided by engineer. */
+"%@ servers" = "%@ サーバー";
+
+/* No comment provided by engineer. */
 "%@ uploaded" = "%@ アップロード済";
 
 /* notification title */
 "%@ wants to connect!" = "%@ が接続を希望しています!";
+
+/* format for date separator in chat */
+"%@, %@" = "%1$@, %2$@";
 
 /* No comment provided by engineer. */
 "%@, %@ and %lld members" = "%@や%@など%lld人のメンバー";
@@ -154,8 +151,23 @@
 /* time interval */
 "%d days" = "%d 日";
 
+/* forward confirmation reason */
+"%d file(s) are still being downloaded." = "%d 個のファイルをダウンロードしています。";
+
+/* forward confirmation reason */
+"%d file(s) failed to download." = "%d 個のファイルがダウンロードに失敗しました。";
+
+/* forward confirmation reason */
+"%d file(s) were deleted." = "%d 個のファイルが削除されました。";
+
+/* forward confirmation reason */
+"%d file(s) were not downloaded." = "%d 個のファイルがダウンロードされていません。";
+
 /* time interval */
 "%d hours" = "%d 時";
+
+/* alert title */
+"%d messages not forwarded" = "%d 個のメッセージが未転送";
 
 /* time interval */
 "%d min" = "%d 分";
@@ -173,7 +185,7 @@
 "%d weeks" = "%d 週";
 
 /* No comment provided by engineer. */
-"%lld" = "%lld";
+"%lld" = "";
 
 /* No comment provided by engineer. */
 "%lld %@" = "%lld %@";
@@ -207,9 +219,6 @@
 
 /* No comment provided by engineer. */
 "%lld new interface languages" = "%lldつの新しいインターフェース言語";
-
-/* No comment provided by engineer. */
-"%lld second(s)" = "%lld 秒";
 
 /* No comment provided by engineer. */
 "%lld seconds" = "%lld 秒";
@@ -256,7 +265,8 @@
 /* No comment provided by engineer. */
 "0s" = "0秒";
 
-/* time interval */
+/* delete after time
+time interval */
 "1 day" = "1日";
 
 /* time interval */
@@ -265,11 +275,19 @@
 /* No comment provided by engineer. */
 "1 minute" = "1分";
 
-/* time interval */
+/* delete after time
+time interval */
 "1 month" = "1ヶ月";
 
-/* time interval */
+/* delete after time
+time interval */
 "1 week" = "1週間";
+
+/* No comment provided by engineer. */
+"1-time link" = "使い捨てリンク";
+
+/* No comment provided by engineer. */
+"1-time link can be used *with one contact only* - share in person or via any messenger." = "使い捨てリンクは、*ひとつの連絡先にのみ* 使用できます - 対面または任意のチャットで共有してください。";
 
 /* No comment provided by engineer. */
 "5 minutes" = "5分";
@@ -311,8 +329,8 @@
 "above, then choose:" = "上で選んでください：";
 
 /* accept contact request via notification
-   accept incoming call via notification
-   swipe action */
+accept incoming call via notification
+swipe action */
 "Accept" = "承諾";
 
 /* No comment provided by engineer. */
@@ -322,7 +340,7 @@
 "Accept contact request from %@?" = "%@ からの連絡要求を受け入れますか?";
 
 /* accept contact request via notification
-   swipe action */
+swipe action */
 "Accept incognito" = "シークレットモードで承諾";
 
 /* call status */
@@ -347,6 +365,12 @@
 "Add welcome message" = "ウェルカムメッセージを追加";
 
 /* No comment provided by engineer. */
+"Added media & file servers" = "追加されたメディア & ファイルサーバー";
+
+/* No comment provided by engineer. */
+"Added message servers" = "追加されたメッセージサーバー";
+
+/* No comment provided by engineer. */
 "Address" = "アドレス";
 
 /* No comment provided by engineer. */
@@ -360,6 +384,9 @@
 
 /* No comment provided by engineer. */
 "Advanced network settings" = "ネットワーク詳細設定";
+
+/* No comment provided by engineer. */
+"Advanced settings" = "詳細設定";
 
 /* chat item text */
 "agreeing encryption for %@…" = "%@の暗号化に同意しています…";
@@ -382,6 +409,9 @@
 /* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "全てのメッセージが削除されます(※注意：元に戻せません！※)。削除されるのは片方あなたのメッセージのみ。";
 
+/* profile dropdown */
+"All profiles" = "すべてのプロフィール";
+
 /* No comment provided by engineer. */
 "All your contacts will remain connected." = "あなたの連絡先が繋がったまま継続します。";
 
@@ -401,7 +431,7 @@
 "Allow disappearing messages only if your contact allows it to you." = "連絡先が許可している場合のみ消えるメッセージを許可する。";
 
 /* No comment provided by engineer. */
-"Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "送信相手も永久メッセージ削除を許可する時のみに許可する。";
+"Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "送信相手も永久メッセージ削除を許可する時のみに許可する。(24時間)";
 
 /* No comment provided by engineer. */
 "Allow message reactions only if your contact allows them." = "連絡先が許可している場合にのみ、メッセージへのリアクションを許可します。";
@@ -414,6 +444,9 @@
 
 /* No comment provided by engineer. */
 "Allow sending disappearing messages." = "消えるメッセージの送信を許可する。";
+
+/* No comment provided by engineer. */
+"Allow sharing" = "共有を許可";
 
 /* No comment provided by engineer. */
 "Allow to irreversibly delete sent messages. (24 hours)" = "送信済みメッセージの永久削除を許可する。(24時間)";
@@ -461,6 +494,9 @@
 "always" = "常に";
 
 /* No comment provided by engineer. */
+"Always use private routing." = "プライベートルーティングを常に使用する。";
+
+/* No comment provided by engineer. */
 "Always use relay" = "常にリレーを経由する";
 
 /* No comment provided by engineer. */
@@ -497,7 +533,16 @@
 "App version: v%@" = "アプリのバージョン: v%@";
 
 /* No comment provided by engineer. */
-"Appearance" = "見た目";
+"Appearance" = "アピアランス";
+
+/* No comment provided by engineer. */
+"Apply" = "適用";
+
+/* No comment provided by engineer. */
+"Apply to" = "に適用する";
+
+/* No comment provided by engineer. */
+"Archive and upload" = "アーカイブとアップロード";
 
 /* No comment provided by engineer. */
 "Attach" = "添付する";
@@ -602,7 +647,7 @@
 "Can't invite contacts!" = "連絡先を招待できません！";
 
 /* alert action
-   alert button */
+alert button */
 "Cancel" = "中止";
 
 /* feature offered item */
@@ -642,7 +687,7 @@
 "Change self-destruct mode" = "自己破壊モードの変更";
 
 /* authentication reason
-   set passcode view */
+set passcode view */
 "Change self-destruct passcode" = "自己破壊パスコードを変更する";
 
 /* chat item text */
@@ -835,7 +880,7 @@
 "Connection" = "接続";
 
 /* No comment provided by engineer. */
-"Connection and servers status." = "接続とサーバーのステータス";
+"Connection and servers status." = "接続とサーバーのステータス。";
 
 /* No comment provided by engineer. */
 "Connection error" = "接続エラー";
@@ -1020,7 +1065,8 @@
 /* message decrypt error item */
 "Decryption error" = "復号化エラー";
 
-/* pref value */
+/* delete after time
+pref value */
 "default (%@)" = "デフォルト (%@)";
 
 /* No comment provided by engineer. */
@@ -1030,8 +1076,7 @@
 "default (yes)" = "デフォルト（はい）";
 
 /* alert action
-   chat item action
-   swipe action */
+swipe action */
 "Delete" = "削除";
 
 /* No comment provided by engineer. */
@@ -1097,7 +1142,7 @@
 /* No comment provided by engineer. */
 "Delete message?" = "メッセージを削除しますか？";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Delete messages" = "メッセージを削除";
 
 /* No comment provided by engineer. */
@@ -1224,7 +1269,7 @@
 "Do NOT use SimpleX for emergency calls." = "緊急通報にSimpleXを使用しないでください。";
 
 /* No comment provided by engineer. */
-"Don't create address" = "アドレスを作成しないでください";
+"Don't create address" = "アドレスを作成しない";
 
 /* No comment provided by engineer. */
 "Don't enable" = "有効にしない";
@@ -1262,7 +1307,7 @@
 /* No comment provided by engineer. */
 "Enable (keep overrides)" = "有効にする（設定の優先を維持）";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Enable automatic message deletion?" = "自動メッセージ削除を有効にしますか？";
 
 /* No comment provided by engineer. */
@@ -1520,7 +1565,9 @@
 /* No comment provided by engineer. */
 "Error: " = "エラー : ";
 
-/* alert message */
+/* alert message
+file error text
+snd error text */
 "Error: %@" = "エラー : %@";
 
 /* No comment provided by engineer. */
@@ -1531,9 +1578,6 @@
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "会話中に無効になっている場合でも。";
-
-/* No comment provided by engineer. */
-"event happened" = "イベント発生";
 
 /* No comment provided by engineer. */
 "Exit without saving" = "保存せずに閉じる";
@@ -1827,7 +1871,7 @@
 "Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "インストール [ターミナル用SimpleX Chat](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
-"Instant" = "すぐに";
+"Instant" = "即時";
 
 /* No comment provided by engineer. */
 "Instant push notifications will be hidden!\n" = "インスタントプッシュ通知は非表示になります！\n";
@@ -2085,6 +2129,9 @@
 "Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." = "メッセージ、ファイル、通話は、前方秘匿性、否認可能性および侵入復元性を備えた**耐量子E2E暗号化**によって保護されます。";
 
 /* No comment provided by engineer. */
+"Migrate from another device" = "別の端末から移行";
+
+/* No comment provided by engineer. */
 "Migrating database archive…" = "データベースのアーカイブを移行しています…";
 
 /* No comment provided by engineer. */
@@ -2097,7 +2144,7 @@
 "Migration is completed" = "移行が完了しました";
 
 /* No comment provided by engineer. */
-"Migrations:" = "移行";
+"Migrations:" = "移行:";
 
 /* time unit */
 "minutes" = "分";
@@ -2132,7 +2179,7 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "複数チャットのプロフィール";
 
-/* swipe action */
+/* notification label action */
 "Mute" = "ミュート";
 
 /* No comment provided by engineer. */
@@ -2150,7 +2197,7 @@
 /* No comment provided by engineer. */
 "Network status" = "ネットワーク状況";
 
-/* No comment provided by engineer. */
+/* delete after time */
 "never" = "一度も";
 
 /* notification */
@@ -2244,8 +2291,8 @@
 "observer" = "オブザーバー";
 
 /* enabled status
-   group pref value
-   time to disappear */
+group pref value
+time to disappear */
 "off" = "オフ";
 
 /* blur media */
@@ -2431,6 +2478,9 @@
 /* No comment provided by engineer. */
 "Private filenames" = "プライベートなファイル名";
 
+/* name of notes to self */
+"Private notes" = "プライベートノート";
+
 /* No comment provided by engineer. */
 "Profile and server connections" = "プロフィールとサーバ接続";
 
@@ -2549,7 +2599,7 @@
 "Reduced battery usage" = "電池使用量低減";
 
 /* reject incoming call via notification
-   swipe action */
+swipe action */
 "Reject" = "拒否";
 
 /* No comment provided by engineer. */
@@ -2649,7 +2699,7 @@
 "Run chat" = "チャット起動";
 
 /* alert button
-   chat item action */
+chat item action */
 "Save" = "保存";
 
 /* alert button */
@@ -2836,7 +2886,7 @@
 "Settings" = "設定";
 
 /* alert action
-   chat item action */
+chat item action */
 "Share" = "共有する";
 
 /* No comment provided by engineer. */
@@ -3184,7 +3234,7 @@
 /* authentication reason */
 "Unlock app" = "アプリのロック解除";
 
-/* swipe action */
+/* notification label action */
 "Unmute" = "ミュート解除";
 
 /* swipe action */
@@ -3388,6 +3438,9 @@
 /* No comment provided by engineer. */
 "You can hide or mute a user profile - swipe it to the right." = "ユーザープロファイルを右にスワイプすると、非表示またはミュートにすることができます。";
 
+/* No comment provided by engineer. */
+"You can make it visible to your SimpleX contacts via Settings." = "設定でSimpleXの連絡先に表示させることができます。";
+
 /* notification body */
 "You can now chat with %@" = "%@ にメッセージを送信できるようになりました";
 
@@ -3552,7 +3605,4 @@
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "あなたのSimpleXアドレス";
-
-/* No comment provided by engineer. */
-"Your SMP servers" = "あなたのSMPサーバ";
 

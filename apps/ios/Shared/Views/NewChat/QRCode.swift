@@ -8,6 +8,7 @@
 
 import SwiftUI
 import CoreImage.CIFilterBuiltins
+import SimpleXChat
 
 struct MutableQRCode: View {
     @Binding var uri: String
@@ -20,6 +21,16 @@ struct MutableQRCode: View {
     }
 }
 
+struct SimpleXCreatedLinkQRCode: View {
+    let link: CreatedConnLink
+    @Binding var short: Bool
+    var onShare: (() -> Void)? = nil
+
+    var body: some View {
+        QRCode(uri: link.simplexChatUri(short: short), onShare: onShare)
+    }
+}
+
 struct SimpleXLinkQRCode: View {
     let uri: String
     var withLogo: Bool = true
@@ -29,12 +40,6 @@ struct SimpleXLinkQRCode: View {
     var body: some View {
         QRCode(uri: simplexChatLink(uri), withLogo: withLogo, tintColor: tintColor, onShare: onShare)
     }
-}
-
-func simplexChatLink(_ uri: String) -> String {
-    uri.starts(with: "simplex:/")
-    ? uri.replacingOccurrences(of: "simplex:/", with: "https://simplex.chat/")
-    : uri
 }
 
 struct QRCode: View {

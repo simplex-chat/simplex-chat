@@ -59,14 +59,18 @@ fun FramedItemView(
       style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface),
       linkMode = linkMode,
       uriHandler = if (appPlatform.isDesktop) uriHandler else null,
-      showTimestamp = showTimestamp
+      showTimestamp = showTimestamp,
     )
   }
 
   @Composable
   fun ciQuotedMsgView(qi: CIQuote) {
     Box(
-      Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
+      Modifier
+        // this width limitation prevents crash on calculating constraints that may happen if you post veeeery long message and then quote it.
+        // Top level layout wants `IntrinsicWidth.Max` and very long layout makes the crash in this case
+        .widthIn(max = 50000.dp)
+        .padding(vertical = 6.dp, horizontal = 12.dp),
       contentAlignment = Alignment.TopStart
     ) {
       val sender = qi.sender(membership())
@@ -76,7 +80,7 @@ fun FramedItemView(
         ) {
           Text(
             sender,
-            style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary),
+            style = TextStyle(fontSize = 13.5.sp, color = if (qi.chatDir is CIDirection.GroupSnd) CurrentColors.value.colors.primary else CurrentColors.value.colors.secondary),
             maxLines = 1
           )
           ciQuotedMsgTextView(qi, lines = 2,  showTimestamp = showTimestamp)
@@ -88,7 +92,7 @@ fun FramedItemView(
   }
 
   @Composable
-  fun FramedItemHeader(caption: String, italic: Boolean, icon: Painter? = null, pad: Boolean = false) {
+  fun FramedItemHeader(caption: String, italic: Boolean, icon: Painter? = null, pad: Boolean = false, iconColor: Color? = null) {
     val sentColor = MaterialTheme.appColors.sentQuote
     val receivedColor = MaterialTheme.appColors.receivedQuote
     Row(
@@ -104,7 +108,7 @@ fun FramedItemView(
           icon,
           caption,
           Modifier.size(18.dp),
-          tint = if (isInDarkTheme()) FileDark else FileLight
+          tint = iconColor ?: if (isInDarkTheme()) FileDark else FileLight
         )
       }
       Text(
@@ -128,17 +132,6 @@ fun FramedItemView(
       Modifier
         .background(if (sent) sentColor else receivedColor)
         .fillMaxWidth()
-        .combinedClickable(
-          onLongClick = { showMenu.value = true },
-          onClick = {
-            if (qi.itemId != null) {
-              scrollToItem(qi.itemId)
-            } else {
-              scrollToQuotedItemFromItem(ci.id)
-            }
-          }
-        )
-        .onRightClick { showMenu.value = true }
     ) {
       when (qi.content) {
         is MsgContent.MCImage -> {
@@ -187,7 +180,7 @@ fun FramedItemView(
   fun ciFileView(ci: ChatItem, text: String) {
     CIFileView(ci.file, ci.meta.itemEdited, showMenu, false, receiveFile)
     if (text != "" || ci.meta.isLive) {
-      CIMarkdownText(ci, chatTTL, linkMode = linkMode, uriHandler, showViaProxy = showViaProxy,  showTimestamp = showTimestamp)
+      CIMarkdownText(ci, chatInfo, chatTTL, linkMode = linkMode, uriHandler, showViaProxy = showViaProxy,  showTimestamp = showTimestamp)
     }
   }
 
@@ -213,31 +206,69 @@ fun FramedItemView(
       Column(
         Modifier
           .width(IntrinsicSize.Max)
-          .padding(start = if (tailRendered) msgTailWidthDp else 0.dp, end = if (sent && tailRendered) msgTailWidthDp else 0.dp)
+          .padding(start = if (!sent && tailRendered) msgTailWidthDp else 0.dp, end = if (sent && tailRendered) msgTailWidthDp else 0.dp)
       ) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
-          if (ci.meta.itemDeleted != null) {
-            when (ci.meta.itemDeleted) {
-              is CIDeleted.Moderated -> {
-                FramedItemHeader(String.format(stringResource(MR.strings.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, painterResource(MR.images.ic_flag))
+          @Composable
+          fun Header() {
+            if (ci.isReport) {
+              if (ci.meta.itemDeleted == null) {
+                FramedItemHeader(
+                  stringResource(if (ci.chatDir.sent) MR.strings.report_item_visibility_submitter else MR.strings.report_item_visibility_moderators),
+                  true,
+                  painterResource(MR.images.ic_flag),
+                  iconColor = Color.Red
+                )
+              } else {
+                val text = if (ci.meta.itemDeleted is CIDeleted.Moderated && ci.meta.itemDeleted.byGroupMember.groupMemberId != (chatInfo as ChatInfo.Group?)?.groupInfo?.membership?.groupMemberId) {
+                  stringResource(MR.strings.report_item_archived_by).format(ci.meta.itemDeleted.byGroupMember.displayName)
+                } else {
+                  stringResource(MR.strings.report_item_archived)
+                }
+                FramedItemHeader(text, true, painterResource(MR.images.ic_flag))
               }
-              is CIDeleted.Blocked -> {
-                FramedItemHeader(stringResource(MR.strings.blocked_item_description), true, painterResource(MR.images.ic_back_hand))
+            } else if (ci.meta.itemDeleted != null) {
+              when (ci.meta.itemDeleted) {
+                is CIDeleted.Moderated -> {
+                  FramedItemHeader(String.format(stringResource(MR.strings.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, painterResource(MR.images.ic_flag))
+                }
+                is CIDeleted.Blocked -> {
+                  FramedItemHeader(stringResource(MR.strings.blocked_item_description), true, painterResource(MR.images.ic_back_hand))
+                }
+                is CIDeleted.BlockedByAdmin -> {
+                  FramedItemHeader(stringResource(MR.strings.blocked_by_admin_item_description), true, painterResource(MR.images.ic_back_hand))
+                }
+                is CIDeleted.Deleted -> {
+                  FramedItemHeader(stringResource(MR.strings.marked_deleted_description), true, painterResource(MR.images.ic_delete))
+                }
               }
-              is CIDeleted.BlockedByAdmin -> {
-                FramedItemHeader(stringResource(MR.strings.blocked_by_admin_item_description), true, painterResource(MR.images.ic_back_hand))
-              }
-              is CIDeleted.Deleted -> {
-                FramedItemHeader(stringResource(MR.strings.marked_deleted_description), true, painterResource(MR.images.ic_delete))
-              }
+            } else if (ci.meta.isLive) {
+              FramedItemHeader(stringResource(MR.strings.live), false)
             }
-          } else if (ci.meta.isLive) {
-            FramedItemHeader(stringResource(MR.strings.live), false)
           }
           if (ci.quotedItem != null) {
-            ciQuoteView(ci.quotedItem)
-          } else if (ci.meta.itemForwarded != null) {
-            FramedItemHeader(ci.meta.itemForwarded.text(chatInfo.chatType), true, painterResource(MR.images.ic_forward), pad = true)
+            Column(
+              Modifier
+                .combinedClickable(
+                  onLongClick = { showMenu.value = true },
+                  onClick = {
+                    if (ci.quotedItem.itemId != null) {
+                      scrollToItem(ci.quotedItem.itemId)
+                    } else {
+                      scrollToQuotedItemFromItem(ci.id)
+                    }
+                  }
+                )
+                .onRightClick { showMenu.value = true }
+            ) {
+              Header()
+              ciQuoteView(ci.quotedItem)
+            }
+          } else {
+            Header()
+            if (ci.meta.itemForwarded != null) {
+              FramedItemHeader(ci.meta.itemForwarded.text(chatInfo.chatType), true, painterResource(MR.images.ic_forward), pad = true)
+            }
           }
           if (ci.file == null && ci.formattedText == null && !ci.meta.isLive && isShortEmoji(ci.content.text)) {
             Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
@@ -258,7 +289,7 @@ fun FramedItemView(
                 if (mc.text == "" && !ci.meta.isLive) {
                   metaColor = Color.White
                 } else {
-                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+                  CIMarkdownText(ci, chatInfo, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 }
               }
               is MsgContent.MCVideo -> {
@@ -266,29 +297,37 @@ fun FramedItemView(
                 if (mc.text == "" && !ci.meta.isLive) {
                   metaColor = Color.White
                 } else {
-                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+                  CIMarkdownText(ci, chatInfo, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 }
               }
               is MsgContent.MCVoice -> {
                 CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = true, ci, timedMessagesTTL = chatTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp, longClick = { onLinkLongClick("") }, receiveFile = receiveFile)
                 if (mc.text != "") {
-                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+                  CIMarkdownText(ci, chatInfo, chatTTL, linkMode, uriHandler, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 }
               }
               is MsgContent.MCFile -> ciFileView(ci, mc.text)
               is MsgContent.MCUnknown ->
                 if (ci.file == null) {
-                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+                  CIMarkdownText(ci, chatInfo, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 } else {
                   ciFileView(ci, mc.text)
                 }
               is MsgContent.MCLink -> {
                 ChatItemLinkView(mc.preview, showMenu, onLongClick = { showMenu.value = true })
                 Box(Modifier.widthIn(max = DEFAULT_MAX_IMAGE_WIDTH)) {
-                  CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+                  CIMarkdownText(ci, chatInfo, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 }
               }
-              else -> CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
+              is MsgContent.MCReport -> {
+                val prefix = buildAnnotatedString {
+                  withStyle(SpanStyle(color = Color.Red, fontStyle = FontStyle.Italic)) {
+                    append(if (mc.text.isEmpty()) mc.reason.text else "${mc.reason.text}: ")
+                  }
+                }
+                CIMarkdownText(ci, chatInfo, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix)
+              }
+              else -> CIMarkdownText(ci, chatInfo, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
             }
           }
         }
@@ -309,19 +348,25 @@ fun FramedItemView(
 @Composable
 fun CIMarkdownText(
   ci: ChatItem,
+  chatInfo: ChatInfo,
   chatTTL: Int?,
   linkMode: SimplexLinkMode,
   uriHandler: UriHandler?,
   onLinkLongClick: (link: String) -> Unit = {},
   showViaProxy: Boolean,
   showTimestamp: Boolean,
+  prefix: AnnotatedString? = null
 ) {
   Box(Modifier.padding(vertical = 7.dp, horizontal = 12.dp)) {
     val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
       meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
-      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp
+      mentions = ci.mentions, userMemberId = when {
+        chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
+        else -> null
+      },
+      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix
     )
   }
 }

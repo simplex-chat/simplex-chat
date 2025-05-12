@@ -43,26 +43,23 @@ struct OnboardingButtonStyle: ButtonStyle {
     }
 }
 
-private enum ChooseServerOperatorsSheet: Identifiable {
-    case showInfo
+private enum OnboardingConditionsViewSheet: Identifiable {
     case showConditions
+    case configureOperators
 
     var id: String {
         switch self {
-        case .showInfo: return "showInfo"
         case .showConditions: return "showConditions"
+        case .configureOperators: return "configureOperators"
         }
     }
 }
 
-struct ChooseServerOperators: View {
-    @Environment(\.dismiss) var dismiss: DismissAction
-    @Environment(\.colorScheme) var colorScheme: ColorScheme
+struct OnboardingConditionsView: View {
     @EnvironmentObject var theme: AppTheme
-    var onboarding: Bool
     @State private var serverOperators: [ServerOperator] = []
     @State private var selectedOperatorIds = Set<Int64>()
-    @State private var sheetItem: ChooseServerOperatorsSheet? = nil
+    @State private var sheetItem: OnboardingConditionsViewSheet? = nil
     @State private var notificationsModeNavLinkActive = false
     @State private var justOpened = true
 
@@ -72,16 +69,192 @@ struct ChooseServerOperators: View {
         GeometryReader { g in
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    let title = Text("Server operators")
+                    Text("Conditions of use")
                         .font(.largeTitle)
                         .bold()
                         .frame(maxWidth: .infinity, alignment: .center)
-                    
-                    if onboarding {
-                        title.padding(.top, 25)
-                    } else {
-                        title
+                        .padding(.top, 25)
+
+                    Spacer()
+
+                    VStack(alignment: .leading, spacing: 20) {
+                        Text("Private chats, groups and your contacts are not accessible to server operators.")
+                            .lineSpacing(2)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Text("""
+                        By using SimpleX Chat you agree to:
+                        - send only legal content in public groups.
+                        - respect other users – no spam.
+                        """)
+                        .lineSpacing(2)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                        Button("Privacy policy and conditions of use.") {
+                            sheetItem = .showConditions
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
+                    .padding(.horizontal, 4)
+
+                    Spacer()
+
+                    VStack(spacing: 12) {
+                        acceptConditionsButton()
+
+                        Button("Configure server operators") {
+                            sheetItem = .configureOperators
+                        }
+                        .frame(minHeight: 40)
+                    }
+                }
+                .frame(minHeight: g.size.height)
+            }
+            .onAppear {
+                if justOpened {
+                    serverOperators = ChatModel.shared.conditions.serverOperators
+                    selectedOperatorIds = Set(serverOperators.filter { $0.enabled }.map { $0.operatorId })
+                    justOpened = false
+                }
+            }
+            .sheet(item: $sheetItem) { item in
+                switch item {
+                case .showConditions:
+                    SimpleConditionsView()
+                        .modifier(ThemedBackground(grouped: true))
+                case .configureOperators:
+                    ChooseServerOperators(serverOperators: serverOperators, selectedOperatorIds: $selectedOperatorIds)
+                        .modifier(ThemedBackground())
+                }
+            }
+            .frame(maxHeight: .infinity, alignment: .top)
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
+        .padding(25)
+    }
+
+    private func continueToNextStep() {
+        onboardingStageDefault.set(.step4_SetNotificationsMode)
+        notificationsModeNavLinkActive = true
+    }
+
+    func notificationsModeNavLinkButton(_ button: @escaping (() -> some View)) -> some View {
+        ZStack {
+            button()
+
+            NavigationLink(isActive: $notificationsModeNavLinkActive) {
+                notificationsModeDestinationView()
+            } label: {
+                EmptyView()
+            }
+            .frame(width: 1, height: 1)
+            .hidden()
+        }
+    }
+
+    private func notificationsModeDestinationView() -> some View {
+        SetNotificationsMode()
+            .navigationBarBackButtonHidden(true)
+            .modifier(ThemedBackground())
+    }
+
+    private func acceptConditionsButton() -> some View {
+        notificationsModeNavLinkButton {
+            Button {
+                Task {
+                    do {
+                        let conditionsId = ChatModel.shared.conditions.currentConditions.conditionsId
+                        let acceptForOperators = selectedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
+                        let operatorIds = acceptForOperators.map { $0.operatorId }
+                        let r = try await acceptConditions(conditionsId: conditionsId, operatorIds: operatorIds)
+                        await MainActor.run {
+                            ChatModel.shared.conditions = r
+                        }
+                        if let enabledOperators = enabledOperators(r.serverOperators) {
+                            let r2 = try await setServerOperators(operators: enabledOperators)
+                            await MainActor.run {
+                                ChatModel.shared.conditions = r2
+                                continueToNextStep()
+                            }
+                        } else {
+                            await MainActor.run {
+                                continueToNextStep()
+                            }
+                        }
+                    } catch let error {
+                        await MainActor.run {
+                            showAlert(
+                                NSLocalizedString("Error accepting conditions", comment: "alert title"),
+                                message: responseError(error)
+                            )
+                        }
+                    }
+                }
+            } label: {
+                Text("Accept")
+            }
+            .buttonStyle(OnboardingButtonStyle(isDisabled: selectedOperatorIds.isEmpty))
+            .disabled(selectedOperatorIds.isEmpty)
+        }
+    }
+
+    private func enabledOperators(_ operators: [ServerOperator]) -> [ServerOperator]? {
+        var ops = operators
+        if !ops.isEmpty {
+            for i in 0..<ops.count {
+                var op = ops[i]
+                op.enabled = selectedOperatorIds.contains(op.operatorId)
+                ops[i] = op
+            }
+            let haveSMPStorage = ops.contains(where: { $0.enabled && $0.smpRoles.storage })
+            let haveSMPProxy = ops.contains(where: { $0.enabled && $0.smpRoles.proxy })
+            let haveXFTPStorage = ops.contains(where: { $0.enabled && $0.xftpRoles.storage })
+            let haveXFTPProxy = ops.contains(where: { $0.enabled && $0.xftpRoles.proxy })
+            if haveSMPStorage && haveSMPProxy && haveXFTPStorage && haveXFTPProxy {
+                return ops
+            } else if let firstEnabledIndex = ops.firstIndex(where: { $0.enabled }) {
+                var op = ops[firstEnabledIndex]
+                if !haveSMPStorage { op.smpRoles.storage = true }
+                if !haveSMPProxy { op.smpRoles.proxy = true }
+                if !haveXFTPStorage { op.xftpRoles.storage = true }
+                if !haveXFTPProxy { op.xftpRoles.proxy = true }
+                ops[firstEnabledIndex] = op
+                return ops
+            } else { // Shouldn't happen - view doesn't let to proceed if no operators are enabled
+                return nil
+            }
+        } else {
+            return nil
+        }
+    }
+}
+
+private enum ChooseServerOperatorsSheet: Identifiable {
+    case showInfo
+
+    var id: String {
+        switch self {
+        case .showInfo: return "showInfo"
+        }
+    }
+}
+
+struct ChooseServerOperators: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
+    @Environment(\.colorScheme) var colorScheme: ColorScheme
+    @EnvironmentObject var theme: AppTheme
+    var serverOperators: [ServerOperator]
+    @Binding var selectedOperatorIds: Set<Int64>
+    @State private var sheetItem: ChooseServerOperatorsSheet? = nil
+
+    var body: some View {
+        GeometryReader { g in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text("Server operators")
+                        .font(.largeTitle)
+                        .bold()
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.top, 25)
 
                     infoText()
                         .frame(maxWidth: .infinity, alignment: .center)
@@ -101,77 +274,25 @@ struct ChooseServerOperators: View {
                     .padding(.horizontal, 16)
                     
                     Spacer()
-                    
-                    let reviewForOperators = selectedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
-                    let canReviewLater = reviewForOperators.allSatisfy { $0.conditionsAcceptance.usageAllowed }
-                    let currEnabledOperatorIds = Set(serverOperators.filter { $0.enabled }.map { $0.operatorId })
-                    
+
                     VStack(spacing: 8) {
-                        if !reviewForOperators.isEmpty {
-                            reviewConditionsButton()
-                        } else if selectedOperatorIds != currEnabledOperatorIds && !selectedOperatorIds.isEmpty {
-                            setOperatorsButton()
-                        } else {
-                            continueButton()
-                        }
-                        if onboarding {
-                            Group {
-                                if reviewForOperators.isEmpty {
-                                    Button("Conditions of use") {
-                                        sheetItem = .showConditions
-                                    }
-                                } else {
-                                    Text("Conditions of use")
-                                        .foregroundColor(.clear)
-                                }
-                            }
-                            .font(.system(size: 17, weight: .semibold))
-                            .frame(minHeight: 40)
-                        }
-                    }
-                    
-                    if !onboarding && !reviewForOperators.isEmpty {
-                        VStack(spacing: 8) {
-                            reviewLaterButton()
-                            (
-                                Text("Conditions will be accepted for enabled operators after 30 days.")
-                                + textSpace
-                                + Text("You can configure operators in Network & servers settings.")
-                            )
-                            .multilineTextAlignment(.center)
-                            .font(.footnote)
-                            .padding(.horizontal, 32)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .disabled(!canReviewLater)
-                        .padding(.bottom)
+                        setOperatorsButton()
+                        onboardingButtonPlaceholder()
                     }
                 }
                 .frame(minHeight: g.size.height)
-            }
-            .onAppear {
-                if justOpened {
-                    serverOperators = ChatModel.shared.conditions.serverOperators
-                    selectedOperatorIds = Set(serverOperators.filter { $0.enabled }.map { $0.operatorId })
-                    justOpened = false
-                }
             }
             .sheet(item: $sheetItem) { item in
                 switch item {
                 case .showInfo:
                     ChooseServerOperatorsInfoView()
-                case .showConditions:
-                    UsageConditionsView(
-                        currUserServers: Binding.constant([]),
-                        userServers: Binding.constant([])
-                    )
-                    .modifier(ThemedBackground(grouped: true))
                 }
             }
             .frame(maxHeight: .infinity, alignment: .top)
         }
         .frame(maxHeight: .infinity, alignment: .top)
-        .padding(onboarding ? 25 : 16)
+        .padding(25)
+        .interactiveDismissDisabled(selectedOperatorIds.isEmpty)
     }
 
     private func infoText() -> some View {
@@ -216,180 +337,14 @@ struct ChooseServerOperators: View {
         }
     }
 
-    private func reviewConditionsButton() -> some View {
-        NavigationLink("Review conditions") {
-            reviewConditionsView()
-                .navigationTitle("Conditions of use")
-                .navigationBarTitleDisplayMode(.large)
-                .toolbar { ToolbarItem(placement: .navigationBarTrailing, content: conditionsLinkButton) }
-                .modifier(ThemedBackground(grouped: true))
+    private func setOperatorsButton() -> some View {
+        Button {
+            dismiss()
+        } label: {
+            Text("OK")
         }
         .buttonStyle(OnboardingButtonStyle(isDisabled: selectedOperatorIds.isEmpty))
         .disabled(selectedOperatorIds.isEmpty)
-    }
-
-    private func setOperatorsButton() -> some View {
-        notificationsModeNavLinkButton {
-            Button {
-                Task {
-                    if let enabledOperators = enabledOperators(serverOperators) {
-                        let r = try await setServerOperators(operators: enabledOperators)
-                        await MainActor.run {
-                            ChatModel.shared.conditions = r
-                            continueToNextStep()
-                        }
-                    } else {
-                        await MainActor.run {
-                            continueToNextStep()
-                        }
-                    }
-                }
-            } label: {
-                Text("Update")
-            }
-            .buttonStyle(OnboardingButtonStyle(isDisabled: selectedOperatorIds.isEmpty))
-            .disabled(selectedOperatorIds.isEmpty)
-        }
-    }
-
-    private func continueButton() -> some View {
-        notificationsModeNavLinkButton {
-            Button {
-                continueToNextStep()
-            } label: {
-                Text("Continue")
-            }
-            .buttonStyle(OnboardingButtonStyle(isDisabled: selectedOperatorIds.isEmpty))
-            .disabled(selectedOperatorIds.isEmpty)
-        }
-    }
-
-    private func reviewLaterButton() -> some View {
-        notificationsModeNavLinkButton {
-            Button {
-                continueToNextStep()
-            } label: {
-                Text("Review later")
-            }
-            .buttonStyle(.borderless)
-        }
-    }
-
-    private func continueToNextStep() {
-        if onboarding {
-            onboardingStageDefault.set(.step4_SetNotificationsMode)
-            notificationsModeNavLinkActive = true
-        } else {
-            dismiss()
-        }
-    }
-
-    func notificationsModeNavLinkButton(_ button: @escaping (() -> some View)) -> some View {
-        ZStack {
-            button()
-
-            NavigationLink(isActive: $notificationsModeNavLinkActive) {
-                notificationsModeDestinationView()
-            } label: {
-                EmptyView()
-            }
-            .frame(width: 1, height: 1)
-            .hidden()
-        }
-    }
-
-    private func notificationsModeDestinationView() -> some View {
-        SetNotificationsMode()
-            .navigationBarBackButtonHidden(true)
-            .modifier(ThemedBackground())
-    }
-
-    @ViewBuilder private func reviewConditionsView() -> some View {
-        let operatorsWithConditionsAccepted = ChatModel.shared.conditions.serverOperators.filter { $0.conditionsAcceptance.conditionsAccepted }
-        let acceptForOperators = selectedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
-        VStack(alignment: .leading, spacing: 20) {
-            if !operatorsWithConditionsAccepted.isEmpty {
-                Text("Conditions are already accepted for these operator(s): **\(operatorsWithConditionsAccepted.map { $0.legalName_ }.joined(separator: ", "))**.")
-                Text("The same conditions will apply to operator(s): **\(acceptForOperators.map { $0.legalName_ }.joined(separator: ", "))**.")
-            } else {
-                Text("Conditions will be accepted for operator(s): **\(acceptForOperators.map { $0.legalName_ }.joined(separator: ", "))**.")
-            }
-            ConditionsTextView()
-                .frame(maxHeight: .infinity)
-            acceptConditionsButton()
-                .padding(.bottom)
-                .padding(.bottom)
-        }
-        .padding(.horizontal, 25)
-    }
-
-    private func acceptConditionsButton() -> some View {
-        notificationsModeNavLinkButton {
-            Button {
-                Task {
-                    do {
-                        let conditionsId = ChatModel.shared.conditions.currentConditions.conditionsId
-                        let acceptForOperators = selectedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
-                        let operatorIds = acceptForOperators.map { $0.operatorId }
-                        let r = try await acceptConditions(conditionsId: conditionsId, operatorIds: operatorIds)
-                        await MainActor.run {
-                            ChatModel.shared.conditions = r
-                        }
-                        if let enabledOperators = enabledOperators(r.serverOperators) {
-                            let r2 = try await setServerOperators(operators: enabledOperators)
-                            await MainActor.run {
-                                ChatModel.shared.conditions = r2
-                                continueToNextStep()
-                            }
-                        } else {
-                            await MainActor.run {
-                                continueToNextStep()
-                            }
-                        }
-                    } catch let error {
-                        await MainActor.run {
-                            showAlert(
-                                NSLocalizedString("Error accepting conditions", comment: "alert title"),
-                                message: responseError(error)
-                            )
-                        }
-                    }
-                }
-            } label: {
-                Text("Accept conditions")
-            }
-            .buttonStyle(OnboardingButtonStyle())
-        }
-    }
-
-    private func enabledOperators(_ operators: [ServerOperator]) -> [ServerOperator]? {
-        var ops = operators
-        if !ops.isEmpty {
-            for i in 0..<ops.count {
-                var op = ops[i]
-                op.enabled = selectedOperatorIds.contains(op.operatorId)
-                ops[i] = op
-            }
-            let haveSMPStorage = ops.contains(where: { $0.enabled && $0.smpRoles.storage })
-            let haveSMPProxy = ops.contains(where: { $0.enabled && $0.smpRoles.proxy })
-            let haveXFTPStorage = ops.contains(where: { $0.enabled && $0.xftpRoles.storage })
-            let haveXFTPProxy = ops.contains(where: { $0.enabled && $0.xftpRoles.proxy })
-            if haveSMPStorage && haveSMPProxy && haveXFTPStorage && haveXFTPProxy {
-                return ops
-            } else if let firstEnabledIndex = ops.firstIndex(where: { $0.enabled }) {
-                var op = ops[firstEnabledIndex]
-                if !haveSMPStorage { op.smpRoles.storage = true }
-                if !haveSMPProxy { op.smpRoles.proxy = true }
-                if !haveXFTPStorage { op.xftpRoles.storage = true }
-                if !haveXFTPProxy { op.xftpRoles.proxy = true }
-                ops[firstEnabledIndex] = op
-                return ops
-            } else { // Shouldn't happen - view doesn't let to proceed if no operators are enabled
-                return nil
-            }
-        } else {
-            return nil
-        }
     }
 }
 
@@ -447,5 +402,5 @@ struct ChooseServerOperatorsInfoView: View {
 }
 
 #Preview {
-    ChooseServerOperators(onboarding: true)
+    OnboardingConditionsView()
 }

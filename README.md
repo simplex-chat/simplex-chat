@@ -72,7 +72,7 @@ You must:
 
 Messages not following these rules will be deleted, the right to send messages may be revoked, and the access to the new members to the group may be temporarily restricted, to prevent re-joining under a different name - our imperfect group moderation does not have a better solution at the moment.
 
-You can join an English-speaking users group if you want to ask any questions: [#SimpleX users group](https://simplex.chat/contact#/?v=2-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2Fos8FftfoV8zjb2T89fUEjJtF7y64p5av%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAQqMgh0fw2lPhjn3PDIEfAKA_E0-gf8Hr8zzhYnDivRs%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22lBPiveK2mjfUH43SN77R0w%3D%3D%22%7D)
+You can join an English-speaking users group if you want to ask any questions: [#SimpleX users group](https://simplex.chat/contact#/?v=2-7&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FiBkJE72asZX1NUZaYFIeKRVk6oVjb-iv%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEAinqu3j74AMjODLoIRR487ZW6ysip_dlpD6Zxk18SPFY%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22groupLinkId%22%3A%223wAFGCLygQHR5AwynZOHlQ%3D%3D%22%7D)
 
 There is also a group [#simplex-devs](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FvYCRjIflKNMGYlfTkuHe4B40qSlQ0439%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAHNdcqNbzXZhyMoSBjT2R0-Eb1EPaLyUg3KZjn-kmM1w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22PD20tcXjw7IpkkMCfR6HLA%3D%3D%22%7D) for developers who build on SimpleX platform:
 
@@ -169,6 +169,7 @@ It is possible to donate via:
 - ETH: 0xD9ee7Db0AD0dc1Dfa7eD53290199ED06beA04692
 - USDT (Ethereum): 0xD9ee7Db0AD0dc1Dfa7eD53290199ED06beA04692
 - ZEC: t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg
+- ZEC shielded: u16rnvkflumf5uw9frngc2lymvmzgdr2mmc9unyu0l44unwfmdcpfm0axujd2w34ct3ye709azxsqge45705lpvvqu264ltzvfay55ygyq
 - DOGE: D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf
 - SOL: 7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu
 - please ask if you want to donate any other coins.
@@ -233,6 +234,10 @@ You can use SimpleX with your own servers and still communicate with people usin
 ## News and updates
 
 Recent and important updates:
+
+[Mar 8, 2025. SimpleX Chat v6.3: new user experience and safety in public groups](./blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.md)
+
+[Jan 14, 2025. SimpleX network: large groups and privacy-preserving content moderation](./blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.md)
 
 [Dec 10, 2024. SimpleX network: preset servers operated by Flux, business chats and more with v6.2 of the apps](./20241210-simplex-network-v6-2-servers-by-flux-business-chats.md)
 
@@ -305,12 +310,13 @@ What is already implemented:
 15. Manual messaging queue rotations to move conversation to another SMP relay.
 16. Sending end-to-end encrypted files using [XFTP protocol](https://simplex.chat/blog/20230301-simplex-file-transfer-protocol.html).
 17. Local files encryption.
+18. [Reproducible server builds](./docs/SERVER.md#reproduce-builds).
 
 We plan to add:
 
 1. Automatic message queue rotation and redundancy. Currently the queues created between two users are used until the queue is manually changed by the user or contact is deleted. We are planning to add automatic queue rotation to make these identifiers temporary and rotate based on some schedule TBC (e.g., every X messages, or every X hours/days).
 2. Message "mixing" - adding latency to message delivery, to protect against traffic correlation by message time.
-3. Reproducible builds – this is the limitation of the development stack, but we will be investing into solving this problem. Users can still build all applications and services from the source code.
+3. Reproducible clients builds – this is a complex problem, but we are aiming to have it in 2025 at least partially.
 4. Recipients' XFTP relays to reduce traffic and conceal IP addresses from the relays chosen, and potentially controlled, by another party.
 
 ## For developers

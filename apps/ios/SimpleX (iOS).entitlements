@@ -9,6 +9,10 @@
 		<string>applinks:simplex.chat</string>
 		<string>applinks:www.simplex.chat</string>
 		<string>applinks:simplex.chat?mode=developer</string>
+		<string>applinks:*.simplex.im</string>
+		<string>applinks:*.simplex.im?mode=developer</string>
+		<string>applinks:*.simplexonflux.com</string>
+		<string>applinks:*.simplexonflux.com?mode=developer</string>
 	</array>
 	<key>com.apple.security.application-groups</key>
 	<array>

@@ -1,10 +1,4 @@
 /* No comment provided by engineer. */
-"\n" = "\n";
-
-/* No comment provided by engineer. */
-" (" = " (";
-
-/* No comment provided by engineer. */
 " (can be copied)" = " (можна скопіювати)";
 
 /* No comment provided by engineer. */
@@ -23,28 +17,13 @@
 "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- голосові повідомлення до 5 хвилин.\n- користувальницький час зникнення.\n- історія редагування.";
 
 /* No comment provided by engineer. */
-", " = ", ";
-
-/* No comment provided by engineer. */
-": " = ": ";
-
-/* No comment provided by engineer. */
 "!1 colored!" = "!1 кольоровий!";
-
-/* No comment provided by engineer. */
-"." = ".";
-
-/* No comment provided by engineer. */
-"(" = "(";
 
 /* No comment provided by engineer. */
 "(new)" = "(новий)";
 
 /* No comment provided by engineer. */
 "(this device v%@)" = "(цей пристрій v%@)";
-
-/* No comment provided by engineer. */
-")" = ")";
 
 /* No comment provided by engineer. */
 "[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[Внесок](https://github.com/simplex-chat/simplex-chat#contribute)";
@@ -242,9 +221,6 @@
 "%lld new interface languages" = "%lld нові мови інтерфейсу";
 
 /* No comment provided by engineer. */
-"%lld second(s)" = "%lld секунд(и)";
-
-/* No comment provided by engineer. */
 "%lld seconds" = "%lld секунд";
 
 /* No comment provided by engineer. */
@@ -289,7 +265,8 @@
 /* No comment provided by engineer. */
 "0s" = "0с";
 
-/* time interval */
+/* delete after time
+time interval */
 "1 day" = "1 день";
 
 /* time interval */
@@ -298,10 +275,12 @@
 /* No comment provided by engineer. */
 "1 minute" = "1 хвилина";
 
-/* time interval */
+/* delete after time
+time interval */
 "1 month" = "1 місяць";
 
-/* time interval */
+/* delete after time
+time interval */
 "1 week" = "1 тиждень";
 
 /* No comment provided by engineer. */
@@ -344,6 +323,9 @@
 "Abort changing address?" = "Скасувати зміну адреси?";
 
 /* No comment provided by engineer. */
+"About operators" = "Про операторів";
+
+/* No comment provided by engineer. */
 "About SimpleX Chat" = "Про чат SimpleX";
 
 /* No comment provided by engineer. */
@@ -353,8 +335,8 @@
 "Accent" = "Акцент";
 
 /* accept contact request via notification
-   accept incoming call via notification
-   swipe action */
+accept incoming call via notification
+swipe action */
 "Accept" = "Прийняти";
 
 /* No comment provided by engineer. */
@@ -367,7 +349,7 @@
 "Accept contact request from %@?" = "Прийняти запит на контакт від %@?";
 
 /* accept contact request via notification
-   swipe action */
+swipe action */
 "Accept incognito" = "Прийняти інкогніто";
 
 /* call status */
@@ -375,6 +357,9 @@
 
 /* No comment provided by engineer. */
 "Accepted conditions" = "Прийняті умови";
+
+/* chat list item title */
+"accepted invitation" = "прийняте запрошення";
 
 /* No comment provided by engineer. */
 "Acknowledged" = "Визнано";
@@ -389,6 +374,9 @@
 "Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Додайте адресу до свого профілю, щоб ваші контакти могли поділитися нею з іншими людьми. Повідомлення про оновлення профілю буде надіслано вашим контактам.";
 
 /* No comment provided by engineer. */
+"Add friends" = "Додайте друзів";
+
+/* No comment provided by engineer. */
 "Add profile" = "Додати профіль";
 
 /* No comment provided by engineer. */
@@ -398,10 +386,16 @@
 "Add servers by scanning QR codes." = "Додайте сервери, відсканувавши QR-код.";
 
 /* No comment provided by engineer. */
+"Add team members" = "Додайте учасників команди";
+
+/* No comment provided by engineer. */
 "Add to another device" = "Додати до іншого пристрою";
 
 /* No comment provided by engineer. */
 "Add welcome message" = "Додати вітальне повідомлення";
+
+/* No comment provided by engineer. */
+"Add your team members to the conversations." = "Додайте членів своєї команди до розмов.";
 
 /* No comment provided by engineer. */
 "Added media & file servers" = "Додано медіа та файлові сервери";
@@ -760,7 +754,8 @@
 /* rcv group event chat item */
 "blocked %@" = "заблоковано %@";
 
-/* marked deleted chat item preview text */
+/* blocked chat item
+marked deleted chat item preview text */
 "blocked by admin" = "заблоковано адміністратором";
 
 /* No comment provided by engineer. */
@@ -792,6 +787,12 @@
 
 /* No comment provided by engineer. */
 "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Болгарською, фінською, тайською та українською мовами - завдяки користувачам та [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
+
+/* No comment provided by engineer. */
+"Business address" = "Адреса підприємства";
+
+/* No comment provided by engineer. */
+"Business chats" = "Ділові чати";
 
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Через профіль чату (за замовчуванням) або [за з'єднанням](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
@@ -836,7 +837,7 @@
 "Can't message member" = "Не можу надіслати повідомлення користувачеві";
 
 /* alert action
-   alert button */
+alert button */
 "Cancel" = "Скасувати";
 
 /* No comment provided by engineer. */
@@ -891,7 +892,7 @@
 "Change self-destruct mode" = "Змінити режим самознищення";
 
 /* authentication reason
-   set passcode view */
+set passcode view */
 "Change self-destruct passcode" = "Змінити пароль самознищення";
 
 /* chat item text */
@@ -908,6 +909,15 @@
 
 /* chat item text */
 "changing address…" = "змінює адресу…";
+
+/* No comment provided by engineer. */
+"Chat" = "Чат";
+
+/* No comment provided by engineer. */
+"Chat already exists" = "Чат вже існує";
+
+/* No comment provided by engineer. */
+"Chat already exists!" = "Чат вже існує!";
 
 /* No comment provided by engineer. */
 "Chat colors" = "Кольори чату";
@@ -953,6 +963,12 @@
 
 /* No comment provided by engineer. */
 "Chat theme" = "Тема чату";
+
+/* No comment provided by engineer. */
+"Chat will be deleted for all members - this cannot be undone!" = "Чат буде видалено для всіх учасників - цю дію неможливо скасувати!";
+
+/* No comment provided by engineer. */
+"Chat will be deleted for you - this cannot be undone!" = "Чат буде видалено для вас - цю дію неможливо скасувати!";
 
 /* No comment provided by engineer. */
 "Chats" = "Чати";
@@ -1034,12 +1050,6 @@
 
 /* No comment provided by engineer. */
 "Conditions of use" = "Умови використання";
-
-/* No comment provided by engineer. */
-"Conditions will be accepted for enabled operators after 30 days." = "Умови будуть прийняті для ввімкнених операторів через 30 днів.";
-
-/* No comment provided by engineer. */
-"Conditions will be accepted for operator(s): **%@**." = "Умови приймаються для оператора(ів): **%@**.";
 
 /* No comment provided by engineer. */
 "Conditions will be accepted for the operator(s): **%@**." = "Для оператора(ів) приймаються умови: **%@**.";
@@ -1440,7 +1450,8 @@
 /* No comment provided by engineer. */
 "decryption errors" = "помилки розшифровки";
 
-/* pref value */
+/* delete after time
+pref value */
 "default (%@)" = "за замовчуванням (%@)";
 
 /* No comment provided by engineer. */
@@ -1450,8 +1461,7 @@
 "default (yes)" = "за замовчуванням (так)";
 
 /* alert action
-   chat item action
-   swipe action */
+swipe action */
 "Delete" = "Видалити";
 
 /* No comment provided by engineer. */
@@ -1476,10 +1486,16 @@
 "Delete and notify contact" = "Видалити та повідомити контакт";
 
 /* No comment provided by engineer. */
+"Delete chat" = "Видалити чат";
+
+/* No comment provided by engineer. */
 "Delete chat profile" = "Видалити профіль чату";
 
 /* No comment provided by engineer. */
 "Delete chat profile?" = "Видалити профіль чату?";
+
+/* No comment provided by engineer. */
+"Delete chat?" = "Видалити чат?";
 
 /* No comment provided by engineer. */
 "Delete connection" = "Видалити підключення";
@@ -1532,7 +1548,7 @@
 /* No comment provided by engineer. */
 "Delete message?" = "Видалити повідомлення?";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Delete messages" = "Видалити повідомлення";
 
 /* No comment provided by engineer. */
@@ -1656,6 +1672,9 @@
 "Direct messages" = "Прямі повідомлення";
 
 /* No comment provided by engineer. */
+"Direct messages between members are prohibited in this chat." = "У цьому чаті заборонені прямі повідомлення між учасниками.";
+
+/* No comment provided by engineer. */
 "Direct messages between members are prohibited." = "У цій групі заборонені прямі повідомлення між учасниками.";
 
 /* No comment provided by engineer. */
@@ -1734,7 +1753,7 @@
 "Downgrade and open chat" = "Пониження та відкритий чат";
 
 /* alert button
-   chat item action */
+chat item action */
 "Download" = "Завантажити";
 
 /* No comment provided by engineer. */
@@ -1791,14 +1810,11 @@
 /* No comment provided by engineer. */
 "Enable (keep overrides)" = "Увімкнути (зберегти перевизначення)";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Enable automatic message deletion?" = "Увімкнути автоматичне видалення повідомлень?";
 
 /* No comment provided by engineer. */
 "Enable camera access" = "Увімкніть доступ до камери";
-
-/* No comment provided by engineer. */
-"Enable Flux" = "Увімкнути Flux";
 
 /* No comment provided by engineer. */
 "Enable for all" = "Увімкнути для всіх";
@@ -2154,7 +2170,9 @@
 /* No comment provided by engineer. */
 "Error: " = "Помилка: ";
 
-/* alert message */
+/* alert message
+file error text
+snd error text */
 "Error: %@" = "Помилка: %@";
 
 /* No comment provided by engineer. */
@@ -2171,9 +2189,6 @@
 
 /* No comment provided by engineer. */
 "Even when disabled in the conversation." = "Навіть коли вимкнений у розмові.";
-
-/* No comment provided by engineer. */
-"event happened" = "відбулася подія";
 
 /* No comment provided by engineer. */
 "Exit without saving" = "Вихід без збереження";
@@ -2214,7 +2229,7 @@
 /* swipe action */
 "Favorite" = "Улюблений";
 
-/* No comment provided by engineer. */
+/* file error alert title */
 "File error" = "Помилка файлу";
 
 /* alert message */
@@ -2294,9 +2309,6 @@
 
 /* No comment provided by engineer. */
 "Fix not supported by group member" = "Виправлення не підтримується учасником групи";
-
-/* No comment provided by engineer. */
-"for better metadata privacy." = "для кращої конфіденційності метаданих.";
 
 /* servers error */
 "For chat profile %@:" = "Для профілю чату %@:";
@@ -2695,6 +2707,9 @@
 "Invite members" = "Запросити учасників";
 
 /* No comment provided by engineer. */
+"Invite to chat" = "Запросити в чат";
+
+/* No comment provided by engineer. */
 "Invite to group" = "Запросити до групи";
 
 /* No comment provided by engineer. */
@@ -2809,6 +2824,12 @@
 "Leave" = "Залишити";
 
 /* No comment provided by engineer. */
+"Leave chat" = "Вийти з чату";
+
+/* No comment provided by engineer. */
+"Leave chat?" = "Залишити чат?";
+
+/* No comment provided by engineer. */
 "Leave group" = "Покинути групу";
 
 /* No comment provided by engineer. */
@@ -2905,10 +2926,16 @@
 "Member inactive" = "Користувач неактивний";
 
 /* No comment provided by engineer. */
+"Member role will be changed to \"%@\". All chat members will be notified." = "Роль учасника буде змінено на \"%@\". Усі учасники чату отримають сповіщення.";
+
+/* No comment provided by engineer. */
 "Member role will be changed to \"%@\". All group members will be notified." = "Роль учасника буде змінено на \"%@\". Всі учасники групи будуть повідомлені про це.";
 
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "Роль учасника буде змінено на \"%@\". Учасник отримає нове запрошення.";
+
+/* No comment provided by engineer. */
+"Member will be removed from chat - this cannot be undone!" = "Учасника буде видалено з чату – це неможливо скасувати!";
 
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "Учасник буде видалений з групи - це неможливо скасувати!";
@@ -3096,10 +3123,7 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Кілька профілів чату";
 
-/* No comment provided by engineer. */
-"mute" = "приглушити";
-
-/* swipe action */
+/* notification label action */
 "Mute" = "Вимкнути звук";
 
 /* No comment provided by engineer. */
@@ -3132,7 +3156,7 @@
 /* No comment provided by engineer. */
 "Network status" = "Стан мережі";
 
-/* No comment provided by engineer. */
+/* delete after time */
 "never" = "ніколи";
 
 /* No comment provided by engineer. */
@@ -3292,8 +3316,8 @@
 "observer" = "спостерігач";
 
 /* enabled status
-   group pref value
-   time to disappear */
+group pref value
+time to disappear */
 "off" = "вимкнено";
 
 /* blur media */
@@ -3328,6 +3352,9 @@
 
 /* No comment provided by engineer. */
 "Onion hosts will not be used." = "Onion хости не будуть використовуватися.";
+
+/* No comment provided by engineer. */
+"Only chat owners can change preferences." = "Лише власники чату можуть змінювати налаштування.";
 
 /* No comment provided by engineer. */
 "Only client devices store user profiles, contacts, groups, and messages." = "Тільки клієнтські пристрої зберігають профілі користувачів, контакти, групи та повідомлення, надіслані за допомогою **2-шарового наскрізного шифрування**.";
@@ -3406,6 +3433,9 @@
 
 /* alert title */
 "Operator server" = "Сервер оператора";
+
+/* No comment provided by engineer. */
+"Or import archive file" = "Або імпортуйте архівний файл";
 
 /* No comment provided by engineer. */
 "Or paste archive link" = "Або вставте посилання на архів";
@@ -3574,6 +3604,9 @@
 
 /* No comment provided by engineer. */
 "Privacy & security" = "Конфіденційність і безпека";
+
+/* No comment provided by engineer. */
+"Privacy for your customers." = "Конфіденційність для ваших клієнтів.";
 
 /* No comment provided by engineer. */
 "Privacy redefined" = "Конфіденційність переглянута";
@@ -3789,7 +3822,7 @@
 "Reduced battery usage" = "Зменшення використання акумулятора";
 
 /* reject incoming call via notification
-   swipe action */
+swipe action */
 "Reject" = "Відхилити";
 
 /* No comment provided by engineer. */
@@ -3867,6 +3900,9 @@
 /* chat item action */
 "Reply" = "Відповісти";
 
+/* chat list item title */
+"requested to connect" = "запит на підключення";
+
 /* No comment provided by engineer. */
 "Required" = "Потрібно";
 
@@ -3922,9 +3958,6 @@
 "Review conditions" = "Умови перегляду";
 
 /* No comment provided by engineer. */
-"Review later" = "Перегляньте пізніше";
-
-/* No comment provided by engineer. */
 "Revoke" = "Відкликати";
 
 /* cancel file action */
@@ -3946,7 +3979,7 @@
 "Safer groups" = "Безпечніші групи";
 
 /* alert button
-   chat item action */
+chat item action */
 "Save" = "Зберегти";
 
 /* alert button */
@@ -4310,7 +4343,7 @@
 "Shape profile images" = "Сформуйте зображення профілю";
 
 /* alert action
-   chat item action */
+chat item action */
 "Share" = "Поділіться";
 
 /* No comment provided by engineer. */
@@ -4390,6 +4423,9 @@
 
 /* No comment provided by engineer. */
 "SimpleX address or 1-time link?" = "SimpleX адреса або одноразове посилання?";
+
+/* No comment provided by engineer. */
+"SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." = "SimpleX Chat і Flux уклали угоду про включення серверів, керованих Flux, у додаток.";
 
 /* No comment provided by engineer. */
 "SimpleX Chat security was audited by Trail of Bits." = "Безпека SimpleX Chat була перевірена компанією Trail of Bits.";
@@ -4572,6 +4608,9 @@
 "Tap button " = "Натисніть кнопку ";
 
 /* No comment provided by engineer. */
+"Tap Create SimpleX address in the menu to create it later." = "Натисніть «Створити адресу SimpleX» у меню, щоб створити її пізніше.";
+
+/* No comment provided by engineer. */
 "Tap to activate profile." = "Натисніть, щоб активувати профіль.";
 
 /* No comment provided by engineer. */
@@ -4604,7 +4643,7 @@
 /* No comment provided by engineer. */
 "TCP_KEEPINTVL" = "TCP_KEEPINTVL";
 
-/* No comment provided by engineer. */
+/* file error alert title */
 "Temporary file error" = "Тимчасова помилка файлу";
 
 /* server test failure */
@@ -4687,9 +4726,6 @@
 
 /* No comment provided by engineer. */
 "The same conditions will apply to operator **%@**." = "Такі ж умови діятимуть і для оператора **%@**.";
-
-/* No comment provided by engineer. */
-"The same conditions will apply to operator(s): **%@**." = "Такі ж умови будуть застосовуватися до оператора(ів): **%@**.";
 
 /* No comment provided by engineer. */
 "The second preset operator in the app!" = "Другий попередньо встановлений оператор у застосунку!";
@@ -4937,10 +4973,7 @@
 /* authentication reason */
 "Unlock app" = "Розблокувати додаток";
 
-/* No comment provided by engineer. */
-"unmute" = "увімкнути звук";
-
-/* swipe action */
+/* notification label action */
 "Unmute" = "Увімкнути звук";
 
 /* No comment provided by engineer. */
@@ -5280,6 +5313,9 @@
 "You are already connected to %@." = "Ви вже підключені до %@.";
 
 /* No comment provided by engineer. */
+"You are already connected with %@." = "Ви вже підключені до %@.";
+
+/* No comment provided by engineer. */
 "You are already connecting to %@." = "Ви вже з'єднані з %@.";
 
 /* No comment provided by engineer. */
@@ -5323,9 +5359,6 @@
 
 /* No comment provided by engineer. */
 "You can change it in Appearance settings." = "Ви можете змінити його в налаштуваннях зовнішнього вигляду.";
-
-/* No comment provided by engineer. */
-"You can configure operators in Network & servers settings." = "Ви можете налаштувати операторів у налаштуваннях Мережі та серверів.";
 
 /* No comment provided by engineer. */
 "You can configure servers via settings." = "Ви можете налаштувати сервери за допомогою налаштувань.";
@@ -5478,6 +5511,9 @@
 "You will still receive calls and notifications from muted profiles when they are active." = "Ви все одно отримуватимете дзвінки та сповіщення від вимкнених профілів, якщо вони активні.";
 
 /* No comment provided by engineer. */
+"You will stop receiving messages from this chat. Chat history will be preserved." = "Ви більше не будете отримувати повідомлення з цього чату. Історія чату буде збережена.";
+
+/* No comment provided by engineer. */
 "You will stop receiving messages from this group. Chat history will be preserved." = "Ви перестанете отримувати повідомлення від цієї групи. Історія чату буде збережена.";
 
 /* No comment provided by engineer. */
@@ -5566,7 +5602,4 @@
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Ваша адреса SimpleX";
-
-/* No comment provided by engineer. */
-"Your SMP servers" = "Ваші SMP-сервери";
 

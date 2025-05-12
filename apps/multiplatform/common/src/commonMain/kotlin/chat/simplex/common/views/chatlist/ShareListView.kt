@@ -191,7 +191,7 @@ private fun ShareList(
   val chats by remember(search) {
     derivedStateOf {
       val sorted = chatModel.chats.value.toList().filter { it.chatInfo.ready }.sortedByDescending { it.chatInfo is ChatInfo.Local }
-      filteredChats(false, mutableStateOf(false), mutableStateOf(null), search, sorted)
+      filteredChats(mutableStateOf(false), mutableStateOf(null), search, sorted)
     }
   }
   val topPaddingToContent = topPaddingToContent(false)

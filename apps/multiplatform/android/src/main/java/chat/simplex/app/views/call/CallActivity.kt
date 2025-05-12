@@ -99,7 +99,8 @@ class CallActivity: ComponentActivity(), ServiceConnection {
   fun setPipParams(video: Boolean, sourceRectHint: Rect? = null, viewRatio: Rational? = null) {
     // By manually specifying source rect we exclude empty background while toggling PiP
     val builder = PictureInPictureParams.Builder()
-        .setAspectRatio(viewRatio)
+      // that's limitation of Android. Otherwise, may crash on devices like Z Fold 3
+        .setAspectRatio(viewRatio?.coerceIn(Rational(100, 239)..Rational(239, 100)))
         .setSourceRectHint(sourceRectHint)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
       builder.setAutoEnterEnabled(video)

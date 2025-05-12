@@ -1,9 +1,12 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
@@ -18,12 +21,12 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
-import Database.SQLite.Simple.FromField (FromField (..))
-import Database.SQLite.Simple.ToField (ToField (..))
+import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types (Contact, ContactId, User)
+import Simplex.Messaging.Agent.Store.DB (Binary (..), fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, fstToLower, singleFieldJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, singleFieldJSON)
 import Simplex.Messaging.Util (decodeJSON, encodeJSON)
 
 data Call = Call
@@ -90,6 +93,9 @@ data CallState
 
 newtype CallId = CallId ByteString
   deriving (Eq, Show)
+  deriving newtype (FromField)
+
+instance ToField CallId where toField (CallId m) = toField $ Binary m
 
 instance StrEncoding CallId where
   strEncode (CallId m) = strEncode m
@@ -102,10 +108,6 @@ instance FromJSON CallId where
 instance ToJSON CallId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
-
-instance FromField CallId where fromField f = CallId <$> fromField f
-
-instance ToField CallId where toField (CallId m) = toField m
 
 data RcvCallInvitation = RcvCallInvitation
   { user :: User,

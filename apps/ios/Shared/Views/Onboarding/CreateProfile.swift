@@ -145,6 +145,7 @@ struct CreateFirstProfile: View {
                     TextField("Enter your name…", text: $displayName)
                         .focused($focusDisplayName)
                         .padding(.horizontal)
+                        .padding(.trailing, 20)
                         .padding(.vertical, 10)
                         .background(
                             RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -174,7 +175,6 @@ struct CreateFirstProfile: View {
         }
         .onAppear() {
             focusDisplayName = true
-            setLastVersionDefault()
         }
         .padding(.horizontal, 25)
         .padding(.top, 10)
@@ -207,7 +207,7 @@ struct CreateFirstProfile: View {
     }
 
     private func nextStepDestinationView() -> some View {
-        ChooseServerOperators(onboarding: true)
+        OnboardingConditionsView()
             .navigationBarBackButtonHidden(true)
             .modifier(ThemedBackground())
     }
@@ -236,15 +236,15 @@ private func showCreateProfileAlert(
     _ error: Error
 ) {
     let m = ChatModel.shared
-    switch error as? ChatResponse {
-    case .chatCmdError(_, .errorStore(.duplicateName)),
-         .chatCmdError(_, .error(.userExists)):
+    switch error as? ChatError {
+    case .errorStore(.duplicateName),
+         .error(.userExists):
         if m.currentUser == nil {
             AlertManager.shared.showAlert(duplicateUserAlert)
         } else {
             showAlert(.duplicateUserError)
         }
-    case .chatCmdError(_, .error(.invalidDisplayName)):
+    case .error(.invalidDisplayName):
         if m.currentUser == nil {
             AlertManager.shared.showAlert(invalidDisplayNameAlert)
         } else {

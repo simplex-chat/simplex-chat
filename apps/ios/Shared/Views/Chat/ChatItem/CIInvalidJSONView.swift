@@ -7,10 +7,11 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct CIInvalidJSONView: View {
     @EnvironmentObject var theme: AppTheme
-    var json: String
+    var json: Data?
     @State private var showJSON = false
     
     var body: some View {
@@ -25,7 +26,7 @@ struct CIInvalidJSONView: View {
         .textSelection(.disabled)
         .onTapGesture { showJSON = true }
         .appSheet(isPresented: $showJSON) {
-            invalidJSONView(json)
+            invalidJSONView(dataToString(json))
         }
     }
 }
@@ -49,6 +50,6 @@ func invalidJSONView(_ json: String) -> some View {
 
 struct CIInvalidJSONView_Previews: PreviewProvider {
     static var previews: some View {
-        CIInvalidJSONView(json: "{}")
+        CIInvalidJSONView(json: "{}".data(using: .utf8)!)
     }
 }

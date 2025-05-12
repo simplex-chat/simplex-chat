@@ -35,7 +35,8 @@ fun DefaultAppBar(
   // If I just disable clickable modifier when don't need it, it will stop passing clicks to search. Replacing the whole modifier
   val modifier = if (!showSearch) {
     Modifier.clickable(enabled = onTitleClick != null, onClick = onTitleClick ?: { })
-  } else Modifier.imePadding()
+  } else if (!onTop) Modifier.imePadding()
+  else Modifier
 
   val themeBackgroundMix = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
   val prefAlpha = remember { appPrefs.inAppBarsAlpha.state }

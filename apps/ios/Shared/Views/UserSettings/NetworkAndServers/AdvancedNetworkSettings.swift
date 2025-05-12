@@ -208,6 +208,19 @@ struct AdvancedNetworkSettings: View {
                     }
                 }
 
+                Section {
+                    Picker("Use web port", selection: $netCfg.smpWebPortServers) {
+                        ForEach(SMPWebPortServers.allCases, id: \.self) { Text($0.text) }
+                    }
+                    .frame(height: 36)
+                } header: {
+                    Text("TCP port for messaging")
+                } footer: {
+                    netCfg.smpWebPortServers == .preset
+                    ? Text("Use TCP port 443 for preset servers only.")
+                    : Text("Use TCP port \(netCfg.smpWebPortServers == .all ? "443" : "5223") when no port is specified.")
+                }
+                
                 Section("TCP connection") {
                     timeoutSettingPicker("TCP connection timeout", selection: $netCfg.tcpConnectTimeout, values: [10_000000, 15_000000, 20_000000, 30_000000, 45_000000, 60_000000, 90_000000], label: secondsLabel)
                     timeoutSettingPicker("Protocol timeout", selection: $netCfg.tcpTimeout, values: [5_000000, 7_000000, 10_000000, 15_000000, 20_000000, 30_000000], label: secondsLabel)
@@ -360,8 +373,8 @@ struct AdvancedNetworkSettings: View {
         let userMode = Text("A separate TCP connection will be used **for each chat profile you have in the app**.")
         return switch mode {
         case .user: userMode
-        case .session: userMode + Text("\n") + Text("New SOCKS credentials will be used every time you start the app.")
-        case .server: userMode + Text("\n") + Text("New SOCKS credentials will be used for each server.")
+        case .session: userMode + textNewLine + Text("New SOCKS credentials will be used every time you start the app.")
+        case .server: userMode + textNewLine + Text("New SOCKS credentials will be used for each server.")
         case .entity: Text("A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.")
         }
     }

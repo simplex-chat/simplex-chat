@@ -243,7 +243,7 @@ struct ActiveCallView: View {
                 ChatReceiver.shared.messagesChannel = nil
                 return
             }
-            if case let .chatItemsStatusesUpdated(_, chatItems) = msg,
+            if case let .result(.chatItemsStatusesUpdated(_, chatItems)) = msg,
                chatItems.contains(where: { ci in
                    ci.chatInfo.id == call.contact.id &&
                    ci.chatItem.content.isSndCall &&
@@ -361,7 +361,7 @@ struct ActiveCallOverlay: View {
                 HStack {
                     Text(call.encryptionStatus)
                     if let connInfo = call.connectionInfo {
-                        Text("(") + Text(connInfo.text) + Text(")")
+                        Text(verbatim: "(") + Text(connInfo.text) + Text(verbatim: ")")
                     }
                 }
             }
@@ -390,7 +390,7 @@ struct ActiveCallOverlay: View {
                 HStack {
                     Text(call.encryptionStatus)
                     if let connInfo = call.connectionInfo {
-                        Text("(") + Text(connInfo.text) + Text(")")
+                        Text(verbatim: "(") + Text(connInfo.text) + Text(verbatim: ")")
                     }
                 }
             }

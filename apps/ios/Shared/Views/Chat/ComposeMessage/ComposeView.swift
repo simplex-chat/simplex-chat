@@ -11,6 +11,8 @@ import SimpleXChat
 import SwiftyGif
 import PhotosUI
 
+let MAX_NUMBER_OF_MENTIONS = 3
+
 enum ComposePreview {
     case noPreview
     case linkPreview(linkPreview: LinkPreview?)
@@ -19,11 +21,12 @@ enum ComposePreview {
     case filePreview(fileName: String, file: URL)
 }
 
-enum ComposeContextItem {
+enum ComposeContextItem: Equatable {
     case noContextItem
     case quotedItem(chatItem: ChatItem)
     case editingItem(chatItem: ChatItem)
     case forwardingItems(chatItems: [ChatItem], fromChatInfo: ChatInfo)
+    case reportedItem(chatItem: ChatItem, reason: ReportReason)
 }
 
 enum VoiceMessageRecordingState {
@@ -38,31 +41,41 @@ struct LiveMessage {
     var sentMsg: String?
 }
 
+typealias MentionedMembers = [String: CIMention]
+
 struct ComposeState {
     var message: String
+    var parsedMessage: [FormattedText]
     var liveMessage: LiveMessage? = nil
     var preview: ComposePreview
     var contextItem: ComposeContextItem
     var voiceMessageRecordingState: VoiceMessageRecordingState
     var inProgress = false
     var useLinkPreviews: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
+    var mentions: MentionedMembers = [:]
 
     init(
         message: String = "",
+        parsedMessage: [FormattedText] = [],
         liveMessage: LiveMessage? = nil,
         preview: ComposePreview = .noPreview,
         contextItem: ComposeContextItem = .noContextItem,
-        voiceMessageRecordingState: VoiceMessageRecordingState = .noRecording
+        voiceMessageRecordingState: VoiceMessageRecordingState = .noRecording,
+        mentions: MentionedMembers = [:]
     ) {
         self.message = message
+        self.parsedMessage = parsedMessage
         self.liveMessage = liveMessage
         self.preview = preview
         self.contextItem = contextItem
         self.voiceMessageRecordingState = voiceMessageRecordingState
+        self.mentions = mentions
     }
 
     init(editingItem: ChatItem) {
-        self.message = editingItem.content.text
+        let text = editingItem.content.text
+        self.message = text
+        self.parsedMessage = editingItem.formattedText ?? FormattedText.plain(text)
         self.preview = chatItemPreview(chatItem: editingItem)
         self.contextItem = .editingItem(chatItem: editingItem)
         if let emc = editingItem.content.msgContent,
@@ -71,10 +84,12 @@ struct ComposeState {
         } else {
             self.voiceMessageRecordingState = .noRecording
         }
+        self.mentions = editingItem.mentions ?? [:]
     }
 
     init(forwardingItems: [ChatItem], fromChatInfo: ChatInfo) {
         self.message = ""
+        self.parsedMessage = []
         self.preview = .noPreview
         self.contextItem = .forwardingItems(chatItems: forwardingItems, fromChatInfo: fromChatInfo)
         self.voiceMessageRecordingState = .noRecording
@@ -82,20 +97,38 @@ struct ComposeState {
 
     func copy(
         message: String? = nil,
+        parsedMessage: [FormattedText]? = nil,
         liveMessage: LiveMessage? = nil,
         preview: ComposePreview? = nil,
         contextItem: ComposeContextItem? = nil,
-        voiceMessageRecordingState: VoiceMessageRecordingState? = nil
+        voiceMessageRecordingState: VoiceMessageRecordingState? = nil,
+        mentions: MentionedMembers? = nil
     ) -> ComposeState {
         ComposeState(
             message: message ?? self.message,
+            parsedMessage: parsedMessage ?? self.parsedMessage,
             liveMessage: liveMessage ?? self.liveMessage,
             preview: preview ?? self.preview,
             contextItem: contextItem ?? self.contextItem,
-            voiceMessageRecordingState: voiceMessageRecordingState ?? self.voiceMessageRecordingState
+            voiceMessageRecordingState: voiceMessageRecordingState ?? self.voiceMessageRecordingState,
+            mentions: mentions ?? self.mentions
         )
     }
-
+    
+    func mentionMemberName(_ name: String) -> String {
+        var n = 0
+        var tryName = name
+        while mentions[tryName] != nil {
+            n += 1
+            tryName = "\(name)_\(n)"
+        }
+        return tryName
+    }
+    
+    var memberMentions: [String: Int64] {
+        self.mentions.compactMapValues { $0.memberRef?.groupMemberId }
+    }
+    
     var editing: Bool {
         switch contextItem {
         case .editingItem: return true
@@ -116,13 +149,31 @@ struct ComposeState {
         default: return false
         }
     }
-
+    
+    var reporting: Bool {
+        switch contextItem {
+        case .reportedItem: return true
+        default: return false
+        }
+    }
+    
+    var submittingValidReport: Bool {
+        switch contextItem {
+        case let .reportedItem(_, reason):
+            switch reason {
+            case .other: return !message.isEmpty
+            default: return true
+            }
+        default: return false
+        }
+    }
+    
     var sendEnabled: Bool {
         switch preview {
         case let .mediaPreviews(media): return !media.isEmpty
         case .voicePreview: return voiceMessageRecordingState == .finished
         case .filePreview: return true
-        default: return !message.isEmpty || forwarding || liveMessage != nil
+        default: return !message.isEmpty || forwarding || liveMessage != nil || submittingValidReport
         }
     }
 
@@ -175,7 +226,7 @@ struct ComposeState {
     }
 
     var attachmentDisabled: Bool {
-        if editing || forwarding || liveMessage != nil || inProgress { return true }
+        if editing || forwarding || liveMessage != nil || inProgress || reporting { return true }
         switch preview {
         case .noPreview: return false
         case .linkPreview: return false
@@ -190,6 +241,15 @@ struct ComposeState {
         case let .mediaPreviews(mediaPreviews): !mediaPreviews.isEmpty
         case .voicePreview: false
         case .filePreview: true
+        }
+    }
+
+    var placeholder: String? {
+        switch contextItem {
+        case let .reportedItem(_, reason):
+            return reason.text
+        default:
+            return nil
         }
     }
 
@@ -265,6 +325,8 @@ struct ComposeView: View {
     @ObservedObject var chat: Chat
     @Binding var composeState: ComposeState
     @Binding var keyboardVisible: Bool
+    @Binding var keyboardHiddenDate: Date
+    @Binding var selectedRange: NSRange
 
     @State var linkUrl: URL? = nil
     @State var hasSimplexLink: Bool = false
@@ -297,6 +359,11 @@ struct ComposeView: View {
                 ContextInvitingContactMemberView()
                 Divider()
             }
+            
+            if case let .reportedItem(_, reason) = composeState.contextItem {
+                reportReasonView(reason)
+                Divider()
+            }
             // preference checks should match checks in forwarding list
             let simplexLinkProhibited = hasSimplexLink && !chat.groupFeatureEnabled(.simplexLinks)
             let fileProhibited = composeState.attachmentPreview && !chat.groupFeatureEnabled(.files)
@@ -326,7 +393,7 @@ struct ComposeView: View {
                 }
                 .disabled(composeState.attachmentDisabled || !chat.userCanSend || (chat.chatInfo.contact?.nextSendGrpInv ?? false))
                 .frame(width: 25, height: 25)
-                .padding(.bottom, 12)
+                .padding(.bottom, 16)
                 .padding(.leading, 12)
                 .tint(theme.colors.primary)
                 if case let .group(g) = chat.chatInfo,
@@ -343,6 +410,7 @@ struct ComposeView: View {
                 ZStack(alignment: .leading) {
                     SendMessageView(
                         composeState: $composeState,
+                        selectedRange: $selectedRange,
                         sendMessage: { ttl in
                             sendMessage(ttl: ttl)
                             resetLinkPreview()
@@ -367,6 +435,7 @@ struct ComposeView: View {
                         timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
                         onMediaAdded: { media in if !media.isEmpty { chosenMedia = media }},
                         keyboardVisible: $keyboardVisible,
+                        keyboardHiddenDate: $keyboardHiddenDate,
                         sendButtonColor: chat.chatInfo.incognito
                             ? .indigo.opacity(colorScheme == .dark ? 1 : 0.7)
                             : theme.colors.primary
@@ -395,15 +464,17 @@ struct ComposeView: View {
                 .ignoresSafeArea(.all, edges: .bottom)
         }
         .onChange(of: composeState.message) { msg in
+            let parsedMsg = parseSimpleXMarkdown(msg)
+            composeState = composeState.copy(parsedMessage: parsedMsg ?? FormattedText.plain(msg))
             if composeState.linkPreviewAllowed {
                 if msg.count > 0 {
-                    showLinkPreview(msg)
+                    showLinkPreview(parsedMsg)
                 } else {
                     resetLinkPreview()
                     hasSimplexLink = false
                 }
             } else if msg.count > 0 && !chat.groupFeatureEnabled(.simplexLinks) {
-                (_, hasSimplexLink) = parseMessage(msg)
+                (_, hasSimplexLink) = getSimplexLink(parsedMsg)
             } else {
                 hasSimplexLink = false
             }
@@ -686,6 +757,27 @@ struct ComposeView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.thinMaterial)
     }
+    
+    
+    private func reportReasonView(_ reason: ReportReason) -> some View {
+        let reportText = switch reason {
+        case .spam: NSLocalizedString("Report spam: only group moderators will see it.", comment: "report reason")
+        case .profile: NSLocalizedString("Report member profile: only group moderators will see it.", comment: "report reason")
+        case .community: NSLocalizedString("Report violation: only group moderators will see it.", comment: "report reason")
+        case .illegal: NSLocalizedString("Report content: only group moderators will see it.", comment: "report reason")
+        case .other: NSLocalizedString("Report other: only group moderators will see it.", comment: "report reason")
+        case .unknown: "" // Should never happen
+        }
+
+        return Text(reportText)
+            .italic()
+            .font(.caption)
+            .padding(12)
+            .frame(minHeight: 44)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.thinMaterial)
+    }
+
 
     @ViewBuilder private func contextItemView() -> some View {
         switch composeState.contextItem {
@@ -715,6 +807,15 @@ struct ComposeView: View {
                 cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) }
             )
             Divider()
+        case let .reportedItem(chatItem: reportedItem, _):
+            ContextItemView(
+                chat: chat,
+                contextItems: [reportedItem],
+                contextIcon: "flag",
+                cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) },
+                contextIconForeground: Color.red
+            )
+            Divider()
         }
     }
 
@@ -730,6 +831,7 @@ struct ComposeView: View {
         var sent: ChatItem?
         let msgText = text ?? composeState.message
         let liveMessage = composeState.liveMessage
+        let mentions = composeState.memberMentions
         if !live {
             if liveMessage != nil { composeState = composeState.copy(liveMessage: nil) }
             await sending()
@@ -740,12 +842,14 @@ struct ComposeView: View {
             // Composed text is send as a reply to the last forwarded item
             sent = await forwardItems(chatItems, fromChatInfo, ttl).last
             if !composeState.message.isEmpty {
-                _ = await send(checkLinkPreview(), quoted: sent?.id, live: false, ttl: ttl)
+                _ = await send(checkLinkPreview(), quoted: sent?.id, live: false, ttl: ttl, mentions: mentions)
             }
         } else if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)
         } else if let liveMessage = liveMessage, liveMessage.sentMsg != nil {
             sent = await updateMessage(liveMessage.chatItem, live: live)
+        } else if case let .reportedItem(chatItem, reason) = composeState.contextItem {
+            sent = await send(reason, chatItemId: chatItem.id)
         } else {
             var quoted: Int64? = nil
             if case let .quotedItem(chatItem: quotedItem) = composeState.contextItem {
@@ -754,10 +858,11 @@ struct ComposeView: View {
 
             switch (composeState.preview) {
             case .noPreview:
-                sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl)
+                sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl, mentions: mentions)
             case .linkPreview:
-                sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl)
+                sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl, mentions: mentions)
             case let .mediaPreviews(media):
+                // TODO: CHECK THIS
                 let last = media.count - 1
                 var msgs: [ComposedMessage] = []
                 if last >= 0 {
@@ -782,10 +887,10 @@ struct ComposeView: View {
             case let .voicePreview(recordingFileName, duration):
                 stopPlayback.toggle()
                 let file = voiceCryptoFile(recordingFileName)
-                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: file, ttl: ttl)
+                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: file, ttl: ttl, mentions: mentions)
             case let .filePreview(_, file):
                 if let savedFile = saveFileFromURL(file) {
-                    sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live, ttl: ttl)
+                    sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live, ttl: ttl, mentions: mentions)
                 }
             }
         }
@@ -840,7 +945,7 @@ struct ComposeView: View {
                             type: chat.chatInfo.chatType,
                             id: chat.chatInfo.apiId,
                             itemId: ei.id,
-                            msg: mc,
+                            updatedMessage: UpdatedMessage(msgContent: mc, mentions: composeState.memberMentions),
                             live: live
                         )
                         await MainActor.run {
@@ -872,6 +977,8 @@ struct ComposeView: View {
                 return .voice(text: msgText, duration: duration)
             case .file:
                 return .file(msgText)
+            case .report(_, let reason):
+                return .report(text: msgText, reason: reason)
             case .unknown(let type, _):
                 return .unknown(type: type, text: msgText)
             }
@@ -891,10 +998,28 @@ struct ComposeView: View {
                 return nil
             }
         }
-
-        func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
+        
+        func send(_ reportReason: ReportReason, chatItemId: Int64) async -> ChatItem? {
+            if let chatItems = await apiReportMessage(
+                groupId: chat.chatInfo.apiId,
+                chatItemId: chatItemId,
+                reportReason: reportReason,
+                reportText: msgText
+            ) {
+                await MainActor.run {
+                    for chatItem in chatItems {
+                        chatModel.addChatItem(chat.chatInfo, chatItem)
+                    }
+                }
+                return chatItems.first
+            }
+            
+            return nil
+        }
+                
+        func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?, mentions: [String: Int64]) async -> ChatItem? {
             await send(
-                [ComposedMessage(fileSource: file, quotedItemId: quoted, msgContent: mc)],
+                [ComposedMessage(fileSource: file, quotedItemId: quoted, msgContent: mc, mentions: mentions)],
                 live: live,
                 ttl: ttl
             ).first
@@ -958,7 +1083,8 @@ struct ComposeView: View {
         func checkLinkPreview() -> MsgContent {
             switch (composeState.preview) {
             case let .linkPreview(linkPreview: linkPreview):
-                if let url = parseMessage(msgText).url,
+                if let parsedMsg = parseSimpleXMarkdown(msgText),
+                   let url = getSimplexLink(parsedMsg).url,
                    let linkPreview = linkPreview,
                    url == linkPreview.uri {
                     return .link(text: msgText, preview: linkPreview)
@@ -1077,9 +1203,9 @@ struct ComposeView: View {
         }
     }
 
-    private func showLinkPreview(_ s: String) {
+    private func showLinkPreview(_ parsedMsg: [FormattedText]?) {
         prevLinkUrl = linkUrl
-        (linkUrl, hasSimplexLink) = parseMessage(s)
+        (linkUrl, hasSimplexLink) = getSimplexLink(parsedMsg)
         if let url = linkUrl {
             if url != composeState.linkPreview?.uri && url != pendingLinkUrl {
                 pendingLinkUrl = url
@@ -1096,8 +1222,8 @@ struct ComposeView: View {
         }
     }
 
-    private func parseMessage(_ msg: String) -> (url: URL?, hasSimplexLink: Bool) {
-        guard let parsedMsg = parseSimpleXMarkdown(msg) else { return (nil, false) }
+    private func getSimplexLink(_ parsedMsg: [FormattedText]?) -> (url: URL?, hasSimplexLink: Bool) {
+        guard let parsedMsg else { return (nil, false) }
         let url: URL? = if let uri = parsedMsg.first(where: { ft in
             ft.format == .uri && !cancelledLinks.contains(ft.text) && !isSimplexLink(ft.text)
         }) {
@@ -1149,18 +1275,23 @@ struct ComposeView_Previews: PreviewProvider {
     static var previews: some View {
         let chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
         @State var composeState = ComposeState(message: "hello")
+        @State var selectedRange = NSRange()
 
         return Group {
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
-                keyboardVisible: Binding.constant(true)
+                keyboardVisible: Binding.constant(true),
+                keyboardHiddenDate: Binding.constant(Date.now),
+                selectedRange: $selectedRange
             )
             .environmentObject(ChatModel())
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
-                keyboardVisible: Binding.constant(true)
+                keyboardVisible: Binding.constant(true),
+                keyboardHiddenDate: Binding.constant(Date.now),
+                selectedRange: $selectedRange
             )
             .environmentObject(ChatModel())
         }

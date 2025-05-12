@@ -23,7 +23,7 @@ struct AddGroupView: View {
     @State private var showTakePhoto = false
     @State private var chosenImage: UIImage? = nil
     @State private var showInvalidNameAlert = false
-    @State private var groupLink: String?
+    @State private var groupLink: CreatedConnLink?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
 
     var body: some View {
@@ -191,11 +191,7 @@ struct AddGroupView: View {
             profile.groupPreferences = GroupPreferences(history: GroupPreference(enable: .on))
             let gInfo = try apiNewGroup(incognito: incognitoDefault, groupProfile: profile)
             Task {
-                let groupMembers = await apiListMembers(gInfo.groupId)
-                await MainActor.run {
-                    m.groupMembers = groupMembers.map { GMember.init($0) }
-                    m.populateGroupMembersIndexes()
-                }
+                await m.loadGroupMembers(gInfo)
             }
             let c = Chat(chatInfo: .group(groupInfo: gInfo), chatItems: [])
             m.addChat(c)

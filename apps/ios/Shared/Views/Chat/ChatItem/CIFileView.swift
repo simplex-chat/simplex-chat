@@ -118,16 +118,10 @@ struct CIFileView: View {
                 }
             case let .rcvError(rcvFileError):
                 logger.debug("CIFileView fileAction - in .rcvError")
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("File error"),
-                    message: Text(rcvFileError.errorInfo)
-                ))
+                showFileErrorAlert(rcvFileError)
             case let .rcvWarning(rcvFileError):
                 logger.debug("CIFileView fileAction - in .rcvWarning")
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("Temporary file error"),
-                    message: Text(rcvFileError.errorInfo)
-                ))
+                showFileErrorAlert(rcvFileError, temporary: true)
             case .sndStored:
                 logger.debug("CIFileView fileAction - in .sndStored")
                 if file.fileProtocol == .local, let fileSource = getLoadedFileSource(file) {
@@ -140,16 +134,10 @@ struct CIFileView: View {
                 }
             case let .sndError(sndFileError):
                 logger.debug("CIFileView fileAction - in .sndError")
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("File error"),
-                    message: Text(sndFileError.errorInfo)
-                ))
+                showFileErrorAlert(sndFileError)
             case let .sndWarning(sndFileError):
                 logger.debug("CIFileView fileAction - in .sndWarning")
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("Temporary file error"),
-                    message: Text(sndFileError.errorInfo)
-                ))
+                showFileErrorAlert(sndFileError, temporary: true)
             default: break
             }
         }
@@ -268,6 +256,26 @@ func saveCryptoFile(_ fileSource: CryptoFile) {
     }
 }
 
+func showFileErrorAlert(_ err: FileError, temporary: Bool = false) {
+    let title: String = if temporary {
+        NSLocalizedString("Temporary file error", comment: "file error alert title")
+    } else {
+        NSLocalizedString("File error", comment: "file error alert title")
+    }
+    if let btn = err.moreInfoButton {
+        showAlert(title, message: err.errorInfo) {
+            [
+                okAlertAction,
+                UIAlertAction(title: NSLocalizedString("How it works", comment: "alert button"), style: .default, handler: { _ in
+                    UIApplication.shared.open(contentModerationPostLink)
+                })
+            ]
+        }
+    } else {
+        showAlert(title, message: err.errorInfo)
+    }
+}
+
 struct CIFileView_Previews: PreviewProvider {
     static var previews: some View {
         let sentFile: ChatItem = ChatItem(
@@ -285,16 +293,16 @@ struct CIFileView_Previews: PreviewProvider {
             file: nil
         )
         Group {
-            ChatItemView(chat: Chat.sampleData, chatItem: sentFile)
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample())
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileName: "some_long_file_name_here", fileStatus: .rcvInvitation))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvAccepted))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvCancelled))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileSize: 1_000_000_000, fileStatus: .rcvInvitation))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(text: "Hello there", fileStatus: .rcvInvitation))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", fileStatus: .rcvInvitation))
-            ChatItemView(chat: Chat.sampleData, chatItem: fileChatItemWtFile)
+            ChatItemView(chat: Chat.sampleData, chatItem: sentFile, scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(), scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileName: "some_long_file_name_here", fileStatus: .rcvInvitation), scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvAccepted), scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvCancelled), scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileSize: 1_000_000_000, fileStatus: .rcvInvitation), scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(text: "Hello there", fileStatus: .rcvInvitation), scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", fileStatus: .rcvInvitation), scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, chatItem: fileChatItemWtFile, scrollToItemId: { _ in })
         }
         .environment(\.revealed, false)
         .previewLayout(.fixed(width: 360, height: 360))

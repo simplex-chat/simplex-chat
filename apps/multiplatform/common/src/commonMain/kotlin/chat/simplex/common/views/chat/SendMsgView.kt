@@ -12,10 +12,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
@@ -56,11 +58,11 @@ fun SendMsgView(
   cancelLiveMessage: (() -> Unit)? = null,
   editPrevMessage: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
-  onMessageChange: (String) -> Unit,
-  textStyle: MutableState<TextStyle>
-) {
+  onMessageChange: (ComposeMessage) -> Unit,
+  textStyle: MutableState<TextStyle>,
+  focusRequester: FocusRequester? = null,
+  ) {
   val showCustomDisappearingMessageDialog = remember { mutableStateOf(false) }
-
   val padding = if (appPlatform.isAndroid) PaddingValues(vertical = 8.dp) else PaddingValues(top = 3.dp, bottom = 4.dp)
   Box(Modifier.padding(padding)) {
     val cs = composeState.value
@@ -73,8 +75,8 @@ fun SendMsgView(
         false
       }
     }
-    val showVoiceButton = !nextSendGrpInv && cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
-        !composeState.value.forwarding && cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
+    val showVoiceButton = !nextSendGrpInv && cs.message.text.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
+        !composeState.value.forwarding && cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started) && (cs.contextItem !is ComposeContextItem.ReportedItem)
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
     val sendMsgButtonDisabled = !sendMsgEnabled || !cs.sendEnabled() ||
       (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
@@ -92,7 +94,8 @@ fun SendMsgView(
       showVoiceButton,
       onMessageChange,
       editPrevMessage,
-      onFilesPasted
+      onFilesPasted,
+      focusRequester
     ) {
       if (!cs.inProgress) {
         sendMessage(null)
@@ -125,6 +128,9 @@ fun SendMsgView(
       }
       when {
         progressByTimeout -> ProgressIndicator()
+        cs.contextItem is ComposeContextItem.ReportedItem -> {
+          SendMsgButton(painterResource(MR.images.ic_check_filled), sendButtonSize, sendButtonAlpha, sendButtonColor, !sendMsgButtonDisabled, sendMessage)
+        }
         showVoiceButton && sendMsgEnabled -> {
           Row(verticalAlignment = Alignment.CenterVertically) {
             val stopRecOnNextClick = remember { mutableStateOf(false) }
@@ -157,7 +163,7 @@ fun SendMsgView(
             }
           }
         }
-        cs.liveMessage?.sent == false && cs.message.isEmpty() -> {
+        cs.liveMessage?.sent == false && cs.message.text.isEmpty() -> {
           CancelLiveMessageButton {
             cancelLiveMessage?.invoke()
           }
@@ -277,7 +283,7 @@ private fun CustomDisappearingMessageDialog(
 @Composable
 private fun BoxScope.DeleteTextButton(composeState: MutableState<ComposeState>) {
   IconButton(
-    { composeState.value = composeState.value.copy(message = "") },
+    { composeState.value = composeState.value.copy(message = ComposeMessage()) },
     Modifier.align(Alignment.TopEnd).size(36.dp)
   ) {
     Icon(painterResource(MR.images.ic_close), null, Modifier.padding(7.dp).size(36.dp), tint = MaterialTheme.colors.secondary)
@@ -583,7 +589,7 @@ fun PreviewSendMsgView() {
       editPrevMessage = {},
       onMessageChange = { _ -> },
       onFilesPasted = {},
-      textStyle = textStyle
+      textStyle = textStyle,
     )
   }
 }
@@ -619,7 +625,7 @@ fun PreviewSendMsgViewEditing() {
       editPrevMessage = {},
       onMessageChange = { _ -> },
       onFilesPasted = {},
-      textStyle = textStyle
+      textStyle = textStyle,
     )
   }
 }
@@ -655,7 +661,7 @@ fun PreviewSendMsgViewInProgress() {
       editPrevMessage = {},
       onMessageChange = { _ -> },
       onFilesPasted = {},
-      textStyle = textStyle
+      textStyle = textStyle,
     )
   }
 }

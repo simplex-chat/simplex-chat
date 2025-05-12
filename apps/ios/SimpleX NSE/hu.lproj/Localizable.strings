@@ -10,6 +10,3 @@
 /* notification */
 "New messages" = "Új üzenetek";
 
-/* notification body */
-"New messages in %d chats" = "Új üzenetek %d csevegésben";
-

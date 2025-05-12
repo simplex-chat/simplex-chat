@@ -21,7 +21,7 @@ private let typingIndicators: [Text] = [
 ]
 
 private func typing(_ w: Font.Weight = .light) -> Text {
-    Text(".").fontWeight(w)
+    Text(verbatim: ".").fontWeight(w)
 }
 
 struct MsgContentView: View {
@@ -32,8 +32,11 @@ struct MsgContentView: View {
     var formattedText: [FormattedText]? = nil
     var sender: String? = nil
     var meta: CIMeta? = nil
+    var mentions: [String: CIMention]? = nil
+    var userMemberId: String? = nil
     var rightToLeft = false
     var showSecrets: Bool
+    var prefix: Text? = nil
     @State private var typingIdx = 0
     @State private var timer: Timer?
 
@@ -67,7 +70,7 @@ struct MsgContentView: View {
     }
 
     private func msgContentView() -> Text {
-        var v = messageText(text, formattedText, sender, showSecrets: showSecrets, secondaryColor: theme.colors.secondary)
+        var v = messageText(text, formattedText, sender, mentions: mentions, userMemberId: userMemberId, showSecrets: showSecrets, secondaryColor: theme.colors.secondary, prefix: prefix)
         if let mt = meta {
             if mt.isLive {
                 v = v + typingIndicator(mt.recent)
@@ -85,18 +88,19 @@ struct MsgContentView: View {
     }
 
     private func reserveSpaceForMeta(_ mt: CIMeta) -> Text {
-        (rightToLeft ? Text("\n") : Text(verbatim: "   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
+        (rightToLeft ? textNewLine : Text(verbatim: "   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
     }
 }
 
-func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: String?, icon: String? = nil, preview: Bool = false, showSecrets: Bool, secondaryColor: Color) -> Text {
+func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: String?, icon: String? = nil, preview: Bool = false, mentions: [String: CIMention]?, userMemberId: String?, showSecrets: Bool, secondaryColor: Color, prefix: Text? = nil) -> Text {
     let s = text
     var res: Text
+    
     if let ft = formattedText, ft.count > 0 && ft.count <= 200 {
-        res = formatText(ft[0], preview, showSecret: showSecrets)
+        res = formatText(ft[0], preview, showSecret: showSecrets, mentions: mentions, userMemberId: userMemberId)
         var i = 1
         while i < ft.count {
-            res = res + formatText(ft[i], preview, showSecret: showSecrets)
+            res = res + formatText(ft[i], preview, showSecret: showSecrets, mentions: mentions, userMemberId: userMemberId)
             i = i + 1
         }
     } else {
@@ -106,16 +110,20 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: St
     if let i = icon {
         res = Text(Image(systemName: i)).foregroundColor(secondaryColor) + textSpace + res
     }
+    
+    if let p = prefix {
+        res = p + res
+    }
 
     if let s = sender {
         let t = Text(s)
-        return (preview ? t : t.fontWeight(.medium)) + Text(": ") + res
+        return (preview ? t : t.fontWeight(.medium)) + Text(verbatim: ": ") + res
     } else {
         return res
     }
 }
 
-private func formatText(_ ft: FormattedText, _ preview: Bool, showSecret: Bool) -> Text {
+private func formatText(_ ft: FormattedText, _ preview: Bool, showSecret: Bool, mentions: [String: CIMention]?, userMemberId: String?) -> Text {
     let t = ft.text
     if let f = ft.format {
         switch (f) {
@@ -138,12 +146,31 @@ private func formatText(_ ft: FormattedText, _ preview: Bool, showSecret: Bool) 
             case .full: return linkText(t, simplexUri, preview, prefix: "")
             case .browser: return linkText(t, simplexUri, preview, prefix: "")
             }
+        case let .mention(memberName):
+            if let m = mentions?[memberName] {
+                if let ref = m.memberRef {
+                    let name: String = if let alias = ref.localAlias, alias != "" {
+                        "\(alias) (\(ref.displayName))"
+                    } else {
+                        ref.displayName
+                    }
+                    let tName = mentionText(name)
+                    return m.memberId == userMemberId ? tName.foregroundColor(.accentColor) : tName
+                } else {
+                    return mentionText(memberName)
+                }
+            }
+            return Text(t)
         case .email: return linkText(t, t, preview, prefix: "mailto:")
         case .phone: return linkText(t, t.replacingOccurrences(of: " ", with: ""), preview, prefix: "tel:")
         }
     } else {
         return Text(t)
     }
+}
+
+private func mentionText(_ name: String) -> Text {
+    Text(verbatim: name.contains(" @") ? "@'\(name)'" : "@\(name)").fontWeight(.semibold)
 }
 
 private func linkText(_ s: String, _ link: String, _ preview: Bool, prefix: String, color: Color = Color(uiColor: uiLinkColor), uiColor: UIColor = uiLinkColor) -> Text {

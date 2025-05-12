@@ -29,9 +29,11 @@ let DEFAULT_WEBRTC_ICE_SERVERS = "webrtcICEServers"
 let DEFAULT_CALL_KIT_CALLS_IN_RECENTS = "callKitCallsInRecents"
 let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages" // unused. Use GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES instead
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews" // deprecated, moved to app group
+let DEFAULT_PRIVACY_CHAT_LIST_OPEN_LINKS = "privacyChatListOpenLinks"
 let DEFAULT_PRIVACY_SIMPLEX_LINK_MODE = "privacySimplexLinkMode"
 let DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS = "privacyShowChatPreviews"
 let DEFAULT_PRIVACY_SAVE_LAST_DRAFT = "privacySaveLastDraft"
+let DEFAULT_PRIVACY_SHORT_LINKS = "privacyShortLinks"
 let DEFAULT_PRIVACY_PROTECT_SCREEN = "privacyProtectScreen"
 let DEFAULT_PRIVACY_DELIVERY_RECEIPTS_SET = "privacyDeliveryReceiptsSet"
 let DEFAULT_PRIVACY_MEDIA_BLUR_RADIUS = "privacyMediaBlurRadius"
@@ -98,6 +100,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_PRIVACY_SIMPLEX_LINK_MODE: SimpleXLinkMode.description.rawValue,
     DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS: true,
     DEFAULT_PRIVACY_SAVE_LAST_DRAFT: true,
+    DEFAULT_PRIVACY_SHORT_LINKS: false,
     DEFAULT_PRIVACY_PROTECT_SCREEN: false,
     DEFAULT_PRIVACY_DELIVERY_RECEIPTS_SET: false,
     DEFAULT_PRIVACY_MEDIA_BLUR_RADIUS: 0,
@@ -181,6 +184,8 @@ let encryptionStartedAtDefault = DateDefault(defaults: UserDefaults.standard, fo
 let connectViaLinkTabDefault = EnumDefault<ConnectViaLinkTab>(defaults: UserDefaults.standard, forKey: DEFAULT_CONNECT_VIA_LINK_TAB, withDefault: .scan)
 
 let privacySimplexLinkModeDefault = EnumDefault<SimpleXLinkMode>(defaults: UserDefaults.standard, forKey: DEFAULT_PRIVACY_SIMPLEX_LINK_MODE, withDefault: .description)
+
+let privacyChatListOpenLinksDefault = EnumDefault<PrivacyChatListOpenLinksMode>(defaults: UserDefaults.standard, forKey: DEFAULT_PRIVACY_CHAT_LIST_OPEN_LINKS, withDefault: PrivacyChatListOpenLinksMode.ask)
 
 let privacyLocalAuthModeDefault = EnumDefault<LAMode>(defaults: UserDefaults.standard, forKey: DEFAULT_LA_MODE, withDefault: .system)
 
@@ -474,7 +479,11 @@ struct SettingsView: View {
         case .registered:
             icon = "bolt.fill"
             color = theme.colors.secondary
-        case .invalid:
+        case .invalid: fallthrough
+        case .invalidBad: fallthrough
+        case .invalidTopic: fallthrough
+        case .invalidExpired: fallthrough
+        case .invalidUnregistered:
             icon = "bolt.slash"
             color = theme.colors.secondary
         case .confirmed:
@@ -521,7 +530,7 @@ struct ProfilePreview: View {
 func profileName(_ profileOf: NamedChat) -> Text {
     var t = Text(profileOf.displayName).fontWeight(.semibold).font(.title2)
     if profileOf.fullName != "" && profileOf.fullName != profileOf.displayName {
-        t = t + Text(" (" + profileOf.fullName + ")")
+        t = t + Text(verbatim: " (" + profileOf.fullName + ")")
 //                        .font(.callout)
         }
     return t

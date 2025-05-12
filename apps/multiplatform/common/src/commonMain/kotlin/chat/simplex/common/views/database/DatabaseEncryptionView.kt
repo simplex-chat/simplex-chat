@@ -435,7 +435,7 @@ suspend fun encryptDatabase(
     }
     val error = m.controller.apiStorageEncryption(currentKey.value, newKey.value)
     appPrefs.encryptionStartedAt.set(null)
-    val sqliteError = ((error?.chatError as? ChatError.ChatErrorDatabase)?.databaseError as? DatabaseError.ErrorExport)?.sqliteError
+    val sqliteError = ((error as? ChatError.ChatErrorDatabase)?.databaseError as? DatabaseError.ErrorExport)?.sqliteError
     when {
       sqliteError is SQLiteError.ErrorNotADatabase -> {
         operationEnded(m, progressIndicator) {
@@ -449,7 +449,7 @@ suspend fun encryptDatabase(
       error != null -> {
         operationEnded(m, progressIndicator) {
           AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_encrypting_database),
-            "failed to set storage encryption: ${error.responseType} ${error.details}"
+            "failed to set storage encryption: error ${error.string}"
           )
         }
         false

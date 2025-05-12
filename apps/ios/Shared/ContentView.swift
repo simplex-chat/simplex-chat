@@ -11,12 +11,10 @@ import SimpleXChat
 
 private enum NoticesSheet: Identifiable {
     case whatsNew(updatedConditions: Bool)
-    case updatedConditions
 
     var id: String {
         switch self {
         case .whatsNew: return "whatsNew"
-        case .updatedConditions: return "updatedConditions"
         }
     }
 }
@@ -278,18 +276,18 @@ struct ContentView: View {
                             let showWhatsNew = shouldShowWhatsNew()
                             let showUpdatedConditions = chatModel.conditions.conditionsAction?.showNotice ?? false
                             noticesShown = showWhatsNew || showUpdatedConditions
-                            if showWhatsNew {
+                            if showWhatsNew || showUpdatedConditions {
                                 noticesSheetItem = .whatsNew(updatedConditions: showUpdatedConditions)
-                            } else if showUpdatedConditions {
-                                noticesSheetItem = .updatedConditions
                             }
                         }
                     }
                 }
                 prefShowLANotice = true
                 connectViaUrl()
+                showReRegisterTokenAlert()
             }
             .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
+            .onChange(of: chatModel.reRegisterTknStatus) { _ in showReRegisterTokenAlert() }
             .sheet(item: $noticesSheetItem) { item in
                 switch item {
                 case let .whatsNew(updatedConditions):
@@ -298,13 +296,6 @@ struct ContentView: View {
                         .if(updatedConditions) { v in
                             v.task { await setConditionsNotified_() }
                         }
-                case .updatedConditions:
-                    UsageConditionsView(
-                        currUserServers: Binding.constant([]),
-                        userServers: Binding.constant([])
-                    )
-                    .modifier(ThemedBackground(grouped: true))
-                    .task { await setConditionsNotified_() }
                 }
             }
             if chatModel.setDeliveryReceipts {
@@ -315,6 +306,12 @@ struct ContentView: View {
         .onContinueUserActivity("INStartCallIntent", perform: processUserActivity)
         .onContinueUserActivity("INStartAudioCallIntent", perform: processUserActivity)
         .onContinueUserActivity("INStartVideoCallIntent", perform: processUserActivity)
+        .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { userActivity in
+            if let url = userActivity.webpageURL {
+                logger.debug("onContinueUserActivity.NSUserActivityTypeBrowsingWeb: \(url)")
+                chatModel.appOpenUrl = url
+            }
+        }
     }
 
     private func setConditionsNotified_() async {
@@ -446,12 +443,12 @@ struct ContentView: View {
     }
 
     func connectViaUrl() {
-        dismissAllSheets() {
-            let m = ChatModel.shared
-            if let url = m.appOpenUrl {
-                m.appOpenUrl = nil
+        let m = ChatModel.shared
+        if let url = m.appOpenUrl {
+            m.appOpenUrl = nil
+            dismissAllSheets() {
                 var path = url.path
-                if (path == "/contact" || path == "/invitation") {
+                if (path == "/contact" || path == "/invitation" || path == "/a" || path == "/c" || path == "/g" || path == "/i") {
                     path.removeFirst()
                     let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
                     planAndConnect(
@@ -464,6 +461,21 @@ struct ContentView: View {
                 } else {
                     AlertManager.shared.showAlert(Alert(title: Text("Error: URL is invalid")))
                 }
+            }
+        }
+    }
+
+    func showReRegisterTokenAlert() {
+        dismissAllSheets() {
+            let m = ChatModel.shared
+            if let errorTknStatus = m.reRegisterTknStatus, let token = chatModel.deviceToken {
+                chatModel.reRegisterTknStatus = nil
+                AlertManager.shared.showAlert(Alert(
+                    title: Text("Notifications error"),
+                    message: Text(tokenStatusInfo(errorTknStatus, register: true)),
+                    primaryButton: .default(Text("Register")) { reRegisterToken(token: token) },
+                    secondaryButton: .cancel()
+                ))
             }
         }
     }

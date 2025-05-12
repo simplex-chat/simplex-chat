@@ -30,11 +30,14 @@ struct SelectedItemsBottomToolbar: View {
     var chatInfo: ChatInfo
     // Bool - delete for everyone is possible
     var deleteItems: (Bool) -> Void
+    var archiveItems: () -> Void
     var moderateItems: () -> Void
     //var shareItems: () -> Void
     var forwardItems: () -> Void
     @State var deleteEnabled: Bool = false
     @State var deleteForEveryoneEnabled: Bool = false
+
+    @State var canArchiveReports: Bool = false
 
     @State var canModerate: Bool = false
     @State var moderateEnabled: Bool = false
@@ -50,7 +53,11 @@ struct SelectedItemsBottomToolbar: View {
 
             HStack(alignment: .center) {
                 Button {
-                    deleteItems(deleteForEveryoneEnabled)
+                    if canArchiveReports {
+                        archiveItems()
+                    } else {
+                        deleteItems(deleteForEveryoneEnabled)
+                    }
                 } label: {
                     Image(systemName: "trash")
                         .resizable()
@@ -109,19 +116,25 @@ struct SelectedItemsBottomToolbar: View {
         deleteCountProhibited = count == 0 || count > 200
         forwardCountProhibited = count == 0 || count > 20
         canModerate = possibleToModerate(chatInfo)
+        let groupInfo: GroupInfo? = if case let ChatInfo.group(groupInfo: info) = chatInfo {
+            info
+        } else {
+             nil
+        }
         if let selected = selectedItems {
             let me: Bool
             let onlyOwnGroupItems: Bool
-            (deleteEnabled, deleteForEveryoneEnabled, me, onlyOwnGroupItems, forwardEnabled, selectedChatItems) = chatItems.reduce((true, true, true, true, true, [])) { (r, ci) in
+            (deleteEnabled, deleteForEveryoneEnabled, canArchiveReports, me, onlyOwnGroupItems, forwardEnabled, selectedChatItems) = chatItems.reduce((true, true, true, true, true, true, [])) { (r, ci) in
                 if selected.contains(ci.id) {
-                    var (de, dee, me, onlyOwnGroupItems, fe, sel) = r
+                    var (de, dee, ar, me, onlyOwnGroupItems, fe, sel) = r
                     de = de && ci.canBeDeletedForSelf
-                    dee = dee && ci.meta.deletable && !ci.localNote
-                    onlyOwnGroupItems = onlyOwnGroupItems && ci.chatDir == .groupSnd
-                    me = me && ci.content.msgContent != nil && ci.memberToModerate(chatInfo) != nil
-                    fe = fe && ci.content.msgContent != nil && ci.meta.itemDeleted == nil && !ci.isLiveDummy
+                    dee = dee && ci.meta.deletable && !ci.localNote && !ci.isReport
+                    ar = ar && ci.isActiveReport && ci.chatDir != .groupSnd && groupInfo != nil && groupInfo!.membership.memberRole >= .moderator
+                    onlyOwnGroupItems = onlyOwnGroupItems && ci.chatDir == .groupSnd && !ci.isReport
+                    me = me && ci.content.msgContent != nil && ci.memberToModerate(chatInfo) != nil && !ci.isReport
+                    fe = fe && ci.content.msgContent != nil && ci.meta.itemDeleted == nil && !ci.isLiveDummy && !ci.isReport
                     sel.insert(ci.id) // we are collecting new selected items here to account for any changes in chat items list
-                    return (de, dee, me, onlyOwnGroupItems, fe, sel)
+                    return (de, dee, ar, me, onlyOwnGroupItems, fe, sel)
                 } else {
                     return r
                 }

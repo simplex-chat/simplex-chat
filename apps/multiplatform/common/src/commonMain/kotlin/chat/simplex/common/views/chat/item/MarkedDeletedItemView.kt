@@ -20,7 +20,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.datetime.Clock
 
 @Composable
-fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: State<Boolean>, showViaProxy: Boolean, showTimestamp: Boolean) {
+fun MarkedDeletedItemView(chatsCtx: ChatModel.ChatsContext, ci: ChatItem, chatInfo: ChatInfo, timedMessagesTTL: Int?, revealed: State<Boolean>, showViaProxy: Boolean, showTimestamp: Boolean) {
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
@@ -33,7 +33,7 @@ fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: State<
       verticalAlignment = Alignment.CenterVertically
     ) {
       Box(Modifier.weight(1f, false)) {
-        MergedMarkedDeletedText(ci, revealed)
+        MergedMarkedDeletedText(chatsCtx, ci, chatInfo, revealed)
       }
       CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
     }
@@ -41,11 +41,11 @@ fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: State<
 }
 
 @Composable
-private fun MergedMarkedDeletedText(chatItem: ChatItem, revealed: State<Boolean>) {
-  var i = getChatItemIndexOrNull(chatItem)
+private fun MergedMarkedDeletedText(chatsCtx: ChatModel.ChatsContext, chatItem: ChatItem, chatInfo: ChatInfo, revealed: State<Boolean>) {
+  val reversedChatItems = chatsCtx.chatItems.value.asReversed()
+  var i = getChatItemIndexOrNull(chatItem, reversedChatItems)
   val ciCategory = chatItem.mergeCategory
   val text =  if (!revealed.value && ciCategory != null && i != null) {
-    val reversedChatItems = ChatModel.chatItems.asReversed()
     var moderated = 0
     var blocked = 0
     var blockedByAdmin = 0
@@ -67,7 +67,7 @@ private fun MergedMarkedDeletedText(chatItem: ChatItem, revealed: State<Boolean>
     }
     val total = moderated + blocked + blockedByAdmin + deleted
     if (total <= 1)
-      markedDeletedText(chatItem.meta)
+      markedDeletedText(chatItem, chatInfo)
     else if (total == moderated)
       stringResource(MR.strings.moderated_items_description).format(total, moderatedBy.joinToString(", "))
     else if (total == blockedByAdmin)
@@ -77,7 +77,7 @@ private fun MergedMarkedDeletedText(chatItem: ChatItem, revealed: State<Boolean>
     else
       stringResource(MR.strings.marked_deleted_items_description).format(total)
   } else {
-    markedDeletedText(chatItem.meta)
+    markedDeletedText(chatItem, chatInfo)
   }
 
   Text(
@@ -91,10 +91,17 @@ private fun MergedMarkedDeletedText(chatItem: ChatItem, revealed: State<Boolean>
   )
 }
 
-fun markedDeletedText(meta: CIMeta): String =
-  when (meta.itemDeleted) {
+fun markedDeletedText(cItem: ChatItem, chatInfo: ChatInfo): String =
+  if (cItem.meta.itemDeleted != null && cItem.isReport) {
+    if (cItem.meta.itemDeleted is CIDeleted.Moderated && cItem.meta.itemDeleted.byGroupMember.groupMemberId != (chatInfo as? ChatInfo.Group)?.groupInfo?.membership?.groupMemberId) {
+      generalGetString(MR.strings.report_item_archived_by).format(cItem.meta.itemDeleted.byGroupMember.displayName)
+    } else {
+      generalGetString(MR.strings.report_item_archived)
+    }
+  }
+  else when (cItem.meta.itemDeleted) {
     is CIDeleted.Moderated ->
-      String.format(generalGetString(MR.strings.moderated_item_description), meta.itemDeleted.byGroupMember.displayName)
+      String.format(generalGetString(MR.strings.moderated_item_description), cItem.meta.itemDeleted.byGroupMember.displayName)
     is CIDeleted.Blocked ->
       generalGetString(MR.strings.blocked_item_description)
     is CIDeleted.BlockedByAdmin ->
