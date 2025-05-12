@@ -1069,7 +1069,7 @@
 \nPuò accadere a causa di qualche bug o quando la connessione è compromessa.</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d messaggi non decifrati.</string>
     <string name="alert_title_msg_bad_hash">Hash del messaggio errato</string>
-    <string name="alert_text_msg_bad_hash">L\'hash del messaggio precedente è diverso.\"</string>
+    <string name="alert_text_msg_bad_hash">L\'hash del messaggio precedente è diverso.</string>
     <string name="alert_text_fragment_please_report_to_developers">Si prega di segnalarlo agli sviluppatori.</string>
     <string name="stop_snd_file__message">L\'invio del file verrà interrotto.</string>
     <string name="stop_file__action">Ferma file</string>

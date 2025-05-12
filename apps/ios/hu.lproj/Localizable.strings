@@ -488,7 +488,7 @@ swipe action */
 "all members" = "összes tag";
 
 /* No comment provided by engineer. */
-"All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages." = "Az összes üzenet és fájl **végpontok közötti titkosítással**, a közvetlen üzenetek továbbá kvantumálló titkosítással is rendelkeznek.";
+"All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages." = "Az összes üzenet és fájl **végpontok közötti titkosítással**, a közvetlen üzenetek továbbá kvantumbiztos titkosítással is rendelkeznek.";
 
 /* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone!" = "Az összes üzenet törölve lesz – ez a művelet nem vonható vissza!";
@@ -504,6 +504,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "All reports will be archived for you." = "Az összes jelentés archiválva lesz az Ön számára.";
+
+/* No comment provided by engineer. */
+"All servers" = "Összes kiszolgáló";
 
 /* No comment provided by engineer. */
 "All your contacts will remain connected." = "Az összes partnerével kapcsolatban marad.";
@@ -687,9 +690,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Archiving database" = "Adatbázis archiválása";
-
-/* No comment provided by engineer. */
-"Ask" = "Mindig kérdezzen rá";
 
 /* No comment provided by engineer. */
 "Attach" = "Mellékelés";
@@ -3274,10 +3274,10 @@ snd error text */
 "Messages were deleted after you selected them." = "Az üzeneteket törölték miután kijelölte őket.";
 
 /* No comment provided by engineer. */
-"Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Az üzeneteket, fájlokat és hívásokat **végpontok közötti titkosítással**, sérülés utáni titkosság-védelemmel és -helyreállítással, továbbá visszautasítással védi.";
+"Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Az üzenetek, a fájlok és a hívások **végpontok közötti titkosítással**, sérülés utáni titkosságvédelemmel és -helyreállítással, továbbá letagadhatósággal vannak védve.";
 
 /* No comment provided by engineer. */
-"Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Az üzenetek, fájlok és hívások **végpontok közötti kvantumálló titkosítással** sérülés utáni titkosságvédelemmel, visszautasítással és feltörés utáni helyreállítással vannak védve.";
+"Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Az üzenetek, a fájlok és a hívások **végpontok közötti kvantumbiztos titkosítással**, sérülés utáni titkosságvédelemmel és -helyreállítással, továbbá letagadhatósággal vannak védve.";
 
 /* No comment provided by engineer. */
 "Migrate device" = "Eszköz átköltöztetése";
@@ -3677,7 +3677,7 @@ time to disappear */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Csak a partnere tud hangüzeneteket küldeni.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Open" = "Megnyitás";
 
 /* No comment provided by engineer. */
@@ -3695,20 +3695,11 @@ time to disappear */
 /* No comment provided by engineer. */
 "Open group" = "Csoport megnyitása";
 
-/* No comment provided by engineer. */
-"Open link" = "Hivatkozás megnyitása";
-
-/* No comment provided by engineer. */
-"Open links from chat list" = "Hivatkozás megnyitása a csevegési listából";
-
 /* authentication reason */
 "Open migration to another device" = "Átköltöztetés indítása egy másik eszközre";
 
 /* No comment provided by engineer. */
 "Open Settings" = "Beállítások megnyitása";
-
-/* No comment provided by engineer. */
-"Open web link?" = "Megnyitja a webhivatkozást?";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Az alkalmazás megnyitása…";
@@ -4023,10 +4014,10 @@ time to disappear */
 "Push server" = "Push-kiszolgáló";
 
 /* chat item text */
-"quantum resistant e2e encryption" = "végpontok közötti kvantumálló titkosítás";
+"quantum resistant e2e encryption" = "végpontok közötti kvantumbiztos titkosítás";
 
 /* No comment provided by engineer. */
-"Quantum resistant encryption" = "Kvantumálló titkosítás";
+"Quantum resistant encryption" = "Kvantumbiztos titkosítás";
 
 /* No comment provided by engineer. */
 "Rate the app" = "Értékelje az alkalmazást";
@@ -5164,7 +5155,7 @@ report reason */
 "This chat is protected by end-to-end encryption." = "Ez a csevegés végpontok közötti titkosítással védett.";
 
 /* E2EE info chat item */
-"This chat is protected by quantum resistant end-to-end encryption." = "Ez a csevegés végpontok közötti kvantumálló titkosítással védett.";
+"This chat is protected by quantum resistant end-to-end encryption." = "Ez a csevegés végpontok közötti kvantumbiztos titkosítással védett.";
 
 /* notification title */
 "this contact" = "ez a partner";
@@ -5491,6 +5482,9 @@ report reason */
 "Use TCP port %@ when no port is specified." = "A következő TCP-port használata, amikor nincs port megadva: %@.";
 
 /* No comment provided by engineer. */
+"Use TCP port 443 for preset servers only." = "A 443-as TCP-port használata kizárólag az előre beállított kiszolgálokhoz.";
+
+/* No comment provided by engineer. */
 "Use the app while in the call." = "Használja az alkalmazást hívás közben.";
 
 /* No comment provided by engineer. */
@@ -5551,7 +5545,7 @@ report reason */
 "via relay" = "egy továbbítókiszolgálón keresztül";
 
 /* No comment provided by engineer. */
-"Via secure quantum resistant protocol." = "Biztonságos kvantumálló-protokollon keresztül.";
+"Via secure quantum resistant protocol." = "Biztonságos kvantumbiztos protokollon keresztül.";
 
 /* No comment provided by engineer. */
 "video" = "videó";
@@ -5708,9 +5702,6 @@ report reason */
 
 /* pref value */
 "yes" = "igen";
-
-/* No comment provided by engineer. */
-"Yes" = "Igen";
 
 /* No comment provided by engineer. */
 "you" = "Ön";

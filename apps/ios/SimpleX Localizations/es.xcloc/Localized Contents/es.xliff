@@ -798,6 +798,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="All servers" xml:space="preserve">
         <source>All servers</source>
+        <target>Todos los servidores</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
@@ -8086,7 +8087,7 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
       </trans-unit>
       <trans-unit id="Unblock member for all?" xml:space="preserve">
         <source>Unblock member for all?</source>
-        <target>¿Desbloquear miembro para todos?</target>
+        <target>¿Desbloquear el miembro para todos?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unblock member?" xml:space="preserve">
@@ -8293,6 +8294,7 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
       </trans-unit>
       <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve">
         <source>Use TCP port 443 for preset servers only.</source>
+        <target>Usar puerto TCP 443 solo en servidores predefinidos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use chat" xml:space="preserve">
@@ -10185,6 +10187,7 @@ last received msg: %2$@</source>
       </trans-unit>
       <trans-unit id="From %d chat(s)" xml:space="preserve">
         <source>From %d chat(s)</source>
+        <target>De %d chat(s)</target>
         <note>notification body</note>
       </trans-unit>
       <trans-unit id="From: %@" xml:space="preserve">

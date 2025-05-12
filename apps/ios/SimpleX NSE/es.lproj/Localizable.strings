@@ -2,6 +2,9 @@
 "%d new events" = "%d evento(s) nuevo(s)";
 
 /* notification body */
+"From %d chat(s)" = "De %d chat(s)";
+
+/* notification body */
 "From: %@" = "De: %@";
 
 /* notification */
