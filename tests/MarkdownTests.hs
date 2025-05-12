@@ -192,10 +192,23 @@ textWithUri = describe "text with Uri" do
     "https://github.com/simplex-chat/ - SimpleX on GitHub" <==> uri "https://github.com/simplex-chat/" <> " - SimpleX on GitHub"
     -- "SimpleX on GitHub (https://github.com/simplex-chat/)" <==> "SimpleX on GitHub (" <> uri "https://github.com/simplex-chat/" <> ")"
     "https://en.m.wikipedia.org/wiki/Servo_(software)" <==> uri "https://en.m.wikipedia.org/wiki/Servo_(software)"
+    "example.com" <==> uri "example.com"
+    "example.com." <==> uri "example.com" <> "."
+    "example.com..." <==> uri "example.com" <> "..."
+    "www.example.com" <==> uri "www.example.com"
+    "example.academy" <==> uri "example.academy"
+    "this is example.com" <==> "this is " <> uri "example.com"
+    "x.com" <==> uri "x.com"
   it "ignored as markdown" do
     "_https://simplex.chat" <==> "_https://simplex.chat"
     "this is _https://simplex.chat" <==> "this is _https://simplex.chat"
     "this is https://" <==> "this is https://"
+    "example.c" <==> "example.c"
+    "www.www.example.com" <==> "www.www.example.com"
+    "www.example1.com" <==> "www.example1.com"
+    "www." <==> "www."
+    ".com" <==> ".com"
+    "example.academytoolong" <==> "example.academytoolong"
   it "SimpleX links" do
     let inv = "/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D"
     ("https://simplex.chat" <> inv) <==> simplexLink XLInvitation ("simplex:" <> inv) ["smp.simplex.im"] ("https://simplex.chat" <> inv)
@@ -220,12 +233,14 @@ textWithEmail = describe "text with Email" do
     "test chat.chat+123@simplex.chat" <==> "test " <> email "chat.chat+123@simplex.chat"
     "chat@simplex.chat test" <==> email "chat@simplex.chat" <> " test"
     "test1 chat@simplex.chat test2" <==> "test1 " <> email "chat@simplex.chat" <> " test2"
-  it "ignored as markdown" do
+    "test chat@simplex.chat." <==> "test " <> email "chat@simplex.chat" <> "."
+    "test chat@simplex.chat..." <==> "test " <> email "chat@simplex.chat" <> "..."
+  it "ignored as email markdown" do
     "chat @simplex.chat" <==> "chat " <> mention "simplex.chat" "@simplex.chat"
     "this is chat @simplex.chat" <==> "this is chat " <> mention "simplex.chat" "@simplex.chat"
-    "this is chat@ simplex.chat" <==> "this is chat@ simplex.chat"
-    "this is chat @ simplex.chat" <==> "this is chat @ simplex.chat"
-    "*this* is chat @ simplex.chat" <==> bold "this" <> " is chat @ simplex.chat"
+    "this is chat@ simplex.chat" <==> "this is chat@ " <> uri "simplex.chat"
+    "this is chat @ simplex.chat" <==> "this is chat @ " <> uri "simplex.chat"
+    "*this* is chat @ simplex.chat" <==> bold "this" <> " is chat @ " <> uri "simplex.chat"
 
 phone :: Text -> Markdown
 phone = Markdown $ Just Phone
@@ -258,8 +273,11 @@ textWithMentions = describe "text with mentions" do
     "@alice" <==> mention "alice" "@alice"
     "hello @alice" <==> "hello " <> mention "alice" "@alice"
     "hello @alice !" <==> "hello " <> mention "alice" "@alice" <> " !"
+    "hello @alice!" <==> "hello " <> mention "alice" "@alice" <> "!"
+    "hello @alice..." <==> "hello " <> mention "alice" "@alice" <> "..."
     "@'alice jones'" <==> mention "alice jones" "@'alice jones'"
     "hello @'alice jones'!" <==> "hello " <> mention "alice jones" "@'alice jones'" <> "!"
+    "hello @'a.j.'!" <==> "hello " <> mention "a.j." "@'a.j.'" <> "!"
   it "ignored as markdown" $ do
     "hello @'alice jones!" <==> "hello @'alice jones!"
     "hello @bob @'alice jones!" <==> "hello " <> mention "bob" "@bob" <> " @'alice jones!"

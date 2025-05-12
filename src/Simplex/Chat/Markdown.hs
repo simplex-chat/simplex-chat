@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Use newtype instead of data" #-}
@@ -16,7 +17,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
-import Data.Char (isDigit, isPunctuation, isSpace)
+import Data.Char (isAlpha, isAscii, isDigit, isPunctuation, isSpace)
 import Data.Either (fromRight)
 import Data.Functor (($>))
 import Data.List (foldl', intercalate)
@@ -204,17 +205,18 @@ markdownP = mconcat <$> A.many' fragmentP
         else pure $ markdown (colored clr) s
     mentionP = do
       c <- A.char '@' *> A.peekChar'
-      name <- displayNameTextP
+      (name, punct) <- displayNameTextP_
       let sName = if c == '\'' then '\'' `T.cons` name `T.snoc` '\'' else name
-      pure $ markdown (Mention name) ('@' `T.cons` sName)
+          mention = markdown (Mention name) ('@' `T.cons` sName)
+      pure $ if T.null punct then mention else mention :|: unmarked punct
     colorP =
       A.anyChar >>= \case
-        'r' -> "ed" $> Red <|> pure Red
-        'g' -> "reen" $> Green <|> pure Green
-        'b' -> "lue" $> Blue <|> pure Blue
-        'y' -> "ellow" $> Yellow <|> pure Yellow
-        'c' -> "yan" $> Cyan <|> pure Cyan
-        'm' -> "agenta" $> Magenta <|> pure Magenta
+        'r' -> optional "ed" $> Red
+        'g' -> optional "reen" $> Green
+        'b' -> optional "lue" $> Blue
+        'y' -> optional "ellow" $> Yellow
+        'c' -> optional "yan" $> Cyan
+        'm' -> optional "agenta" $> Magenta
         '1' -> pure Red
         '2' -> pure Green
         '3' -> pure Blue
@@ -236,12 +238,14 @@ markdownP = mconcat <$> A.many' fragmentP
     wordMD :: Text -> Markdown
     wordMD s
       | T.null s = unmarked s
-      | isUri s =
-          let t = T.takeWhileEnd isPunctuation' s
-              uri = uriMarkdown $ T.dropWhileEnd isPunctuation' s
-           in if T.null t then uri else uri :|: unmarked t
-      | isEmail s = markdown Email s
+      | isUri s' = res $ uriMarkdown s'
+      | isDomain s' = res $ markdown Uri s'
+      | isEmail s' = res $ markdown Email s'
       | otherwise = unmarked s
+      where
+        punct = T.takeWhileEnd isPunctuation' s
+        s' = T.dropWhileEnd isPunctuation' s
+        res md' = if T.null punct then md' else md' :|: unmarked punct
     isPunctuation' = \case
       '/' -> False
       ')' -> False
@@ -250,6 +254,16 @@ markdownP = mconcat <$> A.many' fragmentP
       Right cLink -> markdown (simplexUriFormat cLink) s
       _ -> markdown Uri s
     isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:/"]
+    -- matches what is likely to be a domain, not all valid domain names
+    isDomain s = case T.splitOn "." s of
+      [name, tld] -> isDomain_ name tld
+      [sub, name, tld] -> T.length sub >= 3 && T.length sub <= 8 && isDomain_ name tld
+      _ -> False
+      where
+        isDomain_ name tld =
+          (let n = T.length name in n >= 1 && n <= 24)
+            && (let n = T.length tld in n >= 2 && n <= 8)
+            && (let p c = isAscii c && isAlpha c in T.all p name && T.all p tld)
     isEmail s = T.any (== '@') s && Email.isValid (encodeUtf8 s)
     noFormat = pure . unmarked
     simplexUriFormat :: AConnectionLink -> Format
@@ -307,16 +321,22 @@ markdownText (FormattedText f_ t) = case f_ of
         White -> Nothing
 
 displayNameTextP :: Parser Text
-displayNameTextP = quoted '\'' <|> takeNameTill (== ' ')
+displayNameTextP = displayNameTextP_ >>= \(t, sfx) -> if T.null sfx then pure t else fail "Name ends with punctuation"
+{-# INLINE displayNameTextP #-}
+
+displayNameTextP_ :: Parser (Text, Text)
+displayNameTextP_ = (,"") <$> quoted '\'' <|> splitPunctuation <$> takeNameTill isSpace
   where
     takeNameTill p =
       A.peekChar' >>= \c ->
         if refChar c then A.takeTill p else fail "invalid first character in display name"
+    splitPunctuation s = (T.dropWhileEnd isPunctuation s, T.takeWhileEnd isPunctuation s)
     quoted c = A.char c *> takeNameTill (== c) <* A.char c
     refChar c = c > ' ' && c /= '#' && c /= '@' && c /= '\''
 
+-- quotes names that contain spaces or end on punctuation
 viewName :: Text -> Text
-viewName s = if T.any isSpace s then "'" <> s <> "'" else s
+viewName s = if T.any isSpace s || maybe False (isPunctuation . snd) (T.unsnoc s) then "'" <> s <> "'" else s
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "XL") ''SimplexLinkType)
 
