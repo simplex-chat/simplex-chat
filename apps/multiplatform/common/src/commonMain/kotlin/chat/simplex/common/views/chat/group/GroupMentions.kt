@@ -23,6 +23,12 @@ import chat.simplex.common.views.chatlist.setGroupMembers
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.launch
+import kotlin.text.CharCategory.*
+
+val punctuation = setOf(
+  DASH_PUNCTUATION, START_PUNCTUATION, END_PUNCTUATION,
+  CONNECTOR_PUNCTUATION, OTHER_PUNCTUATION
+)
 
 private val PICKER_ROW_SIZE = MEMBER_ROW_AVATAR_SIZE + (MEMBER_ROW_VERTICAL_PADDING * 2f)
 private val MAX_PICKER_HEIGHT = (PICKER_ROW_SIZE * 4) + (MEMBER_ROW_AVATAR_SIZE + MEMBER_ROW_VERTICAL_PADDING - 4.dp)
@@ -126,7 +132,9 @@ fun GroupMentions(
     }
     val newName = existingMention?.key ?: composeState.value.mentionMemberName(member.memberProfile.displayName)
     mentions[newName] = CIMention(member)
-    var msgMention = "@" + if (newName.contains(" ")) "'$newName'" else newName
+    var msgMention = if (newName.contains(" ") || (newName.lastOrNull()?.category in punctuation))
+                      "@'$newName'"
+                      else "@$newName"
     var newPos = range.start + msgMention.length
     val newMsgLength = composeState.value.message.text.length + msgMention.length - range.length
     if (newPos == newMsgLength) {

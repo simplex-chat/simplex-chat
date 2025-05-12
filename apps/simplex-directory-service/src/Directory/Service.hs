@@ -48,7 +48,7 @@ import Simplex.Chat.Bot
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
-import Simplex.Chat.Markdown (FormattedText (..), Format (..), parseMaybeMarkdownList)
+import Simplex.Chat.Markdown (FormattedText (..), Format (..), parseMaybeMarkdownList, viewName)
 import Simplex.Chat.Messages
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..))
