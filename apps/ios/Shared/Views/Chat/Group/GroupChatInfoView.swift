@@ -556,10 +556,16 @@ struct GroupChatInfoView: View {
                 .modifier(ThemedBackground())
                 .navigationBarTitleDisplayMode(.large)
         } label: {
-            Label(
-                "Chats with members",
-                systemImage: chat.supportUnreadCount > 0 ? "flag.fill" : "flag"
-            )
+            HStack {
+                Label(
+                    "Chats with members",
+                    systemImage: chat.supportUnreadCount > 0 ? "flag.fill" : "flag"
+                )
+                Spacer()
+                if chat.supportUnreadCount > 0 {
+                    UnreadBadge(count: chat.supportUnreadCount, color: theme.colors.primary)
+                }
+            }
         }
     }
 
@@ -573,11 +579,16 @@ struct GroupChatInfoView: View {
             NavigationLink(isActive: $navLinkActive) {
                 SecondaryChatView(chat: chat)
             } label: {
-                if chat.chatStats.reportsCount > 0 {
-                    Label("Member reports", systemImage: "flag.fill")
-                        .foregroundColor(.red)
-                } else {
-                    Label("Member reports", systemImage: "flag")
+                HStack {
+                    Label {
+                        Text("Member reports")
+                    } icon: {
+                        Image(systemName: chat.chatStats.reportsCount > 0 ? "flag.fill" : "flag").foregroundColor(.red)
+                    }
+                    Spacer()
+                    if chat.chatStats.reportsCount > 0 {
+                        UnreadBadge(count: chat.chatStats.reportsCount, color: .red)
+                    }
                 }
             }
             .onChange(of: navLinkActive) { active in
