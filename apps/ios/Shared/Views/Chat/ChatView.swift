@@ -25,7 +25,6 @@ struct ChatView: View {
     @ObservedObject var im: ItemsModel
     @State var mergedItems: BoxedValue<MergedItems>
     @State var floatingButtonModel: FloatingButtonModel
-    var onSheet: Bool
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -89,9 +88,6 @@ struct ChatView: View {
                     )
             }
             VStack(spacing: 0) {
-                if onSheet {
-                    customUserSupportChatNavigationBar()
-                }
                 ZStack(alignment: .bottomTrailing) {
                     chatItemsList()
                     if let groupInfo = chat.chatInfo.groupInfo, !composeState.message.isEmpty {
@@ -311,8 +307,8 @@ struct ChatView: View {
         .onChange(of: colorScheme) { _ in
             theme = buildTheme()
         }
-        .if(im.secondaryIMFilter == nil) {
-            $0.toolbar {
+        .if(im.secondaryIMFilter == nil) { v in
+            v.toolbar {
                 ToolbarItem(placement: .principal) {
                     if selectedChatItems != nil {
                         SelectedItemsTopToolbar(selectedChatItems: $selectedChatItems)
@@ -441,8 +437,8 @@ struct ChatView: View {
                 }
             }
         }
-        .if(im.secondaryIMFilter != nil) {
-            $0.toolbar {
+        .if(im.secondaryIMFilter != nil) { v in
+            v.toolbar {
                 ToolbarItem(placement: .principal) {
                     if selectedChatItems != nil {
                         SelectedItemsTopToolbar(selectedChatItems: $selectedChatItems)
@@ -488,28 +484,14 @@ struct ChatView: View {
 
     @ViewBuilder private func userSupportChat(_ groupInfo: GroupInfo) -> some View {
         if let secondaryIM = chatModel.secondaryIM {
-            SecondaryChatView(
-                chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: userSupportScopeInfo), chatItems: [], chatStats: ChatStats()),
-                im: secondaryIM,
-                onSheet: true
-            )
+            NavigationView {
+                SecondaryChatView(
+                    chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: userSupportScopeInfo), chatItems: [], chatStats: ChatStats()),
+                    im: secondaryIM
+                )
+            }
         } else {
             EmptyView()
-        }
-    }
-
-    private func customUserSupportChatNavigationBar() -> some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Chat with admins")
-                    .font(.headline)
-                    .foregroundColor(theme.colors.onBackground)
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 12)
-            .frame(maxWidth: .infinity)
-            .background(.thinMaterial)
-            Divider()
         }
     }
 
@@ -2652,8 +2634,7 @@ struct ChatView_Previews: PreviewProvider {
             chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []),
             im: im,
             mergedItems: BoxedValue(MergedItems.create(im, [])),
-            floatingButtonModel: FloatingButtonModel(im: im),
-            onSheet: false
+            floatingButtonModel: FloatingButtonModel(im: im)
         )
         .environmentObject(chatModel)
     }

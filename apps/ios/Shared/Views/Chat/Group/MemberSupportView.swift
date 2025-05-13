@@ -84,11 +84,7 @@ struct MemberSupportView: View {
 
                 NavigationLink(isActive: $memberSupportChatNavLinkActive) {
                     if let secondaryIM = chatModel.secondaryIM {
-                        SecondaryChatView(
-                            chat: chat,
-                            im: secondaryIM,
-                            onSheet: false
-                        )
+                        SecondaryChatView(chat: chat, im: secondaryIM)
                     }
                 } label: {
                     EmptyView()

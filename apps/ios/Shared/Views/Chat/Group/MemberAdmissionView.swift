@@ -71,6 +71,7 @@ struct MemberAdmissionView: View {
                         Text(mc.text)
                     }
                 }
+                .frame(height: 36)
             } else {
                 infoRow(Text(admissionStageStr), memberCriteria.wrappedValue?.text ?? NSLocalizedString("off", comment: "member criteria value"))
             }

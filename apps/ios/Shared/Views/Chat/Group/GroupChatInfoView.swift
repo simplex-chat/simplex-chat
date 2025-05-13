@@ -552,11 +552,7 @@ struct GroupChatInfoView: View {
 
                 NavigationLink(isActive: $userSupportChatNavLinkActive) {
                     if let secondaryIM = chatModel.secondaryIM {
-                        SecondaryChatView(
-                            chat: chat,
-                            im: secondaryIM,
-                            onSheet: false
-                        )
+                        SecondaryChatView(chat: chat, im: secondaryIM)
                     }
                 } label: {
                     EmptyView()
@@ -604,11 +600,7 @@ struct GroupChatInfoView: View {
 
                 NavigationLink(isActive: $groupReportsChatNavLinkActive) {
                     if let secondaryIM = chatModel.secondaryIM {
-                        SecondaryChatView(
-                            chat: chat,
-                            im: secondaryIM,
-                            onSheet: false
-                        )
+                        SecondaryChatView(chat: chat, im: secondaryIM)
                     }
                 } label: {
                     EmptyView()
