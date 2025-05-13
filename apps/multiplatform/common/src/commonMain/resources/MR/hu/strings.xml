@@ -366,7 +366,7 @@
     <string name="ttl_s">%dmp</string>
     <string name="delivery_receipts_title">Kézbesítési jelentések!</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Az eszközön nincs beállítva a képernyőzár. A SimpleX-zár az „Adatvédelem és biztonság” menüben kapcsolható be, miután beállította a képernyőzárat az eszközén.</string>
-    <string name="decryption_error">Titkosítás visszafejtési hiba</string>
+    <string name="decryption_error">Titkosításvisszafejtési hiba</string>
     <string name="share_text_disappears_at">Eltűnik: %s</string>
     <string name="icon_descr_edited">szerkesztve</string>
     <string name="delete_verb">Törlés</string>
@@ -532,7 +532,7 @@
     <string name="files_and_media">Fájlok és médiatartalmak</string>
     <string name="section_title_for_console">KONZOLHOZ</string>
     <string name="alert_text_encryption_renegotiation_failed">Nem sikerült a titkosítást újraegyeztetni.</string>
-    <string name="error_deleting_user">Hiba történt a felhasználó-profil törlésekor</string>
+    <string name="error_deleting_user">Hiba történt a felhasználóprofil törlésekor</string>
     <string name="fix_connection_not_supported_by_group_member">Csoporttag általi javítás nem támogatott</string>
     <string name="enter_welcome_message">Adja meg az üdvözlőüzenetet…</string>
     <string name="encrypted_database">Titkosított adatbázis</string>
@@ -716,7 +716,7 @@
     <string name="v4_6_reduced_battery_usage_descr">Hamarosan további fejlesztések érkeznek!</string>
     <string name="message_reactions_prohibited_in_this_chat">A reakciók hozzáadása az üzenetekhez le van tiltva ebben a csevegésben.</string>
     <string name="incorrect_code">Helytelen biztonsági kód!</string>
-    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Ez akkor fordulhat elő, ha Ön vagy a partnere régi adatbázis biztonsági mentést használt.</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Ez akkor fordulhat elő, ha Ön vagy a partnere egy régebbi adatbázis biztonsági mentését használta.</string>
     <string name="v5_3_new_desktop_app">Új számítógép-alkalmazás!</string>
     <string name="v4_6_group_moderation_descr">Most már az adminisztrátorok is:\n- törölhetik a tagok üzeneteit.\n- letilthatnak tagokat (megfigyelő szerepkör)</string>
     <string name="rcv_group_event_member_added">meghívta őt: %1$s</string>
@@ -810,7 +810,7 @@
     <string name="feature_offered_item">%s ajánlotta</string>
     <string name="button_leave_group">Csoport elhagyása</string>
     <string name="unblock_member_desc">%s összes üzenete meg fog jelenni!</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Ez akkor fordulhat elő, ha:\n1. Az üzenetek 2 nap után, vagy a kiszolgálón 30 nap után lejártak.\n2. Nem sikerült visszafejteni az üzenetet, mert Ön, vagy a partnere régebbi adatbázis biztonsági mentést használt.\n3. A kapcsolat sérült.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Ez akkor fordulhat elő, ha:\n1. Az üzenetek 2 nap után, vagy a kiszolgálón 30 nap után lejártak.\n2. Nem sikerült az üzenetet visszafejteni, mert Ön, vagy a partnere egy régebbi adatbázis biztonsági mentését használta.\n3. A kapcsolat sérült.</string>
     <string name="group_member_role_observer">megfigyelő</string>
     <string name="description_via_group_link_incognito">inkognitó a csoporthivatkozáson keresztül</string>
     <string name="network_use_onion_hosts_prefer_desc">Onion-kiszolgálók használata, ha azok rendelkezésre állnak.</string>
@@ -1203,7 +1203,7 @@
     <string name="snd_group_event_member_deleted">Ön eltávolította őt: %1$s</string>
     <string name="save_passphrase_and_open_chat">Jelmondat mentése és a csevegés megnyitása</string>
     <string name="save_preferences_question">Menti a beállításokat?</string>
-    <string name="first_platform_without_user_ids">Nincsenek felhasználó-azonosítók.</string>
+    <string name="first_platform_without_user_ids">Nincsenek felhasználói azonosítók.</string>
     <string name="prohibit_direct_messages">A közvetlen üzenetek küldése a tagok között le van tiltva.</string>
     <string name="network_enable_socks">SOCKS-proxy használata?</string>
     <string name="icon_descr_speaker_off">Hangszóró kikapcsolva</string>
@@ -1395,7 +1395,7 @@
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Kapcsolatba léphet <font color="#0088ff">a SimpleX Chat fejlesztőivel, ahol bármiről kérdezhet és értesülhet a friss hírekről</font>.]]></string>
     <string name="v4_2_auto_accept_contact_requests_desc">Nem kötelező üdvözlőüzenettel.</string>
     <string name="unknown_database_error_with_info">Ismeretlen adatbázishiba: %s</string>
-    <string name="you_can_hide_or_mute_user_profile">Elrejtheti vagy lenémíthatja a felhasználó-profiljait – koppintson (vagy számítógép-alkalmazásban kattintson) hosszan a profilra a felugró menühöz.</string>
+    <string name="you_can_hide_or_mute_user_profile">Elrejtheti vagy lenémíthatja a felhasználóprofiljait – koppintson (vagy számítógép-alkalmazásban kattintson) hosszan a profilra a felugró menühöz.</string>
     <string name="v5_3_simpler_incognito_mode_descr">Inkognitóra váltás kapcsolódáskor.</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Megoszthat egy hivatkozást vagy QR-kódot – így bárki csatlakozhat a csoporthoz. Ha a csoportot Ön később törli, akkor nem fogja elveszíteni annak tagjait.</string>
     <string name="you_joined_this_group">Ön csatlakozott ehhez a csoporthoz</string>
@@ -1435,7 +1435,7 @@
     <string name="receipts_groups_override_disabled">A kézbesítési jelentések le vannak tiltva %d csoportban</string>
     <string name="non_fatal_errors_occured_during_import">Néhány nem végzetes hiba történt az importáláskor:</string>
     <string name="v4_5_italian_interface_descr">Köszönet a felhasználóknak a Weblate-en való közreműködésért!</string>
-    <string name="relay_server_if_necessary">A továbbítókiszolgáló csak szükség esetén lesz használva. Egy másik fél megfigyelheti az IP-címet.</string>
+    <string name="relay_server_if_necessary">A továbbítókiszolgáló csak szükség esetén lesz használva. Egy másik fél megfigyelheti az IP-címét.</string>
     <string name="v5_0_app_passcode_descr">Beállítás a rendszer-hitelesítés helyett.</string>
     <string name="switch_receiving_address_desc">A fogadási cím egy másik kiszolgálóra fog módosulni. A cím módosítása a feladó online állapotba kerülése után fejeződik be.</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">A csevegés megállítása a csevegési adatbázis exportálásához, importálásához vagy törléséhez. A csevegés megállításakor nem tud üzeneteket fogadni és küldeni.</string>
@@ -1444,7 +1444,7 @@
     <string name="save_passphrase_in_settings">Jelmondat mentése a beállításokban</string>
     <string name="send_receipts_disabled_alert_msg">Ennek a csoportnak több mint %1$d tagja van, a kézbesítési jelentések nem lesznek elküldve.</string>
     <string name="v5_2_message_delivery_receipts_descr">A második jelölés, amit kihagytunk! ✅</string>
-    <string name="relay_server_protects_ip">A továbbítókiszolgáló megvédi az Ön IP-címét, de megfigyelheti a hívás időtartamát.</string>
+    <string name="relay_server_protects_ip">A továbbítókiszolgáló megvédi az IP-címét, de megfigyelheti a hívás időtartamát.</string>
     <string name="v4_5_message_draft_descr">Az utolsó üzenet tervezetének megőrzése a mellékletekkel együtt.</string>
     <string name="saved_ICE_servers_will_be_removed">A mentett WebRTC ICE-kiszolgálók el lesznek távolítva.</string>
     <string name="receipts_groups_override_enabled">A kézbesítési jelentések engedélyezve vannak %d csoportban</string>
@@ -1664,8 +1664,8 @@
     <string name="e2ee_info_no_pq_short">Ez a csevegés végpontok közötti titkosítással védett.</string>
     <string name="auth_open_migration_to_another_device">Átköltöztetési párbeszédablak megnyitása</string>
     <string name="e2ee_info_pq_short">Ez a csevegés végpontok közötti kvantumbiztos titkosítással védett.</string>
-    <string name="e2ee_info_no_pq"><![CDATA[Az üzenetek, a fájlok és a hívások <b>végpontok közötti titkosítással</b>, sérülés utáni titkosságvédelemmel és -helyreállítással, továbbá letagadhatósággal vannak védve.]]></string>
-    <string name="e2ee_info_pq"><![CDATA[Az üzenetek, a fájlok és a hívások <b>végpontok közötti kvantumbiztos titkosítással</b>, sérülés utáni titkosságvédelemmel és -helyreállítással, továbbá letagadhatósággal vannak védve.]]></string>
+    <string name="e2ee_info_no_pq"><![CDATA[Az üzenetek, a fájlok és a hívások <b>végpontok közötti titkosítással</b>, kompromittálás előtti titkosságvédelemmel (PFS), letagadhatósággal, illetve kompromittálás utáni titkosságfelépüléssel vannak védve.]]></string>
+    <string name="e2ee_info_pq"><![CDATA[Az üzenetek, a fájlok és a hívások <b>végpontok közötti kvantumbiztos titkosítással</b>, kompromittálás előtti titkosságvédelemmel (PFS), letagadhatósággal, illetve kompromittálás utáni titkosságfelépüléssel vannak védve.]]></string>
     <string name="error_showing_desktop_notification">Hiba történt az értesítés megjelenítésekor, lépjen kapcsolatba a fejlesztőkkel.</string>
     <string name="permissions_find_in_settings_and_grant">Keresse meg ezt az engedélyt az Android beállításaiban, és adja meg kézzel.</string>
     <string name="permissions_grant_in_settings">Engedélyezés a beállításokban</string>
@@ -1749,14 +1749,14 @@
     <string name="private_routing_explanation">Az IP-cím védelmének érdekében a privát útválasztás az SMP-kiszolgálókat használja az üzenetek kézbesítéséhez.</string>
     <string name="update_network_smp_proxy_fallback_question">Üzenet-útválasztási tartalék</string>
     <string name="settings_section_title_private_message_routing">PRIVÁT ÜZENET-ÚTVÁLASZTÁS</string>
-    <string name="network_smp_proxy_mode_unprotected_description">Használjon privát útválasztást ismeretlen kiszolgálókkal, ha az IP-cím nem védett.</string>
+    <string name="network_smp_proxy_mode_unprotected_description">Használjon privát útválasztást az ismeretlen kiszolgálókkal, ha az IP-cím nem védett.</string>
     <string name="network_smp_proxy_fallback_prohibit_description">NE küldjön üzeneteket közvetlenül, még akkor sem, ha a saját kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
-    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Tor vagy VPN nélkül az Ön IP-címe látható lesz a fájlkiszolgálók számára.</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Tor vagy VPN nélkül az IP-címe láthatóvá válik a fájlkiszolgálók számára.</string>
     <string name="settings_section_title_files">FÁJLOK</string>
     <string name="protect_ip_address">IP-cím védelme</string>
     <string name="app_will_ask_to_confirm_unknown_file_servers">Az alkalmazás kérni fogja az ismeretlen fájlkiszolgálókról történő letöltések megerősítését (kivéve, ha az .onion vagy a SOCKS-proxy engedélyezve van).</string>
     <string name="file_not_approved_title">Ismeretlen kiszolgálók!</string>
-    <string name="file_not_approved_descr">Tor vagy VPN nélkül az Ön IP-címe látható lesz a következő XFTP-továbbítókiszolgálók számára:\n%1$s.</string>
+    <string name="file_not_approved_descr">Tor vagy VPN nélkül az IP-címe láthatóvá válik a következő XFTP-továbbítókiszolgálók számára:\n%1$s.</string>
     <string name="chat_theme_apply_to_all_modes">Összes színmód</string>
     <string name="theme_black">Fekete</string>
     <string name="color_mode">Színmód</string>
