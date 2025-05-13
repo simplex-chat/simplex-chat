@@ -2572,7 +2572,7 @@ data class ChatItem (
         else -> CIMergeCategory.RcvGroupEvent
       }
       is CIContent.SndGroupEventContent -> when (content.sndGroupEvent) {
-        is SndGroupEvent.UserRole, is SndGroupEvent.UserLeft, is SndGroupEvent.UserPendingReview -> null
+        is SndGroupEvent.UserRole, is SndGroupEvent.UserLeft, is SndGroupEvent.MemberAccepted, is SndGroupEvent.UserPendingReview -> null
         else -> CIMergeCategory.SndGroupEvent
       }
       else -> {
@@ -4358,6 +4358,7 @@ sealed class SndGroupEvent() {
   @Serializable @SerialName("memberDeleted") class MemberDeleted(val groupMemberId: Long, val profile: Profile): SndGroupEvent()
   @Serializable @SerialName("userLeft") class UserLeft(): SndGroupEvent()
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val groupProfile: GroupProfile): SndGroupEvent()
+  @Serializable @SerialName("memberAccepted") class MemberAccepted(val groupMemberId: Long, val profile: Profile): SndGroupEvent()
   @Serializable @SerialName("userPendingReview") class UserPendingReview(): SndGroupEvent()
 
   val text: String get() = when (this) {
@@ -4371,6 +4372,7 @@ sealed class SndGroupEvent() {
     is MemberDeleted -> String.format(generalGetString(MR.strings.snd_group_event_member_deleted), profile.profileViewName)
     is UserLeft -> generalGetString(MR.strings.snd_group_event_user_left)
     is GroupUpdated -> generalGetString(MR.strings.snd_group_event_group_profile_updated)
+    is MemberAccepted -> generalGetString(MR.strings.snd_group_event_member_accepted)
     is UserPendingReview -> generalGetString(MR.strings.snd_group_event_user_pending_review)
   }
 }
