@@ -150,7 +150,7 @@ import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
+import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, mapMaybe)
 import Data.Ord (Down (..), comparing)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -1352,7 +1352,7 @@ getGroupChat :: DB.Connection -> VersionRangeChat -> User -> Int64 -> Maybe Grou
 getGroupChat db vr user groupId scope_ contentFilter pagination search_ = do
   let search = fromMaybe "" search_
   g <- getGroupInfo db vr user groupId
-  scopeInfo <- mapM (getGroupChatScopeInfo db vr user g) scope_
+  scopeInfo <- mapM (getCreateGroupChatScopeInfo db vr user g) scope_
   case pagination of
     CPLast count -> (,Nothing) <$> getGroupChatLast_ db user g scopeInfo contentFilter count search emptyChatStats
     CPAfter afterId count -> (,Nothing) <$> getGroupChatAfter_ db user g scopeInfo contentFilter afterId count search
@@ -1361,6 +1361,24 @@ getGroupChat db vr user groupId scope_ contentFilter pagination search_ = do
     CPInitial count -> do
       unless (null search) $ throwError $ SEInternalError "initial chat pagination doesn't support search"
       getGroupChatInitial_ db user g scopeInfo contentFilter count
+
+getCreateGroupChatScopeInfo :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupChatScope -> ExceptT StoreError IO GroupChatScopeInfo
+getCreateGroupChatScopeInfo db vr user GroupInfo {membership} = \case
+  GCSMemberSupport Nothing -> do
+    when (isNothing $ supportChat membership) $ do
+      ts <- liftIO getCurrentTime
+      liftIO $ setSupportChatTs db (groupMemberId' membership) ts
+    pure $ GCSIMemberSupport {groupMember_ = Nothing}
+  GCSMemberSupport (Just gmId) -> do
+    m <- getGroupMemberById db vr user gmId
+    when (isNothing $ supportChat m) $ do
+      ts <- liftIO getCurrentTime
+      liftIO $ setSupportChatTs db gmId ts
+    pure GCSIMemberSupport {groupMember_ = Just m}
+
+getGroupChatScopeInfoForItem :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> ChatItemId -> ExceptT StoreError IO (Maybe GroupChatScopeInfo)
+getGroupChatScopeInfoForItem db vr user g itemId =
+  getGroupChatScopeForItem_ db itemId >>= mapM (getGroupChatScopeInfo db vr user g)
 
 getGroupChatScopeInfo :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupChatScope -> ExceptT StoreError IO GroupChatScopeInfo
 getGroupChatScopeInfo db vr user GroupInfo {membership} = \case
@@ -1372,10 +1390,6 @@ getGroupChatScopeInfo db vr user GroupInfo {membership} = \case
     case supportChat m of
       Nothing -> throwError $ SEInternalError "no support chat"
       Just _supportChat -> pure GCSIMemberSupport {groupMember_ = Just m}
-
-getGroupChatScopeInfoForItem :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> ChatItemId -> ExceptT StoreError IO (Maybe GroupChatScopeInfo)
-getGroupChatScopeInfoForItem db vr user g itemId =
-  getGroupChatScopeForItem_ db itemId >>= mapM (getGroupChatScopeInfo db vr user g)
 
 getGroupChatScopeForItem_ :: DB.Connection -> ChatItemId -> ExceptT StoreError IO (Maybe GroupChatScope)
 getGroupChatScopeForItem_ db itemId =

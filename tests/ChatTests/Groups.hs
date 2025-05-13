@@ -6969,8 +6969,7 @@ testScopedSupportManyModerators =
     dan #$> ("/_get chat #1 count=3", chat, [(0, "connected"), (0, "1"), (0, "2")])
     dan #$> ("/_get chat #1(_support:3) count=100", chat, [(0, "3"), (0, "4"), (1, "5")])
     cath #$> ("/_get chat #1 count=3", chat, [(0, "connected"), (0, "1"), (0, "2")])
-    cath ##> "/_get chat #1(_support:3) count=100"
-    cath <## "chat db error: SEInternalError {message = \"no support chat\"}"
+    cath #$> ("/_get chat #1(_support:3) count=100", chat, [])
 
     alice ##> "/member support chats #team"
     alice <## "bob (Bob) (id 2): unread: 0, require attention: 0, mentions: 0"
@@ -6979,7 +6978,7 @@ testScopedSupportManyModerators =
     bob ##> "/member support chats #team"
     bob <## "support: unread: 0, require attention: 0, mentions: 0"
     cath ##> "/member support chats #team"
-    cath <// 50000
+    cath <## "bob (Bob) (id 3): unread: 0, require attention: 0, mentions: 0"
 
 testScopedSupportUnreadStats :: HasCallStack => TestParams -> IO ()
 testScopedSupportUnreadStats =
