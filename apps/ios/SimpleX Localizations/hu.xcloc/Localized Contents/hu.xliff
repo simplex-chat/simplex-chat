@@ -2336,9 +2336,9 @@ Ez a saját egyszer használható meghívója!</target>
         <target>Decentralizált</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Decryption error" xml:space="preserve">
+      <trans-unit id="Decryption error" xml:space="preserve" approved="no">
         <source>Decryption error</source>
-        <target>Titkosítás visszafejtési hiba</target>
+        <target state="translated">Titkosításvisszafejtési hiba</target>
         <note>message decrypt error item</note>
       </trans-unit>
       <trans-unit id="Delete" xml:space="preserve">
@@ -3263,9 +3263,9 @@ chat item action</note>
         <target>Hiba történt a token törlésekor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error deleting user profile" xml:space="preserve">
+      <trans-unit id="Error deleting user profile" xml:space="preserve" approved="no">
         <source>Error deleting user profile</source>
-        <target>Hiba történt a felhasználó-profil törlésekor</target>
+        <target state="translated">Hiba történt a felhasználói profil törlésekor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error downloading the archive" xml:space="preserve">
@@ -4447,19 +4447,19 @@ További fejlesztések hamarosan!</target>
         <target>Lehetővé teszi, hogy egyetlen csevegési profilon belül több névtelen kapcsolat legyen, anélkül, hogy megosztott adatok lennének közöttük.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve">
+      <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve" approved="no">
         <source>It can happen when you or your connection used the old database backup.</source>
-        <target>Ez akkor fordulhat elő, ha Ön vagy a partnere régi adatbázis biztonsági mentést használt.</target>
+        <target state="translated">Ez akkor fordulhat elő, ha Ön vagy a partnere egy régebbi adatbázis biztonsági mentését használta.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
+      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve" approved="no">
         <source>It can happen when:
 1. The messages expired in the sending client after 2 days or on the server after 30 days.
 2. Message decryption failed, because you or your contact used old database backup.
 3. The connection was compromised.</source>
-        <target>Ez akkor fordulhat elő, ha:
+        <target state="translated">Ez akkor fordulhat elő, ha:
 1. Az üzenetek 2 nap után, vagy a kiszolgálón 30 nap után lejártak.
-2. Nem sikerült az üzenetet visszafejteni, mert Ön, vagy a partnere régebbi adatbázis biztonsági mentést használt.
+2. Nem sikerült az üzenetet visszafejteni, mert Ön, vagy a partnere egy régebbi adatbázis biztonsági mentését használta.
 3. A kapcsolat sérült.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -4940,14 +4940,14 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Az üzeneteket törölték miután kijelölte őket.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve">
+      <trans-unit id="Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve" approved="no">
         <source>Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery.</source>
-        <target>Az üzenetek, a fájlok és a hívások **végpontok közötti titkosítással**, sérülés utáni titkosságvédelemmel és -helyreállítással, továbbá letagadhatósággal vannak védve.</target>
+        <target state="translated">Az üzenetek, a fájlok és a hívások **végpontok közötti titkosítással**, kompromittálás előtti titkosságvédelemmel (PFS), letagadhatósággal, illetve kompromittálás utáni titkosságfelépüléssel vannak védve.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve">
+      <trans-unit id="Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve" approved="no">
         <source>Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery.</source>
-        <target>Az üzenetek, a fájlok és a hívások **végpontok közötti kvantumbiztos titkosítással**, sérülés utáni titkosságvédelemmel és -helyreállítással, továbbá letagadhatósággal vannak védve.</target>
+        <target state="translated">Az üzenetek, a fájlok és a hívások **végpontok közötti kvantumbiztos titkosítással**, kompromittálás előtti titkosságvédelemmel (PFS), letagadhatósággal, illetve kompromittálás utáni titkosságfelépüléssel vannak védve.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrate device" xml:space="preserve">
@@ -5345,9 +5345,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Nincsenek olvasatlan csevegések</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No user identifiers." xml:space="preserve">
+      <trans-unit id="No user identifiers." xml:space="preserve" approved="no">
         <source>No user identifiers.</source>
-        <target>Nincsenek felhasználó-azonosítók.</target>
+        <target state="translated">Nincsenek felhasználói azonosítók.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Not compatible!" xml:space="preserve">
@@ -5573,8 +5573,9 @@ VPN engedélyezése szükséges.</target>
         <target>Csoport megnyitása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open link?" xml:space="preserve">
+      <trans-unit id="Open link?" xml:space="preserve" approved="no">
         <source>Open link?</source>
+        <target state="translated">Megnyitja a hivatkozást?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Open migration to another device" xml:space="preserve">
@@ -6281,14 +6282,14 @@ swipe action</note>
         <target>Meghívási kérés elutasítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Relay server is only used if necessary. Another party can observe your IP address." xml:space="preserve">
+      <trans-unit id="Relay server is only used if necessary. Another party can observe your IP address." xml:space="preserve" approved="no">
         <source>Relay server is only used if necessary. Another party can observe your IP address.</source>
-        <target>A továbbítókiszolgáló csak szükség esetén lesz használva. Egy másik fél megfigyelheti az IP-címet.</target>
+        <target state="translated">A továbbítókiszolgáló csak szükség esetén lesz használva. Egy másik fél megfigyelheti az IP-címét.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Relay server protects your IP address, but it can observe the duration of the call." xml:space="preserve">
+      <trans-unit id="Relay server protects your IP address, but it can observe the duration of the call." xml:space="preserve" approved="no">
         <source>Relay server protects your IP address, but it can observe the duration of the call.</source>
-        <target>A továbbítókiszolgáló megvédi az Ön IP-címét, de megfigyelheti a hívás időtartamát.</target>
+        <target state="translated">A továbbítókiszolgáló megvédi az IP-címét, de megfigyelheti a hívás időtartamát.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove" xml:space="preserve">
@@ -8337,9 +8338,9 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
         <target>Csak helyi értesítések használata?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use private routing with unknown servers when IP address is not protected." xml:space="preserve">
+      <trans-unit id="Use private routing with unknown servers when IP address is not protected." xml:space="preserve" approved="no">
         <source>Use private routing with unknown servers when IP address is not protected.</source>
-        <target>Használjon privát útválasztást ismeretlen kiszolgálókkal, ha az IP-cím nem védett.</target>
+        <target state="translated">Használjon privát útválasztást az ismeretlen kiszolgálókkal, ha az IP-cím nem védett.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use private routing with unknown servers." xml:space="preserve">
@@ -8622,14 +8623,14 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
         <target>Csökkentett akkumulátor-használattal.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Without Tor or VPN, your IP address will be visible to file servers." xml:space="preserve">
+      <trans-unit id="Without Tor or VPN, your IP address will be visible to file servers." xml:space="preserve" approved="no">
         <source>Without Tor or VPN, your IP address will be visible to file servers.</source>
-        <target>Tor vagy VPN nélkül az Ön IP-címe látható lesz a fájlkiszolgálók számára.</target>
+        <target state="translated">Tor vagy VPN nélkül az IP-címe láthatóvá válik a fájlkiszolgálók számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." xml:space="preserve">
+      <trans-unit id="Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." xml:space="preserve" approved="no">
         <source>Without Tor or VPN, your IP address will be visible to these XFTP relays: %@.</source>
-        <target>Tor vagy VPN nélkül az Ön IP-címe látható lesz a következő XFTP-továbbítókiszolgálók számára: %@.</target>
+        <target state="translated">Tor vagy VPN nélkül az IP-címe láthatóvá válik a következő XFTP-továbbítókiszolgálók számára: %@.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">
