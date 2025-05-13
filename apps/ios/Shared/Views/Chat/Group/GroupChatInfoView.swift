@@ -530,27 +530,21 @@ struct GroupChatInfoView: View {
     struct UserSupportChatNavLink: View {
         var groupInfo: GroupInfo
         @EnvironmentObject var chatModel: ChatModel
-        @State private var userSupportChatNavLinkActive = false
+        @State private var navLinkActive = false
 
         var body: some View {
-            ZStack {
-                let scopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
-                Button {
+            let scopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
+            NavigationLink(isActive: $navLinkActive) {
+                SecondaryChatView(chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()))
+            } label: {
+                Label("Chat with admins", systemImage: "flag")
+            }
+            .onChange(of: navLinkActive) { active in
+                if active {
                     let im = ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: scopeInfo))
-                    im.loadOpenChat(groupInfo.id) {
-                        userSupportChatNavLinkActive = true
-                    }
-                } label: {
-                    Label("Chat with admins", systemImage: "flag")
+                    ChatModel.shared.secondaryIM = im
+                    im.loadOpenChat(groupInfo.id)
                 }
-
-                NavigationLink(isActive: $userSupportChatNavLinkActive) {
-                    SecondaryChatView(chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()))
-                } label: {
-                    EmptyView()
-                }
-                .frame(width: 1, height: 1)
-                .hidden()
             }
         }
     }
@@ -572,31 +566,26 @@ struct GroupChatInfoView: View {
     struct GroupReportsChatNavLink: View {
         @EnvironmentObject var chatModel: ChatModel
         @EnvironmentObject var theme: AppTheme
-        @State private var groupReportsChatNavLinkActive = false
+        @State private var navLinkActive = false
         @ObservedObject var chat: Chat
 
         var body: some View {
-            ZStack {
-                Button {
+            NavigationLink(isActive: $navLinkActive) {
+                SecondaryChatView(chat: chat)
+            } label: {
+                if chat.chatStats.reportsCount > 0 {
+                    Label("Member reports", systemImage: "flag.fill")
+                        .foregroundColor(.red)
+                } else {
+                    Label("Member reports", systemImage: "flag")
+                }
+            }
+            .onChange(of: navLinkActive) { active in
+                if active {
                     let im = ItemsModel(secondaryIMFilter: .msgContentTagContext(contentTag: .report))
-                    im.loadOpenChat(chat.id) {
-                        groupReportsChatNavLinkActive = true
-                    }
-                } label: {
-                    Label(
-                        "Member reports",
-                        systemImage: chat.chatStats.reportsCount > 0 ? "flag.fill" : "flag"
-                    )
-                    .foregroundColor(chat.chatStats.reportsCount > 0 ? .red : theme.colors.primary)
+                    ChatModel.shared.secondaryIM = im
+                    im.loadOpenChat(chat.id)
                 }
-
-                NavigationLink(isActive: $groupReportsChatNavLinkActive) {
-                    SecondaryChatView(chat: chat)
-                } label: {
-                    EmptyView()
-                }
-                .frame(width: 1, height: 1)
-                .hidden()
             }
         }
     }
