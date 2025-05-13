@@ -175,23 +175,19 @@ struct ChatView: View {
             }
         }
         .appSheet(item: $selectedMember) { member in
-            Group {
-                if case let .group(groupInfo, _) = chat.chatInfo {
-                    GroupMemberInfoView(
-                        groupInfo: groupInfo,
-                        chat: chat,
-                        groupMember: member,
-                        navigation: true
-                    )
-                }
+            if case let .group(groupInfo, _) = chat.chatInfo {
+                GroupMemberInfoView(
+                    groupInfo: groupInfo,
+                    chat: chat,
+                    groupMember: member,
+                    navigation: true
+                )
             }
         }
         // it should be presented on top level in order to prevent a bug in SwiftUI on iOS 16 related to .focused() modifier in AddGroupMembersView's search field
         .appSheet(isPresented: $showAddMembersSheet) {
-            Group {
-                if case let .group(groupInfo, _) = cInfo {
-                    AddGroupMembersView(chat: chat, groupInfo: groupInfo)
-                }
+            if case let .group(groupInfo, _) = cInfo {
+                AddGroupMembersView(chat: chat, groupInfo: groupInfo)
             }
         }
         .sheet(isPresented: Binding(
@@ -208,6 +204,26 @@ struct ChatView: View {
                     .presentationDetents([.fraction(0.8)])
             } else {
                 ChatItemForwardingView(chatItems: forwardedChatItems, fromChatInfo: chat.chatInfo, composeState: $composeState)
+            }
+        }
+        .appSheet(
+            isPresented: $showUserSupportChatSheet,
+            onDismiss: {
+                if chat.chatInfo.groupInfo?.membership.memberPending ?? false {
+                    chatModel.chatId = nil
+                }
+            }
+        ) {
+            if let groupInfo = chat.chatInfo.groupInfo {
+//                let v = SecondaryChatView(chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: userSupportScopeInfo), chatItems: [], chatStats: ChatStats()))
+//                if #available(iOS 16.0, *) {
+//                    NavigationStack { v }
+//                } else {
+//                    NavigationView { v }
+//                }
+                NavigationView {
+                    SecondaryChatView(chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: userSupportScopeInfo), chatItems: [], chatStats: ChatStats()))
+                }
             }
         }
         .onAppear {
@@ -369,16 +385,6 @@ struct ChatView: View {
                     localAlias: groupInfo.localAlias
                 )
             }
-            .appSheet(
-                isPresented: $showUserSupportChatSheet,
-                onDismiss: {
-                    if chat.chatInfo.groupInfo?.membership.memberPending ?? false {
-                        chatModel.chatId = nil
-                    }
-                }
-            ) {
-                userSupportChat(groupInfo)
-            }
         } else if case .local = cInfo {
             ChatInfoToolbar(chat: chat)
         }
@@ -497,13 +503,6 @@ struct ChatView: View {
             }
         } else {
             searchButton()
-        }
-    }
-
-    @inline(__always)
-    private func userSupportChat(_ groupInfo: GroupInfo) -> some View {
-        NavigationView {
-            SecondaryChatView(chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: userSupportScopeInfo), chatItems: [], chatStats: ChatStats()))
         }
     }
 
