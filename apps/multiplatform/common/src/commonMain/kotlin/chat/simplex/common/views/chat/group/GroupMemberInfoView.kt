@@ -439,10 +439,11 @@ fun GroupMemberInfoLayout(
 
     if (member.memberActive) {
       SectionView {
-        // TODO [knocking] allow creating support chat with members that don't have it (currently doesn't work)
-        //   groupInfo.membership.memberRole >= GroupMemberRole.Moderator &&
-        //   (member.memberRole <= GroupMemberRole.Moderator || member.supportChat != null)
-        if (groupInfo.membership.memberRole >= GroupMemberRole.Moderator && member.supportChat != null) {
+        if (
+          groupInfo.membership.memberRole >= GroupMemberRole.Moderator &&
+          member.memberActive &&
+          (member.memberRole < GroupMemberRole.Moderator || member.supportChat != null)
+        ) {
           SupportChatButton()
         }
         if (connectionCode != null) {

@@ -483,7 +483,10 @@ fun ModalData.GroupChatInfoLayout(
             }
           }
         }
-        if (groupInfo.membership.supportChat != null) {
+        if (
+          groupInfo.membership.memberActive &&
+          (groupInfo.membership.memberRole < GroupMemberRole.Moderator || groupInfo.membership.supportChat != null)
+        ) {
           anyTopSectionRowShow = true
           UserSupportChatButton(groupInfo, scrollToItemId)
         }
