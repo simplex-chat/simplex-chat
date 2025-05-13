@@ -967,7 +967,7 @@ object ChatController {
 
   suspend fun apiReportMessage(rh: Long?, groupId: Long, chatItemId: Long, reportReason: ReportReason, reportText: String): List<AChatItem>? {
     val r = sendCmd(rh, CC.ApiReportMessage(groupId, chatItemId, reportReason, reportText))
-    if (r is API.Result && r.res is CR.NewChatItems) r.res.chatItems
+    if (r is API.Result && r.res is CR.NewChatItems) return r.res.chatItems
     apiErrorAlert("apiReportMessage", generalGetString(MR.strings.error_creating_report), r)
     return null
   }
