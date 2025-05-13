@@ -467,7 +467,8 @@
   <string name="group_reports_member_reports">Member reports</string>
   <string name="group_new_support_messages">%d messages</string>
   <string name="group_new_support_chats">%d chats with members</string>
-  <string name="group_new_support_chats_short">%d chats</string>
+  <string name="group_new_support_chat_one">1 chat with a member</string>
+  <string name="group_new_support_chats_short">%d chat(s)</string>
 
   <!-- ShareListView.kt -->
   <string name="share_message">Share message…</string>
