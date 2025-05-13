@@ -310,9 +310,9 @@ struct GroupChatInfoView: View {
         .disabled(!groupInfo.ready || chat.chatItems.isEmpty)
     }
 
-    @ViewBuilder private func addMembersActionButton(width: CGFloat) -> some View {
-        if chat.chatInfo.incognito {
-            ZStack {
+    private func addMembersActionButton(width: CGFloat) -> some View {
+        ZStack {
+            if chat.chatInfo.incognito {
                 InfoViewButton(image: "link.badge.plus", title: "invite", width: width) {
                     groupLinkNavLinkActive = true
                 }
@@ -324,10 +324,7 @@ struct GroupChatInfoView: View {
                 }
                 .frame(width: 1, height: 1)
                 .hidden()
-            }
-            .disabled(!groupInfo.ready)
-        } else {
-            ZStack {
+            } else {
                 InfoViewButton(image: "person.fill.badge.plus", title: "invite", width: width) {
                     addMembersNavLinkActive = true
                 }
@@ -340,8 +337,8 @@ struct GroupChatInfoView: View {
                 .frame(width: 1, height: 1)
                 .hidden()
             }
-            .disabled(!groupInfo.ready)
         }
+        .disabled(!groupInfo.ready)
     }
 
     private func muteButton(width: CGFloat, nextNtfMode: MsgFilter) -> some View {
@@ -672,9 +669,9 @@ struct GroupChatInfoView: View {
         }
     }
 
-    @ViewBuilder private func leaveGroupButton() -> some View {
+    private func leaveGroupButton() -> some View {
         let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Leave group" : "Leave chat"
-        Button(role: .destructive) {
+        return Button(role: .destructive) {
             alert = .leaveGroupAlert
         } label: {
             Label(label, systemImage: "rectangle.portrait.and.arrow.right")

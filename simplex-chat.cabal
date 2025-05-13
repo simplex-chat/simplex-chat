@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        6.3.4.0
+version:        6.3.4.1
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -104,7 +104,8 @@ library
           Simplex.Chat.Store.Postgres.Migrations
           Simplex.Chat.Store.Postgres.Migrations.M20241220_initial
           Simplex.Chat.Store.Postgres.Migrations.M20250402_short_links
-          Simplex.Chat.Store.Postgres.Migrations.M20250403_group_scope
+          Simplex.Chat.Store.Postgres.Migrations.M20250512_member_admission
+          Simplex.Chat.Store.Postgres.Migrations.M20250513_group_scope
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -235,7 +236,8 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20250129_delete_unused_contacts
           Simplex.Chat.Store.SQLite.Migrations.M20250130_indexes
           Simplex.Chat.Store.SQLite.Migrations.M20250402_short_links
-          Simplex.Chat.Store.SQLite.Migrations.M20250403_group_scope
+          Simplex.Chat.Store.SQLite.Migrations.M20250512_member_admission
+          Simplex.Chat.Store.SQLite.Migrations.M20250513_group_scope
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:

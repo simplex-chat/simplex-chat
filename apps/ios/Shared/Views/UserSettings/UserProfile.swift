@@ -133,7 +133,6 @@ struct UserProfile: View {
         .alert(item: $alert) { a in userProfileAlert(a, $profile.displayName) }
     }
 
-    @ViewBuilder
     private func overlayButton(
         _ systemName: String,
         edge: Edge.Set,

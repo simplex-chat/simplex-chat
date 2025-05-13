@@ -1145,7 +1145,7 @@
     <string name="alert_text_msg_bad_id">Die ID der nächsten Nachricht ist falsch (kleiner oder gleich der vorherigen).
 \nDies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompromittiert wurde.</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d Nachrichten konnten nicht entschlüsselt werden.</string>
-    <string name="alert_text_msg_bad_hash">Der Hash der vorherigen Nachricht unterscheidet sich.\"</string>
+    <string name="alert_text_msg_bad_hash">Der Hash der vorherigen Nachricht unterscheidet sich.</string>
     <string name="you_can_turn_on_lock">Sie können die SimpleX-Sperre über die Einstellungen aktivieren.</string>
     <string name="network_socks_proxy_settings">SOCKS-Proxy-Einstellungen</string>
     <string name="la_lock_mode_system">System-Authentifizierung</string>
@@ -2460,6 +2460,6 @@
     <string name="link_requires_newer_app_version_please_upgrade">Für diesen Link wird eine neuere App-Version benötigt. Bitte aktualisieren Sie die App oder bitten Sie Ihren Kontakt einen kompatiblen Link zu senden.</string>
     <string name="network_smp_web_port_all">Alle Server</string>
     <string name="network_smp_web_port_off">Aus</string>
-    <string name="network_smp_web_port_preset_footer">Für voreingestellte Server nur TCP-Port 443 verwenden .</string>
+    <string name="network_smp_web_port_preset_footer">TCP-Port 443 nur für voreingestellte Server verwenden.</string>
     <string name="network_smp_web_port_preset">Voreingestellte Server</string>
 </resources>

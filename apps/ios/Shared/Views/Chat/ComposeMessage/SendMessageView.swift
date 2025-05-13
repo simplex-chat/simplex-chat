@@ -263,13 +263,12 @@ struct SendMessageView: View {
         @State private var pressed: TimeInterval? = nil
 
         var body: some View {
-            Button(action: {}) {
-                Image(systemName: "mic.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 20, height: 20)
-                    .foregroundColor(theme.colors.primary)
-            }
+            Image(systemName: "mic.fill")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 20, height: 20)
+            .foregroundColor(theme.colors.primary)
+            .opacity(holdingVMR ? 0.7 : 1)
             .disabled(disabled)
             .frame(width: 31, height: 31)
             .padding([.bottom, .trailing], 4)
@@ -279,9 +278,7 @@ struct SendMessageView: View {
                     pressed = ProcessInfo.processInfo.systemUptime
                     startVoiceMessageRecording?()
                 } else {
-                    let now = ProcessInfo.processInfo.systemUptime
-                    if let pressed = pressed,
-                       now - pressed >= 1 {
+                    if let pressed, ProcessInfo.processInfo.systemUptime - pressed >= 1 {
                         finishVoiceMessageRecording?()
                     }
                     holdingVMR = false

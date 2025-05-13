@@ -28,7 +28,7 @@ struct PasscodeEntry: View {
         }
     }
 
-    @ViewBuilder private func passwordView() -> some View {
+    private func passwordView() -> some View {
         Text(
             password == ""
             ? " "

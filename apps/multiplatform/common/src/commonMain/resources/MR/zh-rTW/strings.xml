@@ -1495,7 +1495,7 @@
     <string name="remote_host_error_bad_version"><![CDATA[不支援行動裝置 <b>%s</b> 的版本。請檢察兩台裝置安裝的是否版本相同]]></string>
     <string name="v5_7_network_descr">更可靠的網路連接</string>
     <string name="v5_3_discover_join_groups">發現和加入群組</string>
-    <string name="devices">裝置</string>
+    <string name="devices">設備</string>
     <string name="new_mobile_device">新行動裝置</string>
     <string name="migrate_from_device_error_saving_settings">保存設定出錯</string>
     <string name="migrate_from_device_exported_file_doesnt_exist">導出的檔案不存在</string>
@@ -1628,7 +1628,7 @@
     <string name="found_desktop">找到桌面</string>
     <string name="multicast_connect_automatically">自動連接</string>
     <string name="remote_ctrl_error_bad_state">與PC版的連接不穩定</string>
-    <string name="desktop_device">桌面</string>
+    <string name="desktop_device">桌上電腦</string>
     <string name="remote_ctrl_error_bad_version">已安裝的PC版本不支援。請確認兩台裝置所安裝的版本相同</string>
     <string name="remote_ctrl_error_bad_invitation">PC版邀請碼錯誤</string>
     <string name="connect_plan_connect_via_link">通過連結連接？</string>

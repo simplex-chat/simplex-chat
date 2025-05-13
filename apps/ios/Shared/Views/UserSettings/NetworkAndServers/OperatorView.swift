@@ -38,9 +38,9 @@ struct OperatorView: View {
             .allowsHitTesting(!testing)
     }
 
-    @ViewBuilder private func operatorView() -> some View {
+    private func operatorView() -> some View {
         let duplicateHosts = findDuplicateHosts(serverErrors)
-        VStack {
+        return VStack {
             List {
                 Section {
                     infoViewLink()
@@ -500,14 +500,14 @@ struct SingleOperatorUsageConditionsView: View {
         }
     }
     
-    @ViewBuilder private func acceptConditionsButton() -> some View {
+    private func acceptConditionsButton() -> some View {
         let operatorIds = ChatModel.shared.conditions.serverOperators
             .filter {
                 $0.operatorId == userServers[operatorIndex].operator_.operatorId || // Opened operator
                 ($0.enabled && !$0.conditionsAcceptance.conditionsAccepted) // Other enabled operators with conditions not accepted
             }
             .map { $0.operatorId }
-        Button {
+        return Button {
             acceptForOperators(operatorIds, operatorIndex)
         } label: {
             Text("Accept conditions")

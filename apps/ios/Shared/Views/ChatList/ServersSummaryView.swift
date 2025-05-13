@@ -245,7 +245,7 @@ struct ServersSummaryView: View {
         }
     }
 
-    @ViewBuilder private func smpServersListView(
+    private func smpServersListView(
         _ servers: [SMPServerSummary],
         _ statsStartedAt: Date,
         _ header: LocalizedStringKey? = nil,
@@ -256,7 +256,7 @@ struct ServersSummaryView: View {
             ? serverAddress($0.smpServer) < serverAddress($1.smpServer)
             : $0.hasSubs && !$1.hasSubs
         }
-        Section {
+        return Section {
             ForEach(sortedServers) { server in
                 smpServerView(server, statsStartedAt)
             }
@@ -318,14 +318,14 @@ struct ServersSummaryView: View {
         return onionHosts == .require ? .indigo : .accentColor
     }
 
-    @ViewBuilder private func xftpServersListView(
+    private func xftpServersListView(
         _ servers: [XFTPServerSummary],
         _ statsStartedAt: Date,
         _ header: LocalizedStringKey? = nil,
         _ footer: LocalizedStringKey? = nil
     ) -> some View {
         let sortedServers = servers.sorted { serverAddress($0.xftpServer) < serverAddress($1.xftpServer) }
-        Section {
+        return Section {
             ForEach(sortedServers) { server in
                 xftpServerView(server, statsStartedAt)
             }

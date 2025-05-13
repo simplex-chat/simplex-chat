@@ -686,9 +686,6 @@ swipe action */
 "Archiving database" = "Подготовка архива";
 
 /* No comment provided by engineer. */
-"Ask" = "Спросить";
-
-/* No comment provided by engineer. */
 "Attach" = "Прикрепить";
 
 /* No comment provided by engineer. */
@@ -3575,7 +3572,7 @@ time to disappear */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Только Ваш контакт может отправлять голосовые сообщения.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Open" = "Открыть";
 
 /* No comment provided by engineer. */
@@ -3593,20 +3590,11 @@ time to disappear */
 /* No comment provided by engineer. */
 "Open group" = "Открыть группу";
 
-/* No comment provided by engineer. */
-"Open link" = "Открыть ссылку";
-
-/* No comment provided by engineer. */
-"Open links from chat list" = "Открыть ссылку из списка чатов";
-
 /* authentication reason */
 "Open migration to another device" = "Открытие миграции на другое устройство";
 
 /* No comment provided by engineer. */
 "Open Settings" = "Открыть Настройки";
-
-/* No comment provided by engineer. */
-"Open web link?" = "Открыть веб-ссылку?";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Приложение отрывается…";
@@ -5543,9 +5531,6 @@ report reason */
 
 /* pref value */
 "yes" = "да";
-
-/* No comment provided by engineer. */
-"Yes" = "Да";
 
 /* No comment provided by engineer. */
 "you" = "Вы";

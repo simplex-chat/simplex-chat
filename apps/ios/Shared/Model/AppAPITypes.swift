@@ -1438,22 +1438,6 @@ enum NotificationsMode: String, Decodable, SelectableItem {
     static var values: [NotificationsMode] = [.instant, .periodic, .off]
 }
 
-enum PrivacyChatListOpenLinksMode: String, CaseIterable, Codable, RawRepresentable, Identifiable {
-    case yes
-    case no
-    case ask
-
-    var id: Self { self }
-
-    var text: LocalizedStringKey {
-        switch self {
-        case .yes: return "Yes"
-        case .no: return "No"
-        case .ask: return "Ask"
-        }
-    }
-}
-
 struct RemoteCtrlInfo: Decodable {
     var remoteCtrlId: Int64
     var ctrlDeviceName: String
@@ -1966,7 +1950,6 @@ struct AppSettings: Codable, Equatable {
     var privacyAskToApproveRelays: Bool? = nil
     var privacyAcceptImages: Bool? = nil
     var privacyLinkPreviews: Bool? = nil
-    var privacyChatListOpenLinks: PrivacyChatListOpenLinksMode? = nil
     var privacyShowChatPreviews: Bool? = nil
     var privacySaveLastDraft: Bool? = nil
     var privacyProtectScreen: Bool? = nil
@@ -2002,7 +1985,6 @@ struct AppSettings: Codable, Equatable {
         if privacyAskToApproveRelays != def.privacyAskToApproveRelays { empty.privacyAskToApproveRelays = privacyAskToApproveRelays }
         if privacyAcceptImages != def.privacyAcceptImages { empty.privacyAcceptImages = privacyAcceptImages }
         if privacyLinkPreviews != def.privacyLinkPreviews { empty.privacyLinkPreviews = privacyLinkPreviews }
-        if privacyChatListOpenLinks != def.privacyChatListOpenLinks { empty.privacyChatListOpenLinks = privacyChatListOpenLinks }
         if privacyShowChatPreviews != def.privacyShowChatPreviews { empty.privacyShowChatPreviews = privacyShowChatPreviews }
         if privacySaveLastDraft != def.privacySaveLastDraft { empty.privacySaveLastDraft = privacySaveLastDraft }
         if privacyProtectScreen != def.privacyProtectScreen { empty.privacyProtectScreen = privacyProtectScreen }
@@ -2039,7 +2021,6 @@ struct AppSettings: Codable, Equatable {
             privacyAskToApproveRelays: true,
             privacyAcceptImages: true,
             privacyLinkPreviews: true,
-            privacyChatListOpenLinks: .ask,
             privacyShowChatPreviews: true,
             privacySaveLastDraft: true,
             privacyProtectScreen: false,

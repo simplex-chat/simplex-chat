@@ -90,7 +90,7 @@ struct ChatListNavLink: View {
         .actionSheet(item: $actionSheet) { $0.actionSheet }
     }
     
-    @ViewBuilder private func contactNavLink(_ contact: Contact) -> some View {
+    private func contactNavLink(_ contact: Contact) -> some View {
         Group {
             if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
                 ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
@@ -243,7 +243,7 @@ struct ChatListNavLink: View {
         }
     }
 
-    @ViewBuilder private func noteFolderNavLink(_ noteFolder: NoteFolder) -> some View {
+    private func noteFolderNavLink(_ noteFolder: NoteFolder) -> some View {
         NavLinkPlain(
             chatId: chat.chatInfo.id,
             selection: $chatModel.chatId,

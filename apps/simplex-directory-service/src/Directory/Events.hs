@@ -16,7 +16,6 @@ module Directory.Events
     SDirectoryRole (..),
     crDirectoryEvent,
     directoryCmdTag,
-    viewName,
   )
 where
 
@@ -290,9 +289,6 @@ directoryCmdP =
         gc_ f = f <$> (spacesP *> A.decimal) <*> optional (A.char ':' *> displayNameTextP)
         -- wordP = spacesP *> A.takeTill isSpace
         spacesP = A.takeWhile1 isSpace
-
-viewName :: Text -> Text
-viewName n = if T.any isSpace n then "'" <> n <> "'" else n
 
 directoryCmdTag :: DirectoryCmd r -> Text
 directoryCmdTag = \case

@@ -768,7 +768,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages." xml:space="preserve">
         <source>All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages.</source>
-        <target>Az összes üzenet és fájl **végpontok közötti titkosítással**, a közvetlen üzenetek továbbá kvantumálló titkosítással is rendelkeznek.</target>
+        <target>Az összes üzenet és fájl **végpontok közötti titkosítással**, a közvetlen üzenetek továbbá kvantumbiztos titkosítással is rendelkeznek.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All messages will be deleted - this cannot be undone!" xml:space="preserve">
@@ -798,6 +798,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="All servers" xml:space="preserve">
         <source>All servers</source>
+        <target>Összes kiszolgáló</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
@@ -1088,11 +1089,6 @@ swipe action</note>
       <trans-unit id="Archiving database" xml:space="preserve">
         <source>Archiving database</source>
         <target>Adatbázis archiválása</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Ask" xml:space="preserve">
-        <source>Ask</source>
-        <target>Mindig kérdezzen rá</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Attach" xml:space="preserve">
@@ -4946,12 +4942,12 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
       </trans-unit>
       <trans-unit id="Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve">
         <source>Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery.</source>
-        <target>Az üzeneteket, fájlokat és hívásokat **végpontok közötti titkosítással**, sérülés utáni titkosság-védelemmel és -helyreállítással, továbbá visszautasítással védi.</target>
+        <target>Az üzenetek, a fájlok és a hívások **végpontok közötti titkosítással**, sérülés utáni titkosságvédelemmel és -helyreállítással, továbbá letagadhatósággal vannak védve.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve">
         <source>Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery.</source>
-        <target>Az üzenetek, fájlok és hívások **végpontok közötti kvantumálló titkosítással** sérülés utáni titkosságvédelemmel, visszautasítással és feltörés utáni helyreállítással vannak védve.</target>
+        <target>Az üzenetek, a fájlok és a hívások **végpontok közötti kvantumbiztos titkosítással**, sérülés utáni titkosságvédelemmel és -helyreállítással, továbbá letagadhatósággal vannak védve.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrate device" xml:space="preserve">
@@ -5545,7 +5541,7 @@ VPN engedélyezése szükséges.</target>
       <trans-unit id="Open" xml:space="preserve">
         <source>Open</source>
         <target>Megnyitás</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert action</note>
       </trans-unit>
       <trans-unit id="Open Settings" xml:space="preserve">
         <source>Open Settings</source>
@@ -5577,25 +5573,14 @@ VPN engedélyezése szükséges.</target>
         <target>Csoport megnyitása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open link" xml:space="preserve">
-        <source>Open link</source>
-        <target>Hivatkozás megnyitása</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Open links from chat list" xml:space="preserve">
-        <source>Open links from chat list</source>
-        <target>Hivatkozás megnyitása a csevegési listából</target>
-        <note>No comment provided by engineer.</note>
+      <trans-unit id="Open link?" xml:space="preserve">
+        <source>Open link?</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Open migration to another device" xml:space="preserve">
         <source>Open migration to another device</source>
         <target>Átköltöztetés indítása egy másik eszközre</target>
         <note>authentication reason</note>
-      </trans-unit>
-      <trans-unit id="Open web link?" xml:space="preserve">
-        <source>Open web link?</source>
-        <target>Megnyitja a webhivatkozást?</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Opening app…" xml:space="preserve">
         <source>Opening app…</source>
@@ -6092,7 +6077,7 @@ Engedélyezze a *Hálózat és kiszolgálók* menüben.</target>
       </trans-unit>
       <trans-unit id="Quantum resistant encryption" xml:space="preserve">
         <source>Quantum resistant encryption</source>
-        <target>Kvantumálló titkosítás</target>
+        <target>Kvantumbiztos titkosítás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Rate the app" xml:space="preserve">
@@ -7870,7 +7855,7 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
       </trans-unit>
       <trans-unit id="This chat is protected by quantum resistant end-to-end encryption." xml:space="preserve">
         <source>This chat is protected by quantum resistant end-to-end encryption.</source>
-        <target>Ez a csevegés végpontok közötti kvantumálló titkosítással védett.</target>
+        <target>Ez a csevegés végpontok közötti kvantumbiztos titkosítással védett.</target>
         <note>E2EE info chat item</note>
       </trans-unit>
       <trans-unit id="This device name" xml:space="preserve">
@@ -8309,6 +8294,7 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
       </trans-unit>
       <trans-unit id="Use TCP port 443 for preset servers only." xml:space="preserve">
         <source>Use TCP port 443 for preset servers only.</source>
+        <target>A 443-as TCP-port használata kizárólag az előre beállított kiszolgálokhoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use chat" xml:space="preserve">
@@ -8453,7 +8439,7 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
       </trans-unit>
       <trans-unit id="Via secure quantum resistant protocol." xml:space="preserve">
         <source>Via secure quantum resistant protocol.</source>
-        <target>Biztonságos kvantumálló-protokollon keresztül.</target>
+        <target>Biztonságos kvantumbiztos protokollon keresztül.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Video call" xml:space="preserve">
@@ -8674,11 +8660,6 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
       <trans-unit id="XFTP server" xml:space="preserve">
         <source>XFTP server</source>
         <target>XFTP-kiszolgáló</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Yes" xml:space="preserve">
-        <source>Yes</source>
-        <target>Igen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You **must not** use the same database on two devices." xml:space="preserve">
@@ -9821,7 +9802,7 @@ time to disappear</note>
       </trans-unit>
       <trans-unit id="quantum resistant e2e encryption" xml:space="preserve">
         <source>quantum resistant e2e encryption</source>
-        <target>végpontok közötti kvantumálló titkosítás</target>
+        <target>végpontok közötti kvantumbiztos titkosítás</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="received answer…" xml:space="preserve">
@@ -10206,6 +10187,7 @@ utoljára fogadott üzenet: %2$@</target>
       </trans-unit>
       <trans-unit id="From %d chat(s)" xml:space="preserve">
         <source>From %d chat(s)</source>
+        <target>%d csevegésből</target>
         <note>notification body</note>
       </trans-unit>
       <trans-unit id="From: %@" xml:space="preserve">

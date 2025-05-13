@@ -19,42 +19,42 @@ struct CIFileView: View {
     var body: some View {
         if smallViewSize != nil {
             fileIndicator()
-            .onTapGesture(perform: fileAction)
+            .simultaneousGesture(TapGesture().onEnded(fileAction))
         } else {
             let metaReserve = edited
             ? "                           "
             : "                       "
-            Button(action: fileAction) {
-                HStack(alignment: .bottom, spacing: 6) {
-                    fileIndicator()
-                        .padding(.top, 5)
-                        .padding(.bottom, 3)
-                    if let file = file {
-                        let prettyFileSize = ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(file.fileName)
-                                .lineLimit(1)
-                                .multilineTextAlignment(.leading)
-                                .foregroundColor(theme.colors.onBackground)
-                            Text(prettyFileSize + metaReserve)
-                                .font(.caption)
-                                .lineLimit(1)
-                                .multilineTextAlignment(.leading)
-                                .foregroundColor(theme.colors.secondary)
-                        }
-                    } else {
-                        Text(metaReserve)
+            HStack(alignment: .bottom, spacing: 6) {
+                fileIndicator()
+                    .padding(.top, 5)
+                    .padding(.bottom, 3)
+                if let file = file {
+                    let prettyFileSize = ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(file.fileName)
+                            .lineLimit(1)
+                            .multilineTextAlignment(.leading)
+                            .foregroundColor(theme.colors.onBackground)
+                        Text(prettyFileSize + metaReserve)
+                            .font(.caption)
+                            .lineLimit(1)
+                            .multilineTextAlignment(.leading)
+                            .foregroundColor(theme.colors.secondary)
                     }
+                } else {
+                    Text(metaReserve)
                 }
-                .padding(.top, 4)
-                .padding(.bottom, 6)
-                .padding(.leading, 10)
-                .padding(.trailing, 12)
             }
+            .padding(.top, 4)
+            .padding(.bottom, 6)
+            .padding(.leading, 10)
+            .padding(.trailing, 12)
+            .simultaneousGesture(TapGesture().onEnded(fileAction))
             .disabled(!itemInteractive)
         }
     }
 
+    @inline(__always)
     private var itemInteractive: Bool {
         if let file = file {
             switch (file.fileStatus) {

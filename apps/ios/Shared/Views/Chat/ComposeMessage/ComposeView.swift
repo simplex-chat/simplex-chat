@@ -1286,11 +1286,14 @@ struct ComposeView: View {
         if pendingLinkUrl == url {
             composeState = composeState.copy(preview: .linkPreview(linkPreview: nil))
             getLinkPreview(url: url) { linkPreview in
-                if let linkPreview = linkPreview,
-                   pendingLinkUrl == url {
+                if let linkPreview, pendingLinkUrl == url {
                     composeState = composeState.copy(preview: .linkPreview(linkPreview: linkPreview))
-                    pendingLinkUrl = nil
+                } else {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        composeState = composeState.copy(preview: .noPreview)
+                    }
                 }
+                pendingLinkUrl = nil
             }
         }
     }

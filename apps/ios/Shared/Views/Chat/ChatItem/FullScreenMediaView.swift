@@ -126,7 +126,7 @@ struct FullScreenMediaView: View {
                         .scaledToFit()
             }
         }
-        .onTapGesture { showView = false }
+        .onTapGesture { showView = false } // this is used in full screen view, onTapGesture works
     }
 
     private func videoView( _ player: AVPlayer, _ url: URL) -> some View {

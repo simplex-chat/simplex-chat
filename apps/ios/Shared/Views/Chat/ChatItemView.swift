@@ -18,6 +18,10 @@ extension EnvironmentValues {
         static let defaultValue: Bool = true
     }
 
+    struct ContainerBackground: EnvironmentKey {
+        static let defaultValue: UIColor = .clear
+    }
+
     var showTimestamp: Bool {
         get { self[ShowTimestamp.self] }
         set { self[ShowTimestamp.self] = newValue }
@@ -26,6 +30,11 @@ extension EnvironmentValues {
     var revealed: Bool {
         get { self[Revealed.self] }
         set { self[Revealed.self] = newValue }
+    }
+
+    var containerBackground: UIColor {
+        get { self[ContainerBackground.self] }
+        set { self[ContainerBackground.self] = newValue }
     }
 }
 
