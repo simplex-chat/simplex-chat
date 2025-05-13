@@ -2063,9 +2063,9 @@ processChatCommand' vr = \case
                   gInfo' <- updateGroupMembersRequireAttention db user gInfo m m'
                   pure (m', gInfo')
                 -- create item in both scopes
+                createInternalChatItem user (CDGroupRcv gInfo' Nothing m') (CIRcvGroupEvent RGEMemberConnected) Nothing
                 let scopeInfo = Just GCSIMemberSupport {groupMember_ = Just m'}
                 createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvGroupEvent RGEMemberAcceptedByYou) Nothing
-                createInternalChatItem user (CDGroupRcv gInfo' Nothing m') (CIRcvGroupEvent RGEMemberConnected) Nothing
                 pure $ CRMemberAccepted user gInfo' m'
           Nothing -> throwChatError CEGroupMemberNotActive
       GSMemPendingReview -> do
@@ -2083,9 +2083,9 @@ processChatCommand' vr = \case
           gInfo' <- updateGroupMembersRequireAttention db user gInfo m m'
           pure (m', gInfo')
         -- create item in both scopes
+        createInternalChatItem user (CDGroupRcv gInfo' Nothing m') (CIRcvGroupEvent RGEMemberConnected) Nothing
         let scopeInfo = Just GCSIMemberSupport {groupMember_ = Just m'}
         createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvGroupEvent RGEMemberAcceptedByYou) Nothing
-        createInternalChatItem user (CDGroupRcv gInfo' Nothing m') (CIRcvGroupEvent RGEMemberConnected) Nothing
         pure $ CRMemberAccepted user gInfo' m'
         where
           newMemberStatus = case memberConn m of
