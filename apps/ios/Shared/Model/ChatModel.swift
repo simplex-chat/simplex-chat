@@ -499,7 +499,11 @@ final class ChatModel: ObservableObject {
 
     func updateChatInfo(_ cInfo: ChatInfo) {
         if let i = getChatIndex(cInfo.id) {
-            chats[i].chatInfo = cInfo
+            if case let .group(groupInfo, groupChatScope) = cInfo, groupChatScope != nil {
+                chats[i].chatInfo = .group(groupInfo: groupInfo, groupChatScope: nil)
+            } else {
+                chats[i].chatInfo = cInfo
+            }
             chats[i].created = Date.now
         }
     }

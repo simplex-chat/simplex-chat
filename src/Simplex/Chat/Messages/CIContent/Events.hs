@@ -41,6 +41,7 @@ data SndGroupEvent
   | SGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRUserDeletedMembers
   | SGEUserLeft -- CRLeftMemberUser
   | SGEGroupUpdated {groupProfile :: GroupProfile} -- CRGroupUpdated
+  | SGEMemberAccepted {groupMemberId :: GroupMemberId, profile :: Profile}
   | SGEUserPendingReview
   deriving (Show)
 

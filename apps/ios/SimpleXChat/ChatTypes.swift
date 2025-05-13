@@ -2732,6 +2732,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
             switch event {
             case .userRole: nil
             case .userLeft: nil
+            case .memberAccepted: nil
             case .userPendingReview: nil
             default: .sndGroupEvent
             }
@@ -4626,6 +4627,7 @@ public enum SndGroupEvent: Decodable, Hashable {
     case memberDeleted(groupMemberId: Int64, profile: Profile)
     case userLeft
     case groupUpdated(groupProfile: GroupProfile)
+    case memberAccepted(groupMemberId: Int64, profile: Profile)
     case userPendingReview
 
     var text: String {
@@ -4644,6 +4646,7 @@ public enum SndGroupEvent: Decodable, Hashable {
             return String.localizedStringWithFormat(NSLocalizedString("you removed %@", comment: "snd group event chat item"), profile.profileViewName)
         case .userLeft: return NSLocalizedString("you left", comment: "snd group event chat item")
         case .groupUpdated: return NSLocalizedString("group profile updated", comment: "snd group event chat item")
+        case .memberAccepted: return NSLocalizedString("you accepted this member", comment: "snd group event chat item")
         case .userPendingReview:
             return NSLocalizedString("Please wait for group moderators to review your request to join the group.", comment: "snd group event chat item")
         }
