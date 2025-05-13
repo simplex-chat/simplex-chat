@@ -307,199 +307,210 @@ struct ChatView: View {
         .onChange(of: colorScheme) { _ in
             theme = buildTheme()
         }
-        .if(im.secondaryIMFilter == nil) { v in
-            v.toolbar {
-                ToolbarItem(placement: .principal) {
-                    if selectedChatItems != nil {
-                        SelectedItemsTopToolbar(selectedChatItems: $selectedChatItems)
-                    } else if case let .direct(contact) = cInfo {
-                        Button {
-                            Task {
-                                showChatInfoSheet = true
-                            }
-                        } label: {
-                            ChatInfoToolbar(chat: chat)
-                        }
-                        .appSheet(isPresented: $showChatInfoSheet, onDismiss: { theme = buildTheme() }) {
-                            ChatInfoView(
-                                chat: chat,
-                                contact: contact,
-                                localAlias: chat.chatInfo.localAlias,
-                                featuresAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences),
-                                currentFeaturesAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences),
-                                onSearch: { focusSearch() }
-                            )
-                        }
-                    } else if case let .group(groupInfo, _) = cInfo {
-                        Button {
-                            Task { await chatModel.loadGroupMembers(groupInfo) { showChatInfoSheet = true } }
-                        } label: {
-                            ChatInfoToolbar(chat: chat)
-                                .tint(theme.colors.primary)
-                        }
-                        .appSheet(isPresented: $showChatInfoSheet, onDismiss: { theme = buildTheme() }) {
-                            GroupChatInfoView(
-                                chat: chat,
-                                groupInfo: Binding(
-                                    get: { groupInfo },
-                                    set: { gInfo in
-                                        chat.chatInfo = .group(groupInfo: gInfo, groupChatScope: nil)
-                                        chat.created = Date.now
-                                    }
-                                ),
-                                onSearch: { focusSearch() },
-                                localAlias: groupInfo.localAlias
-                            )
-                        }
-                        .appSheet(
-                            isPresented: $showUserSupportChatSheet,
-                            onDismiss: {
-                                if chat.chatInfo.groupInfo?.membership.memberPending ?? false {
-                                    chatModel.chatId = nil
-                                }
-                            }
-                        ) {
-                            userSupportChat(groupInfo)
-                        }
-                    } else if case .local = cInfo {
-                        ChatInfoToolbar(chat: chat)
-                    }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    if selectedChatItems != nil {
-                        Button {
-                            withAnimation {
-                                selectedChatItems = nil
-                            }
-                        } label: {
-                            Text("Cancel")
-                        }
-                    } else {
-                        switch cInfo {
-                        case let .direct(contact):
-                            HStack {
-                                let callsPrefEnabled = contact.mergedPreferences.calls.enabled.forUser
-                                if callsPrefEnabled {
-                                    if chatModel.activeCall == nil {
-                                        callButton(contact, .audio, imageName: "phone")
-                                            .disabled(!contact.ready || !contact.active)
-                                    } else if let call = chatModel.activeCall, call.contact.id == cInfo.id {
-                                        endCallButton(call)
-                                    }
-                                }
-                                Menu {
-                                    if callsPrefEnabled && chatModel.activeCall == nil {
-                                        Button {
-                                            CallController.shared.startCall(contact, .video)
-                                        } label: {
-                                            Label("Video call", systemImage: "video")
-                                        }
-                                        .disabled(!contact.ready || !contact.active)
-                                    }
-                                    searchButton()
-                                    ToggleNtfsButton(chat: chat)
-                                        .disabled(!contact.ready || !contact.active)
-                                } label: {
-                                    Image(systemName: "ellipsis")
-                                }
-                            }
-                        case let .group(groupInfo, _):
-                            HStack {
-                                if groupInfo.canAddMembers {
-                                    if (chat.chatInfo.incognito) {
-                                        groupLinkButton()
-                                            .appSheet(isPresented: $showGroupLinkSheet) {
-                                                GroupLinkView(
-                                                    groupId: groupInfo.groupId,
-                                                    groupLink: $groupLink,
-                                                    groupLinkMemberRole: $groupLinkMemberRole,
-                                                    showTitle: true,
-                                                    creatingGroup: false
-                                                )
-                                            }
-                                    } else {
-                                        addMembersButton()
-                                    }
-                                }
-                                Menu {
-                                    searchButton()
-                                    ToggleNtfsButton(chat: chat)
-                                } label: {
-                                    Image(systemName: "ellipsis")
-                                }
-                            }
-                        case .local:
-                            searchButton()
-                        default:
-                            EmptyView()
-                        }
-                    }
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                if im.secondaryIMFilter == nil {
+                    primaryPrincipalToolbarContent()
+                } else {
+                    secondaryPrincipalToolbarContent()
                 }
             }
-        }
-        .if(im.secondaryIMFilter != nil) { v in
-            v.toolbar {
-                ToolbarItem(placement: .principal) {
-                    if selectedChatItems != nil {
-                        SelectedItemsTopToolbar(selectedChatItems: $selectedChatItems)
-                    } else {
-                        switch im.secondaryIMFilter {
-                        case let .groupChatScopeContext(groupScopeInfo):
-                            switch groupScopeInfo {
-                            case let .memberSupport(groupMember_):
-                                if let groupMember = groupMember_ {
-                                    MemberSupportChatToolbar(groupMember: groupMember)
-                                } else {
-                                    textChatToolbar("Chat with admins")
-                                }
-                            }
-                        case let .msgContentTagContext(contentTag):
-                            switch contentTag {
-                            case .report:
-                                textChatToolbar("Member reports")
-                            default:
-                                EmptyView()
-                            }
-                        case .none:
-                            EmptyView()
-                        }
-                    }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    if selectedChatItems != nil {
-                        Button {
-                            withAnimation {
-                                selectedChatItems = nil
-                            }
-                        } label: {
-                            Text("Cancel")
-                        }
-                    } else {
-                        searchButton()
-                    }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                if im.secondaryIMFilter == nil {
+                    primaryTrailingToolbarContent()
+                } else {
+                    secondaryTrailingToolbarContent()
                 }
             }
         }
     }
 
-    @ViewBuilder private func userSupportChat(_ groupInfo: GroupInfo) -> some View {
-        if let secondaryIM = chatModel.secondaryIM {
-            NavigationView {
-                SecondaryChatView(
-                    chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: userSupportScopeInfo), chatItems: [], chatStats: ChatStats()),
-                    im: secondaryIM
+    @inline(__always)
+    @ViewBuilder private func primaryPrincipalToolbarContent() -> some View {
+        let cInfo = chat.chatInfo
+        if selectedChatItems != nil {
+            SelectedItemsTopToolbar(selectedChatItems: $selectedChatItems)
+        } else if case let .direct(contact) = cInfo {
+            Button {
+                Task {
+                    showChatInfoSheet = true
+                }
+            } label: {
+                ChatInfoToolbar(chat: chat)
+            }
+            .appSheet(isPresented: $showChatInfoSheet, onDismiss: { theme = buildTheme() }) {
+                ChatInfoView(
+                    chat: chat,
+                    contact: contact,
+                    localAlias: chat.chatInfo.localAlias,
+                    featuresAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences),
+                    currentFeaturesAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences),
+                    onSearch: { focusSearch() }
                 )
             }
+        } else if case let .group(groupInfo, _) = cInfo {
+            Button {
+                Task { await chatModel.loadGroupMembers(groupInfo) { showChatInfoSheet = true } }
+            } label: {
+                ChatInfoToolbar(chat: chat)
+                    .tint(theme.colors.primary)
+            }
+            .appSheet(isPresented: $showChatInfoSheet, onDismiss: { theme = buildTheme() }) {
+                GroupChatInfoView(
+                    chat: chat,
+                    groupInfo: Binding(
+                        get: { groupInfo },
+                        set: { gInfo in
+                            chat.chatInfo = .group(groupInfo: gInfo, groupChatScope: nil)
+                            chat.created = Date.now
+                        }
+                    ),
+                    onSearch: { focusSearch() },
+                    localAlias: groupInfo.localAlias
+                )
+            }
+            .appSheet(
+                isPresented: $showUserSupportChatSheet,
+                onDismiss: {
+                    if chat.chatInfo.groupInfo?.membership.memberPending ?? false {
+                        chatModel.chatId = nil
+                    }
+                }
+            ) {
+                userSupportChat(groupInfo)
+            }
+        } else if case .local = cInfo {
+            ChatInfoToolbar(chat: chat)
+        }
+    }
+
+    @inline(__always)
+    @ViewBuilder private func primaryTrailingToolbarContent() -> some View {
+        let cInfo = chat.chatInfo
+        if selectedChatItems != nil {
+            Button {
+                withAnimation {
+                    selectedChatItems = nil
+                }
+            } label: {
+                Text("Cancel")
+            }
         } else {
-            EmptyView()
+            switch cInfo {
+            case let .direct(contact):
+                HStack {
+                    let callsPrefEnabled = contact.mergedPreferences.calls.enabled.forUser
+                    if callsPrefEnabled {
+                        if chatModel.activeCall == nil {
+                            callButton(contact, .audio, imageName: "phone")
+                                .disabled(!contact.ready || !contact.active)
+                        } else if let call = chatModel.activeCall, call.contact.id == cInfo.id {
+                            endCallButton(call)
+                        }
+                    }
+                    Menu {
+                        if callsPrefEnabled && chatModel.activeCall == nil {
+                            Button {
+                                CallController.shared.startCall(contact, .video)
+                            } label: {
+                                Label("Video call", systemImage: "video")
+                            }
+                            .disabled(!contact.ready || !contact.active)
+                        }
+                        searchButton()
+                        ToggleNtfsButton(chat: chat)
+                            .disabled(!contact.ready || !contact.active)
+                    } label: {
+                        Image(systemName: "ellipsis")
+                    }
+                }
+            case let .group(groupInfo, _):
+                HStack {
+                    if groupInfo.canAddMembers {
+                        if (chat.chatInfo.incognito) {
+                            groupLinkButton()
+                                .appSheet(isPresented: $showGroupLinkSheet) {
+                                    GroupLinkView(
+                                        groupId: groupInfo.groupId,
+                                        groupLink: $groupLink,
+                                        groupLinkMemberRole: $groupLinkMemberRole,
+                                        showTitle: true,
+                                        creatingGroup: false
+                                    )
+                                }
+                        } else {
+                            addMembersButton()
+                        }
+                    }
+                    Menu {
+                        searchButton()
+                        ToggleNtfsButton(chat: chat)
+                    } label: {
+                        Image(systemName: "ellipsis")
+                    }
+                }
+            case .local:
+                searchButton()
+            default:
+                EmptyView()
+            }
+        }
+    }
+
+    @inline(__always)
+    @ViewBuilder private func secondaryPrincipalToolbarContent() -> some View {
+        if selectedChatItems != nil {
+            SelectedItemsTopToolbar(selectedChatItems: $selectedChatItems)
+        } else {
+            switch im.secondaryIMFilter {
+            case let .groupChatScopeContext(groupScopeInfo):
+                switch groupScopeInfo {
+                case let .memberSupport(groupMember_):
+                    if let groupMember = groupMember_ {
+                        MemberSupportChatToolbar(groupMember: groupMember)
+                    } else {
+                        textChatToolbar("Chat with admins")
+                    }
+                }
+            case let .msgContentTagContext(contentTag):
+                switch contentTag {
+                case .report:
+                    textChatToolbar("Member reports")
+                default:
+                    EmptyView()
+                }
+            case .none:
+                EmptyView()
+            }
+        }
+    }
+
+    @inline(__always)
+    @ViewBuilder private func secondaryTrailingToolbarContent() -> some View {
+        if selectedChatItems != nil {
+            Button {
+                withAnimation {
+                    selectedChatItems = nil
+                }
+            } label: {
+                Text("Cancel")
+            }
+        } else {
+            searchButton()
+        }
+    }
+
+    @inline(__always)
+    private func userSupportChat(_ groupInfo: GroupInfo) -> some View {
+        NavigationView {
+            SecondaryChatView(chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: userSupportScopeInfo), chatItems: [], chatStats: ChatStats()))
         }
     }
 
     func textChatToolbar(_ text: LocalizedStringKey) -> some View {
-        HStack {
-            Text(text).font(.headline)
-                .lineLimit(1)
-        }
+        Text(text)
+        .font(.headline)
+        .lineLimit(1)
         .foregroundColor(theme.colors.onBackground)
         .frame(width: 220)
     }

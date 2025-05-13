@@ -51,12 +51,9 @@ struct MemberSupportView: View {
                 searchFieldView(text: $searchText, focussed: $searchFocussed, theme.colors.onBackground, theme.colors.secondary)
                     .padding(.leading, 8)
                 ForEach(filteredMembersWithChats) { memberWithChat in
-                    let scopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: memberWithChat.wrapped)
                     MemberSupportChatNavLink(
                         groupInfo: groupInfo,
-                        memberWithChat: memberWithChat,
-                        chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()),
-                        im: ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: scopeInfo))
+                        memberWithChat: memberWithChat
                     )
                 }
             }
@@ -69,13 +66,13 @@ struct MemberSupportView: View {
         @State private var memberSupportChatNavLinkActive = false
         var groupInfo: GroupInfo
         var memberWithChat: GMember
-        @ObservedObject var chat: Chat
-        var im: ItemsModel
 
         var body: some View {
             ZStack {
+                let scopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: memberWithChat.wrapped)
                 Button {
-                    im.loadOpenChat(chat.id) {
+                    let im = ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: scopeInfo))
+                    im.loadOpenChat(groupInfo.id) {
                         memberSupportChatNavLinkActive = true
                     }
                 } label: {
@@ -83,9 +80,7 @@ struct MemberSupportView: View {
                 }
 
                 NavigationLink(isActive: $memberSupportChatNavLinkActive) {
-                    if let secondaryIM = chatModel.secondaryIM {
-                        SecondaryChatView(chat: chat, im: secondaryIM)
-                    }
+                    SecondaryChatView(chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()))
                 } label: {
                     EmptyView()
                 }

@@ -96,17 +96,10 @@ struct GroupChatInfoView: View {
                             memberSupportButton()
                         }
                         if groupInfo.canModerate {
-                            GroupReportsChatNavLink(
-                                chat: chat,
-                                im: ItemsModel(secondaryIMFilter: .msgContentTagContext(contentTag: .report))
-                            )
+                            GroupReportsChatNavLink(chat: chat)
                         }
                         if groupInfo.membership.supportChat != nil {
-                            let scopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
-                            UserSupportChatNavLink(
-                                chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()),
-                                im: ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: scopeInfo))
-                            )
+                            UserSupportChatNavLink(groupInfo: groupInfo)
                         }
                     } header: {
                         Text("")
@@ -535,15 +528,16 @@ struct GroupChatInfoView: View {
     }
 
     struct UserSupportChatNavLink: View {
+        var groupInfo: GroupInfo
         @EnvironmentObject var chatModel: ChatModel
         @State private var userSupportChatNavLinkActive = false
-        @ObservedObject var chat: Chat
-        var im: ItemsModel
 
         var body: some View {
             ZStack {
+                let scopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
                 Button {
-                    im.loadOpenChat(chat.id) {
+                    let im = ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: scopeInfo))
+                    im.loadOpenChat(groupInfo.id) {
                         userSupportChatNavLinkActive = true
                     }
                 } label: {
@@ -551,9 +545,7 @@ struct GroupChatInfoView: View {
                 }
 
                 NavigationLink(isActive: $userSupportChatNavLinkActive) {
-                    if let secondaryIM = chatModel.secondaryIM {
-                        SecondaryChatView(chat: chat, im: secondaryIM)
-                    }
+                    SecondaryChatView(chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()))
                 } label: {
                     EmptyView()
                 }
@@ -582,11 +574,11 @@ struct GroupChatInfoView: View {
         @EnvironmentObject var theme: AppTheme
         @State private var groupReportsChatNavLinkActive = false
         @ObservedObject var chat: Chat
-        var im: ItemsModel
 
         var body: some View {
             ZStack {
                 Button {
+                    let im = ItemsModel(secondaryIMFilter: .msgContentTagContext(contentTag: .report))
                     im.loadOpenChat(chat.id) {
                         groupReportsChatNavLinkActive = true
                     }
@@ -599,9 +591,7 @@ struct GroupChatInfoView: View {
                 }
 
                 NavigationLink(isActive: $groupReportsChatNavLinkActive) {
-                    if let secondaryIM = chatModel.secondaryIM {
-                        SecondaryChatView(chat: chat, im: secondaryIM)
-                    }
+                    SecondaryChatView(chat: chat)
                 } label: {
                     EmptyView()
                 }

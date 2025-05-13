@@ -12,18 +12,18 @@ import SimpleXChat
 struct SecondaryChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var chat: Chat
-    @ObservedObject var im: ItemsModel
 
-    @inline(__always)
     var body: some View {
-        ChatView(
-            chat: chat,
-            im: im,
-            mergedItems: BoxedValue(MergedItems.create(im, [])),
-            floatingButtonModel: FloatingButtonModel(im: im)
-        )
-        .onDisappear {
-            chatModel.secondaryIM = nil
+        if let im = chatModel.secondaryIM {
+            ChatView(
+                chat: chat,
+                im: im,
+                mergedItems: BoxedValue(MergedItems.create(im, [])),
+                floatingButtonModel: FloatingButtonModel(im: im)
+            )
+            .onDisappear {
+                chatModel.secondaryIM = nil
+            }
         }
     }
 }
@@ -34,7 +34,6 @@ struct SecondaryChatView: View {
             chatInfo: .group(groupInfo: GroupInfo.sampleData, groupChatScope: .memberSupport(groupMember_: GroupMember.sampleData)),
             chatItems: [],
             chatStats: ChatStats()
-        ),
-        im: ItemsModel.shared
+        )
     )
 }
