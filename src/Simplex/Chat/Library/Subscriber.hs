@@ -2104,12 +2104,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 gInfo' <- updateGroupMembersRequireAttention db user gInfo referencedMember referencedMember'
                 pure (referencedMember', gInfo')
               when (memberCategory referencedMember == GCInviteeMember) $ introduceToRemainingMembers referencedMember'
-              let scopeInfo = Just $ GCSIMemberSupport {groupMember_ = Just referencedMember'}
-                  gEvent = RGEMemberAccepted (groupMemberId' referencedMember') (fromLocalProfile $ memberProfile referencedMember')
-              (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo' scopeInfo m) msg brokerTs (CIRcvGroupEvent gEvent)
-              groupMsgToView cInfo ci
+              -- create item in both scopes
+              createMemberAcceptedItem $ Just GCSIMemberSupport {groupMember_ = Just referencedMember'}
+              createMemberAcceptedItem Nothing
               toView $ CEvtMemberAcceptedByOther user gInfo' m referencedMember'
               where
+                createMemberAcceptedItem scopeInfo = do
+                  let gEvent = RGEMemberAccepted (groupMemberId' referencedMember') (fromLocalProfile $ memberProfile referencedMember')
+                  (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo' scopeInfo m) msg brokerTs (CIRcvGroupEvent gEvent)
+                  groupMsgToView cInfo ci
                 newMemberStatus refMem = case memberConn refMem of
                   Just c | connReady c -> GSMemConnected
                   _ -> GSMemAnnounced
