@@ -355,6 +355,8 @@ object ChatModel {
               )
             )
           }
+        } else if (currentCInfo is ChatInfo.Group && newCInfo is ChatInfo.Group && newCInfo.groupChatScope != null) {
+          newCInfo = newCInfo.copy(groupInfo = newCInfo.groupInfo, groupChatScope = null)
         }
         chats[i] = chats[i].copy(chatInfo = newCInfo)
       }
