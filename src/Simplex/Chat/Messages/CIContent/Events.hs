@@ -16,7 +16,6 @@ data RcvGroupEvent
   = RGEMemberAdded {groupMemberId :: GroupMemberId, profile :: Profile} -- CRJoinedGroupMemberConnecting
   | RGEMemberConnected -- CEvtUserJoinedGroup, CRJoinedGroupMember, CEvtConnectedToGroupMember
   | RGEMemberAccepted {groupMemberId :: GroupMemberId, profile :: Profile}
-  | RGEMemberAcceptedByYou
   | RGEUserAccepted
   | RGEMemberLeft -- CRLeftMember
   | RGEMemberRole {groupMemberId :: GroupMemberId, profile :: Profile, role :: GroupMemberRole}
@@ -42,6 +41,7 @@ data SndGroupEvent
   | SGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRUserDeletedMembers
   | SGEUserLeft -- CRLeftMemberUser
   | SGEGroupUpdated {groupProfile :: GroupProfile} -- CRGroupUpdated
+  | SGEMemberAccepted {groupMemberId :: GroupMemberId, profile :: Profile}
   | SGEUserPendingReview
   deriving (Show)
 

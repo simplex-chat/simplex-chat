@@ -207,7 +207,6 @@ ciRequiresAttention content = case msgDirection @d of
       RGEMemberAdded {} -> False
       RGEMemberConnected -> False
       RGEMemberAccepted {} -> False
-      RGEMemberAcceptedByYou -> False
       RGEUserAccepted -> False
       RGEMemberLeft -> False
       RGEMemberRole {} -> False
@@ -322,7 +321,6 @@ rcvGroupEventToText = \case
   RGEMemberAdded _ p -> "added " <> profileToText p
   RGEMemberConnected -> "connected"
   RGEMemberAccepted _ p -> "accepted " <> profileToText p
-  RGEMemberAcceptedByYou -> "accepted"
   RGEUserAccepted -> "accepted you"
   RGEMemberLeft -> "left"
   RGEMemberRole _ p r -> "changed role of " <> profileToText p <> " to " <> safeDecodeUtf8 (strEncode r)
@@ -345,6 +343,7 @@ sndGroupEventToText = \case
   SGEMemberDeleted _ p -> "removed " <> profileToText p
   SGEUserLeft -> "left"
   SGEGroupUpdated _ -> "group profile updated"
+  SGEMemberAccepted _ _p -> "you accepted this member"
   SGEUserPendingReview -> "please wait for group moderators to review your request to join the group"
 
 -- used to send to members with old version
