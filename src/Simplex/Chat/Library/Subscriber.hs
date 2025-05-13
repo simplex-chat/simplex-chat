@@ -2104,6 +2104,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 gInfo' <- updateGroupMembersRequireAttention db user gInfo referencedMember referencedMember'
                 pure (referencedMember', gInfo')
               when (memberCategory referencedMember == GCInviteeMember) $ introduceToRemainingMembers referencedMember'
+              -- create item in both scopes
+              memberConnectedChatItem gInfo' Nothing referencedMember'
               let scopeInfo = Just $ GCSIMemberSupport {groupMember_ = Just referencedMember'}
                   gEvent = RGEMemberAccepted (groupMemberId' referencedMember') (fromLocalProfile $ memberProfile referencedMember')
               (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo' scopeInfo m) msg brokerTs (CIRcvGroupEvent gEvent)
