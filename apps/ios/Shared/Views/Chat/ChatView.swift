@@ -335,14 +335,14 @@ struct ChatView: View {
         }
         .toolbar {
             ToolbarItem(placement: .principal) {
-                if memberSupportChat == nil {
+                if im.secondaryIMFilter == nil {
                     primaryPrincipalToolbarContent()
                 } else if !userMemberKnockingChat { // no toolbar while knocking chat, it's unstable on sheet
                     secondaryPrincipalToolbarContent()
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                if memberSupportChat == nil {
+                if im.secondaryIMFilter == nil {
                     primaryTrailingToolbarContent()
                 } else if !userMemberKnockingChat {
                     secondaryTrailingToolbarContent()
