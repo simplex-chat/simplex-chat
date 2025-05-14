@@ -99,7 +99,7 @@ struct GroupChatInfoView: View {
                             GroupReportsChatNavLink(chat: chat)
                         }
                         if groupInfo.membership.supportChat != nil {
-                            UserSupportChatNavLink(groupInfo: groupInfo)
+                            UserSupportChatNavLink(chat: chat, groupInfo: groupInfo)
                         }
                     } header: {
                         Text("")
@@ -528,6 +528,8 @@ struct GroupChatInfoView: View {
     }
 
     struct UserSupportChatNavLink: View {
+        @ObservedObject var chat: Chat
+        @EnvironmentObject var theme: AppTheme
         var groupInfo: GroupInfo
         @EnvironmentObject var chatModel: ChatModel
         @State private var navLinkActive = false
@@ -537,7 +539,13 @@ struct GroupChatInfoView: View {
             NavigationLink(isActive: $navLinkActive) {
                 SecondaryChatView(chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()))
             } label: {
-                Label("Chat with admins", systemImage: "flag")
+                HStack {
+                    Label("Chat with admins", systemImage:  chat.supportUnreadCount > 0 ? "flag.filled" : "flag")
+                    Spacer()
+                    if chat.supportUnreadCount > 0 {
+                        UnreadBadge(count: chat.supportUnreadCount, color: theme.colors.primary)
+                    }
+                }
             }
             .onChange(of: navLinkActive) { active in
                 if active {
