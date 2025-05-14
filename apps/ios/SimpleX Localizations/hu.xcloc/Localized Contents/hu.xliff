@@ -2238,9 +2238,9 @@ Ez a saját egyszer használható meghívója!</target>
         <target>Adatbázis-azonosító: %d</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Database IDs and Transport isolation option." xml:space="preserve">
+      <trans-unit id="Database IDs and Transport isolation option." xml:space="preserve" approved="no">
         <source>Database IDs and Transport isolation option.</source>
-        <target>Adatbázis-azonosítók és átvitel-izolációs beállítások.</target>
+        <target state="translated">Adatbázis-azonosítók és átvitelelkülönítési beállítások.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database downgrade" xml:space="preserve">
@@ -2672,9 +2672,9 @@ swipe action</note>
         <target>Az eszközön nincs beállítva a képernyőzár. A SimpleX-zár az „Adatvédelem és biztonság” menüben kapcsolható be, miután beállította a képernyőzárat az eszközén.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Different names, avatars and transport isolation." xml:space="preserve">
+      <trans-unit id="Different names, avatars and transport isolation." xml:space="preserve" approved="no">
         <source>Different names, avatars and transport isolation.</source>
-        <target>Különböző nevek, profilképek és átvitel-izoláció.</target>
+        <target state="translated">Különböző nevek, profilképek és átvitelizoláció.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Direct messages" xml:space="preserve">
@@ -4449,7 +4449,7 @@ További fejlesztések hamarosan!</target>
       </trans-unit>
       <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve" approved="no">
         <source>It can happen when you or your connection used the old database backup.</source>
-        <target state="translated">Ez akkor fordulhat elő, ha Ön vagy a partnere egy régebbi adatbázis biztonsági mentését használta.</target>
+        <target state="translated">Ez akkor fordulhat elő, ha Ön vagy a partnere egy régi adatbázis biztonsági mentését használta.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve" approved="no">
@@ -4459,7 +4459,7 @@ További fejlesztések hamarosan!</target>
 3. The connection was compromised.</source>
         <target state="translated">Ez akkor fordulhat elő, ha:
 1. Az üzenetek 2 nap után, vagy a kiszolgálón 30 nap után lejártak.
-2. Nem sikerült az üzenetet visszafejteni, mert Ön, vagy a partnere egy régebbi adatbázis biztonsági mentését használta.
+2. Nem sikerült az üzenetet visszafejteni, mert Ön, vagy a partnere egy régi adatbázis biztonsági mentését használta.
 3. A kapcsolat sérült.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -8026,9 +8026,9 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
         <target>Összes kapcsolat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Transport isolation" xml:space="preserve">
+      <trans-unit id="Transport isolation" xml:space="preserve" approved="no">
         <source>Transport isolation</source>
-        <target>Átvitel-izoláció</target>
+        <target state="translated">Átvitelelkülönítés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Transport sessions" xml:space="preserve">
