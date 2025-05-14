@@ -105,6 +105,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20241220_initial
           Simplex.Chat.Store.Postgres.Migrations.M20250402_short_links
           Simplex.Chat.Store.Postgres.Migrations.M20250512_member_admission
+          Simplex.Chat.Store.Postgres.Migrations.M20250513_group_scope
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -236,6 +237,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20250130_indexes
           Simplex.Chat.Store.SQLite.Migrations.M20250402_short_links
           Simplex.Chat.Store.SQLite.Migrations.M20250512_member_admission
+          Simplex.Chat.Store.SQLite.Migrations.M20250513_group_scope
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:

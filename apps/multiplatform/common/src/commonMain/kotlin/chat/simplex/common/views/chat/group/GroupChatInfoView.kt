@@ -74,6 +74,9 @@ fun ModalData.GroupChatInfoView(
     val chatItemTTL = remember(groupInfo.id) { mutableStateOf(if (groupInfo.chatItemTTL != null) ChatItemTTL.fromSeconds(groupInfo.chatItemTTL) else null) }
     val deletingItems = rememberSaveable(groupInfo.id) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val activeSortedMembers = remember { chatModel.groupMembers }.value
+      .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
+      .sortedByDescending { it.memberRole }
 
     GroupChatInfoLayout(
       chat,
@@ -95,9 +98,7 @@ fun ModalData.GroupChatInfoView(
 
         setChatTTLAlert(chatsCtx, chat.remoteHostId, chat.chatInfo, chatItemTTL, previousChatTTL, deletingItems)
       },
-      activeSortedMembers = remember { chatModel.groupMembers }.value
-        .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
-        .sortedByDescending { it.memberRole },
+      activeSortedMembers = activeSortedMembers,
       developerTools,
       onLocalAliasChanged = { setGroupAlias(chat, it, chatModel) },
       groupLink,
@@ -126,7 +127,7 @@ fun ModalData.GroupChatInfoView(
           }
           ModalManager.end.showModalCloseable(true) { closeCurrent ->
             remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
-              GroupMemberInfoView(rhId, groupInfo, mem, stats, code, chatModel, closeCurrent) {
+              GroupMemberInfoView(rhId, groupInfo, mem, scrollToItemId, stats, code, chatModel, closeCurrent) {
                 closeCurrent()
                 close()
               }
@@ -139,6 +140,17 @@ fun ModalData.GroupChatInfoView(
       },
       addOrEditWelcomeMessage = {
         ModalManager.end.showCustomModal { close -> GroupWelcomeView(chatModel, rhId, groupInfo, close) }
+      },
+      openMemberSupport = {
+        ModalManager.end.showCustomModal { close ->
+          MemberSupportView(
+            rhId,
+            chat,
+            groupInfo,
+            scrollToItemId,
+            close
+          )
+        }
       },
       openPreferences = {
         ModalManager.end.showCustomModal { close ->
@@ -318,6 +330,32 @@ fun AddGroupMembersButton(
 }
 
 @Composable
+fun UserSupportChatButton(
+  groupInfo: GroupInfo,
+  scrollToItemId: MutableState<Long?>
+) {
+  val scope = rememberCoroutineScope()
+
+  SettingsActionItem(
+    painterResource(MR.images.ic_flag),
+    stringResource(MR.strings.button_support_chat),
+    click = {
+      val scopeInfo = GroupChatScopeInfo.MemberSupport(groupMember_ = null)
+      val supportChatInfo = ChatInfo.Group(groupInfo, groupChatScope = scopeInfo)
+      scope.launch {
+        showMemberSupportChatView(
+          chatModel.chatId,
+          scrollToItemId = scrollToItemId,
+          supportChatInfo,
+          scopeInfo
+        )
+      }
+    },
+    iconColor = MaterialTheme.colors.secondary,
+  )
+}
+
+@Composable
 fun ModalData.GroupChatInfoLayout(
   chat: Chat,
   groupInfo: GroupInfo,
@@ -337,6 +375,7 @@ fun ModalData.GroupChatInfoLayout(
   showMemberInfo: (GroupMember) -> Unit,
   editGroupProfile: () -> Unit,
   addOrEditWelcomeMessage: () -> Unit,
+  openMemberSupport: () -> Unit,
   openPreferences: () -> Unit,
   deleteGroup: () -> Unit,
   clearChat: () -> Unit,
@@ -422,6 +461,40 @@ fun ModalData.GroupChatInfoLayout(
 
       SectionSpacer()
 
+      var anyTopSectionRowShow = false
+      SectionView {
+        if (groupInfo.canAddMembers && groupInfo.businessChat == null) {
+          anyTopSectionRowShow = true
+          if (groupLink == null) {
+            CreateGroupLinkButton(manageGroupLink)
+          } else {
+            GroupLinkButton(manageGroupLink)
+          }
+        }
+        if (groupInfo.businessChat == null && groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
+          anyTopSectionRowShow = true
+          MemberSupportButton(chat, openMemberSupport)
+        }
+        if (groupInfo.canModerate) {
+          anyTopSectionRowShow = true
+          GroupReportsButton(chat) {
+            scope.launch {
+              showGroupReportsView(chatModel.chatId, scrollToItemId, chat.chatInfo)
+            }
+          }
+        }
+        if (
+          groupInfo.membership.memberActive &&
+          (groupInfo.membership.memberRole < GroupMemberRole.Moderator || groupInfo.membership.supportChat != null)
+        ) {
+          anyTopSectionRowShow = true
+          UserSupportChatButton(groupInfo, scrollToItemId)
+        }
+      }
+      if (anyTopSectionRowShow) {
+        SectionDividerSpaced(maxBottomPadding = false)
+      }
+
       SectionView {
         if (groupInfo.isOwner && groupInfo.businessChat?.chatType == null) {
           EditGroupProfileButton(editGroupProfile)
@@ -431,19 +504,17 @@ fun ModalData.GroupChatInfoLayout(
         }
         val prefsTitleId = if (groupInfo.businessChat == null) MR.strings.group_preferences else MR.strings.chat_preferences
         GroupPreferencesButton(prefsTitleId, openPreferences)
-        if (groupInfo.canModerate) {
-          GroupReportsButton {
-            scope.launch {
-              showGroupReportsView(chatModel.chatId, scrollToItemId, chat.chatInfo)
-            }
-          }
-        }
+      }
+      val footerId = if (groupInfo.businessChat == null) MR.strings.only_group_owners_can_change_prefs else MR.strings.only_chat_owners_can_change_prefs
+      SectionTextFooter(stringResource(footerId))
+      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+
+      SectionView {
         if (activeSortedMembers.filter { it.memberCurrent }.size <= SMALL_GROUPS_RCPS_MEM_LIMIT) {
           SendReceiptsOption(currentUser, sendReceipts, setSendReceipts)
         } else {
           SendReceiptsOptionDisabled()
         }
-
         WallpaperButton {
           ModalManager.end.showModal {
             val chat = remember { derivedStateOf { chatModel.chats.value.firstOrNull { it.id == chat.id } } }
@@ -453,23 +524,13 @@ fun ModalData.GroupChatInfoLayout(
             }
           }
         }
+        ChatTTLOption(chatItemTTL, setChatItemTTL, deletingItems)
+        SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
       }
-      val footerId = if (groupInfo.businessChat == null) MR.strings.only_group_owners_can_change_prefs else MR.strings.only_chat_owners_can_change_prefs
-      SectionTextFooter(stringResource(footerId))
-      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
-
-      ChatTTLSection(chatItemTTL, setChatItemTTL, deletingItems)
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = true)
 
       SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), activeSortedMembers.count() + 1)) {
         if (groupInfo.canAddMembers) {
-          if (groupInfo.businessChat == null) {
-            if (groupLink == null) {
-              CreateGroupLinkButton(manageGroupLink)
-            } else {
-              GroupLinkButton(manageGroupLink)
-            }
-          }
           val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
           val tint = if (chat.chatInfo.incognito) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
           val addMembersTitleId = when (groupInfo.businessChat?.chatType) {
@@ -481,7 +542,7 @@ fun ModalData.GroupChatInfoLayout(
         }
         if (activeSortedMembers.size > 8) {
           SectionItemView(padding = PaddingValues(start = 14.dp, end = DEFAULT_PADDING_HALF)) {
-            SearchRowView(searchText)
+            MemberListSearchRowView(searchText)
           }
         }
         SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
@@ -631,17 +692,14 @@ private fun SelectedItemsCounterToolbarSetter(
 }
 
 @Composable
-fun ChatTTLSection(chatItemTTL: State<ChatItemTTL?>, setChatItemTTL: (ChatItemTTL?) -> Unit, deletingItems: State<Boolean>) {
+fun ChatTTLOption(chatItemTTL: State<ChatItemTTL?>, setChatItemTTL: (ChatItemTTL?) -> Unit, deletingItems: State<Boolean>) {
   Box {
-    SectionView {
-      TtlOptions(
-        chatItemTTL,
-        enabled = remember { derivedStateOf { !deletingItems.value } },
-        onSelected = setChatItemTTL,
-        default = chatModel.chatItemTTL
-      )
-      SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
-    }
+    TtlOptions(
+      chatItemTTL,
+      enabled = remember { derivedStateOf { !deletingItems.value } },
+      onSelected = setChatItemTTL,
+      default = chatModel.chatItemTTL
+    )
     if (deletingItems.value) {
       Box(Modifier.matchParentSize()) {
         ProgressIndicator()
@@ -684,6 +742,16 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
 }
 
 @Composable
+private fun MemberSupportButton(chat: Chat, onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(if (chat.supportUnreadCount > 0) MR.images.ic_flag_filled else MR.images.ic_flag),
+    stringResource(MR.strings.member_support),
+    click = onClick,
+    iconColor = (if (chat.supportUnreadCount > 0) MaterialTheme.colors.primary else MaterialTheme.colors.secondary)
+  )
+}
+
+@Composable
 private fun GroupPreferencesButton(titleId: StringResource, onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_toggle_on),
@@ -693,11 +761,12 @@ private fun GroupPreferencesButton(titleId: StringResource, onClick: () -> Unit)
 }
 
 @Composable
-private fun GroupReportsButton(onClick: () -> Unit) {
+private fun GroupReportsButton(chat: Chat, onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_flag),
+    painterResource(if (chat.chatStats.reportsCount > 0) MR.images.ic_flag_filled else MR.images.ic_flag),
     stringResource(MR.strings.group_reports_member_reports),
-    click = onClick
+    click = onClick,
+    iconColor = (if (chat.chatStats.reportsCount > 0) Color.Red else MaterialTheme.colors.secondary)
   )
 }
 
@@ -820,7 +889,7 @@ fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = tr
 }
 
 @Composable
-private fun MemberVerifiedShield() {
+fun MemberVerifiedShield() {
   Icon(painterResource(MR.images.ic_verified_user), null, Modifier.padding(end = 3.dp).size(16.dp), tint = MaterialTheme.colors.secondary)
 }
 
@@ -941,7 +1010,7 @@ private fun DeleteGroupButton(titleId: StringResource, onClick: () -> Unit) {
 }
 
 @Composable
-private fun SearchRowView(
+fun MemberListSearchRowView(
   searchText: MutableState<TextFieldValue> = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) }
 ) {
   Box(Modifier.width(36.dp), contentAlignment = Alignment.Center) {
@@ -1016,7 +1085,18 @@ fun PreviewGroupChatInfoLayout() {
       selectedItems = remember { mutableStateOf(null) },
       appBar = remember { mutableStateOf(null) },
       scrollToItemId = remember { mutableStateOf(null) },
-      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, addOrEditWelcomeMessage = {}, openPreferences = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {}, onSearchClicked = {}, deletingItems = remember { mutableStateOf(true) }
+      addMembers = {},
+      showMemberInfo = {},
+      editGroupProfile = {},
+      addOrEditWelcomeMessage = {},
+      openMemberSupport = {},
+      openPreferences = {},
+      deleteGroup = {},
+      clearChat = {},
+      leaveGroup = {},
+      manageGroupLink = {},
+      onSearchClicked = {},
+      deletingItems = remember { mutableStateOf(true) }
     )
   }
 }

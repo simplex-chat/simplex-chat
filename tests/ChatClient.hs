@@ -462,14 +462,30 @@ testChatCfgOpts3 cfg opts p1 p2 p3 test = testChatN cfg opts [p1, p2, p3] test_
     test_ _ = error "expected 3 chat clients"
 
 testChat4 :: HasCallStack => Profile -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> TestCC -> IO ()) -> TestParams -> IO ()
-testChat4 = testChatCfg4 testCfg
+testChat4 = testChatCfgOpts4 testCfg testOpts
 
 testChatCfg4 :: HasCallStack => ChatConfig -> Profile -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> TestCC -> IO ()) -> TestParams -> IO ()
-testChatCfg4 cfg p1 p2 p3 p4 test = testChatN cfg testOpts [p1, p2, p3, p4] test_
+testChatCfg4 cfg = testChatCfgOpts4 cfg testOpts
+
+testChatOpts4 :: HasCallStack => ChatOpts -> Profile -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> TestCC -> IO ()) -> TestParams -> IO ()
+testChatOpts4 = testChatCfgOpts4 testCfg
+
+testChatCfgOpts4 :: HasCallStack => ChatConfig -> ChatOpts -> Profile -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> TestCC -> IO ()) -> TestParams -> IO ()
+testChatCfgOpts4 cfg opts p1 p2 p3 p4 test = testChatN cfg opts [p1, p2, p3, p4] test_
   where
     test_ :: HasCallStack => [TestCC] -> IO ()
     test_ [tc1, tc2, tc3, tc4] = test tc1 tc2 tc3 tc4
     test_ _ = error "expected 4 chat clients"
+
+testChat5 :: HasCallStack => Profile -> Profile -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> IO ()) -> TestParams -> IO ()
+testChat5 = testChatCfg5 testCfg
+
+testChatCfg5 :: HasCallStack => ChatConfig -> Profile -> Profile -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> IO ()) -> TestParams -> IO ()
+testChatCfg5 cfg p1 p2 p3 p4 p5 test = testChatN cfg testOpts [p1, p2, p3, p4, p5] test_
+  where
+    test_ :: HasCallStack => [TestCC] -> IO ()
+    test_ [tc1, tc2, tc3, tc4, tc5] = test tc1 tc2 tc3 tc4 tc5
+    test_ _ = error "expected 5 chat clients"
 
 concurrentlyN_ :: [IO a] -> IO ()
 concurrentlyN_ = mapConcurrently_ id

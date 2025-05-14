@@ -372,7 +372,7 @@ testMarkReadDirect = testChat2 aliceProfile bobProfile $ \alice bob -> do
   bob ##> "/last_item_id"
   i :: ChatItemId <- read <$> getTermLine bob
   let itemIds = intercalate "," $ map show [i - 3 .. i]
-  bob #$> ("/_read chat items @2 " <> itemIds, id, "ok")
+  bob #$> ("/_read chat items @2 " <> itemIds, id, "items read for chat")
 
 testChatPaginationInitial :: HasCallStack => TestParams -> IO ()
 testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> do
@@ -391,7 +391,7 @@ testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice 
 
   -- Read next 2 items
   let itemIds = intercalate "," $ map itemId [1 .. 2]
-  bob #$> ("/_read chat items @2 " <> itemIds, id, "ok")
+  bob #$> ("/_read chat items @2 " <> itemIds, id, "items read for chat")
   bob #$> ("/_get chat @2 initial=2", chat, [(0, "1"), (0, "2"), (0, "3"), (0, "4"), (0, "5")])
 
   -- Read all items

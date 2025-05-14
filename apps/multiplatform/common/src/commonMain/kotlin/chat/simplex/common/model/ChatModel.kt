@@ -295,20 +295,33 @@ object ChatModel {
     }
   }
 
-  class ChatsContext(val contentTag: MsgContentTag?) {
+  class ChatsContext(val secondaryContextFilter: SecondaryContextFilter?) {
     val chats = mutableStateOf(SnapshotStateList<Chat>())
     /** if you modify the items by adding/removing them, use helpers methods like [addToChatItems], [removeLastChatItems], [removeAllAndNotify], [clearAndNotify] and so on.
      * If some helper is missing, create it. Notify is needed to track state of items that we added manually (not via api call). See [apiLoadMessages].
      * If you use api call to get the items, use just [add] instead of [addToChatItems].
      * Never modify underlying list directly because it produces unexpected results in ChatView's LazyColumn (setting by index is ok) */
     val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
-    val chatItemStatuses = mutableMapOf<Long, CIStatus>()
     // set listener here that will be notified on every add/delete of a chat item
     val chatState = ActiveChatState()
 
     fun hasChat(rhId: Long?, id: String): Boolean = chats.value.firstOrNull { it.id == id && it.remoteHostId == rhId } != null
     fun getChat(id: String): Chat? = chats.value.firstOrNull { it.id == id }
     private fun getChatIndex(rhId: Long?, id: String): Int = chats.value.indexOfFirst { it.id == id && it.remoteHostId == rhId }
+
+    val contentTag: MsgContentTag? =
+      when (secondaryContextFilter) {
+        null -> null
+        is SecondaryContextFilter.GroupChatScopeContext -> null
+        is SecondaryContextFilter.MsgContentTagContext -> secondaryContextFilter.contentTag
+      }
+
+    val groupScopeInfo: GroupChatScopeInfo? =
+      when (secondaryContextFilter) {
+        null -> null
+        is SecondaryContextFilter.GroupChatScopeContext -> secondaryContextFilter.groupScopeInfo
+        is SecondaryContextFilter.MsgContentTagContext -> null
+      }
 
     suspend fun addChat(chat: Chat) {
       chats.add(index = 0, chat)
@@ -342,6 +355,8 @@ object ChatModel {
               )
             )
           }
+        } else if (currentCInfo is ChatInfo.Group && newCInfo is ChatInfo.Group && newCInfo.groupChatScope != null) {
+          newCInfo = newCInfo.copy(groupInfo = newCInfo.groupInfo, groupChatScope = null)
         }
         chats[i] = chats[i].copy(chatInfo = newCInfo)
       }
@@ -364,7 +379,7 @@ object ChatModel {
       updateContact(rhId, updatedContact)
     }
 
-    suspend fun updateGroup(rhId: Long?, groupInfo: GroupInfo) = updateChat(rhId, ChatInfo.Group(groupInfo))
+    suspend fun updateGroup(rhId: Long?, groupInfo: GroupInfo) = updateChat(rhId, ChatInfo.Group(groupInfo, groupChatScope = null))
 
     private suspend fun updateChat(rhId: Long?, cInfo: ChatInfo, addMissing: Boolean = true) {
       if (hasChat(rhId, cInfo.id)) {
@@ -416,55 +431,64 @@ object ChatModel {
     }
 
     suspend fun addChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
+      // updates membersRequireAttention
+      updateChatInfo(rhId, cInfo)
       // mark chat non deleted
       if (cInfo is ChatInfo.Direct && cInfo.chatDeleted) {
         val updatedContact = cInfo.contact.copy(chatDeleted = false)
         updateContact(rhId, updatedContact)
       }
-      // update previews
+      // update chat list
       val i = getChatIndex(rhId, cInfo.id)
       val chat: Chat
       if (i >= 0) {
         chat = chats[i]
-        val newPreviewItem = when (cInfo) {
-          is ChatInfo.Group -> {
-            val currentPreviewItem = chat.chatItems.firstOrNull()
-            if (currentPreviewItem != null) {
-              if (cItem.meta.itemTs >= currentPreviewItem.meta.itemTs) {
-                cItem
+        // update preview
+        if (cInfo.groupChatScope() == null) {
+          val newPreviewItem = when (cInfo) {
+            is ChatInfo.Group -> {
+              val currentPreviewItem = chat.chatItems.firstOrNull()
+              if (currentPreviewItem != null) {
+                if (cItem.meta.itemTs >= currentPreviewItem.meta.itemTs) {
+                  cItem
+                } else {
+                  currentPreviewItem
+                }
               } else {
-                currentPreviewItem
+                cItem
               }
-            } else {
-              cItem
             }
-          }
-          else -> cItem
-        }
-        val wasUnread = chat.unreadTag
-        chats[i] = chat.copy(
-          chatItems = arrayListOf(newPreviewItem),
-          chatStats =
-          if (cItem.meta.itemStatus is CIStatus.RcvNew) {
-            increaseUnreadCounter(rhId, currentUser.value!!)
-            chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1, unreadMentions = if (cItem.meta.userMention) chat.chatStats.unreadMentions + 1 else chat.chatStats.unreadMentions)
-          }
-          else
-            chat.chatStats
-        )
-        updateChatTagReadNoContentTag(chats[i], wasUnread)
 
+            else -> cItem
+          }
+          val wasUnread = chat.unreadTag
+          chats[i] = chat.copy(
+            chatItems = arrayListOf(newPreviewItem),
+            chatStats =
+            if (cItem.meta.itemStatus is CIStatus.RcvNew) {
+              increaseUnreadCounter(rhId, currentUser.value!!)
+              chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1, unreadMentions = if (cItem.meta.userMention) chat.chatStats.unreadMentions + 1 else chat.chatStats.unreadMentions)
+            } else
+              chat.chatStats
+          )
+          updateChatTagReadInPrimaryContext(chats[i], wasUnread)
+        }
+        // pop chat
         if (appPlatform.isDesktop && cItem.chatDir.sent) {
           reorderChat(chats[i], 0)
         } else {
           popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = i)
         }
       } else {
-        addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
+        if (cInfo.groupChatScope() == null) {
+          addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
+        } else {
+          addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = emptyList()))
+        }
       }
+      // add to current scope
       withContext(Dispatchers.Main) {
-        // add to current chat
-        if (chatId.value == cInfo.id) {
+        if (chatItemBelongsToScope(cInfo, cItem)) {
           // Prevent situation when chat item already in the list received from backend
           if (chatItems.value.none { it.id == cItem.id }) {
             if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
@@ -476,84 +500,101 @@ object ChatModel {
         }
       }
     }
-
-    suspend fun upsertChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem): Boolean {
-      // update previews
-      val i = getChatIndex(rhId, cInfo.id)
-      val chat: Chat
-      val res: Boolean
-      if (i >= 0) {
-        chat = chats[i]
-        val pItem = chat.chatItems.lastOrNull()
-        if (pItem?.id == cItem.id) {
-          chats[i] = chat.copy(chatItems = arrayListOf(cItem))
-          if (pItem.isRcvNew && !cItem.isRcvNew) {
-            // status changed from New to Read, update counter
-            decreaseCounterInChatNoContentTag(rhId, cInfo.id)
+    
+    private fun chatItemBelongsToScope(cInfo: ChatInfo, cItem: ChatItem): Boolean =
+      when (secondaryContextFilter) {
+        null ->
+          chatId.value == cInfo.id && cInfo.groupChatScope() == null
+        is SecondaryContextFilter.GroupChatScopeContext -> {
+          val cInfoScope = cInfo.groupChatScope()
+          if (cInfoScope != null) {
+            chatId.value == cInfo.id && sameChatScope(cInfoScope, secondaryContextFilter.groupScopeInfo.toChatScope())
+          } else {
+            false
           }
         }
-        res = false
-      } else {
-        addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
-        res = true
+        is SecondaryContextFilter.MsgContentTagContext ->
+          chatId.value == cInfo.id && cItem.isReport
       }
-      return withContext(Dispatchers.Main) {
-        // update current chat
-        if (chatId.value == cInfo.id) {
+
+    suspend fun upsertChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem): Boolean {
+      var itemAdded = false
+      // update chat list
+      if (cInfo.groupChatScope() == null) {
+        val i = getChatIndex(rhId, cInfo.id)
+        val chat: Chat
+        if (i >= 0) {
+          chat = chats[i]
+          val pItem = chat.chatItems.lastOrNull()
+          if (pItem?.id == cItem.id) {
+            chats[i] = chat.copy(chatItems = arrayListOf(cItem))
+            if (pItem.isRcvNew && !cItem.isRcvNew) {
+              // status changed from New to Read, update counter
+              decreaseCounterInPrimaryContext(rhId, cInfo.id)
+            }
+          }
+        } else {
+          addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
+          itemAdded = true
+        }
+      }
+      // update current scope
+      withContext(Dispatchers.Main) {
+        if (chatItemBelongsToScope(cInfo, cItem)) {
           if (cItem.isDeletedContent || cItem.meta.itemDeleted != null) {
             AudioPlayer.stop(cItem)
           }
           val items = chatItems.value
           val itemIndex = items.indexOfFirst { it.id == cItem.id }
           if (itemIndex >= 0) {
-            items[itemIndex] = cItem
-            false
-          } else {
-            val status = chatItemStatuses.remove(cItem.id)
-            val ci = if (status != null && cItem.meta.itemStatus is CIStatus.SndNew) {
-              cItem.copy(meta = cItem.meta.copy(itemStatus = status))
+            val oldStatus = items[itemIndex].meta.itemStatus
+            val newStatus = cItem.meta.itemStatus
+            val ci = if (shouldKeepOldSndCIStatus(oldStatus, newStatus)) {
+              cItem.copy(meta = cItem.meta.copy(itemStatus = oldStatus))
             } else {
               cItem
             }
-            addToChatItems(ci)
-            true
+            items[itemIndex] = ci
+          } else {
+            addToChatItems(cItem)
+            itemAdded = true
           }
-        } else {
-          res
         }
       }
+      return  itemAdded
     }
 
     suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null, atIndex: Int? = null) {
       withContext(Dispatchers.Main) {
-        if (chatId.value == cInfo.id) {
+        if (chatItemBelongsToScope(cInfo, cItem)) {
           val items = chatItems.value
           val itemIndex = atIndex ?: items.indexOfFirst { it.id == cItem.id }
           if (itemIndex >= 0) {
             items[itemIndex] = cItem
           }
-        } else if (status != null) {
-          chatItemStatuses[cItem.id] = status
         }
       }
     }
 
     fun removeChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
-      if (cItem.isRcvNew) {
-        decreaseCounterInChatNoContentTag(rhId, cInfo.id)
-      }
-      // update previews
-      val i = getChatIndex(rhId, cInfo.id)
-      val chat: Chat
-      if (i >= 0) {
-        chat = chats[i]
-        val pItem = chat.chatItems.lastOrNull()
-        if (pItem?.id == cItem.id) {
-          chats[i] = chat.copy(chatItems = arrayListOf(ChatItem.deletedItemDummy))
+      // update chat list
+      if (cInfo.groupChatScope() == null) {
+        if (cItem.isRcvNew) {
+          decreaseCounterInPrimaryContext(rhId, cInfo.id)
+        }
+        // update preview
+        val i = getChatIndex(rhId, cInfo.id)
+        val chat: Chat
+        if (i >= 0) {
+          chat = chats[i]
+          val pItem = chat.chatItems.lastOrNull()
+          if (pItem?.id == cItem.id) {
+            chats[i] = chat.copy(chatItems = arrayListOf(ChatItem.deletedItemDummy))
+          }
         }
       }
-      // remove from current chat
-      if (chatId.value == cInfo.id) {
+      // remove from current scope
+      if (chatItemBelongsToScope(cInfo, cItem)) {
         chatItems.removeAllAndNotify {
           // We delete taking into account meta.createdAt to make sure we will not be in situation when two items with the same id will be deleted
           // (it can happen if already deleted chat item in backend still in the list and new one came with the same (re-used) chat item id)
@@ -586,7 +627,7 @@ object ChatModel {
         Log.d(TAG, "exiting removeMemberItems")
         return
       }
-      val cInfo = ChatInfo.Group(groupInfo)
+      val cInfo = ChatInfo.Group(groupInfo, groupChatScope = null) // TODO [knocking] review
       if (chatId.value == groupInfo.id) {
         for (i in 0 until chatItems.value.size) {
           val updatedItem = removedUpdatedItem(chatItems.value[i])
@@ -617,7 +658,6 @@ object ChatModel {
       }
       // clear current chat
       if (chatId.value == cInfo.id) {
-        chatItemStatuses.clear()
         chatItems.clearAndNotify()
       }
     }
@@ -688,7 +728,7 @@ object ChatModel {
           chats[chatIdx] = chat.copy(
             chatStats = chat.chatStats.copy(unreadCount = unreadCount, unreadMentions = unreadMentions)
           )
-          updateChatTagReadNoContentTag(chats[chatIdx], wasUnread)
+          updateChatTagReadInPrimaryContext(chats[chatIdx], wasUnread)
         }
       }
     }
@@ -729,9 +769,9 @@ object ChatModel {
       return markedRead to mentionsMarkedRead
     }
 
-    private fun decreaseCounterInChatNoContentTag(rhId: Long?, chatId: ChatId) {
+    private fun decreaseCounterInPrimaryContext(rhId: Long?, chatId: ChatId) {
       // updates anything only in main ChatView, not GroupReportsView or anything else from the future
-      if (contentTag != null) return
+      if (secondaryContextFilter != null) return
 
       val chatIndex = getChatIndex(rhId, chatId)
       if (chatIndex == -1) return
@@ -745,7 +785,7 @@ object ChatModel {
           unreadCount = unreadCount,
         )
       )
-      updateChatTagReadNoContentTag(chats[chatIndex], wasUnread)
+      updateChatTagReadInPrimaryContext(chats[chatIndex], wasUnread)
     }
 
     fun removeChat(rhId: Long?, id: String) {
@@ -814,16 +854,16 @@ object ChatModel {
     }
 
     fun increaseUnreadCounter(rhId: Long?, user: UserLike) {
-      changeUnreadCounterNoContentTag(rhId, user, 1)
+      changeUnreadCounterInPrimaryContext(rhId, user, 1)
     }
 
     fun decreaseUnreadCounter(rhId: Long?, user: UserLike, by: Int = 1) {
-      changeUnreadCounterNoContentTag(rhId, user, -by)
+      changeUnreadCounterInPrimaryContext(rhId, user, -by)
     }
 
-    private fun changeUnreadCounterNoContentTag(rhId: Long?, user: UserLike, by: Int) {
+    private fun changeUnreadCounterInPrimaryContext(rhId: Long?, user: UserLike, by: Int) {
       // updates anything only in main ChatView, not GroupReportsView or anything else from the future
-      if (contentTag != null) return
+      if (secondaryContextFilter != null) return
 
       val i = users.indexOfFirst { it.user.userId == user.userId && it.user.remoteHostId == rhId }
       if (i != -1) {
@@ -831,9 +871,9 @@ object ChatModel {
       }
     }
 
-    fun updateChatTagReadNoContentTag(chat: Chat, wasUnread: Boolean) {
+    fun updateChatTagReadInPrimaryContext(chat: Chat, wasUnread: Boolean) {
       // updates anything only in main ChatView, not GroupReportsView or anything else from the future
-      if (contentTag != null) return
+      if (secondaryContextFilter != null) return
 
       val tags = chat.chatInfo.chatTags ?: return
       val nowUnread = chat.unreadTag
@@ -843,21 +883,21 @@ object ChatModel {
           unreadTags[tag] = (unreadTags[tag] ?: 0) + 1
         }
       } else if (!nowUnread && wasUnread) {
-        markChatTagReadNoContentTag_(chat, tags)
+        markChatTagReadInPrimaryContext_(chat, tags)
       }
     }
 
     fun markChatTagRead(chat: Chat) {
       if (chat.unreadTag) {
         chat.chatInfo.chatTags?.let { tags ->
-          markChatTagReadNoContentTag_(chat, tags)
+          markChatTagReadInPrimaryContext_(chat, tags)
         }
       }
     }
 
-    private fun markChatTagReadNoContentTag_(chat: Chat, tags: List<Long>) {
+    private fun markChatTagReadInPrimaryContext_(chat: Chat, tags: List<Long>) {
       // updates anything only in main ChatView, not GroupReportsView or anything else from the future
-      if (contentTag != null) return
+      if (secondaryContextFilter != null) return
 
       for (tag in tags) {
         val count = unreadTags[tag]
@@ -889,12 +929,12 @@ object ChatModel {
         val wasReportsCount = chat.chatStats.reportsCount
         val nowReportsCount = chats[i].chatStats.reportsCount
         val by = if (wasReportsCount == 0 && nowReportsCount > 0) 1 else if (wasReportsCount > 0 && nowReportsCount == 0) -1 else 0
-        changeGroupReportsTagNoContentTag(by)
+        changeGroupReportsTagInPrimaryContext(by)
       }
     }
 
-    private fun changeGroupReportsTagNoContentTag(by: Int = 0) {
-      if (by == 0 || contentTag != null) return
+    private fun changeGroupReportsTagInPrimaryContext(by: Int = 0) {
+      if (by == 0 || secondaryContextFilter != null) return
       presetTags[PresetTagKind.GROUP_REPORTS] = kotlin.math.max(0, (presetTags[PresetTagKind.GROUP_REPORTS] ?: 0) + by)
       clearActiveChatFilterIfNeeded()
     }
@@ -1099,6 +1139,28 @@ enum class ChatType(val type: String) {
   ContactConnection(":");
 }
 
+sealed class GroupChatScope {
+  class MemberSupport(val groupMemberId_: Long?): GroupChatScope()
+}
+
+fun sameChatScope(scope1: GroupChatScope, scope2: GroupChatScope) =
+  scope1 is GroupChatScope.MemberSupport
+      && scope2 is GroupChatScope.MemberSupport
+      && scope1.groupMemberId_ == scope2.groupMemberId_
+
+@Serializable
+sealed class GroupChatScopeInfo {
+  @Serializable @SerialName("memberSupport") data class MemberSupport(val groupMember_: GroupMember?) : GroupChatScopeInfo()
+
+  fun toChatScope(): GroupChatScope =
+    when (this) {
+      is MemberSupport -> when (groupMember_) {
+        null -> GroupChatScope.MemberSupport(groupMemberId_ = null)
+        else -> GroupChatScope.MemberSupport(groupMemberId_ = groupMember_.groupMemberId)
+      }
+    }
+}
+
 @Serializable
 data class User(
   val remoteHostId: Long?,
@@ -1236,6 +1298,11 @@ data class Chat(
     else -> false
   }
 
+  val userIsPending: Boolean get() = when(chatInfo) {
+    is ChatInfo.Group -> chatInfo.groupInfo.membership.memberPending
+    else -> false
+  }
+
   val unreadTag: Boolean get() = when (chatInfo.chatSettings?.enableNtfs) {
     All -> chatStats.unreadChat || chatStats.unreadCount > 0
     Mentions -> chatStats.unreadChat || chatStats.unreadMentions > 0
@@ -1243,6 +1310,16 @@ data class Chat(
   }
 
   val id: String get() = chatInfo.id
+
+  val supportUnreadCount: Int get() = when (chatInfo) {
+    is ChatInfo.Group ->
+      if (chatInfo.groupInfo.canModerate) {
+        chatInfo.groupInfo.membersRequireAttention
+      } else {
+        chatInfo.groupInfo.membership.supportChat?.unread ?: 0
+      }
+    else -> 0
+  }
 
   fun groupFeatureEnabled(feature: GroupFeature): Boolean =
     if (chatInfo is ChatInfo.Group) {
@@ -1300,7 +1377,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
   }
 
   @Serializable @SerialName("group")
-  data class Group(val groupInfo: GroupInfo): ChatInfo() {
+  data class Group(val groupInfo: GroupInfo, val groupChatScope: GroupChatScopeInfo?): ChatInfo() {
     override val chatType get() = ChatType.Group
     override val localDisplayName get() = groupInfo.localDisplayName
     override val id get() = groupInfo.id
@@ -1319,7 +1396,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val localAlias get() = groupInfo.localAlias
 
     companion object {
-      val sampleData = Group(GroupInfo.sampleData)
+      val sampleData = Group(GroupInfo.sampleData, groupChatScope = null)
     }
   }
 
@@ -1423,6 +1500,11 @@ sealed class ChatInfo: SomeChat, NamedChat {
     }
   }
 
+  fun groupChatScope(): GroupChatScope? = when (this) {
+    is Group -> groupChatScope?.toChatScope()
+    else -> null
+  }
+
   fun ntfsEnabled(ci: ChatItem): Boolean =
     ntfsEnabled(ci.meta.userMention)
 
@@ -1453,7 +1535,9 @@ sealed class ChatInfo: SomeChat, NamedChat {
   val userCanSend: Boolean
     get() = when (this) {
       is ChatInfo.Direct -> true
-      is ChatInfo.Group -> groupInfo.membership.memberRole >= GroupMemberRole.Member
+      is ChatInfo.Group ->
+        (groupInfo.membership.memberRole >= GroupMemberRole.Member && !groupInfo.membership.memberPending)
+            || groupChatScope != null
       is ChatInfo.Local -> true
       else -> false
     }
@@ -1759,6 +1843,7 @@ data class GroupInfo (
   override val updatedAt: Instant,
   val chatTs: Instant?,
   val uiThemes: ThemeModeOverrides? = null,
+  val membersRequireAttention: Int,
   val chatTags: List<Long>,
   val chatItemTTL: Long?,
   override val localAlias: String,
@@ -1821,6 +1906,7 @@ data class GroupInfo (
       updatedAt = Clock.System.now(),
       chatTs = Clock.System.now(),
       uiThemes = null,
+      membersRequireAttention = 0,
       chatTags = emptyList(),
       localAlias = "",
       chatItemTTL = null
@@ -1838,7 +1924,8 @@ data class GroupProfile (
   val description: String? = null,
   override val image: String? = null,
   override val localAlias: String = "",
-  val groupPreferences: GroupPreferences? = null
+  val groupPreferences: GroupPreferences? = null,
+  val memberAdmission: GroupMemberAdmission? = null
 ): NamedChat {
   companion object {
     val sampleData = GroupProfile(
@@ -1846,6 +1933,27 @@ data class GroupProfile (
       fullName = "My Team"
     )
   }
+}
+
+@Serializable
+data class GroupMemberAdmission(
+  val review: MemberCriteria? = null,
+) {
+  companion object {
+    val sampleData = GroupMemberAdmission(
+      review = null,
+    )
+  }
+}
+
+@Serializable
+enum class MemberCriteria {
+  @SerialName("all") All;
+
+  val text: String
+    get() = when(this) {
+      MemberCriteria.All -> generalGetString(MR.strings.member_criteria_all)
+    }
 }
 
 @Serializable
@@ -1876,7 +1984,8 @@ data class GroupMember (
   val memberProfile: LocalProfile,
   val memberContactId: Long? = null,
   val memberContactProfileId: Long,
-  var activeConn: Connection? = null
+  var activeConn: Connection? = null,
+  val supportChat: GroupSupportChat? = null
 ): NamedChat {
   val id: String get() = "#$groupId @$groupMemberId"
   val ready get() = activeConn?.connStatus == ConnStatus.Ready
@@ -1935,6 +2044,7 @@ data class GroupMember (
     GroupMemberStatus.MemUnknown -> false
     GroupMemberStatus.MemInvited -> false
     GroupMemberStatus.MemPendingApproval -> true
+    GroupMemberStatus.MemPendingReview -> true
     GroupMemberStatus.MemIntroduced -> false
     GroupMemberStatus.MemIntroInvited -> false
     GroupMemberStatus.MemAccepted -> false
@@ -1952,6 +2062,7 @@ data class GroupMember (
     GroupMemberStatus.MemUnknown -> false
     GroupMemberStatus.MemInvited -> false
     GroupMemberStatus.MemPendingApproval -> false
+    GroupMemberStatus.MemPendingReview -> false
     GroupMemberStatus.MemIntroduced -> true
     GroupMemberStatus.MemIntroInvited -> true
     GroupMemberStatus.MemAccepted -> true
@@ -1959,6 +2070,12 @@ data class GroupMember (
     GroupMemberStatus.MemConnected -> true
     GroupMemberStatus.MemComplete -> true
     GroupMemberStatus.MemCreator -> true
+  }
+
+  val memberPending: Boolean get() = when (this.memberStatus) {
+    GroupMemberStatus.MemPendingApproval -> true
+    GroupMemberStatus.MemPendingReview -> true
+    else -> false
   }
 
   fun canBeRemoved(groupInfo: GroupInfo): Boolean {
@@ -2000,6 +2117,14 @@ data class GroupMember (
     )
   }
 }
+
+@Serializable
+class GroupSupportChat (
+  val chatTs: Instant,
+  val unread: Int,
+  val memberAttention: Int,
+  val mentions: Int
+)
 
 @Serializable
 data class GroupMemberSettings(val showMessages: Boolean) {}
@@ -2057,6 +2182,7 @@ enum class GroupMemberStatus {
   @SerialName("unknown") MemUnknown,
   @SerialName("invited") MemInvited,
   @SerialName("pending_approval") MemPendingApproval,
+  @SerialName("pending_review") MemPendingReview,
   @SerialName("introduced") MemIntroduced,
   @SerialName("intro-inv") MemIntroInvited,
   @SerialName("accepted") MemAccepted,
@@ -2073,6 +2199,7 @@ enum class GroupMemberStatus {
     MemUnknown -> generalGetString(MR.strings.group_member_status_unknown)
     MemInvited -> generalGetString(MR.strings.group_member_status_invited)
     MemPendingApproval -> generalGetString(MR.strings.group_member_status_pending_approval)
+    MemPendingReview -> generalGetString(MR.strings.group_member_status_pending_review)
     MemIntroduced -> generalGetString(MR.strings.group_member_status_introduced)
     MemIntroInvited -> generalGetString(MR.strings.group_member_status_intro_invitation)
     MemAccepted -> generalGetString(MR.strings.group_member_status_accepted)
@@ -2090,6 +2217,7 @@ enum class GroupMemberStatus {
     MemUnknown -> generalGetString(MR.strings.group_member_status_unknown_short)
     MemInvited -> generalGetString(MR.strings.group_member_status_invited)
     MemPendingApproval -> generalGetString(MR.strings.group_member_status_pending_approval_short)
+    MemPendingReview -> generalGetString(MR.strings.group_member_status_pending_review_short)
     MemIntroduced -> generalGetString(MR.strings.group_member_status_connecting)
     MemIntroInvited -> generalGetString(MR.strings.group_member_status_connecting)
     MemAccepted -> generalGetString(MR.strings.group_member_status_connecting)
@@ -2437,11 +2565,16 @@ data class ChatItem (
       is CIContent.RcvGroupFeature,
       is CIContent.SndGroupFeature -> CIMergeCategory.ChatFeature
       is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
-        is RcvGroupEvent.UserRole, is RcvGroupEvent.UserDeleted, is RcvGroupEvent.GroupDeleted, is RcvGroupEvent.MemberCreatedContact -> null
+        is RcvGroupEvent.UserRole,
+        is RcvGroupEvent.UserDeleted,
+        is RcvGroupEvent.GroupDeleted,
+        is RcvGroupEvent.MemberCreatedContact,
+        is RcvGroupEvent.NewMemberPendingReview ->
+          null
         else -> CIMergeCategory.RcvGroupEvent
       }
       is CIContent.SndGroupEventContent -> when (content.sndGroupEvent) {
-        is SndGroupEvent.UserRole, is SndGroupEvent.UserLeft -> null
+        is SndGroupEvent.UserRole, is SndGroupEvent.UserLeft, is SndGroupEvent.MemberAccepted, is SndGroupEvent.UserPendingReview -> null
         else -> CIMergeCategory.SndGroupEvent
       }
       else -> {
@@ -2512,6 +2645,8 @@ data class ChatItem (
       is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
         is RcvGroupEvent.MemberAdded -> false
         is RcvGroupEvent.MemberConnected -> false
+        is RcvGroupEvent.MemberAccepted -> false
+        is RcvGroupEvent.UserAccepted -> false
         is RcvGroupEvent.MemberLeft -> false
         is RcvGroupEvent.MemberRole -> false
         is RcvGroupEvent.MemberBlocked -> false
@@ -2523,6 +2658,7 @@ data class ChatItem (
         is RcvGroupEvent.InvitedViaGroupLink -> false
         is RcvGroupEvent.MemberCreatedContact -> false
         is RcvGroupEvent.MemberProfileUpdated -> false
+        is RcvGroupEvent.NewMemberPendingReview -> true
       }
       is CIContent.SndGroupEventContent -> false
       is CIContent.RcvConnEventContent -> false
@@ -2702,6 +2838,11 @@ data class ChatItem (
         file = null
       )
   }
+}
+
+sealed class SecondaryContextFilter {
+  class GroupChatScopeContext(val groupScopeInfo: GroupChatScopeInfo): SecondaryContextFilter()
+  class MsgContentTagContext(val contentTag: MsgContentTag): SecondaryContextFilter()
 }
 
 fun MutableState<SnapshotStateList<Chat>>.add(index: Int, elem: Chat) {
@@ -2962,6 +3103,19 @@ sealed class CIStatus {
   @Serializable @SerialName("rcvRead") class RcvRead: CIStatus()
   @Serializable @SerialName("invalid") class Invalid(val text: String): CIStatus()
 
+  // as in corresponds to SENT response from agent
+  fun isSent(): Boolean = when(this) {
+    is SndNew -> false
+    is SndSent -> true
+    is SndRcvd -> false
+    is SndErrorAuth -> true
+    is CISSndError -> true
+    is SndWarning -> true
+    is RcvNew -> false
+    is RcvRead -> false
+    is Invalid -> false
+  }
+
   fun statusIcon(
     primaryColor: Color,
     metaColor: Color = CurrentColors.value.colors.secondary,
@@ -3000,6 +3154,13 @@ sealed class CIStatus {
     is Invalid -> "Invalid status" to this.text
   }
 }
+
+fun shouldKeepOldSndCIStatus(oldStatus: CIStatus, newStatus: CIStatus): Boolean =
+  when {
+    oldStatus is CIStatus.SndRcvd && newStatus !is CIStatus.SndRcvd -> true
+    oldStatus.isSent() && newStatus is CIStatus.SndNew -> true
+    else -> false
+  }
 
 @Serializable
 sealed class SndError {
@@ -4139,6 +4300,8 @@ sealed class RcvDirectEvent() {
 sealed class RcvGroupEvent() {
   @Serializable @SerialName("memberAdded") class MemberAdded(val groupMemberId: Long, val profile: Profile): RcvGroupEvent()
   @Serializable @SerialName("memberConnected") class MemberConnected(): RcvGroupEvent()
+  @Serializable @SerialName("memberAccepted") class MemberAccepted(val groupMemberId: Long, val profile: Profile): RcvGroupEvent()
+  @Serializable @SerialName("userAccepted") class UserAccepted(): RcvGroupEvent()
   @Serializable @SerialName("memberLeft") class MemberLeft(): RcvGroupEvent()
   @Serializable @SerialName("memberRole") class MemberRole(val groupMemberId: Long, val profile: Profile, val role: GroupMemberRole): RcvGroupEvent()
   @Serializable @SerialName("memberBlocked") class MemberBlocked(val groupMemberId: Long, val profile: Profile, val blocked: Boolean): RcvGroupEvent()
@@ -4150,10 +4313,13 @@ sealed class RcvGroupEvent() {
   @Serializable @SerialName("invitedViaGroupLink") class InvitedViaGroupLink(): RcvGroupEvent()
   @Serializable @SerialName("memberCreatedContact") class MemberCreatedContact(): RcvGroupEvent()
   @Serializable @SerialName("memberProfileUpdated") class MemberProfileUpdated(val fromProfile: Profile, val toProfile: Profile): RcvGroupEvent()
+  @Serializable @SerialName("newMemberPendingReview") class NewMemberPendingReview(): RcvGroupEvent()
 
   val text: String get() = when (this) {
     is MemberAdded -> String.format(generalGetString(MR.strings.rcv_group_event_member_added), profile.profileViewName)
     is MemberConnected -> generalGetString(MR.strings.rcv_group_event_member_connected)
+    is MemberAccepted -> String.format(generalGetString(MR.strings.rcv_group_event_member_accepted), profile.profileViewName)
+    is UserAccepted -> generalGetString(MR.strings.rcv_group_event_user_accepted)
     is MemberLeft -> generalGetString(MR.strings.rcv_group_event_member_left)
     is MemberRole -> String.format(generalGetString(MR.strings.rcv_group_event_changed_member_role), profile.profileViewName, role.text)
     is MemberBlocked -> if (blocked) {
@@ -4169,6 +4335,7 @@ sealed class RcvGroupEvent() {
     is InvitedViaGroupLink -> generalGetString(MR.strings.rcv_group_event_invited_via_your_group_link)
     is MemberCreatedContact -> generalGetString(MR.strings.rcv_group_event_member_created_contact)
     is MemberProfileUpdated -> profileUpdatedText(fromProfile, toProfile)
+    is NewMemberPendingReview -> generalGetString(MR.strings.rcv_group_event_new_member_pending_review)
   }
 
   private fun profileUpdatedText(from: Profile, to: Profile): String =
@@ -4193,6 +4360,8 @@ sealed class SndGroupEvent() {
   @Serializable @SerialName("memberDeleted") class MemberDeleted(val groupMemberId: Long, val profile: Profile): SndGroupEvent()
   @Serializable @SerialName("userLeft") class UserLeft(): SndGroupEvent()
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val groupProfile: GroupProfile): SndGroupEvent()
+  @Serializable @SerialName("memberAccepted") class MemberAccepted(val groupMemberId: Long, val profile: Profile): SndGroupEvent()
+  @Serializable @SerialName("userPendingReview") class UserPendingReview(): SndGroupEvent()
 
   val text: String get() = when (this) {
     is MemberRole -> String.format(generalGetString(MR.strings.snd_group_event_changed_member_role), profile.profileViewName, role.text)
@@ -4205,6 +4374,8 @@ sealed class SndGroupEvent() {
     is MemberDeleted -> String.format(generalGetString(MR.strings.snd_group_event_member_deleted), profile.profileViewName)
     is UserLeft -> generalGetString(MR.strings.snd_group_event_user_left)
     is GroupUpdated -> generalGetString(MR.strings.snd_group_event_group_profile_updated)
+    is MemberAccepted -> generalGetString(MR.strings.snd_group_event_member_accepted)
+    is UserPendingReview -> generalGetString(MR.strings.snd_group_event_user_pending_review)
   }
 }
 

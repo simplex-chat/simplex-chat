@@ -15,7 +15,15 @@ import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.flow.*
 
 @Composable
-private fun GroupReportsView(reportsChatsCtx: ChatModel.ChatsContext, staleChatId: State<String?>, scrollToItemId: MutableState<Long?>) {
+private fun GroupReportsView(
+  reportsChatsCtx: ChatModel.ChatsContext,
+  staleChatId: State<String?>,
+  scrollToItemId: MutableState<Long?>,
+  close: () -> Unit
+) {
+  KeyChangeEffect(chatModel.chatId.value) {
+    close()
+  }
   ChatView(reportsChatsCtx, staleChatId, scrollToItemId, onComposed = {})
 }
 
@@ -53,7 +61,7 @@ fun GroupReportsAppBar(
 }
 
 @Composable
-private fun ItemsReload(chatsCtx: ChatModel.ChatsContext,) {
+fun ItemsReload(chatsCtx: ChatModel.ChatsContext,) {
   LaunchedEffect(Unit) {
     snapshotFlow { chatModel.chatId.value }
       .distinctUntilChanged()
@@ -69,13 +77,13 @@ private fun ItemsReload(chatsCtx: ChatModel.ChatsContext,) {
 }
 
 suspend fun showGroupReportsView(staleChatId: State<String?>, scrollToItemId: MutableState<Long?>, chatInfo: ChatInfo) {
-  val reportsChatsCtx = ChatModel.ChatsContext(contentTag = MsgContentTag.Report)
+  val reportsChatsCtx = ChatModel.ChatsContext(secondaryContextFilter = SecondaryContextFilter.MsgContentTagContext(MsgContentTag.Report))
   openChat(secondaryChatsCtx = reportsChatsCtx, chatModel.remoteHostId(), chatInfo)
   ModalManager.end.showCustomModal(true, id = ModalViewId.SECONDARY_CHAT) { close ->
     ModalView({}, showAppBar = false) {
       val chatInfo = remember { derivedStateOf { chatModel.chats.value.firstOrNull { it.id == chatModel.chatId.value }?.chatInfo } }.value
       if (chatInfo is ChatInfo.Group && chatInfo.groupInfo.canModerate) {
-        GroupReportsView(reportsChatsCtx, staleChatId, scrollToItemId)
+        GroupReportsView(reportsChatsCtx, staleChatId, scrollToItemId, close)
       } else {
         LaunchedEffect(Unit) {
           close()

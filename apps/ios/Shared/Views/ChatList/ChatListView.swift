@@ -452,7 +452,13 @@ struct ChatListView: View {
     
     @ViewBuilder private func chatView() -> some View {
         if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
-            ChatView(chat: chat)
+            let im = ItemsModel.shared
+            ChatView(
+                chat: chat,
+                im: im,
+                mergedItems: BoxedValue(MergedItems.create(im, [])),
+                floatingButtonModel: FloatingButtonModel(im: im)
+            )
         }
     }
     
@@ -898,12 +904,12 @@ func presetTagMatchesChat(_ tag: PresetTag, _ chatInfo: ChatInfo, _ chatStats: C
         case let .direct(contact): !(contact.activeConn == nil && contact.profile.contactLink != nil && contact.active) && !contact.chatDeleted
         case .contactRequest: true
         case .contactConnection: true
-        case let .group(groupInfo): groupInfo.businessChat?.chatType == .customer
+        case let .group(groupInfo, _): groupInfo.businessChat?.chatType == .customer
         default: false
         }
     case .groups:
         switch chatInfo {
-        case let .group(groupInfo): groupInfo.businessChat == nil
+        case let .group(groupInfo, _): groupInfo.businessChat == nil
         default: false
         }
     case .business:

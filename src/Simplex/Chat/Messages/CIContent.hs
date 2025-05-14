@@ -206,6 +206,8 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvGroupEvent rge -> case rge of
       RGEMemberAdded {} -> False
       RGEMemberConnected -> False
+      RGEMemberAccepted {} -> False
+      RGEUserAccepted -> False
       RGEMemberLeft -> False
       RGEMemberRole {} -> False
       RGEMemberBlocked {} -> False
@@ -217,6 +219,7 @@ ciRequiresAttention content = case msgDirection @d of
       RGEInvitedViaGroupLink -> False
       RGEMemberCreatedContact -> False
       RGEMemberProfileUpdated {} -> False
+      RGENewMemberPendingReview -> True
     CIRcvConnEvent _ -> True
     CIRcvChatFeature {} -> False
     CIRcvChatPreference {} -> False
@@ -317,6 +320,8 @@ rcvGroupEventToText :: RcvGroupEvent -> Text
 rcvGroupEventToText = \case
   RGEMemberAdded _ p -> "added " <> profileToText p
   RGEMemberConnected -> "connected"
+  RGEMemberAccepted _ p -> "accepted " <> profileToText p
+  RGEUserAccepted -> "accepted you"
   RGEMemberLeft -> "left"
   RGEMemberRole _ p r -> "changed role of " <> profileToText p <> " to " <> safeDecodeUtf8 (strEncode r)
   RGEMemberBlocked _ p blocked -> (if blocked then "blocked" else "unblocked") <> " " <> profileToText p
@@ -328,6 +333,7 @@ rcvGroupEventToText = \case
   RGEInvitedViaGroupLink -> "invited via your group link"
   RGEMemberCreatedContact -> "started direct connection with you"
   RGEMemberProfileUpdated {} -> "updated profile"
+  RGENewMemberPendingReview -> "new member wants to join the group"
 
 sndGroupEventToText :: SndGroupEvent -> Text
 sndGroupEventToText = \case
@@ -337,6 +343,18 @@ sndGroupEventToText = \case
   SGEMemberDeleted _ p -> "removed " <> profileToText p
   SGEUserLeft -> "left"
   SGEGroupUpdated _ -> "group profile updated"
+  SGEMemberAccepted _ _p -> "you accepted this member"
+  SGEUserPendingReview -> "please wait for group moderators to review your request to join the group"
+
+-- used to send to members with old version
+pendingReviewMessage :: Text
+pendingReviewMessage =
+  "Please wait for group moderators to review your request to join the group."
+
+-- used to send to members with old version
+acceptedToGroupMessage :: Text
+acceptedToGroupMessage =
+  "You are accepted to the group."
 
 rcvConnEventToText :: RcvConnEvent -> Text
 rcvConnEventToText = \case

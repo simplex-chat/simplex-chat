@@ -183,7 +183,7 @@ chatEventNotification t@ChatTerminal {sendNotification} cc = \case
       whenCurrUser cc u $ setActiveChat t cInfo
       case (cInfo, chatDir) of
         (DirectChat ct, _) -> sendNtf (viewContactName ct <> "> ", text)
-        (GroupChat g, CIGroupRcv m) -> sendNtf (fromGroup_ g m, text)
+        (GroupChat g scopeInfo, CIGroupRcv m) -> sendNtf (fromGroup_ g scopeInfo m, text)
         _ -> pure ()
     where
       text = msgText mc formattedText
@@ -207,6 +207,8 @@ chatEventNotification t@ChatTerminal {sendNotification} cc = \case
     sendNtf ("#" <> viewGroupName g, "you are connected to group")
   CEvtJoinedGroupMember u g m ->
     when (groupNtf u g False) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
+  CEvtJoinedGroupMemberConnecting u g _ m | memberStatus m == GSMemPendingReview ->
+    when (groupNtf u g False) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is pending review")
   CEvtConnectedToGroupMember u g m _ ->
     when (groupNtf u g False) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
   CEvtReceivedContactRequest u UserContactRequest {localDisplayName = n} ->
@@ -233,7 +235,7 @@ chatActiveTo (ChatName cType name) = case cType of
 chatInfoActiveTo :: ChatInfo c -> String
 chatInfoActiveTo = \case
   DirectChat c -> contactActiveTo c
-  GroupChat g -> groupActiveTo g
+  GroupChat g _scopeInfo -> groupActiveTo g
   _ -> ""
 
 contactActiveTo :: Contact -> String

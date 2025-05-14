@@ -45,6 +45,7 @@ fun GroupMemberInfoView(
   rhId: Long?,
   groupInfo: GroupInfo,
   member: GroupMember,
+  scrollToItemId: MutableState<Long?>,
   connectionStats: ConnectionStats?,
   connectionCode: String?,
   chatModel: ChatModel,
@@ -79,6 +80,7 @@ fun GroupMemberInfoView(
       rhId = rhId,
       groupInfo,
       member,
+      scrollToItemId,
       connStats,
       newRole,
       developerTools,
@@ -269,6 +271,7 @@ fun GroupMemberInfoLayout(
   rhId: Long?,
   groupInfo: GroupInfo,
   member: GroupMember,
+  scrollToItemId: MutableState<Long?>,
   connStats: MutableState<ConnectionStats?>,
   newRole: MutableState<GroupMemberRole>,
   developerTools: Boolean,
@@ -297,6 +300,29 @@ fun GroupMemberInfoLayout(
     } else {
       null
     }
+  }
+
+  @Composable
+  fun SupportChatButton() {
+    val scope = rememberCoroutineScope()
+
+    SettingsActionItem(
+      painterResource(MR.images.ic_flag),
+      stringResource(MR.strings.button_support_chat_member),
+      click = {
+        val scopeInfo = GroupChatScopeInfo.MemberSupport(groupMember_ = member)
+        val supportChatInfo = ChatInfo.Group(groupInfo, groupChatScope = scopeInfo)
+        scope.launch {
+          showMemberSupportChatView(
+            chatModel.chatId,
+            scrollToItemId = scrollToItemId,
+            supportChatInfo,
+            scopeInfo
+          )
+        }
+      },
+      iconColor = MaterialTheme.colors.secondary,
+    )
   }
 
   @Composable
@@ -413,6 +439,13 @@ fun GroupMemberInfoLayout(
 
     if (member.memberActive) {
       SectionView {
+        if (
+          groupInfo.membership.memberRole >= GroupMemberRole.Moderator &&
+          member.memberActive &&
+          (member.memberRole < GroupMemberRole.Moderator || member.supportChat != null)
+        ) {
+          SupportChatButton()
+        }
         if (connectionCode != null) {
           VerifyCodeButton(member.verified, verifyClicked)
         }
@@ -878,6 +911,7 @@ fun PreviewGroupMemberInfoLayout() {
       rhId = null,
       groupInfo = GroupInfo.sampleData,
       member = GroupMember.sampleData,
+      scrollToItemId = remember { mutableStateOf(null) },
       connStats = remember { mutableStateOf(null) },
       newRole = remember { mutableStateOf(GroupMemberRole.Member) },
       developerTools = false,

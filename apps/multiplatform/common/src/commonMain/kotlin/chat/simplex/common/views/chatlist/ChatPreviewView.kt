@@ -364,6 +364,8 @@ fun ChatPreviewView(
         progressView()
       } else if (chat.chatStats.reportsCount > 0) {
         GroupReportsIcon()
+      } else if (chat.supportUnreadCount > 0) {
+        GroupSupportUnreadIcon()
       } else {
         IncognitoIcon(chat.chatInfo.incognito)
       }
@@ -553,6 +555,18 @@ fun GroupReportsIcon() {
     painterResource(MR.images.ic_flag),
     contentDescription = null,
     tint = MaterialTheme.colors.error,
+    modifier = Modifier
+      .size(21.sp.toDp())
+      .offset(x = 2.sp.toDp())
+  )
+}
+
+@Composable
+fun GroupSupportUnreadIcon() {
+  Icon(
+    painterResource(MR.images.ic_flag),
+    contentDescription = null,
+    tint = MaterialTheme.colors.primary,
     modifier = Modifier
       .size(21.sp.toDp())
       .offset(x = 2.sp.toDp())

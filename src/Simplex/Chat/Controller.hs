@@ -365,6 +365,8 @@ data ChatCommand
   | APIRemoveMembers {groupId :: GroupId, groupMemberIds :: Set GroupMemberId, withMessages :: Bool}
   | APILeaveGroup GroupId
   | APIListMembers GroupId
+  -- | APIDeleteGroupConversations GroupId (NonEmpty GroupConversationId)
+  -- | APIArchiveGroupConversations GroupId (NonEmpty GroupConversationId)
   | APIUpdateGroupProfile GroupId GroupProfile
   | APICreateGroupLink GroupId GroupMemberRole CreateShortLink
   | APIGroupLinkMemberRole GroupId GroupMemberRole
@@ -488,6 +490,7 @@ data ChatCommand
   | DeleteGroup GroupName
   | ClearGroup GroupName
   | ListMembers GroupName
+  | ListMemberSupportChats GroupName
   | APIListGroups UserId (Maybe ContactId) (Maybe String)
   | ListGroups (Maybe ContactName) (Maybe String)
   | UpdateGroupNames GroupName GroupProfile
@@ -523,6 +526,7 @@ data ChatCommand
   | SetContactFeature AChatFeature ContactName (Maybe FeatureAllowed)
   | SetGroupFeature AGroupFeatureNoRole GroupName GroupFeatureEnabled
   | SetGroupFeatureRole AGroupFeatureRole GroupName GroupFeatureEnabled (Maybe GroupMemberRole)
+  | SetGroupMemberAdmissionReview GroupName (Maybe MemberCriteria)
   | SetUserTimedMessages Bool -- UserId (not used in UI)
   | SetContactTimedMessages ContactName (Maybe TimedMessagesEnabled)
   | SetGroupTimedMessages GroupName (Maybe Int)
@@ -626,9 +630,9 @@ data ChatResponse
   | CRGroupMemberInfo {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
   | CRQueueInfo {user :: User, rcvMsgInfo :: Maybe RcvMsgInfo, queueInfo :: ServerQueueInfo}
   | CRContactSwitchStarted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
-  | CRGroupMemberSwitchStarted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
+  | CEvtGroupMemberSwitchStarted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
   | CRContactSwitchAborted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
-  | CRGroupMemberSwitchAborted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
+  | CEvtGroupMemberSwitchAborted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
   | CRContactRatchetSyncStarted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
   | CRGroupMemberRatchetSyncStarted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
   | CRContactCode {user :: User, contact :: Contact, connectionCode :: Text}
@@ -648,6 +652,9 @@ data ChatResponse
   | CRWelcome {user :: User}
   | CRGroupCreated {user :: User, groupInfo :: GroupInfo}
   | CRGroupMembers {user :: User, group :: Group}
+  | CRMemberSupportChats {user :: User, groupInfo :: GroupInfo, members :: [GroupMember]}
+  -- | CRGroupConversationsArchived {user :: User, groupInfo :: GroupInfo, archivedGroupConversations :: [GroupConversation]}
+  -- | CRGroupConversationsDeleted {user :: User, groupInfo :: GroupInfo, deletedGroupConversations :: [GroupConversation]}
   | CRContactsList {user :: User, contacts :: [Contact]}
   | CRUserContactLink {user :: User, contactLink :: UserContactLink}
   | CRUserContactLinkUpdated {user :: User, contactLink :: UserContactLink}
@@ -669,6 +676,7 @@ data ChatResponse
   | CRSentConfirmation {user :: User, connection :: PendingContactConnection}
   | CRSentInvitation {user :: User, connection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRSentInvitationToContact {user :: User, contact :: Contact, customUserProfile :: Maybe Profile}
+  | CRItemsReadForChat {user :: User, chatInfo :: AChatInfo}
   | CRContactDeleted {user :: User, contact :: Contact}
   | CRChatCleared {user :: User, chatInfo :: AChatInfo}
   | CRUserContactLinkCreated {user :: User, connLinkContact :: CreatedLinkContact}
@@ -694,6 +702,7 @@ data ChatResponse
   | CRContactPrefsUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
   | CRNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]}
   | CRJoinedGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
+  | CRMemberAccepted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMembersRoleUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], toRole :: GroupMemberRole}
   | CRMembersBlockedForAllUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], blocked :: Bool}
   | CRGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
@@ -802,6 +811,7 @@ data ChatEvent
   | CEvtUserJoinedGroup {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | CEvtJoinedGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember} -- there is the same command response
   | CEvtJoinedGroupMemberConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
+  | CEvtMemberAcceptedByOther {user :: User, groupInfo :: GroupInfo, acceptingMember :: GroupMember, member :: GroupMember}
   | CEvtMemberRole {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, fromRole :: GroupMemberRole, toRole :: GroupMemberRole}
   | CEvtMemberBlockedForAll {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, blocked :: Bool}
   | CEvtConnectedToGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember, memberContact :: Maybe Contact}
@@ -899,16 +909,15 @@ logEventToFile = \case
     _ -> False
   _ -> False
 
--- (Maybe GroupMemberId) can later be changed to GroupSndScope = GSSAll | GSSAdmins | GSSMember GroupMemberId
 data SendRef
   = SRDirect ContactId
-  | SRGroup GroupId (Maybe GroupMemberId)
+  | SRGroup GroupId (Maybe GroupChatScope)
   deriving (Eq, Show)
 
 sendToChatRef :: SendRef -> ChatRef
 sendToChatRef = \case
-  SRDirect cId -> ChatRef CTDirect cId
-  SRGroup gId _ -> ChatRef CTGroup gId
+  SRDirect cId -> ChatRef CTDirect cId Nothing
+  SRGroup gId scope -> ChatRef CTGroup gId scope
 
 data ChatPagination
   = CPLast Int

@@ -87,7 +87,24 @@ struct GroupChatInfoView: View {
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                    
+
+                    Section {
+                        if groupInfo.canAddMembers && groupInfo.businessChat == nil {
+                            groupLinkButton()
+                        }
+                        if groupInfo.businessChat == nil && groupInfo.membership.memberRole >= .moderator {
+                            memberSupportButton()
+                        }
+                        if groupInfo.canModerate {
+                            GroupReportsChatNavLink(chat: chat)
+                        }
+                        if groupInfo.membership.supportChat != nil {
+                            UserSupportChatNavLink(chat: chat, groupInfo: groupInfo)
+                        }
+                    } header: {
+                        Text("")
+                    }
+
                     Section {
                         if groupInfo.isOwner && groupInfo.businessChat == nil {
                             editGroupButton()
@@ -96,19 +113,6 @@ struct GroupChatInfoView: View {
                             addOrEditWelcomeMessage()
                         }
                         GroupPreferencesButton(groupInfo: $groupInfo, preferences: groupInfo.fullGroupPreferences, currentPreferences: groupInfo.fullGroupPreferences)
-                        if members.filter({ $0.wrapped.memberCurrent }).count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
-                            sendReceiptsOption()
-                        } else {
-                            sendReceiptsOptionDisabled()
-                        }
-                                                
-                        NavigationLink {
-                            ChatWallpaperEditorSheet(chat: chat)
-                        } label: {
-                            Label("Chat theme", systemImage: "photo")
-                        }
-                    } header: {
-                        Text("")
                     } footer: {
                         let label: LocalizedStringKey = (
                             groupInfo.businessChat == nil
@@ -120,6 +124,16 @@ struct GroupChatInfoView: View {
                     }
                     
                     Section {
+                        if members.filter({ $0.wrapped.memberCurrent }).count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
+                            sendReceiptsOption()
+                        } else {
+                            sendReceiptsOptionDisabled()
+                        }
+                        NavigationLink {
+                            ChatWallpaperEditorSheet(chat: chat)
+                        } label: {
+                            Label("Chat theme", systemImage: "photo")
+                        }
                         ChatTTLOption(chat: chat, progressIndicator: $progressIndicator)
                     } footer: {
                         Text("Delete chat messages from your device.")
@@ -127,9 +141,6 @@ struct GroupChatInfoView: View {
                     
                     Section(header: Text("\(members.count + 1) members").foregroundColor(theme.colors.secondary)) {
                         if groupInfo.canAddMembers {
-                            if groupInfo.businessChat == nil {
-                                groupLinkButton()
-                            }
                             if (chat.chatInfo.incognito) {
                                 Label("Invite members", systemImage: "plus")
                                     .foregroundColor(Color(uiColor: .tertiaryLabel))
@@ -516,6 +527,84 @@ struct GroupChatInfoView: View {
         .navigationBarTitleDisplayMode(.large)
     }
 
+    struct UserSupportChatNavLink: View {
+        @ObservedObject var chat: Chat
+        @EnvironmentObject var theme: AppTheme
+        var groupInfo: GroupInfo
+        @EnvironmentObject var chatModel: ChatModel
+        @State private var navLinkActive = false
+
+        var body: some View {
+            let scopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
+            NavigationLink(isActive: $navLinkActive) {
+                SecondaryChatView(chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()))
+            } label: {
+                HStack {
+                    Label("Chat with admins", systemImage:  chat.supportUnreadCount > 0 ? "flag.filled" : "flag")
+                    Spacer()
+                    if chat.supportUnreadCount > 0 {
+                        UnreadBadge(count: chat.supportUnreadCount, color: theme.colors.primary)
+                    }
+                }
+            }
+            .onChange(of: navLinkActive) { active in
+                if active {
+                    ItemsModel.loadSecondaryChat(groupInfo.id, chatFilter: .groupChatScopeContext(groupScopeInfo: scopeInfo))
+                }
+            }
+        }
+    }
+
+    private func memberSupportButton() -> some View {
+        NavigationLink {
+            MemberSupportView(groupInfo: groupInfo)
+                .navigationBarTitle("Chats with members")
+                .modifier(ThemedBackground())
+                .navigationBarTitleDisplayMode(.large)
+        } label: {
+            HStack {
+                Label(
+                    "Chats with members",
+                    systemImage: chat.supportUnreadCount > 0 ? "flag.fill" : "flag"
+                )
+                Spacer()
+                if chat.supportUnreadCount > 0 {
+                    UnreadBadge(count: chat.supportUnreadCount, color: theme.colors.primary)
+                }
+            }
+        }
+    }
+
+    struct GroupReportsChatNavLink: View {
+        @EnvironmentObject var chatModel: ChatModel
+        @EnvironmentObject var theme: AppTheme
+        @State private var navLinkActive = false
+        @ObservedObject var chat: Chat
+
+        var body: some View {
+            NavigationLink(isActive: $navLinkActive) {
+                SecondaryChatView(chat: chat)
+            } label: {
+                HStack {
+                    Label {
+                        Text("Member reports")
+                    } icon: {
+                        Image(systemName: chat.chatStats.reportsCount > 0 ? "flag.fill" : "flag").foregroundColor(.red)
+                    }
+                    Spacer()
+                    if chat.chatStats.reportsCount > 0 {
+                        UnreadBadge(count: chat.chatStats.reportsCount, color: .red)
+                    }
+                }
+            }
+            .onChange(of: navLinkActive) { active in
+                if active {
+                    ItemsModel.loadSecondaryChat(chat.id, chatFilter: .msgContentTagContext(contentTag: .report))
+                }
+            }
+        }
+    }
+
     private func editGroupButton() -> some View {
         NavigationLink {
             GroupProfileView(
@@ -676,23 +765,32 @@ struct GroupChatInfoView: View {
             title: Text("Remove member?"),
             message: Text(messageLabel),
             primaryButton: .destructive(Text("Remove")) {
-                Task {
-                    do {
-                        let updatedMembers = try await apiRemoveMembers(groupInfo.groupId, [mem.groupMemberId])
-                        await MainActor.run {
-                            updatedMembers.forEach { updatedMember in
-                                _ = chatModel.upsertGroupMember(groupInfo, updatedMember)
-                            }
-                        }
-                    } catch let error {
-                        logger.error("apiRemoveMembers error: \(responseError(error))")
-                        let a = getErrorAlert(error, "Error removing member")
-                        alert = .error(title: a.title, error: a.message)
-                    }
-                }
+                removeMember(groupInfo, mem)
             },
             secondaryButton: .cancel()
         )
+    }
+}
+
+func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction? = nil) {
+    Task {
+        do {
+            let updatedMembers = try await apiRemoveMembers(groupInfo.groupId, [mem.groupMemberId])
+            await MainActor.run {
+                updatedMembers.forEach { updatedMember in
+                    _ = ChatModel.shared.upsertGroupMember(groupInfo, updatedMember)
+                }
+                dismiss?()
+            }
+        } catch let error {
+            logger.error("apiRemoveMembers error: \(responseError(error))")
+            await MainActor.run {
+                showAlert(
+                    NSLocalizedString("Error removing member", comment: "alert title"),
+                    message: responseError(error)
+                )
+            }
+        }
     }
 }
 
