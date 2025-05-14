@@ -2121,19 +2121,21 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         processUserAccepted = case acceptance of
           GAAccepted -> do
             membership' <- withStore' $ \db -> updateGroupMemberAccepted db user membership GSMemConnected role
-            let scopeInfo = Just $ GCSIMemberSupport {groupMember_ = Nothing}
-            (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo scopeInfo m) msg brokerTs (CIRcvGroupEvent RGEUserAccepted)
+            let gInfo' = gInfo {membership = membership'}
+                scopeInfo = Just $ GCSIMemberSupport {groupMember_ = Nothing}
+            (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo' scopeInfo m) msg brokerTs (CIRcvGroupEvent RGEUserAccepted)
             groupMsgToView cInfo ci
-            toView $ CEvtUserJoinedGroup user gInfo {membership = membership'} m
-            let cd = CDGroupRcv gInfo Nothing m
+            toView $ CEvtUserJoinedGroup user gInfo' {membership = membership'} m
+            let cd = CDGroupRcv gInfo' Nothing m
             createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
-            createGroupFeatureItems user cd CIRcvGroupFeature gInfo
-            maybeCreateGroupDescrLocal gInfo m
+            createGroupFeatureItems user cd CIRcvGroupFeature gInfo'
+            maybeCreateGroupDescrLocal gInfo' m
           GAPendingReview -> do
             membership' <- withStore' $ \db -> updateGroupMemberAccepted db user membership GSMemPendingReview role
-            let scopeInfo = Just $ GCSIMemberSupport {groupMember_ = Nothing}
-            createInternalChatItem user (CDGroupSnd gInfo scopeInfo) (CISndGroupEvent SGEUserPendingReview) Nothing
-            toView $ CEvtMemberAcceptedByOther user gInfo m membership'
+            let gInfo' = gInfo {membership = membership'}
+                scopeInfo = Just $ GCSIMemberSupport {groupMember_ = Nothing}
+            createInternalChatItem user (CDGroupSnd gInfo' scopeInfo) (CISndGroupEvent SGEUserPendingReview) Nothing
+            toView $ CEvtMemberAcceptedByOther user gInfo' m membership'
           GAPendingApproval ->
             messageWarning "x.grp.link.acpt: unexpected group acceptance - pending approval"
         introduceToRemainingMembers acceptedMember = do

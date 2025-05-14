@@ -460,7 +460,7 @@ struct ComposeView: View {
 
                     if im.secondaryIMFilter == nil {
                         if chat.userIsPending {
-                            Text("reviewed by moderators")
+                            Text("reviewed by admins")
                                 .italic()
                                 .foregroundColor(theme.colors.secondary)
                                 .padding(.horizontal, 12)

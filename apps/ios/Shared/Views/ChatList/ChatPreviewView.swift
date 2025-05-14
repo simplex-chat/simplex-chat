@@ -346,6 +346,7 @@ struct ChatPreviewView: View {
                 case .memRejected: chatPreviewInfoText("rejected")
                 case .memInvited: groupInvitationPreviewText(groupInfo)
                 case .memAccepted: chatPreviewInfoText("connecting…")
+                case .memPendingReview, .memPendingApproval: chatPreviewInfoText("reviewed by admins")
                 default: EmptyView()
                 }
             default: EmptyView()
@@ -439,9 +440,11 @@ struct ChatPreviewView: View {
             if progressByTimeout {
                 ProgressView()
             } else if chat.chatStats.reportsCount > 0 {
-                groupReportsIcon(size: size * 0.8)
+                flagIcon(size: size * 0.8, color: .red)
             } else if chat.supportUnreadCount > 0 {
-                GroupSupportUnreadIcon(size: size * 0.8)
+                flagIcon(size: size * 0.8, color: theme.colors.primary)
+            } else if chat.chatInfo.groupInfo?.membership.memberPending ?? false {
+                flagIcon(size: size * 0.8, color: theme.colors.secondary)
             } else {
                 incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
             }
@@ -487,25 +490,12 @@ struct ChatPreviewView: View {
     }
 }
 
-func groupReportsIcon(size: CGFloat) -> some View {
+func flagIcon(size: CGFloat, color: Color) -> some View {
     Image(systemName: "flag")
         .resizable()
         .scaledToFit()
         .frame(width: size, height: size)
-        .foregroundColor(.red)
-}
-
-struct GroupSupportUnreadIcon: View {
-    @EnvironmentObject var theme: AppTheme
-    var size: CGFloat
-
-    var body: some View {
-        Image(systemName: "flag")
-            .resizable()
-            .scaledToFit()
-            .frame(width: size, height: size)
-            .foregroundColor(theme.colors.primary)
-    }
+        .foregroundColor(color)
 }
 
 func smallContentPreview(size: CGFloat, _ view: @escaping () -> some View) -> some View {

@@ -540,7 +540,7 @@ struct GroupChatInfoView: View {
                 SecondaryChatView(chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()))
             } label: {
                 HStack {
-                    Label("Chat with admins", systemImage:  chat.supportUnreadCount > 0 ? "flag.filled" : "flag")
+                    Label("Chat with admins", systemImage:  chat.supportUnreadCount > 0 ? "flag.fill" : "flag")
                     Spacer()
                     if chat.supportUnreadCount > 0 {
                         UnreadBadge(count: chat.supportUnreadCount, color: theme.colors.primary)
