@@ -582,7 +582,7 @@ final class ChatModel: ObservableObject {
         // update chat list
         if let i = getChatIndex(cInfo.id) {
             // update preview
-            if cInfo.groupChatScope() == nil {
+            if cInfo.groupChatScope() == nil || cInfo.groupInfo?.membership.memberPending ?? false {
                 chats[i].chatItems = switch cInfo {
                 case .group:
                     if let currentPreviewItem = chats[i].chatItems.first {

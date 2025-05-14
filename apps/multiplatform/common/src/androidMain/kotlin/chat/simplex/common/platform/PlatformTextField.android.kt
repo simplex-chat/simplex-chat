@@ -200,7 +200,7 @@ actual fun PlatformTextField(
   if (composeState.value.preview is ComposePreview.VoicePreview) {
     ComposeOverlay(MR.strings.voice_message_send_text, textStyle, padding)
   } else if (userIsPending) {
-    ComposeOverlay(MR.strings.reviewed_by_moderators, textStyle, padding)
+    ComposeOverlay(MR.strings.reviewed_by_admins, textStyle, padding)
   } else if (userIsObserver) {
     ComposeOverlay(MR.strings.you_are_observer, textStyle, padding)
   }
