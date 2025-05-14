@@ -103,6 +103,12 @@ class ItemsModel: ObservableObject {
             .store(in: &bag)
     }
 
+    static func loadSecondaryChat(_ chatId: ChatId, chatFilter: SecondaryItemsModelFilter, willNavigate: @escaping () -> Void = {}) {
+        let im = ItemsModel(secondaryIMFilter: chatFilter)
+        ChatModel.shared.secondaryIM = im
+        im.loadOpenChat(chatId, willNavigate: willNavigate)
+    }
+
     func loadOpenChat(_ chatId: ChatId, willNavigate: @escaping () -> Void = {}) {
         navigationTimeoutTask?.cancel()
         loadChatTask?.cancel()
@@ -111,9 +117,6 @@ class ItemsModel: ObservableObject {
                 try await Task.sleep(nanoseconds: 250_000000)
                 await MainActor.run {
                     ChatModel.shared.chatId = chatId
-                    if secondaryIMFilter != nil {
-                        ChatModel.shared.secondaryIM = self
-                    }
                     willNavigate()
                 }
             } catch {}

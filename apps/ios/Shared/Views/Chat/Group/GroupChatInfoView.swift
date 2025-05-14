@@ -541,9 +541,7 @@ struct GroupChatInfoView: View {
             }
             .onChange(of: navLinkActive) { active in
                 if active {
-                    let im = ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: scopeInfo))
-                    ChatModel.shared.secondaryIM = im
-                    im.loadOpenChat(groupInfo.id)
+                    ItemsModel.loadSecondaryChat(groupInfo.id, chatFilter: .groupChatScopeContext(groupScopeInfo: scopeInfo))
                 }
             }
         }
@@ -593,9 +591,7 @@ struct GroupChatInfoView: View {
             }
             .onChange(of: navLinkActive) { active in
                 if active {
-                    let im = ItemsModel(secondaryIMFilter: .msgContentTagContext(contentTag: .report))
-                    ChatModel.shared.secondaryIM = im
-                    im.loadOpenChat(chat.id)
+                    ItemsModel.loadSecondaryChat(chat.id, chatFilter: .msgContentTagContext(contentTag: .report))
                 }
             }
         }

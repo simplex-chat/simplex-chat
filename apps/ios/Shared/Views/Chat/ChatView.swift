@@ -82,6 +82,7 @@ struct ChatView: View {
                 } else {
                     nil
                 }
+        let userMemberKnockingChat = memberSupportChat?.groupInfo.membership.memberPending == true
         return ZStack {
             let wallpaperImage = theme.wallpaper.type.image
             let wallpaperType = theme.wallpaper.type
@@ -95,7 +96,14 @@ struct ChatView: View {
             }
             VStack(spacing: 0) {
                 ZStack(alignment: .bottomTrailing) {
-                    chatItemsList()
+                    if userMemberKnockingChat {
+                        ZStack(alignment: .top) {
+                            chatItemsList()
+                            userMemberKnockingTitleBar()
+                        }
+                    } else {
+                        chatItemsList()
+                    }
                     if let groupInfo = chat.chatInfo.groupInfo, !composeState.message.isEmpty {
                         GroupMentionsView(im: im, groupInfo: groupInfo, composeState: $composeState, selectedRange: $selectedRange, keyboardVisible: $keyboardVisible)
                     }
@@ -225,15 +233,7 @@ struct ChatView: View {
             }
         ) {
             if let groupInfo = cInfo.groupInfo {
-//                let v = SecondaryChatView(chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: userSupportScopeInfo), chatItems: [], chatStats: ChatStats()))
-//                if #available(iOS 16.0, *) {
-//                    NavigationStack { v }
-//                } else {
-//                    NavigationView { v }
-//                }
-                NavigationView {
-                    SecondaryChatView(chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: userSupportScopeInfo), chatItems: [], chatStats: ChatStats()))
-                }
+                SecondaryChatView(chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: userSupportScopeInfo), chatItems: [], chatStats: ChatStats()))
             }
         }
         .onAppear {
@@ -254,10 +254,9 @@ struct ChatView: View {
             // if this is the main chat of the group with the pending member (knocking)
             if case let .group(groupInfo, nil) = chat.chatInfo,
                groupInfo.membership.memberPending {
-                let secIM = ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: userSupportScopeInfo))
-                secIM.loadOpenChat(chat.id) {
-                    chatModel.secondaryPendingInviteeChatOpened = true
+                ItemsModel.loadSecondaryChat(chat.id, chatFilter: .groupChatScopeContext(groupScopeInfo: userSupportScopeInfo)) {
                     showUserSupportChatSheet = true
+                    chatModel.secondaryPendingInviteeChatOpened = true
                 }
             }
         }
@@ -338,14 +337,14 @@ struct ChatView: View {
             ToolbarItem(placement: .principal) {
                 if memberSupportChat == nil {
                     primaryPrincipalToolbarContent()
-                } else if chat.chatInfo.groupInfo?.membership.memberPending == false { // no toolbar while knocking, it's unstable on sheet, only navigationTitle
+                } else if !userMemberKnockingChat { // no toolbar while knocking chat, it's unstable on sheet
                     secondaryPrincipalToolbarContent()
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 if memberSupportChat == nil {
                     primaryTrailingToolbarContent()
-                } else if chat.chatInfo.groupInfo?.membership.memberPending == false {
+                } else if !userMemberKnockingChat {
                     secondaryTrailingToolbarContent()
                 }
             }
@@ -515,6 +514,20 @@ struct ChatView: View {
         } else {
             searchButton()
         }
+    }
+
+    @inline(__always)
+    private func userMemberKnockingTitleBar() -> some View {
+         VStack(spacing: 0) {
+             Text("Chat with admins")
+                 .font(.headline)
+                 .foregroundColor(theme.colors.onBackground)
+                 .padding(.top, 8)
+                 .padding(.bottom, 14)
+                 .frame(maxWidth: .infinity)
+                 .background(ToolbarMaterial.material(toolbarMaterial))
+             Divider()
+         }
     }
 
     func textChatToolbar(_ text: LocalizedStringKey) -> some View {

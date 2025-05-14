@@ -71,8 +71,7 @@ struct MemberSupportView: View {
             ZStack {
                 let scopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: memberWithChat.wrapped)
                 Button {
-                    let im = ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: scopeInfo))
-                    im.loadOpenChat(groupInfo.id) {
+                    ItemsModel.loadSecondaryChat(groupInfo.id, chatFilter: .groupChatScopeContext(groupScopeInfo: scopeInfo)) {
                         memberSupportChatNavLinkActive = true
                     }
                 } label: {
