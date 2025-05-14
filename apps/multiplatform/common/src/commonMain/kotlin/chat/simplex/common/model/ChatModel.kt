@@ -442,9 +442,9 @@ object ChatModel {
       val i = getChatIndex(rhId, cInfo.id)
       val chat: Chat
       if (i >= 0) {
-        chat = chats[i]
-        // update preview
-        if (cInfo.groupChatScope() == null) {
+        chat = chatsContext.chats[i]
+        // update preview (for chat from main scope to show new items for invitee in pending status)
+        if (cInfo.groupChatScope() == null || cInfo.groupInfo_?.membership?.memberPending == true) {
           val newPreviewItem = when (cInfo) {
             is ChatInfo.Group -> {
               val currentPreviewItem = chat.chatItems.firstOrNull()
@@ -462,7 +462,7 @@ object ChatModel {
             else -> cItem
           }
           val wasUnread = chat.unreadTag
-          chats[i] = chat.copy(
+          chatsContext.chats[i] = chat.copy(
             chatItems = arrayListOf(newPreviewItem),
             chatStats =
             if (cItem.meta.itemStatus is CIStatus.RcvNew) {
@@ -471,11 +471,11 @@ object ChatModel {
             } else
               chat.chatStats
           )
-          updateChatTagReadInPrimaryContext(chats[i], wasUnread)
+          updateChatTagReadInPrimaryContext(chatsContext.chats[i], wasUnread)
         }
         // pop chat
         if (appPlatform.isDesktop && cItem.chatDir.sent) {
-          reorderChat(chats[i], 0)
+          reorderChat(chatsContext.chats[i], 0)
         } else {
           popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = i)
         }
