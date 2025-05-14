@@ -98,7 +98,8 @@ struct GroupChatInfoView: View {
                         if groupInfo.canModerate {
                             GroupReportsChatNavLink(chat: chat)
                         }
-                        if groupInfo.membership.supportChat != nil {
+                        if groupInfo.membership.memberActive
+                            && (groupInfo.membership.memberRole < .moderator || groupInfo.membership.supportChat != nil) {
                             UserSupportChatNavLink(chat: chat, groupInfo: groupInfo)
                         }
                     } header: {
@@ -540,7 +541,7 @@ struct GroupChatInfoView: View {
                 SecondaryChatView(chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()))
             } label: {
                 HStack {
-                    Label("Chat with admins", systemImage:  chat.supportUnreadCount > 0 ? "flag.fill" : "flag")
+                    Label("Chat with admins", systemImage: chat.supportUnreadCount > 0 ? "flag.fill" : "flag")
                     Spacer()
                     if chat.supportUnreadCount > 0 {
                         UnreadBadge(count: chat.supportUnreadCount, color: theme.colors.primary)

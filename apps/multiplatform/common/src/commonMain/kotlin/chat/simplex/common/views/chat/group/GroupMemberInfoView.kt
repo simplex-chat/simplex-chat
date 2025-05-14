@@ -441,7 +441,6 @@ fun GroupMemberInfoLayout(
       SectionView {
         if (
           groupInfo.membership.memberRole >= GroupMemberRole.Moderator &&
-          member.memberActive &&
           (member.memberRole < GroupMemberRole.Moderator || member.supportChat != null)
         ) {
           SupportChatButton()

@@ -103,6 +103,10 @@ struct GroupMemberInfoView: View {
 
                     if member.memberActive {
                         Section {
+                            if groupInfo.membership.memberRole >= .moderator
+                                && (member.memberRole < .moderator || member.supportChat != nil) {
+                                MemberInfoSupportChatNavLink(groupInfo: groupInfo, member: groupMember)
+                            }
                             if let code = connectionCode { verifyCodeButton(code) }
                             if let connStats = connectionStats,
                                connStats.ratchetSyncAllowed {
@@ -472,6 +476,27 @@ struct GroupMemberInfoView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    struct MemberInfoSupportChatNavLink: View {
+        @EnvironmentObject var theme: AppTheme
+        var groupInfo: GroupInfo
+        var member: GMember
+        @State private var navLinkActive = false
+
+        var body: some View {
+            let scopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: member.wrapped)
+            NavigationLink(isActive: $navLinkActive) {
+                SecondaryChatView(chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()))
+            } label: {
+                Label("Chat with member", systemImage: "flag")
+            }
+            .onChange(of: navLinkActive) { active in
+                if active {
+                    ItemsModel.loadSecondaryChat(groupInfo.id, chatFilter: .groupChatScopeContext(groupScopeInfo: scopeInfo))
+                }
+            }
+        }
     }
 
     private func verifyCodeButton(_ code: String) -> some View {
