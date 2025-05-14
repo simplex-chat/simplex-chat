@@ -2359,7 +2359,6 @@
     <string name="group_new_support_messages">%d üzenet</string>
     <string name="group_new_support_chat_one">1 csevegés 1 taggal</string>
     <string name="group_new_support_chats_short">%d csevegés</string>
-    <string name="reviewed_by_moderators">áttekintve a moderátorok által</string>
     <string name="report_sent_alert_title">A jelentés el lett küldve a moderátoroknak</string>
     <string name="report_sent_alert_msg_view_in_support_chat">A jelentéseket megtekintheti a „Csevegés az adminisztrátorokkal” menüben.</string>
     <string name="group_member_status_pending_review">áttekintésre vár</string>
