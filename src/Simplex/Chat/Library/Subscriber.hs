@@ -2125,7 +2125,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 scopeInfo = Just $ GCSIMemberSupport {groupMember_ = Nothing}
             (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo' scopeInfo m) msg brokerTs (CIRcvGroupEvent RGEUserAccepted)
             groupMsgToView cInfo ci
-            toView $ CEvtUserJoinedGroup user gInfo' {membership = membership'} m
+            toView $ CEvtUserJoinedGroup user gInfo' m
             let cd = CDGroupRcv gInfo' Nothing m
             createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
             createGroupFeatureItems user cd CIRcvGroupFeature gInfo'
