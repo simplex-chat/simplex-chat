@@ -482,12 +482,10 @@ struct ChatListNavLink: View {
         }
         .frame(height: dynamicRowHeight)
         .appSheet(isPresented: $showContactConnectionInfo) {
-            Group {
-                if case let .contactConnection(contactConnection) = chat.chatInfo {
-                    ContactConnectionInfo(contactConnection: contactConnection)
-                        .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
-                        .modifier(ThemedBackground(grouped: true))
-                }
+            if case let .contactConnection(contactConnection) = chat.chatInfo {
+                ContactConnectionInfo(contactConnection: contactConnection)
+                    .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
+                    .modifier(ThemedBackground(grouped: true))
             }
         }
         .contentShape(Rectangle())

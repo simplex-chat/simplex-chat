@@ -350,7 +350,7 @@ struct UserProfilesView: View {
                     Image(systemName: "checkmark").foregroundColor(theme.colors.onBackground)
                 } else {
                     if userInfo.unreadCount > 0 {
-                        UnreadBadge(userInfo: userInfo)
+                        userUnreadBadge(userInfo, theme: theme)
                     }
                     if user.hidden {
                         Image(systemName: "lock").foregroundColor(theme.colors.secondary)

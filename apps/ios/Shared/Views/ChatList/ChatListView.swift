@@ -457,8 +457,7 @@ struct ChatListView: View {
                 chat: chat,
                 im: im,
                 mergedItems: BoxedValue(MergedItems.create(im, [])),
-                floatingButtonModel: FloatingButtonModel(im: im),
-                onSheet: false
+                floatingButtonModel: FloatingButtonModel(im: im)
             )
         }
     }

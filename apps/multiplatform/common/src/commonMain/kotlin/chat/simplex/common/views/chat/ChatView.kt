@@ -1252,13 +1252,16 @@ private fun SupportChatsCountToolbar(
           Icon(painterResource(MR.images.ic_flag), null, Modifier.size(22.dp), tint = MaterialTheme.colors.primary)
           Spacer(Modifier.width(4.dp))
           Text(
-            if (chatInfo is ChatInfo.Group && chatInfo.groupInfo.canModerate)
+            if (chatInfo is ChatInfo.Group && chatInfo.groupInfo.canModerate) {
               if (appPlatform.isAndroid)
                 stringResource(MR.strings.group_new_support_chats_short).format(supportUnreadCount)
+              else if (supportUnreadCount == 1)
+                stringResource(MR.strings.group_new_support_chat_one)
               else
                 stringResource(MR.strings.group_new_support_chats).format(supportUnreadCount)
-            else
-              stringResource(MR.strings.group_new_support_messages).format(supportUnreadCount),
+            } else {
+              stringResource(MR.strings.group_new_support_messages).format(supportUnreadCount)
+            },
             style = MaterialTheme.typography.button
           )
         }

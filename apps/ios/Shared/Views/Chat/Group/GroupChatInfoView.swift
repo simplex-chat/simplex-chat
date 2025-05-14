@@ -96,17 +96,10 @@ struct GroupChatInfoView: View {
                             memberSupportButton()
                         }
                         if groupInfo.canModerate {
-                            GroupReportsChatNavLink(
-                                chat: chat,
-                                im: ItemsModel(secondaryIMFilter: .msgContentTagContext(contentTag: .report))
-                            )
+                            GroupReportsChatNavLink(chat: chat)
                         }
                         if groupInfo.membership.supportChat != nil {
-                            let scopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
-                            UserSupportChatNavLink(
-                                chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()),
-                                im: ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: scopeInfo))
-                            )
+                            UserSupportChatNavLink(chat: chat, groupInfo: groupInfo)
                         }
                     } header: {
                         Text("")
@@ -535,34 +528,29 @@ struct GroupChatInfoView: View {
     }
 
     struct UserSupportChatNavLink: View {
-        @EnvironmentObject var chatModel: ChatModel
-        @State private var userSupportChatNavLinkActive = false
         @ObservedObject var chat: Chat
-        var im: ItemsModel
+        @EnvironmentObject var theme: AppTheme
+        var groupInfo: GroupInfo
+        @EnvironmentObject var chatModel: ChatModel
+        @State private var navLinkActive = false
 
         var body: some View {
-            ZStack {
-                Button {
-                    im.loadOpenChat(chat.id) {
-                        userSupportChatNavLinkActive = true
+            let scopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
+            NavigationLink(isActive: $navLinkActive) {
+                SecondaryChatView(chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()))
+            } label: {
+                HStack {
+                    Label("Chat with admins", systemImage:  chat.supportUnreadCount > 0 ? "flag.filled" : "flag")
+                    Spacer()
+                    if chat.supportUnreadCount > 0 {
+                        UnreadBadge(count: chat.supportUnreadCount, color: theme.colors.primary)
                     }
-                } label: {
-                    Label("Chat with admins", systemImage: "flag")
                 }
-
-                NavigationLink(isActive: $userSupportChatNavLinkActive) {
-                    if let secondaryIM = chatModel.secondaryIM {
-                        SecondaryChatView(
-                            chat: chat,
-                            im: secondaryIM,
-                            onSheet: false
-                        )
-                    }
-                } label: {
-                    EmptyView()
+            }
+            .onChange(of: navLinkActive) { active in
+                if active {
+                    ItemsModel.loadSecondaryChat(groupInfo.id, chatFilter: .groupChatScopeContext(groupScopeInfo: scopeInfo))
                 }
-                .frame(width: 1, height: 1)
-                .hidden()
             }
         }
     }
@@ -574,47 +562,45 @@ struct GroupChatInfoView: View {
                 .modifier(ThemedBackground())
                 .navigationBarTitleDisplayMode(.large)
         } label: {
-            Label(
-                "Chats with members",
-                systemImage: chat.supportUnreadCount > 0 ? "flag.fill" : "flag"
-            )
+            HStack {
+                Label(
+                    "Chats with members",
+                    systemImage: chat.supportUnreadCount > 0 ? "flag.fill" : "flag"
+                )
+                Spacer()
+                if chat.supportUnreadCount > 0 {
+                    UnreadBadge(count: chat.supportUnreadCount, color: theme.colors.primary)
+                }
+            }
         }
     }
 
     struct GroupReportsChatNavLink: View {
         @EnvironmentObject var chatModel: ChatModel
         @EnvironmentObject var theme: AppTheme
-        @State private var groupReportsChatNavLinkActive = false
+        @State private var navLinkActive = false
         @ObservedObject var chat: Chat
-        var im: ItemsModel
 
         var body: some View {
-            ZStack {
-                Button {
-                    im.loadOpenChat(chat.id) {
-                        groupReportsChatNavLinkActive = true
+            NavigationLink(isActive: $navLinkActive) {
+                SecondaryChatView(chat: chat)
+            } label: {
+                HStack {
+                    Label {
+                        Text("Member reports")
+                    } icon: {
+                        Image(systemName: chat.chatStats.reportsCount > 0 ? "flag.fill" : "flag").foregroundColor(.red)
                     }
-                } label: {
-                    Label(
-                        "Member reports",
-                        systemImage: chat.chatStats.reportsCount > 0 ? "flag.fill" : "flag"
-                    )
-                    .foregroundColor(chat.chatStats.reportsCount > 0 ? .red : theme.colors.primary)
-                }
-
-                NavigationLink(isActive: $groupReportsChatNavLinkActive) {
-                    if let secondaryIM = chatModel.secondaryIM {
-                        SecondaryChatView(
-                            chat: chat,
-                            im: secondaryIM,
-                            onSheet: false
-                        )
+                    Spacer()
+                    if chat.chatStats.reportsCount > 0 {
+                        UnreadBadge(count: chat.chatStats.reportsCount, color: .red)
                     }
-                } label: {
-                    EmptyView()
                 }
-                .frame(width: 1, height: 1)
-                .hidden()
+            }
+            .onChange(of: navLinkActive) { active in
+                if active {
+                    ItemsModel.loadSecondaryChat(chat.id, chatFilter: .msgContentTagContext(contentTag: .report))
+                }
             }
         }
     }
