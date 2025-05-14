@@ -769,20 +769,22 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         withAgent $ \a -> toggleConnectionNtfs a (aConnId conn) $ chatHasNtfs chatSettings
         case memberCategory m of
           GCHostMember -> do
-            (mStatus, membershipStatus) <- withStore' $ \db -> do
+            (m', gInfo') <- withStore' $ \db -> do
               updateGroupMemberStatus db userId m GSMemConnected
-              membershipStatus <-
+              gInfo' <-
                 if not (memberPending membership)
-                  then updateGroupMemberStatus db userId membership GSMemConnected $> GSMemConnected
-                  else pure $ memberStatus membership
-              pure (GSMemConnected, membershipStatus)
-            toView $ CEvtUserJoinedGroup user gInfo {membership = membership {memberStatus = membershipStatus}} m {memberStatus = mStatus}
-            (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
-            let cd = CDGroupRcv gInfo' scopeInfo m'
+                  then do
+                    updateGroupMemberStatus db userId membership GSMemConnected
+                    pure gInfo {membership = membership {memberStatus = GSMemConnected}}
+                  else pure gInfo
+              pure (m {memberStatus = GSMemConnected}, gInfo')
+            toView $ CEvtUserJoinedGroup user gInfo' m'
+            (gInfo'', m'', scopeInfo) <- mkGroupChatScope gInfo' m'
+            let cd = CDGroupRcv gInfo'' scopeInfo m''
             createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
-            createGroupFeatureItems user cd CIRcvGroupFeature gInfo'
-            memberConnectedChatItem gInfo' scopeInfo m'
-            unless (memberPending membership) $ maybeCreateGroupDescrLocal gInfo' m'
+            createGroupFeatureItems user cd CIRcvGroupFeature gInfo''
+            memberConnectedChatItem gInfo'' scopeInfo m''
+            unless (memberPending membership) $ maybeCreateGroupDescrLocal gInfo'' m''
           GCInviteeMember -> do
             (gInfo', mStatus) <-
               if not (memberPending m)
