@@ -2072,7 +2072,7 @@
     <string name="v6_1_better_calls_descr">Hang/Videó váltása hívás közben.</string>
     <string name="v6_1_switch_chat_profile_descr">Csevegési profilváltás az egyszer használható meghívókhoz.</string>
     <string name="v6_1_better_security">Továbbfejlesztett biztonság ✅</string>
-    <string name="v6_1_better_security_descr">A SimpleX Chat biztonsága a Trail of Bits által lett felülvizsgálva.</string>
+    <string name="v6_1_better_security_descr">A SimpleX Chat biztonsága a Trail of Bits által lett áttekintve.</string>
     <string name="failed_to_save_servers">Hiba történt a kiszolgálók mentésekor</string>
     <string name="no_message_servers_configured">Nincsenek üzenet-kiszolgálók.</string>
     <string name="no_message_servers_configured_for_receiving">Nincsenek üzenetfogadási kiszolgálók.</string>
@@ -2386,4 +2386,5 @@
     <string name="snd_group_event_member_accepted">Ön befogadta ezt a tagot</string>
     <string name="accept_pending_member_alert_confirmation_as_member">Befogadás tagként</string>
     <string name="rcv_group_event_member_accepted">befogadta őt: %1$s</string>
+    <string name="reviewed_by_admins">áttekintve a moderátorok által</string>
 </resources>
