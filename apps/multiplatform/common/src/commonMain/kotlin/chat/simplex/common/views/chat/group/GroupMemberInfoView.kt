@@ -308,7 +308,7 @@ fun GroupMemberInfoLayout(
 
     SettingsActionItem(
       painterResource(MR.images.ic_flag),
-      stringResource(MR.strings.button_support_chat),
+      stringResource(MR.strings.button_support_chat_member),
       click = {
         val scopeInfo = GroupChatScopeInfo.MemberSupport(groupMember_ = member)
         val supportChatInfo = ChatInfo.Group(groupInfo, groupChatScope = scopeInfo)
