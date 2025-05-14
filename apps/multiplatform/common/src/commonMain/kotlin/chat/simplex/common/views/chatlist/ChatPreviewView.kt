@@ -241,6 +241,8 @@ fun ChatPreviewView(
             GroupMemberStatus.MemRejected -> Text(stringResource(MR.strings.group_preview_rejected))
             GroupMemberStatus.MemInvited -> Text(groupInvitationPreviewText(currentUserProfileDisplayName, cInfo.groupInfo))
             GroupMemberStatus.MemAccepted -> Text(stringResource(MR.strings.group_connection_pending), color = MaterialTheme.colors.secondary)
+            GroupMemberStatus.MemPendingReview, GroupMemberStatus.MemPendingApproval ->
+              Text(stringResource(MR.strings.reviewed_by_admins), color = MaterialTheme.colors.secondary)
             else -> {}
           }
         else -> {}
@@ -363,9 +365,11 @@ fun ChatPreviewView(
       if (progressByTimeout) {
         progressView()
       } else if (chat.chatStats.reportsCount > 0) {
-        GroupReportsIcon()
+        FlagIcon(color = MaterialTheme.colors.error)
       } else if (chat.supportUnreadCount > 0) {
-        GroupSupportUnreadIcon()
+        FlagIcon(color = MaterialTheme.colors.primary)
+      } else if (chat.chatInfo.groupInfo_?.membership?.memberPending == true) {
+        FlagIcon(color = MaterialTheme.colors.secondary)
       } else {
         IncognitoIcon(chat.chatInfo.incognito)
       }
@@ -550,23 +554,11 @@ fun IncognitoIcon(incognito: Boolean) {
 }
 
 @Composable
-fun GroupReportsIcon() {
+fun FlagIcon(color: Color) {
   Icon(
     painterResource(MR.images.ic_flag),
     contentDescription = null,
-    tint = MaterialTheme.colors.error,
-    modifier = Modifier
-      .size(21.sp.toDp())
-      .offset(x = 2.sp.toDp())
-  )
-}
-
-@Composable
-fun GroupSupportUnreadIcon() {
-  Icon(
-    painterResource(MR.images.ic_flag),
-    contentDescription = null,
-    tint = MaterialTheme.colors.primary,
+    tint = color,
     modifier = Modifier
       .size(21.sp.toDp())
       .offset(x = 2.sp.toDp())

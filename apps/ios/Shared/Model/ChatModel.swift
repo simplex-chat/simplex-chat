@@ -597,10 +597,10 @@ final class ChatModel: ObservableObject {
                 default:
                     [cItem]
                 }
-            }
-            if cInfo.groupChatScope() == nil {
-                if case .rcvNew = cItem.meta.itemStatus {
-                    unreadCollector.changeUnreadCounter(cInfo.id, by: 1, unreadMentions: cItem.meta.userMention ? 1 : 0)
+                if cInfo.groupChatScope() == nil {
+                    if case .rcvNew = cItem.meta.itemStatus {
+                        unreadCollector.changeUnreadCounter(cInfo.id, by: 1, unreadMentions: cItem.meta.userMention ? 1 : 0)
+                    }
                 }
             }
             // pop chat

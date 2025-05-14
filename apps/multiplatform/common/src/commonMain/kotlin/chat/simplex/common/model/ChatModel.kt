@@ -1558,7 +1558,13 @@ sealed class ChatInfo: SomeChat, NamedChat {
       is Direct -> contact.activeConn == null && contact.profile.contactLink != null && contact.active
       else -> false
     }
-  }
+
+  val groupInfo_: GroupInfo?
+    get() = when (this) {
+      is Group -> groupInfo
+      else -> null
+    }
+}
 
 @Serializable
 sealed class NetworkStatus {
