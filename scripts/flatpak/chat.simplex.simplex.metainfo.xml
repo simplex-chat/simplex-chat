@@ -43,9 +43,9 @@
       <description>
         <p>New in v6.3.1-4:</p>
         <ul>
-          <li>better "secrets" in messages - send them with #secret# markdown.</li>
-          <li>many improvements and fixes for push notifications.</li>
-          <li>support joining groups with "knocking" (admins can enable it in v6.4-beta).</li>
+          <li>fixes mentions with trailing punctuation (e.g., hello @name!).</li>
+          <li>recognizes domain names as links (e.g., simplex.chat).</li>
+          <li>forward compatibility with "knocking" (a feature for group admins to review and to chat with the new members prior to admitting them to groups, it will be released in 6.4)</li>
           <li>support for connecting via short connection links.</li>
           <li>fix related to backward/forward compatibility of the app in some rare cases.</li>
           <li>scrolling/navigation improvements.</li>
