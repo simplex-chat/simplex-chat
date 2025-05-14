@@ -7334,9 +7334,9 @@ chat item action</note>
         <target>Egyszer használható SimpleX-meghívó</target>
         <note>simplex link type</note>
       </trans-unit>
-      <trans-unit id="SimpleX protocols reviewed by Trail of Bits." xml:space="preserve">
+      <trans-unit id="SimpleX protocols reviewed by Trail of Bits." xml:space="preserve" approved="no">
         <source>SimpleX protocols reviewed by Trail of Bits.</source>
-        <target>A SimpleX Chat biztonsága a Trail of Bits által lett felülvizsgálva.</target>
+        <target state="translated">A SimpleX Chat biztonsága a Trail of Bits által lett áttekintve.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Simplified incognito mode" xml:space="preserve">
