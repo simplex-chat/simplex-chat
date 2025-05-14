@@ -19,7 +19,7 @@ struct MemberSupportChatToolbar: View {
         return HStack {
             MemberProfileImage(groupMember, size: imageSize)
                 .padding(.trailing, 4)
-            let t = Text(groupMember.displayName).font(.headline)
+            let t = Text(groupMember.chatViewName).font(.headline)
             (groupMember.verified ? memberVerifiedShield + t : t)
                 .lineLimit(1)
         }

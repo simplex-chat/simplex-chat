@@ -76,6 +76,12 @@ struct ChatView: View {
 
     private var viewBody: some View {
         let cInfo = chat.chatInfo
+        let memberSupportChat: (groupInfo: GroupInfo, member: GroupMember?)? =
+                if case let .group(groupInfo, .memberSupport(member)) = cInfo {
+                    (groupInfo, member)
+                } else {
+                    nil
+                }
         return ZStack {
             let wallpaperImage = theme.wallpaper.type.image
             let wallpaperType = theme.wallpaper.type
@@ -142,7 +148,11 @@ struct ChatView: View {
             }
             .background(ToolbarMaterial.material(toolbarMaterial))
         }
-        .navigationTitle(cInfo.chatViewName)
+        .navigationTitle(
+            memberSupportChat == nil
+            ? cInfo.chatViewName
+            : memberSupportChat?.member?.chatViewName ?? NSLocalizedString("Chat with admins", comment: "chat toolbar")
+        )
         .background(theme.colors.background)
         .navigationBarTitleDisplayMode(.inline)
         .environmentObject(theme)
@@ -214,7 +224,7 @@ struct ChatView: View {
                 }
             }
         ) {
-            if let groupInfo = chat.chatInfo.groupInfo {
+            if let groupInfo = cInfo.groupInfo {
 //                let v = SecondaryChatView(chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: userSupportScopeInfo), chatItems: [], chatStats: ChatStats()))
 //                if #available(iOS 16.0, *) {
 //                    NavigationStack { v }
@@ -241,6 +251,7 @@ struct ChatView: View {
                     }
                 }
             }
+            // if this is the main chat of the group with the pending member (knocking)
             if case let .group(groupInfo, nil) = chat.chatInfo,
                groupInfo.membership.memberPending {
                 let secIM = ItemsModel(secondaryIMFilter: .groupChatScopeContext(groupScopeInfo: userSupportScopeInfo))
@@ -325,16 +336,16 @@ struct ChatView: View {
         }
         .toolbar {
             ToolbarItem(placement: .principal) {
-                if im.secondaryIMFilter == nil {
+                if memberSupportChat == nil {
                     primaryPrincipalToolbarContent()
-                } else {
+                } else if chat.chatInfo.groupInfo?.membership.memberPending == false { // no toolbar while knocking, it's unstable on sheet, only navigationTitle
                     secondaryPrincipalToolbarContent()
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                if im.secondaryIMFilter == nil {
+                if memberSupportChat == nil {
                     primaryTrailingToolbarContent()
-                } else {
+                } else if chat.chatInfo.groupInfo?.membership.memberPending == false {
                     secondaryTrailingToolbarContent()
                 }
             }
