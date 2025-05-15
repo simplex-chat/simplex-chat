@@ -1664,8 +1664,8 @@
     <string name="e2ee_info_no_pq_short">Ez a csevegés végpontok közötti titkosítással védett.</string>
     <string name="auth_open_migration_to_another_device">Átköltöztetési párbeszédablak megnyitása</string>
     <string name="e2ee_info_pq_short">Ez a csevegés végpontok közötti kvantumbiztos titkosítással védett.</string>
-    <string name="e2ee_info_no_pq"><![CDATA[Az üzenetek, a fájlok és a hívások <b>végpontok közötti titkosítással</b>, kompromittálás előtti titkosságvédelemmel (PFS), letagadhatósággal, illetve kompromittálás utáni titkosságfelépüléssel vannak védve.]]></string>
-    <string name="e2ee_info_pq"><![CDATA[Az üzenetek, a fájlok és a hívások <b>végpontok közötti kvantumbiztos titkosítással</b>, kompromittálás előtti titkosságvédelemmel (PFS), letagadhatósággal, illetve kompromittálás utáni titkosságfelépüléssel vannak védve.]]></string>
+    <string name="e2ee_info_no_pq"><![CDATA[Az üzenetek, a fájlok és a hívások <b>végpontok közötti titkosítással</b>, kompromittálás előtti és utáni titkosságvédelemmel, illetve letagadhatósággal vannak védve.]]></string>
+    <string name="e2ee_info_pq"><![CDATA[Az üzenetek, a fájlok és a hívások <b>végpontok közötti kvantumbiztos titkosítással</b>, kompromittálás előtti és utáni titkosságvédelemmel, illetve letagadhatósággal vannak védve.]]></string>
     <string name="error_showing_desktop_notification">Hiba történt az értesítés megjelenítésekor, lépjen kapcsolatba a fejlesztőkkel.</string>
     <string name="permissions_find_in_settings_and_grant">Keresse meg ezt az engedélyt az Android beállításaiban, és adja meg kézzel.</string>
     <string name="permissions_grant_in_settings">Engedélyezés a beállításokban</string>
@@ -2072,7 +2072,7 @@
     <string name="v6_1_better_calls_descr">Hang/Videó váltása hívás közben.</string>
     <string name="v6_1_switch_chat_profile_descr">Csevegési profilváltás az egyszer használható meghívókhoz.</string>
     <string name="v6_1_better_security">Továbbfejlesztett biztonság ✅</string>
-    <string name="v6_1_better_security_descr">A SimpleX Chat biztonsága a Trail of Bits által lett áttekintve.</string>
+    <string name="v6_1_better_security_descr">A SimpleX-protokollokat a Trail of Bits auditálta.</string>
     <string name="failed_to_save_servers">Hiba történt a kiszolgálók mentésekor</string>
     <string name="no_message_servers_configured">Nincsenek üzenet-kiszolgálók.</string>
     <string name="no_message_servers_configured_for_receiving">Nincsenek üzenetfogadási kiszolgálók.</string>
