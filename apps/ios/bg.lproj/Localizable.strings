@@ -3777,7 +3777,7 @@ chat item action */
 "The old database was not removed during the migration, it can be deleted." = "Старата база данни не бе премахната по време на миграцията, тя може да бъде изтрита.";
 
 /* No comment provided by engineer. */
-"The profile is only shared with your contacts." = "Профилът се споделя само с вашите контакти.";
+"Your profile is stored on your device and only shared with your contacts." = "Профилът се споделя само с вашите контакти.";
 
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Втората отметка, която пропуснахме! ✅";

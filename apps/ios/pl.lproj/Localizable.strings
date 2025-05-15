@@ -4557,7 +4557,7 @@ chat item action */
 "The old database was not removed during the migration, it can be deleted." = "Stara baza danych nie została usunięta podczas migracji, można ją usunąć.";
 
 /* No comment provided by engineer. */
-"The profile is only shared with your contacts." = "Profil jest udostępniany tylko Twoim kontaktom.";
+"Your profile is stored on your device and only shared with your contacts." = "Profil jest udostępniany tylko Twoim kontaktom.";
 
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Drugi tik, który przegapiliśmy! ✅";

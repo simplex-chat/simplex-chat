@@ -58,6 +58,7 @@ let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
 let DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE = "showHiddenProfilesNotice"
 let DEFAULT_SHOW_MUTE_PROFILE_ALERT = "showMuteProfileAlert"
+let DEFAULT_SHOW_REPORTS_IN_SUPPORT_CHAT_ALERT = "showReportsInSupportChatAlert"
 let DEFAULT_WHATS_NEW_VERSION = "defaultWhatsNewVersion"
 let DEFAULT_ONBOARDING_STAGE = "onboardingStage"
 let DEFAULT_MIGRATION_TO_STAGE = "migrationToStage"
@@ -117,6 +118,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE: true,
     DEFAULT_SHOW_MUTE_PROFILE_ALERT: true,
+    DEFAULT_SHOW_REPORTS_IN_SUPPORT_CHAT_ALERT: true,
     DEFAULT_ONBOARDING_STAGE: OnboardingStage.onboardingComplete.rawValue,
     DEFAULT_CUSTOM_DISAPPEARING_MESSAGE_TIME: 300,
     DEFAULT_SHOW_UNREAD_AND_FAVORITES: false,
@@ -144,6 +146,7 @@ let hintDefaults = [
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN,
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE,
     DEFAULT_SHOW_MUTE_PROFILE_ALERT,
+    DEFAULT_SHOW_REPORTS_IN_SUPPORT_CHAT_ALERT,
     DEFAULT_SHOW_DELETE_CONVERSATION_NOTICE,
     DEFAULT_SHOW_DELETE_CONTACT_NOTICE
 ]
@@ -194,6 +197,8 @@ let customDisappearingMessageTimeDefault = IntDefault(defaults: UserDefaults.sta
 
 let showDeleteConversationNoticeDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SHOW_DELETE_CONVERSATION_NOTICE)
 let showDeleteContactNoticeDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SHOW_DELETE_CONTACT_NOTICE)
+
+let showReportsInSupportChatAlertDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SHOW_REPORTS_IN_SUPPORT_CHAT_ALERT)
 
 /// after importing new database, this flag will be set and unset only after importing app settings in `initializeChat` */
 let shouldImportAppSettingsDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SHOULD_IMPORT_APP_SETTINGS)

@@ -1,0 +1,129 @@
+package chat.simplex.common.views.chat.group
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import chat.simplex.common.model.*
+import chat.simplex.common.platform.*
+import chat.simplex.common.views.chat.*
+import chat.simplex.common.views.chatlist.*
+import chat.simplex.common.views.helpers.*
+import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
+
+@Composable
+private fun MemberSupportChatView(
+  memberSupportChatsCtx: ChatModel.ChatsContext,
+  staleChatId: State<String?>,
+  scrollToItemId: MutableState<Long?>
+) {
+  KeyChangeEffect(chatModel.chatId.value) {
+    ModalManager.end.closeModals()
+  }
+  ChatView(memberSupportChatsCtx, staleChatId, scrollToItemId, onComposed = {})
+}
+
+@Composable
+fun MemberSupportChatAppBar(
+  chatsCtx: ChatModel.ChatsContext,
+  scopeMember_: GroupMember?,
+  close: () -> Unit,
+  onSearchValueChanged: (String) -> Unit
+) {
+  val oneHandUI = remember { ChatController.appPrefs.oneHandUI.state }
+  val showSearch = rememberSaveable { mutableStateOf(false) }
+  val onBackClicked = {
+    if (!showSearch.value) {
+      close()
+    } else {
+      onSearchValueChanged("")
+      showSearch.value = false
+    }
+  }
+  BackHandler(onBack = onBackClicked)
+  if (scopeMember_ != null) {
+    DefaultAppBar(
+      navigationButton = { NavigationButtonBack(onBackClicked) },
+      title = { MemberSupportChatToolbarTitle(scopeMember_) },
+      onTitleClick = null,
+      onTop = !oneHandUI.value,
+      showSearch = showSearch.value,
+      onSearchValueChanged = onSearchValueChanged,
+      buttons = {
+        IconButton({ showSearch.value = true }) {
+          Icon(painterResource(MR.images.ic_search), stringResource(MR.strings.search_verb), tint = MaterialTheme.colors.primary)
+        }
+      }
+    )
+  } else {
+    DefaultAppBar(
+      navigationButton = { NavigationButtonBack(onBackClicked) },
+      fixedTitleText = stringResource(MR.strings.support_chat),
+      onTitleClick = null,
+      onTop = !oneHandUI.value,
+      showSearch = showSearch.value,
+      onSearchValueChanged = onSearchValueChanged,
+      buttons = {
+        IconButton({ showSearch.value = true }) {
+          Icon(painterResource(MR.images.ic_search), stringResource(MR.strings.search_verb), tint = MaterialTheme.colors.primary)
+        }
+      }
+    )
+  }
+  ItemsReload(chatsCtx)
+}
+
+@Composable
+fun MemberSupportChatToolbarTitle(member: GroupMember, imageSize: Dp = 40.dp, iconColor: Color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)) {
+  Row(
+    horizontalArrangement = Arrangement.Center,
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    MemberProfileImage(size = imageSize * fontSizeSqrtMultiplier, member, iconColor)
+    Column(
+      Modifier.padding(start = 8.dp),
+      horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        if (member.verified) {
+          MemberVerifiedShield()
+        }
+        Text(
+          member.displayName, fontWeight = FontWeight.SemiBold,
+          maxLines = 1, overflow = TextOverflow.Ellipsis
+        )
+      }
+      if (member.fullName != "" && member.fullName != member.displayName && member.localAlias.isEmpty()) {
+        Text(
+          member.fullName,
+          maxLines = 1, overflow = TextOverflow.Ellipsis
+        )
+      }
+    }
+  }
+}
+
+suspend fun showMemberSupportChatView(staleChatId: State<String?>, scrollToItemId: MutableState<Long?>, chatInfo: ChatInfo, scopeInfo: GroupChatScopeInfo) {
+  val memberSupportChatsCtx = ChatModel.ChatsContext(secondaryContextFilter = SecondaryContextFilter.GroupChatScopeContext(scopeInfo))
+  openChat(secondaryChatsCtx = memberSupportChatsCtx, chatModel.remoteHostId(), chatInfo)
+  ModalManager.end.showCustomModal(true, id = ModalViewId.SECONDARY_CHAT) { close ->
+    ModalView({}, showAppBar = false) {
+      if (chatInfo is ChatInfo.Group && chatInfo.groupChatScope != null) {
+        MemberSupportChatView(memberSupportChatsCtx, staleChatId, scrollToItemId)
+      } else {
+        LaunchedEffect(Unit) {
+          close()
+        }
+      }
+    }
+  }
+}

@@ -822,6 +822,9 @@ set passcode view */
 /* No comment provided by engineer. */
 "Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" = "Vytvořit nový profil v [desktop app](https://simplex.chat/downloads/). 💻";
 
+/* No comment provided by engineer. */
+"Create profile" = "Vytvořte si profil";
+
 /* server test step */
 "Create queue" = "Vytvořit frontu";
 
@@ -2986,7 +2989,7 @@ chat item action */
 "The old database was not removed during the migration, it can be deleted." = "Stará databáze nebyla během přenášení odstraněna, lze ji smazat.";
 
 /* No comment provided by engineer. */
-"The profile is only shared with your contacts." = "Profil je sdílen pouze s vašimi kontakty.";
+"Your profile is stored on your device and only shared with your contacts." = "Profil je sdílen pouze s vašimi kontakty.";
 
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Druhé zaškrtnutí jsme přehlédli! ✅";

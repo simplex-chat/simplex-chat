@@ -104,6 +104,7 @@ fun TerminalLayout(
             needToAllowVoiceToContact = false,
             allowedVoiceByPrefs = false,
             userIsObserver = false,
+            userIsPending = false,
             userCanSend = true,
             allowVoiceToContact = {},
             placeholder = "",

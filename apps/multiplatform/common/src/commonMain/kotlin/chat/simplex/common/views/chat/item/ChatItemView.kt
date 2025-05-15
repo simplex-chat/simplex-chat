@@ -86,6 +86,7 @@ fun ChatItemView(
   joinGroup: (Long, () -> Unit) -> Unit,
   acceptCall: (Contact) -> Unit,
   scrollToItem: (Long) -> Unit,
+  scrollToItemId: MutableState<Long?>,
   scrollToQuotedItemFromItem: (Long) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
   openDirectChat: (Long) -> Unit,
@@ -271,6 +272,7 @@ fun ChatItemView(
       }
     }
 
+    // improvement could be to track "forwarded from" scope and open it
     @Composable
     fun GoToItemButton(alignStart: Boolean, parentActivated: State<Boolean>) {
       val chatTypeApiIdMsgId = cItem.meta.itemForwarded?.chatTypeApiIdMsgId
@@ -324,7 +326,7 @@ fun ChatItemView(
           ) {
             @Composable
             fun framedItemView() {
-              FramedItemView(cInfo, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, showTimestamp = showTimestamp, tailVisible = itemSeparation.largeGap, receiveFile, onLinkLongClick, scrollToItem, scrollToQuotedItemFromItem)
+              FramedItemView(chatsCtx, cInfo, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, showTimestamp = showTimestamp, tailVisible = itemSeparation.largeGap, receiveFile, onLinkLongClick, scrollToItem, scrollToItemId, scrollToQuotedItemFromItem)
             }
 
             fun deleteMessageQuestionText(): String {
@@ -635,6 +637,15 @@ fun ChatItemView(
               CIEventView(eventItemViewText(reversedChatItems))
             }
 
+            @Composable fun PendingReviewEventItemView() {
+              Text(
+                buildAnnotatedString {
+                  withStyle(chatEventStyle.copy(fontWeight = FontWeight.Bold)) { append(cItem.content.text) }
+                },
+                Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
+              )
+            }
+
             @Composable
             fun DeletedItem() {
               MarkedDeletedItemView(chatsCtx, cItem, cInfo, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
@@ -711,12 +722,16 @@ fun ChatItemView(
               is CIContent.RcvGroupEventContent -> {
                 when (c.rcvGroupEvent) {
                   is RcvGroupEvent.MemberCreatedContact -> CIMemberCreatedContactView(cItem, openDirectChat)
+                  is RcvGroupEvent.NewMemberPendingReview -> PendingReviewEventItemView()
                   else -> EventItemView()
                 }
                 MsgContentItemDropdownMenu()
               }
               is CIContent.SndGroupEventContent -> {
-                EventItemView()
+                when (c.sndGroupEvent) {
+                  is SndGroupEvent.UserPendingReview -> PendingReviewEventItemView()
+                  else -> EventItemView()
+                }
                 MsgContentItemDropdownMenu()
               }
               is CIContent.RcvConnEventContent -> {
@@ -1422,7 +1437,7 @@ fun PreviewChatItemView(
   chatItem: ChatItem = ChatItem.getSampleData(1, CIDirection.DirectSnd(), Clock.System.now(), "hello")
 ) {
   ChatItemView(
-    chatsCtx = ChatModel.ChatsContext(contentTag = null),
+    chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
     rhId = null,
     ChatInfo.Direct.sampleData,
     chatItem,
@@ -1444,6 +1459,7 @@ fun PreviewChatItemView(
     joinGroup = { _, _ -> },
     acceptCall = { _ -> },
     scrollToItem = {},
+    scrollToItemId = remember { mutableStateOf(null) },
     scrollToQuotedItemFromItem = {},
     acceptFeature = { _, _, _ -> },
     openDirectChat = { _ -> },
@@ -1472,7 +1488,7 @@ fun PreviewChatItemView(
 fun PreviewChatItemViewDeletedContent() {
   SimpleXTheme {
     ChatItemView(
-      chatsCtx = ChatModel.ChatsContext(contentTag = null),
+      chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
       rhId = null,
       ChatInfo.Direct.sampleData,
       ChatItem.getDeletedContentSampleData(),
@@ -1494,6 +1510,7 @@ fun PreviewChatItemViewDeletedContent() {
       joinGroup = { _, _ -> },
       acceptCall = { _ -> },
       scrollToItem = {},
+      scrollToItemId = remember { mutableStateOf(null) },
       scrollToQuotedItemFromItem = {},
       acceptFeature = { _, _, _ -> },
       openDirectChat = { _ -> },

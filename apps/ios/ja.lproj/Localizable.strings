@@ -957,6 +957,9 @@ set passcode view */
 /* No comment provided by engineer. */
 "Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" = "[デスクトップアプリ](https://simplex.chat/downloads/)で新しいプロファイルを作成します。 💻";
 
+/* No comment provided by engineer. */
+"Create profile" = "プロフィールを作成する";
+
 /* server test step */
 "Create queue" = "キューの作成";
 
@@ -3109,7 +3112,7 @@ chat item action */
 "The old database was not removed during the migration, it can be deleted." = "古いデータベースは移行時に削除されなかったので、削除することができます。";
 
 /* No comment provided by engineer. */
-"The profile is only shared with your contacts." = "プロフィールは連絡先にしか共有されません。";
+"Your profile is stored on your device and only shared with your contacts." = "プロフィールは連絡先にしか共有されません。";
 
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "長らくお待たせしました！ ✅";

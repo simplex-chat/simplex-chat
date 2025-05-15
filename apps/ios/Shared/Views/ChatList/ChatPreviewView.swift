@@ -141,7 +141,7 @@ struct ChatPreviewView: View {
             } else {
                 EmptyView()
             }
-        case let .group(groupInfo):
+        case let .group(groupInfo, _):
             switch (groupInfo.membership.memberStatus) {
             case .memRejected: inactiveIcon()
             case .memLeft: inactiveIcon()
@@ -165,7 +165,7 @@ struct ChatPreviewView: View {
         switch chat.chatInfo {
         case let .direct(contact):
             previewTitle(contact.verified == true ? verifiedIcon + t : t).foregroundColor(deleting ? Color.secondary : nil)
-        case let .group(groupInfo):
+        case let .group(groupInfo, _):
             let v = previewTitle(t)
             switch (groupInfo.membership.memberStatus) {
             case .memInvited: v.foregroundColor(deleting ? theme.colors.secondary : chat.chatInfo.incognito ? .indigo : theme.colors.primary)
@@ -341,11 +341,12 @@ struct ChatPreviewView: View {
                         chatPreviewInfoText("connecting…")
                     }
                 }
-            case let .group(groupInfo):
+            case let .group(groupInfo, _):
                 switch (groupInfo.membership.memberStatus) {
                 case .memRejected: chatPreviewInfoText("rejected")
                 case .memInvited: groupInvitationPreviewText(groupInfo)
                 case .memAccepted: chatPreviewInfoText("connecting…")
+                case .memPendingReview, .memPendingApproval: chatPreviewInfoText("reviewed by admins")
                 default: EmptyView()
                 }
             default: EmptyView()
@@ -439,7 +440,11 @@ struct ChatPreviewView: View {
             if progressByTimeout {
                 ProgressView()
             } else if chat.chatStats.reportsCount > 0 {
-                groupReportsIcon(size: size * 0.8)
+                flagIcon(size: size * 0.8, color: .red)
+            } else if chat.supportUnreadCount > 0 {
+                flagIcon(size: size * 0.8, color: theme.colors.primary)
+            } else if chat.chatInfo.groupInfo?.membership.memberPending ?? false {
+                flagIcon(size: size * 0.8, color: theme.colors.secondary)
             } else {
                 incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
             }
@@ -485,12 +490,12 @@ struct ChatPreviewView: View {
     }
 }
 
-func groupReportsIcon(size: CGFloat) -> some View {
+func flagIcon(size: CGFloat, color: Color) -> some View {
     Image(systemName: "flag")
         .resizable()
         .scaledToFit()
         .frame(width: size, height: size)
-        .foregroundColor(.red)
+        .foregroundColor(color)
 }
 
 func smallContentPreview(size: CGFloat, _ view: @escaping () -> some View) -> some View {

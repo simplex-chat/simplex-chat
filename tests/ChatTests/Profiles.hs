@@ -746,7 +746,7 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
       (biz <# "#bob bob_1> hey there")
 
 testBusinessUpdateProfiles :: HasCallStack => TestParams -> IO ()
-testBusinessUpdateProfiles = withTestOutput $ testChat4 businessProfile aliceProfile bobProfile cathProfile $
+testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile cathProfile $
   \biz alice bob cath -> do
     biz ##> "/ad"
     cLink <- getContactLink biz True
@@ -1630,7 +1630,7 @@ testJoinGroupIncognito =
           (cath </)
         ]
       cath ##> "#secret_club hello"
-      cath <## "you are no longer a member of the group"
+      cath <## "bad chat command: not current member"
 
 testCantInviteContactIncognito :: HasCallStack => TestParams -> IO ()
 testCantInviteContactIncognito = testChat2 aliceProfile bobProfile $

@@ -5101,7 +5101,7 @@ report reason */
 "The old database was not removed during the migration, it can be deleted." = "A régi adatbázis nem lett eltávolítva az átköltöztetéskor, ezért törölhető.";
 
 /* No comment provided by engineer. */
-"The profile is only shared with your contacts." = "A profilja csak a partnereivel van megosztva.";
+"Your profile is stored on your device and only shared with your contacts." = "A profilja csak a partnereivel van megosztva.";
 
 /* No comment provided by engineer. */
 "The same conditions will apply to operator **%@**." = "Ugyanezek a feltételek lesznek elfogadva a következő üzemeltető számára is: **%@**.";

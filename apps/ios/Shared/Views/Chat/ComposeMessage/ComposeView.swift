@@ -323,6 +323,7 @@ struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
+    @ObservedObject var im: ItemsModel
     @Binding var composeState: ComposeState
     @Binding var keyboardVisible: Bool
     @Binding var keyboardHiddenDate: Date
@@ -355,6 +356,20 @@ struct ComposeView: View {
     var body: some View {
         VStack(spacing: 0) {
             Divider()
+            if let groupInfo = chat.chatInfo.groupInfo,
+               case let .groupChatScopeContext(groupScopeInfo) = im.secondaryIMFilter,
+               case let .memberSupport(member) = groupScopeInfo,
+               let member = member,
+               member.memberPending,
+               composeState.contextItem == .noContextItem,
+               composeState.noPreview {
+                ContextPendingMemberActionsView(
+                    groupInfo: groupInfo,
+                    member: member
+                )
+                Divider()
+            }
+
             if chat.chatInfo.contact?.nextSendGrpInv ?? false {
                 ContextInvitingContactMemberView()
                 Divider()
@@ -396,7 +411,7 @@ struct ComposeView: View {
                 .padding(.bottom, 16)
                 .padding(.leading, 12)
                 .tint(theme.colors.primary)
-                if case let .group(g) = chat.chatInfo,
+                if case let .group(g, _) = chat.chatInfo,
                    !g.fullGroupPreferences.files.on(for: g.membership) {
                     b.disabled(true).onTapGesture {
                         AlertManager.shared.showAlertMsg(
@@ -443,17 +458,30 @@ struct ComposeView: View {
                     .padding(.trailing, 12)
                     .disabled(!chat.userCanSend)
 
-                    if chat.userIsObserver {
-                        Text("you are observer")
-                            .italic()
-                            .foregroundColor(theme.colors.secondary)
-                            .padding(.horizontal, 12)
-                            .onTapGesture {
-                                AlertManager.shared.showAlertMsg(
-                                    title: "You can't send messages!",
-                                    message: "Please contact group admin."
-                                )
-                            }
+                    if im.secondaryIMFilter == nil {
+                        if chat.userIsPending {
+                            Text("reviewed by admins")
+                                .italic()
+                                .foregroundColor(theme.colors.secondary)
+                                .padding(.horizontal, 12)
+                                .onTapGesture {
+                                    AlertManager.shared.showAlertMsg(
+                                        title: "You can't send messages!",
+                                        message: "Please contact group admin."
+                                    )
+                                }
+                        } else if chat.userIsObserver {
+                            Text("you are observer")
+                                .italic()
+                                .foregroundColor(theme.colors.secondary)
+                                .padding(.horizontal, 12)
+                                .onTapGesture {
+                                    AlertManager.shared.showAlertMsg(
+                                        title: "You can't send messages!",
+                                        message: "Please contact group admin."
+                                    )
+                                }
+                        }
                     }
                 }
             }
@@ -944,6 +972,7 @@ struct ComposeView: View {
                         let chatItem = try await apiUpdateChatItem(
                             type: chat.chatInfo.chatType,
                             id: chat.chatInfo.apiId,
+                            scope: chat.chatInfo.groupChatScope(),
                             itemId: ei.id,
                             updatedMessage: UpdatedMessage(msgContent: mc, mentions: composeState.memberMentions),
                             live: live
@@ -1006,9 +1035,9 @@ struct ComposeView: View {
                 reportReason: reportReason,
                 reportText: msgText
             ) {
-                await MainActor.run {
-                    for chatItem in chatItems {
-                        chatModel.addChatItem(chat.chatInfo, chatItem)
+                if showReportsInSupportChatAlertDefault.get() {
+                    await MainActor.run {
+                        showReportsInSupportChatAlert()
                     }
                 }
                 return chatItems.first
@@ -1016,7 +1045,27 @@ struct ComposeView: View {
             
             return nil
         }
-                
+
+        func showReportsInSupportChatAlert() {
+            showAlert(
+                NSLocalizedString("Report sent to moderators", comment: "alert title"),
+                message: NSLocalizedString("You can view your reports in Chat with admins.", comment: "alert message"),
+                actions: {[
+                    UIAlertAction(
+                        title: NSLocalizedString("Don't show again", comment: "alert action"),
+                        style: .default,
+                        handler: { _ in
+                            showReportsInSupportChatAlertDefault.set(false)
+                        }
+                    ),
+                    UIAlertAction(
+                        title: NSLocalizedString("Ok", comment: "alert action"),
+                        style: .default
+                    )
+                ]}
+            )
+        }
+
         func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?, mentions: [String: Int64]) async -> ChatItem? {
             await send(
                 [ComposedMessage(fileSource: file, quotedItemId: quoted, msgContent: mc, mentions: mentions)],
@@ -1031,6 +1080,7 @@ struct ComposeView: View {
                 : await apiSendMessages(
                     type: chat.chatInfo.chatType,
                     id: chat.chatInfo.apiId,
+                    scope: chat.chatInfo.groupChatScope(),
                     live: live,
                     ttl: ttl,
                     composedMessages: msgs
@@ -1055,8 +1105,10 @@ struct ComposeView: View {
             if let chatItems = await apiForwardChatItems(
                 toChatType: chat.chatInfo.chatType,
                 toChatId: chat.chatInfo.apiId,
+                toScope: chat.chatInfo.groupChatScope(),
                 fromChatType: fromChatInfo.chatType,
                 fromChatId: fromChatInfo.apiId,
+                fromScope: fromChatInfo.groupChatScope(),
                 itemIds: forwardedItems.map { $0.id },
                 ttl: ttl
             ) {
@@ -1277,12 +1329,14 @@ struct ComposeView: View {
 struct ComposeView_Previews: PreviewProvider {
     static var previews: some View {
         let chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
+        let im = ItemsModel.shared
         @State var composeState = ComposeState(message: "hello")
         @State var selectedRange = NSRange()
 
         return Group {
             ComposeView(
                 chat: chat,
+                im: im,
                 composeState: $composeState,
                 keyboardVisible: Binding.constant(true),
                 keyboardHiddenDate: Binding.constant(Date.now),
@@ -1291,6 +1345,7 @@ struct ComposeView_Previews: PreviewProvider {
             .environmentObject(ChatModel())
             ComposeView(
                 chat: chat,
+                im: im,
                 composeState: $composeState,
                 keyboardVisible: Binding.constant(true),
                 keyboardHiddenDate: Binding.constant(Date.now),

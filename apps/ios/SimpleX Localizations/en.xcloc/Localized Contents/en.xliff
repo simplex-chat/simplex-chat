@@ -7764,11 +7764,6 @@ It can happen because of some bug or when the connection is compromised.</target
         <target>The old database was not removed during the migration, it can be deleted.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The profile is only shared with your contacts." xml:space="preserve">
-        <source>The profile is only shared with your contacts.</source>
-        <target>The profile is only shared with your contacts.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve">
         <source>The same conditions will apply to operator **%@**.</source>
         <target>The same conditions will apply to operator **%@**.</target>
@@ -9082,6 +9077,11 @@ Repeat connection request?</target>
         <target>Your profile **%@** will be shared.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your profile is stored on your device and only shared with your contacts." xml:space="preserve">
+        <source>Your profile is stored on your device and only shared with your contacts.</source>
+        <target>Your profile is stored on your device and only shared with your contacts.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." xml:space="preserve">
         <source>Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</source>
         <target>Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</target>
@@ -9091,11 +9091,6 @@ Repeat connection request?</target>
         <source>Your profile was changed. If you save it, the updated profile will be sent to all your contacts.</source>
         <target>Your profile was changed. If you save it, the updated profile will be sent to all your contacts.</target>
         <note>alert message</note>
-      </trans-unit>
-      <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve">
-        <source>Your profile, contacts and delivered messages are stored on your device.</source>
-        <target>Your profile, contacts and delivered messages are stored on your device.</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your random profile" xml:space="preserve">
         <source>Your random profile</source>

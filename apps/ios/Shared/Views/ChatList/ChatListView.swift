@@ -148,6 +148,7 @@ struct ChatListView: View {
     @State private var userPickerShown: Bool = false
     @State private var sheet: SomeSheet<AnyView>? = nil
     @StateObject private var chatTagsModel = ChatTagsModel.shared
+    @State private var scrollToItemId: ChatItem.ID? = nil
 
     // iOS 15 is required it to show/hide toolbar while chat is hidden/visible
     @State private var viewOnScreen = true
@@ -367,13 +368,7 @@ struct ChatListView: View {
                         .offset(x: -8)
                     } else {
                         ForEach(cs, id: \.viewId) { chat in
-                            VStack(spacing: .zero) {
-                                Divider()
-                                    .padding(.leading, 16)
-                                ChatListNavLink(chat: chat,  parentSheet: $sheet)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 6)
-                            }
+                            ChatListNavLink(chat: chat,  parentSheet: $sheet)
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                             .listRowSeparator(.hidden)
                             .listRowInsets(EdgeInsets())
@@ -452,7 +447,14 @@ struct ChatListView: View {
     
     @ViewBuilder private func chatView() -> some View {
         if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
-            ChatView(chat: chat)
+            let im = ItemsModel.shared
+            ChatView(
+                chat: chat,
+                im: im,
+                mergedItems: BoxedValue(MergedItems.create(im, [])),
+                floatingButtonModel: FloatingButtonModel(im: im),
+                scrollToItemId: $scrollToItemId
+            )
         }
     }
     
@@ -898,12 +900,12 @@ func presetTagMatchesChat(_ tag: PresetTag, _ chatInfo: ChatInfo, _ chatStats: C
         case let .direct(contact): !(contact.activeConn == nil && contact.profile.contactLink != nil && contact.active) && !contact.chatDeleted
         case .contactRequest: true
         case .contactConnection: true
-        case let .group(groupInfo): groupInfo.businessChat?.chatType == .customer
+        case let .group(groupInfo, _): groupInfo.businessChat?.chatType == .customer
         default: false
         }
     case .groups:
         switch chatInfo {
-        case let .group(groupInfo): groupInfo.businessChat == nil
+        case let .group(groupInfo, _): groupInfo.businessChat == nil
         default: false
         }
     case .business:

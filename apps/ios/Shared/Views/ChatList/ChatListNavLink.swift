@@ -66,7 +66,7 @@ struct ChatListNavLink: View {
             switch chat.chatInfo {
             case let .direct(contact):
                 contactNavLink(contact)
-            case let .group(groupInfo):
+            case let .group(groupInfo, _):
                 groupNavLink(groupInfo)
             case let .local(noteFolder):
                 noteFolderNavLink(noteFolder)
@@ -94,7 +94,7 @@ struct ChatListNavLink: View {
         Group {
             if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
                 ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
-                    .frame(height: dynamicRowHeight)
+                    .frameCompat(height: dynamicRowHeight)
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button {
                             deleteContactDialog(
@@ -121,6 +121,7 @@ struct ChatListNavLink: View {
                     selection: $chatModel.chatId,
                     label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) }
                 )
+                .frameCompat(height: dynamicRowHeight)
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
                     markReadButton()
                     toggleFavoriteButton()
@@ -145,7 +146,6 @@ struct ChatListNavLink: View {
                     }
                     .tint(.red)
                 }
-                .frame(height: dynamicRowHeight)
             }
         }
         .alert(item: $alert) { $0.alert }
@@ -163,7 +163,7 @@ struct ChatListNavLink: View {
         switch (groupInfo.membership.memberStatus) {
         case .memInvited:
             ChatPreviewView(chat: chat, progressByTimeout: $progressByTimeout)
-                .frame(height: dynamicRowHeight)
+                .frameCompat(height: dynamicRowHeight)
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     joinGroupButton()
                     if groupInfo.canDelete {
@@ -183,7 +183,7 @@ struct ChatListNavLink: View {
                 .disabled(inProgress)
         case .memAccepted:
             ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
-                .frame(height: dynamicRowHeight)
+                .frameCompat(height: dynamicRowHeight)
                 .onTapGesture {
                     AlertManager.shared.showAlert(groupInvitationAcceptedAlert())
                 }
@@ -203,7 +203,7 @@ struct ChatListNavLink: View {
                 label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) },
                 disabled: !groupInfo.ready
             )
-            .frame(height: dynamicRowHeight)
+            .frameCompat(height: dynamicRowHeight)
             .swipeActions(edge: .leading, allowsFullSwipe: true) {
                 markReadButton()
                 toggleFavoriteButton()
@@ -250,7 +250,7 @@ struct ChatListNavLink: View {
             label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) },
             disabled: !noteFolder.ready
         )
-        .frame(height: dynamicRowHeight)
+        .frameCompat(height: dynamicRowHeight)
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             markReadButton()
         }
@@ -276,7 +276,7 @@ struct ChatListNavLink: View {
     @ViewBuilder private func markReadButton() -> some View {
         if chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat {
             Button {
-                Task { await markChatRead(chat) }
+                Task { await markChatRead(ItemsModel.shared, chat) }
             } label: {
                 SwipeLabel(NSLocalizedString("Read", comment: "swipe action"), systemImage: "checkmark", inverted: oneHandUI)
             }
@@ -433,6 +433,7 @@ struct ChatListNavLink: View {
 
     private func contactRequestNavLink(_ contactRequest: UserContactRequest) -> some View {
         ContactRequestView(contactRequest: contactRequest, chat: chat)
+        .frameCompat(height: dynamicRowHeight)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button {
                 Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) }
@@ -451,7 +452,6 @@ struct ChatListNavLink: View {
             }
             .tint(.red)
         }
-        .frame(height: dynamicRowHeight)
         .contentShape(Rectangle())
         .onTapGesture { showContactRequestDialog = true }
         .confirmationDialog("Accept connection request?", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
@@ -463,6 +463,7 @@ struct ChatListNavLink: View {
 
     private func contactConnectionNavLink(_ contactConnection: PendingContactConnection) -> some View {
         ContactConnectionView(chat: chat)
+        .frameCompat(height: dynamicRowHeight)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button {
                 AlertManager.shared.showAlert(deleteContactConnectionAlert(contactConnection) { a in
@@ -480,14 +481,11 @@ struct ChatListNavLink: View {
             }
             .tint(theme.colors.primary)
         }
-        .frame(height: dynamicRowHeight)
         .appSheet(isPresented: $showContactConnectionInfo) {
-            Group {
-                if case let .contactConnection(contactConnection) = chat.chatInfo {
-                    ContactConnectionInfo(contactConnection: contactConnection)
-                        .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
-                        .modifier(ThemedBackground(grouped: true))
-                }
+            if case let .contactConnection(contactConnection) = chat.chatInfo {
+                ContactConnectionInfo(contactConnection: contactConnection)
+                    .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
+                    .modifier(ThemedBackground(grouped: true))
             }
         }
         .contentShape(Rectangle())
@@ -583,7 +581,7 @@ struct ChatListNavLink: View {
         Text("invalid chat data")
             .foregroundColor(.red)
             .padding(4)
-            .frame(height: dynamicRowHeight)
+            .frameCompat(height: dynamicRowHeight)
             .onTapGesture { showInvalidJSON = true }
             .appSheet(isPresented: $showInvalidJSON) {
                 invalidJSONView(dataToString(json))
@@ -598,6 +596,24 @@ struct ChatListNavLink: View {
                 ItemsModel.shared.loadOpenChat(contact.id) {
                     AlertManager.shared.showAlert(connReqSentAlert(.contact))
                 }
+            }
+        }
+    }
+}
+
+extension View {
+    @inline(__always)
+    @ViewBuilder fileprivate func frameCompat(height: CGFloat) -> some View {
+        if #available(iOS 16, *) {
+            self.frame(height: height)
+        } else {
+            VStack(spacing: 0) {
+                Divider()
+                    .padding(.leading, 16)
+                self
+                    .frame(height: height)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 8)
             }
         }
     }

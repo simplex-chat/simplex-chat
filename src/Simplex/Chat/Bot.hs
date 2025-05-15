@@ -95,7 +95,7 @@ deleteMessage cc ct chatItemId = do
     r -> putStrLn $ "unexpected delete message response: " <> show r
 
 contactRef :: Contact -> ChatRef
-contactRef = ChatRef CTDirect . contactId'
+contactRef ct = ChatRef CTDirect (contactId' ct) Nothing
 
 printLog :: ChatController -> ChatLogLevel -> String -> IO ()
 printLog cc level s
