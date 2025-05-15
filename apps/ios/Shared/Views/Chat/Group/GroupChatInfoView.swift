@@ -17,6 +17,7 @@ struct GroupChatInfoView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
     @Binding var groupInfo: GroupInfo
+    @Binding var scrollToItemId: ChatItem.ID?
     var onSearch: () -> Void
     @State var localAlias: String
     @FocusState private var aliasTextFieldFocused: Bool
@@ -96,11 +97,11 @@ struct GroupChatInfoView: View {
                             memberSupportButton()
                         }
                         if groupInfo.canModerate {
-                            GroupReportsChatNavLink(chat: chat)
+                            GroupReportsChatNavLink(chat: chat, scrollToItemId: $scrollToItemId)
                         }
                         if groupInfo.membership.memberActive
                             && (groupInfo.membership.memberRole < .moderator || groupInfo.membership.supportChat != nil) {
-                            UserSupportChatNavLink(chat: chat, groupInfo: groupInfo)
+                            UserSupportChatNavLink(chat: chat, groupInfo: groupInfo, scrollToItemId: $scrollToItemId)
                         }
                     } header: {
                         Text("")
@@ -156,9 +157,16 @@ struct GroupChatInfoView: View {
                         let filteredMembers = s == ""
                             ? members
                             : members.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
-                        MemberRowView(chat: chat, groupInfo: groupInfo, groupMember: GMember(groupInfo.membership), user: true, alert: $alert)
+                        MemberRowView(
+                            chat: chat,
+                            groupInfo: groupInfo,
+                            groupMember: GMember(groupInfo.membership),
+                            scrollToItemId: $scrollToItemId,
+                            user: true,
+                            alert: $alert
+                        )
                         ForEach(filteredMembers) { member in
-                            MemberRowView(chat: chat, groupInfo: groupInfo, groupMember: member, alert: $alert)
+                            MemberRowView(chat: chat, groupInfo: groupInfo, groupMember: member, scrollToItemId: $scrollToItemId, alert: $alert)
                         }
                     }
                     
@@ -365,6 +373,7 @@ struct GroupChatInfoView: View {
         var chat: Chat
         var groupInfo: GroupInfo
         @ObservedObject var groupMember: GMember
+        @Binding var scrollToItemId: ChatItem.ID?
         @EnvironmentObject var theme: AppTheme
         var user: Bool = false
         @Binding var alert: GroupChatInfoViewAlert?
@@ -427,7 +436,7 @@ struct GroupChatInfoView: View {
         }
 
         private func memberInfoView() -> some View {
-            GroupMemberInfoView(groupInfo: groupInfo, chat: chat, groupMember: groupMember)
+            GroupMemberInfoView(groupInfo: groupInfo, chat: chat, groupMember: groupMember, scrollToItemId: $scrollToItemId)
                 .navigationBarHidden(false)
         }
 
@@ -540,12 +549,16 @@ struct GroupChatInfoView: View {
         @EnvironmentObject var theme: AppTheme
         var groupInfo: GroupInfo
         @EnvironmentObject var chatModel: ChatModel
+        @Binding var scrollToItemId: ChatItem.ID?
         @State private var navLinkActive = false
 
         var body: some View {
             let scopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
             NavigationLink(isActive: $navLinkActive) {
-                SecondaryChatView(chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()))
+                SecondaryChatView(
+                    chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()),
+                    scrollToItemId: $scrollToItemId
+                )
             } label: {
                 HStack {
                     Label("Chat with admins", systemImage: chat.supportUnreadCount > 0 ? "flag.fill" : "flag")
@@ -565,7 +578,7 @@ struct GroupChatInfoView: View {
 
     private func memberSupportButton() -> some View {
         NavigationLink {
-            MemberSupportView(groupInfo: groupInfo)
+            MemberSupportView(groupInfo: groupInfo, scrollToItemId: $scrollToItemId)
                 .navigationBarTitle("Chats with members")
                 .modifier(ThemedBackground())
                 .navigationBarTitleDisplayMode(.large)
@@ -588,10 +601,11 @@ struct GroupChatInfoView: View {
         @EnvironmentObject var theme: AppTheme
         @State private var navLinkActive = false
         @ObservedObject var chat: Chat
+        @Binding var scrollToItemId: ChatItem.ID?
 
         var body: some View {
             NavigationLink(isActive: $navLinkActive) {
-                SecondaryChatView(chat: chat)
+                SecondaryChatView(chat: chat, scrollToItemId: $scrollToItemId)
             } label: {
                 HStack {
                     Label {
@@ -895,6 +909,7 @@ struct GroupChatInfoView_Previews: PreviewProvider {
         GroupChatInfoView(
             chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []),
             groupInfo: Binding.constant(GroupInfo.sampleData),
+            scrollToItemId: Binding.constant(nil),
             onSearch: {},
             localAlias: ""
         )

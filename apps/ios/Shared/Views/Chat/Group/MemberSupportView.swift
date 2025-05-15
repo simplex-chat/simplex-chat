@@ -15,6 +15,7 @@ struct MemberSupportView: View {
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
     var groupInfo: GroupInfo
+    @Binding var scrollToItemId: ChatItem.ID?
 
     var body: some View {
         viewBody()
@@ -53,7 +54,8 @@ struct MemberSupportView: View {
                 ForEach(filteredMembersWithChats) { memberWithChat in
                     MemberSupportChatNavLink(
                         groupInfo: groupInfo,
-                        memberWithChat: memberWithChat
+                        memberWithChat: memberWithChat,
+                        scrollToItemId: $scrollToItemId
                     )
                 }
             }
@@ -66,6 +68,7 @@ struct MemberSupportView: View {
         @State private var memberSupportChatNavLinkActive = false
         var groupInfo: GroupInfo
         var memberWithChat: GMember
+        @Binding var scrollToItemId: ChatItem.ID?
 
         var body: some View {
             ZStack {
@@ -79,7 +82,10 @@ struct MemberSupportView: View {
                 }
 
                 NavigationLink(isActive: $memberSupportChatNavLinkActive) {
-                    SecondaryChatView(chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()))
+                    SecondaryChatView(
+                        chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()),
+                        scrollToItemId: $scrollToItemId
+                    )
                 } label: {
                     EmptyView()
                 }
@@ -253,6 +259,7 @@ func showRemoveMemberAlert(_ groupInfo: GroupInfo, _ member: GroupMember, dismis
 
 #Preview {
     MemberSupportView(
-        groupInfo: GroupInfo.sampleData
+        groupInfo: GroupInfo.sampleData,
+        scrollToItemId: Binding.constant(nil)
     )
 }

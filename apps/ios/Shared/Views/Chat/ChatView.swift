@@ -25,6 +25,7 @@ struct ChatView: View {
     @ObservedObject var im: ItemsModel
     @State var mergedItems: BoxedValue<MergedItems>
     @State var floatingButtonModel: FloatingButtonModel
+    @Binding var scrollToItemId: ChatItem.ID?
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -198,6 +199,7 @@ struct ChatView: View {
                     groupInfo: groupInfo,
                     chat: chat,
                     groupMember: member,
+                    scrollToItemId: $scrollToItemId,
                     navigation: true
                 )
             }
@@ -233,7 +235,10 @@ struct ChatView: View {
             }
         ) {
             if let groupInfo = cInfo.groupInfo {
-                SecondaryChatView(chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: userSupportScopeInfo), chatItems: [], chatStats: ChatStats()))
+                SecondaryChatView(
+                    chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: userSupportScopeInfo), chatItems: [], chatStats: ChatStats()),
+                    scrollToItemId: $scrollToItemId
+                )
             }
         }
         .onAppear {
@@ -349,6 +354,16 @@ struct ChatView: View {
                 }
             }
         }
+        .if(im.secondaryIMFilter == nil) { v in
+            v.onChange(of: scrollToItemId) { itemId in
+                if let itemId = itemId {
+                    dismissAllSheets(animated: false) {
+                        scrollToItem(itemId)
+                        scrollToItemId = nil
+                    }
+                }
+            }
+        }
     }
 
     @inline(__always)
@@ -391,6 +406,7 @@ struct ChatView: View {
                             chat.created = Date.now
                         }
                     ),
+                    scrollToItemId: $scrollToItemId,
                     onSearch: { focusSearch() },
                     localAlias: groupInfo.localAlias
                 )
@@ -568,7 +584,7 @@ struct ChatView: View {
         floatingButtonModel.updateOnListChange(scrollView.listState)
     }
 
-    private func scrollToItemId(_ itemId: ChatItem.ID) {
+    private func scrollToItem(_ itemId: ChatItem.ID) {
         Task {
             do {
                 var index = mergedItems.boxedValue.indexInParentItems[itemId]
@@ -670,7 +686,8 @@ struct ChatView: View {
                     index: index,
                     isLastItem: index == mergedItems.boxedValue.items.count - 1,
                     chatItem: ci,
-                    scrollToItemId: scrollToItemId,
+                    scrollToItem: scrollToItem,
+                    scrollToItemId: $scrollToItemId,
                     merged: mergedItem,
                     maxWidth: maxWidth,
                     composeState: $composeState,
@@ -1234,7 +1251,8 @@ struct ChatView: View {
         let index: Int
         let isLastItem: Bool
         let chatItem: ChatItem
-        let scrollToItemId: (ChatItem.ID) -> Void
+        let scrollToItem: (ChatItem.ID) -> Void
+        @Binding var scrollToItemId: ChatItem.ID?
         let merged: MergedItem
         let maxWidth: CGFloat
         @Binding var composeState: ComposeState
@@ -1594,7 +1612,8 @@ struct ChatView: View {
                         chat: chat,
                         im: im,
                         chatItem: ci,
-                        scrollToItemId: scrollToItemId,
+                        scrollToItem: scrollToItem,
+                        scrollToItemId: $scrollToItemId,
                         maxWidth: maxWidth,
                         allowMenu: $allowMenu
                     )
@@ -2668,7 +2687,8 @@ struct ChatView_Previews: PreviewProvider {
             chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []),
             im: im,
             mergedItems: BoxedValue(MergedItems.create(im, [])),
-            floatingButtonModel: FloatingButtonModel(im: im)
+            floatingButtonModel: FloatingButtonModel(im: im),
+            scrollToItemId: Binding.constant(nil)
         )
         .environmentObject(chatModel)
     }

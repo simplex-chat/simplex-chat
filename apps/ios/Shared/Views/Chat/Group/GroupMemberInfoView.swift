@@ -16,6 +16,7 @@ struct GroupMemberInfoView: View {
     @State var groupInfo: GroupInfo
     @ObservedObject var chat: Chat
     @ObservedObject var groupMember: GMember
+    @Binding var scrollToItemId: ChatItem.ID?
     var navigation: Bool = false
     @State private var connectionStats: ConnectionStats? = nil
     @State private var connectionCode: String? = nil
@@ -105,7 +106,7 @@ struct GroupMemberInfoView: View {
                         Section {
                             if groupInfo.membership.memberRole >= .moderator
                                 && (member.memberRole < .moderator || member.supportChat != nil) {
-                                MemberInfoSupportChatNavLink(groupInfo: groupInfo, member: groupMember)
+                                MemberInfoSupportChatNavLink(groupInfo: groupInfo, member: groupMember, scrollToItemId: $scrollToItemId)
                             }
                             if let code = connectionCode { verifyCodeButton(code) }
                             if let connStats = connectionStats,
@@ -482,12 +483,16 @@ struct GroupMemberInfoView: View {
         @EnvironmentObject var theme: AppTheme
         var groupInfo: GroupInfo
         var member: GMember
+        @Binding var scrollToItemId: ChatItem.ID?
         @State private var navLinkActive = false
 
         var body: some View {
             let scopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: member.wrapped)
             NavigationLink(isActive: $navLinkActive) {
-                SecondaryChatView(chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()))
+                SecondaryChatView(
+                    chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()),
+                    scrollToItemId: $scrollToItemId
+                )
             } label: {
                 Label("Chat with member", systemImage: "flag")
             }
@@ -846,7 +851,8 @@ struct GroupMemberInfoView_Previews: PreviewProvider {
         GroupMemberInfoView(
             groupInfo: GroupInfo.sampleData,
             chat: Chat.sampleData,
-            groupMember: GMember.sampleData
+            groupMember: GMember.sampleData,
+            scrollToItemId: Binding.constant(nil)
         )
     }
 }
