@@ -27,6 +27,7 @@ import kotlin.math.ceil
 
 @Composable
 fun FramedItemView(
+  chatsCtx: ChatModel.ChatsContext,
   chatInfo: ChatInfo,
   ci: ChatItem,
   uriHandler: UriHandler? = null,
@@ -39,6 +40,7 @@ fun FramedItemView(
   receiveFile: (Long) -> Unit,
   onLinkLongClick: (link: String) -> Unit = {},
   scrollToItem: (Long) -> Unit = {},
+  scrollToItemId: MutableState<Long?>,
   scrollToQuotedItemFromItem: (Long) -> Unit = {},
 ) {
   val sent = ci.chatDir.sent
@@ -253,7 +255,11 @@ fun FramedItemView(
                   onLongClick = { showMenu.value = true },
                   onClick = {
                     if (ci.quotedItem.itemId != null) {
-                      scrollToItem(ci.quotedItem.itemId)
+                      if (ci.isReport && chatsCtx.secondaryContextFilter != null) {
+                        scrollToItemId.value = ci.quotedItem.itemId
+                      } else {
+                        scrollToItem(ci.quotedItem.itemId)
+                      }
                     } else {
                       scrollToQuotedItemFromItem(ci.id)
                     }
