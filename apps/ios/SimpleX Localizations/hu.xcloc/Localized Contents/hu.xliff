@@ -4942,12 +4942,12 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
       </trans-unit>
       <trans-unit id="Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve" approved="no">
         <source>Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery.</source>
-        <target state="translated">Az üzenetek, a fájlok és a hívások **végpontok közötti titkosítással**, kompromittálás előtti titkosságvédelemmel (PFS), letagadhatósággal, illetve kompromittálás utáni titkosságfelépüléssel vannak védve.</target>
+        <target state="translated">Az üzenetek, a fájlok és a hívások **végpontok közötti titkosítással**, kompromittálás előtti és utáni titkosságvédelemmel, illetve letagadhatósággal vannak védve.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve" approved="no">
         <source>Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery.</source>
-        <target state="translated">Az üzenetek, a fájlok és a hívások **végpontok közötti kvantumbiztos titkosítással**, kompromittálás előtti titkosságvédelemmel (PFS), letagadhatósággal, illetve kompromittálás utáni titkosságfelépüléssel vannak védve.</target>
+        <target state="translated">Az üzenetek, a fájlok és a hívások **végpontok közötti kvantumbiztos titkosítással**, kompromittálás előtti és utáni titkosságvédelemmel, illetve letagadhatósággal vannak védve.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrate device" xml:space="preserve">
@@ -7336,7 +7336,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="SimpleX protocols reviewed by Trail of Bits." xml:space="preserve" approved="no">
         <source>SimpleX protocols reviewed by Trail of Bits.</source>
-        <target state="translated">A SimpleX Chat biztonsága a Trail of Bits által lett áttekintve.</target>
+        <target state="translated">A SimpleX-protokollokat a Trail of Bits auditálta.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Simplified incognito mode" xml:space="preserve">
