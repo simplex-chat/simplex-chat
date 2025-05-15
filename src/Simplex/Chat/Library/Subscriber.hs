@@ -2123,9 +2123,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             membership' <- withStore' $ \db -> updateGroupMemberAccepted db user membership GSMemConnected role
             -- create item in both scopes
             let gInfo' = gInfo {membership = membership'}
-            createInternalChatItem user (CDGroupRcv gInfo' Nothing m') (CIRcvGroupEvent RGEUserAccepted) Nothing
+            createInternalChatItem user (CDGroupRcv gInfo' Nothing m) (CIRcvGroupEvent RGEUserAccepted) Nothing
             let scopeInfo = Just $ GCSIMemberSupport {groupMember_ = Nothing}
-            createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m') (CIRcvGroupEvent RGEUserAccepted) Nothing
+            createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m) (CIRcvGroupEvent RGEUserAccepted) Nothing
             toView $ CEvtUserJoinedGroup user gInfo' m
             let cd = CDGroupRcv gInfo' Nothing m
             createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
