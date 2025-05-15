@@ -67,7 +67,7 @@ struct OnboardingConditionsView: View {
 
     var body: some View {
         GeometryReader { g in
-            ScrollView {
+            let v = ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     Text("Conditions of use")
                         .font(.largeTitle)
@@ -107,6 +107,7 @@ struct OnboardingConditionsView: View {
                         .frame(minHeight: 40)
                     }
                 }
+                .padding(25)
                 .frame(minHeight: g.size.height)
             }
             .onAppear {
@@ -127,9 +128,14 @@ struct OnboardingConditionsView: View {
                 }
             }
             .frame(maxHeight: .infinity, alignment: .top)
+            if #available(iOS 16.4, *) {
+                v.scrollBounceBehavior(.basedOnSize)
+            } else {
+                v
+            }
         }
         .frame(maxHeight: .infinity, alignment: .top)
-        .padding(25)
+        .navigationBarHidden(true) // necessary on iOS 15
     }
 
     private func continueToNextStep() {

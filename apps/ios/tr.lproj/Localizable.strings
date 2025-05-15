@@ -4602,7 +4602,7 @@ chat item action */
 "The old database was not removed during the migration, it can be deleted." = "Eski veritabanı geçiş sırasında kaldırılmadı, silinebilir.";
 
 /* No comment provided by engineer. */
-"The profile is only shared with your contacts." = "Profil sadece kişilerinle paylaşılacak.";
+"Your profile is stored on your device and only shared with your contacts." = "Profil sadece kişilerinle paylaşılacak.";
 
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Özlediğimiz ikinci tik! ✅";

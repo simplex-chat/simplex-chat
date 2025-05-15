@@ -5092,7 +5092,7 @@ report reason */
 "The old database was not removed during the migration, it can be deleted." = "De oude database is niet verwijderd tijdens de migratie, deze kan worden verwijderd.";
 
 /* No comment provided by engineer. */
-"The profile is only shared with your contacts." = "Het profiel wordt alleen gedeeld met uw contacten.";
+"Your profile is stored on your device and only shared with your contacts." = "Het profiel wordt alleen gedeeld met uw contacten.";
 
 /* No comment provided by engineer. */
 "The same conditions will apply to operator **%@**." = "Dezelfde voorwaarden gelden voor operator **%@**.";

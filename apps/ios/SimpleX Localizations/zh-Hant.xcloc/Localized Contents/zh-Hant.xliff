@@ -3054,8 +3054,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">舊的數據庫在遷移過程中沒有被移除，可以刪除。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The profile is only shared with your contacts." xml:space="preserve" approved="no">
-        <source>The profile is only shared with your contacts.</source>
+      <trans-unit id="Your profile is stored on your device and only shared with your contacts." xml:space="preserve" approved="no">
+        <source>Your profile is stored on your device and only shared with your contacts.</source>
         <target state="translated">你的個人檔案只會和你的聯絡人分享。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
