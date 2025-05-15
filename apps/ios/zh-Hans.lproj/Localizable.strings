@@ -4923,7 +4923,7 @@ chat item action */
 "The old database was not removed during the migration, it can be deleted." = "旧数据库在迁移过程中没有被移除，可以删除。";
 
 /* No comment provided by engineer. */
-"The profile is only shared with your contacts." = "该资料仅与您的联系人共享。";
+"Your profile is stored on your device and only shared with your contacts." = "该资料仅与您的联系人共享。";
 
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "我们错过的第二个\"√\"！✅";

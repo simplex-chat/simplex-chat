@@ -7715,11 +7715,6 @@ It can happen because of some bug or when the connection is compromised.</source
         <target>Предыдущая версия данных чата не удалена при перемещении, её можно удалить.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The profile is only shared with your contacts." xml:space="preserve">
-        <source>The profile is only shared with your contacts.</source>
-        <target>Профиль отправляется только Вашим контактам.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve">
         <source>The same conditions will apply to operator **%@**.</source>
         <target>Те же самые условия будут приняты для оператора **%@**.</target>
@@ -9021,6 +9016,11 @@ Repeat connection request?</source>
         <target>Будет отправлен Ваш профиль **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your profile is stored on your device and only shared with your contacts." xml:space="preserve">
+        <source>Your profile is stored on your device and only shared with your contacts.</source>
+        <target>Ваш профиль храниться на Вашем устройстве и отправляется только контактам.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." xml:space="preserve">
         <source>Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</source>
         <target>Ваш профиль хранится на Вашем устройстве и отправляется только Вашим контактам. SimpleX серверы не могут получить доступ к Вашему профилю.</target>
@@ -9030,11 +9030,6 @@ Repeat connection request?</source>
         <source>Your profile was changed. If you save it, the updated profile will be sent to all your contacts.</source>
         <target>Ваш профиль был изменен. Если вы сохраните его, обновленный профиль будет отправлен всем вашим контактам.</target>
         <note>alert message</note>
-      </trans-unit>
-      <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve">
-        <source>Your profile, contacts and delivered messages are stored on your device.</source>
-        <target>Ваш профиль, контакты и доставленные сообщения хранятся на Вашем устройстве.</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your random profile" xml:space="preserve">
         <source>Your random profile</source>

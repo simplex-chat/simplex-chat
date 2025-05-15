@@ -2830,7 +2830,7 @@ chat item action */
 "The old database was not removed during the migration, it can be deleted." = "ฐานข้อมูลเก่าไม่ได้ถูกลบในระหว่างการย้ายข้อมูล แต่สามารถลบได้";
 
 /* No comment provided by engineer. */
-"The profile is only shared with your contacts." = "โปรไฟล์นี้แชร์กับผู้ติดต่อของคุณเท่านั้น";
+"Your profile is stored on your device and only shared with your contacts." = "โปรไฟล์นี้แชร์กับผู้ติดต่อของคุณเท่านั้น";
 
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "ขีดที่สองที่เราพลาด! ✅";

@@ -7583,11 +7583,6 @@ Może się to zdarzyć z powodu jakiegoś błędu lub gdy połączenie jest skom
         <target>Stara baza danych nie została usunięta podczas migracji, można ją usunąć.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The profile is only shared with your contacts." xml:space="preserve">
-        <source>The profile is only shared with your contacts.</source>
-        <target>Profil jest udostępniany tylko Twoim kontaktom.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve">
         <source>The same conditions will apply to operator **%@**.</source>
         <note>No comment provided by engineer.</note>
@@ -8870,6 +8865,11 @@ Powtórzyć prośbę połączenia?</target>
         <target>Twój profil **%@** zostanie udostępniony.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your profile is stored on your device and only shared with your contacts." xml:space="preserve">
+        <source>Your profile is stored on your device and only shared with your contacts.</source>
+        <target>Profil jest udostępniany tylko Twoim kontaktom.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." xml:space="preserve">
         <source>Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</source>
         <target>Twój profil jest przechowywany na urządzeniu i udostępniany tylko Twoim kontaktom. Serwery SimpleX nie mogą zobaczyć Twojego profilu.</target>
@@ -8879,11 +8879,6 @@ Powtórzyć prośbę połączenia?</target>
         <source>Your profile was changed. If you save it, the updated profile will be sent to all your contacts.</source>
         <target>Twój profil został zmieniony. Jeśli go zapiszesz, zaktualizowany profil zostanie wysłany do wszystkich kontaktów.</target>
         <note>alert message</note>
-      </trans-unit>
-      <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve">
-        <source>Your profile, contacts and delivered messages are stored on your device.</source>
-        <target>Twój profil, kontakty i dostarczone wiadomości są przechowywane na Twoim urządzeniu.</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your random profile" xml:space="preserve">
         <source>Your random profile</source>

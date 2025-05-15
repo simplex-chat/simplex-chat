@@ -768,6 +768,9 @@ set passcode view */
 /* No comment provided by engineer. */
 "Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" = "Luo uusi profiili [työpöytäsovelluksessa](https://simplex.chat/downloads/). 💻";
 
+/* No comment provided by engineer. */
+"Create profile" = "Luo profiilisi";
+
 /* server test step */
 "Create queue" = "Luo jono";
 
@@ -2908,7 +2911,7 @@ chat item action */
 "The old database was not removed during the migration, it can be deleted." = "Vanhaa tietokantaa ei poistettu siirron aikana, se voidaan kuitenkin poistaa.";
 
 /* No comment provided by engineer. */
-"The profile is only shared with your contacts." = "Profiili jaetaan vain kontaktiesi kanssa.";
+"Your profile is stored on your device and only shared with your contacts." = "Profiili jaetaan vain kontaktiesi kanssa.";
 
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Toinen kuittaus, joka uupui! ✅";

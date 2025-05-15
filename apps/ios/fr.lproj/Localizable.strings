@@ -4884,7 +4884,7 @@ chat item action */
 "The old database was not removed during the migration, it can be deleted." = "L'ancienne base de données n'a pas été supprimée lors de la migration, elle peut être supprimée.";
 
 /* No comment provided by engineer. */
-"The profile is only shared with your contacts." = "Le profil n'est partagé qu'avec vos contacts.";
+"Your profile is stored on your device and only shared with your contacts." = "Le profil n'est partagé qu'avec vos contacts.";
 
 /* No comment provided by engineer. */
 "The same conditions will apply to operator **%@**." = "Les mêmes conditions s'appliquent à l'opérateur **%@**.";

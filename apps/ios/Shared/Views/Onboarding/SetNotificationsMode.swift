@@ -17,7 +17,7 @@ struct SetNotificationsMode: View {
 
     var body: some View {
         GeometryReader { g in
-            ScrollView {
+            let v = ScrollView {
                 VStack(alignment: .center, spacing: 20) {
                     Text("Push notifications")
                         .font(.largeTitle)
@@ -57,11 +57,17 @@ struct SetNotificationsMode: View {
                 .padding(25)
                 .frame(minHeight: g.size.height)
             }
+            if #available(iOS 16.4, *) {
+                v.scrollBounceBehavior(.basedOnSize)
+            } else {
+                v
+            }
         }
         .frame(maxHeight: .infinity)
         .sheet(isPresented: $showInfo) {
             NotificationsInfoView()
         }
+        .navigationBarHidden(true) // necessary on iOS 15
     }
 
     private func setNotificationsMode(_ token: DeviceToken, _ mode: NotificationsMode) {

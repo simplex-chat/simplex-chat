@@ -62,8 +62,7 @@ struct CreateProfile: View {
                 .frame(height: 20)
             } footer: {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Your profile, contacts and delivered messages are stored on your device.")
-                    Text("The profile is only shared with your contacts.")
+                    Text("Your profile is stored on your device and only shared with your contacts.")
                 }
                 .foregroundColor(theme.colors.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -118,25 +117,22 @@ struct CreateFirstProfile: View {
     @State private var nextStepNavLinkActive = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .center, spacing: 20) {
-                Text("Create your profile")
+        let v = VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .center, spacing: 16) {
+                Text("Create profile")
                     .font(.largeTitle)
                     .bold()
                     .multilineTextAlignment(.center)
-                
-                Text("Your profile, contacts and delivered messages are stored on your device.")
-                    .font(.callout)
-                    .foregroundColor(theme.colors.secondary)
-                    .multilineTextAlignment(.center)
-                
-                Text("The profile is only shared with your contacts.")
+
+                Text("Your profile is stored on your device and only shared with your contacts.")
                     .font(.callout)
                     .foregroundColor(theme.colors.secondary)
                     .multilineTextAlignment(.center)
             }
+            .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity) // Ensures it takes up the full width
             .padding(.horizontal, 10)
+            .onTapGesture { focusDisplayName = false }
 
             HStack {
                 let name = displayName.trimmingCharacters(in: .whitespaces)
@@ -174,12 +170,23 @@ struct CreateFirstProfile: View {
             }
         }
         .onAppear() {
-            focusDisplayName = true
+            if #available(iOS 16, *) {
+                focusDisplayName = true
+            } else {
+                // it does not work before animation completes on iOS 15
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    focusDisplayName = true
+                }
+            }
         }
         .padding(.horizontal, 25)
-        .padding(.top, 10)
         .padding(.bottom, 25)
         .frame(maxWidth: .infinity, alignment: .leading)
+        if #available(iOS 16, *) {
+            return v.padding(.top, 10)
+        } else {
+            return v.padding(.top, 75).ignoresSafeArea(.all, edges: .top)
+        }
     }
 
     func createProfileButton() -> some View {

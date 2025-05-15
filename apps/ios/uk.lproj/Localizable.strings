@@ -4722,7 +4722,7 @@ chat item action */
 "The old database was not removed during the migration, it can be deleted." = "Стара база даних не була видалена під час міграції, її можна видалити.";
 
 /* No comment provided by engineer. */
-"The profile is only shared with your contacts." = "Профіль доступний лише вашим контактам.";
+"Your profile is stored on your device and only shared with your contacts." = "Профіль доступний лише вашим контактам.";
 
 /* No comment provided by engineer. */
 "The same conditions will apply to operator **%@**." = "Такі ж умови діятимуть і для оператора **%@**.";

@@ -4957,7 +4957,7 @@ report reason */
 "The old database was not removed during the migration, it can be deleted." = "Предыдущая версия данных чата не удалена при перемещении, её можно удалить.";
 
 /* No comment provided by engineer. */
-"The profile is only shared with your contacts." = "Профиль отправляется только Вашим контактам.";
+"Your profile is stored on your device and only shared with your contacts." = "Ваш профиль храниться на Вашем устройстве и отправляется только контактам.";
 
 /* No comment provided by engineer. */
 "The same conditions will apply to operator **%@**." = "Те же самые условия будут приняты для оператора **%@**.";

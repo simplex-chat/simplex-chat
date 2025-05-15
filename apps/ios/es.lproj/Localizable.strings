@@ -5101,7 +5101,7 @@ report reason */
 "The old database was not removed during the migration, it can be deleted." = "La base de datos antigua no se eliminó durante la migración, puede eliminarse.";
 
 /* No comment provided by engineer. */
-"The profile is only shared with your contacts." = "El perfil sólo se comparte con tus contactos.";
+"Your profile is stored on your device and only shared with your contacts." = "El perfil sólo se comparte con tus contactos.";
 
 /* No comment provided by engineer. */
 "The same conditions will apply to operator **%@**." = "Las mismas condiciones se aplicarán al operador **%@**.";
