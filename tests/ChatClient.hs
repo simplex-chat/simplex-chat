@@ -17,6 +17,7 @@ import Control.Concurrent (forkIOWithUnmask, killThread, threadDelay)
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
+import Control.Logger.Simple (LogLevel (..))
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
@@ -535,7 +536,7 @@ smpServerCfg =
       allowSMPProxy = True,
       serverClientConcurrency = 16,
       information = Nothing,
-      startOptions = StartOptions {maintenance = False, compactLog = False, skipWarnings = False, confirmMigrations = MCYesUp}
+      startOptions = StartOptions {maintenance = False, compactLog = False, logLevel = LogError, skipWarnings = False, confirmMigrations = MCYesUp}
     }
 
 persistentServerStoreCfg :: FilePath -> AServerStoreCfg
