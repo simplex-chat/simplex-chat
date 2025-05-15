@@ -9077,9 +9077,9 @@ Megismétli a meghívási kérést?</target>
         <target>A(z) **%@** nevű profilja meg lesz osztva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your profile is stored on your device and only shared with your contacts." xml:space="preserve">
+      <trans-unit id="Your profile is stored on your device and only shared with your contacts." xml:space="preserve" approved="no">
         <source>Your profile is stored on your device and only shared with your contacts.</source>
-        <target>A profilja csak a partnereivel van megosztva.</target>
+        <target state="translated">A profilja az eszközén van tárolva és csak a partnereivel van megosztva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." xml:space="preserve">
