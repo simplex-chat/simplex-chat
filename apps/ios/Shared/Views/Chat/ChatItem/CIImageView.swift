@@ -12,7 +12,7 @@ import SimpleXChat
 struct CIImageView: View {
     @EnvironmentObject var m: ChatModel
     let chatItem: ChatItem
-    var scrollToItemId: ((ChatItem.ID) -> Void)? = nil
+    var scrollToItem: ((ChatItem.ID) -> Void)? = nil
     var preview: UIImage?
     let maxWidth: CGFloat
     var imgWidth: CGFloat?
@@ -26,7 +26,7 @@ struct CIImageView: View {
             if let uiImage = getLoadedImage(file) {
                 Group { if smallView { smallViewImageView(uiImage) } else { imageView(uiImage) } }
                 .fullScreenCover(isPresented: $showFullScreenImage) {
-                    FullScreenMediaView(chatItem: chatItem, scrollToItemId: scrollToItemId, image: uiImage, showView: $showFullScreenImage)
+                    FullScreenMediaView(chatItem: chatItem, scrollToItem: scrollToItem, image: uiImage, showView: $showFullScreenImage)
                 }
                 .if(!smallView) { view in
                     view.modifier(PrivacyBlur(blurred: $blurred))

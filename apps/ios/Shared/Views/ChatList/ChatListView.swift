@@ -148,6 +148,7 @@ struct ChatListView: View {
     @State private var userPickerShown: Bool = false
     @State private var sheet: SomeSheet<AnyView>? = nil
     @StateObject private var chatTagsModel = ChatTagsModel.shared
+    @State private var scrollToItemId: ChatItem.ID? = nil
 
     // iOS 15 is required it to show/hide toolbar while chat is hidden/visible
     @State private var viewOnScreen = true
@@ -451,7 +452,8 @@ struct ChatListView: View {
                 chat: chat,
                 im: im,
                 mergedItems: BoxedValue(MergedItems.create(im, [])),
-                floatingButtonModel: FloatingButtonModel(im: im)
+                floatingButtonModel: FloatingButtonModel(im: im),
+                scrollToItemId: $scrollToItemId
             )
         }
     }

@@ -45,7 +45,8 @@ struct ChatItemView: View {
     @Environment(\.showTimestamp) var showTimestamp: Bool
     @Environment(\.revealed) var revealed: Bool
     var chatItem: ChatItem
-    var scrollToItemId: (ChatItem.ID) -> Void
+    var scrollToItem: (ChatItem.ID) -> Void
+    @Binding var scrollToItemId: ChatItem.ID?
     var maxWidth: CGFloat = .infinity
     @Binding var allowMenu: Bool
 
@@ -53,7 +54,8 @@ struct ChatItemView: View {
         chat: Chat,
         im: ItemsModel,
         chatItem: ChatItem,
-        scrollToItemId: @escaping (ChatItem.ID) -> Void,
+        scrollToItem: @escaping (ChatItem.ID) -> Void,
+        scrollToItemId: Binding<ChatItem.ID?> = .constant(nil),
         showMember: Bool = false,
         maxWidth: CGFloat = .infinity,
         allowMenu: Binding<Bool> = .constant(false)
@@ -61,7 +63,8 @@ struct ChatItemView: View {
         self.chat = chat
         self.im = im
         self.chatItem = chatItem
-        self.scrollToItemId = scrollToItemId
+        self.scrollToItem = scrollToItem
+        _scrollToItemId = scrollToItemId
         self.maxWidth = maxWidth
         _allowMenu = allowMenu
     }
@@ -106,7 +109,8 @@ struct ChatItemView: View {
             chat: chat,
             im: im,
             chatItem: chatItem,
-            scrollToItemId: scrollToItemId,
+            scrollToItem: scrollToItem,
+            scrollToItemId: $scrollToItemId,
             preview: preview,
             maxWidth: maxWidth,
             imgWidth: adjustedMaxWidth,
@@ -272,15 +276,15 @@ struct ChatItemView_Previews: PreviewProvider {
     static var previews: some View {
         let im = ItemsModel.shared
         Group{
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"), scrollToItemId: { _ in })
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too"), scrollToItemId: { _ in })
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂"), scrollToItemId: { _ in })
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂"), scrollToItemId: { _ in })
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂🙂"), scrollToItemId: { _ in })
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getDeletedContentSample(), scrollToItemId: { _ in })
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now)), scrollToItemId: { _ in })
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂", .sndSent(sndProgress: .complete), itemLive: true), scrollToItemId: { _ in }).environment(\.revealed, true)
-            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemLive: true), scrollToItemId: { _ in }).environment(\.revealed, true)
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too"), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂"), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂"), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂🙂"), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getDeletedContentSample(), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now)), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂", .sndSent(sndProgress: .complete), itemLive: true), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).environment(\.revealed, true)
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemLive: true), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)).environment(\.revealed, true)
         }
         .environment(\.revealed, false)
         .previewLayout(.fixed(width: 360, height: 70))
@@ -303,7 +307,8 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                     quotedItem: nil,
                     file: nil
                 ),
-                scrollToItemId: { _ in }
+                scrollToItem: { _ in },
+                scrollToItemId: Binding.constant(nil)
             )
             ChatItemView(
                 chat: Chat.sampleData,
@@ -315,7 +320,7 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                     quotedItem: nil,
                     file: nil
                 ),
-                scrollToItemId: { _ in }
+                scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil)
             )
             ChatItemView(
                 chat: Chat.sampleData,
@@ -327,7 +332,8 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                     quotedItem: nil,
                     file: nil
                 ),
-                scrollToItemId: { _ in }
+                scrollToItem: { _ in },
+                scrollToItemId: Binding.constant(nil)
             )
             ChatItemView(
                 chat: Chat.sampleData,
@@ -339,7 +345,8 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                     quotedItem: nil,
                     file: nil
                 ),
-                scrollToItemId: { _ in }
+                scrollToItem: { _ in },
+                scrollToItemId: Binding.constant(nil)
             )
             ChatItemView(
                 chat: Chat.sampleData,
@@ -351,7 +358,8 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                     quotedItem: nil,
                     file: nil
                 ),
-                scrollToItemId: { _ in }
+                scrollToItem: { _ in },
+                scrollToItemId: Binding.constant(nil)
             )
         }
         .environment(\.revealed, true)

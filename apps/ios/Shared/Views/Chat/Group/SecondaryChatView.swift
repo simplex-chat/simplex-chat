@@ -12,6 +12,7 @@ import SimpleXChat
 struct SecondaryChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var chat: Chat
+    @Binding var scrollToItemId: ChatItem.ID?
 
     var body: some View {
         if let im = chatModel.secondaryIM {
@@ -19,7 +20,8 @@ struct SecondaryChatView: View {
                 chat: chat,
                 im: im,
                 mergedItems: BoxedValue(MergedItems.create(im, [])),
-                floatingButtonModel: FloatingButtonModel(im: im)
+                floatingButtonModel: FloatingButtonModel(im: im),
+                scrollToItemId: $scrollToItemId
             )
             .onDisappear {
                 chatModel.secondaryIM = nil
@@ -34,6 +36,7 @@ struct SecondaryChatView: View {
             chatInfo: .group(groupInfo: GroupInfo.sampleData, groupChatScope: .memberSupport(groupMember_: GroupMember.sampleData)),
             chatItems: [],
             chatStats: ChatStats()
-        )
+        ),
+        scrollToItemId: Binding.constant(nil)
     )
 }
