@@ -144,11 +144,9 @@ struct GroupChatInfoView: View {
                         let filteredMembers = s == ""
                             ? members
                             : members.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
-                        MemberRowView(groupInfo: groupInfo, groupMember: GMember(groupInfo.membership), user: true, alert: $alert) { EmptyView() }
+                        MemberRowView(chat: chat, groupInfo: groupInfo, groupMember: GMember(groupInfo.membership), user: true, alert: $alert)
                         ForEach(filteredMembers) { member in
-                            MemberRowView(groupInfo: groupInfo, groupMember: member, alert: $alert) {
-                                memberInfoView(member)
-                            }
+                            MemberRowView(chat: chat, groupInfo: groupInfo, groupMember: member, alert: $alert)
                         }
                     }
                     
@@ -351,13 +349,13 @@ struct GroupChatInfoView: View {
             }
     }
 
-    private struct MemberRowView<V: View>: View {
+    private struct MemberRowView: View {
+        var chat: Chat
         var groupInfo: GroupInfo
         @ObservedObject var groupMember: GMember
         @EnvironmentObject var theme: AppTheme
         var user: Bool = false
         @Binding var alert: GroupChatInfoViewAlert?
-        var memberInfoView: (() -> V)? = nil
 
         var body: some View {
             let member = groupMember.wrapped
@@ -379,15 +377,15 @@ struct GroupChatInfoView: View {
             }
 
             let v = ZStack {
-                if let memberInfoView {
+                if user {
+                    v1
+                } else {
                     NavigationLink {
                         memberInfoView()
                     } label: {
                         EmptyView()
                     }
                     .opacity(0)
-                    v1
-                } else {
                     v1
                 }
             }
@@ -414,6 +412,11 @@ struct GroupChatInfoView: View {
                     v
                 }
             }
+        }
+
+        private func memberInfoView() -> some View {
+            GroupMemberInfoView(groupInfo: groupInfo, chat: chat, groupMember: groupMember)
+                .navigationBarHidden(false)
         }
 
         private func memberConnStatus(_ member: GroupMember) -> LocalizedStringKey {
@@ -493,11 +496,6 @@ struct GroupChatInfoView: View {
                 .kerning(-2)
                 .foregroundColor(theme.colors.secondary)
         }
-    }
-    
-    private func memberInfoView(_ groupMember: GMember) -> some View {
-        GroupMemberInfoView(groupInfo: groupInfo, chat: chat, groupMember: groupMember)
-            .navigationBarHidden(false)
     }
 
     private func groupLinkButton() -> some View {
