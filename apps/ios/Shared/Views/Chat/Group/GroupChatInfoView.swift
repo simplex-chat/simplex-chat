@@ -144,16 +144,10 @@ struct GroupChatInfoView: View {
                         let filteredMembers = s == ""
                             ? members
                             : members.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
-                        MemberRowView(groupInfo: groupInfo, groupMember: GMember(groupInfo.membership), user: true, alert: $alert)
+                        MemberRowView(groupInfo: groupInfo, groupMember: GMember(groupInfo.membership), user: true, alert: $alert) { EmptyView() }
                         ForEach(filteredMembers) { member in
-                            ZStack {
-                                NavigationLink {
-                                    memberInfoView(member)
-                                } label: {
-                                    EmptyView()
-                                }
-                                .opacity(0)
-                                MemberRowView(groupInfo: groupInfo, groupMember: member, alert: $alert)
+                            MemberRowView(groupInfo: groupInfo, groupMember: member, alert: $alert) {
+                                memberInfoView(member)
                             }
                         }
                     }
@@ -357,16 +351,17 @@ struct GroupChatInfoView: View {
             }
     }
 
-    private struct MemberRowView: View {
+    private struct MemberRowView<V: View>: View {
         var groupInfo: GroupInfo
         @ObservedObject var groupMember: GMember
         @EnvironmentObject var theme: AppTheme
         var user: Bool = false
         @Binding var alert: GroupChatInfoViewAlert?
+        var memberInfoView: (() -> V)? = nil
 
         var body: some View {
             let member = groupMember.wrapped
-            let v = HStack{
+            let v1 = HStack{
                 MemberProfileImage(member, size: 38)
                     .padding(.trailing, 2)
                 // TODO server connection status
@@ -381,6 +376,20 @@ struct GroupChatInfoView: View {
                 }
                 Spacer()
                 memberInfo(member)
+            }
+
+            let v = ZStack {
+                if let memberInfoView {
+                    NavigationLink {
+                        memberInfoView()
+                    } label: {
+                        EmptyView()
+                    }
+                    .opacity(0)
+                    v1
+                } else {
+                    v1
+                }
             }
 
             if user {
