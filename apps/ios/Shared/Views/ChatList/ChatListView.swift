@@ -367,13 +367,7 @@ struct ChatListView: View {
                         .offset(x: -8)
                     } else {
                         ForEach(cs, id: \.viewId) { chat in
-                            VStack(spacing: .zero) {
-                                Divider()
-                                    .padding(.leading, 16)
-                                ChatListNavLink(chat: chat,  parentSheet: $sheet)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 6)
-                            }
+                            ChatListNavLink(chat: chat,  parentSheet: $sheet)
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                             .listRowSeparator(.hidden)
                             .listRowInsets(EdgeInsets())
