@@ -2294,7 +2294,6 @@ func processReceivedMsg(_ res: ChatEvent) async {
                case .memberSupport(nil) = m.secondaryIM?.groupScopeInfo {
                 await MainActor.run {
                     m.secondaryPendingInviteeChatOpened = false
-                    m.secondaryIM = nil
                 }
             }
         }
