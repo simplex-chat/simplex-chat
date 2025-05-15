@@ -1035,9 +1035,9 @@ struct ComposeView: View {
                 reportReason: reportReason,
                 reportText: msgText
             ) {
-                await MainActor.run {
-                    for chatItem in chatItems {
-                        chatModel.addChatItem(chat.chatInfo, chatItem)
+                if showReportsInSupportChatAlertDefault.get() {
+                    await MainActor.run {
+                        showReportsInSupportChatAlert()
                     }
                 }
                 return chatItems.first
@@ -1045,7 +1045,27 @@ struct ComposeView: View {
             
             return nil
         }
-                
+
+        func showReportsInSupportChatAlert() {
+            showAlert(
+                NSLocalizedString("Report sent to moderators", comment: "alert title"),
+                message: NSLocalizedString("You can view your reports in Chat with admins.", comment: "alert message"),
+                actions: {[
+                    UIAlertAction(
+                        title: NSLocalizedString("Don't show again", comment: "alert action"),
+                        style: .default,
+                        handler: { _ in
+                            showReportsInSupportChatAlertDefault.set(false)
+                        }
+                    ),
+                    UIAlertAction(
+                        title: NSLocalizedString("Ok", comment: "alert action"),
+                        style: .default
+                    )
+                ]}
+            )
+        }
+
         func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?, mentions: [String: Int64]) async -> ChatItem? {
             await send(
                 [ComposedMessage(fileSource: file, quotedItemId: quoted, msgContent: mc, mentions: mentions)],

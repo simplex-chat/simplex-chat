@@ -198,6 +198,8 @@ let customDisappearingMessageTimeDefault = IntDefault(defaults: UserDefaults.sta
 let showDeleteConversationNoticeDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SHOW_DELETE_CONVERSATION_NOTICE)
 let showDeleteContactNoticeDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SHOW_DELETE_CONTACT_NOTICE)
 
+let showReportsInSupportChatAlertDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SHOW_REPORTS_IN_SUPPORT_CHAT_ALERT)
+
 /// after importing new database, this flag will be set and unset only after importing app settings in `initializeChat` */
 let shouldImportAppSettingsDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SHOULD_IMPORT_APP_SETTINGS)
 let currentThemeDefault = StringDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CURRENT_THEME, withDefault: DefaultTheme.SYSTEM_THEME_NAME)
