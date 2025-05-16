@@ -1232,7 +1232,7 @@ updateGroupMemberAccepted db User {userId} m@GroupMember {groupMemberId} status 
   pure m {memberStatus = status, memberRole = role, updatedAt = currentTs}
 
 updateGroupMembersRequireAttention :: DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> IO GroupInfo
-updateGroupMembersRequireAttention db user@User {userId} g@GroupInfo {groupId, membersRequireAttention} member member'
+updateGroupMembersRequireAttention db user g member member'
   | nowRequires && not didRequire =
       increaseGroupMembersRequireAttention db user g
   | not nowRequires && didRequire =
