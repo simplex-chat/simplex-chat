@@ -81,6 +81,7 @@ module Simplex.Chat.Store.Groups
     updateGroupMemberStatusById,
     updateGroupMemberAccepted,
     updateGroupMembersRequireAttention,
+    decreaseGroupMembersRequireAttention,
     increaseGroupMembersRequireAttention,
     createNewGroupMember,
     checkGroupMemberHasItems,
@@ -1234,20 +1235,24 @@ updateGroupMembersRequireAttention :: DB.Connection -> User -> GroupInfo -> Grou
 updateGroupMembersRequireAttention db user@User {userId} g@GroupInfo {groupId, membersRequireAttention} member member'
   | nowRequires && not didRequire =
       increaseGroupMembersRequireAttention db user g
-  | not nowRequires && didRequire = do
-      DB.execute
-        db
-        [sql|
-          UPDATE groups
-          SET members_require_attention = members_require_attention - 1
-          WHERE user_id = ? AND group_id = ?
-        |]
-        (userId, groupId)
-      pure g {membersRequireAttention = membersRequireAttention - 1}
+  | not nowRequires && didRequire =
+      decreaseGroupMembersRequireAttention db user g
   | otherwise = pure g
   where
     didRequire = gmRequiresAttention member
     nowRequires = gmRequiresAttention member'
+
+decreaseGroupMembersRequireAttention :: DB.Connection -> User -> GroupInfo -> IO GroupInfo
+decreaseGroupMembersRequireAttention db User {userId} g@GroupInfo {groupId, membersRequireAttention} = do
+  DB.execute
+    db
+    [sql|
+      UPDATE groups
+      SET members_require_attention = members_require_attention - 1
+      WHERE user_id = ? AND group_id = ?
+    |]
+    (userId, groupId)
+  pure g {membersRequireAttention = membersRequireAttention - 1}
 
 increaseGroupMembersRequireAttention :: DB.Connection -> User -> GroupInfo -> IO GroupInfo
 increaseGroupMembersRequireAttention db User {userId} g@GroupInfo {groupId, membersRequireAttention} = do

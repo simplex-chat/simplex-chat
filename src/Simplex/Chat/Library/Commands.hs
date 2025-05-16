@@ -2230,7 +2230,9 @@ processChatCommand' vr = \case
       unless (null acis) $ toView $ CEvtNewChatItems user acis
       unless (null errs) $ toView $ CEvtChatErrors errs
       when withMessages $ deleteMessages user gInfo deleted
-      pure $ CRUserDeletedMembers user gInfo deleted withMessages -- same order is not guaranteed
+      -- Read group info with updated membersRequireAttention
+      gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
+      pure $ CRUserDeletedMembers user gInfo' deleted withMessages -- same order is not guaranteed
     where
       selectMembers :: [GroupMember] -> (Int, [GroupMember], [GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool)
       selectMembers = foldl' addMember (0, [], [], [], [], GRObserver, False)
@@ -2280,7 +2282,11 @@ processChatCommand' vr = \case
                   ts = ciContentTexts content
                in NewSndChatItemData msg content ts M.empty Nothing Nothing Nothing
             delMember db m = do
-              deleteOrUpdateMemberRecordIO db user m
+              -- We're in a function used in batch member deletion, and since we're passing same gInfo for each member,
+              -- voided result (updated group info) may have incorrect state of membersRequireAttention.
+              -- To avoid complicating code by passing updated group info through iterations,
+              -- instead we re-read it once after deleting all members (for CRUserDeletedMembers).
+              void $ deleteOrUpdateMemberRecordIO db user gInfo m
               pure m {memberStatus = GSMemRemoved}
       deleteMessages user gInfo@GroupInfo {membership} ms
         | groupFeatureMemberAllowed SGFFullDelete membership gInfo = deleteGroupMembersCIs user gInfo ms membership

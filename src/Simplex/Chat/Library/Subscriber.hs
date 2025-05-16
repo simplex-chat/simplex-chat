@@ -2697,10 +2697,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 -- ? prohibit deleting member if it's the sender - sender should use x.grp.leave
                 deleteMemberConnection member
                 -- undeleted "member connected" chat item will prevent deletion of member record
-                deleteOrUpdateMemberRecord user member
+                gInfo' <- deleteOrUpdateMemberRecord user gInfo member
                 when withMessages $ deleteMessages member SMDRcv
                 deleteMemberItem $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
-                toView $ CEvtDeletedMember user gInfo m member {memberStatus = GSMemRemoved} withMessages
+                toView $ CEvtDeletedMember user gInfo' m member {memberStatus = GSMemRemoved} withMessages
       where
         checkRole GroupMember {memberRole} a
           | senderRole < GRAdmin || senderRole < memberRole =
@@ -2719,11 +2719,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpLeave gInfo m msg brokerTs = do
       deleteMemberConnection m
       -- member record is not deleted to allow creation of "member left" chat item
-      withStore' $ \db -> updateGroupMemberStatus db userId m GSMemLeft
-      (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
-      (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo' scopeInfo m') msg brokerTs (CIRcvGroupEvent RGEMemberLeft)
+      gInfo' <- withStore' $ \db -> do
+        updateGroupMemberStatus db userId m GSMemLeft
+        if gmRequiresAttention m
+          then decreaseGroupMembersRequireAttention db user gInfo
+          else pure gInfo
+      (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m
+      (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo'' scopeInfo m') msg brokerTs (CIRcvGroupEvent RGEMemberLeft)
       groupMsgToView cInfo ci
-      toView $ CEvtLeftMember user gInfo' m' {memberStatus = GSMemLeft}
+      toView $ CEvtLeftMember user gInfo'' m' {memberStatus = GSMemLeft}
 
     xGrpDel :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> CM ()
     xGrpDel gInfo@GroupInfo {membership} m@GroupMember {memberRole} msg brokerTs = do
