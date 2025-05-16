@@ -331,13 +331,14 @@ fun AddGroupMembersButton(
 
 @Composable
 fun UserSupportChatButton(
+  chat: Chat,
   groupInfo: GroupInfo,
   scrollToItemId: MutableState<Long?>
 ) {
   val scope = rememberCoroutineScope()
 
-  SettingsActionItem(
-    painterResource(MR.images.ic_flag),
+  SettingsActionItemWithContent(
+    painterResource(if (chat.supportUnreadCount > 0) MR.images.ic_flag_filled else MR.images.ic_flag),
     stringResource(MR.strings.button_support_chat),
     click = {
       val scopeInfo = GroupChatScopeInfo.MemberSupport(groupMember_ = null)
@@ -351,8 +352,15 @@ fun UserSupportChatButton(
         )
       }
     },
-    iconColor = MaterialTheme.colors.secondary,
-  )
+    iconColor = (if (chat.supportUnreadCount > 0) MaterialTheme.colors.primary else MaterialTheme.colors.secondary),
+  ) {
+    if (chat.supportUnreadCount > 0) {
+      UnreadBadge(
+        text = unreadCountStr(chat.supportUnreadCount),
+        backgroundColor = MaterialTheme.colors.primary
+      )
+    }
+  }
 }
 
 @Composable
@@ -488,7 +496,7 @@ fun ModalData.GroupChatInfoLayout(
           (groupInfo.membership.memberRole < GroupMemberRole.Moderator || groupInfo.membership.supportChat != null)
         ) {
           anyTopSectionRowShow = true
-          UserSupportChatButton(groupInfo, scrollToItemId)
+          UserSupportChatButton(chat, groupInfo, scrollToItemId)
         }
       }
       if (anyTopSectionRowShow) {
@@ -743,12 +751,19 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
 
 @Composable
 private fun MemberSupportButton(chat: Chat, onClick: () -> Unit) {
-  SettingsActionItem(
+  SettingsActionItemWithContent(
     painterResource(if (chat.supportUnreadCount > 0) MR.images.ic_flag_filled else MR.images.ic_flag),
     stringResource(MR.strings.member_support),
     click = onClick,
     iconColor = (if (chat.supportUnreadCount > 0) MaterialTheme.colors.primary else MaterialTheme.colors.secondary)
-  )
+  ) {
+    if (chat.supportUnreadCount > 0) {
+      UnreadBadge(
+        text = unreadCountStr(chat.supportUnreadCount),
+        backgroundColor = MaterialTheme.colors.primary
+      )
+    }
+  }
 }
 
 @Composable
@@ -762,12 +777,19 @@ private fun GroupPreferencesButton(titleId: StringResource, onClick: () -> Unit)
 
 @Composable
 private fun GroupReportsButton(chat: Chat, onClick: () -> Unit) {
-  SettingsActionItem(
+  SettingsActionItemWithContent(
     painterResource(if (chat.chatStats.reportsCount > 0) MR.images.ic_flag_filled else MR.images.ic_flag),
     stringResource(MR.strings.group_reports_member_reports),
     click = onClick,
     iconColor = (if (chat.chatStats.reportsCount > 0) Color.Red else MaterialTheme.colors.secondary)
-  )
+  ) {
+    if (chat.chatStats.reportsCount > 0) {
+      UnreadBadge(
+        text = unreadCountStr(chat.chatStats.reportsCount),
+        backgroundColor = Color.Red
+      )
+    }
+  }
 }
 
 @Composable

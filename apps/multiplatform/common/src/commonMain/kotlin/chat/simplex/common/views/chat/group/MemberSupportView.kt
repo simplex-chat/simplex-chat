@@ -25,8 +25,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.item.ItemAction
-import chat.simplex.common.views.chatlist.setGroupMembers
-import chat.simplex.common.views.chatlist.unreadCountStr
+import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.launch
@@ -179,12 +178,12 @@ fun SupportChatRow(member: GroupMember) {
     Box(Modifier.widthIn(min = 34.sp.toDp()), contentAlignment = Alignment.TopEnd) {
       Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.sp.toDp())) {
         if (supportChat.unread > 0 || supportChat.mentions > 0 || supportChat.memberAttention > 0) {
-          val indicatorTint = when {
+          val unreadBadgeColor = when {
             supportChat.mentions > 0 || supportChat.memberAttention > 0 -> MaterialTheme.colors.primaryVariant
             else -> MaterialTheme.colors.secondary
           }
           if (supportChat.mentions == 1 && supportChat.unread == 1) {
-            Box(modifier = Modifier.offset(y = 2.sp.toDp()).size(15.sp.toDp()).background(indicatorTint, shape = CircleShape), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.offset(y = 2.sp.toDp()).size(15.sp.toDp()).background(unreadBadgeColor, shape = CircleShape), contentAlignment = Alignment.Center) {
               Icon(
                 painterResource(MR.images.ic_alternate_email),
                 contentDescription = generalGetString(MR.strings.notifications),
@@ -197,22 +196,15 @@ fun SupportChatRow(member: GroupMember) {
               Icon(
                 painterResource(MR.images.ic_alternate_email),
                 contentDescription = generalGetString(MR.strings.notifications),
-                tint = indicatorTint,
-                modifier = Modifier.size(12.sp.toDp()).offset(y = 3.sp.toDp())
+                tint = unreadBadgeColor,
+                modifier = Modifier.size(12.sp.toDp()).offset(y = 2.sp.toDp())
               )
             }
 
-            Text(
-              unreadCountStr(supportChat.unread),
-              color = Color.White,
-              fontSize = 10.sp,
-              style = TextStyle(textAlign = TextAlign.Center),
-              modifier = Modifier
-                .offset(y = 3.sp.toDp())
-                .background(indicatorTint, shape = CircleShape)
-                .badgeLayout()
-                .padding(horizontal = 2.sp.toDp())
-                .padding(vertical = 1.sp.toDp())
+            UnreadBadge(
+              text = unreadCountStr(supportChat.unread),
+              backgroundColor = unreadBadgeColor,
+              yOffset = 2.dp
             )
           }
         }
