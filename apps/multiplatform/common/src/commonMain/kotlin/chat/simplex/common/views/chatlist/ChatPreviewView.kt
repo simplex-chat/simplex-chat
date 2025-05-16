@@ -471,17 +471,10 @@ fun ChatPreviewView(
                     )
                   }
                 } else {
-                  Text(
-                    if (n > 0) unreadCountStr(n) else "",
-                    color = Color.White,
-                    fontSize = 10.sp,
-                    style = TextStyle(textAlign = TextAlign.Center),
-                    modifier = Modifier
-                      .offset(y = 3.sp.toDp())
-                      .background(if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
-                      .badgeLayout()
-                      .padding(horizontal = 2.sp.toDp())
-                      .padding(vertical = 1.sp.toDp())
+                  UnreadBadge(
+                    text = if (n > 0) unreadCountStr(n) else "",
+                    backgroundColor = if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant,
+                    yOffset = 3.dp
                   )
                 }
               }
@@ -571,6 +564,26 @@ private fun groupInvitationPreviewText(currentUserProfileDisplayName: String?, g
     String.format(stringResource(MR.strings.group_preview_join_as), groupInfo.membership.memberProfile.displayName)
   else
     stringResource(MR.strings.group_preview_you_are_invited)
+}
+
+@Composable
+fun UnreadBadge(
+  text: String,
+  backgroundColor: Color,
+  yOffset: Dp? = null
+) {
+  Text(
+    text,
+    color = Color.White,
+    fontSize = 10.sp,
+    style = TextStyle(textAlign = TextAlign.Center),
+    modifier = Modifier
+      .offset(y = yOffset ?: 0.dp)
+      .background(backgroundColor, shape = CircleShape)
+      .badgeLayout()
+      .padding(horizontal = 2.sp.toDp())
+      .padding(vertical = 1.sp.toDp())
+  )
 }
 
 @Composable
