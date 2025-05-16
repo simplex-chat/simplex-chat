@@ -9077,9 +9077,9 @@ Verbindungsanfrage wiederholen?</target>
         <target>Ihr Profil **%@** wird geteilt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your profile is stored on your device and only shared with your contacts." xml:space="preserve">
+      <trans-unit id="Your profile is stored on your device and only shared with your contacts." xml:space="preserve" approved="no">
         <source>Your profile is stored on your device and only shared with your contacts.</source>
-        <target>Das Profil wird nur mit Ihren Kontakten geteilt.</target>
+        <target state="translated">Ihr Profil wird auf Ihrem Gerät gespeichert und nur mit Ihren Kontakten geteilt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." xml:space="preserve">
