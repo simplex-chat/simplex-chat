@@ -2227,11 +2227,12 @@ processChatCommand' vr = \case
       let acis = acis2 <> acis3 <> acis4
           errs = errs1 <> errs2 <> errs3 <> errs4
           deleted = deleted1 <> deleted2 <> deleted3 <> deleted4
-      unless (null acis) $ toView $ CEvtNewChatItems user acis
-      unless (null errs) $ toView $ CEvtChatErrors errs
-      when withMessages $ deleteMessages user gInfo deleted
       -- Read group info with updated membersRequireAttention
       gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
+      let acis' = map (updateCIGroupInfo gInfo') acis
+      unless (null acis') $ toView $ CEvtNewChatItems user acis'
+      unless (null errs) $ toView $ CEvtChatErrors errs
+      when withMessages $ deleteMessages user gInfo' deleted
       pure $ CRUserDeletedMembers user gInfo' deleted withMessages -- same order is not guaranteed
     where
       selectMembers :: [GroupMember] -> (Int, [GroupMember], [GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool)
@@ -2284,10 +2285,15 @@ processChatCommand' vr = \case
             delMember db m = do
               -- We're in a function used in batch member deletion, and since we're passing same gInfo for each member,
               -- voided result (updated group info) may have incorrect state of membersRequireAttention.
-              -- To avoid complicating code by passing updated group info through iterations,
-              -- instead we re-read it once after deleting all members (for CRUserDeletedMembers).
+              -- To avoid complicating code by chaining group info updates,
+              -- instead we re-read it once after deleting all members before response.
               void $ deleteOrUpdateMemberRecordIO db user gInfo m
               pure m {memberStatus = GSMemRemoved}
+      updateCIGroupInfo :: GroupInfo -> AChatItem -> AChatItem
+      updateCIGroupInfo gInfo' = \case
+        AChatItem SCTGroup SMDSnd (GroupChat _gInfo chatScopeInfo) ci ->
+          AChatItem SCTGroup SMDSnd (GroupChat gInfo' chatScopeInfo) ci
+        aci -> aci
       deleteMessages user gInfo@GroupInfo {membership} ms
         | groupFeatureMemberAllowed SGFFullDelete membership gInfo = deleteGroupMembersCIs user gInfo ms membership
         | otherwise = markGroupMembersCIsDeleted user gInfo ms membership
