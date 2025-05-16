@@ -1336,14 +1336,6 @@ LIST SUBQUERY 1
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-          UPDATE groups
-          SET members_require_attention = members_require_attention - 1
-          WHERE user_id = ? AND group_id = ?
-        
-Plan:
-SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
           UPDATE user_contact_links
           SET auto_accept = ?, business_address = ?, auto_accept_incognito = ?, auto_reply_msg_content = ?
           WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
@@ -4446,6 +4438,14 @@ SEARCH group_snd_item_statuses USING INDEX idx_group_snd_item_statuses_chat_item
 Query: 
       UPDATE groups
       SET members_require_attention = members_require_attention + 1
+      WHERE user_id = ? AND group_id = ?
+    
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+      UPDATE groups
+      SET members_require_attention = members_require_attention - 1
       WHERE user_id = ? AND group_id = ?
     
 Plan:
