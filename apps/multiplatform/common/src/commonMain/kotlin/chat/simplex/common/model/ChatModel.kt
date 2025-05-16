@@ -323,6 +323,12 @@ object ChatModel {
         is SecondaryContextFilter.MsgContentTagContext -> null
       }
 
+    val isUserSupportChat: Boolean =
+      when (groupScopeInfo) {
+        null -> false
+        is GroupChatScopeInfo.MemberSupport -> groupScopeInfo.groupMember_ == null
+      }
+
     suspend fun addChat(chat: Chat) {
       chats.add(index = 0, chat)
       popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = 0)
@@ -1877,7 +1883,7 @@ data class GroupInfo (
     get() = membership.memberRole == GroupMemberRole.Owner && membership.memberCurrent
 
   val canDelete: Boolean
-    get() = membership.memberRole == GroupMemberRole.Owner || !membership.memberCurrent
+    get() = membership.memberRole == GroupMemberRole.Owner || !membership.memberCurrentOrPending
 
   val canAddMembers: Boolean
     get() = membership.memberRole >= GroupMemberRole.Admin && membership.memberActive
@@ -2083,6 +2089,9 @@ data class GroupMember (
     GroupMemberStatus.MemPendingReview -> true
     else -> false
   }
+
+  val memberCurrentOrPending: Boolean get() =
+    memberCurrent || memberPending
 
   fun canBeRemoved(groupInfo: GroupInfo): Boolean {
     val userRole = groupInfo.membership.memberRole

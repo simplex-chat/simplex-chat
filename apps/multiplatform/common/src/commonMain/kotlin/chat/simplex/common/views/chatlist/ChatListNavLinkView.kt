@@ -304,7 +304,7 @@ fun GroupMenuItems(
       }
     }
     GroupMemberStatus.MemAccepted -> {
-      if (groupInfo.membership.memberCurrent) {
+      if (groupInfo.membership.memberCurrentOrPending) {
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
       }
       if (groupInfo.canDelete) {
@@ -326,7 +326,7 @@ fun GroupMenuItems(
         }
       }
       ClearChatAction(chat, showMenu)
-      if (groupInfo.membership.memberCurrent) {
+      if (groupInfo.membership.memberCurrentOrPending) {
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
       }
       if (groupInfo.canDelete) {

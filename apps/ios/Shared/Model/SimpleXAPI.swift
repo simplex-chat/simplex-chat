@@ -1646,9 +1646,9 @@ func apiAcceptMember(_ groupId: Int64, _ groupMemberId: Int64, _ memberRole: Gro
     throw r.unexpected
 }
 
-func apiRemoveMembers(_ groupId: Int64, _ memberIds: [Int64], _ withMessages: Bool = false) async throws -> [GroupMember] {
+func apiRemoveMembers(_ groupId: Int64, _ memberIds: [Int64], _ withMessages: Bool = false) async throws -> (GroupInfo, [GroupMember]) {
     let r: ChatResponse2 = try await chatSendCmd(.apiRemoveMembers(groupId: groupId, memberIds: memberIds, withMessages: withMessages), bgTask: false)
-    if case let .userDeletedMembers(_, _, members, withMessages) = r { return members }
+    if case let .userDeletedMembers(_, updatedGroupInfo, members, _withMessages) = r { return (updatedGroupInfo, members) }
     throw r.unexpected
 }
 
@@ -2267,6 +2267,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
     case let .deletedMember(user, groupInfo, byMember, deletedMember, withMessages):
         if active(user) {
             await MainActor.run {
+                m.updateGroup(groupInfo)
                 _ = m.upsertGroupMember(groupInfo, deletedMember)
                 if withMessages {
                     m.removeMemberItems(deletedMember, byMember: byMember, groupInfo)
@@ -2276,6 +2277,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
     case let .leftMember(user, groupInfo, member):
         if active(user) {
             await MainActor.run {
+                m.updateGroup(groupInfo)
                 _ = m.upsertGroupMember(groupInfo, member)
             }
         }

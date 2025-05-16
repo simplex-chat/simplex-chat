@@ -1911,9 +1911,9 @@ object ChatController {
     return null
   }
 
-  suspend fun apiRemoveMembers(rh: Long?, groupId: Long, memberIds: List<Long>, withMessages: Boolean = false): List<GroupMember>? {
+  suspend fun apiRemoveMembers(rh: Long?, groupId: Long, memberIds: List<Long>, withMessages: Boolean = false): Pair<GroupInfo, List<GroupMember>>? {
     val r = sendCmd(rh, CC.ApiRemoveMembers(groupId, memberIds, withMessages))
-    if (r is API.Result && r.res is CR.UserDeletedMembers) return r.res.members
+    if (r is API.Result && r.res is CR.UserDeletedMembers) return r.res.groupInfo to r.res.members
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiRemoveMembers", generalGetString(MR.strings.error_removing_member), r)
     }
@@ -2603,6 +2603,7 @@ object ChatController {
       is CR.DeletedMember ->
         if (active(r.user)) {
           withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateGroup(rhId, r.groupInfo)
             chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.deletedMember)
             if (r.withMessages) {
               chatModel.chatsContext.removeMemberItems(rhId, r.deletedMember, byMember = r.byMember, r.groupInfo)
@@ -2618,6 +2619,7 @@ object ChatController {
       is CR.LeftMember ->
         if (active(r.user)) {
           withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateGroup(rhId, r.groupInfo)
             chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
           }
           withContext(Dispatchers.Main) {

@@ -898,7 +898,6 @@ fun ChatLayout(
         if (oneHandUI.value && chatBottomBar.value) {
           if (
             chatInfo is ChatInfo.Group
-            && chatInfo.groupInfo.canModerate
             && chatsCtx.secondaryContextFilter == null
             && (reportsCount > 0 || supportUnreadCount > 0)
           ) {
@@ -960,8 +959,6 @@ fun ChatLayout(
               }
               if (
                 chatInfo is ChatInfo.Group
-                && chatInfo.groupInfo.canModerate
-                && chatsCtx.contentTag == null
                 && (reportsCount > 0 || supportUnreadCount > 0)
                 && (!oneHandUI.value || !chatBottomBar.value)
               ) {
@@ -1212,7 +1209,11 @@ private fun SupportChatsCountToolbar(
         .fillMaxWidth(),
       horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
-      if (reportsCount > 0) {
+      if (
+        chatInfo is ChatInfo.Group
+        && chatInfo.groupInfo.canModerate
+        && reportsCount > 0
+      ) {
         Row(
           Modifier
             .fillMaxWidth()

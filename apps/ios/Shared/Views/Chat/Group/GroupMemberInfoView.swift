@@ -640,10 +640,11 @@ struct GroupMemberInfoView: View {
             primaryButton: .destructive(Text("Remove")) {
                 Task {
                     do {
-                        let updatedMembers = try await apiRemoveMembers(groupInfo.groupId, [mem.groupMemberId])
+                        let (updatedGroupInfo, updatedMembers) = try await apiRemoveMembers(groupInfo.groupId, [mem.groupMemberId])
                         await MainActor.run {
+                            chatModel.updateGroup(updatedGroupInfo)
                             updatedMembers.forEach { updatedMember in
-                                _ = chatModel.upsertGroupMember(groupInfo, updatedMember)
+                                _ = chatModel.upsertGroupMember(updatedGroupInfo, updatedMember)
                             }
                             dismiss()
                         }

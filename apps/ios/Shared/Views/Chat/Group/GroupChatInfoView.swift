@@ -175,7 +175,7 @@ struct GroupChatInfoView: View {
                         if groupInfo.canDelete {
                             deleteGroupButton()
                         }
-                        if groupInfo.membership.memberCurrent {
+                        if groupInfo.membership.memberCurrentOrPending {
                             leaveGroupButton()
                         }
                     }
@@ -797,10 +797,11 @@ struct GroupChatInfoView: View {
 func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction? = nil) {
     Task {
         do {
-            let updatedMembers = try await apiRemoveMembers(groupInfo.groupId, [mem.groupMemberId])
+            let (updatedGroupInfo, updatedMembers) = try await apiRemoveMembers(groupInfo.groupId, [mem.groupMemberId])
             await MainActor.run {
+                ChatModel.shared.updateGroup(updatedGroupInfo)
                 updatedMembers.forEach { updatedMember in
-                    _ = ChatModel.shared.upsertGroupMember(groupInfo, updatedMember)
+                    _ = ChatModel.shared.upsertGroupMember(updatedGroupInfo, updatedMember)
                 }
                 dismiss?()
             }

@@ -189,7 +189,7 @@ struct ChatListNavLink: View {
                 }
                 .swipeActions(edge: .trailing) {
                     tagChatButton(chat)
-                    if (groupInfo.membership.memberCurrent) {
+                    if (groupInfo.membership.memberCurrentOrPending) {
                         leaveGroupChatButton(groupInfo)
                     }
                     if groupInfo.canDelete {
@@ -214,7 +214,7 @@ struct ChatListNavLink: View {
                 let showReportsButton = chat.chatStats.reportsCount > 0 && groupInfo.membership.memberRole >= .moderator
                 let showClearButton = !chat.chatItems.isEmpty
                 let showDeleteGroup = groupInfo.canDelete
-                let showLeaveGroup = groupInfo.membership.memberCurrent
+                let showLeaveGroup = groupInfo.membership.memberCurrentOrPending
                 let totalNumberOfButtons = 1 + (showReportsButton ? 1 : 0) + (showClearButton ? 1 : 0) + (showDeleteGroup ? 1 : 0) + (showLeaveGroup ? 1 : 0)
 
                 if showClearButton && totalNumberOfButtons <= 3 {

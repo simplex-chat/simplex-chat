@@ -22,12 +22,28 @@ import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
 private fun MemberSupportChatView(
+  chatInfo: ChatInfo,
   memberSupportChatsCtx: ChatModel.ChatsContext,
   staleChatId: State<String?>,
   scrollToItemId: MutableState<Long?>
 ) {
   KeyChangeEffect(chatModel.chatId.value) {
     ModalManager.end.closeModals()
+  }
+  if (appPlatform.isAndroid) {
+    DisposableEffect(Unit) {
+      onDispose {
+        val chat = chatModel.chats.value.firstOrNull { ch -> ch.id == chatInfo.id }
+        if (
+          memberSupportChatsCtx.isUserSupportChat
+          && chat?.chatInfo?.groupInfo_?.membership?.memberPending == true
+        ) {
+          withBGApi {
+            chatModel.chatId.value = null
+          }
+        }
+      }
+    }
   }
   ChatView(memberSupportChatsCtx, staleChatId, scrollToItemId, onComposed = {})
 }
@@ -118,7 +134,7 @@ suspend fun showMemberSupportChatView(staleChatId: State<String?>, scrollToItemI
   ModalManager.end.showCustomModal(true, id = ModalViewId.SECONDARY_CHAT) { close ->
     ModalView({}, showAppBar = false) {
       if (chatInfo is ChatInfo.Group && chatInfo.groupChatScope != null) {
-        MemberSupportChatView(memberSupportChatsCtx, staleChatId, scrollToItemId)
+        MemberSupportChatView(chatInfo, memberSupportChatsCtx, staleChatId, scrollToItemId)
       } else {
         LaunchedEffect(Unit) {
           close()
