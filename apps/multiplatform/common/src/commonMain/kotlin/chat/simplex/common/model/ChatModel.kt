@@ -323,6 +323,12 @@ object ChatModel {
         is SecondaryContextFilter.MsgContentTagContext -> null
       }
 
+    val isUserSupportChat: Boolean =
+      when (groupScopeInfo) {
+        null -> false
+        is GroupChatScopeInfo.MemberSupport -> groupScopeInfo.groupMember_ == null
+      }
+
     suspend fun addChat(chat: Chat) {
       chats.add(index = 0, chat)
       popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = 0)
