@@ -175,7 +175,7 @@ struct GroupChatInfoView: View {
                         if groupInfo.canDelete {
                             deleteGroupButton()
                         }
-                        if groupInfo.membership.memberCurrent {
+                        if groupInfo.membership.memberCurrentOrPending {
                             leaveGroupButton()
                         }
                     }

@@ -2043,7 +2043,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     }
 
     public var canDelete: Bool {
-        return membership.memberRole == .owner || !membership.memberCurrent
+        return membership.memberRole == .owner || !membership.memberCurrentOrPending
     }
 
     public var canAddMembers: Bool {
@@ -2273,6 +2273,10 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         case .memPendingReview: return true
         default: return false
         }
+    }
+
+    public var memberCurrentOrPending: Bool {
+        memberCurrent || memberPending
     }
 
     public func canBeRemoved(groupInfo: GroupInfo) -> Bool {

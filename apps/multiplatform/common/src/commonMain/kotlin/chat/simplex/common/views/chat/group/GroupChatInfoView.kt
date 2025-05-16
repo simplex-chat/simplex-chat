@@ -596,7 +596,7 @@ fun ModalData.GroupChatInfoLayout(
           val titleId = if (groupInfo.businessChat == null) MR.strings.button_delete_group else MR.strings.button_delete_chat
           DeleteGroupButton(titleId, deleteGroup)
         }
-        if (groupInfo.membership.memberCurrent) {
+        if (groupInfo.membership.memberCurrentOrPending) {
           val titleId = if (groupInfo.businessChat == null) MR.strings.button_leave_group else MR.strings.button_leave_chat
           LeaveGroupButton(titleId, leaveGroup)
         }
