@@ -2077,8 +2077,8 @@ processChatCommand' vr = \case
         void $ sendGroupMessage user gInfo scope ([m] <> rcpModMs') msg
         when (maxVersion (memberChatVRange m) < groupKnockingVersion) $
           forM_ (memberConn m) $ \mConn -> do
-            let msg = XMsgNew $ MCSimple $ extMsgContent (MCText acceptedToGroupMessage) Nothing
-            void $ sendDirectMemberMessage mConn msg groupId
+            let msg2 = XMsgNew $ MCSimple $ extMsgContent (MCText acceptedToGroupMessage) Nothing
+            void $ sendDirectMemberMessage mConn msg2 groupId
         (m', gInfo') <- withFastStore' $ \db -> do
           m' <- updateGroupMemberAccepted db user m newMemberStatus role
           gInfo' <- updateGroupMembersRequireAttention db user gInfo m m'
@@ -2227,10 +2227,13 @@ processChatCommand' vr = \case
       let acis = acis2 <> acis3 <> acis4
           errs = errs1 <> errs2 <> errs3 <> errs4
           deleted = deleted1 <> deleted2 <> deleted3 <> deleted4
-      unless (null acis) $ toView $ CEvtNewChatItems user acis
+      -- Read group info with updated membersRequireAttention
+      gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
+      let acis' = map (updateCIGroupInfo gInfo') acis
+      unless (null acis') $ toView $ CEvtNewChatItems user acis'
       unless (null errs) $ toView $ CEvtChatErrors errs
-      when withMessages $ deleteMessages user gInfo deleted
-      pure $ CRUserDeletedMembers user gInfo deleted withMessages -- same order is not guaranteed
+      when withMessages $ deleteMessages user gInfo' deleted
+      pure $ CRUserDeletedMembers user gInfo' deleted withMessages -- same order is not guaranteed
     where
       selectMembers :: [GroupMember] -> (Int, [GroupMember], [GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool)
       selectMembers = foldl' addMember (0, [], [], [], [], GRObserver, False)
@@ -2280,8 +2283,17 @@ processChatCommand' vr = \case
                   ts = ciContentTexts content
                in NewSndChatItemData msg content ts M.empty Nothing Nothing Nothing
             delMember db m = do
-              deleteOrUpdateMemberRecordIO db user m
+              -- We're in a function used in batch member deletion, and since we're passing same gInfo for each member,
+              -- voided result (updated group info) may have incorrect state of membersRequireAttention.
+              -- To avoid complicating code by chaining group info updates,
+              -- instead we re-read it once after deleting all members before response.
+              void $ deleteOrUpdateMemberRecordIO db user gInfo m
               pure m {memberStatus = GSMemRemoved}
+      updateCIGroupInfo :: GroupInfo -> AChatItem -> AChatItem
+      updateCIGroupInfo gInfo' = \case
+        AChatItem SCTGroup SMDSnd (GroupChat _gInfo chatScopeInfo) ci ->
+          AChatItem SCTGroup SMDSnd (GroupChat gInfo' chatScopeInfo) ci
+        aci -> aci
       deleteMessages user gInfo@GroupInfo {membership} ms
         | groupFeatureMemberAllowed SGFFullDelete membership gInfo = deleteGroupMembersCIs user gInfo ms membership
         | otherwise = markGroupMembersCIsDeleted user gInfo ms membership
