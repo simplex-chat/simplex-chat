@@ -1055,16 +1055,18 @@ private fun setGroupAlias(chat: Chat, localAlias: String, chatModel: ChatModel) 
 
 fun removeMembers(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, onSuccess: () -> Unit = {}) {
   withBGApi {
-    val updatedMembers = chatModel.controller.apiRemoveMembers(rhId, groupInfo.groupId, memberIds)
-    if (updatedMembers != null) {
+    val r = chatModel.controller.apiRemoveMembers(rhId, groupInfo.groupId, memberIds)
+    if (r != null) {
+      val (updatedGroupInfo, updatedMembers) = r
       withContext(Dispatchers.Main) {
+        chatModel.chatsContext.updateGroup(rhId, updatedGroupInfo)
         updatedMembers.forEach { updatedMember ->
-          chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, updatedMember)
+          chatModel.chatsContext.upsertGroupMember(rhId, updatedGroupInfo, updatedMember)
         }
       }
       withContext(Dispatchers.Main) {
         updatedMembers.forEach { updatedMember ->
-          chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, groupInfo, updatedMember)
+          chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, updatedGroupInfo, updatedMember)
         }
       }
       onSuccess()
