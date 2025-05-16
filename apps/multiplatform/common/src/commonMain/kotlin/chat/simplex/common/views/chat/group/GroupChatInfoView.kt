@@ -331,13 +331,14 @@ fun AddGroupMembersButton(
 
 @Composable
 fun UserSupportChatButton(
+  chat: Chat,
   groupInfo: GroupInfo,
   scrollToItemId: MutableState<Long?>
 ) {
   val scope = rememberCoroutineScope()
 
   SettingsActionItem(
-    painterResource(MR.images.ic_flag),
+    painterResource(if (chat.supportUnreadCount > 0) MR.images.ic_flag_filled else MR.images.ic_flag),
     stringResource(MR.strings.button_support_chat),
     click = {
       val scopeInfo = GroupChatScopeInfo.MemberSupport(groupMember_ = null)
@@ -351,7 +352,7 @@ fun UserSupportChatButton(
         )
       }
     },
-    iconColor = MaterialTheme.colors.secondary,
+    iconColor = (if (chat.supportUnreadCount > 0) MaterialTheme.colors.primary else MaterialTheme.colors.secondary),
   )
 }
 
@@ -488,7 +489,7 @@ fun ModalData.GroupChatInfoLayout(
           (groupInfo.membership.memberRole < GroupMemberRole.Moderator || groupInfo.membership.supportChat != null)
         ) {
           anyTopSectionRowShow = true
-          UserSupportChatButton(groupInfo, scrollToItemId)
+          UserSupportChatButton(chat, groupInfo, scrollToItemId)
         }
       }
       if (anyTopSectionRowShow) {
