@@ -195,6 +195,7 @@ chatGroupTests = do
   describe "group scoped messages" $ do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
     it "should send scoped messages to support (many moderators)" testScopedSupportManyModerators
+    it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats" testScopedSupportUnreadStats
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
@@ -6979,6 +6980,25 @@ testScopedSupportManyModerators =
     bob <## "support: unread: 0, require attention: 0, mentions: 0"
     cath ##> "/member support chats #team"
     cath <## "bob (Bob) (id 3): unread: 0, require attention: 0, mentions: 0"
+
+testSupportCLISendCommand :: HasCallStack => TestParams -> IO ()
+testSupportCLISendCommand =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    createGroup2' "team" alice (bob, GRObserver) True
+
+    alice #> "#team 1"
+    bob <# "#team alice> 1"
+
+    bob ##> "#team 2"
+    bob <## "#team: you don't have permission to send messages"
+    (alice </)
+
+    alice `send` "#team (support: 'bob') 3"
+    alice <# "#team (support: bob) 3"
+    bob <# "#team (support) alice> 3"
+
+    bob #> "#team (support) 4"
+    alice <# "#team (support: bob) bob> 4"
 
 testScopedSupportUnreadStats :: HasCallStack => TestParams -> IO ()
 testScopedSupportUnreadStats =

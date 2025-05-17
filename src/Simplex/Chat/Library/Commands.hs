@@ -1848,10 +1848,10 @@ processChatCommand' vr = \case
     forwardedItemId <- withFastStore $ \db -> getLocalChatItemIdByText' db user folderId forwardedMsg
     toChatRef <- getChatRef user toChatName
     processChatCommand $ APIForwardChatItems toChatRef (ChatRef CTLocal folderId Nothing) (forwardedItemId :| []) Nothing
-  SendMessage (ChatName cType name) msg -> withUser $ \user -> do
+  SendMessage sendName msg -> withUser $ \user -> do
     let mc = MCText msg
-    case cType of
-      CTDirect ->
+    case sendName of
+      SNDirect name ->
         withFastStore' (\db -> runExceptT $ getContactIdByName db user name) >>= \case
           Right ctId -> do
             let sendRef = SRDirect ctId
@@ -1866,18 +1866,18 @@ processChatCommand' vr = \case
                 throwChatError $ CEContactNotFound name (Just suspectedMember)
               _ ->
                 throwChatError $ CEContactNotFound name Nothing
-      CTGroup -> do
-        (gId, mentions) <- withFastStore $ \db -> do
+      SNGroup name scope_ -> do
+        (gId, cScope_, mentions) <- withFastStore $ \db -> do
           gId <- getGroupIdByName db user name
-          (gId,) <$> liftIO (getMessageMentions db user gId msg)
-        let sendRef = SRGroup gId Nothing
+          cScope_ <-
+            forM scope_ $ \(GSNMemberSupport mName_) ->
+              GCSMemberSupport <$> mapM (getGroupMemberIdByName db user gId) mName_
+          (gId,cScope_,) <$> liftIO (getMessageMentions db user gId msg)
+        let sendRef = SRGroup gId cScope_
         processChatCommand $ APISendMessages sendRef False Nothing [ComposedMessage Nothing Nothing mc mentions]
-      CTLocal
-        | name == "" -> do
-            folderId <- withFastStore (`getUserNoteFolderId` user)
-            processChatCommand $ APICreateChatItems folderId [composedMessage Nothing mc]
-        | otherwise -> throwCmdError "not supported"
-      _ -> throwCmdError "not supported"
+      SNLocal -> do
+        folderId <- withFastStore (`getUserNoteFolderId` user)
+        processChatCommand $ APICreateChatItems folderId [composedMessage Nothing mc]
   SendMemberContactMessage gName mName msg -> withUser $ \user -> do
     (gId, mId) <- getGroupAndMemberId user gName mName
     m <- withFastStore $ \db -> getGroupMember db vr user gId mId
@@ -3369,7 +3369,7 @@ processChatCommand' vr = \case
           Nothing -> Just GRAuthor
           Just (GCSMemberSupport Nothing)
             | memberPending membership -> Nothing
-            | otherwise -> Just GRAuthor
+            | otherwise -> Just GRObserver
           Just (GCSMemberSupport (Just _gmId)) -> Just GRModerator
         assertGroupContentAllowed :: CM ()
         assertGroupContentAllowed =
@@ -4233,8 +4233,7 @@ chatCommandP =
       ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayNameP <* A.space <* A.char '@' <*> (Just <$> displayNameP) <* A.space <*> msgTextP,
       ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayNameP <*> pure Nothing <* A.space <*> msgTextP,
       ForwardLocalMessage <$> chatNameP <* " <- * " <*> msgTextP,
-      SendMessage <$> chatNameP <* A.space <*> msgTextP,
-      "/* " *> (SendMessage (ChatName CTLocal "") <$> msgTextP),
+      SendMessage <$> sendNameP <* A.space <*> msgTextP,
       "@#" *> (SendMemberContactMessage <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <* A.space <*> msgTextP),
       "/live " *> (SendLiveMessage <$> chatNameP <*> (A.space *> msgTextP <|> pure "")),
       (">@" <|> "> @") *> sendMsgQuote (AMsgDirection SMDRcv),
@@ -4437,14 +4436,21 @@ chatCommandP =
     chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayNameP
     chatRefP = do
       chatTypeP >>= \case
-        CTGroup -> ChatRef CTGroup <$> A.decimal <*> (Just <$> gcScopeP <|> pure Nothing)
+        CTGroup -> ChatRef CTGroup <$> A.decimal <*> optional gcScopeP
         cType -> (\chatId -> ChatRef cType chatId Nothing) <$> A.decimal
     sendRefP =
       (A.char '@' $> SRDirect <*> A.decimal)
-        <|> (A.char '#' $> SRGroup <*> A.decimal <*> (Just <$> gcScopeP <|> pure Nothing))
+        <|> (A.char '#' $> SRGroup <*> A.decimal <*> optional gcScopeP)
     gcScopeP =
       ("(_support:" *> (GCSMemberSupport . Just <$> A.decimal) <* ")")
         <|> ("(_support)" $> (GCSMemberSupport Nothing))
+    sendNameP =
+      (A.char '@' $> SNDirect <*> displayNameP)
+        <|> (A.char '#' $> SNGroup <*> displayNameP <*> optional (A.takeWhile isSpace *> gScopeNameP))
+        <|> ("/*" $> SNLocal)
+    gScopeNameP =
+      ("(support:" *> A.takeWhile isSpace *> (GSNMemberSupport . Just <$> displayNameP) <* ")")
+        <|> ("(support)" $> (GSNMemberSupport Nothing))
     msgCountP = A.space *> A.decimal <|> pure 10
     ciTTLDecimal = ("default" $> Nothing) <|> (Just <$> A.decimal)
     ciTTL =
