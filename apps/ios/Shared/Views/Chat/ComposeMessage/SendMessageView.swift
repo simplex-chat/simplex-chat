@@ -15,6 +15,7 @@ struct SendMessageView: View {
     @Binding var composeState: ComposeState
     @Binding var selectedRange: NSRange
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.isEnabled) var isEnabled
     var sendMessage: (Int?) -> Void
     var sendLiveMessage: (() async -> Void)? = nil
     var updateLiveMessage: (() async -> Void)? = nil
@@ -255,6 +256,7 @@ struct SendMessageView: View {
     }
 
     private struct RecordVoiceMessageButton: View {
+        @Environment(\.isEnabled) var isEnabled
         @EnvironmentObject var theme: AppTheme
         var startVoiceMessageRecording: (() -> Void)?
         var finishVoiceMessageRecording: (() -> Void)?
@@ -263,11 +265,11 @@ struct SendMessageView: View {
         @State private var pressed: TimeInterval? = nil
 
         var body: some View {
-            Image(systemName: "mic.fill")
+            Image(systemName: isEnabled ? "mic.fill" : "mic")
             .resizable()
             .scaledToFit()
             .frame(width: 20, height: 20)
-            .foregroundColor(theme.colors.primary)
+            .foregroundColor(isEnabled ? theme.colors.primary : theme.colors.secondary)
             .opacity(holdingVMR ? 0.7 : 1)
             .disabled(disabled)
             .frame(width: 31, height: 31)
@@ -352,7 +354,7 @@ struct SendMessageView: View {
             Image(systemName: "bolt.fill")
                 .resizable()
                 .scaledToFit()
-                .foregroundColor(theme.colors.primary)
+                .foregroundColor(isEnabled ? theme.colors.primary : theme.colors.secondary)
                 .frame(width: 20, height: 20)
         }
         .frame(width: 29, height: 29)
