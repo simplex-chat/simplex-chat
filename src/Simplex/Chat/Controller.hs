@@ -483,6 +483,7 @@ data ChatCommand
   | NewGroup IncognitoEnabled GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup {groupName :: GroupName, enableNtfs :: MsgFilter}
+  | AcceptMember GroupName ContactName GroupMemberRole
   | MemberRole GroupName ContactName GroupMemberRole
   | BlockForAll GroupName ContactName Bool
   | RemoveMembers {groupName :: GroupName, members :: Set ContactName, withMessages :: Bool}

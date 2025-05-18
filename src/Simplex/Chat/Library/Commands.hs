@@ -27,6 +27,7 @@ import Control.Monad.Reader
 import qualified Data.Aeson as J
 import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import qualified Data.Attoparsec.Combinator as A
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -2328,6 +2329,7 @@ processChatCommand' vr = \case
   JoinGroup gName enableNtfs -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIJoinGroup groupId enableNtfs
+  AcceptMember gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIAcceptMember gId gMemberId memRole
   MemberRole gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIMembersRole gId [gMemberId] memRole
   BlockForAll gName gMemberName blocked -> withMemberName gName gMemberName $ \gId gMemberId -> APIBlockMembersForAll gId [gMemberId] blocked
   RemoveMembers gName gMemberNames withMessages -> withUser $ \user -> do
@@ -2418,7 +2420,8 @@ processChatCommand' vr = \case
     when (contactGrpInvSent ct) $ throwCmdError "x.grp.direct.inv already sent"
     case memberConn m of
       Just mConn -> do
-        let msg = XGrpDirectInv cReq msgContent_
+        -- TODO [knocking] send in correct scope - modiy API
+        let msg = XGrpDirectInv cReq msgContent_ Nothing
         (sndMsg, _, _) <- sendDirectMemberMessage mConn msg groupId
         withFastStore' $ \db -> setContactGrpInvSent db ct True
         let ct' = ct {contactGrpInvSent = True}
@@ -4187,6 +4190,7 @@ chatCommandP =
       "/_group " *> (APINewGroup <$> A.decimal <*> incognitoOnOffP <* A.space <*> jsonP),
       ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> (memberRole <|> pure GRMember)),
       ("/join " <|> "/j ") *> char_ '#' *> (JoinGroup <$> displayNameP <*> (" mute" $> MFNone <|> pure MFAll)),
+      "/accept member " *> char_ '#' *> (AcceptMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> (memberRole <|> pure GRMember)),
       ("/member role " <|> "/mr ") *> char_ '#' *> (MemberRole <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> memberRole),
       "/block for all #" *> (BlockForAll <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure True),
       "/unblock for all #" *> (BlockForAll <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure False),
@@ -4441,16 +4445,22 @@ chatCommandP =
     sendRefP =
       (A.char '@' $> SRDirect <*> A.decimal)
         <|> (A.char '#' $> SRGroup <*> A.decimal <*> optional gcScopeP)
-    gcScopeP =
-      ("(_support:" *> (GCSMemberSupport . Just <$> A.decimal) <* ")")
-        <|> ("(_support)" $> (GCSMemberSupport Nothing))
+    gcScopeP = "(_support" *> (GCSMemberSupport <$> optional (A.char ':' *> A.decimal)) <* A.char ')'
     sendNameP =
       (A.char '@' $> SNDirect <*> displayNameP)
-        <|> (A.char '#' $> SNGroup <*> displayNameP <*> optional (A.takeWhile isSpace *> gScopeNameP))
+        <|> (A.char '#' $> SNGroup <*> displayNameP <*> gScopeNameP)
         <|> ("/*" $> SNLocal)
     gScopeNameP =
-      ("(support:" *> A.takeWhile isSpace *> (GSNMemberSupport . Just <$> displayNameP) <* ")")
-        <|> ("(support)" $> (GSNMemberSupport Nothing))
+      (supportPfx *> (Just . GSNMemberSupport <$> optional supportMember) <* A.char ')')
+        -- this branch fails on "(support" followed by incorrect syntax,
+        -- to avoid sending message to the whole group as `optional gScopeNameP` would do
+        <|> (optional supportPfx >>= mapM (\_ -> fail "bad chat scope"))
+      where
+        supportPfx = A.takeWhile isSpace *> "(support"
+        supportMember = safeDecodeUtf8 <$> (A.char ':' *> A.takeWhile isSpace *> (A.take . lengthTillLastParen =<< A.lookAhead displayNameP_))
+        lengthTillLastParen s = case B.unsnoc s of
+          Just (_, ')') -> B.length s - 1
+          _ -> B.length s
     msgCountP = A.space *> A.decimal <|> pure 10
     ciTTLDecimal = ("default" $> Nothing) <|> (Just <$> A.decimal)
     ciTTL =
@@ -4516,7 +4526,11 @@ chatCommandP =
     char_ = optional . A.char
 
 displayNameP :: Parser Text
-displayNameP = safeDecodeUtf8 <$> (quoted '\'' <|> takeNameTill (\c -> isSpace c || c == ','))
+displayNameP = safeDecodeUtf8 <$> displayNameP_
+{-# INLINE displayNameP #-}
+
+displayNameP_ :: Parser ByteString
+displayNameP_ = quoted '\'' <|> takeNameTill (\c -> isSpace c || c == ',')
   where
     takeNameTill p =
       A.peekChar' >>= \c ->

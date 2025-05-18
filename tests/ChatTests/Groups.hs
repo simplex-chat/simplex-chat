@@ -3010,7 +3010,7 @@ testGLinkApproveMember =
       alice <# "#team (support: cath) cath> proofs"
 
       -- accept member
-      alice ##> "/_accept member #1 3 member"
+      alice ##> "/accept member #team cath"
       concurrentlyN_
         [ alice <## "#team: cath accepted",
           cath
@@ -6993,12 +6993,14 @@ testSupportCLISendCommand =
     bob <## "#team: you don't have permission to send messages"
     (alice </)
 
-    alice `send` "#team (support: 'bob') 3"
-    alice <# "#team (support: bob) 3"
+    alice #> "#team (support: bob) 3"
     bob <# "#team (support) alice> 3"
 
     bob #> "#team (support) 4"
     alice <# "#team (support: bob) bob> 4"
+
+    bob ##> "#team (support 4"
+    bob <## "bad chat command: Failed reading: empty"
 
 testScopedSupportUnreadStats :: HasCallStack => TestParams -> IO ()
 testScopedSupportUnreadStats =

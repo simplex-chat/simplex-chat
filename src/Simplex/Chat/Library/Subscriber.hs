@@ -873,8 +873,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             case event of
               XMsgNew mc -> memberCanSend m'' scope $ newGroupContentMessage gInfo' m'' mc msg brokerTs False
                 where ExtMsgContent {scope} = mcExtMsgContent mc
-              -- TODO [knocking] XMsgFileDescr should include scope? otherwise files will be rejected in support scope for observers
-              XMsgFileDescr sharedMsgId fileDescr -> memberCanSend m'' Nothing $ groupMessageFileDescription gInfo' m'' sharedMsgId fileDescr
+              -- file description is always allowed, to allow sending files to support scope
+              XMsgFileDescr sharedMsgId fileDescr -> groupMessageFileDescription gInfo' m'' sharedMsgId fileDescr
               XMsgUpdate sharedMsgId mContent mentions ttl live msgScope -> memberCanSend m'' msgScope $ groupMessageUpdate gInfo' m'' sharedMsgId mContent mentions msgScope msg brokerTs ttl live
               XMsgDel sharedMsgId memberId -> groupMessageDelete gInfo' m'' sharedMsgId memberId msg brokerTs
               XMsgReact sharedMsgId (Just memberId) reaction add -> groupMsgReaction gInfo' m'' sharedMsgId memberId reaction add msg brokerTs
@@ -897,8 +897,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpDel -> xGrpDel gInfo' m'' msg brokerTs
               XGrpInfo p' -> xGrpInfo gInfo' m'' p' msg brokerTs
               XGrpPrefs ps' -> xGrpPrefs gInfo' m'' ps'
-              -- TODO [knocking] allow making member a contact from support scope?
-              XGrpDirectInv connReq mContent_ -> memberCanSend m'' Nothing $ xGrpDirectInv gInfo' m'' conn' connReq mContent_ msg brokerTs
+              -- TODO [knocking] why don't we forward these messages?
+              XGrpDirectInv connReq mContent_ msgScope -> memberCanSend m'' msgScope $ xGrpDirectInv gInfo' m'' conn' connReq mContent_ msg brokerTs
               XGrpMsgForward memberId msg' msgTs -> xGrpMsgForward gInfo' m'' memberId msg' msgTs
               XInfoProbe probe -> xInfoProbe (COMGroupMember m'') probe
               XInfoProbeCheck probeHash -> xInfoProbeCheck (COMGroupMember m'') probeHash
@@ -2846,8 +2846,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           case event of
             XMsgNew mc -> memberCanSend author scope $ newGroupContentMessage gInfo author mc rcvMsg msgTs True
               where ExtMsgContent {scope} = mcExtMsgContent mc
-            -- TODO [knocking] file description for scope
-            XMsgFileDescr sharedMsgId fileDescr -> memberCanSend author Nothing $ groupMessageFileDescription gInfo author sharedMsgId fileDescr
+            -- file description is always allowed, to allow sending files to support scope
+            XMsgFileDescr sharedMsgId fileDescr -> groupMessageFileDescription gInfo author sharedMsgId fileDescr
             XMsgUpdate sharedMsgId mContent mentions ttl live msgScope -> memberCanSend author msgScope $ groupMessageUpdate gInfo author sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live
             XMsgDel sharedMsgId memId -> groupMessageDelete gInfo author sharedMsgId memId rcvMsg msgTs
             XMsgReact sharedMsgId (Just memId) reaction add -> groupMsgReaction gInfo author sharedMsgId memId reaction add rcvMsg msgTs
