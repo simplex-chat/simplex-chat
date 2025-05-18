@@ -327,6 +327,7 @@ struct ComposeView: View {
     @Binding var keyboardVisible: Bool
     @Binding var keyboardHiddenDate: Date
     @Binding var selectedRange: NSRange
+    var disabledText: LocalizedStringKey? = nil
 
     @State var linkUrl: URL? = nil
     @State var hasSimplexLink: Bool = false
@@ -443,17 +444,11 @@ struct ComposeView: View {
                     .padding(.trailing, 12)
                     .disabled(!chat.userCanSend)
 
-                    if chat.userIsObserver {
-                        Text("you are observer")
+                    if let disabledText {
+                        Text(disabledText)
                             .italic()
                             .foregroundColor(theme.colors.secondary)
                             .padding(.horizontal, 12)
-                            .onTapGesture {
-                                AlertManager.shared.showAlertMsg(
-                                    title: "You can't send messages!",
-                                    message: "Please contact group admin."
-                                )
-                            }
                     }
                 }
             }

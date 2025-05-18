@@ -1154,21 +1154,12 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
 
     var userCanSend: Bool {
         switch chatInfo {
-        case .direct: return true
+        case let .direct(contact): return contact.active
         case let .group(groupInfo):
             let m = groupInfo.membership
             return m.memberActive && m.memberRole >= .member
         case .local:
             return true
-        default: return false
-        }
-    }
-
-    var userIsObserver: Bool {
-        switch chatInfo {
-        case let .group(groupInfo):
-            let m = groupInfo.membership
-            return m.memberActive && m.memberRole == .observer
         default: return false
         }
     }
