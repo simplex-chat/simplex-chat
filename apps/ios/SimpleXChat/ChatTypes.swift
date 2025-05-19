@@ -1333,6 +1333,19 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public var userCantSendReason: (composeLabel: LocalizedStringKey, alertMessage: LocalizedStringKey?)? {
+        get {
+            switch self {
+            case let .direct(contact): return contact.userCantSendReason
+            case let .group(groupInfo): return groupInfo.userCantSendReason
+            case let .local(noteFolder): return noteFolder.userCantSendReason
+            case let .contactRequest(contactRequest): return contactRequest.userCantSendReason
+            case let .contactConnection(contactConnection): return contactConnection.userCantSendReason
+            case .invalidJSON: return ("can't send messages", nil)
+            }
+        }
+    }
+
     public var sendMsgEnabled: Bool {
         get {
             switch self {
@@ -1642,15 +1655,16 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var ready: Bool { get { activeConn?.connStatus == .ready } }
     public var sndReady: Bool { get { ready || activeConn?.connStatus == .sndReady } }
     public var active: Bool { get { contactStatus == .active } }
-    public var sendMsgEnabled: Bool { get {
-        (
-            sndReady
-            && active
-            && !(activeConn?.connectionStats?.ratchetSyncSendProhibited ?? false)
-            && !(activeConn?.connDisabled ?? true)
-        )
-        || nextSendGrpInv
-    } }
+    public var userCantSendReason: (composeLabel: LocalizedStringKey, alertMessage: LocalizedStringKey?)? {
+        // TODO [short links] this will have additional statuses for pending contact requests before they are accepted
+        if nextSendGrpInv { return nil }
+        if !active { return ("contact deleted", nil) }
+        if !sndReady { return ("contact not ready", nil) }
+        if activeConn?.connectionStats?.ratchetSyncSendProhibited ?? false { return ("not synchronized", nil) }
+        if activeConn?.connDisabled ?? true { return ("contact disabled", nil) }
+        return nil
+    }
+    public var sendMsgEnabled: Bool { userCantSendReason == nil }
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
     public var displayName: String { localAlias == "" ? profile.displayName : localAlias }
     public var fullName: String { get { profile.fullName } }
@@ -1829,6 +1843,7 @@ public struct UserContactRequest: Decodable, NamedChat, Hashable {
     public var id: ChatId { get { "<@\(contactRequestId)" } }
     public var apiId: Int64 { get { contactRequestId } }
     var ready: Bool { get { true } }
+    public var userCantSendReason: (composeLabel: LocalizedStringKey, alertMessage: LocalizedStringKey?)? { ("can't send messages", nil) }
     public var sendMsgEnabled: Bool { get { false } }
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
@@ -1861,6 +1876,7 @@ public struct PendingContactConnection: Decodable, NamedChat, Hashable {
     public var id: ChatId { get { ":\(pccConnId)" } }
     public var apiId: Int64 { get { pccConnId } }
     var ready: Bool { get { false } }
+    public var userCantSendReason: (composeLabel: LocalizedStringKey, alertMessage: LocalizedStringKey?)? { ("can't send messages", nil) }
     public var sendMsgEnabled: Bool { get { false } }
     var localDisplayName: String {
         get { String.localizedStringWithFormat(NSLocalizedString("connection:%@", comment: "connection information"), pccConnId) }
@@ -1990,7 +2006,20 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var id: ChatId { get { "#\(groupId)" } }
     public var apiId: Int64 { get { groupId } }
     public var ready: Bool { get { true } }
-    public var sendMsgEnabled: Bool { get { membership.memberActive } }
+    public var userCantSendReason: (composeLabel: LocalizedStringKey, alertMessage: LocalizedStringKey?)? {
+        return if membership.memberActive {
+            membership.memberRole == .observer ? ("you are observer", "Please contact group admin.") : nil
+        } else {
+            switch membership.memberStatus {
+            case .memRejected: ("request to join rejected", nil)
+            case .memGroupDeleted: ("group is deleted", nil)
+            case .memRemoved: ("removed from group", nil)
+            case .memLeft: ("you left", nil)
+            default: ("can't send messages", nil)
+            }
+        }
+    }
+    public var sendMsgEnabled: Bool { userCantSendReason == nil }
     public var displayName: String { localAlias == "" ? groupProfile.displayName : localAlias }
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
@@ -2357,6 +2386,7 @@ public struct NoteFolder: Identifiable, Decodable, NamedChat, Hashable {
     public var id: ChatId { get { "*\(noteFolderId)" } }
     public var apiId: Int64 { get { noteFolderId } }
     public var ready: Bool { get { true } }
+    public var userCantSendReason: (composeLabel: LocalizedStringKey, alertMessage: LocalizedStringKey?)? { nil }
     public var sendMsgEnabled: Bool { get { true } }
     public var displayName: String { get { ChatInfo.privateNotesChatName } }
     public var fullName: String { get { "" } }
