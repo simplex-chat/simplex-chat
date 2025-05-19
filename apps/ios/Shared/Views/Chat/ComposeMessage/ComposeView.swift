@@ -380,8 +380,8 @@ struct ComposeView: View {
                 Divider()
             }
             // preference checks should match checks in forwarding list
-            let simplexLinkProhibited = hasSimplexLink && !chat.groupFeatureEnabled(.simplexLinks)
-            let fileProhibited = composeState.attachmentPreview && !chat.groupFeatureEnabled(.files)
+            let simplexLinkProhibited = im.secondaryIMFilter == nil && hasSimplexLink && !chat.groupFeatureEnabled(.simplexLinks)
+            let fileProhibited = im.secondaryIMFilter == nil && composeState.attachmentPreview && !chat.groupFeatureEnabled(.files)
             let voiceProhibited = composeState.voicePreview && !chat.chatInfo.featureEnabled(.voice)
             if simplexLinkProhibited {
                 msgNotAllowedView("SimpleX links not allowed", icon: "link")
@@ -411,7 +411,8 @@ struct ComposeView: View {
                 .padding(.bottom, 16)
                 .padding(.leading, 12)
                 .tint(theme.colors.primary)
-                if case let .group(g, _) = chat.chatInfo,
+                if im.secondaryIMFilter == nil,
+                   case let .group(g, _) = chat.chatInfo,
                    !g.fullGroupPreferences.files.on(for: g.membership) {
                     b.disabled(true).onTapGesture {
                         AlertManager.shared.showAlertMsg(

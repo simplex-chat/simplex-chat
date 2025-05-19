@@ -1039,8 +1039,8 @@ fun ComposeView(
     if (ctx is ComposeContextItem.ReportedItem) {
       ReportReasonView(ctx.reason)
     }
-    val simplexLinkProhibited = hasSimplexLink.value && !chat.groupFeatureEnabled(GroupFeature.SimplexLinks)
-    val fileProhibited = composeState.value.attachmentPreview && !chat.groupFeatureEnabled(GroupFeature.Files)
+    val simplexLinkProhibited = chatsCtx.secondaryContextFilter == null && hasSimplexLink.value && !chat.groupFeatureEnabled(GroupFeature.SimplexLinks)
+    val fileProhibited = chatsCtx.secondaryContextFilter == null && composeState.value.attachmentPreview && !chat.groupFeatureEnabled(GroupFeature.Files)
     val voiceProhibited = composeState.value.preview is ComposePreview.VoicePreview && !chat.chatInfo.featureEnabled(ChatFeature.Voice)
     if (composeState.value.preview !is ComposePreview.VoicePreview || composeState.value.editing) {
       if (simplexLinkProhibited) {
@@ -1069,7 +1069,10 @@ fun ComposeView(
     Surface(color = MaterialTheme.colors.background, contentColor = MaterialTheme.colors.onBackground) {
       Divider()
       Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
-        val isGroupAndProhibitedFiles = chat.chatInfo is ChatInfo.Group && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on(chat.chatInfo.groupInfo.membership)
+        val isGroupAndProhibitedFiles =
+          chatsCtx.secondaryContextFilter == null
+              && chat.chatInfo is ChatInfo.Group
+              && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on(chat.chatInfo.groupInfo.membership)
         val attachmentClicked = if (isGroupAndProhibitedFiles) {
           {
             AlertManager.shared.showAlertMsg(

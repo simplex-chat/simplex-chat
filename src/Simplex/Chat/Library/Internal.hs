@@ -323,12 +323,12 @@ quoteContent mc qmc ciFile_
     qFileName = maybe qText (T.pack . getFileName) ciFile_
     qTextOrFile = if T.null qText then qFileName else qText
 
-prohibitedGroupContent :: GroupInfo -> GroupMember -> MsgContent -> Maybe MarkdownList -> Maybe f -> Bool -> Maybe GroupFeature
-prohibitedGroupContent gInfo@GroupInfo {membership = GroupMember {memberRole = userRole}} m mc ft file_ sent
+prohibitedGroupContent :: GroupInfo -> GroupMember -> Maybe GroupChatScopeInfo -> MsgContent -> Maybe MarkdownList -> Maybe f -> Bool -> Maybe GroupFeature
+prohibitedGroupContent gInfo@GroupInfo {membership = GroupMember {memberRole = userRole}} m scopeInfo mc ft file_ sent
   | isVoice mc && not (groupFeatureMemberAllowed SGFVoice m gInfo) = Just GFVoice
-  | not (isVoice mc) && isJust file_ && not (groupFeatureMemberAllowed SGFFiles m gInfo) = Just GFFiles
-  | isReport mc && (badReportUser || not (groupFeatureAllowed SGFReports gInfo)) = Just GFReports
-  | prohibitedSimplexLinks gInfo m ft = Just GFSimplexLinks
+  | isNothing scopeInfo && not (isVoice mc) && isJust file_ && not (groupFeatureMemberAllowed SGFFiles m gInfo) = Just GFFiles
+  | isNothing scopeInfo && isReport mc && (badReportUser || not (groupFeatureAllowed SGFReports gInfo)) = Just GFReports
+  | isNothing scopeInfo && prohibitedSimplexLinks gInfo m ft = Just GFSimplexLinks
   | otherwise = Nothing
   where
     -- admins cannot send reports, non-admins cannot receive reports
