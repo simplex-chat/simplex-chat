@@ -1248,34 +1248,6 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
         )
     }
 
-    var userCanSend: Bool {
-        switch chatInfo {
-        case .direct: return true
-        case let .group(groupInfo, groupChatScope):
-            let m = groupInfo.membership
-            return (m.memberActive && m.memberRole >= .member && !m.memberPending) || groupChatScope != nil
-        case .local:
-            return true
-        default: return false
-        }
-    }
-
-    var userIsObserver: Bool {
-        switch chatInfo {
-        case let .group(groupInfo, _):
-            let m = groupInfo.membership
-            return m.memberActive && m.memberRole == .observer
-        default: return false
-        }
-    }
-
-    var userIsPending: Bool {
-        switch chatInfo {
-        case let .group(groupInfo, _): groupInfo.membership.memberPending
-        default: false
-        }
-    }
-
     var unreadTag: Bool {
         switch chatInfo.chatSettings?.enableNtfs {
         case .all: chatStats.unreadChat || chatStats.unreadCount > 0

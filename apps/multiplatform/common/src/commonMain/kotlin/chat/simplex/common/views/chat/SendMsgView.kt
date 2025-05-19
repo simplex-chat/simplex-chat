@@ -39,13 +39,11 @@ fun SendMsgView(
   isDirectChat: Boolean,
   liveMessageAlertShown: SharedPreference<Boolean>,
   sendMsgEnabled: Boolean,
+  userCantSendReason: Pair<String, String?>?,
   sendButtonEnabled: Boolean,
   nextSendGrpInv: Boolean,
   needToAllowVoiceToContact: Boolean,
   allowedVoiceByPrefs: Boolean,
-  userIsObserver: Boolean,
-  userIsPending: Boolean,
-  userCanSend: Boolean,
   sendButtonColor: Color = MaterialTheme.colors.primary,
   allowVoiceToContact: () -> Unit,
   timedMessageAllowed: Boolean = false,
@@ -81,15 +79,14 @@ fun SendMsgView(
       (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
         cs.endLiveDisabled ||
         !sendButtonEnabled
-    val clicksOnTextFieldDisabled = !sendMsgEnabled || cs.preview is ComposePreview.VoicePreview || !userCanSend || cs.inProgress
+    val clicksOnTextFieldDisabled = !sendMsgEnabled || cs.preview is ComposePreview.VoicePreview || cs.inProgress
     PlatformTextField(
       composeState,
       sendMsgEnabled,
+      disabledText = userCantSendReason?.first,
       sendMsgButtonDisabled,
       textStyle,
       showDeleteTextButton,
-      userIsObserver,
-      userIsPending,
       if (clicksOnTextFieldDisabled) "" else placeholder,
       showVoiceButton,
       onMessageChange,
@@ -102,16 +99,23 @@ fun SendMsgView(
       }
     }
     if (clicksOnTextFieldDisabled) {
-      Box(
-        Modifier
-          .matchParentSize()
-          .clickable(enabled = !userCanSend, indication = null, interactionSource = remember { MutableInteractionSource() }, onClick = {
-            AlertManager.shared.showAlertMsg(
-              title = generalGetString(MR.strings.observer_cant_send_message_title),
-              text = generalGetString(MR.strings.observer_cant_send_message_desc)
-            )
-          })
-      )
+      if (userCantSendReason != null) {
+        Box(
+          Modifier
+            .matchParentSize()
+            .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }, onClick = {
+              AlertManager.shared.showAlertMsg(
+                title = generalGetString(MR.strings.cant_send_message_alert_title),
+                text = userCantSendReason.second
+              )
+            })
+        )
+      } else {
+        Box(
+          Modifier
+            .matchParentSize()
+        )
+      }
     }
     if (showDeleteTextButton.value) {
       DeleteTextButton(composeState)
@@ -135,11 +139,11 @@ fun SendMsgView(
           Row(verticalAlignment = Alignment.CenterVertically) {
             val stopRecOnNextClick = remember { mutableStateOf(false) }
             when {
-              needToAllowVoiceToContact || !allowedVoiceByPrefs || !userCanSend -> {
-                DisallowedVoiceButton(userCanSend) {
+              needToAllowVoiceToContact || !allowedVoiceByPrefs -> {
+                DisallowedVoiceButton {
                   if (needToAllowVoiceToContact) {
                     showNeedToAllowVoiceAlert(allowVoiceToContact)
-                  } else if (!allowedVoiceByPrefs) {
+                  } else {
                     showDisabledVoiceAlert(isDirectChat)
                   }
                 }
@@ -155,7 +159,7 @@ fun SendMsgView(
               && cs.contextItem is ComposeContextItem.NoContextItem
             ) {
               Spacer(Modifier.width(12.dp))
-              StartLiveMessageButton(userCanSend) {
+              StartLiveMessageButton {
                 if (composeState.value.preview is ComposePreview.NoPreview) {
                   startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)
                 }
@@ -343,8 +347,8 @@ private fun RecordVoiceView(recState: MutableState<RecordingState>, stopRecOnNex
 }
 
 @Composable
-private fun DisallowedVoiceButton(enabled: Boolean, onClick: () -> Unit) {
-  IconButton(onClick, Modifier.size(36.dp), enabled = enabled) {
+private fun DisallowedVoiceButton(onClick: () -> Unit) {
+  IconButton(onClick, Modifier.size(36.dp)) {
     Icon(
       painterResource(MR.images.ic_keyboard_voice),
       stringResource(MR.strings.icon_descr_record_voice_message),
@@ -460,14 +464,13 @@ private fun SendMsgButton(
 }
 
 @Composable
-private fun StartLiveMessageButton(enabled: Boolean, onClick: () -> Unit) {
+private fun StartLiveMessageButton(onClick: () -> Unit) {
   val interactionSource = remember { MutableInteractionSource() }
   val ripple = remember { ripple(bounded = false, radius = 24.dp) }
   Box(
     modifier = Modifier.requiredSize(36.dp)
       .clickable(
         onClick = onClick,
-        enabled = enabled,
         role = Role.Button,
         interactionSource = interactionSource,
         indication = ripple
@@ -477,7 +480,7 @@ private fun StartLiveMessageButton(enabled: Boolean, onClick: () -> Unit) {
     Icon(
       BoltFilled,
       stringResource(MR.strings.icon_descr_send_message),
-      tint = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+      tint = MaterialTheme.colors.primary,
       modifier = Modifier
         .size(36.dp)
         .padding(4.dp)
@@ -576,13 +579,11 @@ fun PreviewSendMsgView() {
       isDirectChat = true,
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       sendMsgEnabled = true,
+      userCantSendReason = null,
       sendButtonEnabled = true,
       nextSendGrpInv = false,
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
-      userIsObserver = false,
-      userIsPending = false,
-      userCanSend = true,
       allowVoiceToContact = {},
       timedMessageAllowed = false,
       placeholder = "",
@@ -613,13 +614,11 @@ fun PreviewSendMsgViewEditing() {
       isDirectChat = true,
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       sendMsgEnabled = true,
+      userCantSendReason = null,
       sendButtonEnabled = true,
       nextSendGrpInv = false,
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
-      userIsObserver = false,
-      userIsPending = false,
-      userCanSend = true,
       allowVoiceToContact = {},
       timedMessageAllowed = false,
       placeholder = "",
@@ -650,13 +649,11 @@ fun PreviewSendMsgViewInProgress() {
       isDirectChat = true,
       liveMessageAlertShown = SharedPreference(get = { true }, set = { }),
       sendMsgEnabled = true,
+      userCantSendReason = null,
       sendButtonEnabled = true,
       nextSendGrpInv = false,
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
-      userIsObserver = false,
-      userIsPending = false,
-      userCanSend = true,
       allowVoiceToContact = {},
       timedMessageAllowed = false,
       placeholder = "",

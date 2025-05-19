@@ -116,15 +116,25 @@ struct ChatView: View {
                 }
                 connectingText()
                 if selectedChatItems == nil {
+                    let reason = chat.chatInfo.userCantSendReason
                     ComposeView(
                         chat: chat,
                         im: im,
                         composeState: $composeState,
                         keyboardVisible: $keyboardVisible,
                         keyboardHiddenDate: $keyboardHiddenDate,
-                        selectedRange: $selectedRange
+                        selectedRange: $selectedRange,
+                        disabledText: reason?.composeLabel
                     )
                     .disabled(!cInfo.sendMsgEnabled)
+                    .if(!cInfo.sendMsgEnabled) { v in
+                        v.disabled(true).onTapGesture {
+                            AlertManager.shared.showAlertMsg(
+                                title: "You can't send messages!",
+                                message: reason?.alertMessage
+                            )
+                        }
+                    }
                 } else {
                     SelectedItemsBottomToolbar(
                         im: im,

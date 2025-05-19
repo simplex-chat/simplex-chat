@@ -1689,8 +1689,8 @@ func apiListMembers(_ groupId: Int64) async -> [GroupMember] {
 func filterMembersToAdd(_ ms: [GMember]) -> [Contact] {
     let memberContactIds = ms.compactMap{ m in m.wrapped.memberCurrent ? m.wrapped.memberContactId : nil }
     return ChatModel.shared.chats
-        .compactMap{ $0.chatInfo.contact }
-        .filter{ c in c.sendMsgEnabled && !c.nextSendGrpInv && !memberContactIds.contains(c.apiId) }
+        .compactMap{ c in c.chatInfo.sendMsgEnabled ? c.chatInfo.contact : nil }
+        .filter{ c in !c.nextSendGrpInv && !memberContactIds.contains(c.apiId) }
         .sorted{ $0.displayName.lowercased() < $1.displayName.lowercased() }
 }
 
