@@ -42,7 +42,6 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filter
 import java.lang.reflect.Field
 import java.net.URI
@@ -51,10 +50,10 @@ import java.net.URI
 actual fun PlatformTextField(
   composeState: MutableState<ComposeState>,
   sendMsgEnabled: Boolean,
+  disabledText: String?,
   sendMsgButtonDisabled: Boolean,
   textStyle: MutableState<TextStyle>,
   showDeleteTextButton: MutableState<Boolean>,
-  userIsObserver: Boolean,
   placeholder: String,
   showVoiceButton: Boolean,
   onMessageChange: (ComposeMessage) -> Unit,
@@ -197,16 +196,16 @@ actual fun PlatformTextField(
     showDeleteTextButton.value = it.lineCount >= 4 && !cs.inProgress
   }
   if (composeState.value.preview is ComposePreview.VoicePreview) {
-    ComposeOverlay(MR.strings.voice_message_send_text, textStyle, padding)
-  } else if (userIsObserver) {
-    ComposeOverlay(MR.strings.you_are_observer, textStyle, padding)
+    ComposeOverlay(generalGetString(MR.strings.voice_message_send_text), textStyle, padding)
+  } else if (disabledText != null) {
+    ComposeOverlay(disabledText, textStyle, padding)
   }
 }
 
 @Composable
-private fun ComposeOverlay(textId: StringResource, textStyle: MutableState<TextStyle>, padding: PaddingValues) {
+private fun ComposeOverlay(text: String, textStyle: MutableState<TextStyle>, padding: PaddingValues) {
   Text(
-    generalGetString(textId),
+    text,
     Modifier.padding(padding),
     color = MaterialTheme.colors.secondary,
     style = textStyle.value.copy(fontStyle = FontStyle.Italic)

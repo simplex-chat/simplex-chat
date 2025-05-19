@@ -1843,7 +1843,7 @@ public struct UserContactRequest: Decodable, NamedChat, Hashable {
     public var id: ChatId { get { "<@\(contactRequestId)" } }
     public var apiId: Int64 { get { contactRequestId } }
     var ready: Bool { get { true } }
-    public var userCantSendReason: (composeLabel: LocalizedStringKey, alertMessage: LocalizedStringKey?)? { nil }
+    public var userCantSendReason: (composeLabel: LocalizedStringKey, alertMessage: LocalizedStringKey?)? { ("can't send messages", nil) }
     public var sendMsgEnabled: Bool { get { false } }
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
@@ -1876,7 +1876,7 @@ public struct PendingContactConnection: Decodable, NamedChat, Hashable {
     public var id: ChatId { get { ":\(pccConnId)" } }
     public var apiId: Int64 { get { pccConnId } }
     var ready: Bool { get { false } }
-    public var userCantSendReason: (composeLabel: LocalizedStringKey, alertMessage: LocalizedStringKey?)? { nil }
+    public var userCantSendReason: (composeLabel: LocalizedStringKey, alertMessage: LocalizedStringKey?)? { ("can't send messages", nil) }
     public var sendMsgEnabled: Bool { get { false } }
     var localDisplayName: String {
         get { String.localizedStringWithFormat(NSLocalizedString("connection:%@", comment: "connection information"), pccConnId) }
@@ -2019,7 +2019,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
             }
         }
     }
-    public var sendMsgEnabled: Bool { get { membership.memberActive && membership.memberRole >= .member } }
+    public var sendMsgEnabled: Bool { userCantSendReason == nil }
     public var displayName: String { localAlias == "" ? groupProfile.displayName : localAlias }
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }

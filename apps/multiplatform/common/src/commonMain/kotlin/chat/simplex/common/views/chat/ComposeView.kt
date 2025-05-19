@@ -999,9 +999,8 @@ fun ComposeView(
     chatModel.sharedContent.value = null
   }
 
-  val userCanSend = rememberUpdatedState(chat.chatInfo.userCanSend)
   val sendMsgEnabled = rememberUpdatedState(chat.chatInfo.sendMsgEnabled)
-  val userIsObserver = rememberUpdatedState(chat.userIsObserver)
+  val userCantSendReason = rememberUpdatedState(chat.chatInfo.userCantSendReason)
   val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
 
   Column {
@@ -1056,7 +1055,6 @@ fun ComposeView(
         val attachmentEnabled =
           !composeState.value.attachmentDisabled
               && sendMsgEnabled.value
-              && userCanSend.value
               && !isGroupAndProhibitedFiles
               && !nextSendGrpInv.value
         IconButton(
@@ -1102,8 +1100,8 @@ fun ComposeView(
             }
         }
 
-        LaunchedEffect(rememberUpdatedState(chat.chatInfo.userCanSend).value) {
-          if (!chat.chatInfo.userCanSend) {
+        LaunchedEffect(rememberUpdatedState(chat.chatInfo.sendMsgEnabled).value) {
+          if (!chat.chatInfo.sendMsgEnabled) {
             clearCurrentDraft()
             clearState()
           }
@@ -1159,13 +1157,12 @@ fun ComposeView(
           chat.chatInfo is ChatInfo.Direct,
           liveMessageAlertShown = chatModel.controller.appPrefs.liveMessageAlertShown,
           sendMsgEnabled = sendMsgEnabled.value,
+          userCantSendReason = userCantSendReason.value,
           sendButtonEnabled = sendMsgEnabled.value && !(simplexLinkProhibited || fileProhibited || voiceProhibited),
           nextSendGrpInv = nextSendGrpInv.value,
           needToAllowVoiceToContact,
           allowedVoiceByPrefs,
           allowVoiceToContact = ::allowVoiceToContact,
-          userIsObserver = userIsObserver.value,
-          userCanSend = userCanSend.value,
           sendButtonColor = sendButtonColor,
           timedMessageAllowed = timedMessageAllowed,
           customDisappearingMessageTimePref = chatModel.controller.appPrefs.customDisappearingMessageTime,
