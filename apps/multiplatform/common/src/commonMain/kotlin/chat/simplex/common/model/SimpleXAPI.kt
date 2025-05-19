@@ -58,6 +58,9 @@ typealias ChatCtrl = Long
 // version range that supports establishing direct connection with a group member (xGrpDirectInvVRange in core)
 val CREATE_MEMBER_CONTACT_VERSION = 2
 
+// support group knocking (MsgScope)
+val GROUP_KNOCKING_VERSION = 15
+
 enum class CallOnLockScreen {
   DISABLE,
   SHOW,

@@ -1500,15 +1500,29 @@ sealed class ChatInfo: SomeChat, NamedChat {
         }
         is Group -> {
           if (groupInfo.membership.memberActive) {
-            if (groupChatScope == null) {
-              if (groupInfo.membership.memberPending) {
-                return generalGetString(MR.strings.reviewed_by_admins) to generalGetString(MR.strings.observer_cant_send_message_desc)
+            when (groupChatScope) {
+              null -> {
+                if (groupInfo.membership.memberPending) {
+                  return generalGetString(MR.strings.reviewed_by_admins) to generalGetString(MR.strings.observer_cant_send_message_desc)
+                }
+                if (groupInfo.membership.memberRole == GroupMemberRole.Observer) {
+                  return generalGetString(MR.strings.observer_cant_send_message_title) to generalGetString(MR.strings.observer_cant_send_message_desc)
+                }
+                return null
               }
-              if (groupInfo.membership.memberRole == GroupMemberRole.Observer) {
-                return generalGetString(MR.strings.observer_cant_send_message_title) to generalGetString(MR.strings.observer_cant_send_message_desc)
-              }
+              is GroupChatScopeInfo.MemberSupport ->
+                if (groupChatScope.groupMember_ != null) {
+                  if (
+                    groupChatScope.groupMember_.versionRange.maxVersion < GROUP_KNOCKING_VERSION
+                    && !groupChatScope.groupMember_.memberPending
+                  ) {
+                    return generalGetString(MR.strings.cant_send_message_member_has_old_version) to null
+                  }
+                  return null
+                } else {
+                  return null
+                }
             }
-            return null
           } else {
             return when (groupInfo.membership.memberStatus) {
               GroupMemberStatus.MemRejected -> generalGetString(MR.strings.cant_send_message_rejected) to null
@@ -2005,7 +2019,8 @@ data class GroupMember (
   val memberContactId: Long? = null,
   val memberContactProfileId: Long,
   var activeConn: Connection? = null,
-  val supportChat: GroupSupportChat? = null
+  val supportChat: GroupSupportChat? = null,
+  val memberChatVRange: VersionRange
 ): NamedChat {
   val id: String get() = "#$groupId @$groupMemberId"
   val ready get() = activeConn?.connStatus == ConnStatus.Ready
@@ -2119,6 +2134,8 @@ data class GroupMember (
         && userRole >= GroupMemberRole.Moderator && userRole >= memberRole && groupInfo.membership.memberActive
   }
 
+  val versionRange: VersionRange = activeConn?.peerChatVRange ?: memberChatVRange
+
   val memberIncognito = memberProfile.profileId != memberContactProfileId
 
   companion object {
@@ -2136,7 +2153,8 @@ data class GroupMember (
       memberProfile = LocalProfile.sampleData,
       memberContactId = 1,
       memberContactProfileId = 1L,
-      activeConn = Connection.sampleData
+      activeConn = Connection.sampleData,
+      memberChatVRange = VersionRange(minVersion = 1, maxVersion = 15)
     )
   }
 }

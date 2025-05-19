@@ -15,6 +15,9 @@ public let CREATE_MEMBER_CONTACT_VERSION = 2
 // version to receive reports (MCReport)
 public let REPORTS_VERSION = 12
 
+// support group knocking (MsgScope)
+public let GROUP_KNOCKING_VERSION = 15
+
 public let contentModerationPostLink = URL(string: "https://simplex.chat/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.html#preventing-server-abuse-without-compromising-e2e-encryption")!
 
 public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
@@ -1346,11 +1349,19 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
                 return nil
             case let .group(groupInfo, groupChatScope):
                 if groupInfo.membership.memberActive {
-                    if groupChatScope == nil {
+                    switch(groupChatScope) {
+                    case .none:
                         if groupInfo.membership.memberPending { return ("reviewed by admins", "Please contact group admin.") }
                         if groupInfo.membership.memberRole == .observer { return ("you are observer", "Please contact group admin.") }
+                        return nil
+                    case let .some(.memberSupport(groupMember_: .some(supportMember))):
+                        if supportMember.versionRange.maxVersion < GROUP_KNOCKING_VERSION && !supportMember.memberPending {
+                            return ("member has old version", nil)
+                        }
+                        return nil
+                    case .some(.memberSupport(groupMember_: .none)):
+                        return nil
                     }
-                    return nil
                 } else {
                     switch groupInfo.membership.memberStatus {
                     case .memRejected: return ("request to join rejected", nil)
