@@ -2079,6 +2079,9 @@ processChatCommand' vr = \case
           forM_ (memberConn m) $ \mConn -> do
             let msg2 = XMsgNew $ MCSimple $ extMsgContent (MCText acceptedToGroupMessage) Nothing
             void $ sendDirectMemberMessage mConn msg2 groupId
+        when (memberCategory m == GCInviteeMember) $ do
+          introduceToRemaining vr user gInfo m {memberRole = role}
+          when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo m
         (m', gInfo') <- withFastStore' $ \db -> do
           m' <- updateGroupMemberAccepted db user m newMemberStatus role
           gInfo' <- updateGroupMembersRequireAttention db user gInfo m m'
