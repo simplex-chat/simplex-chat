@@ -1658,8 +1658,8 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var userCantSendReason: (composeLabel: LocalizedStringKey, alertMessage: LocalizedStringKey?)? {
         // TODO [short links] this will have additional statuses for pending contact requests before they are accepted
         if nextSendGrpInv { return nil }
-        if !sndReady { return ("contact not ready", nil) }
         if !active { return ("contact deleted", nil) }
+        if !sndReady { return ("contact not ready", nil) }
         if activeConn?.connectionStats?.ratchetSyncSendProhibited ?? false { return ("not synchronized", nil) }
         if activeConn?.connDisabled ?? true { return ("contact disabled", nil) }
         return nil

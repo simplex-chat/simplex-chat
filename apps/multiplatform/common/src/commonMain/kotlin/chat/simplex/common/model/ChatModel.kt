@@ -1523,8 +1523,8 @@ data class Contact(
     get() {
       // TODO [short links] this will have additional statuses for pending contact requests before they are accepted
       if (nextSendGrpInv) return null
-      if (!sndReady) return generalGetString(MR.strings.cant_send_message_title_contact_not_ready) to null
       if (!active) return generalGetString(MR.strings.cant_send_message_title_contact_deleted) to null
+      if (!sndReady) return generalGetString(MR.strings.cant_send_message_title_contact_not_ready) to null
       if (activeConn?.connectionStats?.ratchetSyncSendProhibited == true) return generalGetString(MR.strings.cant_send_message_title_contact_not_synchronized) to null
       if (activeConn?.connDisabled == true) return generalGetString(MR.strings.cant_send_message_title_contact_disabled) to null
       return null
