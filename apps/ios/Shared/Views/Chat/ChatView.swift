@@ -98,7 +98,7 @@ struct ChatView: View {
                 }
                 connectingText()
                 if selectedChatItems == nil {
-                    let reason = userCantSendReason
+                    let reason = chat.chatInfo.userCantSendReason
                     ComposeView(
                         chat: chat,
                         composeState: $composeState,
@@ -417,33 +417,6 @@ struct ChatView: View {
                         EmptyView()
                     }
                 }
-            }
-        }
-    }
-
-    private var userCantSendReason: (composeLabel: LocalizedStringKey, alertMessage: LocalizedStringKey?)? {
-        switch chat.chatInfo {
-        case let .direct(contact):
-            // TODO [short links] this will have additional statuses for pending contact requests before they are accepted
-            return contact.active ? nil : ("contact deleted", nil)
-        case let .group(groupInfo):
-            let m = groupInfo.membership
-            return if m.memberActive {
-                m.memberRole == .observer ? ("you are observer", "Please contact group admin.") : nil
-            } else {
-                switch m.memberStatus {
-                case .memRejected: ("request to join rejected", nil)
-                case .memGroupDeleted: ("group is deleted", nil)
-                case .memRemoved: ("removed from group", nil)
-                case .memLeft: ("you left", nil)
-                default: ("can't send messages", nil)
-                }
-            }
-        default:
-            return if chat.chatInfo.sendMsgEnabled {
-                nil
-            } else {
-                ("can't send messages", nil)
             }
         }
     }

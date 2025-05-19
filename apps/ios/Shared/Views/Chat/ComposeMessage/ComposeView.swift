@@ -392,7 +392,7 @@ struct ComposeView: View {
                     Image(systemName: "paperclip")
                         .resizable()
                 }
-                .disabled(composeState.attachmentDisabled || !chat.userCanSend || (chat.chatInfo.contact?.nextSendGrpInv ?? false))
+                .disabled(composeState.attachmentDisabled || !chat.chatInfo.sendMsgEnabled || (chat.chatInfo.contact?.nextSendGrpInv ?? false))
                 .frame(width: 25, height: 25)
                 .padding(.bottom, 16)
                 .padding(.leading, 12)
@@ -442,7 +442,7 @@ struct ComposeView: View {
                             : theme.colors.primary
                     )
                     .padding(.trailing, 12)
-                    .disabled(!chat.userCanSend)
+                    .disabled(!chat.chatInfo.sendMsgEnabled)
 
                     if let disabledText {
                         Text(disabledText)
@@ -474,8 +474,8 @@ struct ComposeView: View {
                 hasSimplexLink = false
             }
         }
-        .onChange(of: chat.userCanSend) { canSend in
-            if !canSend {
+        .onChange(of: chat.chatInfo.sendMsgEnabled) { sendEnabled in
+            if !sendEnabled {
                 cancelCurrentVoiceRecording()
                 clearCurrentDraft()
                 clearState()

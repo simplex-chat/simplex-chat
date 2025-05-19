@@ -1152,18 +1152,6 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
         )
     }
 
-    var userCanSend: Bool {
-        switch chatInfo {
-        case let .direct(contact): return contact.active
-        case let .group(groupInfo):
-            let m = groupInfo.membership
-            return m.memberActive && m.memberRole >= .member
-        case .local:
-            return true
-        default: return false
-        }
-    }
-
     var unreadTag: Bool {
         switch chatInfo.chatSettings?.enableNtfs {
         case .all: chatStats.unreadChat || chatStats.unreadCount > 0
