@@ -506,17 +506,18 @@
   <string name="report_compose_reason_header_illegal">Report content: only group moderators will see it.</string>
   <string name="report_compose_reason_header_other">Report other: only group moderators will see it.</string>
 
-  <string name="cant_send_message_title_contact_not_ready">contact not ready</string>
-  <string name="cant_send_message_title_contact_deleted">contact deleted</string>
-  <string name="cant_send_message_title_contact_not_synchronized">not synchronized</string>
-  <string name="cant_send_message_title_contact_disabled">contact disabled</string>
+  <string name="cant_send_message_alert_title">You can\'t send messages!</string>
+  <string name="cant_send_message_contact_not_ready">contact not ready</string>
+  <string name="cant_send_message_contact_deleted">contact deleted</string>
+  <string name="cant_send_message_contact_not_synchronized">not synchronized</string>
+  <string name="cant_send_message_contact_disabled">contact disabled</string>
   <string name="observer_cant_send_message_title">you are observer</string>
   <string name="observer_cant_send_message_desc">Please contact group admin.</string>
-  <string name="cant_send_message_title_rejected">request to join rejected</string>
-  <string name="cant_send_message_title_group_deleted">group is deleted</string>
-  <string name="cant_send_message_title_mem_removed">removed from group</string>
-  <string name="cant_send_message_title_you_left">you left</string>
-  <string name="cant_send_message_title_generic">can\'t send messages</string>
+  <string name="cant_send_message_rejected">request to join rejected</string>
+  <string name="cant_send_message_group_deleted">group is deleted</string>
+  <string name="cant_send_message_mem_removed">removed from group</string>
+  <string name="cant_send_message_you_left">you left</string>
+  <string name="cant_send_message_generic">can\'t send messages</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>

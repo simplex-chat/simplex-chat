@@ -105,7 +105,7 @@ fun SendMsgView(
             .matchParentSize()
             .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }, onClick = {
               AlertManager.shared.showAlertMsg(
-                title = userCantSendReason.first,
+                title = generalGetString(MR.strings.cant_send_message_alert_title),
                 text = userCantSendReason.second
               )
             })

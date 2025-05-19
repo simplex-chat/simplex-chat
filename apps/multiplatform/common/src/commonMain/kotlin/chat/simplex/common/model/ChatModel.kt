@@ -1406,7 +1406,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val id get() = "?$apiId"
     override val ready get() = false
     override val chatDeleted get() = false
-    override val userCantSendReason get() = generalGetString(MR.strings.cant_send_message_title_generic) to null
+    override val userCantSendReason get() = generalGetString(MR.strings.cant_send_message_generic) to null
     override val sendMsgEnabled get() = false
     override val incognito get() = false
     override fun featureEnabled(feature: ChatFeature) = false
@@ -1523,10 +1523,10 @@ data class Contact(
     get() {
       // TODO [short links] this will have additional statuses for pending contact requests before they are accepted
       if (nextSendGrpInv) return null
-      if (!active) return generalGetString(MR.strings.cant_send_message_title_contact_deleted) to null
-      if (!sndReady) return generalGetString(MR.strings.cant_send_message_title_contact_not_ready) to null
-      if (activeConn?.connectionStats?.ratchetSyncSendProhibited == true) return generalGetString(MR.strings.cant_send_message_title_contact_not_synchronized) to null
-      if (activeConn?.connDisabled == true) return generalGetString(MR.strings.cant_send_message_title_contact_disabled) to null
+      if (!active) return generalGetString(MR.strings.cant_send_message_contact_deleted) to null
+      if (!sndReady) return generalGetString(MR.strings.cant_send_message_contact_not_ready) to null
+      if (activeConn?.connectionStats?.ratchetSyncSendProhibited == true) return generalGetString(MR.strings.cant_send_message_contact_not_synchronized) to null
+      if (activeConn?.connDisabled == true) return generalGetString(MR.strings.cant_send_message_contact_disabled) to null
       return null
     }
   override val sendMsgEnabled get() = userCantSendReason == null
@@ -1772,11 +1772,11 @@ data class GroupInfo (
       }
     } else {
       when (membership.memberStatus) {
-        GroupMemberStatus.MemRejected -> generalGetString(MR.strings.cant_send_message_title_rejected) to null
-        GroupMemberStatus.MemGroupDeleted -> generalGetString(MR.strings.cant_send_message_title_group_deleted) to null
-        GroupMemberStatus.MemRemoved -> generalGetString(MR.strings.cant_send_message_title_mem_removed) to null
-        GroupMemberStatus.MemLeft -> generalGetString(MR.strings.cant_send_message_title_you_left) to null
-        else -> generalGetString(MR.strings.cant_send_message_title_generic) to null
+        GroupMemberStatus.MemRejected -> generalGetString(MR.strings.cant_send_message_rejected) to null
+        GroupMemberStatus.MemGroupDeleted -> generalGetString(MR.strings.cant_send_message_group_deleted) to null
+        GroupMemberStatus.MemRemoved -> generalGetString(MR.strings.cant_send_message_mem_removed) to null
+        GroupMemberStatus.MemLeft -> generalGetString(MR.strings.cant_send_message_you_left) to null
+        else -> generalGetString(MR.strings.cant_send_message_generic) to null
       }
     }
   override val sendMsgEnabled get() = userCantSendReason == null
@@ -2192,7 +2192,7 @@ class UserContactRequest (
   override val apiId get() = contactRequestId
   override val chatDeleted get() = false
   override val ready get() = true
-  override val userCantSendReason = generalGetString(MR.strings.cant_send_message_title_generic) to null
+  override val userCantSendReason = generalGetString(MR.strings.cant_send_message_generic) to null
   override val sendMsgEnabled get() = false
   override val incognito get() = false
   override fun featureEnabled(feature: ChatFeature) = false
@@ -2232,7 +2232,7 @@ class PendingContactConnection(
   override val apiId get() = pccConnId
   override val chatDeleted get() = false
   override val ready get() = false
-  override val userCantSendReason = generalGetString(MR.strings.cant_send_message_title_generic) to null
+  override val userCantSendReason = generalGetString(MR.strings.cant_send_message_generic) to null
   override val sendMsgEnabled get() = false
   override val incognito get() = customUserProfileId != null
   override fun featureEnabled(feature: ChatFeature) = false
