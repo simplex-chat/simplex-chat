@@ -83,6 +83,16 @@ instance TextEncoding GroupChatScopeTag where
 data ChatName = ChatName {chatType :: ChatType, chatName :: Text}
   deriving (Show)
 
+data SendName
+  = SNDirect ContactName
+  | SNGroup GroupName (Maybe GroupScopeName)
+  | SNLocal
+  deriving (Show)
+
+data GroupScopeName
+  = GSNMemberSupport (Maybe ContactName)
+  deriving (Show)
+
 chatTypeStr :: ChatType -> Text
 chatTypeStr = \case
   CTDirect -> "@"
