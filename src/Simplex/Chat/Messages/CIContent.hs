@@ -194,7 +194,9 @@ ciRequiresAttention :: forall d. MsgDirectionI d => CIContent d -> Bool
 ciRequiresAttention content = case msgDirection @d of
   SMDSnd -> True
   SMDRcv -> case content of
-    CIRcvMsgContent _ -> True
+    CIRcvMsgContent msgContent -> case msgContent of
+      MCReport {} -> False -- reports use a different attention mechanism
+      _ -> True
     CIRcvDeleted _ -> True
     CIRcvCall {} -> True
     CIRcvIntegrityError _ -> True
