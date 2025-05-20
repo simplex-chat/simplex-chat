@@ -2475,7 +2475,6 @@
     <string name="member_support">Chats mit Mitgliedern</string>
     <string name="support_chat">Chat mit Administratoren</string>
     <string name="no_support_chats">Keine Chats mit Mitgliedern</string>
-    <string name="remove_pending_member_button">Entfernen</string>
     <string name="rcv_group_event_user_accepted">hat Sie übernommen</string>
     <string name="button_support_chat_member">Chat mit einem Mitglied</string>
     <string name="group_new_support_messages">%d Nachrichten</string>

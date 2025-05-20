@@ -2408,7 +2408,6 @@
     <string name="admission_stage_review_descr">Revisiona i membri prima di ammetterli (bussare).</string>
     <string name="accept_pending_member_button">Accetta</string>
     <string name="support_chat">Chat con amministratori</string>
-    <string name="remove_pending_member_button">Rimuovi</string>
     <string name="accept_pending_member_alert_question">Il membro entrerà nel gruppo, accettarlo?</string>
     <string name="reviewed_by_admins">revisionato dagli amministratori</string>
     <string name="accept_pending_member_alert_title">Accetta membro</string>

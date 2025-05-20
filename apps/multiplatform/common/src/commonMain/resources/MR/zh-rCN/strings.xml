@@ -2389,7 +2389,6 @@
     <string name="member_criteria_all">全部</string>
     <string name="member_admission">成员准入</string>
     <string name="member_criteria_off">关闭</string>
-    <string name="remove_pending_member_button">删除</string>
     <string name="accept_pending_member_button">接受</string>
     <string name="member_support">和成员聊天</string>
     <string name="support_chat">和管理员聊天</string>
