@@ -37,7 +37,7 @@ import Data.Foldable (foldr')
 import Data.Functor (($>))
 import Data.Functor.Identity
 import Data.Int (Int64)
-import Data.List (find, mapAccumL, partition)
+import Data.List (find, foldl', mapAccumL, partition)
 import Data.List.NonEmpty (NonEmpty (..), (<|))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -459,7 +459,14 @@ deleteGroupCIs user gInfo chatScopeInfo items byGroupMember_ deletedTs = do
   deleteCIFiles user ciFilesInfo
   (errs, deletions) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (deleteItem db) items)
   unless (null errs) $ toView $ CEvtChatErrors errs
-  pure deletions
+  vr <- chatVersionRange
+  deletions' <- case chatScopeInfo of
+    Nothing -> pure deletions
+    Just scopeInfo@GCSIMemberSupport {groupMember_} -> do
+      let decStats = countDeletedUnreadItems groupMember_ deletions
+      gInfo' <- withFastStore' $ \db -> updateGroupScopeUnreadStats db vr user gInfo scopeInfo decStats
+      pure $ map (updateDeletionGroupInfo gInfo') deletions
+  pure deletions'
   where
     deleteItem :: DB.Connection -> CChatItem 'CTGroup -> IO ChatItemDeletion
     deleteItem db (CChatItem md ci) = do
@@ -467,6 +474,32 @@ deleteGroupCIs user gInfo chatScopeInfo items byGroupMember_ deletedTs = do
         Just m -> Just <$> updateGroupChatItemModerated db user gInfo ci m deletedTs
         Nothing -> Nothing <$ deleteGroupChatItem db user gInfo ci
       pure $ groupDeletion md gInfo chatScopeInfo ci ci'
+    countDeletedUnreadItems :: Maybe GroupMember -> [ChatItemDeletion] -> (Int, Int, Int)
+    countDeletedUnreadItems scopeMember_ = foldl' countItem (0, 0, 0)
+      where
+        countItem :: (Int, Int, Int) -> ChatItemDeletion -> (Int, Int, Int)
+        countItem (!unread, !unanswered, !mentions) ChatItemDeletion {deletedChatItem}
+          | aChatItemIsRcvNew deletedChatItem =
+              let unread' = unread + 1
+                  unanswered' = case (scopeMember_, aChatItemRcvFromMember deletedChatItem) of
+                    (Just scopeMember, Just rcvFromMember)
+                      | groupMemberId' rcvFromMember == groupMemberId' scopeMember -> unanswered + 1
+                    _ -> unanswered
+                  mentions' = if isACIUserMention deletedChatItem then mentions + 1 else mentions
+               in (unread', unanswered', mentions')
+          | otherwise = (unread, unanswered, mentions)
+    updateDeletionGroupInfo :: GroupInfo -> ChatItemDeletion -> ChatItemDeletion
+    updateDeletionGroupInfo gInfo' ChatItemDeletion {deletedChatItem, toChatItem} =
+      ChatItemDeletion
+        { deletedChatItem = updateACIGroupInfo gInfo' deletedChatItem,
+          toChatItem = updateACIGroupInfo gInfo' <$> toChatItem
+        }
+
+updateACIGroupInfo :: GroupInfo -> AChatItem -> AChatItem
+updateACIGroupInfo gInfo' = \case
+  AChatItem SCTGroup dir (GroupChat _gInfo chatScopeInfo) ci ->
+    AChatItem SCTGroup dir (GroupChat gInfo' chatScopeInfo) ci
+  aci -> aci
 
 deleteGroupMemberCIs :: MsgDirectionI d => User -> GroupInfo -> GroupMember -> GroupMember -> SMsgDirection d -> CM ()
 deleteGroupMemberCIs user gInfo member byGroupMember msgDir = do

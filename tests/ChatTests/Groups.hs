@@ -196,7 +196,8 @@ chatGroupTests = do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
     it "should send scoped messages to support (many moderators)" testScopedSupportManyModerators
     it "should send messages to admins and members" testSupportCLISendCommand
-    it "should correctly maintain unread stats for support chats" testScopedSupportUnreadStats
+    it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
+    it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -7009,8 +7010,8 @@ testSupportCLISendCommand =
     bob ##> "#team (support 4"
     bob <## "bad chat command: Failed reading: empty"
 
-testScopedSupportUnreadStats :: HasCallStack => TestParams -> IO ()
-testScopedSupportUnreadStats =
+testScopedSupportUnreadStatsOnRead :: HasCallStack => TestParams -> IO ()
+testScopedSupportUnreadStatsOnRead =
   testChatOpts4 opts aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
     createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRModerator)
 
@@ -7149,3 +7150,33 @@ testScopedSupportUnreadStats =
         { markRead = False
         }
 
+testScopedSupportUnreadStatsOnDelete :: HasCallStack => TestParams -> IO ()
+testScopedSupportUnreadStatsOnDelete =
+  testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> do
+    createGroup2 "team" alice bob
+
+    alice ##> "/set delete #team on"
+    alice <## "updated group preferences:"
+    alice <## "Full deletion: on"
+    bob <## "alice updated group #team:"
+    bob <## "updated group preferences:"
+    bob <## "Full deletion: on"
+
+    bob #> "#team (support) 1"
+    alice <# "#team (support: bob) bob> 1"
+
+    msgIdBob <- lastItemId bob
+
+    alice ##> "/member support chats #team"
+    alice <## "bob (Bob) (id 2): unread: 1, require attention: 1, mentions: 0"
+
+    bob #$> ("/_delete item #1(_support) " <> msgIdBob <> " broadcast", id, "message deleted")
+    alice <# "#team (support: bob) bob> [deleted] 1"
+
+    alice ##> "/member support chats #team"
+    alice <## "bob (Bob) (id 2): unread: 0, require attention: 0, mentions: 0"
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }

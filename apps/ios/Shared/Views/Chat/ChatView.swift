@@ -2277,6 +2277,7 @@ struct ChatView: View {
                                 if deletedItem.isActiveReport {
                                     m.decreaseGroupReportsCounter(chat.chatInfo.id)
                                 }
+                                m.updateChatInfo(itemDeletion.deletedChatItem.chatInfo)
                             }
                         }
                     }
@@ -2466,6 +2467,9 @@ private func deleteMessages(_ chat: Chat, _ deletingItems: [Int64], _ mode: CIDe
                             ChatModel.shared.decreaseGroupReportsCounter(chat.chatInfo.id)
                         }
                     }
+                    if let updatedChatInfo = deletedItems.last?.deletedChatItem.chatInfo {
+                        ChatModel.shared.updateChatInfo(updatedChatInfo)
+                    }
                 }
                 await onSuccess()
             } catch {
@@ -2496,6 +2500,9 @@ func archiveReports(_ chatInfo: ChatInfo, _ itemIds: [Int64], _ forAll: Bool, _ 
                         if deletedItem.isActiveReport {
                             ChatModel.shared.decreaseGroupReportsCounter(chatInfo.id)
                         }
+                    }
+                    if let updatedChatInfo = deleted.last?.deletedChatItem.chatInfo {
+                        ChatModel.shared.updateChatInfo(updatedChatInfo)
                     }
                 }
                 await onSuccess()

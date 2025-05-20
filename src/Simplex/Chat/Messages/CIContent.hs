@@ -182,6 +182,9 @@ ciMsgContent = \case
   CIRcvMsgContent mc -> Just mc
   _ -> Nothing
 
+isCIReport :: CIContent d -> Bool
+isCIReport = maybe False isReport . ciMsgContent
+
 data MsgDecryptError
   = MDERatchetHeader
   | MDETooManySkipped

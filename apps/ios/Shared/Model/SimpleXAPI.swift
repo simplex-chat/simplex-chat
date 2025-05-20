@@ -2206,6 +2206,9 @@ func processReceivedMsg(_ res: ChatEvent) async {
                     m.decreaseGroupReportsCounter(item.deletedChatItem.chatInfo.id)
                 }
             }
+            if let updatedChatInfo = items.last?.deletedChatItem.chatInfo {
+                m.updateChatInfo(updatedChatInfo)
+            }
         }
     case let .groupChatItemsDeleted(user, groupInfo, chatItemIDs, _, member_):
         await groupChatItemsDeleted(user, groupInfo, chatItemIDs, member_)
