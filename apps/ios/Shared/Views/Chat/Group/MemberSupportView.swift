@@ -265,6 +265,8 @@ func deleteMemberSupportChat(_ groupInfo: GroupInfo, _ member: GroupMember) {
                 _ = ChatModel.shared.upsertGroupMember(gInfo, updatedMember)
                 ChatModel.shared.updateGroup(gInfo)
             }
+            // TODO member row doesn't get removed from list (upsertGroupMember correctly sets supportChat to nil) - this repopulates list to fix it
+            await ChatModel.shared.loadGroupMembers(gInfo)
         } catch let error {
             logger.error("apiDeleteMemberSupportChat error: \(responseError(error))")
             await MainActor.run {
