@@ -2098,6 +2098,12 @@ processChatCommand' vr = \case
             Just c | connReady c -> GSMemConnected
             _ -> GSMemAnnounced
       _ -> throwCmdError "member should be pending approval and invitee, or pending review and not invitee"
+  APIDeleteMemberSupportChat groupId gmId -> withUser $ \user -> do
+    (gInfo, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user gmId
+    when (isNothing $ supportChat m) $ throwCmdError "member has no support chat"
+    when (memberPending m) $ throwCmdError "member is pending"
+    (gInfo', m') <- withFastStore' $ \db -> deleteGroupMemberSupportChat db user gInfo m
+    pure $ CRMemberSupportChatDeleted user gInfo' m'
   APIMembersRole groupId memberIds newRole -> withUser $ \user ->
     withGroupLock "memberRole" groupId . procCmd $ do
       g@(Group gInfo members) <- withFastStore $ \db -> getGroup db vr user groupId
@@ -4106,6 +4112,7 @@ chatCommandP =
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_join #" *> (APIJoinGroup <$> A.decimal <*> pure MFAll), -- needs to be changed to support in UI
       "/_accept member #" *> (APIAcceptMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
+      "/_delete member chat #" *> (APIDeleteMemberSupportChat <$> A.decimal <* A.space <*> A.decimal),
       "/_member role #" *> (APIMembersRole <$> A.decimal <*> _strP <*> memberRole),
       "/_block #" *> (APIBlockMembersForAll <$> A.decimal <*> _strP <* " blocked=" <*> onOffP),
       "/_remove #" *> (APIRemoveMembers <$> A.decimal <*> _strP <*> (" messages=" *> onOffP <|> pure False)),

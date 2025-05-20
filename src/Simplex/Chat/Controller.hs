@@ -360,6 +360,7 @@ data ChatCommand
   | APIAddMember GroupId ContactId GroupMemberRole
   | APIJoinGroup {groupId :: GroupId, enableNtfs :: MsgFilter}
   | APIAcceptMember GroupId GroupMemberId GroupMemberRole
+  | APIDeleteMemberSupportChat GroupId GroupMemberId
   | APIMembersRole GroupId (NonEmpty GroupMemberId) GroupMemberRole
   | APIBlockMembersForAll GroupId (NonEmpty GroupMemberId) Bool
   | APIRemoveMembers {groupId :: GroupId, groupMemberIds :: Set GroupMemberId, withMessages :: Bool}
@@ -704,6 +705,7 @@ data ChatResponse
   | CRNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]}
   | CRJoinedGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMemberAccepted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
+  | CRMemberSupportChatDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMembersRoleUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], toRole :: GroupMemberRole}
   | CRMembersBlockedForAllUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], blocked :: Bool}
   | CRGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
