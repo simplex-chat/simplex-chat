@@ -1860,7 +1860,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Don't miss important messages." = "Не пропустите важные сообщения.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Don't show again" = "Не показывать";
 
 /* No comment provided by engineer. */
@@ -3482,6 +3482,7 @@ snd error text */
 
 /* enabled status
 group pref value
+member criteria value
 time to disappear */
 "off" = "нет";
 
@@ -3494,7 +3495,8 @@ time to disappear */
 /* feature offered item */
 "offered %@: %@" = "предложил(a) %1$@: %2$@";
 
-/* alert button */
+/* alert action
+alert button */
 "Ok" = "Ок";
 
 /* No comment provided by engineer. */
@@ -4957,9 +4959,6 @@ report reason */
 "The old database was not removed during the migration, it can be deleted." = "Предыдущая версия данных чата не удалена при перемещении, её можно удалить.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and only shared with your contacts." = "Ваш профиль храниться на Вашем устройстве и отправляется только контактам.";
-
-/* No comment provided by engineer. */
 "The same conditions will apply to operator **%@**." = "Те же самые условия будут приняты для оператора **%@**.";
 
 /* No comment provided by engineer. */
@@ -5812,13 +5811,13 @@ report reason */
 "Your profile **%@** will be shared." = "Будет отправлен Ваш профиль **%@**.";
 
 /* No comment provided by engineer. */
+"Your profile is stored on your device and only shared with your contacts." = "Ваш профиль храниться на Вашем устройстве и отправляется только контактам.";
+
+/* No comment provided by engineer. */
 "Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Ваш профиль хранится на Вашем устройстве и отправляется только Вашим контактам. SimpleX серверы не могут получить доступ к Вашему профилю.";
 
 /* alert message */
 "Your profile was changed. If you save it, the updated profile will be sent to all your contacts." = "Ваш профиль был изменен. Если вы сохраните его, обновленный профиль будет отправлен всем вашим контактам.";
-
-/* No comment provided by engineer. */
-"Your profile, contacts and delivered messages are stored on your device." = "Ваш профиль, контакты и доставленные сообщения хранятся на Вашем устройстве.";
 
 /* No comment provided by engineer. */
 "Your random profile" = "Случайный профиль";

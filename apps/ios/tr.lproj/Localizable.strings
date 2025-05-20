@@ -1740,7 +1740,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Don't enable" = "Etkinleştirme";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Don't show again" = "Yeniden gösterme";
 
 /* No comment provided by engineer. */
@@ -2083,7 +2083,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error reconnecting servers" = "Hata sunuculara yeniden bağlanılıyor";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error removing member" = "Kişiyi silerken sorun oluştu";
 
 /* No comment provided by engineer. */
@@ -3272,6 +3272,7 @@ snd error text */
 
 /* enabled status
 group pref value
+member criteria value
 time to disappear */
 "off" = "kapalı";
 
@@ -3284,7 +3285,8 @@ time to disappear */
 /* feature offered item */
 "offered %@: %@" = "%1$@: %2$@ teklif etti";
 
-/* alert button */
+/* alert action
+alert button */
 "Ok" = "Tamam";
 
 /* No comment provided by engineer. */
@@ -3780,7 +3782,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Remove member" = "Kişiyi sil";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "Kişi silinsin mi?";
 
 /* No comment provided by engineer. */
@@ -4602,9 +4604,6 @@ chat item action */
 "The old database was not removed during the migration, it can be deleted." = "Eski veritabanı geçiş sırasında kaldırılmadı, silinebilir.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and only shared with your contacts." = "Profil sadece kişilerinle paylaşılacak.";
-
-/* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Özlediğimiz ikinci tik! ✅";
 
 /* No comment provided by engineer. */
@@ -5400,13 +5399,13 @@ chat item action */
 "Your profile **%@** will be shared." = "Profiliniz **%@** paylaşılacaktır.";
 
 /* No comment provided by engineer. */
+"Your profile is stored on your device and only shared with your contacts." = "Profil sadece kişilerinle paylaşılacak.";
+
+/* No comment provided by engineer. */
 "Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Profiliniz cihazınızda saklanır ve sadece kişilerinizle paylaşılır. SimpleX sunucuları profilinizi göremez.";
 
 /* alert message */
 "Your profile was changed. If you save it, the updated profile will be sent to all your contacts." = "Profiliniz değiştirildi. Kaydederseniz, güncellenmiş profil tüm kişilerinize gönderilecektir.";
-
-/* No comment provided by engineer. */
-"Your profile, contacts and delivered messages are stored on your device." = "Profiliniz, kişileriniz ve gönderilmiş mesajlar cihazınızda saklanır.";
 
 /* No comment provided by engineer. */
 "Your random profile" = "Rasgele profiliniz";

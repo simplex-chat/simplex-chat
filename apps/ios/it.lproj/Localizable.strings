@@ -1872,7 +1872,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Don't miss important messages." = "Non perdere messaggi importanti.";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Don't show again" = "Non mostrare più";
 
 /* No comment provided by engineer. */
@@ -2236,7 +2236,7 @@ chat item action */
 /* alert title */
 "Error registering for notifications" = "Errore di registrazione per le notifiche";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error removing member" = "Errore nella rimozione del membro";
 
 /* alert title */
@@ -3587,6 +3587,7 @@ snd error text */
 
 /* enabled status
 group pref value
+member criteria value
 time to disappear */
 "off" = "off";
 
@@ -3599,7 +3600,8 @@ time to disappear */
 /* feature offered item */
 "offered %@: %@" = "offerto %1$@: %2$@";
 
-/* alert button */
+/* alert action
+alert button */
 "Ok" = "Ok";
 
 /* No comment provided by engineer. */
@@ -3694,6 +3696,9 @@ time to disappear */
 
 /* No comment provided by engineer. */
 "Open group" = "Apri gruppo";
+
+/* alert title */
+"Open link?" = "Aprire il link?";
 
 /* authentication reason */
 "Open migration to another device" = "Apri migrazione ad un altro dispositivo";
@@ -4170,7 +4175,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Remove member" = "Rimuovi membro";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "Rimuovere il membro?";
 
 /* No comment provided by engineer. */
@@ -5101,9 +5106,6 @@ report reason */
 "The old database was not removed during the migration, it can be deleted." = "Il database vecchio non è stato rimosso durante la migrazione, può essere eliminato.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and only shared with your contacts." = "Il profilo è condiviso solo con i tuoi contatti.";
-
-/* No comment provided by engineer. */
 "The same conditions will apply to operator **%@**." = "Le stesse condizioni si applicheranno all'operatore **%@**.";
 
 /* No comment provided by engineer. */
@@ -5992,13 +5994,13 @@ report reason */
 "Your profile **%@** will be shared." = "Verrà condiviso il tuo profilo **%@**.";
 
 /* No comment provided by engineer. */
+"Your profile is stored on your device and only shared with your contacts." = "Il profilo è condiviso solo con i tuoi contatti.";
+
+/* No comment provided by engineer. */
 "Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Il tuo profilo è memorizzato sul tuo dispositivo e condiviso solo con i tuoi contatti. I server di SimpleX non possono vedere il tuo profilo.";
 
 /* alert message */
 "Your profile was changed. If you save it, the updated profile will be sent to all your contacts." = "Il tuo profilo è stato cambiato. Se lo salvi, il profilo aggiornato verrà inviato a tutti i tuoi contatti.";
-
-/* No comment provided by engineer. */
-"Your profile, contacts and delivered messages are stored on your device." = "Il tuo profilo, i contatti e i messaggi recapitati sono memorizzati sul tuo dispositivo.";
 
 /* No comment provided by engineer. */
 "Your random profile" = "Il tuo profilo casuale";

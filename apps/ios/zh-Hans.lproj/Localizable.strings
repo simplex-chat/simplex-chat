@@ -1866,7 +1866,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Don't miss important messages." = "不错过重要消息。";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Don't show again" = "不再显示";
 
 /* No comment provided by engineer. */
@@ -2227,7 +2227,7 @@ chat item action */
 /* alert title */
 "Error registering for notifications" = "注册消息推送出错";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error removing member" = "删除成员错误";
 
 /* alert title */
@@ -3575,6 +3575,7 @@ snd error text */
 
 /* enabled status
 group pref value
+member criteria value
 time to disappear */
 "off" = "关闭";
 
@@ -3587,7 +3588,8 @@ time to disappear */
 /* feature offered item */
 "offered %@: %@" = "已提供 %1$@：%2$@";
 
-/* alert button */
+/* alert action
+alert button */
 "Ok" = "好的";
 
 /* No comment provided by engineer. */
@@ -4107,7 +4109,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Remove member" = "删除成员";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "删除成员吗？";
 
 /* No comment provided by engineer. */
@@ -4923,9 +4925,6 @@ chat item action */
 "The old database was not removed during the migration, it can be deleted." = "旧数据库在迁移过程中没有被移除，可以删除。";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and only shared with your contacts." = "该资料仅与您的联系人共享。";
-
-/* No comment provided by engineer. */
 "The second tick we missed! ✅" = "我们错过的第二个\"√\"！✅";
 
 /* No comment provided by engineer. */
@@ -5697,10 +5696,10 @@ chat item action */
 "Your profile **%@** will be shared." = "您的个人资料 **%@** 将被共享。";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "您的资料存储在您的设备上并仅与您的联系人共享。 SimpleX 服务器无法看到您的资料。";
+"Your profile is stored on your device and only shared with your contacts." = "该资料仅与您的联系人共享。";
 
 /* No comment provided by engineer. */
-"Your profile, contacts and delivered messages are stored on your device." = "您的资料、联系人和发送的消息存储在您的设备上。";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "您的资料存储在您的设备上并仅与您的联系人共享。 SimpleX 服务器无法看到您的资料。";
 
 /* No comment provided by engineer. */
 "Your random profile" = "您的随机资料";

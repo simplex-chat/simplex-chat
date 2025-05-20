@@ -1485,7 +1485,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Don't enable" = "Не активирай";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Don't show again" = "Не показвай отново";
 
 /* No comment provided by engineer. */
@@ -1777,7 +1777,7 @@ chat item action */
 /* alert title */
 "Error receiving file" = "Грешка при получаване на файл";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error removing member" = "Грешка при отстраняване на член";
 
 /* No comment provided by engineer. */
@@ -2747,6 +2747,7 @@ snd error text */
 
 /* enabled status
 group pref value
+member criteria value
 time to disappear */
 "off" = "изключено";
 
@@ -2759,7 +2760,8 @@ time to disappear */
 /* feature offered item */
 "offered %@: %@" = "предлага %1$@: %2$@";
 
-/* alert button */
+/* alert action
+alert button */
 "Ok" = "Ок";
 
 /* No comment provided by engineer. */
@@ -3156,7 +3158,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Remove member" = "Острани член";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "Острани член?";
 
 /* No comment provided by engineer. */
@@ -3775,9 +3777,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "The old database was not removed during the migration, it can be deleted." = "Старата база данни не бе премахната по време на миграцията, тя може да бъде изтрита.";
-
-/* No comment provided by engineer. */
-"Your profile is stored on your device and only shared with your contacts." = "Профилът се споделя само с вашите контакти.";
 
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Втората отметка, която пропуснахме! ✅";
@@ -4446,10 +4445,10 @@ chat item action */
 "Your profile **%@** will be shared." = "Вашият профил **%@** ще бъде споделен.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Вашият профил се съхранява на вашето устройство и се споделя само с вашите контакти. SimpleX сървърите не могат да видят вашия профил.";
+"Your profile is stored on your device and only shared with your contacts." = "Профилът се споделя само с вашите контакти.";
 
 /* No comment provided by engineer. */
-"Your profile, contacts and delivered messages are stored on your device." = "Вашият профил, контакти и доставени съобщения се съхраняват на вашето устройство.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Вашият профил се съхранява на вашето устройство и се споделя само с вашите контакти. SimpleX сървърите не могат да видят вашия профил.";
 
 /* No comment provided by engineer. */
 "Your random profile" = "Вашият автоматично генериран профил";
