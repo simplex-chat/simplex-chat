@@ -2426,8 +2426,9 @@ swipe action</note>
         <target>Törli a csevegési profilt?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete chat with member?" xml:space="preserve">
+      <trans-unit id="Delete chat with member?" xml:space="preserve" approved="no">
         <source>Delete chat with member?</source>
+        <target state="translated">Törli a taggal való csevegést?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Delete chat?" xml:space="preserve">
@@ -3270,8 +3271,9 @@ chat item action</note>
         <target>Hiba történt a csevegési adatbázis törlésekor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error deleting chat with member" xml:space="preserve">
+      <trans-unit id="Error deleting chat with member" xml:space="preserve" approved="no">
         <source>Error deleting chat with member</source>
+        <target state="translated">Hiba a taggal való csevegés törlésekor</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error deleting chat!" xml:space="preserve">
