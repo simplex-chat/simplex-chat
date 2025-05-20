@@ -1,22 +1,4 @@
 Query: 
-                    UPDATE groups
-                    SET members_require_attention = members_require_attention - 1
-                    WHERE user_id = ? AND group_id = ?
-                  
-Plan:
-SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-                  UPDATE group_members
-                  SET support_chat_items_unread = support_chat_items_unread - ?,
-                      support_chat_items_member_attention = support_chat_items_member_attention - ?,
-                      support_chat_items_mentions = support_chat_items_mentions - ?
-                  WHERE group_member_id = ?
-                
-Plan:
-SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
                   UPDATE groups
                   SET chat_ts = ?,
                       members_require_attention = members_require_attention + 1
@@ -1316,6 +1298,17 @@ Query:
           SET support_chat_items_unread = 0,
               support_chat_items_member_attention = 0,
               support_chat_items_mentions = 0
+          WHERE group_member_id = ?
+        
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+          UPDATE group_members
+          SET support_chat_items_unread = support_chat_items_unread - ?,
+              support_chat_items_member_attention = support_chat_items_member_attention - ?,
+              support_chat_items_mentions = support_chat_items_mentions - ?,
+              updated_at = ?
           WHERE group_member_id = ?
         
 Plan:
