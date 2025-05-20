@@ -245,27 +245,26 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
     text = generalGetString(messageId),
     confirmText = generalGetString(MR.strings.remove_member_confirmation),
     onConfirm = {
-      withBGApi {
-        val r = chatModel.controller.apiRemoveMembers(rhId, member.groupId, listOf(member.groupMemberId))
-        if (r != null) {
-          val (updatedGroupInfo, removedMembers) = r
-          withContext(Dispatchers.Main) {
-            chatModel.chatsContext.updateGroup(rhId, updatedGroupInfo)
-            removedMembers.forEach { removedMember ->
-              chatModel.chatsContext.upsertGroupMember(rhId, updatedGroupInfo, removedMember)
-            }
-          }
-          withContext(Dispatchers.Main) {
-            removedMembers.forEach { removedMember ->
-              chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, updatedGroupInfo, removedMember)
-            }
-          }
-        }
-        close?.invoke()
-      }
+      removeMember(rhId, member, chatModel, close)
     },
     destructive = true,
   )
+}
+
+fun removeMember(rhId: Long?, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
+  withBGApi {
+    val r = chatModel.controller.apiRemoveMembers(rhId, member.groupId, listOf(member.groupMemberId))
+    if (r != null) {
+      val (updatedGroupInfo, removedMembers) = r
+      withContext(Dispatchers.Main) {
+        chatModel.chatsContext.updateGroup(rhId, updatedGroupInfo)
+        removedMembers.forEach { removedMember ->
+          chatModel.chatsContext.upsertGroupMember(rhId, updatedGroupInfo, removedMember)
+        }
+      }
+    }
+    close?.invoke()
+  }
 }
 
 @Composable

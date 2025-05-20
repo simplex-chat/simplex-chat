@@ -13,6 +13,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.chatModel
+import chat.simplex.common.views.chat.group.removeMember
 import chat.simplex.common.views.chat.group.removeMemberDialog
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -44,12 +45,12 @@ fun ComposeContextPendingMemberActionsView(
           .fillMaxHeight()
           .weight(1F)
           .clickable {
-            removeMemberDialog(rhId, groupInfo, member, chatModel, close = { ModalManager.end.closeModal() })
+            rejectMemberDialog(rhId, member, chatModel, close = { ModalManager.end.closeModal() })
           },
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
       ) {
-        Text(stringResource(MR.strings.remove_pending_member_button), color = Color.Red)
+        Text(stringResource(MR.strings.reject_pending_member_button), color = Color.Red)
       }
 
       Column(
@@ -67,6 +68,17 @@ fun ComposeContextPendingMemberActionsView(
       }
     }
   }
+}
+
+fun rejectMemberDialog(rhId: Long?, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.reject_pending_member_alert_title),
+    confirmText = generalGetString(MR.strings.reject_pending_member_button),
+    onConfirm = {
+      removeMember(rhId, member, chatModel, close)
+    },
+    destructive = true,
+  )
 }
 
 fun acceptMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, close: (() -> Unit)? = null) {
@@ -105,11 +117,8 @@ private fun acceptMember(rhId: Long?, groupInfo: GroupInfo, member: GroupMember,
     val r = chatModel.controller.apiAcceptMember(rhId, groupInfo.groupId, member.groupMemberId, role)
     if (r != null) {
       withContext(Dispatchers.Main) {
-        chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, r.second)
+        chatModel.chatsContext.upsertGroupMember(rhId, r.first, r.second)
         chatModel.chatsContext.updateGroup(rhId, r.first)
-      }
-      withContext(Dispatchers.Main) {
-        chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, groupInfo, r.second)
       }
     }
     close?.invoke()
