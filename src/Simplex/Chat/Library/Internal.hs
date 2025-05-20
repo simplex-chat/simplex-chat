@@ -497,8 +497,8 @@ deleteGroupCIs user gInfo chatScopeInfo items byGroupMember_ deletedTs = do
 
 updateACIGroupInfo :: GroupInfo -> AChatItem -> AChatItem
 updateACIGroupInfo gInfo' = \case
-  AChatItem SCTGroup SMDSnd (GroupChat _gInfo chatScopeInfo) ci ->
-    AChatItem SCTGroup SMDSnd (GroupChat gInfo' chatScopeInfo) ci
+  AChatItem SCTGroup dir (GroupChat _gInfo chatScopeInfo) ci ->
+    AChatItem SCTGroup dir (GroupChat gInfo' chatScopeInfo) ci
   aci -> aci
 
 deleteGroupMemberCIs :: MsgDirectionI d => User -> GroupInfo -> GroupMember -> GroupMember -> SMsgDirection d -> CM ()
