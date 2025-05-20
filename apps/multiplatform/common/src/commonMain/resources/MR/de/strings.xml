@@ -1014,7 +1014,7 @@
     <string name="moderate_verb">Moderieren</string>
     <string name="moderate_message_will_be_marked_warning">Diese Nachricht wird für alle Mitglieder als moderiert gekennzeichnet.</string>
     <string name="you_are_observer">Sie sind Beobachter</string>
-    <string name="observer_cant_send_message_title">Sie können keine Nachrichten versenden!</string>
+    <string name="observer_cant_send_message_title">Sie sind Beobachter</string>
     <string name="group_member_role_observer">Beobachter</string>
     <string name="initial_member_role">Anfängliche Rolle</string>
     <string name="delete_member_message__question">Nachricht des Mitglieds löschen\?</string>
@@ -2466,7 +2466,7 @@
     <string name="group_new_support_chats_short">%d Chat(s)</string>
     <string name="report_sent_alert_title">Meldung wurde an die Moderatoren gesendet</string>
     <string name="snd_group_event_member_accepted">Sie haben dieses Mitglied übernommen</string>
-    <string name="admission_stage_review_descr">Überprüfung der Mitglieder vor der Aufnahme (Anklopfen).</string>
+    <string name="admission_stage_review_descr">Überprüfung der Mitglieder vor der Aufnahme (\"Anklopfen\").</string>
     <string name="admission_stage_review">Überprüfung der Mitglieder</string>
     <string name="member_criteria_all">alle</string>
     <string name="member_criteria_off">Aus</string>
@@ -2489,10 +2489,25 @@
     <string name="button_support_chat">Chat mit Administratoren</string>
     <string name="rcv_group_event_member_accepted">%1$s übernommen</string>
     <string name="accept_pending_member_alert_confirmation_as_member">Als Mitglied übernehmen</string>
-    <string name="error_accepting_member">Fehler beim Übernehmen eines Mitglieds</string>
+    <string name="error_accepting_member">Fehler beim Übernehmen des Mitglieds</string>
     <string name="member_admission">Aufnahme von Mitgliedern</string>
     <string name="group_member_status_pending_review">Ausstehende Überprüfung</string>
     <string name="group_new_support_chat_one">Chat mit einem Mitglied</string>
     <string name="accept_pending_member_button">Übernehmen</string>
     <string name="snd_group_event_user_pending_review">Bitte warten Sie auf die Überprüfung Ihrer Anfrage durch die Gruppen-Moderatoren, um der Gruppe beitreten zu können.</string>
+    <string name="cant_send_message_group_deleted">Gruppe wird gelöscht</string>
+    <string name="cant_send_message_rejected">Beitrittsanfrage abgelehnt</string>
+    <string name="cant_send_message_mem_removed">Von der Gruppe entfernt</string>
+    <string name="cant_send_message_you_left">Sie haben die Gruppe verlassen</string>
+    <string name="cant_send_message_contact_disabled">Kontakt deaktiviert</string>
+    <string name="cant_send_message_contact_not_synchronized">Nicht synchronisiert</string>
+    <string name="error_deleting_member_support_chat">Fehler beim Löschen des Chats mit dem Mitglied</string>
+    <string name="cant_send_message_contact_not_ready">Kontakt nicht bereit</string>
+    <string name="cant_send_message_alert_title">Sie können keine Nachrichten senden!</string>
+    <string name="delete_member_support_chat_button">Chat löschen</string>
+    <string name="delete_member_support_chat_alert_title">Chat mit dem Mitglied löschen?</string>
+    <string name="reject_pending_member_alert_title">Mitglied ablehnen?</string>
+    <string name="cant_send_message_generic">Es können keine Nachrichten gesendet werden</string>
+    <string name="cant_send_message_contact_deleted">Kontakt gelöscht</string>
+    <string name="cant_send_message_member_has_old_version">Das Mitglied hat eine alte App-Version</string>
 </resources>
