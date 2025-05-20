@@ -100,14 +100,14 @@ struct MemberSupportView: View {
                         Label("Accept", systemImage: "checkmark")
                     }
                     .tint(theme.colors.primary)
+                } else {
+                    Button {
+                        showDeleteMemberSupportChatAlert(groupInfo, memberWithChat.wrapped)
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                    .tint(.red)
                 }
-
-                Button {
-                    showRemoveMemberAlert(groupInfo, memberWithChat.wrapped)
-                } label: {
-                    Label("Remove", systemImage: "trash")
-                }
-                .tint(.red)
             }
         }
     }
@@ -248,13 +248,33 @@ struct MemberSupportView: View {
     }
 }
 
-func showRemoveMemberAlert(_ groupInfo: GroupInfo, _ member: GroupMember, dismiss: DismissAction? = nil) {
+func showDeleteMemberSupportChatAlert(_ groupInfo: GroupInfo, _ member: GroupMember) {
     showAlert(
-        title: NSLocalizedString("Remove member?", comment: "alert title"),
-        buttonTitle: "Remove",
-        buttonAction: { removeMember(groupInfo, member, dismiss: dismiss) },
+        title: NSLocalizedString("Delete chat with member?", comment: "alert title"),
+        buttonTitle: "Delete",
+        buttonAction: { deleteMemberSupportChat(groupInfo, member) },
         cancelButton: true
     )
+}
+
+func deleteMemberSupportChat(_ groupInfo: GroupInfo, _ member: GroupMember) {
+    Task {
+        do {
+            let (gInfo, updatedMember) = try await apiDeleteMemberSupportChat(groupInfo.groupId, member.groupMemberId)
+            await MainActor.run {
+                _ = ChatModel.shared.upsertGroupMember(gInfo, updatedMember)
+                ChatModel.shared.updateGroup(gInfo)
+            }
+        } catch let error {
+            logger.error("apiDeleteMemberSupportChat error: \(responseError(error))")
+            await MainActor.run {
+                showAlert(
+                    NSLocalizedString("Error deleting member support chat", comment: "alert title"),
+                    message: responseError(error)
+                )
+            }
+        }
+    }
 }
 
 #Preview {

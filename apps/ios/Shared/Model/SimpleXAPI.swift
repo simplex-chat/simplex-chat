@@ -1646,6 +1646,12 @@ func apiAcceptMember(_ groupId: Int64, _ groupMemberId: Int64, _ memberRole: Gro
     throw r.unexpected
 }
 
+func apiDeleteMemberSupportChat(_ groupId: Int64, _ groupMemberId: Int64) async throws -> (GroupInfo, GroupMember) {
+    let r: ChatResponse2 = try await chatSendCmd(.apiDeleteMemberSupportChat(groupId: groupId, groupMemberId: groupMemberId))
+    if case let .memberSupportChatDeleted(_, groupInfo, member) = r { return (groupInfo, member) }
+    throw r.unexpected
+}
+
 func apiRemoveMembers(_ groupId: Int64, _ memberIds: [Int64], _ withMessages: Bool = false) async throws -> (GroupInfo, [GroupMember]) {
     let r: ChatResponse2 = try await chatSendCmd(.apiRemoveMembers(groupId: groupId, memberIds: memberIds, withMessages: withMessages), bgTask: false)
     if case let .userDeletedMembers(_, updatedGroupInfo, members, _withMessages) = r { return (updatedGroupInfo, members) }
