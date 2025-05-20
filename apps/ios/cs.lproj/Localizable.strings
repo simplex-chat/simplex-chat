@@ -1127,7 +1127,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Don't enable" = "Nepovolovat";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Don't show again" = "Znovu neukazuj";
 
 /* No comment provided by engineer. */
@@ -1367,7 +1367,7 @@ swipe action */
 /* alert title */
 "Error receiving file" = "Chyba při příjmu souboru";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error removing member" = "Chyba při odebrání člena";
 
 /* No comment provided by engineer. */
@@ -2145,6 +2145,7 @@ snd error text */
 
 /* enabled status
 group pref value
+member criteria value
 time to disappear */
 "off" = "vypnuto";
 
@@ -2157,7 +2158,8 @@ time to disappear */
 /* feature offered item */
 "offered %@: %@" = "nabídl %1$@: %2$@";
 
-/* alert button */
+/* alert action
+alert button */
 "Ok" = "Ok";
 
 /* No comment provided by engineer. */
@@ -2476,7 +2478,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Remove member" = "Odstranit člena";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "Odebrat člena?";
 
 /* No comment provided by engineer. */
@@ -2989,9 +2991,6 @@ chat item action */
 "The old database was not removed during the migration, it can be deleted." = "Stará databáze nebyla během přenášení odstraněna, lze ji smazat.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and only shared with your contacts." = "Profil je sdílen pouze s vašimi kontakty.";
-
-/* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Druhé zaškrtnutí jsme přehlédli! ✅";
 
 /* No comment provided by engineer. */
@@ -3472,10 +3471,10 @@ chat item action */
 "Your profile **%@** will be shared." = "Váš profil **%@** bude sdílen.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Váš profil je uložen ve vašem zařízení a sdílen pouze s vašimi kontakty. Servery SimpleX nevidí váš profil.";
+"Your profile is stored on your device and only shared with your contacts." = "Profil je sdílen pouze s vašimi kontakty.";
 
 /* No comment provided by engineer. */
-"Your profile, contacts and delivered messages are stored on your device." = "Váš profil, kontakty a doručené zprávy jsou uloženy ve vašem zařízení.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Váš profil je uložen ve vašem zařízení a sdílen pouze s vašimi kontakty. Servery SimpleX nevidí váš profil.";
 
 /* No comment provided by engineer. */
 "Your random profile" = "Váš náhodný profil";

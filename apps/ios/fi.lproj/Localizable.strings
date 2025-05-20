@@ -1073,7 +1073,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Don't enable" = "Älä salli";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Don't show again" = "Älä näytä uudelleen";
 
 /* No comment provided by engineer. */
@@ -1307,7 +1307,7 @@ swipe action */
 /* alert title */
 "Error receiving file" = "Virhe tiedoston vastaanottamisessa";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error removing member" = "Virhe poistettaessa jäsentä";
 
 /* No comment provided by engineer. */
@@ -2079,6 +2079,7 @@ snd error text */
 
 /* enabled status
 group pref value
+member criteria value
 time to disappear */
 "off" = "pois";
 
@@ -2091,7 +2092,8 @@ time to disappear */
 /* feature offered item */
 "offered %@: %@" = "tarjottu %1$@: %2$@";
 
-/* alert button */
+/* alert action
+alert button */
 "Ok" = "Ok";
 
 /* No comment provided by engineer. */
@@ -2407,7 +2409,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Remove member" = "Poista jäsen";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "Poista jäsen?";
 
 /* No comment provided by engineer. */
@@ -2911,9 +2913,6 @@ chat item action */
 "The old database was not removed during the migration, it can be deleted." = "Vanhaa tietokantaa ei poistettu siirron aikana, se voidaan kuitenkin poistaa.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and only shared with your contacts." = "Profiili jaetaan vain kontaktiesi kanssa.";
-
-/* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Toinen kuittaus, joka uupui! ✅";
 
 /* No comment provided by engineer. */
@@ -3391,10 +3390,10 @@ chat item action */
 "Your profile **%@** will be shared." = "Profiilisi **%@** jaetaan.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Profiilisi tallennetaan laitteeseesi ja jaetaan vain yhteystietojesi kanssa. SimpleX-palvelimet eivät näe profiiliasi.";
+"Your profile is stored on your device and only shared with your contacts." = "Profiili jaetaan vain kontaktiesi kanssa.";
 
 /* No comment provided by engineer. */
-"Your profile, contacts and delivered messages are stored on your device." = "Profiilisi, kontaktisi ja toimitetut viestit tallennetaan laitteellesi.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Profiilisi tallennetaan laitteeseesi ja jaetaan vain yhteystietojesi kanssa. SimpleX-palvelimet eivät näe profiiliasi.";
 
 /* No comment provided by engineer. */
 "Your random profile" = "Satunnainen profiilisi";

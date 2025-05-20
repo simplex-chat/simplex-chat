@@ -1746,7 +1746,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Don't enable" = "Не вмикати";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Don't show again" = "Більше не показувати";
 
 /* No comment provided by engineer. */
@@ -2089,7 +2089,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error reconnecting servers" = "Помилка перепідключення серверів";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error removing member" = "Помилка видалення учасника";
 
 /* No comment provided by engineer. */
@@ -3317,6 +3317,7 @@ snd error text */
 
 /* enabled status
 group pref value
+member criteria value
 time to disappear */
 "off" = "вимкнено";
 
@@ -3329,7 +3330,8 @@ time to disappear */
 /* feature offered item */
 "offered %@: %@" = "запропонував %1$@: %2$@";
 
-/* alert button */
+/* alert action
+alert button */
 "Ok" = "Гаразд";
 
 /* No comment provided by engineer. */
@@ -3852,7 +3854,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Remove member" = "Видалити учасника";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "Видалити учасника?";
 
 /* No comment provided by engineer. */
@@ -4722,9 +4724,6 @@ chat item action */
 "The old database was not removed during the migration, it can be deleted." = "Стара база даних не була видалена під час міграції, її можна видалити.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and only shared with your contacts." = "Профіль доступний лише вашим контактам.";
-
-/* No comment provided by engineer. */
 "The same conditions will apply to operator **%@**." = "Такі ж умови діятимуть і для оператора **%@**.";
 
 /* No comment provided by engineer. */
@@ -5580,13 +5579,13 @@ chat item action */
 "Your profile **%@** will be shared." = "Ваш профіль **%@** буде опублікований.";
 
 /* No comment provided by engineer. */
+"Your profile is stored on your device and only shared with your contacts." = "Профіль доступний лише вашим контактам.";
+
+/* No comment provided by engineer. */
 "Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Ваш профіль зберігається на вашому пристрої і доступний лише вашим контактам. Сервери SimpleX не бачать ваш профіль.";
 
 /* alert message */
 "Your profile was changed. If you save it, the updated profile will be sent to all your contacts." = "Ваш профіль було змінено. Якщо ви збережете його, оновлений профіль буде надіслано всім вашим контактам.";
-
-/* No comment provided by engineer. */
-"Your profile, contacts and delivered messages are stored on your device." = "Ваш профіль, контакти та доставлені повідомлення зберігаються на вашому пристрої.";
 
 /* No comment provided by engineer. */
 "Your random profile" = "Ваш випадковий профіль";
