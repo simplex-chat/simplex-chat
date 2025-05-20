@@ -2399,4 +2399,7 @@
     <string name="cant_send_message_contact_not_synchronized">nincs szinkronizálva</string>
     <string name="delete_member_support_chat_alert_title">Törli a taggal való csevegést?</string>
     <string name="cant_send_message_contact_deleted">partner törölve</string>
+    <string name="delete_member_support_chat_button">Csevegés törlése</string>
+    <string name="reject_pending_member_button">Elutasítás</string>
+    <string name="reject_pending_member_alert_title">Elutasítja a tagot?</string>
 </resources>
