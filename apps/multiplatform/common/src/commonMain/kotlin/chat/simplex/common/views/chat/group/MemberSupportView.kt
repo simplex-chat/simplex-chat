@@ -28,7 +28,7 @@ import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 @Composable
 fun ModalData.MemberSupportView(
@@ -269,14 +269,34 @@ private fun DropDownMenuForSupportChat(rhId: Long?, member: GroupMember, groupIn
         acceptMemberDialog(rhId, groupInfo, member)
         showMenu.value = false
       })
+    } else {
+      ItemAction(stringResource(MR.strings.delete_member_support_chat_button), painterResource(MR.images.ic_delete), color = MaterialTheme.colors.error, onClick = {
+        deleteMemberSupportChatDialog(rhId, groupInfo, member)
+        showMenu.value = false
+      })
     }
-    ItemAction(stringResource(MR.strings.remove_pending_member_button), painterResource(MR.images.ic_delete), color = MaterialTheme.colors.error, onClick = {
-      removeMemberDialog(rhId, groupInfo, member, chatModel)
-      showMenu.value = false
-    })
-    // TODO [knocking] mark read, mark unread
-    // ItemAction(stringResource(MR.strings.mark_unread), painterResource(MR.images.ic_mark_chat_unread), onClick = {
-    //   showMenu.value = false
-    // })
+  }
+}
+
+fun deleteMemberSupportChatDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.delete_member_support_chat_alert_title),
+    confirmText = generalGetString(MR.strings.delete_member_support_chat_button),
+    onConfirm = {
+      deleteMemberSupportChat(rhId, groupInfo, member)
+    },
+    destructive = true,
+  )
+}
+
+private fun deleteMemberSupportChat(rhId: Long?, groupInfo: GroupInfo, member: GroupMember) {
+  withBGApi {
+    val r = chatModel.controller.apiDeleteMemberSupportChat(rhId, groupInfo.groupId, member.groupMemberId)
+    if (r != null) {
+      withContext(Dispatchers.Main) {
+        chatModel.chatsContext.upsertGroupMember(rhId, r.first, r.second)
+        chatModel.chatsContext.updateGroup(rhId, r.first)
+      }
+    }
   }
 }
