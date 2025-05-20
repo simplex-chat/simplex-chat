@@ -565,12 +565,14 @@ time interval</note>
 accept incoming call via notification
 swipe action</note>
       </trans-unit>
-      <trans-unit id="Accept as member" xml:space="preserve">
+      <trans-unit id="Accept as member" xml:space="preserve" approved="no">
         <source>Accept as member</source>
+        <target state="translated">Accetta come membro</target>
         <note>alert action</note>
       </trans-unit>
-      <trans-unit id="Accept as observer" xml:space="preserve">
+      <trans-unit id="Accept as observer" xml:space="preserve" approved="no">
         <source>Accept as observer</source>
+        <target state="translated">Accetta come osservatore</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Accept conditions" xml:space="preserve">
@@ -594,8 +596,9 @@ swipe action</note>
         <note>accept contact request via notification
 swipe action</note>
       </trans-unit>
-      <trans-unit id="Accept member" xml:space="preserve">
+      <trans-unit id="Accept member" xml:space="preserve" approved="no">
         <source>Accept member</source>
+        <target state="translated">Accetta membro</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Accepted conditions" xml:space="preserve">
@@ -1594,12 +1597,14 @@ set passcode view</note>
         <target>La chat verrà eliminata solo per te, non è reversibile!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat with admins" xml:space="preserve">
+      <trans-unit id="Chat with admins" xml:space="preserve" approved="no">
         <source>Chat with admins</source>
+        <target state="translated">Chat con amministratori</target>
         <note>chat toolbar</note>
       </trans-unit>
-      <trans-unit id="Chat with member" xml:space="preserve">
+      <trans-unit id="Chat with member" xml:space="preserve" approved="no">
         <source>Chat with member</source>
+        <target state="translated">Chatta con il membro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
@@ -1607,8 +1612,9 @@ set passcode view</note>
         <target>Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chats with members" xml:space="preserve">
+      <trans-unit id="Chats with members" xml:space="preserve" approved="no">
         <source>Chats with members</source>
+        <target state="translated">Chat con membri</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Check messages every 20 min." xml:space="preserve">
@@ -2426,8 +2432,9 @@ swipe action</note>
         <target>Eliminare il profilo di chat?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete chat with member?" xml:space="preserve">
+      <trans-unit id="Delete chat with member?" xml:space="preserve" approved="no">
         <source>Delete chat with member?</source>
+        <target state="translated">Eliminare la chat con il membro?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Delete chat?" xml:space="preserve">
@@ -3171,8 +3178,9 @@ chat item action</note>
         <target>Errore nell'accettazione della richiesta di contatto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error accepting member" xml:space="preserve">
+      <trans-unit id="Error accepting member" xml:space="preserve" approved="no">
         <source>Error accepting member</source>
+        <target state="translated">Errore di accettazione del membro</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
@@ -3270,8 +3278,9 @@ chat item action</note>
         <target>Errore nell'eliminazione del database della chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error deleting chat with member" xml:space="preserve">
+      <trans-unit id="Error deleting chat with member" xml:space="preserve" approved="no">
         <source>Error deleting chat with member</source>
+        <target state="translated">Errore di eliminazione della chat con il membro</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error deleting chat!" xml:space="preserve">
@@ -4766,8 +4775,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Membro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member admission" xml:space="preserve">
+      <trans-unit id="Member admission" xml:space="preserve" approved="no">
         <source>Member admission</source>
+        <target state="translated">Ammissione del membro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member inactive" xml:space="preserve">
@@ -4805,8 +4815,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Il membro verrà rimosso dal gruppo, non è reversibile!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member will join the group, accept member?" xml:space="preserve">
+      <trans-unit id="Member will join the group, accept member?" xml:space="preserve" approved="no">
         <source>Member will join the group, accept member?</source>
+        <target state="translated">Il membro entrerà nel gruppo, accettarlo?</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Members can add message reactions." xml:space="preserve">
@@ -5229,8 +5240,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Nuovo ruolo del membro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New member wants to join the group." xml:space="preserve">
+      <trans-unit id="New member wants to join the group." xml:space="preserve" approved="no">
         <source>New member wants to join the group.</source>
+        <target state="translated">Un nuovo membro vuole entrare nel gruppo.</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="New message" xml:space="preserve">
@@ -5273,8 +5285,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Nessuna chat nell'elenco %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No chats with members" xml:space="preserve">
+      <trans-unit id="No chats with members" xml:space="preserve" approved="no">
         <source>No chats with members</source>
+        <target state="translated">Nessuna chat con membri</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No contacts selected" xml:space="preserve">
@@ -5882,8 +5895,9 @@ Errore: %@</target>
         <target>Prova a disattivare e riattivare le notifiche.</target>
         <note>token info</note>
       </trans-unit>
-      <trans-unit id="Please wait for group moderators to review your request to join the group." xml:space="preserve">
+      <trans-unit id="Please wait for group moderators to review your request to join the group." xml:space="preserve" approved="no">
         <source>Please wait for group moderators to review your request to join the group.</source>
+        <target state="translated">Attendi che i moderatori del gruppo revisionino la tua richiesta di entrare nel gruppo.</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="Please wait for token activation to complete." xml:space="preserve">
@@ -6339,8 +6353,9 @@ swipe action</note>
         <target>Rifiuta la richiesta di contatto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reject member?" xml:space="preserve">
+      <trans-unit id="Reject member?" xml:space="preserve" approved="no">
         <source>Reject member?</source>
+        <target state="translated">Rifiutare il membro?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Relay server is only used if necessary. Another party can observe your IP address." xml:space="preserve">
@@ -6453,8 +6468,9 @@ swipe action</note>
         <target>Motivo della segnalazione?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Report sent to moderators" xml:space="preserve">
+      <trans-unit id="Report sent to moderators" xml:space="preserve" approved="no">
         <source>Report sent to moderators</source>
+        <target state="translated">Segnalazione inviata ai moderatori</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Report spam: only group moderators will see it." xml:space="preserve">
@@ -6572,12 +6588,14 @@ swipe action</note>
         <target>Leggi le condizioni</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Review members" xml:space="preserve">
+      <trans-unit id="Review members" xml:space="preserve" approved="no">
         <source>Review members</source>
+        <target state="translated">Revisiona i membri</target>
         <note>admission stage</note>
       </trans-unit>
-      <trans-unit id="Review members before admitting (&quot;knocking&quot;)." xml:space="preserve">
+      <trans-unit id="Review members before admitting (&quot;knocking&quot;)." xml:space="preserve" approved="no">
         <source>Review members before admitting ("knocking").</source>
+        <target state="translated">Revisiona i membri prima di ammetterli ("bussare").</target>
         <note>admission stage description</note>
       </trans-unit>
       <trans-unit id="Revoke" xml:space="preserve">
@@ -6636,8 +6654,9 @@ chat item action</note>
         <target>Salva (e avvisa i contatti)</target>
         <note>alert button</note>
       </trans-unit>
-      <trans-unit id="Save admission settings?" xml:space="preserve">
+      <trans-unit id="Save admission settings?" xml:space="preserve" approved="no">
         <source>Save admission settings?</source>
+        <target state="translated">Salvare le impostazioni di ammissione?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Save and notify contact" xml:space="preserve">
@@ -7155,8 +7174,9 @@ chat item action</note>
         <target>Impostalo al posto dell'autenticazione di sistema.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set member admission" xml:space="preserve">
+      <trans-unit id="Set member admission" xml:space="preserve" approved="no">
         <source>Set member admission</source>
+        <target state="translated">Imposta l'ammissione del membro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set message expiration in chats." xml:space="preserve">
@@ -8921,8 +8941,9 @@ Ripetere la richiesta di ingresso?</target>
         <target>Puoi vedere di nuovo il link di invito nei dettagli di connessione.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="You can view your reports in Chat with admins." xml:space="preserve">
+      <trans-unit id="You can view your reports in Chat with admins." xml:space="preserve" approved="no">
         <source>You can view your reports in Chat with admins.</source>
+        <target state="translated">Puoi vedere le tue segnalazioni nella chat con gli amministratori.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="You can't send messages!" xml:space="preserve">
@@ -9227,8 +9248,9 @@ Ripetere la richiesta di connessione?</target>
         <target>sopra, quindi scegli:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="accepted %@" xml:space="preserve">
+      <trans-unit id="accepted %@" xml:space="preserve" approved="no">
         <source>accepted %@</source>
+        <target state="translated">%@ accettato</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="accepted call" xml:space="preserve">
@@ -9241,8 +9263,9 @@ Ripetere la richiesta di connessione?</target>
         <target>invito accettato</target>
         <note>chat list item title</note>
       </trans-unit>
-      <trans-unit id="accepted you" xml:space="preserve">
+      <trans-unit id="accepted you" xml:space="preserve" approved="no">
         <source>accepted you</source>
+        <target state="translated">ti ha accettato/a</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="admin" xml:space="preserve">
@@ -9265,8 +9288,9 @@ Ripetere la richiesta di connessione?</target>
         <target>concordando la crittografia…</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="all" xml:space="preserve">
+      <trans-unit id="all" xml:space="preserve" approved="no">
         <source>all</source>
+        <target state="translated">tutti</target>
         <note>member criteria value</note>
       </trans-unit>
       <trans-unit id="all members" xml:space="preserve">
@@ -9355,8 +9379,9 @@ marked deleted chat item preview text</note>
         <target>chiamata…</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="can't send messages" xml:space="preserve">
+      <trans-unit id="can't send messages" xml:space="preserve" approved="no">
         <source>can't send messages</source>
+        <target state="translated">impossibile inviare messaggi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="cancelled %@" xml:space="preserve">
@@ -9464,12 +9489,14 @@ marked deleted chat item preview text</note>
         <target>contatto %1$@ cambiato in %2$@</target>
         <note>profile update event chat item</note>
       </trans-unit>
-      <trans-unit id="contact deleted" xml:space="preserve">
+      <trans-unit id="contact deleted" xml:space="preserve" approved="no">
         <source>contact deleted</source>
+        <target state="translated">contatto eliminato</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="contact disabled" xml:space="preserve">
+      <trans-unit id="contact disabled" xml:space="preserve" approved="no">
         <source>contact disabled</source>
+        <target state="translated">contatto disattivato</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="contact has e2e encryption" xml:space="preserve">
@@ -9482,8 +9509,9 @@ marked deleted chat item preview text</note>
         <target>il contatto non ha la crittografia e2e</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="contact not ready" xml:space="preserve">
+      <trans-unit id="contact not ready" xml:space="preserve" approved="no">
         <source>contact not ready</source>
+        <target state="translated">contatto non pronto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="creator" xml:space="preserve">
@@ -9657,8 +9685,9 @@ pref value</note>
         <target>gruppo eliminato</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="group is deleted" xml:space="preserve">
+      <trans-unit id="group is deleted" xml:space="preserve" approved="no">
         <source>group is deleted</source>
+        <target state="translated">il gruppo è eliminato</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="group profile updated" xml:space="preserve">
@@ -9786,8 +9815,9 @@ pref value</note>
         <target>si è connesso/a</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="member has old version" xml:space="preserve">
+      <trans-unit id="member has old version" xml:space="preserve" approved="no">
         <source>member has old version</source>
+        <target state="translated">il membro ha una versione vecchia</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="message" xml:space="preserve">
@@ -9855,8 +9885,9 @@ pref value</note>
         <target>nessun testo</target>
         <note>copied message info in history</note>
       </trans-unit>
-      <trans-unit id="not synchronized" xml:space="preserve">
+      <trans-unit id="not synchronized" xml:space="preserve" approved="no">
         <source>not synchronized</source>
+        <target state="translated">non sincronizzato</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="observer" xml:space="preserve">
@@ -9922,8 +9953,9 @@ time to disappear</note>
         <target>in attesa di approvazione</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="pending review" xml:space="preserve">
+      <trans-unit id="pending review" xml:space="preserve" approved="no">
         <source>pending review</source>
+        <target state="translated">in attesa di revisione</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="quantum resistant e2e encryption" xml:space="preserve">
@@ -9966,8 +9998,9 @@ time to disappear</note>
         <target>indirizzo di contatto rimosso</target>
         <note>profile update event chat item</note>
       </trans-unit>
-      <trans-unit id="removed from group" xml:space="preserve">
+      <trans-unit id="removed from group" xml:space="preserve" approved="no">
         <source>removed from group</source>
+        <target state="translated">rimosso dal gruppo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="removed profile picture" xml:space="preserve">
@@ -9980,8 +10013,9 @@ time to disappear</note>
         <target>ti ha rimosso/a</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="request to join rejected" xml:space="preserve">
+      <trans-unit id="request to join rejected" xml:space="preserve" approved="no">
         <source>request to join rejected</source>
+        <target state="translated">richiesta di entrare rifiutata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="requested to connect" xml:space="preserve">
@@ -9989,12 +10023,14 @@ time to disappear</note>
         <target>richiesto di connettersi</target>
         <note>chat list item title</note>
       </trans-unit>
-      <trans-unit id="review" xml:space="preserve">
+      <trans-unit id="review" xml:space="preserve" approved="no">
         <source>review</source>
+        <target state="translated">revisiona</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="reviewed by admins" xml:space="preserve">
+      <trans-unit id="reviewed by admins" xml:space="preserve" approved="no">
         <source>reviewed by admins</source>
+        <target state="translated">revisionato dagli amministratori</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="saved" xml:space="preserve">
@@ -10186,8 +10222,9 @@ ultimo msg ricevuto: %2$@</target>
         <target>tu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="you accepted this member" xml:space="preserve">
+      <trans-unit id="you accepted this member" xml:space="preserve" approved="no">
         <source>you accepted this member</source>
+        <target state="translated">hai accettato questo membro</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you are invited to group" xml:space="preserve">
