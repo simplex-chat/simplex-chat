@@ -463,7 +463,7 @@ deleteGroupCIs user gInfo chatScopeInfo items byGroupMember_ deletedTs = do
   deletions' <- case chatScopeInfo of
     Nothing -> pure deletions
     Just scopeInfo@GCSIMemberSupport {groupMember_} -> do
-      let decStats = countReadItems groupMember_ deletions
+      let decStats = countDeletedUnreadItems groupMember_ deletions
       gInfo' <- withFastStore' $ \db -> updateGroupScopeUnreadStats db vr user gInfo scopeInfo decStats
       pure $ map (updateDeletionGroupInfo gInfo') deletions
   pure deletions'
@@ -474,8 +474,8 @@ deleteGroupCIs user gInfo chatScopeInfo items byGroupMember_ deletedTs = do
         Just m -> Just <$> updateGroupChatItemModerated db user gInfo ci m deletedTs
         Nothing -> Nothing <$ deleteGroupChatItem db user gInfo ci
       pure $ groupDeletion md gInfo chatScopeInfo ci ci'
-    countReadItems :: Maybe GroupMember -> [ChatItemDeletion] -> (Int, Int, Int)
-    countReadItems scopeMember_ = foldl' countItem (0, 0, 0)
+    countDeletedUnreadItems :: Maybe GroupMember -> [ChatItemDeletion] -> (Int, Int, Int)
+    countDeletedUnreadItems scopeMember_ = foldl' countItem (0, 0, 0)
       where
         countItem :: (Int, Int, Int) -> ChatItemDeletion -> (Int, Int, Int)
         countItem (!unread, !unanswered, !mentions) ChatItemDeletion {deletedChatItem}
