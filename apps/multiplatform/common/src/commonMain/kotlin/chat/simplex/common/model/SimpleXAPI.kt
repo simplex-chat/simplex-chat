@@ -2533,6 +2533,11 @@ object ChatController {
             }
           }
         }
+        r.chatItemDeletions.lastOrNull()?.deletedChatItem?.chatInfo?.let { updatedChatInfo ->
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateChatInfo(rhId, updatedChatInfo)
+          }
+        }
       }
       is CR.GroupChatItemsDeleted -> {
         groupChatItemsDeleted(rhId, r)

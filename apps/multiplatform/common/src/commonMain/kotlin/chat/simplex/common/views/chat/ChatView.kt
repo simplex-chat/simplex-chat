@@ -455,6 +455,7 @@ fun ChatView(
                     if (deletedItem.isActiveReport) {
                       chatModel.chatsContext.decreaseGroupReportsCounter(chatRh, chatInfo.id)
                     }
+                    chatModel.chatsContext.updateChatInfo(chatRh, deleted.deletedChatItem.chatInfo)
                   }
                   withContext(Dispatchers.Main) {
                     if (toChatItem != null) {
@@ -2672,6 +2673,9 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
               chatModel.chatsContext.decreaseGroupReportsCounter(chatRh, chatInfo.id)
             }
           }
+          deleted.lastOrNull()?.deletedChatItem?.chatInfo?.let { updatedChatInfo ->
+            chatModel.chatsContext.updateChatInfo(chatRh, updatedChatInfo)
+          }
         }
         withContext(Dispatchers.Main) {
           for (di in deleted) {
@@ -2711,6 +2715,9 @@ private fun archiveReports(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
             if (deletedItem.isActiveReport) {
               chatModel.chatsContext.decreaseGroupReportsCounter(chatRh, chatInfo.id)
             }
+          }
+          deleted.lastOrNull()?.deletedChatItem?.chatInfo?.let { updatedChatInfo ->
+            chatModel.chatsContext.updateChatInfo(chatRh, updatedChatInfo)
           }
         }
         withContext(Dispatchers.Main) {
