@@ -1010,10 +1010,8 @@ fun ComposeView(
     chatModel.sharedContent.value = null
   }
 
-  val userCanSend = rememberUpdatedState(chat.chatInfo.userCanSend)
   val sendMsgEnabled = rememberUpdatedState(chat.chatInfo.sendMsgEnabled)
-  val userIsObserver = rememberUpdatedState(chat.userIsObserver)
-  val userIsPending = rememberUpdatedState(chat.userIsPending)
+  val userCantSendReason = rememberUpdatedState(chat.chatInfo.userCantSendReason)
   val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
 
   Column {
@@ -1039,8 +1037,8 @@ fun ComposeView(
     if (ctx is ComposeContextItem.ReportedItem) {
       ReportReasonView(ctx.reason)
     }
-    val simplexLinkProhibited = hasSimplexLink.value && !chat.groupFeatureEnabled(GroupFeature.SimplexLinks)
-    val fileProhibited = composeState.value.attachmentPreview && !chat.groupFeatureEnabled(GroupFeature.Files)
+    val simplexLinkProhibited = chatsCtx.secondaryContextFilter == null && hasSimplexLink.value && !chat.groupFeatureEnabled(GroupFeature.SimplexLinks)
+    val fileProhibited = chatsCtx.secondaryContextFilter == null && composeState.value.attachmentPreview && !chat.groupFeatureEnabled(GroupFeature.Files)
     val voiceProhibited = composeState.value.preview is ComposePreview.VoicePreview && !chat.chatInfo.featureEnabled(ChatFeature.Voice)
     if (composeState.value.preview !is ComposePreview.VoicePreview || composeState.value.editing) {
       if (simplexLinkProhibited) {
@@ -1069,7 +1067,10 @@ fun ComposeView(
     Surface(color = MaterialTheme.colors.background, contentColor = MaterialTheme.colors.onBackground) {
       Divider()
       Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
-        val isGroupAndProhibitedFiles = chat.chatInfo is ChatInfo.Group && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on(chat.chatInfo.groupInfo.membership)
+        val isGroupAndProhibitedFiles =
+          chatsCtx.secondaryContextFilter == null
+              && chat.chatInfo is ChatInfo.Group
+              && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on(chat.chatInfo.groupInfo.membership)
         val attachmentClicked = if (isGroupAndProhibitedFiles) {
           {
             AlertManager.shared.showAlertMsg(
@@ -1083,7 +1084,6 @@ fun ComposeView(
         val attachmentEnabled =
           !composeState.value.attachmentDisabled
               && sendMsgEnabled.value
-              && userCanSend.value
               && !isGroupAndProhibitedFiles
               && !nextSendGrpInv.value
         IconButton(
@@ -1129,8 +1129,8 @@ fun ComposeView(
             }
         }
 
-        LaunchedEffect(rememberUpdatedState(chat.chatInfo.userCanSend).value) {
-          if (!chat.chatInfo.userCanSend) {
+        LaunchedEffect(rememberUpdatedState(chat.chatInfo.sendMsgEnabled).value) {
+          if (!chat.chatInfo.sendMsgEnabled) {
             clearCurrentDraft()
             clearState()
           }
@@ -1186,14 +1186,12 @@ fun ComposeView(
           chat.chatInfo is ChatInfo.Direct,
           liveMessageAlertShown = chatModel.controller.appPrefs.liveMessageAlertShown,
           sendMsgEnabled = sendMsgEnabled.value,
+          userCantSendReason = userCantSendReason.value,
           sendButtonEnabled = sendMsgEnabled.value && !(simplexLinkProhibited || fileProhibited || voiceProhibited),
           nextSendGrpInv = nextSendGrpInv.value,
           needToAllowVoiceToContact,
           allowedVoiceByPrefs,
           allowVoiceToContact = ::allowVoiceToContact,
-          userIsObserver = if (chatsCtx.secondaryContextFilter == null) userIsObserver.value else false,
-          userIsPending = if (chatsCtx.secondaryContextFilter == null) userIsPending.value else false,
-          userCanSend = userCanSend.value,
           sendButtonColor = sendButtonColor,
           timedMessageAllowed = timedMessageAllowed,
           customDisappearingMessageTimePref = chatModel.controller.appPrefs.customDisappearingMessageTime,

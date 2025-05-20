@@ -784,7 +784,7 @@ fun ChatLayout(
     Modifier
       .fillMaxWidth()
       .desktopOnExternalDrag(
-        enabled = remember(attachmentDisabled.value, chatInfo.value?.userCanSend) { mutableStateOf(!attachmentDisabled.value && chatInfo.value?.userCanSend == true) }.value,
+        enabled = remember(attachmentDisabled.value, chatInfo.value?.sendMsgEnabled) { mutableStateOf(!attachmentDisabled.value && chatInfo.value?.sendMsgEnabled == true) }.value,
         onFiles = { paths -> composeState.onFilesAttached(paths.map { it.toURI() }) },
         onImage = { file -> CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(listOf(file.toURI()), null) } },
         onText = {

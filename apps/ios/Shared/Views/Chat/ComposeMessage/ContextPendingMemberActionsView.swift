@@ -18,13 +18,13 @@ struct ContextPendingMemberActionsView: View {
     var body: some View {
         HStack(spacing: 0) {
             ZStack {
-                Text("Remove")
+                Text("Reject")
                     .foregroundColor(.red)
             }
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
             .onTapGesture {
-                showRemoveMemberAlert(groupInfo, member, dismiss: dismiss)
+                showRejectMemberAlert(groupInfo, member, dismiss: dismiss)
             }
 
             ZStack {
@@ -41,6 +41,15 @@ struct ContextPendingMemberActionsView: View {
         .frame(maxWidth: .infinity)
         .background(.thinMaterial)
     }
+}
+
+func showRejectMemberAlert(_ groupInfo: GroupInfo, _ member: GroupMember, dismiss: DismissAction? = nil) {
+    showAlert(
+        title: NSLocalizedString("Reject member?", comment: "alert title"),
+        buttonTitle: "Reject",
+        buttonAction: { removeMember(groupInfo, member, dismiss: dismiss) },
+        cancelButton: true
+    )
 }
 
 func showAcceptMemberAlert(_ groupInfo: GroupInfo, _ member: GroupMember, dismiss: DismissAction? = nil) {
@@ -75,7 +84,7 @@ func acceptMember(_ groupInfo: GroupInfo, _ member: GroupMember, _ role: GroupMe
         do {
             let (gInfo, acceptedMember) = try await apiAcceptMember(groupInfo.groupId, member.groupMemberId, role)
             await MainActor.run {
-                _ = ChatModel.shared.upsertGroupMember(groupInfo, acceptedMember)
+                _ = ChatModel.shared.upsertGroupMember(gInfo, acceptedMember)
                 ChatModel.shared.updateGroup(gInfo)
                 dismiss?()
             }

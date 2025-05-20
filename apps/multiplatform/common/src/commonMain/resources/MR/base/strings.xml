@@ -159,6 +159,7 @@
   <string name="error_adding_members">Error adding member(s)</string>
   <string name="error_joining_group">Error joining group</string>
   <string name="error_accepting_member">Error accepting member</string>
+  <string name="error_deleting_member_support_chat">Error deleting member support chat</string>
   <string name="cannot_receive_file">Cannot receive file</string>
   <string name="sender_cancelled_file_transfer">Sender cancelled file transfer.</string>
   <string name="file_not_approved_title">Unknown servers!</string>
@@ -491,10 +492,6 @@
   <string name="image_decoding_exception_title">Decoding error</string>
   <string name="image_decoding_exception_desc">The image cannot be decoded. Please, try a different image or contact developers.</string>
   <string name="video_decoding_exception_desc">The video cannot be decoded. Please, try a different video or contact developers.</string>
-  <string name="you_are_observer">you are observer</string>
-  <string name="reviewed_by_admins">reviewed by admins</string>
-  <string name="observer_cant_send_message_title">You can\'t send messages!</string>
-  <string name="observer_cant_send_message_desc">Please contact group admin.</string>
   <string name="files_and_media_prohibited">Files and media prohibited!</string>
   <string name="only_owners_can_enable_files_and_media">Only group owners can enable files and media.</string>
   <string name="compose_send_direct_message_to_connect">Send direct message to connect</string>
@@ -515,6 +512,22 @@
   <string name="report_compose_reason_header_other">Report other: only group moderators will see it.</string>
   <string name="report_sent_alert_title">Report sent to moderators</string>
   <string name="report_sent_alert_msg_view_in_support_chat">You can view your reports in Chat with admins.</string>
+
+  <string name="cant_send_message_alert_title">You can\'t send messages!</string>
+  <string name="cant_send_message_contact_not_ready">contact not ready</string>
+  <string name="cant_send_message_contact_deleted">contact deleted</string>
+  <string name="cant_send_message_contact_not_synchronized">not synchronized</string>
+  <string name="cant_send_message_contact_disabled">contact disabled</string>
+  <string name="observer_cant_send_message_title">you are observer</string>
+  <string name="observer_cant_send_message_desc">Please contact group admin.</string>
+  <string name="cant_send_message_rejected">request to join rejected</string>
+  <string name="cant_send_message_group_deleted">group is deleted</string>
+  <string name="cant_send_message_mem_removed">removed from group</string>
+  <string name="cant_send_message_you_left">you left</string>
+  <string name="cant_send_message_generic">can\'t send messages</string>
+  <string name="you_are_observer">you are observer</string>
+  <string name="reviewed_by_admins">reviewed by admins</string>
+  <string name="cant_send_message_member_has_old_version">member has old version</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>
@@ -2176,10 +2189,13 @@
   <!-- MemberSupportView.kt -->
   <string name="member_support">Chats with members</string>
   <string name="no_support_chats">No chats with members</string>
+  <string name="delete_member_support_chat_button">Delete chat</string>
+  <string name="delete_member_support_chat_alert_title">Delete chat with member?</string>
 
   <!-- MemberSupportChatView.kt -->
   <string name="support_chat">Chat with admins</string>
-  <string name="remove_pending_member_button">Remove</string>
+  <string name="reject_pending_member_button">Reject</string>
+  <string name="reject_pending_member_alert_title">Reject member?</string>
   <string name="accept_pending_member_button">Accept</string>
   <string name="accept_pending_member_alert_title">Accept member</string>
   <string name="accept_pending_member_alert_question">Member will join the group, accept member?</string>

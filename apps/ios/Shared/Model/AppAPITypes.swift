@@ -69,6 +69,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole)
     case apiJoinGroup(groupId: Int64)
     case apiAcceptMember(groupId: Int64, groupMemberId: Int64, memberRole: GroupMemberRole)
+    case apiDeleteMemberSupportChat(groupId: Int64, groupMemberId: Int64)
     case apiMembersRole(groupId: Int64, memberIds: [Int64], memberRole: GroupMemberRole)
     case apiBlockMembersForAll(groupId: Int64, memberIds: [Int64], blocked: Bool)
     case apiRemoveMembers(groupId: Int64, memberIds: [Int64], withMessages: Bool)
@@ -250,6 +251,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiAddMember(groupId, contactId, memberRole): return "/_add #\(groupId) \(contactId) \(memberRole)"
             case let .apiJoinGroup(groupId): return "/_join #\(groupId)"
             case let .apiAcceptMember(groupId, groupMemberId, memberRole): return "/_accept member #\(groupId) \(groupMemberId) \(memberRole.rawValue)"
+            case let .apiDeleteMemberSupportChat(groupId, groupMemberId): return "/_delete member chat #\(groupId) \(groupMemberId)"
             case let .apiMembersRole(groupId, memberIds, memberRole): return "/_member role #\(groupId) \(memberIds.map({ "\($0)" }).joined(separator: ",")) \(memberRole.rawValue)"
             case let .apiBlockMembersForAll(groupId, memberIds, blocked): return "/_block #\(groupId) \(memberIds.map({ "\($0)" }).joined(separator: ",")) blocked=\(onOff(blocked))"
             case let .apiRemoveMembers(groupId, memberIds, withMessages): return "/_remove #\(groupId) \(memberIds.map({ "\($0)" }).joined(separator: ",")) messages=\(onOff(withMessages))"
@@ -425,6 +427,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiAddMember: return "apiAddMember"
             case .apiJoinGroup: return "apiJoinGroup"
             case .apiAcceptMember: return "apiAcceptMember"
+            case .apiDeleteMemberSupportChat: return "apiDeleteMemberSupportChat"
             case .apiMembersRole: return "apiMembersRole"
             case .apiBlockMembersForAll: return "apiBlockMembersForAll"
             case .apiRemoveMembers: return "apiRemoveMembers"
@@ -851,6 +854,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     case leftMemberUser(user: UserRef, groupInfo: GroupInfo)
     case groupMembers(user: UserRef, group: SimpleXChat.Group)
     case memberAccepted(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
+    case memberSupportChatDeleted(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
     case membersRoleUser(user: UserRef, groupInfo: GroupInfo, members: [GroupMember], toRole: GroupMemberRole)
     case membersBlockedForAllUser(user: UserRef, groupInfo: GroupInfo, members: [GroupMember], blocked: Bool)
     case groupUpdated(user: UserRef, toGroup: GroupInfo)
@@ -900,6 +904,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case .leftMemberUser: "leftMemberUser"
         case .groupMembers: "groupMembers"
         case .memberAccepted: "memberAccepted"
+        case .memberSupportChatDeleted: "memberSupportChatDeleted"
         case .membersRoleUser: "membersRoleUser"
         case .membersBlockedForAllUser: "membersBlockedForAllUser"
         case .groupUpdated: "groupUpdated"
@@ -945,6 +950,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case let .leftMemberUser(u, groupInfo): return withUser(u, String(describing: groupInfo))
         case let .groupMembers(u, group): return withUser(u, String(describing: group))
         case let .memberAccepted(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
+        case let .memberSupportChatDeleted(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
         case let .membersRoleUser(u, groupInfo, members, toRole): return withUser(u, "groupInfo: \(groupInfo)\nmembers: \(members)\ntoRole: \(toRole)")
         case let .membersBlockedForAllUser(u, groupInfo, members, blocked): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(members)\nblocked: \(blocked)")
         case let .groupUpdated(u, toGroup): return withUser(u, String(describing: toGroup))

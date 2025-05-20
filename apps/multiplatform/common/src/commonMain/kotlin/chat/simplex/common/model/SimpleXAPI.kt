@@ -58,6 +58,9 @@ typealias ChatCtrl = Long
 // version range that supports establishing direct connection with a group member (xGrpDirectInvVRange in core)
 val CREATE_MEMBER_CONTACT_VERSION = 2
 
+// support group knocking (MsgScope)
+val GROUP_KNOCKING_VERSION = 15
+
 enum class CallOnLockScreen {
   DISABLE,
   SHOW,
@@ -1911,6 +1914,13 @@ object ChatController {
     return null
   }
 
+  suspend fun apiDeleteMemberSupportChat(rh: Long?, groupId: Long, groupMemberId: Long): Pair<GroupInfo, GroupMember>? {
+    val r = sendCmd(rh, CC.ApiDeleteMemberSupportChat(groupId, groupMemberId))
+    if (r is API.Result && r.res is CR.MemberSupportChatDeleted) return r.res.groupInfo to r.res.member
+    apiErrorAlert("apiDeleteMemberSupportChat", generalGetString(MR.strings.error_deleting_member_support_chat), r)
+    return null
+  }
+
   suspend fun apiRemoveMembers(rh: Long?, groupId: Long, memberIds: List<Long>, withMessages: Boolean = false): Pair<GroupInfo, List<GroupMember>>? {
     val r = sendCmd(rh, CC.ApiRemoveMembers(groupId, memberIds, withMessages))
     if (r is API.Result && r.res is CR.UserDeletedMembers) return r.res.groupInfo to r.res.members
@@ -3342,6 +3352,7 @@ sealed class CC {
   class ApiAddMember(val groupId: Long, val contactId: Long, val memberRole: GroupMemberRole): CC()
   class ApiJoinGroup(val groupId: Long): CC()
   class ApiAcceptMember(val groupId: Long, val groupMemberId: Long, val memberRole: GroupMemberRole): CC()
+  class ApiDeleteMemberSupportChat(val groupId: Long, val groupMemberId: Long): CC()
   class ApiMembersRole(val groupId: Long, val memberIds: List<Long>, val memberRole: GroupMemberRole): CC()
   class ApiBlockMembersForAll(val groupId: Long, val memberIds: List<Long>, val blocked: Boolean): CC()
   class ApiRemoveMembers(val groupId: Long, val memberIds: List<Long>, val withMessages: Boolean): CC()
@@ -3528,6 +3539,7 @@ sealed class CC {
     is ApiAddMember -> "/_add #$groupId $contactId ${memberRole.memberRole}"
     is ApiJoinGroup -> "/_join #$groupId"
     is ApiAcceptMember -> "/_accept member #$groupId $groupMemberId ${memberRole.memberRole}"
+    is ApiDeleteMemberSupportChat -> "/_delete member chat #$groupId $groupMemberId"
     is ApiMembersRole -> "/_member role #$groupId ${memberIds.joinToString(",")} ${memberRole.memberRole}"
     is ApiBlockMembersForAll -> "/_block #$groupId ${memberIds.joinToString(",")} blocked=${onOff(blocked)}"
     is ApiRemoveMembers -> "/_remove #$groupId ${memberIds.joinToString(",")} messages=${onOff(withMessages)}"
@@ -3692,6 +3704,7 @@ sealed class CC {
     is ApiAddMember -> "apiAddMember"
     is ApiJoinGroup -> "apiJoinGroup"
     is ApiAcceptMember -> "apiAcceptMember"
+    is ApiDeleteMemberSupportChat -> "apiDeleteMemberSupportChat"
     is ApiMembersRole -> "apiMembersRole"
     is ApiBlockMembersForAll -> "apiBlockMembersForAll"
     is ApiRemoveMembers -> "apiRemoveMembers"
@@ -5846,6 +5859,7 @@ sealed class CR {
   @Serializable @SerialName("groupDeletedUser") class GroupDeletedUser(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("joinedGroupMemberConnecting") class JoinedGroupMemberConnecting(val user: UserRef, val groupInfo: GroupInfo, val hostMember: GroupMember, val member: GroupMember): CR()
   @Serializable @SerialName("memberAccepted") class MemberAccepted(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
+  @Serializable @SerialName("memberSupportChatDeleted") class MemberSupportChatDeleted(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("memberAcceptedByOther") class MemberAcceptedByOther(val user: UserRef, val groupInfo: GroupInfo, val acceptingMember: GroupMember, val member: GroupMember): CR()
   @Serializable @SerialName("memberRole") class MemberRole(val user: UserRef, val groupInfo: GroupInfo, val byMember: GroupMember, val member: GroupMember, val fromRole: GroupMemberRole, val toRole: GroupMemberRole): CR()
   @Serializable @SerialName("membersRoleUser") class MembersRoleUser(val user: UserRef, val groupInfo: GroupInfo, val members: List<GroupMember>, val toRole: GroupMemberRole): CR()
@@ -6024,6 +6038,7 @@ sealed class CR {
     is GroupDeletedUser -> "groupDeletedUser"
     is JoinedGroupMemberConnecting -> "joinedGroupMemberConnecting"
     is MemberAccepted -> "memberAccepted"
+    is MemberSupportChatDeleted -> "memberSupportChatDeleted"
     is MemberAcceptedByOther -> "memberAcceptedByOther"
     is MemberRole -> "memberRole"
     is MembersRoleUser -> "membersRoleUser"
@@ -6195,6 +6210,7 @@ sealed class CR {
     is GroupDeletedUser -> withUser(user, json.encodeToString(groupInfo))
     is JoinedGroupMemberConnecting -> withUser(user, "groupInfo: $groupInfo\nhostMember: $hostMember\nmember: $member")
     is MemberAccepted -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
+    is MemberSupportChatDeleted -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
     is MemberAcceptedByOther -> withUser(user, "groupInfo: $groupInfo\nacceptingMember: $acceptingMember\nmember: $member")
     is MemberRole -> withUser(user, "groupInfo: $groupInfo\nbyMember: $byMember\nmember: $member\nfromRole: $fromRole\ntoRole: $toRole")
     is MembersRoleUser -> withUser(user, "groupInfo: $groupInfo\nmembers: $members\ntoRole: $toRole")

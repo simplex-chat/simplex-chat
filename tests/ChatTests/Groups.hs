@@ -3118,6 +3118,10 @@ testGLinkReviewMember =
 
       (bob </)
 
+      -- deleting support chat with pending member is prohibited
+      alice ##> "/_delete member chat #1 5"
+      alice <## "bad chat command: member is pending"
+
       -- accept member
       dan ##> "/_accept member #1 5 member"
       concurrentlyN_
@@ -6922,6 +6926,9 @@ testScopedSupportSingleModerator =
 
     cath ##> "/_send #1(_support:3) text 5"
     cath <## "#team: you have insufficient permissions for this action, the required role is moderator"
+
+    alice ##> "/_delete member chat #1 2"
+    alice <## "#team: bob support chat deleted"
 
 testScopedSupportManyModerators :: HasCallStack => TestParams -> IO ()
 testScopedSupportManyModerators =
