@@ -985,7 +985,10 @@ ciStatusNew = case msgDirection @d of
 ciCreateStatus :: forall d. MsgDirectionI d => CIContent d -> CIStatus d
 ciCreateStatus content = case msgDirection @d of
   SMDSnd -> ciStatusNew
-  SMDRcv -> if ciRequiresAttention content then ciStatusNew else CISRcvRead
+  SMDRcv
+    | isCIReport content -> CISRcvRead
+    | ciRequiresAttention content -> ciStatusNew
+    | otherwise -> CISRcvRead
 
 membersGroupItemStatus :: [(GroupSndStatus, Int)] -> CIStatus 'MDSnd
 membersGroupItemStatus memStatusCounts

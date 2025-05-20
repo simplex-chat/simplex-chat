@@ -182,6 +182,9 @@ ciMsgContent = \case
   CIRcvMsgContent mc -> Just mc
   _ -> Nothing
 
+isCIReport :: CIContent d -> Bool
+isCIReport = maybe False isReport . ciMsgContent
+
 data MsgDecryptError
   = MDERatchetHeader
   | MDETooManySkipped
@@ -194,9 +197,7 @@ ciRequiresAttention :: forall d. MsgDirectionI d => CIContent d -> Bool
 ciRequiresAttention content = case msgDirection @d of
   SMDSnd -> True
   SMDRcv -> case content of
-    CIRcvMsgContent msgContent -> case msgContent of
-      MCReport {} -> False -- reports use a different attention mechanism
-      _ -> True
+    CIRcvMsgContent _ -> True
     CIRcvDeleted _ -> True
     CIRcvCall {} -> True
     CIRcvIntegrityError _ -> True
