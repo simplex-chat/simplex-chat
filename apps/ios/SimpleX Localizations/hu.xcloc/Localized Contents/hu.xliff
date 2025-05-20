@@ -565,12 +565,14 @@ time interval</note>
 accept incoming call via notification
 swipe action</note>
       </trans-unit>
-      <trans-unit id="Accept as member" xml:space="preserve">
+      <trans-unit id="Accept as member" xml:space="preserve" approved="no">
         <source>Accept as member</source>
+        <target state="translated">Befogadás tagként</target>
         <note>alert action</note>
       </trans-unit>
-      <trans-unit id="Accept as observer" xml:space="preserve">
+      <trans-unit id="Accept as observer" xml:space="preserve" approved="no">
         <source>Accept as observer</source>
+        <target state="translated">Befogadás megfigyelőként</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Accept conditions" xml:space="preserve">
@@ -594,8 +596,9 @@ swipe action</note>
         <note>accept contact request via notification
 swipe action</note>
       </trans-unit>
-      <trans-unit id="Accept member" xml:space="preserve">
+      <trans-unit id="Accept member" xml:space="preserve" approved="no">
         <source>Accept member</source>
+        <target state="translated">Tag befogadása</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Accepted conditions" xml:space="preserve">
@@ -1594,12 +1597,14 @@ set passcode view</note>
         <target>A csevegés törölve lesz az Ön számára – ez a művelet nem vonható vissza!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat with admins" xml:space="preserve">
+      <trans-unit id="Chat with admins" xml:space="preserve" approved="no">
         <source>Chat with admins</source>
+        <target state="translated">Csevegés az adminisztrátorokkal</target>
         <note>chat toolbar</note>
       </trans-unit>
-      <trans-unit id="Chat with member" xml:space="preserve">
+      <trans-unit id="Chat with member" xml:space="preserve" approved="no">
         <source>Chat with member</source>
+        <target state="translated">Csevegés a taggal</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
@@ -1607,8 +1612,9 @@ set passcode view</note>
         <target>Csevegések</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chats with members" xml:space="preserve">
+      <trans-unit id="Chats with members" xml:space="preserve" approved="no">
         <source>Chats with members</source>
+        <target state="translated">Csevegés a tagokkal</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Check messages every 20 min." xml:space="preserve">
@@ -3172,8 +3178,9 @@ chat item action</note>
         <target>Hiba történt a meghívási kérés elfogadásakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error accepting member" xml:space="preserve">
+      <trans-unit id="Error accepting member" xml:space="preserve" approved="no">
         <source>Error accepting member</source>
+        <target state="translated">Hiba a tag befogadásakor</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
@@ -4768,8 +4775,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Tag</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member admission" xml:space="preserve">
+      <trans-unit id="Member admission" xml:space="preserve" approved="no">
         <source>Member admission</source>
+        <target state="translated">Tagbefogadás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member inactive" xml:space="preserve">
@@ -4807,8 +4815,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>A tag el lesz távolítva a csoportból – ez a művelet nem vonható vissza!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member will join the group, accept member?" xml:space="preserve">
+      <trans-unit id="Member will join the group, accept member?" xml:space="preserve" approved="no">
         <source>Member will join the group, accept member?</source>
+        <target state="translated">A tag csatlakozni akar a csoporthoz, befogadja a tagot?</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Members can add message reactions." xml:space="preserve">
@@ -5231,8 +5240,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Új tag szerepköre</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New member wants to join the group." xml:space="preserve">
+      <trans-unit id="New member wants to join the group." xml:space="preserve" approved="no">
         <source>New member wants to join the group.</source>
+        <target state="translated">Új tag szeretne csatlakozni a csoporthoz.</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="New message" xml:space="preserve">
@@ -5275,8 +5285,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Nincsenek csevegések a(z) %@ nevű listában</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No chats with members" xml:space="preserve">
+      <trans-unit id="No chats with members" xml:space="preserve" approved="no">
         <source>No chats with members</source>
+        <target state="translated">Nincsenek csevegések a tagokkal</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No contacts selected" xml:space="preserve">
@@ -5884,8 +5895,9 @@ Hiba: %@</target>
         <target>Próbálja meg letiltani és újra engedélyezni az értesítéseket.</target>
         <note>token info</note>
       </trans-unit>
-      <trans-unit id="Please wait for group moderators to review your request to join the group." xml:space="preserve">
+      <trans-unit id="Please wait for group moderators to review your request to join the group." xml:space="preserve" approved="no">
         <source>Please wait for group moderators to review your request to join the group.</source>
+        <target state="translated">Várja meg, amíg a csoport moderátorai áttekintik a csoporthoz való csatlakozási kérelmét.</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="Please wait for token activation to complete." xml:space="preserve">
@@ -6341,8 +6353,9 @@ swipe action</note>
         <target>Meghívási kérés elutasítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reject member?" xml:space="preserve">
+      <trans-unit id="Reject member?" xml:space="preserve" approved="no">
         <source>Reject member?</source>
+        <target state="translated">Elutasítja a tagot?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Relay server is only used if necessary. Another party can observe your IP address." xml:space="preserve">
@@ -6455,8 +6468,9 @@ swipe action</note>
         <target>Jelentés indoklása?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Report sent to moderators" xml:space="preserve">
+      <trans-unit id="Report sent to moderators" xml:space="preserve" approved="no">
         <source>Report sent to moderators</source>
+        <target state="translated">A jelentés el lett küldve a moderátoroknak</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Report spam: only group moderators will see it." xml:space="preserve">
@@ -6574,8 +6588,9 @@ swipe action</note>
         <target>Feltételek felülvizsgálata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Review members" xml:space="preserve">
+      <trans-unit id="Review members" xml:space="preserve" approved="no">
         <source>Review members</source>
+        <target state="translated">Tagok áttekintése</target>
         <note>admission stage</note>
       </trans-unit>
       <trans-unit id="Review members before admitting (&quot;knocking&quot;)." xml:space="preserve">
@@ -6638,8 +6653,9 @@ chat item action</note>
         <target>Mentés (és a partnerek értesítése)</target>
         <note>alert button</note>
       </trans-unit>
-      <trans-unit id="Save admission settings?" xml:space="preserve">
+      <trans-unit id="Save admission settings?" xml:space="preserve" approved="no">
         <source>Save admission settings?</source>
+        <target state="translated">Elmenti a befogadási beállításokat?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Save and notify contact" xml:space="preserve">
