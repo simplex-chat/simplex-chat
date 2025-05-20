@@ -1026,7 +1026,7 @@
     <string name="rcv_group_event_updated_group_profile">frissítette a csoport profilját</string>
     <string name="settings_section_title_support">SIMPLEX CHAT TÁMOGATÁSA</string>
     <string name="simplex_service_notification_title">SimpleX Chat szolgáltatás</string>
-    <string name="observer_cant_send_message_title">Nem lehet üzeneteket küldeni!</string>
+    <string name="observer_cant_send_message_title">Ön megfigyelő</string>
     <string name="is_verified">%s hitelesítve</string>
     <string name="password_to_show">Jelszó a megjelenítéshez</string>
     <string name="privacy_and_security">Adatvédelem és biztonság</string>
@@ -2386,4 +2386,17 @@
     <string name="accept_pending_member_alert_confirmation_as_member">Befogadás tagként</string>
     <string name="rcv_group_event_member_accepted">befogadta őt: %1$s</string>
     <string name="reviewed_by_admins">áttekintve a moderátorok által</string>
+    <string name="cant_send_message_generic">nem lehet üzeneteket küldeni</string>
+    <string name="cant_send_message_contact_disabled">partner letiltva</string>
+    <string name="cant_send_message_group_deleted">csoport törölve</string>
+    <string name="cant_send_message_mem_removed">eltávolítva a csoportból</string>
+    <string name="cant_send_message_rejected">csatlakozási kérelem elutasítva</string>
+    <string name="cant_send_message_you_left">Ön elhagyta a csoportot</string>
+    <string name="cant_send_message_member_has_old_version">a tag régi verziót használ</string>
+    <string name="error_deleting_member_support_chat">Hiba a taggal való csevegés törlésekor</string>
+    <string name="cant_send_message_alert_title">Ön nem tud üzeneteket küldeni!</string>
+    <string name="cant_send_message_contact_not_ready">a kapcsolat nem áll készen</string>
+    <string name="cant_send_message_contact_not_synchronized">nincs szinkronizálva</string>
+    <string name="delete_member_support_chat_alert_title">Törli a taggal való csevegést?</string>
+    <string name="cant_send_message_contact_deleted">partner törölve</string>
 </resources>
