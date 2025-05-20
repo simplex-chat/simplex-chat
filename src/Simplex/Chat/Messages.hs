@@ -215,6 +215,9 @@ data CIMentionMember = CIMentionMember
   }
   deriving (Eq, Show)
 
+isACIUserMention :: AChatItem -> Bool
+isACIUserMention (AChatItem _ _ _ ci) = isUserMention ci
+
 isUserMention :: ChatItem c d -> Bool
 isUserMention ChatItem {meta = CIMeta {userMention}} = userMention
 
@@ -294,6 +297,16 @@ chatItemMember :: GroupInfo -> ChatItem 'CTGroup d -> GroupMember
 chatItemMember GroupInfo {membership} ChatItem {chatDir} = case chatDir of
   CIGroupSnd -> membership
   CIGroupRcv m -> m
+
+chatItemRcvFromMember :: ChatItem c d -> Maybe GroupMember
+chatItemRcvFromMember ChatItem {chatDir} = case chatDir of
+  CIGroupRcv m -> Just m
+  _ -> Nothing
+
+chatItemIsRcvNew :: ChatItem c d -> Bool
+chatItemIsRcvNew ChatItem {meta = CIMeta {itemStatus}} = case itemStatus of
+  CISRcvNew -> True
+  _ -> False
 
 ciReactionAllowed :: ChatItem c d -> Bool
 ciReactionAllowed ChatItem {meta = CIMeta {itemDeleted = Just _}} = False
@@ -394,6 +407,12 @@ aChatItemTs (AChatItem _ _ _ ci) = chatItemTs' ci
 
 aChatItemDir :: AChatItem -> MsgDirection
 aChatItemDir (AChatItem _ sMsgDir _ _) = toMsgDirection sMsgDir
+
+aChatItemRcvFromMember :: AChatItem -> Maybe GroupMember
+aChatItemRcvFromMember (AChatItem _ _ _ ci) = chatItemRcvFromMember ci
+
+aChatItemIsRcvNew :: AChatItem -> Bool
+aChatItemIsRcvNew (AChatItem _ _ _ ci) = chatItemIsRcvNew ci
 
 updateFileStatus :: forall c d. ChatItem c d -> CIFileStatus d -> ChatItem c d
 updateFileStatus ci@ChatItem {file} status = case file of

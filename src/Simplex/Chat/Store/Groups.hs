@@ -1233,7 +1233,7 @@ updateGroupMemberAccepted db User {userId} m@GroupMember {groupMemberId} status 
   pure m {memberStatus = status, memberRole = role, updatedAt = currentTs}
 
 deleteGroupMemberSupportChat :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO (GroupInfo, GroupMember)
-deleteGroupMemberSupportChat db user@User {userId} g@GroupInfo {groupId, membersRequireAttention} m@GroupMember {groupMemberId, supportChat} = do
+deleteGroupMemberSupportChat db user g m@GroupMember {groupMemberId} = do
   let requiredAttention = gmRequiresAttention m
   currentTs <- getCurrentTime
   DB.execute
