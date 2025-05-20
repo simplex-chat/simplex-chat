@@ -9248,8 +9248,9 @@ Megismétli a meghívási kérést?</target>
         <target>gombra fent, majd válassza ki:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="accepted %@" xml:space="preserve">
+      <trans-unit id="accepted %@" xml:space="preserve" approved="no">
         <source>accepted %@</source>
+        <target state="translated">befogadta őt: %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="accepted call" xml:space="preserve">
@@ -9954,7 +9955,7 @@ time to disappear</note>
       </trans-unit>
       <trans-unit id="pending review" xml:space="preserve" approved="no">
         <source>pending review</source>
-        <target state="translated">áttekintésre vár</target>
+        <target state="translated">függőben lévő áttekintés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="quantum resistant e2e encryption" xml:space="preserve">
