@@ -2426,6 +2426,10 @@ swipe action</note>
         <target>Eliminare il profilo di chat?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete chat with member?" xml:space="preserve">
+        <source>Delete chat with member?</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Delete chat?" xml:space="preserve">
         <source>Delete chat?</source>
         <target>Eliminare la chat?</target>
@@ -3265,6 +3269,10 @@ chat item action</note>
         <source>Error deleting chat database</source>
         <target>Errore nell'eliminazione del database della chat</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error deleting chat with member" xml:space="preserve">
+        <source>Error deleting chat with member</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error deleting chat!" xml:space="preserve">
         <source>Error deleting chat!</source>
@@ -6331,6 +6339,10 @@ swipe action</note>
         <target>Rifiuta la richiesta di contatto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Reject member?" xml:space="preserve">
+        <source>Reject member?</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Relay server is only used if necessary. Another party can observe your IP address." xml:space="preserve">
         <source>Relay server is only used if necessary. Another party can observe your IP address.</source>
         <target>Il server relay viene usato solo se necessario. Un altro utente può osservare il tuo indirizzo IP.</target>
@@ -6364,7 +6376,7 @@ swipe action</note>
       <trans-unit id="Remove member?" xml:space="preserve">
         <source>Remove member?</source>
         <target>Rimuovere il membro?</target>
-        <note>alert title</note>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove passphrase from keychain?" xml:space="preserve">
         <source>Remove passphrase from keychain?</source>
@@ -9343,6 +9355,10 @@ marked deleted chat item preview text</note>
         <target>chiamata…</target>
         <note>call status</note>
       </trans-unit>
+      <trans-unit id="can't send messages" xml:space="preserve">
+        <source>can't send messages</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="cancelled %@" xml:space="preserve">
         <source>cancelled %@</source>
         <target>annullato %@</target>
@@ -9448,6 +9464,14 @@ marked deleted chat item preview text</note>
         <target>contatto %1$@ cambiato in %2$@</target>
         <note>profile update event chat item</note>
       </trans-unit>
+      <trans-unit id="contact deleted" xml:space="preserve">
+        <source>contact deleted</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="contact disabled" xml:space="preserve">
+        <source>contact disabled</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="contact has e2e encryption" xml:space="preserve">
         <source>contact has e2e encryption</source>
         <target>il contatto ha la crittografia e2e</target>
@@ -9456,6 +9480,10 @@ marked deleted chat item preview text</note>
       <trans-unit id="contact has no e2e encryption" xml:space="preserve">
         <source>contact has no e2e encryption</source>
         <target>il contatto non ha la crittografia e2e</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="contact not ready" xml:space="preserve">
+        <source>contact not ready</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="creator" xml:space="preserve">
@@ -9629,6 +9657,10 @@ pref value</note>
         <target>gruppo eliminato</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="group is deleted" xml:space="preserve">
+        <source>group is deleted</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="group profile updated" xml:space="preserve">
         <source>group profile updated</source>
         <target>profilo del gruppo aggiornato</target>
@@ -9754,6 +9786,10 @@ pref value</note>
         <target>si è connesso/a</target>
         <note>rcv group event chat item</note>
       </trans-unit>
+      <trans-unit id="member has old version" xml:space="preserve">
+        <source>member has old version</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="message" xml:space="preserve">
         <source>message</source>
         <target>messaggio</target>
@@ -9818,6 +9854,10 @@ pref value</note>
         <source>no text</source>
         <target>nessun testo</target>
         <note>copied message info in history</note>
+      </trans-unit>
+      <trans-unit id="not synchronized" xml:space="preserve">
+        <source>not synchronized</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="observer" xml:space="preserve">
         <source>observer</source>
@@ -9926,6 +9966,10 @@ time to disappear</note>
         <target>indirizzo di contatto rimosso</target>
         <note>profile update event chat item</note>
       </trans-unit>
+      <trans-unit id="removed from group" xml:space="preserve">
+        <source>removed from group</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="removed profile picture" xml:space="preserve">
         <source>removed profile picture</source>
         <target>immagine del profilo rimossa</target>
@@ -9935,6 +9979,10 @@ time to disappear</note>
         <source>removed you</source>
         <target>ti ha rimosso/a</target>
         <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="request to join rejected" xml:space="preserve">
+        <source>request to join rejected</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="requested to connect" xml:space="preserve">
         <source>requested to connect</source>

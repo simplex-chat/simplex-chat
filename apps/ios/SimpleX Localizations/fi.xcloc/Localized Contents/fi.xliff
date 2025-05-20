@@ -2198,6 +2198,10 @@ swipe action</note>
         <target>Poista keskusteluprofiili?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete chat with member?" xml:space="preserve">
+        <source>Delete chat with member?</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Delete chat?" xml:space="preserve">
         <source>Delete chat?</source>
         <note>No comment provided by engineer.</note>
@@ -2971,6 +2975,10 @@ chat item action</note>
         <source>Error deleting chat database</source>
         <target>Virhe keskustelujen tietokannan poistamisessa</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error deleting chat with member" xml:space="preserve">
+        <source>Error deleting chat with member</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error deleting chat!" xml:space="preserve">
         <source>Error deleting chat!</source>
@@ -5756,6 +5764,10 @@ swipe action</note>
         <target>Hylkää yhteyspyyntö</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Reject member?" xml:space="preserve">
+        <source>Reject member?</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Relay server is only used if necessary. Another party can observe your IP address." xml:space="preserve">
         <source>Relay server is only used if necessary. Another party can observe your IP address.</source>
         <target>Välityspalvelinta käytetään vain tarvittaessa. Toinen osapuoli voi tarkkailla IP-osoitettasi.</target>
@@ -5787,7 +5799,7 @@ swipe action</note>
       <trans-unit id="Remove member?" xml:space="preserve">
         <source>Remove member?</source>
         <target>Poista jäsen?</target>
-        <note>alert title</note>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove passphrase from keychain?" xml:space="preserve">
         <source>Remove passphrase from keychain?</source>
@@ -8493,6 +8505,10 @@ marked deleted chat item preview text</note>
         <target>soittaa…</target>
         <note>call status</note>
       </trans-unit>
+      <trans-unit id="can't send messages" xml:space="preserve">
+        <source>can't send messages</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="cancelled %@" xml:space="preserve">
         <source>cancelled %@</source>
         <target>peruutettu %@</target>
@@ -8596,6 +8612,14 @@ marked deleted chat item preview text</note>
         <source>contact %1$@ changed to %2$@</source>
         <note>profile update event chat item</note>
       </trans-unit>
+      <trans-unit id="contact deleted" xml:space="preserve">
+        <source>contact deleted</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="contact disabled" xml:space="preserve">
+        <source>contact disabled</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="contact has e2e encryption" xml:space="preserve">
         <source>contact has e2e encryption</source>
         <target>kontaktilla on e2e-salaus</target>
@@ -8604,6 +8628,10 @@ marked deleted chat item preview text</note>
       <trans-unit id="contact has no e2e encryption" xml:space="preserve">
         <source>contact has no e2e encryption</source>
         <target>kontaktilla ei ole e2e-salausta</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="contact not ready" xml:space="preserve">
+        <source>contact not ready</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="creator" xml:space="preserve">
@@ -8772,6 +8800,10 @@ pref value</note>
         <target>ryhmä poistettu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="group is deleted" xml:space="preserve">
+        <source>group is deleted</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="group profile updated" xml:space="preserve">
         <source>group profile updated</source>
         <target>ryhmäprofiili päivitetty</target>
@@ -8894,6 +8926,10 @@ pref value</note>
         <target>yhdistetty</target>
         <note>rcv group event chat item</note>
       </trans-unit>
+      <trans-unit id="member has old version" xml:space="preserve">
+        <source>member has old version</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="message" xml:space="preserve">
         <source>message</source>
         <note>No comment provided by engineer.</note>
@@ -8956,6 +8992,10 @@ pref value</note>
         <source>no text</source>
         <target>ei tekstiä</target>
         <note>copied message info in history</note>
+      </trans-unit>
+      <trans-unit id="not synchronized" xml:space="preserve">
+        <source>not synchronized</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="observer" xml:space="preserve">
         <source>observer</source>
@@ -9056,6 +9096,10 @@ time to disappear</note>
         <source>removed contact address</source>
         <note>profile update event chat item</note>
       </trans-unit>
+      <trans-unit id="removed from group" xml:space="preserve">
+        <source>removed from group</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="removed profile picture" xml:space="preserve">
         <source>removed profile picture</source>
         <note>profile update event chat item</note>
@@ -9064,6 +9108,10 @@ time to disappear</note>
         <source>removed you</source>
         <target>poisti sinut</target>
         <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="request to join rejected" xml:space="preserve">
+        <source>request to join rejected</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="requested to connect" xml:space="preserve">
         <source>requested to connect</source>
