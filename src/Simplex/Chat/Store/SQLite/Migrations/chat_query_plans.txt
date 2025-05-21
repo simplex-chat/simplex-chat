@@ -1,22 +1,4 @@
 Query: 
-                    UPDATE groups
-                    SET members_require_attention = members_require_attention - 1
-                    WHERE user_id = ? AND group_id = ?
-                  
-Plan:
-SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-                  UPDATE group_members
-                  SET support_chat_items_unread = support_chat_items_unread - ?,
-                      support_chat_items_member_attention = support_chat_items_member_attention - ?,
-                      support_chat_items_mentions = support_chat_items_mentions - ?
-                  WHERE group_member_id = ?
-                
-Plan:
-SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
                   UPDATE groups
                   SET chat_ts = ?,
                       members_require_attention = members_require_attention + 1
@@ -1316,6 +1298,17 @@ Query:
           SET support_chat_items_unread = 0,
               support_chat_items_member_attention = 0,
               support_chat_items_mentions = 0
+          WHERE group_member_id = ?
+        
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+          UPDATE group_members
+          SET support_chat_items_unread = support_chat_items_unread - ?,
+              support_chat_items_member_attention = support_chat_items_member_attention - ?,
+              support_chat_items_mentions = support_chat_items_mentions - ?,
+              updated_at = ?
           WHERE group_member_id = ?
         
 Plan:
@@ -3484,6 +3477,21 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       DELETE FROM chat_items
+      WHERE group_scope_group_member_id = ?
+    
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_group_member_id (group_scope_group_member_id=?)
+SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
+SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
+SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
+SEARCH calls USING COVERING INDEX idx_calls_chat_item_id (chat_item_id=?)
+SEARCH chat_item_messages USING COVERING INDEX sqlite_autoindex_chat_item_messages_2 (chat_item_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_fwd_from_chat_item_id (fwd_from_chat_item_id=?)
+SEARCH files USING COVERING INDEX idx_files_chat_item_id (chat_item_id=?)
+SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
+
+Query: 
+      DELETE FROM chat_items
       WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
     
 Plan:
@@ -4401,6 +4409,19 @@ Query:
       UPDATE group_members
       SET show_messages = ?, updated_at = ?
       WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+    
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+      UPDATE group_members
+      SET support_chat_ts = NULL,
+          support_chat_items_unread = 0,
+          support_chat_items_member_attention = 0,
+          support_chat_items_mentions = 0,
+          support_chat_last_msg_from_member_ts = NULL,
+          updated_at = ?
+      WHERE group_member_id = ?
     
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)

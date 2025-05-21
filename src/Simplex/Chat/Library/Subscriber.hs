@@ -871,9 +871,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             logInfo $ "group msg=" <> tshow tag <> " " <> eInfo
             (m'', conn', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveGroupRcvMsg user groupId m' conn msgMeta msgBody chatMsg
             case event of
-              XMsgNew mc -> memberCanSend m'' $ newGroupContentMessage gInfo' m'' mc msg brokerTs False
-              XMsgFileDescr sharedMsgId fileDescr -> memberCanSend m'' $ groupMessageFileDescription gInfo' m'' sharedMsgId fileDescr
-              XMsgUpdate sharedMsgId mContent mentions ttl live msgScope -> memberCanSend m'' $ groupMessageUpdate gInfo' m'' sharedMsgId mContent mentions msgScope msg brokerTs ttl live
+              XMsgNew mc -> memberCanSend m'' scope $ newGroupContentMessage gInfo' m'' mc msg brokerTs False
+                where ExtMsgContent {scope} = mcExtMsgContent mc
+              -- file description is always allowed, to allow sending files to support scope
+              XMsgFileDescr sharedMsgId fileDescr -> groupMessageFileDescription gInfo' m'' sharedMsgId fileDescr
+              XMsgUpdate sharedMsgId mContent mentions ttl live msgScope -> memberCanSend m'' msgScope $ groupMessageUpdate gInfo' m'' sharedMsgId mContent mentions msgScope msg brokerTs ttl live
               XMsgDel sharedMsgId memberId -> groupMessageDelete gInfo' m'' sharedMsgId memberId msg brokerTs
               XMsgReact sharedMsgId (Just memberId) reaction add -> groupMsgReaction gInfo' m'' sharedMsgId memberId reaction add msg brokerTs
               -- TODO discontinue XFile
@@ -895,7 +897,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpDel -> xGrpDel gInfo' m'' msg brokerTs
               XGrpInfo p' -> xGrpInfo gInfo' m'' p' msg brokerTs
               XGrpPrefs ps' -> xGrpPrefs gInfo' m'' ps'
-              XGrpDirectInv connReq mContent_ -> memberCanSend m'' $ xGrpDirectInv gInfo' m'' conn' connReq mContent_ msg brokerTs
+              -- TODO [knocking] why don't we forward these messages?
+              XGrpDirectInv connReq mContent_ msgScope -> memberCanSend m'' msgScope $ xGrpDirectInv gInfo' m'' conn' connReq mContent_ msg brokerTs
               XGrpMsgForward memberId msg' msgTs -> xGrpMsgForward gInfo' m'' memberId msg' msgTs
               XInfoProbe probe -> xInfoProbe (COMGroupMember m'') probe
               XInfoProbeCheck probeHash -> xInfoProbeCheck (COMGroupMember m'') probeHash
@@ -1252,10 +1255,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                                 toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
                 _ -> toView $ CEvtReceivedContactRequest user cReq
 
-    memberCanSend :: GroupMember -> CM () -> CM ()
-    memberCanSend m@GroupMember {memberRole} a
-      | memberRole > GRObserver || memberPending m = a
-      | otherwise = messageError "member is not allowed to send messages"
+    memberCanSend :: GroupMember -> Maybe MsgScope -> CM () -> CM ()
+    memberCanSend m@GroupMember {memberRole} msgScope a = case msgScope of
+      Just MSMember {} -> a
+      Nothing
+        | memberRole > GRObserver || memberPending m -> a
+        | otherwise -> messageError "member is not allowed to send messages"
 
     processConnMERR :: ConnectionEntity -> Connection -> AgentErrorType -> CM ()
     processConnMERR connEntity conn err = do
@@ -1643,62 +1648,60 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         e -> throwError e
 
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> UTCTime -> Bool -> CM ()
-    newGroupContentMessage gInfo m@GroupMember {memberId, memberRole} mc msg@RcvMessage {sharedMsgId_} brokerTs forwarded
-      | blockedByAdmin m = createBlockedByAdmin
-      | otherwise = case prohibitedGroupContent gInfo m content ft_ fInv_ False of
-          Just f -> rejected f
-          Nothing ->
-            withStore' (\db -> getCIModeration db vr user gInfo memberId sharedMsgId_) >>= \case
-              Just ciModeration -> do
-                applyModeration ciModeration
-                withStore' $ \db -> deleteCIModeration db gInfo memberId sharedMsgId_
-              Nothing -> createContentItem
+    newGroupContentMessage gInfo m@GroupMember {memberId, memberRole} mc msg@RcvMessage {sharedMsgId_} brokerTs forwarded = do
+      (gInfo', m', scopeInfo) <- mkGetMessageChatScope vr user gInfo m msgScope_
+      if blockedByAdmin m'
+        then createBlockedByAdmin gInfo' m' scopeInfo
+        else
+          case prohibitedGroupContent gInfo' m' scopeInfo content ft_ fInv_ False of
+            Just f -> rejected gInfo' m' scopeInfo f
+            Nothing ->
+              withStore' (\db -> getCIModeration db vr user gInfo' memberId sharedMsgId_) >>= \case
+                Just ciModeration -> do
+                  applyModeration gInfo' m' scopeInfo ciModeration
+                  withStore' $ \db -> deleteCIModeration db gInfo' memberId sharedMsgId_
+                Nothing -> createContentItem gInfo' m' scopeInfo
       where
-        rejected f = newChatItem (ciContentNoParse $ CIRcvGroupFeatureRejected f) Nothing Nothing False
-        timed' = if forwarded then rcvCITimed_ (Just Nothing) itemTTL else rcvGroupCITimed gInfo itemTTL
+        rejected gInfo' m' scopeInfo f = newChatItem gInfo' m' scopeInfo (ciContentNoParse $ CIRcvGroupFeatureRejected f) Nothing Nothing False
+        timed' gInfo' = if forwarded then rcvCITimed_ (Just Nothing) itemTTL else rcvGroupCITimed gInfo' itemTTL
         live' = fromMaybe False live_
         ExtMsgContent content mentions fInv_ itemTTL live_ msgScope_ = mcExtMsgContent mc
         ts@(_, ft_) = msgContentTexts content
-        saveRcvCI gInfo' scopeInfo m' = saveRcvChatItem' user (CDGroupRcv gInfo' scopeInfo m') msg sharedMsgId_ brokerTs
-        createBlockedByAdmin
-          | groupFeatureAllowed SGFFullDelete gInfo = do
-              (gInfo', m', scopeInfo) <- mkGetMessageChatScope vr user gInfo m msgScope_
+        saveRcvCI gInfo' m' scopeInfo = saveRcvChatItem' user (CDGroupRcv gInfo' scopeInfo m') msg sharedMsgId_ brokerTs
+        createBlockedByAdmin gInfo' m' scopeInfo
+          | groupFeatureAllowed SGFFullDelete gInfo' = do
               -- ignores member role when blocked by admin
-              (ci, cInfo) <- saveRcvCI gInfo' scopeInfo m' (ciContentNoParse CIRcvBlocked) Nothing timed' False M.empty
+              (ci, cInfo) <- saveRcvCI gInfo' m' scopeInfo (ciContentNoParse CIRcvBlocked) Nothing (timed' gInfo') False M.empty
               ci' <- withStore' $ \db -> updateGroupCIBlockedByAdmin db user gInfo' ci brokerTs
               groupMsgToView cInfo ci'
           | otherwise = do
-              file_ <- processFileInv
-              (ci, cInfo) <- createNonLive file_
-              ci' <- withStore' $ \db -> markGroupCIBlockedByAdmin db user gInfo ci
+              file_ <- processFileInv m'
+              (ci, cInfo) <- createNonLive gInfo' m' scopeInfo file_
+              ci' <- withStore' $ \db -> markGroupCIBlockedByAdmin db user gInfo' ci
               groupMsgToView cInfo ci'
-        applyModeration CIModeration {moderatorMember = moderator@GroupMember {memberRole = moderatorRole}, moderatedAt}
+        applyModeration gInfo' m' scopeInfo CIModeration {moderatorMember = moderator@GroupMember {memberRole = moderatorRole}, moderatedAt}
           | moderatorRole < GRModerator || moderatorRole < memberRole =
-              createContentItem
-          | groupFeatureMemberAllowed SGFFullDelete moderator gInfo = do
-              (gInfo', m', scopeInfo) <- mkGetMessageChatScope vr user gInfo m msgScope_
-              (ci, cInfo) <- saveRcvCI gInfo' scopeInfo m' (ciContentNoParse CIRcvModerated) Nothing timed' False M.empty
+              createContentItem gInfo' m' scopeInfo
+          | groupFeatureMemberAllowed SGFFullDelete moderator gInfo' = do
+              (ci, cInfo) <- saveRcvCI gInfo' m' scopeInfo (ciContentNoParse CIRcvModerated) Nothing (timed' gInfo') False M.empty
               ci' <- withStore' $ \db -> updateGroupChatItemModerated db user gInfo' ci moderator moderatedAt
               groupMsgToView cInfo ci'
           | otherwise = do
-              (gInfo', _m', scopeInfo) <- mkGetMessageChatScope vr user gInfo m msgScope_
-              file_ <- processFileInv
-              (ci, _cInfo) <- createNonLive file_
+              file_ <- processFileInv m'
+              (ci, _cInfo) <- createNonLive gInfo' m' scopeInfo file_
               deletions <- markGroupCIsDeleted user gInfo' scopeInfo [CChatItem SMDRcv ci] (Just moderator) moderatedAt
               toView $ CEvtChatItemsDeleted user deletions False False
-        createNonLive file_ = do
-          (gInfo', m', scopeInfo) <- mkGetMessageChatScope vr user gInfo m msgScope_
-          saveRcvCI gInfo' scopeInfo m' (CIRcvMsgContent content, ts) (snd <$> file_) timed' False mentions
-        createContentItem = do
-          file_ <- processFileInv
-          newChatItem (CIRcvMsgContent content, ts) (snd <$> file_) timed' live'
-          when (showMessages $ memberSettings m) $ autoAcceptFile file_
-        processFileInv =
-          processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
-        newChatItem ciContent ciFile_ timed_ live = do
-          let mentions' = if showMessages (memberSettings m) then mentions else []
-          (gInfo', m', scopeInfo) <- mkGetMessageChatScope vr user gInfo m msgScope_
-          (ci, cInfo) <- saveRcvCI gInfo' scopeInfo m' ciContent ciFile_ timed_ live mentions'
+        createNonLive gInfo' m' scopeInfo file_ = do
+          saveRcvCI gInfo' m' scopeInfo (CIRcvMsgContent content, ts) (snd <$> file_) (timed' gInfo') False mentions
+        createContentItem gInfo' m' scopeInfo = do
+          file_ <- processFileInv m'
+          newChatItem gInfo' m' scopeInfo (CIRcvMsgContent content, ts) (snd <$> file_) (timed' gInfo') live'
+          when (showMessages $ memberSettings m') $ autoAcceptFile file_
+        processFileInv m' =
+          processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m'
+        newChatItem gInfo' m' scopeInfo ciContent ciFile_ timed_ live = do
+          let mentions' = if showMessages (memberSettings m') then mentions else []
+          (ci, cInfo) <- saveRcvCI gInfo' m' scopeInfo ciContent ciFile_ timed_ live mentions'
           ci' <- blockedMember m' ci $ withStore' $ \db -> markGroupChatItemBlocked db user gInfo' ci
           reactions <- maybe (pure []) (\sharedMsgId -> withStore' $ \db -> getGroupCIReactions db gInfo' memberId sharedMsgId) sharedMsgId_
           groupMsgToView cInfo ci' {reactions}
@@ -2123,14 +2126,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             membership' <- withStore' $ \db -> updateGroupMemberAccepted db user membership GSMemConnected role
             -- create item in both scopes
             let gInfo' = gInfo {membership = membership'}
-            createInternalChatItem user (CDGroupRcv gInfo' Nothing m) (CIRcvGroupEvent RGEUserAccepted) Nothing
-            let scopeInfo = Just $ GCSIMemberSupport {groupMember_ = Nothing}
-            createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m) (CIRcvGroupEvent RGEUserAccepted) Nothing
-            toView $ CEvtUserJoinedGroup user gInfo' m
-            let cd = CDGroupRcv gInfo' Nothing m
+                cd = CDGroupRcv gInfo' Nothing m
             createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
             createGroupFeatureItems user cd CIRcvGroupFeature gInfo'
             maybeCreateGroupDescrLocal gInfo' m
+            createInternalChatItem user cd (CIRcvGroupEvent RGEUserAccepted) Nothing
+            let scopeInfo = Just $ GCSIMemberSupport {groupMember_ = Nothing}
+            createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m) (CIRcvGroupEvent RGEUserAccepted) Nothing
+            toView $ CEvtUserJoinedGroup user gInfo' m
           GAPendingReview -> do
             membership' <- withStore' $ \db -> updateGroupMemberAccepted db user membership GSMemPendingReview role
             let gInfo' = gInfo {membership = membership'}
@@ -2839,9 +2842,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           let body = LB.toStrict $ J.encode msg
           rcvMsg@RcvMessage {chatMsgEvent = ACME _ event} <- saveGroupFwdRcvMsg user groupId m author body chatMsg
           case event of
-            XMsgNew mc -> memberCanSend author $ newGroupContentMessage gInfo author mc rcvMsg msgTs True
-            XMsgFileDescr sharedMsgId fileDescr -> memberCanSend author $ groupMessageFileDescription gInfo author sharedMsgId fileDescr
-            XMsgUpdate sharedMsgId mContent mentions ttl live msgScope -> memberCanSend author $ groupMessageUpdate gInfo author sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live
+            XMsgNew mc -> memberCanSend author scope $ newGroupContentMessage gInfo author mc rcvMsg msgTs True
+              where ExtMsgContent {scope} = mcExtMsgContent mc
+            -- file description is always allowed, to allow sending files to support scope
+            XMsgFileDescr sharedMsgId fileDescr -> groupMessageFileDescription gInfo author sharedMsgId fileDescr
+            XMsgUpdate sharedMsgId mContent mentions ttl live msgScope -> memberCanSend author msgScope $ groupMessageUpdate gInfo author sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live
             XMsgDel sharedMsgId memId -> groupMessageDelete gInfo author sharedMsgId memId rcvMsg msgTs
             XMsgReact sharedMsgId (Just memId) reaction add -> groupMsgReaction gInfo author sharedMsgId memId reaction add rcvMsg msgTs
             XFileCancel sharedMsgId -> xFileCancelGroup gInfo author sharedMsgId

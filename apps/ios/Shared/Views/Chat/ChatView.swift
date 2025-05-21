@@ -116,15 +116,25 @@ struct ChatView: View {
                 }
                 connectingText()
                 if selectedChatItems == nil {
+                    let reason = chat.chatInfo.userCantSendReason
                     ComposeView(
                         chat: chat,
                         im: im,
                         composeState: $composeState,
                         keyboardVisible: $keyboardVisible,
                         keyboardHiddenDate: $keyboardHiddenDate,
-                        selectedRange: $selectedRange
+                        selectedRange: $selectedRange,
+                        disabledText: reason?.composeLabel
                     )
                     .disabled(!cInfo.sendMsgEnabled)
+                    .if(!cInfo.sendMsgEnabled) { v in
+                        v.disabled(true).onTapGesture {
+                            AlertManager.shared.showAlertMsg(
+                                title: "You can't send messages!",
+                                message: reason?.alertMessage
+                            )
+                        }
+                    }
                 } else {
                     SelectedItemsBottomToolbar(
                         im: im,
@@ -2267,6 +2277,7 @@ struct ChatView: View {
                                 if deletedItem.isActiveReport {
                                     m.decreaseGroupReportsCounter(chat.chatInfo.id)
                                 }
+                                m.updateChatInfo(itemDeletion.deletedChatItem.chatInfo)
                             }
                         }
                     }
@@ -2456,6 +2467,9 @@ private func deleteMessages(_ chat: Chat, _ deletingItems: [Int64], _ mode: CIDe
                             ChatModel.shared.decreaseGroupReportsCounter(chat.chatInfo.id)
                         }
                     }
+                    if let updatedChatInfo = deletedItems.last?.deletedChatItem.chatInfo {
+                        ChatModel.shared.updateChatInfo(updatedChatInfo)
+                    }
                 }
                 await onSuccess()
             } catch {
@@ -2486,6 +2500,9 @@ func archiveReports(_ chatInfo: ChatInfo, _ itemIds: [Int64], _ forAll: Bool, _ 
                         if deletedItem.isActiveReport {
                             ChatModel.shared.decreaseGroupReportsCounter(chatInfo.id)
                         }
+                    }
+                    if let updatedChatInfo = deleted.last?.deletedChatItem.chatInfo {
+                        ChatModel.shared.updateChatInfo(updatedChatInfo)
                     }
                 }
                 await onSuccess()

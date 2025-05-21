@@ -83,6 +83,16 @@ instance TextEncoding GroupChatScopeTag where
 data ChatName = ChatName {chatType :: ChatType, chatName :: Text}
   deriving (Show)
 
+data SendName
+  = SNDirect ContactName
+  | SNGroup GroupName (Maybe GroupScopeName)
+  | SNLocal
+  deriving (Show)
+
+data GroupScopeName
+  = GSNMemberSupport (Maybe ContactName)
+  deriving (Show)
+
 chatTypeStr :: ChatType -> Text
 chatTypeStr = \case
   CTDirect -> "@"
@@ -205,6 +215,9 @@ data CIMentionMember = CIMentionMember
   }
   deriving (Eq, Show)
 
+isACIUserMention :: AChatItem -> Bool
+isACIUserMention (AChatItem _ _ _ ci) = isUserMention ci
+
 isUserMention :: ChatItem c d -> Bool
 isUserMention ChatItem {meta = CIMeta {userMention}} = userMention
 
@@ -284,6 +297,16 @@ chatItemMember :: GroupInfo -> ChatItem 'CTGroup d -> GroupMember
 chatItemMember GroupInfo {membership} ChatItem {chatDir} = case chatDir of
   CIGroupSnd -> membership
   CIGroupRcv m -> m
+
+chatItemRcvFromMember :: ChatItem c d -> Maybe GroupMember
+chatItemRcvFromMember ChatItem {chatDir} = case chatDir of
+  CIGroupRcv m -> Just m
+  _ -> Nothing
+
+chatItemIsRcvNew :: ChatItem c d -> Bool
+chatItemIsRcvNew ChatItem {meta = CIMeta {itemStatus}} = case itemStatus of
+  CISRcvNew -> True
+  _ -> False
 
 ciReactionAllowed :: ChatItem c d -> Bool
 ciReactionAllowed ChatItem {meta = CIMeta {itemDeleted = Just _}} = False
@@ -384,6 +407,12 @@ aChatItemTs (AChatItem _ _ _ ci) = chatItemTs' ci
 
 aChatItemDir :: AChatItem -> MsgDirection
 aChatItemDir (AChatItem _ sMsgDir _ _) = toMsgDirection sMsgDir
+
+aChatItemRcvFromMember :: AChatItem -> Maybe GroupMember
+aChatItemRcvFromMember (AChatItem _ _ _ ci) = chatItemRcvFromMember ci
+
+aChatItemIsRcvNew :: AChatItem -> Bool
+aChatItemIsRcvNew (AChatItem _ _ _ ci) = chatItemIsRcvNew ci
 
 updateFileStatus :: forall c d. ChatItem c d -> CIFileStatus d -> ChatItem c d
 updateFileStatus ci@ChatItem {file} status = case file of
@@ -956,7 +985,10 @@ ciStatusNew = case msgDirection @d of
 ciCreateStatus :: forall d. MsgDirectionI d => CIContent d -> CIStatus d
 ciCreateStatus content = case msgDirection @d of
   SMDSnd -> ciStatusNew
-  SMDRcv -> if ciRequiresAttention content then ciStatusNew else CISRcvRead
+  SMDRcv
+    | isCIReport content -> CISRcvRead
+    | ciRequiresAttention content -> ciStatusNew
+    | otherwise -> CISRcvRead
 
 membersGroupItemStatus :: [(GroupSndStatus, Int)] -> CIStatus 'MDSnd
 membersGroupItemStatus memStatusCounts

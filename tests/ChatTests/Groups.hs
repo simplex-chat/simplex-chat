@@ -195,7 +195,9 @@ chatGroupTests = do
   describe "group scoped messages" $ do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
     it "should send scoped messages to support (many moderators)" testScopedSupportManyModerators
-    it "should correctly maintain unread stats for support chats" testScopedSupportUnreadStats
+    it "should send messages to admins and members" testSupportCLISendCommand
+    it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
+    it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -3009,7 +3011,7 @@ testGLinkApproveMember =
       alice <# "#team (support: cath) cath> proofs"
 
       -- accept member
-      alice ##> "/_accept member #1 3 member"
+      alice ##> "/accept member #team cath"
       concurrentlyN_
         [ alice <## "#team: cath accepted",
           cath
@@ -3116,6 +3118,10 @@ testGLinkReviewMember =
       [alice, cath, dan] *<# "#team (support: eve) eve> 8"
 
       (bob </)
+
+      -- deleting support chat with pending member is prohibited
+      alice ##> "/_delete member chat #1 5"
+      alice <## "bad chat command: member is pending"
 
       -- accept member
       dan ##> "/_accept member #1 5 member"
@@ -6922,6 +6928,9 @@ testScopedSupportSingleModerator =
     cath ##> "/_send #1(_support:3) text 5"
     cath <## "#team: you have insufficient permissions for this action, the required role is moderator"
 
+    alice ##> "/_delete member chat #1 2"
+    alice <## "#team: bob support chat deleted"
+
 testScopedSupportManyModerators :: HasCallStack => TestParams -> IO ()
 testScopedSupportManyModerators =
   testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
@@ -6980,8 +6989,29 @@ testScopedSupportManyModerators =
     cath ##> "/member support chats #team"
     cath <## "bob (Bob) (id 3): unread: 0, require attention: 0, mentions: 0"
 
-testScopedSupportUnreadStats :: HasCallStack => TestParams -> IO ()
-testScopedSupportUnreadStats =
+testSupportCLISendCommand :: HasCallStack => TestParams -> IO ()
+testSupportCLISendCommand =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    createGroup2' "team" alice (bob, GRObserver) True
+
+    alice #> "#team 1"
+    bob <# "#team alice> 1"
+
+    bob ##> "#team 2"
+    bob <## "#team: you don't have permission to send messages"
+    (alice </)
+
+    alice #> "#team (support: bob) 3"
+    bob <# "#team (support) alice> 3"
+
+    bob #> "#team (support) 4"
+    alice <# "#team (support: bob) bob> 4"
+
+    bob ##> "#team (support 4"
+    bob <## "bad chat command: Failed reading: empty"
+
+testScopedSupportUnreadStatsOnRead :: HasCallStack => TestParams -> IO ()
+testScopedSupportUnreadStatsOnRead =
   testChatOpts4 opts aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
     createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRModerator)
 
@@ -7120,3 +7150,33 @@ testScopedSupportUnreadStats =
         { markRead = False
         }
 
+testScopedSupportUnreadStatsOnDelete :: HasCallStack => TestParams -> IO ()
+testScopedSupportUnreadStatsOnDelete =
+  testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> do
+    createGroup2 "team" alice bob
+
+    alice ##> "/set delete #team on"
+    alice <## "updated group preferences:"
+    alice <## "Full deletion: on"
+    bob <## "alice updated group #team:"
+    bob <## "updated group preferences:"
+    bob <## "Full deletion: on"
+
+    bob #> "#team (support) 1"
+    alice <# "#team (support: bob) bob> 1"
+
+    msgIdBob <- lastItemId bob
+
+    alice ##> "/member support chats #team"
+    alice <## "bob (Bob) (id 2): unread: 1, require attention: 1, mentions: 0"
+
+    bob #$> ("/_delete item #1(_support) " <> msgIdBob <> " broadcast", id, "message deleted")
+    alice <# "#team (support: bob) bob> [deleted] 1"
+
+    alice ##> "/member support chats #team"
+    alice <## "bob (Bob) (id 2): unread: 0, require attention: 0, mentions: 0"
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }

@@ -455,6 +455,7 @@ fun ChatView(
                     if (deletedItem.isActiveReport) {
                       chatModel.chatsContext.decreaseGroupReportsCounter(chatRh, chatInfo.id)
                     }
+                    chatModel.chatsContext.updateChatInfo(chatRh, deleted.deletedChatItem.chatInfo)
                   }
                   withContext(Dispatchers.Main) {
                     if (toChatItem != null) {
@@ -784,7 +785,7 @@ fun ChatLayout(
     Modifier
       .fillMaxWidth()
       .desktopOnExternalDrag(
-        enabled = remember(attachmentDisabled.value, chatInfo.value?.userCanSend) { mutableStateOf(!attachmentDisabled.value && chatInfo.value?.userCanSend == true) }.value,
+        enabled = remember(attachmentDisabled.value, chatInfo.value?.sendMsgEnabled) { mutableStateOf(!attachmentDisabled.value && chatInfo.value?.sendMsgEnabled == true) }.value,
         onFiles = { paths -> composeState.onFilesAttached(paths.map { it.toURI() }) },
         onImage = { file -> CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(listOf(file.toURI()), null) } },
         onText = {
@@ -2672,6 +2673,9 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
               chatModel.chatsContext.decreaseGroupReportsCounter(chatRh, chatInfo.id)
             }
           }
+          deleted.lastOrNull()?.deletedChatItem?.chatInfo?.let { updatedChatInfo ->
+            chatModel.chatsContext.updateChatInfo(chatRh, updatedChatInfo)
+          }
         }
         withContext(Dispatchers.Main) {
           for (di in deleted) {
@@ -2711,6 +2715,9 @@ private fun archiveReports(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
             if (deletedItem.isActiveReport) {
               chatModel.chatsContext.decreaseGroupReportsCounter(chatRh, chatInfo.id)
             }
+          }
+          deleted.lastOrNull()?.deletedChatItem?.chatInfo?.let { updatedChatInfo ->
+            chatModel.chatsContext.updateChatInfo(chatRh, updatedChatInfo)
           }
         }
         withContext(Dispatchers.Main) {

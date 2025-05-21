@@ -1277,7 +1277,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Don't enable" = "有効にしない";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Don't show again" = "次から表示しない";
 
 /* No comment provided by engineer. */
@@ -1514,7 +1514,7 @@ swipe action */
 /* alert title */
 "Error receiving file" = "ファイル受信にエラー発生";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error removing member" = "メンバー除名にエラー発生";
 
 /* No comment provided by engineer. */
@@ -2295,6 +2295,7 @@ snd error text */
 
 /* enabled status
 group pref value
+member criteria value
 time to disappear */
 "off" = "オフ";
 
@@ -2307,7 +2308,8 @@ time to disappear */
 /* feature offered item */
 "offered %@: %@" = "提供された %1$@: %2$@";
 
-/* alert button */
+/* alert action
+alert button */
 "Ok" = "OK";
 
 /* No comment provided by engineer. */
@@ -2626,7 +2628,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Remove member" = "メンバーを除名する";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "メンバーを除名しますか？";
 
 /* No comment provided by engineer. */
@@ -3112,9 +3114,6 @@ chat item action */
 "The old database was not removed during the migration, it can be deleted." = "古いデータベースは移行時に削除されなかったので、削除することができます。";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and only shared with your contacts." = "プロフィールは連絡先にしか共有されません。";
-
-/* No comment provided by engineer. */
 "The second tick we missed! ✅" = "長らくお待たせしました！ ✅";
 
 /* No comment provided by engineer. */
@@ -3592,10 +3591,10 @@ chat item action */
 "Your profile **%@** will be shared." = "あなたのプロファイル **%@** が共有されます。";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "プロフィールはデバイスに保存され、連絡先とのみ共有されます。 SimpleX サーバーはあなたのプロファイルを参照できません。";
+"Your profile is stored on your device and only shared with your contacts." = "プロフィールは連絡先にしか共有されません。";
 
 /* No comment provided by engineer. */
-"Your profile, contacts and delivered messages are stored on your device." = "あなたのプロフィール、連絡先、送信したメッセージがご自分の端末に保存されます。";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "プロフィールはデバイスに保存され、連絡先とのみ共有されます。 SimpleX サーバーはあなたのプロファイルを参照できません。";
 
 /* No comment provided by engineer. */
 "Your random profile" = "あなたのランダム・プロフィール";

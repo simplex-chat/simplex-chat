@@ -361,7 +361,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpDel :: ChatMsgEvent 'Json
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
   XGrpPrefs :: GroupPreferences -> ChatMsgEvent 'Json
-  XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> ChatMsgEvent 'Json
+  XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> Maybe MsgScope -> ChatMsgEvent 'Json
   XGrpMsgForward :: MemberId -> ChatMessage 'Json -> UTCTime -> ChatMsgEvent 'Json
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
   XInfoProbeCheck :: ProbeHash -> ChatMsgEvent 'Json
@@ -1011,7 +1011,7 @@ toCMEventTag msg = case msg of
   XGrpDel -> XGrpDel_
   XGrpInfo _ -> XGrpInfo_
   XGrpPrefs _ -> XGrpPrefs_
-  XGrpDirectInv _ _ -> XGrpDirectInv_
+  XGrpDirectInv {} -> XGrpDirectInv_
   XGrpMsgForward {} -> XGrpMsgForward_
   XInfoProbe _ -> XInfoProbe_
   XInfoProbeCheck _ -> XInfoProbeCheck_
@@ -1083,7 +1083,14 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
     msg = \case
       XMsgNew_ -> XMsgNew <$> JT.parseEither parseMsgContainer params
       XMsgFileDescr_ -> XMsgFileDescr <$> p "msgId" <*> p "fileDescr"
-      XMsgUpdate_ -> XMsgUpdate <$> p "msgId" <*> p "content" <*> (fromMaybe M.empty <$> opt "mentions") <*> opt "ttl" <*> opt "live" <*> opt "scope"
+      XMsgUpdate_ -> do
+        msgId' <- p "msgId"
+        content <- p "content"
+        mentions <- fromMaybe M.empty <$> opt "mentions"
+        ttl <- opt "ttl"
+        live <- opt "live"
+        scope <- opt "scope"
+        pure XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope}
       XMsgDel_ -> XMsgDel <$> p "msgId" <*> opt "memberId"
       XMsgDeleted_ -> pure XMsgDeleted
       XMsgReact_ -> XMsgReact <$> p "msgId" <*> opt "memberId" <*> p "reaction" <*> p "add"
@@ -1114,7 +1121,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpDel_ -> pure XGrpDel
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
       XGrpPrefs_ -> XGrpPrefs <$> p "groupPreferences"
-      XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content"
+      XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content" <*> opt "scope"
       XGrpMsgForward_ -> XGrpMsgForward <$> p "memberId" <*> p "msg" <*> p "msgTs"
       XInfoProbe_ -> XInfoProbe <$> p "probe"
       XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"
@@ -1147,7 +1154,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
     params = \case
       XMsgNew container -> msgContainerJSON container
       XMsgFileDescr msgId' fileDescr -> o ["msgId" .= msgId', "fileDescr" .= fileDescr]
-      XMsgUpdate msgId' content mentions ttl live scope -> o $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
+      XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope} -> o $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' memberId -> o $ ("memberId" .=? memberId) ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
       XMsgReact msgId' memberId reaction add -> o $ ("memberId" .=? memberId) ["msgId" .= msgId', "reaction" .= reaction, "add" .= add]
@@ -1178,7 +1185,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XGrpDel -> JM.empty
       XGrpInfo p -> o ["groupProfile" .= p]
       XGrpPrefs p -> o ["groupPreferences" .= p]
-      XGrpDirectInv connReq content -> o $ ("content" .=? content) ["connReq" .= connReq]
+      XGrpDirectInv connReq content scope -> o $ ("content" .=? content) $ ("scope" .=? scope) ["connReq" .= connReq]
       XGrpMsgForward memberId msg msgTs -> o ["memberId" .= memberId, "msg" .= msg, "msgTs" .= msgTs]
       XInfoProbe probe -> o ["probe" .= probe]
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]

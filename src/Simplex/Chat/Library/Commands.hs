@@ -27,6 +27,7 @@ import Control.Monad.Reader
 import qualified Data.Aeson as J
 import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import qualified Data.Attoparsec.Combinator as A
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -1031,8 +1032,9 @@ processChatCommand' vr = \case
         user <- getUserByGroupId db chatId
         gInfo <- getGroupInfo db vr user chatId
         pure (user, gInfo)
+      chatScopeInfo <- mapM (getChatScopeInfo vr user) scope
       (timedItems, gInfo') <- withFastStore $ \db -> do
-        (timedItems, gInfo') <- updateGroupChatItemsReadList db vr user gInfo scope itemIds
+        (timedItems, gInfo') <- updateGroupChatItemsReadList db vr user gInfo chatScopeInfo itemIds
         timedItems' <- liftIO $ setGroupChatItemsDeleteAt db user chatId timedItems =<< getCurrentTime
         pure (timedItems', gInfo')
       forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
@@ -1848,10 +1850,10 @@ processChatCommand' vr = \case
     forwardedItemId <- withFastStore $ \db -> getLocalChatItemIdByText' db user folderId forwardedMsg
     toChatRef <- getChatRef user toChatName
     processChatCommand $ APIForwardChatItems toChatRef (ChatRef CTLocal folderId Nothing) (forwardedItemId :| []) Nothing
-  SendMessage (ChatName cType name) msg -> withUser $ \user -> do
+  SendMessage sendName msg -> withUser $ \user -> do
     let mc = MCText msg
-    case cType of
-      CTDirect ->
+    case sendName of
+      SNDirect name ->
         withFastStore' (\db -> runExceptT $ getContactIdByName db user name) >>= \case
           Right ctId -> do
             let sendRef = SRDirect ctId
@@ -1866,18 +1868,18 @@ processChatCommand' vr = \case
                 throwChatError $ CEContactNotFound name (Just suspectedMember)
               _ ->
                 throwChatError $ CEContactNotFound name Nothing
-      CTGroup -> do
-        (gId, mentions) <- withFastStore $ \db -> do
+      SNGroup name scope_ -> do
+        (gId, cScope_, mentions) <- withFastStore $ \db -> do
           gId <- getGroupIdByName db user name
-          (gId,) <$> liftIO (getMessageMentions db user gId msg)
-        let sendRef = SRGroup gId Nothing
+          cScope_ <-
+            forM scope_ $ \(GSNMemberSupport mName_) ->
+              GCSMemberSupport <$> mapM (getGroupMemberIdByName db user gId) mName_
+          (gId,cScope_,) <$> liftIO (getMessageMentions db user gId msg)
+        let sendRef = SRGroup gId cScope_
         processChatCommand $ APISendMessages sendRef False Nothing [ComposedMessage Nothing Nothing mc mentions]
-      CTLocal
-        | name == "" -> do
-            folderId <- withFastStore (`getUserNoteFolderId` user)
-            processChatCommand $ APICreateChatItems folderId [composedMessage Nothing mc]
-        | otherwise -> throwCmdError "not supported"
-      _ -> throwCmdError "not supported"
+      SNLocal -> do
+        folderId <- withFastStore (`getUserNoteFolderId` user)
+        processChatCommand $ APICreateChatItems folderId [composedMessage Nothing mc]
   SendMemberContactMessage gName mName msg -> withUser $ \user -> do
     (gId, mId) <- getGroupAndMemberId user gName mName
     m <- withFastStore $ \db -> getGroupMember db vr user gId mId
@@ -2079,6 +2081,9 @@ processChatCommand' vr = \case
           forM_ (memberConn m) $ \mConn -> do
             let msg2 = XMsgNew $ MCSimple $ extMsgContent (MCText acceptedToGroupMessage) Nothing
             void $ sendDirectMemberMessage mConn msg2 groupId
+        when (memberCategory m == GCInviteeMember) $ do
+          introduceToRemaining vr user gInfo m {memberRole = role}
+          when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo m
         (m', gInfo') <- withFastStore' $ \db -> do
           m' <- updateGroupMemberAccepted db user m newMemberStatus role
           gInfo' <- updateGroupMembersRequireAttention db user gInfo m m'
@@ -2094,6 +2099,12 @@ processChatCommand' vr = \case
             Just c | connReady c -> GSMemConnected
             _ -> GSMemAnnounced
       _ -> throwCmdError "member should be pending approval and invitee, or pending review and not invitee"
+  APIDeleteMemberSupportChat groupId gmId -> withUser $ \user -> do
+    (gInfo, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user gmId
+    when (isNothing $ supportChat m) $ throwCmdError "member has no support chat"
+    when (memberPending m) $ throwCmdError "member is pending"
+    (gInfo', m') <- withFastStore' $ \db -> deleteGroupMemberSupportChat db user gInfo m
+    pure $ CRMemberSupportChatDeleted user gInfo' m'
   APIMembersRole groupId memberIds newRole -> withUser $ \user ->
     withGroupLock "memberRole" groupId . procCmd $ do
       g@(Group gInfo members) <- withFastStore $ \db -> getGroup db vr user groupId
@@ -2229,7 +2240,7 @@ processChatCommand' vr = \case
           deleted = deleted1 <> deleted2 <> deleted3 <> deleted4
       -- Read group info with updated membersRequireAttention
       gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
-      let acis' = map (updateCIGroupInfo gInfo') acis
+      let acis' = map (updateACIGroupInfo gInfo') acis
       unless (null acis') $ toView $ CEvtNewChatItems user acis'
       unless (null errs) $ toView $ CEvtChatErrors errs
       when withMessages $ deleteMessages user gInfo' deleted
@@ -2289,11 +2300,6 @@ processChatCommand' vr = \case
               -- instead we re-read it once after deleting all members before response.
               void $ deleteOrUpdateMemberRecordIO db user gInfo m
               pure m {memberStatus = GSMemRemoved}
-      updateCIGroupInfo :: GroupInfo -> AChatItem -> AChatItem
-      updateCIGroupInfo gInfo' = \case
-        AChatItem SCTGroup SMDSnd (GroupChat _gInfo chatScopeInfo) ci ->
-          AChatItem SCTGroup SMDSnd (GroupChat gInfo' chatScopeInfo) ci
-        aci -> aci
       deleteMessages user gInfo@GroupInfo {membership} ms
         | groupFeatureMemberAllowed SGFFullDelete membership gInfo = deleteGroupMembersCIs user gInfo ms membership
         | otherwise = markGroupMembersCIsDeleted user gInfo ms membership
@@ -2328,6 +2334,7 @@ processChatCommand' vr = \case
   JoinGroup gName enableNtfs -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIJoinGroup groupId enableNtfs
+  AcceptMember gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIAcceptMember gId gMemberId memRole
   MemberRole gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIMembersRole gId [gMemberId] memRole
   BlockForAll gName gMemberName blocked -> withMemberName gName gMemberName $ \gId gMemberId -> APIBlockMembersForAll gId [gMemberId] blocked
   RemoveMembers gName gMemberNames withMessages -> withUser $ \user -> do
@@ -2418,7 +2425,8 @@ processChatCommand' vr = \case
     when (contactGrpInvSent ct) $ throwCmdError "x.grp.direct.inv already sent"
     case memberConn m of
       Just mConn -> do
-        let msg = XGrpDirectInv cReq msgContent_
+        -- TODO [knocking] send in correct scope - modiy API
+        let msg = XGrpDirectInv cReq msgContent_ Nothing
         (sndMsg, _, _) <- sendDirectMemberMessage mConn msg groupId
         withFastStore' $ \db -> setContactGrpInvSent db ct True
         let ct' = ct {contactGrpInvSent = True}
@@ -3369,7 +3377,7 @@ processChatCommand' vr = \case
           Nothing -> Just GRAuthor
           Just (GCSMemberSupport Nothing)
             | memberPending membership -> Nothing
-            | otherwise -> Just GRAuthor
+            | otherwise -> Just GRObserver
           Just (GCSMemberSupport (Just _gmId)) -> Just GRModerator
         assertGroupContentAllowed :: CM ()
         assertGroupContentAllowed =
@@ -3380,7 +3388,7 @@ processChatCommand' vr = \case
             findProhibited :: [ComposedMessageReq] -> Maybe GroupFeature
             findProhibited =
               foldr'
-                (\(ComposedMessage {fileSource, msgContent = mc}, _, (_, ft), _) acc -> prohibitedGroupContent gInfo membership mc ft fileSource True <|> acc)
+                (\(ComposedMessage {fileSource, msgContent = mc}, _, (_, ft), _) acc -> prohibitedGroupContent gInfo membership chatScopeInfo mc ft fileSource True <|> acc)
                 Nothing
         processComposedMessages ::  CM ChatResponse
         processComposedMessages = do
@@ -4100,6 +4108,7 @@ chatCommandP =
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_join #" *> (APIJoinGroup <$> A.decimal <*> pure MFAll), -- needs to be changed to support in UI
       "/_accept member #" *> (APIAcceptMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
+      "/_delete member chat #" *> (APIDeleteMemberSupportChat <$> A.decimal <* A.space <*> A.decimal),
       "/_member role #" *> (APIMembersRole <$> A.decimal <*> _strP <*> memberRole),
       "/_block #" *> (APIBlockMembersForAll <$> A.decimal <*> _strP <* " blocked=" <*> onOffP),
       "/_remove #" *> (APIRemoveMembers <$> A.decimal <*> _strP <*> (" messages=" *> onOffP <|> pure False)),
@@ -4187,6 +4196,7 @@ chatCommandP =
       "/_group " *> (APINewGroup <$> A.decimal <*> incognitoOnOffP <* A.space <*> jsonP),
       ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> (memberRole <|> pure GRMember)),
       ("/join " <|> "/j ") *> char_ '#' *> (JoinGroup <$> displayNameP <*> (" mute" $> MFNone <|> pure MFAll)),
+      "/accept member " *> char_ '#' *> (AcceptMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> (memberRole <|> pure GRMember)),
       ("/member role " <|> "/mr ") *> char_ '#' *> (MemberRole <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> memberRole),
       "/block for all #" *> (BlockForAll <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure True),
       "/unblock for all #" *> (BlockForAll <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure False),
@@ -4233,8 +4243,7 @@ chatCommandP =
       ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayNameP <* A.space <* A.char '@' <*> (Just <$> displayNameP) <* A.space <*> msgTextP,
       ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayNameP <*> pure Nothing <* A.space <*> msgTextP,
       ForwardLocalMessage <$> chatNameP <* " <- * " <*> msgTextP,
-      SendMessage <$> chatNameP <* A.space <*> msgTextP,
-      "/* " *> (SendMessage (ChatName CTLocal "") <$> msgTextP),
+      SendMessage <$> sendNameP <* A.space <*> msgTextP,
       "@#" *> (SendMemberContactMessage <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <* A.space <*> msgTextP),
       "/live " *> (SendLiveMessage <$> chatNameP <*> (A.space *> msgTextP <|> pure "")),
       (">@" <|> "> @") *> sendMsgQuote (AMsgDirection SMDRcv),
@@ -4437,14 +4446,27 @@ chatCommandP =
     chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayNameP
     chatRefP = do
       chatTypeP >>= \case
-        CTGroup -> ChatRef CTGroup <$> A.decimal <*> (Just <$> gcScopeP <|> pure Nothing)
+        CTGroup -> ChatRef CTGroup <$> A.decimal <*> optional gcScopeP
         cType -> (\chatId -> ChatRef cType chatId Nothing) <$> A.decimal
     sendRefP =
       (A.char '@' $> SRDirect <*> A.decimal)
-        <|> (A.char '#' $> SRGroup <*> A.decimal <*> (Just <$> gcScopeP <|> pure Nothing))
-    gcScopeP =
-      ("(_support:" *> (GCSMemberSupport . Just <$> A.decimal) <* ")")
-        <|> ("(_support)" $> (GCSMemberSupport Nothing))
+        <|> (A.char '#' $> SRGroup <*> A.decimal <*> optional gcScopeP)
+    gcScopeP = "(_support" *> (GCSMemberSupport <$> optional (A.char ':' *> A.decimal)) <* A.char ')'
+    sendNameP =
+      (A.char '@' $> SNDirect <*> displayNameP)
+        <|> (A.char '#' $> SNGroup <*> displayNameP <*> gScopeNameP)
+        <|> ("/*" $> SNLocal)
+    gScopeNameP =
+      (supportPfx *> (Just . GSNMemberSupport <$> optional supportMember) <* A.char ')')
+        -- this branch fails on "(support" followed by incorrect syntax,
+        -- to avoid sending message to the whole group as `optional gScopeNameP` would do
+        <|> (optional supportPfx >>= mapM (\_ -> fail "bad chat scope"))
+      where
+        supportPfx = A.takeWhile isSpace *> "(support"
+        supportMember = safeDecodeUtf8 <$> (A.char ':' *> A.takeWhile isSpace *> (A.take . lengthTillLastParen =<< A.lookAhead displayNameP_))
+        lengthTillLastParen s = case B.unsnoc s of
+          Just (_, ')') -> B.length s - 1
+          _ -> B.length s
     msgCountP = A.space *> A.decimal <|> pure 10
     ciTTLDecimal = ("default" $> Nothing) <|> (Just <$> A.decimal)
     ciTTL =
@@ -4510,7 +4532,11 @@ chatCommandP =
     char_ = optional . A.char
 
 displayNameP :: Parser Text
-displayNameP = safeDecodeUtf8 <$> (quoted '\'' <|> takeNameTill (\c -> isSpace c || c == ','))
+displayNameP = safeDecodeUtf8 <$> displayNameP_
+{-# INLINE displayNameP #-}
+
+displayNameP_ :: Parser ByteString
+displayNameP_ = quoted '\'' <|> takeNameTill (\c -> isSpace c || c == ',')
   where
     takeNameTill p =
       A.peekChar' >>= \c ->

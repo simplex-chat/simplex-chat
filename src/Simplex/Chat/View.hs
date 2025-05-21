@@ -192,7 +192,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRSentConfirmation u _ -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u _ customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
   CRSentInvitationToContact u _c customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
-  CRItemsReadForChat u chatId -> ttyUser u ["items read for chat"]
+  CRItemsReadForChat u _chatId -> ttyUser u ["items read for chat"]
   CRContactDeleted u c -> ttyUser u [ttyContact' c <> ": contact is deleted"]
   CRChatCleared u chatInfo -> ttyUser u $ viewChatCleared chatInfo
   CRAcceptingContactRequest u c -> ttyUser u $ viewAcceptingContactRequest c
@@ -222,6 +222,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRNetworkStatuses u statuses -> if testView then ttyUser' u $ viewNetworkStatuses statuses else []
   CRJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
   CRMemberAccepted u g m -> ttyUser u $ viewMemberAccepted g m
+  CRMemberSupportChatDeleted u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " support chat deleted"]
   CRMembersRoleUser u g members r' -> ttyUser u $ viewMemberRoleUserChanged g members r'
   CRMembersBlockedForAllUser u g members blocked -> ttyUser u $ viewMembersBlockedForAllUser g members blocked
   CRGroupUpdated u g g' m -> ttyUser u $ viewGroupUpdated g g' m

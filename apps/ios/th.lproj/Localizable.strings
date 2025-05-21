@@ -1028,7 +1028,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Don't enable" = "อย่าเปิดใช้งาน";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Don't show again" = "ไม่ต้องแสดงอีก";
 
 /* No comment provided by engineer. */
@@ -1256,7 +1256,7 @@ swipe action */
 /* alert title */
 "Error receiving file" = "เกิดข้อผิดพลาดในการรับไฟล์";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error removing member" = "เกิดข้อผิดพลาดในการลบสมาชิก";
 
 /* No comment provided by engineer. */
@@ -2016,6 +2016,7 @@ snd error text */
 
 /* enabled status
 group pref value
+member criteria value
 time to disappear */
 "off" = "ปิด";
 
@@ -2028,7 +2029,8 @@ time to disappear */
 /* feature offered item */
 "offered %@: %@" = "เสนอแล้ว %1$@: %2$@";
 
-/* alert button */
+/* alert action
+alert button */
 "Ok" = "ตกลง";
 
 /* No comment provided by engineer. */
@@ -2338,7 +2340,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Remove member" = "ลบสมาชิกออก";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Remove member?" = "ลบสมาชิกออก?";
 
 /* No comment provided by engineer. */
@@ -2830,9 +2832,6 @@ chat item action */
 "The old database was not removed during the migration, it can be deleted." = "ฐานข้อมูลเก่าไม่ได้ถูกลบในระหว่างการย้ายข้อมูล แต่สามารถลบได้";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and only shared with your contacts." = "โปรไฟล์นี้แชร์กับผู้ติดต่อของคุณเท่านั้น";
-
-/* No comment provided by engineer. */
 "The second tick we missed! ✅" = "ขีดที่สองที่เราพลาด! ✅";
 
 /* No comment provided by engineer. */
@@ -3292,10 +3291,10 @@ chat item action */
 "Your privacy" = "ความเป็นส่วนตัวของคุณ";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "โปรไฟล์ของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณและแชร์กับผู้ติดต่อของคุณเท่านั้น เซิร์ฟเวอร์ SimpleX ไม่สามารถดูโปรไฟล์ของคุณได้";
+"Your profile is stored on your device and only shared with your contacts." = "โปรไฟล์นี้แชร์กับผู้ติดต่อของคุณเท่านั้น";
 
 /* No comment provided by engineer. */
-"Your profile, contacts and delivered messages are stored on your device." = "โปรไฟล์ รายชื่อผู้ติดต่อ และข้อความที่ส่งของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณ";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "โปรไฟล์ของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณและแชร์กับผู้ติดต่อของคุณเท่านั้น เซิร์ฟเวอร์ SimpleX ไม่สามารถดูโปรไฟล์ของคุณได้";
 
 /* No comment provided by engineer. */
 "Your random profile" = "โปรไฟล์แบบสุ่มของคุณ";

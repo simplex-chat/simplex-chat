@@ -360,6 +360,7 @@ data ChatCommand
   | APIAddMember GroupId ContactId GroupMemberRole
   | APIJoinGroup {groupId :: GroupId, enableNtfs :: MsgFilter}
   | APIAcceptMember GroupId GroupMemberId GroupMemberRole
+  | APIDeleteMemberSupportChat GroupId GroupMemberId
   | APIMembersRole GroupId (NonEmpty GroupMemberId) GroupMemberRole
   | APIBlockMembersForAll GroupId (NonEmpty GroupMemberId) Bool
   | APIRemoveMembers {groupId :: GroupId, groupMemberIds :: Set GroupMemberId, withMessages :: Bool}
@@ -469,7 +470,7 @@ data ChatCommand
   | ForwardMessage {toChatName :: ChatName, fromContactName :: ContactName, forwardedMsg :: Text}
   | ForwardGroupMessage {toChatName :: ChatName, fromGroupName :: GroupName, fromMemberName_ :: Maybe ContactName, forwardedMsg :: Text}
   | ForwardLocalMessage {toChatName :: ChatName, forwardedMsg :: Text}
-  | SendMessage ChatName Text
+  | SendMessage SendName Text
   | SendMemberContactMessage GroupName ContactName Text
   | SendLiveMessage ChatName Text
   | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: Text, message :: Text}
@@ -483,6 +484,7 @@ data ChatCommand
   | NewGroup IncognitoEnabled GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup {groupName :: GroupName, enableNtfs :: MsgFilter}
+  | AcceptMember GroupName ContactName GroupMemberRole
   | MemberRole GroupName ContactName GroupMemberRole
   | BlockForAll GroupName ContactName Bool
   | RemoveMembers {groupName :: GroupName, members :: Set ContactName, withMessages :: Bool}
@@ -703,6 +705,7 @@ data ChatResponse
   | CRNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]}
   | CRJoinedGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMemberAccepted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
+  | CRMemberSupportChatDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMembersRoleUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], toRole :: GroupMemberRole}
   | CRMembersBlockedForAllUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], blocked :: Bool}
   | CRGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
@@ -838,7 +841,7 @@ data ChatEvent
   | CEvtRemoteHostConnected {remoteHost :: RemoteHostInfo}
   | CEvtRemoteHostStopped {remoteHostId_ :: Maybe RemoteHostId, rhsState :: RemoteHostSessionState, rhStopReason :: RemoteHostStopReason}
   | CEvtRemoteCtrlFound {remoteCtrl :: RemoteCtrlInfo, ctrlAppInfo_ :: Maybe CtrlAppInfo, appVersion :: AppVersion, compatible :: Bool}
-  | CEvtRemoteCtrlSessionCode {remoteCtrl_ :: Maybe RemoteCtrlInfo, sessionCode :: Text}  
+  | CEvtRemoteCtrlSessionCode {remoteCtrl_ :: Maybe RemoteCtrlInfo, sessionCode :: Text}
   | CEvtRemoteCtrlStopped {rcsState :: RemoteCtrlSessionState, rcStopReason :: RemoteCtrlStopReason}
   | CEvtContactPQEnabled {user :: User, contact :: Contact, pqEnabled :: PQEncryption}
   | CEvtContactDisabled {user :: User, contact :: Contact}

@@ -1646,6 +1646,12 @@ func apiAcceptMember(_ groupId: Int64, _ groupMemberId: Int64, _ memberRole: Gro
     throw r.unexpected
 }
 
+func apiDeleteMemberSupportChat(_ groupId: Int64, _ groupMemberId: Int64) async throws -> (GroupInfo, GroupMember) {
+    let r: ChatResponse2 = try await chatSendCmd(.apiDeleteMemberSupportChat(groupId: groupId, groupMemberId: groupMemberId))
+    if case let .memberSupportChatDeleted(_, groupInfo, member) = r { return (groupInfo, member) }
+    throw r.unexpected
+}
+
 func apiRemoveMembers(_ groupId: Int64, _ memberIds: [Int64], _ withMessages: Bool = false) async throws -> (GroupInfo, [GroupMember]) {
     let r: ChatResponse2 = try await chatSendCmd(.apiRemoveMembers(groupId: groupId, memberIds: memberIds, withMessages: withMessages), bgTask: false)
     if case let .userDeletedMembers(_, updatedGroupInfo, members, _withMessages) = r { return (updatedGroupInfo, members) }
@@ -1689,8 +1695,8 @@ func apiListMembers(_ groupId: Int64) async -> [GroupMember] {
 func filterMembersToAdd(_ ms: [GMember]) -> [Contact] {
     let memberContactIds = ms.compactMap{ m in m.wrapped.memberCurrent ? m.wrapped.memberContactId : nil }
     return ChatModel.shared.chats
-        .compactMap{ $0.chatInfo.contact }
-        .filter{ c in c.sendMsgEnabled && !c.nextSendGrpInv && !memberContactIds.contains(c.apiId) }
+        .compactMap{ c in c.chatInfo.sendMsgEnabled ? c.chatInfo.contact : nil }
+        .filter{ c in !c.nextSendGrpInv && !memberContactIds.contains(c.apiId) }
         .sorted{ $0.displayName.lowercased() < $1.displayName.lowercased() }
 }
 
@@ -2199,6 +2205,9 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 if item.deletedChatItem.chatItem.isActiveReport {
                     m.decreaseGroupReportsCounter(item.deletedChatItem.chatInfo.id)
                 }
+            }
+            if let updatedChatInfo = items.last?.deletedChatItem.chatInfo {
+                m.updateChatInfo(updatedChatInfo)
             }
         }
     case let .groupChatItemsDeleted(user, groupInfo, chatItemIDs, _, member_):

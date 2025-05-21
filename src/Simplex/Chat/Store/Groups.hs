@@ -80,6 +80,7 @@ module Simplex.Chat.Store.Groups
     updateGroupMemberStatus,
     updateGroupMemberStatusById,
     updateGroupMemberAccepted,
+    deleteGroupMemberSupportChat,
     updateGroupMembersRequireAttention,
     decreaseGroupMembersRequireAttention,
     increaseGroupMembersRequireAttention,
@@ -1230,6 +1231,36 @@ updateGroupMemberAccepted db User {userId} m@GroupMember {groupMemberId} status 
     |]
     (status, role, currentTs, userId, groupMemberId)
   pure m {memberStatus = status, memberRole = role, updatedAt = currentTs}
+
+deleteGroupMemberSupportChat :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO (GroupInfo, GroupMember)
+deleteGroupMemberSupportChat db user g m@GroupMember {groupMemberId} = do
+  let requiredAttention = gmRequiresAttention m
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      DELETE FROM chat_items
+      WHERE group_scope_group_member_id = ?
+    |]
+    (Only groupMemberId)
+  DB.execute
+    db
+    [sql|
+      UPDATE group_members
+      SET support_chat_ts = NULL,
+          support_chat_items_unread = 0,
+          support_chat_items_member_attention = 0,
+          support_chat_items_mentions = 0,
+          support_chat_last_msg_from_member_ts = NULL,
+          updated_at = ?
+      WHERE group_member_id = ?
+    |]
+    (currentTs, groupMemberId)
+  let m' = m {supportChat = Nothing, updatedAt = currentTs}
+  g' <- if requiredAttention
+    then decreaseGroupMembersRequireAttention db user g
+    else pure g
+  pure (g', m')
 
 updateGroupMembersRequireAttention :: DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> IO GroupInfo
 updateGroupMembersRequireAttention db user g member member'
