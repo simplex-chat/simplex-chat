@@ -714,7 +714,7 @@ window.addEventListener('scroll',changeHeaderBg);
     Ön határozza meg, hogy melyik kiszolgáló(ka)t használja az üzenetek fogadására, a kapcsolatokhoz — azokat a kiszolgálókat, amelyeket az üzenetek küldésére használ. Minden beszélgetés két különböző kiszolgálót használ.
 </p>
 <p>
-    Ez a kialakítás megakadályozza a felhasználók metaadatainak kiszivárgását az alkalmazás szintjén. Az adatvédelem további javítása és az IP-cím védelme érdekében az üzenetküldő kiszolgálókhoz Tor hálózaton keresztül is kapcsolódhat.
+    Ez a kialakítás megakadályozza a felhasználók metaadatainak kiszivárgását az alkalmazás szintjén. Az adatvédelem további javítása és az IP-cím védelme érdekében az üzenetküldő kiszolgálókhoz Tor-hálózaton keresztül is kapcsolódhat.
 </p>
 <p>
     Csak a kliensek tárolják a felhasználói profilokat, kapcsolatokat és csoportokat; az üzenetek küldése 2 rétegű végpontok közötti titkosítással történik.
@@ -1281,7 +1281,7 @@ window.addEventListener('scroll',changeHeaderBg);
     Az üzenetek kézbesítéséhez a SimpleX az egyirányú üzenet várakoztatást használ <a href="https://csrc.nist.gov/glossary/term/Pairwise_Pseudonymous_Identifier">páronkénti névtelen címekkel</a>, külön a fogadott és külön az elküldött üzenetek számára, általában különböző kiszolgálókon keresztül.
 </p>
 <p>
-    Ez a kialakítás megvédi annak titkosságát, hogy kivel kommunikál, elrejtve azt a SimpleX-hálózat kiszolgálói és a megfigyelők elől. IP-címének a kiszolgálók elől való elrejtéséhez azt teheti meg, hogy <strong> Toron keresztül kapcsolódik a SimpleX-kiszolgálókhoz</strong>.
+    Ez a kialakítás védi partnerének adatait, elrejtve azt a SimpleX-hálózat kiszolgálói és a külső megfigyelők elől. Az IP-címe elrejtésének érdekében a<strong>Tor-hálózaton keresztül is kapcsolódhat a SimpleX-kiszolgálókhoz</strong>.
 </p>
 
                         </div>
@@ -1664,7 +1664,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Hozzáférés Tor-hálózaton keresztül<br>(nem kötelező)</h3>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">Az IP-címe védelme érdekében a kiszolgálókat a Tor hálózaton vagy más átvitelátfedő hálózaton keresztül is elérheti.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">Az IP-címe védelme érdekében a kiszolgálókat a Tor-hálózaton vagy más átvitelátfedő hálózaton keresztül is elérheti.</p>
                             
                             <p class="text-grey-black dark:text-white text-[14px] text-center">A SimpleX, Tor-hálózaton keresztüli használatához telepítse az <a href="https://guardianproject.info/apps/org.torproject.android/" target="_blank">Orbot alkalmazást</a> és engedélyezze a SOCKS5 proxyt (vagy a VPN-t <a href="https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone" target="_blank">az iOS-ban</a>).</p>
                             
@@ -1911,7 +1911,7 @@ window.addEventListener('scroll',changeHeaderBg);
                             A kiszolgálók minden egyes üzenetsorbaállításhoz külön névtelen hitelesítő-adatokkal rendelkeznek, és nem tudják, hogy melyik felhasználóhoz tartoznak.
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            A felhasználók tovább fokozhatják a metaadatok adatvédelmét, ha a Tor segítségével férnek hozzá a kiszolgálókhoz, így megakadályozva az IP-cím szerinti korrelációt.
+                            A felhasználók tovább fokozhatják a metaadatok adatvédelmét, ha a Tor-hálózat használatával férnek hozzá a kiszolgálókhoz, így megakadályozva az IP-cím szerinti korrelációt.
                         </p>
                     </div>
                 </div>
