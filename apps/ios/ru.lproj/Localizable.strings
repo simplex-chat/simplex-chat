@@ -4853,7 +4853,7 @@ chat item action */
 "Share with contacts" = "Поделиться с контактами";
 
 /* No comment provided by engineer. */
-"Short link" = "Короткая";
+"Short link" = "Короткая ссылка";
 
 /* No comment provided by engineer. */
 "Show → on messages sent via private routing." = "Показать → на сообщениях доставленных конфиденциально.";
@@ -6127,4 +6127,3 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Ваш адрес SimpleX";
-

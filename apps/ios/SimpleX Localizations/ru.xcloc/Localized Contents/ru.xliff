@@ -7291,7 +7291,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Short link" xml:space="preserve">
         <source>Short link</source>
-        <target>Короткая</target>
+        <target>Короткая ссылка</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show QR code" xml:space="preserve">

@@ -2472,7 +2472,7 @@
     <string name="accept_pending_member_alert_question">Участник хочет присоединиться к группе. Принять?</string>
     <string name="cant_send_message_group_deleted">группа удалена</string>
     <string name="cant_send_message_mem_removed">удален из группы</string>
-    <string name="group_new_support_chats_short">%dчата(ов)</string>
+    <string name="group_new_support_chats_short">%d чата(ов)</string>
     <string name="cant_send_message_contact_not_ready">контакт не готов</string>
     <string name="cant_send_message_contact_deleted">контакт удален</string>
     <string name="cant_send_message_contact_not_synchronized">не синхронизирован</string>
@@ -2508,7 +2508,7 @@
     <string name="cant_send_message_contact_disabled">контакт выключен</string>
     <string name="cant_send_message_member_has_old_version">член имеет старую версию</string>
     <string name="cant_send_message_alert_title">Вы не можете отправлять сообщения!</string>
-    <string name="short_link_button_text">Короткая</string>
+    <string name="short_link_button_text">Короткая ссылка</string>
     <string name="save_admission_question">Сохранить настройки вступления?</string>
     <string name="snd_group_event_member_accepted">Вы приняли этого члена</string>
     <string name="group_member_status_pending_review_short">рассмотрение</string>
