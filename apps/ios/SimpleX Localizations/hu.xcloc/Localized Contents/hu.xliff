@@ -335,9 +335,9 @@
         <target>**Csoport létrehozása:** új csoport létrehozásához.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata." xml:space="preserve">
+      <trans-unit id="**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata." xml:space="preserve" approved="no">
         <source>**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata.</source>
-        <target>**Privátabb:** 20 percenként ellenőrzi az új üzeneteket. Az eszköztoken meg lesz osztva a SimpleX Chat-kiszolgálóval, de az nem, hogy hány partnere vagy üzenete van.</target>
+        <target state="translated">**Privátabb:** 20 percenként ellenőrzi az új üzeneteket. Az eszköztoken meg lesz osztva a SimpleX Chat kiszolgálóval, de az nem, hogy hány partnere vagy üzenete van.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Most private**: do not use SimpleX Chat push server. The app will check messages in background, when the system allows it, depending on how often you use the app." xml:space="preserve">
@@ -417,12 +417,12 @@
 - és még sok más!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve">
+      <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve" approved="no">
         <source>- voice messages up to 5 minutes.
 - custom time to disappear.
 - editing history.</source>
-        <target>- legfeljebb 5 perc hosszúságú hangüzenetek.
-- egyéni üzenet-eltűnési időkorlát.
+        <target state="translated">- legfeljebb 5 perc hosszúságú hangüzenetek.
+- egyéni időkorlát beállítása az üzenetek eltűnéséhez.
 - előzmények szerkesztése.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3809,9 +3809,9 @@ snd error text</note>
         <target>Konzolhoz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." xml:space="preserve">
+      <trans-unit id="For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." xml:space="preserve" approved="no">
         <source>For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server.</source>
-        <target>Például, ha a partnere egy SimpleX Chat-kiszolgálón keresztül fogadja az üzeneteket, akkor az Ön alkalmazása egy Flux-kiszolgálón keresztül fogja azokat kézbesíteni.</target>
+        <target state="translated">Például, ha a partnere egy SimpleX Chat kiszolgálón keresztül fogadja az üzeneteket, akkor az Ön alkalmazása egy Flux kiszolgálón keresztül fogja azokat kézbesíteni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For me" xml:space="preserve">
@@ -5345,9 +5345,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Nincs üzenet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No message servers." xml:space="preserve">
+      <trans-unit id="No message servers." xml:space="preserve" approved="no">
         <source>No message servers.</source>
-        <target>Nincsenek üzenet-kiszolgálók.</target>
+        <target state="translated">Nincsenek üzenetkiszolgálók.</target>
         <note>servers error</note>
       </trans-unit>
       <trans-unit id="No network connection" xml:space="preserve">
@@ -5495,23 +5495,23 @@ alert button</note>
         <target>Egyszer használható meghívó</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Onion hosts will be **required** for connection.&#10;Requires compatible VPN." xml:space="preserve">
+      <trans-unit id="Onion hosts will be **required** for connection.&#10;Requires compatible VPN." xml:space="preserve" approved="no">
         <source>Onion hosts will be **required** for connection.
 Requires compatible VPN.</source>
-        <target>Onion-kiszolgálók **szükségesek** a kapcsolódáshoz.
+        <target state="translated">Onion kiszolgálók **szükségesek** a kapcsolódáshoz.
 Kompatibilis VPN szükséges.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Onion hosts will be used when available.&#10;Requires compatible VPN." xml:space="preserve">
+      <trans-unit id="Onion hosts will be used when available.&#10;Requires compatible VPN." xml:space="preserve" approved="no">
         <source>Onion hosts will be used when available.
 Requires compatible VPN.</source>
-        <target>Onion-kiszolgálók használata, ha azok rendelkezésre állnak.
+        <target state="translated">Onion kiszolgálók használata, ha azok rendelkezésre állnak.
 VPN engedélyezése szükséges.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Onion hosts will not be used." xml:space="preserve">
+      <trans-unit id="Onion hosts will not be used." xml:space="preserve" approved="no">
         <source>Onion hosts will not be used.</source>
-        <target>Az onion-kiszolgálók nem lesznek használva.</target>
+        <target state="translated">Az onion kiszolgálók nem lesznek használva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only chat owners can change preferences." xml:space="preserve">
@@ -6628,9 +6628,9 @@ swipe action</note>
         <target>SMP-kiszolgáló</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SOCKS proxy" xml:space="preserve">
+      <trans-unit id="SOCKS proxy" xml:space="preserve" approved="no">
         <source>SOCKS proxy</source>
-        <target>SOCKS-proxy</target>
+        <target state="translated">SOCKS proxy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Safely receive files" xml:space="preserve">
@@ -7800,9 +7800,9 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>Az adatbázis jelmondatának módosítására tett kísérlet nem fejeződött be.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The code you scanned is not a SimpleX link QR code." xml:space="preserve">
+      <trans-unit id="The code you scanned is not a SimpleX link QR code." xml:space="preserve" approved="no">
         <source>The code you scanned is not a SimpleX link QR code.</source>
-        <target>A beolvasott QR-kód nem egy SimpleX-QR-kód-hivatkozás.</target>
+        <target state="translated">A beolvasott QR-kód nem egy SimpleX-hivatkozás.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The connection reached the limit of undelivered messages, your contact may be offline." xml:space="preserve">
@@ -8052,9 +8052,9 @@ You will be prompted to complete authentication before this feature is enabled.<
 A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beállítására az eszközén.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect your privacy, SimpleX uses separate IDs for each of your contacts." xml:space="preserve">
+      <trans-unit id="To protect your privacy, SimpleX uses separate IDs for each of your contacts." xml:space="preserve" approved="no">
         <source>To protect your privacy, SimpleX uses separate IDs for each of your contacts.</source>
-        <target>Adatainak védelme érdekében a SimpleX külön üzenet-azonosítókat használ minden egyes kapcsolatához.</target>
+        <target state="translated">Adatainak védelme érdekében a SimpleX külön azonosítókat használ minden egyes kapcsolatához.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To receive" xml:space="preserve">
@@ -8369,19 +8369,19 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
         <target>%@ használata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use .onion hosts" xml:space="preserve">
+      <trans-unit id="Use .onion hosts" xml:space="preserve" approved="no">
         <source>Use .onion hosts</source>
-        <target>Onion-kiszolgálók használata</target>
+        <target state="translated">Onion kiszolgálók használata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use SOCKS proxy" xml:space="preserve">
+      <trans-unit id="Use SOCKS proxy" xml:space="preserve" approved="no">
         <source>Use SOCKS proxy</source>
-        <target>SOCKS-proxy használata</target>
+        <target state="translated">SOCKS proxy használata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use SimpleX Chat servers?" xml:space="preserve">
+      <trans-unit id="Use SimpleX Chat servers?" xml:space="preserve" approved="no">
         <source>Use SimpleX Chat servers?</source>
-        <target>SimpleX Chat-kiszolgálók használata?</target>
+        <target state="translated">SimpleX Chat kiszolgálók használata?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use TCP port %@ when no port is specified." xml:space="preserve">
@@ -8489,9 +8489,9 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
         <target>Felhasználónév</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Using SimpleX Chat servers." xml:space="preserve">
+      <trans-unit id="Using SimpleX Chat servers." xml:space="preserve" approved="no">
         <source>Using SimpleX Chat servers.</source>
-        <target>SimpleX Chat-kiszolgálók használatban.</target>
+        <target state="translated">SimpleX Chat kiszolgálók használatban.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Verify code with desktop" xml:space="preserve">
@@ -9188,9 +9188,9 @@ Megismétli a meghívási kérést?</target>
         <target>A profilja az eszközén van tárolva és csak a partnereivel van megosztva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." xml:space="preserve">
+      <trans-unit id="Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." xml:space="preserve" approved="no">
         <source>Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</source>
-        <target>A profilja az eszközén van tárolva és csak a partnereivel van megosztva. A SimpleX-kiszolgálók nem láthatják a profilját.</target>
+        <target state="translated">A profilja az eszközén van tárolva és csak a partnereivel van megosztva. A SimpleX kiszolgálók nem láthatják a profilját.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile was changed. If you save it, the updated profile will be sent to all your contacts." xml:space="preserve">
