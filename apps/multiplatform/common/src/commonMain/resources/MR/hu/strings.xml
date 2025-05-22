@@ -21,7 +21,7 @@
     <string name="about_simplex">A SimpleXről</string>
     <string name="color_primary">Kiemelőszín</string>
     <string name="callstatus_accepted">fogadott hívás</string>
-    <string name="network_enable_socks_info">Hozzáférés a kiszolgálókhoz SOCKS-proxyn a következő porton keresztül: %d? A proxyt el kell indítani, mielőtt engedélyezné ezt az opciót.</string>
+    <string name="network_enable_socks_info">Hozzáférés a kiszolgálókhoz SOCKS proxyn a következő porton keresztül: %d? A proxyt el kell indítani, mielőtt engedélyezné ezt az opciót.</string>
     <string name="accept_feature">Elfogadás</string>
     <string name="accept_call_on_lock_screen">Elfogadás</string>
     <string name="above_then_preposition_continuation">gombra fent, majd:</string>
@@ -45,7 +45,7 @@
     <string name="keychain_is_storing_securely">Az Android Keystore-t a jelmondat biztonságos tárolására használják – lehetővé teszi az értesítési szolgáltatás működését.</string>
     <string name="alert_title_msg_bad_hash">Érvénytelen az üzenet hasítóértéke</string>
     <string name="color_background">Háttér</string>
-    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Megjegyzés:</b> az üzenet- és fájltovábbító kiszolgálók SOCKS-proxyn keresztül kapcsolódnak. A hívások és a hivatkozások előnézetének elküldése közvetlen kapcsolatot használnak.]]></string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Megjegyzés:</b> az üzenet- és fájltovábbító kiszolgálók SOCKS proxyn keresztül kapcsolódnak. A hívások és a hivatkozások előnézetének elküldése közvetlen kapcsolatot használnak.]]></string>
     <string name="full_backup">Alkalmazásadatok biztonsági mentése</string>
     <string name="database_initialization_error_title">Az adatbázis előkészítése sikertelen</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">A partnereivel kapcsolatban marad. A profilfrissítés el lesz küldve a partnerei számára.</string>
@@ -734,7 +734,7 @@
     <string name="chat_item_ttl_none">soha</string>
     <string name="new_desktop"><![CDATA[<i>(új)</i>]]></string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy a megadott SMP-kiszolgálók címei megfelelő formátumúak, soronként elkülönítettek, és nincsenek duplikálva.</string>
-    <string name="network_use_onion_hosts_no_desc">Az onion-kiszolgálók nem lesznek használva.</string>
+    <string name="network_use_onion_hosts_no_desc">Az onion kiszolgálók nem lesznek használva.</string>
     <string name="custom_time_unit_minutes">perc</string>
     <string name="learn_more">Tudjon meg többet</string>
     <string name="notification_new_contact_request">Új meghívási kérés</string>
@@ -762,7 +762,7 @@
     <string name="message_deletion_prohibited">Az üzenetek végleges törlése le van tiltva ebben a csevegésben.</string>
     <string name="v4_3_voice_messages_desc">Max 40 másodperc, azonnal fogadható.</string>
     <string name="description_via_contact_address_link_incognito">inkognitó a kapcsolattartási címhivatkozáson keresztül</string>
-    <string name="network_use_onion_hosts_required_desc">Onion-kiszolgálók szükségesek a kapcsolódáshoz.\nMegjegyzés: .onion cím nélkül nem fog tudni kapcsolódni a kiszolgálókhoz.</string>
+    <string name="network_use_onion_hosts_required_desc">Onion kiszolgálók szükségesek a kapcsolódáshoz.\nMegjegyzés: .onion cím nélkül nem fog tudni kapcsolódni a kiszolgálókhoz.</string>
     <string name="v4_5_italian_interface">Olasz kezelőfelület</string>
     <string name="system_restricted_background_in_call_title">Nincsenek háttérhívások</string>
     <string name="messages_section_title">Üzenetek</string>
@@ -802,7 +802,7 @@
     <string name="mark_unread">Megjelölés olvasatlanként</string>
     <string name="icon_descr_more_button">Továbbiak</string>
     <string name="auth_log_in_using_credential">Bejelentkezés hitelesítőadatokkal</string>
-    <string name="invalid_message_format">érvénytelen üzenet-formátum</string>
+    <string name="invalid_message_format">érvénytelen üzenetformátum</string>
     <string name="join_group_button">Csatlakozás</string>
     <string name="shutdown_alert_desc">Az értesítések az alkalmazás elindításáig nem fognak működni</string>
     <string name="chat_preferences_off">kikapcsolva</string>`
@@ -813,7 +813,7 @@
     <string name="alert_text_skipped_messages_it_can_happen_when">Ez akkor fordulhat elő, ha:\n1. Az üzenetek 2 nap után, vagy a kiszolgálón 30 nap után lejártak.\n2. Nem sikerült az üzenetet visszafejteni, mert Ön, vagy a partnere egy régi adatbázis biztonsági mentését használta.\n3. A kapcsolat sérült.</string>
     <string name="group_member_role_observer">megfigyelő</string>
     <string name="description_via_group_link_incognito">inkognitó a csoporthivatkozáson keresztül</string>
-    <string name="network_use_onion_hosts_prefer_desc">Onion-kiszolgálók használata, ha azok rendelkezésre állnak.</string>
+    <string name="network_use_onion_hosts_prefer_desc">Onion kiszolgálók használata, ha azok rendelkezésre állnak.</string>
     <string name="invite_friends">Barátok meghívása</string>
     <string name="color_surface">Menük és figyelmeztetések</string>
     <string name="icon_descr_add_members">Tagok meghívása</string>
@@ -1076,7 +1076,7 @@
     <string name="theme_colors_section_title">KEZELŐFELÜLET SZÍNEI</string>
     <string name="restore_database_alert_desc">Adja meg a korábbi jelszót az adatbázis biztonsági mentésének visszaállítása után. Ez a művelet nem vonható vissza.</string>
     <string name="color_secondary">Másodlagos szín</string>
-    <string name="settings_section_title_socks">SOCKS-PROXY</string>
+    <string name="settings_section_title_socks">SOCKS PROXY</string>
     <string name="save_servers_button">Mentés</string>
     <string name="settings_restart_app">Újraindítás</string>
     <string name="smp_servers">SMP-kiszolgálók</string>
@@ -1173,7 +1173,7 @@
     <string name="callstate_starting">indítás…</string>
     <string name="settings_shutdown">Leállítás</string>
     <string name="icon_descr_sent_msg_status_sent">elküldve</string>
-    <string name="network_socks_toggle_use_socks_proxy">SOCKS-proxy használata</string>
+    <string name="network_socks_toggle_use_socks_proxy">SOCKS proxy használata</string>
     <string name="send_live_message">Élő üzenet küldése</string>
     <string name="privacy_redefined">Újraértelmezett adatvédelem</string>
     <string name="voice_message_send_text">Hangüzenet…</string>
@@ -1186,11 +1186,11 @@
     <string name="chat_help_tap_button">Koppintson a</string>
     <string name="save_and_notify_contact">Mentés és a partner értesítése</string>
     <string name="icon_descr_call_rejected">Elutasított hívás</string>
-    <string name="network_socks_proxy_settings">SOCKS-proxybeállítások</string>
+    <string name="network_socks_proxy_settings">SOCKS proxybeállítások</string>
     <string name="image_descr_qr_code">QR-kód</string>
     <string name="renegotiate_encryption">Titkosítás újraegyeztetése</string>
     <string name="remove_passphrase">Eltávolítás</string>
-    <string name="network_use_onion_hosts">Onion-kiszolgálók használata</string>
+    <string name="network_use_onion_hosts">Onion kiszolgálók használata</string>
     <string name="reveal_verb">Felfedés</string>
     <string name="la_lock_mode">Zárolási mód</string>
     <string name="revoke_file__action">Fájl visszavonása</string>
@@ -1205,7 +1205,7 @@
     <string name="save_preferences_question">Menti a beállításokat?</string>
     <string name="first_platform_without_user_ids">Nincsenek felhasználói azonosítók.</string>
     <string name="prohibit_direct_messages">A közvetlen üzenetek küldése a tagok között le van tiltva.</string>
-    <string name="network_enable_socks">SOCKS-proxy használata?</string>
+    <string name="network_enable_socks">SOCKS proxy használata?</string>
     <string name="icon_descr_speaker_off">Hangszóró kikapcsolva</string>
     <string name="custom_time_unit_weeks">hét</string>
     <string name="show_call_on_lock_screen">Megjelenítés</string>
@@ -1258,8 +1258,8 @@
     <string name="color_received_message">Fogadott üzenetbuborék színe</string>
     <string name="only_your_contact_can_delete">Csak a partnere tudja az üzeneteket véglegesen törölni (Ön csak törlésre jelölheti meg azokat). (24 óra)</string>
     <string name="self_destruct_passcode_changed">Az önmegsemmisítő-jelkód módosult!</string>
-    <string name="using_simplex_chat_servers">SimpleX Chat-kiszolgálók használatban.</string>
-    <string name="use_simplex_chat_servers__question">SimpleX Chat-kiszolgálók használata?</string>
+    <string name="using_simplex_chat_servers">SimpleX Chat kiszolgálók használatban.</string>
+    <string name="use_simplex_chat_servers__question">SimpleX Chat kiszolgálók használata?</string>
     <string name="unhide_chat_profile">Csevegési profil felfedése</string>
     <string name="v5_0_large_files_support">Videók és fájlok legfeljebb 1GB méretig</string>
     <string name="network_option_tcp_connection_timeout">TCP-kapcsolat időtúllépése</string>
@@ -1337,7 +1337,7 @@
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">A csatlakozás már folyamatban van a csoporthoz ezen a hivatkozáson keresztül.</string>
     <string name="you_are_invited_to_group">Ön meghívást kapott a csoportba</string>
     <string name="contact_sent_large_file">A partnere a jelenleg megengedett maximális méretű (%1$s) fájlnál nagyobbat küldött.</string>
-    <string name="we_do_not_store_contacts_or_messages_on_servers">A partnerei és az üzenetek (kézbesítés után) nem a SimpleX-kiszolgálókon vannak tárolva.</string>
+    <string name="we_do_not_store_contacts_or_messages_on_servers">A partnerei és az üzenetek (kézbesítés után) nem a SimpleX kiszolgálókon vannak tárolva.</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Üzenetek formázása a szövegbe szúrt speciális karakterekkel:</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[A hivatkozásra kattintva is kapcsolódhat. Ha megnyílik a böngészőben, kattintson a<b>Megnyitás az alkalmazásban</b> gombra.]]></string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">A csevegési profilja el lesz küldve\na partnere számára</string>
@@ -1350,18 +1350,18 @@
     <string name="voice_messages_are_prohibited">A hangüzenetek küldése le van tiltva.</string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[A háttérben való hívásokhoz válassza ki az <b>Alkalmazás akkumulátor-használata</b> / <b>Korlátlan</b> módot az alkalmazás beállításaiban.]]></string>
     <string name="v5_4_link_mobile_desktop_descr">Biztonságos kvantumbiztos protokollon keresztül.</string>
-    <string name="v5_1_better_messages_descr">- legfeljebb 5 perc hosszúságú hangüzenetek.\n- egyéni üzenet-eltűnési időkorlát.\n- előzmények szerkesztése.</string>
+    <string name="v5_1_better_messages_descr">- legfeljebb 5 perc hosszúságú hangüzenetek.\n- egyéni időkorlát beállítása az üzenetek eltűnéséhez.\n- előzmények szerkesztése.</string>
     <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Válassza a <i>Társítás számítógéppel</i> menüt a hordozható eszköz alkalmazásban és olvassa be a QR-kódot.]]></string>
     <string name="sender_at_ts">%s ekkor: %s</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Akkor lesz kapcsolódva, amikor a partnerének az eszköze online lesz, várjon, vagy ellenőrizze később!</string>
     <string name="v5_4_block_group_members_descr">Kéretlen üzenetek elrejtése.</string>
-    <string name="disable_onion_hosts_when_not_supported"><![CDATA[Állítsa az <i>Onion-kiszolgálók használata</i> opciót „Nemre”, ha a SOCKS-proxy nem támogatja őket.]]></string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[Állítsa az <i>Onion kiszolgálók használata</i> opciót „Nemre”, ha a SOCKS proxy nem támogatja őket.]]></string>
     <string name="you_can_share_your_address">Megoszthatja a címét egy hivatkozásként vagy egy QR-kódként – így bárki kapcsolódhat Önhöz.</string>
     <string name="you_can_create_it_later">Létrehozás később</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">A profilja az eszközén van tárolva és csak a partnereivel van megosztva. A SimpleX-kiszolgálók nem láthatják a profilját.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">A profilja az eszközén van tárolva és csak a partnereivel van megosztva. A SimpleX kiszolgálók nem láthatják a profilját.</string>
     <string name="snd_group_event_changed_member_role">Ön a következőre módosította %s szerepkörét: „%s”</string>
     <string name="you_rejected_group_invitation">Csoportmeghívó elutasítva</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Adatainak védelme érdekében a SimpleX külön üzenet-azonosítókat használ minden egyes kapcsolatához.</string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">Adatainak védelme érdekében a SimpleX külön azonosítókat használ minden egyes kapcsolatához.</string>
     <string name="to_share_with_your_contact">(a megosztáshoz a partnerével)</string>
     <string name="you_sent_group_invitation">Csoportmeghívó elküldve</string>
     <string name="update_network_session_mode_question">Frissíti az átvitelelkülönítési módot?</string>
@@ -1483,7 +1483,7 @@
     <string name="error_showing_message">Hiba történt az üzenet megjelenítésekor</string>
     <string name="you_can_make_address_visible_via_settings">Láthatóvá teheti a SimpleXbeli partnerei számára a „Beállításokban”.</string>
     <string name="recent_history_is_sent_to_new_members">Legfeljebb az utolsó 100 üzenet lesz elküldve az új tagok számára.</string>
-    <string name="code_you_scanned_is_not_simplex_link_qr_code">A beolvasott QR-kód nem egy SimpleX-QR-kód-hivatkozás.</string>
+    <string name="code_you_scanned_is_not_simplex_link_qr_code">A beolvasott QR-kód nem egy SimpleX-hivatkozás.</string>
     <string name="the_text_you_pasted_is_not_a_link">A beillesztett szöveg nem egy SimpleX-hivatkozás.</string>
     <string name="you_can_view_invitation_link_again">A meghívási hivatkozást újra megtekintheti a kapcsolat részleteinél.</string>
     <string name="start_chat_question">Elindítja a csevegést?</string>
@@ -1754,7 +1754,7 @@
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Tor vagy VPN nélkül az IP-címe láthatóvá válik a fájlkiszolgálók számára.</string>
     <string name="settings_section_title_files">FÁJLOK</string>
     <string name="protect_ip_address">IP-cím védelme</string>
-    <string name="app_will_ask_to_confirm_unknown_file_servers">Az alkalmazás kérni fogja az ismeretlen fájlkiszolgálókról történő letöltések megerősítését (kivéve, ha az .onion vagy a SOCKS-proxy engedélyezve van).</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">Az alkalmazás kérni fogja az ismeretlen fájlkiszolgálókról történő letöltések megerősítését (kivéve, ha az .onion vagy a SOCKS proxy engedélyezve van).</string>
     <string name="file_not_approved_title">Ismeretlen kiszolgálók!</string>
     <string name="file_not_approved_descr">Tor vagy VPN nélkül az IP-címe láthatóvá válik a következő XFTP-továbbítókiszolgálók számára:\n%1$s.</string>
     <string name="chat_theme_apply_to_all_modes">Összes színmód</string>
@@ -1993,7 +1993,7 @@
     <string name="v6_0_private_routing_descr">Védi az IP-címét és a kapcsolatait.</string>
     <string name="v6_0_reachable_chat_toolbar">Könnyen elérhető eszköztár</string>
     <string name="message_servers">Üzenetkiszolgálók</string>
-    <string name="network_socks_proxy">SOCKS-proxy</string>
+    <string name="network_socks_proxy">SOCKS proxy</string>
     <string name="chat_database_exported_not_all_files">Néhány fájl nem lett exportálva</string>
     <string name="chat_database_exported_migrate">Az exportált adatbázist átköltöztetheti.</string>
     <string name="network_options_save_and_reconnect">Mentés és újrakapcsolódás</string>
@@ -2074,7 +2074,7 @@
     <string name="v6_1_better_security">Továbbfejlesztett biztonság ✅</string>
     <string name="v6_1_better_security_descr">A SimpleX-protokollokat a Trail of Bits auditálta.</string>
     <string name="failed_to_save_servers">Hiba történt a kiszolgálók mentésekor</string>
-    <string name="no_message_servers_configured">Nincsenek üzenet-kiszolgálók.</string>
+    <string name="no_message_servers_configured">Nincsenek üzenetkiszolgálók.</string>
     <string name="no_message_servers_configured_for_receiving">Nincsenek üzenetfogadási kiszolgálók.</string>
     <string name="no_media_servers_configured">Nincsenek média- és fájlkiszolgálók.</string>
     <string name="for_chat_profile">A(z) %s nevű csevegési profilhoz:</string>
@@ -2109,7 +2109,7 @@
     <string name="onboarding_choose_server_operators">Kiszolgálóüzemeltetők</string>
     <string name="onboarding_network_operators">Hálózatüzemeltetők</string>
     <string name="onboarding_network_operators_app_will_use_different_operators">Az alkalmazás úgy védi az adatait, hogy minden egyes beszélgetéshez más-más üzemeltetőt használ.</string>
-    <string name="onboarding_network_operators_app_will_use_for_routing">Például, ha a partnere egy SimpleX Chat-kiszolgálón keresztül fogadja az üzeneteket, akkor az Ön alkalmazása egy Flux-kiszolgálón keresztül fogja azokat kézbesíteni.</string>
+    <string name="onboarding_network_operators_app_will_use_for_routing">Például, ha a partnere egy SimpleX Chat kiszolgálón keresztül fogadja az üzeneteket, akkor az Ön alkalmazása egy Flux kiszolgálón keresztül fogja azokat kézbesíteni.</string>
     <string name="onboarding_select_network_operators_to_use">Jelölje ki a használni kívánt hálózatüzemeltetőket.</string>
     <string name="onboarding_network_operators_review_later">Felülvizsgálat később</string>
     <string name="onboarding_network_operators_configure_via_settings">A kiszolgálókat a „Hálózat és kiszolgálók” menüben konfigurálhatja.</string>
