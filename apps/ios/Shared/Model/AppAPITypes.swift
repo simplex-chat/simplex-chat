@@ -134,6 +134,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiCreateMyAddress(userId: Int64, short: Bool)
     case apiDeleteMyAddress(userId: Int64)
     case apiShowMyAddress(userId: Int64)
+    case apiAddShortLinkMyAddress(userId: Int64)
     case apiSetProfileAddress(userId: Int64, on: Bool)
     case apiAddressAutoAccept(userId: Int64, autoAccept: AutoAccept?)
     case apiAcceptContact(incognito: Bool, contactReqId: Int64)
@@ -326,6 +327,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiCreateMyAddress(userId, short): return "/_address \(userId) short=\(onOff(short))"
             case let .apiDeleteMyAddress(userId): return "/_delete_address \(userId)"
             case let .apiShowMyAddress(userId): return "/_show_address \(userId)"
+            case let .apiAddShortLinkMyAddress(userId): return "/_short_link_address \(userId)"
             case let .apiSetProfileAddress(userId, on): return "/_profile_address \(userId) \(onOff(on))"
             case let .apiAddressAutoAccept(userId, autoAccept): return "/_auto_accept \(userId) \(AutoAccept.cmdString(autoAccept))"
             case let .apiAcceptContact(incognito, contactReqId): return "/_accept incognito=\(onOff(incognito)) \(contactReqId)"
@@ -491,6 +493,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiCreateMyAddress: return "apiCreateMyAddress"
             case .apiDeleteMyAddress: return "apiDeleteMyAddress"
             case .apiShowMyAddress: return "apiShowMyAddress"
+            case .apiAddShortLinkMyAddress: return "apiAddShortLinkMyAddress"
             case .apiSetProfileAddress: return "apiSetProfileAddress"
             case .apiAddressAutoAccept: return "apiAddressAutoAccept"
             case .apiAcceptContact: return "apiAcceptContact"

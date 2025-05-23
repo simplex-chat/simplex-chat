@@ -1210,6 +1210,13 @@ private func userAddressResponse(_ r: APIResult<ChatResponse1>) throws -> UserCo
     }
 }
 
+func apiAddShortLinkMyAddress() async throws -> UserContactLink? {
+    let userId = try currentUserId("apiAddShortLinkMyAddress")
+    let r: ChatResponse1 = try await chatSendCmd(.apiAddShortLinkMyAddress(userId: userId))
+    if case let .userContactLink(_, contactLink) = r { return contactLink }
+    throw r.unexpected
+}
+
 func userAddressAutoAccept(_ autoAccept: AutoAccept?) async throws -> UserContactLink? {
     let userId = try currentUserId("userAddressAutoAccept")
     let r: APIResult<ChatResponse1> = await chatApiSendCmd(.apiAddressAutoAccept(userId: userId, autoAccept: autoAccept))
