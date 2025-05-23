@@ -224,10 +224,9 @@ struct UserAddressView: View {
         progressIndicator = true
         Task {
             do {
-                if let userAddress = try await apiAddShortLinkMyAddress() {
-                    await MainActor.run {
-                        chatModel.userAddress = userAddress
-                    }
+                let userAddress = try await apiAddShortLinkMyAddress()
+                await MainActor.run {
+                    chatModel.userAddress = userAddress
                 }
                 await MainActor.run { progressIndicator = false }
             } catch let error {

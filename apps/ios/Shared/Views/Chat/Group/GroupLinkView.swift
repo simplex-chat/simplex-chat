@@ -35,16 +35,23 @@ struct GroupLinkView: View {
     }
 
     var body: some View {
-        if creatingGroup {
-            groupLinkView()
-                .navigationBarBackButtonHidden()
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button ("Continue") { linkCreatedCb?() }
+        ZStack {
+            if creatingGroup {
+                groupLinkView()
+                    .navigationBarBackButtonHidden()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button ("Continue") { linkCreatedCb?() }
+                        }
                     }
-                }
-        } else {
-            groupLinkView()
+            } else {
+                groupLinkView()
+            }
+            if creatingLink {
+                ProgressView()
+                    .scaleEffect(2)
+                    .frame(maxWidth: .infinity)
+            }
         }
     }
 
@@ -79,6 +86,14 @@ struct GroupLinkView: View {
                         Label("Share link", systemImage: "square.and.arrow.up")
                     }
 
+                    if (groupLink.connShortLink == nil && UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_SHORT_LINKS)) {
+                        Button {
+                            addShortLink()
+                        } label: {
+                            Text("Add short link")
+                        }
+                    }
+
                     if !creatingGroup {
                         Button(role: .destructive) { alert = .deleteLink } label: {
                             Label("Delete link", systemImage: "trash")
@@ -89,11 +104,6 @@ struct GroupLinkView: View {
                         Label("Create link", systemImage: "link.badge.plus")
                     }
                     .disabled(creatingLink)
-                    if creatingLink {
-                        ProgressView()
-                            .scaleEffect(2)
-                            .frame(maxWidth: .infinity)
-                    }
                 }
             } header: {
                 if let groupLink, groupLink.connShortLink != nil {
@@ -155,6 +165,26 @@ struct GroupLinkView: View {
                 await MainActor.run {
                     creatingLink = false
                     let a = getErrorAlert(error, "Error creating group link")
+                    alert = .error(title: a.title, error: a.message)
+                }
+            }
+        }
+    }
+
+    private func addShortLink() {
+        Task {
+            do {
+                creatingLink = true
+                let link = try await apiAddShortLinkGroupLink(groupId)
+                await MainActor.run {
+                    creatingLink = false
+                    (groupLink, groupLinkMemberRole) = link
+                }
+            } catch let error {
+                logger.error("apiAddShortLinkGroupLink: \(responseError(error))")
+                await MainActor.run {
+                    creatingLink = false
+                    let a = getErrorAlert(error, "Error adding short link")
                     alert = .error(title: a.title, error: a.message)
                 }
             }

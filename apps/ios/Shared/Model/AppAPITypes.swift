@@ -80,6 +80,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiGroupLinkMemberRole(groupId: Int64, memberRole: GroupMemberRole)
     case apiDeleteGroupLink(groupId: Int64)
     case apiGetGroupLink(groupId: Int64)
+    case apiAddShortLinkGroupLink(groupId: Int64)
     case apiCreateMemberContact(groupId: Int64, groupMemberId: Int64)
     case apiSendMemberContactInvitation(contactId: Int64, msg: MsgContent)
     case apiTestProtoServer(userId: Int64, server: String)
@@ -263,6 +264,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiGroupLinkMemberRole(groupId, memberRole): return "/_set link role #\(groupId) \(memberRole)"
             case let .apiDeleteGroupLink(groupId): return "/_delete link #\(groupId)"
             case let .apiGetGroupLink(groupId): return "/_get link #\(groupId)"
+            case let .apiAddShortLinkGroupLink(groupId): return "/_short link #\(groupId)"
             case let .apiCreateMemberContact(groupId, groupMemberId): return "/_create member contact #\(groupId) \(groupMemberId)"
             case let .apiSendMemberContactInvitation(contactId, mc): return "/_invite member contact @\(contactId) \(mc.cmdString)"
             case let .apiTestProtoServer(userId, server): return "/_server test \(userId) \(server)"
@@ -440,6 +442,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiGroupLinkMemberRole: return "apiGroupLinkMemberRole"
             case .apiDeleteGroupLink: return "apiDeleteGroupLink"
             case .apiGetGroupLink: return "apiGetGroupLink"
+            case .apiAddShortLinkGroupLink: return "apiAddShortLinkGroupLink"
             case .apiCreateMemberContact: return "apiCreateMemberContact"
             case .apiSendMemberContactInvitation: return "apiSendMemberContactInvitation"
             case .apiTestProtoServer: return "apiTestProtoServer"
