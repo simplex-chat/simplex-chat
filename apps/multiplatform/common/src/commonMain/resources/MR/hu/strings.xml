@@ -2403,4 +2403,5 @@
     <string name="delete_member_support_chat_button">Csevegés törlése</string>
     <string name="reject_pending_member_button">Elutasítás</string>
     <string name="reject_pending_member_alert_title">Elutasítja a tagot?</string>
+    <string name="add_short_link">Rövid hivatkozás hozzáadása</string>
 </resources>
