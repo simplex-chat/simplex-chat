@@ -85,7 +85,7 @@ fun UserAddressView(
   fun addShortLink() {
     withBGApi {
       progressIndicator = true
-      val userAddress = chatModel.controller.apiAddShortLinkMyAddress(user.value?.remoteHostId)
+      val userAddress = chatModel.controller.apiAddMyAddressShortLink(user.value?.remoteHostId)
       if (userAddress != null) {
         chatModel.userAddress.value = userAddress
       }

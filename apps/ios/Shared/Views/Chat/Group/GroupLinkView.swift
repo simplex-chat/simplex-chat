@@ -175,13 +175,13 @@ struct GroupLinkView: View {
         Task {
             do {
                 creatingLink = true
-                let link = try await apiAddShortLinkGroupLink(groupId)
+                let link = try await apiAddGroupShortLink(groupId)
                 await MainActor.run {
                     creatingLink = false
                     (groupLink, groupLinkMemberRole) = link
                 }
             } catch let error {
-                logger.error("apiAddShortLinkGroupLink: \(responseError(error))")
+                logger.error("apiAddGroupShortLink: \(responseError(error))")
                 await MainActor.run {
                     creatingLink = false
                     let a = getErrorAlert(error, "Error adding short link")

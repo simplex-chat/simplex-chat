@@ -52,7 +52,7 @@ fun GroupLinkView(
   fun addShortLink() {
     creatingLink = true
     withBGApi {
-      val link = chatModel.controller.apiAddShortLinkGroupLink(rhId, groupInfo.groupId)
+      val link = chatModel.controller.apiAddGroupShortLink(rhId, groupInfo.groupId)
       if (link != null) {
         groupLink = link.first
         groupLinkMemberRole.value = link.second
