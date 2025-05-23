@@ -2401,4 +2401,5 @@
     <string name="delete_member_support_chat_alert_title">Suprimir el xat amb membre?</string>
     <string name="group_new_support_chats">%d xats amb membres</string>
     <string name="member_criteria_all">tots(es)</string>
+    <string name="add_short_link">Afegir enllaç curt</string>
 </resources>
