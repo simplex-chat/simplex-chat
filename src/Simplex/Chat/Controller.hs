@@ -87,7 +87,7 @@ import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
 import Simplex.Messaging.TMap (TMap)
-import Simplex.Messaging.Transport (TLS, simplexMQVersion)
+import Simplex.Messaging.Transport (TLS, TransportPeer (..), simplexMQVersion)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, catchAllErrors', tryAllErrors, tryAllErrors', (<$$>))
 import Simplex.RemoteControl.Client
@@ -1413,7 +1413,7 @@ data RemoteCtrlSession
       { remoteCtrlId_ :: Maybe RemoteCtrlId,
         ctrlDeviceName :: Text,
         rcsClient :: RCCtrlClient,
-        tls :: TLS,
+        tls :: TLS 'TClient,
         sessionCode :: Text,
         rcsWaitSession :: Async (),
         rcsWaitConfirmation :: TMVar (Either RCErrorType (RCCtrlSession, RCCtrlPairing))
@@ -1421,7 +1421,7 @@ data RemoteCtrlSession
   | RCSessionConnected
       { remoteCtrlId :: RemoteCtrlId,
         rcsClient :: RCCtrlClient,
-        tls :: TLS,
+        tls :: TLS 'TClient,
         rcsSession :: RCCtrlSession,
         http2Server :: Async (),
         remoteOutputQ :: TBQueue (Either ChatError ChatEvent)

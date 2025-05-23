@@ -25,7 +25,7 @@ import Simplex.Chat.Types (verificationCode)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
-import Simplex.Messaging.Transport (TLS (..), TSbChainKeys (..))
+import Simplex.Messaging.Transport (TLS (..), TSbChainKeys (..), TransportPeer (..))
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.RemoteControl.Client
@@ -102,11 +102,11 @@ data RHPendingSession = RHPendingSession
 data RemoteHostSession
   = RHSessionStarting
   | RHSessionConnecting {invitation :: Text, rhPendingSession :: RHPendingSession}
-  | RHSessionPendingConfirmation {sessionCode :: Text, tls :: TLS, rhPendingSession :: RHPendingSession}
-  | RHSessionConfirmed {tls :: TLS, rhPendingSession :: RHPendingSession}
+  | RHSessionPendingConfirmation {sessionCode :: Text, tls :: TLS 'TServer, rhPendingSession :: RHPendingSession}
+  | RHSessionConfirmed {tls :: TLS 'TServer, rhPendingSession :: RHPendingSession}
   | RHSessionConnected
       { rchClient :: RCHostClient,
-        tls :: TLS,
+        tls :: TLS 'TServer,
         rhClient :: RemoteHostClient,
         pollAction :: Async (),
         storePath :: FilePath
@@ -128,7 +128,7 @@ rhsSessionState = \case
   RHSessionConfirmed {tls} -> RHSConfirmed {sessionCode = tlsSessionCode tls}
   RHSessionConnected {tls} -> RHSConnected {sessionCode = tlsSessionCode tls}
 
-tlsSessionCode :: TLS -> Text
+tlsSessionCode :: TLS p -> Text
 tlsSessionCode = verificationCode . tlsUniq
 
 data RemoteProtocolError
