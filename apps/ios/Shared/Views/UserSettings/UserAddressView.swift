@@ -153,6 +153,9 @@ struct UserAddressView: View {
                     }
             }
             addressSettingsButton(userAddress)
+            if (userAddress.connLinkContact.connShortLink == nil && UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_SHORT_LINKS)) {
+                addShortLinkButton()
+            }
         } header: {
             ToggleShortLinkHeader(text: Text("For social media"), link: userAddress.connLinkContact, short: $showShortLink)
         } footer: {
@@ -204,6 +207,30 @@ struct UserAddressView: View {
                 logger.error("UserAddressView apiCreateUserAddress: \(responseError(error))")
                 let a = getErrorAlert(error, "Error creating address")
                 alert = .error(title: a.title, error: a.message)
+                await MainActor.run { progressIndicator = false }
+            }
+        }
+    }
+
+    private func addShortLinkButton() -> some View {
+        Button {
+            addShortLink()
+        } label: {
+            Label("Add short link", systemImage: "plus")
+        }
+    }
+
+    private func addShortLink() {
+        progressIndicator = true
+        Task {
+            do {
+                let userAddress = try await apiAddShortLinkMyAddress()
+                await MainActor.run {
+                    chatModel.userAddress = userAddress
+                }
+                await MainActor.run { progressIndicator = false }
+            } catch let error {
+                logger.error("apiAddShortLinkMyAddress: \(responseError(error))")
                 await MainActor.run { progressIndicator = false }
             }
         }

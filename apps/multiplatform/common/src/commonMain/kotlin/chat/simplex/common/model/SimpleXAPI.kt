@@ -1570,6 +1570,14 @@ object ChatController {
     return null
   }
 
+  suspend fun apiAddShortLinkMyAddress(rh: Long?): UserContactLinkRec? {
+    val userId = kotlin.runCatching { currentUserId("apiAddShortLinkMyAddress") }.getOrElse { return null }
+    val r = sendCmd(rh, CC.ApiAddShortLinkMyAddress(userId))
+    if (r is API.Result && r.res is CR.UserContactLink) return r.res.contactLink
+    Log.e(TAG, "apiAddShortLinkMyAddress bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun userAddressAutoAccept(rh: Long?, autoAccept: AutoAccept?): UserContactLinkRec? {
     val userId = kotlin.runCatching { currentUserId("userAddressAutoAccept") }.getOrElse { return null }
     val r = sendCmd(rh, CC.ApiAddressAutoAccept(userId, autoAccept))
@@ -2013,6 +2021,13 @@ object ChatController {
     val r = sendCmd(rh, CC.APIGetGroupLink(groupId))
     if (r is API.Result && r.res is CR.GroupLink) return r.res.connLinkContact to r.res.memberRole
     Log.e(TAG, "apiGetGroupLink bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun apiAddShortLinkGroupLink(rh: Long?, groupId: Long): Pair<CreatedConnLink, GroupMemberRole>? {
+    val r = sendCmd(rh, CC.APIAddShortLinkGroupLink(groupId))
+    if (r is API.Result && r.res is CR.GroupLink) return r.res.connLinkContact to r.res.memberRole
+    Log.e(TAG, "apiAddShortLinkGroupLink bad response: ${r.responseType} ${r.details}")
     return null
   }
 
@@ -3368,6 +3383,7 @@ sealed class CC {
   class APIGroupLinkMemberRole(val groupId: Long, val memberRole: GroupMemberRole): CC()
   class APIDeleteGroupLink(val groupId: Long): CC()
   class APIGetGroupLink(val groupId: Long): CC()
+  class APIAddShortLinkGroupLink(val groupId: Long): CC()
   class APICreateMemberContact(val groupId: Long, val groupMemberId: Long): CC()
   class APISendMemberContactInvitation(val contactId: Long, val mc: MsgContent): CC()
   class APITestProtoServer(val userId: Long, val server: String): CC()
@@ -3422,6 +3438,7 @@ sealed class CC {
   class ApiCreateMyAddress(val userId: Long, val short: Boolean): CC()
   class ApiDeleteMyAddress(val userId: Long): CC()
   class ApiShowMyAddress(val userId: Long): CC()
+  class ApiAddShortLinkMyAddress(val userId: Long): CC()
   class ApiSetProfileAddress(val userId: Long, val on: Boolean): CC()
   class ApiAddressAutoAccept(val userId: Long, val autoAccept: AutoAccept?): CC()
   class ApiGetCallInvitations: CC()
@@ -3555,6 +3572,7 @@ sealed class CC {
     is APIGroupLinkMemberRole -> "/_set link role #$groupId ${memberRole.name.lowercase()}"
     is APIDeleteGroupLink -> "/_delete link #$groupId"
     is APIGetGroupLink -> "/_get link #$groupId"
+    is APIAddShortLinkGroupLink -> "/_short link #$groupId"
     is APICreateMemberContact -> "/_create member contact #$groupId $groupMemberId"
     is APISendMemberContactInvitation -> "/_invite member contact @$contactId ${mc.cmdString}"
     is APITestProtoServer -> "/_server test $userId $server"
@@ -3609,6 +3627,7 @@ sealed class CC {
     is ApiCreateMyAddress -> "/_address $userId short=${onOff(short)}"
     is ApiDeleteMyAddress -> "/_delete_address $userId"
     is ApiShowMyAddress -> "/_show_address $userId"
+    is ApiAddShortLinkMyAddress -> "/_short_link_address $userId"
     is ApiSetProfileAddress -> "/_profile_address $userId ${onOff(on)}"
     is ApiAddressAutoAccept -> "/_auto_accept $userId ${AutoAccept.cmdString(autoAccept)}"
     is ApiAcceptContact -> "/_accept incognito=${onOff(incognito)} $contactReqId"
@@ -3720,6 +3739,7 @@ sealed class CC {
     is APIGroupLinkMemberRole -> "apiGroupLinkMemberRole"
     is APIDeleteGroupLink -> "apiDeleteGroupLink"
     is APIGetGroupLink -> "apiGetGroupLink"
+    is APIAddShortLinkGroupLink -> "apiAddShortLinkGroupLink"
     is APICreateMemberContact -> "apiCreateMemberContact"
     is APISendMemberContactInvitation -> "apiSendMemberContactInvitation"
     is APITestProtoServer -> "testProtoServer"
@@ -3774,6 +3794,7 @@ sealed class CC {
     is ApiCreateMyAddress -> "apiCreateMyAddress"
     is ApiDeleteMyAddress -> "apiDeleteMyAddress"
     is ApiShowMyAddress -> "apiShowMyAddress"
+    is ApiAddShortLinkMyAddress -> "apiAddShortLinkMyAddress"
     is ApiSetProfileAddress -> "apiSetProfileAddress"
     is ApiAddressAutoAccept -> "apiAddressAutoAccept"
     is ApiAcceptContact -> "apiAcceptContact"

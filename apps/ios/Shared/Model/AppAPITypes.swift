@@ -80,6 +80,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiGroupLinkMemberRole(groupId: Int64, memberRole: GroupMemberRole)
     case apiDeleteGroupLink(groupId: Int64)
     case apiGetGroupLink(groupId: Int64)
+    case apiAddShortLinkGroupLink(groupId: Int64)
     case apiCreateMemberContact(groupId: Int64, groupMemberId: Int64)
     case apiSendMemberContactInvitation(contactId: Int64, msg: MsgContent)
     case apiTestProtoServer(userId: Int64, server: String)
@@ -134,6 +135,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiCreateMyAddress(userId: Int64, short: Bool)
     case apiDeleteMyAddress(userId: Int64)
     case apiShowMyAddress(userId: Int64)
+    case apiAddShortLinkMyAddress(userId: Int64)
     case apiSetProfileAddress(userId: Int64, on: Bool)
     case apiAddressAutoAccept(userId: Int64, autoAccept: AutoAccept?)
     case apiAcceptContact(incognito: Bool, contactReqId: Int64)
@@ -262,6 +264,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiGroupLinkMemberRole(groupId, memberRole): return "/_set link role #\(groupId) \(memberRole)"
             case let .apiDeleteGroupLink(groupId): return "/_delete link #\(groupId)"
             case let .apiGetGroupLink(groupId): return "/_get link #\(groupId)"
+            case let .apiAddShortLinkGroupLink(groupId): return "/_short link #\(groupId)"
             case let .apiCreateMemberContact(groupId, groupMemberId): return "/_create member contact #\(groupId) \(groupMemberId)"
             case let .apiSendMemberContactInvitation(contactId, mc): return "/_invite member contact @\(contactId) \(mc.cmdString)"
             case let .apiTestProtoServer(userId, server): return "/_server test \(userId) \(server)"
@@ -326,6 +329,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiCreateMyAddress(userId, short): return "/_address \(userId) short=\(onOff(short))"
             case let .apiDeleteMyAddress(userId): return "/_delete_address \(userId)"
             case let .apiShowMyAddress(userId): return "/_show_address \(userId)"
+            case let .apiAddShortLinkMyAddress(userId): return "/_short_link_address \(userId)"
             case let .apiSetProfileAddress(userId, on): return "/_profile_address \(userId) \(onOff(on))"
             case let .apiAddressAutoAccept(userId, autoAccept): return "/_auto_accept \(userId) \(AutoAccept.cmdString(autoAccept))"
             case let .apiAcceptContact(incognito, contactReqId): return "/_accept incognito=\(onOff(incognito)) \(contactReqId)"
@@ -438,6 +442,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiGroupLinkMemberRole: return "apiGroupLinkMemberRole"
             case .apiDeleteGroupLink: return "apiDeleteGroupLink"
             case .apiGetGroupLink: return "apiGetGroupLink"
+            case .apiAddShortLinkGroupLink: return "apiAddShortLinkGroupLink"
             case .apiCreateMemberContact: return "apiCreateMemberContact"
             case .apiSendMemberContactInvitation: return "apiSendMemberContactInvitation"
             case .apiTestProtoServer: return "apiTestProtoServer"
@@ -491,6 +496,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiCreateMyAddress: return "apiCreateMyAddress"
             case .apiDeleteMyAddress: return "apiDeleteMyAddress"
             case .apiShowMyAddress: return "apiShowMyAddress"
+            case .apiAddShortLinkMyAddress: return "apiAddShortLinkMyAddress"
             case .apiSetProfileAddress: return "apiSetProfileAddress"
             case .apiAddressAutoAccept: return "apiAddressAutoAccept"
             case .apiAcceptContact: return "apiAcceptContact"

@@ -1796,9 +1796,9 @@ processChatCommand' vr = \case
   CreateMyAddress short -> withUser $ \User {userId} ->
     processChatCommand $ APICreateMyAddress userId short
   APIDeleteMyAddress userId -> withUserId userId $ \user@User {profile = p} -> do
-    conns <- withFastStore $ \db -> getUserAddressConnections db vr user
+    conn <- withFastStore $ \db -> getUserAddressConnection db vr user
     withChatLock "deleteMyAddress" $ do
-      deleteAgentConnectionsAsync $ map aConnId conns
+      deleteAgentConnectionAsync $ aConnId conn
       withFastStore' (`deleteUserAddress` user)
     let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing}
     r <- updateProfile_ user p' $ withFastStore' $ \db -> setUserProfileContactLink db user Nothing
@@ -1812,6 +1812,17 @@ processChatCommand' vr = \case
     CRUserContactLink user <$> withFastStore (`getUserAddress` user)
   ShowMyAddress -> withUser' $ \User {userId} ->
     processChatCommand $ APIShowMyAddress userId
+  APIAddShortLinkMyAddress userId -> withUserId' userId $ \user -> do
+    (ucl@UserContactLink {connLinkContact = CCLink connFullLink sLnk_}, conn) <-
+      withFastStore $ \db -> (,) <$> getUserAddress db user <*> getUserAddressConnection db vr user
+    when (isJust sLnk_) $ throwCmdError "address already has short link"
+    sLnk <- withAgent $ \a -> setContactShortLink a (aConnId conn) ""
+    case entityId conn of
+      Just uclId -> do
+        withFastStore' $ \db -> setUserContactLinkShortLink db uclId sLnk
+        let ucl' = (ucl :: UserContactLink) {connLinkContact = CCLink connFullLink (Just sLnk)}
+        pure $ CRUserContactLink user ucl'
+      Nothing -> throwChatError $ CEException "no user contact link id"
   APISetProfileAddress userId False -> withUserId userId $ \user@User {profile = p} -> do
     let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing}
     updateProfile_ user p' $ withFastStore' $ \db -> setUserProfileContactLink db user Nothing
@@ -2403,6 +2414,17 @@ processChatCommand' vr = \case
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
     (_, groupLink, mRole) <- withFastStore $ \db -> getGroupLink db user gInfo
     pure $ CRGroupLink user gInfo groupLink mRole
+  APIAddShortLinkGroupLink groupId -> withUser $ \user -> do
+    (gInfo, (uclId, _gLink@(CCLink connFullLink sLnk_), mRole), conn) <- withFastStore $ \db -> do
+      gInfo <- getGroupInfo db vr user groupId
+      gLink <- getGroupLink db user gInfo
+      conn <- getGroupLinkConnection db vr user gInfo
+      pure (gInfo, gLink, conn)
+    when (isJust sLnk_) $ throwCmdError "group link already has short link"
+    sLnk <- withAgent $ \a -> setContactShortLink a (aConnId conn) ""
+    withFastStore' $ \db -> setUserContactLinkShortLink db uclId sLnk
+    let groupLink' = CCLink connFullLink (Just sLnk)
+    pure $ CRGroupLink user gInfo groupLink' mRole
   APICreateMemberContact gId gMemberId -> withUser $ \user -> do
     (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
     assertUserGroupRole g GRAuthor
@@ -4222,6 +4244,7 @@ chatCommandP =
       "/_set link role #" *> (APIGroupLinkMemberRole <$> A.decimal <*> memberRole),
       "/_delete link #" *> (APIDeleteGroupLink <$> A.decimal),
       "/_get link #" *> (APIGetGroupLink <$> A.decimal),
+      "/_short link #" *> (APIAddShortLinkGroupLink <$> A.decimal),
       "/create link #" *> (CreateGroupLink <$> displayNameP <*> (memberRole <|> pure GRMember) <*> shortP),
       "/set link role #" *> (GroupLinkMemberRole <$> displayNameP <*> memberRole),
       "/delete link #" *> (DeleteGroupLink <$> displayNameP),
@@ -4277,6 +4300,7 @@ chatCommandP =
       ("/delete_address" <|> "/da") $> DeleteMyAddress,
       "/_show_address " *> (APIShowMyAddress <$> A.decimal),
       ("/show_address" <|> "/sa") $> ShowMyAddress,
+      "/_short_link_address " *> (APIAddShortLinkMyAddress <$> A.decimal),
       "/_profile_address " *> (APISetProfileAddress <$> A.decimal <* A.space <*> onOffP),
       ("/profile_address " <|> "/pa ") *> (SetProfileAddress <$> onOffP),
       "/_auto_accept " *> (APIAddressAutoAccept <$> A.decimal <* A.space <*> autoAcceptP),
