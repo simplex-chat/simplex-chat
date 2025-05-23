@@ -527,8 +527,8 @@ userContactLinkQuery =
     FROM user_contact_links
   |]
 
-setUserContactLinkShortLink :: DB.Connection -> Int64 -> UserContactLink -> ShortLinkContact -> IO UserContactLink
-setUserContactLinkShortLink db userContactLinkId ucl@UserContactLink {connLinkContact = CCLink connFullLink _} shortLink = do
+setUserContactLinkShortLink :: DB.Connection -> Int64 -> ShortLinkContact -> IO ()
+setUserContactLinkShortLink db userContactLinkId shortLink =
   DB.execute
     db
     [sql|
@@ -537,7 +537,6 @@ setUserContactLinkShortLink db userContactLinkId ucl@UserContactLink {connLinkCo
       WHERE user_contact_link_id = ?
     |]
     (shortLink, userContactLinkId)
-  pure ucl {connLinkContact = CCLink connFullLink (Just shortLink)}
 
 getContactWithoutConnViaAddress :: DB.Connection -> VersionRangeChat -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe Contact)
 getContactWithoutConnViaAddress db vr user@User {userId} (cReqSchema1, cReqSchema2) = do

@@ -1813,13 +1813,14 @@ processChatCommand' vr = \case
   ShowMyAddress -> withUser' $ \User {userId} ->
     processChatCommand $ APIShowMyAddress userId
   APIAddShortLinkMyAddress userId -> withUserId' userId $ \user -> do
-    (ucl@UserContactLink {connLinkContact = CCLink _ sLnk_}, conn) <-
+    (ucl@UserContactLink {connLinkContact = CCLink connFullLink sLnk_}, conn) <-
       withFastStore $ \db -> (,) <$> getUserAddress db user <*> getUserAddressConnection db vr user
-    when (isJust sLnk_) $ throwCmdError "short link already exists"
+    when (isJust sLnk_) $ throwCmdError "address already has short link"
     sLnk <- withAgent $ \a -> setContactShortLink a (aConnId conn) ""
     case entityId conn of
       Just uclId -> do
-        ucl' <- withFastStore' $ \db -> setUserContactLinkShortLink db uclId ucl sLnk
+        withFastStore' $ \db -> setUserContactLinkShortLink db uclId sLnk
+        let ucl' = (ucl :: UserContactLink) {connLinkContact = CCLink connFullLink (Just sLnk)}
         pure $ CRUserContactLink user ucl'
       Nothing -> throwChatError $ CEException "no user contact link id"
   APISetProfileAddress userId False -> withUserId userId $ \user@User {profile = p} -> do
@@ -2413,6 +2414,17 @@ processChatCommand' vr = \case
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
     (_, groupLink, mRole) <- withFastStore $ \db -> getGroupLink db user gInfo
     pure $ CRGroupLink user gInfo groupLink mRole
+  APIAddShortLinkGroupLink groupId -> withUser $ \user -> do
+    (gInfo, (uclId, _gLink@(CCLink connFullLink sLnk_), mRole), conn) <- withFastStore $ \db -> do
+      gInfo <- getGroupInfo db vr user groupId
+      gLink <- getGroupLink db user gInfo
+      conn <- getGroupLinkConnection db vr user gInfo
+      pure (gInfo, gLink, conn)
+    when (isJust sLnk_) $ throwCmdError "group link already has short link"
+    sLnk <- withAgent $ \a -> setContactShortLink a (aConnId conn) ""
+    withFastStore' $ \db -> setUserContactLinkShortLink db uclId sLnk
+    let groupLink' = CCLink connFullLink (Just sLnk)
+    pure $ CRGroupLink user gInfo groupLink' mRole
   APICreateMemberContact gId gMemberId -> withUser $ \user -> do
     (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
     assertUserGroupRole g GRAuthor
@@ -4232,6 +4244,7 @@ chatCommandP =
       "/_set link role #" *> (APIGroupLinkMemberRole <$> A.decimal <*> memberRole),
       "/_delete link #" *> (APIDeleteGroupLink <$> A.decimal),
       "/_get link #" *> (APIGetGroupLink <$> A.decimal),
+      "/_short link #" *> (APIAddShortLinkGroupLink <$> A.decimal),
       "/create link #" *> (CreateGroupLink <$> displayNameP <*> (memberRole <|> pure GRMember) <*> shortP),
       "/set link role #" *> (GroupLinkMemberRole <$> displayNameP <*> memberRole),
       "/delete link #" *> (DeleteGroupLink <$> displayNameP),

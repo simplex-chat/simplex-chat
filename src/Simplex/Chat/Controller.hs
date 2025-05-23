@@ -373,6 +373,7 @@ data ChatCommand
   | APIGroupLinkMemberRole GroupId GroupMemberRole
   | APIDeleteGroupLink GroupId
   | APIGetGroupLink GroupId
+  | APIAddShortLinkGroupLink GroupId
   | APICreateMemberContact GroupId GroupMemberId
   | APISendMemberContactInvitation {contactId :: ContactId, msgContent_ :: Maybe MsgContent}
   | GetUserProtoServers AProtocolType
