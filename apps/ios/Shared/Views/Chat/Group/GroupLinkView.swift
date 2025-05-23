@@ -90,7 +90,7 @@ struct GroupLinkView: View {
                         Button {
                             addShortLink()
                         } label: {
-                            Text("Add short link")
+                            Label("Add short link", systemImage: "plus")
                         }
                     }
 
