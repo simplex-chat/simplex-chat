@@ -2401,7 +2401,7 @@ processChatCommand' vr = \case
     pure $ CRGroupLinkCreated user gInfo ccLink' mRole
   APIGroupLinkMemberRole groupId mRole' -> withUser $ \user -> withGroupLock "groupLinkMemberRole" groupId $ do
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
-    (groupLinkId, groupLink, mRole) <- withFastStore $ \db -> getGroupLink db user gInfo
+    (groupLinkId, groupLink, _, mRole) <- withFastStore $ \db -> getGroupLink db user gInfo
     assertUserGroupRole gInfo GRAdmin
     when (mRole' > GRMember) $ throwChatError $ CEGroupMemberInitialRole gInfo mRole'
     when (mRole' /= mRole) $ withFastStore' $ \db -> setGroupLinkMemberRole db user groupLinkId mRole'
@@ -2412,17 +2412,16 @@ processChatCommand' vr = \case
     pure $ CRGroupLinkDeleted user gInfo
   APIGetGroupLink groupId -> withUser $ \user -> do
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
-    (_, groupLink, mRole) <- withFastStore $ \db -> getGroupLink db user gInfo
+    (_, groupLink, _, mRole) <- withFastStore $ \db -> getGroupLink db user gInfo
     pure $ CRGroupLink user gInfo groupLink mRole
   APIAddGroupShortLink groupId -> withUser $ \user -> do
-    (gInfo, (uclId, _gLink@(CCLink connFullLink sLnk_), mRole), gLinkId, conn) <- withFastStore $ \db -> do
+    (gInfo, (uclId, _gLink@(CCLink connFullLink sLnk_), gLinkId, mRole), conn) <- withFastStore $ \db -> do
       gInfo <- getGroupInfo db vr user groupId
       gLink <- getGroupLink db user gInfo
-      gLinkId <- getGroupLinkId db user gInfo
       conn <- getGroupLinkConnection db vr user gInfo
-      pure (gInfo, gLink, gLinkId, conn)
+      pure (gInfo, gLink, conn)
     when (isJust sLnk_) $ throwCmdError "group link already has short link"
-    let crClientData = encodeJSON $ CRDataGroup groupLinkId
+    let crClientData = encodeJSON $ CRDataGroup gLinkId
     sLnk <- shortenShortLink' =<< toShortGroupLink <$> withAgent (\a -> setContactShortLink a (aConnId conn) "" (Just crClientData))
     withFastStore' $ \db -> setUserContactLinkShortLink db uclId sLnk
     let groupLink' = CCLink connFullLink (Just sLnk)
