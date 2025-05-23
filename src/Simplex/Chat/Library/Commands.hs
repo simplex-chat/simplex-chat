@@ -2421,7 +2421,7 @@ processChatCommand' vr = \case
       conn <- getGroupLinkConnection db vr user gInfo
       pure (gInfo, gLink, conn)
     when (isJust sLnk_) $ throwCmdError "group link already has short link"
-    sLnk <- withAgent $ \a -> setContactShortLink a (aConnId conn) ""
+    sLnk <- toShortGroupLink <$> withAgent (\a -> setContactShortLink a (aConnId conn) "")
     withFastStore' $ \db -> setUserContactLinkShortLink db uclId sLnk
     let groupLink' = CCLink connFullLink (Just sLnk)
     pure $ CRGroupLink user gInfo groupLink' mRole
@@ -3298,10 +3298,9 @@ processChatCommand' vr = \case
     shortenCreatedLink :: CreatedConnLink m -> CM (CreatedConnLink m)
     shortenCreatedLink (CCLink cReq sLnk) = CCLink cReq <$> mapM (\l -> (`shortenShortLink` l) <$> asks (shortLinkPresetServers . config)) sLnk
     createdGroupLink :: CreatedLinkContact -> CreatedLinkContact
-    createdGroupLink (CCLink cReq shortLink) = CCLink cReq (toGroupLink <$> shortLink)
-      where
-        toGroupLink :: ShortLinkContact -> ShortLinkContact
-        toGroupLink (CSLContact sch _ srv k) = CSLContact sch CCTGroup srv k
+    createdGroupLink (CCLink cReq shortLink) = CCLink cReq (toShortGroupLink <$> shortLink)
+    toShortGroupLink :: ShortLinkContact -> ShortLinkContact
+    toShortGroupLink (CSLContact sch _ srv k) = CSLContact sch CCTGroup srv k
     updateCIGroupInvitationStatus :: User -> GroupInfo -> CIGroupInvitationStatus -> CM ()
     updateCIGroupInvitationStatus user GroupInfo {groupId} newStatus = do
       AChatItem _ _ cInfo ChatItem {content, meta = CIMeta {itemId}} <- withFastStore $ \db -> getChatItemByGroupId db vr user groupId
