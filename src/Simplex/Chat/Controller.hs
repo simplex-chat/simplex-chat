@@ -461,6 +461,7 @@ data ChatCommand
   | DeleteMyAddress
   | APIShowMyAddress UserId
   | ShowMyAddress
+  | APIAddShortLinkMyAddress UserId
   | APISetProfileAddress UserId Bool
   | SetProfileAddress Bool
   | APIAddressAutoAccept UserId (Maybe AutoAccept)
