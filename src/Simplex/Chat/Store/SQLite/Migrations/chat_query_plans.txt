@@ -502,19 +502,6 @@ Plan:
 SEARCH messages USING INDEX idx_messages_group_id_shared_msg_id (group_id=? AND shared_msg_id=?)
 
 Query: 
-            SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-              c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
-              c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-              c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
-            FROM connections c
-            JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
-            WHERE c.user_id = ? AND uc.user_id = ? AND uc.local_display_name = '' AND uc.group_id IS NULL
-          
-Plan:
-SEARCH uc USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
-SEARCH c USING INDEX idx_connections_user_contact_link_id (user_contact_link_id=?)
-
-Query: 
             SELECT chat_item_id, contact_id, group_id, group_scope_tag, group_scope_group_member_id, note_folder_id
             FROM chat_items
             WHERE user_id = ? AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'
@@ -2821,6 +2808,19 @@ Query:
       
 Plan:
 SEARCH uc USING INDEX idx_user_contact_links_group_id (group_id=?)
+SEARCH c USING INDEX idx_connections_user_contact_link_id (user_contact_link_id=?)
+
+Query: 
+        SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
+          c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
+          c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+          c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+        FROM connections c
+        JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
+        WHERE c.user_id = ? AND uc.user_id = ? AND uc.local_display_name = '' AND uc.group_id IS NULL
+      
+Plan:
+SEARCH uc USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
 SEARCH c USING INDEX idx_connections_user_contact_link_id (user_contact_link_id=?)
 
 Query: 
