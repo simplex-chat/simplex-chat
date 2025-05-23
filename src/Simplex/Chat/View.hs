@@ -532,6 +532,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
       ttyUser u ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
     TERcvFileSubError u RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e ->
       ttyUser u ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
+  CEvtCustomChatEvent u r -> ttyUser' u $ map plain $ T.lines r
   where
     ttyUser :: User -> [StyledString] -> [StyledString]
     ttyUser user@User {showNtfs, activeUser, viewPwdHash} ss

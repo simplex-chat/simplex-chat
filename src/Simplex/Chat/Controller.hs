@@ -854,6 +854,7 @@ data ChatEvent
   | CEvtChatErrors {chatErrors :: [ChatError]}
   | CEvtTimedAction {action :: String, durationMilliseconds :: Int64}
   | CEvtTerminalEvent TerminalEvent
+  | CEvtCustomChatEvent {user_ :: Maybe User, response :: Text}
   deriving (Show)
 
 data TerminalEvent
