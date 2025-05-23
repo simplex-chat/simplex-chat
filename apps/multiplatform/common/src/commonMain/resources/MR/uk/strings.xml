@@ -329,7 +329,7 @@
     <string name="tap_to_start_new_chat">Торкніться, щоб розпочати новий чат</string>
     <string name="chat_with_developers">Чат із розробниками</string>
     <string name="you_have_no_chats">У вас немає чатів</string>
-    <string name="observer_cant_send_message_title">Ви не можете відправляти повідомлення!</string>
+    <string name="observer_cant_send_message_title">ви спостерігач</string>
     <string name="observer_cant_send_message_desc">Будь ласка, зв\'яжіться з адміністратором групи.</string>
     <string name="file_will_be_received_when_contact_is_online">Файл буде отримано, коли ваш контакт буде в мережі, будь ласка, зачекайте або перевірте пізніше!</string>
     <string name="icon_descr_video_snd_complete">Відео відправлене</string>
@@ -2413,4 +2413,28 @@
     <string name="delete_member_support_chat_button">Видалити чат</string>
     <string name="delete_member_support_chat_alert_title">Видалити чат з учасником?</string>
     <string name="error_deleting_member_support_chat">Помилка видалення чату з учасником</string>
+    <string name="set_member_admission">Встановити прийом учасників</string>
+    <string name="save_admission_question">Зберегти налаштування прийому?</string>
+    <string name="snd_group_event_user_pending_review">Будь ласка, зачекайте, поки модератори групи розглянуть ваш запит на приєднання до групи.</string>
+    <string name="snd_group_event_member_accepted">ви прийняли цього учасника</string>
+    <string name="admission_stage_review">Схвалювати учасників</string>
+    <string name="member_criteria_off">вимкнено</string>
+    <string name="admission_stage_review_descr">Схвалювати учасників для вступу до групи.</string>
+    <string name="add_short_link">Додати коротке посилання</string>
+    <string name="cant_send_message_contact_not_synchronized">не синхронізовано</string>
+    <string name="reviewed_by_admins">схвалено адміністраторами</string>
+    <string name="group_member_status_pending_review">очікує на схвалення</string>
+    <string name="group_member_status_pending_review_short">перегляд</string>
+    <string name="cant_send_message_member_has_old_version">учасник використовує застарілу версію</string>
+    <string name="cant_send_message_mem_removed">видалено з групи</string>
+    <string name="report_sent_alert_title">Повідомлення надіслано модераторам</string>
+    <string name="cant_send_message_rejected">запит на приєднання відхилено</string>
+    <string name="cant_send_message_alert_title">Ви не можете надсилати повідомлення!</string>
+    <string name="report_sent_alert_msg_view_in_support_chat">Ви можете переглянути свої звіти у чаті з адміністраторами.</string>
+    <string name="rcv_group_event_new_member_pending_review">Новий учасник хоче приєднатися до групи.</string>
+    <string name="no_support_chats">Немає чатів з учасниками</string>
+    <string name="accept_pending_member_alert_question">Учасник приєднається до групи, прийняти учасника?</string>
+    <string name="reject_pending_member_button">Відхилити</string>
+    <string name="reject_pending_member_alert_title">Відхилити учасника?</string>
+    <string name="cant_send_message_you_left">ви вийшли</string>
 </resources>
