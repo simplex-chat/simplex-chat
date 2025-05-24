@@ -1574,7 +1574,9 @@ object ChatController {
     val userId = kotlin.runCatching { currentUserId("apiAddMyAddressShortLink") }.getOrElse { return null }
     val r = sendCmd(rh, CC.ApiAddMyAddressShortLink(userId))
     if (r is API.Result && r.res is CR.UserContactLink) return r.res.contactLink
-    Log.e(TAG, "apiAddMyAddressShortLink bad response: ${r.responseType} ${r.details}")
+    if (!(networkErrorAlert(r))) {
+      apiErrorAlert("apiAddMyAddressShortLink", generalGetString(MR.strings.error_creating_address), r)
+    }
     return null
   }
 
@@ -2027,7 +2029,9 @@ object ChatController {
   suspend fun apiAddGroupShortLink(rh: Long?, groupId: Long): Pair<CreatedConnLink, GroupMemberRole>? {
     val r = sendCmd(rh, CC.ApiAddGroupShortLink(groupId))
     if (r is API.Result && r.res is CR.GroupLink) return r.res.connLinkContact to r.res.memberRole
-    Log.e(TAG, "apiAddGroupShortLink bad response: ${r.responseType} ${r.details}")
+    if (!(networkErrorAlert(r))) {
+      apiErrorAlert("apiAddGroupShortLink", generalGetString(MR.strings.error_creating_link_for_group), r)
+    }
     return null
   }
 

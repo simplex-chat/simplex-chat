@@ -231,6 +231,8 @@ struct UserAddressView: View {
                 await MainActor.run { progressIndicator = false }
             } catch let error {
                 logger.error("apiAddMyAddressShortLink: \(responseError(error))")
+                let a = getErrorAlert(error, "Error creating address")
+                alert = .error(title: a.title, error: a.message)
                 await MainActor.run { progressIndicator = false }
             }
         }
