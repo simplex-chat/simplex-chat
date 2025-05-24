@@ -88,6 +88,7 @@ import Simplex.FileTransfer.Description (FileDescriptionURI (..), maxFileSize, m
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
 import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Agent.Store.Interface (execSQL)
 import Simplex.Messaging.Agent.Store.Shared (upMigration)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -197,7 +198,7 @@ startChatController mainApp enableSndFiles = do
       startExpireCIThread user
       setExpireCIFlag user True
       where
-        shouldExpireChats = 
+        shouldExpireChats =
           fmap (fromRight False) $ runExceptT $ withStore' $ \db -> do
             ttl <- getChatItemTTL db user
             ttlCount <- getChatTTLCount db user
@@ -3683,7 +3684,7 @@ startExpireCIThread user@User {userId} = do
         liftIO $ threadDelay' interval
 
 setChatItemsExpiration :: User -> Int64 -> Int -> CM' ()
-setChatItemsExpiration user newTTL ttlCount 
+setChatItemsExpiration user newTTL ttlCount
   | newTTL > 0 || ttlCount > 0 = do
       startExpireCIThread user
       whenM chatStarted $ setExpireCIFlag user True

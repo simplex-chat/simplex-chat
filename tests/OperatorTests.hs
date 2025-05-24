@@ -23,6 +23,7 @@ import Simplex.Chat.Operators.Presets
 import Simplex.Chat.Types
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.Messaging.Agent.Env.SQLite (ServerRoles (..), allRoles)
+import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Protocol
 import Test.Hspec
 

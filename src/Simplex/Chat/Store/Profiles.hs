@@ -111,6 +111,7 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode)
+import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 #if defined(dbPostgres)
@@ -500,14 +501,14 @@ toGroupLinkInfo (groupId_, mRole_) =
 
 getGroupLinkInfo :: DB.Connection -> UserId -> GroupId -> IO (Maybe GroupLinkInfo)
 getGroupLinkInfo db userId groupId =
-  fmap join $ maybeFirstRow toGroupLinkInfo $ 
+  fmap join $ maybeFirstRow toGroupLinkInfo $
     DB.query
       db
       [sql|
         SELECT group_id, group_link_member_role
         FROM user_contact_links
         WHERE user_id = ? AND group_id = ?
-      |]      
+      |]
       (userId, groupId)
 
 getUserContactLinkByConnReq :: DB.Connection -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe UserContactLink)
