@@ -31,6 +31,7 @@ fun SimpleXCreatedLinkQRCode(
 ) {
   QRCode(
     connLink.simplexChatUri(short),
+    small = short && connLink.connShortLink != null,
     modifier,
     padding,
     tintColor,
@@ -42,6 +43,7 @@ fun SimpleXCreatedLinkQRCode(
 @Composable
 fun SimpleXLinkQRCode(
   connReq: String,
+  small: Boolean = false,
   modifier: Modifier = Modifier,
   padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING * 2f, vertical = DEFAULT_PADDING_HALF),
   tintColor: Color = Color(0xff062d56),
@@ -50,6 +52,7 @@ fun SimpleXLinkQRCode(
 ) {
   QRCode(
     simplexChatLink(connReq),
+    small,
     modifier,
     padding,
     tintColor,
@@ -61,6 +64,7 @@ fun SimpleXLinkQRCode(
 @Composable
 fun QRCode(
   connReq: String,
+  small: Boolean = false,
   modifier: Modifier = Modifier,
   padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING * 2f, vertical = DEFAULT_PADDING_HALF),
   tintColor: Color = Color(0xff062d56),
@@ -68,23 +72,26 @@ fun QRCode(
   onShare: (() -> Unit)? = null,
 ) {
   val scope = rememberCoroutineScope()
+  val logoSize = if (small) 0.21f else 0.16f
+  val errorLevel = if (small) QrCode.ErrorLevel.M else QrCode.ErrorLevel.L
   val qr = remember(connReq, tintColor, withLogo) {
-    qrCodeBitmap(connReq, 1024).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
-      .let { if (withLogo) it.addLogo() else it }
+    qrCodeBitmap(connReq, 1024, errorLevel).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
+      .let { if (withLogo) it.addLogo(logoSize) else it }
   }
   Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
     Image(
       bitmap = qr,
       contentDescription = stringResource(MR.strings.image_descr_qr_code),
       Modifier
+        .fillMaxWidth(if (small) 0.7f else 1f)
         .padding(padding)
         .widthIn(max = 400.dp)
         .aspectRatio(1f)
         .then(modifier)
         .clickable {
           scope.launch {
-            val image = qrCodeBitmap(connReq, 1024).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
-              .let { if (withLogo) it.addLogo() else it }
+            val image = qrCodeBitmap(connReq, 1024, errorLevel).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
+              .let { if (withLogo) it.addLogo(logoSize) else it }
             val file = saveTempImageUncompressed(image, true)
             if (file != null) {
               shareFile("", CryptoFile.plain(file.absolutePath))
@@ -96,8 +103,8 @@ fun QRCode(
   }
 }
 
-fun qrCodeBitmap(content: String, size: Int = 1024): ImageBitmap {
-  val qrCode = QrCodeEncoder().addAutomatic(content).setError(QrCode.ErrorLevel.L).fixate()
+fun qrCodeBitmap(content: String, size: Int = 1024, errorLevel: QrCode.ErrorLevel): ImageBitmap {
+  val qrCode = QrCodeEncoder().addAutomatic(content).setError(errorLevel).fixate()
   /** See [QrCodeGeneratorImage.initialize] and [FiducialImageEngine.configure] for size calculation */
   val numModules = QrCode.totalModules(qrCode.version)
   // Hide border on light themes to make it fit to the same place as camera in QRCodeScanner.
