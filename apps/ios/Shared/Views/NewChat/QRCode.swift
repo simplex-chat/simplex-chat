@@ -12,11 +12,12 @@ import SimpleXChat
 
 struct MutableQRCode: View {
     @Binding var uri: String
+    var small: Bool = false
     var withLogo: Bool = true
     var tintColor = UIColor(red: 0.023, green: 0.176, blue: 0.337, alpha: 1)
 
     var body: some View {
-        QRCode(uri: uri, withLogo: withLogo, tintColor: tintColor)
+        QRCode(uri: uri, small: small, withLogo: withLogo, tintColor: tintColor)
             .id("simplex-qrcode-view-for-\(uri)")
     }
 }
@@ -33,13 +34,12 @@ struct SimpleXCreatedLinkQRCode: View {
 
 struct SimpleXLinkQRCode: View {
     let uri: String
-    var small: Bool = false
     var withLogo: Bool = true
     var tintColor = UIColor(red: 0.023, green: 0.176, blue: 0.337, alpha: 1)
     var onShare: (() -> Void)? = nil
 
     var body: some View {
-        QRCode(uri: simplexChatLink(uri), small: small, withLogo: withLogo, tintColor: tintColor, onShare: onShare)
+        QRCode(uri: simplexChatLink(uri), small: uri.count < 200, withLogo: withLogo, tintColor: tintColor, onShare: onShare)
     }
 }
 

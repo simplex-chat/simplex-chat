@@ -43,7 +43,6 @@ fun SimpleXCreatedLinkQRCode(
 @Composable
 fun SimpleXLinkQRCode(
   connReq: String,
-  small: Boolean = false,
   modifier: Modifier = Modifier,
   padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING * 2f, vertical = DEFAULT_PADDING_HALF),
   tintColor: Color = Color(0xff062d56),
@@ -52,7 +51,7 @@ fun SimpleXLinkQRCode(
 ) {
   QRCode(
     simplexChatLink(connReq),
-    small,
+    small = connReq.count() < 200,
     modifier,
     padding,
     tintColor,
@@ -83,9 +82,9 @@ fun QRCode(
       bitmap = qr,
       contentDescription = stringResource(MR.strings.image_descr_qr_code),
       Modifier
-        .fillMaxWidth(if (small) 0.7f else 1f)
         .padding(padding)
         .widthIn(max = 400.dp)
+        .fillMaxWidth(if (small) 0.7f else 1f)
         .aspectRatio(1f)
         .then(modifier)
         .clickable {
