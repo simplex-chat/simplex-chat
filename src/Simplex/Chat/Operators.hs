@@ -37,7 +37,6 @@ import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isNothing, mapMaybe)
-import Data.Scientific (floatingOrInteger)
 import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Text (Text)
@@ -46,11 +45,11 @@ import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime, nominalDay)
 import Language.Haskell.TH.Syntax (lift)
 import Simplex.Chat.Operators.Conditions
-import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types (User)
 import Simplex.Chat.Types.Util (textParseJSON)
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
-import Simplex.Messaging.Agent.Store.DB (fromTextField_)
+import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
+import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtocolType (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
@@ -68,32 +67,6 @@ usageConditionsText =
   $( let s = $(embedFile =<< makeRelativeToProject "PRIVACY.md")
       in [|stripFrontMatter $(lift (safeDecodeUtf8 s))|]
    )
-
-data DBStored = DBStored | DBNew
-
-data SDBStored (s :: DBStored) where
-  SDBStored :: SDBStored 'DBStored
-  SDBNew :: SDBStored 'DBNew
-
-deriving instance Show (SDBStored s)
-
-class DBStoredI s where sdbStored :: SDBStored s
-
-instance DBStoredI 'DBStored where sdbStored = SDBStored
-
-instance DBStoredI 'DBNew where sdbStored = SDBNew
-
-data DBEntityId' (s :: DBStored) where
-  DBEntityId :: Int64 -> DBEntityId' 'DBStored
-  DBNewEntity :: DBEntityId' 'DBNew
-
-deriving instance Show (DBEntityId' s)
-
-deriving instance Eq (DBEntityId' s)
-
-type DBEntityId = DBEntityId' 'DBStored
-
-type DBNewEntity = DBEntityId' 'DBNew
 
 data OperatorTag = OTSimplex | OTFlux
   deriving (Eq, Ord, Show)
@@ -117,19 +90,6 @@ instance TextEncoding OperatorTag where
   textEncode = \case
     OTSimplex -> "simplex"
     OTFlux -> "flux"
-
--- this and other types only define instances of serialization for known DB IDs only,
--- entities without IDs cannot be serialized to JSON
-instance FromField DBEntityId
-#if defined(dbPostgres)
-  where
-    fromField f dat = DBEntityId <$> fromField f dat
-#else
-  where
-    fromField f = DBEntityId <$> fromField f
-#endif
-
-instance ToField DBEntityId where toField (DBEntityId i) = toField i
 
 data UsageConditions = UsageConditions
   { conditionsId :: Int64,
@@ -485,25 +445,6 @@ validateUserServers curr others = currUserErrs <> concatMap otherUserErrs others
           | otherwise = (S.insert h hs, dups)
     userServers :: (UserServersClass u, UserProtocol p) => SProtocolType p -> [u] -> [AUserServer p]
     userServers p = map aUserServer' . concatMap (servers' p)
-
-instance ToJSON (DBEntityId' s) where
-  toEncoding = \case
-    DBEntityId i -> toEncoding i
-    DBNewEntity -> JE.null_
-  toJSON = \case
-    DBEntityId i -> toJSON i
-    DBNewEntity -> J.Null
-
-instance DBStoredI s => FromJSON (DBEntityId' s) where
-  parseJSON v = case (v, sdbStored @s) of
-    (J.Null, SDBNew) -> pure DBNewEntity
-    (J.Number n, SDBStored) -> case floatingOrInteger n of
-      Left (_ :: Double) -> fail "bad DBEntityId"
-      Right i -> pure $ DBEntityId (fromInteger i)
-    _ -> fail "bad DBEntityId"
-  omittedField = case sdbStored @s of
-    SDBStored -> Nothing
-    SDBNew -> Just DBNewEntity
 
 $(JQ.deriveJSON defaultJSON ''UsageConditions)
 
