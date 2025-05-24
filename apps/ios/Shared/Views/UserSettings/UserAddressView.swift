@@ -224,13 +224,15 @@ struct UserAddressView: View {
         progressIndicator = true
         Task {
             do {
-                let userAddress = try await apiAddShortLinkMyAddress()
+                let userAddress = try await apiAddMyAddressShortLink()
                 await MainActor.run {
                     chatModel.userAddress = userAddress
                 }
                 await MainActor.run { progressIndicator = false }
             } catch let error {
-                logger.error("apiAddShortLinkMyAddress: \(responseError(error))")
+                logger.error("apiAddMyAddressShortLink: \(responseError(error))")
+                let a = getErrorAlert(error, "Error creating address")
+                alert = .error(title: a.title, error: a.message)
                 await MainActor.run { progressIndicator = false }
             }
         }

@@ -373,7 +373,7 @@ data ChatCommand
   | APIGroupLinkMemberRole GroupId GroupMemberRole
   | APIDeleteGroupLink GroupId
   | APIGetGroupLink GroupId
-  | APIAddShortLinkGroupLink GroupId
+  | APIAddGroupShortLink GroupId
   | APICreateMemberContact GroupId GroupMemberId
   | APISendMemberContactInvitation {contactId :: ContactId, msgContent_ :: Maybe MsgContent}
   | GetUserProtoServers AProtocolType
@@ -462,7 +462,7 @@ data ChatCommand
   | DeleteMyAddress
   | APIShowMyAddress UserId
   | ShowMyAddress
-  | APIAddShortLinkMyAddress UserId
+  | APIAddMyAddressShortLink UserId
   | APISetProfileAddress UserId Bool
   | SetProfileAddress Bool
   | APIAddressAutoAccept UserId (Maybe AutoAccept)

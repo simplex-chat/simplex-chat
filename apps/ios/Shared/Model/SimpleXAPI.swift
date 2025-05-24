@@ -1210,9 +1210,9 @@ private func userAddressResponse(_ r: APIResult<ChatResponse1>) throws -> UserCo
     }
 }
 
-func apiAddShortLinkMyAddress() async throws -> UserContactLink {
-    let userId = try currentUserId("apiAddShortLinkMyAddress")
-    let r: ChatResponse1 = try await chatSendCmd(.apiAddShortLinkMyAddress(userId: userId))
+func apiAddMyAddressShortLink() async throws -> UserContactLink {
+    let userId = try currentUserId("apiAddMyAddressShortLink")
+    let r: ChatResponse1 = try await chatSendCmd(.apiAddMyAddressShortLink(userId: userId))
     if case let .userContactLink(_, contactLink) = r { return contactLink }
     throw r.unexpected
 }
@@ -1743,8 +1743,8 @@ func apiGetGroupLink(_ groupId: Int64) throws -> (CreatedConnLink, GroupMemberRo
     }
 }
 
-func apiAddShortLinkGroupLink(_ groupId: Int64) async throws -> (CreatedConnLink, GroupMemberRole) {
-    let r: ChatResponse2 = try await chatSendCmd(.apiAddShortLinkGroupLink(groupId: groupId))
+func apiAddGroupShortLink(_ groupId: Int64) async throws -> (CreatedConnLink, GroupMemberRole) {
+    let r: ChatResponse2 = try await chatSendCmd(.apiAddGroupShortLink(groupId: groupId))
     if case let .groupLink(_, _, connLink, memberRole) = r { return (connLink, memberRole) }
     throw r.unexpected
 }

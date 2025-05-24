@@ -5794,7 +5794,7 @@ Query: SELECT user_contact_link_id FROM contact_requests WHERE contact_request_i
 Plan:
 SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: SELECT user_contact_link_id, conn_req_contact, short_link_contact, group_link_member_role FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1
+Query: SELECT user_contact_link_id, conn_req_contact, short_link_contact, group_link_id, group_link_member_role FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1
 Plan:
 SEARCH user_contact_links USING INDEX idx_user_contact_links_group_id (group_id=?)
 
