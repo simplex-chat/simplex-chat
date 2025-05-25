@@ -2510,4 +2510,5 @@
     <string name="cant_send_message_generic">Es können keine Nachrichten gesendet werden</string>
     <string name="cant_send_message_contact_deleted">Kontakt gelöscht</string>
     <string name="cant_send_message_member_has_old_version">Das Mitglied hat eine alte App-Version</string>
+    <string name="add_short_link">Verkürzten Link hinzufügen</string>
 </resources>
