@@ -1742,6 +1742,13 @@ processChatCommand' vr = \case
     ok_
   APIPrepareGroup userId groupLinkData link -> withUserId userId $ \user -> do
     ok_
+  -- TODO [short links] change prepared entity user
+  -- TODO  - UI would call these APIs before APIConnectPrepared... APIs
+  -- TODO  - UI to transition to new user keeping chat opened
+  APIChangeContactUser contactId newUserId -> withUser $ \user -> do
+    ok_
+  APIChangeGroupUser groupId newUserId -> withUser $ \user -> do
+    ok_
   -- TODO [short links] connect to prepared entity
   -- TODO  - UI would call these APIs from ChatView on user action after entity is prepared
   -- TODO  - APIs to call APIConnect
@@ -4317,6 +4324,8 @@ chatCommandP =
       "/_prepare invitation contact" *> (APIPrepareInvitationContact <$> A.decimal <* A.space <*> jsonP <* A.space <*> connLinkP),
       "/_prepare address contact" *> (APIPrepareAddressContact <$> A.decimal <* A.space <*> jsonP <* A.space <*> connLinkP),
       "/_prepare group" *> (APIPrepareGroup <$> A.decimal <* A.space <*> jsonP <* A.space <*> connLinkP),
+      "/_set contact user @" *> (APIChangeContactUser <$> A.decimal <* A.space <*> A.decimal),
+      "/_set group user #" *> (APIChangeGroupUser <$> A.decimal <* A.space <*> A.decimal),
       "/_connect invitation contact @" *> (APIConnectPreparedInvitationContact <$> A.decimal <*> optional (A.space *> msgContentP)),
       "/_connect address contact @" *> (APIConnectPreparedInvitationContact <$> A.decimal <*> optional (A.space *> msgContentP)),
       "/_connect group $" *> (APIConnectPreparedInvitationContact <$> A.decimal),

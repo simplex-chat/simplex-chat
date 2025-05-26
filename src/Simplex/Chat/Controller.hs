@@ -451,6 +451,8 @@ data ChatCommand
   | APIPrepareInvitationContact UserId InvitationLinkData ACreatedConnLink
   | APIPrepareAddressContact UserId AddressLinkData ACreatedConnLink
   | APIPrepareGroup UserId GroupLinkData ACreatedConnLink
+  | APIChangeContactUser ContactId UserId
+  | APIChangeGroupUser GroupId UserId
   | APIConnectPreparedInvitationContact {contactId :: ContactId, msgContent_ :: Maybe MsgContent}
   | APIConnectPreparedAddressContact {contactId :: ContactId, msgContent_ :: Maybe MsgContent}
   | APIConnectPreparedGroup GroupId
