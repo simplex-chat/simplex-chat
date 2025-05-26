@@ -1728,12 +1728,36 @@ processChatCommand' vr = \case
         pure conn'
   APIConnectPlan userId cLink -> withUserId userId $ \user ->
     uncurry (CRConnectionPlan user) <$> connectPlan user cLink
-  -- TODO [short links] prepare entity (UI would call these APIs after Ok connection plans with short link data)
-  APIPrepareInvitationContact userId invLinkData -> withUserId userId $ \user ->
+  -- TODO [short links] prepare entity
+  -- TODO  - UI would call these APIs after Ok connection plans with short link data
+  -- TODO  - Persist ACreatedConnLink to be used for connection later on user action:
+  -- TODO    - `link` to contacts.inv_conn_req_to_connect, contacts.addr_conn_req_to_connect, groups.conn_req_to_connect
+  -- TODO    - prepared "invitation" and "address" contacts have to be differentiated,
+  -- TODO      for example to warn user before deleting "invitation" contact, hence two fields
+  -- TODO  - Alternatively, entity can be prepared without user action during Ok plans
+  -- TODO    to avoid extra user action, then these APIs can be avoided altogether
+  APIPrepareInvitationContact userId invLinkData link -> withUserId userId $ \user -> do
     ok_
-  APIPrepareAddressContact userId addrLinkData -> withUserId userId $ \user ->
+  APIPrepareAddressContact userId addrLinkData link -> withUserId userId $ \user -> do
     ok_
-  APIPrepareGroup userId groupLinkData -> withUserId userId $ \user ->
+  APIPrepareGroup userId groupLinkData link -> withUserId userId $ \user -> do
+    ok_
+  -- TODO [short links] connect to prepared entity
+  -- TODO  - UI would call these APIs from ChatView on user action after entity is prepared
+  -- TODO  - APIs to call APIConnect
+  -- TODO  - or new API for asynchronous connection? keep APIConnect for legacy links?
+  APIConnectPreparedInvitationContact contactId msgContent_ -> withUser $ \user -> do
+    -- TODO [short links] connect to prepared "invitation" contact
+    -- TODO  - optional message to be sent on successful "sender secure"?
+    -- TODO  - call APIConnect, wait for synchronous (successful) response?
+    -- TODO  - or persist message and queue it asynchronously?
+    -- TODO  - rework agent to allow queueing messages for New connections?
+    ok_
+  APIConnectPreparedAddressContact contactId msgContent_ -> withUser $ \user -> do
+    -- TODO [short links] connect to prepared "address" contact
+    -- TODO  - optional message to be sent in contact request
+    ok_
+  APIConnectPreparedGroup groupId -> withUser $ \user -> do
     ok_
   APIConnect userId incognito (Just (ACCL SCMInvitation (CCLink cReq@(CRInvitationUri crData e2e) sLnk_))) -> withUserId userId $ \user -> withInvitationLock "connect" (strEncode cReq) . procCmd $ do
     subMode <- chatReadVar subscriptionMode
@@ -1746,6 +1770,9 @@ processChatCommand' vr = \case
       Just (agentV, pqSup') -> do
         let chatV = agentToChatVersion agentV
         dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
+        -- TODO [short links] use short link data on connection:
+        -- TODO  - new connection (Nothing) is only for legacy links
+        -- TODO  - existing contact is new normal (allow existing connection to have contact or change approach)
         withFastStore' (\db -> getConnectionEntityByConnReq db vr user cReqs) >>= \case
           Nothing -> joinNewConn chatV dm
           Just (RcvDirectMsgConnection conn@Connection {connId, connStatus, contactConnInitiated} Nothing)
@@ -4287,6 +4314,12 @@ chatCommandP =
       "/_contacts " *> (APIListContacts <$> A.decimal),
       "/contacts" $> ListContacts,
       "/_connect plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> strP),
+      "/_prepare invitation contact" *> (APIPrepareInvitationContact <$> A.decimal <* A.space <*> jsonP <* A.space <*> connLinkP),
+      "/_prepare address contact" *> (APIPrepareAddressContact <$> A.decimal <* A.space <*> jsonP <* A.space <*> connLinkP),
+      "/_prepare group" *> (APIPrepareGroup <$> A.decimal <* A.space <*> jsonP <* A.space <*> connLinkP),
+      "/_connect invitation contact @" *> (APIConnectPreparedInvitationContact <$> A.decimal <*> optional (A.space *> msgContentP)),
+      "/_connect address contact @" *> (APIConnectPreparedInvitationContact <$> A.decimal <*> optional (A.space *> msgContentP)),
+      "/_connect group $" *> (APIConnectPreparedInvitationContact <$> A.decimal),
       "/_connect " *> (APIAddContact <$> A.decimal <*> shortOnOffP <*> incognitoOnOffP),
       "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <* A.space <*> connLinkP),
       "/_set incognito :" *> (APISetConnectionIncognito <$> A.decimal <* A.space <*> onOffP),
