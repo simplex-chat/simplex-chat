@@ -1,10 +1,5 @@
 package chat.simplex.common.views.chat.item
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
-import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.material.MaterialTheme
@@ -46,6 +41,7 @@ private val typingIndicators: List<AnnotatedString> = listOf(
   typing() + typing(FontWeight.Bold) + typing(FontWeight.Black),
   typing() + typing() + typing(FontWeight.Bold)
 )
+
 
 private fun typingIndicator(recent: Boolean, typingIdx: Int): AnnotatedString = buildAnnotatedString {
   pushStyle(SpanStyle(color = CurrentColors.value.colors.secondary, fontFamily = FontFamily.Monospace, letterSpacing = (-1).sp))
@@ -188,20 +184,14 @@ fun MarkdownText (
         if (meta?.isLive == true) {
           append(typingIndicator(meta.recent, typingIdx))
         }
-        if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
+        // With RTL language set globally links looks bad sometimes, better to add a new line to bo sure everything looks good
+        /*if (metaText != null && hasLinks && LocalLayoutDirection.current == LayoutDirection.Rtl)
+          withStyle(reserveTimestampStyle) { append("\n" + metaText) }
+        else */if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
-
       if (hasAnnotations && uriHandler != null) {
         val icon = remember { mutableStateOf(PointerIcon.Default) }
-        val clipboardManager = LocalClipboardManager.current
-        val context = LocalContext.current
-
-        ClickableText(
-          annotatedText,
-          style = style,
-          modifier = modifier.pointerHoverIcon(icon.value),
-          maxLines = maxLines,
-          overflow = overflow,
+        ClickableText(annotatedText, style = style, modifier = modifier.pointerHoverIcon(icon.value), maxLines = maxLines, overflow = overflow,
           onLongClick = { offset ->
             annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
               .firstOrNull()?.let { annotation -> onLinkLongClick(annotation.item) }
@@ -214,7 +204,9 @@ fun MarkdownText (
                 try {
                   uriHandler.openUri(annotation.item)
                 } catch (e: Exception) {
-                  Log.e("MarkdownText", "Open url: ${e.stackTraceToString()}")
+                  // It can happen, for example, when you click on a text 0.00001 but don't have any app that can catch
+                  // `tel:` scheme in url installed on a device (no phone app or contacts, maybe)
+                  Log.e(TAG, "Open url: ${e.stackTraceToString()}")
                 }
               }
             annotatedText.getStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
@@ -227,29 +219,21 @@ fun MarkdownText (
                 showSecrets[key] = !(showSecrets[key] ?: false)
               }
           },
-          onDoubleTap = { offset ->
-            annotatedText.getStringAnnotations(tag = "SECRET", start = offset, end = offset)
-              .firstOrNull()?.let { annotation ->
-                val key = annotation.item
-                // Copy the secret text to clipboard
-                val secretText = annotatedText.text
-                clipboardManager.setText(AnnotatedString(secretText))
-                Toast.makeText(context, "Secret text copied to clipboard", Toast.LENGTH_SHORT).show()
-                Log.d("MarkdownText", "Secret text copied on double tap (key=$key)")
-              }
-          },
           onHover = { offset ->
             icon.value = annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
-              .firstOrNull()?.let { PointerIcon.Hand }
-              ?: annotatedText.getStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
-                .firstOrNull()?.let { PointerIcon.Hand }
-                      ?: annotatedText.getStringAnnotations(tag = "SECRET", start = offset, end = offset)
-                .firstOrNull()?.let { PointerIcon.Hand }
-                      ?: PointerIcon.Default
+              .firstOrNull()?.let {
+                PointerIcon.Hand
+              } ?: annotatedText.getStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
+              .firstOrNull()?.let {
+                PointerIcon.Hand
+              } ?: annotatedText.getStringAnnotations(tag = "SECRET", start = offset, end = offset)
+              .firstOrNull()?.let {
+                PointerIcon.Hand
+              } ?: PointerIcon.Default
           },
           shouldConsumeEvent = { offset ->
-            annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset).any() ||
-                    annotatedText.getStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset).any()
+            annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset).any()
+            annotatedText.getStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset).any()
           }
         )
       } else {
@@ -270,39 +254,39 @@ fun ClickableText(
   onTextLayout: (TextLayoutResult) -> Unit = {},
   onClick: (Int) -> Unit,
   onLongClick: (Int) -> Unit = {},
-  onDoubleTap: (Int) -> Unit = {},
   onHover: (Int) -> Unit = {},
   shouldConsumeEvent: (Int) -> Boolean
 ) {
   val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
-  val pressIndicator = Modifier.pointerInput(onClick, onLongClick, onDoubleTap) {
-    detectTapGestures(
-      onDoubleTap = { pos ->
-        layoutResult.value?.let { layoutResult ->
-          onDoubleTap(layoutResult.getOffsetForPosition(pos))
-        }
-      },
-      onLongPress = { pos ->
-        layoutResult.value?.let { layoutResult ->
-          onLongClick(layoutResult.getOffsetForPosition(pos))
-        }
-      },
-      onTap = { pos ->
-        layoutResult.value?.let { layoutResult ->
+  val pressIndicator = Modifier.pointerInput(onClick, onLongClick) {
+    detectGesture(onLongPress = { pos ->
+      layoutResult.value?.let { layoutResult ->
+        onLongClick(layoutResult.getOffsetForPosition(pos))
+      }
+    }, onPress = { pos ->
+      layoutResult.value?.let { layoutResult ->
+        val res  = tryAwaitRelease()
+        if (res) {
           onClick(layoutResult.getOffsetForPosition(pos))
         }
       }
+    }, shouldConsumeEvent = { pos ->
+      var consume = false
+      layoutResult.value?.let { layoutResult ->
+        consume = shouldConsumeEvent(layoutResult.getOffsetForPosition(pos))
+      }
+      consume
+    }
     )
-  }
-    .pointerInput(onHover) {
-      if (appPlatform.isDesktop) {
-        detectCursorMove { pos ->
-          layoutResult.value?.let { layoutResult ->
-            onHover(layoutResult.getOffsetForPosition(pos))
-          }
+  }.pointerInput(onHover) {
+    if (appPlatform.isDesktop) {
+      detectCursorMove { pos ->
+        layoutResult.value?.let { layoutResult ->
+          onHover(layoutResult.getOffsetForPosition(pos))
         }
       }
     }
+  }
 
   BasicText(
     text = text,
