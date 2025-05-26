@@ -4328,7 +4328,7 @@ chatCommandP =
       "/_set group user #" *> (APIChangeGroupUser <$> A.decimal <* A.space <*> A.decimal),
       "/_connect invitation contact @" *> (APIConnectPreparedInvitationContact <$> A.decimal <*> optional (A.space *> msgContentP)),
       "/_connect address contact @" *> (APIConnectPreparedInvitationContact <$> A.decimal <*> optional (A.space *> msgContentP)),
-      "/_connect group $" *> (APIConnectPreparedInvitationContact <$> A.decimal),
+      "/_connect group $" *> (APIConnectPreparedGroup <$> A.decimal),
       "/_connect " *> (APIAddContact <$> A.decimal <*> shortOnOffP <*> incognitoOnOffP),
       "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <* A.space <*> connLinkP),
       "/_set incognito :" *> (APISetConnectionIncognito <$> A.decimal <* A.space <*> onOffP),
