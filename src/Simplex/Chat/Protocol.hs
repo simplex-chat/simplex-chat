@@ -340,6 +340,8 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XFileCancel :: SharedMsgId -> ChatMsgEvent 'Json
   XInfo :: Profile -> ChatMsgEvent 'Json
   XContact :: Profile -> Maybe XContactId -> ChatMsgEvent 'Json
+  -- TODO [short links] add optional message for connection requests
+  -- XContact :: Profile -> Maybe XContactId -> Maybe MsgContent -> ChatMsgEvent 'Json
   XDirectDel :: ChatMsgEvent 'Json
   XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
   XGrpAcpt :: MemberId -> ChatMsgEvent 'Json
