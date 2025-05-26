@@ -84,7 +84,7 @@ fun QRCode(
       Modifier
         .padding(padding)
         .widthIn(max = 400.dp)
-        .fillMaxWidth(if (small) 0.67f else 1f)
+        .fillMaxWidth(if (small) 0.63f else 1f)
         .aspectRatio(1f)
         .then(modifier)
         .clickable {
