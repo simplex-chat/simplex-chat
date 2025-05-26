@@ -448,7 +448,7 @@ data ChatCommand
   | APISetConnectionIncognito Int64 IncognitoEnabled
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
   | APIConnectPlan UserId AConnectionLink
-  | APIConnect UserId IncognitoEnabled (Maybe ACreatedConnLink)
+  | APIConnect UserId IncognitoEnabled (Maybe ShortLinkData) (Maybe ACreatedConnLink)
   | Connect IncognitoEnabled (Maybe AConnectionLink)
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
@@ -1002,6 +1002,13 @@ connectionPlanProceed = \case
     GLPConnectingConfirmReconnect -> True
     _ -> False
   CPError _ -> True
+
+planShortLinkData :: ConnectionPlan -> Maybe ShortLinkData
+planShortLinkData = \case
+  CPInvitationLink (ILPOk (Just ild)) -> Just $ SLDInvitation ild
+  CPContactAddress (CAPOk (Just ald)) -> Just $ SLDAddress ald
+  CPGroupLink (GLPOk (Just gld)) -> Just $ SLDGroup gld
+  _ -> Nothing
 
 data ForwardConfirmation
   = FCFilesNotAccepted {fileIds :: [FileTransferId]}
