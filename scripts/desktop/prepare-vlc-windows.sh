@@ -10,10 +10,13 @@ vlc_dir=$root_dir/apps/multiplatform/common/src/commonMain/cpp/desktop/libs/wind
 rm -rf $vlc_dir
 mkdir -p $vlc_dir/vlc || exit 0
 
+vlc_tag='v3.0.21-1'
+vlc_url="https://github.com/simplex-chat/vlc/releases/download/${vlc_tag}/vlc-win-x86_64.zip"
+
 cd /tmp
 mkdir tmp 2>/dev/null || true
 cd tmp
-curl --tlsv1.2 https://irltoolkit.mm.fcix.net/videolan-ftp/vlc/3.0.18/win64/vlc-3.0.18-win64.zip -L -o vlc
+curl --tlsv1.2 "${vlc_url}" -L -o vlc
 $WINDIR\\System32\\tar.exe -xf vlc
 cd vlc-*
 # Setting the same date as the date that will be on the file after extraction from JAR to make VLC cache checker happy
