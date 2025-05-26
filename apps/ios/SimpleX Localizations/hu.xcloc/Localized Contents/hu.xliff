@@ -1191,9 +1191,9 @@ swipe action</note>
         <target>Téves üzenet ID</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bad message hash" xml:space="preserve">
+      <trans-unit id="Bad message hash" xml:space="preserve" approved="no">
         <source>Bad message hash</source>
-        <target>Érvénytelen az üzenet hasítóértéke</target>
+        <target state="translated">Érvénytelen az üzenet ellenőrzőösszege</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better calls" xml:space="preserve">
@@ -7835,9 +7835,9 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>Az üzenetváltás jövője</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The hash of the previous message is different." xml:space="preserve">
+      <trans-unit id="The hash of the previous message is different." xml:space="preserve" approved="no">
         <source>The hash of the previous message is different.</source>
-        <target>Az előző üzenet hasítóértéke különbözik.</target>
+        <target state="translated">Az előző üzenet ellenőrzőösszege különbözik.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve">
@@ -9333,9 +9333,9 @@ Megismétli a meghívási kérést?</target>
         <target>téves üzenet ID</target>
         <note>integrity error chat item</note>
       </trans-unit>
-      <trans-unit id="bad message hash" xml:space="preserve">
+      <trans-unit id="bad message hash" xml:space="preserve" approved="no">
         <source>bad message hash</source>
-        <target>érvénytelen az üzenet hasítóértéke</target>
+        <target state="translated">érvénytelen az üzenet ellenőrzőösszege</target>
         <note>integrity error chat item</note>
       </trans-unit>
       <trans-unit id="blocked" xml:space="preserve">
