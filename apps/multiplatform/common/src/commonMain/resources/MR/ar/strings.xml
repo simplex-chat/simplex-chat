@@ -2424,4 +2424,5 @@
     <string name="reviewed_by_admins">رُجع من قِبل المُدراء</string>
     <string name="no_support_chats">لا دردشات مع الأعضاء</string>
     <string name="cant_send_message_member_has_old_version">العضو لديه نُسخة قديمة</string>
+    <string name="add_short_link">أضف رابط قصير</string>
 </resources>
