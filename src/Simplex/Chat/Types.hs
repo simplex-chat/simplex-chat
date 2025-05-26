@@ -649,6 +649,23 @@ instance ToField ImageData where toField (ImageData t) = toField t
 
 deriving newtype instance FromField ImageData
 
+-- TODO [short links] StrEncoding instances?
+data InvitationLinkData = InvitationLinkData
+  { profile :: Profile
+  }
+  deriving (Show)
+
+data AddressLinkData = AddressLinkData
+  { profile :: Profile,
+    welcomeMessage :: Maybe Text
+  }
+  deriving (Show)
+
+data GroupLinkData = GroupLinkData
+  { groupProfile :: GroupProfile
+  }
+  deriving (Show)
+
 data CReqClientData = CRDataGroup {groupLinkId :: GroupLinkId}
 
 newtype GroupLinkId = GroupLinkId {unGroupLinkId :: ByteString} -- used to identify invitation via group link
@@ -1915,6 +1932,12 @@ $(JQ.deriveJSON defaultJSON ''GroupSummary)
 instance FromField MsgFilter where fromField = fromIntField_ msgFilterIntP
 
 instance ToField MsgFilter where toField = toField . msgFilterInt
+
+$(JQ.deriveJSON defaultJSON ''InvitationLinkData)
+
+$(JQ.deriveJSON defaultJSON ''AddressLinkData)
+
+$(JQ.deriveJSON defaultJSON ''GroupLinkData)
 
 $(JQ.deriveJSON defaultJSON ''CReqClientData)
 

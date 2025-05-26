@@ -1818,7 +1818,7 @@ viewConnectionUserChanged User {localDisplayName = n} PendingContactConnection {
 viewConnectionPlan :: ChatConfig -> ConnectionPlan -> [StyledString]
 viewConnectionPlan ChatConfig {logLevel, testView} = \case
   CPInvitationLink ilp -> case ilp of
-    ILPOk -> [invLink "ok to connect"]
+    ILPOk _invLinkData -> [invLink "ok to connect"]
     ILPOwnLink -> [invLink "own link"]
     ILPConnecting Nothing -> [invLink "connecting"]
     ILPConnecting (Just ct) -> [invLink ("connecting to contact " <> ttyContact' ct)]
@@ -1829,7 +1829,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} = \case
     where
       invLink = ("invitation link: " <>)
   CPContactAddress cap -> case cap of
-    CAPOk -> [ctAddr "ok to connect"]
+    CAPOk _addrLinkData -> [ctAddr "ok to connect"]
     CAPOwnLink -> [ctAddr "own address"]
     CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
     CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
@@ -1841,7 +1841,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} = \case
     where
       ctAddr = ("contact address: " <>)
   CPGroupLink glp -> case glp of
-    GLPOk -> [grpLink "ok to connect"]
+    GLPOk _groupLinkData -> [grpLink "ok to connect"]
     GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
     GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
     GLPConnectingProhibit Nothing -> [grpLink "connecting"]

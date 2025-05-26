@@ -961,14 +961,14 @@ data ConnectionPlan
   deriving (Show)
 
 data InvitationLinkPlan
-  = ILPOk
+  = ILPOk {invLinkData_ :: Maybe InvitationLinkData}
   | ILPOwnLink
   | ILPConnecting {contact_ :: Maybe Contact}
   | ILPKnown {contact :: Contact}
   deriving (Show)
 
 data ContactAddressPlan
-  = CAPOk
+  = CAPOk {addrLinkData_ :: Maybe AddressLinkData}
   | CAPOwnLink
   | CAPConnectingConfirmReconnect
   | CAPConnectingProhibit {contact :: Contact}
@@ -977,7 +977,7 @@ data ContactAddressPlan
   deriving (Show)
 
 data GroupLinkPlan
-  = GLPOk
+  = GLPOk {groupLinkData_ :: Maybe GroupLinkData}
   | GLPOwnLink {groupInfo :: GroupInfo}
   | GLPConnectingConfirmReconnect
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
@@ -987,17 +987,17 @@ data GroupLinkPlan
 connectionPlanProceed :: ConnectionPlan -> Bool
 connectionPlanProceed = \case
   CPInvitationLink ilp -> case ilp of
-    ILPOk -> True
+    ILPOk _ -> True
     ILPOwnLink -> True
     _ -> False
   CPContactAddress cap -> case cap of
-    CAPOk -> True
+    CAPOk _ -> True
     CAPOwnLink -> True
     CAPConnectingConfirmReconnect -> True
     CAPContactViaAddress _ -> True
     _ -> False
   CPGroupLink glp -> case glp of
-    GLPOk -> True
+    GLPOk _ -> True
     GLPOwnLink _ -> True
     GLPConnectingConfirmReconnect -> True
     _ -> False
