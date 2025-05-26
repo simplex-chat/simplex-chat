@@ -1728,7 +1728,7 @@ processChatCommand' vr = \case
         pure conn'
   APIConnectPlan userId cLink -> withUserId userId $ \user ->
     uncurry (CRConnectionPlan user) <$> connectPlan user cLink
-  APIConnect userId incognito shortLinkData (Just (ACCL SCMInvitation (CCLink cReq@(CRInvitationUri crData e2e) sLnk_))) -> withUserId userId $ \user -> withInvitationLock "connect" (strEncode cReq) . procCmd $ do
+  APIConnect userId incognito (Just (ACCL SCMInvitation (CCLink cReq@(CRInvitationUri crData e2e) sLnk_))) -> withUserId userId $ \user -> withInvitationLock "connect" (strEncode cReq) . procCmd $ do
     subMode <- chatReadVar subscriptionMode
     -- [incognito] generate profile to send
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
@@ -1740,10 +1740,6 @@ processChatCommand' vr = \case
         let chatV = agentToChatVersion agentV
         dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
         withFastStore' (\db -> getConnectionEntityByConnReq db vr user cReqs) >>= \case
-          -- TODO [short links] use short link data on connection:
-          -- TODO  - check short link data is SLDInvitation
-          -- TODO  - for new connection: create contact
-          -- TODO  - for existing connection: allow connection to have contact
           Nothing -> joinNewConn chatV dm
           Just (RcvDirectMsgConnection conn@Connection {connId, connStatus, contactConnInitiated} Nothing)
             | connStatus == ConnNew && contactConnInitiated -> joinNewConn chatV dm -- own connection link
@@ -1766,8 +1762,8 @@ processChatCommand' vr = \case
             ( CRInvitationUri crData {crScheme = SSSimplex} e2e,
               CRInvitationUri crData {crScheme = simplexChat} e2e
             )
-  APIConnect userId incognito shortLinkData (Just (ACCL SCMContact ccLink)) -> withUserId userId $ \user -> connectViaContact user incognito ccLink shortLinkData
-  APIConnect _ _ _ Nothing -> throwChatError CEInvalidConnReq
+  APIConnect userId incognito (Just (ACCL SCMContact ccLink)) -> withUserId userId $ \user -> connectViaContact user incognito ccLink
+  APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
   Connect incognito (Just cLink@(ACL m cLink')) -> withUser $ \user -> do
     (ccLink, plan) <- connectPlan user cLink `catchChatError` \e -> case cLink' of CLFull cReq -> pure (ACCL m (CCLink cReq Nothing), CPInvitationLink (ILPOk Nothing)); _ -> throwError e
     connectWithPlan user incognito ccLink plan
@@ -2804,14 +2800,11 @@ processChatCommand' vr = \case
       CTGroup -> withFastStore $ \db -> getGroupChatItemIdByText' db user cId msg
       CTLocal -> withFastStore $ \db -> getLocalChatItemIdByText' db user cId msg
       _ -> throwCmdError "not supported"
-    connectViaContact :: User -> IncognitoEnabled -> CreatedLinkContact -> Maybe ShortLinkData -> CM ChatResponse
-    connectViaContact user@User {userId} incognito (CCLink cReq@(CRContactUri ConnReqUriData {crClientData}) sLnk) shortLinkData = withInvitationLock "connectViaContact" (strEncode cReq) $ do
+    connectViaContact :: User -> IncognitoEnabled -> CreatedLinkContact -> CM ChatResponse
+    connectViaContact user@User {userId} incognito (CCLink cReq@(CRContactUri ConnReqUriData {crClientData}) sLnk) = withInvitationLock "connectViaContact" (strEncode cReq) $ do
       let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
           cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
       case groupLinkId of
-        -- TODO [short links] use short link data on connection:
-        -- TODO  - check short link data is SLDAddress
-        -- TODO  - for new connection: create contact
         -- contact address
         Nothing ->
           withFastStore' (\db -> getConnReqContactXContactId db vr user cReqHash) >>= \case
@@ -2820,9 +2813,6 @@ processChatCommand' vr = \case
               let randomXContactId = XContactId <$> drgRandomBytes 16
               xContactId <- maybe randomXContactId pure xContactId_
               connect' Nothing cReqHash xContactId False
-        -- TODO [short links] use short link data on connection:
-        -- TODO  - check short link data is SLDGroup
-        -- TODO  - for new connection: create group
         -- group link
         Just gLinkId ->
           withFastStore' (\db -> getConnReqContactXContactId db vr user cReqHash) >>= \case
@@ -3222,9 +3212,7 @@ processChatCommand' vr = \case
           case plan of
             CPContactAddress (CAPContactViaAddress Contact {contactId}) ->
               processChatCommand $ APIConnectContactViaAddress userId incognito contactId
-            _ -> do
-              let shortLinkData = planShortLinkData plan
-              processChatCommand $ APIConnect userId incognito shortLinkData (Just ccLink)
+            _ -> processChatCommand $ APIConnect userId incognito (Just ccLink)
       | otherwise = pure $ CRConnectionPlan user ccLink plan
     invitationRequestPlan :: User -> ConnReqInvitation -> Maybe InvitationLinkData -> CM ConnectionPlan
     invitationRequestPlan user cReq invLinkData_ = do
@@ -4293,7 +4281,7 @@ chatCommandP =
       "/contacts" $> ListContacts,
       "/_connect plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> strP),
       "/_connect " *> (APIAddContact <$> A.decimal <*> shortOnOffP <*> incognitoOnOffP),
-      "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <*> optional (A.space *> jsonP) <* A.space <*> connLinkP),
+      "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <* A.space <*> connLinkP),
       "/_set incognito :" *> (APISetConnectionIncognito <$> A.decimal <* A.space <*> onOffP),
       "/_set conn user :" *> (APIChangeConnectionUser <$> A.decimal <* A.space <*> A.decimal),
       ("/connect" <|> "/c") *> (AddContact <$> shortP <*> incognitoP),

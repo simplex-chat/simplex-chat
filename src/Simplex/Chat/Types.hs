@@ -649,12 +649,6 @@ instance ToField ImageData where toField (ImageData t) = toField t
 
 deriving newtype instance FromField ImageData
 
-data ShortLinkData
-  = SLDInvitation {invLinkData :: InvitationLinkData}
-  | SLDAddress {addrLinkData :: AddressLinkData}
-  | SLDGroup {groupLinkData :: GroupLinkData}
-  deriving (Show)
-
 -- TODO [short links] StrEncoding instances?
 data InvitationLinkData = InvitationLinkData
   { profile :: Profile
@@ -1944,8 +1938,6 @@ $(JQ.deriveJSON defaultJSON ''InvitationLinkData)
 $(JQ.deriveJSON defaultJSON ''AddressLinkData)
 
 $(JQ.deriveJSON defaultJSON ''GroupLinkData)
-
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SLD") ''ShortLinkData)
 
 $(JQ.deriveJSON defaultJSON ''CReqClientData)
 
