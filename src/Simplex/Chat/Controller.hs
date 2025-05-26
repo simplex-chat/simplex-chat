@@ -448,6 +448,9 @@ data ChatCommand
   | APISetConnectionIncognito Int64 IncognitoEnabled
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
   | APIConnectPlan UserId AConnectionLink
+  | APIPrepareInvitationContact UserId InvitationLinkData
+  | APIPrepareAddressContact UserId AddressLinkData
+  | APIPrepareGroup UserId GroupLinkData
   | APIConnect UserId IncognitoEnabled (Maybe ACreatedConnLink)
   | Connect IncognitoEnabled (Maybe AConnectionLink)
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId

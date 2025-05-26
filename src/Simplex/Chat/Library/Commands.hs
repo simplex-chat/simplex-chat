@@ -1728,6 +1728,13 @@ processChatCommand' vr = \case
         pure conn'
   APIConnectPlan userId cLink -> withUserId userId $ \user ->
     uncurry (CRConnectionPlan user) <$> connectPlan user cLink
+  -- TODO [short links] prepare entity (UI would call these APIs after Ok connection plans with short link data)
+  APIPrepareInvitationContact userId invLinkData -> withUserId userId $ \user ->
+    ok_
+  APIPrepareAddressContact userId addrLinkData -> withUserId userId $ \user ->
+    ok_
+  APIPrepareGroup userId groupLinkData -> withUserId userId $ \user ->
+    ok_
   APIConnect userId incognito (Just (ACCL SCMInvitation (CCLink cReq@(CRInvitationUri crData e2e) sLnk_))) -> withUserId userId $ \user -> withInvitationLock "connect" (strEncode cReq) . procCmd $ do
     subMode <- chatReadVar subscriptionMode
     -- [incognito] generate profile to send
