@@ -448,13 +448,11 @@ data ChatCommand
   | APISetConnectionIncognito Int64 IncognitoEnabled
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
   | APIConnectPlan UserId AConnectionLink
-  | APIPrepareInvitationContact UserId InvitationLinkData ACreatedConnLink
-  | APIPrepareAddressContact UserId AddressLinkData ACreatedConnLink
-  | APIPrepareGroup UserId GroupLinkData ACreatedConnLink
+  | APIPrepareContact UserId ContactShortLinkData ACreatedConnLink
+  | APIPrepareGroup UserId GroupShortLinkData ACreatedConnLink
   | APIChangeContactUser ContactId UserId
   | APIChangeGroupUser GroupId UserId
-  | APIConnectPreparedInvitationContact {contactId :: ContactId, msgContent_ :: Maybe MsgContent}
-  | APIConnectPreparedAddressContact {contactId :: ContactId, msgContent_ :: Maybe MsgContent}
+  | APIConnectPreparedContact {contactId :: ContactId, msgContent_ :: Maybe MsgContent}
   | APIConnectPreparedGroup GroupId
   | APIConnect UserId IncognitoEnabled (Maybe ACreatedConnLink)
   | Connect IncognitoEnabled (Maybe AConnectionLink)
@@ -969,14 +967,14 @@ data ConnectionPlan
   deriving (Show)
 
 data InvitationLinkPlan
-  = ILPOk {invLinkData_ :: Maybe InvitationLinkData}
+  = ILPOk {contactSLinkData_ :: Maybe ContactShortLinkData}
   | ILPOwnLink
   | ILPConnecting {contact_ :: Maybe Contact}
   | ILPKnown {contact :: Contact}
   deriving (Show)
 
 data ContactAddressPlan
-  = CAPOk {addrLinkData_ :: Maybe AddressLinkData}
+  = CAPOk {contactSLinkData_ :: Maybe ContactShortLinkData}
   | CAPOwnLink
   | CAPConnectingConfirmReconnect
   | CAPConnectingProhibit {contact :: Contact}
@@ -985,7 +983,7 @@ data ContactAddressPlan
   deriving (Show)
 
 data GroupLinkPlan
-  = GLPOk {groupLinkData_ :: Maybe GroupLinkData}
+  = GLPOk {groupSLinkData_ :: Maybe GroupShortLinkData}
   | GLPOwnLink {groupInfo :: GroupInfo}
   | GLPConnectingConfirmReconnect
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}

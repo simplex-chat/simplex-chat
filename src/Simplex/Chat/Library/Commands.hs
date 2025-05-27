@@ -1736,11 +1736,9 @@ processChatCommand' vr = \case
   -- TODO      for example to warn user before deleting "invitation" contact, hence two fields
   -- TODO  - Alternatively, entity can be prepared without user action during Ok plans
   -- TODO    to avoid extra user action, then these APIs can be avoided altogether
-  APIPrepareInvitationContact userId invLinkData link -> withUserId userId $ \user -> do
+  APIPrepareContact userId contactSLinkData link -> withUserId userId $ \user -> do
     ok_
-  APIPrepareAddressContact userId addrLinkData link -> withUserId userId $ \user -> do
-    ok_
-  APIPrepareGroup userId groupLinkData link -> withUserId userId $ \user -> do
+  APIPrepareGroup userId groupSLinkData link -> withUserId userId $ \user -> do
     ok_
   -- TODO [short links] change prepared entity user
   -- TODO  - UI would call these APIs before APIConnectPrepared... APIs
@@ -1753,16 +1751,15 @@ processChatCommand' vr = \case
   -- TODO  - UI would call these APIs from ChatView on user action after entity is prepared
   -- TODO  - APIs to call APIConnect
   -- TODO  - or new API for asynchronous connection? keep APIConnect for legacy links?
-  APIConnectPreparedInvitationContact contactId msgContent_ -> withUser $ \user -> do
-    -- TODO [short links] connect to prepared "invitation" contact
-    -- TODO  - optional message to be sent on successful "sender secure"?
-    -- TODO  - call APIConnect, wait for synchronous (successful) response?
-    -- TODO  - or persist message and queue it asynchronously?
-    -- TODO  - rework agent to allow queueing messages for New connections?
-    ok_
-  APIConnectPreparedAddressContact contactId msgContent_ -> withUser $ \user -> do
-    -- TODO [short links] connect to prepared "address" contact
-    -- TODO  - optional message to be sent in contact request
+  APIConnectPreparedContact contactId msgContent_ -> withUser $ \user -> do
+    -- TODO [short links] connect to prepared contact
+    -- TODO  - for "invitation" contact:
+    -- TODO    - optional message to be sent on successful "sender secure"?
+    -- TODO    - call APIConnect, wait for synchronous (successful) response?
+    -- TODO    - or persist message and queue it asynchronously?
+    -- TODO    - rework agent to allow queueing messages for New connections?
+    -- TODO  - for "address" contact:
+    -- TODO    - optional message to be sent in contact request
     ok_
   APIConnectPreparedGroup groupId -> withUser $ \user -> do
     ok_
@@ -3216,11 +3213,11 @@ processChatCommand' vr = \case
             (ACCL SCMInvitation (CCLink cReq (Just l')),) <$> (invitationEntityPlan ent `catchChatError` (pure . CPError))
           Nothing -> do
             (cReq, cData) <- getShortLinkConnReq user l'
-            let invLinkData_ = decodeJSON . safeDecodeUtf8 $ linkUserData cData
-            invitationReqAndPlan cReq (Just l') invLinkData_
+            let contactSLinkData_ = decodeJSON . safeDecodeUtf8 $ linkUserData cData
+            invitationReqAndPlan cReq (Just l') contactSLinkData_
       where
-        invitationReqAndPlan cReq sLnk_ invLinkData_ = do
-          plan <- invitationRequestPlan user cReq invLinkData_ `catchChatError` (pure . CPError)
+        invitationReqAndPlan cReq sLnk_ contactSLinkData_ = do
+          plan <- invitationRequestPlan user cReq contactSLinkData_ `catchChatError` (pure . CPError)
           pure (ACCL SCMInvitation (CCLink cReq sLnk_), plan)
     connectPlan user (ACL SCMContact cLink) = case cLink of
       CLFull cReq -> do
@@ -3234,16 +3231,16 @@ processChatCommand' vr = \case
               Just (UserContactLink (CCLink cReq _) _) -> pure (ACCL SCMContact $ CCLink cReq (Just l'), CPContactAddress CAPOwnLink)
               Nothing -> do
                 (cReq, cData) <- getShortLinkConnReq user l'
-                let addrLinkData_ = decodeJSON . safeDecodeUtf8 $ linkUserData cData
-                plan <- contactRequestPlan user cReq addrLinkData_
+                let contactSLinkData_ = decodeJSON . safeDecodeUtf8 $ linkUserData cData
+                plan <- contactRequestPlan user cReq contactSLinkData_
                 pure (ACCL SCMContact $ CCLink cReq (Just l'), plan)
           CCTGroup ->
             withFastStore' (\db -> getGroupInfoViaUserShortLink db vr user l') >>= \case
               Just (cReq, g) -> pure (ACCL SCMContact $ CCLink cReq (Just l'), CPGroupLink (GLPOwnLink g))
               Nothing -> do
                 (cReq, cData) <- getShortLinkConnReq user l'
-                let groupLinkData_ = decodeJSON . safeDecodeUtf8 $ linkUserData cData
-                plan <- groupJoinRequestPlan user cReq groupLinkData_
+                let groupSLinkData_ = decodeJSON . safeDecodeUtf8 $ linkUserData cData
+                plan <- groupJoinRequestPlan user cReq groupSLinkData_
                 pure (ACCL SCMContact $ CCLink cReq (Just l'), plan)
           CCTChannel -> throwCmdError "channel links are not supported in this version"
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
@@ -3255,10 +3252,10 @@ processChatCommand' vr = \case
               processChatCommand $ APIConnectContactViaAddress userId incognito contactId
             _ -> processChatCommand $ APIConnect userId incognito (Just ccLink)
       | otherwise = pure $ CRConnectionPlan user ccLink plan
-    invitationRequestPlan :: User -> ConnReqInvitation -> Maybe InvitationLinkData -> CM ConnectionPlan
-    invitationRequestPlan user cReq invLinkData_ = do
+    invitationRequestPlan :: User -> ConnReqInvitation -> Maybe ContactShortLinkData -> CM ConnectionPlan
+    invitationRequestPlan user cReq contactSLinkData_ = do
       withFastStore' (\db -> getConnectionEntityByConnReq db vr user $ invCReqSchemas cReq) >>= \case
-        Nothing -> pure $ CPInvitationLink (ILPOk invLinkData_)
+        Nothing -> pure $ CPInvitationLink (ILPOk contactSLinkData_)
         Just ent -> invitationEntityPlan ent
       where
         invCReqSchemas :: ConnReqInvitation -> (ConnReqInvitation, ConnReqInvitation)
@@ -3269,7 +3266,7 @@ processChatCommand' vr = \case
     invitationEntityPlan :: ConnectionEntity -> CM ConnectionPlan
     invitationEntityPlan = \case
       RcvDirectMsgConnection Connection {connStatus = ConnPrepared} Nothing ->
-        -- TODO [short links] entity is already found - passing InvitationLinkData doesn't make sense?
+        -- TODO [short links] entity is already found - passing ContactShortLinkData doesn't make sense?
         pure $ CPInvitationLink (ILPOk Nothing)
       RcvDirectMsgConnection conn ct_ -> do
         let Connection {connStatus, contactConnInitiated} = conn
@@ -3290,8 +3287,8 @@ processChatCommand' vr = \case
       case groupLinkId of
         Nothing -> contactRequestPlan user cReq Nothing
         Just _ -> groupJoinRequestPlan user cReq Nothing
-    contactRequestPlan :: User -> ConnReqContact -> Maybe AddressLinkData -> CM ConnectionPlan
-    contactRequestPlan user (CRContactUri crData) addrLinkData_ = do
+    contactRequestPlan :: User -> ConnReqContact -> Maybe ContactShortLinkData -> CM ConnectionPlan
+    contactRequestPlan user (CRContactUri crData) contactSLinkData_ = do
       let cReqSchemas = contactCReqSchemas crData
           cReqHashes = bimap contactCReqHash contactCReqHash cReqSchemas
       withFastStore' (\db -> getUserContactLinkByConnReq db user cReqSchemas) >>= \case
@@ -3300,18 +3297,18 @@ processChatCommand' vr = \case
           withFastStore' (\db -> getContactConnEntityByConnReqHash db vr user cReqHashes) >>= \case
             Nothing ->
               withFastStore' (\db -> getContactWithoutConnViaAddress db vr user cReqSchemas) >>= \case
-                Nothing -> pure $ CPContactAddress (CAPOk addrLinkData_)
+                Nothing -> pure $ CPContactAddress (CAPOk contactSLinkData_)
                 Just ct -> pure $ CPContactAddress (CAPContactViaAddress ct)
             Just (RcvDirectMsgConnection _conn Nothing) -> pure $ CPContactAddress CAPConnectingConfirmReconnect
             Just (RcvDirectMsgConnection _ (Just ct))
               | not (contactReady ct) && contactActive ct -> pure $ CPContactAddress (CAPConnectingProhibit ct)
-              | contactDeleted ct -> pure $ CPContactAddress (CAPOk addrLinkData_)
+              | contactDeleted ct -> pure $ CPContactAddress (CAPOk contactSLinkData_)
               | otherwise -> pure $ CPContactAddress (CAPKnown ct)
             -- TODO [short links] RcvGroupMsgConnection branch is deprecated? (old group link protocol?)
             Just (RcvGroupMsgConnection _ gInfo _) -> groupPlan gInfo
             Just _ -> throwCmdError "found connection entity is not RcvDirectMsgConnection or RcvGroupMsgConnection"
-    groupJoinRequestPlan :: User -> ConnReqContact -> Maybe GroupLinkData -> CM ConnectionPlan
-    groupJoinRequestPlan user (CRContactUri crData) groupLinkData_ = do
+    groupJoinRequestPlan :: User -> ConnReqContact -> Maybe GroupShortLinkData -> CM ConnectionPlan
+    groupJoinRequestPlan user (CRContactUri crData) groupSLinkData_ = do
       let cReqSchemas = contactCReqSchemas crData
           cReqHashes = bimap contactCReqHash contactCReqHash cReqSchemas
       withFastStore' (\db -> getGroupInfoByUserContactLinkConnReq db vr user cReqSchemas) >>= \case
@@ -3320,12 +3317,12 @@ processChatCommand' vr = \case
           connEnt_ <- withFastStore' $ \db -> getContactConnEntityByConnReqHash db vr user cReqHashes
           gInfo_ <- withFastStore' $ \db -> getGroupInfoByGroupLinkHash db vr user cReqHashes
           case (gInfo_, connEnt_) of
-            (Nothing, Nothing) -> pure $ CPGroupLink (GLPOk groupLinkData_)
+            (Nothing, Nothing) -> pure $ CPGroupLink (GLPOk groupSLinkData_)
             -- TODO [short links] RcvDirectMsgConnection branches are deprecated? (old group link protocol?)
             (Nothing, Just (RcvDirectMsgConnection _conn Nothing)) -> pure $ CPGroupLink GLPConnectingConfirmReconnect
             (Nothing, Just (RcvDirectMsgConnection _ (Just ct)))
               | not (contactReady ct) && contactActive ct -> pure $ CPGroupLink (GLPConnectingProhibit gInfo_)
-              | otherwise -> pure $ CPGroupLink (GLPOk groupLinkData_)
+              | otherwise -> pure $ CPGroupLink (GLPOk groupSLinkData_)
             (Nothing, Just _) -> throwCmdError "found connection entity is not RcvDirectMsgConnection"
             (Just gInfo, _) -> groupPlan gInfo
     groupPlan :: GroupInfo -> CM ConnectionPlan
@@ -3334,7 +3331,7 @@ processChatCommand' vr = \case
       | not (memberActive membership) && not (memberRemoved membership) =
           pure $ CPGroupLink (GLPConnectingProhibit $ Just gInfo)
       | memberActive membership = pure $ CPGroupLink (GLPKnown gInfo)
-      -- TODO [short links] entity is already found - passing GroupLinkData doesn't make sense?
+      -- TODO [short links] entity is already found - passing GroupShortLinkData doesn't make sense?
       | otherwise = pure $ CPGroupLink (GLPOk Nothing)
     contactCReqSchemas :: ConnReqUriData -> (ConnReqContact, ConnReqContact)
     contactCReqSchemas crData =
@@ -4321,16 +4318,14 @@ chatCommandP =
       "/_contacts " *> (APIListContacts <$> A.decimal),
       "/contacts" $> ListContacts,
       "/_connect plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> strP),
-      "/_prepare invitation contact" *> (APIPrepareInvitationContact <$> A.decimal <* A.space <*> jsonP <* A.space <*> connLinkP),
-      "/_prepare address contact" *> (APIPrepareAddressContact <$> A.decimal <* A.space <*> jsonP <* A.space <*> connLinkP),
+      "/_prepare contact" *> (APIPrepareContact <$> A.decimal <* A.space <*> jsonP <* A.space <*> connLinkP),
       "/_prepare group" *> (APIPrepareGroup <$> A.decimal <* A.space <*> jsonP <* A.space <*> connLinkP),
       "/_set contact user @" *> (APIChangeContactUser <$> A.decimal <* A.space <*> A.decimal),
       "/_set group user #" *> (APIChangeGroupUser <$> A.decimal <* A.space <*> A.decimal),
-      "/_connect invitation contact @" *> (APIConnectPreparedInvitationContact <$> A.decimal <*> optional (A.space *> msgContentP)),
-      "/_connect address contact @" *> (APIConnectPreparedInvitationContact <$> A.decimal <*> optional (A.space *> msgContentP)),
+      "/_connect contact @" *> (APIConnectPreparedContact <$> A.decimal <*> optional (A.space *> msgContentP)),
       "/_connect group $" *> (APIConnectPreparedGroup <$> A.decimal),
       "/_connect " *> (APIAddContact <$> A.decimal <*> shortOnOffP <*> incognitoOnOffP),
-      "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <* A.space <*> connLinkP),
+      "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <* A.space <*> connLinkP_),
       "/_set incognito :" *> (APISetConnectionIncognito <$> A.decimal <* A.space <*> onOffP),
       "/_set conn user :" *> (APIChangeConnectionUser <$> A.decimal <* A.space <*> A.decimal),
       ("/connect" <|> "/c") *> (AddContact <$> shortP <*> incognitoP),
@@ -4441,8 +4436,11 @@ chatCommandP =
   where
     choice = A.choice . map (\p -> p <* A.takeWhile (== ' ') <* A.endOfInput)
     connLinkP = do
-      ((Just <$> strP) <|> A.takeTill (== ' ') $> Nothing)
-        >>= mapM (\(ACR m cReq) -> ACCL m . CCLink cReq <$> optional (A.space *> strP))
+      (ACR m cReq) <- strP
+      sLink_ <- optional (A.space *> strP)
+      pure $ ACCL m (CCLink cReq sLink_)
+    connLinkP_ =
+      ((Just <$> connLinkP) <|> A.takeTill (== ' ') $> Nothing)
     shortP = (A.space *> ("short" <|> "s")) $> True <|> pure False
     incognitoP = (A.space *> ("incognito" <|> "i")) $> True <|> pure False
     shortOnOffP = (A.space *> "short=" *> onOffP) <|> pure False
