@@ -80,6 +80,8 @@ CREATE TABLE contacts(
   chat_deleted INTEGER NOT NULL DEFAULT 0,
   chat_item_ttl INTEGER,
   conn_req_to_connect BLOB,
+  conn_req_to_connect_tag TEXT,
+  is_contact_request INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
