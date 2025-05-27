@@ -661,6 +661,23 @@ data GroupShortLinkData = GroupShortLinkData
   }
   deriving (Show)
 
+data ConnectionRequestUriTag where
+  CRInvitationUri_ :: ConnectionRequestUriTag
+  CRContactUri_ :: ConnectionRequestUriTag
+
+instance FromField ConnectionRequestUriTag where fromField = fromTextField_ textDecode
+
+instance ToField ConnectionRequestUriTag where toField = toField . textEncode
+
+instance TextEncoding ConnectionRequestUriTag where
+  textDecode = \case
+    "invitation" -> Just CRInvitationUri_
+    "contact" -> Just CRContactUri_
+    _ -> Nothing
+  textEncode = \case
+    CRInvitationUri_ -> "invitation"
+    CRContactUri_ -> "contact"
+
 data CReqClientData = CRDataGroup {groupLinkId :: GroupLinkId}
 
 newtype GroupLinkId = GroupLinkId {unGroupLinkId :: ByteString} -- used to identify invitation via group link

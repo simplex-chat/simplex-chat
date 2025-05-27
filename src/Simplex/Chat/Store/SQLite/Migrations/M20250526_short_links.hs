@@ -9,6 +9,7 @@ m20250526_short_links :: Query
 m20250526_short_links =
   [sql|
 ALTER TABLE contacts ADD COLUMN conn_req_to_connect BLOB;
+ALTER TABLE contacts ADD COLUMN conn_req_to_connect_tag TEXT;
 ALTER TABLE groups ADD COLUMN conn_req_to_connect BLOB;
 |]
 
@@ -16,5 +17,6 @@ down_m20250526_short_links :: Query
 down_m20250526_short_links =
   [sql|
 ALTER TABLE contacts DROP COLUMN conn_req_to_connect;
+ALTER TABLE contacts DROP COLUMN conn_req_to_connect_tag;
 ALTER TABLE groups DROP COLUMN conn_req_to_connect;
 |]
