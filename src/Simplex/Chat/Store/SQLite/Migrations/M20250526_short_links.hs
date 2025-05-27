@@ -1,0 +1,23 @@
+{-# LANGUAGE QuasiQuotes #-}
+
+module Simplex.Chat.Store.SQLite.Migrations.M20250526_short_links where
+
+import Database.SQLite.Simple (Query)
+import Database.SQLite.Simple.QQ (sql)
+
+-- TODO [short links] contacts with contact requests
+-- TODO  - contacts.is_contact_request flag?
+-- TODO  - link contact_requests and contacts?
+m20250526_short_links :: Query
+m20250526_short_links =
+  [sql|
+ALTER TABLE contacts ADD COLUMN conn_req_to_connect BLOB;
+ALTER TABLE groups ADD COLUMN conn_req_to_connect BLOB;
+|]
+
+down_m20250526_short_links :: Query
+down_m20250526_short_links =
+  [sql|
+ALTER TABLE contacts DROP COLUMN conn_req_to_connect;
+ALTER TABLE groups DROP COLUMN conn_req_to_connect;
+|]
