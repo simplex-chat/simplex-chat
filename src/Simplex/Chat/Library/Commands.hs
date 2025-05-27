@@ -1856,7 +1856,7 @@ processChatCommand' vr = \case
     (ucl@UserContactLink {connLinkContact = CCLink connFullLink sLnk_}, conn) <-
       withFastStore $ \db -> (,) <$> getUserAddress db user <*> getUserAddressConnection db vr user
     when (isJust sLnk_) $ throwCmdError "address already has short link"
-    -- TODO [short links] set userData
+    -- TODO [short links] set ContactShortLinkData
     sLnk <- shortenShortLink' =<< withAgent (\a -> setContactShortLink a (aConnId conn) "" Nothing)
     case entityId conn of
       Just uclId -> do
@@ -2463,7 +2463,7 @@ processChatCommand' vr = \case
       pure (gInfo, gLink, conn)
     when (isJust sLnk_) $ throwCmdError "group link already has short link"
     let crClientData = encodeJSON $ CRDataGroup gLinkId
-    -- TODO [short links] set userData
+    -- TODO [short links] set GroupShortLinkData
     sLnk <- shortenShortLink' =<< toShortGroupLink <$> withAgent (\a -> setContactShortLink a (aConnId conn) "" (Just crClientData))
     withFastStore' $ \db -> setUserContactLinkShortLink db uclId sLnk
     let groupLink' = CCLink connFullLink (Just sLnk)
@@ -3357,6 +3357,7 @@ processChatCommand' vr = \case
       CSLInvitation _ srv lnkId linkKey -> CSLInvitation SLSServer srv lnkId linkKey
       CSLContact _ ct srv linkKey -> CSLContact SLSServer ct srv linkKey
     restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . config)
+    -- TODO [short links] pass encoded ContactShortLinkData or GroupShortLinkData
     shortLinkUserData short = if short then Just "" else Nothing
     shortenShortLink' :: ConnShortLink m -> CM (ConnShortLink m)
     shortenShortLink' l = (`shortenShortLink` l) <$> asks (shortLinkPresetServers . config)
