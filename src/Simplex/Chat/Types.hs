@@ -51,7 +51,7 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
-import Simplex.Messaging.Agent.Protocol (ACorrId, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink, InvitationId, SAEntity (..), UserId)
+import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri, ACorrId, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
@@ -188,6 +188,7 @@ data Contact = Contact
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
+    connReqToConnect :: Maybe AConnectionRequestUri,
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
     chatTags :: [ChatTagId],
@@ -418,6 +419,7 @@ data GroupInfo = GroupInfo
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
     userMemberProfileSentAt :: Maybe UTCTime,
+    connReqToConnect :: Maybe ConnReqContact,
     chatTags :: [ChatTagId],
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
@@ -660,23 +662,6 @@ data GroupShortLinkData = GroupShortLinkData
   { groupProfile :: GroupProfile
   }
   deriving (Show)
-
-data ConnectionRequestUriTag where
-  CRInvitationUri_ :: ConnectionRequestUriTag
-  CRContactUri_ :: ConnectionRequestUriTag
-
-instance FromField ConnectionRequestUriTag where fromField = fromTextField_ textDecode
-
-instance ToField ConnectionRequestUriTag where toField = toField . textEncode
-
-instance TextEncoding ConnectionRequestUriTag where
-  textDecode = \case
-    "invitation" -> Just CRInvitationUri_
-    "contact" -> Just CRContactUri_
-    _ -> Nothing
-  textEncode = \case
-    CRInvitationUri_ -> "invitation"
-    CRContactUri_ -> "contact"
 
 data CReqClientData = CRDataGroup {groupLinkId :: GroupLinkId}
 

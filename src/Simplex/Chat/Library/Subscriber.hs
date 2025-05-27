@@ -1213,7 +1213,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- TODO [short links] on contact request create contact with message
           -- TODO  - instead of creating a contact request, create a contact that can be accepted or rejected,
           -- TODO    and can be opened as a chat to view message
-          -- TODO  - set contacts.is_contact_request
+          -- TODO  - see schema comments on persistence
           withStore (\db -> createOrUpdateContactRequest db vr user userContactLinkId invId chatVRange p xContactId_ reqPQSup) >>= \case
             CORContact contact -> toView $ CEvtContactRequestAlreadyAccepted user contact
             CORGroup gInfo -> toView $ CEvtBusinessRequestAlreadyAccepted user gInfo
