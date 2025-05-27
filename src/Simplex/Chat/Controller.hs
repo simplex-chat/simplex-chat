@@ -454,7 +454,7 @@ data ChatCommand
   | APIChangeGroupUser GroupId UserId
   | APIConnectPreparedContact {contactId :: ContactId, msgContent_ :: Maybe MsgContent}
   | APIConnectPreparedGroup GroupId
-  | APIConnect UserId IncognitoEnabled (Maybe ACreatedConnLink)
+  | APIConnect UserId IncognitoEnabled (Maybe ACreatedConnLink) (Maybe MsgContent)
   | Connect IncognitoEnabled (Maybe AConnectionLink)
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
@@ -1287,6 +1287,7 @@ data ChatErrorType
   | CEInvalidConnReq
   | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
+  | CEConnReqMessageProhibited
   | CEContactNotFound {contactName :: ContactName, suspectedMember :: Maybe (GroupInfo, GroupMember)}
   | CEContactNotReady {contact :: Contact}
   | CEContactNotActive {contact :: Contact}

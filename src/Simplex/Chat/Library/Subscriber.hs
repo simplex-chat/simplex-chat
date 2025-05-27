@@ -1195,8 +1195,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       REQ invId pqSupport _ connInfo -> do
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
         case chatMsgEvent of
-          XContact p xContactId_ -> profileContactRequest invId chatVRange p xContactId_ pqSupport
-          XInfo p -> profileContactRequest invId chatVRange p Nothing pqSupport
+          XContact p xContactId_ mc_ -> profileContactRequest invId chatVRange p xContactId_ mc_ pqSupport
+          XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing pqSupport
           -- TODO show/log error, other events in contact request
           _ -> pure ()
       MERR _ err -> do
@@ -1208,8 +1208,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       -- TODO add debugging output
       _ -> pure ()
       where
-        profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> PQSupport -> CM ()
-        profileContactRequest invId chatVRange p@Profile {displayName} xContactId_ reqPQSup = do
+        profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MsgContent -> PQSupport -> CM ()
+        profileContactRequest invId chatVRange p@Profile {displayName} xContactId_ mc_ reqPQSup = do
+          -- TODO [short links] on contact request create contact with message
+          -- TODO  - instead of creating a contact request, create a contact that can be accepted or rejected,
+          -- TODO    and can be opened as a chat to view message
+          -- TODO  - set contacts.is_contact_request
           withStore (\db -> createOrUpdateContactRequest db vr user userContactLinkId invId chatVRange p xContactId_ reqPQSup) >>= \case
             CORContact contact -> toView $ CEvtContactRequestAlreadyAccepted user contact
             CORGroup gInfo -> toView $ CEvtBusinessRequestAlreadyAccepted user gInfo
