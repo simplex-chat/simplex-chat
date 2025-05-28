@@ -1743,13 +1743,14 @@ processChatCommand' vr = \case
   -- TODO [short links] prepare entity
   -- TODO  - UI would call these APIs after Ok connection plans with short link data
   -- TODO  - Persist ACreatedConnLink to be used for connection later on user action:
-  -- TODO    - `link` to contacts.inv_conn_req_to_connect, contacts.addr_conn_req_to_connect, groups.conn_req_to_connect
-  -- TODO    - prepared "invitation" and "address" contacts have to be differentiated,
-  -- TODO      for example to warn user before deleting "invitation" contact, hence two fields
-  -- TODO  - Alternatively, entity can be prepared without user action during Ok plans
-  -- TODO    to avoid extra user action, then these APIs can be avoided altogether
+  -- TODO    `link` to contacts.conn_req_to_connect, groups.conn_req_to_connect
   APIPrepareContact userId contactSLinkData link -> withUserId userId $ \user -> do
-    ok_
+    let ContactShortLinkData {profile, welcomMessage} = contactSLinkData
+        ACCL _ (CCLink connReqToConnect _) = link
+    ct <- withStore $ \db -> createPreparedContact db user p connReqToConnect
+    forM_ welcomMessage $ \msg ->
+      createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent $ MCText msg) Nothing
+    pure $ CRNewPreparedContact user ct
   APIPrepareGroup userId groupSLinkData link -> withUserId userId $ \user -> do
     ok_
   -- TODO [short links] change prepared entity user

@@ -667,6 +667,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- TODO add debugging output
         _ -> pure ()
       where
+        -- TODO [short links] don't send auto-reply message if it should have been created by connecting client
+        -- TODO  (based on version + whether address has short link data)
         sendAutoReply ct = \case
           Just AutoAccept {autoReply = Just mc} -> do
             (msg, _) <- sendDirectContactMessage user ct (XMsgNew $ MCSimple (extMsgContent mc Nothing))

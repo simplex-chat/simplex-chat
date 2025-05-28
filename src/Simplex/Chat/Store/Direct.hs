@@ -30,6 +30,7 @@ module Simplex.Chat.Store.Direct
     getProfileById,
     getConnReqContactXContactId,
     getContactByConnReqHash,
+    createPreparedContact,
     createDirectContact,
     deleteContactConnections,
     deleteContactFiles,
@@ -239,10 +240,42 @@ createIncognitoProfile db User {userId} p = do
   createdAt <- getCurrentTime
   createIncognitoProfile_ db userId createdAt p
 
+createPreparedContact :: DB.Connection -> User -> Profile -> AConnectionRequestUri -> ExceptT StoreError IO Contact
+createPreparedContact db user p@Profile {preferences} connReqToConnect = do
+  currentTs <- liftIO getCurrentTime
+  (localDisplayName, contactId, profileId) <- createContact_ db userId p (Just connReqToConnect) "" Nothing currentTs
+  let profile = toLocalProfile profileId p ""
+      userPreferences = emptyChatPrefs
+      mergedPreferences = contactUserPreferences user userPreferences preferences False
+  pure $
+    Contact
+      { contactId,
+        localDisplayName,
+        profile,
+        activeConn = Nothing,
+        viaGroup = Nothing,
+        contactUsed = True,
+        contactStatus = CSActive,
+        chatSettings = defaultChatSettings,
+        userPreferences,
+        mergedPreferences,
+        createdAt = currentTs,
+        updatedAt = currentTs,
+        chatTs = Just currentTs,
+        connReqToConnect = Just connReqToConnect,
+        contactGroupMemberId = Nothing,
+        contactGrpInvSent = False,
+        chatTags = [],
+        chatItemTTL = Nothing,
+        uiThemes = Nothing,
+        chatDeleted = False,
+        customData = Nothing
+      }
+
 createDirectContact :: DB.Connection -> User -> Connection -> Profile -> ExceptT StoreError IO Contact
 createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p@Profile {preferences} = do
   currentTs <- liftIO getCurrentTime
-  (localDisplayName, contactId, profileId) <- createContact_ db userId p localAlias Nothing currentTs
+  (localDisplayName, contactId, profileId) <- createContact_ db userId p Nothing localAlias Nothing currentTs
   liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
   let profile = toLocalProfile profileId p localAlias
       userPreferences = emptyChatPrefs

@@ -382,10 +382,10 @@ setCommandConnId db User {userId} cmdId connId = do
 createContact :: DB.Connection -> User -> Profile -> ExceptT StoreError IO ()
 createContact db User {userId} profile = do
   currentTs <- liftIO getCurrentTime
-  void $ createContact_ db userId profile "" Nothing currentTs
+  void $ createContact_ db userId profile Nothing "" Nothing currentTs
 
-createContact_ :: DB.Connection -> UserId -> Profile -> LocalAlias -> Maybe Int64 -> UTCTime -> ExceptT StoreError IO (Text, ContactId, ProfileId)
-createContact_ db userId Profile {displayName, fullName, image, contactLink, preferences} localAlias viaGroup currentTs =
+createContact_ :: DB.Connection -> UserId -> Profile -> Maybe AConnectionRequestUri -> LocalAlias -> Maybe Int64 -> UTCTime -> ExceptT StoreError IO (Text, ContactId, ProfileId)
+createContact_ db userId Profile {displayName, fullName, image, contactLink, preferences} connReqToConnect localAlias viaGroup currentTs =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
     DB.execute
       db
@@ -394,8 +394,8 @@ createContact_ db userId Profile {displayName, fullName, image, contactLink, pre
     profileId <- insertedRowId db
     DB.execute
       db
-      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at, chat_ts, contact_used) VALUES (?,?,?,?,?,?,?,?)"
-      (profileId, ldn, userId, viaGroup, currentTs, currentTs, currentTs, BI True)
+      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, conn_req_to_connect, via_group, created_at, updated_at, chat_ts, contact_used) VALUES (?,?,?,?,?,?,?,?,?)"
+      (profileId, ldn, userId, connReqToConnect, viaGroup, currentTs, currentTs, currentTs, BI True)
     contactId <- insertedRowId db
     pure $ Right (ldn, contactId, profileId)
 
