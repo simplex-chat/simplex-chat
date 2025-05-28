@@ -247,7 +247,7 @@
     "jobs": "チームに参加する",
     "hero-overlay-3-textlink": "セキュリティ評価",
     "hero-overlay-3-title": "セキュリティ評価",
-    "hero-overlay-card-3-p-2": "Trail of Bitsは2022年11月にSimpleXプラットフォームの暗号とネットワークのコンポーネントを検証しました。<a href=\"/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html\">詳しくは お知らせをご覧ください。</a>",
+    "hero-overlay-card-3-p-2": "Trail of Bitsは2022年11月にSimpleXプラットフォームの暗号とネットワークのコンポーネントを検証しました。<a href=\"/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html\">詳しくはお知らせをご覧ください</a>。",
     "docs-dropdown-9": "ダウンロード",
     "please-enable-javascript": "QRコードを表示するためにJavaScriptを有効にしてください。",
     "please-use-link-in-mobile-app": "このリンクをモバイルアプリで使用してください",
@@ -255,5 +255,5 @@
     "docs-dropdown-11": "よくある質問",
     "docs-dropdown-12": "セキュリティ",
     "docs-dropdown-14": "ビジネス向けSimpleX",
-    "hero-overlay-card-3-p-3": "Trail of Bits は 2024 年 7 月に SimpleX ネットワーク プロトコルの暗号設計をレビューしました。"
+    "hero-overlay-card-3-p-3": "Trail of Bits は 2024年7月に SimpleX ネットワーク プロトコルの暗号設計をレビューしました。<a href=\"/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html\">続きを読む</a>。"
 }
