@@ -4259,7 +4259,7 @@ SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE connections
-      SET custom_user_profile_id = ?, updated_at = ?
+      SET custom_user_profile_id = ?, short_link_inv = ?, updated_at = ?
       WHERE user_id = ? AND connection_id = ?
     
 Plan:
@@ -4307,7 +4307,7 @@ SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE connections
-      SET user_id = ?, custom_user_profile_id = NULL, updated_at = ?
+      SET user_id = ?, short_link_inv = ?, custom_user_profile_id = NULL, updated_at = ?
       WHERE user_id = ? AND connection_id = ?
     
 Plan:
