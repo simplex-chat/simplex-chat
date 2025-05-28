@@ -119,10 +119,10 @@ import UnliftIO.Directory
 import qualified UnliftIO.Exception as E
 import UnliftIO.IO (hClose)
 import UnliftIO.STM
-#if defined(dbPostgres)
-import Data.Bifunctor (bimap, second)
-import Simplex.Messaging.Agent.Client (SubInfo (..), getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary)
-#else
+
+
+
+
 import Data.Bifunctor (bimap, first, second)
 import qualified Data.ByteArray as BA
 import qualified Database.SQLite.Simple as SQL
@@ -130,7 +130,7 @@ import Simplex.Chat.Archive
 import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary)
 import Simplex.Messaging.Agent.Store.Common (withConnection)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
-#endif
+
 
 _defaultNtfServers :: [NtfServer]
 _defaultNtfServers =
@@ -465,7 +465,7 @@ processChatCommand' vr = \case
         chatWriteVar sel $ Just f
   APISetEncryptLocalFiles on -> chatWriteVar encryptLocalFiles on >> ok_
   SetContactMergeEnabled onOff -> chatWriteVar contactMergeEnabled onOff >> ok_
-#if !defined(dbPostgres)
+
   APIExportArchive cfg -> checkChatStopped $ CRArchiveExported <$> lift (exportArchive cfg)
   ExportArchive -> do
     ts <- liftIO getCurrentTime
@@ -490,7 +490,7 @@ processChatCommand' vr = \case
             . sortOn (timeAvg . snd)
             . M.assocs
             <$> withConnection st (readTVarIO . DB.slow)
-#endif
+
   ExecChatStoreSQL query -> CRSQLResult <$> withStore' (`execSQL` query)
   ExecAgentStoreSQL query -> CRSQLResult <$> withAgent (`execAgentStoreSQL` query)
   APISaveAppSettings as -> withFastStore' (`saveAppSettings` as) >> ok_
@@ -1267,6 +1267,7 @@ processChatCommand' vr = \case
   APICallStatus contactId receivedStatus ->
     withCurrentCall contactId $ \user ct call ->
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
+  -- TODO [short links] update address short link data
   APIUpdateProfile userId profile -> withUserId userId (`updateProfile` profile)
   APISetContactPrefs contactId prefs' -> withUser $ \user -> do
     ct <- withFastStore $ \db -> getContact db vr user contactId
@@ -1666,7 +1667,10 @@ processChatCommand' vr = \case
     -- [incognito] generate profile for connection
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     subMode <- chatReadVar subscriptionMode
-    let userData = shortLinkUserData short
+    let userData =
+          if short
+            then Just $ encodeShortLinkData (ContactShortLinkData (userProfileToSend user incognitoProfile Nothing False) Nothing)
+            else Nothing
     (connId, ccLink) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation userData Nothing IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
     -- TODO PQ pass minVersion from the current range
@@ -1675,27 +1679,30 @@ processChatCommand' vr = \case
   AddContact short incognito -> withUser $ \User {userId} ->
     processChatCommand $ APIAddContact userId short incognito
   APISetConnectionIncognito connId incognito -> withUser $ \user@User {userId} -> do
-    conn'_ <- withFastStore $ \db -> do
-      conn@PendingContactConnection {pccConnStatus, customUserProfileId} <- getPendingContactConnection db userId connId
-      case (pccConnStatus, customUserProfileId, incognito) of
-        (ConnNew, Nothing, True) -> liftIO $ do
-          incognitoProfile <- generateRandomProfile
+    conn <- withFastStore $ \db -> getPendingContactConnection db userId connId
+    let PendingContactConnection {pccConnStatus, customUserProfileId} = conn
+    case (pccConnStatus, customUserProfileId, incognito) of
+      (ConnNew, Nothing, True) -> do
+        incognitoProfile <- liftIO generateRandomProfile
+        sLnk <- updatePCCShortLinkData conn (ContactShortLinkData (userProfileToSend user (Just incognitoProfile) Nothing False) Nothing)
+        conn' <- withFastStore' $ \db -> do
           pId <- createIncognitoProfile db user incognitoProfile
-          Just <$> updatePCCIncognito db user conn (Just pId)
-        (ConnNew, Just pId, False) -> liftIO $ do
+          updatePCCIncognito db user conn (Just pId) sLnk
+        pure $ CRConnectionIncognitoUpdated user conn'
+      (ConnNew, Just pId, False) -> do
+        sLnk <- updatePCCShortLinkData conn (ContactShortLinkData (userProfileToSend user Nothing Nothing False) Nothing)
+        conn' <- withFastStore' $ \db -> do
           deletePCCIncognitoProfile db user pId
-          Just <$> updatePCCIncognito db user conn Nothing
-        _ -> pure Nothing
-    case conn'_ of
-      Just conn' -> pure $ CRConnectionIncognitoUpdated user conn'
-      Nothing -> throwChatError CEConnectionIncognitoChangeProhibited
+          updatePCCIncognito db user conn Nothing sLnk
+        pure $ CRConnectionIncognitoUpdated user conn'
+      _ -> throwChatError CEConnectionIncognitoChangeProhibited
   APIChangeConnectionUser connId newUserId -> withUser $ \user@User {userId} -> do
     conn <- withFastStore $ \db -> getPendingContactConnection db userId connId
     let PendingContactConnection {pccConnStatus, connLinkInv} = conn
     case (pccConnStatus, connLinkInv) of
       (ConnNew, Just (CCLink cReqInv _)) -> do
         newUser <- privateGetUser newUserId
-        conn' <- ifM (canKeepLink cReqInv newUser) (updateConnRecord user conn newUser) (recreateConn user conn newUser)
+        conn' <- ifM (canKeepLink cReqInv newUser) (updateConn user conn newUser) (recreateConn user conn newUser)
         pure $ CRConnectionUserChanged user conn conn' newUser
       _ -> throwChatError CEConnectionUserChangeProhibited
     where
@@ -1707,16 +1714,21 @@ processChatCommand' vr = \case
           map protoServer' . L.filter (\ServerCfg {enabled} -> enabled)
             <$> getKnownAgentServers SPSMP newUser
         pure $ smpServer `elem` newUserServers
-      updateConnRecord user@User {userId} conn@PendingContactConnection {customUserProfileId} newUser = do
+      updateConn user@User {userId} conn@PendingContactConnection {customUserProfileId} newUser = do
         withAgent $ \a -> changeConnectionUser a (aUserId user) (aConnId' conn) (aUserId newUser)
+        sLnk <- updatePCCShortLinkData conn (ContactShortLinkData (userProfileToSend newUser Nothing Nothing False) Nothing)
         withFastStore' $ \db -> do
-          conn' <- updatePCCUser db userId conn newUserId
+          conn' <- updatePCCUser db userId conn newUserId sLnk
           forM_ customUserProfileId $ \profileId ->
             deletePCCIncognitoProfile db user profileId
           pure conn'
       recreateConn user conn@PendingContactConnection {customUserProfileId, connLinkInv} newUser = do
         subMode <- chatReadVar subscriptionMode
-        let userData = shortLinkUserData $ isJust $ connShortLink =<< connLinkInv
+        let short = isJust $ connShortLink =<< connLinkInv
+            userData =
+              if short
+                then Just $ encodeShortLinkData (ContactShortLinkData (userProfileToSend user Nothing Nothing False) Nothing)
+                else Nothing
         (agConnId, ccLink) <- withAgent $ \a -> createConnection a (aUserId newUser) True SCMInvitation userData Nothing IKPQOn subMode
         ccLink' <- shortenCreatedLink ccLink
         conn' <- withFastStore' $ \db -> do
@@ -1828,7 +1840,34 @@ processChatCommand' vr = \case
     processChatCommand $ APIListContacts userId
   APICreateMyAddress userId short -> withUserId userId $ \user -> procCmd $ do
     subMode <- chatReadVar subscriptionMode
-    let userData = shortLinkUserData short
+    -- TODO [short links] incognito interaction with contact address
+    -- TODO  - problems:
+    -- TODO    1 now that user profile is advertised in short link, giving an option to
+    -- TODO      share incognito profile on accept doesn't make sense.
+    -- TODO    2 even advertising a random incognito profile in short link is somewhat broken,
+    -- TODO      as it would be the same for all connecting clients, but then changed on accept (in current implementation),
+    -- TODO      so it would be clear it's incognito profile; it might as well be clearly a placeholder
+    -- TODO      (e.g. "Hidden profile" in profile name), and to avoid distinguishing incognito and main profiles,
+    -- TODO      it can be a setting that can be set for main profile too.
+    -- TODO    3 changing short link data from main to incognito profile also defeats the purpose of incognito profile,
+    -- TODO      as by scanning the short link in the past, connecting clients may know main profile (even if it's
+    -- TODO      currently set as incognito).
+    -- TODO  - some possibilities:
+    -- TODO    1 always base choice on autoAccept -> acceptIncognito choice, don't give option on user accept action
+    -- TODO    2 in this case, replace short link user data on change of this setting? (doesn't solve problem 3)
+    -- TODO    3 give setting to include "Hidden profile" in short link, even if autoAccept is not set to incognito
+    -- TODO    4 share same random profile on each accept, this way connecting clients technically
+    -- TODO      wouldn't be able to distinguish incognito profile (placeholder problem);
+    -- TODO    5 only give choice to accept with main or incognito profile if random profile or placeholder is shared
+    -- TODO      in short link user data; if main profile is shared, don't give choice
+    -- TODO    6 don't allow to change from main profile in short link to "Hidden profile" (or incognito autoAccept),
+    -- TODO      only allow to change vice versa, in one direction (solves problem 3)
+    -- TODO    7 remove incognito functionality from address altogether
+    -- TODO  - it seems measures 3, 5, 6 are the most reasonable, or removing incognito functionality for addresses altogether
+    let userData =
+          if short
+            then Just $ encodeShortLinkData (ContactShortLinkData (userProfileToSend user Nothing Nothing False) Nothing)
+            else Nothing
     (connId, ccLink) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact userData Nothing IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
     withFastStore $ \db -> createUserContactLink db user connId ccLink' subMode
@@ -1853,11 +1892,14 @@ processChatCommand' vr = \case
   ShowMyAddress -> withUser' $ \User {userId} ->
     processChatCommand $ APIShowMyAddress userId
   APIAddMyAddressShortLink userId -> withUserId' userId $ \user -> do
-    (ucl@UserContactLink {connLinkContact = CCLink connFullLink sLnk_}, conn) <-
+    (ucl@UserContactLink {connLinkContact = CCLink connFullLink sLnk_, autoAccept}, conn) <-
       withFastStore $ \db -> (,) <$> getUserAddress db user <*> getUserAddressConnection db vr user
     when (isJust sLnk_) $ throwCmdError "address already has short link"
-    -- TODO [short links] set ContactShortLinkData
-    sLnk <- shortenShortLink' =<< withAgent (\a -> setContactShortLink a (aConnId conn) "" Nothing)
+    -- TODO [short links] allow to add short link without data if autoAccept was set to incognito?
+    let shortLinkProfile = userProfileToSend user Nothing Nothing False
+        shortLinkMsg = autoAccept >>= autoReply >>= (Just . msgContentText)
+        userData = encodeShortLinkData (ContactShortLinkData shortLinkProfile shortLinkMsg)
+    sLnk <- shortenShortLink' =<< withAgent (\a -> setContactShortLink a (aConnId conn) userData Nothing)
     case entityId conn of
       Just uclId -> do
         withFastStore' $ \db -> setUserContactLinkShortLink db uclId sLnk
@@ -1875,6 +1917,7 @@ processChatCommand' vr = \case
   SetProfileAddress onOff -> withUser $ \User {userId} ->
     processChatCommand $ APISetProfileAddress userId onOff
   APIAddressAutoAccept userId autoAccept_ -> withUserId userId $ \user -> do
+    -- TODO [short links] update adress short link data if message changed
     forM_ autoAccept_ $ \AutoAccept {businessAddress, acceptIncognito} ->
       when (businessAddress && acceptIncognito) $ throwCmdError "requests to business address cannot be accepted incognito"
     contactLink <- withFastStore (\db -> updateUserAddressAutoAccept db user autoAccept_)
@@ -2419,6 +2462,7 @@ processChatCommand' vr = \case
     processChatCommand $ APIListGroups userId (contactId' <$> ct_) search_
   APIUpdateGroupProfile groupId p' -> withUser $ \user -> do
     g <- withFastStore $ \db -> getGroup db vr user groupId
+    -- TODO [short links] update group link short link data
     runUpdateGroupProfile user g p'
   UpdateGroupNames gName GroupProfile {displayName, fullName} ->
     updateGroupProfileByName gName $ \p -> p {displayName, fullName}
@@ -2429,13 +2473,16 @@ processChatCommand' vr = \case
   ShowGroupDescription gName -> withUser $ \user ->
     CRGroupDescription user <$> withFastStore (\db -> getGroupInfoByName db vr user gName)
   APICreateGroupLink groupId mRole short -> withUser $ \user -> withGroupLock "createGroupLink" groupId $ do
-    gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
+    gInfo@GroupInfo {groupProfile} <- withFastStore $ \db -> getGroupInfo db vr user groupId
     assertUserGroupRole gInfo GRAdmin
     when (mRole > GRMember) $ throwChatError $ CEGroupMemberInitialRole gInfo mRole
     groupLinkId <- GroupLinkId <$> drgRandomBytes 16
     subMode <- chatReadVar subscriptionMode
-    let crClientData = encodeJSON $ CRDataGroup groupLinkId
-        userData = shortLinkUserData short
+    let userData =
+          if short
+            then Just $ encodeShortLinkData (GroupShortLinkData groupProfile)
+            else Nothing
+        crClientData = encodeJSON $ CRDataGroup groupLinkId
     (connId, ccLink) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact userData (Just crClientData) IKPQOff subMode
     ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
     withFastStore $ \db -> createGroupLink db user gInfo connId ccLink' groupLinkId mRole subMode
@@ -2462,9 +2509,10 @@ processChatCommand' vr = \case
       conn <- getGroupLinkConnection db vr user gInfo
       pure (gInfo, gLink, conn)
     when (isJust sLnk_) $ throwCmdError "group link already has short link"
-    let crClientData = encodeJSON $ CRDataGroup gLinkId
-    -- TODO [short links] set GroupShortLinkData
-    sLnk <- shortenShortLink' =<< toShortGroupLink <$> withAgent (\a -> setContactShortLink a (aConnId conn) "" (Just crClientData))
+    let GroupInfo {groupProfile} = gInfo
+        userData = encodeShortLinkData (GroupShortLinkData groupProfile)
+        crClientData = encodeJSON $ CRDataGroup gLinkId
+    sLnk <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setContactShortLink a (aConnId conn) userData (Just crClientData))
     withFastStore' $ \db -> setUserContactLinkShortLink db uclId sLnk
     let groupLink' = CCLink connFullLink (Just sLnk)
     pure $ CRGroupLink user gInfo groupLink' mRole
@@ -2797,14 +2845,14 @@ processChatCommand' vr = \case
       (chatRef,) <$> case cType of
         CTGroup -> withFastStore' $ \db -> getMessageMentions db user chatId msg
         _ -> pure []
-#if !defined(dbPostgres)
+
     checkChatStopped :: CM ChatResponse -> CM ChatResponse
     checkChatStopped a = asks agentAsync >>= readTVarIO >>= maybe a (const $ throwChatError CEChatNotStopped)
     setStoreChanged :: CM ()
     setStoreChanged = asks chatStoreChanged >>= atomically . (`writeTVar` True)
     withStoreChanged :: CM () -> CM ChatResponse
     withStoreChanged a = checkChatStopped $ a >> setStoreChanged >> ok_
-#endif
+
     checkStoreNotChanged :: CM ChatResponse -> CM ChatResponse
     checkStoreNotChanged = ifM (asks chatStoreChanged >>= readTVarIO) (throwChatError CEChatStoreChanged)
     withUserName :: UserName -> (UserId -> ChatCommand) -> CM ChatResponse
@@ -3215,7 +3263,7 @@ processChatCommand' vr = \case
             (ACCL SCMInvitation (CCLink cReq (Just l')),) <$> (invitationEntityPlan ent `catchChatError` (pure . CPError))
           Nothing -> do
             (cReq, cData) <- getShortLinkConnReq user l'
-            let contactSLinkData_ = decodeJSON . safeDecodeUtf8 $ linkUserData cData
+            let contactSLinkData_ = decodeShortLinkData $ linkUserData cData
             invitationReqAndPlan cReq (Just l') contactSLinkData_
       where
         invitationReqAndPlan cReq sLnk_ contactSLinkData_ = do
@@ -3233,7 +3281,7 @@ processChatCommand' vr = \case
               Just (UserContactLink (CCLink cReq _) _) -> pure (ACCL SCMContact $ CCLink cReq (Just l'), CPContactAddress CAPOwnLink)
               Nothing -> do
                 (cReq, cData) <- getShortLinkConnReq user l'
-                let contactSLinkData_ = decodeJSON . safeDecodeUtf8 $ linkUserData cData
+                let contactSLinkData_ = decodeShortLinkData $ linkUserData cData
                 plan <- contactRequestPlan user cReq contactSLinkData_
                 pure (ACCL SCMContact $ CCLink cReq (Just l'), plan)
           CCTGroup ->
@@ -3241,7 +3289,7 @@ processChatCommand' vr = \case
               Just (cReq, g) -> pure (ACCL SCMContact $ CCLink cReq (Just l'), CPGroupLink (GLPOwnLink g))
               Nothing -> do
                 (cReq, cData) <- getShortLinkConnReq user l'
-                let groupSLinkData_ = decodeJSON . safeDecodeUtf8 $ linkUserData cData
+                let groupSLinkData_ = decodeShortLinkData $ linkUserData cData
                 plan <- groupJoinRequestPlan user cReq groupSLinkData_
                 pure (ACCL SCMContact $ CCLink cReq (Just l'), plan)
           CCTChannel -> throwCmdError "channel links are not supported in this version"
@@ -3357,8 +3405,19 @@ processChatCommand' vr = \case
       CSLInvitation _ srv lnkId linkKey -> CSLInvitation SLSServer srv lnkId linkKey
       CSLContact _ ct srv linkKey -> CSLContact SLSServer ct srv linkKey
     restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . config)
-    -- TODO [short links] pass encoded ContactShortLinkData or GroupShortLinkData
-    shortLinkUserData short = if short then Just "" else Nothing
+    encodeShortLinkData :: J.ToJSON a => a -> ByteString
+    encodeShortLinkData = encodeUtf8 . encodeJSON
+    decodeShortLinkData :: J.FromJSON a => ByteString -> Maybe a
+    decodeShortLinkData = decodeJSON . safeDecodeUtf8
+    updatePCCShortLinkData :: J.ToJSON a => PendingContactConnection -> a -> CM (Maybe ShortLinkInvitation)
+    updatePCCShortLinkData conn@PendingContactConnection {connLinkInv} shortLinkData = do
+      let short = isJust $ connShortLink =<< connLinkInv
+      if short
+        then do
+          let userData = encodeShortLinkData shortLinkData
+          sLnk <- shortenShortLink' =<< withAgent (\a -> setInvitationShortLink a (aConnId' conn) userData)
+          pure $ Just sLnk
+        else pure Nothing
     shortenShortLink' :: ConnShortLink m -> CM (ConnShortLink m)
     shortenShortLink' l = (`shortenShortLink` l) <$> asks (shortLinkPresetServers . config)
     shortenCreatedLink :: CreatedConnLink m -> CM (CreatedConnLink m)
@@ -4114,7 +4173,7 @@ chatCommandP =
       "/set file paths " *> (APISetAppFilePaths <$> jsonP),
       "/_files_encrypt " *> (APISetEncryptLocalFiles <$> onOffP),
       "/contact_merge " *> (SetContactMergeEnabled <$> onOffP),
-#if !defined(dbPostgres)
+
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/db export" $> ExportArchive,
       "/_db import " *> (APIImportArchive <$> jsonP),
@@ -4125,7 +4184,7 @@ chatCommandP =
       "/db decrypt " *> (APIStorageEncryption . (`dbEncryptionConfig` "") <$> dbKeyP),
       "/db test key " *> (TestStorageEncryption <$> dbKeyP),
       "/sql slow" $> SlowSQLQueries,
-#endif
+
       "/_save app settings" *> (APISaveAppSettings <$> jsonP),
       "/_get app settings" *> (APIGetAppSettings <$> optional (A.space *> jsonP)),
       "/sql chat " *> (ExecChatStoreSQL <$> textP),
@@ -4615,11 +4674,11 @@ chatCommandP =
       logTLSErrors <- " log=" *> onOffP <|> pure False
       let tcpTimeout_ = (1000000 *) <$> t_
       pure $ SimpleNetCfg {socksProxy, socksMode, hostMode, requiredHostMode, smpProxyMode_, smpProxyFallback_, smpWebPortServers, tcpTimeout_, logTLSErrors}
-#if !defined(dbPostgres)
+
     dbKeyP = nonEmptyKey <$?> strP
     nonEmptyKey k@(DBEncryptionKey s) = if BA.null s then Left "empty key" else Right k
     dbEncryptionConfig currentKey newKey = DBEncryptionConfig {currentKey, newKey, keepKey = Just False}
-#endif
+
     autoAcceptP = ifM onOffP (Just <$> (businessAA <|> addressAA)) (pure Nothing)
       where
         addressAA = AutoAccept False <$> (" incognito=" *> onOffP <|> pure False) <*> autoReply

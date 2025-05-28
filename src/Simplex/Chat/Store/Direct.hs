@@ -429,31 +429,39 @@ updateContactConnectionAlias db userId conn localAlias = do
     (localAlias, updatedAt, userId, pccConnId conn)
   pure (conn :: PendingContactConnection) {localAlias, updatedAt}
 
-updatePCCIncognito :: DB.Connection -> User -> PendingContactConnection -> Maybe ProfileId -> IO PendingContactConnection
-updatePCCIncognito db User {userId} conn customUserProfileId = do
+updatePCCIncognito :: DB.Connection -> User -> PendingContactConnection -> Maybe ProfileId -> Maybe ShortLinkInvitation -> IO PendingContactConnection
+updatePCCIncognito db User {userId} conn@PendingContactConnection {connLinkInv} customUserProfileId sLnk = do
   updatedAt <- getCurrentTime
   DB.execute
     db
     [sql|
       UPDATE connections
-      SET custom_user_profile_id = ?, updated_at = ?
+      SET custom_user_profile_id = ?, short_link_inv = ?, updated_at = ?
       WHERE user_id = ? AND connection_id = ?
     |]
-    (customUserProfileId, updatedAt, userId, pccConnId conn)
-  pure (conn :: PendingContactConnection) {customUserProfileId, updatedAt}
+    (customUserProfileId, sLnk, updatedAt, userId, pccConnId conn)
+  pure (conn :: PendingContactConnection) {customUserProfileId, connLinkInv = connLinkInv', updatedAt}
+  where
+    connLinkInv' = case connLinkInv of
+      Just (CCLink cReq _) -> Just (CCLink cReq sLnk)
+      Nothing -> Nothing
 
-updatePCCUser :: DB.Connection -> UserId -> PendingContactConnection -> UserId -> IO PendingContactConnection
-updatePCCUser db userId conn newUserId = do
+updatePCCUser :: DB.Connection -> UserId -> PendingContactConnection -> UserId -> Maybe ShortLinkInvitation -> IO PendingContactConnection
+updatePCCUser db userId conn@PendingContactConnection {connLinkInv} newUserId sLnk = do
   updatedAt <- getCurrentTime
   DB.execute
     db
     [sql|
       UPDATE connections
-      SET user_id = ?, custom_user_profile_id = NULL, updated_at = ?
+      SET user_id = ?, short_link_inv = ?, custom_user_profile_id = NULL, updated_at = ?
       WHERE user_id = ? AND connection_id = ?
     |]
-    (newUserId, updatedAt, userId, pccConnId conn)
-  pure (conn :: PendingContactConnection) {customUserProfileId = Nothing, updatedAt}
+    (newUserId, sLnk, updatedAt, userId, pccConnId conn)
+  pure (conn :: PendingContactConnection) {customUserProfileId = Nothing, connLinkInv = connLinkInv', updatedAt}
+  where
+    connLinkInv' = case connLinkInv of
+      Just (CCLink cReq _) -> Just (CCLink cReq sLnk)
+      Nothing -> Nothing
 
 deletePCCIncognitoProfile :: DB.Connection -> User -> ProfileId -> IO ()
 deletePCCIncognitoProfile db User {userId} profileId =

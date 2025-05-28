@@ -1481,6 +1481,8 @@ type CreatedLinkContact = CreatedConnLink 'CMContact
 
 type ConnLinkContact = ConnectionLink 'CMContact
 
+type ShortLinkInvitation = ConnShortLink 'CMInvitation
+
 type ShortLinkContact = ConnShortLink 'CMContact
 
 data Connection = Connection
