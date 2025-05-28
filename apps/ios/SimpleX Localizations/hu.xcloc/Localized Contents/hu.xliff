@@ -1193,7 +1193,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Bad message hash" xml:space="preserve" approved="no">
         <source>Bad message hash</source>
-        <target state="translated">Érvénytelen az üzenet hasító értéke</target>
+        <target state="translated">Érvénytelen az üzenet hasítóértéke</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better calls" xml:space="preserve">
@@ -7837,7 +7837,7 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
       </trans-unit>
       <trans-unit id="The hash of the previous message is different." xml:space="preserve" approved="no">
         <source>The hash of the previous message is different.</source>
-        <target state="translated">Az előző üzenet hasító értéke különbözik.</target>
+        <target state="translated">Az előző üzenet hasítóértéke különbözik.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve">
@@ -9335,7 +9335,7 @@ Megismétli a meghívási kérést?</target>
       </trans-unit>
       <trans-unit id="bad message hash" xml:space="preserve" approved="no">
         <source>bad message hash</source>
-        <target state="translated">érvénytelen az üzenet hasító értéke</target>
+        <target state="translated">érvénytelen az üzenet hasítóértéke</target>
         <note>integrity error chat item</note>
       </trans-unit>
       <trans-unit id="blocked" xml:space="preserve">
