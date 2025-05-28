@@ -2435,4 +2435,5 @@
     <string name="accept_pending_member_alert_title">Aceptar miembro</string>
     <string name="accept_pending_member_alert_confirmation_as_member">Aceptar como miembro</string>
     <string name="accept_pending_member_alert_question">El miembro se unirá al grupo, ¿aceptas al miembro?</string>
+    <string name="add_short_link">Añadir enlace corto</string>
 </resources>
