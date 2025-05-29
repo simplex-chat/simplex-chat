@@ -1743,12 +1743,11 @@ processChatCommand' vr = \case
   -- TODO [short links] prepare entity
   -- TODO  - UI would call these APIs after Ok connection plans with short link data
   -- TODO  - Persist ACreatedConnLink to be used for connection later on user action:
-  -- TODO    `link` to contacts.conn_req_to_connect, groups.conn_req_to_connect
+  -- TODO    `link` to contacts.conn_link_to_connect, groups.conn_link_to_connect
   APIPrepareContact userId contactSLinkData link -> withUserId userId $ \user -> do
-    let ContactShortLinkData {profile, welcomMessage} = contactSLinkData
-        ACCL _ (CCLink connReqToConnect _) = link
-    ct <- withStore $ \db -> createPreparedContact db user p connReqToConnect
-    forM_ welcomMessage $ \msg ->
+    let ContactShortLinkData {profile, welcomeMessage} = contactSLinkData
+    ct <- withStore $ \db -> createPreparedContact db user profile link
+    forM_ welcomeMessage $ \msg ->
       createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent $ MCText msg) Nothing
     pure $ CRNewPreparedContact user ct
   APIPrepareGroup userId groupSLinkData link -> withUserId userId $ \user -> do
@@ -1900,7 +1899,7 @@ processChatCommand' vr = \case
     let shortLinkProfile = userProfileToSend user Nothing Nothing False
         shortLinkMsg = autoAccept >>= autoReply >>= (Just . msgContentText)
         userData = encodeShortLinkData (ContactShortLinkData shortLinkProfile shortLinkMsg)
-    sLnk <- shortenShortLink' =<< withAgent (\a -> setContactShortLink a (aConnId conn) userData Nothing)
+    sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a (aConnId conn) SCMContact userData Nothing)
     case entityId conn of
       Just uclId -> do
         withFastStore' $ \db -> setUserContactLinkShortLink db uclId sLnk
@@ -2513,7 +2512,7 @@ processChatCommand' vr = \case
     let GroupInfo {groupProfile} = gInfo
         userData = encodeShortLinkData (GroupShortLinkData groupProfile)
         crClientData = encodeJSON $ CRDataGroup gLinkId
-    sLnk <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setContactShortLink a (aConnId conn) userData (Just crClientData))
+    sLnk <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a (aConnId conn) SCMContact userData (Just crClientData))
     withFastStore' $ \db -> setUserContactLinkShortLink db uclId sLnk
     let groupLink' = CCLink connFullLink (Just sLnk)
     pure $ CRGroupLink user gInfo groupLink' mRole
@@ -3416,7 +3415,7 @@ processChatCommand' vr = \case
       if short
         then do
           let userData = encodeShortLinkData shortLinkData
-          sLnk <- shortenShortLink' =<< withAgent (\a -> setInvitationShortLink a (aConnId' conn) userData)
+          sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a (aConnId' conn) SCMInvitation userData Nothing)
           pure $ Just sLnk
         else pure Nothing
     shortenShortLink' :: ConnShortLink m -> CM (ConnShortLink m)

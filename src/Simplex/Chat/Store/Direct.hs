@@ -101,7 +101,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (ConnId, CreatedConnLink (..), InvitationId, UserId)
+import Simplex.Messaging.Agent.Protocol (ACreatedConnLink, ConnId, CreatedConnLink (..), InvitationId, UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -200,7 +200,7 @@ getContactByConnReqHash db vr user@User {userId} cReqHash = do
           SELECT
             -- Contact
             ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-            cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_req_to_connect,
+            cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_link_to_connect,
             ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
             -- Connection
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
@@ -240,10 +240,10 @@ createIncognitoProfile db User {userId} p = do
   createdAt <- getCurrentTime
   createIncognitoProfile_ db userId createdAt p
 
-createPreparedContact :: DB.Connection -> User -> Profile -> AConnectionRequestUri -> ExceptT StoreError IO Contact
-createPreparedContact db user p@Profile {preferences} connReqToConnect = do
+createPreparedContact :: DB.Connection -> User -> Profile -> ACreatedConnLink -> ExceptT StoreError IO Contact
+createPreparedContact db user@User {userId} p@Profile {preferences} connLinkToConnect = do
   currentTs <- liftIO getCurrentTime
-  (localDisplayName, contactId, profileId) <- createContact_ db userId p (Just connReqToConnect) "" Nothing currentTs
+  (localDisplayName, contactId, profileId) <- createContact_ db userId p (Just connLinkToConnect) "" Nothing currentTs
   let profile = toLocalProfile profileId p ""
       userPreferences = emptyChatPrefs
       mergedPreferences = contactUserPreferences user userPreferences preferences False
@@ -262,7 +262,7 @@ createPreparedContact db user p@Profile {preferences} connReqToConnect = do
         createdAt = currentTs,
         updatedAt = currentTs,
         chatTs = Just currentTs,
-        connReqToConnect = Just connReqToConnect,
+        connLinkToConnect = Just connLinkToConnect,
         contactGroupMemberId = Nothing,
         contactGrpInvSent = False,
         chatTags = [],
@@ -295,7 +295,7 @@ createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p
         createdAt = currentTs,
         updatedAt = currentTs,
         chatTs = Just currentTs,
-        connReqToConnect = Nothing,
+        connLinkToConnect = Nothing,
         contactGroupMemberId = Nothing,
         contactGrpInvSent = False,
         chatTags = [],
@@ -693,7 +693,7 @@ createOrUpdateContactRequest db vr user@User {userId, userContactId} userContact
               SELECT
                 -- Contact
                 ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-                cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_req_to_connect,
+                cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_link_to_connect,
                 ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
                 -- Connection
                 c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
@@ -870,7 +870,7 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
             createdAt,
             updatedAt = createdAt,
             chatTs = Just createdAt,
-            connReqToConnect = Nothing,
+            connLinkToConnect = Nothing,
             contactGroupMemberId = Nothing,
             contactGrpInvSent = False,
             chatTags = [],
@@ -910,7 +910,7 @@ getContact_ db vr user@User {userId} contactId deleted = do
         SELECT
           -- Contact
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_req_to_connect,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_link_to_connect,
           ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
