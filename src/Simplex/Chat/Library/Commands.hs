@@ -1817,7 +1817,7 @@ processChatCommand' vr = \case
     (ucl@UserContactLink {connLinkContact = CCLink connFullLink sLnk_}, conn) <-
       withFastStore $ \db -> (,) <$> getUserAddress db user <*> getUserAddressConnection db vr user
     when (isJust sLnk_) $ throwCmdError "address already has short link"
-    sLnk <- shortenShortLink' =<< withAgent (\a -> setContactShortLink a (aConnId conn) "" Nothing)
+    sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a (aConnId conn) SCMContact "" Nothing)
     case entityId conn of
       Just uclId -> do
         withFastStore' $ \db -> setUserContactLinkShortLink db uclId sLnk
@@ -2423,7 +2423,7 @@ processChatCommand' vr = \case
       pure (gInfo, gLink, conn)
     when (isJust sLnk_) $ throwCmdError "group link already has short link"
     let crClientData = encodeJSON $ CRDataGroup gLinkId
-    sLnk <- shortenShortLink' =<< toShortGroupLink <$> withAgent (\a -> setContactShortLink a (aConnId conn) "" (Just crClientData))
+    sLnk <- shortenShortLink' =<< toShortGroupLink <$> withAgent (\a -> setConnShortLink a (aConnId conn) SCMContact "" (Just crClientData))
     withFastStore' $ \db -> setUserContactLinkShortLink db uclId sLnk
     let groupLink' = CCLink connFullLink (Just sLnk)
     pure $ CRGroupLink user gInfo groupLink' mRole
