@@ -633,9 +633,6 @@ struct GroupChatInfoView: View {
                 groupInfo: $groupInfo,
                 groupProfile: groupInfo.groupProfile
             )
-            .navigationBarTitle("Group profile")
-            .modifier(ThemedBackground())
-            .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Edit group profile", systemImage: "pencil")
         }
