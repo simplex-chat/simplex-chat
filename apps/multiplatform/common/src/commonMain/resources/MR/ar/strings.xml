@@ -826,7 +826,7 @@
     <string name="periodic_notifications_disabled">الإشعارات الدورية مُعطَّلة</string>
     <string name="image_descr_profile_image">صورة ملف التعريف</string>
     <string name="onboarding_notifications_mode_title">الإشعارات خاصة</string>
-    <string name="store_passphrase_securely_without_recover">يرجى تخزين عبارة المرور بشكل آمن، فلن تتمكن من الوصول إلى الدردشة إذا فقدتها.</string>
+    <string name="store_passphrase_securely_without_recover">يُرجى تخزين عبارة المرور بشكل آمن، فلن تتمكن من الوصول إلى الدردشة إذا فقدتها.</string>
     <string name="contact_developers">يُرجى تحديث التطبيق والتواصل مع المطورين.</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[اقرأ المزيد في <font color="#0088ff">دليل المستخدم</font>.]]></string>
     <string name="auth_open_chat_profiles">غيّر ملفات تعريف الدردشة</string>
@@ -843,7 +843,7 @@
     <string name="remove_passphrase">إزالة</string>
     <string name="remove_passphrase_from_keychain">إزالة عبارة المرور من Keystore؟</string>
     <string name="enter_correct_current_passphrase">الرجاء إدخال عبارة المرور الحالية الصحيحة.</string>
-    <string name="store_passphrase_securely">يرجى تخزين عبارة المرور بشكل آمن، فلن تتمكن من الوصول إلى الدردشة إذا فقدتها.</string>
+    <string name="store_passphrase_securely">يُرجى تخزين عبارة المرور بشكل آمن، فلن تتمكن من الوصول إلى الدردشة إذا فقدتها.</string>
     <string name="prohibit_calls">منع مكالمات الصوت/الفيديو.</string>
     <string name="prohibit_message_deletion">منع حذف الرسائل التي لا رجعة فيها.</string>
     <string name="receiving_files_not_yet_supported">استلام الملفات غير معتمد حتى الآن</string>
@@ -908,7 +908,7 @@
     <string name="callstatus_rejected">رُفضت المكالمة</string>
     <string name="protect_app_screen">حماية شاشة التطبيق</string>
     <string name="group_member_status_removed">أُزيلت</string>
-    <string name="la_please_remember_to_store_password">يرجى تذكرها أو تخزينها بأمان - لا توجد طريقة لاستعادة كلمة المرور المفقودة!</string>
+    <string name="la_please_remember_to_store_password">يُرجى تذكرها أو تخزينها بأمان - لا توجد طريقة لاستعادة كلمة المرور المفقودة!</string>
     <string name="group_welcome_preview">معاينة</string>
     <string name="error_smp_test_certificate">من المحتمل أن الملف المرجعي للشهادة في عنوان الخادم غير صحيح</string>
     <string name="simplex_service_notification_text">يتم استلام الرسائل…</string>
@@ -918,7 +918,7 @@
     <string name="revoke_file__action">سحب وصول الملف</string>
     <string name="revoke_file__title">سحب وصول الملف؟</string>
     <string name="toast_permission_denied">رٌفض الإذن!</string>
-    <string name="ask_your_contact_to_enable_voice">يرجى مطالبة جهة اتصالك بتفعيل إرسال الرسائل الصوتية.</string>
+    <string name="ask_your_contact_to_enable_voice">يُرجى مطالبة جهة اتصالك بتفعيل إرسال الرسائل الصوتية.</string>
     <string name="icon_descr_profile_image_placeholder">العنصر النائب لصورة ملف التعريف</string>
     <string name="image_descr_qr_code">رمز QR</string>
     <string name="reset_verb">صفّر</string>
@@ -1108,7 +1108,7 @@
     <string name="v4_5_transport_isolation">عزل النقل</string>
     <string name="this_string_is_not_a_connection_link">هذه السلسلة ليست رابط اتصال!</string>
     <string name="receipts_section_description">هذه الإعدادات لملف تعريفك الحالي</string>
-    <string name="receipts_section_description_1">يمكن تجاوزها في إعدادات الاتصال و المجموعة.</string>
+    <string name="receipts_section_description_1">يمكن تجاوزها في إعدادات الاتصال والمجموعة.</string>
     <string name="network_option_tcp_connection_timeout">انتهت مهلة اتصال TCP</string>
     <string name="v4_5_private_filenames_descr">لحماية المنطقة الزمنية، تستخدم ملفات الصور / الصوت التوقيت العالمي المنسق (UTC).</string>
     <string name="v5_2_message_delivery_receipts_descr">فقدنا القراد الثاني! ✅</string>
@@ -1608,7 +1608,7 @@
     <string name="call_service_notification_end_call">أنهيّ المكالمة</string>
     <string name="unable_to_open_browser_desc">متصفح الويب الافتراضي مطلوب للمكالمات. يُرجى تضبيط المتصفح الافتراضي في النظام، ومشاركة المزيد من المعلومات مع المطورين.</string>
     <string name="unable_to_open_browser_title">حدث خطأ أثناء فتح المتصفح</string>
-    <string name="migrate_from_device_archive_and_upload">أرشفة و رفع</string>
+    <string name="migrate_from_device_archive_and_upload">أرشف وأرفع</string>
     <string name="v5_6_safer_groups_descr">يمكن للمُدراء حظر عضو للجميع.</string>
     <string name="v5_6_app_data_migration">ترحيل بيانات التطبيق</string>
     <string name="migrate_from_device_archiving_database">جارِ أرشفة قاعدة البيانات</string>
