@@ -448,7 +448,13 @@ data ChatCommand
   | APISetConnectionIncognito Int64 IncognitoEnabled
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
   | APIConnectPlan UserId AConnectionLink
-  | APIConnect UserId IncognitoEnabled (Maybe ACreatedConnLink)
+  | APIPrepareContact UserId ContactShortLinkData ACreatedConnLink
+  | APIPrepareGroup UserId GroupShortLinkData ACreatedConnLink
+  | APIChangeContactUser ContactId UserId
+  | APIChangeGroupUser GroupId UserId
+  | APIConnectPreparedContact {contactId :: ContactId, msgContent_ :: Maybe MsgContent}
+  | APIConnectPreparedGroup GroupId
+  | APIConnect UserId IncognitoEnabled (Maybe ACreatedConnLink) (Maybe MsgContent)
   | Connect IncognitoEnabled (Maybe AConnectionLink)
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
@@ -961,14 +967,14 @@ data ConnectionPlan
   deriving (Show)
 
 data InvitationLinkPlan
-  = ILPOk
+  = ILPOk {contactSLinkData_ :: Maybe ContactShortLinkData}
   | ILPOwnLink
   | ILPConnecting {contact_ :: Maybe Contact}
   | ILPKnown {contact :: Contact}
   deriving (Show)
 
 data ContactAddressPlan
-  = CAPOk
+  = CAPOk {contactSLinkData_ :: Maybe ContactShortLinkData}
   | CAPOwnLink
   | CAPConnectingConfirmReconnect
   | CAPConnectingProhibit {contact :: Contact}
@@ -977,7 +983,7 @@ data ContactAddressPlan
   deriving (Show)
 
 data GroupLinkPlan
-  = GLPOk
+  = GLPOk {groupSLinkData_ :: Maybe GroupShortLinkData}
   | GLPOwnLink {groupInfo :: GroupInfo}
   | GLPConnectingConfirmReconnect
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
@@ -987,17 +993,17 @@ data GroupLinkPlan
 connectionPlanProceed :: ConnectionPlan -> Bool
 connectionPlanProceed = \case
   CPInvitationLink ilp -> case ilp of
-    ILPOk -> True
+    ILPOk _ -> True
     ILPOwnLink -> True
     _ -> False
   CPContactAddress cap -> case cap of
-    CAPOk -> True
+    CAPOk _ -> True
     CAPOwnLink -> True
     CAPConnectingConfirmReconnect -> True
     CAPContactViaAddress _ -> True
     _ -> False
   CPGroupLink glp -> case glp of
-    GLPOk -> True
+    GLPOk _ -> True
     GLPOwnLink _ -> True
     GLPConnectingConfirmReconnect -> True
     _ -> False
@@ -1281,6 +1287,7 @@ data ChatErrorType
   | CEInvalidConnReq
   | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
+  | CEConnReqMessageProhibited
   | CEContactNotFound {contactName :: ContactName, suspectedMember :: Maybe (GroupInfo, GroupMember)}
   | CEContactNotReady {contact :: Contact}
   | CEContactNotActive {contact :: Contact}

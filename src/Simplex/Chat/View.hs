@@ -1818,7 +1818,7 @@ viewConnectionUserChanged User {localDisplayName = n} PendingContactConnection {
 viewConnectionPlan :: ChatConfig -> ConnectionPlan -> [StyledString]
 viewConnectionPlan ChatConfig {logLevel, testView} = \case
   CPInvitationLink ilp -> case ilp of
-    ILPOk -> [invLink "ok to connect"]
+    ILPOk _contactSLinkData -> [invLink "ok to connect"]
     ILPOwnLink -> [invLink "own link"]
     ILPConnecting Nothing -> [invLink "connecting"]
     ILPConnecting (Just ct) -> [invLink ("connecting to contact " <> ttyContact' ct)]
@@ -1829,7 +1829,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} = \case
     where
       invLink = ("invitation link: " <>)
   CPContactAddress cap -> case cap of
-    CAPOk -> [ctAddr "ok to connect"]
+    CAPOk _contactSLinkData -> [ctAddr "ok to connect"]
     CAPOwnLink -> [ctAddr "own address"]
     CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
     CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
@@ -1841,7 +1841,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} = \case
     where
       ctAddr = ("contact address: " <>)
   CPGroupLink glp -> case glp of
-    GLPOk -> [grpLink "ok to connect"]
+    GLPOk _groupSLinkData -> [grpLink "ok to connect"]
     GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
     GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
     GLPConnectingProhibit Nothing -> [grpLink "connecting"]
@@ -2286,6 +2286,7 @@ viewChatError isCmd logLevel testView = \case
             <> (", connection id: " <> show connId)
             <> maybe "" (\MsgMetaJSON {rcvId} -> ", agent msg rcv id: " <> show rcvId) msgMeta_
       ]
+    CEConnReqMessageProhibited -> ["message is not allowed with this connection link"]
     CEContactNotFound cName m_ -> viewContactNotFound cName m_
     CEContactNotReady c -> [ttyContact' c <> ": not ready"]
     CEContactDisabled ct -> [ttyContact' ct <> ": disabled, to enable: " <> highlight ("/enable " <> viewContactName ct) <> ", to delete: " <> highlight ("/d " <> viewContactName ct)]
