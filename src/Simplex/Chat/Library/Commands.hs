@@ -1304,6 +1304,8 @@ processChatCommand' vr = \case
         liftIO $ setGroupUIThemes db user g uiThemes
       ok user
     _ -> throwCmdError "not supported"
+  APIGetNtfServers -> withUser $ \_ -> CRNtfServers <$> lift (withAgent' getNtfServers)
+  APISetNtfServers servers -> withUser $ \_ -> lift (withAgent' (`setNtfServers` servers)) >> ok_
   APIGetNtfToken -> withUser' $ \_ -> crNtfToken <$> withAgent getNtfToken
   APIRegisterToken token mode -> withUser $ \_ ->
     CRNtfTokenStatus <$> withAgent (\a -> registerNtfToken a token mode)
@@ -4098,6 +4100,8 @@ chatCommandP =
       "/_set prefs @" *> (APISetContactPrefs <$> A.decimal <* A.space <*> jsonP),
       "/_set theme user " *> (APISetUserUIThemes <$> A.decimal <*> optional (A.space *> jsonP)),
       "/_set theme " *> (APISetChatUIThemes <$> chatRefP <*> optional (A.space *> jsonP)),
+      "/_ntf servers" $> APIGetNtfServers,
+      "/_ntf servers " *> (APISetNtfServers . map SMP.protoServer <$> protocolServersP),
       "/_ntf get" $> APIGetNtfToken,
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),
       "/_ntf verify " *> (APIVerifyToken <$> strP <* A.space <*> strP <* A.space <*> strP),

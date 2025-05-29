@@ -235,6 +235,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRNewMemberContactSentInv u _ct g m -> ttyUser u ["sent invitation to connect directly to member " <> ttyGroup' g <> " " <> ttyMember m]
   CRCallInvitations _ -> []
   CRContactConnectionDeleted u PendingContactConnection {pccConnId} -> ttyUser u ["connection :" <> sShow pccConnId <> " deleted"]
+  CRNtfServers ntfServers -> viewNtfServers ntfServers
   CRNtfTokenStatus status -> ["device token status: " <> plain (smpEncode status)]
   CRNtfToken _ status mode srv -> ["device token status: " <> plain (smpEncode status) <> ", notifications mode: " <> plain (strEncode mode) <> ", server: " <> sShow srv]
   CRNtfConns {ntfConns} -> map (\NtfConn {agentConnId, expectedMsg_} -> plain $ show agentConnId <> " " <> show expectedMsg_) ntfConns
@@ -2200,6 +2201,14 @@ viewVersionInfo logLevel CoreVersionInfo {version, simplexmqVersion, simplexmqCo
 
 parens :: (IsString a, Semigroup a) => a -> a
 parens s = " (" <> s <> ")"
+
+viewNtfServers :: [SMP.NtfServer] -> [StyledString]
+viewNtfServers = \case
+  [] -> ["No remote NTF server"]
+  s -> map viewNtfServer s
+  where
+    viewNtfServer s =
+      plain $ SMP.legacyStrEncodeServer s
 
 viewRemoteHosts :: [RemoteHostInfo] -> [StyledString]
 viewRemoteHosts = \case

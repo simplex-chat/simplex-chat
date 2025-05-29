@@ -350,6 +350,8 @@ data ChatCommand
   | APISetConnectionAlias Int64 LocalAlias
   | APISetUserUIThemes UserId (Maybe UIThemeEntityOverrides)
   | APISetChatUIThemes ChatRef (Maybe UIThemeEntityOverrides)
+  | APIGetNtfServers
+  | APISetNtfServers [NtfServer]
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode
   | APIVerifyToken DeviceToken C.CbNonce ByteString
@@ -717,6 +719,7 @@ data ChatResponse
   | CRNewMemberContact {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | CRNewMemberContactSentInv {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | CRCallInvitations {callInvitations :: [RcvCallInvitation]}
+  | CRNtfServers {ntfServers :: [NtfServer]}
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode, ntfServer :: NtfServer}
   | CRNtfConns {ntfConns :: [NtfConn]}
