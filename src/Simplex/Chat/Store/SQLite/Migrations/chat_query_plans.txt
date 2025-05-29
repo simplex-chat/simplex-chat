@@ -36,14 +36,6 @@ Plan:
 Query: 
                 INSERT INTO groups
                   (group_profile_id, local_display_name, user_id, enable_ntfs,
-                   created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat, business_member_id, customer_member_id)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?)
-              
-Plan:
-
-Query: 
-                INSERT INTO groups
-                  (group_profile_id, local_display_name, user_id, enable_ntfs,
                    created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat, business_xcontact_id)
                 VALUES (?,?,?,?,?,?,?,?,?,?)
               
@@ -698,6 +690,15 @@ Query:
               user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
               peer_chat_min_version, peer_chat_max_version)
           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        
+Plan:
+
+Query: 
+          INSERT INTO groups
+            (group_profile_id, local_display_name, user_id, enable_ntfs,
+              created_at, updated_at, chat_ts, user_member_profile_sent_at, conn_full_link_to_connect, conn_short_link_to_connect,
+              business_chat, business_member_id, customer_member_id)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
         
 Plan:
 
@@ -5496,11 +5497,11 @@ Query: INSERT INTO contact_profiles (display_name, full_name, image, user_id, pr
 Plan:
 SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_profile_id (contact_profile_id=?)
 
-Query: INSERT INTO contacts (contact_profile_id, local_display_name, user_id, conn_full_link_to_connect, conn_short_link_to_connect, via_group, created_at, updated_at, chat_ts, contact_used) VALUES (?,?,?,?,?,?,?,?,?,?)
+Query: INSERT INTO contacts (contact_profile_id, local_display_name, user_id, is_user, created_at, updated_at, chat_ts) VALUES (?,?,?,?,?,?,?)
 Plan:
 SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
 
-Query: INSERT INTO contacts (contact_profile_id, local_display_name, user_id, is_user, created_at, updated_at, chat_ts) VALUES (?,?,?,?,?,?,?)
+Query: INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at, chat_ts, contact_used, conn_full_link_to_connect, conn_short_link_to_connect) VALUES (?,?,?,?,?,?,?,?,?,?)
 Plan:
 SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
 
