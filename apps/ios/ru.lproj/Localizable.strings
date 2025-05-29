@@ -1596,13 +1596,13 @@ set passcode view */
 
 /* delete after time
 pref value */
-"default (%@)" = "по умолчанию (%@)";
+"default (%@)" = "базовый (%@)";
 
 /* No comment provided by engineer. */
-"default (no)" = "по умолчанию (нет)";
+"default (no)" = "базовый (нет)";
 
 /* No comment provided by engineer. */
-"default (yes)" = "по умолчанию (да)";
+"default (yes)" = "базовый (да)";
 
 /* alert action
 swipe action */
@@ -1705,7 +1705,7 @@ swipe action */
 "Delete messages" = "Удалить сообщения";
 
 /* No comment provided by engineer. */
-"Delete messages after" = "Удалять сообщения через";
+"Delete messages after" = "Удалять сообщения";
 
 /* No comment provided by engineer. */
 "Delete old database" = "Удалить предыдущую версию данных";
@@ -4633,7 +4633,7 @@ chat item action */
 "Send questions and ideas" = "Отправьте вопросы и идеи";
 
 /* No comment provided by engineer. */
-"Send receipts" = "Отправлять отчёты о доставке";
+"Send receipts" = "Отчёты о доставке";
 
 /* No comment provided by engineer. */
 "Send them from gallery or custom keyboards." = "Отправьте из галереи или из дополнительных клавиатур.";
