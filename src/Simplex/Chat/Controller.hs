@@ -452,8 +452,8 @@ data ChatCommand
   | APIPrepareGroup UserId GroupShortLinkData ACreatedConnLink
   | APIChangeContactUser ContactId UserId
   | APIChangeGroupUser GroupId UserId
-  | APIConnectPreparedContact {contactId :: ContactId, msgContent_ :: Maybe MsgContent}
-  | APIConnectPreparedGroup GroupId
+  | APIConnectPreparedContact {contactId :: ContactId, incognito :: IncognitoEnabled, msgContent_ :: Maybe MsgContent}
+  | APIConnectPreparedGroup GroupId IncognitoEnabled
   | APIConnect UserId IncognitoEnabled (Maybe ACreatedConnLink) (Maybe MsgContent)
   | Connect IncognitoEnabled (Maybe AConnectionLink)
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
@@ -687,6 +687,7 @@ data ChatResponse
   | CRNewPreparedGroup {user :: User, groupInfo :: GroupInfo}
   | CRSentConfirmation {user :: User, connection :: PendingContactConnection}
   | CRSentInvitation {user :: User, connection :: PendingContactConnection, customUserProfile :: Maybe Profile}
+  | CRStartedConnectionToContact {user :: User, contact :: Contact}
   | CRSentInvitationToContact {user :: User, contact :: Contact, customUserProfile :: Maybe Profile}
   | CRItemsReadForChat {user :: User, chatInfo :: AChatInfo}
   | CRContactDeleted {user :: User, contact :: Contact}

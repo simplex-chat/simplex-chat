@@ -1759,61 +1759,46 @@ processChatCommand' vr = \case
     ok_
   APIChangeGroupUser groupId newUserId -> withUser $ \user -> do
     ok_
-  -- TODO [short links] connect to prepared entity
-  -- TODO  - UI would call these APIs from ChatView on user action after entity is prepared
-  -- TODO  - APIs to call APIConnect
-  -- TODO  - or new API for asynchronous connection? keep APIConnect for legacy links?
-  APIConnectPreparedContact contactId msgContent_ -> withUser $ \user -> do
-    -- TODO [short links] connect to prepared contact
-    -- TODO  - for "invitation" contact:
-    -- TODO    - optional message to be sent on successful "sender secure"?
-    -- TODO    - call APIConnect, wait for synchronous (successful) response?
-    -- TODO    - or persist message and queue it asynchronously?
-    -- TODO    - rework agent to allow queueing messages for New connections?
-    -- TODO  - for "address" contact:
-    -- TODO    - optional message to be sent in contact request (pass to APIConnect)
+  -- Alternative to passing incognito to APIConnectPreparedContact, APIConnectPreparedGroup would be to
+  -- create new APIs to set incognito on entity - APISetContactIncognito, APISetGroupIncognito.
+  -- It would be more complex:
+  -- - would require to persist incognito profile on entity opposing to connection as currently,
+  -- - would require decomposing part of APIConnect.
+  -- As it's an edge case / not a big issue that it's not persisted like a change of user,
+  -- we're simply passing it to prepare here.
+  APIConnectPreparedContact contactId incognito msgContent_ -> withUser $ \user@User {userId} -> do
+    ct@Contact {connLinkToConnect} <- withFastStore $ \db -> getContact db vr user contactId
+    case connLinkToConnect of
+      Nothing -> throwCmdError "contact doesn't have link to connect"
+      Just link -> case link of
+        (ACCL SCMInvitation ccLink) ->
+          connectViaInvitation user incognito ccLink (Just contactId) >>= \case
+            cr@(CRSentConfirmation _ PendingContactConnection {pccConnId}) -> do
+              -- toView cr -- incompatible types event/response
+              -- TODO [short links] send message to prepared contact
+              -- TODO  - optional message to be sent on successful "sender secure"? (can be returned with CRSentConfirmation)
+              -- TODO  - persist message and queue it asynchronously later if not secured? or ignore as it's an older feature?
+              -- TODO  - rework agent to allow queueing messages for New connections?
+              -- get updated contact with connection
+              ct' <- withFastStore $ \db -> getContact db vr user contactId
+              pure $ CRStartedConnectionToContact user ct'
+            cr -> pure cr
+        (ACCL SCMContact ccLink) ->
+          connectViaContact user incognito ccLink msgContent_ (Just contactId) >>= \case
+            cr@(CRSentInvitation _ PendingContactConnection {pccConnId} _) -> do
+              -- toView cr -- incompatible types event/response
+              -- get updated contact with connection
+              ct' <- withFastStore $ \db -> getContact db vr user contactId
+              pure $ CRStartedConnectionToContact user ct'
+            cr -> pure cr
+  -- TODO [short links] connect to prepared group
+  APIConnectPreparedGroup groupId incognito -> withUser $ \user -> do
     ok_
-  APIConnectPreparedGroup groupId -> withUser $ \user -> do
-    ok_
-  APIConnect userId incognito (Just (ACCL SCMInvitation (CCLink cReq@(CRInvitationUri crData e2e) sLnk_))) mc_ -> withUserId userId $ \user -> withInvitationLock "connect" (strEncode cReq) . procCmd $ do
+  APIConnect userId incognito (Just (ACCL SCMInvitation ccLink)) mc_ -> withUserId userId $ \user -> do
     when (isJust mc_) $ throwChatError CEConnReqMessageProhibited
-    subMode <- chatReadVar subscriptionMode
-    -- [incognito] generate profile to send
-    incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-    let profileToSend = userProfileToSend user incognitoProfile Nothing False
-    lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOn cReq) >>= \case
-      Nothing -> throwChatError CEInvalidConnReq
-      -- TODO PQ the error above should be CEIncompatibleConnReqVersion, also the same API should be called in Plan
-      Just (agentV, pqSup') -> do
-        let chatV = agentToChatVersion agentV
-        dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
-        -- TODO [short links] use short link data on connection:
-        -- TODO  - new connection (Nothing) is only for legacy links
-        -- TODO  - existing contact is new normal (allow existing connection to have contact or change approach)
-        withFastStore' (\db -> getConnectionEntityByConnReq db vr user cReqs) >>= \case
-          Nothing -> joinNewConn chatV dm
-          Just (RcvDirectMsgConnection conn@Connection {connId, connStatus, contactConnInitiated} Nothing)
-            | connStatus == ConnNew && contactConnInitiated -> joinNewConn chatV dm -- own connection link
-            | connStatus == ConnPrepared -> do
-                -- retrying join after error
-                pcc <- withFastStore $ \db -> getPendingContactConnection db userId connId
-                joinPreparedConn (aConnId conn) pcc dm
-          Just ent -> throwCmdError $ "connection exists: " <> show (connEntityInfo ent)
-        where
-          joinNewConn chatV dm = do
-            connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
-            let ccLink = CCLink cReq $ serverShortLink <$> sLnk_
-            pcc <- withFastStore' $ \db -> createDirectConnection db user connId ccLink ConnPrepared (incognitoProfile $> profileToSend) subMode chatV pqSup'
-            joinPreparedConn connId pcc dm
-          joinPreparedConn connId pcc@PendingContactConnection {pccConnId} dm = do
-            void $ withAgent $ \a -> joinConnection a (aUserId user) connId True cReq dm pqSup' subMode
-            withFastStore' $ \db -> updateConnectionStatusFromTo db pccConnId ConnPrepared ConnJoined
-            pure $ CRSentConfirmation user pcc {pccConnStatus = ConnJoined}
-          cReqs =
-            ( CRInvitationUri crData {crScheme = SSSimplex} e2e,
-              CRInvitationUri crData {crScheme = simplexChat} e2e
-            )
-  APIConnect userId incognito (Just (ACCL SCMContact ccLink)) mc_ -> withUserId userId $ \user -> connectViaContact user incognito ccLink mc_
+    connectViaInvitation user incognito ccLink Nothing
+  APIConnect userId incognito (Just (ACCL SCMContact ccLink)) mc_ -> withUserId userId $ \user ->
+    connectViaContact user incognito ccLink mc_ Nothing
   APIConnect _ _ Nothing _ -> throwChatError CEInvalidConnReq
   Connect incognito (Just cLink@(ACL m cLink')) -> withUser $ \user -> do
     (ccLink, plan) <- connectPlan user cLink `catchChatError` \e -> case cLink' of CLFull cReq -> pure (ACCL m (CCLink cReq Nothing), CPInvitationLink (ILPOk Nothing)); _ -> throwError e
@@ -2887,8 +2872,50 @@ processChatCommand' vr = \case
       CTGroup -> withFastStore $ \db -> getGroupChatItemIdByText' db user cId msg
       CTLocal -> withFastStore $ \db -> getLocalChatItemIdByText' db user cId msg
       _ -> throwCmdError "not supported"
-    connectViaContact :: User -> IncognitoEnabled -> CreatedLinkContact -> Maybe MsgContent -> CM ChatResponse
-    connectViaContact user@User {userId} incognito (CCLink cReq@(CRContactUri ConnReqUriData {crClientData}) sLnk) mc_ = withInvitationLock "connectViaContact" (strEncode cReq) $ do
+    -- TODO [short links] link connection to contact in createDirectConnection
+    connectViaInvitation :: User -> IncognitoEnabled -> CreatedLinkInvitation -> Maybe ContactId -> CM ChatResponse
+    connectViaInvitation user@User {userId} incognito (CCLink cReq@(CRInvitationUri crData e2e) sLnk_) contactId_ =
+      withInvitationLock "connect" (strEncode cReq) . procCmd $ do
+        subMode <- chatReadVar subscriptionMode
+        -- [incognito] generate profile to send
+        incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
+        let profileToSend = userProfileToSend user incognitoProfile Nothing False
+        lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOn cReq) >>= \case
+          Nothing -> throwChatError CEInvalidConnReq
+          -- TODO PQ the error above should be CEIncompatibleConnReqVersion, also the same API should be called in Plan
+          Just (agentV, pqSup') -> do
+            let chatV = agentToChatVersion agentV
+            dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
+            -- TODO [short links] use short link data on connection:
+            -- TODO  - new connection (Nothing) is only for legacy links
+            -- TODO  - existing contact is new normal (allow existing connection to have contact or change approach)
+            withFastStore' (\db -> getConnectionEntityByConnReq db vr user cReqs) >>= \case
+              Nothing -> joinNewConn chatV dm
+              Just (RcvDirectMsgConnection conn@Connection {connId, connStatus, contactConnInitiated} Nothing)
+                | connStatus == ConnNew && contactConnInitiated -> joinNewConn chatV dm -- own connection link
+                | connStatus == ConnPrepared -> do
+                    -- retrying join after error
+                    pcc <- withFastStore $ \db -> getPendingContactConnection db userId connId
+                    joinPreparedConn (aConnId conn) pcc dm
+              Just ent -> throwCmdError $ "connection exists: " <> show (connEntityInfo ent)
+            where
+              joinNewConn chatV dm = do
+                connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
+                let ccLink = CCLink cReq $ serverShortLink <$> sLnk_
+                pcc <- withFastStore' $ \db -> createDirectConnection db user connId ccLink ConnPrepared (incognitoProfile $> profileToSend) subMode chatV pqSup'
+                joinPreparedConn connId pcc dm
+              joinPreparedConn connId pcc@PendingContactConnection {pccConnId} dm = do
+                void $ withAgent $ \a -> joinConnection a (aUserId user) connId True cReq dm pqSup' subMode
+                withFastStore' $ \db -> updateConnectionStatusFromTo db pccConnId ConnPrepared ConnJoined
+                pure $ CRSentConfirmation user pcc {pccConnStatus = ConnJoined}
+              cReqs =
+                ( CRInvitationUri crData {crScheme = SSSimplex} e2e,
+                  CRInvitationUri crData {crScheme = simplexChat} e2e
+                )
+    -- TODO [short links] Maybe Int64 should be Maybe <entity id type> to differentiate between contact and group links;
+    -- TODO  link connection to entity in createConnReqConnection
+    connectViaContact :: User -> IncognitoEnabled -> CreatedLinkContact -> Maybe MsgContent -> Maybe Int64 -> CM ChatResponse
+    connectViaContact user@User {userId} incognito (CCLink cReq@(CRContactUri ConnReqUriData {crClientData}) sLnk) mc_ entityId_ = withInvitationLock "connectViaContact" (strEncode cReq) $ do
       let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
           cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
       case groupLinkId of
@@ -4384,8 +4411,8 @@ chatCommandP =
       "/_prepare group" *> (APIPrepareGroup <$> A.decimal <* A.space <*> jsonP <* A.space <*> connLinkP),
       "/_set contact user @" *> (APIChangeContactUser <$> A.decimal <* A.space <*> A.decimal),
       "/_set group user #" *> (APIChangeGroupUser <$> A.decimal <* A.space <*> A.decimal),
-      "/_connect contact @" *> (APIConnectPreparedContact <$> A.decimal <*> optional (A.space *> msgContentP)),
-      "/_connect group $" *> (APIConnectPreparedGroup <$> A.decimal),
+      "/_connect contact @" *> (APIConnectPreparedContact <$> A.decimal <*> incognitoOnOffP <*> optional (A.space *> msgContentP)),
+      "/_connect group $" *> (APIConnectPreparedGroup <$> A.decimal <*> incognitoOnOffP),
       "/_connect " *> (APIAddContact <$> A.decimal <*> shortOnOffP <*> incognitoOnOffP),
       "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <* A.space <*> connLinkP_ <*> optional (A.space *> msgContentP)),
       "/_set incognito :" *> (APISetConnectionIncognito <$> A.decimal <* A.space <*> onOffP),
