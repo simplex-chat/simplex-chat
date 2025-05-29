@@ -393,21 +393,19 @@ createContact_ db userId Profile {displayName, fullName, image, contactLink, pre
       "INSERT INTO contact_profiles (display_name, full_name, image, contact_link, user_id, local_alias, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
       (displayName, fullName, image, contactLink, userId, localAlias, preferences, currentTs, currentTs)
     profileId <- insertedRowId db
-    let (connFullLink, connShortLink) = links
     DB.execute
       db
-      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, conn_full_link_to_connect, conn_short_link_to_connect, via_group, created_at, updated_at, chat_ts, contact_used) VALUES (?,?,?,?,?,?,?,?,?,?)"
-      (profileId, ldn, userId, connFullLink, connShortLink, viaGroup, currentTs, currentTs, currentTs, BI True)
+      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at, chat_ts, contact_used, conn_full_link_to_connect, conn_short_link_to_connect) VALUES (?,?,?,?,?,?,?,?,?,?)"
+      ((profileId, ldn, userId, viaGroup, currentTs, currentTs, currentTs, BI True) :. connLinkToConnectRow connLinkToConnect)
     contactId <- insertedRowId db
     pure $ Right (ldn, contactId, profileId)
-  where
-    links :: (Maybe AConnectionRequestUri, Maybe AConnShortLink)
-    links = case connLinkToConnect of
-      Just (ACCL m (CCLink fullLink shortLink)) -> (Just (ACR m fullLink), ACSL m <$> shortLink)
-      Nothing -> (Nothing, Nothing)
-    -- (connFullLink, connShortLink) = case connLinkToConnect of
-    --   Just (ACCL _ (CCLink fullLink shortLink)) -> (Just fullLink, shortLink)
-    --   Nothing -> (Nothing, Nothing)
+
+type ConnLinkToConnectRow = (Maybe AConnectionRequestUri, Maybe AConnShortLink)
+
+connLinkToConnectRow :: Maybe ACreatedConnLink -> ConnLinkToConnectRow
+connLinkToConnectRow = \case
+  Just (ACCL m (CCLink fullLink shortLink)) -> (Just (ACR m fullLink), ACSL m <$> shortLink)
+  Nothing -> (Nothing, Nothing)
 
 deleteUnusedIncognitoProfileById_ :: DB.Connection -> User -> ProfileId -> IO ()
 deleteUnusedIncognitoProfileById_ db User {userId} profileId =

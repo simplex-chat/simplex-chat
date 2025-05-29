@@ -32,6 +32,7 @@ module Simplex.Chat.Store.Groups
     createNewGroup,
     createGroupInvitation,
     deleteContactCardKeepConn,
+    createPreparedGroup,
     createGroupInvitedViaLink,
     createGroupRejectedViaLink,
     setViaGroupLinkHash,
@@ -163,7 +164,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (ConnId, CreatedConnLink (..), UserId)
+import Simplex.Messaging.Agent.Protocol (ACreatedConnLink, ConnId, CreatedConnLink (..), UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, fromOnlyBI, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -535,6 +536,24 @@ deleteContactCardKeepConn db connId Contact {contactId, profile = LocalProfile {
   DB.execute db "DELETE FROM contacts WHERE contact_id = ?" (Only contactId)
   DB.execute db "DELETE FROM contact_profiles WHERE contact_profile_id = ?" (Only profileId)
 
+createPreparedGroup :: DB.Connection -> VersionRangeChat -> User -> GroupProfile -> ACreatedConnLink -> ExceptT StoreError IO GroupInfo
+createPreparedGroup db vr user@User {userId} groupProfile connLinkToConnect = do
+  currentTs <- liftIO getCurrentTime
+  -- TODO [short links] support preparing business chats
+  let business = Nothing
+  groupId <- createGroup_ db userId groupProfile (Just connLinkToConnect) business currentTs
+  -- TODO [short links] create "unknown" host member here? set invitedByGroupMemberId later?
+  -- TODO  - same for invitedMember
+  -- TODO  - for membershipStatus - new status GSMemNew?
+  -- TODO  - customUserProfileId - pass on APIConnectPreparedGroup, update member; or separate apis for switching before joining?
+  let invitedByGroupMemberId = Nothing
+      invitedMember = MemberIdRole (MemberId "unknown") GRMember
+      membershipStatus = GSMemAccepted
+      customUserProfileId = Nothing
+  void $ createContactMemberInv_ db user groupId invitedByGroupMemberId user invitedMember GCUserMember membershipStatus IBUnknown customUserProfileId currentTs vr
+  -- TODO [short links] review: setViaGroupLinkHash
+  getGroupInfo db vr user groupId
+
 createGroupInvitedViaLink :: DB.Connection -> VersionRangeChat -> User -> Connection -> GroupLinkInvitation -> ExceptT StoreError IO (GroupInfo, GroupMember)
 createGroupInvitedViaLink db vr user conn GroupLinkInvitation {fromMember, fromMemberName, invitedMember, groupProfile, accepted, business} = do
   let fromMemberProfile = profileFromName fromMemberName
@@ -559,7 +578,7 @@ createGroupViaLink'
   business
   membershipStatus = do
     currentTs <- liftIO getCurrentTime
-    groupId <- insertGroup_ currentTs
+    groupId <- createGroup_ db userId groupProfile Nothing business currentTs
     hostMemberId <- insertHost_ currentTs groupId
     liftIO $ DB.execute db "UPDATE connections SET conn_type = ?, group_member_id = ?, updated_at = ? WHERE connection_id = ?" (ConnMember, hostMemberId, currentTs, connId)
     -- using IBUnknown since host is created without contact
@@ -567,25 +586,6 @@ createGroupViaLink'
     liftIO $ setViaGroupLinkHash db groupId connId
     (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user hostMemberId
     where
-      insertGroup_ currentTs = ExceptT $ do
-        let GroupProfile {displayName, fullName, description, image, groupPreferences, memberAdmission} = groupProfile
-        withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
-          liftIO $ do
-            DB.execute
-              db
-              "INSERT INTO group_profiles (display_name, full_name, description, image, user_id, preferences, member_admission, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-              (displayName, fullName, description, image, userId, groupPreferences, memberAdmission, currentTs, currentTs)
-            profileId <- insertedRowId db
-            DB.execute
-              db
-              [sql|
-                INSERT INTO groups
-                  (group_profile_id, local_display_name, user_id, enable_ntfs,
-                   created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat, business_member_id, customer_member_id)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?)
-              |]
-              ((profileId, localDisplayName, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. businessChatInfoRow business)
-            insertedRowId db
       insertHost_ currentTs groupId = do
         (localDisplayName, profileId) <- createNewMemberProfile_ db user fromMemberProfile currentTs
         let MemberIdRole {memberId, memberRole} = fromMember
@@ -602,6 +602,28 @@ createGroupViaLink'
                 :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
             )
           insertedRowId db
+
+createGroup_ :: DB.Connection -> UserId -> GroupProfile -> Maybe ACreatedConnLink -> Maybe BusinessChatInfo -> UTCTime -> ExceptT StoreError IO GroupId
+createGroup_ db userId groupProfile connLinkToConnect business currentTs = ExceptT $ do
+  let GroupProfile {displayName, fullName, description, image, groupPreferences, memberAdmission} = groupProfile
+  withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
+    liftIO $ do
+      DB.execute
+        db
+        "INSERT INTO group_profiles (display_name, full_name, description, image, user_id, preferences, member_admission, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+        (displayName, fullName, description, image, userId, groupPreferences, memberAdmission, currentTs, currentTs)
+      profileId <- insertedRowId db
+      DB.execute
+        db
+        [sql|
+          INSERT INTO groups
+            (group_profile_id, local_display_name, user_id, enable_ntfs,
+              created_at, updated_at, chat_ts, user_member_profile_sent_at, conn_full_link_to_connect, conn_short_link_to_connect,
+              business_chat, business_member_id, customer_member_id)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+        |]
+        ((profileId, localDisplayName, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. connLinkToConnectRow connLinkToConnect :. businessChatInfoRow business)
+      insertedRowId db
 
 setViaGroupLinkHash :: DB.Connection -> GroupId -> Int64 -> IO ()
 setViaGroupLinkHash db groupId connId =

@@ -1740,10 +1740,6 @@ processChatCommand' vr = \case
         pure conn'
   APIConnectPlan userId cLink -> withUserId userId $ \user ->
     uncurry (CRConnectionPlan user) <$> connectPlan user cLink
-  -- TODO [short links] prepare entity
-  -- TODO  - UI would call these APIs after Ok connection plans with short link data
-  -- TODO  - Persist ACreatedConnLink to be used for connection later on user action:
-  -- TODO    `link` to contacts.conn_full_link_to_connect, contacts.conn_short_link_to_connect, same for groups
   APIPrepareContact userId contactSLinkData link -> withUserId userId $ \user -> do
     let ContactShortLinkData {profile, welcomeMessage} = contactSLinkData
     ct <- withStore $ \db -> createPreparedContact db user profile link
@@ -1751,9 +1747,11 @@ processChatCommand' vr = \case
       createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent $ MCText msg) Nothing
     pure $ CRNewPreparedContact user ct
   APIPrepareGroup userId groupSLinkData link -> withUserId userId $ \user -> do
-    -- let GroupShortLinkData {groupProfile} = groupSLinkData
-    -- pure $ CRNewPreparedGroup user gInfo
-    ok_
+    let GroupShortLinkData {groupProfile} = groupSLinkData
+    -- TODO [short link] create host member for group connection on CONF, XGrpLinkInv (as in createGroupViaLink')
+    -- TODO  - see other problems in createPreparedGroup: invited member id (user member), business chats
+    gInfo <- withStore $ \db -> createPreparedGroup db vr user groupProfile link
+    pure $ CRNewPreparedGroup user gInfo
   -- TODO [short links] change prepared entity user
   -- TODO  - UI would call these APIs before APIConnectPrepared... APIs
   -- TODO  - UI to transition to new user keeping chat opened
