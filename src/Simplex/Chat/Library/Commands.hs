@@ -1743,7 +1743,7 @@ processChatCommand' vr = \case
   -- TODO [short links] prepare entity
   -- TODO  - UI would call these APIs after Ok connection plans with short link data
   -- TODO  - Persist ACreatedConnLink to be used for connection later on user action:
-  -- TODO    `link` to contacts.conn_link_to_connect, groups.conn_link_to_connect
+  -- TODO    `link` to contacts.conn_full_link_to_connect, contacts.conn_short_link_to_connect, same for groups
   APIPrepareContact userId contactSLinkData link -> withUserId userId $ \user -> do
     let ContactShortLinkData {profile, welcomeMessage} = contactSLinkData
     ct <- withStore $ \db -> createPreparedContact db user profile link
@@ -1751,6 +1751,8 @@ processChatCommand' vr = \case
       createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent $ MCText msg) Nothing
     pure $ CRNewPreparedContact user ct
   APIPrepareGroup userId groupSLinkData link -> withUserId userId $ \user -> do
+    -- let GroupShortLinkData {groupProfile} = groupSLinkData
+    -- pure $ CRNewPreparedGroup user gInfo
     ok_
   -- TODO [short links] change prepared entity user
   -- TODO  - UI would call these APIs before APIConnectPrepared... APIs

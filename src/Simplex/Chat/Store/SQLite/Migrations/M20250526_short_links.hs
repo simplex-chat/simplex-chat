@@ -11,13 +11,17 @@ import Database.SQLite.Simple.QQ (sql)
 m20250526_short_links :: Query
 m20250526_short_links =
   [sql|
-ALTER TABLE contacts ADD COLUMN conn_link_to_connect BLOB;
-ALTER TABLE groups ADD COLUMN conn_link_to_connect BLOB;
+ALTER TABLE contacts ADD COLUMN conn_full_link_to_connect BLOB;
+ALTER TABLE contacts ADD COLUMN conn_short_link_to_connect BLOB;
+ALTER TABLE groups ADD COLUMN conn_full_link_to_connect BLOB;
+ALTER TABLE groups ADD COLUMN conn_short_link_to_connect BLOB;
 |]
 
 down_m20250526_short_links :: Query
 down_m20250526_short_links =
   [sql|
-ALTER TABLE contacts DROP COLUMN conn_link_to_connect;
-ALTER TABLE groups DROP COLUMN conn_link_to_connect;
+ALTER TABLE contacts DROP COLUMN conn_full_link_to_connect;
+ALTER TABLE contacts DROP COLUMN conn_short_link_to_connect;
+ALTER TABLE groups DROP COLUMN conn_full_link_to_connect;
+ALTER TABLE groups DROP COLUMN conn_short_link_to_connect;
 |]

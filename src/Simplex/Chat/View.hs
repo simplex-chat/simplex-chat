@@ -191,6 +191,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRConnectionUserChanged u c c' nu -> ttyUser u $ viewConnectionUserChanged u c nu c'
   CRConnectionPlan u _ connectionPlan -> ttyUser u $ viewConnectionPlan cfg connectionPlan
   CRNewPreparedContact u c -> ttyUser u  [ttyContact' c <> ": contact is prepared"]
+  CRNewPreparedGroup u g -> ttyUser u [ttyGroup' g <> ": group is prepared"]
   CRSentConfirmation u _ -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u _ customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
   CRSentInvitationToContact u _c customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView

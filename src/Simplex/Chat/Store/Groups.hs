@@ -283,7 +283,7 @@ getGroupAndMember db User {userId, userContactId} groupMemberId vr = do
             -- GroupInfo
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.conn_link_to_connect,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.conn_full_link_to_connect, g.conn_short_link_to_connect,
             g.business_chat, g.business_member_id, g.customer_member_id,
             g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
             -- GroupInfo {membership}
@@ -778,7 +778,7 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
           SELECT
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.conn_link_to_connect,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.conn_full_link_to_connect, g.conn_short_link_to_connect,
             g.business_chat, g.business_member_id, g.customer_member_id,
             g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
             mu.group_member_id, g.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category, mu.member_status, mu.show_messages, mu.member_restriction,
@@ -1638,7 +1638,7 @@ getViaGroupMember db vr User {userId, userContactId} Contact {contactId} = do
             -- GroupInfo
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.conn_link_to_connect,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.conn_full_link_to_connect, g.conn_short_link_to_connect,
             g.business_chat, g.business_member_id, g.customer_member_id,
             g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
             -- GroupInfo {membership}

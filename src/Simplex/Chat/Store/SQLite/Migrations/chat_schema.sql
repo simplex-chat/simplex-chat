@@ -79,7 +79,8 @@ CREATE TABLE contacts(
   ui_themes TEXT,
   chat_deleted INTEGER NOT NULL DEFAULT 0,
   chat_item_ttl INTEGER,
-  conn_link_to_connect BLOB,
+  conn_full_link_to_connect BLOB,
+  conn_short_link_to_connect BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -137,7 +138,8 @@ CREATE TABLE groups(
   chat_item_ttl INTEGER,
   local_alias TEXT DEFAULT '',
   members_require_attention INTEGER NOT NULL DEFAULT 0,
-  conn_link_to_connect BLOB, -- received
+  conn_full_link_to_connect BLOB,
+  conn_short_link_to_connect BLOB, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
