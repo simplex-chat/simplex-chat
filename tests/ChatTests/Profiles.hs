@@ -107,7 +107,8 @@ chatProfileTests = do
     it "should connect via contact address" testShortLinkContactAddress
     it "should join group" testShortLinkJoinGroup
     describe "connection via prepared entity" $ do
-      it "prepare contact using invitation short link data and connect" testShortLinkInvPrepareContact
+      it "prepare contact using invitation short link data and connect" testShortLinkInvitationPrepareContact
+      it "prepare contact using address short link data and connect" testShortLinkAddressPrepareContact
 
 testUpdateProfile :: HasCallStack => TestParams -> IO ()
 testUpdateProfile =
@@ -287,6 +288,7 @@ testRetryAcceptingViaContactLink ps = testChatCfgOpts2 cfg' opts' aliceProfile b
       alice <## "server disconnected localhost ()"
       bob ##> ("/_connect plan 1 " <> cLink)
       bob <## "contact address: ok to connect"
+      _sLinkData <- getTermLine bob
       bob ##> ("/_connect 1 " <> cLink)
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
@@ -294,6 +296,7 @@ testRetryAcceptingViaContactLink ps = testChatCfgOpts2 cfg' opts' aliceProfile b
         threadDelay 250000
         bob ##> ("/_connect plan 1 " <> cLink)
         bob <## "contact address: ok to connect"
+        _sLinkData <- getTermLine bob
         bob ##> ("/_connect 1 " <> cLink)
         alice <#? bob
       alice <## "server disconnected localhost ()"
@@ -703,6 +706,7 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
     biz <## "auto_accept on, business"
     bob ##> ("/_connect plan 1 " <> cLink)
     bob <## "contact address: ok to connect"
+    _sLinkData <- getTermLine bob
     bob ##> ("/c " <> cLink)
     bob <## "connection request sent!"
     bob ##> ("/_connect plan 1 " <> cLink)
@@ -888,6 +892,7 @@ testPlanAddressOkKnown =
 
       bob ##> ("/_connect plan 1 " <> cLink)
       bob <## "contact address: ok to connect"
+      _sLinkData <- getTermLine bob
 
       bob ##> ("/c " <> cLink)
       alice <#? bob
@@ -1070,10 +1075,12 @@ testPlanAddressContactDeletedReconnected =
 
       bob ##> ("/_connect plan 1 " <> cLink)
       bob <## "contact address: ok to connect"
+      _sLinkData <- getTermLine bob
 
       let cLinkSchema2 = linkAnotherSchema cLink
       bob ##> ("/_connect plan 1 " <> cLinkSchema2)
       bob <## "contact address: ok to connect"
+      _sLinkData <- getTermLine bob
 
       bob ##> ("/c " <> cLink)
       bob <## "connection request sent!"
@@ -2617,7 +2624,7 @@ testPlanShortLinkInvitation =
     alice <## "invitation link: own link"
     bob ##> ("/_connect plan 1 " <> inv)
     bob <## "invitation link: ok to connect"
-    _contactSLinkData <- getTermLine bob
+    _sLinkData <- getTermLine bob
     -- nobody else can connect
     cath ##> ("/_connect plan 1 " <> inv)
     cath <##. "error: connection authorization failed"
@@ -2626,11 +2633,11 @@ testPlanShortLinkInvitation =
     -- bob can retry "plan"
     bob ##> ("/_connect plan 1 " <> inv)
     bob <## "invitation link: ok to connect"
-    _contactSLinkData <- getTermLine bob
+    _sLinkData <- getTermLine bob
     -- with simplex: scheme too
     bob ##> ("/_connect plan 1 " <> slSimplexScheme inv)
     bob <## "invitation link: ok to connect"
-    _contactSLinkData <- getTermLine bob
+    _sLinkData <- getTermLine bob
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
     concurrently_
@@ -2674,6 +2681,7 @@ testShortLinkContactAddress =
       sName <- showName cc
       cc ##> ("/_connect plan 1 " <> cLink)
       cc <## "contact address: ok to connect"
+      _sLinkData <- getTermLine cc
       cc ##> ("/c " <> cLink)
       alice <#? cc
       alice ##> ("/ac " <> name)
@@ -2743,6 +2751,7 @@ testShortLinkJoinGroup =
       sName <- showName cc
       cc ##> ("/_connect plan 1 " <> link)
       cc <## "group link: ok to connect"
+      _sLinkData <- getTermLine cc
       cc ##> ("/c " <> link)
       cc <## "connection request sent!"
       alice <## (sName <> ": accepting request to join group #team...")
@@ -2753,8 +2762,8 @@ testShortLinkJoinGroup =
             cc <## "#team: you joined the group"
         ]
 
-testShortLinkInvPrepareContact :: HasCallStack => TestParams -> IO ()
-testShortLinkInvPrepareContact =
+testShortLinkInvitationPrepareContact :: HasCallStack => TestParams -> IO ()
+testShortLinkInvitationPrepareContact =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       alice ##> "/_connect 1 short=on"
@@ -2766,6 +2775,29 @@ testShortLinkInvPrepareContact =
       bob <## "alice: contact is prepared"
       bob ##> "/_connect contact @2"
       bob <## "alice: connection started"
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice <##> bob
+
+testShortLinkAddressPrepareContact :: HasCallStack => TestParams -> IO ()
+testShortLinkAddressPrepareContact =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/ad short"
+      (shortLink, fullLink) <- getShortContactLink alice True
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "contact address: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+      bob <## "alice: contact is prepared"
+      bob ##> "/_connect contact @2"
+      bob <## "alice: connection started"
+      alice <## "bob (Bob) wants to connect to you!"
+      alice <## "to accept: /ac bob"
+      alice <## "to reject: /rc bob (the sender will NOT be notified)"
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")

@@ -522,14 +522,6 @@ USE TEMP B-TREE FOR ORDER BY
 Query: 
             SELECT conn_req_contact, group_id
             FROM user_contact_links
-            WHERE user_id = ? AND short_link_contact = ?
-          
-Plan:
-SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
-
-Query: 
-            SELECT conn_req_contact, group_id
-            FROM user_contact_links
             WHERE user_id = ? AND user_contact_link_id = ?
           
 Plan:
@@ -4796,13 +4788,6 @@ Query:
    WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
 Plan:
 SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
-
-Query: 
-    SELECT conn_req_contact, short_link_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
-    FROM user_contact_links
-   WHERE user_id = ? AND short_link_contact = ?
-Plan:
-SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
 
 Query: 
     SELECT f.file_id, f.ci_file_status, f.file_path
