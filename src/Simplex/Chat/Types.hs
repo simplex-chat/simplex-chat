@@ -456,6 +456,8 @@ data GroupSummary = GroupSummary
 
 data ContactOrGroup = CGContact Contact | CGGroup GroupInfo [GroupMember]
 
+data ContactOrGroupMemberId = CGMContactId ContactId | CGMGroupMemberId GroupMemberId
+
 contactAndGroupIds :: ContactOrGroup -> (Maybe ContactId, Maybe GroupId)
 contactAndGroupIds = \case
   CGContact Contact {contactId} -> (Just contactId, Nothing)

@@ -1674,7 +1674,7 @@ processChatCommand' vr = \case
     (connId, ccLink) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation userData Nothing IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
     -- TODO PQ pass minVersion from the current range
-    conn <- withFastStore' $ \db -> createDirectConnection db user connId ccLink' ConnNew incognitoProfile subMode initialChatVersion PQSupportOn
+    conn <- withFastStore' $ \db -> createDirectConnection db user connId ccLink' Nothing ConnNew incognitoProfile subMode initialChatVersion PQSupportOn
     pure $ CRInvitation user ccLink' conn
   AddContact short incognito -> withUser $ \User {userId} ->
     processChatCommand $ APIAddContact userId short incognito
@@ -1735,7 +1735,7 @@ processChatCommand' vr = \case
           deleteConnectionRecord db user connId
           forM_ customUserProfileId $ \profileId ->
             deletePCCIncognitoProfile db user profileId
-          createDirectConnection db newUser agConnId ccLink' ConnNew Nothing subMode initialChatVersion PQSupportOn
+          createDirectConnection db newUser agConnId ccLink' Nothing ConnNew Nothing subMode initialChatVersion PQSupportOn
         deleteAgentConnectionAsync (aConnId' conn)
         pure conn'
   APIConnectPlan userId cLink -> withUserId userId $ \user ->
@@ -1773,8 +1773,7 @@ processChatCommand' vr = \case
       Just link -> case link of
         (ACCL SCMInvitation ccLink) ->
           connectViaInvitation user incognito ccLink (Just contactId) >>= \case
-            cr@(CRSentConfirmation _ PendingContactConnection {pccConnId}) -> do
-              -- toView cr -- incompatible types event/response
+            CRSentConfirmation {} -> do
               -- TODO [short links] send message to prepared contact
               -- TODO  - optional message to be sent on successful "sender secure"? (can be returned with CRSentConfirmation)
               -- TODO  - persist message and queue it asynchronously later if not secured? or ignore as it's an older feature?
@@ -1784,9 +1783,8 @@ processChatCommand' vr = \case
               pure $ CRStartedConnectionToContact user ct'
             cr -> pure cr
         (ACCL SCMContact ccLink) ->
-          connectViaContact user incognito ccLink msgContent_ (Just contactId) >>= \case
-            cr@(CRSentInvitation _ PendingContactConnection {pccConnId} _) -> do
-              -- toView cr -- incompatible types event/response
+          connectViaContact user incognito ccLink msgContent_ (Just $ CGMContactId contactId) >>= \case
+            CRSentInvitation {} -> do
               -- get updated contact with connection
               ct' <- withFastStore $ \db -> getContact db vr user contactId
               pure $ CRStartedConnectionToContact user ct'
@@ -2872,7 +2870,6 @@ processChatCommand' vr = \case
       CTGroup -> withFastStore $ \db -> getGroupChatItemIdByText' db user cId msg
       CTLocal -> withFastStore $ \db -> getLocalChatItemIdByText' db user cId msg
       _ -> throwCmdError "not supported"
-    -- TODO [short links] link connection to contact in createDirectConnection
     connectViaInvitation :: User -> IncognitoEnabled -> CreatedLinkInvitation -> Maybe ContactId -> CM ChatResponse
     connectViaInvitation user@User {userId} incognito (CCLink cReq@(CRInvitationUri crData e2e) sLnk_) contactId_ =
       withInvitationLock "connect" (strEncode cReq) . procCmd $ do
@@ -2886,23 +2883,20 @@ processChatCommand' vr = \case
           Just (agentV, pqSup') -> do
             let chatV = agentToChatVersion agentV
             dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
-            -- TODO [short links] use short link data on connection:
-            -- TODO  - new connection (Nothing) is only for legacy links
-            -- TODO  - existing contact is new normal (allow existing connection to have contact or change approach)
             withFastStore' (\db -> getConnectionEntityByConnReq db vr user cReqs) >>= \case
               Nothing -> joinNewConn chatV dm
-              Just (RcvDirectMsgConnection conn@Connection {connId, connStatus, contactConnInitiated} Nothing)
+              Just (RcvDirectMsgConnection conn@Connection {connId, connStatus, contactConnInitiated} _ct_)
                 | connStatus == ConnNew && contactConnInitiated -> joinNewConn chatV dm -- own connection link
                 | connStatus == ConnPrepared -> do
                     -- retrying join after error
                     pcc <- withFastStore $ \db -> getPendingContactConnection db userId connId
                     joinPreparedConn (aConnId conn) pcc dm
-              Just ent -> throwCmdError $ "connection exists: " <> show (connEntityInfo ent)
+              Just ent -> throwCmdError $ "connection is not RcvDirectMsgConnection: " <> show (connEntityInfo ent)
             where
               joinNewConn chatV dm = do
                 connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
                 let ccLink = CCLink cReq $ serverShortLink <$> sLnk_
-                pcc <- withFastStore' $ \db -> createDirectConnection db user connId ccLink ConnPrepared (incognitoProfile $> profileToSend) subMode chatV pqSup'
+                pcc <- withFastStore' $ \db -> createDirectConnection db user connId ccLink contactId_ ConnPrepared (incognitoProfile $> profileToSend) subMode chatV pqSup'
                 joinPreparedConn connId pcc dm
               joinPreparedConn connId pcc@PendingContactConnection {pccConnId} dm = do
                 void $ withAgent $ \a -> joinConnection a (aUserId user) connId True cReq dm pqSup' subMode
@@ -2914,8 +2908,8 @@ processChatCommand' vr = \case
                 )
     -- TODO [short links] Maybe Int64 should be Maybe <entity id type> to differentiate between contact and group links;
     -- TODO  link connection to entity in createConnReqConnection
-    connectViaContact :: User -> IncognitoEnabled -> CreatedLinkContact -> Maybe MsgContent -> Maybe Int64 -> CM ChatResponse
-    connectViaContact user@User {userId} incognito (CCLink cReq@(CRContactUri ConnReqUriData {crClientData}) sLnk) mc_ entityId_ = withInvitationLock "connectViaContact" (strEncode cReq) $ do
+    connectViaContact :: User -> IncognitoEnabled -> CreatedLinkContact -> Maybe MsgContent -> Maybe ContactOrGroupMemberId -> CM ChatResponse
+    connectViaContact user@User {userId} incognito (CCLink cReq@(CRContactUri ConnReqUriData {crClientData}) sLnk) mc_ comId_ = withInvitationLock "connectViaContact" (strEncode cReq) $ do
       let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
           cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
       case groupLinkId of
@@ -2947,7 +2941,7 @@ processChatCommand' vr = \case
           incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
           subMode <- chatReadVar subscriptionMode
           let sLnk' = serverShortLink <$> sLnk
-          conn@PendingContactConnection {pccConnId} <- withFastStore' $ \db -> createConnReqConnection db userId connId cReqHash sLnk' xContactId incognitoProfile groupLinkId subMode chatV pqSup
+          conn@PendingContactConnection {pccConnId} <- withFastStore' $ \db -> createConnReqConnection db userId connId cReqHash sLnk' comId_ xContactId incognitoProfile groupLinkId subMode chatV pqSup
           joinContact user pccConnId connId cReq incognitoProfile xContactId mc_ inGroup pqSup chatV
           pure $ CRSentInvitation user conn incognitoProfile
     connectContactViaAddress :: User -> IncognitoEnabled -> Contact -> CreatedLinkContact -> CM ChatResponse
