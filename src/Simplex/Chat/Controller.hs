@@ -448,7 +448,7 @@ data ChatCommand
   | APISetConnectionIncognito Int64 IncognitoEnabled
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
   | APIConnectPlan UserId AConnectionLink
-  | APIPrepareContact UserId ACreatedConnLink ContactShortLinkData -- TODO [short links] maybe put link + data into single json
+  | APIPrepareContact UserId ACreatedConnLink ContactShortLinkData
   | APIPrepareGroup UserId ACreatedConnLink GroupShortLinkData
   | APIChangeContactUser ContactId UserId
   | APIChangeGroupUser GroupId UserId

@@ -2165,6 +2165,15 @@ public enum MemberCriteria: String, Codable, Identifiable, Hashable {
     }
 }
 
+public struct ContactShortLinkData: Codable {
+    public var profile: Profile
+    public var welcomeMessage: String?
+}
+
+public struct GroupShortLinkData: Codable {
+    public var groupProfile: GroupProfile
+}
+
 public struct BusinessChatInfo: Decodable, Hashable {
     public var chatType: BusinessChatType
     public var businessId: String

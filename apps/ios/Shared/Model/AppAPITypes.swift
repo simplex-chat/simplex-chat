@@ -120,6 +120,10 @@ enum ChatCommand: ChatCmdProtocol {
     case apiSetConnectionIncognito(connId: Int64, incognito: Bool)
     case apiChangeConnectionUser(connId: Int64, userId: Int64)
     case apiConnectPlan(userId: Int64, connLink: String)
+    case apiPrepareContact(userId: Int64, connLink: String, contactShortLinkData: ContactShortLinkData)
+    case apiPrepareGroup(userId: Int64, connLink: String, groupShortLinkData: GroupShortLinkData)
+    case apiConnectPreparedContact(contactId: Int64, incognito: Bool, msg: MsgContent)
+    case apiConnectPreparedGroup(groupId: Int64, incognito: Bool)
     case apiConnect(userId: Int64, incognito: Bool, connLink: CreatedConnLink)
     case apiConnectContactViaAddress(userId: Int64, incognito: Bool, contactId: Int64)
     case apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode)
@@ -314,6 +318,10 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiSetConnectionIncognito(connId, incognito): return "/_set incognito :\(connId) \(onOff(incognito))"
             case let .apiChangeConnectionUser(connId, userId): return "/_set conn user :\(connId) \(userId)"
             case let .apiConnectPlan(userId, connLink): return "/_connect plan \(userId) \(connLink)"
+            case let .apiPrepareContact(userId, connLink, contactShortLinkData): return "/_prepare contact \(userId) \(connLink) \(encodeJSON(contactShortLinkData))"
+            case let .apiPrepareGroup(userId, connLink, groupShortLinkData): return "/_prepare group \(userId) \(connLink) \(encodeJSON(groupShortLinkData))"
+            case let .apiConnectPreparedContact(contactId, incognito, mc): return "/_connect contact @\(contactId) incognito=\(onOff(incognito)) \(mc.cmdString)"
+            case let .apiConnectPreparedGroup(groupId, incognito): return "/_connect group #\(groupId) incognito=\(onOff(incognito))"
             case let .apiConnect(userId, incognito, connLink): return "/_connect \(userId) incognito=\(onOff(incognito)) \(connLink.connFullLink) \(connLink.connShortLink ?? "")"
             case let .apiConnectContactViaAddress(userId, incognito, contactId): return "/_connect contact \(userId) incognito=\(onOff(incognito)) \(contactId)"
             case let .apiDeleteChat(type, id, chatDeleteMode): return "/_delete \(ref(type, id, scope: nil)) \(chatDeleteMode.cmdString)"
@@ -482,6 +490,10 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiSetConnectionIncognito: return "apiSetConnectionIncognito"
             case .apiChangeConnectionUser: return "apiChangeConnectionUser"
             case .apiConnectPlan: return "apiConnectPlan"
+            case .apiPrepareContact: return "apiPrepareContact"
+            case .apiPrepareGroup: return "apiPrepareGroup"
+            case .apiConnectPreparedContact: return "apiConnectPreparedContact"
+            case .apiConnectPreparedGroup: return "apiConnectPreparedGroup"
             case .apiConnect: return "apiConnect"
             case .apiDeleteChat: return "apiDeleteChat"
             case .apiClearChat: return "apiClearChat"

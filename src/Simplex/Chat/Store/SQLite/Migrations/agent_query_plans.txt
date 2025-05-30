@@ -995,6 +995,10 @@ Query: SELECT ratchet_state FROM ratchets WHERE conn_id = ?
 Plan:
 SEARCH ratchets USING PRIMARY KEY (conn_id=?)
 
+Query: SELECT ratchet_state, x3dh_pub_key_1, x3dh_pub_key_2, pq_pub_kem FROM ratchets WHERE conn_id = ?
+Plan:
+SEARCH ratchets USING PRIMARY KEY (conn_id=?)
+
 Query: SELECT rcv_file_id FROM rcv_files WHERE rcv_file_entity_id = ?
 Plan:
 SEARCH rcv_files USING COVERING INDEX sqlite_autoindex_rcv_files_1 (rcv_file_entity_id=?)
