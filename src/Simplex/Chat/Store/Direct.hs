@@ -167,7 +167,7 @@ createConnReqConnection db userId acId cReqHash sLnk comId_ xContactId incognito
         via_contact_uri_hash, via_short_link_contact, contact_id, group_member_id,
         xcontact_id, custom_user_profile_id, via_group_link, group_link_id,
         created_at, updated_at, to_subscribe, conn_chat_version, pq_support, pq_encryption
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
     ( (userId, acId, pccConnStatus, ConnContact, BI True)
         :. (cReqHash, sLnk, contactId_, groupMemberId_)
