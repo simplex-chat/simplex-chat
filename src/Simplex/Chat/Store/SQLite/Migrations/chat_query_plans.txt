@@ -36,14 +36,6 @@ Plan:
 Query: 
                 INSERT INTO groups
                   (group_profile_id, local_display_name, user_id, enable_ntfs,
-                   created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat, business_member_id, customer_member_id)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?)
-              
-Plan:
-
-Query: 
-                INSERT INTO groups
-                  (group_profile_id, local_display_name, user_id, enable_ntfs,
                    created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat, business_xcontact_id)
                 VALUES (?,?,?,?,?,?,?,?,?,?)
               
@@ -54,7 +46,7 @@ Query:
                   -- GroupInfo
                   g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
                   g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-                  g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.conn_req_to_connect,
+                  g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.conn_full_link_to_connect, g.conn_short_link_to_connect,
                   g.business_chat, g.business_member_id, g.customer_member_id,
                   g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
                   -- GroupInfo {membership}
@@ -180,7 +172,7 @@ Query:
               SELECT
                 -- Contact
                 ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-                cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_req_to_connect,
+                cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect,
                 ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
                 -- Connection
                 c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
@@ -331,7 +323,7 @@ Plan:
 Query: 
             SELECT
               c.contact_profile_id, c.local_display_name, c.via_group, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, c.contact_used, c.contact_status, c.enable_ntfs, c.send_rcpts, c.favorite,
-              p.preferences, c.user_preferences, c.created_at, c.updated_at, c.chat_ts, c.conn_req_to_connect,
+              p.preferences, c.user_preferences, c.created_at, c.updated_at, c.chat_ts, c.conn_full_link_to_connect, c.conn_short_link_to_connect,
               c.contact_group_member_id, c.contact_grp_inv_sent, c.ui_themes, c.chat_deleted, c.custom_data, c.chat_item_ttl
             FROM contacts c
             JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
@@ -703,6 +695,15 @@ Plan:
 
 Query: 
           INSERT INTO groups
+            (group_profile_id, local_display_name, user_id, enable_ntfs,
+              created_at, updated_at, chat_ts, user_member_profile_sent_at, conn_full_link_to_connect, conn_short_link_to_connect,
+              business_chat, business_member_id, customer_member_id)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+        
+Plan:
+
+Query: 
+          INSERT INTO groups
             (local_display_name, user_id, group_profile_id, enable_ntfs,
              created_at, updated_at, chat_ts, user_member_profile_sent_at)
           VALUES (?,?,?,?,?,?,?,?)
@@ -828,7 +829,7 @@ Query:
           SELECT
             -- Contact
             ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-            cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_req_to_connect,
+            cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect,
             ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
             -- Connection
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
@@ -852,7 +853,7 @@ Query:
             -- GroupInfo
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.conn_req_to_connect,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.conn_full_link_to_connect, g.conn_short_link_to_connect,
             g.business_chat, g.business_member_id, g.customer_member_id,
             g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
             -- GroupInfo {membership}
@@ -901,7 +902,7 @@ Query:
           SELECT
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.conn_req_to_connect,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.conn_full_link_to_connect, g.conn_short_link_to_connect,
             g.business_chat, g.business_member_id, g.customer_member_id,
             g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
             mu.group_member_id, g.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category, mu.member_status, mu.show_messages, mu.member_restriction,
@@ -1398,7 +1399,7 @@ Query:
         SELECT
           -- Contact
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_req_to_connect,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect,
           ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
@@ -4034,9 +4035,9 @@ Plan:
 
 Query: 
       INSERT INTO connections
-        (user_id, agent_conn_id, conn_req_inv, short_link_inv, conn_status, conn_type, contact_conn_initiated, custom_user_profile_id,
+        (user_id, agent_conn_id, conn_req_inv, short_link_inv, conn_status, conn_type, contact_id, contact_conn_initiated, custom_user_profile_id,
          created_at, updated_at, to_subscribe, conn_chat_version, pq_support, pq_encryption)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -4052,9 +4053,10 @@ Plan:
 Query: 
       INSERT INTO connections (
         user_id, agent_conn_id, conn_status, conn_type, contact_conn_initiated,
-        via_contact_uri_hash, via_short_link_contact, xcontact_id, custom_user_profile_id, via_group_link, group_link_id,
+        via_contact_uri_hash, via_short_link_contact, contact_id, group_member_id,
+        xcontact_id, custom_user_profile_id, via_group_link, group_link_id,
         created_at, updated_at, to_subscribe, conn_chat_version, pq_support, pq_encryption
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -4259,7 +4261,7 @@ SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE connections
-      SET custom_user_profile_id = ?, updated_at = ?
+      SET custom_user_profile_id = ?, short_link_inv = ?, updated_at = ?
       WHERE user_id = ? AND connection_id = ?
     
 Plan:
@@ -4307,7 +4309,7 @@ SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE connections
-      SET user_id = ?, custom_user_profile_id = NULL, updated_at = ?
+      SET user_id = ?, short_link_inv = ?, custom_user_profile_id = NULL, updated_at = ?
       WHERE user_id = ? AND connection_id = ?
     
 Plan:
@@ -4578,7 +4580,7 @@ Query:
       -- GroupInfo
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
       g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.conn_req_to_connect,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.conn_full_link_to_connect, g.conn_short_link_to_connect,
       g.business_chat, g.business_member_id, g.customer_member_id,
       g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
       -- GroupMember - membership
@@ -4603,7 +4605,7 @@ Query:
       -- GroupInfo
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
       g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.conn_req_to_connect,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.conn_full_link_to_connect, g.conn_short_link_to_connect,
       g.business_chat, g.business_member_id, g.customer_member_id,
       g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
       -- GroupMember - membership
@@ -5500,7 +5502,7 @@ Query: INSERT INTO contacts (contact_profile_id, local_display_name, user_id, is
 Plan:
 SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
 
-Query: INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at, chat_ts, contact_used) VALUES (?,?,?,?,?,?,?,?)
+Query: INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at, chat_ts, contact_used, conn_full_link_to_connect, conn_short_link_to_connect) VALUES (?,?,?,?,?,?,?,?,?,?)
 Plan:
 SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
 
@@ -5860,10 +5862,6 @@ Plan:
 SEARCH connections USING INDEX idx_connections_group_member_id (group_member_id=?)
 
 Query: UPDATE connections SET conn_type = ?, group_member_id = ?, updated_at = ? WHERE connection_id = ?
-Plan:
-SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: UPDATE connections SET contact_id = ? WHERE connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
