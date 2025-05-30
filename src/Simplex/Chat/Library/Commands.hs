@@ -1740,13 +1740,13 @@ processChatCommand' vr = \case
         pure conn'
   APIConnectPlan userId cLink -> withUserId userId $ \user ->
     uncurry (CRConnectionPlan user) <$> connectPlan user cLink
-  APIPrepareContact userId contactSLinkData link -> withUserId userId $ \user -> do
+  APIPrepareContact userId link contactSLinkData -> withUserId userId $ \user -> do
     let ContactShortLinkData {profile, welcomeMessage} = contactSLinkData
     ct <- withStore $ \db -> createPreparedContact db user profile link
     forM_ welcomeMessage $ \msg ->
       createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent $ MCText msg) Nothing
     pure $ CRNewPreparedContact user ct
-  APIPrepareGroup userId groupSLinkData link -> withUserId userId $ \user -> do
+  APIPrepareGroup userId link groupSLinkData -> withUserId userId $ \user -> do
     let GroupShortLinkData {groupProfile} = groupSLinkData
     -- TODO [short link] create host member for group connection on CONF, XGrpLinkInv (as in createGroupViaLink')
     -- TODO  - see other problems in createPreparedGroup: invited member id (user member), business chats
@@ -4401,8 +4401,8 @@ chatCommandP =
       "/_contacts " *> (APIListContacts <$> A.decimal),
       "/contacts" $> ListContacts,
       "/_connect plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> strP),
-      "/_prepare contact" *> (APIPrepareContact <$> A.decimal <* A.space <*> jsonP <* A.space <*> connLinkP),
-      "/_prepare group" *> (APIPrepareGroup <$> A.decimal <* A.space <*> jsonP <* A.space <*> connLinkP),
+      "/_prepare contact " *> (APIPrepareContact <$> A.decimal <* A.space <*> connLinkP <* A.space <*> jsonP),
+      "/_prepare group " *> (APIPrepareGroup <$> A.decimal <* A.space <*> connLinkP <* A.space <*> jsonP),
       "/_set contact user @" *> (APIChangeContactUser <$> A.decimal <* A.space <*> A.decimal),
       "/_set group user #" *> (APIChangeGroupUser <$> A.decimal <* A.space <*> A.decimal),
       "/_connect contact @" *> (APIConnectPreparedContact <$> A.decimal <*> incognitoOnOffP <*> optional (A.space *> msgContentP)),

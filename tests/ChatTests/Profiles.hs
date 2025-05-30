@@ -106,6 +106,8 @@ chatProfileTests = do
     it "should plan and connect via one-time inviation" testPlanShortLinkInvitation
     it "should connect via contact address" testShortLinkContactAddress
     it "should join group" testShortLinkJoinGroup
+    describe "connection via prepared entity" $ do
+      it "prepare contact using invitation short link data and connect" testShortLinkInvPrepareContact
 
 testUpdateProfile :: HasCallStack => TestParams -> IO ()
 testUpdateProfile =
@@ -2593,7 +2595,7 @@ testShortLinkInvitation :: HasCallStack => TestParams -> IO ()
 testShortLinkInvitation =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     alice ##> "/c short"
-    inv <- getShortInvitation alice
+    (inv, _) <- getShortInvitation alice
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
     concurrently_
@@ -2608,13 +2610,14 @@ testPlanShortLinkInvitation :: HasCallStack => TestParams -> IO ()
 testPlanShortLinkInvitation =
   testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
     alice ##> "/c short"
-    inv <- getShortInvitation alice
+    (inv, _) <- getShortInvitation alice
     alice ##> ("/_connect plan 1 " <> inv)
     alice <## "invitation link: own link"
     alice ##> ("/_connect plan 1 " <> slSimplexScheme inv)
     alice <## "invitation link: own link"
     bob ##> ("/_connect plan 1 " <> inv)
     bob <## "invitation link: ok to connect"
+    _contactSLinkData <- getTermLine bob
     -- nobody else can connect
     cath ##> ("/_connect plan 1 " <> inv)
     cath <##. "error: connection authorization failed"
@@ -2623,9 +2626,11 @@ testPlanShortLinkInvitation =
     -- bob can retry "plan"
     bob ##> ("/_connect plan 1 " <> inv)
     bob <## "invitation link: ok to connect"
+    _contactSLinkData <- getTermLine bob
     -- with simplex: scheme too
     bob ##> ("/_connect plan 1 " <> slSimplexScheme inv)
     bob <## "invitation link: ok to connect"
+    _contactSLinkData <- getTermLine bob
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
     concurrently_
@@ -2747,3 +2752,21 @@ testShortLinkJoinGroup =
             cc <## "#team: joining the group..."
             cc <## "#team: you joined the group"
         ]
+
+testShortLinkInvPrepareContact :: HasCallStack => TestParams -> IO ()
+testShortLinkInvPrepareContact =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/_connect 1 short=on"
+      (shortLink, fullLink) <- getShortInvitation alice
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "invitation link: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+      bob <## "alice: contact is prepared"
+      bob ##> "/_connect contact @2"
+      bob <## "alice: connection started"
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice <##> bob

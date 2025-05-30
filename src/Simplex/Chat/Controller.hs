@@ -448,8 +448,8 @@ data ChatCommand
   | APISetConnectionIncognito Int64 IncognitoEnabled
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
   | APIConnectPlan UserId AConnectionLink
-  | APIPrepareContact UserId ContactShortLinkData ACreatedConnLink
-  | APIPrepareGroup UserId GroupShortLinkData ACreatedConnLink
+  | APIPrepareContact UserId ACreatedConnLink ContactShortLinkData -- TODO [short links] maybe put link + data into single json
+  | APIPrepareGroup UserId ACreatedConnLink GroupShortLinkData
   | APIChangeContactUser ContactId UserId
   | APIChangeGroupUser GroupId UserId
   | APIConnectPreparedContact {contactId :: ContactId, incognito :: IncognitoEnabled, msgContent_ :: Maybe MsgContent}
