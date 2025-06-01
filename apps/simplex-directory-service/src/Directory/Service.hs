@@ -713,7 +713,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           case mRole_ of
             Nothing ->
               getGroupLinkRole cc user g >>= \case
-                Just (_, CCLink gLink _, mRole) -> do
+                Just (_, CCLink gLink _, _, mRole) -> do
                   let anotherRole = case mRole of GRObserver -> GRMember; _ -> GRObserver
                   sendReply $
                     initialRole n mRole
@@ -1045,7 +1045,7 @@ vr :: ChatController -> VersionRangeChat
 vr ChatController {config = ChatConfig {chatVRange}} = chatVRange
 {-# INLINE vr #-}
 
-getGroupLinkRole :: ChatController -> User -> GroupInfo -> IO (Maybe (Int64, CreatedLinkContact, GroupMemberRole))
+getGroupLinkRole :: ChatController -> User -> GroupInfo -> IO (Maybe (Int64, CreatedLinkContact, GroupLinkId, GroupMemberRole))
 getGroupLinkRole cc user gInfo =
   withDB "getGroupLink" cc $ \db -> getGroupLink db user gInfo
 

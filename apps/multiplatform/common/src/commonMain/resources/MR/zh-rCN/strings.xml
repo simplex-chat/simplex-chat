@@ -929,7 +929,7 @@
     <string name="group_member_role_observer">观察员</string>
     <string name="you_are_observer">你是观察者</string>
     <string name="error_updating_link_for_group">更新群链接错误</string>
-    <string name="observer_cant_send_message_title">你无法发送消息！</string>
+    <string name="observer_cant_send_message_title">你是观察员</string>
     <string name="initial_member_role">初始角色</string>
     <string name="observer_cant_send_message_desc">请联系群管理员。</string>
     <string name="language_system">系统</string>
@@ -2408,4 +2408,19 @@
     <string name="report_sent_alert_msg_view_in_support_chat">你可以在和管理员和聊天中查看你的举报。</string>
     <string name="accept_pending_member_alert_confirmation_as_observer">接受为观察员</string>
     <string name="group_new_support_chat_one">和一名成员的一个聊天</string>
+    <string name="cant_send_message_generic">无法发送消息</string>
+    <string name="cant_send_message_you_left">你离开了</string>
+    <string name="error_deleting_member_support_chat">删除和成员的聊天出错</string>
+    <string name="cant_send_message_alert_title">你无法发送消息！</string>
+    <string name="cant_send_message_contact_disabled">禁用了联系人</string>
+    <string name="cant_send_message_group_deleted">群被删除了</string>
+    <string name="cant_send_message_mem_removed">从群被删除了</string>
+    <string name="cant_send_message_rejected">加入请求被拒绝</string>
+    <string name="delete_member_support_chat_button">删除聊天</string>
+    <string name="delete_member_support_chat_alert_title">删除和成员的聊天吗？</string>
+    <string name="cant_send_message_contact_not_synchronized">未同步</string>
+    <string name="cant_send_message_member_has_old_version">成员有旧版本</string>
+    <string name="cant_send_message_contact_deleted">删除了联系人</string>
+    <string name="cant_send_message_contact_not_ready">联系人未就绪</string>
+    <string name="reject_pending_member_alert_title">拒绝成员?</string>
 </resources>

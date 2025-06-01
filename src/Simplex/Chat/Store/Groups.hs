@@ -256,12 +256,12 @@ deleteGroupLink db User {userId} GroupInfo {groupId} = do
     (userId, groupId)
   DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND group_id = ?" (userId, groupId)
 
-getGroupLink :: DB.Connection -> User -> GroupInfo -> ExceptT StoreError IO (Int64, CreatedLinkContact, GroupMemberRole)
+getGroupLink :: DB.Connection -> User -> GroupInfo -> ExceptT StoreError IO (Int64, CreatedLinkContact, GroupLinkId, GroupMemberRole)
 getGroupLink db User {userId} gInfo@GroupInfo {groupId} =
   ExceptT . firstRow groupLink (SEGroupLinkNotFound gInfo) $
-    DB.query db "SELECT user_contact_link_id, conn_req_contact, short_link_contact, group_link_member_role FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1" (userId, groupId)
+    DB.query db "SELECT user_contact_link_id, conn_req_contact, short_link_contact, group_link_id, group_link_member_role FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1" (userId, groupId)
   where
-    groupLink (linkId, cReq, shortLink, mRole_) = (linkId, CCLink cReq shortLink, fromMaybe GRMember mRole_)
+    groupLink (linkId, cReq, shortLink, gLinkId, mRole_) = (linkId, CCLink cReq shortLink, gLinkId, fromMaybe GRMember mRole_)
 
 getGroupLinkId :: DB.Connection -> User -> GroupInfo -> IO (Maybe GroupLinkId)
 getGroupLinkId db User {userId} GroupInfo {groupId} =

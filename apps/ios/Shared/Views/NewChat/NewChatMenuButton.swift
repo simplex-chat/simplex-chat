@@ -125,7 +125,7 @@ struct NewChatSheet: View {
                     }
                     NavigationLink {
                         AddGroupView()
-                            .navigationTitle("Create secret group")
+                            .navigationTitle("Create group")
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
