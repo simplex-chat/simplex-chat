@@ -27,8 +27,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
-import chat.simplex.common.model.ChatModel.withChats
-import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
@@ -40,12 +38,14 @@ import chat.simplex.common.views.chatlist.openLoadedChat
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.datetime.Clock
+import kotlinx.coroutines.*
 
 @Composable
 fun GroupMemberInfoView(
   rhId: Long?,
   groupInfo: GroupInfo,
   member: GroupMember,
+  scrollToItemId: MutableState<Long?>,
   connectionStats: ConnectionStats?,
   connectionCode: String?,
   chatModel: ChatModel,
@@ -63,11 +63,11 @@ fun GroupMemberInfoView(
       val r = chatModel.controller.apiSyncGroupMemberRatchet(rhId, groupInfo.apiId, member.groupMemberId, force = false)
       if (r != null) {
         connStats.value = r.second
-        withChats {
-          updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
         }
-        withReportsChatsIfOpen {
-          updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+        withContext(Dispatchers.Main) {
+          chatModel.secondaryChatsContext.value?.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
         }
         close.invoke()
       }
@@ -80,6 +80,7 @@ fun GroupMemberInfoView(
       rhId = rhId,
       groupInfo,
       member,
+      scrollToItemId,
       connStats,
       newRole,
       developerTools,
@@ -87,7 +88,7 @@ fun GroupMemberInfoView(
       getContactChat = { chatModel.getContactChat(it) },
       openDirectChat = {
         withBGApi {
-          apiLoadMessages(rhId, ChatType.Direct, it, null, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
+          apiLoadMessages(chatModel.chatsContext, rhId, ChatType.Direct, it, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
           if (chatModel.getContactChat(it) != null) {
             closeAll()
           }
@@ -100,8 +101,8 @@ fun GroupMemberInfoView(
             val memberContact = chatModel.controller.apiCreateMemberContact(rhId, groupInfo.apiId, member.groupMemberId)
             if (memberContact != null) {
               val memberChat = Chat(remoteHostId = rhId, ChatInfo.Direct(memberContact), chatItems = arrayListOf())
-              withChats {
-                addChat(memberChat)
+              withContext(Dispatchers.Main) {
+                chatModel.chatsContext.addChat(memberChat)
               }
               openLoadedChat(memberChat)
               closeAll()
@@ -137,22 +138,10 @@ fun GroupMemberInfoView(
         if (it == newRole.value) return@GroupMemberInfoLayout
         val prevValue = newRole.value
         newRole.value = it
-        updateMemberRoleDialog(it, groupInfo, member, onDismiss = {
+        updateMemberRoleDialog(it, groupInfo, member.memberCurrent, onDismiss = {
           newRole.value = prevValue
         }) {
-          withBGApi {
-            kotlin.runCatching {
-              val mem = chatModel.controller.apiMemberRole(rhId, groupInfo.groupId, member.groupMemberId, it)
-              withChats {
-                upsertGroupMember(rhId, groupInfo, mem)
-              }
-              withReportsChatsIfOpen {
-                upsertGroupMember(rhId, groupInfo, mem)
-              }
-            }.onFailure {
-              newRole.value = prevValue
-            }
-          }
+          updateMembersRole(newRole.value, rhId, groupInfo, listOf(member.groupMemberId), onFailure = { newRole.value = prevValue })
         }
       },
       switchMemberAddress = {
@@ -161,11 +150,11 @@ fun GroupMemberInfoView(
             val r = chatModel.controller.apiSwitchGroupMember(rhId, groupInfo.apiId, member.groupMemberId)
             if (r != null) {
               connStats.value = r.second
-              withChats {
-                updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+              withContext(Dispatchers.Main) {
+                chatModel.chatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               }
-              withReportsChatsIfOpen {
-                updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+              withContext(Dispatchers.Main) {
+                chatModel.secondaryChatsContext.value?.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               }
               close.invoke()
             }
@@ -178,11 +167,11 @@ fun GroupMemberInfoView(
             val r = chatModel.controller.apiAbortSwitchGroupMember(rhId, groupInfo.apiId, member.groupMemberId)
             if (r != null) {
               connStats.value = r.second
-              withChats {
-                updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+              withContext(Dispatchers.Main) {
+                chatModel.chatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               }
-              withReportsChatsIfOpen {
-                updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+              withContext(Dispatchers.Main) {
+                chatModel.secondaryChatsContext.value?.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               }
               close.invoke()
             }
@@ -198,11 +187,11 @@ fun GroupMemberInfoView(
             val r = chatModel.controller.apiSyncGroupMemberRatchet(rhId, groupInfo.apiId, member.groupMemberId, force = true)
             if (r != null) {
               connStats.value = r.second
-              withChats {
-                updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+              withContext(Dispatchers.Main) {
+                chatModel.chatsContext.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               }
-              withReportsChatsIfOpen {
-                updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+              withContext(Dispatchers.Main) {
+                chatModel.secondaryChatsContext.value?.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               }
               close.invoke()
             }
@@ -224,11 +213,11 @@ fun GroupMemberInfoView(
                       connectionCode = if (verified) SecurityCode(existingCode, Clock.System.now()) else null
                     )
                   )
-                  withChats {
-                    upsertGroupMember(rhId, groupInfo, copy)
+                  withContext(Dispatchers.Main) {
+                    chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, copy)
                   }
-                  withReportsChatsIfOpen {
-                    upsertGroupMember(rhId, groupInfo, copy)
+                  withContext(Dispatchers.Main) {
+                    chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, groupInfo, copy)
                   }
                   r
                 }
@@ -256,21 +245,26 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
     text = generalGetString(messageId),
     confirmText = generalGetString(MR.strings.remove_member_confirmation),
     onConfirm = {
-      withBGApi {
-        val removedMember = chatModel.controller.apiRemoveMember(rhId, member.groupId, member.groupMemberId)
-        if (removedMember != null) {
-          withChats {
-            upsertGroupMember(rhId, groupInfo, removedMember)
-          }
-          withReportsChatsIfOpen {
-            upsertGroupMember(rhId, groupInfo, removedMember)
-          }
-        }
-        close?.invoke()
-      }
+      removeMember(rhId, member, chatModel, close)
     },
     destructive = true,
   )
+}
+
+fun removeMember(rhId: Long?, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
+  withBGApi {
+    val r = chatModel.controller.apiRemoveMembers(rhId, member.groupId, listOf(member.groupMemberId))
+    if (r != null) {
+      val (updatedGroupInfo, removedMembers) = r
+      withContext(Dispatchers.Main) {
+        chatModel.chatsContext.updateGroup(rhId, updatedGroupInfo)
+        removedMembers.forEach { removedMember ->
+          chatModel.chatsContext.upsertGroupMember(rhId, updatedGroupInfo, removedMember)
+        }
+      }
+    }
+    close?.invoke()
+  }
 }
 
 @Composable
@@ -278,6 +272,7 @@ fun GroupMemberInfoLayout(
   rhId: Long?,
   groupInfo: GroupInfo,
   member: GroupMember,
+  scrollToItemId: MutableState<Long?>,
   connStats: MutableState<ConnectionStats?>,
   newRole: MutableState<GroupMemberRole>,
   developerTools: Boolean,
@@ -309,7 +304,30 @@ fun GroupMemberInfoLayout(
   }
 
   @Composable
-  fun AdminDestructiveSection() {
+  fun SupportChatButton() {
+    val scope = rememberCoroutineScope()
+
+    SettingsActionItem(
+      painterResource(MR.images.ic_flag),
+      stringResource(MR.strings.button_support_chat_member),
+      click = {
+        val scopeInfo = GroupChatScopeInfo.MemberSupport(groupMember_ = member)
+        val supportChatInfo = ChatInfo.Group(groupInfo, groupChatScope = scopeInfo)
+        scope.launch {
+          showMemberSupportChatView(
+            chatModel.chatId,
+            scrollToItemId = scrollToItemId,
+            supportChatInfo,
+            scopeInfo
+          )
+        }
+      },
+      iconColor = MaterialTheme.colors.secondary,
+    )
+  }
+
+  @Composable
+  fun ModeratorDestructiveSection() {
     val canBlockForAll = member.canBlockForAll(groupInfo)
     val canRemove = member.canBeRemoved(groupInfo)
     if (canBlockForAll || canRemove) {
@@ -422,6 +440,12 @@ fun GroupMemberInfoLayout(
 
     if (member.memberActive) {
       SectionView {
+        if (
+          groupInfo.membership.memberRole >= GroupMemberRole.Moderator &&
+          (member.memberRole < GroupMemberRole.Moderator || member.supportChat != null)
+        ) {
+          SupportChatButton()
+        }
         if (connectionCode != null) {
           VerifyCodeButton(member.verified, verifyClicked)
         }
@@ -486,8 +510,8 @@ fun GroupMemberInfoLayout(
       }
     }
 
-    if (groupInfo.membership.memberRole >= GroupMemberRole.Admin) {
-      AdminDestructiveSection()
+    if (groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
+      ModeratorDestructiveSection()
     } else {
       NonAdminBlockSection()
     }
@@ -701,16 +725,37 @@ fun MemberProfileImage(
   )
 }
 
-private fun updateMemberRoleDialog(
+fun updateMembersRole(newRole: GroupMemberRole, rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, onFailure: () -> Unit = {}, onSuccess: () -> Unit = {}) {
+  withBGApi {
+    kotlin.runCatching {
+      val members = chatModel.controller.apiMembersRole(rhId, groupInfo.groupId, memberIds, newRole)
+      withContext(Dispatchers.Main) {
+        members.forEach { member ->
+          chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, member)
+        }
+      }
+      withContext(Dispatchers.Main) {
+        members.forEach { member ->
+          chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, groupInfo, member)
+        }
+      }
+      onSuccess()
+    }.onFailure {
+      onFailure()
+    }
+  }
+}
+
+fun updateMemberRoleDialog(
   newRole: GroupMemberRole,
   groupInfo: GroupInfo,
-  member: GroupMember,
+  memberCurrent: Boolean,
   onDismiss: () -> Unit,
   onConfirm: () -> Unit
 ) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.change_member_role_question),
-    text = if (member.memberCurrent) {
+    text = if (memberCurrent) {
       if (groupInfo.businessChat == null)
         String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification), newRole.text)
       else
@@ -721,6 +766,22 @@ private fun updateMemberRoleDialog(
     onDismiss = onDismiss,
     onConfirm = onConfirm,
     onDismissRequest = onDismiss
+  )
+}
+
+fun updateMembersRoleDialog(
+  newRole: GroupMemberRole,
+  groupInfo: GroupInfo,
+  onConfirm: () -> Unit
+) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.change_member_role_question),
+    text = if (groupInfo.businessChat == null)
+      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification), newRole.text)
+    else
+      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification_chat), newRole.text),
+    confirmText = generalGetString(MR.strings.change_verb),
+    onConfirm = onConfirm,
   )
 }
 
@@ -769,11 +830,11 @@ fun updateMemberSettings(rhId: Long?, gInfo: GroupInfo, member: GroupMember, mem
   withBGApi {
     val success = ChatController.apiSetMemberSettings(rhId, gInfo.groupId, member.groupMemberId, memberSettings)
     if (success) {
-      withChats {
-        upsertGroupMember(rhId, gInfo, member.copy(memberSettings = memberSettings))
+      withContext(Dispatchers.Main) {
+        chatModel.chatsContext.upsertGroupMember(rhId, gInfo, member.copy(memberSettings = memberSettings))
       }
-      withReportsChatsIfOpen {
-        upsertGroupMember(rhId, gInfo, member.copy(memberSettings = memberSettings))
+      withContext(Dispatchers.Main) {
+        chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, gInfo, member.copy(memberSettings = memberSettings))
       }
     }
   }
@@ -785,7 +846,19 @@ fun blockForAllAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
     text = generalGetString(MR.strings.block_member_desc).format(mem.chatViewName),
     confirmText = generalGetString(MR.strings.block_for_all),
     onConfirm = {
-      blockMemberForAll(rhId, gInfo, mem, true)
+      blockMemberForAll(rhId, gInfo, listOf(mem.groupMemberId), true)
+    },
+    destructive = true,
+  )
+}
+
+fun blockForAllAlert(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>, onSuccess: () -> Unit = {}) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.block_members_for_all_question),
+    text = generalGetString(MR.strings.block_members_desc),
+    confirmText = generalGetString(MR.strings.block_for_all),
+    onConfirm = {
+      blockMemberForAll(rhId, gInfo, memberIds, true, onSuccess)
     },
     destructive = true,
   )
@@ -797,20 +870,36 @@ fun unblockForAllAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
     text = generalGetString(MR.strings.unblock_member_desc).format(mem.chatViewName),
     confirmText = generalGetString(MR.strings.unblock_for_all),
     onConfirm = {
-      blockMemberForAll(rhId, gInfo, mem, false)
+      blockMemberForAll(rhId, gInfo, listOf(mem.groupMemberId), false)
     },
   )
 }
 
-fun blockMemberForAll(rhId: Long?, gInfo: GroupInfo, member: GroupMember, blocked: Boolean) {
+fun unblockForAllAlert(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>, onSuccess: () -> Unit = {}) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.unblock_members_for_all_question),
+    text = generalGetString(MR.strings.unblock_members_desc),
+    confirmText = generalGetString(MR.strings.unblock_for_all),
+    onConfirm = {
+      blockMemberForAll(rhId, gInfo, memberIds, false, onSuccess)
+    },
+  )
+}
+
+fun blockMemberForAll(rhId: Long?, gInfo: GroupInfo, memberIds: List<Long>, blocked: Boolean, onSuccess: () -> Unit = {}) {
   withBGApi {
-    val updatedMember = ChatController.apiBlockMemberForAll(rhId, gInfo.groupId, member.groupMemberId, blocked)
-    withChats {
-      upsertGroupMember(rhId, gInfo, updatedMember)
+    val updatedMembers = ChatController.apiBlockMembersForAll(rhId, gInfo.groupId, memberIds, blocked)
+    withContext(Dispatchers.Main) {
+      updatedMembers.forEach { updatedMember ->
+        chatModel.chatsContext.upsertGroupMember(rhId, gInfo, updatedMember)
+      }
     }
-    withReportsChatsIfOpen {
-      upsertGroupMember(rhId, gInfo, updatedMember)
+    withContext(Dispatchers.Main) {
+      updatedMembers.forEach { updatedMember ->
+        chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, gInfo, updatedMember)
+      }
     }
+    onSuccess()
   }
 }
 
@@ -822,6 +911,7 @@ fun PreviewGroupMemberInfoLayout() {
       rhId = null,
       groupInfo = GroupInfo.sampleData,
       member = GroupMember.sampleData,
+      scrollToItemId = remember { mutableStateOf(null) },
       connStats = remember { mutableStateOf(null) },
       newRole = remember { mutableStateOf(GroupMemberRole.Member) },
       developerTools = false,

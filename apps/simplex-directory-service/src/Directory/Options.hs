@@ -1,5 +1,6 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -22,6 +23,12 @@ data DirectoryOpts = DirectoryOpts
     adminUsers :: [KnownContact],
     superUsers :: [KnownContact],
     ownersGroup :: Maybe KnownGroup,
+    blockedWordsFile :: Maybe FilePath,
+    blockedFragmentsFile :: Maybe FilePath,
+    blockedExtensionRules :: Maybe FilePath,
+    nameSpellingFile :: Maybe FilePath,
+    profileNameLimit :: Int,
+    captchaGenerator :: Maybe FilePath,
     directoryLog :: Maybe FilePath,
     serviceName :: T.Text,
     runCLI :: Bool,
@@ -55,6 +62,49 @@ directoryOpts appDir defaultDbName = do
             <> metavar "OWNERS_GROUP"
             <> help "The group of group owners in the format GROUP_ID:DISPLAY_NAME - owners of listed groups will be invited automatically"
         )
+  blockedWordsFile <-
+    optional $
+      strOption
+        ( long "blocked-words-file"
+            <> metavar "BLOCKED_WORDS_FILE"
+            <> help "File with the basic forms of words not allowed in profiles"
+        )
+  blockedFragmentsFile <-
+    optional $
+      strOption
+        ( long "blocked-fragments-file"
+            <> metavar "BLOCKED_WORDS_FILE"
+            <> help "File with the basic forms of word fragments not allowed in profiles"
+        )
+  blockedExtensionRules <-
+    optional $
+      strOption
+        ( long "blocked-extenstion-rules"
+            <> metavar "BLOCKED_EXTENSION_RULES"
+            <> help "Substitions to extend the list of blocked words"
+        )
+  nameSpellingFile <-
+    optional $
+      strOption
+        ( long "name-spelling-file"
+            <> metavar "NAME_SPELLING_FILE"
+            <> help "File with the character substitions to match in profile names"
+        )
+  profileNameLimit <-
+    option
+      auto
+      ( long "profile-name-limit"
+          <> metavar "PROFILE_NAME_LIMIT"
+          <> help "Max length of profile name that will be allowed to connect and to join groups"
+          <> value maxBound
+      )
+  captchaGenerator <-
+    optional $
+      strOption
+        ( long "captcha-generator"
+            <> metavar "CAPTCHA_GENERATOR"
+            <> help "Executable to generate captcha files, must accept text as parameter and save file to stdout as base64 up to 12500 bytes"
+        )
   directoryLog <-
     Just
       <$> strOption
@@ -80,6 +130,12 @@ directoryOpts appDir defaultDbName = do
         adminUsers,
         superUsers,
         ownersGroup,
+        blockedWordsFile,
+        blockedFragmentsFile,
+        blockedExtensionRules,
+        nameSpellingFile,
+        profileNameLimit,
+        captchaGenerator,
         directoryLog,
         serviceName = T.pack serviceName,
         runCLI,
@@ -102,7 +158,6 @@ mkChatOpts :: DirectoryOpts -> ChatOpts
 mkChatOpts DirectoryOpts {coreOptions} =
   ChatOpts
     { coreOptions,
-      deviceName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
       chatCmdLog = CCLNone,

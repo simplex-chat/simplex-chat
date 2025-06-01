@@ -39,7 +39,7 @@ abstract class NtfManager {
   fun notifyMessageReceived(rhId: Long?, user: UserLike, cInfo: ChatInfo, cItem: ChatItem) {
     if (
       cItem.showNotification &&
-      cInfo.ntfsEnabled &&
+      cInfo.ntfsEnabled(cItem) &&
       (
           allowedToShowNotification() ||
               chatModel.chatId.value != cInfo.id ||
@@ -73,7 +73,7 @@ abstract class NtfManager {
       }
       val cInfo = chatModel.getChat(chatId)?.chatInfo
       chatModel.clearOverlays.value = true
-      if (cInfo != null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group)) openChat(null, cInfo)
+      if (cInfo != null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group)) openChat(secondaryChatsCtx = null, rhId = null, cInfo)
     }
   }
 
@@ -134,7 +134,12 @@ abstract class NtfManager {
       }
       res
     } else {
-      cItem.text
+      val mc = cItem.content.msgContent
+      if (mc is MsgContent.MCReport) {
+        generalGetString(MR.strings.notification_group_report).format(cItem.text.ifEmpty { mc.reason.text })
+      } else {
+        cItem.text
+      }
     }
   }
 }

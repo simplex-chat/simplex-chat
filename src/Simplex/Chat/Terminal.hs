@@ -9,14 +9,14 @@ module Simplex.Chat.Terminal where
 
 import Control.Monad
 import qualified Data.List.NonEmpty as L
-import Simplex.Chat (defaultChatConfig, operatorSimpleXChat)
+import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Help (chatWelcome)
 import Simplex.Chat.Library.Commands (_defaultNtfServers)
 import Simplex.Chat.Operators
+import Simplex.Chat.Operators.Presets (operatorSimpleXChat)
 import Simplex.Chat.Options
-import Simplex.Chat.Options.DB
 import Simplex.Chat.Terminal.Input
 import Simplex.Chat.Terminal.Output
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
@@ -29,6 +29,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Database.SQLite.Simple (SQLError (..))
 import qualified Database.SQLite.Simple as DB
+import Simplex.Chat.Options.DB
 import System.IO (hFlush, hSetEcho, stdin, stdout)
 #endif
 

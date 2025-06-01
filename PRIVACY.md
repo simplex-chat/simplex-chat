@@ -123,6 +123,16 @@ This section applies only to the experimental group directory operated by Simple
 
 [SimpleX Directory](/docs/DIRECTORY.md) stores: your search requests, the messages and the members profiles in the registered groups. You can connect to SimpleX Directory via [this address](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).
 
+#### Public groups and content channels
+
+You may participate in a public group and receive content from a public channel (Group). In case you send messages or comments to the Group, you grant a license:
+- to all recipients:
+  - to share your messages with the new Group members and outside of the group, e.g. via quoting (replying), forwarding and copy-pasting your message. When your message is deleted or marked as deleted, the copies of your message will not be deleted.
+  - to retain a copy of your messages according to the Group settings (e.g., the Group may allow irreversible message deletion from the recipient devices for a limited period of time, or it may only allow to edit and mark messages as deleted on recipient devices). Deleting message from the recipient devices or marking message as deleted revokes the license to share the message.
+- to Group owners: to share your messages with the new Group members as history of the Group. Currently, the Group history shared with the new members is limited to 100 messages.
+
+Group owners may use chat relays or automated bots (Chat Relays) to re-broadcast member messages to all members, for efficiency. The Chat Relays may be operated by the group owners, by preset operators or by 3rd parties. The Chat Relays have access to and will retain messages in line with Group settings, for technical functioning of the Group. Neither you nor group owners grant any content license to Chat Relay operators.
+
 #### User Support
 
 The app includes support contact operated by SimpleX Chat Ltd. If you contact support, any personal data you share is kept only for the purposes of researching the issue and contacting you about your case. We recommend contacting support [via chat](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion) when it is possible, and avoid sharing any personal information.
@@ -131,9 +141,9 @@ The app includes support contact operated by SimpleX Chat Ltd. If you contact su
 
 Preset server operators will not share the information on their servers with each other, other than aggregate usage statistics. 
 
-Preset server operators will not provide general access to their servers or the data on their servers to each other.
+Preset server operators must not provide general access to their servers or the data on their servers to each other.
 
-Preset server operators will provide non-administrative access to control port of preset servers to SimpleX Chat Ltd, for the purposes of removing identified illegal content. This control port access only allows deleting known links and files, and access to aggregate statistics, but does NOT allow enumerating any information on the servers.
+Preset server operators will provide non-administrative access to control port of preset servers to SimpleX Chat Ltd, for the purposes of removing illegal content identified in publicly accessible resources (contact and group addresses, and downloadable files). This control port access only allows deleting known links and files, and accessing aggregate server-wide statistics, but does NOT allow enumerating any information on the servers or accessing statistics related to specific users.
 
 ### Information Preset Server Operators May Share
 
@@ -148,7 +158,7 @@ The cases when the preset server operators may share the data temporarily stored
 - To detect, prevent, or otherwise address fraud, security, or technical issues.
 - To protect against harm to the rights, property, or safety of software users, operators of preset servers, or the public as required or permitted by law.
 
-At the time of updating this document, the preset server operators have never provided or have been requested the access to the preset relay servers or any information from the servers by any third parties. If the preset server operators are ever requested to provide such access or information, they will follow the due legal process to limit any information shared with the third parties to the minimally required by law.
+By the time of updating this document, the preset server operators were not served with any enforceable requests and did not provide any information from the servers to any third parties. If the preset server operators are ever requested to provide such access or information, they will follow the due legal process to limit any information shared with the third parties to the minimally required by law.
 
 Preset server operators will publish information they are legally allowed to share about such requests in the [Transparency reports](./docs/TRANSPARENCY.md).
 
@@ -190,7 +200,18 @@ You accept the Conditions of Use of Software and Infrastructure ("Conditions") b
 
 **Legal usage**. You agree to use SimpleX Chat Applications only for legal purposes. You will not use (or assist others in using) the Applications in ways that: 1) violate or infringe the rights of Software users, SimpleX Chat Ltd, other preset server operators, or others, including privacy, publicity, intellectual property, or other proprietary rights; 2) involve sending illegal communications, e.g. spam. While server operators cannot access content or identify messages or groups, in some cases the links to the illegal communications can be shared publicly on social media or websites. Preset server operators reserve the right to remove such links from the preset servers and disrupt the conversations that send illegal content via their servers, whether they were reported by the users or discovered by the operators themselves.
 
-**Damage to SimpleX Chat Ltd and Preset Server Operators**. You must not (or assist others to) access, use, modify, distribute, transfer, or exploit SimpleX Chat Applications in unauthorized manners, or in ways that harm Software users, SimpleX Chat Ltd, other preset server operators, their Infrastructure, or any other systems. For example, you must not 1) access preset operators' Infrastructure or systems without authorization, in any way other than by using the Software; 2) disrupt the integrity or performance of preset operators' Infrastructure; 3) collect information about the users in any manner; or 4) sell, rent, or charge for preset operators' Infrastructure. This does not prohibit you from providing your own Infrastructure to others, whether free or for a fee, as long as you do not violate these Conditions and AGPLv3 license, including the requirement to publish any modifications of the relay server software.
+**Damage to SimpleX Chat Ltd and Preset Server Operators**. You must not (or assist others to) access, use, modify, distribute, transfer, or exploit SimpleX Chat Applications in unauthorized manners, or in ways that harm Software users, SimpleX Chat Ltd, other preset server operators, their Infrastructure, or any other systems. For example, you must not 1) access preset operators' Infrastructure or systems without authorization, in any way other than by using the Software or by using a 3rd party client applications that satisfies the requirements of the Conditions of use (see the next section); 2) disrupt the integrity or performance of preset operators' Infrastructure; 3) collect information about the users in any manner; or 4) sell, rent, or charge for preset operators' Infrastructure. This does not prohibit you from providing your own Infrastructure to others, whether free or for a fee, as long as you do not violate these Conditions and AGPLv3 license, including the requirement to publish any modifications of the relay server software.
+
+**3rd party client applications**. You may use a 3rd party application (App) to access preset operators' Infrastructure or systems, provided that this App:
+- is compatible with the protocol specifications not older than 1 year,
+- provides user-to-user messaging only or enables automated chat bots sending messages requested by users (in case of bots, it must be made clear to the users that these are automated bots),
+- implements the same limits, rules and restrictions as Software,
+- requires that the users accept the same Conditions of use of preset operators' Infrastructure as in Software prior to providing access to this Infrastructure,
+- displays the notice that it is the App for using SimpleX network,
+- provides its source code under open-source license accessible to the users via the App interface. In case the App uses the source code of Software, the App's source code must be provided under AGPLv3 license, and in case it is developed without using Software code its source code must be provided under any widely recognized free open-source license,
+- does NOT use the branding of SimpleX Chat Ltd without the permission,
+- does NOT pretend to be Software,
+- complies with these Conditions of use.
 
 **Keeping your data secure**. SimpleX Chat is the first communication software that aims to be 100% private by design - server software neither has the ability to access your messages, nor it has information about who you communicate with. That means that you are solely responsible for keeping your device, your user profile and any data safe and secure. If you lose your phone or remove the Software from the device, you will not be able to recover the lost data, unless you made a back up. To protect the data you need to make regular backups, as using old backups may disrupt your communication with some of the contacts. SimpleX Chat Ltd and other preset server operators are not responsible for any data loss.
 
@@ -222,4 +243,4 @@ You accept the Conditions of Use of Software and Infrastructure ("Conditions") b
 
 **Ending these conditions**. You may end these Conditions with SimpleX Chat Ltd and preset server operators at any time by deleting the Applications from your devices and discontinuing use of the Infrastructure of SimpleX Chat Ltd and preset server operators. The provisions related to Licenses, Disclaimers, Limitation of Liability, Resolving dispute, Availability, Changes to the conditions, Enforcing the conditions, and Ending these conditions will survive termination of your relationship with SimpleX Chat Ltd and/or preset server operators.
 
-Updated November 14, 2024
+Updated March 3, 2025

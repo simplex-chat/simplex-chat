@@ -70,8 +70,10 @@ struct ContextItemView: View {
             .lineLimit(lines)
     }
 
-    private func contextMsgPreview(_ contextItem: ChatItem) -> Text {
-        return attachment() + messageText(contextItem.text, contextItem.formattedText, nil, preview: true, showSecrets: false, secondaryColor: theme.colors.secondary)
+    private func contextMsgPreview(_ contextItem: ChatItem) -> some View {
+        let r = messageText(contextItem.text, contextItem.formattedText, sender: nil, preview: true, mentions: contextItem.mentions, userMemberId: nil, showSecrets: nil, backgroundColor: UIColor(background))
+        let t = attachment() + Text(AttributedString(r.string))
+        return t.if(r.hasSecrets, transform: hiddenSecretsView)
 
         func attachment() -> Text {
             let isFileLoaded = if let fileSource = getLoadedFileSource(contextItem.file) {

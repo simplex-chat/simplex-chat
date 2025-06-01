@@ -1,9 +1,9 @@
 package chat.simplex.common.views.chat.group
 
 import SectionBottomSpacer
+import SectionViewWithButton
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -16,11 +16,11 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.ColumnWithScrollBar
-import chat.simplex.common.platform.shareText
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.*
+import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.MR
 
 @Composable
@@ -28,19 +28,31 @@ fun GroupLinkView(
   chatModel: ChatModel,
   rhId: Long?,
   groupInfo: GroupInfo,
-  connReqContact: String?,
+  connLinkContact: CreatedConnLink?,
   memberRole: GroupMemberRole?,
-  onGroupLinkUpdated: ((Pair<String, GroupMemberRole>?) -> Unit)?,
+  onGroupLinkUpdated: ((Pair<CreatedConnLink, GroupMemberRole>?) -> Unit)?,
   creatingGroup: Boolean = false,
   close: (() -> Unit)? = null
 ) {
-  var groupLink by rememberSaveable { mutableStateOf(connReqContact) }
+  var groupLink by rememberSaveable(stateSaver = CreatedConnLink.nullableStateSaver) { mutableStateOf(connLinkContact) }
   val groupLinkMemberRole = rememberSaveable { mutableStateOf(memberRole) }
   var creatingLink by rememberSaveable { mutableStateOf(false) }
   fun createLink() {
     creatingLink = true
     withBGApi {
       val link = chatModel.controller.apiCreateGroupLink(rhId, groupInfo.groupId)
+      if (link != null) {
+        groupLink = link.first
+        groupLinkMemberRole.value = link.second
+        onGroupLinkUpdated?.invoke(link)
+      }
+      creatingLink = false
+    }
+  }
+  fun addShortLink() {
+    creatingLink = true
+    withBGApi {
+      val link = chatModel.controller.apiAddGroupShortLink(rhId, groupInfo.groupId)
       if (link != null) {
         groupLink = link.first
         groupLinkMemberRole.value = link.second
@@ -60,6 +72,7 @@ fun GroupLinkView(
     groupLinkMemberRole,
     creatingLink,
     createLink = ::createLink,
+    addShortLink = ::addShortLink,
     updateLink = {
       val role = groupLinkMemberRole.value
       if (role != null) {
@@ -100,11 +113,12 @@ fun GroupLinkView(
 
 @Composable
 fun GroupLinkLayout(
-  groupLink: String?,
+  groupLink: CreatedConnLink?,
   groupInfo: GroupInfo,
   groupLinkMemberRole: MutableState<GroupMemberRole?>,
   creatingLink: Boolean,
   createLink: () -> Unit,
+  addShortLink: () -> Unit,
   updateLink: () -> Unit,
   deleteLink: () -> Unit,
   creatingGroup: Boolean = false,
@@ -151,7 +165,15 @@ fun GroupLinkLayout(
           }
           initialLaunch = false
         }
-        SimpleXLinkQRCode(groupLink)
+        val showShortLink = remember { mutableStateOf(true) }
+        Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+        if (groupLink.connShortLink == null) {
+          SimpleXCreatedLinkQRCode(groupLink, short = false)
+        } else {
+          SectionViewWithButton(titleButton = { ToggleShortLinkButton(showShortLink) }) {
+            SimpleXCreatedLinkQRCode(groupLink, short = showShortLink.value)
+          }
+        }
         Row(
           horizontalArrangement = Arrangement.spacedBy(10.dp),
           verticalAlignment = Alignment.CenterVertically,
@@ -161,7 +183,7 @@ fun GroupLinkLayout(
           SimpleButton(
             stringResource(MR.strings.share_link),
             icon = painterResource(MR.images.ic_share),
-            click = { clipboard.shareText(simplexChatLink(groupLink)) }
+            click = { clipboard.shareText(groupLink.simplexChatUri(short = showShortLink.value)) }
           )
           if (creatingGroup && close != null) {
             ContinueButton(close)
@@ -174,10 +196,24 @@ fun GroupLinkLayout(
             )
           }
         }
+        if (groupLink.connShortLink == null && appPreferences.privacyShortLinks.get()) {
+          AddShortLinkButton(addShortLink)
+        }
       }
     }
     SectionBottomSpacer()
   }
+}
+
+@Composable
+private fun AddShortLinkButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_add),
+    stringResource(MR.strings.add_short_link),
+    onClick,
+    iconColor = MaterialTheme.colors.primary,
+    textColor = MaterialTheme.colors.primary,
+  )
 }
 
 @Composable

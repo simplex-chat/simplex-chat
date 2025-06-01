@@ -179,7 +179,7 @@ class ShareModel: ObservableObject {
                 resetChatCtrl() // Clears retained migration result
                 registerGroupDefaults()
                 haskell_init_se()
-                let (_, result) = chatMigrateInit(dbKey, confirmMigrations: defaultMigrationConfirmation())
+                let (_, result) = chatMigrateInit(dbKey, confirmMigrations: defaultMigrationConfirmation(), backgroundMode: false)
                 if let e = migrationError(result) { return e }
                 try apiSetAppFilePaths(
                     filesFolder: getAppFilesDirectory().path,
@@ -303,8 +303,9 @@ class ShareModel: ObservableObject {
                     }
                 }
             }
-            switch recvSimpleXMsg(messageTimeout: 1_000_000) {
-            case let .sndFileProgressXFTP(_, ci, _, sentSize, totalSize):
+            let r: APIResult<SEChatEvent>? = recvSimpleXMsg(messageTimeout: 1_000_000)
+            switch r {
+            case let .result(.sndFileProgressXFTP(_, ci, _, sentSize, totalSize)):
                 guard isMessage(for: ci) else { continue }
                 networkTimeout = CFAbsoluteTimeGetCurrent()
                 await MainActor.run {
@@ -313,14 +314,14 @@ class ShareModel: ObservableObject {
                         bottomBar = .loadingBar(progress: progress)
                     }
                 }
-            case let .sndFileCompleteXFTP(_, ci, _):
+            case let .result(.sndFileCompleteXFTP(_, ci, _)):
                 guard isMessage(for: ci) else { continue }
                 if isGroupChat {
                     await MainActor.run { bottomBar = .loadingSpinner }
                 }
                 await ch.completeFile()
                 if await !ch.isRunning { break }
-            case let .chatItemsStatusesUpdated(_, chatItems):
+            case let .result(.chatItemsStatusesUpdated(_, chatItems)):
                 guard let ci = chatItems.last else { continue }
                 guard isMessage(for: ci) else { continue }
                 if let (title, message) = ci.chatItem.meta.itemStatus.statusInfo {
@@ -342,17 +343,15 @@ class ShareModel: ObservableObject {
                         }
                     }
                 }
-            case let .sndFileError(_, ci, _, errorMessage):
+            case let .result(.sndFileError(_, ci, _, errorMessage)):
                 guard isMessage(for: ci) else { continue }
                 if let ci { cleanupFile(ci) }
                 return ErrorAlert(title: "File error", message: "\(fileErrorInfo(ci) ?? errorMessage)")
-            case let .sndFileWarning(_, ci, _, errorMessage):
+            case let .result(.sndFileWarning(_, ci, _, errorMessage)):
                 guard isMessage(for: ci) else { continue }
                 if let ci { cleanupFile(ci) }
                 return ErrorAlert(title: "File error", message: "\(fileErrorInfo(ci) ?? errorMessage)")
-            case let .chatError(_, chatError):
-                return ErrorAlert(chatError)
-            case let .chatCmdError(_, chatError):
+            case let .error(chatError):
                 return ErrorAlert(chatError)
             default: continue
             }

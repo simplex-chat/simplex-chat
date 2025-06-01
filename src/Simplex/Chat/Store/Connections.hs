@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -12,6 +13,7 @@ module Simplex.Chat.Store.Connections
   ( getChatLockEntity,
     getConnectionEntity,
     getConnectionEntityByConnReq,
+    getConnectionEntityViaShortLink,
     getContactConnEntityByConnReqHash,
     getConnectionsToSubscribe,
     unsetConnectionToSubscribe,
@@ -33,7 +35,7 @@ import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (ConnId)
+import Simplex.Messaging.Agent.Protocol (ConnId, ConnShortLink, ConnectionMode (..))
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, firstRow', maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -134,16 +136,21 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
                 SELECT
                   -- GroupInfo
                   g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
-                  g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
-                  g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
+                  g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
+                  g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id,
+                  g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
                   -- GroupInfo {membership}
                   mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
                   mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
                   -- GroupInfo {membership = GroupMember {memberProfile}}
                   pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
+                  mu.created_at, mu.updated_at,
+                  mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts,
                   -- from GroupMember
                   m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-                  m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences
+                  m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
+                  m.created_at, m.updated_at,
+                  m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts
                 FROM group_members m
                 JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
                 JOIN groups g ON g.group_id = m.group_id
@@ -201,6 +208,26 @@ getConnectionEntityByConnReq db vr user@User {userId} (cReqSchema1, cReqSchema2)
     maybeFirstRow fromOnly $
       DB.query db "SELECT agent_conn_id FROM connections WHERE user_id = ? AND conn_req_inv IN (?,?) LIMIT 1" (userId, cReqSchema1, cReqSchema2)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db vr user) connId_
+
+getConnectionEntityViaShortLink :: DB.Connection -> VersionRangeChat -> User -> ConnShortLink 'CMInvitation -> IO (Maybe (ConnReqInvitation, ConnectionEntity))
+getConnectionEntityViaShortLink db vr user@User {userId} shortLink = fmap eitherToMaybe $ runExceptT $ do
+  (cReq, connId) <- ExceptT getConnReqConnId
+  (cReq,) <$> getConnectionEntity db vr user connId
+  where
+    getConnReqConnId = 
+      firstRow' toConnReqConnId (SEInternalError "connection not found") $
+        DB.query
+          db
+          [sql|
+            SELECT conn_req_inv, agent_conn_id
+            FROM connections
+            WHERE user_id = ? AND short_link_inv = ? LIMIT 1
+          |]
+          (userId, shortLink)
+    -- cReq is Maybe - it is removed when connection is established
+    toConnReqConnId = \case
+      (Just cReq, connId) -> Right (cReq, connId)
+      _ -> Left $ SEInternalError "no connection request"
 
 -- search connection for connection plan:
 -- multiple connections can have same via_contact_uri_hash if request was repeated;

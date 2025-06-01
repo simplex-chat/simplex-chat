@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import SimpleXChat
+@preconcurrency import SimpleXChat
 
 func infoRow(_ title: LocalizedStringKey, _ value: String) -> some View {
     HStack {
@@ -158,7 +158,9 @@ struct ChatInfoView: View {
                             searchButton(width: buttonWidth)
                             AudioCallButton(chat: chat, contact: contact, connectionStats: $connectionStats, width: buttonWidth) { alert = .someAlert(alert: $0) }
                             VideoButton(chat: chat, contact: contact, connectionStats: $connectionStats, width: buttonWidth) { alert = .someAlert(alert: $0) }
-                            muteButton(width: buttonWidth)
+                            if let nextNtfMode = chat.chatInfo.nextNtfMode {
+                                muteButton(width: buttonWidth, nextNtfMode: nextNtfMode)
+                            }
                         }
                     }
                     .padding(.trailing)
@@ -432,13 +434,13 @@ struct ChatInfoView: View {
         .disabled(!contact.ready || chat.chatItems.isEmpty)
     }
 
-    private func muteButton(width: CGFloat) -> some View {
-        InfoViewButton(
-            image: chat.chatInfo.ntfsEnabled ? "speaker.slash.fill" : "speaker.wave.2.fill",
-            title: chat.chatInfo.ntfsEnabled ? "mute" : "unmute",
+    private func muteButton(width: CGFloat, nextNtfMode: MsgFilter) -> some View {
+        return InfoViewButton(
+            image: nextNtfMode.iconFilled,
+            title: "\(nextNtfMode.text(mentions: false))",
             width: width
         ) {
-            toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
+            toggleNotifications(chat, enableNtfs: nextNtfMode)
         }
         .disabled(!contact.ready || !contact.active)
     }
@@ -682,17 +684,23 @@ struct ChatTTLOption: View {
             ) {
                 progressIndicator = true
                 Task {
+                    let m = ChatModel.shared
                     do {
                         try await setChatTTL(chatType: chat.chatInfo.chatType, id: chat.chatInfo.apiId, ttl)
-                        await loadChat(chat: chat, clearItems: true, replaceChat: true)
+                        await loadChat(chat: chat, im: ItemsModel.shared, clearItems: true)
                         await MainActor.run {
                             progressIndicator = false
                             currentChatItemTTL = chatItemTTL
+                            if ItemsModel.shared.reversedChatItems.isEmpty && m.chatId == chat.id,
+                               let chat = m.getChat(chat.id) {
+                                chat.chatItems = []
+                                m.replaceChat(chat.id, chat)
+                            }
                         }
                     }
                     catch let error {
                         logger.error("setChatTTL error \(responseError(error))")
-                        await loadChat(chat: chat, clearItems: true, replaceChat: true)
+                        await loadChat(chat: chat, im: ItemsModel.shared, clearItems: true)
                         await MainActor.run {
                             chatItemTTL = currentChatItemTTL
                             progressIndicator = false
@@ -930,7 +938,7 @@ struct ChatWallpaperEditorSheet: View {
         self.chat = chat
         self.themes = if case let ChatInfo.direct(contact) = chat.chatInfo, let uiThemes = contact.uiThemes {
             uiThemes
-        } else if case let ChatInfo.group(groupInfo) = chat.chatInfo, let uiThemes = groupInfo.uiThemes {
+        } else if case let ChatInfo.group(groupInfo, _) = chat.chatInfo, let uiThemes = groupInfo.uiThemes {
             uiThemes
         } else {
             ThemeModeOverrides()
@@ -966,7 +974,7 @@ struct ChatWallpaperEditorSheet: View {
     private func themesFromChat(_ chat: Chat) -> ThemeModeOverrides {
         if case let ChatInfo.direct(contact) = chat.chatInfo, let uiThemes = contact.uiThemes {
             uiThemes
-        } else if case let ChatInfo.group(groupInfo) = chat.chatInfo, let uiThemes = groupInfo.uiThemes {
+        } else if case let ChatInfo.group(groupInfo, _) = chat.chatInfo, let uiThemes = groupInfo.uiThemes {
             uiThemes
         } else {
             ThemeModeOverrides()
@@ -1044,12 +1052,12 @@ struct ChatWallpaperEditorSheet: View {
                             chat.wrappedValue = Chat.init(chatInfo: ChatInfo.direct(contact: contact))
                             themes = themesFromChat(chat.wrappedValue)
                         }
-                    } else if case var ChatInfo.group(groupInfo) = chat.wrappedValue.chatInfo {
+                    } else if case var ChatInfo.group(groupInfo, _) = chat.wrappedValue.chatInfo {
                         groupInfo.uiThemes = changedThemesConstant
 
                         await MainActor.run {
-                            ChatModel.shared.updateChatInfo(ChatInfo.group(groupInfo: groupInfo))
-                            chat.wrappedValue = Chat.init(chatInfo: ChatInfo.group(groupInfo: groupInfo))
+                            ChatModel.shared.updateChatInfo(ChatInfo.group(groupInfo: groupInfo, groupChatScope: nil))
+                            chat.wrappedValue = Chat.init(chatInfo: ChatInfo.group(groupInfo: groupInfo, groupChatScope: nil))
                             themes = themesFromChat(chat.wrappedValue)
                         }
                     }

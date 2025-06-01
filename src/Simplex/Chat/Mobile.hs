@@ -13,10 +13,10 @@ import Control.Concurrent.STM
 import Control.Exception (SomeException, catch)
 import Control.Monad.Except
 import Control.Monad.Reader
+import Data.Aeson (ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.Bifunctor (first)
-import Data.ByteArray (ScrubbedBytes)
 import qualified Data.ByteString.Base64.URL as U
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -52,13 +52,15 @@ import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), Migrati
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), CorrId (..), ProtoServerWithAuth (..), ProtocolServer (..))
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..))
 import Simplex.Messaging.Util (catchAll, liftEitherWith, safeDecodeUtf8)
 import System.IO (utf8)
 import System.Timeout (timeout)
 #if !defined(dbPostgres)
+import Data.ByteArray (ScrubbedBytes)
 import Database.SQLite.Simple (SQLError (..))
 import qualified Database.SQLite.Simple as DB
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 #endif
 
 data DBMigrationResult
@@ -71,9 +73,19 @@ data DBMigrationResult
 
 $(JQ.deriveToJSON (sumTypeJSON $ dropPrefix "DBM") ''DBMigrationResult)
 
-data APIResponse = APIResponse {corr :: Maybe CorrId, remoteHostId :: Maybe RemoteHostId, resp :: ChatResponse}
+data APIResult r
+  = APIResult  {remoteHostId :: Maybe RemoteHostId, result :: r}
+  | APIError {remoteHostId :: Maybe RemoteHostId, error :: ChatError}
 
-$(JQ.deriveToJSON defaultJSON ''APIResponse)
+eitherToResult :: Maybe RemoteHostId -> Either ChatError r -> APIResult r
+eitherToResult rhId = either (APIError rhId) (APIResult rhId)
+{-# INLINE eitherToResult #-}
+
+$(pure [])
+
+instance ToJSON r => ToJSON (APIResult r) where
+  toEncoding = $(JQ.mkToEncoding (defaultJSON {J.sumEncoding = J.UntaggedValue}) ''APIResult)
+  toJSON = $(JQ.mkToJSON (defaultJSON {J.sumEncoding = J.UntaggedValue}) ''APIResult)
 
 foreign export ccall "chat_migrate_init" cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
 
@@ -203,10 +215,10 @@ mobileChatOpts dbOptions =
             logAgent = Nothing,
             logFile = Nothing,
             tbqSize = 4096,
+            deviceName = Nothing,
             highlyAvailable = False,
             yesToUpMigrations = False
           },
-      deviceName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
       chatCmdLog = CCLNone,
@@ -237,7 +249,7 @@ getActiveUser_ st = find activeUser <$> withTransaction st getUsers
 -- only used in tests
 chatMigrateInit :: String -> ScrubbedBytes -> String -> IO (Either DBMigrationResult ChatController)
 chatMigrateInit dbFilePrefix dbKey confirm = do
-  let chatDBOpts = ChatDbOpts {dbFilePrefix, dbKey, vacuumOnMigration = True}
+  let chatDBOpts = ChatDbOpts {dbFilePrefix, dbKey, trackQueries = DB.TQSlow 5000, vacuumOnMigration = True}
   chatMigrateInitKey chatDBOpts False confirm False
 #endif
 
@@ -285,21 +297,15 @@ chatSendCmd :: ChatController -> B.ByteString -> IO JSONByteString
 chatSendCmd cc = chatSendRemoteCmd cc Nothing
 
 chatSendRemoteCmd :: ChatController -> Maybe RemoteHostId -> B.ByteString -> IO JSONByteString
-chatSendRemoteCmd cc rh s = J.encode . APIResponse Nothing rh <$> runReaderT (execChatCommand rh s) cc
+chatSendRemoteCmd cc rh s = J.encode . eitherToResult rh <$> runReaderT (execChatCommand rh s) cc
 
 chatRecvMsg :: ChatController -> IO JSONByteString
-chatRecvMsg ChatController {outputQ} = json <$> readChatResponse
+chatRecvMsg ChatController {outputQ} = J.encode . uncurry eitherToResult <$> readChatResponse
   where
-    json (corr, remoteHostId, resp) = J.encode APIResponse {corr, remoteHostId, resp}
-    readChatResponse = do
-      out@(_, _, cr) <- atomically $ readTBQueue outputQ
-      if filterEvent cr then pure out else readChatResponse
-    filterEvent = \case
-      CRGroupSubscribed {} -> False
-      CRGroupEmpty {} -> False
-      CRMemberSubSummary {} -> False
-      CRPendingSubSummary {} -> False
-      _ -> True
+    readChatResponse =
+      atomically (readTBQueue outputQ) >>= \case
+        (_, Right CEvtTerminalEvent {}) -> readChatResponse
+        out -> pure out
 
 chatRecvMsgWait :: ChatController -> Int -> IO JSONByteString
 chatRecvMsgWait cc time = fromMaybe "" <$> timeout time (chatRecvMsg cc)

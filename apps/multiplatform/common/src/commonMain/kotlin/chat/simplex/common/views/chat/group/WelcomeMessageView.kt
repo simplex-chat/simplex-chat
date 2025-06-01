@@ -26,13 +26,10 @@ import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
-import chat.simplex.common.model.ChatModel.withChats
-import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.model.GroupInfo
-import chat.simplex.common.platform.ColumnWithScrollBar
-import chat.simplex.common.platform.chatJsonLength
+import chat.simplex.common.platform.*
 import chat.simplex.res.MR
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 
 private const val maxByteCount = 1200
 
@@ -51,8 +48,8 @@ fun GroupWelcomeView(m: ChatModel, rhId: Long?, groupInfo: GroupInfo, close: () 
       val res = m.controller.apiUpdateGroup(rhId, gInfo.groupId, groupProfileUpdated)
       if (res != null) {
         gInfo = res
-        withChats {
-          updateGroup(rhId, res)
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.updateGroup(rhId, res)
         }
         welcomeText.value = welcome ?: ""
       }

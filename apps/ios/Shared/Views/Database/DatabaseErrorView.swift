@@ -28,7 +28,7 @@ struct DatabaseErrorView: View {
         }
     }
 
-    @ViewBuilder private func databaseErrorView() -> some View {
+    private func databaseErrorView() -> some View {
         VStack(alignment: .center, spacing: 20) {
             switch status {
             case let .errorNotADatabase(dbFile):
@@ -141,7 +141,7 @@ struct DatabaseErrorView: View {
     }
 
     private func migrationsText(_ ms: [String]) -> some View {
-        (Text("Migrations:").font(.subheadline) + Text(verbatim: "\n") + Text(ms.joined(separator: "\n")).font(.caption))
+        (Text("Migrations:").font(.subheadline) + textNewLine + Text(ms.joined(separator: "\n")).font(.caption))
             .multilineTextAlignment(.center)
             .padding(.horizontal, 25)
     }

@@ -14,12 +14,13 @@ struct PrivacySettings: View {
     @EnvironmentObject var theme: AppTheme
     @AppStorage(DEFAULT_PRIVACY_ACCEPT_IMAGES) private var autoAcceptImages = true
     @AppStorage(DEFAULT_PRIVACY_LINK_PREVIEWS) private var useLinkPreviews = true
-    @State private var chatListOpenLinks = privacyChatListOpenLinksDefault.get()
     @AppStorage(DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) private var showChatPreviews = true
     @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
     @AppStorage(GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES, store: groupDefaults) private var encryptLocalFiles = true
     @AppStorage(GROUP_DEFAULT_PRIVACY_ASK_TO_APPROVE_RELAYS, store: groupDefaults) private var askToApproveRelays = true
     @State private var simplexLinkMode = privacySimplexLinkModeDefault.get()
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
+    @AppStorage(DEFAULT_PRIVACY_SHORT_LINKS) private var shortSimplexLinks = false
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @State private var currentLAMode = privacyLocalAuthModeDefault.get()
@@ -75,17 +76,6 @@ struct PrivacySettings: View {
                                 privacyLinkPreviewsGroupDefault.set(linkPreviews)
                             }
                     }
-                    settingsRow("arrow.up.right.circle", color: theme.colors.secondary) {
-                        Picker("Open links from chat list", selection: $chatListOpenLinks) {
-                            ForEach(PrivacyChatListOpenLinksMode.allCases) { mode in
-                                Text(mode.text)
-                            }
-                        }
-                    }
-                    .frame(height: 36)
-                    .onChange(of: chatListOpenLinks) { mode in
-                        privacyChatListOpenLinksDefault.set(mode)
-                    }
                     settingsRow("message", color: theme.colors.secondary) {
                         Toggle("Show last messages", isOn: $showChatPreviews)
                     }
@@ -110,6 +100,11 @@ struct PrivacySettings: View {
                     .frame(height: 36)
                     .onChange(of: simplexLinkMode) { mode in
                         privacySimplexLinkModeDefault.set(mode)
+                    }
+                    if developerTools {
+                        settingsRow("link.badge.plus", color: theme.colors.secondary) {
+                            Toggle("Use short links (BETA)", isOn: $shortSimplexLinks)
+                        }
                     }
                 } header: {
                     Text("Chats")

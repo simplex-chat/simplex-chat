@@ -85,7 +85,7 @@ struct NewChatSheet: View {
         }
     }
 
-    @ViewBuilder private func viewBody(_ showArchive: Bool) -> some View {
+    private func viewBody(_ showArchive: Bool) -> some View {
         List {
             HStack {
                 ContactsListSearchBar(
@@ -125,7 +125,7 @@ struct NewChatSheet: View {
                     }
                     NavigationLink {
                         AddGroupView()
-                            .navigationTitle("Create secret group")
+                            .navigationTitle("Create group")
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
@@ -258,7 +258,7 @@ struct ContactsList: View {
         }
     }
     
-    @ViewBuilder private func noResultSection(text: String) -> some View {
+    private func noResultSection(text: String) -> some View {
         Section {
             Text(text)
                 .foregroundColor(theme.colors.secondary)

@@ -95,8 +95,10 @@ actual fun LazyColumnWithScrollBarNoAppBar(
   additionalBarOffset: State<Dp>?,
   additionalTopBar: State<Boolean>,
   chatBottomBar: State<Boolean>,
+  maxHeight: State<Dp>?,
+  containerAlignment: Alignment,
   content: LazyListScope.() -> Unit
-) {
+  ) {
   val state = state ?: rememberLazyListState()
   LazyColumn(modifier, state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled) {
     content()

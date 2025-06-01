@@ -26,14 +26,17 @@
 
 module Simplex.Chat.Types where
 
+import Control.Applicative ((<|>))
 import Crypto.Number.Serialize (os2ip)
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Lazy as LB
+import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.Maybe (isJust)
 import Data.Text (Text)
@@ -48,13 +51,13 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
-import Simplex.Messaging.Agent.Protocol (ACorrId, AEventTag (..), AEvtTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
-import Simplex.Messaging.Agent.Store.DB (Binary (..))
+import Simplex.Messaging.Agent.Protocol (ACorrId, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink, InvitationId, SAEntity (..), UserId)
+import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (blobFieldDecoder, defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON)
-import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
+import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 #if defined(dbPostgres)
@@ -217,6 +220,8 @@ contactConnId c = aConnId <$> contactConn c
 
 type IncognitoEnabled = Bool
 
+type CreateShortLink = Bool
+
 contactConnIncognito :: Contact -> IncognitoEnabled
 contactConnIncognito = maybe False connIncognito . contactConn
 
@@ -366,12 +371,34 @@ type UserName = Text
 
 type ContactName = Text
 
+type MemberName = Text
+
 type GroupName = Text
 
 optionalFullName :: ContactName -> Text -> Text
 optionalFullName displayName fullName
   | T.null fullName || displayName == fullName = ""
   | otherwise = " (" <> fullName <> ")"
+
+data ShortGroup = ShortGroup
+  { shortInfo :: ShortGroupInfo,
+    members :: [ShortGroupMember]
+  }
+
+data ShortGroupInfo = ShortGroupInfo
+  { groupId :: GroupId,
+    groupName :: GroupName,
+    membershipStatus :: GroupMemberStatus
+  }
+  deriving (Eq, Show)
+
+data ShortGroupMember = ShortGroupMember
+  { groupMemberId :: GroupMemberId,
+    groupId :: GroupId,
+    memberName :: ContactName,
+    connId :: AgentConnId
+  }
+  deriving (Show)
 
 data Group = Group {groupInfo :: GroupInfo, members :: [GroupMember]}
   deriving (Eq, Show)
@@ -386,7 +413,6 @@ data GroupInfo = GroupInfo
     businessChat :: Maybe BusinessChatInfo,
     fullGroupPreferences :: FullGroupPreferences,
     membership :: GroupMember,
-    hostConnCustomUserProfileId :: Maybe ProfileId,
     chatSettings :: ChatSettings,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
@@ -395,7 +421,8 @@ data GroupInfo = GroupInfo
     chatTags :: [ChatTagId],
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
-    customData :: Maybe CustomData
+    customData :: Maybe CustomData,
+    membersRequireAttention :: Int
   }
   deriving (Eq, Show)
 
@@ -535,7 +562,7 @@ data Profile = Profile
   { displayName :: ContactName,
     fullName :: Text,
     image :: Maybe ImageData,
-    contactLink :: Maybe ConnReqContact,
+    contactLink :: Maybe ConnLinkContact,
     preferences :: Maybe Preferences
     -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
     -- - contact_profile_id
@@ -568,7 +595,7 @@ data LocalProfile = LocalProfile
     displayName :: ContactName,
     fullName :: Text,
     image :: Maybe ImageData,
-    contactLink :: Maybe ConnReqContact,
+    contactLink :: Maybe ConnLinkContact,
     preferences :: Maybe Preferences,
     localAlias :: LocalAlias
   }
@@ -590,9 +617,23 @@ data GroupProfile = GroupProfile
     fullName :: Text,
     description :: Maybe Text,
     image :: Maybe ImageData,
-    groupPreferences :: Maybe GroupPreferences
+    groupPreferences :: Maybe GroupPreferences,
+    memberAdmission :: Maybe GroupMemberAdmission
   }
   deriving (Eq, Show)
+
+data GroupMemberAdmission = GroupMemberAdmission
+  { -- names :: Maybe MemberCriteria,
+    -- captcha :: Maybe MemberCriteria,
+    review :: Maybe MemberCriteria
+  }
+  deriving (Eq, Show)
+
+data MemberCriteria = MCAll
+  deriving (Eq, Show)
+
+emptyGroupMemberAdmission :: GroupMemberAdmission
+emptyGroupMemberAdmission = GroupMemberAdmission Nothing
 
 newtype ImageData = ImageData Text
   deriving (Eq, Show)
@@ -644,10 +685,46 @@ data GroupLinkInvitation = GroupLinkInvitation
     fromMemberName :: ContactName,
     invitedMember :: MemberIdRole,
     groupProfile :: GroupProfile,
+    accepted :: Maybe GroupAcceptance,
     business :: Maybe BusinessChatInfo,
     groupSize :: Maybe Int
   }
   deriving (Eq, Show)
+
+data GroupLinkRejection = GroupLinkRejection
+  { fromMember :: MemberIdRole,
+    invitedMember :: MemberIdRole,
+    groupProfile :: GroupProfile,
+    rejectionReason :: GroupRejectionReason
+  }
+  deriving (Eq, Show)
+
+data GroupRejectionReason
+  = GRRLongName
+  | GRRBlockedName
+  | GRRUnknown {text :: Text}
+  deriving (Eq, Show)
+
+instance FromField GroupRejectionReason where fromField = blobFieldDecoder strDecode
+
+instance ToField GroupRejectionReason where toField = toField . strEncode
+
+instance StrEncoding GroupRejectionReason where
+  strEncode = \case
+    GRRLongName -> "long_name"
+    GRRBlockedName -> "blocked_name"
+    GRRUnknown text -> encodeUtf8 text
+  strP =
+    "long_name" $> GRRLongName
+    <|> "blocked_name" $> GRRBlockedName
+    <|> GRRUnknown . safeDecodeUtf8 <$> A.takeByteString
+
+instance FromJSON GroupRejectionReason where
+  parseJSON = strParseJSON "GroupRejectionReason"
+
+instance ToJSON GroupRejectionReason where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
 
 data MemberIdRole = MemberIdRole
   { memberId :: MemberId,
@@ -763,9 +840,28 @@ data GroupMember = GroupMember
     -- member chat protocol version range; if member has active connection, its version range is preferred;
     -- for membership current supportedChatVRange is set, it's not updated on protocol version increase in database,
     -- but it's correctly set on read (see toGroupInfo)
-    memberChatVRange :: VersionRangeChat
+    memberChatVRange :: VersionRangeChat,
+    createdAt :: UTCTime,
+    updatedAt :: UTCTime,
+    supportChat :: Maybe GroupSupportChat
   }
   deriving (Eq, Show)
+
+data GroupSupportChat = GroupSupportChat
+  { chatTs :: UTCTime,
+    unread :: Int64,
+    memberAttention :: Int64,
+    mentions :: Int64,
+    lastMsgFromMemberTs :: Maybe UTCTime
+  }
+  deriving (Eq, Show)
+
+gmRequiresAttention :: GroupMember -> Bool
+gmRequiresAttention m@GroupMember {supportChat} =
+  memberPending m || maybe False supportChatAttention supportChat
+  where
+    supportChatAttention GroupSupportChat {memberAttention, mentions} =
+      memberAttention > 0 || mentions > 0
 
 data GroupMemberRef = GroupMemberRef {groupMemberId :: Int64, profile :: Profile}
   deriving (Eq, Show)
@@ -780,6 +876,9 @@ memberConn GroupMember {activeConn} = activeConn
 memberConnId :: GroupMember -> Maybe ConnId
 memberConnId GroupMember {activeConn} = aConnId <$> activeConn
 
+sameMemberId :: MemberId -> GroupMember -> Bool
+sameMemberId memId GroupMember {memberId} = memId == memberId
+
 memberChatVRange' :: GroupMember -> VersionRangeChat
 memberChatVRange' GroupMember {activeConn, memberChatVRange} = case activeConn of
   Just Connection {peerChatVRange} -> peerChatVRange
@@ -790,6 +889,9 @@ supportsVersion m v = maxVersion (memberChatVRange' m) >= v
 
 groupMemberId' :: GroupMember -> GroupMemberId
 groupMemberId' GroupMember {groupMemberId} = groupMemberId
+
+memberId' :: GroupMember -> MemberId
+memberId' GroupMember {memberId} = memberId
 
 memberIncognito :: GroupMember -> IncognitoEnabled
 memberIncognito GroupMember {memberProfile, memberContactProfileId} = localProfileId memberProfile /= memberContactProfileId
@@ -819,7 +921,7 @@ data NewGroupMember = NewGroupMember
   }
 
 newtype MemberId = MemberId {unMemberId :: ByteString}
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
   deriving newtype (FromField)
 
 instance ToField MemberId where toField (MemberId m) = toField $ Binary m
@@ -835,6 +937,9 @@ instance FromJSON MemberId where
 instance ToJSON MemberId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
+
+nameFromMemberId :: MemberId -> ContactName
+nameFromMemberId = T.take 7 . safeDecodeUtf8 . B64.encode . unMemberId
 
 data InvitedBy = IBContact {byContactId :: Int64} | IBUser | IBUnknown
   deriving (Eq, Show)
@@ -924,11 +1029,14 @@ instance TextEncoding GroupMemberCategory where
     GCPostMember -> "post"
 
 data GroupMemberStatus
-  = GSMemRemoved -- member who was removed from the group
+  = GSMemRejected -- joining member who was rejected by the host, or host that rejected the join
+  | GSMemRemoved -- member who was removed from the group
   | GSMemLeft -- member who left the group
   | GSMemGroupDeleted -- user member of the deleted group
   | GSMemUnknown -- unknown member, whose message was forwarded by an admin (likely member wasn't introduced due to not being a current member, but message was included in history)
   | GSMemInvited -- member is sent to or received invitation to join the group
+  | GSMemPendingApproval -- member is connected to host but pending host approval before connecting to other members ("knocking")
+  | GSMemPendingReview -- member is introduced to admins but pending admin review before connecting to other members ("knocking")
   | GSMemIntroduced -- user received x.grp.mem.intro for this member (only with GCPreMember)
   | GSMemIntroInvited -- member is sent to or received from intro invitation
   | GSMemAccepted -- member accepted invitation (only User and Invitee)
@@ -949,13 +1057,23 @@ instance ToJSON GroupMemberStatus where
   toJSON = J.String . textEncode
   toEncoding = JE.text . textEncode
 
+acceptanceToStatus :: Maybe GroupMemberAdmission -> GroupAcceptance -> GroupMemberStatus
+acceptanceToStatus memberAdmission groupAcceptance
+  | groupAcceptance == GAPendingApproval = GSMemPendingApproval
+  | groupAcceptance == GAPendingReview = GSMemPendingReview
+  | (memberAdmission >>= review) == Just MCAll = GSMemPendingReview
+  | otherwise = GSMemAccepted
+
 memberActive :: GroupMember -> Bool
 memberActive m = case memberStatus m of
+  GSMemRejected -> False
   GSMemRemoved -> False
   GSMemLeft -> False
   GSMemGroupDeleted -> False
   GSMemUnknown -> False
   GSMemInvited -> False
+  GSMemPendingApproval -> True
+  GSMemPendingReview -> True
   GSMemIntroduced -> False
   GSMemIntroInvited -> False
   GSMemAccepted -> False
@@ -967,14 +1085,26 @@ memberActive m = case memberStatus m of
 memberCurrent :: GroupMember -> Bool
 memberCurrent = memberCurrent' . memberStatus
 
+memberPending :: GroupMember -> Bool
+memberPending m = case memberStatus m of
+  GSMemPendingApproval -> True
+  GSMemPendingReview -> True
+  _ -> False
+
+memberCurrentOrPending :: GroupMember -> Bool
+memberCurrentOrPending m = memberCurrent m || memberPending m
+
 -- update getGroupSummary if this is changed
 memberCurrent' :: GroupMemberStatus -> Bool
 memberCurrent' = \case
+  GSMemRejected -> False
   GSMemRemoved -> False
   GSMemLeft -> False
   GSMemGroupDeleted -> False
   GSMemUnknown -> False
   GSMemInvited -> False
+  GSMemPendingApproval -> False
+  GSMemPendingReview -> False
   GSMemIntroduced -> True
   GSMemIntroInvited -> True
   GSMemAccepted -> True
@@ -985,11 +1115,14 @@ memberCurrent' = \case
 
 memberRemoved :: GroupMember -> Bool
 memberRemoved m = case memberStatus m of
+  GSMemRejected -> True
   GSMemRemoved -> True
   GSMemLeft -> True
   GSMemGroupDeleted -> True
   GSMemUnknown -> False
   GSMemInvited -> False
+  GSMemPendingApproval -> False
+  GSMemPendingReview -> False
   GSMemIntroduced -> False
   GSMemIntroInvited -> False
   GSMemAccepted -> False
@@ -1000,11 +1133,14 @@ memberRemoved m = case memberStatus m of
 
 instance TextEncoding GroupMemberStatus where
   textDecode = \case
+    "rejected" -> Just GSMemRejected
     "removed" -> Just GSMemRemoved
     "left" -> Just GSMemLeft
     "deleted" -> Just GSMemGroupDeleted
     "unknown" -> Just GSMemUnknown
     "invited" -> Just GSMemInvited
+    "pending_approval" -> Just GSMemPendingApproval
+    "pending_review" -> Just GSMemPendingReview
     "introduced" -> Just GSMemIntroduced
     "intro-inv" -> Just GSMemIntroInvited
     "accepted" -> Just GSMemAccepted
@@ -1014,11 +1150,14 @@ instance TextEncoding GroupMemberStatus where
     "creator" -> Just GSMemCreator
     _ -> Nothing
   textEncode = \case
+    GSMemRejected -> "rejected"
     GSMemRemoved -> "removed"
     GSMemLeft -> "left"
     GSMemGroupDeleted -> "deleted"
     GSMemUnknown -> "unknown"
     GSMemInvited -> "invited"
+    GSMemPendingApproval -> "pending_approval"
+    GSMemPendingReview -> "pending_review"
     GSMemIntroduced -> "introduced"
     GSMemIntroInvited -> "intro-inv"
     GSMemAccepted -> "accepted"
@@ -1322,6 +1461,14 @@ type ConnReqInvitation = ConnectionRequestUri 'CMInvitation
 
 type ConnReqContact = ConnectionRequestUri 'CMContact
 
+type CreatedLinkInvitation = CreatedConnLink 'CMInvitation
+
+type CreatedLinkContact = CreatedConnLink 'CMContact
+
+type ConnLinkContact = ConnectionLink 'CMContact
+
+type ShortLinkContact = ConnShortLink 'CMContact
+
 data Connection = Connection
   { connId :: Int64,
     agentConnId :: AgentConnId,
@@ -1399,7 +1546,7 @@ data PendingContactConnection = PendingContactConnection
     viaUserContactLink :: Maybe Int64,
     groupLinkId :: Maybe GroupLinkId,
     customUserProfileId :: Maybe Int64,
-    connReqInv :: Maybe ConnReqInvitation,
+    connLinkInv :: Maybe CreatedLinkInvitation,
     localAlias :: Text,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
@@ -1721,6 +1868,16 @@ $(JQ.deriveJSON defaultJSON ''LocalProfile)
 
 $(JQ.deriveJSON defaultJSON ''UserContactRequest)
 
+$(JQ.deriveJSON (enumJSON $ dropPrefix "MC") {J.tagSingleConstructors = True} ''MemberCriteria)
+
+$(JQ.deriveJSON defaultJSON ''GroupMemberAdmission)
+
+instance ToField GroupMemberAdmission where
+  toField = toField . encodeJSON
+
+instance FromField GroupMemberAdmission where
+  fromField = fromTextField_ decodeJSON
+
 $(JQ.deriveJSON defaultJSON ''GroupProfile)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "IB") ''InvitedBy)
@@ -1736,6 +1893,8 @@ $(JQ.deriveJSON defaultJSON ''ConnNetworkStatus)
 $(JQ.deriveJSON defaultJSON ''Connection)
 
 $(JQ.deriveJSON defaultJSON ''PendingContactConnection)
+
+$(JQ.deriveJSON defaultJSON ''GroupSupportChat)
 
 $(JQ.deriveJSON defaultJSON ''GroupMember)
 
@@ -1766,6 +1925,8 @@ $(JQ.deriveJSON defaultJSON ''MemberInfo)
 $(JQ.deriveJSON defaultJSON ''GroupInvitation)
 
 $(JQ.deriveJSON defaultJSON ''GroupLinkInvitation)
+
+$(JQ.deriveJSON defaultJSON ''GroupLinkRejection)
 
 $(JQ.deriveJSON defaultJSON ''IntroInvitation)
 
@@ -1812,3 +1973,7 @@ $(JQ.deriveJSON defaultJSON ''ContactRef)
 $(JQ.deriveJSON defaultJSON ''NoteFolder)
 
 $(JQ.deriveJSON defaultJSON ''ChatTag)
+
+$(JQ.deriveJSON defaultJSON ''ShortGroupInfo)
+
+$(JQ.deriveJSON defaultJSON ''ShortGroupMember)

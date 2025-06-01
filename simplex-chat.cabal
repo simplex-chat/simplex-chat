@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        6.3.0.1
+version:        6.4.0.2
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -24,6 +24,11 @@ flag swift
   manual: True
   default: False
 
+flag client_library
+  description: Don't build server- and CLI-related code.
+  manual: True
+  default: False
+
 flag client_postgres
   description: Build with PostgreSQL instead of SQLite.
   manual: True
@@ -33,13 +38,9 @@ library
   exposed-modules:
       Simplex.Chat
       Simplex.Chat.AppSettings
-      Simplex.Chat.Bot
-      Simplex.Chat.Bot.KnownContacts
       Simplex.Chat.Call
       Simplex.Chat.Controller
-      Simplex.Chat.Core
       Simplex.Chat.Files
-      Simplex.Chat.Help
       Simplex.Chat.Library.Commands
       Simplex.Chat.Library.Internal
       Simplex.Chat.Library.Subscriber
@@ -54,6 +55,7 @@ library
       Simplex.Chat.Mobile.WebRTC
       Simplex.Chat.Operators
       Simplex.Chat.Operators.Conditions
+      Simplex.Chat.Operators.Presets
       Simplex.Chat.Options
       Simplex.Chat.Options.DB
       Simplex.Chat.ProfileGenerator
@@ -78,23 +80,32 @@ library
       Simplex.Chat.Store.Remote
       Simplex.Chat.Store.Shared
       Simplex.Chat.Styled
-      Simplex.Chat.Terminal
-      Simplex.Chat.Terminal.Input
-      Simplex.Chat.Terminal.Main
-      Simplex.Chat.Terminal.Notification
-      Simplex.Chat.Terminal.Output
       Simplex.Chat.Types
       Simplex.Chat.Types.Preferences
       Simplex.Chat.Types.Shared
       Simplex.Chat.Types.UITheme
       Simplex.Chat.Types.Util
       Simplex.Chat.Util
-      Simplex.Chat.View
+  if !flag(client_library)
+      exposed-modules:
+          Simplex.Chat.Bot
+          Simplex.Chat.Bot.KnownContacts
+          Simplex.Chat.Core
+          Simplex.Chat.Help
+          Simplex.Chat.Terminal
+          Simplex.Chat.Terminal.Input
+          Simplex.Chat.Terminal.Main
+          Simplex.Chat.Terminal.Notification
+          Simplex.Chat.Terminal.Output
+          Simplex.Chat.View
   if flag(client_postgres)
       exposed-modules:
           Simplex.Chat.Options.Postgres
           Simplex.Chat.Store.Postgres.Migrations
           Simplex.Chat.Store.Postgres.Migrations.M20241220_initial
+          Simplex.Chat.Store.Postgres.Migrations.M20250402_short_links
+          Simplex.Chat.Store.Postgres.Migrations.M20250512_member_admission
+          Simplex.Chat.Store.Postgres.Migrations.M20250513_group_scope
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -220,6 +231,13 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20241230_reports
           Simplex.Chat.Store.SQLite.Migrations.M20250105_indexes
           Simplex.Chat.Store.SQLite.Migrations.M20250115_chat_ttl
+          Simplex.Chat.Store.SQLite.Migrations.M20250122_chat_items_include_in_history
+          Simplex.Chat.Store.SQLite.Migrations.M20250126_mentions
+          Simplex.Chat.Store.SQLite.Migrations.M20250129_delete_unused_contacts
+          Simplex.Chat.Store.SQLite.Migrations.M20250130_indexes
+          Simplex.Chat.Store.SQLite.Migrations.M20250402_short_links
+          Simplex.Chat.Store.SQLite.Migrations.M20250512_member_admission
+          Simplex.Chat.Store.SQLite.Migrations.M20250513_group_scope
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
@@ -238,6 +256,7 @@ library
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , crypton ==0.34.*
+    , crypton-x509 ==1.7.*
     , data-default ==0.7.*
     , directory ==1.3.*
     , email-validate ==2.3.*
@@ -253,7 +272,6 @@ library
     , optparse-applicative >=0.15 && <0.17
     , random >=1.1 && <1.3
     , record-hasfield ==1.0.*
-    , scientific ==0.3.7.*
     , simple-logger ==0.1.*
     , simplexmq >=6.3
     , socks ==0.6.*
@@ -292,6 +310,8 @@ library
       , text >=1.2.4.0 && <1.3
 
 executable simplex-bot
+  if flag(client_library)
+      buildable: False
   main-is: Main.hs
   other-modules:
       Paths_simplex_chat
@@ -309,6 +329,8 @@ executable simplex-bot
     cpp-options: -DdbPostgres
 
 executable simplex-bot-advanced
+  if flag(client_library)
+      buildable: False
   main-is: Main.hs
   other-modules:
       Paths_simplex_chat
@@ -335,6 +357,8 @@ executable simplex-bot-advanced
         text >=1.2.4.0 && <1.3
 
 executable simplex-broadcast-bot
+  if flag(client_library)
+      buildable: False
   main-is: Main.hs
   hs-source-dirs:
       apps/simplex-broadcast-bot
@@ -365,6 +389,8 @@ executable simplex-broadcast-bot
         text >=1.2.4.0 && <1.3
 
 executable simplex-chat
+  if flag(client_library)
+      buildable: False
   main-is: Main.hs
   other-modules:
       Server
@@ -396,6 +422,8 @@ executable simplex-chat
         text >=1.2.4.0 && <1.3
 
 executable simplex-directory-service
+  if flag(client_library)
+      buildable: False
   main-is: Main.hs
   hs-source-dirs:
       apps/simplex-directory-service
@@ -403,6 +431,8 @@ executable simplex-directory-service
   default-extensions:
       StrictData
   other-modules:
+      Directory.BlockedWords
+      Directory.Captcha
       Directory.Events
       Directory.Options
       Directory.Search
@@ -411,18 +441,23 @@ executable simplex-directory-service
       Paths_simplex_chat
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -threaded
   build-depends:
-      async ==2.2.*
+      aeson ==2.2.*
+    , async ==2.2.*
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , composition ==1.0.*
     , containers ==0.6.*
     , directory ==1.3.*
+    , mtl >=2.3.1 && <3.0
     , optparse-applicative >=0.15 && <0.17
+    , process >=1.6 && <1.6.18
+    , random >=1.1 && <1.3
     , simple-logger ==0.1.*
     , simplex-chat
     , simplexmq >=6.3
     , stm ==2.5.*
     , time ==1.12.*
+    , unicode-transforms ==0.4.*
   default-language: Haskell2010
   if flag(client_postgres)
     cpp-options: -DdbPostgres
@@ -436,6 +471,10 @@ executable simplex-directory-service
       , text >=1.2.4.0 && <1.3
 
 test-suite simplex-chat-test
+  if flag(swift)
+    cpp-options: -DswiftJSON
+  if flag(client_library)
+      buildable: False
   type: exitcode-stdio-1.0
   main-is: Test.hs
   other-modules:
@@ -445,6 +484,7 @@ test-suite simplex-chat-test
       ChatTests
       ChatTests.ChatList
       ChatTests.Direct
+      ChatTests.DBUtils
       ChatTests.Files
       ChatTests.Forward
       ChatTests.Groups
@@ -463,14 +503,20 @@ test-suite simplex-chat-test
       ViewTests
       Broadcast.Bot
       Broadcast.Options
+      Directory.BlockedWords
+      Directory.Captcha
       Directory.Events
       Directory.Options
       Directory.Search
       Directory.Service
       Directory.Store
       Paths_simplex_chat
-  if !flag(client_postgres)
+  if flag(client_postgres)
       other-modules:
+          ChatTests.DBUtils.Postgres
+  else
+      other-modules:
+          ChatTests.DBUtils.SQLite
           MobileTests
           SchemaDump
           WebRTCTests
@@ -501,6 +547,7 @@ test-suite simplex-chat-test
     , mtl >=2.3.1 && <3.0
     , network ==3.1.*
     , optparse-applicative >=0.15 && <0.17
+    , random >=1.1 && <1.3
     , silently ==1.2.*
     , simple-logger ==0.1.*
     , simplex-chat
@@ -508,6 +555,7 @@ test-suite simplex-chat-test
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
+    , unicode-transforms ==0.4.*
     , unliftio ==0.2.*
   default-language: Haskell2010
   if flag(client_postgres)

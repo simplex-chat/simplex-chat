@@ -8,7 +8,7 @@
 
 import SwiftUI
 import MessageUI
-import SimpleXChat
+@preconcurrency import SimpleXChat
 
 struct UserAddressView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
@@ -16,6 +16,7 @@ struct UserAddressView: View {
     @EnvironmentObject var theme: AppTheme
     @State var shareViaProfile = false
     @State var autoCreate = false
+    @State private var showShortLink = true
     @State private var aas = AutoAcceptState()
     @State private var savedAAS = AutoAcceptState()
     @State private var showMailView = false
@@ -135,8 +136,8 @@ struct UserAddressView: View {
 
     @ViewBuilder private func existingAddressView(_ userAddress: UserContactLink) -> some View {
         Section {
-            SimpleXLinkQRCode(uri: userAddress.connReqContact)
-                .id("simplex-contact-address-qrcode-\(userAddress.connReqContact)")
+            SimpleXCreatedLinkQRCode(link: userAddress.connLinkContact, short: $showShortLink)
+                .id("simplex-contact-address-qrcode-\(userAddress.connLinkContact.simplexChatUri(short: showShortLink))")
             shareQRCodeButton(userAddress)
             // if MFMailComposeViewController.canSendMail() {
             //     shareViaEmailButton(userAddress)
@@ -152,9 +153,11 @@ struct UserAddressView: View {
                     }
             }
             addressSettingsButton(userAddress)
+            if (userAddress.connLinkContact.connShortLink == nil && UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_SHORT_LINKS)) {
+                addShortLinkButton()
+            }
         } header: {
-            Text("For social media")
-                .foregroundColor(theme.colors.secondary)
+            ToggleShortLinkHeader(text: Text("For social media"), link: userAddress.connLinkContact, short: $showShortLink)
         } footer: {
             if aas.business {
                 Text("Add your team members to the conversations.")
@@ -193,14 +196,41 @@ struct UserAddressView: View {
         progressIndicator = true
         Task {
             do {
-                let connReqContact = try await apiCreateUserAddress()
+                let short = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_SHORT_LINKS)
+                let connLinkContact = try await apiCreateUserAddress(short: short)
                 DispatchQueue.main.async {
-                    chatModel.userAddress = UserContactLink(connReqContact: connReqContact)
+                    chatModel.userAddress = UserContactLink(connLinkContact: connLinkContact)
                     alert = .shareOnCreate
                     progressIndicator = false
                 }
             } catch let error {
                 logger.error("UserAddressView apiCreateUserAddress: \(responseError(error))")
+                let a = getErrorAlert(error, "Error creating address")
+                alert = .error(title: a.title, error: a.message)
+                await MainActor.run { progressIndicator = false }
+            }
+        }
+    }
+
+    private func addShortLinkButton() -> some View {
+        Button {
+            addShortLink()
+        } label: {
+            Label("Add short link", systemImage: "plus")
+        }
+    }
+
+    private func addShortLink() {
+        progressIndicator = true
+        Task {
+            do {
+                let userAddress = try await apiAddMyAddressShortLink()
+                await MainActor.run {
+                    chatModel.userAddress = userAddress
+                }
+                await MainActor.run { progressIndicator = false }
+            } catch let error {
+                logger.error("apiAddMyAddressShortLink: \(responseError(error))")
                 let a = getErrorAlert(error, "Error creating address")
                 alert = .error(title: a.title, error: a.message)
                 await MainActor.run { progressIndicator = false }
@@ -231,7 +261,7 @@ struct UserAddressView: View {
 
     private func shareQRCodeButton(_ userAddress: UserContactLink) -> some View {
         Button {
-            showShareSheet(items: [simplexChatLink(userAddress.connReqContact)])
+            showShareSheet(items: [simplexChatLink(userAddress.connLinkContact.simplexChatUri(short: showShortLink))])
         } label: {
             settingsRow("square.and.arrow.up", color: theme.colors.secondary) {
                 Text("Share address")
@@ -289,6 +319,28 @@ struct UserAddressView: View {
         } label: {
             settingsRow("info.circle", color: theme.colors.secondary) {
                 Text("SimpleX address or 1-time link?")
+            }
+        }
+    }
+}
+
+struct ToggleShortLinkHeader: View {
+    @EnvironmentObject var theme: AppTheme
+    let text: Text
+    var link: CreatedConnLink
+    @Binding var short: Bool
+    
+    var body: some View {
+        if link.connShortLink == nil {
+            text.foregroundColor(theme.colors.secondary)
+        } else {
+            HStack {
+                text.foregroundColor(theme.colors.secondary)
+                Spacer()
+                Text(short ? "Full link" : "Short link")
+                    .textCase(.none)
+                    .foregroundColor(theme.colors.primary)
+                    .onTapGesture { short.toggle() }
             }
         }
     }
@@ -542,7 +594,7 @@ private func saveAAS(_ aas: Binding<AutoAcceptState>, _ savedAAS: Binding<AutoAc
 struct UserAddressView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
-        chatModel.userAddress = UserContactLink(connReqContact: "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D")
+        chatModel.userAddress = UserContactLink(connLinkContact: CreatedConnLink(connFullLink: "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D", connShortLink: nil))
 
         
         return Group {

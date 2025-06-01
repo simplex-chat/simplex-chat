@@ -539,7 +539,46 @@ private let versionDescriptions: [VersionDescription] = [
                 description: "Delivered even when Apple drops them."
             )),
         ]
-    )
+    ),
+    VersionDescription(
+        version: "v6.3",
+        post: URL(string: "https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html"),
+        features: [
+            .feature(Description(
+                icon: "at",
+                title: "Mention members 👋",
+                description: "Get notified when mentioned."
+            )),
+            .feature(Description(
+                icon: "flag",
+                title: "Send private reports",
+                description: "Help admins moderating their groups."
+            )),
+            .feature(Description(
+                icon: "list.bullet",
+                title: "Organize chats into lists",
+                description: "Don't miss important messages."
+            )),
+            .feature(Description(
+                icon: nil,
+                title: "Better privacy and security",
+                description: nil,
+                subfeatures: [
+                    ("eye.slash", "Private media file names."),
+                    ("trash", "Set message expiration in chats.")
+                ]
+            )),
+            .feature(Description(
+                icon: nil,
+                title: "Better groups performance",
+                description: nil,
+                subfeatures: [
+                    ("bolt", "Faster sending messages."),
+                    ("person.2.slash", "Faster deletion of groups.")
+                ]
+            )),
+        ]
+    ),
 ]
 
 private let lastVersion = versionDescriptions.last!.version
@@ -555,8 +594,6 @@ func shouldShowWhatsNew() -> Bool {
 }
 
 fileprivate struct NewOperatorsView: View {
-    @State private var showOperatorsSheet = false
-
     var body: some View {
         VStack(alignment: .leading) {
             Image((operatorsInfo[.flux] ?? ServerOperator.dummyOperatorInfo).largeLogo)
@@ -567,16 +604,7 @@ fileprivate struct NewOperatorsView: View {
                 .multilineTextAlignment(.leading)
                 .lineLimit(10)
             HStack {
-                Button("Enable Flux") {
-                    showOperatorsSheet = true
-                }
-                Text("for better metadata privacy.")
-            }
-        }
-        .sheet(isPresented: $showOperatorsSheet) {
-            NavigationView {
-                ChooseServerOperators(onboarding: false)
-                    .modifier(ThemedBackground())
+                Text("Enable Flux in Network & servers settings for better metadata privacy.")
             }
         }
     }
