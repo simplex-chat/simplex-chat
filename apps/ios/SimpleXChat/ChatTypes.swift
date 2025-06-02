@@ -1708,6 +1708,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     var createdAt: Date
     var updatedAt: Date
     var chatTs: Date?
+    public var connLinkToConnect: CreatedConnLink?
     var contactGroupMemberId: Int64?
     var contactGrpInvSent: Bool
     public var chatTags: [Int64]
@@ -2052,6 +2053,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     var createdAt: Date
     var updatedAt: Date
     var chatTs: Date?
+    public var connLinkToConnect: CreatedConnLink?
     public var uiThemes: ThemeModeOverrides?
     public var membersRequireAttention: Int
 
@@ -2165,12 +2167,12 @@ public enum MemberCriteria: String, Codable, Identifiable, Hashable {
     }
 }
 
-public struct ContactShortLinkData: Codable {
+public struct ContactShortLinkData: Codable, Hashable {
     public var profile: Profile
     public var welcomeMessage: String?
 }
 
-public struct GroupShortLinkData: Codable {
+public struct GroupShortLinkData: Codable, Hashable {
     public var groupProfile: GroupProfile
 }
 
