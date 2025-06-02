@@ -65,6 +65,27 @@ func showAlert(
     }
 }
 
+func showSheet(
+    _ title: String?,
+    message: String? = nil,
+    actions: () -> [UIAlertAction] = { [okAlertAction] },
+    sourceView: UIView? = nil  // For iPad support
+) {
+    if let topController = getTopViewController() {
+        let sheet = UIAlertController(title: title, message: message, preferredStyle: .actionSheet)
+        for action in actions() { sheet.addAction(action) }
+
+        // Required for iPad: Configure popover presentation
+        if let popover = sheet.popoverPresentationController {
+            popover.sourceView = sourceView ?? topController.view
+            popover.sourceRect = sourceView?.bounds ?? CGRect(x: topController.view.bounds.midX, y: topController.view.bounds.midY, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
+
+        topController.present(sheet, animated: true)
+    }
+}
+
 let okAlertAction = UIAlertAction(title: NSLocalizedString("Ok", comment: "alert button"), style: .default)
 
 let cancelAlertAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert button"), style: .cancel)
