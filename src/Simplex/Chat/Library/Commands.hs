@@ -1774,12 +1774,13 @@ processChatCommand' vr = \case
         (ACCL SCMInvitation ccLink) ->
           connectViaInvitation user incognito ccLink (Just contactId) >>= \case
             CRSentConfirmation {} -> do
-              -- TODO [short links] send message to prepared contact
-              -- TODO  - optional message to be sent on successful "sender secure"? (can be returned with CRSentConfirmation)
-              -- TODO  - persist message and queue it asynchronously later if not secured? or ignore as it's an older feature?
-              -- TODO  - rework agent to allow queueing messages for New connections?
               -- get updated contact with connection
               ct' <- withFastStore $ \db -> getContact db vr user contactId
+              forM_ msgContent_ $ \mc -> do
+                let evt = XMsgNew $ MCSimple (extMsgContent mc Nothing)
+                (msg, _) <- sendDirectContactMessage user ct' evt
+                ci <- saveSndChatItem user (CDDirectSnd ct') msg (CISndMsgContent mc)
+                toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct') ci]
               pure $ CRStartedConnectionToContact user ct'
             cr -> pure cr
         (ACCL SCMContact ccLink) ->
@@ -1787,6 +1788,8 @@ processChatCommand' vr = \case
             CRSentInvitation {} -> do
               -- get updated contact with connection
               ct' <- withFastStore $ \db -> getContact db vr user contactId
+              forM_ msgContent_ $ \mc ->
+                createInternalChatItem user (CDDirectSnd ct') (CISndMsgContent mc) Nothing
               pure $ CRStartedConnectionToContact user ct'
             cr -> pure cr
   -- TODO [short links] connect to prepared group
@@ -2899,9 +2902,10 @@ processChatCommand' vr = \case
                 pcc <- withFastStore' $ \db -> createDirectConnection db user connId ccLink contactId_ ConnPrepared (incognitoProfile $> profileToSend) subMode chatV pqSup'
                 joinPreparedConn connId pcc dm
               joinPreparedConn connId pcc@PendingContactConnection {pccConnId} dm = do
-                void $ withAgent $ \a -> joinConnection a (aUserId user) connId True cReq dm pqSup' subMode
-                withFastStore' $ \db -> updateConnectionStatusFromTo db pccConnId ConnPrepared ConnJoined
-                pure $ CRSentConfirmation user pcc {pccConnStatus = ConnJoined}
+                sqSecured <- withAgent $ \a -> joinConnection a (aUserId user) connId True cReq dm pqSup' subMode
+                let newStatus = if sqSecured then ConnSndReady else ConnJoined
+                withFastStore' $ \db -> updateConnectionStatusFromTo db pccConnId ConnPrepared newStatus
+                pure $ CRSentConfirmation user pcc {pccConnStatus = newStatus}
               cReqs =
                 ( CRInvitationUri crData {crScheme = SSSimplex} e2e,
                   CRInvitationUri crData {crScheme = simplexChat} e2e

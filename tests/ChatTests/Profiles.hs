@@ -2773,8 +2773,12 @@ testShortLinkInvitationPrepareContact =
       contactSLinkData <- getTermLine bob
       bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
       bob <## "alice: contact is prepared"
-      bob ##> "/_connect contact @2"
-      bob <## "alice: connection started"
+      bob ##> "/_connect contact @2 text hello"
+      bob
+        <### [ "alice: connection started",
+               WithTime "@alice hello"
+             ]
+      alice <# "bob> hello"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -2791,8 +2795,12 @@ testShortLinkAddressPrepareContact =
       contactSLinkData <- getTermLine bob
       bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
       bob <## "alice: contact is prepared"
-      bob ##> "/_connect contact @2"
-      bob <## "alice: connection started"
+      bob ##> "/_connect contact @2 text hello"
+      bob
+        <### [ "alice: connection started",
+               WithTime "@alice hello"
+             ]
+      -- TODO [short links] for alice create message from contact request
       alice <## "bob (Bob) wants to connect to you!"
       alice <## "to accept: /ac bob"
       alice <## "to reject: /rc bob (the sender will NOT be notified)"
