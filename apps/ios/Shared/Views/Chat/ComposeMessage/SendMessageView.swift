@@ -20,7 +20,7 @@ struct SendMessageView: View {
     var sendLiveMessage: (() async -> Void)? = nil
     var updateLiveMessage: (() async -> Void)? = nil
     var cancelLiveMessage: (() -> Void)? = nil
-    var sendMsgToConnect: Bool = false
+    var showComposeActionButtons: Bool = true
     var showVoiceMessageButton: Bool = true
     var voiceMessageAllowed: Bool = true
     var disableSendButton = false
@@ -68,7 +68,7 @@ struct SendMessageView: View {
                     selectedRange: $selectedRange,
                     onImagesAdded: onMediaAdded
                 )
-                .padding(.trailing, 32)
+                .padding(.trailing, showComposeActionButtons ? 32 : 16) // 16 - for deleteTextButton
                 .allowsTightening(false)
                 .fixedSize(horizontal: false, vertical: true)
             }
@@ -78,18 +78,20 @@ struct SendMessageView: View {
                 deleteTextButton()
             }
         })
-        .overlay(alignment: .bottomTrailing, content: {
-            if progressByTimeout {
-                ProgressView()
-                    .scaleEffect(1.4)
-                    .frame(width: 31, height: 31, alignment: .center)
-                    .padding([.bottom, .trailing], 4)
-            } else {
-                composeActionButtons()
-                // required for intercepting clicks
-                    .background(.white.opacity(0.000001))
-            }
-        })
+        .if(showComposeActionButtons) { v in
+            v.overlay(alignment: .bottomTrailing, content: {
+                if progressByTimeout {
+                    ProgressView()
+                        .scaleEffect(1.4)
+                        .frame(width: 31, height: 31, alignment: .center)
+                        .padding([.bottom, .trailing], 4)
+                } else {
+                    composeActionButtons()
+                    // required for intercepting clicks
+                        .background(.white.opacity(0.000001))
+                }
+            })
+        }
         .padding(.vertical, 1)
         .background(theme.colors.background)
         .clipShape(composeShape)
@@ -109,9 +111,7 @@ struct SendMessageView: View {
 
     @ViewBuilder private func composeActionButtons() -> some View {
         let vmrs = composeState.voiceMessageRecordingState
-        if sendMsgToConnect {
-            sendMsgToConnectButton()
-        } else if case .reportedItem = composeState.contextItem {
+        if case .reportedItem = composeState.contextItem {
             sendMessageButton()
         } else if showVoiceMessageButton
             && composeState.message.isEmpty
@@ -156,24 +156,6 @@ struct SendMessageView: View {
         }
         .foregroundColor(Color(uiColor: .tertiaryLabel))
         .padding([.top, .trailing], 4)
-    }
-
-    private func sendMsgToConnectButton() -> some View {
-        Button {
-            sendMessage(nil)
-        } label: {
-            Image(systemName: "arrow.up.circle.fill")
-                .resizable()
-                .foregroundColor(sendButtonColor)
-                .frame(width: sendButtonSize, height: sendButtonSize)
-                .opacity(sendButtonOpacity)
-        }
-        .disabled(
-            !composeState.sendEnabled ||
-            composeState.inProgress
-        )
-        .frame(width: 31, height: 31)
-        .padding([.bottom, .trailing], 4)
     }
 
     private func sendMessageButton() -> some View {
