@@ -20,7 +20,7 @@ struct SendMessageView: View {
     var sendLiveMessage: (() async -> Void)? = nil
     var updateLiveMessage: (() async -> Void)? = nil
     var cancelLiveMessage: (() -> Void)? = nil
-    var nextSendGrpInv: Bool = false
+    var sendMsgToConnect: Bool = false
     var showVoiceMessageButton: Bool = true
     var voiceMessageAllowed: Bool = true
     var disableSendButton = false
@@ -109,8 +109,8 @@ struct SendMessageView: View {
 
     @ViewBuilder private func composeActionButtons() -> some View {
         let vmrs = composeState.voiceMessageRecordingState
-        if nextSendGrpInv {
-            inviteMemberContactButton()
+        if sendMsgToConnect {
+            sendMsgToConnectButton()
         } else if case .reportedItem = composeState.contextItem {
             sendMessageButton()
         } else if showVoiceMessageButton
@@ -158,7 +158,7 @@ struct SendMessageView: View {
         .padding([.top, .trailing], 4)
     }
 
-    private func inviteMemberContactButton() -> some View {
+    private func sendMsgToConnectButton() -> some View {
         Button {
             sendMessage(nil)
         } label: {

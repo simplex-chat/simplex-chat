@@ -1018,14 +1018,12 @@ func apiPrepareGroup(connLink: CreatedConnLink, groupShortLinkData: GroupShortLi
 }
 
 func apiConnectPreparedContact(contactId: Int64, incognito: Bool, msg: MsgContent) async throws -> Contact {
-    let userId = try currentUserId("apiConnectPreparedContact")
     let r: ChatResponse1 = try await chatSendCmd(.apiConnectPreparedContact(contactId: contactId, incognito: incognito, msg: msg))
     if case let .startedConnectionToContact(_, contact) = r { return contact }
     throw r.unexpected
 }
 
 func apiConnectPreparedGroup(groupId: Int64, incognito: Bool) async throws -> GroupInfo {
-    let userId = try currentUserId("apiConnectPreparedGroup")
     let r: ChatResponse1 = try await chatSendCmd(.apiConnectPreparedGroup(groupId: groupId, incognito: incognito))
     // if case let .startedConnectionToGroup(_, groupInfo) = r { return groupInfo } // TODO [short links] startedConnectionToGroup response
     throw r.unexpected
@@ -1731,7 +1729,7 @@ func filterMembersToAdd(_ ms: [GMember]) -> [Contact] {
     let memberContactIds = ms.compactMap{ m in m.wrapped.memberCurrent ? m.wrapped.memberContactId : nil }
     return ChatModel.shared.chats
         .compactMap{ c in c.chatInfo.sendMsgEnabled ? c.chatInfo.contact : nil }
-        .filter{ c in !c.nextSendGrpInv && !memberContactIds.contains(c.apiId) }
+        .filter{ c in !c.sendMsgToConnect && !memberContactIds.contains(c.apiId) }
         .sorted{ $0.displayName.lowercased() < $1.displayName.lowercased() }
 }
 

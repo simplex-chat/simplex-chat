@@ -8,7 +8,7 @@
 
 import SwiftUI
 
-struct ContextInvitingContactMemberView: View {
+struct ContextSendMsgToConnectView: View {
     @EnvironmentObject var theme: AppTheme
 
     var body: some View {
@@ -24,8 +24,8 @@ struct ContextInvitingContactMemberView: View {
     }
 }
 
-struct ContextInvitingContactMemberView_Previews: PreviewProvider {
+struct ContextSendMsgToConnectView_Previews: PreviewProvider {
     static var previews: some View {
-        ContextInvitingContactMemberView()
+        ContextSendMsgToConnectView()
     }
 }

@@ -760,7 +760,7 @@ struct ChatView: View {
         if case let .direct(contact) = chat.chatInfo,
            !contact.sndReady,
            contact.active,
-           !contact.nextSendGrpInv {
+           !contact.sendMsgToConnect {
             Text("connecting…")
                 .font(.caption)
                 .foregroundColor(theme.colors.secondary)

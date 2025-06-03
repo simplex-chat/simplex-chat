@@ -371,8 +371,8 @@ struct ComposeView: View {
                 Divider()
             }
 
-            if chat.chatInfo.contact?.nextSendGrpInv ?? false {
-                ContextInvitingContactMemberView()
+            if chat.chatInfo.contact?.sendMsgToConnect ?? false {
+                ContextSendMsgToConnectView()
                 Divider()
             }
             
@@ -407,7 +407,7 @@ struct ComposeView: View {
                     Image(systemName: "paperclip")
                         .resizable()
                 }
-                .disabled(composeState.attachmentDisabled || !chat.chatInfo.sendMsgEnabled || (chat.chatInfo.contact?.nextSendGrpInv ?? false))
+                .disabled(composeState.attachmentDisabled || !chat.chatInfo.sendMsgEnabled || (chat.chatInfo.contact?.sendMsgToConnect ?? false))
                 .frame(width: 25, height: 25)
                 .padding(.bottom, 16)
                 .padding(.leading, 12)
@@ -438,7 +438,7 @@ struct ComposeView: View {
                             composeState.liveMessage = nil
                             chatModel.removeLiveDummy()
                         },
-                        nextSendGrpInv: chat.chatInfo.contact?.nextSendGrpInv ?? false,
+                        sendMsgToConnect: chat.chatInfo.contact?.sendMsgToConnect ?? false,
                         voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
                         disableSendButton: simplexLinkProhibited || fileProhibited || voiceProhibited,
                         showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
@@ -849,6 +849,8 @@ struct ComposeView: View {
         }
         if chat.chatInfo.contact?.nextSendGrpInv ?? false {
             await sendMemberContactInvitation()
+        } else if chat.chatInfo.contact?.nextConnectPrepared ?? false {
+            await sendConnectPreparedContact()
         } else if case let .forwardingItems(chatItems, fromChatInfo) = composeState.contextItem {
             // Composed text is send as a reply to the last forwarded item
             sent = await forwardItems(chatItems, fromChatInfo, ttl).last
@@ -944,6 +946,20 @@ struct ComposeView: View {
             } catch {
                 logger.error("ChatView.sendMemberContactInvitation error: \(error.localizedDescription)")
                 AlertManager.shared.showAlertMsg(title: "Error sending member contact invitation", message: "Error: \(responseError(error))")
+            }
+        }
+
+        func sendConnectPreparedContact() async {
+            do {
+                let mc = checkLinkPreview()
+                // TODO [short links] allow to choose incognito, different user profile (as "compose context")
+                let contact = try await apiConnectPreparedContact(contactId: chat.chatInfo.apiId, incognito: false, msg: mc)
+                await MainActor.run {
+                    self.chatModel.updateContact(contact)
+                }
+            } catch {
+                logger.error("ChatView.sendConnectPreparedContact error: \(error.localizedDescription)")
+                AlertManager.shared.showAlertMsg(title: "Error connecting with contact", message: "Error: \(responseError(error))")
             }
         }
 
