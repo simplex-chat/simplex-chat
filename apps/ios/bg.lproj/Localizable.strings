@@ -3388,10 +3388,10 @@ chat item action */
 "Send delivery receipts to" = "Изпращайте потвърждениe за доставка на";
 
 /* No comment provided by engineer. */
-"send direct message" = "изпрати лично съобщение";
+"send to connect" = "изпрати лично съобщение";
 
 /* No comment provided by engineer. */
-"Send direct message to connect" = "Изпрати лично съобщение за свързване";
+"Send message to connect" = "Изпрати лично съобщение за свързване";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "Изпрати изчезващо съобщение";

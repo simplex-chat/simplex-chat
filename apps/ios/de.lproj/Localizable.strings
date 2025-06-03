@@ -4597,10 +4597,10 @@ chat item action */
 "Send delivery receipts to" = "Empfangsbestätigungen senden an";
 
 /* No comment provided by engineer. */
-"send direct message" = "Direktnachricht senden";
+"send to connect" = "Direktnachricht senden";
 
 /* No comment provided by engineer. */
-"Send direct message to connect" = "Eine Direktnachricht zum Verbinden senden";
+"Send message to connect" = "Eine Direktnachricht zum Verbinden senden";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "Verschwindende Nachricht senden";

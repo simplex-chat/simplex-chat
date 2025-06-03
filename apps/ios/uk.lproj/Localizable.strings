@@ -4141,10 +4141,10 @@ chat item action */
 "Send delivery receipts to" = "Надсилання звітів про доставку";
 
 /* No comment provided by engineer. */
-"send direct message" = "надіслати пряме повідомлення";
+"send to connect" = "надіслати пряме повідомлення";
 
 /* No comment provided by engineer. */
-"Send direct message to connect" = "Надішліть пряме повідомлення, щоб підключитися";
+"Send message to connect" = "Надішліть пряме повідомлення, щоб підключитися";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "Надіслати зникаюче повідомлення";

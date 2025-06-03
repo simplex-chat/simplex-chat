@@ -4063,10 +4063,10 @@ chat item action */
 "Send delivery receipts to" = "Görüldü bilgilerini şuraya gönder";
 
 /* No comment provided by engineer. */
-"send direct message" = "doğrudan mesaj gönder";
+"send to connect" = "doğrudan mesaj gönder";
 
 /* No comment provided by engineer. */
-"Send direct message to connect" = "Bağlanmak için doğrudan mesaj gönder";
+"Send message to connect" = "Bağlanmak için doğrudan mesaj gönder";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "Kaybolan bir mesaj gönder";

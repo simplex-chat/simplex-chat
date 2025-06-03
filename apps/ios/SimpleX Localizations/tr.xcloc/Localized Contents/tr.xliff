@@ -6724,8 +6724,8 @@ chat item action</note>
         <target>Görüldü bilgilerini şuraya gönder</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send direct message to connect" xml:space="preserve">
-        <source>Send direct message to connect</source>
+      <trans-unit id="Send message to connect" xml:space="preserve">
+        <source>Send message to connect</source>
         <target>Bağlanmak için doğrudan mesaj gönder</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -9828,8 +9828,8 @@ time to disappear</note>
         <target>güvenlik kodu değiştirildi</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="send direct message" xml:space="preserve">
-        <source>send direct message</source>
+      <trans-unit id="send to connect" xml:space="preserve">
+        <source>send to connect</source>
         <target>doğrudan mesaj gönder</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

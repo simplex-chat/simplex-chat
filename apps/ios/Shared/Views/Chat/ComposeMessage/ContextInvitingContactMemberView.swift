@@ -15,7 +15,7 @@ struct ContextSendMsgToConnectView: View {
         HStack {
             Image(systemName: "message")
                 .foregroundColor(theme.colors.secondary)
-            Text("Send direct message to connect")
+            Text("Send message to connect")
         }
         .padding(12)
         .frame(minHeight: 54)

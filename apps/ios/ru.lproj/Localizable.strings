@@ -4597,10 +4597,10 @@ chat item action */
 "Send delivery receipts to" = "Отправка отчётов о доставке";
 
 /* No comment provided by engineer. */
-"send direct message" = "отправьте сообщение";
+"send to connect" = "отправьте сообщение";
 
 /* No comment provided by engineer. */
-"Send direct message to connect" = "Отправьте сообщение чтобы соединиться";
+"Send message to connect" = "Отправьте сообщение чтобы соединиться";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "Отправить исчезающее сообщение";

@@ -6883,8 +6883,8 @@ chat item action</note>
         <target>Отправка отчётов о доставке</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send direct message to connect" xml:space="preserve">
-        <source>Send direct message to connect</source>
+      <trans-unit id="Send message to connect" xml:space="preserve">
+        <source>Send message to connect</source>
         <target>Отправьте сообщение чтобы соединиться</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -10067,8 +10067,8 @@ time to disappear</note>
         <target>код безопасности изменился</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="send direct message" xml:space="preserve">
-        <source>send direct message</source>
+      <trans-unit id="send to connect" xml:space="preserve">
+        <source>send to connect</source>
         <target>отправьте сообщение</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

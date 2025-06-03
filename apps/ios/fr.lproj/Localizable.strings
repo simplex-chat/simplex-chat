@@ -4303,10 +4303,10 @@ chat item action */
 "Send delivery receipts to" = "Envoyer les accusés de réception à";
 
 /* No comment provided by engineer. */
-"send direct message" = "envoyer un message direct";
+"send to connect" = "envoyer un message direct";
 
 /* No comment provided by engineer. */
-"Send direct message to connect" = "Envoyer un message direct pour vous connecter";
+"Send message to connect" = "Envoyer un message direct pour vous connecter";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "Envoyer un message éphémère";

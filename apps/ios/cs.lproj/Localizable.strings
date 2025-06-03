@@ -2657,10 +2657,10 @@ chat item action */
 "Send delivery receipts to" = "Potvrzení o doručení zasílat na";
 
 /* No comment provided by engineer. */
-"send direct message" = "odeslat přímou zprávu";
+"send to connect" = "odeslat přímou zprávu";
 
 /* No comment provided by engineer. */
-"Send direct message to connect" = "Odeslat přímou zprávu pro připojení";
+"Send message to connect" = "Odeslat přímou zprávu pro připojení";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "Poslat mizící zprávu";

@@ -335,7 +335,7 @@ struct ChatPreviewView: View {
                     chatPreviewInfoText("Tap to Connect")
                         .foregroundColor(theme.colors.primary)
                 } else if contact.sendMsgToConnect {
-                    chatPreviewInfoText("send direct message")
+                    chatPreviewInfoText("send to connect")
                 } else if !contact.sndReady && contact.activeConn != nil && contact.active {
                     chatPreviewInfoText("connecting…")
                 }
