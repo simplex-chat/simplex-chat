@@ -656,7 +656,7 @@ deriving newtype instance FromField ImageData
 -- TODO [short links] StrEncoding instances?
 data ContactShortLinkData = ContactShortLinkData
   { profile :: Profile,
-    welcomeMessage :: Maybe Text
+    welcomeMsg :: Maybe Text
   }
   deriving (Show)
 

@@ -1741,9 +1741,9 @@ processChatCommand' vr = \case
   APIConnectPlan userId cLink -> withUserId userId $ \user ->
     uncurry (CRConnectionPlan user) <$> connectPlan user cLink
   APIPrepareContact userId link contactSLinkData -> withUserId userId $ \user -> do
-    let ContactShortLinkData {profile, welcomeMessage} = contactSLinkData
+    let ContactShortLinkData {profile, welcomeMsg} = contactSLinkData
     ct <- withStore $ \db -> createPreparedContact db user profile link
-    forM_ welcomeMessage $ \msg ->
+    forM_ welcomeMsg $ \msg ->
       createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent $ MCText msg) Nothing
     pure $ CRNewPreparedContact user ct
   APIPrepareGroup userId link groupSLinkData -> withUserId userId $ \user -> do
