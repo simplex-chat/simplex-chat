@@ -654,6 +654,7 @@ private struct ConnectView: View {
     private func connect(_ link: String) {
         planAndConnect(
             link,
+            theme: theme,
             dismiss: true
         )
     }
@@ -1003,46 +1004,39 @@ private func showOwnGroupLinkConfirmConnectSheet(
     )
 }
 
-// TODO [short links] custom alert with avatar
 private func showPrepareContactAlert(
     connectionLink: CreatedConnLink,
     contactShortLinkData: ContactShortLinkData,
+    theme: AppTheme,
     dismiss: Bool,
     cleanup: (() -> Void)?
 ) {
-    showAlert(
-        contactShortLinkData.profile.displayName,
-        actions: {[
-            UIAlertAction(
-                title: NSLocalizedString("Open chat", comment: "new chat action"),
-                style: .default,
-                handler: { _ in
-                    Task {
-                        do {
-                            let contact = try await apiPrepareContact(connLink: connectionLink, contactShortLinkData: contactShortLinkData)
-                            await MainActor.run {
-                                ChatModel.shared.addChat(Chat(chatInfo: .direct(contact: contact)))
-                                openKnownContact(contact, dismiss: dismiss, showAlreadyExistsAlert: nil)
-                            }
-                        } catch let error {
-                            logger.error("deleteGroupAlert apiDeleteChat error: \(error.localizedDescription)")
-                        }
+    showOpenChatAlert(
+        profileName: contactShortLinkData.profile.displayName,
+        profileImage: ProfileImage(imageStr: contactShortLinkData.profile.image, size: 60),
+        theme: theme,
+        cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
+        confirmTitle: NSLocalizedString("Open chat", comment: "new chat action"),
+        onCancel: { cleanup?() },
+        onConfirm: {
+            Task {
+                do {
+                    let contact = try await apiPrepareContact(connLink: connectionLink, contactShortLinkData: contactShortLinkData)
+                    await MainActor.run {
+                        ChatModel.shared.addChat(Chat(chatInfo: .direct(contact: contact)))
+                        openKnownContact(contact, dismiss: dismiss, showAlreadyExistsAlert: nil)
                     }
+                } catch let error {
+                    logger.error("deleteGroupAlert apiDeleteChat error: \(error.localizedDescription)")
                 }
-            ),
-            UIAlertAction(
-                title: NSLocalizedString("Cancel", comment: "new chat action"),
-                style: .default,
-                handler: { _ in
-                    cleanup?()
-                }
-            )
-        ]}
+            }
+        }
     )
 }
 
 func planAndConnect(
     _ shortOrFullLink: String,
+    theme: AppTheme,
     dismiss: Bool,
     cleanup: (() -> Void)? = nil,
     filterKnownContact: ((Contact) -> Void)? = nil,
@@ -1061,6 +1055,7 @@ func planAndConnect(
                             showPrepareContactAlert(
                                 connectionLink: connectionLink,
                                 contactShortLinkData: contactSLinkData,
+                                theme: theme,
                                 dismiss: dismiss,
                                 cleanup: cleanup
                             )
@@ -1121,6 +1116,7 @@ func planAndConnect(
                             showPrepareContactAlert(
                                 connectionLink: connectionLink,
                                 contactShortLinkData: contactSLinkData,
+                                theme: theme,
                                 dismiss: dismiss,
                                 cleanup: cleanup
                             )
