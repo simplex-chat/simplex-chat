@@ -2804,7 +2804,7 @@ chat item action */
 "Send a live message - it will update for the recipient(s) as you type it" = "ライブメッセージを送信 (入力しながら宛先の画面で更新される)";
 
 /* No comment provided by engineer. */
-"Send message to connect" = "ダイレクトメッセージを送信して接続する";
+"Send direct message to connect" = "ダイレクトメッセージを送信して接続する";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "消えるメッセージを送信";

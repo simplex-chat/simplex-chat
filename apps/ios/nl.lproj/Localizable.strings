@@ -4492,7 +4492,7 @@ chat item action */
 "send to connect" = "stuur een direct bericht";
 
 /* No comment provided by engineer. */
-"Send message to connect" = "Stuur een direct bericht om verbinding te maken";
+"Send direct message to connect" = "Stuur een direct bericht om verbinding te maken";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "Stuur een verdwijnend bericht";

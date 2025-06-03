@@ -6711,8 +6711,8 @@ chat item action</note>
         <target>Wyślij potwierdzenia dostawy do</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send message to connect" xml:space="preserve">
-        <source>Send message to connect</source>
+      <trans-unit id="Send direct message to connect" xml:space="preserve">
+        <source>Send direct message to connect</source>
         <target>Wyślij wiadomość bezpośrednią aby połączyć</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

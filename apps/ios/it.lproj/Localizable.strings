@@ -4600,7 +4600,7 @@ chat item action */
 "send to connect" = "invia messaggio diretto";
 
 /* No comment provided by engineer. */
-"Send message to connect" = "Invia messaggio diretto per connetterti";
+"Send direct message to connect" = "Invia messaggio diretto per connetterti";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "Invia messaggio a tempo";

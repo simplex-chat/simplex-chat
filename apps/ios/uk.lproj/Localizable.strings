@@ -4144,7 +4144,7 @@ chat item action */
 "send to connect" = "надіслати пряме повідомлення";
 
 /* No comment provided by engineer. */
-"Send message to connect" = "Надішліть пряме повідомлення, щоб підключитися";
+"Send direct message to connect" = "Надішліть пряме повідомлення, щоб підключитися";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "Надіслати зникаюче повідомлення";

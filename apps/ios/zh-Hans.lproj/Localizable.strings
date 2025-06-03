@@ -4396,7 +4396,7 @@ chat item action */
 "send to connect" = "发送私信";
 
 /* No comment provided by engineer. */
-"Send message to connect" = "发送私信来连接";
+"Send direct message to connect" = "发送私信来连接";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "发送限时消息中";

@@ -6269,8 +6269,8 @@ chat item action</note>
         <target>Potvrzení o doručení zasílat na</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send message to connect" xml:space="preserve">
-        <source>Send message to connect</source>
+      <trans-unit id="Send direct message to connect" xml:space="preserve">
+        <source>Send direct message to connect</source>
         <target>Odeslat přímou zprávu pro připojení</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

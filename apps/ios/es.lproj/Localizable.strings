@@ -4495,7 +4495,7 @@ chat item action */
 "send to connect" = "Enviar mensaje directo";
 
 /* No comment provided by engineer. */
-"Send message to connect" = "Envía un mensaje para conectar";
+"Send direct message to connect" = "Envía un mensaje para conectar";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "Enviar mensaje temporal";

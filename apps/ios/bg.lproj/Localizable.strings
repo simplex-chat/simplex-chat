@@ -3391,7 +3391,7 @@ chat item action */
 "send to connect" = "изпрати лично съобщение";
 
 /* No comment provided by engineer. */
-"Send message to connect" = "Изпрати лично съобщение за свързване";
+"Send direct message to connect" = "Изпрати лично съобщение за свързване";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "Изпрати изчезващо съобщение";

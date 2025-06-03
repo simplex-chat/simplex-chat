@@ -6168,8 +6168,8 @@ It can happen because of some bug or when the connection is compromised.</source
         <source>Send message to enable calls.</source>
         <target state="translated">發送訊息以啟用通話功能。</target>
       </trans-unit>
-      <trans-unit id="Send message to connect" xml:space="preserve" approved="no">
-        <source>Send message to connect</source>
+      <trans-unit id="Send direct message to connect" xml:space="preserve" approved="no">
+        <source>Send direct message to connect</source>
         <target state="translated">直接發送訊息以連結</target>
       </trans-unit>
       <trans-unit id="Scale" xml:space="preserve" approved="no">

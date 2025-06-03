@@ -4600,7 +4600,7 @@ chat item action */
 "send to connect" = "közvetlen üzenet küldése";
 
 /* No comment provided by engineer. */
-"Send message to connect" = "Közvetlen üzenet küldése a kapcsolódáshoz";
+"Send direct message to connect" = "Közvetlen üzenet küldése a kapcsolódáshoz";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "Eltűnő üzenet küldése";

@@ -6884,8 +6884,8 @@ chat item action</note>
         <target>Invia ricevute di consegna a</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send message to connect" xml:space="preserve">
-        <source>Send message to connect</source>
+      <trans-unit id="Send direct message to connect" xml:space="preserve">
+        <source>Send direct message to connect</source>
         <target>Invia messaggio diretto per connetterti</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

@@ -6863,8 +6863,8 @@ chat item action</note>
         <target>Stuur ontvangstbewijzen naar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send message to connect" xml:space="preserve">
-        <source>Send message to connect</source>
+      <trans-unit id="Send direct message to connect" xml:space="preserve">
+        <source>Send direct message to connect</source>
         <target>Stuur een direct bericht om verbinding te maken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
