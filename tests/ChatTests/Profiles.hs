@@ -110,7 +110,7 @@ chatProfileTests = do
       it "prepare contact using invitation short link data and connect" testShortLinkInvitationPrepareContact
       it "prepare contact using address short link data and connect" testShortLinkAddressPrepareContact
       -- testShortLinkPrepareGroupReject -- TODO [short links] test reject
-      fit "prepare group using group short link data and connect" testShortLinkPrepareGroup
+      it "prepare group using group short link data and connect" testShortLinkPrepareGroup
 
 testUpdateProfile :: HasCallStack => TestParams -> IO ()
 testUpdateProfile =

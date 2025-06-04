@@ -2910,8 +2910,6 @@ processChatCommand' vr = \case
                 ( CRInvitationUri crData {crScheme = SSSimplex} e2e,
                   CRInvitationUri crData {crScheme = simplexChat} e2e
                 )
-    -- TODO [short links] Maybe Int64 should be Maybe <entity id type> to differentiate between contact and group links;
-    -- TODO  link connection to entity in createConnReqConnection
     connectViaContact :: User -> IncognitoEnabled -> CreatedLinkContact -> Maybe MsgContent -> Maybe ContactOrGroupMemberId -> CM ChatResponse
     connectViaContact user@User {userId} incognito (CCLink cReq@(CRContactUri ConnReqUriData {crClientData}) sLnk) mc_ comId_ = withInvitationLock "connectViaContact" (strEncode cReq) $ do
       let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
