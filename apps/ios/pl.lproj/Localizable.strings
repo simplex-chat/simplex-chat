@@ -4027,7 +4027,7 @@ chat item action */
 "Send delivery receipts to" = "Wyślij potwierdzenia dostawy do";
 
 /* No comment provided by engineer. */
-"send direct message" = "wyślij wiadomość bezpośrednią";
+"send to connect" = "wyślij wiadomość bezpośrednią";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Wyślij wiadomość bezpośrednią aby połączyć";

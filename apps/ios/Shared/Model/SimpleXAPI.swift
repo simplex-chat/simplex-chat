@@ -1003,6 +1003,32 @@ private func connectionErrorAlert<R>(_ r: APIResult<R>) -> Alert {
     }
 }
 
+func apiPrepareContact(connLink: CreatedConnLink, contactShortLinkData: ContactShortLinkData) async throws -> Contact {
+    let userId = try currentUserId("apiPrepareContact")
+    let r: ChatResponse1 = try await chatSendCmd(.apiPrepareContact(userId: userId, connLink: connLink, contactShortLinkData: contactShortLinkData))
+    if case let .newPreparedContact(_, contact) = r { return contact }
+    throw r.unexpected
+}
+
+func apiPrepareGroup(connLink: CreatedConnLink, groupShortLinkData: GroupShortLinkData) async throws -> GroupInfo {
+    let userId = try currentUserId("apiPrepareGroup")
+    let r: ChatResponse1 = try await chatSendCmd(.apiPrepareGroup(userId: userId, connLink: connLink, groupShortLinkData: groupShortLinkData))
+    if case let .newPreparedGroup(_, groupInfo) = r { return groupInfo }
+    throw r.unexpected
+}
+
+func apiConnectPreparedContact(contactId: Int64, incognito: Bool, msg: MsgContent) async throws -> Contact {
+    let r: ChatResponse1 = try await chatSendCmd(.apiConnectPreparedContact(contactId: contactId, incognito: incognito, msg: msg))
+    if case let .startedConnectionToContact(_, contact) = r { return contact }
+    throw r.unexpected
+}
+
+func apiConnectPreparedGroup(groupId: Int64, incognito: Bool) async throws -> GroupInfo {
+    let r: ChatResponse1 = try await chatSendCmd(.apiConnectPreparedGroup(groupId: groupId, incognito: incognito))
+    // if case let .startedConnectionToGroup(_, groupInfo) = r { return groupInfo } // TODO [short links] startedConnectionToGroup response
+    throw r.unexpected
+}
+
 func apiConnectContactViaAddress(incognito: Bool, contactId: Int64) async -> (Contact?, Alert?) {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiConnectContactViaAddress: no current user")
@@ -1703,7 +1729,7 @@ func filterMembersToAdd(_ ms: [GMember]) -> [Contact] {
     let memberContactIds = ms.compactMap{ m in m.wrapped.memberCurrent ? m.wrapped.memberContactId : nil }
     return ChatModel.shared.chats
         .compactMap{ c in c.chatInfo.sendMsgEnabled ? c.chatInfo.contact : nil }
-        .filter{ c in !c.nextSendGrpInv && !memberContactIds.contains(c.apiId) }
+        .filter{ c in !c.sendMsgToConnect && !memberContactIds.contains(c.apiId) }
         .sorted{ $0.displayName.lowercased() < $1.displayName.lowercased() }
 }
 

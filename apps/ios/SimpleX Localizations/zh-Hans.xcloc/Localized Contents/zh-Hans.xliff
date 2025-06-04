@@ -9928,8 +9928,8 @@ time to disappear</note>
         <target>安全密码已更改</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="send direct message" xml:space="preserve">
-        <source>send direct message</source>
+      <trans-unit id="send to connect" xml:space="preserve">
+        <source>send to connect</source>
         <target>发送私信</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

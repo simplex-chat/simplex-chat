@@ -833,7 +833,7 @@ private struct CallButton: View {
                         ))
                     }
                 }
-            } else if contact.nextSendGrpInv {
+            } else if contact.sendMsgToConnect {
                 showAlert(SomeAlert(
                     alert: mkAlert(
                         title: "Can't call contact",

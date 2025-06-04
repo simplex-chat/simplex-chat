@@ -448,12 +448,12 @@ data ChatCommand
   | APISetConnectionIncognito Int64 IncognitoEnabled
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
   | APIConnectPlan UserId AConnectionLink
-  | APIPrepareContact UserId ContactShortLinkData ACreatedConnLink
-  | APIPrepareGroup UserId GroupShortLinkData ACreatedConnLink
+  | APIPrepareContact UserId ACreatedConnLink ContactShortLinkData
+  | APIPrepareGroup UserId ACreatedConnLink GroupShortLinkData
   | APIChangeContactUser ContactId UserId
   | APIChangeGroupUser GroupId UserId
-  | APIConnectPreparedContact {contactId :: ContactId, msgContent_ :: Maybe MsgContent}
-  | APIConnectPreparedGroup GroupId
+  | APIConnectPreparedContact {contactId :: ContactId, incognito :: IncognitoEnabled, msgContent_ :: Maybe MsgContent}
+  | APIConnectPreparedGroup GroupId IncognitoEnabled
   | APIConnect UserId IncognitoEnabled (Maybe ACreatedConnLink) (Maybe MsgContent)
   | Connect IncognitoEnabled (Maybe AConnectionLink)
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
@@ -683,8 +683,11 @@ data ChatResponse
   | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection}
   | CRConnectionUserChanged {user :: User, fromConnection :: PendingContactConnection, toConnection :: PendingContactConnection, newUser :: User}
   | CRConnectionPlan {user :: User, connLink :: ACreatedConnLink, connectionPlan :: ConnectionPlan}
+  | CRNewPreparedContact {user :: User, contact :: Contact}
+  | CRNewPreparedGroup {user :: User, groupInfo :: GroupInfo}
   | CRSentConfirmation {user :: User, connection :: PendingContactConnection}
   | CRSentInvitation {user :: User, connection :: PendingContactConnection, customUserProfile :: Maybe Profile}
+  | CRStartedConnectionToContact {user :: User, contact :: Contact}
   | CRSentInvitationToContact {user :: User, contact :: Contact, customUserProfile :: Maybe Profile}
   | CRItemsReadForChat {user :: User, chatInfo :: AChatInfo}
   | CRContactDeleted {user :: User, contact :: Contact}

@@ -334,12 +334,10 @@ struct ChatPreviewView: View {
                 if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
                     chatPreviewInfoText("Tap to Connect")
                         .foregroundColor(theme.colors.primary)
-                } else if !contact.sndReady && contact.activeConn != nil {
-                    if contact.nextSendGrpInv {
-                        chatPreviewInfoText("send direct message")
-                    } else if contact.active {
-                        chatPreviewInfoText("connecting…")
-                    }
+                } else if contact.sendMsgToConnect {
+                    chatPreviewInfoText("send to connect")
+                } else if !contact.sndReady && contact.activeConn != nil && contact.active {
+                    chatPreviewInfoText("connecting…")
                 }
             case let .group(groupInfo, _):
                 switch (groupInfo.membership.memberStatus) {

@@ -1341,7 +1341,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
             switch self {
             case let .direct(contact):
                 // TODO [short links] this will have additional statuses for pending contact requests before they are accepted
-                if contact.nextSendGrpInv { return nil }
+                if contact.sendMsgToConnect { return nil }
                 if !contact.active { return ("contact deleted", nil) }
                 if !contact.sndReady { return ("contact not ready", nil) }
                 if contact.activeConn?.connectionStats?.ratchetSyncSendProhibited ?? false { return ("not synchronized", nil) }
@@ -1708,19 +1708,22 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     var createdAt: Date
     var updatedAt: Date
     var chatTs: Date?
+    public var connLinkToConnect: CreatedConnLink?
     var contactGroupMemberId: Int64?
     var contactGrpInvSent: Bool
     public var chatTags: [Int64]
     public var chatItemTTL: Int64?
     public var uiThemes: ThemeModeOverrides?
     public var chatDeleted: Bool
-    
+
     public var id: ChatId { get { "@\(contactId)" } }
     public var apiId: Int64 { get { contactId } }
     public var ready: Bool { get { activeConn?.connStatus == .ready } }
     public var sndReady: Bool { get { ready || activeConn?.connStatus == .sndReady } }
     public var active: Bool { get { contactStatus == .active } }
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
+    public var nextConnectPrepared: Bool { get { connLinkToConnect != nil && activeConn == nil } }
+    public var sendMsgToConnect: Bool { get { nextSendGrpInv || nextConnectPrepared } }
     public var displayName: String { localAlias == "" ? profile.displayName : localAlias }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
@@ -2052,6 +2055,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     var createdAt: Date
     var updatedAt: Date
     var chatTs: Date?
+    public var connLinkToConnect: CreatedConnLink?
     public var uiThemes: ThemeModeOverrides?
     public var membersRequireAttention: Int
 
@@ -2163,6 +2167,15 @@ public enum MemberCriteria: String, Codable, Identifiable, Hashable {
         case .all: return NSLocalizedString("all", comment: "member criteria value")
         }
     }
+}
+
+public struct ContactShortLinkData: Codable, Hashable {
+    public var profile: Profile
+    public var welcomeMsg: String?
+}
+
+public struct GroupShortLinkData: Codable, Hashable {
+    public var groupProfile: GroupProfile
 }
 
 public struct BusinessChatInfo: Decodable, Hashable {
