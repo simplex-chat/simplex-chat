@@ -688,6 +688,7 @@ data ChatResponse
   | CRSentConfirmation {user :: User, connection :: PendingContactConnection}
   | CRSentInvitation {user :: User, connection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRStartedConnectionToContact {user :: User, contact :: Contact}
+  | CRStartedConnectionToGroup {user :: User, groupInfo :: GroupInfo}
   | CRSentInvitationToContact {user :: User, contact :: Contact, customUserProfile :: Maybe Profile}
   | CRItemsReadForChat {user :: User, chatInfo :: AChatInfo}
   | CRContactDeleted {user :: User, contact :: Contact}

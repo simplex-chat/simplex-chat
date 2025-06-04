@@ -109,6 +109,8 @@ chatProfileTests = do
     describe "connection via prepared entity" $ do
       it "prepare contact using invitation short link data and connect" testShortLinkInvitationPrepareContact
       it "prepare contact using address short link data and connect" testShortLinkAddressPrepareContact
+      -- testShortLinkPrepareGroupReject -- TODO [short links] test reject
+      fit "prepare group using group short link data and connect" testShortLinkPrepareGroup
 
 testUpdateProfile :: HasCallStack => TestParams -> IO ()
 testUpdateProfile =
@@ -2810,3 +2812,31 @@ testShortLinkAddressPrepareContact =
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
       alice <##> bob
+
+testShortLinkPrepareGroup :: HasCallStack => TestParams -> IO ()
+testShortLinkPrepareGroup =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/create link #team short"
+      (shortLink, fullLink) <- getShortGroupLink alice "team" GRMember True
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "group link: ok to connect"
+      groupSLinkData <- getTermLine bob
+      bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
+      bob <## "#team: group is prepared"
+      bob ##> "/_connect group #1"
+      bob <## "#team: connection started"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: bob joined the group",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group"
+        ]
+      alice #> "#team hi"
+      bob <# "#team alice> hi"
+      bob #> "#team hey"
+      alice <# "#team bob> hey"

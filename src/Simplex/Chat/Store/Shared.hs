@@ -89,6 +89,7 @@ data StoreError
   | SEGroupNotFoundByName {groupName :: GroupName}
   | SEGroupMemberNameNotFound {groupId :: GroupId, groupMemberName :: ContactName}
   | SEGroupMemberNotFound {groupMemberId :: GroupMemberId}
+  | SEGroupHostMemberNotFound {groupId :: GroupId}
   | SEGroupMemberNotFoundByMemberId {memberId :: MemberId}
   | SEMemberContactGroupMemberNotFound {contactId :: ContactId}
   | SEGroupWithoutUser
@@ -597,12 +598,12 @@ safeDeleteLDN db User {userId} localDisplayName = do
 
 type BusinessChatInfoRow = (Maybe BusinessChatType, Maybe MemberId, Maybe MemberId)
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Text, Maybe Text, Maybe ImageData, Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe GroupPreferences, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime, Maybe ConnReqContact, Maybe ShortLinkContact) :. BusinessChatInfoRow :. (Maybe UIThemeEntityOverrides, Maybe CustomData, Maybe Int64, Int) :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Text, Maybe Text, Maybe ImageData, Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe GroupPreferences, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. (Maybe ConnReqContact, Maybe ShortLinkContact, BoolInt) :. BusinessChatInfoRow :. (Maybe UIThemeEntityOverrides, Maybe CustomData, Maybe Int64, Int) :. GroupMemberRow
 
 type GroupMemberRow = (Int64, Int64, MemberId, VersionChat, VersionChat, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId, ProfileId, ContactName, Text, Maybe ImageData, Maybe ConnLinkContact, LocalAlias, Maybe Preferences) :. (UTCTime, UTCTime) :. (Maybe UTCTime, Int64, Int64, Int64, Maybe UTCTime)
 
 toGroupInfo :: VersionRangeChat -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo
-toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, fullName, localAlias, description, image, enableNtfs_, sendRcpts, BI favorite, groupPreferences, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt, connFullLink, connShortLink) :. businessRow :. (uiThemes, customData, chatItemTTL, membersRequireAttention) :. userMemberRow) =
+toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, fullName, localAlias, description, image, enableNtfs_, sendRcpts, BI favorite, groupPreferences, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. (connFullLink, connShortLink, BI connLinkStartedConnection) :. businessRow :. (uiThemes, customData, chatItemTTL, membersRequireAttention) :. userMemberRow) =
   let membership = (toGroupMember userContactId userMemberRow) {memberChatVRange = vr}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
@@ -611,7 +612,7 @@ toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, 
       connLinkToConnect = case (connFullLink, connShortLink) of
         (Nothing, _) -> Nothing
         (Just fullLink, shortLink_) -> Just $ CCLink fullLink shortLink_
-   in GroupInfo {groupId, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, connLinkToConnect, chatTags, chatItemTTL, uiThemes, customData, membersRequireAttention}
+   in GroupInfo {groupId, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, connLinkToConnect, connLinkStartedConnection, chatTags, chatItemTTL, uiThemes, customData, membersRequireAttention}
 
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
 toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, BI showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image, contactLink, localAlias, preferences) :. (createdAt, updatedAt) :. (supportChatTs_, supportChatUnread, supportChatMemberAttention, supportChatMentions, supportChatLastMsgFromMemberTs)) =
@@ -644,7 +645,8 @@ groupInfoQuery =
       -- GroupInfo
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
       g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.conn_full_link_to_connect, g.conn_short_link_to_connect,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_started_connection,
       g.business_chat, g.business_member_id, g.customer_member_id,
       g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
       -- GroupMember - membership
