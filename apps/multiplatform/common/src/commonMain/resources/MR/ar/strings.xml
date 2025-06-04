@@ -30,7 +30,7 @@
     <string name="smp_servers_preset_add">أضِف خوادم مُعدة مسبقًا</string>
     <string name="smp_servers_add_to_another_device">أضِف إلى جهاز آخر</string>
     <string name="users_delete_all_chats_deleted">سيتم حذف جميع الدردشات والرسائل - لا يمكن التراجع عن هذا!</string>
-    <string name="network_enable_socks_info">الوصول إلى الخوادم عبر وكيل SOCKS على المنفذ %d؟ يجب بدء تشغيل الوكيل قبل تفعيل هذا الخيار.</string>
+    <string name="network_enable_socks_info">الوصول إلى الخوادم عبر وسيط SOCKS على المنفذ %d؟ يجب بدء تشغيل الوسيط قبل تفعيل هذا الخيار.</string>
     <string name="smp_servers_add">أضِف خادم</string>
     <string name="network_settings">إعدادات الشبكة المتقدمة</string>
     <string name="all_group_members_will_remain_connected">سيبقى جميع أعضاء المجموعة على اتصال.</string>
@@ -286,7 +286,7 @@
     <string name="connection_local_display_name">الاتصال %1$d</string>
     <string name="display_name_connection_established">انشأت الاتصال</string>
     <string name="callstatus_connecting">مكالمة جارية…</string>
-    <string name="encrypt_database">تشفير</string>
+    <string name="encrypt_database">عمِّ</string>
     <string name="enter_passphrase">أدخل عبارة المرور…</string>
     <string name="group_member_status_creator">المنشئ</string>
     <string name="error_adding_members">خطأ في إضافة الأعضاء</string>
@@ -486,7 +486,7 @@
     <string name="image_will_be_received_when_contact_completes_uploading">سيتم استلام الصورة عندما يكتمل جهة اتصالك من رفعِها.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[إذا لم تتمكن من الالتقاء شخصيًا، <b>اعرض رمز QR في مكالمة الفيديو</b>، أو شارك الرابط.]]></string>
     <string name="install_simplex_chat_for_terminal">ثبّت SimpleX Chat لطرفية</string>
-    <string name="network_disable_socks_info">إذا قمت بالتأكيد، فستتمكن خوادم المراسلة من رؤية عنوان IP الخاص بك ومزود الخدمة الخاص بك - أي الخوادم التي تتصل بها.</string>
+    <string name="network_disable_socks_info">إذا أكّدت، فستتمكن خوادم المُراسلة من رؤية عنوان IP الخاص بك ومزود خدمتك - أي الخوادم التي تتصل بها.</string>
     <string name="hide_dev_options">إخفاء:</string>
     <string name="if_you_enter_passcode_data_removed">إذا أدخلت رمز المرور هذا عند فتح التطبيق، فستتم إزالة جميع بيانات التطبيق نهائيًا!</string>
     <string name="import_database_question">استيراد قاعدة بيانات الدردشة؟</string>
@@ -1025,7 +1025,7 @@
     <string name="stop_chat_question">إيقاف الدردشة؟</string>
     <string name="show_call_on_lock_screen">عرض</string>
     <string name="non_fatal_errors_occured_during_import">حدثت بعض الأخطاء غير الفادحة أثناء الاستيراد:</string>
-    <string name="settings_section_title_socks">وكيل SOCKS</string>
+    <string name="settings_section_title_socks">وسيط SOCKS</string>
     <string name="v4_2_security_assessment_desc">تم تدقيق أمان SimpleX Chat بواسطة Trail of Bits.</string>
     <string name="stop_chat_confirmation">إيقاف</string>
     <string name="settings_notification_preview_mode_title">عرض المعاينة</string>
@@ -1060,10 +1060,10 @@
     <string name="stop_file__action">إيقاف الملف</string>
     <string name="stop_snd_file__title">التوقف عن إرسال الملف؟</string>
     <string name="icon_descr_address">عنوان SimpleX</string>
-    <string name="disable_onion_hosts_when_not_supported"><![CDATA[اضبط <i>استخدم مضيفي .onion</i> إلى "لا" إذا كان وكيل SOCKS لا يدعمها.]]></string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[اضبط <i>استخدم مضيفي .onion</i> إلى "لا" إذا كان وسيط SOCKS لا يدعمها.]]></string>
     <string name="share_with_contacts">مشاركة مع جهات الاتصال</string>
     <string name="shutdown_alert_question">إيقاف التشغيل؟</string>
-    <string name="network_socks_proxy_settings">إعدادات وكيل SOCKS</string>
+    <string name="network_socks_proxy_settings">إعدادات وسيط SOCKS</string>
     <string name="settings_shutdown">إيقاف التشغيل</string>
     <string name="icon_descr_speaker_on">السماعة قيد التشغيل</string>
     <string name="submit_passcode">أرسل</string>
@@ -1160,9 +1160,9 @@
     <string name="you_will_be_connected_when_group_host_device_is_online">ستكون متصلاً بالمجموعة عندما يكون جهاز مضيف المجموعة متصلاً بالإنترنت، يُرجى الانتظار أو التحقق لاحقًا!</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">ستكون متصلاً عندما يتم قبول طلب اتصالك، يُرجى الانتظار أو التحقق لاحقًا!</string>
     <string name="using_simplex_chat_servers">تستخدم خوادم SimpleX Chat.</string>
-    <string name="network_socks_toggle_use_socks_proxy">استخدم وكيل SOCKS</string>
+    <string name="network_socks_toggle_use_socks_proxy">استخدم وسيط SOCKS</string>
     <string name="network_use_onion_hosts">استخدم مضيفي onion.</string>
-    <string name="network_enable_socks">استخدام وكيل SOCKS؟</string>
+    <string name="network_enable_socks">استخدام وسيط SOCKS؟</string>
     <string name="network_use_onion_hosts_prefer">عندما تكون متاحة</string>
     <string name="your_contacts_will_remain_connected">ستبقى جهات اتصالك متصلة.</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">لا نقوم بتخزين أي من جهات اتصالك أو رسائلك (بمجرد تسليمها) على الخوادم.</string>
@@ -1276,8 +1276,7 @@
     <string name="description_via_contact_address_link">عبر رابط عنوان الاتصال</string>
     <string name="connection_error_auth_desc">ما لم يحذف جهة الاتصال الاتصال أو استُخدم هذا الرابط بالفعل، فقد يكون خطأ - الرجاء الإبلاغ عنه.
 \nللاتصال، يُرجى مطالبة جهة اتصالك بإنشاء رابط اتصال آخر والتحقق من أن لديك اتصال شبكة ثابت.</string>
-    <string name="your_chat_profile_will_be_sent_to_your_contact">سيتم إرسال ملف تعريف الدردشة الخاص بك
-\nإلى جهة اتصالك</string>
+    <string name="your_chat_profile_will_be_sent_to_your_contact">سيتم إرسال ملف تعريف دردشتك\nإلى جهة اتصالك</string>
     <string name="user_unhide">إلغاء الإخفاء</string>
     <string name="incognito_random_profile">ملفك التعريفي العشوائي</string>
     <string name="you_will_still_receive_calls_and_ntfs">ستستمر في استلام المكالمات والإشعارات من الملفات التعريفية المكتومة عندما تكون نشطة.</string>
@@ -1340,8 +1339,7 @@
     <string name="rcv_group_event_n_members_connected">%s، %s و %d أعضاء آخرين متصلون</string>
     <string name="rcv_group_event_3_members_connected">%s، %s و %s متصل</string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">سيتم تعمية قاعدة البيانات وتخزين عبارة المرور في الإعدادات.</string>
-    <string name="you_can_change_it_later">يُخزين عبارة المرور العشوائية في الإعدادات كنص عادي.
-\nيمكنك تغييره لاحقا.</string>
+    <string name="you_can_change_it_later">يُخزين عبارة المرور العشوائية في الإعدادات كنص عادي.\nيمكنك تغييره لاحقًا.</string>
     <string name="database_encryption_will_be_updated_in_settings">سيتم تحديث عبارة مرور تعمية قاعدة البيانات وتخزينها في الإعدادات.</string>
     <string name="remove_passphrase_from_settings">هل تريد إزالة عبارة المرور من الإعدادات؟</string>
     <string name="use_random_passphrase">استخدم عبارة مرور عشوائية</string>
@@ -1351,9 +1349,9 @@
     <string name="open_database_folder">افتح مجلد قاعدة البيانات</string>
     <string name="passphrase_will_be_saved_in_settings">سيتم تخزين عبارة المرور في الإعدادات كنص عادي بعد تغييرها أو إعادة تشغيل التطبيق.</string>
     <string name="settings_is_storing_in_clear_text">عبارة المرور مخزنة في الإعدادات كنص عادي.</string>
-    <string name="socks_proxy_setting_limitations"><![CDATA[<b>يُرجى الملاحظة</b>: يتم توصيل مرحلات الرسائل والملفات عبر وكيل SOCKS. تستخدم المكالمات وإرسال معاينات الروابط الاتصال المباشر.]]></string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>يُرجى الملاحظة</b>: يتم توصيل مُرحلات الرسائل والملفات عبر وسيط SOCKS. تستخدم المكالمات وإرسال معاينات الروابط الاتصال المباشر.]]></string>
     <string name="encrypt_local_files">عَمِّ الملفات المحلية</string>
-    <string name="v5_3_encrypt_local_files">عَمِّ الملفات والوسائط المخزنة</string>
+    <string name="v5_3_encrypt_local_files">عمِّ الملفات والوسائط المخزنة</string>
     <string name="v5_3_new_desktop_app">تطبيق سطح المكتب الجديد!</string>
     <string name="v5_3_new_interface_languages">6 لغات واجهة جديدة</string>
     <string name="v5_3_encrypt_local_files_descr">يُعمِّي الملفات المحلية الجديدة (باستثناء مقاطع الفيديو).</string>
@@ -1612,7 +1610,7 @@
     <string name="v5_6_safer_groups_descr">يمكن للمُدراء حظر عضو للجميع.</string>
     <string name="v5_6_app_data_migration">ترحيل بيانات التطبيق</string>
     <string name="migrate_from_device_archiving_database">جارِ أرشفة قاعدة البيانات</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">جميع جهات الاتصال، المحادثات والملفات الخاصة بك سيتم تشفيرها بأمان ورفعها على شكل أجزاء إلى موجهات XFTP المُعدة.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">جميع جهات الاتصال، المحادثات والملفات الخاصة بك سيتم تعميتها بأمان ورفعها على شكل أجزاء إلى موجهات XFTP المُعدة.</string>
     <string name="migrate_to_device_apply_onion">طبّق</string>
     <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>يُرجى ملاحظة</b>: استخدام نفس قاعدة البيانات على جهازين سيؤدي إلى كسر فك تعمية الرسائل من اتصالاتك، كحماية أمنية.]]></string>
     <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>تحذير</b>: سيتم حذف الأرشيف.]]></string>
@@ -1694,7 +1692,7 @@
     <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[اختر <i>رحّل من جهاز آخر</i> على الجهاز الجديد و امسح رمز QR ضوئيًا.]]></string>
     <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">تحذير: بدء الدردشة على أجهزة متعددة غير مدعوم وسيؤدي إلى فشل تسليم الرسائل</string>
     <string name="settings_section_title_network_connection">إتصال شبكة</string>
-    <string name="forwarded_description">محوّلة</string>
+    <string name="forwarded_description">مُحوّلة</string>
     <string name="network_type_cellular">خلوي</string>
     <string name="network_type_ethernet">إيثرنت سلكية</string>
     <string name="network_type_no_network_connection">لا إتصال شبكة</string>
@@ -1712,7 +1710,7 @@
     <string name="feature_enabled_for">مفعّل لـ</string>
     <string name="feature_roles_owners">المالكون</string>
     <string name="files_and_media_not_allowed">الملفات والوسائط غير مسموح بها</string>
-    <string name="forwarded_chat_item_info_tab">محوّلة</string>
+    <string name="forwarded_chat_item_info_tab">مُحوّلة</string>
     <string name="forward_message">حوّل الرسالة…</string>
     <string name="network_option_rcv_concurrency">تلقي التزامن</string>
     <string name="recipients_can_not_see_who_message_from">لا يستطيع المُستلم/ون معرفة مَن أرسل هذه الرسالة.</string>
@@ -1722,7 +1720,7 @@
     <string name="audio_device_speaker">السماعة</string>
     <string name="audio_device_earpiece">سماعة الأذن</string>
     <string name="audio_device_wired_headphones">سماعات الرأس</string>
-    <string name="forwarded_from_chat_item_info_title">محوّلة مِن</string>
+    <string name="forwarded_from_chat_item_info_title">مُحوّلة مِن</string>
     <string name="saved_chat_item_info_tab">حُفظت</string>
     <string name="download_file">نزّل</string>
     <string name="forward_chat_item">حوّل</string>
@@ -1744,10 +1742,8 @@
     <string name="snd_error_quota">تم تجاوز السعة - لم يتلق المُستلم الرسائل المُرسلة مسبقًا.</string>
     <string name="snd_error_relay">خطأ في خادم الوجهة: %1$s</string>
     <string name="ci_status_other_error">خطأ: %1$s</string>
-    <string name="snd_error_proxy_relay">خادم التحويل: %1$s
-\nخطأ في الخادم الوجهة: %2$s</string>
-    <string name="snd_error_proxy">خادم التحويل: %1$s
-\nخطأ: %2$s</string>
+    <string name="snd_error_proxy_relay">خادم التحويل: %1$s\nخطأ في خادم الوجهة: %2$s</string>
+    <string name="snd_error_proxy">خادم التحويل: %1$s\nخطأ: %2$s</string>
     <string name="message_delivery_warning_title">تحذير تسليم الرسالة</string>
     <string name="snd_error_expired">مشكلات الشبكة - انتهت صلاحية الرسالة بعد عِدة محاولات لإرسالها.</string>
     <string name="network_smp_proxy_fallback_allow">نعم</string>
@@ -1772,7 +1768,7 @@
     <string name="network_smp_proxy_mode_always_description">استخدم دائمًا التوجيه الخاص.</string>
     <string name="settings_section_title_files">الملفات</string>
     <string name="network_smp_proxy_mode_never">مطلقًا</string>
-    <string name="app_will_ask_to_confirm_unknown_file_servers">سيطلب التطبيق تأكيد التنزيلات من خوادم ملفات غير معروفة (باستثناء .onion أو عند تفعيل وكيل SOCKS).</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">سيطلب التطبيق تأكيد التنزيلات من خوادم ملفات غير معروفة (باستثناء .onion أو عند تفعيل وسيط SOCKS).</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">أرسل الرسائل مباشرة عندما يكون عنوان IP محميًا ولا يدعم الخادم الوجهة لديك التوجيه الخاص.</string>
     <string name="network_smp_proxy_mode_unknown">خوادم غير معروفة</string>
     <string name="file_not_approved_title">خوادم غير معروفة!</string>
@@ -1847,13 +1843,13 @@
     <string name="servers_info_detailed_statistics_sent_messages_total">أرسلت الإجمالي</string>
     <string name="size">الحجم</string>
     <string name="uploaded_files">الملفات المرفوعة</string>
-    <string name="please_try_later">يُرجى المحاولة لاحقا.</string>
+    <string name="please_try_later">يُرجى المحاولة لاحقًا.</string>
     <string name="private_routing_error">خطأ في التوجيه الخاص</string>
     <string name="network_error_broker_host_desc">عنوان الخادم غير متوافق مع إعدادات الشبكة: %1$s.</string>
     <string name="network_error_broker_version_desc">إصدار الخادم غير متوافق مع تطبيقك: %1$s.</string>
     <string name="member_inactive_title">العضو غير نشط</string>
-    <string name="message_forwarded_title">رسالة محوّلة</string>
-    <string name="message_forwarded_desc">لا يوجد اتصال مباشر حتى الآن، يتم تحويل من قِبل المُدير.</string>
+    <string name="message_forwarded_title">رسالة مُحوّلة</string>
+    <string name="message_forwarded_desc">لا يوجد اتصال مباشر حتى الآن، الرسالة مُحوّلة بواسطة المُدير.</string>
     <string name="scan_paste_link">امسح / ألصِق الرابط</string>
     <string name="smp_servers_configured">خوادم SMP المهيأة</string>
     <string name="smp_servers_other">خوادم SMP أخرى</string>
@@ -1868,7 +1864,7 @@
     <string name="app_check_for_updates_installed_successfully_title">ثُبّت بنجاح</string>
     <string name="app_check_for_updates_button_open">افتح مكان الملف</string>
     <string name="app_check_for_updates_installed_successfully_desc">يُرجى إعادة تشغيل التطبيق.</string>
-    <string name="app_check_for_updates_button_remind_later">تذكر لاحقا</string>
+    <string name="app_check_for_updates_button_remind_later">تذكر لاحقًا</string>
     <string name="app_check_for_updates_button_skip">تخطي هذه النسخة</string>
     <string name="app_check_for_updates_canceled">أُلغيت تنزيل التحديث</string>
     <string name="member_info_member_disabled">مُعطَّل</string>
@@ -1910,7 +1906,7 @@
     <string name="secured">مؤمن</string>
     <string name="send_errors">أرسل الأخطاء</string>
     <string name="sent_directly">أُرسلت مباشرةً</string>
-    <string name="sent_via_proxy">مُرسَل عبر الوكيل</string>
+    <string name="sent_via_proxy">مُرسَل عبر الوسيط</string>
     <string name="subscribed">مشترك</string>
     <string name="subscription_errors">أخطاء الاشتراك</string>
     <string name="upload_errors">رفع الأخطاء</string>
@@ -1957,11 +1953,11 @@
     <string name="app_check_for_updates_notice_desc">لكي يتم إعلامك بالإصدارات الجديدة، شغّل الفحص الدوري للإصدارات المستقرة أو التجريبية.</string>
     <string name="servers_info_proxied_servers_section_footer">أنت غير متصل بهذه الخوادم. يتم استخدام التوجيه الخاص لتسليم الرسائل إليهم.</string>
     <string name="appearance_zoom">قرّب</string>
-    <string name="smp_proxy_error_connecting">حدث خطأ أثناء الاتصال بخادم التحويل %1$s. يُرجى المحاولة لاحقا.</string>
+    <string name="smp_proxy_error_connecting">حدث خطأ أثناء الاتصال بخادم التحويل %1$s. يُرجى المحاولة لاحقًا.</string>
     <string name="smp_proxy_error_broker_host">عنوان خادم التحويل غير متوافق مع إعدادات الشبكة: %1$s.</string>
     <string name="proxy_destination_error_broker_host">عنوان خادم الوجهة %1$s غير متوافق مع إعدادات خادم التحويل %2$s.</string>
     <string name="proxy_destination_error_broker_version">إصدار الخادم الوجهة %1$s غير متوافق مع خادم التحويل %2$s.</string>
-    <string name="proxy_destination_error_failed_to_connect">فشل خادم التحويل %1$s في الاتصال بالخادم الوجهة %2$s. يُرجى المحاولة لاحقا.</string>
+    <string name="proxy_destination_error_failed_to_connect">فشل خادم التحويل %1$s في الاتصال بالخادم الوجهة %2$s. يُرجى المحاولة لاحقًا.</string>
     <string name="smp_proxy_error_broker_version">إصدار خادم التحويل غير متوافق مع إعدادات الشبكة: %1$s.</string>
     <string name="privacy_media_blur_radius_off">مطفي</string>
     <string name="privacy_media_blur_radius_strong">قوي</string>
@@ -2011,7 +2007,7 @@
     <string name="media_and_file_servers">خوادم الوسائط والملفات</string>
     <string name="message_servers">خوادم الرسائل</string>
     <string name="chat_database_exported_continue">متابعة</string>
-    <string name="network_socks_proxy">وكيل SOCKS</string>
+    <string name="network_socks_proxy">وسيط SOCKS</string>
     <string name="chat_database_exported_migrate">يمكنك ترحيل قاعدة البيانات المُصدرة.</string>
     <string name="chat_database_exported_save">يمكنك حفظ الأرشيف المُصدر.</string>
     <string name="v6_0_connection_servers_status_descr">حالة الاتصال والخوادم.</string>
@@ -2046,19 +2042,19 @@
     <string name="forward_files_not_accepted_desc">لم يتم تنزيل %1$d ملف/ات.</string>
     <string name="forward_files_not_accepted_receive_files">نزّل</string>
     <string name="new_chat_share_profile">شارك ملف التعريف</string>
-    <string name="network_proxy_auth_mode_isolate_by_auth_entity">استخدم بيانات اعتماد الوكيل المختلفة لكل اتصال.</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_entity">استخدم بيانات اعتماد الوسيط المختلفة لكل اتصال.</string>
     <string name="network_proxy_username">اسم المستخدم</string>
     <string name="network_proxy_auth_mode_username_password">قد يتم إرسال بيانات اعتمادك غير مُعمَّاة.</string>
-    <string name="network_proxy_incorrect_config_title">خطأ في حفظ الوكيل</string>
+    <string name="network_proxy_incorrect_config_title">خطأ في حفظ الوسيط</string>
     <string name="migrate_from_device_remove_archive_question">إزالة الأرشيف؟</string>
     <string name="system_mode_toast">وضع النظام</string>
     <string name="migrate_from_device_uploaded_archive_will_be_removed">سيتم إزالة أرشيف قاعدة البيانات المرفوعة نهائيًا من الخوادم.</string>
-    <string name="network_proxy_auth_mode_isolate_by_auth_user">استخدم بيانات اعتماد الوكيل المختلفة لكل ملف تعريف.</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_user">استخدم بيانات اعتماد الوسيط المختلفة لكل ملف تعريف.</string>
     <string name="network_proxy_random_credentials">استخدم بيانات اعتماد عشوائية</string>
     <string name="settings_section_title_chat_database">قاعدة بيانات الدردشة</string>
     <string name="forward_files_missing_desc">حُذف %1$d ملف/ات.</string>
     <string name="forward_files_in_progress_desc">لا يزال يتم تنزيل %1$d ملف/ات.</string>
-    <string name="network_proxy_auth_mode_no_auth">لا تستخدم بيانات الاعتماد مع الوكيل.</string>
+    <string name="network_proxy_auth_mode_no_auth">لا تستخدم بيانات الاعتماد مع الوسيط.</string>
     <string name="error_forwarding_messages">خطأ في تحويل الرسائل</string>
     <string name="switching_profile_error_title">خطأ في تبديل ملف التعريف</string>
     <string name="select_chat_profile">حدد ملف تعريف الدردشة</string>
@@ -2069,12 +2065,12 @@
     <string name="forward_multiple">حوّل الرسائل…</string>
     <string name="forward_alert_forward_messages_without_files">تحويل الرسائل بدون ملفات؟</string>
     <string name="compose_save_messages_n">جارِ حفظ %1$s رسالة</string>
-    <string name="network_proxy_incorrect_config_desc">تأكد من صحة تضبيط الوكيل.</string>
+    <string name="network_proxy_incorrect_config_desc">تأكد من صحة تضبيط الوسيط.</string>
     <string name="n_other_file_errors">%1$d خطأ في ملف آخر.</string>
     <string name="forward_files_messages_deleted_after_selection_desc">حُذفت الرسائل بعد تحديدها.</string>
     <string name="forward_alert_title_nothing_to_forward">لا يوجد شيء لتحويله!</string>
     <string name="network_proxy_password">كلمة المرور</string>
-    <string name="network_proxy_auth">استيثاق الوكيل</string>
+    <string name="network_proxy_auth">استيثاق الوسيط</string>
     <string name="delete_messages_cannot_be_undone_warning">سيتم حذف الرسائل - لا يمكن التراجع عن هذا!</string>
     <string name="icon_descr_sound_muted">الصوت مكتوم</string>
     <string name="error_initializing_web_view_wrong_arch">حدث خطأ أثناء تهيئة WebView. تأكد من تثبيت WebView وأن بنيته المدعومة هي arm64.\nالخطأ: %s</string>
