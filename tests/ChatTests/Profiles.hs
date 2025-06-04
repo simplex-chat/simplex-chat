@@ -102,8 +102,8 @@ chatProfileTests = do
       it "SimpleX links" testGroupPrefsSimplexLinksForRole
     it "set user, contact and group UI theme" testSetUITheme
   describe "short links" $ do
-    it "should connect via one-time inviation" testShortLinkInvitation
-    it "should plan and connect via one-time inviation" testPlanShortLinkInvitation
+    it "should connect via one-time invitation" testShortLinkInvitation
+    it "should plan and connect via one-time invitation" testPlanShortLinkInvitation
     it "should connect via contact address" testShortLinkContactAddress
     it "should join group" testShortLinkJoinGroup
     describe "connection via prepared entity" $ do

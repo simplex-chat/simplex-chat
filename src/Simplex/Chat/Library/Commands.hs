@@ -3284,8 +3284,9 @@ processChatCommand' vr = \case
       CLShort l -> do
         let l' = serverShortLink l
         withFastStore' (\db -> getConnectionEntityViaShortLink db vr user l') >>= \case
-          Just (cReq, ent) ->
-            (ACCL SCMInvitation (CCLink cReq (Just l')),) <$> (invitationEntityPlan ent `catchChatError` (pure . CPError))
+          Just (cReq, ent) -> do
+            plan <- invitationEntityPlan Nothing ent `catchChatError` (pure . CPError)
+            pure (ACCL SCMInvitation (CCLink cReq (Just l')), plan)
           Nothing -> do
             (cReq, cData) <- getShortLinkConnReq user l'
             let contactSLinkData_ = decodeShortLinkData $ linkUserData cData
@@ -3331,29 +3332,23 @@ processChatCommand' vr = \case
     invitationRequestPlan user cReq contactSLinkData_ = do
       withFastStore' (\db -> getConnectionEntityByConnReq db vr user $ invCReqSchemas cReq) >>= \case
         Nothing -> pure $ CPInvitationLink (ILPOk contactSLinkData_)
-        Just ent -> invitationEntityPlan ent
+        Just ent -> invitationEntityPlan contactSLinkData_ ent
       where
         invCReqSchemas :: ConnReqInvitation -> (ConnReqInvitation, ConnReqInvitation)
         invCReqSchemas (CRInvitationUri crData e2e) =
           ( CRInvitationUri crData {crScheme = SSSimplex} e2e,
             CRInvitationUri crData {crScheme = simplexChat} e2e
           )
-    invitationEntityPlan :: ConnectionEntity -> CM ConnectionPlan
-    invitationEntityPlan = \case
-      RcvDirectMsgConnection Connection {connStatus = ConnPrepared} Nothing ->
-        -- TODO [short links] entity is already found - passing ContactShortLinkData doesn't make sense?
-        pure $ CPInvitationLink (ILPOk Nothing)
-      RcvDirectMsgConnection conn ct_ -> do
-        let Connection {connStatus, contactConnInitiated} = conn
-        if
-          | connStatus == ConnNew && contactConnInitiated ->
-              pure $ CPInvitationLink ILPOwnLink
-          -- TODO [short links] check status (now present contact may mean scanned, not only connecting)
-          | not (connReady conn) ->
-              pure $ CPInvitationLink (ILPConnecting ct_)
-          | otherwise -> case ct_ of
-              Just ct -> pure $ CPInvitationLink (ILPKnown ct)
-              Nothing -> throwChatError $ CEInternalError "ready RcvDirectMsgConnection connection should have associated contact"
+    invitationEntityPlan :: Maybe ContactShortLinkData -> ConnectionEntity -> CM ConnectionPlan
+    invitationEntityPlan contactSLinkData_ = \case
+      RcvDirectMsgConnection Connection {connStatus, contactConnInitiated} ct_ -> case ct_ of
+        Just ct
+          | contactActive ct -> pure $ CPInvitationLink (ILPKnown ct)
+          | otherwise -> pure $ CPInvitationLink (ILPOk contactSLinkData_)
+        Nothing
+          | connStatus == ConnNew && contactConnInitiated -> pure $ CPInvitationLink ILPOwnLink
+          | connStatus == ConnPrepared -> pure $ CPInvitationLink (ILPOk contactSLinkData_)
+          | otherwise -> pure $ CPInvitationLink (ILPConnecting Nothing)
       _ -> throwCmdError "found connection entity is not RcvDirectMsgConnection"
     contactOrGroupRequestPlan ::  User -> ConnReqContact -> CM ConnectionPlan
     contactOrGroupRequestPlan user cReq@(CRContactUri crData) = do
