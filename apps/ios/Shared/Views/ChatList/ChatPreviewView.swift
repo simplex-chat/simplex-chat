@@ -340,12 +340,16 @@ struct ChatPreviewView: View {
                     chatPreviewInfoText("connecting…")
                 }
             case let .group(groupInfo, _):
-                switch (groupInfo.membership.memberStatus) {
-                case .memRejected: chatPreviewInfoText("rejected")
-                case .memInvited: groupInvitationPreviewText(groupInfo)
-                case .memAccepted: chatPreviewInfoText("connecting…")
-                case .memPendingReview, .memPendingApproval: chatPreviewInfoText("reviewed by admins")
-                default: EmptyView()
+                if groupInfo.nextConnectPrepared {
+                    chatPreviewInfoText("open to join")
+                } else {
+                    switch (groupInfo.membership.memberStatus) {
+                    case .memRejected: chatPreviewInfoText("rejected")
+                    case .memInvited: groupInvitationPreviewText(groupInfo)
+                    case .memAccepted: chatPreviewInfoText("connecting…")
+                    case .memPendingReview, .memPendingApproval: chatPreviewInfoText("reviewed by admins")
+                    default: EmptyView()
+                    }
                 }
             default: EmptyView()
             }

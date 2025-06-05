@@ -139,7 +139,8 @@ CREATE TABLE groups(
   local_alias TEXT DEFAULT '',
   members_require_attention INTEGER NOT NULL DEFAULT 0,
   conn_full_link_to_connect BLOB,
-  conn_short_link_to_connect BLOB, -- received
+  conn_short_link_to_connect BLOB,
+  conn_link_started_connection INTEGER NOT NULL DEFAULT 0, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

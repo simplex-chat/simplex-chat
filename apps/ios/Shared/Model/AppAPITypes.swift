@@ -746,6 +746,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
     case sentConfirmation(user: UserRef, connection: PendingContactConnection)
     case sentInvitation(user: UserRef, connection: PendingContactConnection)
     case startedConnectionToContact(user: UserRef, contact: Contact)
+    case startedConnectionToGroup(user: UserRef, groupInfo: GroupInfo)
     case sentInvitationToContact(user: UserRef, contact: Contact, customUserProfile: Profile?)
     case contactAlreadyExists(user: UserRef, contact: Contact)
     case contactDeleted(user: UserRef, contact: Contact)
@@ -788,6 +789,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
         case .sentConfirmation: "sentConfirmation"
         case .sentInvitation: "sentInvitation"
         case .startedConnectionToContact: "startedConnectionToContact"
+        case .startedConnectionToGroup: "startedConnectionToGroup"
         case .sentInvitationToContact: "sentInvitationToContact"
         case .contactAlreadyExists: "contactAlreadyExists"
         case .contactDeleted: "contactDeleted"
@@ -866,6 +868,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
         case let .sentConfirmation(u, connection): return withUser(u, String(describing: connection))
         case let .sentInvitation(u, connection): return withUser(u, String(describing: connection))
         case let .startedConnectionToContact(u, contact): return withUser(u, String(describing: contact))
+        case let .startedConnectionToGroup(u, groupInfo): return withUser(u, String(describing: groupInfo))
         case let .sentInvitationToContact(u, contact, _): return withUser(u, String(describing: contact))
         case let .contactAlreadyExists(u, contact): return withUser(u, String(describing: contact))
         }

@@ -117,6 +117,10 @@ struct ChatView: View {
                 connectingText()
                 if selectedChatItems == nil {
                     let reason = chat.chatInfo.userCantSendReason
+                    let composeEnabled = (
+                        chat.chatInfo.sendMsgEnabled ||
+                        (chat.chatInfo.groupInfo?.nextConnectPrepared ?? false) // allow to join prepared group without message
+                    )
                     ComposeView(
                         chat: chat,
                         im: im,
@@ -126,8 +130,8 @@ struct ChatView: View {
                         selectedRange: $selectedRange,
                         disabledText: reason?.composeLabel
                     )
-                    .disabled(!cInfo.sendMsgEnabled)
-                    .if(!cInfo.sendMsgEnabled) { v in
+                    .disabled(!composeEnabled)
+                    .if(!composeEnabled) { v in
                         v.disabled(true).onTapGesture {
                             AlertManager.shared.showAlertMsg(
                                 title: "You can't send messages!",

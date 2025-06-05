@@ -389,14 +389,14 @@ struct ComposeView: View {
             default: previewView()
             }
             HStack (alignment: .bottom) {
-                if !(chat.chatInfo.contact?.sendMsgToConnect ?? false) {
+                if !chat.chatInfo.nextConnect {
                     attachmentButton()
                 }
 
                 sendMessageView(simplexLinkProhibited, fileProhibited, voiceProhibited)
 
-                if chat.chatInfo.contact?.sendMsgToConnect ?? false {
-                    sendToConnectButton()
+                if chat.chatInfo.nextConnect {
+                    nextConnectButton()
                         .padding(.bottom, 16)
                         .padding(.horizontal, 8)
                 }
@@ -581,7 +581,7 @@ struct ComposeView: View {
                     composeState.liveMessage = nil
                     chatModel.removeLiveDummy()
                 },
-                showComposeActionButtons: !(chat.chatInfo.contact?.sendMsgToConnect ?? false),
+                showComposeActionButtons: !chat.chatInfo.nextConnect,
                 voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
                 disableSendButton: simplexLinkProhibited || fileProhibited || voiceProhibited,
                 showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
@@ -636,23 +636,37 @@ struct ComposeView: View {
         }
     }
 
-    private func sendToConnectButton() -> some View {
+    @ViewBuilder private func nextConnectButton() -> some View {
+        let connectButtonEnabled = (
+            composeState.sendEnabled ||
+            (chat.chatInfo.groupInfo?.nextConnectPrepared ?? false) // allow to join prepared group without message
+        )
         Button {
             Task {
                 if chat.chatInfo.contact?.nextSendGrpInv ?? false {
                     await sendMemberContactInvitation()
                 } else if chat.chatInfo.contact?.nextConnectPrepared ?? false {
                     await sendConnectPreparedContact()
+                } else if chat.chatInfo.groupInfo?.nextConnectPrepared ?? false {
+                    await connectPreparedGroup()
                 }
             }
         } label: {
-            HStack {
-                Text("Connect")
-                    .fontWeight(.medium)
-                Image(systemName: "person.fill.badge.plus")
+            if case .group = chat.chatInfo {
+                HStack {
+                    Text("Join")
+                        .fontWeight(.medium)
+                    Image(systemName: "person.2.fill")
+                }
+            } else {
+                HStack {
+                    Text("Connect")
+                        .fontWeight(.medium)
+                    Image(systemName: "person.fill.badge.plus")
+                }
             }
         }
-        .disabled(!composeState.sendEnabled)
+        .disabled(!connectButtonEnabled)
     }
 
     private func sendMemberContactInvitation() async {
@@ -681,6 +695,20 @@ struct ComposeView: View {
         } catch {
             logger.error("ChatView.sendConnectPreparedContact error: \(error.localizedDescription)")
             AlertManager.shared.showAlertMsg(title: "Error connecting with contact", message: "Error: \(responseError(error))")
+        }
+    }
+
+    private func connectPreparedGroup() async {
+        do {
+            // TODO [short links] allow to choose incognito, different user profile (as "compose context")
+            let groupInfo = try await apiConnectPreparedGroup(groupId: chat.chatInfo.apiId, incognito: false)
+            await MainActor.run {
+                self.chatModel.updateGroup(groupInfo)
+                clearState()
+            }
+        } catch {
+            logger.error("ChatView.connectPreparedGroup error: \(error.localizedDescription)")
+            AlertManager.shared.showAlertMsg(title: "Error joining group", message: "Error: \(responseError(error))")
         }
     }
 

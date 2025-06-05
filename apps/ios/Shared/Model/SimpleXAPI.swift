@@ -1025,7 +1025,7 @@ func apiConnectPreparedContact(contactId: Int64, incognito: Bool, msg: MsgConten
 
 func apiConnectPreparedGroup(groupId: Int64, incognito: Bool) async throws -> GroupInfo {
     let r: ChatResponse1 = try await chatSendCmd(.apiConnectPreparedGroup(groupId: groupId, incognito: incognito))
-    // if case let .startedConnectionToGroup(_, groupInfo) = r { return groupInfo } // TODO [short links] startedConnectionToGroup response
+    if case let .startedConnectionToGroup(_, groupInfo) = r { return groupInfo }
     throw r.unexpected
 }
 

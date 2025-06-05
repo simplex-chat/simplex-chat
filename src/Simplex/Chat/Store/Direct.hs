@@ -169,7 +169,7 @@ createConnReqConnection db userId acId cReqHash sLnk comId_ xContactId incognito
         created_at, updated_at, to_subscribe, conn_chat_version, pq_support, pq_encryption
       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
-    ( (userId, acId, pccConnStatus, ConnContact, BI True)
+    ( (userId, acId, pccConnStatus, connType, BI True)
         :. (cReqHash, sLnk, contactId_, groupMemberId_)
         :. (xContactId, customUserProfileId, BI (isJust groupLinkId), groupLinkId)
         :. (createdAt, createdAt, BI (subMode == SMOnlyCreate), chatV, pqSup, pqSup)
@@ -177,10 +177,10 @@ createConnReqConnection db userId acId cReqHash sLnk comId_ xContactId incognito
   pccConnId <- insertedRowId db
   pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = True, viaUserContactLink = Nothing, groupLinkId, customUserProfileId, connLinkInv = Nothing, localAlias = "", createdAt, updatedAt = createdAt}
   where
-    (contactId_, groupMemberId_) = case comId_ of
-      Just (CGMContactId ctId) -> (Just ctId, Nothing)
-      Just (CGMGroupMemberId gmId) -> (Nothing, Just gmId)
-      Nothing -> (Nothing, Nothing)
+    (connType, contactId_, groupMemberId_) = case comId_ of
+      Just (CGMContactId ctId) -> (ConnContact, Just ctId, Nothing)
+      Just (CGMGroupMemberId gmId) -> (ConnMember, Nothing, Just gmId)
+      Nothing -> (ConnContact, Nothing, Nothing)
 
 getConnReqContactXContactId :: DB.Connection -> VersionRangeChat -> User -> ConnReqUriHash -> IO (Maybe Contact, Maybe XContactId)
 getConnReqContactXContactId db vr user@User {userId} cReqHash = do

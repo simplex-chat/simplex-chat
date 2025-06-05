@@ -420,6 +420,7 @@ data GroupInfo = GroupInfo
     chatTs :: Maybe UTCTime,
     userMemberProfileSentAt :: Maybe UTCTime,
     connLinkToConnect :: Maybe CreatedLinkContact,
+    connLinkStartedConnection :: Bool,
     chatTags :: [ChatTagId],
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,

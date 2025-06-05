@@ -1740,17 +1740,15 @@ processChatCommand' vr = \case
         pure conn'
   APIConnectPlan userId cLink -> withUserId userId $ \user ->
     uncurry (CRConnectionPlan user) <$> connectPlan user cLink
-  APIPrepareContact userId link contactSLinkData -> withUserId userId $ \user -> do
+  APIPrepareContact userId accLink contactSLinkData -> withUserId userId $ \user -> do
     let ContactShortLinkData {profile, welcomeMsg} = contactSLinkData
-    ct <- withStore $ \db -> createPreparedContact db user profile link
+    ct <- withStore $ \db -> createPreparedContact db user profile accLink
     forM_ welcomeMsg $ \msg ->
       createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent $ MCText msg) Nothing
     pure $ CRNewPreparedContact user ct
-  APIPrepareGroup userId link groupSLinkData -> withUserId userId $ \user -> do
+  APIPrepareGroup userId accLink groupSLinkData -> withUserId userId $ \user -> do
     let GroupShortLinkData {groupProfile} = groupSLinkData
-    -- TODO [short link] create host member for group connection on CONF, XGrpLinkInv (as in createGroupViaLink')
-    -- TODO  - see other problems in createPreparedGroup: invited member id (user member), business chats
-    gInfo <- withStore $ \db -> createPreparedGroup db vr user groupProfile link
+    gInfo <- withStore $ \db -> createPreparedGroup db vr user groupProfile accLink
     pure $ CRNewPreparedGroup user gInfo
   -- TODO [short links] change prepared entity user
   -- TODO  - UI would call these APIs before APIConnectPrepared... APIs
@@ -1759,42 +1757,44 @@ processChatCommand' vr = \case
     ok_
   APIChangeGroupUser groupId newUserId -> withUser $ \user -> do
     ok_
-  -- Alternative to passing incognito to APIConnectPreparedContact, APIConnectPreparedGroup would be to
-  -- create new APIs to set incognito on entity - APISetContactIncognito, APISetGroupIncognito.
-  -- It would be more complex:
-  -- - would require to persist incognito profile on entity opposing to connection as currently,
-  -- - would require decomposing part of APIConnect.
-  -- As it's an edge case / not a big issue that it's not persisted like a change of user,
-  -- we're simply passing it to prepare here.
-  APIConnectPreparedContact contactId incognito msgContent_ -> withUser $ \user@User {userId} -> do
-    ct@Contact {connLinkToConnect} <- withFastStore $ \db -> getContact db vr user contactId
+  APIConnectPreparedContact contactId incognito msgContent_ -> withUser $ \user -> do
+    Contact {connLinkToConnect} <- withFastStore $ \db -> getContact db vr user contactId
     case connLinkToConnect of
       Nothing -> throwCmdError "contact doesn't have link to connect"
-      Just link -> case link of
-        (ACCL SCMInvitation ccLink) ->
-          connectViaInvitation user incognito ccLink (Just contactId) >>= \case
-            CRSentConfirmation {} -> do
-              -- get updated contact with connection
-              ct' <- withFastStore $ \db -> getContact db vr user contactId
-              forM_ msgContent_ $ \mc -> do
-                let evt = XMsgNew $ MCSimple (extMsgContent mc Nothing)
-                (msg, _) <- sendDirectContactMessage user ct' evt
-                ci <- saveSndChatItem user (CDDirectSnd ct') msg (CISndMsgContent mc)
-                toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct') ci]
-              pure $ CRStartedConnectionToContact user ct'
-            cr -> pure cr
-        (ACCL SCMContact ccLink) ->
-          connectViaContact user incognito ccLink msgContent_ (Just $ CGMContactId contactId) >>= \case
-            CRSentInvitation {} -> do
-              -- get updated contact with connection
-              ct' <- withFastStore $ \db -> getContact db vr user contactId
-              forM_ msgContent_ $ \mc ->
-                createInternalChatItem user (CDDirectSnd ct') (CISndMsgContent mc) Nothing
-              pure $ CRStartedConnectionToContact user ct'
-            cr -> pure cr
-  -- TODO [short links] connect to prepared group
+      Just (ACCL SCMInvitation ccLink) ->
+        connectViaInvitation user incognito ccLink (Just contactId) >>= \case
+          CRSentConfirmation {} -> do
+            -- get updated contact with connection
+            ct' <- withFastStore $ \db -> getContact db vr user contactId
+            forM_ msgContent_ $ \mc -> do
+              let evt = XMsgNew $ MCSimple (extMsgContent mc Nothing)
+              (msg, _) <- sendDirectContactMessage user ct' evt
+              ci <- saveSndChatItem user (CDDirectSnd ct') msg (CISndMsgContent mc)
+              toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct') ci]
+            pure $ CRStartedConnectionToContact user ct'
+          cr -> pure cr
+      Just (ACCL SCMContact ccLink) ->
+        connectViaContact user incognito ccLink msgContent_ (Just $ CGMContactId contactId) >>= \case
+          CRSentInvitation {} -> do
+            -- get updated contact with connection
+            ct' <- withFastStore $ \db -> getContact db vr user contactId
+            forM_ msgContent_ $ \mc ->
+              createInternalChatItem user (CDDirectSnd ct') (CISndMsgContent mc) Nothing
+            pure $ CRStartedConnectionToContact user ct'
+          cr -> pure cr
   APIConnectPreparedGroup groupId incognito -> withUser $ \user -> do
-    ok_
+    (gInfo, hostMember) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getHostMember db vr user groupId
+    let GroupInfo {connLinkToConnect} = gInfo
+    case connLinkToConnect of
+      Nothing -> throwCmdError "group doesn't have link to connect"
+      Just ccLink ->
+        connectViaContact user incognito ccLink Nothing (Just $ CGMGroupMemberId (groupMemberId' hostMember)) >>= \case
+          CRSentInvitation {connection = PendingContactConnection {pccConnId}} -> do
+            gInfo' <- withStore' $ \db -> do
+              setViaGroupLinkHash db groupId pccConnId
+              setGroupConnLinkStartedConnection db gInfo True
+            pure $ CRStartedConnectionToGroup user gInfo'
+          cr -> pure cr
   APIConnect userId incognito (Just (ACCL SCMInvitation ccLink)) mc_ -> withUserId userId $ \user -> do
     when (isJust mc_) $ throwChatError CEConnReqMessageProhibited
     connectViaInvitation user incognito ccLink Nothing
@@ -2910,8 +2910,6 @@ processChatCommand' vr = \case
                 ( CRInvitationUri crData {crScheme = SSSimplex} e2e,
                   CRInvitationUri crData {crScheme = simplexChat} e2e
                 )
-    -- TODO [short links] Maybe Int64 should be Maybe <entity id type> to differentiate between contact and group links;
-    -- TODO  link connection to entity in createConnReqConnection
     connectViaContact :: User -> IncognitoEnabled -> CreatedLinkContact -> Maybe MsgContent -> Maybe ContactOrGroupMemberId -> CM ChatResponse
     connectViaContact user@User {userId} incognito (CCLink cReq@(CRContactUri ConnReqUriData {crClientData}) sLnk) mc_ comId_ = withInvitationLock "connectViaContact" (strEncode cReq) $ do
       let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli

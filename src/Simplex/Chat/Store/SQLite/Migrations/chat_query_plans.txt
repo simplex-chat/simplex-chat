@@ -46,7 +46,8 @@ Query:
                   -- GroupInfo
                   g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
                   g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-                  g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.conn_full_link_to_connect, g.conn_short_link_to_connect,
+                  g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+                  g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_started_connection,
                   g.business_chat, g.business_member_id, g.customer_member_id,
                   g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
                   -- GroupInfo {membership}
@@ -278,6 +279,16 @@ LIST SUBQUERY 1
 SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+              UPDATE group_members
+              SET member_id = ?,
+                  member_role = ?,
+                  updated_at = ?
+              WHERE group_member_id = ?
+            
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
               UPDATE xftp_file_descriptions
               SET file_descr_text = ?, file_descr_part_no = ?, file_descr_complete = ?
               WHERE file_descr_id = ?
@@ -293,6 +304,14 @@ Query:
           
 Plan:
 SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
+
+Query: 
+            INSERT INTO group_members
+              ( group_id, member_id, member_role, member_category, member_status, invited_by,
+                user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+          
+Plan:
 
 Query: 
             INSERT INTO group_members
@@ -657,6 +676,17 @@ Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+            UPDATE group_members
+            SET member_id = ?,
+                member_role = ?,
+                member_status = ?,
+                updated_at = ?
+            WHERE group_member_id = ?
+          
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
           DELETE FROM chat_item_reactions
           WHERE contact_id = ? AND shared_msg_id = ? AND reaction_sent = ? AND reaction = ?
         
@@ -853,7 +883,8 @@ Query:
             -- GroupInfo
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.conn_full_link_to_connect, g.conn_short_link_to_connect,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+            g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_started_connection,
             g.business_chat, g.business_member_id, g.customer_member_id,
             g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
             -- GroupInfo {membership}
@@ -902,7 +933,8 @@ Query:
           SELECT
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.conn_full_link_to_connect, g.conn_short_link_to_connect,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+            g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_started_connection,
             g.business_chat, g.business_member_id, g.customer_member_id,
             g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
             mu.group_member_id, g.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category, mu.member_status, mu.show_messages, mu.member_restriction,
@@ -4580,7 +4612,8 @@ Query:
       -- GroupInfo
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
       g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.conn_full_link_to_connect, g.conn_short_link_to_connect,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_started_connection,
       g.business_chat, g.business_member_id, g.customer_member_id,
       g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
       -- GroupMember - membership
@@ -4605,7 +4638,8 @@ Query:
       -- GroupInfo
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
       g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.conn_full_link_to_connect, g.conn_short_link_to_connect,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_started_connection,
       g.business_chat, g.business_member_id, g.customer_member_id,
       g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
       -- GroupMember - membership
@@ -4678,6 +4712,31 @@ Query:
    WHERE m.group_id = ? AND m.group_member_id = ? AND m.user_id = ?
 Plan:
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH c USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+CORRELATED SCALAR SUBQUERY 1
+SEARCH cc USING COVERING INDEX idx_connections_group_member (user_id=? AND group_member_id=?)
+
+Query: 
+    SELECT
+      m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
+      m.created_at, m.updated_at,
+      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
+      c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
+      c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
+      c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+      c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+    FROM group_members m
+    JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+    LEFT JOIN connections c ON c.connection_id = (
+      SELECT max(cc.connection_id)
+      FROM connections cc
+      WHERE cc.user_id = ? AND cc.group_member_id = m.group_member_id
+    )
+   WHERE m.group_id = ? AND m.member_category = ?
+Plan:
+SEARCH m USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
@@ -6010,6 +6069,10 @@ Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE groups SET chat_ts = ? WHERE user_id = ? AND group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE groups SET conn_link_started_connection = ?, updated_at = ? WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 

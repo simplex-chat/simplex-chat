@@ -677,7 +677,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           _ -> pure ()
 
     processGroupMessage :: AEvent e -> ConnectionEntity -> Connection -> GroupInfo -> GroupMember -> CM ()
-    processGroupMessage agentMsg connEntity conn@Connection {connId, connChatVersion, connectionCode} gInfo@GroupInfo {groupId, groupProfile, membership, chatSettings} m = case agentMsg of
+    processGroupMessage agentMsg connEntity conn@Connection {connId, connChatVersion, customUserProfileId, connectionCode} gInfo@GroupInfo {groupId, groupProfile, membership, chatSettings} m = case agentMsg of
       INV (ACR _ cReq) ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cReq of
@@ -735,6 +735,21 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     allowAgentConnectionAsync user conn' confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
               _ -> messageError "CONF from invited member must have x.grp.acpt"
+          GCHostMember ->
+            case chatMsgEvent of
+              XGrpLinkInv glInv -> do
+                -- XGrpLinkInv here means we are connecting via prepared group, and we have to update user and host member records
+                (gInfo', m') <- withStore $ \db -> updatePreparedUserAndHostMembersInvited db vr user gInfo m glInv
+                -- [incognito] send saved profile
+                incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
+                let profileToSend = userProfileToSend user (fromLocalProfile <$> incognitoProfile) Nothing True
+                allowAgentConnectionAsync user conn' confId $ XInfo profileToSend
+                toView $ CEvtGroupLinkConnecting user gInfo' m'
+              XGrpLinkReject glRjct@GroupLinkRejection {rejectionReason} -> do
+                (gInfo', m') <- withStore $ \db -> updatePreparedUserAndHostMembersRejected db vr user gInfo m glRjct
+                toView $ CEvtGroupLinkConnecting user gInfo' m'
+                toViewTE $ TEGroupLinkRejected user gInfo' rejectionReason
+              _ -> messageError "CONF from host member in prepared group must have x.grp.link.inv or x.grp.link.reject"
           _ ->
             case chatMsgEvent of
               XGrpMemInfo memId _memProfile
