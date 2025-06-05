@@ -17,11 +17,11 @@ import Control.Monad.Except
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
-import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), defaultChatHooks)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (currentChatVersion)
 import Simplex.Chat.Store.Shared (createContact)
-import Simplex.Chat.Types (ConnStatus (..), Profile (..))
+import Simplex.Chat.Types (ConnStatus (..), Profile (..), GroupRejectionReason (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Env.SQLite
@@ -109,8 +109,8 @@ chatProfileTests = do
     describe "connection via prepared entity" $ do
       it "prepare contact using invitation short link data and connect" testShortLinkInvitationPrepareContact
       it "prepare contact using address short link data and connect" testShortLinkAddressPrepareContact
-      -- testShortLinkPrepareGroupReject -- TODO [short links] test reject
       it "prepare group using group short link data and connect" testShortLinkPrepareGroup
+      it "prepare group using group short link data and connect, host rejects" testShortLinkPrepareGroupReject
 
 testUpdateProfile :: HasCallStack => TestParams -> IO ()
 testUpdateProfile =
@@ -2815,11 +2815,9 @@ testShortLinkAddressPrepareContact =
 
 testShortLinkPrepareGroup :: HasCallStack => TestParams -> IO ()
 testShortLinkPrepareGroup =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
-      alice ##> "/g team"
-      alice <## "group #team is created"
-      alice <## "to add members use /a team <name> or /create link #team"
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice cath
       alice ##> "/create link #team short"
       (shortLink, fullLink) <- getShortGroupLink alice "team" GRMember True
       bob ##> ("/_connect plan 1 " <> shortLink)
@@ -2835,8 +2833,43 @@ testShortLinkPrepareGroup =
           do
             bob <## "#team: joining the group..."
             bob <## "#team: you joined the group"
+            bob <## "#team: member cath (Catherine) is connected",
+          do
+            cath <## "#team: alice added bob (Bob) to the group (connecting...)"
+            cath <## "#team: new member bob is connected"
         ]
-      alice #> "#team hi"
-      bob <# "#team alice> hi"
-      bob #> "#team hey"
-      alice <# "#team bob> hey"
+      alice #> "#team 1"
+      [bob, cath] *<# "#team alice> 1"
+      bob #> "#team 2"
+      [alice, cath] *<# "#team bob> 2"
+      cath #> "#team 3"
+      [alice, bob] *<# "#team cath> 3"
+
+testShortLinkPrepareGroupReject :: HasCallStack => TestParams -> IO ()
+testShortLinkPrepareGroupReject =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice cath
+      alice ##> "/create link #team short"
+      (shortLink, fullLink) <- getShortGroupLink alice "team" GRMember True
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "group link: ok to connect"
+      groupSLinkData <- getTermLine bob
+      bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
+      bob <## "#team: group is prepared"
+      bob ##> "/_connect group #1"
+      bob <## "#team: connection started"
+      alice <## "bob (Bob): rejecting request to join group #team, reason: GRRBlockedName"
+      bob <## "#team: joining the group..."
+      bob <## "#team: join rejected, reason: GRRBlockedName"
+
+      alice #> "#team 1"
+      cath <# "#team alice> 1"
+      cath #> "#team 2"
+      alice <# "#team cath> 2"
+
+      -- rejected member can't send messages to group
+      bob ##> "#team hello"
+      bob <## "bad chat command: not current member"
+  where
+    cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Left GRRBlockedName)}}
