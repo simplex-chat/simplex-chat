@@ -10,7 +10,7 @@
 
 # SimpleX - the first messaging platform that has no user identifiers of any kind - 100% private by design!
 
-[<img src="./images/trail-of-bits.jpg" height="100">](http://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html) &nbsp;&nbsp;&nbsp; [<img src="./images/privacy-guides.jpg" height="80">](https://www.privacyguides.org/en/real-time-communication/#simplex-chat) &nbsp;&nbsp;&nbsp; [<img src="./images/kuketz-blog.jpg" height="80">](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/)
+[<img src="./images/trail-of-bits.jpg" height="80">](http://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html) &nbsp;&nbsp;&nbsp; [<img src="./images/privacy-guides.jpg" height="64">](https://www.privacyguides.org/en/real-time-communication/#simplex-chat) &nbsp;&nbsp;&nbsp; [<img src="./images/whonix-logo.jpg" height="64">](https://www.whonix.org/wiki/Chat#Recommendation) &nbsp;&nbsp;&nbsp; [<img src="./images/kuketz-blog.jpg" height="64">](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/)
 
 ## Welcome to SimpleX Chat!
 
@@ -110,6 +110,15 @@ After you connect, you can [verify connection security code](./blog/20230103-sim
 
 Read about the app features and settings in the new [User guide](./docs/guide/README.md).
 
+## Contribute
+
+We would love to have you join the development! You can help us with:
+
+- [share the color theme](./docs/THEMES.md) you use in Android app!
+- writing a tutorial or recipes about hosting servers, chat bot automations, etc.
+- contributing to SimpleX Chat knowledge-base.
+- developing features - please connect to us via chat so we can help you get started.
+
 ## Help translating SimpleX Chat
 
 Thanks to our users and [Weblate](https://hosted.weblate.org/engage/simplex-chat/), SimpleX Chat apps, website and documents are translated to many other languages.
@@ -140,15 +149,6 @@ Join our translators to help SimpleX grow!
 |🇨🇳 zh-CHS|简体中文|[sith-on-mars](https://github.com/sith-on-mars)<br><br>[Float-hu](https://github.com/Float-hu)|[![android app](https://hosted.weblate.org/widgets/simplex-chat/zh_Hans/android/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/android/zh_Hans/)<br>[![ios app](https://hosted.weblate.org/widgets/simplex-chat/zh_Hans/ios/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/ios/zh_Hans/)<br>&nbsp;|<br><br>[![website](https://hosted.weblate.org/widgets/simplex-chat/zh_Hans/website/svg-badge.svg)](https://hosted.weblate.org/projects/simplex-chat/website/zh_Hans/)||
 
 Languages in progress: Arabic, Japanese, Korean, Portuguese and [others](https://hosted.weblate.org/projects/simplex-chat/#languages). We will be adding more languages as some of the already added are completed – please suggest new languages, review the [translation guide](./docs/TRANSLATIONS.md) and get in touch with us!
-
-## Contribute
-
-We would love to have you join the development! You can help us with:
-
-- [share the color theme](./docs/THEMES.md) you use in Android app!
-- writing a tutorial or recipes about hosting servers, chat bot automations, etc.
-- contributing to SimpleX Chat knowledge-base.
-- developing features - please connect to us via chat so we can help you get started.
 
 ## Please support us with your donations
 
