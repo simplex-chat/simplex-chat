@@ -685,6 +685,7 @@ public enum ChatErrorType: Decodable, Hashable {
     case invalidConnReq
     case unsupportedConnReq
     case invalidChatMessage(connection: Connection, message: String)
+    case connReqMessageProhibited
     case contactNotReady(contact: Contact)
     case contactNotActive(contact: Contact)
     case contactDisabled(contact: Contact)
@@ -761,6 +762,7 @@ public enum StoreError: Decodable, Hashable {
     case groupNotFoundByName(groupName: GroupName)
     case groupMemberNameNotFound(groupId: Int64, groupMemberName: ContactName)
     case groupMemberNotFound(groupMemberId: Int64)
+    case groupHostMemberNotFound(groupId: Int64)
     case groupMemberNotFoundByMemberId(memberId: String)
     case memberContactGroupMemberNotFound(contactId: Int64)
     case groupWithoutUser

@@ -1326,11 +1326,21 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
             }
         }
     }
-    
+
     public var chatDeleted: Bool {
         get {
             switch self {
             case let .direct(contact): return contact.chatDeleted
+            default: return false
+            }
+        }
+    }
+
+    public var nextConnect: Bool {
+        get {
+            switch self {
+            case let .direct(contact): return contact.sendMsgToConnect
+            case let .group(groupInfo, _): return groupInfo.nextConnectPrepared
             default: return false
             }
         }
@@ -2056,12 +2066,14 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     var updatedAt: Date
     var chatTs: Date?
     public var connLinkToConnect: CreatedConnLink?
+    public var connLinkStartedConnection: Bool
     public var uiThemes: ThemeModeOverrides?
     public var membersRequireAttention: Int
 
     public var id: ChatId { get { "#\(groupId)" } }
     public var apiId: Int64 { get { groupId } }
     public var ready: Bool { get { true } }
+    public var nextConnectPrepared: Bool { get { connLinkToConnect != nil && !connLinkStartedConnection } }
     public var displayName: String { localAlias == "" ? groupProfile.displayName : localAlias }
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
@@ -2094,6 +2106,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
         chatSettings: ChatSettings.defaults,
         createdAt: .now,
         updatedAt: .now,
+        connLinkStartedConnection: false,
         membersRequireAttention: 0,
         chatTags: [],
         localAlias: ""

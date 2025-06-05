@@ -1027,7 +1027,39 @@ private func showPrepareContactAlert(
                         openKnownContact(contact, dismiss: dismiss, showAlreadyExistsAlert: nil)
                     }
                 } catch let error {
-                    logger.error("deleteGroupAlert apiDeleteChat error: \(error.localizedDescription)")
+                    logger.error("showPrepareContactAlert apiPrepareContact error: \(error.localizedDescription)")
+                    showAlert(NSLocalizedString("Error preparing contact", comment: ""), message: responseError(error))
+                }
+            }
+        }
+    )
+}
+
+private func showPrepareGroupAlert(
+    connectionLink: CreatedConnLink,
+    groupShortLinkData: GroupShortLinkData,
+    theme: AppTheme,
+    dismiss: Bool,
+    cleanup: (() -> Void)?
+) {
+    showOpenChatAlert(
+        profileName: groupShortLinkData.groupProfile.displayName,
+        profileImage: ProfileImage(imageStr: groupShortLinkData.groupProfile.image, iconName: "person.2.circle.fill", size: 60),
+        theme: theme,
+        cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
+        confirmTitle: NSLocalizedString("Open chat", comment: "new chat action"),
+        onCancel: { cleanup?() },
+        onConfirm: {
+            Task {
+                do {
+                    let groupInfo = try await apiPrepareGroup(connLink: connectionLink, groupShortLinkData: groupShortLinkData)
+                    await MainActor.run {
+                        ChatModel.shared.addChat(Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil)))
+                        openKnownGroup(groupInfo, dismiss: dismiss, showAlreadyExistsAlert: nil)
+                    }
+                } catch let error {
+                    logger.error("showPrepareGroupAlert apiPrepareGroup error: \(error.localizedDescription)")
+                    showAlert(NSLocalizedString("Error preparing group", comment: ""), message: responseError(error))
                 }
             }
         }
@@ -1050,7 +1082,7 @@ func planAndConnect(
                 switch ilp {
                 case let .ok(contactSLinkData_):
                     if let contactSLinkData = contactSLinkData_ {
-                        logger.debug("planAndConnect, .invitationLink, .ok, no short link data")
+                        logger.debug("planAndConnect, .invitationLink, .ok, short link data present")
                         await MainActor.run {
                             showPrepareContactAlert(
                                 connectionLink: connectionLink,
@@ -1061,7 +1093,7 @@ func planAndConnect(
                             )
                         }
                     } else {
-                        logger.debug("planAndConnect, .invitationLink, .ok, short link data present")
+                        logger.debug("planAndConnect, .invitationLink, .ok, no short link data")
                         await MainActor.run {
                             showAskCurrentOrIncognitoProfileSheet(
                                 title: NSLocalizedString("Connect via one-time link", comment: "new chat sheet title"),
@@ -1111,7 +1143,7 @@ func planAndConnect(
                 switch cap {
                 case let .ok(contactSLinkData_):
                     if let contactSLinkData = contactSLinkData_ {
-                        logger.debug("planAndConnect, .contactAddress, .ok, no short link data")
+                        logger.debug("planAndConnect, .contactAddress, .ok, short link data present")
                         await MainActor.run {
                             showPrepareContactAlert(
                                 connectionLink: connectionLink,
@@ -1122,7 +1154,7 @@ func planAndConnect(
                             )
                         }
                     } else {
-                        logger.debug("planAndConnect, .contactAddress, .ok, short link data present")
+                        logger.debug("planAndConnect, .contactAddress, .ok, no short link data")
                         await MainActor.run {
                             showAskCurrentOrIncognitoProfileSheet(
                                 title: NSLocalizedString("Connect via contact address", comment: "new chat sheet title"),
@@ -1189,10 +1221,18 @@ func planAndConnect(
                 switch glp {
                 case let .ok(groupSLinkData_):
                     if let groupSLinkData = groupSLinkData_ {
-                        logger.debug("planAndConnect, .groupLink, .ok, no short link data")
-                        // TODO [short links] showPrepareGroupAlert -> apiPrepareGroup
-                    } else {
                         logger.debug("planAndConnect, .groupLink, .ok, short link data present")
+                        await MainActor.run {
+                            showPrepareGroupAlert(
+                                connectionLink: connectionLink,
+                                groupShortLinkData: groupSLinkData,
+                                theme: theme,
+                                dismiss: dismiss,
+                                cleanup: cleanup
+                            )
+                        }
+                    } else {
+                        logger.debug("planAndConnect, .groupLink, .ok, no short link data")
                         await MainActor.run {
                             showAskCurrentOrIncognitoProfileSheet(
                                 title: NSLocalizedString("Join group", comment: "new chat sheet title"),
