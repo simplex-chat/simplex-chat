@@ -1025,10 +1025,14 @@ private func showPrepareContactAlert(
                     await MainActor.run {
                         ChatModel.shared.addChat(Chat(chatInfo: .direct(contact: contact)))
                         openKnownContact(contact, dismiss: dismiss, showAlreadyExistsAlert: nil)
+                        cleanup?()
                     }
                 } catch let error {
                     logger.error("showPrepareContactAlert apiPrepareContact error: \(error.localizedDescription)")
                     showAlert(NSLocalizedString("Error preparing contact", comment: ""), message: responseError(error))
+                    await MainActor.run {
+                        cleanup?()
+                    }
                 }
             }
         }
@@ -1056,10 +1060,14 @@ private func showPrepareGroupAlert(
                     await MainActor.run {
                         ChatModel.shared.addChat(Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil)))
                         openKnownGroup(groupInfo, dismiss: dismiss, showAlreadyExistsAlert: nil)
+                        cleanup?()
                     }
                 } catch let error {
                     logger.error("showPrepareGroupAlert apiPrepareGroup error: \(error.localizedDescription)")
                     showAlert(NSLocalizedString("Error preparing group", comment: ""), message: responseError(error))
+                    await MainActor.run {
+                        cleanup?()
+                    }
                 }
             }
         }

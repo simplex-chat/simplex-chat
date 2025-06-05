@@ -652,10 +652,18 @@ struct ComposeView: View {
                 }
             }
         } label: {
-            HStack {
-                Text("Connect")
-                    .fontWeight(.medium)
-                Image(systemName: "person.fill.badge.plus")
+            if case .group = chat.chatInfo {
+                HStack {
+                    Text("Join")
+                        .fontWeight(.medium)
+                    Image(systemName: "person.2.fill")
+                }
+            } else {
+                HStack {
+                    Text("Connect")
+                        .fontWeight(.medium)
+                    Image(systemName: "person.fill.badge.plus")
+                }
             }
         }
         .disabled(!connectButtonEnabled)
