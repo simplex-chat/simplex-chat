@@ -2040,4 +2040,10 @@
     <string name="network_smp_proxy_mode_unknown">未知伺服器</string>
     <string name="report_reason_alert_title">舉報理由？</string>
     <string name="group_members_2">%s 和 %s</string>
+    <string name="v5_5_message_delivery_descr">減少電量使用。</string>
+    <string name="connect__your_profile_will_be_shared">你的個人檔案 %1$s 將會被分享。</string>
+    <string name="cant_send_message_alert_title">你無法傳送訊息！</string>
+    <string name="v5_8_message_delivery_descr">減少電量使用。</string>
+    <string name="snd_group_event_member_unblocked">你已解除封鎖 %s</string>
+    <string name="snd_group_event_member_accepted">你已接受此成員</string>
 </resources>
