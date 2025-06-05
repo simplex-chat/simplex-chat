@@ -385,7 +385,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     agentMsgConnStatus :: AEvent e -> Maybe ConnStatus
     agentMsgConnStatus = \case
-      JOINED True -> Just ConnSndReady
+      JOINED True _ -> Just ConnSndReady
       CONF {} -> Just ConnRequested
       INFO {} -> Just ConnSndReady
       CON _ -> Just ConnReady
@@ -430,7 +430,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         OK ->
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        JOINED _ ->
+        JOINED _ _serviceId -> -- TODO [certs rcv]
           -- [async agent commands] continuation on receiving JOINED
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         QCONT ->
@@ -449,7 +449,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- TODO add debugging output
         _ -> pure ()
       Just ct@Contact {contactId} -> case agentMsg of
-        INV (ACR _ cReq) ->
+        -- TODO [certs rcv]
+        INV (ACR _ cReq) _serviceId ->
           -- [async agent commands] XGrpMemIntro continuation on receiving INV
           withCompletedCommand conn agentMsg $ \_ ->
             case cReq of
@@ -638,7 +639,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         OK ->
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        JOINED sqSecured ->
+        -- TODO [certs rcv]
+        JOINED sqSecured _serviceId ->
           -- [async agent commands] continuation on receiving JOINED
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData ->
             when (directOrUsed ct && sqSecured) $ do
@@ -676,7 +678,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     processGroupMessage :: AEvent e -> ConnectionEntity -> Connection -> GroupInfo -> GroupMember -> CM ()
     processGroupMessage agentMsg connEntity conn@Connection {connId, connChatVersion, connectionCode} gInfo@GroupInfo {groupId, groupProfile, membership, chatSettings} m = case agentMsg of
-      INV (ACR _ cReq) ->
+      -- TODO [certs rcv]
+      INV (ACR _ cReq) _serviceId ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cReq of
             groupConnReq@(CRInvitationUri _ _) -> case cmdFunction of
@@ -981,7 +984,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       OK ->
         -- [async agent commands] continuation on receiving OK
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-      JOINED sqSecured ->
+      -- TODO [certs rcv]
+      JOINED sqSecured _serviceId ->
         -- [async agent commands] continuation on receiving JOINED
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData ->
           when (sqSecured && connChatVersion >= batchSend2Version) sendGroupAutoReply
@@ -1095,7 +1099,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         OK ->
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        JOINED _ ->
+        -- TODO [certs rcv]
+        JOINED _ _serviceId ->
           -- [async agent commands] continuation on receiving JOINED
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         ERR err -> do
@@ -1107,7 +1112,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     processRcvFileConn :: AEvent e -> ConnectionEntity -> Connection -> RcvFileTransfer -> CM ()
     processRcvFileConn agentMsg connEntity conn ft@RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}, grpMemberId} =
       case agentMsg of
-        INV (ACR _ cReq) ->
+        -- TODO [certs rcv]
+        INV (ACR _ cReq) _serviceId ->
           withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
             case cReq of
               fileInvConnReq@(CRInvitationUri _ _) -> case cmdFunction of
@@ -1144,7 +1150,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         OK ->
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        JOINED _ ->
+        -- TODO [certs rcv]
+        JOINED _ _serviceId ->
           -- [async agent commands] continuation on receiving JOINED
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         MERR _ err -> do

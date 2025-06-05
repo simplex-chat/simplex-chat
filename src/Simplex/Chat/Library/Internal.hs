@@ -111,37 +111,37 @@ maxRcvMentions = 5
 maxSndMentions :: Int
 maxSndMentions = 3
 
-withChatLock :: String -> CM a -> CM a
+withChatLock :: Text -> CM a -> CM a
 withChatLock name action = asks chatLock >>= \l -> withLock l name action
 
-withEntityLock :: String -> ChatLockEntity -> CM a -> CM a
+withEntityLock :: Text -> ChatLockEntity -> CM a -> CM a
 withEntityLock name entity action = do
   chatLock <- asks chatLock
   ls <- asks entityLocks
   atomically $ unlessM (isEmptyTMVar chatLock) retry
   withLockMap ls entity name action
 
-withInvitationLock :: String -> ByteString -> CM a -> CM a
+withInvitationLock :: Text -> ByteString -> CM a -> CM a
 withInvitationLock name = withEntityLock name . CLInvitation
 {-# INLINE withInvitationLock #-}
 
-withConnectionLock :: String -> Int64 -> CM a -> CM a
+withConnectionLock :: Text -> Int64 -> CM a -> CM a
 withConnectionLock name = withEntityLock name . CLConnection
 {-# INLINE withConnectionLock #-}
 
-withContactLock :: String -> ContactId -> CM a -> CM a
+withContactLock :: Text -> ContactId -> CM a -> CM a
 withContactLock name = withEntityLock name . CLContact
 {-# INLINE withContactLock #-}
 
-withGroupLock :: String -> GroupId -> CM a -> CM a
+withGroupLock :: Text -> GroupId -> CM a -> CM a
 withGroupLock name = withEntityLock name . CLGroup
 {-# INLINE withGroupLock #-}
 
-withUserContactLock :: String -> Int64 -> CM a -> CM a
+withUserContactLock :: Text -> Int64 -> CM a -> CM a
 withUserContactLock name = withEntityLock name . CLUserContact
 {-# INLINE withUserContactLock #-}
 
-withFileLock :: String -> Int64 -> CM a -> CM a
+withFileLock :: Text -> Int64 -> CM a -> CM a
 withFileLock name = withEntityLock name . CLFile
 {-# INLINE withFileLock #-}
 
@@ -889,7 +889,8 @@ acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = 
           pure (ct, conn, ExistingIncognito <$> incognitoProfile)
   let profileToSend = profileToSendOnAccept user incognitoProfile False
   dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
-  (ct,conn,) <$> withAgent (\a -> acceptContact a (aConnId conn) True invId dm pqSup' subMode)
+  -- TODO [certs rcv]
+  (ct,conn,) . fst <$> withAgent (\a -> acceptContact a (aConnId conn) True invId dm pqSup' subMode)
 
 acceptContactRequestAsync :: User -> UserContactRequest -> Maybe IncognitoProfile -> PQSupport -> CM Contact
 acceptContactRequestAsync user cReq@UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile pqSup = do
