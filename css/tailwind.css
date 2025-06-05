@@ -824,6 +824,10 @@ video {
   margin-bottom: 80px;
 }
 
+.mb-\[8px\] {
+  margin-bottom: 8px;
+}
+
 .mb-auto {
   margin-bottom: auto;
 }
@@ -962,6 +966,10 @@ video {
 
 .h-\[215px\] {
   height: 215px;
+}
+
+.h-\[24px\] {
+  height: 24px;
 }
 
 .h-\[322px\] {
