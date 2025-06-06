@@ -1162,6 +1162,7 @@ processChatCommand' vr = \case
       pure $ CRAcceptingContactRequest user ct'
   APIRejectContact connReqId -> withUser $ \user -> do
     userContactLinkId <- withFastStore $ \db -> getUserContactLinkIdByCReq db connReqId
+    -- TODO [short links] maybe delete contact
     withUserContactLock "rejectContact" userContactLinkId $ do
       cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
         withFastStore $ \db ->

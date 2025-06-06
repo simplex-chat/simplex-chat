@@ -81,6 +81,7 @@ CREATE TABLE contacts(
   chat_item_ttl INTEGER,
   conn_full_link_to_connect BLOB,
   conn_short_link_to_connect BLOB,
+  contact_request_id INTEGER REFERENCES contact_requests ON DELETE SET NULL,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

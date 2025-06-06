@@ -781,7 +781,7 @@ data ChatEvent
   | CEvtGroupMemberUpdated {user :: User, groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
   | CEvtContactsMerged {user :: User, intoContact :: Contact, mergedContact :: Contact, updatedContact :: Contact}
   | CEvtContactDeletedByContact {user :: User, contact :: Contact}
-  | CEvtReceivedContactRequest {user :: User, contactRequest :: UserContactRequest}
+  | CEvtReceivedContactRequest {user :: User, contactRequest :: UserContactRequest, contact_ :: Maybe Contact}
   | CEvtAcceptingContactRequest {user :: User, contact :: Contact} -- there is the same command response
   | CEvtAcceptingBusinessRequest {user :: User, groupInfo :: GroupInfo}
   | CEvtContactRequestAlreadyAccepted {user :: User, contact :: Contact}
