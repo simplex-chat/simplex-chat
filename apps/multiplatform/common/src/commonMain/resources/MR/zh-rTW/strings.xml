@@ -98,7 +98,7 @@
     <string name="keychain_is_storing_securely">Android 金鑰庫是用於安全地儲存密碼 - 確保通知推送服務的運作。</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>請注意</b>：如果你忘記了密碼你將不能再次復原或修改密碼。]]></string>
     <string name="keychain_allows_to_receive_ntfs">當你重新啟動應用程式或修改密碼後， Android 金鑰庫將用來安全地儲存密碼 - 將允許接收訊息通知。</string>
-    <string name="chat_is_stopped_indication">聊天室已停止運作</string>
+    <string name="chat_is_stopped_indication">聊天已停止</string>
     <string name="only_group_owners_can_change_prefs">只有這個群組的負責人才能修改群組內的設定。</string>
     <string name="change_verb">變更</string>
     <string name="users_add">新增個人檔案</string>
@@ -116,7 +116,7 @@
     <string name="v4_3_improved_server_configuration_desc">使用二維碼掃描以新增伺服器。</string>
     <string name="chat_is_running">聊天室運行中</string>
     <string name="chat_database_section">聊天資料庫</string>
-    <string name="chat_is_stopped">聊天室已停止運作</string>
+    <string name="chat_is_stopped">聊天已停止</string>
     <string name="stop_chat_confirmation">停止</string>
     <string name="chat_database_deleted">已刪除資料庫的對話內容</string>
     <string name="change_database_passphrase_question">修改資料庫密碼？</string>
@@ -222,7 +222,7 @@
     <string name="error_sending_message">傳送訊息時出錯</string>
     <string name="contact_already_exists">聯絡人已存在</string>
     <string name="you_are_already_connected_to_vName_via_this_link">你已經連接到 %1$s。</string>
-    <string name="v4_5_transport_isolation_descr">使用個人檔案（預設值）或使用連接（測試版）。</string>
+    <string name="v4_5_transport_isolation_descr">按聊天個人檔案（預設）或按連接（測試版）。</string>
     <string name="v4_5_reduced_battery_usage">減少電量使用</string>
     <string name="v4_5_reduced_battery_usage_descr">更多改進即將推出！</string>
     <string name="v4_5_italian_interface">意大利語言界面</string>
@@ -990,7 +990,7 @@
     <string name="settings_section_title_experimenta">實驗性</string>
     <string name="upgrade_and_open_chat">升級和開啟對話</string>
     <string name="show_developer_options">顯示開發者選項</string>
-    <string name="delete_profile">刪除資料</string>
+    <string name="delete_profile">刪除個人檔案</string>
     <string name="unhide_chat_profile">取消隱藏聊天資料</string>
     <string name="unhide_profile">取消隱藏個人檔案</string>
     <string name="delete_chat_profile">刪除聊天個人檔案</string>
@@ -1160,7 +1160,7 @@
     <string name="you_can_accept_or_reject_connection">當有人向你發出連接請求，你可以接受或拒絕請求。</string>
     <string name="your_contacts_will_remain_connected">你的聯絡人會保持連接。</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">你的所有聯絡人會保持連接。更新了的個人檔案將傳送給你的聯絡人。</string>
-    <string name="add_address_to_your_profile">將聯絡地址新增到你的個人檔案中，以便你的聯絡人與其他人分享你的聯絡地址。更新了的個人檔案將傳送給你的聯絡人。</string>
+    <string name="add_address_to_your_profile">新增地址至你的個人檔案，以便你的聯絡人可以與其他人分享。更新了的個人檔案將傳送給你的聯絡人。</string>
     <string name="email_invite_subject">讓我們在 SimpleX Chat中聊天</string>
     <string name="import_theme_error_desc">確保檔案具有正確的 YAML 語法。匯出主題以獲得主題檔案結構的範例。</string>
     <string name="message_reactions">訊息反應</string>
@@ -2046,4 +2046,16 @@
     <string name="v5_8_message_delivery_descr">減少電量使用。</string>
     <string name="snd_group_event_member_unblocked">你已解除封鎖 %s</string>
     <string name="snd_group_event_member_accepted">你已接受此成員</string>
+    <string name="disable_automatic_deletion">停用刪除訊息</string>
+    <string name="business_address">商業地址</string>
+    <string name="change_automatic_deletion_question">變更自動燒毀訊息？</string>
+    <string name="button_support_chat_member">與成員聊天</string>
+    <string name="support_chat">與管理員們聊天</string>
+    <string name="button_delete_chat">刪除聊天</string>
+    <string name="delete_chat_question">刪除聊天？</string>
+    <string name="member_support">與成員們聊天</string>
+    <string name="v6_2_business_chats">商業聊天</string>
+    <string name="v6_1_better_security">更好的安全性 ✅</string>
+    <string name="button_support_chat">與管理員們聊天</string>
+    <string name="cant_send_message_generic">無法傳送訊息</string>
 </resources>
