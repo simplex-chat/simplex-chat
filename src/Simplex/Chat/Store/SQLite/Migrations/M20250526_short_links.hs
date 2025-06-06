@@ -12,6 +12,7 @@ ALTER TABLE contacts ADD COLUMN conn_full_link_to_connect BLOB;
 ALTER TABLE contacts ADD COLUMN conn_short_link_to_connect BLOB;
 
 ALTER TABLE contacts ADD COLUMN contact_request_id INTEGER REFERENCES contact_requests ON DELETE SET NULL;
+CREATE INDEX idx_contacts_contact_request_id ON contacts(contact_request_id);
 
 ALTER TABLE groups ADD COLUMN conn_full_link_to_connect BLOB;
 ALTER TABLE groups ADD COLUMN conn_short_link_to_connect BLOB;
@@ -25,6 +26,7 @@ ALTER TABLE contacts DROP COLUMN conn_full_link_to_connect;
 ALTER TABLE contacts DROP COLUMN conn_short_link_to_connect;
 
 ALTER TABLE contacts DROP COLUMN contact_request_id;
+DROP INDEX idx_contacts_contact_request_id;
 
 ALTER TABLE groups DROP COLUMN conn_full_link_to_connect;
 ALTER TABLE groups DROP COLUMN conn_short_link_to_connect;

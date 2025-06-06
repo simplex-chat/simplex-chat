@@ -1054,3 +1054,4 @@ CREATE INDEX idx_chat_items_group_scope_item_status ON chat_items(
   item_status,
   item_ts
 );
+CREATE INDEX idx_contacts_contact_request_id ON contacts(contact_request_id);
