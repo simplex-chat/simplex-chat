@@ -43,9 +43,11 @@ func dynamicSize(_ font: DynamicTypeSize) -> DynamicSizes {
 struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @EnvironmentObject var chatTagsModel: ChatTagsModel
     @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = false
     @ObservedObject var chat: Chat
+    @Binding var parentSheet: SomeSheet<AnyView>?
     @State private var showContactRequestDialog = false
     @State private var showJoinGroupDialog = false
     @State private var showContactConnectionInfo = false
@@ -85,13 +87,14 @@ struct ChatListNavLink: View {
                 progressByTimeout = false
             }
         }
+        .actionSheet(item: $actionSheet) { $0.actionSheet }
     }
     
-    @ViewBuilder private func contactNavLink(_ contact: Contact) -> some View {
+    private func contactNavLink(_ contact: Contact) -> some View {
         Group {
             if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
                 ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
-                    .frame(height: dynamicRowHeight)
+                    .frameCompat(height: dynamicRowHeight)
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button {
                             deleteContactDialog(
@@ -118,12 +121,14 @@ struct ChatListNavLink: View {
                     selection: $chatModel.chatId,
                     label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) }
                 )
+                .frameCompat(height: dynamicRowHeight)
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
                     markReadButton()
                     toggleFavoriteButton()
                     toggleNtfsButton(chat: chat)
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    tagChatButton(chat)
                     if !chat.chatItems.isEmpty {
                         clearChatButton()
                     }
@@ -141,15 +146,13 @@ struct ChatListNavLink: View {
                     }
                     .tint(.red)
                 }
-                .frame(height: dynamicRowHeight)
             }
         }
         .alert(item: $alert) { $0.alert }
-        .actionSheet(item: $actionSheet) { $0.actionSheet }
         .sheet(item: $sheet) {
             if #available(iOS 16.0, *) {
                 $0.content
-                    .presentationDetents([.fraction(0.4)])
+                    .presentationDetents([.fraction($0.fraction)])
             } else {
                 $0.content
             }
@@ -160,7 +163,7 @@ struct ChatListNavLink: View {
         switch (groupInfo.membership.memberStatus) {
         case .memInvited:
             ChatPreviewView(chat: chat, progressByTimeout: $progressByTimeout)
-                .frame(height: dynamicRowHeight)
+                .frameCompat(height: dynamicRowHeight)
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     joinGroupButton()
                     if groupInfo.canDelete {
@@ -180,11 +183,12 @@ struct ChatListNavLink: View {
                 .disabled(inProgress)
         case .memAccepted:
             ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
-                .frame(height: dynamicRowHeight)
+                .frameCompat(height: dynamicRowHeight)
                 .onTapGesture {
                     AlertManager.shared.showAlert(groupInvitationAcceptedAlert())
                 }
                 .swipeActions(edge: .trailing) {
+                    tagChatButton(chat)
                     if (groupInfo.membership.memberCurrent) {
                         leaveGroupChatButton(groupInfo)
                     }
@@ -199,34 +203,54 @@ struct ChatListNavLink: View {
                 label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) },
                 disabled: !groupInfo.ready
             )
-            .frame(height: dynamicRowHeight)
+            .frameCompat(height: dynamicRowHeight)
             .swipeActions(edge: .leading, allowsFullSwipe: true) {
                 markReadButton()
                 toggleFavoriteButton()
                 toggleNtfsButton(chat: chat)
             }
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                if !chat.chatItems.isEmpty {
+                tagChatButton(chat)
+                let showReportsButton = chat.chatStats.reportsCount > 0 && groupInfo.membership.memberRole >= .moderator
+                let showClearButton = !chat.chatItems.isEmpty
+                let showDeleteGroup = groupInfo.canDelete
+                let showLeaveGroup = groupInfo.membership.memberCurrent
+                let totalNumberOfButtons = 1 + (showReportsButton ? 1 : 0) + (showClearButton ? 1 : 0) + (showDeleteGroup ? 1 : 0) + (showLeaveGroup ? 1 : 0)
+
+                if showClearButton && totalNumberOfButtons <= 3 {
                     clearChatButton()
                 }
-                if (groupInfo.membership.memberCurrent) {
+
+                if showReportsButton && totalNumberOfButtons <= 3 {
+                    archiveAllReportsButton()
+                }
+
+                if showLeaveGroup {
                     leaveGroupChatButton(groupInfo)
                 }
-                if groupInfo.canDelete {
+
+                if showDeleteGroup && totalNumberOfButtons <= 3 {
                     deleteGroupChatButton(groupInfo)
+                } else if totalNumberOfButtons > 3 {
+                    if showDeleteGroup && !groupInfo.membership.memberActive {
+                        deleteGroupChatButton(groupInfo)
+                        moreOptionsButton(false, chat, groupInfo)
+                    } else {
+                        moreOptionsButton(true, chat, groupInfo)
+                    }
                 }
             }
         }
     }
 
-    @ViewBuilder private func noteFolderNavLink(_ noteFolder: NoteFolder) -> some View {
+    private func noteFolderNavLink(_ noteFolder: NoteFolder) -> some View {
         NavLinkPlain(
             chatId: chat.chatInfo.id,
             selection: $chatModel.chatId,
             label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) },
             disabled: !noteFolder.ready
         )
-        .frame(height: dynamicRowHeight)
+        .frameCompat(height: dynamicRowHeight)
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             markReadButton()
         }
@@ -287,14 +311,22 @@ struct ChatListNavLink: View {
     }
 
     @ViewBuilder private func toggleNtfsButton(chat: Chat) -> some View {
-        Button {
-            toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
-        } label: {
-            if chat.chatInfo.ntfsEnabled {
-                SwipeLabel(NSLocalizedString("Mute", comment: "swipe action"), systemImage: "speaker.slash.fill", inverted: oneHandUI)
-            } else {
-                SwipeLabel(NSLocalizedString("Unmute", comment: "swipe action"), systemImage: "speaker.wave.2.fill", inverted: oneHandUI)
+        if let nextMode = chat.chatInfo.nextNtfMode {
+            Button {
+                toggleNotifications(chat, enableNtfs: nextMode)
+            } label: {
+                SwipeLabel(nextMode.text(mentions: chat.chatInfo.hasMentions), systemImage: nextMode.iconFilled, inverted: oneHandUI)
             }
+        } else {
+            EmptyView()
+        }
+    }
+
+    private func archiveAllReportsButton() -> some View {
+        Button {
+            AlertManager.shared.showAlert(archiveAllReportsAlert())
+        } label: {
+            SwipeLabel(NSLocalizedString("Archive reports", comment: "swipe action"), systemImage: "archivebox", inverted: oneHandUI)
         }
     }
 
@@ -306,7 +338,72 @@ struct ChatListNavLink: View {
         }
         .tint(Color.orange)
     }
+    
+    private func tagChatButton(_ chat: Chat) -> some View {
+        Button {
+            setTagChatSheet(chat)
+        } label: {
+            SwipeLabel(NSLocalizedString("List", comment: "swipe action"), systemImage: "tag.fill", inverted: oneHandUI)
+        }
+        .tint(.mint)
+    }
+    
+    private func setTagChatSheet(_ chat: Chat) {
+        let screenHeight = UIScreen.main.bounds.height
+        let reservedSpace: Double = 4 * 44 // 2 for padding, 1 for "Create list" and another for extra tag
+        let tagsSpace = Double(max(chatTagsModel.userTags.count, 3)) * 44
+        let fraction = min((reservedSpace + tagsSpace) / screenHeight, 0.62)
+        
+        parentSheet = SomeSheet(
+            content: {
+                AnyView(
+                    NavigationView {
+                        if chatTagsModel.userTags.isEmpty {
+                            TagListEditor(chat: chat)
+                        } else {
+                            TagListView(chat: chat)
+                        }
+                    }
+                )
+            },
+            id: "lists sheet",
+            fraction: fraction
+        )
+    }
+    
+    private func moreOptionsButton(_ canShowGroupDelete: Bool, _ chat: Chat, _ groupInfo: GroupInfo?) -> some View {
+        Button {
+            var buttons: [Alert.Button] = []
+            buttons.append(.default(Text("Clear")) {
+                AlertManager.shared.showAlert(clearChatAlert())
+            })
 
+            if let groupInfo, chat.chatStats.reportsCount > 0 && groupInfo.membership.memberRole >= .moderator && groupInfo.ready {
+                buttons.append(.default(Text("Archive reports")) {
+                    AlertManager.shared.showAlert(archiveAllReportsAlert())
+                })
+            }
+
+            if canShowGroupDelete, let gi = groupInfo, gi.canDelete {
+                buttons.append(.destructive(Text("Delete")) {
+                    AlertManager.shared.showAlert(deleteGroupAlert(gi))
+                })
+            }
+            
+            buttons.append(.cancel())
+                               
+            actionSheet = SomeActionSheet(
+                actionSheet: ActionSheet(
+                    title: canShowGroupDelete ? Text("Clear or delete group?") : Text("Clear group?"),
+                    buttons: buttons
+                ),
+                id: "other options"
+            )
+        } label: {
+            SwipeLabel(NSLocalizedString("More", comment: "swipe action"), systemImage: "ellipsis", inverted: oneHandUI)
+        }
+    }
+    
     private func clearNoteFolderButton() -> some View {
         Button {
             AlertManager.shared.showAlert(clearNoteFolderAlert())
@@ -336,6 +433,7 @@ struct ChatListNavLink: View {
 
     private func contactRequestNavLink(_ contactRequest: UserContactRequest) -> some View {
         ContactRequestView(contactRequest: contactRequest, chat: chat)
+        .frameCompat(height: dynamicRowHeight)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button {
                 Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) }
@@ -354,7 +452,6 @@ struct ChatListNavLink: View {
             }
             .tint(.red)
         }
-        .frame(height: dynamicRowHeight)
         .contentShape(Rectangle())
         .onTapGesture { showContactRequestDialog = true }
         .confirmationDialog("Accept connection request?", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
@@ -366,6 +463,7 @@ struct ChatListNavLink: View {
 
     private func contactConnectionNavLink(_ contactConnection: PendingContactConnection) -> some View {
         ContactConnectionView(chat: chat)
+        .frameCompat(height: dynamicRowHeight)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button {
                 AlertManager.shared.showAlert(deleteContactConnectionAlert(contactConnection) { a in
@@ -383,7 +481,6 @@ struct ChatListNavLink: View {
             }
             .tint(theme.colors.primary)
         }
-        .frame(height: dynamicRowHeight)
         .appSheet(isPresented: $showContactConnectionInfo) {
             Group {
                 if case let .contactConnection(contactConnection) = chat.chatInfo {
@@ -413,6 +510,27 @@ struct ChatListNavLink: View {
             },
             secondaryButton: .cancel()
         )
+    }
+
+    private func archiveAllReportsAlert() -> Alert {
+        Alert(
+            title: Text("Archive all reports?"),
+            message: Text("All reports will be archived for you."),
+            primaryButton: .destructive(Text("Archive")) {
+                Task { await archiveAllReportsForMe(chat.chatInfo.apiId) }
+            },
+            secondaryButton: .cancel()
+        )
+    }
+
+    private func archiveAllReportsForMe(_ apiId: Int64) async {
+        do {
+            if case let .groupChatItemsDeleted(user, groupInfo, chatItemIDs, _, member) = try await apiArchiveReceivedReports(groupId: apiId) {
+                await groupChatItemsDeleted(user, groupInfo, chatItemIDs, member)
+            }
+        } catch {
+            logger.error("archiveAllReportsForMe error: \(responseError(error))")
+        }
     }
 
     private func clearChatAlert() -> Alert {
@@ -461,14 +579,14 @@ struct ChatListNavLink: View {
         )
     }
 
-    private func invalidJSONPreview(_ json: String) -> some View {
+    private func invalidJSONPreview(_ json: Data?) -> some View {
         Text("invalid chat data")
             .foregroundColor(.red)
             .padding(4)
-            .frame(height: dynamicRowHeight)
+            .frameCompat(height: dynamicRowHeight)
             .onTapGesture { showInvalidJSON = true }
             .appSheet(isPresented: $showInvalidJSON) {
-                invalidJSONView(json)
+                invalidJSONView(dataToString(json))
                     .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
             }
     }
@@ -477,8 +595,27 @@ struct ChatListNavLink: View {
         Task {
             let ok = await connectContactViaAddress(contact.contactId, incognito, showAlert: { AlertManager.shared.showAlert($0) })
             if ok {
-                ItemsModel.shared.loadOpenChat(contact.id)
-                AlertManager.shared.showAlert(connReqSentAlert(.contact))
+                ItemsModel.shared.loadOpenChat(contact.id) {
+                    AlertManager.shared.showAlert(connReqSentAlert(.contact))
+                }
+            }
+        }
+    }
+}
+
+extension View {
+    @inline(__always)
+    @ViewBuilder fileprivate func frameCompat(height: CGFloat) -> some View {
+        if #available(iOS 16, *) {
+            self.frame(height: height)
+        } else {
+            VStack(spacing: 0) {
+                Divider()
+                    .padding(.leading, 16)
+                self
+                    .frame(height: height)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 8)
             }
         }
     }
@@ -570,7 +707,7 @@ func joinGroup(_ groupId: Int64, _ onComplete: @escaping () async -> Void) {
 }
 
 func getErrorAlert(_ error: Error, _ title: LocalizedStringKey) -> ErrorAlert {
-    if let r = error as? ChatResponse,
+    if let r = error as? ChatError,
        let alert = getNetworkErrorAlert(r) {
         return alert
     } else {
@@ -585,15 +722,15 @@ struct ChatListNavLink_Previews: PreviewProvider {
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
-            ))
+            ), parentSheet: .constant(nil))
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
-            ))
+            ), parentSheet: .constant(nil))
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.contactRequest,
                 chatItems: []
-            ))
+            ), parentSheet: .constant(nil))
         }
         .previewLayout(.fixed(width: 360, height: 82))
     }

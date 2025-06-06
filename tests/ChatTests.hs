@@ -1,6 +1,7 @@
 module ChatTests where
 
 import ChatTests.ChatList
+import ChatTests.DBUtils
 import ChatTests.Direct
 import ChatTests.Files
 import ChatTests.Forward
@@ -9,7 +10,7 @@ import ChatTests.Local
 import ChatTests.Profiles
 import Test.Hspec hiding (it)
 
-chatTests :: SpecWith FilePath
+chatTests :: SpecWith TestParams
 chatTests = do
   describe "direct tests" chatDirectTests
   describe "forward tests" chatForwardTests

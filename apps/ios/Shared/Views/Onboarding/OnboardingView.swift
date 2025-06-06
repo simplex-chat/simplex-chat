@@ -23,7 +23,7 @@ struct OnboardingView: View {
             case .step3_CreateSimpleXAddress: // deprecated
                 CreateSimpleXAddress()
             case .step3_ChooseServerOperators:
-                ChooseServerOperators(onboarding: true)
+                OnboardingConditionsView()
                     .navigationBarBackButtonHidden(true)
                     .modifier(ThemedBackground())
             case .step4_SetNotificationsMode:
@@ -44,7 +44,7 @@ enum OnboardingStage: String, Identifiable {
     case step1_SimpleXInfo
     case step2_CreateProfile // deprecated
     case step3_CreateSimpleXAddress // deprecated
-    case step3_ChooseServerOperators
+    case step3_ChooseServerOperators // changed to simplified conditions
     case step4_SetNotificationsMode
     case onboardingComplete
 

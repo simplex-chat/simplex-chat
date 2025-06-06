@@ -26,9 +26,9 @@ struct CIFeaturePreferenceView: View {
                allowed != .no && ct.allowsFeature(feature) && !ct.userAllowsFeature(feature) {
                 let setParam = feature == .timedMessages && ct.mergedPreferences.timedMessages.userPreference.preference.ttl == nil
                 featurePreferenceView(acceptText: setParam ? "Set 1 day" : "Accept")
-                    .onTapGesture {
+                    .simultaneousGesture(TapGesture().onEnded {
                         allowFeatureToContact(ct, feature, param: setParam ? 86400 : nil)
-                    }
+                    })
             } else {
                 featurePreferenceView()
             }

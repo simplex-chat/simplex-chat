@@ -11,13 +11,13 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Modifier
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.ColumnWithScrollBar
+import chat.simplex.common.platform.chatModel
 import chat.simplex.res.MR
+import kotlinx.coroutines.*
 
 @Composable
 fun PreferencesView(m: ChatModel, user: User, close: () -> Unit,) {
@@ -34,8 +34,8 @@ fun PreferencesView(m: ChatModel, user: User, close: () -> Unit,) {
       if (updated != null) {
         val (updatedProfile, updatedContacts) = updated
         m.updateCurrentUser(user.remoteHostId, updatedProfile, preferences)
-        withChats {
-          updatedContacts.forEach { updateContact(user.remoteHostId, it) }
+        withContext(Dispatchers.Main) {
+          updatedContacts.forEach { chatModel.chatsContext.updateContact(user.remoteHostId, it) }
         }
         currentPreferences = preferences
       }

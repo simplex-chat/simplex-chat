@@ -30,10 +30,31 @@ internal class Cryptor: CryptorInterface {
       }
       return null
     }
-    val cipher: Cipher = Cipher.getInstance(TRANSFORMATION)
-    val spec = GCMParameterSpec(128, iv)
-    cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
-    return runCatching { String(cipher.doFinal(data))}.onFailure { Log.e(TAG, "doFinal: ${it.stackTraceToString()}") }.getOrNull()
+
+    try {
+      val cipher: Cipher = Cipher.getInstance(TRANSFORMATION)
+      val spec = GCMParameterSpec(128, iv)
+      cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
+      return String(cipher.doFinal(data))
+    } catch (e: Throwable) {
+      Log.e(TAG, "cipher.init: ${e.stackTraceToString()}")
+      val randomPassphrase = appPreferences.initialRandomDBPassphrase.get()
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.error_reading_passphrase),
+        text = generalGetString(if (randomPassphrase) {
+          MR.strings.restore_passphrase_can_not_be_read_desc
+        } else {
+          MR.strings.restore_passphrase_can_not_be_read_enter_manually_desc
+        }
+        )
+          .plus("\n\n").plus(e.stackTraceToString())
+      )
+      if (randomPassphrase) {
+        // do not allow to override initial random passphrase in case of such error
+        throw e
+      }
+      return null
+    }
   }
 
   override fun encryptText(text: String, alias: String): Pair<ByteArray, ByteArray> {

@@ -1,0 +1,47 @@
+name: "Prebuilt steps for build"
+description: "Reusable steps for multiple jobs"
+inputs:
+   java_ver:
+     required: true
+     description: "Java version to install"
+   ghc_ver:
+     required: true
+     description: "GHC version to install"
+   github_ref:
+     required: true
+     description: "Git reference"
+   os:
+     required: true
+     description: "Target OS"
+   cache_path:
+     required: false
+     default: "~/.cabal/store"
+     description: "Cache path"
+   cabal_ver:
+     required: false
+     default: 3.10.1.0
+     description: "GHC version to install"
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Haskell
+      uses: simplex-chat/setup-haskell-action@v2
+      with:
+        ghc-version: ${{ inputs.ghc_ver }}
+        cabal-version: ${{ inputs.cabal_ver }}
+
+    - name: Setup Java
+      if: startsWith(inputs.github_ref, 'refs/tags/v')
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'corretto'
+        java-version: ${{ inputs.java_ver }}
+        cache: 'gradle'
+
+    - name: Restore cached build
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ inputs.cache_path }}
+          dist-newstyle
+        key: ${{ inputs.os }}-ghc${{ inputs.ghc_ver }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}

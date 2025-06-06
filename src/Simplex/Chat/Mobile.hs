@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -12,11 +13,10 @@ import Control.Concurrent.STM
 import Control.Exception (SomeException, catch)
 import Control.Monad.Except
 import Control.Monad.Reader
+import Data.Aeson (ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.Bifunctor (first)
-import Data.ByteArray (ScrubbedBytes)
-import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Base64.URL as U
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -26,8 +26,6 @@ import Data.List (find)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
 import Data.Word (Word8)
-import Database.SQLite.Simple (SQLError (..))
-import qualified Database.SQLite.Simple as DB
 import Foreign.C.String
 import Foreign.C.Types (CInt (..))
 import Foreign.Ptr
@@ -36,25 +34,34 @@ import Foreign.Storable (poke)
 import GHC.IO.Encoding (setFileSystemEncoding, setForeignEncoding, setLocaleEncoding)
 import Simplex.Chat
 import Simplex.Chat.Controller
+import Simplex.Chat.Library.Commands
 import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Mobile.WebRTC
 import Simplex.Chat.Options
+import Simplex.Chat.Options.DB
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, closeSQLiteStore, reopenSQLiteStore)
+import Simplex.Messaging.Agent.Store.Interface (closeDBStore, reopenDBStore)
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), CorrId (..), ProtoServerWithAuth (..), ProtocolServer (..))
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..))
 import Simplex.Messaging.Util (catchAll, liftEitherWith, safeDecodeUtf8)
 import System.IO (utf8)
 import System.Timeout (timeout)
+#if !defined(dbPostgres)
+import Data.ByteArray (ScrubbedBytes)
+import Database.SQLite.Simple (SQLError (..))
+import qualified Database.SQLite.Simple as DB
+import qualified Simplex.Messaging.Agent.Store.DB as DB
+#endif
 
 data DBMigrationResult
   = DBMOk
@@ -66,9 +73,19 @@ data DBMigrationResult
 
 $(JQ.deriveToJSON (sumTypeJSON $ dropPrefix "DBM") ''DBMigrationResult)
 
-data APIResponse = APIResponse {corr :: Maybe CorrId, remoteHostId :: Maybe RemoteHostId, resp :: ChatResponse}
+data APIResult r
+  = APIResult  {remoteHostId :: Maybe RemoteHostId, result :: r}
+  | APIError {remoteHostId :: Maybe RemoteHostId, error :: ChatError}
 
-$(JQ.deriveToJSON defaultJSON ''APIResponse)
+eitherToResult :: Maybe RemoteHostId -> Either ChatError r -> APIResult r
+eitherToResult rhId = either (APIError rhId) (APIResult rhId)
+{-# INLINE eitherToResult #-}
+
+$(pure [])
+
+instance ToJSON r => ToJSON (APIResult r) where
+  toEncoding = $(JQ.mkToEncoding (defaultJSON {J.sumEncoding = J.UntaggedValue}) ''APIResult)
+  toJSON = $(JQ.mkToJSON (defaultJSON {J.sumEncoding = J.UntaggedValue}) ''APIResult)
 
 foreign export ccall "chat_migrate_init" cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
 
@@ -109,9 +126,11 @@ foreign export ccall "chat_encrypt_file" cChatEncryptFile :: StablePtr ChatContr
 foreign export ccall "chat_decrypt_file" cChatDecryptFile :: CString -> CString -> CString -> CString -> IO CString
 
 -- | check / migrate database and initialize chat controller on success
+-- For postgres first param is schema prefix, second param is database connection string.
 cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
 cChatMigrateInit fp key conf = cChatMigrateInitKey fp key 0 conf 0
 
+-- For postgres first param is schema prefix, second param is database connection string.
 cChatMigrateInitKey :: CString -> CString -> CInt -> CString -> CInt -> Ptr (StablePtr ChatController) -> IO CJSONString
 cChatMigrateInitKey fp key keepKey conf background ctrl = do
   -- ensure we are set to UTF-8; iOS does not have locale, and will default to
@@ -120,11 +139,10 @@ cChatMigrateInitKey fp key keepKey conf background ctrl = do
   setFileSystemEncoding utf8
   setForeignEncoding utf8
 
-  dbPath <- peekCString fp
-  dbKey <- BA.convert <$> B.packCString key
+  chatDbOpts <- mobileDbOpts fp key
   confirm <- peekCAString conf
   r <-
-    chatMigrateInitKey dbPath dbKey (keepKey /= 0) confirm (background /= 0) >>= \case
+    chatMigrateInitKey chatDbOpts (keepKey /= 0) confirm (background /= 0) >>= \case
       Right cc -> (newStablePtr cc >>= poke ctrl) $> DBMOk
       Left e -> pure e
   newCStringFromLazyBS $ J.encode r
@@ -182,13 +200,12 @@ cChatValidName cName = newCString . mkValidName =<< peekCString cName
 cChatJsonLength :: CString -> IO CInt
 cChatJsonLength s = fromIntegral . subtract 2 . LB.length . J.encode . safeDecodeUtf8 <$> B.packCString s
 
-mobileChatOpts :: String -> ChatOpts
-mobileChatOpts dbFilePrefix =
+mobileChatOpts :: ChatDbOpts -> ChatOpts
+mobileChatOpts dbOptions =
   ChatOpts
     { coreOptions =
         CoreChatOpts
-          { dbFilePrefix,
-            dbKey = "", -- for API database is already opened, and the key in options is not used
+          { dbOptions,
             smpServers = [],
             xftpServers = [],
             simpleNetCfg = defaultSimpleNetCfg,
@@ -197,11 +214,11 @@ mobileChatOpts dbFilePrefix =
             logServerHosts = True,
             logAgent = Nothing,
             logFile = Nothing,
-            tbqSize = 1024,
+            tbqSize = 4096,
+            deviceName = Nothing,
             highlyAvailable = False,
             yesToUpMigrations = False
           },
-      deviceName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
       chatCmdLog = CCLNone,
@@ -225,42 +242,53 @@ defaultMobileConfig =
       deviceNameForRemote = "Mobile"
     }
 
-getActiveUser_ :: SQLiteStore -> IO (Maybe User)
+getActiveUser_ :: DBStore -> IO (Maybe User)
 getActiveUser_ st = find activeUser <$> withTransaction st getUsers
 
+#if !defined(dbPostgres)
+-- only used in tests
 chatMigrateInit :: String -> ScrubbedBytes -> String -> IO (Either DBMigrationResult ChatController)
-chatMigrateInit dbFilePrefix dbKey confirm = chatMigrateInitKey dbFilePrefix dbKey False confirm False
+chatMigrateInit dbFilePrefix dbKey confirm = do
+  let chatDBOpts = ChatDbOpts {dbFilePrefix, dbKey, trackQueries = DB.TQSlow 5000, vacuumOnMigration = True}
+  chatMigrateInitKey chatDBOpts False confirm False
+#endif
 
-chatMigrateInitKey :: String -> ScrubbedBytes -> Bool -> String -> Bool -> IO (Either DBMigrationResult ChatController)
-chatMigrateInitKey dbFilePrefix dbKey keepKey confirm backgroundMode = runExceptT $ do
+chatMigrateInitKey :: ChatDbOpts -> Bool -> String -> Bool -> IO (Either DBMigrationResult ChatController)
+chatMigrateInitKey chatDbOpts keepKey confirm backgroundMode = runExceptT $ do
   confirmMigrations <- liftEitherWith (const DBMInvalidConfirmation) $ strDecode $ B.pack confirm
-  chatStore <- migrate createChatStore (chatStoreFile dbFilePrefix) confirmMigrations
-  agentStore <- migrate createAgentStore (agentStoreFile dbFilePrefix) confirmMigrations
+  chatStore <- migrate createChatStore (toDBOpts chatDbOpts chatSuffix keepKey) confirmMigrations
+  agentStore <- migrate createAgentStore (toDBOpts chatDbOpts agentSuffix keepKey) confirmMigrations
   liftIO $ initialize chatStore ChatDatabase {chatStore, agentStore}
   where
+    opts = mobileChatOpts $ removeDbKey chatDbOpts
     initialize st db = do
       user_ <- getActiveUser_ st
-      newChatController db user_ defaultMobileConfig (mobileChatOpts dbFilePrefix) backgroundMode
-    migrate createStore dbFile confirmMigrations =
+      newChatController db user_ defaultMobileConfig opts backgroundMode
+    migrate createStore dbOpts confirmMigrations =
       ExceptT $
-        (first (DBMErrorMigration dbFile) <$> createStore dbFile dbKey keepKey confirmMigrations)
+        (first (DBMErrorMigration errDbStr) <$> createStore dbOpts confirmMigrations)
+#if !defined(dbPostgres)
           `catch` (pure . checkDBError)
+#endif
           `catchAll` (pure . dbError)
       where
+        errDbStr = errorDbStr dbOpts
+#if !defined(dbPostgres)
         checkDBError e = case sqlError e of
-          DB.ErrorNotADatabase -> Left $ DBMErrorNotADatabase dbFile
+          DB.ErrorNotADatabase -> Left $ DBMErrorNotADatabase errDbStr
           _ -> dbError e
-        dbError e = Left . DBMErrorSQL dbFile $ show e
+#endif
+        dbError e = Left . DBMErrorSQL errDbStr $ show e
 
 chatCloseStore :: ChatController -> IO String
 chatCloseStore ChatController {chatStore, smpAgent} = handleErr $ do
-  closeSQLiteStore chatStore
-  closeSQLiteStore $ agentClientStore smpAgent
+  closeDBStore chatStore
+  closeDBStore $ agentClientStore smpAgent
 
 chatReopenStore :: ChatController -> IO String
 chatReopenStore ChatController {chatStore, smpAgent} = handleErr $ do
-  reopenSQLiteStore chatStore
-  reopenSQLiteStore (agentClientStore smpAgent)
+  reopenDBStore chatStore
+  reopenDBStore (agentClientStore smpAgent)
 
 handleErr :: IO () -> IO String
 handleErr a = (a $> "") `catch` (pure . show @SomeException)
@@ -269,21 +297,15 @@ chatSendCmd :: ChatController -> B.ByteString -> IO JSONByteString
 chatSendCmd cc = chatSendRemoteCmd cc Nothing
 
 chatSendRemoteCmd :: ChatController -> Maybe RemoteHostId -> B.ByteString -> IO JSONByteString
-chatSendRemoteCmd cc rh s = J.encode . APIResponse Nothing rh <$> runReaderT (execChatCommand rh s) cc
+chatSendRemoteCmd cc rh s = J.encode . eitherToResult rh <$> runReaderT (execChatCommand rh s) cc
 
 chatRecvMsg :: ChatController -> IO JSONByteString
-chatRecvMsg ChatController {outputQ} = json <$> readChatResponse
+chatRecvMsg ChatController {outputQ} = J.encode . uncurry eitherToResult <$> readChatResponse
   where
-    json (corr, remoteHostId, resp) = J.encode APIResponse {corr, remoteHostId, resp}
-    readChatResponse = do
-      out@(_, _, cr) <- atomically $ readTBQueue outputQ
-      if filterEvent cr then pure out else readChatResponse
-    filterEvent = \case
-      CRGroupSubscribed {} -> False
-      CRGroupEmpty {} -> False
-      CRMemberSubSummary {} -> False
-      CRPendingSubSummary {} -> False
-      _ -> True
+    readChatResponse =
+      atomically (readTBQueue outputQ) >>= \case
+        (_, Right CEvtTerminalEvent {}) -> readChatResponse
+        out -> pure out
 
 chatRecvMsgWait :: ChatController -> Int -> IO JSONByteString
 chatRecvMsgWait cc time = fromMaybe "" <$> timeout time (chatRecvMsg cc)

@@ -247,13 +247,26 @@ fun saveAnimImage(uri: URI): CryptoFile? {
 
 expect suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean): File?
 
-fun saveFileFromUri(uri: URI, withAlertOnException: Boolean = true): CryptoFile? {
+fun saveFileFromUri(
+  uri: URI,
+  withAlertOnException: Boolean = true,
+  hiddenFileNamePrefix: String? = null
+): CryptoFile? {
   return try {
     val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
     val inputStream = uri.inputStream()
     val fileToSave = getFileName(uri)
     return if (inputStream != null && fileToSave != null) {
-      val destFileName = uniqueCombine(fileToSave, File(getAppFilePath("")))
+      val destFileName = if (hiddenFileNamePrefix == null) {
+        uniqueCombine(fileToSave, File(getAppFilePath("")))
+      } else {
+        val ext = when {
+          // remove everything but extension
+          fileToSave.contains(".") -> fileToSave.substringAfterLast(".")
+          else -> null
+        }
+        generateNewFileName(hiddenFileNamePrefix, ext, File(getAppFilePath("")))
+      }
       val destFile = File(getAppFilePath(destFileName))
       if (encrypted) {
         createTmpFileAndDelete { tmpFile ->
@@ -341,8 +354,9 @@ fun removeWallpaperFilesFromAllChats(user: User) {
   }
 }
 
-fun <T> createTmpFileAndDelete(onCreated: (File) -> T): T {
-  val tmpFile = File(tmpDir, UUID.randomUUID().toString())
+fun <T> createTmpFileAndDelete(dir: File = tmpDir, onCreated: (File) -> T): T {
+  val tmpFile = File(dir, UUID.randomUUID().toString())
+  tmpFile.parentFile.mkdirs()
   tmpFile.deleteOnExit()
   ChatModel.filesToDelete.add(tmpFile)
   try {
@@ -352,11 +366,12 @@ fun <T> createTmpFileAndDelete(onCreated: (File) -> T): T {
   }
 }
 
-fun generateNewFileName(prefix: String, ext: String, dir: File): String {
+fun generateNewFileName(prefix: String, ext: String?, dir: File): String {
   val sdf = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
   sdf.timeZone = TimeZone.getTimeZone("GMT")
   val timestamp = sdf.format(Date())
-  return uniqueCombine("${prefix}_$timestamp.$ext", dir)
+  val extension = if (ext != null) ".$ext" else ""
+  return uniqueCombine("${prefix}_$timestamp$extension", dir)
 }
 
 fun uniqueCombine(fileName: String, dir: File): String {

@@ -30,6 +30,19 @@ private val CALL_BOTTOM_ICON_OFFSET = (-15).dp
 private val CALL_BOTTOM_ICON_HEIGHT = CALL_INTERACTIVE_AREA_HEIGHT + CALL_BOTTOM_ICON_OFFSET
 
 @Composable
+actual fun TagsRow(content: @Composable() (() -> Unit)) {
+  Row(
+    modifier = Modifier
+      .padding(horizontal = 14.dp)
+      .horizontalScroll(rememberScrollState()),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(2.dp)
+  ) {
+    content()
+  }
+}
+
+@Composable
 actual fun ActiveCallInteractiveArea(call: Call) {
   val onClick = { platform.androidStartCallActivity(false) }
   val statusBar = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()

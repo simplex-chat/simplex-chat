@@ -50,7 +50,7 @@ struct CICallItemView: View {
         Image(systemName: "phone.connection").foregroundColor(.green)
     }
 
-    @ViewBuilder private func endedCallIcon(_ sent: Bool) -> some View {
+    private func endedCallIcon(_ sent: Bool) -> some View {
         HStack {
             Image(systemName: "phone.down")
             Text(durationText(duration)).foregroundColor(theme.colors.secondary)
@@ -60,16 +60,16 @@ struct CICallItemView: View {
 
     @ViewBuilder private func acceptCallButton() -> some View {
         if case let .direct(contact) = chat.chatInfo {
-            Button {
-                if let invitation = m.callInvitations[contact.id] {
-                    CallController.shared.answerCall(invitation: invitation)
-                    logger.debug("acceptCallButton call answered")
-                } else {
-                    AlertManager.shared.showAlertMsg(title: "Call already ended!")
-                }
-            } label: {
-                Label("Answer call", systemImage: "phone.arrow.down.left")
-            }
+            Label("Answer call", systemImage: "phone.arrow.down.left")
+                .foregroundColor(theme.colors.primary)
+                .simultaneousGesture(TapGesture().onEnded {
+                    if let invitation = m.callInvitations[contact.id] {
+                        CallController.shared.answerCall(invitation: invitation)
+                        logger.debug("acceptCallButton call answered")
+                    } else {
+                        AlertManager.shared.showAlertMsg(title: "Call already ended!")
+                    }
+                })
         } else {
             Image(systemName: "phone.arrow.down.left").foregroundColor(theme.colors.secondary)
         }

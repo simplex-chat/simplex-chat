@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
@@ -25,23 +26,27 @@ import Data.Maybe (isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Database.SQLite.Simple (Only (..))
-import qualified Database.SQLite.Simple as SQL
-import Database.SQLite.Simple.QQ (sql)
 import GHC.Weak (deRefWeak)
-import Simplex.Chat
 import Simplex.Chat.Controller
+import Simplex.Chat.Library.Commands
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Output
 import Simplex.Chat.Types (User (..))
-import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore, withTransaction)
-import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Util (catchAll_, safeDecodeUtf8, whenM)
 import System.Exit (exitSuccess)
 import System.Terminal hiding (insertChars)
 import UnliftIO.STM
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (Only (..), Query, ToRow)
+import Database.PostgreSQL.Simple.SqlQQ (sql)
+#else
+import Database.SQLite.Simple (Only (..), Query, ToRow)
+import Database.SQLite.Simple.QQ (sql)
+#endif
 
 getKey :: MonadTerminal m => m (Key, Modifiers)
 getKey =
@@ -59,12 +64,14 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
       rh' = if either (const False) allowRemoteCommand cmd then rh else Nothing
   unless (isMessage cmd) $ echo s
   r <- runReaderT (execChatCommand rh' bs) cc
-  processResp s cmd rh r
+  case r of
+    Right r' -> processResp cmd rh r'
+    Left _ -> when (isMessage cmd) $ echo s
   printRespToTerminal ct cc False rh r
-  startLiveMessage cmd r
+  mapM_ (startLiveMessage cmd) r
   where
     echo s = printToTerminal ct [plain s]
-    processResp s cmd rh = \case
+    processResp cmd rh = \case
       CRActiveUser u -> case rh of
         Nothing -> setActive ct ""
         Just rhId -> updateRemoteUser ct u rhId
@@ -75,8 +82,6 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
       CRContactDeleted u c -> whenCurrUser cc u $ unsetActiveContact ct c
       CRGroupDeletedUser u g -> whenCurrUser cc u $ unsetActiveGroup ct g
       CRSentGroupInvitation u g _ _ -> whenCurrUser cc u $ setActiveGroup ct g
-      CRChatCmdError _ _ -> when (isMessage cmd) $ echo s
-      CRChatError _ _ -> when (isMessage cmd) $ echo s
       CRCmdOk _ -> case cmd of
         Right APIDeleteUser {} -> setActive ct ""
         _ -> pure ()
@@ -128,7 +133,7 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
         updateLiveMessage typedMsg lm = case liveMessageToSend typedMsg lm of
           Just sentMsg ->
             sendUpdatedLiveMessage cc sentMsg lm True >>= \case
-              CRChatItemUpdated {} -> setLiveMessage lm {sentMsg, typedMsg}
+              Right CRChatItemUpdated {} -> setLiveMessage lm {sentMsg, typedMsg}
               _ -> do
                 -- TODO print error
                 setLiveMessage lm {typedMsg}
@@ -142,10 +147,10 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
               | otherwise = (s <> reverse (c : w), "")
     startLiveMessage _ _ = pure ()
 
-sendUpdatedLiveMessage :: ChatController -> String -> LiveMessage -> Bool -> IO ChatResponse
+sendUpdatedLiveMessage :: ChatController -> String -> LiveMessage -> Bool -> IO (Either ChatError ChatResponse)
 sendUpdatedLiveMessage cc sentMsg LiveMessage {chatName, chatItemId} live = do
   let cmd = UpdateLiveMessage chatName chatItemId live $ T.pack sentMsg
-  either (CRChatCmdError Nothing) id <$> runExceptT (processChatCommand cmd) `runReaderT` cc
+  runExceptT (processChatCommand cmd) `runReaderT` cc
 
 runTerminalInput :: ChatTerminal -> ChatController -> IO ()
 runTerminalInput ct cc = withChatTerm ct $ do
@@ -223,7 +228,7 @@ data AutoComplete
   | ACCommand Text
   | ACNone
 
-updateTermState :: Maybe User -> SQLiteStore -> String -> Bool -> Int -> (Key, Modifiers) -> TerminalState -> IO TerminalState
+updateTermState :: Maybe User -> DBStore -> String -> Bool -> Int -> (Key, Modifiers) -> TerminalState -> IO TerminalState
 updateTermState user_ st chatPrefix live tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p, autoComplete = acp} = case key of
   CharKey c
     | ms == mempty || ms == shiftKey -> pure $ insertChars $ charsWithContact [c]
@@ -321,7 +326,7 @@ updateTermState user_ st chatPrefix live tw (key, ms) ts@TerminalState {inputStr
             getNameSfxs table pfx =
               getNameSfxs_ pfx (userId, pfx <> "%") $
                 "SELECT local_display_name FROM " <> table <> " WHERE user_id = ? AND local_display_name LIKE ?"
-            getNameSfxs_ :: SQL.ToRow p => Text -> p -> SQL.Query -> IO [String]
+            getNameSfxs_ :: ToRow p => Text -> p -> Query -> IO [String]
             getNameSfxs_ pfx ps q =
               withTransaction st (\db -> hasPfx pfx . map fromOnly <$> DB.query db q ps) `catchAll_` pure []
             commands =

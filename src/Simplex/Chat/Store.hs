@@ -1,29 +1,29 @@
+{-# LANGUAGE CPP #-}
+
 module Simplex.Chat.Store
-  ( SQLiteStore,
+  ( DBStore,
     StoreError (..),
     ChatLockEntity (..),
     UserMsgReceiptSettings (..),
     UserContactLink (..),
+    GroupLinkInfo (..),
     AutoAccept (..),
     createChatStore,
     migrations, -- used in tests
-    chatStoreFile,
-    agentStoreFile,
     withTransaction,
   )
 where
 
-import Data.ByteArray (ScrubbedBytes)
-import Simplex.Chat.Store.Migrations
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, MigrationError, SQLiteStore (..), createSQLiteStore, withTransaction)
+import Simplex.Messaging.Agent.Store.Common (DBStore (..), withTransaction)
+import Simplex.Messaging.Agent.Store.Interface (DBOpts, createDBStore)
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation, MigrationError)
+#if defined(dbPostgres)
+import Simplex.Chat.Store.Postgres.Migrations
+#else
+import Simplex.Chat.Store.SQLite.Migrations
+#endif
 
-createChatStore :: FilePath -> ScrubbedBytes -> Bool -> MigrationConfirmation -> IO (Either MigrationError SQLiteStore)
-createChatStore dbPath key keepKey = createSQLiteStore dbPath key keepKey migrations
-
-chatStoreFile :: FilePath -> FilePath
-chatStoreFile = (<> "_chat.db")
-
-agentStoreFile :: FilePath -> FilePath
-agentStoreFile = (<> "_agent.db")
+createChatStore :: DBOpts -> MigrationConfirmation -> IO (Either MigrationError DBStore)
+createChatStore dbCreateOpts = createDBStore dbCreateOpts migrations

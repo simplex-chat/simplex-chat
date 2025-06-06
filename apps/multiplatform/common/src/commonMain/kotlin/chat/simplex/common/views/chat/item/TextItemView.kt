@@ -13,7 +13,6 @@ import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.sp
@@ -22,7 +21,6 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.*
-import java.awt.*
 
 val reserveTimestampStyle = SpanStyle(color = Color.Transparent)
 val boldFont = SpanStyle(fontWeight = FontWeight.Medium)
@@ -60,6 +58,8 @@ fun MarkdownText (
   sender: String? = null,
   meta: CIMeta? = null,
   chatTTL: Int? = null,
+  mentions: Map<String, CIMention>? = null,
+  userMemberId: String? = null,
   toggleSecrets: Boolean,
   style: TextStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onSurface, lineHeight = 22.sp),
   maxLines: Int = Int.MAX_VALUE,
@@ -147,6 +147,26 @@ fun MarkdownText (
             val key = i.toString()
             withAnnotation(tag = "SECRET", annotation = key) {
               if (showSecrets[key] == true) append(ft.text) else withStyle(ftStyle) { append(ft.text) }
+            }
+          } else if (ft.format is Format.Mention) {
+            val mention = mentions?.get(ft.format.memberName)
+
+            if (mention != null) {
+              if (mention.memberRef != null) {
+                val displayName = mention.memberRef.displayName
+                val name = if (mention.memberRef.localAlias.isNullOrEmpty()) {
+                  displayName
+                } else {
+                  "${mention.memberRef.localAlias} ($displayName)"
+                }
+                val mentionStyle = if (mention.memberId == userMemberId) ft.format.style.copy(color = MaterialTheme.colors.primary) else ft.format.style
+
+                withStyle(mentionStyle) { append(mentionText(name)) }
+              } else {
+                withStyle( ft.format.style) { append(mentionText(ft.format.memberName)) }
+              }
+            } else {
+              append(ft.text)
             }
           } else {
             val link = ft.link(linkMode)
@@ -291,3 +311,5 @@ private fun isRtl(s: CharSequence): Boolean {
   }
   return false
 }
+
+private fun mentionText(name: String): String = if (name.contains(" @"))  "@'$name'" else "@$name"

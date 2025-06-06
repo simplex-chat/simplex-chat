@@ -1096,6 +1096,7 @@ object AppearanceScope {
       "en" to "English",
       "ar" to "العربية",
       "bg" to "Български",
+      "ca" to "Català",
       "cs" to "Čeština",
       "de" to "Deutsch",
       "es" to "Español",

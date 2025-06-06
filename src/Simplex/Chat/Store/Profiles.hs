@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -17,6 +18,7 @@ module Simplex.Chat.Store.Profiles
   ( AutoAccept (..),
     UserMsgReceiptSettings (..),
     UserContactLink (..),
+    GroupLinkInfo (..),
     createUserRecord,
     createUserRecordAt,
     getUsersInfo,
@@ -46,7 +48,9 @@ module Simplex.Chat.Store.Profiles
     deleteUserAddress,
     getUserAddress,
     getUserContactLinkById,
+    getGroupLinkInfo,
     getUserContactLinkByConnReq,
+    getUserContactLinkViaShortLink,
     getContactWithoutConnViaAddress,
     updateUserAddressAutoAccept,
     getProtocolServers,
@@ -86,8 +90,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
-import Database.SQLite.Simple (NamedParam (..), Only (..), Query, (:.) (..))
-import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Call
 import Simplex.Chat.Messages
 import Simplex.Chat.Operators
@@ -99,9 +101,10 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Env.SQLite (ServerRoles (..))
-import Simplex.Messaging.Agent.Protocol (ACorrId, ConnId, UserId)
-import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
-import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Agent.Protocol (ACorrId, ConnId, ConnectionLink (..), CreatedConnLink (..), UserId)
+import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
+import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding.String
@@ -109,6 +112,13 @@ import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
+import Database.PostgreSQL.Simple.SqlQQ (sql)
+#else
+import Database.SQLite.Simple (Only (..), Query, (:.) (..))
+import Database.SQLite.Simple.QQ (sql)
+#endif
 
 createUserRecord :: DB.Connection -> AgentUserId -> Profile -> Bool -> ExceptT StoreError IO User
 createUserRecord db auId p activeUser = createUserRecordAt db auId p activeUser =<< liftIO getCurrentTime
@@ -124,7 +134,7 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
     DB.execute
       db
       "INSERT INTO users (agent_user_id, local_display_name, active_user, active_order, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, created_at, updated_at) VALUES (?,?,?,?,0,?,?,?,?,?)"
-      (auId, displayName, activeUser, order, showNtfs, sendRcptsContacts, sendRcptsSmallGroups, currentTs, currentTs)
+      (auId, displayName, BI activeUser, order, BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, currentTs, currentTs)
     userId <- insertedRowId db
     DB.execute
       db
@@ -138,11 +148,12 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
     DB.execute
       db
       "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, is_user, created_at, updated_at, chat_ts) VALUES (?,?,?,?,?,?,?)"
-      (profileId, displayName, userId, True, currentTs, currentTs, currentTs)
+      (profileId, displayName, userId, BI True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser $ (userId, auId, contactId, profileId, activeUser, order, displayName, fullName, image, Nothing, userPreferences) :. (showNtfs, sendRcptsContacts, sendRcptsSmallGroups, Nothing, Nothing, Nothing, Nothing)
+    pure $ toUser $ (userId, auId, contactId, profileId, BI activeUser, order, displayName, fullName, image, Nothing, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, Nothing, Nothing, Nothing, Nothing)
 
+-- TODO [mentions]
 getUsersInfo :: DB.Connection -> IO [UserInfo]
 getUsersInfo db = getUsers db >>= mapM getUserInfo
   where
@@ -167,7 +178,8 @@ getUsersInfo db = getUsers db >>= mapM getUserInfo
               SELECT COUNT(1)
               FROM chat_items i
               JOIN groups g USING (group_id)
-              WHERE i.user_id = ? AND i.item_status = ? AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL)
+              WHERE i.user_id = ? AND i.item_status = ?
+                AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL OR (g.enable_ntfs = 2 AND i.user_mention = 1))
             |]
             (userId, CISRcvNew)
       pure UserInfo {user, unreadCount = fromMaybe 0 ctCount + fromMaybe 0 gCount}
@@ -253,7 +265,7 @@ updateUserPrivacy db User {userId, showNtfs, viewPwdHash} =
       SET view_pwd_hash = ?, view_pwd_salt = ?, show_ntfs = ?
       WHERE user_id = ?
     |]
-    (hashSalt viewPwdHash :. (showNtfs, userId))
+    (hashSalt viewPwdHash :. (BI showNtfs, userId))
   where
     hashSalt = L.unzip . fmap (\UserPwdHash {hash, salt} -> (hash, salt))
 
@@ -262,16 +274,16 @@ updateAllContactReceipts db onOff =
   DB.execute
     db
     "UPDATE users SET send_rcpts_contacts = ?, send_rcpts_small_groups = ? WHERE view_pwd_hash IS NULL"
-    (onOff, onOff)
+    (BI onOff, BI onOff)
 
 updateUserContactReceipts :: DB.Connection -> User -> UserMsgReceiptSettings -> IO ()
 updateUserContactReceipts db User {userId} UserMsgReceiptSettings {enable, clearOverrides} = do
-  DB.execute db "UPDATE users SET send_rcpts_contacts = ? WHERE user_id = ?" (enable, userId)
+  DB.execute db "UPDATE users SET send_rcpts_contacts = ? WHERE user_id = ?" (BI enable, userId)
   when clearOverrides $ DB.execute_ db "UPDATE contacts SET send_rcpts = NULL"
 
 updateUserGroupReceipts :: DB.Connection -> User -> UserMsgReceiptSettings -> IO ()
 updateUserGroupReceipts db User {userId} UserMsgReceiptSettings {enable, clearOverrides} = do
-  DB.execute db "UPDATE users SET send_rcpts_small_groups = ? WHERE user_id = ?" (enable, userId)
+  DB.execute db "UPDATE users SET send_rcpts_small_groups = ? WHERE user_id = ?" (BI enable, userId)
   when clearOverrides $ DB.execute_ db "UPDATE groups SET send_rcpts = NULL"
 
 updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO User
@@ -315,11 +327,13 @@ setUserProfileContactLink db user@User {userId, profile = p@LocalProfile {profil
       SET contact_link = ?, updated_at = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    (connReqContact_, ts, userId, profileId)
-  pure (user :: User) {profile = p {contactLink = connReqContact_}}
+    (contactLink, ts, userId, profileId)
+  pure (user :: User) {profile = p {contactLink}}
   where
-    connReqContact_ = case ucl_ of
-      Just UserContactLink {connReqContact} -> Just connReqContact
+    -- TODO [short links] this should be replaced with short links once they are supported by all clients.
+    -- Or, maybe, we want to allow both, when both are optional.
+    contactLink = case ucl_ of
+      Just UserContactLink {connLinkContact = CCLink cReq _} -> Just $ CLFull cReq
       _ -> Nothing
 
 -- only used in tests
@@ -335,17 +349,17 @@ getUserContactProfiles db User {userId} =
       |]
       (Only userId)
   where
-    toContactProfile :: (ContactName, Text, Maybe ImageData, Maybe ConnReqContact, Maybe Preferences) -> Profile
+    toContactProfile :: (ContactName, Text, Maybe ImageData, Maybe ConnLinkContact, Maybe Preferences) -> Profile
     toContactProfile (displayName, fullName, image, contactLink, preferences) = Profile {displayName, fullName, image, contactLink, preferences}
 
-createUserContactLink :: DB.Connection -> User -> ConnId -> ConnReqContact -> SubscriptionMode -> ExceptT StoreError IO ()
-createUserContactLink db User {userId} agentConnId cReq subMode =
+createUserContactLink :: DB.Connection -> User -> ConnId -> CreatedLinkContact -> SubscriptionMode -> ExceptT StoreError IO ()
+createUserContactLink db User {userId} agentConnId (CCLink cReq shortLink) subMode =
   checkConstraint SEDuplicateContactLink . liftIO $ do
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO user_contact_links (user_id, conn_req_contact, created_at, updated_at) VALUES (?,?,?,?)"
-      (userId, cReq, currentTs, currentTs)
+      "INSERT INTO user_contact_links (user_id, conn_req_contact, short_link_contact, created_at, updated_at) VALUES (?,?,?,?,?)"
+      (userId, cReq, shortLink, currentTs, currentTs)
     userContactLinkId <- insertedRowId db
     void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId ConnNew initialChatVersion chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
 
@@ -403,21 +417,21 @@ deleteUserAddress db user@User {userId} = do
       )
     |]
     (Only userId)
-  DB.executeNamed
+  DB.execute
     db
     [sql|
       DELETE FROM display_names
-      WHERE user_id = :user_id
+      WHERE user_id = ?
         AND local_display_name in (
           SELECT cr.local_display_name
           FROM contact_requests cr
           JOIN user_contact_links uc USING (user_contact_link_id)
-          WHERE uc.user_id = :user_id AND uc.local_display_name = '' AND uc.group_id IS NULL
+          WHERE uc.user_id = ? AND uc.local_display_name = '' AND uc.group_id IS NULL
         )
-        AND local_display_name NOT IN (SELECT local_display_name FROM users WHERE user_id = :user_id)
+        AND local_display_name NOT IN (SELECT local_display_name FROM users WHERE user_id = ?)
     |]
-    [":user_id" := userId]
-  DB.executeNamed
+    (userId, userId, userId)
+  DB.execute
     db
     [sql|
       DELETE FROM contact_profiles
@@ -425,10 +439,10 @@ deleteUserAddress db user@User {userId} = do
         SELECT cr.contact_profile_id
         FROM contact_requests cr
         JOIN user_contact_links uc USING (user_contact_link_id)
-        WHERE uc.user_id = :user_id AND uc.local_display_name = '' AND uc.group_id IS NULL
+        WHERE uc.user_id = ? AND uc.local_display_name = '' AND uc.group_id IS NULL
       )
     |]
-    [":user_id" := userId]
+    (Only userId)
   void $ setUserProfileContactLink db user Nothing
   DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL" (Only userId)
 
@@ -439,8 +453,14 @@ data UserMsgReceiptSettings = UserMsgReceiptSettings
   deriving (Show)
 
 data UserContactLink = UserContactLink
-  { connReqContact :: ConnReqContact,
+  { connLinkContact :: CreatedLinkContact,
     autoAccept :: Maybe AutoAccept
+  }
+  deriving (Show)
+
+data GroupLinkInfo = GroupLinkInfo
+  { groupId :: GroupId,
+    memberRole :: GroupMemberRole
   }
   deriving (Show)
 
@@ -455,47 +475,61 @@ $(J.deriveJSON defaultJSON ''AutoAccept)
 
 $(J.deriveJSON defaultJSON ''UserContactLink)
 
-toUserContactLink :: (ConnReqContact, Bool, Bool, IncognitoEnabled, Maybe MsgContent) -> UserContactLink
-toUserContactLink (connReq, autoAccept, businessAddress, acceptIncognito, autoReply) =
-  UserContactLink connReq $
+toUserContactLink :: (ConnReqContact, Maybe ShortLinkContact, BoolInt, BoolInt, BoolInt, Maybe MsgContent) -> UserContactLink
+toUserContactLink (connReq, shortLink, BI autoAccept, BI businessAddress, BI acceptIncognito, autoReply) =
+  UserContactLink (CCLink connReq shortLink) $
     if autoAccept then Just AutoAccept {businessAddress, acceptIncognito, autoReply} else Nothing
 
 getUserAddress :: DB.Connection -> User -> ExceptT StoreError IO UserContactLink
 getUserAddress db User {userId} =
   ExceptT . firstRow toUserContactLink SEUserContactLinkNotFound $
-    DB.query
-      db
-      [sql|
-        SELECT conn_req_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
-        FROM user_contact_links
-        WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
-      |]
-      (Only userId)
+    DB.query db (userContactLinkQuery <> " WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL") (Only userId)
 
-getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO (UserContactLink, Maybe GroupId, GroupMemberRole)
+getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO (UserContactLink, Maybe GroupLinkInfo)
 getUserContactLinkById db userId userContactLinkId =
-  ExceptT . firstRow (\(ucl :. (groupId_, mRole_)) -> (toUserContactLink ucl, groupId_, fromMaybe GRMember mRole_)) SEUserContactLinkNotFound $
+  ExceptT . firstRow (\(ucl :. gli) -> (toUserContactLink ucl, toGroupLinkInfo gli)) SEUserContactLinkNotFound $
     DB.query
       db
       [sql|
-        SELECT conn_req_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
+        SELECT conn_req_contact, short_link_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
         FROM user_contact_links
-        WHERE user_id = ?
-          AND user_contact_link_id = ?
+        WHERE user_id = ? AND user_contact_link_id = ?
       |]
       (userId, userContactLinkId)
+
+toGroupLinkInfo :: (Maybe GroupId, Maybe GroupMemberRole) -> Maybe GroupLinkInfo
+toGroupLinkInfo (groupId_, mRole_) =
+  (\groupId -> GroupLinkInfo {groupId, memberRole = fromMaybe GRMember mRole_})
+    <$> groupId_
+
+getGroupLinkInfo :: DB.Connection -> UserId -> GroupId -> IO (Maybe GroupLinkInfo)
+getGroupLinkInfo db userId groupId =
+  fmap join $ maybeFirstRow toGroupLinkInfo $ 
+    DB.query
+      db
+      [sql|
+        SELECT group_id, group_link_member_role
+        FROM user_contact_links
+        WHERE user_id = ? AND group_id = ?
+      |]      
+      (userId, groupId)
 
 getUserContactLinkByConnReq :: DB.Connection -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe UserContactLink)
 getUserContactLinkByConnReq db User {userId} (cReqSchema1, cReqSchema2) =
   maybeFirstRow toUserContactLink $
-    DB.query
-      db
-      [sql|
-        SELECT conn_req_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
-        FROM user_contact_links
-        WHERE user_id = ? AND conn_req_contact IN (?,?)
-      |]
-      (userId, cReqSchema1, cReqSchema2)
+    DB.query db (userContactLinkQuery <> " WHERE user_id = ? AND conn_req_contact IN (?,?)") (userId, cReqSchema1, cReqSchema2)
+
+getUserContactLinkViaShortLink :: DB.Connection -> User -> ShortLinkContact -> IO (Maybe UserContactLink)
+getUserContactLinkViaShortLink db User {userId} shortLink =
+  maybeFirstRow toUserContactLink $
+    DB.query db (userContactLinkQuery <> " WHERE user_id = ? AND short_link_contact = ?") (userId, shortLink)
+
+userContactLinkQuery :: Query
+userContactLinkQuery =
+  [sql|
+    SELECT conn_req_contact, short_link_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
+    FROM user_contact_links
+  |]
 
 getContactWithoutConnViaAddress :: DB.Connection -> VersionRangeChat -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe Contact)
 getContactWithoutConnViaAddress db vr user@User {userId} (cReqSchema1, cReqSchema2) = do
@@ -528,8 +562,8 @@ updateUserAddressAutoAccept db user@User {userId} autoAccept = do
         |]
         (ucl :. Only userId)
     ucl = case autoAccept of
-      Just AutoAccept {businessAddress, acceptIncognito, autoReply} -> (True, businessAddress, acceptIncognito, autoReply)
-      _ -> (False, False, False, Nothing)
+      Just AutoAccept {businessAddress, acceptIncognito, autoReply} -> (BI True, BI businessAddress, BI acceptIncognito, autoReply)
+      _ -> (BI False, BI False, BI False, Nothing)
 
 getProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> SProtocolType p -> User -> IO [UserServer p]
 getProtocolServers db p User {userId} =
@@ -543,10 +577,10 @@ getProtocolServers db p User {userId} =
       |]
       (userId, decodeLatin1 $ strEncode p)
   where
-    toUserServer :: (DBEntityId, NonEmpty TransportHost, String, C.KeyHash, Maybe Text, Bool, Maybe Bool, Bool) -> UserServer p
-    toUserServer (serverId, host, port, keyHash, auth_, preset, tested, enabled) =
+    toUserServer :: (DBEntityId, NonEmpty TransportHost, String, C.KeyHash, Maybe Text, BoolInt, Maybe BoolInt, BoolInt) -> UserServer p
+    toUserServer (serverId, host, port, keyHash, auth_, BI preset, tested, BI enabled) =
       let server = ProtoServerWithAuth (ProtocolServer p host port keyHash) (BasicAuth . encodeUtf8 <$> auth_)
-       in UserServer {serverId, server, preset, tested, enabled, deleted = False}
+       in UserServer {serverId, server, preset, tested = unBI <$> tested, enabled, deleted = False}
 
 insertProtocolServer :: forall p. ProtocolTypeI p => DB.Connection -> SProtocolType p -> User -> UTCTime -> NewUserServer p -> IO (UserServer p)
 insertProtocolServer db p User {userId} ts srv@UserServer {server, preset, tested, enabled} = do
@@ -557,7 +591,7 @@ insertProtocolServer db p User {userId} ts srv@UserServer {server, preset, teste
         (protocol, host, port, key_hash, basic_auth, preset, tested, enabled, user_id, created_at, updated_at)
       VALUES (?,?,?,?,?,?,?,?,?,?,?)
     |]
-    (serverColumns p server :. (preset, tested, enabled, userId, ts, ts))
+    (serverColumns p server :. (BI preset, BI <$> tested, BI enabled, userId, ts, ts))
   sId <- insertedRowId db
   pure (srv :: NewUserServer p) {serverId = DBEntityId sId}
 
@@ -571,7 +605,7 @@ updateProtocolServer db p ts UserServer {serverId, server, preset, tested, enabl
           preset = ?, tested = ?, enabled = ?, updated_at = ?
       WHERE smp_server_id = ?
     |]
-    (serverColumns p server :. (preset, tested, enabled, ts, serverId))
+    (serverColumns p server :. (BI preset, BI <$> tested, BI enabled, ts, serverId))
 
 serverColumns :: ProtocolTypeI p => SProtocolType p -> ProtoServerWithAuth p -> (Text, NonEmpty TransportHost, String, C.KeyHash, Maybe Text)
 serverColumns p (ProtoServerWithAuth ProtocolServer {host, port, keyHash} auth_) =
@@ -611,7 +645,7 @@ updateServerOperator db currentTs ServerOperator {operatorId, enabled, smpRoles,
       SET enabled = ?, smp_role_storage = ?, smp_role_proxy = ?, xftp_role_storage = ?, xftp_role_proxy = ?, updated_at = ?
       WHERE server_operator_id = ?
     |]
-    (enabled, storage smpRoles, proxy smpRoles, storage xftpRoles, proxy xftpRoles, currentTs, operatorId)
+    (BI enabled, BI (storage smpRoles), BI (proxy smpRoles), BI (storage xftpRoles), BI (proxy xftpRoles), currentTs, operatorId)
 
 getUpdateServerOperators :: DB.Connection -> NonEmpty PresetOperator -> Bool -> IO [(Maybe PresetOperator, Maybe ServerOperator)]
 getUpdateServerOperators db presetOps newUser = do
@@ -649,7 +683,7 @@ getUpdateServerOperators db presetOps newUser = do
           SET trade_name = ?, legal_name = ?, server_domains = ?, enabled = ?, smp_role_storage = ?, smp_role_proxy = ?, xftp_role_storage = ?, xftp_role_proxy = ?
           WHERE server_operator_id = ?
         |]
-        (tradeName, legalName, T.intercalate "," serverDomains, enabled, storage smpRoles, proxy smpRoles, storage xftpRoles, proxy xftpRoles, operatorId)
+        (tradeName, legalName, T.intercalate "," serverDomains, BI enabled, BI (storage smpRoles), BI (proxy smpRoles), BI (storage xftpRoles), BI (proxy xftpRoles), operatorId)
     insertOperator :: NewServerOperator -> IO ServerOperator
     insertOperator op@ServerOperator {operatorTag, tradeName, legalName, serverDomains, enabled, smpRoles, xftpRoles} = do
       DB.execute
@@ -659,7 +693,7 @@ getUpdateServerOperators db presetOps newUser = do
             (server_operator_tag, trade_name, legal_name, server_domains, enabled, smp_role_storage, smp_role_proxy, xftp_role_storage, xftp_role_proxy)
           VALUES (?,?,?,?,?,?,?,?,?)
         |]
-        (operatorTag, tradeName, legalName, T.intercalate "," serverDomains, enabled, storage smpRoles, proxy smpRoles, storage xftpRoles, proxy xftpRoles)
+        (operatorTag, tradeName, legalName, T.intercalate "," serverDomains, BI enabled, BI (storage smpRoles), BI (proxy smpRoles), BI (storage xftpRoles), BI (proxy xftpRoles))
       opId <- insertedRowId db
       pure op {operatorId = DBEntityId opId}
     autoAcceptConditions op UsageConditions {conditionsCommit} now =
@@ -677,8 +711,8 @@ serverOperatorQuery =
 getServerOperators_ :: DB.Connection -> IO [ServerOperator]
 getServerOperators_ db = map toServerOperator <$> DB.query_ db serverOperatorQuery
 
-toServerOperator :: (DBEntityId, Maybe OperatorTag, Text, Maybe Text, Text, Bool) :. (Bool, Bool) :. (Bool, Bool) -> ServerOperator
-toServerOperator ((operatorId, operatorTag, tradeName, legalName, domains, enabled) :. smpRoles' :. xftpRoles') =
+toServerOperator :: (DBEntityId, Maybe OperatorTag, Text, Maybe Text, Text, BoolInt) :. (BoolInt, BoolInt) :. (BoolInt, BoolInt) -> ServerOperator
+toServerOperator ((operatorId, operatorTag, tradeName, legalName, domains, BI enabled) :. smpRoles' :. xftpRoles') =
   ServerOperator
     { operatorId,
       operatorTag,
@@ -691,7 +725,7 @@ toServerOperator ((operatorId, operatorTag, tradeName, legalName, domains, enabl
       xftpRoles = serverRoles xftpRoles'
     }
   where
-    serverRoles (storage, proxy) = ServerRoles {storage, proxy}
+    serverRoles (BI storage, BI proxy) = ServerRoles {storage, proxy}
 
 getOperatorConditions_ :: DB.Connection -> ServerOperator -> UsageConditions -> Maybe UsageConditions -> UTCTime -> IO ConditionsAcceptance
 getOperatorConditions_ db ServerOperator {operatorId} UsageConditions {conditionsCommit = currentCommit, createdAt, notifiedAt} latestAcceptedConds_ now = do
@@ -711,7 +745,7 @@ getOperatorConditions_ db ServerOperator {operatorId} UsageConditions {condition
             |]
             (Only operatorId)
       pure $ case operatorAcceptedConds_ of
-        Just (operatorCommit, acceptedAt_, autoAccept)
+        Just (operatorCommit, acceptedAt_, BI autoAccept)
           | operatorCommit /= latestAcceptedCommit -> CARequired Nothing -- TODO should we consider this operator disabled?
           | currentCommit /= latestAcceptedCommit -> CARequired $ conditionsRequiredOrDeadline createdAt (fromMaybe now notifiedAt)
           | otherwise -> CAAccepted acceptedAt_ autoAccept
@@ -767,23 +801,23 @@ acceptConditions db condId opIds acceptedAt = do
 
 acceptConditions_ :: DB.Connection -> ServerOperator -> Text -> UTCTime -> Bool -> IO ()
 acceptConditions_ db ServerOperator {operatorId, operatorTag} conditionsCommit acceptedAt autoAccepted = do
-  acceptedAt_ :: Maybe (Maybe UTCTime) <- maybeFirstRow fromOnly $ DB.query db "SELECT accepted_at FROM operator_usage_conditions WHERE server_operator_id = ? AND conditions_commit == ?" (operatorId, conditionsCommit)
+  acceptedAt_ :: Maybe (Maybe UTCTime) <- maybeFirstRow fromOnly $ DB.query db "SELECT accepted_at FROM operator_usage_conditions WHERE server_operator_id = ? AND conditions_commit = ?" (operatorId, conditionsCommit)
   case acceptedAt_ of
-        Just Nothing ->
-          DB.execute
-            db
-            (q <> "ON CONFLICT (server_operator_id, conditions_commit) DO UPDATE SET accepted_at = ?, auto_accepted = ?")
-            (operatorId, operatorTag, conditionsCommit, acceptedAt, autoAccepted, acceptedAt, autoAccepted)
-        Just (Just _) ->
-          DB.execute
-            db
-            (q <> "ON CONFLICT (server_operator_id, conditions_commit) DO NOTHING")
-            (operatorId, operatorTag, conditionsCommit, acceptedAt, autoAccepted)
-        Nothing ->
-          DB.execute
-            db
-            q
-            (operatorId, operatorTag, conditionsCommit, acceptedAt, autoAccepted)
+    Just Nothing ->
+      DB.execute
+        db
+        (q <> "ON CONFLICT (server_operator_id, conditions_commit) DO UPDATE SET accepted_at = ?, auto_accepted = ?")
+        (operatorId, operatorTag, conditionsCommit, acceptedAt, BI autoAccepted, acceptedAt, BI autoAccepted)
+    Just (Just _) ->
+      DB.execute
+        db
+        (q <> "ON CONFLICT (server_operator_id, conditions_commit) DO NOTHING")
+        (operatorId, operatorTag, conditionsCommit, acceptedAt, BI autoAccepted)
+    Nothing ->
+      DB.execute
+        db
+        q
+        (operatorId, operatorTag, conditionsCommit, acceptedAt, BI autoAccepted)
   where
     q =
       [sql|
@@ -820,7 +854,7 @@ setUserServers' db user@User {userId} ts UpdatedUserOperatorServers {operator, s
         | deleted -> pure Nothing
         | otherwise -> Just <$> insertProtocolServer db p user ts s
       DBEntityId srvId
-        | deleted -> Nothing <$ DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND smp_server_id = ? AND preset = ?" (userId, srvId, False)
+        | deleted -> Nothing <$ DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND smp_server_id = ? AND preset = ?" (userId, srvId, BI False)
         | otherwise -> Just s <$ updateProtocolServer db p ts s
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()

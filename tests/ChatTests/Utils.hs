@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -8,8 +9,9 @@
 module ChatTests.Utils where
 
 import ChatClient
+import ChatTests.DBUtils
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (concurrently_)
+import Control.Concurrent.Async (concurrently_, mapConcurrently_)
 import Control.Concurrent.STM
 import Control.Monad (unless, when)
 import Control.Monad.Except (runExceptT)
@@ -21,7 +23,6 @@ import Data.List (isPrefixOf, isSuffixOf)
 import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
-import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
 import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
 import Simplex.Chat.Protocol
@@ -32,8 +33,9 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.FileTransfer.Client.Main (xftpClientCLI)
-import Simplex.Messaging.Agent.Store.SQLite (maybeFirstRow, withTransaction)
-import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Agent.Client (agentClientStore)
+import Simplex.Messaging.Agent.Store.AgentStore (maybeFirstRow, withTransaction)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff)
 import Simplex.Messaging.Encoding.String
@@ -45,6 +47,11 @@ import System.Info (os)
 import Test.Hspec hiding (it)
 import qualified Test.Hspec as Hspec
 import UnliftIO (timeout)
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (Only (..))
+#else
+import Database.SQLite.Simple (Only (..))
+#endif
 
 defaultPrefs :: Maybe Preferences
 defaultPrefs = Just $ toChatPrefs defaultChatPrefs
@@ -67,13 +74,13 @@ danProfile = Profile {displayName = "dan", fullName = "Daniel", image = Nothing,
 businessProfile :: Profile
 businessProfile = Profile {displayName = "biz", fullName = "Biz Inc", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
 
-it :: HasCallStack => String -> (FilePath -> Expectation) -> SpecWith (Arg (FilePath -> Expectation))
+it :: HasCallStack => String -> (TestParams -> Expectation) -> SpecWith (Arg (TestParams -> Expectation))
 it name test =
   Hspec.it name $ \tmp -> timeout t (test tmp) >>= maybe (error "test timed out") pure
   where
     t = 90 * 1000000
 
-xit' :: HasCallStack => String -> (FilePath -> Expectation) -> SpecWith (Arg (FilePath -> Expectation))
+xit' :: HasCallStack => String -> (TestParams -> Expectation) -> SpecWith (Arg (TestParams -> Expectation))
 xit' = if os == "linux" then xit else it
 
 xit'' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
@@ -91,7 +98,7 @@ skip :: String -> SpecWith a -> SpecWith a
 skip = before_ . pendingWith
 
 -- Bool is pqExpected - see testAddContact
-versionTestMatrix2 :: (HasCallStack => Bool -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
+versionTestMatrix2 :: (HasCallStack => Bool -> TestCC -> TestCC -> IO ()) -> SpecWith TestParams
 versionTestMatrix2 runTest = do
   it "current" $ testChat2 aliceProfile bobProfile (runTest True)
   it "prev" $ testChatCfg2 testCfgVPrev aliceProfile bobProfile (runTest False)
@@ -101,7 +108,7 @@ versionTestMatrix2 runTest = do
   it "old to curr" $ runTestCfg2 testCfg testCfgV1 (runTest False)
   it "curr to old" $ runTestCfg2 testCfgV1 testCfg (runTest False)
 
-versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
+versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith TestParams
 versionTestMatrix3 runTest = do
   it "current" $ testChat3 aliceProfile bobProfile cathProfile runTest
   it "prev" $ testChatCfg3 testCfgVPrev aliceProfile bobProfile cathProfile runTest
@@ -110,46 +117,46 @@ versionTestMatrix3 runTest = do
   it "curr to prev" $ runTestCfg3 testCfgVPrev testCfg testCfg runTest
   it "curr+prev to prev" $ runTestCfg3 testCfgVPrev testCfg testCfgVPrev runTest
 
-runTestCfg2 :: ChatConfig -> ChatConfig -> (HasCallStack => TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
-runTestCfg2 aliceCfg bobCfg runTest tmp =
-  withNewTestChatCfg tmp aliceCfg "alice" aliceProfile $ \alice ->
-    withNewTestChatCfg tmp bobCfg "bob" bobProfile $ \bob ->
+runTestCfg2 :: ChatConfig -> ChatConfig -> (HasCallStack => TestCC -> TestCC -> IO ()) -> TestParams -> IO ()
+runTestCfg2 aliceCfg bobCfg runTest ps =
+  withNewTestChatCfg ps aliceCfg "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps bobCfg "bob" bobProfile $ \bob ->
       runTest alice bob
 
-runTestCfg3 :: ChatConfig -> ChatConfig -> ChatConfig -> (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
-runTestCfg3 aliceCfg bobCfg cathCfg runTest tmp =
-  withNewTestChatCfg tmp aliceCfg "alice" aliceProfile $ \alice ->
-    withNewTestChatCfg tmp bobCfg "bob" bobProfile $ \bob ->
-      withNewTestChatCfg tmp cathCfg "cath" cathProfile $ \cath ->
+runTestCfg3 :: ChatConfig -> ChatConfig -> ChatConfig -> (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> TestParams -> IO ()
+runTestCfg3 aliceCfg bobCfg cathCfg runTest ps =
+  withNewTestChatCfg ps aliceCfg "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps bobCfg "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps cathCfg "cath" cathProfile $ \cath ->
         runTest alice bob cath
 
-withTestChatGroup3Connected :: HasCallStack => FilePath -> String -> (HasCallStack => TestCC -> IO a) -> IO a
-withTestChatGroup3Connected tmp dbPrefix action = do
-  withTestChat tmp dbPrefix $ \cc -> do
+withTestChatGroup3Connected :: HasCallStack => TestParams -> String -> (HasCallStack => TestCC -> IO a) -> IO a
+withTestChatGroup3Connected ps dbPrefix action = do
+  withTestChat ps dbPrefix $ \cc -> do
     cc <## "2 contacts connected (use /cs for the list)"
     cc <## "#team: connected to server(s)"
     action cc
 
-withTestChatGroup3Connected' :: HasCallStack => FilePath -> String -> IO ()
-withTestChatGroup3Connected' tmp dbPrefix = withTestChatGroup3Connected tmp dbPrefix $ \_ -> pure ()
+withTestChatGroup3Connected' :: HasCallStack => TestParams -> String -> IO ()
+withTestChatGroup3Connected' ps dbPrefix = withTestChatGroup3Connected ps dbPrefix $ \_ -> pure ()
 
-withTestChatContactConnected :: HasCallStack => FilePath -> String -> (HasCallStack => TestCC -> IO a) -> IO a
-withTestChatContactConnected tmp dbPrefix action =
-  withTestChat tmp dbPrefix $ \cc -> do
+withTestChatContactConnected :: HasCallStack => TestParams -> String -> (HasCallStack => TestCC -> IO a) -> IO a
+withTestChatContactConnected ps dbPrefix action =
+  withTestChat ps dbPrefix $ \cc -> do
     cc <## "1 contacts connected (use /cs for the list)"
     action cc
 
-withTestChatContactConnected' :: HasCallStack => FilePath -> String -> IO ()
-withTestChatContactConnected' tmp dbPrefix = withTestChatContactConnected tmp dbPrefix $ \_ -> pure ()
+withTestChatContactConnected' :: HasCallStack => TestParams -> String -> IO ()
+withTestChatContactConnected' ps dbPrefix = withTestChatContactConnected ps dbPrefix $ \_ -> pure ()
 
-withTestChatContactConnectedV1 :: HasCallStack => FilePath -> String -> (HasCallStack => TestCC -> IO a) -> IO a
-withTestChatContactConnectedV1 tmp dbPrefix action =
-  withTestChatV1 tmp dbPrefix $ \cc -> do
+withTestChatContactConnectedV1 :: HasCallStack => TestParams -> String -> (HasCallStack => TestCC -> IO a) -> IO a
+withTestChatContactConnectedV1 ps dbPrefix action =
+  withTestChatV1 ps dbPrefix $ \cc -> do
     cc <## "1 contacts connected (use /cs for the list)"
     action cc
 
-withTestChatContactConnectedV1' :: HasCallStack => FilePath -> String -> IO ()
-withTestChatContactConnectedV1' tmp dbPrefix = withTestChatContactConnectedV1 tmp dbPrefix $ \_ -> pure ()
+withTestChatContactConnectedV1' :: HasCallStack => TestParams -> String -> IO ()
+withTestChatContactConnectedV1' ps dbPrefix = withTestChatContactConnectedV1 ps dbPrefix $ \_ -> pure ()
 
 -- | test sending direct messages
 (<##>) :: HasCallStack => TestCC -> TestCC -> IO ()
@@ -299,6 +306,7 @@ groupFeatures'' dir =
     ((dir, "Voice messages: on"), Nothing, Nothing),
     ((dir, "Files and media: on"), Nothing, Nothing),
     ((dir, "SimpleX links: on"), Nothing, Nothing),
+    ((dir, "Member reports: on"), Nothing, Nothing),
     ((dir, "Recent history: on"), Nothing, Nothing)
   ]
 
@@ -355,6 +363,13 @@ cc <#. line = do
   unless prefix $ print ("expected to start from: " <> line, ", got: " <> l)
   prefix `shouldBe` True
 
+(.<#) :: HasCallStack => TestCC -> String -> Expectation
+cc .<# line = do
+  l <- dropTime <$> getTermLine cc
+  let suffix = line `isSuffixOf` l
+  unless suffix $ print ("expected to end with: " <> line, ", got: " <> l)
+  suffix `shouldBe` True
+
 (<##..) :: HasCallStack => TestCC -> [String] -> Expectation
 cc <##.. ls = do
   l <- getTermLine cc
@@ -362,8 +377,8 @@ cc <##.. ls = do
   unless prefix $ print ("expected to start from one of: " <> show ls, ", got: " <> l)
   prefix `shouldBe` True
 
-(/*) :: HasCallStack => TestCC -> String -> IO ()
-cc /* note = do
+(>*) :: HasCallStack => TestCC -> String -> IO ()
+cc >* note = do
   cc `send` ("/* " <> note)
   (dropTime <$> getTermLine cc) `shouldReturn` ("* " <> note)
 
@@ -409,7 +424,7 @@ getInAnyOrder f cc ls = do
 cc <# line = (dropTime <$> getTermLine cc) `shouldReturn` line
 
 (*<#) :: HasCallStack => [TestCC] -> String -> Expectation
-ccs *<# line = concurrentlyN_ $ map (<# line) ccs
+ccs *<# line = mapConcurrently_ (<# line) ccs
 
 (?<#) :: HasCallStack => TestCC -> String -> Expectation
 cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line
@@ -487,13 +502,26 @@ dropPartialReceipt_ msg = case splitAt 2 msg of
   _ -> Nothing
 
 getInvitation :: HasCallStack => TestCC -> IO String
-getInvitation cc = do
+getInvitation = getInvitation_ False
+
+getShortInvitation :: HasCallStack => TestCC -> IO String
+getShortInvitation = getInvitation_ True
+
+getInvitation_ :: HasCallStack => Bool -> TestCC -> IO String
+getInvitation_ short cc = do
   cc <## "pass this invitation link to your contact (via another channel):"
   cc <## ""
   inv <- getTermLine cc
   cc <## ""
   cc <## "and ask them to connect: /c <invitation_link_above>"
+  when short $ cc <##. "The invitation link for old clients: https://simplex.chat/invitation#"
   pure inv
+
+getShortContactLink :: HasCallStack => TestCC -> Bool -> IO (String, String)
+getShortContactLink cc created = do
+  shortLink <- getContactLink cc created
+  fullLink <- dropLinePrefix "The contact link for old clients: " =<< getTermLine cc
+  pure (shortLink, fullLink)
 
 getContactLink :: HasCallStack => TestCC -> Bool -> IO String
 getContactLink cc created = do
@@ -506,6 +534,17 @@ getContactLink cc created = do
   cc <## "to share with your contacts: /profile_address on"
   cc <## "to delete it: /da (accepted contacts will remain connected)"
   pure link
+
+dropLinePrefix :: String -> String -> IO String
+dropLinePrefix line s
+  | line `isPrefixOf` s = pure $ drop (length line) s
+  | otherwise = error $ "expected to start from: " <> line <> ", got: " <> s
+
+getShortGroupLink :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO (String, String)
+getShortGroupLink cc gName mRole created = do
+  shortLink <- getGroupLink cc gName mRole created
+  fullLink <- dropLinePrefix "The group link for old clients: " =<< getTermLine cc
+  pure (shortLink, fullLink)
 
 getGroupLink :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO String
 getGroupLink cc gName mRole created = do
@@ -541,6 +580,10 @@ withCCUser cc action = do
 withCCTransaction :: TestCC -> (DB.Connection -> IO a) -> IO a
 withCCTransaction cc action =
   withTransaction (chatStore $ chatController cc) $ \db -> action db
+
+withCCAgentTransaction :: TestCC -> (DB.Connection -> IO a) -> IO a
+withCCAgentTransaction TestCC {chatController = ChatController {smpAgent}} action =
+  withTransaction (agentClientStore smpAgent) $ \db -> action db
 
 createCCNoteFolder :: TestCC -> IO ()
 createCCNoteFolder cc =
@@ -626,6 +669,16 @@ createGroup2' gName cc1 cc2 doConnectUsers = do
     (cc1 <## ("#" <> gName <> ": " <> name2 <> " joined the group"))
     (cc2 <## ("#" <> gName <> ": you joined the group"))
 
+disableFullDeletion2 :: HasCallStack => String -> TestCC -> TestCC -> IO ()
+disableFullDeletion2 gName cc1 cc2 = do
+  cc1 ##> ("/set delete #" <> gName <> " off")
+  cc1 <## "updated group preferences:"
+  cc1 <## "Full deletion: off"
+  name1 <- userName cc1
+  cc2 <## (name1 <> " updated group #" <> gName <> ":")
+  cc2 <## "updated group preferences:"
+  cc2 <## "Full deletion: off"
+
 createGroup3 :: HasCallStack => String -> TestCC -> TestCC -> TestCC -> IO ()
 createGroup3 gName cc1 cc2 cc3 = do
   createGroup2 gName cc1 cc2
@@ -645,6 +698,14 @@ createGroup3 gName cc1 cc2 cc3 = do
         cc2 <## ("#" <> gName <> ": " <> name1 <> " added " <> sName3 <> " to the group (connecting...)")
         cc2 <## ("#" <> gName <> ": new member " <> name3 <> " is connected")
     ]
+
+disableFullDeletion3 :: HasCallStack => String -> TestCC -> TestCC -> TestCC -> IO ()
+disableFullDeletion3 gName cc1 cc2 cc3 = do
+  disableFullDeletion2 gName cc1 cc2
+  name1 <- userName cc1
+  cc3 <## (name1 <> " updated group #" <> gName <> ":")
+  cc3 <## "updated group preferences:"
+  cc3 <## "Full deletion: off"
 
 create2Groups3 :: HasCallStack => String -> String -> TestCC -> TestCC -> TestCC -> IO ()
 create2Groups3 gName1 gName2 cc1 cc2 cc3 = do

@@ -68,7 +68,7 @@ struct CIRcvDecryptionError: View {
             }
     }
 
-    @ViewBuilder private func viewBody() -> some View {
+    private func viewBody() -> some View {
         Group {
             if case let .direct(contact) = chat.chatInfo,
                let contactStats = contact.activeConn?.connectionStats {
@@ -133,7 +133,7 @@ struct CIRcvDecryptionError: View {
             CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
                 .padding(.horizontal, 12)
         }
-        .onTapGesture(perform: { onClick() })
+        .simultaneousGesture(TapGesture().onEnded(onClick))
         .padding(.vertical, 6)
         .textSelection(.disabled)
     }
@@ -151,7 +151,7 @@ struct CIRcvDecryptionError: View {
             CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
                 .padding(.horizontal, 12)
         }
-        .onTapGesture(perform: { onClick() })
+        .simultaneousGesture(TapGesture().onEnded(onClick))
         .padding(.vertical, 6)
         .textSelection(.disabled)
     }
@@ -161,13 +161,13 @@ struct CIRcvDecryptionError: View {
         let why = Text(decryptErrorReason)
         switch msgDecryptError {
         case .ratchetHeader:
-            message = Text("\(msgCount) messages failed to decrypt.") + Text("\n") + why
+            message = Text("\(msgCount) messages failed to decrypt.") + textNewLine + why
         case .tooManySkipped:
-            message = Text("\(msgCount) messages skipped.") + Text("\n") + why
+            message = Text("\(msgCount) messages skipped.") + textNewLine + why
         case .ratchetEarlier:
-            message = Text("\(msgCount) messages failed to decrypt.") + Text("\n") + why
+            message = Text("\(msgCount) messages failed to decrypt.") + textNewLine + why
         case .other:
-            message = Text("\(msgCount) messages failed to decrypt.") + Text("\n") + why
+            message = Text("\(msgCount) messages failed to decrypt.") + textNewLine + why
         case .ratchetSync:
             message = Text("Encryption re-negotiation failed.")
         }

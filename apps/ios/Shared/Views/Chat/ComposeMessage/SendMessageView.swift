@@ -13,7 +13,9 @@ private let liveMsgInterval: UInt64 = 3000_000000
 
 struct SendMessageView: View {
     @Binding var composeState: ComposeState
+    @Binding var selectedRange: NSRange
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.isEnabled) var isEnabled
     var sendMessage: (Int?) -> Void
     var sendLiveMessage: (() async -> Void)? = nil
     var updateLiveMessage: (() async -> Void)? = nil
@@ -31,8 +33,9 @@ struct SendMessageView: View {
     @State private var holdingVMR = false
     @Namespace var namespace
     @Binding var keyboardVisible: Bool
+    @Binding var keyboardHiddenDate: Date
     var sendButtonColor = Color.accentColor
-    @State private var teHeight: CGFloat = 42
+    @State private var teHeight: CGFloat = NativeTextEditor.minHeight
     @State private var teFont: Font = .body
     @State private var sendButtonSize: CGFloat = 29
     @State private var sendButtonOpacity: CGFloat = 1
@@ -43,52 +46,54 @@ struct SendMessageView: View {
     @UserDefault(DEFAULT_LIVE_MESSAGE_ALERT_SHOWN) private var liveMessageAlertShown = false
 
     var body: some View {
-        ZStack {
-            let composeShape = RoundedRectangle(cornerSize: CGSize(width: 20, height: 20))
-            HStack(alignment: .bottom) {
-                ZStack(alignment: .leading) {
-                    if case .voicePreview = composeState.preview {
-                        Text("Voice message…")
-                            .font(teFont.italic())
-                            .multilineTextAlignment(.leading)
-                            .foregroundColor(theme.colors.secondary)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 8)
-                            .frame(maxWidth: .infinity)
-                    } else {
-                        NativeTextEditor(
-                            text: $composeState.message,
-                            disableEditing: $composeState.inProgress,
-                            height: $teHeight,
-                            focused: $keyboardVisible,
-                            placeholder: Binding(get: { composeState.placeholder }, set: { _ in }),
-                            onImagesAdded: onMediaAdded
-                        )
-                        .allowsTightening(false)
-                        .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                if progressByTimeout {
-                    ProgressView()
-                        .scaleEffect(1.4)
-                        .frame(width: 31, height: 31, alignment: .center)
-                        .padding([.bottom, .trailing], 3)
-                } else {
-                    VStack(alignment: .trailing) {
-                        if teHeight > 100 && !composeState.inProgress {
-                            deleteTextButton()
-                            Spacer()
-                        }
-                        composeActionButtons()
-                    }
-                    .frame(height: teHeight, alignment: .bottom)
-                }
+        let composeShape = RoundedRectangle(cornerSize: CGSize(width: 20, height: 20))
+        ZStack(alignment: .leading) {
+            if case .voicePreview = composeState.preview {
+                Text("Voice message…")
+                    .font(teFont.italic())
+                    .multilineTextAlignment(.leading)
+                    .foregroundColor(theme.colors.secondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .padding(.trailing, 32)
+                    .frame(maxWidth: .infinity)
+            } else {
+                NativeTextEditor(
+                    text: $composeState.message,
+                    disableEditing: $composeState.inProgress,
+                    height: $teHeight,
+                    focused: $keyboardVisible,
+                    lastUnfocusedDate: $keyboardHiddenDate,
+                    placeholder: Binding(get: { composeState.placeholder }, set: { _ in }),
+                    selectedRange: $selectedRange,
+                    onImagesAdded: onMediaAdded
+                )
+                .padding(.trailing, 32)
+                .allowsTightening(false)
+                .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.vertical, 1)
-            .background(theme.colors.background)
-            .clipShape(composeShape)
-            .overlay(composeShape.strokeBorder(.secondary, lineWidth: 0.5).opacity(0.7))
         }
+        .overlay(alignment: .topTrailing, content: {
+            if !progressByTimeout && teHeight > 100 && !composeState.inProgress {
+                deleteTextButton()
+            }
+        })
+        .overlay(alignment: .bottomTrailing, content: {
+            if progressByTimeout {
+                ProgressView()
+                    .scaleEffect(1.4)
+                    .frame(width: 31, height: 31, alignment: .center)
+                    .padding([.bottom, .trailing], 4)
+            } else {
+                composeActionButtons()
+                // required for intercepting clicks
+                    .background(.white.opacity(0.000001))
+            }
+        })
+        .padding(.vertical, 1)
+        .background(theme.colors.background)
+        .clipShape(composeShape)
+        .overlay(composeShape.strokeBorder(.secondary, lineWidth: 0.5).opacity(0.7))
         .onChange(of: composeState.message, perform: { text in updateFont(text) })
         .onChange(of: composeState.inProgress) { inProgress in
             if inProgress {
@@ -167,7 +172,7 @@ struct SendMessageView: View {
             !composeState.sendEnabled ||
             composeState.inProgress
         )
-        .frame(width: 29, height: 29)
+        .frame(width: 31, height: 31)
         .padding([.bottom, .trailing], 4)
     }
 
@@ -190,7 +195,7 @@ struct SendMessageView: View {
             composeState.endLiveDisabled ||
             disableSendButton
         )
-        .frame(width: 29, height: 29)
+        .frame(width: 31, height: 31)
         .contextMenu{
             sendButtonContextMenuItems()
         }
@@ -251,6 +256,7 @@ struct SendMessageView: View {
     }
 
     private struct RecordVoiceMessageButton: View {
+        @Environment(\.isEnabled) var isEnabled
         @EnvironmentObject var theme: AppTheme
         var startVoiceMessageRecording: (() -> Void)?
         var finishVoiceMessageRecording: (() -> Void)?
@@ -259,15 +265,14 @@ struct SendMessageView: View {
         @State private var pressed: TimeInterval? = nil
 
         var body: some View {
-            Button(action: {}) {
-                Image(systemName: "mic.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 20, height: 20)
-                    .foregroundColor(theme.colors.primary)
-            }
+            Image(systemName: isEnabled ? "mic.fill" : "mic")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 20, height: 20)
+            .foregroundColor(isEnabled ? theme.colors.primary : theme.colors.secondary)
+            .opacity(holdingVMR ? 0.7 : 1)
             .disabled(disabled)
-            .frame(width: 29, height: 29)
+            .frame(width: 31, height: 31)
             .padding([.bottom, .trailing], 4)
             ._onButtonGesture { down in
                 if down {
@@ -275,9 +280,7 @@ struct SendMessageView: View {
                     pressed = ProcessInfo.processInfo.systemUptime
                     startVoiceMessageRecording?()
                 } else {
-                    let now = ProcessInfo.processInfo.systemUptime
-                    if let pressed = pressed,
-                       now - pressed >= 1 {
+                    if let pressed, ProcessInfo.processInfo.systemUptime - pressed >= 1 {
                         finishVoiceMessageRecording?()
                     }
                     holdingVMR = false
@@ -323,7 +326,7 @@ struct SendMessageView: View {
                 .foregroundColor(theme.colors.secondary)
         }
         .disabled(composeState.inProgress)
-        .frame(width: 29, height: 29)
+        .frame(width: 31, height: 31)
         .padding([.bottom, .trailing], 4)
     }
 
@@ -351,7 +354,7 @@ struct SendMessageView: View {
             Image(systemName: "bolt.fill")
                 .resizable()
                 .scaledToFit()
-                .foregroundColor(theme.colors.primary)
+                .foregroundColor(isEnabled ? theme.colors.primary : theme.colors.secondary)
                 .frame(width: 20, height: 20)
         }
         .frame(width: 29, height: 29)
@@ -408,7 +411,7 @@ struct SendMessageView: View {
                 .foregroundColor(theme.colors.primary)
         }
         .disabled(composeState.inProgress)
-        .frame(width: 29, height: 29)
+        .frame(width: 31, height: 31)
         .padding([.bottom, .trailing], 4)
     }
 
@@ -424,8 +427,10 @@ struct SendMessageView: View {
 struct SendMessageView_Previews: PreviewProvider {
     static var previews: some View {
         @State var composeStateNew = ComposeState()
+        @State var selectedRange = NSRange()
         let ci = ChatItem.getSample(1, .directSnd, .now, "hello")
         @State var composeStateEditing = ComposeState(editingItem: ci)
+        @State var selectedRangeEditing = NSRange()
         @State var sendEnabled: Bool = true
 
         return Group {
@@ -434,9 +439,11 @@ struct SendMessageView_Previews: PreviewProvider {
                 Spacer(minLength: 0)
                 SendMessageView(
                     composeState: $composeStateNew,
+                    selectedRange: $selectedRange,
                     sendMessage: { _ in },
                     onMediaAdded: { _ in },
-                    keyboardVisible: Binding.constant(true)
+                    keyboardVisible: Binding.constant(true),
+                    keyboardHiddenDate: Binding.constant(Date.now)
                 )
             }
             VStack {
@@ -444,9 +451,11 @@ struct SendMessageView_Previews: PreviewProvider {
                 Spacer(minLength: 0)
                 SendMessageView(
                     composeState: $composeStateEditing,
+                    selectedRange: $selectedRangeEditing,
                     sendMessage: { _ in },
                     onMediaAdded: { _ in },
-                    keyboardVisible: Binding.constant(true)
+                    keyboardVisible: Binding.constant(true),
+                    keyboardHiddenDate: Binding.constant(Date.now)
                 )
             }
         }

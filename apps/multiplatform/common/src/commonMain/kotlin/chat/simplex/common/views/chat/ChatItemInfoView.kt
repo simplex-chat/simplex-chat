@@ -42,18 +42,20 @@ sealed class CIInfoTab {
 }
 
 @Composable
-fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
+fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean, chatInfo: ChatInfo?) {
   val sent = ci.chatDir.sent
   val appColors = MaterialTheme.appColors
   val uriHandler = LocalUriHandler.current
   val selection = remember { mutableStateOf<CIInfoTab>(CIInfoTab.History) }
 
   @Composable
-  fun TextBubble(text: String, formattedText: List<FormattedText>?, sender: String?, showMenu: MutableState<Boolean>) {
+  fun TextBubble(text: String, formattedText: List<FormattedText>?, sender: String?, showMenu: MutableState<Boolean>, mentions: Map<String, CIMention>? = null, userMemberId: String? = null, ) {
     if (text != "") {
       MarkdownText(
         text, if (text.isEmpty()) emptyList() else formattedText,
         sender = sender,
+        mentions = mentions,
+        userMemberId = userMemberId,
         senderBold = true,
         toggleSecrets = true,
         linkMode = SimplexLinkMode.DESCRIPTION, uriHandler = uriHandler,
@@ -80,7 +82,12 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
           .onRightClick { showMenu.value = true }
       ) {
         Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
-          TextBubble(text, ciVersion.formattedText, sender = null, showMenu)
+          TextBubble(text, ciVersion.formattedText, sender = null, showMenu = showMenu, mentions = ci.mentions,
+            userMemberId = when {
+              chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
+              else -> null
+            }
+          )
         }
       }
       Row(Modifier.padding(start = 12.dp, top = 3.dp, bottom = 16.dp)) {
@@ -202,7 +209,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       SectionItemView(
         click = {
           withBGApi {
-            openChat(chatRh, forwardedFromItem.chatInfo)
+            openChat(secondaryChatsCtx = null, chatRh, forwardedFromItem.chatInfo)
             ModalManager.end.closeModals()
           }
         },

@@ -87,6 +87,9 @@ kotlin {
         implementation("io.coil-kt:coil-compose:2.6.0")
         implementation("io.coil-kt:coil-gif:2.6.0")
 
+        // Emojis
+        implementation("androidx.emoji2:emoji2-emojipicker:1.4.0")
+
         implementation("com.jakewharton:process-phoenix:3.0.0")
 
         val cameraXVersion = "1.3.4"
@@ -151,6 +154,7 @@ buildConfig {
     buildConfigField("int", "ANDROID_VERSION_CODE", "${extra["android.version_code"]}")
     buildConfigField("String", "DESKTOP_VERSION_NAME", "\"${extra["desktop.version_name"]}\"")
     buildConfigField("int", "DESKTOP_VERSION_CODE", "${extra["desktop.version_code"]}")
+    buildConfigField("String", "DATABASE_BACKEND", "\"${extra["database.backend"]}\"")
   }
 }
 

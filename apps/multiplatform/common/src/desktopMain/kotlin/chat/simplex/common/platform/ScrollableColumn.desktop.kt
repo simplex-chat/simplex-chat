@@ -36,6 +36,7 @@ actual fun LazyColumnWithScrollBar(
   flingBehavior: FlingBehavior,
   userScrollEnabled: Boolean,
   additionalBarOffset: State<Dp>?,
+  additionalTopBar: State<Boolean>,
   chatBottomBar: State<Boolean>,
   fillMaxSize: Boolean,
   content: LazyListScope.() -> Unit
@@ -93,7 +94,7 @@ actual fun LazyColumnWithScrollBar(
   val modifier = if (fillMaxSize) Modifier.fillMaxSize().then(modifier) else modifier
   Box(Modifier.copyViewToAppBar(remember { appPrefs.appearanceBarsBlurRadius.state }.value, LocalAppBarHandler.current?.graphicsLayer).nestedScroll(connection)) {
     LazyColumn(modifier.then(scrollModifier), state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled, content)
-    ScrollBar(reverseLayout, state, scrollBarAlpha, scrollJob, scrollBarDraggingState, additionalBarOffset, chatBottomBar)
+    ScrollBar(reverseLayout, state, scrollBarAlpha, scrollJob, scrollBarDraggingState, additionalBarOffset, additionalTopBar, chatBottomBar)
   }
 }
 
@@ -108,8 +109,11 @@ actual fun LazyColumnWithScrollBarNoAppBar(
   flingBehavior: FlingBehavior,
   userScrollEnabled: Boolean,
   additionalBarOffset: State<Dp>?,
+  additionalTopBar: State<Boolean>,
   chatBottomBar: State<Boolean>,
-  content: LazyListScope.() -> Unit
+  maxHeight: State<Dp>?,
+  containerAlignment: Alignment,
+  content: LazyListScope.() -> Unit,
 ) {
   val scope = rememberCoroutineScope()
   val scrollBarAlpha = remember { Animatable(0f) }
@@ -133,9 +137,11 @@ actual fun LazyColumnWithScrollBarNoAppBar(
   // When scroll bar is dragging, there is no scroll event in nested scroll modifier. So, listen for changes on lazy column state
   // (only first visible row is useful because LazyColumn doesn't have absolute scroll position, only relative to row)
   val scrollBarDraggingState = remember { mutableStateOf(false) }
-  Box {
+  Box(contentAlignment = containerAlignment) {
     LazyColumn(modifier.then(scrollModifier), state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled, content)
-    ScrollBar(reverseLayout, state, scrollBarAlpha, scrollJob, scrollBarDraggingState, additionalBarOffset, chatBottomBar)
+    Box(if (maxHeight?.value != null) Modifier.height(maxHeight.value).fillMaxWidth() else Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
+      DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.fillMaxHeight(), scrollBarAlpha, scrollJob, reverseLayout, scrollBarDraggingState)
+    }
   }
 }
 
@@ -147,11 +153,13 @@ private fun ScrollBar(
   scrollJob: MutableState<Job>,
   scrollBarDraggingState: MutableState<Boolean>,
   additionalBarHeight: State<Dp>?,
+  additionalTopBar: State<Boolean>,
   chatBottomBar: State<Boolean>,
 ) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val topBarPadding = if (additionalTopBar.value) AppBarHeight * fontSizeSqrtMultiplier else 0.dp
   val padding = if (additionalBarHeight != null) {
-    PaddingValues(top = if (oneHandUI.value && chatBottomBar.value) 0.dp else AppBarHeight * fontSizeSqrtMultiplier, bottom = additionalBarHeight.value)
+    PaddingValues(top = topBarPadding + if (oneHandUI.value && chatBottomBar.value) 0.dp else AppBarHeight * fontSizeSqrtMultiplier, bottom = additionalBarHeight.value)
   } else if (reverseLayout) {
     PaddingValues(bottom = AppBarHeight * fontSizeSqrtMultiplier)
   } else {

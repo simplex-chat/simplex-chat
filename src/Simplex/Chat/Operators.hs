@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -43,24 +44,24 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime, nominalDay)
-import Database.SQLite.Simple.FromField (FromField (..))
-import Database.SQLite.Simple.ToField (ToField (..))
 import Language.Haskell.TH.Syntax (lift)
 import Simplex.Chat.Operators.Conditions
+import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types (User)
 import Simplex.Chat.Types.Util (textParseJSON)
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
+import Simplex.Messaging.Agent.Store.DB (fromTextField_)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, sumTypeJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtocolType (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (atomicModifyIORef'_, safeDecodeUtf8)
 
 usageConditionsCommit :: Text
-usageConditionsCommit = "a5061f3147165a05979d6ace33960aced2d6ac03"
+usageConditionsCommit = "7471fd2af5838dc0467aebc570b5ea75e5df3209"
 
 previousConditionsCommit :: Text
-previousConditionsCommit = "11a44dc1fd461a93079f897048b46998db55da5c"
+previousConditionsCommit = "a5061f3147165a05979d6ace33960aced2d6ac03"
 
 usageConditionsText :: Text
 usageConditionsText =
@@ -119,7 +120,14 @@ instance TextEncoding OperatorTag where
 
 -- this and other types only define instances of serialization for known DB IDs only,
 -- entities without IDs cannot be serialized to JSON
-instance FromField DBEntityId where fromField f = DBEntityId <$> fromField f
+instance FromField DBEntityId
+#if defined(dbPostgres)
+  where
+    fromField f dat = DBEntityId <$> fromField f dat
+#else
+  where
+    fromField f = DBEntityId <$> fromField f
+#endif
 
 instance ToField DBEntityId where toField (DBEntityId i) = toField i
 
@@ -267,6 +275,10 @@ data UserServer' s (p :: ProtocolType) = UserServer
   }
   deriving (Show)
 
+presetServerAddress :: UserServer' s p -> ProtocolServer p
+presetServerAddress UserServer {server = ProtoServerWithAuth srv _} = srv
+{-# INLINE presetServerAddress #-}
+
 data PresetOperator = PresetOperator
   { operator :: Maybe NewServerOperator,
     smp :: [NewUserServer 'PSMP],
@@ -288,6 +300,9 @@ operatorServersToUse :: UserProtocol p => SProtocolType p -> PresetOperator -> I
 operatorServersToUse p PresetOperator {useSMP, useXFTP} = case p of
   SPSMP -> useSMP
   SPXFTP -> useXFTP
+
+presetServer' :: Bool -> ProtocolServer p -> NewUserServer p
+presetServer' enabled = presetServer enabled . (`ProtoServerWithAuth` Nothing)
 
 presetServer :: Bool -> ProtoServerWithAuth p -> NewUserServer p
 presetServer = newUserServer_ True
@@ -338,7 +353,7 @@ updatedServerOperators presetOps storedOps =
     <> map (\op -> (Nothing, Just $ ASO SDBStored op)) (filter (isNothing . operatorTag) storedOps)
   where
     -- TODO remove domains of preset operators from custom
-    addPreset op = ((Just op, storedOp' <$> pOperator op) :)      
+    addPreset op = ((Just op, storedOp' <$> pOperator op) :)
       where
         storedOp' presetOp = case find ((operatorTag presetOp ==) . operatorTag) storedOps of
           Just ServerOperator {operatorId, conditionsAcceptance, enabled, smpRoles, xftpRoles} ->
@@ -427,7 +442,7 @@ groupByOperator_ (ops, smpSrvs, xftpSrvs) = do
   where
     mkUS op = UserOperatorServers op [] []
     addServer :: [([Text], IORef (f UserOperatorServers))] -> IORef (f UserOperatorServers) -> (UserServer p -> UserOperatorServers -> UserOperatorServers) -> UserServer p -> IO ()
-    addServer ss custom add srv = 
+    addServer ss custom add srv =
       let v = maybe custom snd $ find (\(ds, _) -> any (\d -> any (matchingHost d) (srvHost srv)) ds) ss
        in atomicModifyIORef'_ v (add srv <$>)
     addSMP srv s@UserOperatorServers {smpServers} = (s :: UserOperatorServers) {smpServers = srv : smpServers}
@@ -445,7 +460,7 @@ validateUserServers curr others = currUserErrs <> concatMap otherUserErrs others
   where
     currUserErrs = noServersErrs SPSMP Nothing curr <> noServersErrs SPXFTP Nothing curr <> serverErrs SPSMP curr <> serverErrs SPXFTP curr
     otherUserErrs (user, uss) = noServersErrs SPSMP (Just user) uss <> noServersErrs SPXFTP (Just user) uss
-    noServersErrs  :: (UserServersClass u, ProtocolTypeI p, UserProtocol p) => SProtocolType p -> Maybe User -> [u] -> [UserServersError]
+    noServersErrs :: (UserServersClass u, ProtocolTypeI p, UserProtocol p) => SProtocolType p -> Maybe User -> [u] -> [UserServersError]
     noServersErrs p user uss
       | noServers opEnabled = [USENoServers p' user]
       | otherwise = [USEStorageMissing p' user | noServers (hasRole storage)] <> [USEProxyMissing p' user | noServers (hasRole proxy)]

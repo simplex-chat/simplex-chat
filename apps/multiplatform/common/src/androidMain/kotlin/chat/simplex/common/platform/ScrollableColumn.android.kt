@@ -29,6 +29,7 @@ actual fun LazyColumnWithScrollBar(
   flingBehavior: FlingBehavior,
   userScrollEnabled: Boolean,
   additionalBarOffset: State<Dp>?,
+  additionalTopBar: State<Boolean>,
   chatBottomBar: State<Boolean>,
   fillMaxSize: Boolean,
   content: LazyListScope.() -> Unit
@@ -92,9 +93,12 @@ actual fun LazyColumnWithScrollBarNoAppBar(
   flingBehavior: FlingBehavior,
   userScrollEnabled: Boolean,
   additionalBarOffset: State<Dp>?,
+  additionalTopBar: State<Boolean>,
   chatBottomBar: State<Boolean>,
+  maxHeight: State<Dp>?,
+  containerAlignment: Alignment,
   content: LazyListScope.() -> Unit
-) {
+  ) {
   val state = state ?: rememberLazyListState()
   LazyColumn(modifier, state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled) {
     content()

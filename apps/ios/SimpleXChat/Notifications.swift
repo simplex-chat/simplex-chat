@@ -203,6 +203,11 @@ func hideSecrets(_ cItem: ChatItem) -> String {
         }
         return res
     } else {
-        return cItem.text
+        let mc = cItem.content.msgContent
+        if case let .report(text, reason) = mc {
+            return String.localizedStringWithFormat(NSLocalizedString("Report: %@", comment: "report in notification"), text.isEmpty ? reason.text : text)
+        } else {
+            return cItem.text
+        }
     }
 }

@@ -15,10 +15,12 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.LayoutDirection
@@ -40,7 +42,6 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filter
 import java.lang.reflect.Field
 import java.net.URI
@@ -49,15 +50,16 @@ import java.net.URI
 actual fun PlatformTextField(
   composeState: MutableState<ComposeState>,
   sendMsgEnabled: Boolean,
+  disabledText: String?,
   sendMsgButtonDisabled: Boolean,
   textStyle: MutableState<TextStyle>,
   showDeleteTextButton: MutableState<Boolean>,
-  userIsObserver: Boolean,
   placeholder: String,
   showVoiceButton: Boolean,
-  onMessageChange: (String) -> Unit,
+  onMessageChange: (ComposeMessage) -> Unit,
   onUpArrow: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
+  focusRequester: FocusRequester?,
   onDone: () -> Unit,
 ) {
   val cs = composeState.value
@@ -117,6 +119,13 @@ actual fun PlatformTextField(
         }
         return InputConnectionCompat.createWrapper(connection, editorInfo, onCommit)
       }
+
+      override fun onSelectionChanged(selStart: Int, selEnd: Int) {
+        val start = minOf(text.length, minOf(selStart, selEnd))
+        val end = minOf(text.length, maxOf(selStart, selEnd))
+        onMessageChange(ComposeMessage(text.toString(), TextRange(start, end)))
+        super.onSelectionChanged(start, end)
+      }
     }
     editText.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
     editText.maxLines = 16
@@ -126,7 +135,8 @@ actual fun PlatformTextField(
     editText.background = ColorDrawable(Color.Transparent.toArgb())
     editText.textDirection = if (isRtl) EditText.TEXT_DIRECTION_LOCALE else EditText.TEXT_DIRECTION_ANY_RTL
     editText.setPaddingRelative(paddingStart, paddingTop, paddingEnd, paddingBottom)
-    editText.setText(cs.message)
+    editText.setText(cs.message.text)
+    editText.setSelection(cs.message.selection.start, cs.message.selection.end)
     editText.hint = placeholder
     editText.setHintTextColor(hintColor.toArgb())
     if (Build.VERSION.SDK_INT >= 29) {
@@ -149,9 +159,10 @@ actual fun PlatformTextField(
     }
     editText.doOnTextChanged { text, _, _, _ ->
       if (!composeState.value.inProgress) {
-        onMessageChange(text.toString())
-      } else if (text.toString() != composeState.value.message) {
-        editText.setText(composeState.value.message)
+        onMessageChange(ComposeMessage(text.toString(), TextRange(minOf(editText.selectionStart, editText.selectionEnd), maxOf(editText.selectionStart, editText.selectionEnd))))
+      } else if (text.toString() != composeState.value.message.text) {
+        editText.setText(composeState.value.message.text)
+        editText.setSelection(composeState.value.message.selection.start, composeState.value.message.selection.end)
       }
     }
     editText.doAfterTextChanged { text -> if (composeState.value.preview is ComposePreview.VoicePreview && text.toString() != "") editText.setText("") }
@@ -167,10 +178,9 @@ actual fun PlatformTextField(
     it.textSize = textStyle.value.fontSize.value * appPrefs.fontScale.get()
     it.isFocusable = composeState.value.preview !is ComposePreview.VoicePreview
     it.isFocusableInTouchMode = it.isFocusable
-    if (cs.message != it.text.toString()) {
-      it.setText(cs.message)
-      // Set cursor to the end of the text
-      it.setSelection(it.text.length)
+    if (cs.message.text != it.text.toString() || cs.message.selection.start != it.selectionStart || cs.message.selection.end != it.selectionEnd) {
+      it.setText(cs.message.text)
+      it.setSelection(cs.message.selection.start, cs.message.selection.end)
     }
     if (showKeyboard) {
       it.requestFocus()
@@ -186,16 +196,16 @@ actual fun PlatformTextField(
     showDeleteTextButton.value = it.lineCount >= 4 && !cs.inProgress
   }
   if (composeState.value.preview is ComposePreview.VoicePreview) {
-    ComposeOverlay(MR.strings.voice_message_send_text, textStyle, padding)
-  } else if (userIsObserver) {
-    ComposeOverlay(MR.strings.you_are_observer, textStyle, padding)
+    ComposeOverlay(generalGetString(MR.strings.voice_message_send_text), textStyle, padding)
+  } else if (disabledText != null) {
+    ComposeOverlay(disabledText, textStyle, padding)
   }
 }
 
 @Composable
-private fun ComposeOverlay(textId: StringResource, textStyle: MutableState<TextStyle>, padding: PaddingValues) {
+private fun ComposeOverlay(text: String, textStyle: MutableState<TextStyle>, padding: PaddingValues) {
   Text(
-    generalGetString(textId),
+    text,
     Modifier.padding(padding),
     color = MaterialTheme.colors.secondary,
     style = textStyle.value.copy(fontStyle = FontStyle.Italic)

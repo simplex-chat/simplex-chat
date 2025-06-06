@@ -194,7 +194,7 @@ fun MainScreen() {
           OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
           OnboardingStage.Step3_ChooseServerOperators -> {
             val modalData = remember { ModalData() }
-            modalData.ChooseServerOperators(true)
+            modalData.OnboardingConditionsView()
             if (appPlatform.isDesktop) {
               ModalManager.fullscreen.showInView()
             }
@@ -339,7 +339,7 @@ fun AndroidScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
       .graphicsLayer { translationX = maxWidth.toPx() - minOf(offset.value.dp, maxWidth).toPx() }
     ) Box2@{
       currentChatId.value?.let {
-        ChatView(currentChatId, onComposed)
+        ChatView(chatsCtx = chatModel.chatsContext, currentChatId, onComposed = onComposed)
       }
     }
   }
@@ -393,7 +393,7 @@ fun CenterPartOfScreen() {
         ModalManager.center.showInView()
       }
     }
-    else -> ChatView(currentChatId) {}
+    else -> ChatView(chatsCtx = chatModel.chatsContext, currentChatId) {}
   }
 }
 

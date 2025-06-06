@@ -162,7 +162,7 @@ struct GroupMemberInfoView: View {
                             }
                             .disabled(
                                 connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil }
-                                || connStats.ratchetSyncSendProhibited
+                                || !member.sendMsgEnabled
                             )
                             if connStats.rcvQueuesInfo.contains(where: { $0.rcvSwitchStatus != nil }) {
                                 Button("Abort changing address") {
@@ -170,7 +170,7 @@ struct GroupMemberInfoView: View {
                                 }
                                 .disabled(
                                     connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil && !$0.canAbortSwitch }
-                                    || connStats.ratchetSyncSendProhibited
+                                    || !member.sendMsgEnabled
                                 )
                             }
                             smpServers("Receiving via", connStats.rcvQueuesInfo.map { $0.rcvServer }, theme.colors.secondary)
@@ -297,7 +297,7 @@ struct GroupMemberInfoView: View {
                     if let contactId = member.memberContactId {
                         newDirectChatButton(contactId, width: buttonWidth)
                     } else if member.versionRange.maxVersion >= CREATE_MEMBER_CONTACT_VERSION {
-                        createMemberContactButton(width: buttonWidth)
+                        createMemberContactButton(member, width: buttonWidth)
                     }
                     InfoViewButton(image: "phone.fill", title: "call", disabledLook: true, width: buttonWidth) { showSendMessageToEnableCallsAlert()
                     }
@@ -366,45 +366,48 @@ struct GroupMemberInfoView: View {
     func newDirectChatButton(_ contactId: Int64, width: CGFloat) -> some View {
         InfoViewButton(image: "message.fill", title: "message", width: width) {
             Task {
-                do {
-                    let chat = try await apiGetChat(type: .direct, id: contactId)
-                    chatModel.addChat(chat)
-                    ItemsModel.shared.loadOpenChat(chat.id) {
-                        dismissAllSheets(animated: true)
-                    }
-                } catch let error {
-                    logger.error("openDirectChatButton apiGetChat error: \(responseError(error))")
+                ItemsModel.shared.loadOpenChat("@\(contactId)") {
+                    dismissAllSheets(animated: true)
                 }
             }
         }
     }
 
-    func createMemberContactButton(width: CGFloat) -> some View {
-        InfoViewButton(image: "message.fill", title: "message", width: width) {
-            if let connStats = connectionStats {
-                if connStats.ratchetSyncState == .ok {
-                    progressIndicator = true
-                    Task {
-                        do {
-                            let memberContact = try await apiCreateMemberContact(groupInfo.apiId, groupMember.groupMemberId)
-                            await MainActor.run {
-                                progressIndicator = false
-                                chatModel.addChat(Chat(chatInfo: .direct(contact: memberContact)))
-                                ItemsModel.shared.loadOpenChat(memberContact.id) {
-                                    dismissAllSheets(animated: true)
-                                }
-                                NetworkModel.shared.setContactNetworkStatus(memberContact, .connected)
+    func createMemberContactButton(_ member: GroupMember, width: CGFloat) -> some View {
+        InfoViewButton(
+            image: "message.fill",
+            title: "message",
+            disabledLook:
+                !(
+                    member.sendMsgEnabled ||
+                    (member.activeConn?.connectionStats?.ratchetSyncAllowed ?? false)
+                ),
+            width: width
+        ) {
+            if member.sendMsgEnabled {
+                progressIndicator = true
+                Task {
+                    do {
+                        let memberContact = try await apiCreateMemberContact(groupInfo.apiId, groupMember.groupMemberId)
+                        await MainActor.run {
+                            progressIndicator = false
+                            chatModel.addChat(Chat(chatInfo: .direct(contact: memberContact)))
+                            ItemsModel.shared.loadOpenChat(memberContact.id) {
+                                dismissAllSheets(animated: true)
                             }
-                        } catch let error {
-                            logger.error("createMemberContactButton apiCreateMemberContact error: \(responseError(error))")
-                            let a = getErrorAlert(error, "Error creating member contact")
-                            await MainActor.run {
-                                progressIndicator = false
-                                alert = .error(title: a.title, error: a.message)
-                            }
+                            NetworkModel.shared.setContactNetworkStatus(memberContact, .connected)
+                        }
+                    } catch let error {
+                        logger.error("createMemberContactButton apiCreateMemberContact error: \(responseError(error))")
+                        let a = getErrorAlert(error, "Error creating member contact")
+                        await MainActor.run {
+                            progressIndicator = false
+                            alert = .error(title: a.title, error: a.message)
                         }
                     }
-                } else if connStats.ratchetSyncAllowed {
+                }
+            } else if let connStats = connectionStats {
+                if connStats.ratchetSyncAllowed {
                     alert = .someAlert(alert: SomeAlert(
                         alert: Alert(
                             title: Text("Fix connection?"),
@@ -416,13 +419,21 @@ struct GroupMemberInfoView: View {
                         ),
                         id: "can't message member, fix connection"
                     ))
-                } else {
+                } else if connStats.ratchetSyncInProgress {
                     alert = .someAlert(alert: SomeAlert(
                         alert: mkAlert(
                             title: "Can't message member",
                             message: "Encryption renegotiation in progress."
                         ),
-                        id: "can't message contact, encryption renegotiation in progress"
+                        id: "can't message member, encryption renegotiation in progress"
+                    ))
+                } else {
+                    alert = .someAlert(alert: SomeAlert(
+                        alert: mkAlert(
+                            title: "Can't message member",
+                            message: "Connection not ready."
+                        ),
+                        id: "can't message member, connection not ready"
                     ))
                 }
             }
@@ -599,13 +610,15 @@ struct GroupMemberInfoView: View {
             primaryButton: .destructive(Text("Remove")) {
                 Task {
                     do {
-                        let updatedMember = try await apiRemoveMember(groupInfo.groupId, mem.groupMemberId)
+                        let updatedMembers = try await apiRemoveMembers(groupInfo.groupId, [mem.groupMemberId])
                         await MainActor.run {
-                            _ = chatModel.upsertGroupMember(groupInfo, updatedMember)
+                            updatedMembers.forEach { updatedMember in
+                                _ = chatModel.upsertGroupMember(groupInfo, updatedMember)
+                            }
                             dismiss()
                         }
                     } catch let error {
-                        logger.error("apiRemoveMember error: \(responseError(error))")
+                        logger.error("apiRemoveMembers error: \(responseError(error))")
                         let a = getErrorAlert(error, "Error removing member")
                         alert = .error(title: a.title, error: a.message)
                     }
@@ -630,14 +643,16 @@ struct GroupMemberInfoView: View {
             primaryButton: .default(Text("Change")) {
                 Task {
                     do {
-                        let updatedMember = try await apiMemberRole(groupInfo.groupId, mem.groupMemberId, newRole)
+                        let updatedMembers = try await apiMembersRole(groupInfo.groupId, [mem.groupMemberId], newRole)
                         await MainActor.run {
-                            _ = chatModel.upsertGroupMember(groupInfo, updatedMember)
+                            updatedMembers.forEach { updatedMember in
+                                _ = chatModel.upsertGroupMember(groupInfo, updatedMember)
+                            }
                         }
 
                     } catch let error {
                         newRole = mem.memberRole
-                        logger.error("apiMemberRole error: \(responseError(error))")
+                        logger.error("apiMembersRole error: \(responseError(error))")
                         let a = getErrorAlert(error, "Error changing role")
                         alert = .error(title: a.title, error: a.message)
                     }
@@ -789,12 +804,14 @@ func unblockForAllAlert(_ gInfo: GroupInfo, _ mem: GroupMember) -> Alert {
 func blockMemberForAll(_ gInfo: GroupInfo, _ member: GroupMember, _ blocked: Bool) {
     Task {
         do {
-            let updatedMember = try await apiBlockMemberForAll(gInfo.groupId, member.groupMemberId, blocked)
+            let updatedMembers = try await apiBlockMembersForAll(gInfo.groupId, [member.groupMemberId], blocked)
             await MainActor.run {
-                _ = ChatModel.shared.upsertGroupMember(gInfo, updatedMember)
+                updatedMembers.forEach { updatedMember in
+                    _ = ChatModel.shared.upsertGroupMember(gInfo, updatedMember)
+                }
             }
         } catch let error {
-            logger.error("apiBlockMemberForAll error: \(responseError(error))")
+            logger.error("apiBlockMembersForAll error: \(responseError(error))")
         }
     }
 }

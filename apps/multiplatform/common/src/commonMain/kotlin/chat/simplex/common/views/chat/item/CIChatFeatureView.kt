@@ -16,6 +16,7 @@ import chat.simplex.common.platform.onRightClick
 
 @Composable
 fun CIChatFeatureView(
+  chatsCtx: ChatModel.ChatsContext,
   chatInfo: ChatInfo,
   chatItem: ChatItem,
   feature: Feature,
@@ -24,7 +25,7 @@ fun CIChatFeatureView(
   revealed: State<Boolean>,
   showMenu: MutableState<Boolean>,
 ) {
-  val merged = if (!revealed.value) mergedFeatures(chatItem, chatInfo) else emptyList()
+  val merged = if (!revealed.value) mergedFeatures(chatsCtx, chatItem, chatInfo) else emptyList()
   Box(
     Modifier
       .combinedClickable(
@@ -71,13 +72,12 @@ private fun Feature.toFeatureInfo(color: Color, param: Int?, type: String): Feat
   )
 
 @Composable
-private fun mergedFeatures(chatItem: ChatItem, chatInfo: ChatInfo): List<FeatureInfo>? {
-  val m = ChatModel
+private fun mergedFeatures(chatsCtx: ChatModel.ChatsContext, chatItem: ChatItem, chatInfo: ChatInfo): List<FeatureInfo>? {
   val fs: ArrayList<FeatureInfo> = arrayListOf()
   val icons: MutableSet<PainterBox> = mutableSetOf()
-  var i = getChatItemIndexOrNull(chatItem)
+  val reversedChatItems = chatsCtx.chatItems.value.asReversed()
+  var i = getChatItemIndexOrNull(chatItem, reversedChatItems)
   if (i != null) {
-    val reversedChatItems = m.chatItems.asReversed()
     while (i < reversedChatItems.size) {
       val f = featureInfo(reversedChatItems[i], chatInfo) ?: break
       if (!icons.contains(f.icon)) {
