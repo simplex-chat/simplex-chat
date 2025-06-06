@@ -51,7 +51,7 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
-import Simplex.Messaging.Agent.Protocol (ACorrId, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink, InvitationId, SAEntity (..), UserId)
+import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
@@ -188,6 +188,7 @@ data Contact = Contact
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
+    connLinkToConnect :: Maybe ACreatedConnLink,
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
     chatTags :: [ChatTagId],
@@ -418,6 +419,8 @@ data GroupInfo = GroupInfo
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
     userMemberProfileSentAt :: Maybe UTCTime,
+    connLinkToConnect :: Maybe CreatedLinkContact,
+    connLinkStartedConnection :: Bool,
     chatTags :: [ChatTagId],
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
@@ -453,6 +456,8 @@ data GroupSummary = GroupSummary
   deriving (Show)
 
 data ContactOrGroup = CGContact Contact | CGGroup GroupInfo [GroupMember]
+
+data ContactOrGroupMemberId = CGMContactId ContactId | CGMGroupMemberId GroupMemberId
 
 contactAndGroupIds :: ContactOrGroup -> (Maybe ContactId, Maybe GroupId)
 contactAndGroupIds = \case
@@ -648,6 +653,18 @@ instance ToJSON ImageData where
 instance ToField ImageData where toField (ImageData t) = toField t
 
 deriving newtype instance FromField ImageData
+
+-- TODO [short links] StrEncoding instances?
+data ContactShortLinkData = ContactShortLinkData
+  { profile :: Profile,
+    welcomeMsg :: Maybe Text
+  }
+  deriving (Show)
+
+data GroupShortLinkData = GroupShortLinkData
+  { groupProfile :: GroupProfile
+  }
+  deriving (Show)
 
 data CReqClientData = CRDataGroup {groupLinkId :: GroupLinkId}
 
@@ -1467,6 +1484,8 @@ type CreatedLinkContact = CreatedConnLink 'CMContact
 
 type ConnLinkContact = ConnectionLink 'CMContact
 
+type ShortLinkInvitation = ConnShortLink 'CMInvitation
+
 type ShortLinkContact = ConnShortLink 'CMContact
 
 data Connection = Connection
@@ -1915,6 +1934,10 @@ $(JQ.deriveJSON defaultJSON ''GroupSummary)
 instance FromField MsgFilter where fromField = fromIntField_ msgFilterIntP
 
 instance ToField MsgFilter where toField = toField . msgFilterInt
+
+$(JQ.deriveJSON defaultJSON ''ContactShortLinkData)
+
+$(JQ.deriveJSON defaultJSON ''GroupShortLinkData)
 
 $(JQ.deriveJSON defaultJSON ''CReqClientData)
 

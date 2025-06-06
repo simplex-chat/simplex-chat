@@ -189,9 +189,13 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRInvitation u ccLink _ -> ttyUser u $ viewConnReqInvitation ccLink
   CRConnectionIncognitoUpdated u c -> ttyUser u $ viewConnectionIncognitoUpdated c
   CRConnectionUserChanged u c c' nu -> ttyUser u $ viewConnectionUserChanged u c nu c'
-  CRConnectionPlan u _ connectionPlan -> ttyUser u $ viewConnectionPlan cfg connectionPlan
+  CRConnectionPlan u connLink connectionPlan -> ttyUser u $ viewConnectionPlan cfg connLink connectionPlan
+  CRNewPreparedContact u c -> ttyUser u  [ttyContact' c <> ": contact is prepared"]
+  CRNewPreparedGroup u g -> ttyUser u [ttyGroup' g <> ": group is prepared"]
   CRSentConfirmation u _ -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u _ customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
+  CRStartedConnectionToContact u c -> ttyUser u [ttyContact' c <> ": connection started"]
+  CRStartedConnectionToGroup u g -> ttyUser u [ttyGroup' g <> ": connection started"]
   CRSentInvitationToContact u _c customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
   CRItemsReadForChat u _chatId -> ttyUser u ["items read for chat"]
   CRContactDeleted u c -> ttyUser u [ttyContact' c <> ": contact is deleted"]
@@ -988,7 +992,13 @@ viewConnReqInvitation (CCLink cReq shortLink) =
     "",
     "and ask them to connect: " <> highlight' "/c <invitation_link_above>"
   ]
-    <> ["The invitation link for old clients: " <> plain cReqStr | isJust shortLink]
+    <>
+      if isJust shortLink
+        then
+          [ "The invitation link for old clients:",
+            plain cReqStr
+          ]
+        else []
   where
     cReqStr = strEncode $ simplexChatInvitation cReq
 
@@ -1815,10 +1825,10 @@ viewConnectionUserChanged User {localDisplayName = n} PendingContactConnection {
       where
         cReqStr = strEncode $ simplexChatInvitation cReq
 
-viewConnectionPlan :: ChatConfig -> ConnectionPlan -> [StyledString]
-viewConnectionPlan ChatConfig {logLevel, testView} = \case
+viewConnectionPlan :: ChatConfig -> ACreatedConnLink -> ConnectionPlan -> [StyledString]
+viewConnectionPlan ChatConfig {logLevel, testView} connLink = \case
   CPInvitationLink ilp -> case ilp of
-    ILPOk -> [invLink "ok to connect"]
+    ILPOk contactSLinkData -> [invLink "ok to connect"] <> [viewJSON contactSLinkData | testView]
     ILPOwnLink -> [invLink "own link"]
     ILPConnecting Nothing -> [invLink "connecting"]
     ILPConnecting (Just ct) -> [invLink ("connecting to contact " <> ttyContact' ct)]
@@ -1829,7 +1839,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} = \case
     where
       invLink = ("invitation link: " <>)
   CPContactAddress cap -> case cap of
-    CAPOk -> [ctAddr "ok to connect"]
+    CAPOk contactSLinkData -> [ctAddr "ok to connect"] <> [viewJSON contactSLinkData | testView]
     CAPOwnLink -> [ctAddr "own address"]
     CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
     CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
@@ -1841,7 +1851,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} = \case
     where
       ctAddr = ("contact address: " <>)
   CPGroupLink glp -> case glp of
-    GLPOk -> [grpLink "ok to connect"]
+    GLPOk groupSLinkData -> [grpLink "ok to connect"] <> [viewJSON groupSLinkData | testView]
     GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
     GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
     GLPConnectingProhibit Nothing -> [grpLink "connecting"]
@@ -2286,6 +2296,7 @@ viewChatError isCmd logLevel testView = \case
             <> (", connection id: " <> show connId)
             <> maybe "" (\MsgMetaJSON {rcvId} -> ", agent msg rcv id: " <> show rcvId) msgMeta_
       ]
+    CEConnReqMessageProhibited -> ["message is not allowed with this connection link"]
     CEContactNotFound cName m_ -> viewContactNotFound cName m_
     CEContactNotReady c -> [ttyContact' c <> ": not ready"]
     CEContactDisabled ct -> [ttyContact' ct <> ": disabled, to enable: " <> highlight ("/enable " <> viewContactName ct) <> ", to delete: " <> highlight ("/d " <> viewContactName ct)]

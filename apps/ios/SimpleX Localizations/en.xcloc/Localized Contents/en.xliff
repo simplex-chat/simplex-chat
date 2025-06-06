@@ -10068,9 +10068,9 @@ time to disappear</note>
         <target>security code changed</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="send direct message" xml:space="preserve">
-        <source>send direct message</source>
-        <target>send direct message</target>
+      <trans-unit id="send to connect" xml:space="preserve">
+        <source>send to connect</source>
+        <target>send to connect</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="server queue info: %@&#10;&#10;last received msg: %@" xml:space="preserve">

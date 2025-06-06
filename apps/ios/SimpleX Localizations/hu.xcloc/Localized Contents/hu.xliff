@@ -10068,8 +10068,8 @@ time to disappear</note>
         <target>a biztonsági kód módosult</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="send direct message" xml:space="preserve">
-        <source>send direct message</source>
+      <trans-unit id="send to connect" xml:space="preserve">
+        <source>send to connect</source>
         <target>közvetlen üzenet küldése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

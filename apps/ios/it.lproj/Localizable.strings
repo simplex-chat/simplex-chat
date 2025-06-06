@@ -4597,7 +4597,7 @@ chat item action */
 "Send delivery receipts to" = "Invia ricevute di consegna a";
 
 /* No comment provided by engineer. */
-"send direct message" = "invia messaggio diretto";
+"send to connect" = "invia messaggio diretto";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Invia messaggio diretto per connetterti";

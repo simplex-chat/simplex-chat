@@ -667,6 +667,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- TODO add debugging output
         _ -> pure ()
       where
+        -- TODO [short links] don't send auto-reply message if it should have been created by connecting client
+        -- TODO  (based on version + whether address has short link data)
         sendAutoReply ct = \case
           Just AutoAccept {autoReply = Just mc} -> do
             (msg, _) <- sendDirectContactMessage user ct (XMsgNew $ MCSimple (extMsgContent mc Nothing))
@@ -675,7 +677,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           _ -> pure ()
 
     processGroupMessage :: AEvent e -> ConnectionEntity -> Connection -> GroupInfo -> GroupMember -> CM ()
-    processGroupMessage agentMsg connEntity conn@Connection {connId, connChatVersion, connectionCode} gInfo@GroupInfo {groupId, groupProfile, membership, chatSettings} m = case agentMsg of
+    processGroupMessage agentMsg connEntity conn@Connection {connId, connChatVersion, customUserProfileId, connectionCode} gInfo@GroupInfo {groupId, groupProfile, membership, chatSettings} m = case agentMsg of
       INV (ACR _ cReq) ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cReq of
@@ -733,6 +735,21 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     allowAgentConnectionAsync user conn' confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
               _ -> messageError "CONF from invited member must have x.grp.acpt"
+          GCHostMember ->
+            case chatMsgEvent of
+              XGrpLinkInv glInv -> do
+                -- XGrpLinkInv here means we are connecting via prepared group, and we have to update user and host member records
+                (gInfo', m') <- withStore $ \db -> updatePreparedUserAndHostMembersInvited db vr user gInfo m glInv
+                -- [incognito] send saved profile
+                incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
+                let profileToSend = userProfileToSend user (fromLocalProfile <$> incognitoProfile) Nothing True
+                allowAgentConnectionAsync user conn' confId $ XInfo profileToSend
+                toView $ CEvtGroupLinkConnecting user gInfo' m'
+              XGrpLinkReject glRjct@GroupLinkRejection {rejectionReason} -> do
+                (gInfo', m') <- withStore $ \db -> updatePreparedUserAndHostMembersRejected db vr user gInfo m glRjct
+                toView $ CEvtGroupLinkConnecting user gInfo' m'
+                toViewTE $ TEGroupLinkRejected user gInfo' rejectionReason
+              _ -> messageError "CONF from host member in prepared group must have x.grp.link.inv or x.grp.link.reject"
           _ ->
             case chatMsgEvent of
               XGrpMemInfo memId _memProfile
@@ -1195,8 +1212,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       REQ invId pqSupport _ connInfo -> do
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
         case chatMsgEvent of
-          XContact p xContactId_ -> profileContactRequest invId chatVRange p xContactId_ pqSupport
-          XInfo p -> profileContactRequest invId chatVRange p Nothing pqSupport
+          XContact p xContactId_ mc_ -> profileContactRequest invId chatVRange p xContactId_ mc_ pqSupport
+          XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing pqSupport
           -- TODO show/log error, other events in contact request
           _ -> pure ()
       MERR _ err -> do
@@ -1208,8 +1225,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       -- TODO add debugging output
       _ -> pure ()
       where
-        profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> PQSupport -> CM ()
-        profileContactRequest invId chatVRange p@Profile {displayName} xContactId_ reqPQSup = do
+        profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MsgContent -> PQSupport -> CM ()
+        profileContactRequest invId chatVRange p@Profile {displayName} xContactId_ mc_ reqPQSup = do
+          -- TODO [short links] on contact request create contact with message
+          -- TODO  - instead of creating a contact request, create a contact that can be accepted or rejected,
+          -- TODO    and can be opened as a chat to view message
+          -- TODO  - see schema comments on persistence
           withStore (\db -> createOrUpdateContactRequest db vr user userContactLinkId invId chatVRange p xContactId_ reqPQSup) >>= \case
             CORContact contact -> toView $ CEvtContactRequestAlreadyAccepted user contact
             CORGroup gInfo -> toView $ CEvtBusinessRequestAlreadyAccepted user gInfo

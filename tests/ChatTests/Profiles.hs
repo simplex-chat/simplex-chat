@@ -17,11 +17,11 @@ import Control.Monad.Except
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
-import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), defaultChatHooks)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (currentChatVersion)
 import Simplex.Chat.Store.Shared (createContact)
-import Simplex.Chat.Types (ConnStatus (..), Profile (..))
+import Simplex.Chat.Types (ConnStatus (..), Profile (..), GroupRejectionReason (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Env.SQLite
@@ -102,10 +102,15 @@ chatProfileTests = do
       it "SimpleX links" testGroupPrefsSimplexLinksForRole
     it "set user, contact and group UI theme" testSetUITheme
   describe "short links" $ do
-    it "should connect via one-time inviation" testShortLinkInvitation
-    it "should plan and connect via one-time inviation" testPlanShortLinkInvitation
+    it "should connect via one-time invitation" testShortLinkInvitation
+    it "should plan and connect via one-time invitation" testPlanShortLinkInvitation
     it "should connect via contact address" testShortLinkContactAddress
     it "should join group" testShortLinkJoinGroup
+    describe "connection via prepared entity" $ do
+      it "prepare contact using invitation short link data and connect" testShortLinkInvitationPrepareContact
+      it "prepare contact using address short link data and connect" testShortLinkAddressPrepareContact
+      it "prepare group using group short link data and connect" testShortLinkPrepareGroup
+      it "prepare group using group short link data and connect, host rejects" testShortLinkPrepareGroupReject
 
 testUpdateProfile :: HasCallStack => TestParams -> IO ()
 testUpdateProfile =
@@ -285,6 +290,7 @@ testRetryAcceptingViaContactLink ps = testChatCfgOpts2 cfg' opts' aliceProfile b
       alice <## "server disconnected localhost ()"
       bob ##> ("/_connect plan 1 " <> cLink)
       bob <## "contact address: ok to connect"
+      _sLinkData <- getTermLine bob
       bob ##> ("/_connect 1 " <> cLink)
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
@@ -292,6 +298,7 @@ testRetryAcceptingViaContactLink ps = testChatCfgOpts2 cfg' opts' aliceProfile b
         threadDelay 250000
         bob ##> ("/_connect plan 1 " <> cLink)
         bob <## "contact address: ok to connect"
+        _sLinkData <- getTermLine bob
         bob ##> ("/_connect 1 " <> cLink)
         alice <#? bob
       alice <## "server disconnected localhost ()"
@@ -701,6 +708,7 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
     biz <## "auto_accept on, business"
     bob ##> ("/_connect plan 1 " <> cLink)
     bob <## "contact address: ok to connect"
+    _sLinkData <- getTermLine bob
     bob ##> ("/c " <> cLink)
     bob <## "connection request sent!"
     bob ##> ("/_connect plan 1 " <> cLink)
@@ -886,6 +894,7 @@ testPlanAddressOkKnown =
 
       bob ##> ("/_connect plan 1 " <> cLink)
       bob <## "contact address: ok to connect"
+      _sLinkData <- getTermLine bob
 
       bob ##> ("/c " <> cLink)
       alice <#? bob
@@ -1068,10 +1077,12 @@ testPlanAddressContactDeletedReconnected =
 
       bob ##> ("/_connect plan 1 " <> cLink)
       bob <## "contact address: ok to connect"
+      _sLinkData <- getTermLine bob
 
       let cLinkSchema2 = linkAnotherSchema cLink
       bob ##> ("/_connect plan 1 " <> cLinkSchema2)
       bob <## "contact address: ok to connect"
+      _sLinkData <- getTermLine bob
 
       bob ##> ("/c " <> cLink)
       bob <## "connection request sent!"
@@ -2593,7 +2604,7 @@ testShortLinkInvitation :: HasCallStack => TestParams -> IO ()
 testShortLinkInvitation =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     alice ##> "/c short"
-    inv <- getShortInvitation alice
+    (inv, _) <- getShortInvitation alice
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
     concurrently_
@@ -2608,13 +2619,14 @@ testPlanShortLinkInvitation :: HasCallStack => TestParams -> IO ()
 testPlanShortLinkInvitation =
   testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
     alice ##> "/c short"
-    inv <- getShortInvitation alice
+    (inv, _) <- getShortInvitation alice
     alice ##> ("/_connect plan 1 " <> inv)
     alice <## "invitation link: own link"
     alice ##> ("/_connect plan 1 " <> slSimplexScheme inv)
     alice <## "invitation link: own link"
     bob ##> ("/_connect plan 1 " <> inv)
     bob <## "invitation link: ok to connect"
+    _sLinkData <- getTermLine bob
     -- nobody else can connect
     cath ##> ("/_connect plan 1 " <> inv)
     cath <##. "error: connection authorization failed"
@@ -2623,9 +2635,11 @@ testPlanShortLinkInvitation =
     -- bob can retry "plan"
     bob ##> ("/_connect plan 1 " <> inv)
     bob <## "invitation link: ok to connect"
+    _sLinkData <- getTermLine bob
     -- with simplex: scheme too
     bob ##> ("/_connect plan 1 " <> slSimplexScheme inv)
     bob <## "invitation link: ok to connect"
+    _sLinkData <- getTermLine bob
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
     concurrently_
@@ -2669,6 +2683,7 @@ testShortLinkContactAddress =
       sName <- showName cc
       cc ##> ("/_connect plan 1 " <> cLink)
       cc <## "contact address: ok to connect"
+      _sLinkData <- getTermLine cc
       cc ##> ("/c " <> cLink)
       alice <#? cc
       alice ##> ("/ac " <> name)
@@ -2738,6 +2753,7 @@ testShortLinkJoinGroup =
       sName <- showName cc
       cc ##> ("/_connect plan 1 " <> link)
       cc <## "group link: ok to connect"
+      _sLinkData <- getTermLine cc
       cc ##> ("/c " <> link)
       cc <## "connection request sent!"
       alice <## (sName <> ": accepting request to join group #team...")
@@ -2747,3 +2763,113 @@ testShortLinkJoinGroup =
             cc <## "#team: joining the group..."
             cc <## "#team: you joined the group"
         ]
+
+testShortLinkInvitationPrepareContact :: HasCallStack => TestParams -> IO ()
+testShortLinkInvitationPrepareContact =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/_connect 1 short=on"
+      (shortLink, fullLink) <- getShortInvitation alice
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "invitation link: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+      bob <## "alice: contact is prepared"
+      bob ##> "/_connect contact @2 text hello"
+      bob
+        <### [ "alice: connection started",
+               WithTime "@alice hello"
+             ]
+      alice <# "bob> hello"
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice <##> bob
+
+testShortLinkAddressPrepareContact :: HasCallStack => TestParams -> IO ()
+testShortLinkAddressPrepareContact =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/ad short"
+      (shortLink, fullLink) <- getShortContactLink alice True
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "contact address: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+      bob <## "alice: contact is prepared"
+      bob ##> "/_connect contact @2 text hello"
+      bob
+        <### [ "alice: connection started",
+               WithTime "@alice hello"
+             ]
+      -- TODO [short links] for alice create message from contact request
+      alice <## "bob (Bob) wants to connect to you!"
+      alice <## "to accept: /ac bob"
+      alice <## "to reject: /rc bob (the sender will NOT be notified)"
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice <##> bob
+
+testShortLinkPrepareGroup :: HasCallStack => TestParams -> IO ()
+testShortLinkPrepareGroup =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice cath
+      alice ##> "/create link #team short"
+      (shortLink, fullLink) <- getShortGroupLink alice "team" GRMember True
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "group link: ok to connect"
+      groupSLinkData <- getTermLine bob
+      bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
+      bob <## "#team: group is prepared"
+      bob ##> "/_connect group #1"
+      bob <## "#team: connection started"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: bob joined the group",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group"
+            bob <## "#team: member cath (Catherine) is connected",
+          do
+            cath <## "#team: alice added bob (Bob) to the group (connecting...)"
+            cath <## "#team: new member bob is connected"
+        ]
+      alice #> "#team 1"
+      [bob, cath] *<# "#team alice> 1"
+      bob #> "#team 2"
+      [alice, cath] *<# "#team bob> 2"
+      cath #> "#team 3"
+      [alice, bob] *<# "#team cath> 3"
+
+testShortLinkPrepareGroupReject :: HasCallStack => TestParams -> IO ()
+testShortLinkPrepareGroupReject =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice cath
+      alice ##> "/create link #team short"
+      (shortLink, fullLink) <- getShortGroupLink alice "team" GRMember True
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "group link: ok to connect"
+      groupSLinkData <- getTermLine bob
+      bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
+      bob <## "#team: group is prepared"
+      bob ##> "/_connect group #1"
+      bob <## "#team: connection started"
+      alice <## "bob (Bob): rejecting request to join group #team, reason: GRRBlockedName"
+      bob <## "#team: joining the group..."
+      bob <## "#team: join rejected, reason: GRRBlockedName"
+
+      alice #> "#team 1"
+      cath <# "#team alice> 1"
+      cath #> "#team 2"
+      alice <# "#team cath> 2"
+
+      -- rejected member can't send messages to group
+      bob ##> "#team hello"
+      bob <## "bad chat command: not current member"
+  where
+    cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Left GRRBlockedName)}}

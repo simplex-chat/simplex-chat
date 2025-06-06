@@ -434,6 +434,7 @@ struct ContactsListSearchBar: View {
     private func connect(_ link: String) {
         planAndConnect(
             link,
+            theme: theme,
             dismiss: true,
             cleanup: {
                 searchText = ""

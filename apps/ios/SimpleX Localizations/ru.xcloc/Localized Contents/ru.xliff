@@ -10067,8 +10067,8 @@ time to disappear</note>
         <target>код безопасности изменился</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="send direct message" xml:space="preserve">
-        <source>send direct message</source>
+      <trans-unit id="send to connect" xml:space="preserve">
+        <source>send to connect</source>
         <target>отправьте сообщение</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

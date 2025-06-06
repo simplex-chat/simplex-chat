@@ -248,6 +248,7 @@ testRetryConnecting ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile tes
       alice <## "server disconnected localhost ()"
       bob ##> ("/_connect plan 1 " <> inv)
       bob <## "invitation link: ok to connect"
+      _sLinkData <- getTermLine bob
       bob ##> ("/_connect 1 " <> inv)
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
@@ -255,6 +256,7 @@ testRetryConnecting ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile tes
         threadDelay 250000
         bob ##> ("/_connect plan 1 " <> inv)
         bob <## "invitation link: ok to connect"
+        _sLinkData <- getTermLine bob
         bob ##> ("/_connect 1 " <> inv)
         bob <## "confirmation sent!"
         concurrently_
@@ -299,6 +301,7 @@ testRetryConnectingClientTimeout ps = do
       withNewTestChatCfgOpts ps cfgZeroTimeout opts' "bob" bobProfile $ \bob -> do
         bob ##> ("/_connect plan 1 " <> inv)
         bob <## "invitation link: ok to connect"
+        _sLinkData <- getTermLine bob
         bob ##> ("/_connect 1 " <> inv)
         bob <## "smp agent error: BROKER {brokerAddress = \"smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7003\", brokerErr = TIMEOUT}"
 
@@ -312,6 +315,7 @@ testRetryConnectingClientTimeout ps = do
       withTestChatCfgOpts ps cfg' opts' "bob" $ \bob -> do
         bob ##> ("/_connect plan 1 " <> inv)
         bob <## "invitation link: ok to connect"
+        _sLinkData <- getTermLine bob
         bob ##> ("/_connect 1 " <> inv)
         bob <## "confirmation sent!"
 
@@ -478,6 +482,7 @@ testPlanInvitationLinkOk =
       inv <- getInvitation alice
       bob ##> ("/_connect plan 1 " <> inv)
       bob <## "invitation link: ok to connect"
+      _sLinkData <- getTermLine bob
 
       bob ##> ("/c " <> inv)
       bob <## "confirmation sent!"
@@ -487,6 +492,7 @@ testPlanInvitationLinkOk =
 
       bob ##> ("/_connect plan 1 " <> inv)
       bob <## "invitation link: ok to connect" -- conn_req_inv is forgotten after connection
+      _sLinkData <- getTermLine bob
       alice <##> bob
 
 testPlanInvitationLinkOwn :: HasCallStack => TestParams -> IO ()
@@ -510,6 +516,7 @@ testPlanInvitationLinkOwn ps =
 
     alice ##> ("/_connect plan 1 " <> inv)
     alice <## "invitation link: ok to connect" -- conn_req_inv is forgotten after connection
+    _sLinkData <- getTermLine alice
     threadDelay 100000
     alice @@@ [("@alice_1", lastChatFeature), ("@alice_2", lastChatFeature)]
     alice `send` "@alice_2 hi"

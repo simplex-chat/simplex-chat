@@ -32,6 +32,10 @@ module Simplex.Chat.Store.Groups
     createNewGroup,
     createGroupInvitation,
     deleteContactCardKeepConn,
+    createPreparedGroup,
+    setGroupConnLinkStartedConnection,
+    updatePreparedUserAndHostMembersInvited,
+    updatePreparedUserAndHostMembersRejected,
     createGroupInvitedViaLink,
     createGroupRejectedViaLink,
     setViaGroupLinkHash,
@@ -49,6 +53,7 @@ module Simplex.Chat.Store.Groups
     getActiveMembersByName,
     getGroupInfoByName,
     getGroupMember,
+    getHostMember,
     getMentionedGroupMember,
     getMentionedMemberByMemberId,
     getGroupMemberById,
@@ -155,6 +160,7 @@ import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing)
 import Data.Ord (Down (..))
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
+import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol (MsgMention (..), groupForwardVersion)
 import Simplex.Chat.Store.Direct
@@ -163,7 +169,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (ConnId, CreatedConnLink (..), UserId)
+import Simplex.Messaging.Agent.Protocol (ACreatedConnLink, ConnId, CreatedConnLink (..), UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, fromOnlyBI, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -283,7 +289,9 @@ getGroupAndMember db User {userId, userContactId} groupMemberId vr = do
             -- GroupInfo
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+            g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_started_connection,
+            g.business_chat, g.business_member_id, g.customer_member_id,
             g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
@@ -364,6 +372,8 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
           updatedAt = currentTs,
           chatTs = Just currentTs,
           userMemberProfileSentAt = Just currentTs,
+          connLinkToConnect = Nothing,
+          connLinkStartedConnection = False,
           chatTags = [],
           chatItemTTL = Nothing,
           uiThemes = Nothing,
@@ -435,6 +445,8 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                   updatedAt = currentTs,
                   chatTs = Just currentTs,
                   userMemberProfileSentAt = Just currentTs,
+                  connLinkToConnect = Nothing,
+                  connLinkStartedConnection = False,
                   chatTags = [],
                   chatItemTTL = Nothing,
                   uiThemes = Nothing,
@@ -532,6 +544,104 @@ deleteContactCardKeepConn db connId Contact {contactId, profile = LocalProfile {
   DB.execute db "DELETE FROM contacts WHERE contact_id = ?" (Only contactId)
   DB.execute db "DELETE FROM contact_profiles WHERE contact_profile_id = ?" (Only profileId)
 
+createPreparedGroup :: DB.Connection -> VersionRangeChat -> User -> GroupProfile -> ACreatedConnLink -> ExceptT StoreError IO GroupInfo
+createPreparedGroup db vr user@User {userId, userContactId} groupProfile connLinkToConnect = do
+  currentTs <- liftIO getCurrentTime
+  (groupId, groupLDN) <- createGroup_ db userId groupProfile (Just connLinkToConnect) Nothing currentTs
+  hostMemberId <- insertHost_ currentTs groupId groupLDN
+  let userMember = MemberIdRole (MemberId $ encodeUtf8 groupLDN <> "_user_unknown_id") GRMember
+  void $ createContactMemberInv_ db user groupId (Just hostMemberId) user userMember GCUserMember GSMemUnknown IBUnknown Nothing currentTs vr
+  getGroupInfo db vr user groupId
+  where
+    insertHost_ currentTs groupId groupLDN = do
+      let memberId = MemberId $ encodeUtf8 groupLDN <> "_host_unknown_id"
+          hostProfile = profileFromName $ nameFromMemberId memberId
+      (localDisplayName, profileId) <- createNewMemberProfile_ db user hostProfile currentTs
+      liftIO $ do
+        DB.execute
+          db
+          [sql|
+            INSERT INTO group_members
+              ( group_id, member_id, member_role, member_category, member_status, invited_by,
+                user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+          |]
+          ( (groupId, memberId, GRAdmin, GCHostMember, GSMemAccepted, fromInvitedBy userContactId IBUnknown)
+              :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
+          )
+        insertedRowId db
+
+setGroupConnLinkStartedConnection :: DB.Connection -> GroupInfo -> Bool -> IO GroupInfo
+setGroupConnLinkStartedConnection db groupInfo@GroupInfo {groupId} connLinkStartedConnection = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE groups SET conn_link_started_connection = ?, updated_at = ? WHERE group_id = ?"
+    (BI connLinkStartedConnection, currentTs, groupId)
+  pure groupInfo {connLinkStartedConnection = connLinkStartedConnection}
+
+updatePreparedUserAndHostMembersInvited :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupMember -> GroupLinkInvitation -> ExceptT StoreError IO (GroupInfo, GroupMember)
+updatePreparedUserAndHostMembersInvited db vr user gInfo hostMember GroupLinkInvitation {fromMember, fromMemberName, invitedMember, groupProfile, accepted} = do
+  let fromMemberProfile = profileFromName fromMemberName
+      initialStatus = maybe GSMemAccepted (acceptanceToStatus $ memberAdmission groupProfile) accepted
+  updatePreparedUserAndHostMembers' db vr user gInfo hostMember fromMember fromMemberProfile invitedMember groupProfile initialStatus
+
+updatePreparedUserAndHostMembersRejected :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupMember -> GroupLinkRejection -> ExceptT StoreError IO (GroupInfo, GroupMember)
+updatePreparedUserAndHostMembersRejected db vr user gInfo hostMember GroupLinkRejection {fromMember = fromMember@MemberIdRole {memberId}, invitedMember, groupProfile} = do
+  let fromMemberProfile = profileFromName $ nameFromMemberId memberId
+  updatePreparedUserAndHostMembers' db vr user gInfo hostMember fromMember fromMemberProfile invitedMember groupProfile GSMemRejected
+
+updatePreparedUserAndHostMembers' :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupMember -> MemberIdRole -> Profile -> MemberIdRole -> GroupProfile -> GroupMemberStatus -> ExceptT StoreError IO (GroupInfo, GroupMember)
+updatePreparedUserAndHostMembers'
+  db
+  vr
+  user
+  gInfo@GroupInfo {groupId, groupProfile = gp}
+  hostMember
+  fromMember
+  fromMemberProfile
+  invitedMember
+  groupProfile
+  membershipStatus = do
+    currentTs <- liftIO getCurrentTime
+    liftIO $ updateUserMember currentTs
+    hostMember' <- updateHostMember currentTs
+    when (gp /= groupProfile) $
+      void $ updateGroupProfile db user gInfo groupProfile
+    gInfo' <- getGroupInfo db vr user groupId
+    pure (gInfo', hostMember')
+    where
+      updateUserMember currentTs = do
+        let GroupInfo {membership} = gInfo
+            MemberIdRole memberId memberRole = invitedMember
+        DB.execute
+          db
+          [sql|
+            UPDATE group_members
+            SET member_id = ?,
+                member_role = ?,
+                member_status = ?,
+                updated_at = ?
+            WHERE group_member_id = ?
+          |]
+          (memberId, memberRole, membershipStatus, currentTs, groupMemberId' membership)
+      updateHostMember currentTs = do
+        _ <- updateMemberProfile db user hostMember fromMemberProfile
+        let MemberIdRole memberId memberRole = fromMember
+            gmId = groupMemberId' hostMember
+        liftIO $
+          DB.execute
+            db
+            [sql|
+              UPDATE group_members
+              SET member_id = ?,
+                  member_role = ?,
+                  updated_at = ?
+              WHERE group_member_id = ?
+            |]
+            (memberId, memberRole, currentTs, gmId)
+        getGroupMemberById db vr user gmId
+
 createGroupInvitedViaLink :: DB.Connection -> VersionRangeChat -> User -> Connection -> GroupLinkInvitation -> ExceptT StoreError IO (GroupInfo, GroupMember)
 createGroupInvitedViaLink db vr user conn GroupLinkInvitation {fromMember, fromMemberName, invitedMember, groupProfile, accepted, business} = do
   let fromMemberProfile = profileFromName fromMemberName
@@ -556,7 +666,7 @@ createGroupViaLink'
   business
   membershipStatus = do
     currentTs <- liftIO getCurrentTime
-    groupId <- insertGroup_ currentTs
+    (groupId, _groupLDN) <- createGroup_ db userId groupProfile Nothing business currentTs
     hostMemberId <- insertHost_ currentTs groupId
     liftIO $ DB.execute db "UPDATE connections SET conn_type = ?, group_member_id = ?, updated_at = ? WHERE connection_id = ?" (ConnMember, hostMemberId, currentTs, connId)
     -- using IBUnknown since host is created without contact
@@ -564,25 +674,6 @@ createGroupViaLink'
     liftIO $ setViaGroupLinkHash db groupId connId
     (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user hostMemberId
     where
-      insertGroup_ currentTs = ExceptT $ do
-        let GroupProfile {displayName, fullName, description, image, groupPreferences, memberAdmission} = groupProfile
-        withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
-          liftIO $ do
-            DB.execute
-              db
-              "INSERT INTO group_profiles (display_name, full_name, description, image, user_id, preferences, member_admission, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-              (displayName, fullName, description, image, userId, groupPreferences, memberAdmission, currentTs, currentTs)
-            profileId <- insertedRowId db
-            DB.execute
-              db
-              [sql|
-                INSERT INTO groups
-                  (group_profile_id, local_display_name, user_id, enable_ntfs,
-                   created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat, business_member_id, customer_member_id)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?)
-              |]
-              ((profileId, localDisplayName, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. businessChatInfoRow business)
-            insertedRowId db
       insertHost_ currentTs groupId = do
         (localDisplayName, profileId) <- createNewMemberProfile_ db user fromMemberProfile currentTs
         let MemberIdRole {memberId, memberRole} = fromMember
@@ -599,6 +690,29 @@ createGroupViaLink'
                 :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
             )
           insertedRowId db
+
+createGroup_ :: DB.Connection -> UserId -> GroupProfile -> Maybe ACreatedConnLink -> Maybe BusinessChatInfo -> UTCTime -> ExceptT StoreError IO (GroupId, Text)
+createGroup_ db userId groupProfile connLinkToConnect business currentTs = ExceptT $ do
+  let GroupProfile {displayName, fullName, description, image, groupPreferences, memberAdmission} = groupProfile
+  withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
+    liftIO $ do
+      DB.execute
+        db
+        "INSERT INTO group_profiles (display_name, full_name, description, image, user_id, preferences, member_admission, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+        (displayName, fullName, description, image, userId, groupPreferences, memberAdmission, currentTs, currentTs)
+      profileId <- insertedRowId db
+      DB.execute
+        db
+        [sql|
+          INSERT INTO groups
+            (group_profile_id, local_display_name, user_id, enable_ntfs,
+              created_at, updated_at, chat_ts, user_member_profile_sent_at, conn_full_link_to_connect, conn_short_link_to_connect,
+              business_chat, business_member_id, customer_member_id)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+        |]
+        ((profileId, localDisplayName, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. connLinkToConnectRow connLinkToConnect :. businessChatInfoRow business)
+      groupId <- insertedRowId db
+      pure (groupId, localDisplayName)
 
 setViaGroupLinkHash :: DB.Connection -> GroupId -> Int64 -> IO ()
 setViaGroupLinkHash db groupId connId =
@@ -775,7 +889,9 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
           SELECT
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+            g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_started_connection,
+            g.business_chat, g.business_member_id, g.customer_member_id,
             g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
             mu.group_member_id, g.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category, mu.member_status, mu.show_messages, mu.member_restriction,
             mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id, pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
@@ -866,6 +982,14 @@ getGroupMember db vr user@User {userId} groupId groupMemberId =
       db
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.group_member_id = ? AND m.user_id = ?")
       (userId, groupId, groupMemberId, userId)
+
+getHostMember :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO GroupMember
+getHostMember db vr user@User {userId} groupId =
+  ExceptT . firstRow (toContactMember vr user) (SEGroupHostMemberNotFound groupId) $
+    DB.query
+      db
+      (groupMemberQuery <> " WHERE m.group_id = ? AND m.member_category = ?")
+      (userId, groupId, GCHostMember)
 
 getMentionedGroupMember :: DB.Connection -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO CIMention
 getMentionedGroupMember db User {userId} groupId gmId =
@@ -1634,7 +1758,9 @@ getViaGroupMember db vr User {userId, userContactId} Contact {contactId} = do
             -- GroupInfo
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+            g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_started_connection,
+            g.business_chat, g.business_member_id, g.customer_member_id,
             g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
@@ -2309,7 +2435,7 @@ createMemberContact
               quotaErrCounter = 0
             }
         mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatDeleted = False, customData = Nothing}
+    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, connLinkToConnect = Nothing, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatDeleted = False, customData = Nothing}
 
 getMemberContact :: DB.Connection -> VersionRangeChat -> User -> ContactId -> ExceptT StoreError IO (GroupInfo, GroupMember, Contact, ConnReqInvitation)
 getMemberContact db vr user contactId = do
@@ -2346,7 +2472,7 @@ createMemberContactInvited
     contactId <- createContactUpdateMember currentTs userPreferences
     ctConn <- createMemberContactConn_ db user connIds gInfo mConn contactId subMode
     let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-        mCt' = Contact {contactId, localDisplayName = memberLDN, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Nothing, contactGrpInvSent = False, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatDeleted = False, customData = Nothing}
+        mCt' = Contact {contactId, localDisplayName = memberLDN, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, connLinkToConnect = Nothing, contactGroupMemberId = Nothing, contactGrpInvSent = False, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatDeleted = False, customData = Nothing}
         m' = m {memberContactId = Just contactId}
     pure (mCt', m')
     where

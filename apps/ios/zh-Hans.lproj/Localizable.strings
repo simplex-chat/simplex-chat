@@ -4393,7 +4393,7 @@ chat item action */
 "Send delivery receipts to" = "将送达回执发送给";
 
 /* No comment provided by engineer. */
-"send direct message" = "发送私信";
+"send to connect" = "发送私信";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "发送私信来连接";

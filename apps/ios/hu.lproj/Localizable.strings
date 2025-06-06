@@ -4597,7 +4597,7 @@ chat item action */
 "Send delivery receipts to" = "A kézbesítési jelentéseket a következő címre kell küldeni";
 
 /* No comment provided by engineer. */
-"send direct message" = "közvetlen üzenet küldése";
+"send to connect" = "közvetlen üzenet küldése";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Közvetlen üzenet küldése a kapcsolódáshoz";
