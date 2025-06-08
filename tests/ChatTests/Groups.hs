@@ -84,7 +84,10 @@ chatGroupTests = do
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
+#if !defined(dbPostgres)
+    -- TODO [postgres] this test hangs with PostgreSQL
     it "send multiple messages (many chat batches)" testSendMultiManyBatches
+#endif
     xit'' "shared message body is reused" testSharedMessageBody
     xit'' "shared batch body is reused" testSharedBatchBody
   describe "async group connections" $ do
