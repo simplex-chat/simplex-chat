@@ -1821,7 +1821,7 @@ testDeleteMemberWithMessages =
           do
             cath <## "alice updated group #team:"
             cath <## "updated group preferences:"
-            cath <## "Full deletion: on"            
+            cath <## "Full deletion: on"
         ]
       threadDelay 750000
       bob #> "#team hello"
@@ -6496,7 +6496,7 @@ testForwardQuoteMention =
             bob <## "      hello @alice @cath",
           do
             cath <# "#team alice!> -> forwarded"
-            cath <## "      hello @alice @cath"          
+            cath <## "      hello @alice @cath"
         ]
       -- forward mentions
       alice `send` "@bob <- #team hello"
