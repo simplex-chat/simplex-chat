@@ -3186,7 +3186,7 @@ Query:
         SELECT r.display_name, r.member_id, m.group_member_id, m.member_role, p.display_name, p.local_alias
         FROM chat_item_mentions r
         LEFT JOIN group_members m ON r.group_id = m.group_id AND r.member_id = m.member_id
-        LEFT JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id) 
+        LEFT JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
         WHERE r.chat_item_id = ?
       
 Plan:
