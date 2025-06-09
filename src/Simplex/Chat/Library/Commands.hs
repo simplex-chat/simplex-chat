@@ -1144,6 +1144,12 @@ processChatCommand' vr = \case
       withFastStore' $ \db -> deleteNoteFolderCIs db user nf
       pure $ CRChatCleared user (AChatInfo SCTLocal $ LocalChat nf)
     _ -> throwCmdError "not supported"
+  -- TODO [short links] prohibit incognito if short link data is set for address
+  -- TODO  - add user_contact_links.short_link_data_set; UserContactLink.shortLinkDataSet
+  -- TODO  - same for auto-accept:
+  -- TODO    - set incognito to false on setting short link data
+  -- TODO    - ignore on accept (for foolproofing)
+  -- TODO    - hide in UI
   APIAcceptContact incognito connReqId -> withUser $ \_ -> do
     userContactLinkId <- withFastStore $ \db -> getUserContactLinkIdByCReq db connReqId
     withUserContactLock "acceptContact" userContactLinkId $ do
