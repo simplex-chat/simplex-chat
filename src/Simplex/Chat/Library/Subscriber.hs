@@ -1235,10 +1235,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Nothing ->
               withStore (\db -> createOrUpdateContactRequest db vr user uclId invId chatVRange p xContactId_ reqPQSup) >>= \case
                 CORContact ct -> toView $ CEvtContactRequestAlreadyAccepted user ct
-                CORRequest cReq ct_ ->
-                  -- forM_ ct_ $ \ct -> do
-                  --   -- TODO create msg
-                  --   pure ()
+                CORRequest cReq ct_ -> do
+                  forM_ ct_ $ \ct ->
+                    forM_ mc_ $ \mc ->
+                      createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent mc) Nothing
                   toView $ CEvtReceivedContactRequest user cReq ct_
             Just AutoAccept {acceptIncognito, businessAddress}
               | businessAddress ->
@@ -1248,14 +1248,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         Just ct -> toView $ CEvtContactRequestAlreadyAccepted user ct
                         Nothing -> do
                           ct <- acceptContactRequestAsync user uclId invId chatVRange p xContactId_ reqPQSup Nothing
-                          -- TODO create msg
+                          forM_ mc_ $ \mc ->
+                            createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent mc) Nothing
                           toView $ CEvtAcceptingContactRequest user ct
                     else
                       maybe (pure Nothing) (\xContactId -> withStore' (\db -> getAcceptedBusinessChatByXContactId db vr user xContactId)) xContactId_ >>= \case
                         Just gInfo -> toView $ CEvtBusinessRequestAlreadyAccepted user gInfo
                         Nothing -> do
-                          gInfo <- acceptBusinessJoinRequestAsync user uclId invId chatVRange p xContactId_
-                          -- TODO create msg
+                          (gInfo, clientMember) <- acceptBusinessJoinRequestAsync user uclId invId chatVRange p xContactId_
+                          forM_ mc_ $ \mc ->
+                            createInternalChatItem user (CDGroupRcv gInfo Nothing clientMember) (CIRcvMsgContent mc) Nothing
                           toView $ CEvtAcceptingBusinessRequest user gInfo
               | otherwise -> case gLinkInfo_ of
                   Nothing ->
@@ -1265,7 +1267,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         -- [incognito] generate profile to send, create connection with incognito profile
                         incognitoProfile <- if acceptIncognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
                         ct <- acceptContactRequestAsync user uclId invId chatVRange p xContactId_ reqPQSup incognitoProfile
-                        -- TODO create msg
+                        forM_ mc_ $ \mc ->
+                          createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent mc) Nothing
                         toView $ CEvtAcceptingContactRequest user ct
                   Just gli@GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
                     gInfo <- withStore $ \db -> getGroupInfo db vr user groupId

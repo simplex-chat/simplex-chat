@@ -878,13 +878,17 @@ acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = 
     Nothing -> do
       incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
       connId <- withAgent $ \a -> prepareConnectionToAccept a True invId pqSup'
-      (ct, conn) <- withStore' $ \db -> createContactFromRequest db user connId chatV cReqChatVRange cName profileId cp userContactLinkId xContactId incognitoProfile subMode pqSup' False
+      (ct, conn) <- withStore' $ \db -> createContactFromRequest db user userContactLinkId connId chatV cReqChatVRange cName profileId cp xContactId incognitoProfile subMode pqSup' False
       pure (ct, conn, incognitoProfile)
     Just contactId -> do
       ct <- withFastStore $ \db -> getContact db vr user contactId
       case contactConn ct of
-        -- TODO [short links] allow to accept contact request with contact (it's default now)
-        Nothing -> throwChatError $ CECommandError "contact has no connection"
+        Nothing -> do
+          incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
+          connId <- withAgent $ \a -> prepareConnectionToAccept a True invId pqSup'
+          currentTs <- liftIO getCurrentTime
+          conn <- withStore' $ \db -> createAcceptedContactConn db user userContactLinkId contactId connId chatV cReqChatVRange pqSup' incognitoProfile subMode currentTs
+          pure (ct {activeConn = Just conn}, conn, incognitoProfile)
         Just conn@Connection {customUserProfileId} -> do
           incognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
           pure (ct, conn, ExistingIncognito <$> incognitoProfile)
@@ -978,7 +982,7 @@ acceptGroupJoinSendRejectAsync
       liftIO $ createJoiningMemberConnection db user uclId connIds chatV cReqChatVRange groupMemberId subMode
       getGroupMemberById db vr user groupMemberId
 
-acceptBusinessJoinRequestAsync :: User -> Int64 -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> CM GroupInfo
+acceptBusinessJoinRequestAsync :: User -> Int64 -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> CM (GroupInfo, GroupMember)
 acceptBusinessJoinRequestAsync
   user
   uclId
@@ -1016,7 +1020,7 @@ acceptBusinessJoinRequestAsync
     let cd = CDGroupSnd gInfo Nothing
     createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
     createGroupFeatureItems user cd CISndGroupFeature gInfo
-    pure gInfo
+    pure (gInfo, clientMember)
     where
       businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
       businessGroupProfile Profile {displayName, fullName, image} groupPreferences =
