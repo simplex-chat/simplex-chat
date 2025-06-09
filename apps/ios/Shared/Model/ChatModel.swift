@@ -1216,6 +1216,7 @@ struct ShowingInvitation {
     var connChatUsed: Bool
 }
 
+// TODO [short links] incognito if !userAddress.shortLinkDataSet; or remove if no access to chat model here
 struct NTFContactRequest {
     var incognito: Bool
     var chatId: String

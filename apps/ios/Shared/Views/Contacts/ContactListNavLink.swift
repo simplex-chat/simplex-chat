@@ -28,6 +28,8 @@ struct ContactListNavLink: View {
                 switch contactType {
                 case .recent:
                     recentContactNavLink(contact)
+                case .contactWithRequest:
+                    contactWithRequestNavLink(contact)
                 case .chatDeleted:
                     deletedChatNavLink(contact)
                 case .card:
@@ -75,6 +77,36 @@ struct ContactListNavLink: View {
                 Label("Delete", systemImage: "trash")
             }
             .tint(.red)
+        }
+    }
+
+    func contactWithRequestNavLink(_ contact: Contact) -> some View {
+        Button {
+            dismissAllSheets(animated: true) {
+                ItemsModel.shared.loadOpenChat(contact.id)
+            }
+        } label: {
+            contactRequestPreview()
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            if let contactRequestId = contact.contactRequestId {
+                Button {
+                    Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequestId) }
+                } label: { Label("Accept", systemImage: "checkmark") }
+                    .tint(theme.colors.primary)
+                Button {
+                    Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequestId) }
+                } label: {
+                    Label("Accept incognito", systemImage: "theatermasks")
+                }
+                .tint(.indigo)
+                Button {
+                    alert = SomeAlert(alert: rejectContactRequestAlert(contactRequestId), id: "rejectContactRequestAlert")
+                } label: {
+                    Label("Reject", systemImage: "multiply")
+                }
+                .tint(.red)
+            }
         }
     }
 
@@ -219,36 +251,36 @@ struct ContactListNavLink: View {
         Button {
             showContactRequestDialog = true
         } label: {
-            contactRequestPreview(contactRequest)
+            contactRequestPreview()
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button {
-                Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) }
+                Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequest.apiId) }
             } label: { Label("Accept", systemImage: "checkmark") }
                 .tint(theme.colors.primary)
             Button {
-                Task { await acceptContactRequest(incognito: true, contactRequest: contactRequest) }
+                Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequest.apiId) }
             } label: {
                 Label("Accept incognito", systemImage: "theatermasks")
             }
             .tint(.indigo)
             Button {
-                alert = SomeAlert(alert: rejectContactRequestAlert(contactRequest), id: "rejectContactRequestAlert")
+                alert = SomeAlert(alert: rejectContactRequestAlert(contactRequest.apiId), id: "rejectContactRequestAlert")
             } label: {
                 Label("Reject", systemImage: "multiply")
             }
             .tint(.red)
         }
         .confirmationDialog("Accept connection request?", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
-            Button("Accept") { Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) } }
-            Button("Accept incognito") { Task { await acceptContactRequest(incognito: true, contactRequest: contactRequest) } }
-            Button("Reject (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest) } }
+            Button("Accept") { Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequest.apiId) } }
+            Button("Accept incognito") { Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequest.apiId) } }
+            Button("Reject (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest.apiId) } }
         }
     }
 
-    func contactRequestPreview(_ contactRequest: UserContactRequest) -> some View {
+    func contactRequestPreview() -> some View {
         HStack{
-            ProfileImage(imageStr: contactRequest.image, size: 30)
+            ProfileImage(imageStr: chat.chatInfo.image, size: 30)
 
             Text(chat.chatInfo.chatViewName)
                 .foregroundColor(.accentColor)

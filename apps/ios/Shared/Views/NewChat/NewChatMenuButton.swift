@@ -10,7 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 enum ContactType: Int {
-    case card, request, recent, chatDeleted, unlisted
+    case card, contactWithRequest, request, recent, chatDeleted, unlisted
 }
 
 struct NewChatMenuButton: View {
@@ -42,7 +42,7 @@ private var indent: CGFloat = 36
 
 struct NewChatSheet: View {
     @EnvironmentObject var theme: AppTheme
-    @State private var baseContactTypes: [ContactType] = [.card, .request, .recent]
+    @State private var baseContactTypes: [ContactType] = [.card, .contactWithRequest, .request, .recent]
     @EnvironmentObject var chatModel: ChatModel
     @State private var searchMode = false
     @FocusState var searchFocussed: Bool
@@ -191,7 +191,9 @@ func chatContactType(_ chat: Chat) -> ContactType {
     case .contactRequest:
         return .request
     case let .direct(contact):
-        if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
+        if contact.nextAcceptContactRequest {
+            return .contactWithRequest
+        } else if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
             return .card
         } else if contact.chatDeleted {
             return .chatDeleted

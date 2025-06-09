@@ -766,7 +766,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
     case userContactLinkCreated(user: User, connLinkContact: CreatedConnLink)
     case userContactLinkDeleted(user: User)
     case acceptingContactRequest(user: UserRef, contact: Contact)
-    case contactRequestRejected(user: UserRef)
+    case contactRequestRejected(user: UserRef, contactRequest: UserContactRequest, contact_: Contact?)
     case networkStatuses(user_: UserRef?, networkStatuses: [ConnNetworkStatus])
     case newChatItems(user: UserRef, chatItems: [AChatItem])
     case groupChatItemsDeleted(user: UserRef, groupInfo: GroupInfo, chatItemIDs: Set<Int64>, byUser: Bool, member_: GroupMember?)
@@ -842,7 +842,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
         case let .userContactLinkCreated(u, connLink): return withUser(u, String(describing: connLink))
         case .userContactLinkDeleted: return noDetails
         case let .acceptingContactRequest(u, contact): return withUser(u, String(describing: contact))
-        case .contactRequestRejected: return noDetails
+        case let .contactRequestRejected(u, contactRequest, contact_): return withUser(u, "contactRequest: \(String(describing: contactRequest))\ncontact_: \(String(describing: contact_))")
         case let .networkStatuses(u, statuses): return withUser(u, String(describing: statuses))
         case let .newChatItems(u, chatItems):
             let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
@@ -1028,7 +1028,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
     case contactConnected(user: UserRef, contact: Contact, userCustomProfile: Profile?)
     case contactConnecting(user: UserRef, contact: Contact)
     case contactSndReady(user: UserRef, contact: Contact)
-    case receivedContactRequest(user: UserRef, contactRequest: UserContactRequest)
+    case receivedContactRequest(user: UserRef, contactRequest: UserContactRequest, contact_: Contact?)
     case contactUpdated(user: UserRef, toContact: Contact)
     case groupMemberUpdated(user: UserRef, groupInfo: GroupInfo, fromMember: GroupMember, toMember: GroupMember)
     case contactsMerged(user: UserRef, intoContact: Contact, mergedContact: Contact)
@@ -1179,7 +1179,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case let .contactConnected(u, contact, _): return withUser(u, String(describing: contact))
         case let .contactConnecting(u, contact): return withUser(u, String(describing: contact))
         case let .contactSndReady(u, contact): return withUser(u, String(describing: contact))
-        case let .receivedContactRequest(u, contactRequest): return withUser(u, String(describing: contactRequest))
+        case let .receivedContactRequest(u, contactRequest, contact_): return withUser(u, "contactRequest: \(String(describing: contactRequest))\ncontact_: \(String(describing: contact_))")
         case let .contactUpdated(u, toContact): return withUser(u, String(describing: toContact))
         case let .groupMemberUpdated(u, groupInfo, fromMember, toMember): return withUser(u, "groupInfo: \(groupInfo)\nfromMember: \(fromMember)\ntoMember: \(toMember)")
         case let .contactsMerged(u, intoContact, mergedContact): return withUser(u, "intoContact: \(intoContact)\nmergedContact: \(mergedContact)")
