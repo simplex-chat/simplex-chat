@@ -25,8 +25,8 @@ down_m20250526_short_links =
 ALTER TABLE contacts DROP COLUMN conn_full_link_to_connect;
 ALTER TABLE contacts DROP COLUMN conn_short_link_to_connect;
 
-ALTER TABLE contacts DROP COLUMN contact_request_id;
 DROP INDEX idx_contacts_contact_request_id;
+ALTER TABLE contacts DROP COLUMN contact_request_id;
 
 ALTER TABLE groups DROP COLUMN conn_full_link_to_connect;
 ALTER TABLE groups DROP COLUMN conn_short_link_to_connect;
