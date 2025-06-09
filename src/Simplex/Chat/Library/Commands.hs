@@ -1162,14 +1162,18 @@ processChatCommand' vr = \case
       pure $ CRAcceptingContactRequest user ct'
   APIRejectContact connReqId -> withUser $ \user -> do
     userContactLinkId <- withFastStore $ \db -> getUserContactLinkIdByCReq db connReqId
-    -- TODO [short links] maybe delete contact
     withUserContactLock "rejectContact" userContactLinkId $ do
-      cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
-        withFastStore $ \db ->
-          getContactRequest db user connReqId
-            `storeFinally` liftIO (deleteContactRequest db user connReqId)
+      (cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId}, ct_) <-
+        withFastStore $ \db -> do
+          cReq@UserContactRequest {contactId_} <- getContactRequest db user connReqId
+          ct_ <- forM contactId_ $ \contactId -> do
+            ct <- getContact db vr user contactId
+            deleteContact db user ct
+            pure ct
+          liftIO $ deleteContactRequest db user connReqId
+          pure (cReq, ct_)
       withAgent $ \a -> rejectContact a connId invId
-      pure $ CRContactRequestRejected user cReq
+      pure $ CRContactRequestRejected user cReq ct_
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
     ct <- withFastStore $ \db -> getContact db vr user contactId

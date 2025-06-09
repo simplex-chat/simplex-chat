@@ -46,7 +46,6 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..))
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
-import Simplex.Messaging.Util (allFinally)
 import Simplex.Messaging.Version
 import UnliftIO.STM
 #if defined(dbPostgres)
@@ -177,10 +176,6 @@ handleSQLError :: StoreError -> SQLError -> StoreError
 handleSQLError err e
   | constraintError e = err
   | otherwise = SEInternalError $ show e
-
-storeFinally :: ExceptT StoreError IO a -> ExceptT StoreError IO b -> ExceptT StoreError IO a
-storeFinally = allFinally mkStoreError
-{-# INLINE storeFinally #-}
 
 mkStoreError :: E.SomeException -> StoreError
 mkStoreError = SEInternalError . show
