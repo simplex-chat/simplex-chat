@@ -614,8 +614,11 @@ testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathPr
     cLink <- getContactLink alice True
     bob ##> ("/c " <> cLink)
     alice <#? bob
+    alice @@@ [("@bob", "")]
+
     alice ##> "/rc bob"
     alice <## "bob: contact request rejected"
+    alice @@@ []
     (bob </)
 
     alice ##> "/_show_address 1"
