@@ -88,7 +88,7 @@
     <string name="appearance_settings">外觀</string>
     <string name="audio_call_no_encryption">語音通話（沒有端對端加密）</string>
     <string name="icon_descr_audio_call">語音通話</string>
-    <string name="settings_audio_video_calls">語音 &amp; 視訊通話</string>
+    <string name="settings_audio_video_calls">語音和視訊通話</string>
     <string name="icon_descr_video_call">視訊通話</string>
     <string name="bold_text">粗體</string>
     <string name="auto_accept_images">自動接收圖片</string>
@@ -177,7 +177,7 @@
     <string name="smp_servers_check_address">檢查輸入的伺服器地址，然後再試一次。</string>
     <string name="chat_console">聊天終端機</string>
     <string name="star_on_github">於 Github 給個星星</string>
-    <string name="incognito_info_protects">隱身模式透過為每個聯絡人使用新的隨機設定檔來保護您的隱私。</string>
+    <string name="incognito_info_protects">隱身模式透過為每個聯絡人使用新的隨機設定檔來保護你的隱私。</string>
     <string name="incognito_info_allows">這樣是允許每一個對話中擁有不同的顯示名稱，並且沒有任何的個人資料可用於分享或有機會外洩。</string>
     <string name="allow_disappearing_messages_only_if">只有你的聯絡人允許的情況下，才允許自動銷毀訊息。</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">允許你的聯絡人傳送自動銷毀的訊息。</string>
@@ -242,7 +242,7 @@
     <string name="trying_to_connect_to_server_to_receive_messages">正在嘗試連接到用於接收此聯絡人訊息伺服器。</string>
     <string name="deleted_description">已刪除</string>
     <string name="marked_deleted_description">已標記為已刪除</string>
-    <string name="simplex_link_mode_browser_warning">在瀏覽器中開啟連結可能會有私隱疑慮和不確定性。不受 SimpleX 信任的連結會顯示紅色。</string>
+    <string name="simplex_link_mode_browser_warning">在瀏覽器中開啟連結可能會有隱私疑慮和不確定性。不受 SimpleX 信任的連結會顯示紅色。</string>
     <string name="error_saving_smp_servers">儲存 SMP 伺服器時出錯</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">請確保 SMP 伺服器連結是正確的格式，每行也分隔且不重複。</string>
     <string name="error_setting_network_config">更新網路配置時出錯</string>
@@ -506,7 +506,7 @@
     <string name="callstate_connecting">連接中…</string>
     <string name="callstate_ended">已結束</string>
     <string name="connect_button">連接</string>
-    <string name="network_and_servers">網路 &amp; 伺服器</string>
+    <string name="network_and_servers">網路和伺服器</string>
     <string name="network_settings_title">進階設定</string>
     <string name="network_enable_socks">使用 SOCKS 代理伺服器</string>
     <string name="save_and_notify_group_members">儲存並通知群組內的聯絡人</string>
@@ -533,7 +533,7 @@
     <string name="is_not_verified">%s 並未驗證</string>
     <string name="your_simplex_contact_address">你的 SimpleX 聯絡地址</string>
     <string name="your_chat_profiles">你的個人檔案</string>
-    <string name="database_passphrase_and_export">資料庫密碼及匯出</string>
+    <string name="database_passphrase_and_export">資料庫密碼和匯出</string>
     <string name="send_us_an_email">傳送電郵</string>
     <string name="chat_lock">SimpleX 鎖定</string>
     <string name="smp_servers">SMP 伺服器</string>
@@ -545,8 +545,7 @@
     <string name="smp_servers_test_some_failed">有一些伺服器測試失敗：</string>
     <string name="smp_servers_scan_qr">掃描伺服器的二維碼</string>
     <string name="smp_servers_your_server">你的伺服器</string>
-    <string name="network_use_onion_hosts_required_desc">連接時需要使用 Onion 主機。
-\n請注意：如果沒有 .onion 地址，您將無法連接到伺服器。</string>
+    <string name="network_use_onion_hosts_required_desc">連接時需要使用 Onion 主機。 \n請注意：如果沒有 .onion 地址，你將無法連接到伺服器。</string>
     <string name="network_session_mode_user">聊天個人檔案</string>
     <string name="description_via_group_link">透過群組連結</string>
     <string name="description_via_group_link_incognito">透過群組連結使用匿名聊天模式</string>
@@ -561,7 +560,7 @@
     <string name="icon_descr_call_rejected">已拒絕通話</string>
     <string name="show_call_on_lock_screen">顯示</string>
     <string name="icon_descr_call_connecting">連接通話中</string>
-    <string name="files_and_media_section">檔案及媒體檔案</string>
+    <string name="files_and_media_section">檔案和媒體</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">重新啟動應用程式以建立新的對話檔案。</string>
     <string name="delete_files_and_media_question">刪除所有檔案及媒體檔案？</string>
     <string name="delete_files_and_media_for_all_users">刪除所有你的個人對話資料的檔案</string>
@@ -644,7 +643,7 @@
     <string name="next_generation_of_private_messaging">未來的訊息平台</string>
     <string name="decentralized">去中心化的</string>
     <string name="people_can_connect_only_via_links_you_share">你決定誰可以連接。</string>
-    <string name="privacy_redefined">重新定義私隱</string>
+    <string name="privacy_redefined">重新定義隱私</string>
     <string name="create_your_profile">建立你的個人檔案</string>
     <string name="how_it_works">這是如何運作</string>
     <string name="onboarding_notifications_mode_subtitle">它如何影響電池</string>
@@ -657,7 +656,7 @@
     <string name="status_no_e2e_encryption">沒有端對端加密</string>
     <string name="icon_descr_speaker_off">關閉喇叭</string>
     <string name="settings_section_title_messages">訊息和檔案</string>
-    <string name="privacy_and_security">私隱 &amp; 安全性</string>
+    <string name="privacy_and_security">隱私和安全性</string>
     <string name="settings_section_title_themes">主題</string>
     <string name="v4_4_french_interface">法語介面</string>
     <string name="encrypted_audio_call">端對端加密的語音通話</string>
@@ -890,7 +889,7 @@
     <string name="icon_descr_video_on">開啟視訊</string>
     <string name="icon_descr_flip_camera">翻轉相機</string>
     <string name="icon_descr_call_pending_sent">待確認通話</string>
-    <string name="your_privacy">你的私隱</string>
+    <string name="your_privacy">你的隱私</string>
     <string name="your_calls">你的通話</string>
     <string name="always_use_relay">經由分程傳遞連接</string>
     <string name="call_on_lock_screen">在上鎖畫面顯示來電通知：</string>
@@ -1177,7 +1176,7 @@
     <string name="share_text_moderated_at">已移除於：%s</string>
     <string name="item_info_current">（目前的）</string>
     <string name="allow_message_reactions">允許訊息反應。</string>
-    <string name="v5_1_better_messages">更佳的訊息</string>
+    <string name="v5_1_better_messages">更好的訊息</string>
     <string name="v5_1_custom_themes_descr">自定義和分享顏色主題</string>
     <string name="v5_1_custom_themes">自定義主題</string>
     <string name="custom_time_unit_hours">小時</string>
@@ -1280,7 +1279,7 @@
     <string name="clear_note_folder_warning">所有訊息都將被刪除 - 這無法復原</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>請注意</b>：訊息和檔案中繼通過 SOCKS 代理連接。通話和傳送連預覽使用直接連接。]]></string>
     <string name="block_for_all">封鎖全部</string>
-    <string name="v5_4_better_groups">改進群組功能</string>
+    <string name="v5_4_better_groups">更好的群組</string>
     <string name="network_type_cellular">行動網路</string>
     <string name="block_member_button">封鎖成員</string>
     <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>警告</b>：此封存將被刪除。]]></string>
@@ -1508,7 +1507,7 @@
     <string name="alert_text_encryption_renegotiation_failed">加密重協商失敗</string>
     <string name="database_encryption_will_be_updated_in_settings">將更新資料庫密碼並儲存在設定中。</string>
     <string name="v5_4_incognito_groups_descr">使用隨機身分建立群組</string>
-    <string name="v5_4_better_groups_descr">加入速度更快、訊息更可靠。</string>
+    <string name="v5_4_better_groups_descr">更快的加入速度，訊息更可靠。</string>
     <string name="v5_4_incognito_groups">匿名群組</string>
     <string name="link_a_mobile">連結行動裝置</string>
     <string name="in_reply_to">回復</string>
@@ -1718,7 +1717,7 @@
 \n%s</string>
     <string name="turn_off_system_restriction_button">打開應用程式設定</string>
     <string name="auth_open_migration_to_another_device">開啟轉移畫面</string>
-    <string name="shutdown_alert_desc">通知將停止，直到您重啟應用程式</string>
+    <string name="shutdown_alert_desc">通知將停止，直到你重啟應用程式</string>
     <string name="prohibit_sending_files">禁止傳送檔案和媒體。</string>
     <string name="connect_plan_open_group">打開群組</string>
     <string name="only_owners_can_enable_files_and_media">只有群組所有者才能啟用檔案和媒體。</string>
@@ -1770,10 +1769,8 @@
     <string name="v6_0_reachable_chat_toolbar">單手模式的聊天工具列</string>
     <string name="v5_5_join_group_conversation_descr">最近歷史和改進的目錄機器人。</string>
     <string name="network_option_protocol_timeout_per_kb">每 KB 協議超時</string>
-    <string name="v5_8_private_routing_descr">保護您的真實 IP 地址。不讓你聯絡人選擇的訊息中繼看到它。
-\n在*網絡&amp;伺服器*設定中開啓。</string>
-    <string name="you_can_change_it_later">隨機密碼以明文形式儲存在設定中。
-\n您可以稍後更改。</string>
+    <string name="v5_8_private_routing_descr">保護你的真實 IP 地址，以不讓你的聯絡人所選擇的訊息中繼看到它。 \n在*網路和伺服器*設定中啟用。</string>
+    <string name="you_can_change_it_later">隨機密碼以明文形式儲存在設定中。 \n你可以稍後更改。</string>
     <string name="send_receipts_disabled_alert_title">傳送回條已禁用</string>
     <string name="servers_info_proxied_servers_section_header">代理伺服器</string>
     <string name="servers_info_reconnect_servers_title">重新連接伺服器？</string>
@@ -2058,4 +2055,24 @@
     <string name="v6_1_better_security">更好的安全性 ✅</string>
     <string name="button_support_chat">與管理員們聊天</string>
     <string name="cant_send_message_generic">無法傳送訊息</string>
+    <string name="v6_1_customizable_message_descr">可自訂訊息形狀。</string>
+    <string name="v6_1_better_user_experience">更好的使用體驗</string>
+    <string name="blocking_reason_content">內容違反使用條款</string>
+    <string name="disable_automatic_deletion_question">停用自動刪除訊息？</string>
+    <string name="v6_1_delete_many_messages_descr">刪除或審查最多 200 條訊息。</string>
+    <string name="v6_2_network_decentralization_enable_flux">於網路和伺服器設定中啟用 Flux 以獲得更好的元資料隱私。</string>
+    <string name="onboarding_conditions_configure_server_operators">配置伺服器營運者</string>
+    <string name="operator_conditions_of_use">使用條款</string>
+    <string name="v6_3_better_privacy_and_security">更好的隱私和安全性</string>
+    <string name="migrate_from_device_try_again">你可以再試一次。</string>
+    <string name="onboarding_notifications_mode_periodic_desc_short">每 10 分鐘檢查訊息</string>
+    <string name="cant_send_message_contact_not_ready">聯絡人未就緒</string>
+    <string name="one_hand_ui_change_instruction">你可以在外觀設定中變更它。</string>
+    <string name="chat_ttl_options_footer">從你的裝置刪除聊天訊息。</string>
+    <string name="v6_3_better_groups_performance">更好的群組性能</string>
+    <string name="snd_group_event_member_blocked">你已封鎖 %s</string>
+    <string name="connection_not_ready">連接未就緒。</string>
+    <string name="v6_1_message_dates_descr">更好的訊息日期。</string>
+    <string name="v6_2_network_decentralization_enable_flux_reason">為了更好的元資料隱私。</string>
+    <string name="migrate_to_device_try_again">你可以再試一次。</string>
 </resources>
