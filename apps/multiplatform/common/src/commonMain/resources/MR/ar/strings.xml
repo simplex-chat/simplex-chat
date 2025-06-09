@@ -286,7 +286,7 @@
     <string name="connection_local_display_name">الاتصال %1$d</string>
     <string name="display_name_connection_established">انشأت الاتصال</string>
     <string name="callstatus_connecting">مكالمة جارية…</string>
-    <string name="encrypt_database">عمِّ</string>
+    <string name="encrypt_database">تشفير</string>
     <string name="enter_passphrase">أدخل عبارة المرور…</string>
     <string name="group_member_status_creator">المنشئ</string>
     <string name="error_adding_members">خطأ في إضافة الأعضاء</string>
