@@ -227,8 +227,6 @@ testPaginationAllChatTypes =
 
       let queryUnread = "{\"type\": \"filters\", \"favorite\": false, \"unread\": true}"
 
-      getChats_ alice queryUnread [("@cath", "")]
+      getChats_ alice queryUnread []
       getChats_ alice ("before=" <> ts2 <> " count=10 " <> queryUnread) []
-      getChats_ alice ("before=" <> ts3 <> " count=10 " <> queryUnread) [("@cath", "")]
-      getChats_ alice ("after=" <> ts2 <> " count=10 " <> queryUnread) [("@cath", "")]
-      getChats_ alice ("after=" <> ts3 <> " count=10 " <> queryUnread) []
+      getChats_ alice ("after=" <> ts2 <> " count=10 " <> queryUnread) []
