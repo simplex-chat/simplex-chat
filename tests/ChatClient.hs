@@ -41,7 +41,7 @@ import Simplex.Chat.Types
 import Simplex.FileTransfer.Description (kb, mb)
 import Simplex.FileTransfer.Server (runXFTPServerBlocking)
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpiration)
-import Simplex.FileTransfer.Transport (supportedFileServerVRange)
+import Simplex.FileTransfer.Transport (alpnSupportedXFTPhandshakes, supportedFileServerVRange)
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Protocol (currentSMPAgentVersion, duplexHandshakeSMPAgentVersion, pqdrSMPAgentVersion, supportedSMPAgentVRange)
@@ -55,10 +55,10 @@ import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Protocol (srvHostnamesSMPClientVersion)
 import Simplex.Messaging.Server (runSMPServerBlocking)
-import Simplex.Messaging.Server.Env.STM (AServerStoreCfg (..), ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultMessageExpiration, defaultIdleQueueInterval, defaultNtfExpiration, defaultInactiveClientExpiration)
-import Simplex.Messaging.Server.MsgStore.Types (SQSType (..), SMSType (..))
+import Simplex.Messaging.Server.Env.STM (ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultMessageExpiration, defaultIdleQueueInterval, defaultNtfExpiration, defaultInactiveClientExpiration)
+import Simplex.Messaging.Server.MsgStore.STM (STMMsgStore)
 import Simplex.Messaging.Transport
-import Simplex.Messaging.Transport.Server (ServerCredentials (..), defaultTransportServerConfig)
+import Simplex.Messaging.Transport.Server (ServerCredentials (..), mkTransportServerConfig)
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
@@ -491,7 +491,7 @@ testChatCfg5 cfg p1 p2 p3 p4 p5 test = testChatN cfg testOpts [p1, p2, p3, p4, p
 concurrentlyN_ :: [IO a] -> IO ()
 concurrentlyN_ = mapConcurrently_ id
 
-smpServerCfg :: ServerConfig
+smpServerCfg :: ServerConfig STMMsgStore
 smpServerCfg =
   ServerConfig
     { transports = [(serverPort, transport @TLS, False)],
@@ -501,7 +501,7 @@ smpServerCfg =
       maxJournalStateLines = 4,
       queueIdBytes = 24,
       msgIdBytes = 6,
-      serverStoreCfg = ASSCfg SQSMemory SMSMemory $ SSCMemory Nothing,
+      serverStoreCfg = SSCMemory Nothing,
       storeNtfsFile = Nothing,
       allowNewQueues = True,
       -- server password is disabled as otherwise v1 tests fail
@@ -529,7 +529,7 @@ smpServerCfg =
       pendingENDInterval = 500000,
       ntfDeliveryInterval = 200000,
       smpServerVRange = supportedServerSMPRelayVRange,
-      transportConfig = defaultTransportServerConfig,
+      transportConfig = mkTransportServerConfig True (Just alpnSupportedSMPHandshakes) True,
       smpHandshakeTimeout = 1000000,
       controlPort = Nothing,
       smpAgentCfg = defaultSMPClientAgentConfig,
@@ -539,13 +539,13 @@ smpServerCfg =
       startOptions = StartOptions {maintenance = False, compactLog = False, logLevel = LogError, skipWarnings = False, confirmMigrations = MCYesUp}
     }
 
-persistentServerStoreCfg :: FilePath -> AServerStoreCfg
-persistentServerStoreCfg tmp = ASSCfg SQSMemory SMSMemory $ SSCMemory $ Just StorePaths {storeLogFile = tmp <> "/smp-server-store.log", storeMsgsFile = Just $ tmp <> "/smp-server-messages.log"}
+persistentServerStoreCfg :: FilePath -> ServerStoreCfg STMMsgStore
+persistentServerStoreCfg tmp = SSCMemory $ Just StorePaths {storeLogFile = tmp <> "/smp-server-store.log", storeMsgsFile = Just $ tmp <> "/smp-server-messages.log"}
 
 withSmpServer :: IO () -> IO ()
 withSmpServer = withSmpServer' smpServerCfg
 
-withSmpServer' :: ServerConfig -> IO a -> IO a
+withSmpServer' :: ServerConfig STMMsgStore -> IO a -> IO a
 withSmpServer' cfg = serverBracket (\started -> runSMPServerBlocking started cfg Nothing)
 
 xftpTestPort :: ServiceName
@@ -582,7 +582,7 @@ xftpServerConfig =
       serverStatsLogFile = "tests/tmp/xftp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
       controlPort = Nothing,
-      transportConfig = defaultTransportServerConfig,
+      transportConfig = mkTransportServerConfig True (Just alpnSupportedXFTPhandshakes) False,
       responseDelay = 0
     }
 
@@ -594,7 +594,7 @@ withXFTPServer' cfg =
   serverBracket
     ( \started -> do
         createDirectoryIfMissing False xftpServerFiles
-        runXFTPServerBlocking started cfg Nothing
+        runXFTPServerBlocking started cfg
     )
 
 serverBracket :: (TMVar Bool -> IO ()) -> IO a -> IO a
