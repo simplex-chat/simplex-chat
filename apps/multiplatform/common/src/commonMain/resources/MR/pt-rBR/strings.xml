@@ -87,7 +87,7 @@
     <string name="v4_2_auto_accept_contact_requests">Aceitar solicitações de contato automaticamente</string>
     <string name="appearance_settings">Aparência</string>
     <string name="notifications_mode_service_desc">O serviço em segundo plano está sempre em execução - as notificações serão exibidas assim que as mensagens estiverem disponíveis.</string>
-    <string name="network_session_mode_entity_description">Uma conexão TCP separada (e credencial SOCKS) será usada <b>para cada contato e membro do grupo</b>. 
+    <string name="network_session_mode_entity_description">Uma conexão TCP separada (e credencial SOCKS) será usada <b>para cada contato e membro do grupo</b>.
 \n<b>Atenção</b>: se você tiver muitas conexões, o consumo de bateria e tráfego pode ser substancialmente maior e algumas conexões podem falhar.</string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Bom para bateria</b>. O aplicativo procura por mensagens a cada 10 minutos. Você pode perder chamadas ou mensagens urgentes.]]></string>
     <string name="callstatus_ended">chamda encerrada %1$s</string>
@@ -739,7 +739,7 @@
     <string name="icon_descr_call_missed">Chamada perdida</string>
     <string name="save_passphrase_in_keychain">Salvar senha na Keystore</string>
     <string name="database_is_not_encrypted">Seu banco de dados de bate-papo não está criptografado - defina uma senha para protegê-lo.</string>
-    <string name="group_invitation_item_description">convite para o grupo%1$s</string>
+    <string name="group_invitation_item_description">convite para o grupo %1$s</string>
     <string name="alert_title_cant_invite_contacts_descr">Você esta usando um perfil anônimo para este grupo - para evitar compartilhar seu perfil principal, convidar contatos não é permitido</string>
     <string name="invalid_migration_confirmation">Confirmação de migração inválida</string>
     <string name="database_migrations">Migrações: %s</string>
@@ -1445,7 +1445,7 @@
     <string name="v5_3_simpler_incognito_mode">Modo anônimo simplificado</string>
     <string name="found_desktop">Desktop encontrado</string>
     <string name="random_port">Aleatório</string>
-    <string name="database_migration_in_progress">Migração do banco de dados em progresso. 
+    <string name="database_migration_in_progress">Migração do banco de dados em progresso.
 \nIsso pode levar alguns minutos.</string>
     <string name="moderated_items_description">%1$d mensagens moderadas por %2$s</string>
     <string name="blocked_items_description">%d mensagens bloqueadas</string>

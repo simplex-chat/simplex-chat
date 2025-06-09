@@ -2008,4 +2008,8 @@
     <string name="chat_list_add_list">リストを追加</string>
     <string name="chat_list_all">すべて</string>
     <string name="create_1_time_link">ワンタイムリンクを生成</string>
+    <string name="selected_chat_items_selected_n">%d 件を選択中</string>
+    <string name="v6_3_better_groups_performance">グループのパフォーマンス向上</string>
+    <string name="select_verb">選択</string>
+    <string name="v6_3_better_privacy_and_security">プライバシーとセキュリティの向上</string>
 </resources>

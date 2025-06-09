@@ -2439,4 +2439,5 @@
     <string name="reject_pending_member_alert_title">Rifiutare il membro?</string>
     <string name="delete_member_support_chat_button">Elimina chat</string>
     <string name="error_deleting_member_support_chat">Errore di eliminazione della chat con il membro</string>
+    <string name="add_short_link">Aggiungi link breve</string>
 </resources>
