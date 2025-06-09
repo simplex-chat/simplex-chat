@@ -485,7 +485,8 @@ swipe action */
 "Can't invite contacts!" = "ไม่สามารถเชิญผู้ติดต่อได้!";
 
 /* alert action
-alert button */
+alert button
+new chat action */
 "Cancel" = "ยกเลิก";
 
 /* feature offered item */
@@ -630,7 +631,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "เชื่อมต่อกับนักพัฒนา SimpleX Chat";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via link" = "เชื่อมต่อผ่านลิงก์";
 
 /* No comment provided by engineer. */
@@ -737,9 +738,6 @@ set passcode view */
 
 /* server test step */
 "Create queue" = "สร้างคิว";
-
-/* No comment provided by engineer. */
-"Create secret group" = "สร้างกลุ่มลับ";
 
 /* No comment provided by engineer. */
 "Create SimpleX address" = "สร้างที่อยู่ SimpleX";
@@ -1199,7 +1197,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Error changing role" = "เกิดข้อผิดพลาดในการเปลี่ยนบทบาท";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error changing setting" = "เกิดข้อผิดพลาดในการเปลี่ยนการตั้งค่า";
 
 /* No comment provided by engineer. */
@@ -1214,7 +1212,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Error creating profile!" = "เกิดข้อผิดพลาดในการสร้างโปรไฟล์!";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat database" = "เกิดข้อผิดพลาดในการลบฐานข้อมูลแชท";
 
 /* No comment provided by engineer. */
@@ -1223,10 +1221,10 @@ swipe action */
 /* No comment provided by engineer. */
 "Error deleting connection" = "เกิดข้อผิดพลาดในการลบการเชื่อมต่อ";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting database" = "เกิดข้อผิดพลาดในการลบฐานข้อมูล";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting old database" = "เกิดข้อผิดพลาดในการลบฐานข้อมูลเก่า";
 
 /* No comment provided by engineer. */
@@ -1244,10 +1242,10 @@ swipe action */
 /* No comment provided by engineer. */
 "Error encrypting database" = "เกิดข้อผิดพลาดในการ encrypt ฐานข้อมูล";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error exporting chat database" = "เกิดข้อผิดพลาดในการส่งออกฐานข้อมูลแชท";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error importing chat database" = "เกิดข้อผิดพลาดในการนำเข้าฐานข้อมูลแชท";
 
 /* No comment provided by engineer. */
@@ -1705,7 +1703,7 @@ snd error text */
 /* No comment provided by engineer. */
 "join as %@" = "เข้าร่วมเป็น %@";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Join group" = "เข้าร่วมกลุ่ม";
 
 /* No comment provided by engineer. */
@@ -2030,7 +2028,8 @@ time to disappear */
 "offered %@: %@" = "เสนอแล้ว %1$@: %2$@";
 
 /* alert action
-alert button */
+alert button
+new chat action */
 "Ok" = "ตกลง";
 
 /* No comment provided by engineer. */

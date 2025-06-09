@@ -526,7 +526,7 @@
     <string name="theme_black">Negru</string>
     <string name="block_for_all_question">Blochezi membrul pentru toți?</string>
     <string name="both_you_and_your_contacts_can_delete">Și tu și contactul tău puteți șterge ireversibil mesajele trimise. (24 de ore)</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Folosește mai multă baterie</b>! 
+    <string name="onboarding_notifications_mode_service_desc"><b>Folosește mai multă baterie</b>!
 \nServiciul în fundal rulează mereu – notificările sunt afișate imediat ce mesajele sunt disponibile.</string>
     <string name="cannot_share_message_alert_title">Nu se poate trimite mesajul</string>
     <string name="clear_contacts_selection_button">Ștergeți</string>
@@ -1354,7 +1354,7 @@
     <string name="markdown_help">Ajutor pentru marcare</string>
     <string name="if_you_enter_passcode_data_removed">Dacă introduceți această parolă la deschiderea aplicației, toate datele aplicației vor fi șterse ireversibil!</string>
     <string name="error_changing_message_deletion">Eroare la modificarea setării</string>
-    <string name="group_invitation_item_description">invitație la grup %1 $ s</string>
+    <string name="group_invitation_item_description">invitație la grup %1$s</string>
     <string name="v4_3_improved_privacy_and_security">Confidențialitate și securitate îmbunătățite</string>
     <string name="v4_6_group_moderation">Moderarea grupului</string>
     <string name="migrate_to_device_file_delete_or_link_invalid">Fișierul a fost șters sau linkul este invalid</string>
@@ -2391,7 +2391,7 @@
     <string name="chat_list_businesses">Întreprinderi</string>
     <string name="onboarding_conditions_by_using_you_agree">Prin utilizarea SimpleX Chat, sunteți de acord să:\n- trimiteți doar conținut legal în grupuri publice.\n- respectați ceilalți utilizatori – fără spam.</string>
     <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[Linkul unic poate fi folosit <i> cu un singur contact</i> - partajați personal sau prin orice mesagerie.]]></string>
-    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[Nu trebuie să utilizați aceeași bază de date pe două dispozitive.]]></string>
+    <string name="migrate_from_device_you_must_not_start_database_on_two_device">Nu trebuie să utilizați aceeași bază de date pe două dispozitive.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Dacă nu vă puteți întâlni în persoană, <b>arătați codul QR în apelul video</b> sau distribuiți linkul.]]></string>
     <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Deschide <i>Utilizare de pe desktop</i> în aplicația mobilă și scanați codul QR.]]></string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Pentru a îmbunătăți confidențialitatea, <b>SimpleX rulează în fundal</b> în loc să utilizeze notificări push.]]></string>

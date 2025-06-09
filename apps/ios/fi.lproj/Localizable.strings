@@ -509,7 +509,8 @@ swipe action */
 "Can't invite contacts!" = "Kontakteja ei voi kutsua!";
 
 /* alert action
-alert button */
+alert button
+new chat action */
 "Cancel" = "Peruuta";
 
 /* feature offered item */
@@ -652,15 +653,12 @@ set passcode view */
 "Connect" = "Yhdistä";
 
 /* No comment provided by engineer. */
-"Connect incognito" = "Yhdistä Incognito";
-
-/* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "ole yhteydessä SimpleX Chat -kehittäjiin.";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via link" = "Yhdistä linkin kautta";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via one-time link" = "Yhdistä kertalinkillä";
 
 /* No comment provided by engineer. */
@@ -773,9 +771,6 @@ set passcode view */
 
 /* server test step */
 "Create queue" = "Luo jono";
-
-/* No comment provided by engineer. */
-"Create secret group" = "Luo salainen ryhmä";
 
 /* No comment provided by engineer. */
 "Create SimpleX address" = "Luo SimpleX-osoite";
@@ -1247,7 +1242,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Error changing role" = "Virhe roolin vaihdossa";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error changing setting" = "Virhe asetuksen muuttamisessa";
 
 /* No comment provided by engineer. */
@@ -1265,7 +1260,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Error decrypting file" = "Virhe tiedoston salauksen purussa";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat database" = "Virhe keskustelujen tietokannan poistamisessa";
 
 /* No comment provided by engineer. */
@@ -1274,10 +1269,10 @@ swipe action */
 /* No comment provided by engineer. */
 "Error deleting connection" = "Virhe yhteyden poistamisessa";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting database" = "Virhe tietokannan poistamisessa";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting old database" = "Virhe vanhan tietokannan poistamisessa";
 
 /* No comment provided by engineer. */
@@ -1295,10 +1290,10 @@ swipe action */
 /* No comment provided by engineer. */
 "Error encrypting database" = "Virhe tietokannan salauksessa";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error exporting chat database" = "Virhe vietäessä keskustelujen tietokantaa";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error importing chat database" = "Virhe keskustelujen tietokannan tuonnissa";
 
 /* No comment provided by engineer. */
@@ -1762,7 +1757,7 @@ snd error text */
 /* No comment provided by engineer. */
 "join as %@" = "Liity %@:nä";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Join group" = "Liity ryhmään";
 
 /* No comment provided by engineer. */
@@ -2093,7 +2088,8 @@ time to disappear */
 "offered %@: %@" = "tarjottu %1$@: %2$@";
 
 /* alert action
-alert button */
+alert button
+new chat action */
 "Ok" = "Ok";
 
 /* No comment provided by engineer. */
@@ -3071,7 +3067,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Use chat" = "Käytä chattia";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Use current profile" = "Käytä nykyistä profiilia";
 
 /* No comment provided by engineer. */
@@ -3080,7 +3076,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Use iOS call interface" = "Käytä iOS:n puhelujen käyttöliittymää";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Use new incognito profile" = "Käytä uutta incognito-profiilia";
 
 /* No comment provided by engineer. */

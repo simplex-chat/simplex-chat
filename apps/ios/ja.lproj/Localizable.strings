@@ -484,10 +484,10 @@ swipe action */
 /* No comment provided by engineer. */
 "Already connected?" = "すでに接続済みですか？";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Already connecting!" = "既に接続中です！";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Already joining the group!" = "すでにグループに参加しています！";
 
 /* pref value */
@@ -647,7 +647,8 @@ swipe action */
 "Can't invite contacts!" = "連絡先を招待できません！";
 
 /* alert action
-alert button */
+alert button
+new chat action */
 "Cancel" = "中止";
 
 /* feature offered item */
@@ -808,9 +809,6 @@ set passcode view */
 "Connect" = "接続";
 
 /* No comment provided by engineer. */
-"Connect incognito" = "シークレットモードで接続";
-
-/* No comment provided by engineer. */
 "Connect to desktop" = "デスクトップに接続";
 
 /* No comment provided by engineer. */
@@ -819,10 +817,10 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connect to your friends faster." = "友達ともっと速くつながりましょう。";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via link" = "リンク経由で接続";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via one-time link" = "ワンタイムリンクで接続";
 
 /* No comment provided by engineer. */
@@ -962,9 +960,6 @@ set passcode view */
 
 /* server test step */
 "Create queue" = "キューの作成";
-
-/* No comment provided by engineer. */
-"Create secret group" = "シークレットグループを作成する";
 
 /* No comment provided by engineer. */
 "Create SimpleX address" = "SimpleXアドレスの作成";
@@ -1454,7 +1449,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Error changing role" = "役割変更にエラー発生";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error changing setting" = "設定変更にエラー発生";
 
 /* No comment provided by engineer. */
@@ -1475,7 +1470,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Error decrypting file" = "ファイルの復号エラー";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat database" = "チャットデータベース削除にエラー発生";
 
 /* No comment provided by engineer. */
@@ -1484,10 +1479,10 @@ swipe action */
 /* No comment provided by engineer. */
 "Error deleting connection" = "接続の削除エラー";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting database" = "データベースの削除にエラー発生";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting old database" = "古いデータベースを削除にエラー発生";
 
 /* No comment provided by engineer. */
@@ -1502,10 +1497,10 @@ swipe action */
 /* No comment provided by engineer. */
 "Error encrypting database" = "データベース暗号化ににエラー発生";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error exporting chat database" = "チャットデータベースのエキスポートにエラー発生";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error importing chat database" = "チャットデータベースのインポートにエラー発生";
 
 /* No comment provided by engineer. */
@@ -1969,7 +1964,7 @@ snd error text */
 /* No comment provided by engineer. */
 "join as %@" = "%@ として参加";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Join group" = "グループに参加";
 
 /* No comment provided by engineer. */
@@ -2309,7 +2304,8 @@ time to disappear */
 "offered %@: %@" = "提供された %1$@: %2$@";
 
 /* alert action
-alert button */
+alert button
+new chat action */
 "Ok" = "OK";
 
 /* No comment provided by engineer. */
@@ -3269,7 +3265,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Use chat" = "チャット";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Use current profile" = "現在のプロファイルを使用する";
 
 /* No comment provided by engineer. */
@@ -3278,7 +3274,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Use iOS call interface" = "iOS通話インターフェースを使用する";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Use new incognito profile" = "新しいシークレットプロファイルを使用する";
 
 /* No comment provided by engineer. */
