@@ -9,6 +9,7 @@ import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Simplex.Chat.Operators
 import Simplex.Messaging.Agent.Env.SQLite (ServerRoles (..), allRoles)
+import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Protocol (ProtocolType (..), SMPServer)
 
 operatorSimpleXChat :: NewServerOperator

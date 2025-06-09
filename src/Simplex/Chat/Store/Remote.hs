@@ -10,6 +10,7 @@ import Control.Monad.Except
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeASCII, encodeUtf8)
+import qualified Data.X509 as X
 import Data.Word (Word16)
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store.Shared
@@ -66,7 +67,7 @@ remoteHostQuery =
     FROM remote_hosts
   |]
 
-toRemoteHost :: (Int64, Text, FilePath, C.APrivateSignKey, C.SignedObject C.Certificate, C.PrivateKeyEd25519, C.KeyHash, C.PublicKeyX25519, Maybe Text, Maybe Text, Maybe Word16) -> RemoteHost
+toRemoteHost :: (Int64, Text, FilePath, C.APrivateSignKey, C.SignedObject X.Certificate, C.PrivateKeyEd25519, C.KeyHash, C.PublicKeyX25519, Maybe Text, Maybe Text, Maybe Word16) -> RemoteHost
 toRemoteHost (remoteHostId, hostDeviceName, storePath, caKey, C.SignedObject caCert, idPrivKey, hostFingerprint, hostDhPubKey, ifaceName_, ifaceAddr_, bindPort_) =
   RemoteHost {remoteHostId, hostDeviceName, storePath, hostPairing, bindAddress_, bindPort_}
   where
@@ -133,7 +134,7 @@ toRemoteCtrl ::
   ( RemoteCtrlId,
     Text,
     C.APrivateSignKey,
-    C.SignedObject C.Certificate,
+    C.SignedObject X.Certificate,
     C.KeyHash,
     C.PublicKeyEd25519,
     C.PrivateKeyX25519,

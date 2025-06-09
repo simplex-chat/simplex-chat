@@ -49,6 +49,18 @@ fun GroupLinkView(
       creatingLink = false
     }
   }
+  fun addShortLink() {
+    creatingLink = true
+    withBGApi {
+      val link = chatModel.controller.apiAddGroupShortLink(rhId, groupInfo.groupId)
+      if (link != null) {
+        groupLink = link.first
+        groupLinkMemberRole.value = link.second
+        onGroupLinkUpdated?.invoke(link)
+      }
+      creatingLink = false
+    }
+  }
   LaunchedEffect(Unit) {
     if (groupLink == null && !creatingLink) {
       createLink()
@@ -60,6 +72,7 @@ fun GroupLinkView(
     groupLinkMemberRole,
     creatingLink,
     createLink = ::createLink,
+    addShortLink = ::addShortLink,
     updateLink = {
       val role = groupLinkMemberRole.value
       if (role != null) {
@@ -105,6 +118,7 @@ fun GroupLinkLayout(
   groupLinkMemberRole: MutableState<GroupMemberRole?>,
   creatingLink: Boolean,
   createLink: () -> Unit,
+  addShortLink: () -> Unit,
   updateLink: () -> Unit,
   deleteLink: () -> Unit,
   creatingGroup: Boolean = false,
@@ -182,10 +196,24 @@ fun GroupLinkLayout(
             )
           }
         }
+        if (groupLink.connShortLink == null && appPreferences.privacyShortLinks.get()) {
+          AddShortLinkButton(addShortLink)
+        }
       }
     }
     SectionBottomSpacer()
   }
+}
+
+@Composable
+private fun AddShortLinkButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_add),
+    stringResource(MR.strings.add_short_link),
+    onClick,
+    iconColor = MaterialTheme.colors.primary,
+    textColor = MaterialTheme.colors.primary,
+  )
 }
 
 @Composable

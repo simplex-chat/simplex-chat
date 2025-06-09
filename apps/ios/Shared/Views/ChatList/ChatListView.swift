@@ -579,8 +579,6 @@ struct ChatListSearchBar: View {
     @Binding var searchChatFilteredBySimplexLink: String?
     @Binding var parentSheet: SomeSheet<AnyView>?
     @State private var ignoreSearchTextChange = false
-    @State private var alert: PlanAndConnectAlert?
-    @State private var sheet: PlanAndConnectActionSheet?
 
     var body: some View {
         VStack(spacing: 12) {
@@ -645,12 +643,6 @@ struct ChatListSearchBar: View {
         .onChange(of: chatTagsModel.activeFilter) { _ in
             searchText = ""
         }
-        .alert(item: $alert) { a in
-            planAndConnectAlert(a, dismiss: true, cleanup: { searchText = "" })
-        }
-        .actionSheet(item: $sheet) { s in
-            planAndConnectActionSheet(s, dismiss: true, cleanup: { searchText = "" })
-        }
     }
 
     private func toggleFilterButton() -> some View {
@@ -676,10 +668,11 @@ struct ChatListSearchBar: View {
     private func connect(_ link: String) {
         planAndConnect(
             link,
-            showAlert: { alert = $0 },
-            showActionSheet: { sheet = $0 },
             dismiss: false,
-            incognito: nil,
+            cleanup: {
+                searchText = ""
+                searchFocussed = false
+            },
             filterKnownContact: { searchChatFilteredBySimplexLink = $0.id },
             filterKnownGroup: { searchChatFilteredBySimplexLink = $0.id }
         )

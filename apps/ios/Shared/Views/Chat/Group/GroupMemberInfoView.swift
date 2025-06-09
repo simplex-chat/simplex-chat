@@ -26,7 +26,6 @@ struct GroupMemberInfoView: View {
     @State private var knownContactConnectionStats: ConnectionStats? = nil
     @State private var newRole: GroupMemberRole = .member
     @State private var alert: GroupMemberInfoViewAlert?
-    @State private var sheet: PlanAndConnectActionSheet?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var justOpened = true
     @State private var progressIndicator = false
@@ -41,7 +40,6 @@ struct GroupMemberInfoView: View {
         case switchAddressAlert
         case abortSwitchAddressAlert
         case syncConnectionForceAlert
-        case planAndConnectAlert(alert: PlanAndConnectAlert)
         case queueInfo(info: String)
         case someAlert(alert: SomeAlert)
         case error(title: LocalizedStringKey, error: LocalizedStringKey?)
@@ -57,7 +55,6 @@ struct GroupMemberInfoView: View {
             case .switchAddressAlert: return "switchAddressAlert"
             case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
             case .syncConnectionForceAlert: return "syncConnectionForceAlert"
-            case let .planAndConnectAlert(alert): return "planAndConnectAlert \(alert.id)"
             case let .queueInfo(info): return "queueInfo \(info)"
             case let .someAlert(alert): return "someAlert \(alert.id)"
             case let .error(title, _): return "error \(title)"
@@ -270,13 +267,11 @@ struct GroupMemberInfoView: View {
                 case .switchAddressAlert: return switchAddressAlert(switchMemberAddress)
                 case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchMemberAddress)
                 case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncMemberConnection(force: true) })
-                case let .planAndConnectAlert(alert): return planAndConnectAlert(alert, dismiss: true)
                 case let .queueInfo(info): return queueInfoAlert(info)
                 case let .someAlert(a): return a.alert
                 case let .error(title, error): return mkAlert(title: title, message: error)
                 }
             }
-            .actionSheet(item: $sheet) { s in planAndConnectActionSheet(s, dismiss: true) }
 
             if progressIndicator {
                 ProgressView().scaleEffect(2)
@@ -350,10 +345,7 @@ struct GroupMemberInfoView: View {
         Button {
             planAndConnect(
                 contactLink,
-                showAlert: { alert = .planAndConnectAlert(alert: $0) },
-                showActionSheet: { sheet = $0 },
-                dismiss: true,
-                incognito: nil
+                dismiss: true
             )
         } label: {
             Label("Connect", systemImage: "link")

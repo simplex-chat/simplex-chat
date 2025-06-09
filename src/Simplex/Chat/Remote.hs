@@ -58,7 +58,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import qualified Simplex.Messaging.TMap as TM
-import Simplex.Messaging.Transport (TLS, closeConnection, tlsUniq)
+import Simplex.Messaging.Transport (TLS, TransportPeer (..), closeConnection, tlsUniq)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2ClientError, closeHTTP2Client)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
 import Simplex.Messaging.Util
@@ -75,11 +75,11 @@ remoteFilesFolder = "simplex_v1_files"
 
 -- when acting as host
 minRemoteCtrlVersion :: AppVersion
-minRemoteCtrlVersion = AppVersion [6, 4, 0, 2]
+minRemoteCtrlVersion = AppVersion [6, 4, 0, 3]
 
 -- when acting as controller
 minRemoteHostVersion :: AppVersion
-minRemoteHostVersion = AppVersion [6, 4, 0, 2]
+minRemoteHostVersion = AppVersion [6, 4, 0, 3]
 
 currentAppVersion :: AppVersion
 currentAppVersion = AppVersion SC.version
@@ -184,7 +184,7 @@ startRemoteHost rh_ rcAddrPrefs_ port_ = do
       action `catchChatError` \err -> do
         logError $ "startRemoteHost.waitForHostSession crashed: " <> tshow err
         readTVarIO rhKeyVar >>= cancelRemoteHostSession (Just (sessSeq, RHSRCrashed err))
-    waitForHostSession :: Maybe RemoteHostInfo -> RHKey -> SessionSeq -> Maybe RCCtrlAddress -> TVar RHKey -> RCStepTMVar (ByteString, TLS, RCStepTMVar (RCHostSession, RCHostHello, RCHostPairing)) -> CM ()
+    waitForHostSession :: Maybe RemoteHostInfo -> RHKey -> SessionSeq -> Maybe RCCtrlAddress -> TVar RHKey -> RCStepTMVar (ByteString, TLS 'TServer, RCStepTMVar (RCHostSession, RCHostHello, RCHostPairing)) -> CM ()
     waitForHostSession remoteHost_ rhKey sseq rcAddr_ rhKeyVar vars = do
       (sessId, tls, vars') <- timeoutThrow (ChatErrorRemoteHost rhKey RHETimeout) 60000000 $ takeRCStep vars
       let sessionCode = verificationCode sessId
@@ -474,7 +474,7 @@ connectRemoteCtrl verifiedInv@(RCVerifiedInvitation inv@RCInvitation {ca, app}) 
   where
     validateRemoteCtrl RCInvitation {idkey} RemoteCtrl {ctrlPairing = RCCtrlPairing {idPubKey}} =
       unless (idkey == idPubKey) $ throwError $ ChatErrorRemoteCtrl $ RCEProtocolError $ PRERemoteControl RCEIdentity
-    waitForCtrlSession :: Maybe RemoteCtrl -> Text -> RCCtrlClient -> RCStepTMVar (ByteString, TLS, RCStepTMVar (RCCtrlSession, RCCtrlPairing)) -> CM ()
+    waitForCtrlSession :: Maybe RemoteCtrl -> Text -> RCCtrlClient -> RCStepTMVar (ByteString, TLS 'TClient, RCStepTMVar (RCCtrlSession, RCCtrlPairing)) -> CM ()
     waitForCtrlSession rc_ ctrlName rcsClient vars = do
       (uniq, tls, rcsWaitConfirmation) <- timeoutThrow (ChatErrorRemoteCtrl RCETimeout) networkIOTimeout $ takeRCStep vars
       let sessionCode = verificationCode uniq

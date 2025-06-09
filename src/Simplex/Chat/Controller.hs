@@ -87,7 +87,7 @@ import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
 import Simplex.Messaging.TMap (TMap)
-import Simplex.Messaging.Transport (TLS, simplexMQVersion)
+import Simplex.Messaging.Transport (TLS, TransportPeer (..), simplexMQVersion)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, catchAllErrors', tryAllErrors, tryAllErrors', (<$$>))
 import Simplex.RemoteControl.Client
@@ -373,6 +373,7 @@ data ChatCommand
   | APIGroupLinkMemberRole GroupId GroupMemberRole
   | APIDeleteGroupLink GroupId
   | APIGetGroupLink GroupId
+  | APIAddGroupShortLink GroupId
   | APICreateMemberContact GroupId GroupMemberId
   | APISendMemberContactInvitation {contactId :: ContactId, msgContent_ :: Maybe MsgContent}
   | GetUserProtoServers AProtocolType
@@ -461,6 +462,7 @@ data ChatCommand
   | DeleteMyAddress
   | APIShowMyAddress UserId
   | ShowMyAddress
+  | APIAddMyAddressShortLink UserId
   | APISetProfileAddress UserId Bool
   | SetProfileAddress Bool
   | APIAddressAutoAccept UserId (Maybe AutoAccept)
@@ -735,7 +737,7 @@ data ChatResponse
   | CRArchiveImported {archiveErrors :: [ArchiveError]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
 #endif
-  | CRDebugLocks {chatLockName :: Maybe String, chatEntityLocks :: Map String String, agentLocks :: AgentLocks}
+  | CRDebugLocks {chatLockName :: Maybe Text, chatEntityLocks :: Map Text Text, agentLocks :: AgentLocks}
   | CRAgentSubsTotal {user :: User, subsTotal :: SMPServerSubs, hasSession :: Bool}
   | CRAgentServersSummary {user :: User, serversSummary :: PresentedServersSummary}
   | CRAgentWorkersDetails {agentWorkersDetails :: AgentWorkersDetails}
@@ -854,6 +856,7 @@ data ChatEvent
   | CEvtChatErrors {chatErrors :: [ChatError]}
   | CEvtTimedAction {action :: String, durationMilliseconds :: Int64}
   | CEvtTerminalEvent TerminalEvent
+  | CEvtCustomChatEvent {user_ :: Maybe User, response :: Text}
   deriving (Show)
 
 data TerminalEvent
@@ -1412,7 +1415,7 @@ data RemoteCtrlSession
       { remoteCtrlId_ :: Maybe RemoteCtrlId,
         ctrlDeviceName :: Text,
         rcsClient :: RCCtrlClient,
-        tls :: TLS,
+        tls :: TLS 'TClient,
         sessionCode :: Text,
         rcsWaitSession :: Async (),
         rcsWaitConfirmation :: TMVar (Either RCErrorType (RCCtrlSession, RCCtrlPairing))
@@ -1420,7 +1423,7 @@ data RemoteCtrlSession
   | RCSessionConnected
       { remoteCtrlId :: RemoteCtrlId,
         rcsClient :: RCCtrlClient,
-        tls :: TLS,
+        tls :: TLS 'TClient,
         rcsSession :: RCCtrlSession,
         http2Server :: Async (),
         remoteOutputQ :: TBQueue (Either ChatError ChatEvent)

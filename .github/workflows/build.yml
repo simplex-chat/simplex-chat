@@ -234,16 +234,14 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
         shell: docker exec -t builder sh -eu {0}
         run: |
-          scripts/desktop/build-lib-linux.sh
-          cd apps/multiplatform
-          ./gradlew packageDeb
+          scripts/desktop/make-deb-linux.sh
 
       - name: Prepare Desktop
         id: linux_desktop_build
         if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
         shell: bash
         run: |
-          path=$(echo ${{ github.workspace }}/apps/multiplatform/release/main/deb/simplex_*_amd64.deb )
+          path=$(echo ${{ github.workspace }}/apps/multiplatform/release/main/deb/simplex_amd64.deb )
           echo "package_path=$path" >> $GITHUB_OUTPUT
           echo "package_hash=$(echo SHA2-256\(${{ matrix.desktop_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 

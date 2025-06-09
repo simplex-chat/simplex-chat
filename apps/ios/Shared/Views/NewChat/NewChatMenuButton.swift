@@ -125,7 +125,7 @@ struct NewChatSheet: View {
                     }
                     NavigationLink {
                         AddGroupView()
-                            .navigationTitle("Create secret group")
+                            .navigationTitle("Create group")
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
@@ -346,8 +346,6 @@ struct ContactsListSearchBar: View {
     @Binding var searchShowingSimplexLink: Bool
     @Binding var searchChatFilteredBySimplexLink: String?
     @State private var ignoreSearchTextChange = false
-    @State private var alert: PlanAndConnectAlert?
-    @State private var sheet: PlanAndConnectActionSheet?
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
@@ -416,12 +414,6 @@ struct ContactsListSearchBar: View {
                 }
             }
         }
-        .alert(item: $alert) { a in
-            planAndConnectAlert(a, dismiss: true, cleanup: { searchText = "" })
-        }
-        .actionSheet(item: $sheet) { s in
-            planAndConnectActionSheet(s, dismiss: true, cleanup: { searchText = "" })
-        }
     }
 
     private func toggleFilterButton() -> some View {
@@ -442,10 +434,11 @@ struct ContactsListSearchBar: View {
     private func connect(_ link: String) {
         planAndConnect(
             link,
-            showAlert: { alert = $0 },
-            showActionSheet: { sheet = $0 },
             dismiss: true,
-            incognito: nil,
+            cleanup: {
+                searchText = ""
+                searchFocussed = false
+            },
             filterKnownContact: { searchChatFilteredBySimplexLink = $0.id }
         )
     }
