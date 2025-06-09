@@ -1061,6 +1061,7 @@ getContactRequestChatPreviews_ db User {userId} pagination clq = case clq of
           AND uc.user_id = ?
           AND uc.local_display_name = ''
           AND uc.group_id IS NULL
+          AND cr.contact_id IS NULL
           AND (
             LOWER(cr.local_display_name) LIKE '%' || LOWER(?) || '%'
             OR LOWER(p.display_name) LIKE '%' || LOWER(?) || '%'

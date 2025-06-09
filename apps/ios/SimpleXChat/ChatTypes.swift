@@ -1719,6 +1719,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     var updatedAt: Date
     var chatTs: Date?
     public var connLinkToConnect: CreatedConnLink?
+    public var contactRequestId: Int64?
     var contactGroupMemberId: Int64?
     var contactGrpInvSent: Bool
     public var chatTags: [Int64]
@@ -1733,6 +1734,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var active: Bool { get { contactStatus == .active } }
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
     public var nextConnectPrepared: Bool { get { connLinkToConnect != nil && activeConn == nil } }
+    public var nextAcceptContactRequest: Bool { get { contactRequestId != nil && activeConn == nil } }
     public var sendMsgToConnect: Bool { get { nextSendGrpInv || nextConnectPrepared } }
     public var displayName: String { localAlias == "" ? profile.displayName : localAlias }
     public var fullName: String { get { profile.fullName } }
@@ -1908,7 +1910,7 @@ public struct UserContactRequest: Decodable, NamedChat, Hashable {
     var createdAt: Date
     public var updatedAt: Date
 
-    public var id: ChatId { get { "<@\(contactRequestId)" } }
+    public var id: ChatId { get { contactRequestChatId(contactRequestId) } }
     public var apiId: Int64 { get { contactRequestId } }
     var ready: Bool { get { true } }
     public var displayName: String { get { profile.displayName } }
@@ -1925,6 +1927,10 @@ public struct UserContactRequest: Decodable, NamedChat, Hashable {
         createdAt: .now,
         updatedAt: .now
     )
+}
+
+public func contactRequestChatId(_ contactRequestId: Int64) -> ChatId {
+    return "<@\(contactRequestId)"
 }
 
 public struct PendingContactConnection: Decodable, NamedChat, Hashable {

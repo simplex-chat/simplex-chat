@@ -668,7 +668,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         _ -> pure ()
       where
         -- TODO [short links] don't send auto-reply message if it should have been created by connecting client
-        -- TODO  (based on version + whether address has short link data)
+        -- TODO   - based on version + whether address has short link data (shortLinkDataSet)
         sendAutoReply ct = \case
           Just AutoAccept {autoReply = Just mc} -> do
             (msg, _) <- sendDirectContactMessage user ct (XMsgNew $ MCSimple (extMsgContent mc Nothing))
@@ -1208,7 +1208,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
 
     processUserContactRequest :: AEvent e -> ConnectionEntity -> Connection -> UserContact -> CM ()
-    processUserContactRequest agentMsg connEntity conn UserContact {userContactLinkId} = case agentMsg of
+    processUserContactRequest agentMsg connEntity conn UserContact {userContactLinkId = uclId} = case agentMsg of
       REQ invId pqSupport _ connInfo -> do
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
         case chatMsgEvent of
@@ -1227,54 +1227,68 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       where
         profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MsgContent -> PQSupport -> CM ()
         profileContactRequest invId chatVRange p@Profile {displayName} xContactId_ mc_ reqPQSup = do
-          -- TODO [short links] on contact request create contact with message
-          -- TODO  - instead of creating a contact request, create a contact that can be accepted or rejected,
-          -- TODO    and can be opened as a chat to view message
-          -- TODO  - see schema comments on persistence
-          withStore (\db -> createOrUpdateContactRequest db vr user userContactLinkId invId chatVRange p xContactId_ reqPQSup) >>= \case
-            CORContact contact -> toView $ CEvtContactRequestAlreadyAccepted user contact
-            CORGroup gInfo -> toView $ CEvtBusinessRequestAlreadyAccepted user gInfo
-            CORRequest cReq -> do
-              ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
-              let (UserContactLink {connLinkContact = CCLink connReq _, autoAccept}, gLinkInfo_) = ucl
-                  isSimplexTeam = sameConnReqContact connReq adminContactReq
-                  v = maxVersion chatVRange
-              case autoAccept of
-                Just AutoAccept {acceptIncognito, businessAddress}
-                  | businessAddress ->
-                      if isSimplexTeam && v < businessChatsVersion
-                        then do
-                          ct <- acceptContactRequestAsync user cReq Nothing reqPQSup
+          ucl <- withStore $ \db -> getUserContactLinkById db userId uclId
+          let (UserContactLink {connLinkContact = CCLink connReq _, autoAccept}, gLinkInfo_) = ucl
+              isSimplexTeam = sameConnReqContact connReq adminContactReq
+              v = maxVersion chatVRange
+          case autoAccept of
+            Nothing ->
+              withStore (\db -> createOrUpdateContactRequest db vr user uclId invId chatVRange p xContactId_ reqPQSup) >>= \case
+                CORContact ct -> toView $ CEvtContactRequestAlreadyAccepted user ct
+                CORRequest cReq ct_ -> do
+                  forM_ ct_ $ \ct ->
+                    forM_ mc_ $ \mc ->
+                      createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent mc) Nothing
+                  toView $ CEvtReceivedContactRequest user cReq ct_
+            Just AutoAccept {acceptIncognito, businessAddress}
+              | businessAddress ->
+                  if isSimplexTeam && v < businessChatsVersion
+                    then
+                      maybe (pure Nothing) (\xContactId -> withStore' (\db -> getAcceptedContactByXContactId db vr user xContactId)) xContactId_ >>= \case
+                        Just ct -> toView $ CEvtContactRequestAlreadyAccepted user ct
+                        Nothing -> do
+                          ct <- acceptContactRequestAsync user uclId invId chatVRange p xContactId_ reqPQSup Nothing
+                          forM_ mc_ $ \mc ->
+                            createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent mc) Nothing
                           toView $ CEvtAcceptingContactRequest user ct
-                        else do
-                          gInfo <- acceptBusinessJoinRequestAsync user cReq
+                    else
+                      maybe (pure Nothing) (\xContactId -> withStore' (\db -> getAcceptedBusinessChatByXContactId db vr user xContactId)) xContactId_ >>= \case
+                        Just gInfo -> toView $ CEvtBusinessRequestAlreadyAccepted user gInfo
+                        Nothing -> do
+                          (gInfo, clientMember) <- acceptBusinessJoinRequestAsync user uclId invId chatVRange p xContactId_
+                          forM_ mc_ $ \mc ->
+                            createInternalChatItem user (CDGroupRcv gInfo Nothing clientMember) (CIRcvMsgContent mc) Nothing
                           toView $ CEvtAcceptingBusinessRequest user gInfo
-                  | otherwise -> case gLinkInfo_ of
+              | otherwise -> case gLinkInfo_ of
+                  Nothing ->
+                    maybe (pure Nothing) (\xContactId -> withStore' (\db -> getAcceptedContactByXContactId db vr user xContactId)) xContactId_ >>= \case
+                      Just ct -> toView $ CEvtContactRequestAlreadyAccepted user ct
                       Nothing -> do
                         -- [incognito] generate profile to send, create connection with incognito profile
                         incognitoProfile <- if acceptIncognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
-                        ct <- acceptContactRequestAsync user cReq incognitoProfile reqPQSup
+                        ct <- acceptContactRequestAsync user uclId invId chatVRange p xContactId_ reqPQSup incognitoProfile
+                        forM_ mc_ $ \mc ->
+                          createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent mc) Nothing
                         toView $ CEvtAcceptingContactRequest user ct
-                      Just gli@GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
-                        gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
-                        acceptMember_ <- asks $ acceptMember . chatHooks . config
-                        maybe (pure $ Right (GAAccepted, gLinkMemRole)) (\am -> liftIO $ am gInfo gli p) acceptMember_ >>= \case
-                          Right (acceptance, useRole)
-                            | v < groupFastLinkJoinVersion ->
-                                messageError "processUserContactRequest: chat version range incompatible for accepting group join request"
-                            | otherwise -> do
-                                let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
-                                mem <- acceptGroupJoinRequestAsync user gInfo cReq acceptance useRole profileMode
-                                (gInfo', mem', scopeInfo) <- mkGroupChatScope gInfo mem
-                                createInternalChatItem user (CDGroupRcv gInfo' scopeInfo mem') (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
-                                toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'
-                          Left rjctReason
-                            | v < groupJoinRejectVersion ->
-                                messageWarning $ "processUserContactRequest (group " <> groupName' gInfo <> "): joining of " <> displayName <> " is blocked"
-                            | otherwise -> do
-                                mem <- acceptGroupJoinSendRejectAsync user gInfo cReq rjctReason
-                                toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
-                _ -> toView $ CEvtReceivedContactRequest user cReq
+                  Just gli@GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
+                    gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
+                    acceptMember_ <- asks $ acceptMember . chatHooks . config
+                    maybe (pure $ Right (GAAccepted, gLinkMemRole)) (\am -> liftIO $ am gInfo gli p) acceptMember_ >>= \case
+                      Right (acceptance, useRole)
+                        | v < groupFastLinkJoinVersion ->
+                            messageError "processUserContactRequest: chat version range incompatible for accepting group join request"
+                        | otherwise -> do
+                            let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
+                            mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p acceptance useRole profileMode
+                            (gInfo', mem', scopeInfo) <- mkGroupChatScope gInfo mem
+                            createInternalChatItem user (CDGroupRcv gInfo' scopeInfo mem') (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
+                            toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'
+                      Left rjctReason
+                        | v < groupJoinRejectVersion ->
+                            messageWarning $ "processUserContactRequest (group " <> groupName' gInfo <> "): joining of " <> displayName <> " is blocked"
+                        | otherwise -> do
+                            mem <- acceptGroupJoinSendRejectAsync user uclId gInfo invId chatVRange p rjctReason
+                            toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
 
     memberCanSend :: GroupMember -> Maybe MsgScope -> CM () -> CM ()
     memberCanSend m@GroupMember {memberRole} msgScope a = case msgScope of

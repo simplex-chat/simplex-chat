@@ -119,7 +119,8 @@ struct ChatView: View {
                     let reason = chat.chatInfo.userCantSendReason
                     let composeEnabled = (
                         chat.chatInfo.sendMsgEnabled ||
-                        (chat.chatInfo.groupInfo?.nextConnectPrepared ?? false) // allow to join prepared group without message
+                        (chat.chatInfo.groupInfo?.nextConnectPrepared ?? false) || // allow to join prepared group without message
+                        (chat.chatInfo.contact?.nextAcceptContactRequest ?? false) // allow to accept or reject contact request
                     )
                     ComposeView(
                         chat: chat,
@@ -764,7 +765,8 @@ struct ChatView: View {
         if case let .direct(contact) = chat.chatInfo,
            !contact.sndReady,
            contact.active,
-           !contact.sendMsgToConnect {
+           !contact.sendMsgToConnect,
+           !contact.nextAcceptContactRequest {
             Text("connecting…")
                 .font(.caption)
                 .foregroundColor(theme.colors.secondary)

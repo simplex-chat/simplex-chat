@@ -63,7 +63,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
            let chatId = content.userInfo["chatId"] as? String {
             let incognito = action == ntfActionAcceptContactIncognito
             if case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {
-                Task { await acceptContactRequest(incognito: incognito, contactRequest: contactRequest) }
+                Task { await acceptContactRequest(incognito: incognito, contactRequestId: contactRequest.apiId) }
             } else {
                 chatModel.ntfContactRequest = NTFContactRequest(incognito: incognito, chatId: chatId)
             }
@@ -161,7 +161,9 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                         identifier: ntfActionAcceptContact,
                         title: NSLocalizedString("Accept", comment: "accept contact request via notification"),
                         options: .foreground
-                    ), UNNotificationAction(
+                    ),
+                    // TODO [short links] if !userAddress.shortLinkDataSet; or remove if no access to chat model here
+                    UNNotificationAction(
                         identifier: ntfActionAcceptContactIncognito,
                         title: NSLocalizedString("Accept incognito", comment: "accept contact request via notification"),
                         options: .foreground

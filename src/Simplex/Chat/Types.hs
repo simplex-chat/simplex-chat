@@ -189,6 +189,7 @@ data Contact = Contact
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
     connLinkToConnect :: Maybe ACreatedConnLink,
+    contactRequestId :: Maybe Int64,
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
     chatTags :: [ChatTagId],
@@ -366,7 +367,10 @@ instance ToJSON ConnReqUriHash where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-data ChatOrRequest = CORContact Contact | CORGroup GroupInfo | CORRequest UserContactRequest
+data ChatOrRequest
+  = CORContact Contact
+  -- Contact is Maybe for backward compatibility with legacy requests, all new requests are created with contact
+  | CORRequest UserContactRequest (Maybe Contact)
 
 type UserName = Text
 

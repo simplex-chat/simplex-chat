@@ -1144,6 +1144,12 @@ processChatCommand' vr = \case
       withFastStore' $ \db -> deleteNoteFolderCIs db user nf
       pure $ CRChatCleared user (AChatInfo SCTLocal $ LocalChat nf)
     _ -> throwCmdError "not supported"
+  -- TODO [short links] prohibit incognito if short link data is set for address
+  -- TODO  - add user_contact_links.short_link_data_set; UserContactLink.shortLinkDataSet
+  -- TODO  - same for auto-accept:
+  -- TODO    - set incognito to false on setting short link data
+  -- TODO    - ignore on accept (for foolproofing)
+  -- TODO    - hide in UI
   APIAcceptContact incognito connReqId -> withUser $ \_ -> do
     userContactLinkId <- withFastStore $ \db -> getUserContactLinkIdByCReq db connReqId
     withUserContactLock "acceptContact" userContactLinkId $ do
@@ -1163,12 +1169,17 @@ processChatCommand' vr = \case
   APIRejectContact connReqId -> withUser $ \user -> do
     userContactLinkId <- withFastStore $ \db -> getUserContactLinkIdByCReq db connReqId
     withUserContactLock "rejectContact" userContactLinkId $ do
-      cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
-        withFastStore $ \db ->
-          getContactRequest db user connReqId
-            `storeFinally` liftIO (deleteContactRequest db user connReqId)
+      (cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId}, ct_) <-
+        withFastStore $ \db -> do
+          cReq@UserContactRequest {contactId_} <- getContactRequest db user connReqId
+          ct_ <- forM contactId_ $ \contactId -> do
+            ct <- getContact db vr user contactId
+            deleteContact db user ct
+            pure ct
+          liftIO $ deleteContactRequest db user connReqId
+          pure (cReq, ct_)
       withAgent $ \a -> rejectContact a connId invId
-      pure $ CRContactRequestRejected user cReq
+      pure $ CRContactRequestRejected user cReq ct_
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
     ct <- withFastStore $ \db -> getContact db vr user contactId

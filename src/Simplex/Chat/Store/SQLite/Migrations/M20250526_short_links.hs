@@ -5,14 +5,14 @@ module Simplex.Chat.Store.SQLite.Migrations.M20250526_short_links where
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
--- TODO [short links] contacts with contact requests
--- TODO  - contacts.is_contact_request flag?
--- TODO  - link contact_requests and contacts?
 m20250526_short_links :: Query
 m20250526_short_links =
   [sql|
 ALTER TABLE contacts ADD COLUMN conn_full_link_to_connect BLOB;
 ALTER TABLE contacts ADD COLUMN conn_short_link_to_connect BLOB;
+
+ALTER TABLE contacts ADD COLUMN contact_request_id INTEGER REFERENCES contact_requests ON DELETE SET NULL;
+CREATE INDEX idx_contacts_contact_request_id ON contacts(contact_request_id);
 
 ALTER TABLE groups ADD COLUMN conn_full_link_to_connect BLOB;
 ALTER TABLE groups ADD COLUMN conn_short_link_to_connect BLOB;
@@ -24,6 +24,9 @@ down_m20250526_short_links =
   [sql|
 ALTER TABLE contacts DROP COLUMN conn_full_link_to_connect;
 ALTER TABLE contacts DROP COLUMN conn_short_link_to_connect;
+
+DROP INDEX idx_contacts_contact_request_id;
+ALTER TABLE contacts DROP COLUMN contact_request_id;
 
 ALTER TABLE groups DROP COLUMN conn_full_link_to_connect;
 ALTER TABLE groups DROP COLUMN conn_short_link_to_connect;

@@ -257,7 +257,7 @@ testUserContactLink =
       cLink <- getContactLink alice True
       bob ##> ("/c " <> cLink)
       alice <#? bob
-      alice @@@ [("<@bob", "")]
+      alice @@@ [("@bob", "")]
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
@@ -269,7 +269,7 @@ testUserContactLink =
 
       cath ##> ("/c " <> cLink)
       alice <#? cath
-      alice @@@ [("<@cath", ""), ("@bob", "hey")]
+      alice @@@ [("@cath", ""), ("@bob", "hey")]
       alice ##> "/ac cath"
       alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
       concurrently_
@@ -432,7 +432,7 @@ testUserContactLinkAutoAccept =
 
       bob ##> ("/c " <> cLink)
       alice <#? bob
-      alice @@@ [("<@bob", "")]
+      alice @@@ [("@bob", "")]
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
@@ -461,7 +461,7 @@ testUserContactLinkAutoAccept =
 
       dan ##> ("/c " <> cLink)
       alice <#? dan
-      alice @@@ [("<@dan", ""), ("@cath", "hey"), ("@bob", "hey")]
+      alice @@@ [("@dan", ""), ("@cath", "hey"), ("@bob", "hey")]
       alice ##> "/ac dan"
       alice <## "dan (Daniel): accepting contact request, you can send messages to contact"
       concurrently_
@@ -479,14 +479,14 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
 
     bob ##> ("/c " <> cLink)
     alice <#? bob
-    alice @@@ [("<@bob", "")]
+    alice @@@ [("@bob", "")]
     bob @@@! [(":1", "", Just ConnJoined)]
 
     bob ##> ("/c " <> cLink)
     alice <#? bob
     bob ##> ("/c " <> cLink)
     alice <#? bob
-    alice @@@ [("<@bob", "")]
+    alice @@@ [("@bob", "")]
     bob @@@! [(":3", "", Just ConnJoined), (":2", "", Just ConnJoined), (":1", "", Just ConnJoined)]
 
     alice ##> "/ac bob"
@@ -520,7 +520,7 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
 
     cath ##> ("/c " <> cLink)
     alice <#? cath
-    alice @@@ [("<@cath", ""), ("@bob", "hey")]
+    alice @@@ [("@cath", ""), ("@bob", "hey")]
     alice ##> "/ac cath"
     alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
     concurrently_
@@ -538,7 +538,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
 
     bob ##> ("/c " <> cLink)
     alice <#? bob
-    alice @@@ [("<@bob", "")]
+    alice @@@ [("@bob", "")]
 
     bob ##> "/p bob"
     bob <## "user full name removed (your 0 contacts are notified)"
@@ -547,19 +547,19 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     alice <## "bob wants to connect to you!"
     alice <## "to accept: /ac bob"
     alice <## "to reject: /rc bob (the sender will NOT be notified)"
-    alice @@@ [("<@bob", "")]
+    alice @@@ [("@bob", "")]
 
     bob ##> "/p bob Bob Ross"
     bob <## "user full name changed to Bob Ross (your 0 contacts are notified)"
     bob ##> ("/c " <> cLink)
     alice <#? bob
-    alice @@@ [("<@bob", "")]
+    alice @@@ [("@bob", "")]
 
     bob ##> "/p robert Robert"
     bob <## "user profile is changed to robert (Robert) (your 0 contacts are notified)"
     bob ##> ("/c " <> cLink)
     alice <#? bob
-    alice @@@ [("<@robert", "")]
+    alice @@@ [("@robert", "")]
 
     alice ##> "/ac bob"
     alice <## "no contact request from bob"
@@ -597,7 +597,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
 
     cath ##> ("/c " <> cLink)
     alice <#? cath
-    alice @@@ [("<@cath", ""), ("@robert", "hey")]
+    alice @@@ [("@cath", ""), ("@robert", "hey")]
     alice ##> "/ac cath"
     alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
     concurrently_
@@ -614,8 +614,11 @@ testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathPr
     cLink <- getContactLink alice True
     bob ##> ("/c " <> cLink)
     alice <#? bob
+    alice @@@ [("@bob", "")]
+
     alice ##> "/rc bob"
     alice <## "bob: contact request rejected"
+    alice @@@ []
     (bob </)
 
     alice ##> "/_show_address 1"
@@ -898,7 +901,7 @@ testPlanAddressOkKnown =
 
       bob ##> ("/c " <> cLink)
       alice <#? bob
-      alice @@@ [("<@bob", "")]
+      alice @@@ [("@bob", "")]
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
@@ -937,7 +940,7 @@ testPlanAddressOwn ps =
     alice <## "alice_1 (Alice) wants to connect to you!"
     alice <## "to accept: /ac alice_1"
     alice <## "to reject: /rc alice_1 (the sender will NOT be notified)"
-    alice @@@ [("<@alice_1", ""), (":2", "")]
+    alice @@@ [("@alice_1", ""), (":2", "")]
     alice ##> "/ac alice_1"
     alice <## "alice_1 (Alice): accepting contact request, you can send messages to contact"
     alice
@@ -2802,8 +2805,10 @@ testShortLinkAddressPrepareContact =
         <### [ "alice: connection started",
                WithTime "@alice hello"
              ]
-      -- TODO [short links] for alice create message from contact request
-      alice <## "bob (Bob) wants to connect to you!"
+      alice
+        <### [ "bob (Bob) wants to connect to you!",
+               WithTime "bob> hello"
+             ]
       alice <## "to accept: /ac bob"
       alice <## "to reject: /rc bob (the sender will NOT be notified)"
       alice ##> "/ac bob"

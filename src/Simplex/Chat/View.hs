@@ -172,7 +172,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRContactsList u cs -> ttyUser u $ viewContactsList cs
   CRUserContactLink u UserContactLink {connLinkContact, autoAccept} -> ttyUser u $ connReqContact_ "Your chat address:" connLinkContact <> autoAcceptStatus_ autoAccept
   CRUserContactLinkUpdated u UserContactLink {autoAccept} -> ttyUser u $ autoAcceptStatus_ autoAccept
-  CRContactRequestRejected u UserContactRequest {localDisplayName = c} -> ttyUser u [ttyContact c <> ": contact request rejected"]
+  CRContactRequestRejected u UserContactRequest {localDisplayName = c} _ct_ -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRGroupMembers u g -> ttyUser u $ viewGroupMembers g
   CRMemberSupportChats u g ms -> ttyUser u $ viewMemberSupportChats g ms
@@ -416,7 +416,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtContactUpdated {user = u, fromContact = c, toContact = c'} -> ttyUser u $ viewContactUpdated c c' <> viewContactPrefsUpdated u c c'
   CEvtGroupMemberUpdated {} -> []
   CEvtContactsMerged u intoCt mergedCt ct' -> ttyUser u $ viewContactsMerged intoCt mergedCt ct'
-  CEvtReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} -> ttyUser u $ viewReceivedContactRequest c profile
+  CEvtReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} _ct_ -> ttyUser u $ viewReceivedContactRequest c profile
   CEvtRcvFileStart u ci -> ttyUser u $ receivingFile_' hu testView "started" ci
   CEvtRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" ci
   CEvtRcvStandaloneFileComplete u _ ft -> ttyUser u $ receivingFileStandalone "completed" ft
@@ -1826,7 +1826,7 @@ viewConnectionUserChanged User {localDisplayName = n} PendingContactConnection {
         cReqStr = strEncode $ simplexChatInvitation cReq
 
 viewConnectionPlan :: ChatConfig -> ACreatedConnLink -> ConnectionPlan -> [StyledString]
-viewConnectionPlan ChatConfig {logLevel, testView} connLink = \case
+viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
   CPInvitationLink ilp -> case ilp of
     ILPOk contactSLinkData -> [invLink "ok to connect"] <> [viewJSON contactSLinkData | testView]
     ILPOwnLink -> [invLink "own link"]

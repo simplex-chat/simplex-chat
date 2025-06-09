@@ -668,7 +668,7 @@ data ChatResponse
   | CRContactsList {user :: User, contacts :: [Contact]}
   | CRUserContactLink {user :: User, contactLink :: UserContactLink}
   | CRUserContactLinkUpdated {user :: User, contactLink :: UserContactLink}
-  | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest}
+  | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest, contact_ :: Maybe Contact}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool}
   | CRGroupsList {user :: User, groups :: [(GroupInfo, GroupSummary)]}
@@ -781,7 +781,7 @@ data ChatEvent
   | CEvtGroupMemberUpdated {user :: User, groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
   | CEvtContactsMerged {user :: User, intoContact :: Contact, mergedContact :: Contact, updatedContact :: Contact}
   | CEvtContactDeletedByContact {user :: User, contact :: Contact}
-  | CEvtReceivedContactRequest {user :: User, contactRequest :: UserContactRequest}
+  | CEvtReceivedContactRequest {user :: User, contactRequest :: UserContactRequest, contact_ :: Maybe Contact}
   | CEvtAcceptingContactRequest {user :: User, contact :: Contact} -- there is the same command response
   | CEvtAcceptingBusinessRequest {user :: User, groupInfo :: GroupInfo}
   | CEvtContactRequestAlreadyAccepted {user :: User, contact :: Contact}

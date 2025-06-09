@@ -350,6 +350,12 @@ struct ComposeView: View {
     var body: some View {
         VStack(spacing: 0) {
             Divider()
+            if let contact = chat.chatInfo.contact,
+               contact.nextAcceptContactRequest,
+               let contactRequestId = contact.contactRequestId {
+                ContextContactRequestActionsView(contactRequestId: contactRequestId)
+            }
+
             if let groupInfo = chat.chatInfo.groupInfo,
                case let .groupChatScopeContext(groupScopeInfo) = im.secondaryIMFilter,
                case let .memberSupport(member) = groupScopeInfo,

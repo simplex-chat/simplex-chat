@@ -1275,9 +1275,9 @@ func apiAcceptContactRequest(incognito: Bool, contactReqId: Int64) async -> Cont
     return nil
 }
 
-func apiRejectContactRequest(contactReqId: Int64) async throws {
+func apiRejectContactRequest(contactReqId: Int64) async throws -> Contact? {
     let r: ChatResponse1 = try await chatSendCmd(.apiRejectContact(contactReqId: contactReqId))
-    if case .contactRequestRejected = r { return }
+    if case let .contactRequestRejected(_, _, contact_) = r { return contact_ }
     throw r.unexpected
 }
 
@@ -1511,11 +1511,15 @@ func networkErrorAlert<R>(_ res: APIResult<R>) -> Alert? {
     }
 }
 
-func acceptContactRequest(incognito: Bool, contactRequest: UserContactRequest) async {
-    if let contact = await apiAcceptContactRequest(incognito: incognito, contactReqId: contactRequest.apiId) {
+func acceptContactRequest(incognito: Bool, contactRequestId: Int64) async {
+    if let contact = await apiAcceptContactRequest(incognito: incognito, contactReqId: contactRequestId) {
         let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
         await MainActor.run {
-            ChatModel.shared.replaceChat(contactRequest.id, chat)
+            if contact.contactRequestId != nil { // means contact request was initially created with contact, so we don't need to replace it
+                ChatModel.shared.updateContact(contact)
+            } else {
+                ChatModel.shared.replaceChat(contactRequestChatId(contactRequestId), chat)
+            }
             NetworkModel.shared.setContactNetworkStatus(contact, .connected)
         }
         if contact.sndReady {
@@ -1528,12 +1532,27 @@ func acceptContactRequest(incognito: Bool, contactRequest: UserContactRequest) a
     }
 }
 
-func rejectContactRequest(_ contactRequest: UserContactRequest) async {
+func rejectContactRequest(_ contactRequestId: Int64, dismissToChatList: Bool = false) async {
     do {
-        try await apiRejectContactRequest(contactReqId: contactRequest.apiId)
-        DispatchQueue.main.async { ChatModel.shared.removeChat(contactRequest.id) }
+        let contact_ = try await apiRejectContactRequest(contactReqId: contactRequestId)
+        await MainActor.run {
+            if let contact = contact_ { // means contact request was initially created with contact, so we need to remove contact chat
+                ChatModel.shared.removeChat(contact.id)
+            } else {
+                ChatModel.shared.removeChat(contactRequestChatId(contactRequestId))
+            }
+            if dismissToChatList {
+                ChatModel.shared.chatId = nil
+            }
+        }
     } catch let error {
         logger.error("rejectContactRequest: \(responseError(error))")
+        await MainActor.run {
+            showAlert(
+                NSLocalizedString("Error rejecting contact request", comment: "alert title"),
+                message: responseError(error)
+            )
+        }
     }
 }
 
@@ -2106,17 +2125,28 @@ func processReceivedMsg(_ res: ChatEvent) async {
         await MainActor.run {
             n.setContactNetworkStatus(contact, .connected)
         }
-    case let .receivedContactRequest(user, contactRequest):
+    case let .receivedContactRequest(user, contactRequest, contact_):
         if active(user) {
-            let cInfo = ChatInfo.contactRequest(contactRequest: contactRequest)
             await MainActor.run {
-                if m.hasChat(contactRequest.id) {
-                    m.updateChatInfo(cInfo)
+                if let contact = contact_ { // means contact request was created with contact, so we need to add/update contact chat
+                    if m.hasChat(contact.id) {
+                        m.updateContact(contact)
+                    } else {
+                        m.addChat(Chat(
+                            chatInfo: ChatInfo.direct(contact: contact),
+                            chatItems: []
+                        ))
+                    }
                 } else {
-                    m.addChat(Chat(
-                        chatInfo: cInfo,
-                        chatItems: []
-                    ))
+                    let cInfo = ChatInfo.contactRequest(contactRequest: contactRequest)
+                    if m.hasChat(contactRequest.id) {
+                        m.updateChatInfo(cInfo)
+                    } else {
+                        m.addChat(Chat(
+                            chatInfo: cInfo,
+                            chatItems: []
+                        ))
+                    }
                 }
             }
         }

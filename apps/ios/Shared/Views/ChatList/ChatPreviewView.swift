@@ -164,7 +164,16 @@ struct ChatPreviewView: View {
         let t = Text(chat.chatInfo.chatViewName).font(.title3).fontWeight(.bold)
         switch chat.chatInfo {
         case let .direct(contact):
-            previewTitle(contact.verified == true ? verifiedIcon + t : t).foregroundColor(deleting ? Color.secondary : nil)
+            let color = (
+                deleting
+                ? Color.secondary
+                : (
+                    contact.nextAcceptContactRequest
+                    ? theme.colors.primary
+                    : nil
+                )
+            )
+            previewTitle(contact.verified == true ? verifiedIcon + t : t).foregroundColor(color)
         case let .group(groupInfo, _):
             let v = previewTitle(t)
             switch (groupInfo.membership.memberStatus) {
