@@ -16,6 +16,7 @@ RUN apt-get update && \
     apt-get install -y curl \
                        libpq-dev \
                        git \
+                       strip-nondeterminism \
                        sqlite3 \
                        libsqlite3-dev \
                        build-essential \
