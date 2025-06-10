@@ -577,9 +577,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 probeMatchingContactsAndMembers ct' (contactConnIncognito ct') doProbeContacts
                 withStore' $ \db -> resetContactConnInitiated db user conn'
               forM_ viaUserContactLink $ \userContactLinkId -> do
-                ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
-                let (UserContactLink {autoAccept}, gli_) = ucl
-                when (connChatVersion < batchSend2Version) $ sendAutoReply ct' autoAccept
+                (ucl, gli_) <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
+                when (connChatVersion < batchSend2Version) $ sendAutoReply ucl ct'
                 -- TODO REMOVE LEGACY vvv
                 forM_ gli_ $ \GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
                   groupInfo <- withStore $ \db -> getGroupInfo db vr user groupId
@@ -645,9 +644,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               lift $ setContactNetworkStatus ct NSConnected
               toView $ CEvtContactSndReady user ct
               forM_ viaUserContactLink $ \userContactLinkId -> do
-                ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
-                let (UserContactLink {autoAccept}, _) = ucl
-                when (connChatVersion >= batchSend2Version) $ sendAutoReply ct autoAccept
+                (ucl, _) <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
+                when (connChatVersion >= batchSend2Version) $ sendAutoReply ucl ct
         QCONT ->
           void $ continueSending connEntity conn
         MWARN msgId err -> do
@@ -667,13 +665,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- TODO add debugging output
         _ -> pure ()
       where
-        -- TODO [short links] don't send auto-reply message if it should have been created by connecting client
-        -- TODO   - based on version + whether address has short link data (shortLinkDataSet)
-        sendAutoReply ct = \case
-          Just AutoAccept {autoReply = Just mc} -> do
-            (msg, _) <- sendDirectContactMessage user ct (XMsgNew $ MCSimple (extMsgContent mc Nothing))
-            ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
-            toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
+        sendAutoReply UserContactLink {shortLinkDataSet, autoAccept} ct = case autoAccept of
+          Just AutoAccept {autoReply = Just mc}
+            | not shortLinkDataSet || connChatVersion < shortLinkDataVersion -> do
+              (msg, _) <- sendDirectContactMessage user ct (XMsgNew $ MCSimple (extMsgContent mc Nothing))
+              ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
+              toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
           _ -> pure ()
 
     processGroupMessage :: AEvent e -> ConnectionEntity -> Connection -> GroupInfo -> GroupMember -> CM ()
@@ -1227,8 +1224,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       where
         profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MsgContent -> PQSupport -> CM ()
         profileContactRequest invId chatVRange p@Profile {displayName} xContactId_ mc_ reqPQSup = do
-          ucl <- withStore $ \db -> getUserContactLinkById db userId uclId
-          let (UserContactLink {connLinkContact = CCLink connReq _, autoAccept}, gLinkInfo_) = ucl
+          uclGLinkInfo <- withStore $ \db -> getUserContactLinkById db userId uclId
+          let (UserContactLink {connLinkContact = CCLink connReq _, shortLinkDataSet, autoAccept}, gLinkInfo_) = uclGLinkInfo
               isSimplexTeam = sameConnReqContact connReq adminContactReq
               v = maxVersion chatVRange
           case autoAccept of
@@ -1265,7 +1262,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       Just ct -> toView $ CEvtContactRequestAlreadyAccepted user ct
                       Nothing -> do
                         -- [incognito] generate profile to send, create connection with incognito profile
-                        incognitoProfile <- if acceptIncognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
+                        incognitoProfile <-
+                          if not shortLinkDataSet && acceptIncognito
+                            then Just . NewIncognito <$> liftIO generateRandomProfile
+                            else pure Nothing
                         ct <- acceptContactRequestAsync user uclId invId chatVRange p xContactId_ reqPQSup incognitoProfile
                         forM_ mc_ $ \mc ->
                           createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent mc) Nothing

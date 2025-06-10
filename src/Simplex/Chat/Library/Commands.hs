@@ -1144,19 +1144,17 @@ processChatCommand' vr = \case
       withFastStore' $ \db -> deleteNoteFolderCIs db user nf
       pure $ CRChatCleared user (AChatInfo SCTLocal $ LocalChat nf)
     _ -> throwCmdError "not supported"
-  -- TODO [short links] prohibit incognito if short link data is set for address
-  -- TODO  - add user_contact_links.short_link_data_set; UserContactLink.shortLinkDataSet
-  -- TODO  - same for auto-accept:
-  -- TODO    - set incognito to false on setting short link data
-  -- TODO    - ignore on accept (for foolproofing)
-  -- TODO    - hide in UI
-  APIAcceptContact incognito connReqId -> withUser $ \_ -> do
-    userContactLinkId <- withFastStore $ \db -> getUserContactLinkIdByCReq db connReqId
-    withUserContactLock "acceptContact" userContactLinkId $ do
+  APIAcceptContact incognito connReqId -> withUser $ \User {userId} -> do
+    (uclId, (ucl, gLinkInfo_)) <- withFastStore $ \db -> do
+      uclId <- getUserContactLinkIdByCReq db connReqId
+      uclGLinkInfo <- getUserContactLinkById db userId uclId
+      pure (uclId, uclGLinkInfo)
+    let UserContactLink {shortLinkDataSet} = ucl
+    when (shortLinkDataSet && incognito) $ throwCmdError "incognito not allowed for address with short link data"
+    withUserContactLock "acceptContact" uclId $ do
       (user@User {userId}, cReq) <- withFastStore $ \db -> getContactRequest' db connReqId
       (ct, conn@Connection {connId}, sqSecured) <- acceptContactRequest user cReq incognito
-      ucl <- withFastStore $ \db -> getUserContactLinkById db userId userContactLinkId
-      let contactUsed = (\(_, gLinkInfo_) -> isNothing gLinkInfo_) ucl
+      let contactUsed = isNothing gLinkInfo_
       ct' <- withStore' $ \db -> do
         deleteContactRequestRec db user cReq
         updateContactAccepted db user ct contactUsed
@@ -1837,37 +1835,13 @@ processChatCommand' vr = \case
     processChatCommand $ APIListContacts userId
   APICreateMyAddress userId short -> withUserId userId $ \user -> procCmd $ do
     subMode <- chatReadVar subscriptionMode
-    -- TODO [short links] incognito interaction with contact address
-    -- TODO  - problems:
-    -- TODO    1 now that user profile is advertised in short link, giving an option to
-    -- TODO      share incognito profile on accept doesn't make sense.
-    -- TODO    2 even advertising a random incognito profile in short link is somewhat broken,
-    -- TODO      as it would be the same for all connecting clients, but then changed on accept (in current implementation),
-    -- TODO      so it would be clear it's incognito profile; it might as well be clearly a placeholder
-    -- TODO      (e.g. "Hidden profile" in profile name), and to avoid distinguishing incognito and main profiles,
-    -- TODO      it can be a setting that can be set for main profile too.
-    -- TODO    3 changing short link data from main to incognito profile also defeats the purpose of incognito profile,
-    -- TODO      as by scanning the short link in the past, connecting clients may know main profile (even if it's
-    -- TODO      currently set as incognito).
-    -- TODO  - some possibilities:
-    -- TODO    1 always base choice on autoAccept -> acceptIncognito choice, don't give option on user accept action
-    -- TODO    2 in this case, replace short link user data on change of this setting? (doesn't solve problem 3)
-    -- TODO    3 give setting to include "Hidden profile" in short link, even if autoAccept is not set to incognito
-    -- TODO    4 share same random profile on each accept, this way connecting clients technically
-    -- TODO      wouldn't be able to distinguish incognito profile (placeholder problem);
-    -- TODO    5 only give choice to accept with main or incognito profile if random profile or placeholder is shared
-    -- TODO      in short link user data; if main profile is shared, don't give choice
-    -- TODO    6 don't allow to change from main profile in short link to "Hidden profile" (or incognito autoAccept),
-    -- TODO      only allow to change vice versa, in one direction (solves problem 3)
-    -- TODO    7 remove incognito functionality from address altogether
-    -- TODO  - it seems measures 3, 5, 6 are the most reasonable, or removing incognito functionality for addresses altogether
     let userData =
           if short
             then Just $ encodeShortLinkData (ContactShortLinkData (userProfileToSend user Nothing Nothing False) Nothing)
             else Nothing
     (connId, ccLink) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact userData Nothing IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
-    withFastStore $ \db -> createUserContactLink db user connId ccLink' subMode
+    withFastStore $ \db -> createUserContactLink db user connId ccLink' short subMode
     pure $ CRUserContactLinkCreated user ccLink'
   CreateMyAddress short -> withUser $ \User {userId} ->
     processChatCommand $ APICreateMyAddress userId short
@@ -1892,7 +1866,6 @@ processChatCommand' vr = \case
     (ucl@UserContactLink {connLinkContact = CCLink connFullLink sLnk_, autoAccept}, conn) <-
       withFastStore $ \db -> (,) <$> getUserAddress db user <*> getUserAddressConnection db vr user
     when (isJust sLnk_) $ throwCmdError "address already has short link"
-    -- TODO [short links] allow to add short link without data if autoAccept was set to incognito?
     let shortLinkProfile = userProfileToSend user Nothing Nothing False
         shortLinkMsg = autoAccept >>= autoReply >>= (Just . msgContentText)
         userData = encodeShortLinkData (ContactShortLinkData shortLinkProfile shortLinkMsg)
@@ -1900,7 +1873,8 @@ processChatCommand' vr = \case
     case entityId conn of
       Just uclId -> do
         withFastStore' $ \db -> setUserContactLinkShortLink db uclId sLnk
-        let ucl' = (ucl :: UserContactLink) {connLinkContact = CCLink connFullLink (Just sLnk)}
+        let autoAccept' = autoAccept >>= \aa -> Just aa {acceptIncognito = False}
+            ucl' = (ucl :: UserContactLink) {connLinkContact = CCLink connFullLink (Just sLnk), shortLinkDataSet = True, autoAccept = autoAccept'}
         pure $ CRUserContactLink user ucl'
       Nothing -> throwChatError $ CEException "no user contact link id"
   APISetProfileAddress userId False -> withUserId userId $ \user@User {profile = p} -> do
@@ -1915,7 +1889,9 @@ processChatCommand' vr = \case
     processChatCommand $ APISetProfileAddress userId onOff
   APIAddressAutoAccept userId autoAccept_ -> withUserId userId $ \user -> do
     -- TODO [short links] update adress short link data if message changed
-    forM_ autoAccept_ $ \AutoAccept {businessAddress, acceptIncognito} ->
+    UserContactLink {shortLinkDataSet} <- withFastStore (`getUserAddress` user)
+    forM_ autoAccept_ $ \AutoAccept {businessAddress, acceptIncognito} -> do
+      when (shortLinkDataSet && acceptIncognito) $ throwCmdError "incognito not allowed for address with short link data"
       when (businessAddress && acceptIncognito) $ throwCmdError "requests to business address cannot be accepted incognito"
     contactLink <- withFastStore (\db -> updateUserAddressAutoAccept db user autoAccept_)
     pure $ CRUserContactLinkUpdated user contactLink
@@ -2482,7 +2458,7 @@ processChatCommand' vr = \case
         crClientData = encodeJSON $ CRDataGroup groupLinkId
     (connId, ccLink) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact userData (Just crClientData) IKPQOff subMode
     ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
-    withFastStore $ \db -> createGroupLink db user gInfo connId ccLink' groupLinkId mRole subMode
+    withFastStore $ \db -> createGroupLink db user gInfo connId ccLink' groupLinkId mRole short subMode
     pure $ CRGroupLinkCreated user gInfo ccLink' mRole
   APIGroupLinkMemberRole groupId mRole' -> withUser $ \user -> withGroupLock "groupLinkMemberRole" groupId $ do
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
@@ -3313,7 +3289,7 @@ processChatCommand' vr = \case
         case ct of
           CCTContact ->
             withFastStore' (\db -> getUserContactLinkViaShortLink db user l') >>= \case
-              Just (UserContactLink (CCLink cReq _) _) -> pure (ACCL SCMContact $ CCLink cReq (Just l'), CPContactAddress CAPOwnLink)
+              Just (UserContactLink (CCLink cReq _) _ _) -> pure (ACCL SCMContact $ CCLink cReq (Just l'), CPContactAddress CAPOwnLink)
               Nothing -> do
                 (cReq, cData) <- getShortLinkConnReq user l'
                 let contactSLinkData_ = decodeShortLinkData $ linkUserData cData
