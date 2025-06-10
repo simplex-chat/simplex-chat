@@ -837,8 +837,8 @@ enum ChatResponse1: Decodable, ChatAPIResult {
         case let .groupAliasUpdated(u, toGroup): return withUser(u, String(describing: toGroup))
         case let .connectionAliasUpdated(u, toConnection): return withUser(u, String(describing: toConnection))
         case let .contactPrefsUpdated(u, fromContact, toContact): return withUser(u, "fromContact: \(String(describing: fromContact))\ntoContact: \(String(describing: toContact))")
-        case let .userContactLink(u, contactLink): return withUser(u, contactLink.responseDetails)
-        case let .userContactLinkUpdated(u, contactLink): return withUser(u, contactLink.responseDetails)
+        case let .userContactLink(u, contactLink): return withUser(u, String(describing: contactLink))
+        case let .userContactLinkUpdated(u, contactLink): return withUser(u, String(describing: contactLink))
         case let .userContactLinkCreated(u, connLink): return withUser(u, String(describing: connLink))
         case .userContactLinkDeleted: return noDetails
         case let .acceptingContactRequest(u, contact): return withUser(u, String(describing: contact))
@@ -888,8 +888,8 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     case membersRoleUser(user: UserRef, groupInfo: GroupInfo, members: [GroupMember], toRole: GroupMemberRole)
     case membersBlockedForAllUser(user: UserRef, groupInfo: GroupInfo, members: [GroupMember], blocked: Bool)
     case groupUpdated(user: UserRef, toGroup: GroupInfo)
-    case groupLinkCreated(user: UserRef, groupInfo: GroupInfo, connLinkContact: CreatedConnLink, memberRole: GroupMemberRole)
-    case groupLink(user: UserRef, groupInfo: GroupInfo, connLinkContact: CreatedConnLink, memberRole: GroupMemberRole)
+    case groupLinkCreated(user: UserRef, groupInfo: GroupInfo, groupLink: GroupLink)
+    case groupLink(user: UserRef, groupInfo: GroupInfo, groupLink: GroupLink)
     case groupLinkDeleted(user: UserRef, groupInfo: GroupInfo)
     case newMemberContact(user: UserRef, contact: Contact, groupInfo: GroupInfo, member: GroupMember)
     case newMemberContactSentInv(user: UserRef, contact: Contact, groupInfo: GroupInfo, member: GroupMember)
@@ -984,8 +984,8 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case let .membersRoleUser(u, groupInfo, members, toRole): return withUser(u, "groupInfo: \(groupInfo)\nmembers: \(members)\ntoRole: \(toRole)")
         case let .membersBlockedForAllUser(u, groupInfo, members, blocked): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(members)\nblocked: \(blocked)")
         case let .groupUpdated(u, toGroup): return withUser(u, String(describing: toGroup))
-        case let .groupLinkCreated(u, groupInfo, connLinkContact, memberRole): return withUser(u, "groupInfo: \(groupInfo)\nconnLinkContact: \(connLinkContact)\nmemberRole: \(memberRole)")
-        case let .groupLink(u, groupInfo, connLinkContact, memberRole): return withUser(u, "groupInfo: \(groupInfo)\nconnLinkContact: \(connLinkContact)\nmemberRole: \(memberRole)")
+        case let .groupLinkCreated(u, groupInfo, groupLink): return withUser(u, "groupInfo: \(groupInfo)\ngroupLink: \(groupLink)")
+        case let .groupLink(u, groupInfo, groupLink): return withUser(u, "groupInfo: \(groupInfo)\ngroupLink: \(groupLink)")
         case let .groupLinkDeleted(u, groupInfo): return withUser(u, String(describing: groupInfo))
         case let .newMemberContact(u, contact, groupInfo, member): return withUser(u, "contact: \(contact)\ngroupInfo: \(groupInfo)\nmember: \(member)")
         case let .newMemberContactSentInv(u, contact, groupInfo, member): return withUser(u, "contact: \(contact)\ngroupInfo: \(groupInfo)\nmember: \(member)")
@@ -1395,11 +1395,8 @@ struct UserMsgReceiptSettings: Codable {
 
 struct UserContactLink: Decodable, Hashable {
     var connLinkContact: CreatedConnLink
+    var shortLinkDataSet: Bool
     var autoAccept: AutoAccept?
-
-    var responseDetails: String {
-        "connLinkContact: \(connLinkContact)\nautoAccept: \(AutoAccept.cmdString(autoAccept))"
-    }
 }
 
 struct AutoAccept: Codable, Hashable {
@@ -1418,6 +1415,14 @@ struct AutoAccept: Codable, Hashable {
         guard let msg = autoAccept.autoReply else { return s }
         return s + " " + msg.cmdString
     }
+}
+
+struct GroupLink: Decodable, Hashable {
+    var userContactLinkId: Int64
+    var connLinkContact: CreatedConnLink
+    var shortLinkDataSet: Bool
+    var groupLinkId: String
+    var acceptMemberRole: GroupMemberRole
 }
 
 struct DeviceToken: Decodable {

@@ -2811,6 +2811,8 @@ testShortLinkAddressPrepareContact =
              ]
       alice <## "to accept: /ac bob"
       alice <## "to reject: /rc bob (the sender will NOT be notified)"
+      alice ##> "/ac i bob"
+      alice <## "bad chat command: incognito not allowed for address with short link data"
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_

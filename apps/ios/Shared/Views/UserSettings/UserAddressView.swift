@@ -153,8 +153,12 @@ struct UserAddressView: View {
                     }
             }
             addressSettingsButton(userAddress)
-            if (userAddress.connLinkContact.connShortLink == nil && UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_SHORT_LINKS)) {
-                addShortLinkButton()
+            if UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_SHORT_LINKS) {
+                if userAddress.connLinkContact.connShortLink == nil {
+                    addShortLinkButton()
+                } else if !userAddress.shortLinkDataSet {
+                    addProfileToShortLinkButton()
+                }
             }
         } header: {
             ToggleShortLinkHeader(text: Text("For social media"), link: userAddress.connLinkContact, short: $showShortLink)
@@ -199,7 +203,7 @@ struct UserAddressView: View {
                 let short = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_SHORT_LINKS)
                 let connLinkContact = try await apiCreateUserAddress(short: short)
                 DispatchQueue.main.async {
-                    chatModel.userAddress = UserContactLink(connLinkContact: connLinkContact)
+                    chatModel.userAddress = UserContactLink(connLinkContact: connLinkContact, shortLinkDataSet: short)
                     alert = .shareOnCreate
                     progressIndicator = false
                 }
@@ -214,10 +218,28 @@ struct UserAddressView: View {
 
     private func addShortLinkButton() -> some View {
         Button {
-            addShortLink()
+            showAddShortLinkAlert()
         } label: {
             Label("Add short link", systemImage: "plus")
         }
+    }
+
+    private func addProfileToShortLinkButton() -> some View {
+        Button {
+            showAddShortLinkAlert()
+        } label: {
+            Label("Share profile via link", systemImage: "plus")
+        }
+    }
+
+    private func showAddShortLinkAlert() {
+        showAlert(
+            title: NSLocalizedString("Share profile via link", comment: "alert title"),
+            message: NSLocalizedString("Profile will be shared via the address short link. This change to the address cannot be reversed, other than fully deleting it. Do you wish to update the address?", comment: "alert message"),
+            buttonTitle: NSLocalizedString("Update (and share profile)", comment: "alert button"),
+            buttonAction: { addShortLink() },
+            cancelButton: true
+        )
     }
 
     private func addShortLink() {
@@ -231,7 +253,7 @@ struct UserAddressView: View {
                 await MainActor.run { progressIndicator = false }
             } catch let error {
                 logger.error("apiAddMyAddressShortLink: \(responseError(error))")
-                let a = getErrorAlert(error, "Error creating address")
+                let a = getErrorAlert(error, "Error adding address short link")
                 alert = .error(title: a.title, error: a.message)
                 await MainActor.run { progressIndicator = false }
             }
@@ -527,7 +549,7 @@ struct UserAddressSettingsView: View {
 
     private func autoAcceptSection() -> some View {
         Section {
-            if !aas.business {
+            if !ChatModel.shared.addressShortLinkDataSet && !aas.business {
                 acceptIncognitoToggle()
             }
             welcomeMessageEditor()
@@ -594,7 +616,10 @@ private func saveAAS(_ aas: Binding<AutoAcceptState>, _ savedAAS: Binding<AutoAc
 struct UserAddressView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
-        chatModel.userAddress = UserContactLink(connLinkContact: CreatedConnLink(connFullLink: "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D", connShortLink: nil))
+        chatModel.userAddress = UserContactLink(
+            connLinkContact: CreatedConnLink(connFullLink: "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D", connShortLink: nil),
+            shortLinkDataSet: false
+        )
 
         
         return Group {

@@ -6,6 +6,7 @@ module Simplex.Chat.Store
     ChatLockEntity (..),
     UserMsgReceiptSettings (..),
     UserContactLink (..),
+    GroupLink (..),
     GroupLinkInfo (..),
     AutoAccept (..),
     createChatStore,
@@ -14,6 +15,7 @@ module Simplex.Chat.Store
   )
 where
 
+import Simplex.Chat.Store.Groups (GroupLink (..))
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Messaging.Agent.Store.Common (DBStore (..), withTransaction)

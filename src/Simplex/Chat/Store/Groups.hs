@@ -8,6 +8,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
@@ -17,6 +18,7 @@ module Simplex.Chat.Store.Groups
     GroupInfoRow,
     GroupMemberRow,
     MaybeGroupMemberRow,
+    GroupLink (..),
     toGroupInfo,
     toGroupMember,
     toMaybeGroupMember,
@@ -28,6 +30,7 @@ module Simplex.Chat.Store.Groups
     getGroupLink,
     getGroupLinkId,
     setGroupLinkMemberRole,
+    setGroupLinkShortLink,
     getGroupAndMember,
     createNewGroup,
     createGroupInvitation,
@@ -151,6 +154,7 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG)
+import qualified Data.Aeson.TH as J
 import Data.Bifunctor (second)
 import Data.Bitraversable (bitraverse)
 import Data.Either (rights)
@@ -175,6 +179,7 @@ import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff, pattern PQSupportOff)
+import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Util (eitherToMaybe, firstRow', ($>>=), (<$$>))
 import Simplex.Messaging.Version
@@ -194,16 +199,17 @@ toMaybeGroupMember userContactId ((Just groupMemberId, Just groupId, Just member
   Just $ toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image, contactLink, localAlias, contactPreferences) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs))
 toMaybeGroupMember _ _ = Nothing
 
-createGroupLink :: DB.Connection -> User -> GroupInfo -> ConnId -> CreatedLinkContact -> GroupLinkId -> GroupMemberRole -> SubscriptionMode -> ExceptT StoreError IO ()
-createGroupLink db User {userId} groupInfo@GroupInfo {groupId, localDisplayName} agentConnId (CCLink cReq shortLink) groupLinkId memberRole subMode =
+createGroupLink :: DB.Connection -> User -> GroupInfo -> ConnId -> CreatedLinkContact -> GroupLinkId -> GroupMemberRole -> Bool -> SubscriptionMode -> ExceptT StoreError IO GroupLink
+createGroupLink db user@User {userId} groupInfo@GroupInfo {groupId, localDisplayName} agentConnId (CCLink cReq shortLink) groupLinkId memberRole shortLinkDataSet subMode = do
   checkConstraint (SEDuplicateGroupLink groupInfo) . liftIO $ do
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO user_contact_links (user_id, group_id, group_link_id, local_display_name, conn_req_contact, short_link_contact, group_link_member_role, auto_accept, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)"
-      (userId, groupId, groupLinkId, "group_link_" <> localDisplayName, cReq, shortLink, memberRole, BI True, currentTs, currentTs)
+      "INSERT INTO user_contact_links (user_id, group_id, group_link_id, local_display_name, conn_req_contact, short_link_contact, short_link_data_set, group_link_member_role, auto_accept, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+      ((userId, groupId, groupLinkId, "group_link_" <> localDisplayName, cReq, shortLink, BI shortLinkDataSet) :. (memberRole, BI True, currentTs, currentTs))
     userContactLinkId <- insertedRowId db
     void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId ConnNew initialChatVersion chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode PQSupportOff
+  getGroupLink db user groupInfo
 
 getGroupLinkConnection :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> ExceptT StoreError IO Connection
 getGroupLinkConnection db vr User {userId} groupInfo@GroupInfo {groupId} =
@@ -262,21 +268,51 @@ deleteGroupLink db User {userId} GroupInfo {groupId} = do
     (userId, groupId)
   DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND group_id = ?" (userId, groupId)
 
-getGroupLink :: DB.Connection -> User -> GroupInfo -> ExceptT StoreError IO (Int64, CreatedLinkContact, GroupLinkId, GroupMemberRole)
+data GroupLink = GroupLink
+  { userContactLinkId :: Int64, -- db id
+    connLinkContact :: CreatedLinkContact,
+    shortLinkDataSet :: Bool,
+    groupLinkId :: GroupLinkId,
+    acceptMemberRole :: GroupMemberRole
+  }
+  deriving (Show)
+
+getGroupLink :: DB.Connection -> User -> GroupInfo -> ExceptT StoreError IO GroupLink
 getGroupLink db User {userId} gInfo@GroupInfo {groupId} =
-  ExceptT . firstRow groupLink (SEGroupLinkNotFound gInfo) $
-    DB.query db "SELECT user_contact_link_id, conn_req_contact, short_link_contact, group_link_id, group_link_member_role FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1" (userId, groupId)
+  ExceptT . firstRow toGroupLink (SEGroupLinkNotFound gInfo) $
+    DB.query db "SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, group_link_id, group_link_member_role FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1" (userId, groupId)
   where
-    groupLink (linkId, cReq, shortLink, gLinkId, mRole_) = (linkId, CCLink cReq shortLink, gLinkId, fromMaybe GRMember mRole_)
+    toGroupLink (userContactLinkId, cReq, shortLink, BI shortLinkDataSet, groupLinkId, mRole_) =
+      GroupLink {
+        userContactLinkId,
+        connLinkContact = CCLink cReq shortLink,
+        shortLinkDataSet,
+        groupLinkId,
+        acceptMemberRole = fromMaybe GRMember mRole_
+      }
 
 getGroupLinkId :: DB.Connection -> User -> GroupInfo -> IO (Maybe GroupLinkId)
 getGroupLinkId db User {userId} GroupInfo {groupId} =
   fmap join . maybeFirstRow fromOnly $
     DB.query db "SELECT group_link_id FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1" (userId, groupId)
 
-setGroupLinkMemberRole :: DB.Connection -> User -> Int64 -> GroupMemberRole -> IO ()
-setGroupLinkMemberRole db User {userId} userContactLinkId memberRole =
+setGroupLinkMemberRole :: DB.Connection -> User -> GroupLink -> GroupMemberRole -> IO GroupLink
+setGroupLinkMemberRole db User {userId} gLnk@GroupLink{userContactLinkId} memberRole = do
   DB.execute db "UPDATE user_contact_links SET group_link_member_role = ? WHERE user_id = ? AND user_contact_link_id = ?" (memberRole, userId, userContactLinkId)
+  pure gLnk {acceptMemberRole = memberRole}
+
+setGroupLinkShortLink :: DB.Connection -> GroupLink -> ShortLinkContact -> IO GroupLink
+setGroupLinkShortLink db gLnk@GroupLink {userContactLinkId, connLinkContact = CCLink connFullLink _sLnk_} shortLink = do
+  DB.execute
+    db
+    [sql|
+      UPDATE user_contact_links
+      SET short_link_contact = ?,
+          short_link_data_set = ?
+      WHERE user_contact_link_id = ?
+    |]
+    (shortLink, BI True, userContactLinkId)
+  pure gLnk {connLinkContact = CCLink connFullLink (Just shortLink), shortLinkDataSet = True}
 
 getGroupAndMember :: DB.Connection -> User -> Int64 -> VersionRangeChat -> ExceptT StoreError IO (GroupInfo, GroupMember)
 getGroupAndMember db User {userId, userContactId} groupMemberId vr = do
@@ -2747,3 +2783,5 @@ updateGroupAlias db userId g@GroupInfo {groupId} localAlias = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE groups SET local_alias = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (localAlias, updatedAt, userId, groupId)
   pure (g :: GroupInfo) {localAlias = localAlias}
+
+$(J.deriveJSON defaultJSON ''GroupLink)

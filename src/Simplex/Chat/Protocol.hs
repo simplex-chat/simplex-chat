@@ -78,12 +78,13 @@ import Simplex.Messaging.Version hiding (version)
 -- 12 - support sending and receiving content reports (2025-01-03)
 -- 14 - support sending and receiving group join rejection (2025-02-24)
 -- 15 - support specifying message scopes for group messages (2025-03-12)
+-- 16 - support short link data (2025-06-10)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 15
+currentChatVersion = VersionChat 16
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -141,6 +142,10 @@ groupJoinRejectVersion = VersionChat 14
 -- support group knocking (MsgScope)
 groupKnockingVersion :: VersionChat
 groupKnockingVersion = VersionChat 15
+
+-- support short link data in invitation, contact and group links
+shortLinkDataVersion :: VersionChat
+shortLinkDataVersion = VersionChat 16
 
 agentToChatVersion :: VersionSMPA -> VersionChat
 agentToChatVersion v

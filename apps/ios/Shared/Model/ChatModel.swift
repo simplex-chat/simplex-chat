@@ -404,6 +404,10 @@ final class ChatModel: ObservableObject {
         remoteCtrlSession?.active ?? false
     }
 
+    var addressShortLinkDataSet: Bool {
+        userAddress?.shortLinkDataSet ?? true
+    }
+
     func getUser(_ userId: Int64) -> User? {
         currentUser?.userId == userId
         ? currentUser
@@ -1216,9 +1220,7 @@ struct ShowingInvitation {
     var connChatUsed: Bool
 }
 
-// TODO [short links] incognito if !userAddress.shortLinkDataSet; or remove if no access to chat model here
 struct NTFContactRequest {
-    var incognito: Bool
     var chatId: String
 }
 

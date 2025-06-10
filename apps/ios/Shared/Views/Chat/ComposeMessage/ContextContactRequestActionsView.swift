@@ -56,29 +56,36 @@ func showRejectRequestAlert(_ contactRequestId: Int64) {
 }
 
 func showAcceptRequestAlert(_ contactRequestId: Int64) {
-    showAlert(
-        NSLocalizedString("Accept contact request", comment: "alert title"),
-        actions: {[
+    var actions: [UIAlertAction] = []
+    actions.append(
+        UIAlertAction(
+            title: NSLocalizedString("Accept", comment: "alert action"),
+            style: .default,
+            handler: { _ in
+                Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequestId) }
+            }
+        )
+    )
+    if !ChatModel.shared.addressShortLinkDataSet {
+        actions.append(
             UIAlertAction(
-                title: NSLocalizedString("Accept", comment: "alert action"),
+                title: NSLocalizedString("Accept incognito", comment: "alert action"),
                 style: .default,
                 handler: { _ in
-                    Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequestId) }
-                }
-            ),
-            // TODO [short links] if !userAddress.shortLinkDataSet; check other places
-            // UIAlertAction(
-            //     title: NSLocalizedString("Accept incognito", comment: "alert action"),
-            //     style: .default,
-            //     handler: { _ in
-            //         Task { await acceptContactRequest(incognito: true, contactRequest: contactRequest) }
-            //    }
-            // ),
-            UIAlertAction(
-                title: NSLocalizedString("Cancel", comment: "alert action"),
-                style: .default
+                    Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequestId) }
+               }
             )
-        ]}
+        )
+    }
+    actions.append(
+        UIAlertAction(
+            title: NSLocalizedString("Cancel", comment: "alert action"),
+            style: .default
+        )
+    )
+    showAlert(
+        NSLocalizedString("Accept contact request", comment: "alert title"),
+        actions: { actions }
     )
 }
 

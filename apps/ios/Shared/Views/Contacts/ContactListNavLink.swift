@@ -94,12 +94,14 @@ struct ContactListNavLink: View {
                     Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequestId) }
                 } label: { Label("Accept", systemImage: "checkmark") }
                     .tint(theme.colors.primary)
-                Button {
-                    Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequestId) }
-                } label: {
-                    Label("Accept incognito", systemImage: "theatermasks")
+                if !ChatModel.shared.addressShortLinkDataSet {
+                    Button {
+                        Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequestId) }
+                    } label: {
+                        Label("Accept incognito", systemImage: "theatermasks")
+                    }
+                    .tint(.indigo)
                 }
-                .tint(.indigo)
                 Button {
                     alert = SomeAlert(alert: rejectContactRequestAlert(contactRequestId), id: "rejectContactRequestAlert")
                 } label: {
@@ -258,12 +260,14 @@ struct ContactListNavLink: View {
                 Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequest.apiId) }
             } label: { Label("Accept", systemImage: "checkmark") }
                 .tint(theme.colors.primary)
-            Button {
-                Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequest.apiId) }
-            } label: {
-                Label("Accept incognito", systemImage: "theatermasks")
+            if !ChatModel.shared.addressShortLinkDataSet {
+                Button {
+                    Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequest.apiId) }
+                } label: {
+                    Label("Accept incognito", systemImage: "theatermasks")
+                }
+                .tint(.indigo)
             }
-            .tint(.indigo)
             Button {
                 alert = SomeAlert(alert: rejectContactRequestAlert(contactRequest.apiId), id: "rejectContactRequestAlert")
             } label: {
@@ -273,7 +277,9 @@ struct ContactListNavLink: View {
         }
         .confirmationDialog("Accept connection request?", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
             Button("Accept") { Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequest.apiId) } }
-            Button("Accept incognito") { Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequest.apiId) } }
+            if !ChatModel.shared.addressShortLinkDataSet {
+                Button("Accept incognito") { Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequest.apiId) } }
+            }
             Button("Reject (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest.apiId) } }
         }
     }

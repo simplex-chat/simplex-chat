@@ -60,7 +60,6 @@ module Simplex.Chat.Store.Direct
     getAcceptedContactByXContactId,
     getAcceptedBusinessChatByXContactId,
     getUserContactLinkIdByCReq,
-    getContactRequest',
     getContactRequest,
     getContactRequestIdByName,
     deleteContactRequest,
@@ -829,11 +828,6 @@ getUserContactLinkIdByCReq :: DB.Connection -> Int64 -> ExceptT StoreError IO In
 getUserContactLinkIdByCReq db contactRequestId =
   ExceptT . firstRow fromOnly (SEContactRequestNotFound contactRequestId) $
     DB.query db "SELECT user_contact_link_id FROM contact_requests WHERE contact_request_id = ?" (Only contactRequestId)
-
-getContactRequest' :: DB.Connection -> Int64 -> ExceptT StoreError IO (User, UserContactRequest)
-getContactRequest' db contactRequestId = do
-  user <- getUserByContactRequestId db contactRequestId
-  (user,) <$> getContactRequest db user contactRequestId
 
 getContactRequest :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO UserContactRequest
 getContactRequest db User {userId} contactRequestId =

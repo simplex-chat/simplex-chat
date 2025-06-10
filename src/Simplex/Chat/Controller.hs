@@ -62,7 +62,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.AppVersion
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Stats (PresentedServersSummary)
-import Simplex.Chat.Store (AutoAccept, ChatLockEntity, StoreError (..), UserContactLink, GroupLinkInfo, UserMsgReceiptSettings)
+import Simplex.Chat.Store (AutoAccept, ChatLockEntity, GroupLink, GroupLinkInfo, StoreError (..), UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -723,8 +723,8 @@ data ChatResponse
   | CRGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
   | CRGroupProfile {user :: User, groupInfo :: GroupInfo}
   | CRGroupDescription {user :: User, groupInfo :: GroupInfo} -- only used in CLI
-  | CRGroupLinkCreated {user :: User, groupInfo :: GroupInfo, connLinkContact :: CreatedLinkContact, memberRole :: GroupMemberRole}
-  | CRGroupLink {user :: User, groupInfo :: GroupInfo, connLinkContact :: CreatedLinkContact, memberRole :: GroupMemberRole}
+  | CRGroupLinkCreated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink}
+  | CRGroupLink {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink}
   | CRGroupLinkDeleted {user :: User, groupInfo :: GroupInfo}
   | CRNewMemberContact {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | CRNewMemberContactSentInv {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
