@@ -1395,10 +1395,11 @@ struct UserMsgReceiptSettings: Codable {
 
 struct UserContactLink: Decodable, Hashable {
     var connLinkContact: CreatedConnLink
+    var shortLinkDataSet: Bool
     var autoAccept: AutoAccept?
 
     var responseDetails: String {
-        "connLinkContact: \(connLinkContact)\nautoAccept: \(AutoAccept.cmdString(autoAccept))"
+        "connLinkContact: \(connLinkContact)\nshortLinkDataSet: \(shortLinkDataSet)\nautoAccept: \(AutoAccept.cmdString(autoAccept))"
     }
 }
 
