@@ -234,8 +234,8 @@ struct UserAddressView: View {
 
     private func showAddShortLinkAlert() {
         showAlert(
-            title: NSLocalizedString("Share profile via short link", comment: "alert title"),
-            message: NSLocalizedString("Profile will be shared via short link. This change to address cannot be reversed, other than fully deleting address. Do you wish to update address?", comment: "alert message"),
+            title: NSLocalizedString("Share profile via link", comment: "alert title"),
+            message: NSLocalizedString("Profile will be shared via the address short link. This change to the address cannot be reversed, other than fully deleting it. Do you wish to update the address?", comment: "alert message"),
             buttonTitle: NSLocalizedString("Update (and share profile)", comment: "alert button"),
             buttonAction: { addShortLink() },
             cancelButton: true
