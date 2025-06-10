@@ -2457,36 +2457,39 @@ processChatCommand' vr = \case
         crClientData = encodeJSON $ CRDataGroup groupLinkId
     (connId, ccLink) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact userData (Just crClientData) IKPQOff subMode
     ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
-    withFastStore $ \db -> createGroupLink db user gInfo connId ccLink' groupLinkId mRole short subMode
-    pure $ CRGroupLinkCreated user gInfo ccLink' mRole
+    gLink <- withFastStore $ \db -> createGroupLink db user gInfo connId ccLink' groupLinkId mRole short subMode
+    pure $ CRGroupLinkCreated user gInfo gLink
   APIGroupLinkMemberRole groupId mRole' -> withUser $ \user -> withGroupLock "groupLinkMemberRole" groupId $ do
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
-    (groupLinkId, groupLink, _, mRole) <- withFastStore $ \db -> getGroupLink db user gInfo
+    gLnk@GroupLink {userContactLinkId, connLinkContact, acceptMemberRole} <- withFastStore $ \db -> getGroupLink db user gInfo
     assertUserGroupRole gInfo GRAdmin
     when (mRole' > GRMember) $ throwChatError $ CEGroupMemberInitialRole gInfo mRole'
-    when (mRole' /= mRole) $ withFastStore' $ \db -> setGroupLinkMemberRole db user groupLinkId mRole'
-    pure $ CRGroupLink user gInfo groupLink mRole'
+    gLnk' <-
+      if mRole' /= acceptMemberRole
+        then withFastStore' $ \db -> setGroupLinkMemberRole db user gLnk mRole'
+        else pure gLnk
+    pure $ CRGroupLink user gInfo gLnk'
   APIDeleteGroupLink groupId -> withUser $ \user -> withGroupLock "deleteGroupLink" groupId $ do
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
     deleteGroupLink' user gInfo
     pure $ CRGroupLinkDeleted user gInfo
   APIGetGroupLink groupId -> withUser $ \user -> do
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
-    (_, groupLink, _, mRole) <- withFastStore $ \db -> getGroupLink db user gInfo
-    pure $ CRGroupLink user gInfo groupLink mRole
+    gLnk <- withFastStore $ \db -> getGroupLink db user gInfo
+    pure $ CRGroupLink user gInfo gLnk
   APIAddGroupShortLink groupId -> withUser $ \user -> do
-    (gInfo, (uclId, _gLink@(CCLink connFullLink _sLnk_), gLinkId, mRole), conn) <- withFastStore $ \db -> do
+    (gInfo, gLink, conn) <- withFastStore $ \db -> do
       gInfo <- getGroupInfo db vr user groupId
       gLink <- getGroupLink db user gInfo
       conn <- getGroupLinkConnection db vr user gInfo
       pure (gInfo, gLink, conn)
     let GroupInfo {groupProfile} = gInfo
         userData = encodeShortLinkData (GroupShortLinkData groupProfile)
-        crClientData = encodeJSON $ CRDataGroup gLinkId
+        GroupLink {groupLinkId} = gLink
+        crClientData = encodeJSON $ CRDataGroup groupLinkId
     sLnk <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a (aConnId conn) SCMContact userData (Just crClientData))
-    withFastStore' $ \db -> setUserContactLinkShortLink db uclId sLnk
-    let groupLink' = CCLink connFullLink (Just sLnk)
-    pure $ CRGroupLink user gInfo groupLink' mRole
+    gLink' <- withFastStore' $ \db -> setGroupLinkShortLink db gLink sLnk
+    pure $ CRGroupLink user gInfo gLink'
   APICreateMemberContact gId gMemberId -> withUser $ \user -> do
     (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
     assertUserGroupRole g GRAuthor

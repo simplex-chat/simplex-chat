@@ -50,7 +50,7 @@ import Simplex.Chat.Operators
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.AppVersion (AppVersion (..), pattern AppVersionRange)
 import Simplex.Chat.Remote.Types
-import Simplex.Chat.Store (AutoAccept (..), StoreError (..), UserContactLink (..))
+import Simplex.Chat.Store (AutoAccept (..), GroupLink (..), StoreError (..), UserContactLink (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -233,8 +233,8 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRGroupUpdated u g g' m -> ttyUser u $ viewGroupUpdated g g' m
   CRGroupProfile u g -> ttyUser u $ viewGroupProfile g
   CRGroupDescription u g -> ttyUser u $ viewGroupDescription g
-  CRGroupLinkCreated u g ccLink mRole -> ttyUser u $ groupLink_ "Group link is created!" g ccLink mRole
-  CRGroupLink u g ccLink mRole -> ttyUser u $ groupLink_ "Group link:" g ccLink mRole
+  CRGroupLinkCreated u g gLink -> ttyUser u $ groupLink_ "Group link is created!" g gLink
+  CRGroupLink u g gLink -> ttyUser u $ groupLink_ "Group link:" g gLink
   CRGroupLinkDeleted u g -> ttyUser u $ viewGroupLinkDeleted g
   CRNewMemberContact u _ g m -> ttyUser u ["contact for member " <> ttyGroup' g <> " " <> ttyMember m <> " is created"]
   CRNewMemberContactSentInv u _ct g m -> ttyUser u ["sent invitation to connect directly to member " <> ttyGroup' g <> " " <> ttyMember m]
@@ -1090,13 +1090,13 @@ autoAcceptStatus_ = \case
         | otherwise = ""
   _ -> ["auto_accept off"]
 
-groupLink_ :: StyledString -> GroupInfo -> CreatedLinkContact -> GroupMemberRole -> [StyledString]
-groupLink_ intro g (CCLink cReq shortLink) mRole =
+groupLink_ :: StyledString -> GroupInfo -> GroupLink -> [StyledString]
+groupLink_ intro g GroupLink {connLinkContact = CCLink cReq shortLink, acceptMemberRole} =
   [ intro,
     "",
     plain $ maybe cReqStr strEncode shortLink,
     "",
-    "Anybody can connect to you and join group as " <> showRole mRole <> " with: " <> highlight' "/c <group_link_above>",
+    "Anybody can connect to you and join group as " <> showRole acceptMemberRole <> " with: " <> highlight' "/c <group_link_above>",
     "to show it again: " <> highlight ("/show link #" <> viewGroupName g),
     "to delete it: " <> highlight ("/delete link #" <> viewGroupName g) <> " (joined members will remain connected to you)"
   ]

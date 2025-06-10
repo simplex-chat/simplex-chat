@@ -537,7 +537,7 @@ setUserContactLinkShortLink db userContactLinkId shortLink =
       UPDATE user_contact_links
       SET short_link_contact = ?,
           short_link_data_set = ?,
-          auto_accept_incognito = ?,
+          auto_accept_incognito = ?
       WHERE user_contact_link_id = ?
     |]
     (shortLink, BI True, BI False, userContactLinkId)
