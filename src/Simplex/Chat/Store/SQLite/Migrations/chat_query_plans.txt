@@ -5028,19 +5028,6 @@ Query:
     FROM users u
     JOIN contacts uct ON uct.contact_id = u.contact_id
     JOIN contact_profiles ucp ON ucp.contact_profile_id = uct.contact_profile_id
-   JOIN contact_requests cr ON cr.user_id = u.user_id WHERE cr.contact_request_id = ?
-Plan:
-SEARCH cr USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH u USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH uct USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH ucp USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.image, ucp.contact_link, ucp.preferences,
-      u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.ui_themes
-    FROM users u
-    JOIN contacts uct ON uct.contact_id = u.contact_id
-    JOIN contact_profiles ucp ON ucp.contact_profile_id = uct.contact_profile_id
    JOIN contacts ct ON ct.user_id = u.user_id WHERE ct.contact_id = ? AND ct.deleted = 0
 Plan:
 SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
@@ -5880,7 +5867,7 @@ Query: SELECT user_contact_link_id FROM contact_requests WHERE contact_request_i
 Plan:
 SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: SELECT user_contact_link_id, conn_req_contact, short_link_contact, group_link_id, group_link_member_role FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1
+Query: SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, group_link_id, group_link_member_role FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1
 Plan:
 SEARCH user_contact_links USING INDEX idx_user_contact_links_group_id (group_id=?)
 
