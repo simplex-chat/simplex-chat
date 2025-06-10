@@ -2288,7 +2288,7 @@
     <string name="business_address">Geschäftliche Adresse</string>
     <string name="v6_2_business_chats">Geschäftliche Chats</string>
     <string name="add_your_team_members_to_conversations">Nehmen Sie Team-Mitglieder in Ihre Unterhaltungen auf.</string>
-    <string name="onboarding_notifications_mode_service_desc_short">App läuft dauerhaft im Hintergrund</string>
+    <string name="onboarding_notifications_mode_service_desc_short">Die App läuft immer im Hintergrund</string>
     <string name="direct_messages_are_prohibited_in_chat">In diesem Chat sind Direktnachrichten zwischen Mitgliedern nicht erlaubt.</string>
     <string name="onboarding_notifications_mode_off_desc_short">Kein Hintergrund-Service</string>
     <string name="onboarding_notifications_mode_periodic_desc_short">Nachrichten alle 10 Minuten überprüfen</string>
