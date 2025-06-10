@@ -1144,7 +1144,7 @@ processChatCommand' vr = \case
       withFastStore' $ \db -> deleteNoteFolderCIs db user nf
       pure $ CRChatCleared user (AChatInfo SCTLocal $ LocalChat nf)
     _ -> throwCmdError "not supported"
-  APIAcceptContact incognito connReqId -> withUser $ \User {userId} -> do
+  APIAcceptContact incognito connReqId -> withUser $ \user@User {userId} -> do
     (uclId, (ucl, gLinkInfo_)) <- withFastStore $ \db -> do
       uclId <- getUserContactLinkIdByCReq db connReqId
       uclGLinkInfo <- getUserContactLinkById db userId uclId
@@ -1152,7 +1152,7 @@ processChatCommand' vr = \case
     let UserContactLink {shortLinkDataSet} = ucl
     when (shortLinkDataSet && incognito) $ throwCmdError "incognito not allowed for address with short link data"
     withUserContactLock "acceptContact" uclId $ do
-      (user@User {userId}, cReq) <- withFastStore $ \db -> getContactRequest' db connReqId
+      cReq <- withFastStore $ \db -> getContactRequest db user connReqId
       (ct, conn@Connection {connId}, sqSecured) <- acceptContactRequest user cReq incognito
       let contactUsed = isNothing gLinkInfo_
       ct' <- withStore' $ \db -> do
@@ -1762,9 +1762,9 @@ processChatCommand' vr = \case
   -- TODO [short links] change prepared entity user
   -- TODO  - UI would call these APIs before APIConnectPrepared... APIs
   -- TODO  - UI to transition to new user keeping chat opened
-  APIChangeContactUser contactId newUserId -> withUser $ \user -> do
+  APIChangeContactUser _contactId _newUserId -> withUser $ \_user -> do
     ok_
-  APIChangeGroupUser groupId newUserId -> withUser $ \user -> do
+  APIChangeGroupUser _groupId _newUserId -> withUser $ \_user -> do
     ok_
   APIConnectPreparedContact contactId incognito msgContent_ -> withUser $ \user -> do
     Contact {connLinkToConnect} <- withFastStore $ \db -> getContact db vr user contactId
@@ -2461,7 +2461,7 @@ processChatCommand' vr = \case
     pure $ CRGroupLinkCreated user gInfo gLink
   APIGroupLinkMemberRole groupId mRole' -> withUser $ \user -> withGroupLock "groupLinkMemberRole" groupId $ do
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
-    gLnk@GroupLink {userContactLinkId, connLinkContact, acceptMemberRole} <- withFastStore $ \db -> getGroupLink db user gInfo
+    gLnk@GroupLink {acceptMemberRole} <- withFastStore $ \db -> getGroupLink db user gInfo
     assertUserGroupRole gInfo GRAdmin
     when (mRole' > GRMember) $ throwChatError $ CEGroupMemberInitialRole gInfo mRole'
     gLnk' <-

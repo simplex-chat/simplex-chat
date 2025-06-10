@@ -26,7 +26,6 @@ import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
-import Data.Int (Int64)
 import Data.List (find, intercalate)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
@@ -52,7 +51,7 @@ import Simplex.Chat.Markdown (FormattedText (..), Format (..), parseMaybeMarkdow
 import Simplex.Chat.Messages
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..))
-import Simplex.Chat.Store (GroupLink)
+import Simplex.Chat.Store (GroupLink (..))
 import Simplex.Chat.Store.Direct (getContact)
 import Simplex.Chat.Store.Groups (getGroupInfo, getGroupLink, getGroupSummary, setGroupCustomData)
 import Simplex.Chat.Store.Profiles (GroupLinkInfo (..), getGroupLinkInfo)
@@ -350,7 +349,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           let GroupInfo {groupId, groupProfile = GroupProfile {displayName}} = g
           notifyOwner gr $ "Joined the group " <> displayName <> ", creating the link…"
           sendChatCmd cc (APICreateGroupLink groupId GRMember False) >>= \case
-            Right CRGroupLinkCreated {connLinkContact = CCLink gLink _} -> do
+            Right CRGroupLinkCreated {groupLink = GroupLink {connLinkContact = CCLink gLink _}} -> do
               setGroupStatus st gr GRSPendingUpdate
               notifyOwner
                 gr
