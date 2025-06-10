@@ -1758,16 +1758,16 @@ func apiUpdateGroup(_ groupId: Int64, _ groupProfile: GroupProfile) async throws
     throw r.unexpected
 }
 
-func apiCreateGroupLink(_ groupId: Int64, memberRole: GroupMemberRole = .member) async throws -> (CreatedConnLink, GroupMemberRole) {
+func apiCreateGroupLink(_ groupId: Int64, memberRole: GroupMemberRole = .member) async throws -> GroupLink {
     let short = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_SHORT_LINKS)
     let r: ChatResponse2 = try await chatSendCmd(.apiCreateGroupLink(groupId: groupId, memberRole: memberRole, short: short))
-    if case let .groupLinkCreated(_, _, connLink, memberRole) = r { return (connLink, memberRole) }
+    if case let .groupLinkCreated(_, _, groupLink) = r { return groupLink }
     throw r.unexpected
 }
 
-func apiGroupLinkMemberRole(_ groupId: Int64, memberRole: GroupMemberRole = .member) async throws -> (CreatedConnLink, GroupMemberRole) {
+func apiGroupLinkMemberRole(_ groupId: Int64, memberRole: GroupMemberRole = .member) async throws -> GroupLink {
     let r: ChatResponse2 = try await chatSendCmd(.apiGroupLinkMemberRole(groupId: groupId, memberRole: memberRole))
-    if case let .groupLink(_, _, connLink, memberRole) = r { return (connLink, memberRole) }
+    if case let .groupLink(_, _, groupLink) = r { return groupLink }
     throw r.unexpected
 }
 
@@ -1777,20 +1777,20 @@ func apiDeleteGroupLink(_ groupId: Int64) async throws {
     throw r.unexpected
 }
 
-func apiGetGroupLink(_ groupId: Int64) throws -> (CreatedConnLink, GroupMemberRole)? {
+func apiGetGroupLink(_ groupId: Int64) throws -> GroupLink? {
     let r: APIResult<ChatResponse2> = chatApiSendCmdSync(.apiGetGroupLink(groupId: groupId))
     switch r {
-    case let .result(.groupLink(_, _, connLink, memberRole)):
-        return (connLink, memberRole)
+    case let .result(.groupLink(_, _, groupLink)):
+        return groupLink
     case .error(.errorStore(storeError: .groupLinkNotFound)):
         return nil
     default: throw r.unexpected
     }
 }
 
-func apiAddGroupShortLink(_ groupId: Int64) async throws -> (CreatedConnLink, GroupMemberRole) {
+func apiAddGroupShortLink(_ groupId: Int64) async throws -> GroupLink {
     let r: ChatResponse2 = try await chatSendCmd(.apiAddGroupShortLink(groupId: groupId))
-    if case let .groupLink(_, _, connLink, memberRole) = r { return (connLink, memberRole) }
+    if case let .groupLink(_, _, groupLink) = r { return groupLink }
     throw r.unexpected
 }
 

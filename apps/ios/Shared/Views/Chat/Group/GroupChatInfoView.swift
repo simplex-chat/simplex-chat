@@ -22,7 +22,7 @@ struct GroupChatInfoView: View {
     @State var localAlias: String
     @FocusState private var aliasTextFieldFocused: Bool
     @State private var alert: GroupChatInfoViewAlert? = nil
-    @State private var groupLink: CreatedConnLink?
+    @State private var groupLink: GroupLink?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
     @State private var groupLinkNavLinkActive: Bool = false
     @State private var addMembersNavLinkActive: Bool = false
@@ -221,8 +221,9 @@ struct GroupChatInfoView: View {
             }
             sendReceipts = SendReceipts.fromBool(groupInfo.chatSettings.sendRcpts, userDefault: sendReceiptsUserDefault)
             do {
-                if let link = try apiGetGroupLink(groupInfo.groupId) {
-                    (groupLink, groupLinkMemberRole) = link
+                if let gLink = try apiGetGroupLink(groupInfo.groupId) {
+                    groupLink = gLink
+                    groupLinkMemberRole = gLink.acceptMemberRole
                 }
             } catch let error {
                 logger.error("GroupChatInfoView apiGetGroupLink: \(responseError(error))")

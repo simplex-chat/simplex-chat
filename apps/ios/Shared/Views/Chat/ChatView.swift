@@ -47,7 +47,7 @@ struct ChatView: View {
     @State private var selectedMember: GMember? = nil
     // opening GroupLinkView on link button (incognito)
     @State private var showGroupLinkSheet: Bool = false
-    @State private var groupLink: CreatedConnLink?
+    @State private var groupLink: GroupLink?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
     @State private var forwardedChatItems: [ChatItem] = []
     @State private var selectedChatItems: Set<Int64>? = nil
@@ -1040,8 +1040,9 @@ struct ChatView: View {
             if case let .group(gInfo, _) = chat.chatInfo {
                 Task {
                     do {
-                        if let link = try apiGetGroupLink(gInfo.groupId) {
-                            (groupLink, groupLinkMemberRole) = link
+                        if let gLink = try apiGetGroupLink(gInfo.groupId) {
+                            groupLink = gLink
+                            groupLinkMemberRole = gLink.acceptMemberRole
                         }
                     } catch let error {
                         logger.error("ChatView apiGetGroupLink: \(responseError(error))")

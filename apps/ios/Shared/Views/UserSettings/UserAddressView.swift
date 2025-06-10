@@ -156,7 +156,7 @@ struct UserAddressView: View {
             if UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_SHORT_LINKS) {
                 if userAddress.connLinkContact.connShortLink == nil {
                     addShortLinkButton()
-                } else {
+                } else if !userAddress.shortLinkDataSet {
                     addProfileToShortLinkButton()
                 }
             }
@@ -228,7 +228,7 @@ struct UserAddressView: View {
         Button {
             showAddShortLinkAlert()
         } label: {
-            Label("Share profile via short link", systemImage: "plus")
+            Label("Share profile via link", systemImage: "plus")
         }
     }
 
