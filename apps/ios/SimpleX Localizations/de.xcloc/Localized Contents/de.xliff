@@ -665,8 +665,9 @@ swipe action</note>
         <target>Server durch Scannen von QR Codes hinzufügen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add short link" xml:space="preserve">
+      <trans-unit id="Add short link" xml:space="preserve" approved="no">
         <source>Add short link</source>
+        <target state="translated">Verkürzten Link hinzufügen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add team members" xml:space="preserve">
@@ -3199,8 +3200,9 @@ chat item action</note>
         <target>Fehler beim Hinzufügen des Servers</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error adding short link" xml:space="preserve">
+      <trans-unit id="Error adding short link" xml:space="preserve" approved="no">
         <source>Error adding short link</source>
+        <target state="translated">Fehler beim Hinzufügen eines verkürzten Links</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error changing address" xml:space="preserve">
@@ -4064,8 +4066,9 @@ Fehler: %2$@</target>
         <target>Das Gruppenprofil wird nur auf den Mitglieds-Systemen gespeichert und nicht auf den Servern.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group profile was changed. If you save it, the updated profile will be sent to group members." xml:space="preserve">
+      <trans-unit id="Group profile was changed. If you save it, the updated profile will be sent to group members." xml:space="preserve" approved="no">
         <source>Group profile was changed. If you save it, the updated profile will be sent to group members.</source>
+        <target state="translated">Das Gruppenprofil wurde geändert. Wenn Sie es speichern, wird das aktualisierte Profil an die Gruppenmitglieder gesendet.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Group welcome message" xml:space="preserve">
@@ -6699,8 +6702,9 @@ chat item action</note>
         <target>Speichern (und Kontakte benachrichtigen)</target>
         <note>alert button</note>
       </trans-unit>
-      <trans-unit id="Save (and notify members)" xml:space="preserve">
+      <trans-unit id="Save (and notify members)" xml:space="preserve" approved="no">
         <source>Save (and notify members)</source>
+        <target state="translated">Speichern (und Mitglieder benachrichtigen)</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Save admission settings?" xml:space="preserve">
@@ -6733,8 +6737,9 @@ chat item action</note>
         <target>Gruppenprofil speichern</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save group profile?" xml:space="preserve">
+      <trans-unit id="Save group profile?" xml:space="preserve" approved="no">
         <source>Save group profile?</source>
+        <target state="translated">Gruppenprofil speichern?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Save list" xml:space="preserve">
