@@ -1863,9 +1863,8 @@ processChatCommand' vr = \case
   ShowMyAddress -> withUser' $ \User {userId} ->
     processChatCommand $ APIShowMyAddress userId
   APIAddMyAddressShortLink userId -> withUserId' userId $ \user -> do
-    (ucl@UserContactLink {connLinkContact = CCLink connFullLink sLnk_, autoAccept}, conn) <-
+    (ucl@UserContactLink {connLinkContact = CCLink connFullLink _sLnk_, autoAccept}, conn) <-
       withFastStore $ \db -> (,) <$> getUserAddress db user <*> getUserAddressConnection db vr user
-    when (isJust sLnk_) $ throwCmdError "address already has short link"
     let shortLinkProfile = userProfileToSend user Nothing Nothing False
         shortLinkMsg = autoAccept >>= autoReply >>= (Just . msgContentText)
         userData = encodeShortLinkData (ContactShortLinkData shortLinkProfile shortLinkMsg)
@@ -2476,12 +2475,11 @@ processChatCommand' vr = \case
     (_, groupLink, _, mRole) <- withFastStore $ \db -> getGroupLink db user gInfo
     pure $ CRGroupLink user gInfo groupLink mRole
   APIAddGroupShortLink groupId -> withUser $ \user -> do
-    (gInfo, (uclId, _gLink@(CCLink connFullLink sLnk_), gLinkId, mRole), conn) <- withFastStore $ \db -> do
+    (gInfo, (uclId, _gLink@(CCLink connFullLink _sLnk_), gLinkId, mRole), conn) <- withFastStore $ \db -> do
       gInfo <- getGroupInfo db vr user groupId
       gLink <- getGroupLink db user gInfo
       conn <- getGroupLinkConnection db vr user gInfo
       pure (gInfo, gLink, conn)
-    when (isJust sLnk_) $ throwCmdError "group link already has short link"
     let GroupInfo {groupProfile} = gInfo
         userData = encodeShortLinkData (GroupShortLinkData groupProfile)
         crClientData = encodeJSON $ CRDataGroup gLinkId

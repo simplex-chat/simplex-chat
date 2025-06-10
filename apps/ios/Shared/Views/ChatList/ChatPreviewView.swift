@@ -343,6 +343,8 @@ struct ChatPreviewView: View {
                 if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
                     chatPreviewInfoText("Tap to Connect")
                         .foregroundColor(theme.colors.primary)
+                } else if contact.nextAcceptContactRequest {
+                    chatPreviewInfoText("swipe or open to connect")
                 } else if contact.sendMsgToConnect {
                     chatPreviewInfoText("send to connect")
                 } else if !contact.sndReady && contact.activeConn != nil && contact.active {

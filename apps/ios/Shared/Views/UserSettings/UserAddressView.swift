@@ -153,8 +153,12 @@ struct UserAddressView: View {
                     }
             }
             addressSettingsButton(userAddress)
-            if (userAddress.connLinkContact.connShortLink == nil && UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_SHORT_LINKS)) {
-                addShortLinkButton()
+            if UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_SHORT_LINKS) {
+                if userAddress.connLinkContact.connShortLink == nil {
+                    addShortLinkButton()
+                } else {
+                    addProfileToShortLinkButton()
+                }
             }
         } header: {
             ToggleShortLinkHeader(text: Text("For social media"), link: userAddress.connLinkContact, short: $showShortLink)
@@ -214,10 +218,28 @@ struct UserAddressView: View {
 
     private func addShortLinkButton() -> some View {
         Button {
-            addShortLink()
+            showAddShortLinkAlert()
         } label: {
             Label("Add short link", systemImage: "plus")
         }
+    }
+
+    private func addProfileToShortLinkButton() -> some View {
+        Button {
+            showAddShortLinkAlert()
+        } label: {
+            Label("Share profile via short link", systemImage: "plus")
+        }
+    }
+
+    private func showAddShortLinkAlert() {
+        showAlert(
+            title: NSLocalizedString("Share profile via short link", comment: "alert title"),
+            message: NSLocalizedString("Profile will be shared via short link. This change to address cannot be reversed, other than fully deleting address. Do you wish to update address?", comment: "alert message"),
+            buttonTitle: NSLocalizedString("Update (and share profile)", comment: "alert button"),
+            buttonAction: { addShortLink() },
+            cancelButton: true
+        )
     }
 
     private func addShortLink() {
@@ -231,7 +253,7 @@ struct UserAddressView: View {
                 await MainActor.run { progressIndicator = false }
             } catch let error {
                 logger.error("apiAddMyAddressShortLink: \(responseError(error))")
-                let a = getErrorAlert(error, "Error creating address")
+                let a = getErrorAlert(error, "Error adding address short link")
                 alert = .error(title: a.title, error: a.message)
                 await MainActor.run { progressIndicator = false }
             }
