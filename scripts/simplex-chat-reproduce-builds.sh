@@ -120,7 +120,7 @@ for os in '22.04' '24.04'; do
 	# Important! Remove dist-newstyle for the next interation
 	docker exec \
 		-t "${container_name}" \
-		sh -c 'rm -rf ./dist-newstyle ./apps/multiplatform/release ./apps/multiplatform/extracted ./apps/multiplatform/desktop/build'
+		sh -c 'rm -rf ./dist-newstyle ./apps/multiplatform'
 
 	# Also restore git to previous state 
 	git reset --hard && git clean -dfx
