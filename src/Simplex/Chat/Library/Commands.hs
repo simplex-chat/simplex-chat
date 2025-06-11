@@ -3029,19 +3029,16 @@ processChatCommand' vr = \case
               fmap $ \SndMessage {msgId, msgBody} ->
                 (conn, MsgFlags {notification = hasNotification XInfo_}, (vrValue msgBody, [msgId]))
     setMyAddressData :: User -> UserContactLink -> CM ChatResponse
-    setMyAddressData user ucl@UserContactLink {connLinkContact = CCLink connFullLink _sLnk_, autoAccept} = do
+    setMyAddressData user ucl@UserContactLink {userContactLinkId, connLinkContact = CCLink connFullLink _sLnk_, autoAccept} = do
       conn <- withFastStore $ \db -> getUserAddressConnection db vr user
       let shortLinkProfile = userProfileToSend user Nothing Nothing False
           shortLinkMsg = autoAccept >>= autoReply >>= (Just . msgContentText)
           userData = encodeShortLinkData (ContactShortLinkData shortLinkProfile shortLinkMsg)
       sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a (aConnId conn) SCMContact userData Nothing)
-      case entityId conn of
-        Just uclId -> do
-          withFastStore' $ \db -> setUserContactLinkShortLink db uclId sLnk
-          let autoAccept' = autoAccept >>= \aa -> Just aa {acceptIncognito = False}
-              ucl' = (ucl :: UserContactLink) {connLinkContact = CCLink connFullLink (Just sLnk), shortLinkDataSet = True, autoAccept = autoAccept'}
-          pure $ CRUserContactLink user ucl'
-        Nothing -> throwChatError $ CEException "no user contact link id"
+      withFastStore' $ \db -> setUserContactLinkShortLink db userContactLinkId sLnk
+      let autoAccept' = autoAccept >>= \aa -> Just aa {acceptIncognito = False}
+          ucl' = (ucl :: UserContactLink) {connLinkContact = CCLink connFullLink (Just sLnk), shortLinkDataSet = True, autoAccept = autoAccept'}
+      pure $ CRUserContactLink user ucl'
     updateContactPrefs :: User -> Contact -> Preferences -> CM ChatResponse
     updateContactPrefs _ ct@Contact {activeConn = Nothing} _ = throwChatError $ CEContactNotActive ct
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Just Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
@@ -3303,7 +3300,7 @@ processChatCommand' vr = \case
         case ct of
           CCTContact ->
             withFastStore' (\db -> getUserContactLinkViaShortLink db user l') >>= \case
-              Just (UserContactLink (CCLink cReq _) _ _) -> pure (ACCL SCMContact $ CCLink cReq (Just l'), CPContactAddress CAPOwnLink)
+              Just UserContactLink {connLinkContact = CCLink cReq _} -> pure (ACCL SCMContact $ CCLink cReq (Just l'), CPContactAddress CAPOwnLink)
               Nothing -> do
                 (cReq, cData) <- getShortLinkConnReq user l'
                 let contactSLinkData_ = decodeShortLinkData $ linkUserData cData

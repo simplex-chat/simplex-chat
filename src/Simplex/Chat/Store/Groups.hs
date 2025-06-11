@@ -269,7 +269,7 @@ deleteGroupLink db User {userId} GroupInfo {groupId} = do
   DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND group_id = ?" (userId, groupId)
 
 data GroupLink = GroupLink
-  { userContactLinkId :: Int64, -- db id
+  { userContactLinkId :: Int64,
     connLinkContact :: CreatedLinkContact,
     shortLinkDataSet :: Bool,
     groupLinkId :: GroupLinkId,
