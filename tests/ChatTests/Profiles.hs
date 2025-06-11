@@ -111,7 +111,10 @@ chatProfileTests = do
       it "prepare contact using address short link data and connect" testShortLinkAddressPrepareContact
       it "prepare group using group short link data and connect" testShortLinkPrepareGroup
       it "prepare group using group short link data and connect, host rejects" testShortLinkPrepareGroupReject
+      -- TODO [short links] enable test - AGENT A_MESSAGE error
       it "setting incognito for invitation should update short link data" testShortLinkInvitationSetIncognito
+      it "changing profile should update address short link data" testShortLinkAddressChangeProfile
+      it "changing auto-reply message should update address short link data" testShortLinkAddressChangeAutoReply
 
 testUpdateProfile :: HasCallStack => TestParams -> IO ()
 testUpdateProfile =
@@ -2909,8 +2912,101 @@ testShortLinkInvitationSetIncognito =
         <### [ ConsoleString (aliceIncognito <> ": connection started"),
                WithTime ("@" <> aliceIncognito <> " hello")
              ]
+      alice ?<# "bob> hello"
+      concurrentlyN_
+        [ bob <## (aliceIncognito <> ": contact is connected"),
+          do
+            alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
+            alice <## "use /i bob to print out this incognito profile again"
+        ]
+      alice ?#> ("@bob hi")
+      bob <# (aliceIncognito <> "> hi")
+      bob #> ("@" <> aliceIncognito <> " hey")
+      alice ?<# ("bob> hey")
+
+testShortLinkAddressChangeProfile :: HasCallStack => TestParams -> IO ()
+testShortLinkAddressChangeProfile =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/ad short"
+      (shortLink, fullLink) <- getShortContactLink alice True
+
+      alice ##> "/p alisa"
+      alice <## "user profile is changed to alisa (your 0 contacts are notified)"
+
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "contact address: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+      bob <## "alisa: contact is prepared"
+      bob ##> "/_connect contact @2 text hello"
+      bob
+        <### [ "alisa: connection started",
+               WithTime "@alisa hello"
+             ]
+      alice
+        <### [ "bob (Bob) wants to connect to you!",
+               WithTime "bob> hello"
+             ]
+      alice <## "to accept: /ac bob"
+      alice <## "to reject: /rc bob (the sender will NOT be notified)"
+      alice ##> "/ac i bob"
+      alice <## "bad chat command: incognito not allowed for address with short link data"
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+      concurrently_
+        (bob <## "alisa: contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice <##> bob
+
+testShortLinkAddressChangeAutoReply :: HasCallStack => TestParams -> IO ()
+testShortLinkAddressChangeAutoReply =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      alice ##> "/ad short"
+      (shortLink, fullLink) <- getShortContactLink alice True
+
+      alice ##> "/_auto_accept 1 on incognito=off text welcome!"
+      alice <## "auto_accept on"
+      alice <## "auto reply:"
+      alice <## "welcome!"
+
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "contact address: ok to connect"
+      bobContactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> bobContactSLinkData)
+      bob <## "alice: contact is prepared"
+      bob <# "alice> welcome!"
+      bob ##> "/_connect contact @2 text hello"
+      bob
+        <### [ "alice: connection started",
+               WithTime "@alice hello"
+             ]
       alice <# "bob> hello"
+      alice <## "bob (Bob): accepting contact request..."
+      alice <## "bob (Bob): you can send messages to contact"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
       alice <##> bob
+
+      alice ##> "/_auto_accept 1 on incognito=off"
+      alice <## "auto_accept on"
+
+      cath ##> ("/_connect plan 1 " <> shortLink)
+      cath <## "contact address: ok to connect"
+      cathContactSLinkData <- getTermLine cath
+      cath ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> cathContactSLinkData)
+      cath <## "alice: contact is prepared"
+      cath ##> "/_connect contact @2 text hello"
+      cath
+        <### [ "alice: connection started",
+               WithTime "@alice hello"
+             ]
+      alice <# "cath> hello"
+      alice <## "cath (Catherine): accepting contact request..."
+      alice <## "cath (Catherine): you can send messages to contact"
+      concurrently_
+        (cath <## "alice (Alice): contact is connected")
+        (alice <## "cath (Catherine): contact is connected")
+      alice <##> cath

@@ -3441,9 +3441,9 @@ processChatCommand' vr = \case
       CSLContact _ ct srv linkKey -> CSLContact SLSServer ct srv linkKey
     restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . config)
     encodeShortLinkData :: J.ToJSON a => a -> ByteString
-    encodeShortLinkData = encodeUtf8 . encodeJSON
+    encodeShortLinkData = LB.toStrict . J.encode
     decodeShortLinkData :: J.FromJSON a => ByteString -> Maybe a
-    decodeShortLinkData = decodeJSON . safeDecodeUtf8
+    decodeShortLinkData = J.decodeStrict
     updatePCCShortLinkData :: J.ToJSON a => PendingContactConnection -> a -> CM (Maybe ShortLinkInvitation)
     updatePCCShortLinkData conn@PendingContactConnection {connLinkInv} shortLinkData = do
       let short = isJust $ connShortLink =<< connLinkInv

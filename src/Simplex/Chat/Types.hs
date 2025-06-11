@@ -658,7 +658,6 @@ instance ToField ImageData where toField (ImageData t) = toField t
 
 deriving newtype instance FromField ImageData
 
--- TODO [short links] StrEncoding instances?
 data ContactShortLinkData = ContactShortLinkData
   { profile :: Profile,
     welcomeMsg :: Maybe Text
