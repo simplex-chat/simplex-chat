@@ -559,21 +559,18 @@ getContactWithoutConnViaAddress db vr user@User {userId} (cReqSchema1, cReqSchem
         (userId, cReqSchema1, cReqSchema2)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db vr user) ctId_
 
-updateUserAddressAutoAccept :: DB.Connection -> User -> Maybe AutoAccept -> ExceptT StoreError IO UserContactLink
-updateUserAddressAutoAccept db user@User {userId} autoAccept = do
-  link <- getUserAddress db user
-  liftIO updateUserAddressAutoAccept_ $> link {autoAccept}
+updateUserAddressAutoAccept :: DB.Connection -> Int64 -> Maybe AutoAccept -> IO ()
+updateUserAddressAutoAccept db userContactLinkId autoAccept =
+  DB.execute
+    db
+    [sql|
+      UPDATE user_contact_links
+      SET auto_accept = ?, business_address = ?, auto_accept_incognito = ?, auto_reply_msg_content = ?
+      WHERE user_contact_link_id = ?
+    |]
+    (autoAcceptValues :. Only userContactLinkId)
   where
-    updateUserAddressAutoAccept_ =
-      DB.execute
-        db
-        [sql|
-          UPDATE user_contact_links
-          SET auto_accept = ?, business_address = ?, auto_accept_incognito = ?, auto_reply_msg_content = ?
-          WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
-        |]
-        (ucl :. Only userId)
-    ucl = case autoAccept of
+    autoAcceptValues = case autoAccept of
       Just AutoAccept {businessAddress, acceptIncognito, autoReply} -> (BI True, BI businessAddress, BI acceptIncognito, autoReply)
       _ -> (BI False, BI False, BI False, Nothing)
 

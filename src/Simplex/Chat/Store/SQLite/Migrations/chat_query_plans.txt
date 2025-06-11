@@ -1363,14 +1363,6 @@ LIST SUBQUERY 1
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-          UPDATE user_contact_links
-          SET auto_accept = ?, business_address = ?, auto_accept_incognito = ?, auto_reply_msg_content = ?
-          WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
-        
-Plan:
-SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
-
-Query: 
         INSERT INTO connections (
           user_id, agent_conn_id, conn_level, conn_status, conn_type, contact_id, custom_user_profile_id,
           conn_chat_version, peer_chat_min_version, peer_chat_max_version, created_at, updated_at, to_subscribe
@@ -4582,6 +4574,14 @@ Query:
     
 Plan:
 SEARCH server_operators USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+      UPDATE user_contact_links
+      SET auto_accept = ?, business_address = ?, auto_accept_incognito = ?, auto_reply_msg_content = ?
+      WHERE user_contact_link_id = ?
+    
+Plan:
+SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE users

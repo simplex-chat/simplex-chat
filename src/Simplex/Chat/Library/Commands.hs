@@ -1875,13 +1875,24 @@ processChatCommand' vr = \case
   SetProfileAddress onOff -> withUser $ \User {userId} ->
     processChatCommand $ APISetProfileAddress userId onOff
   APIAddressAutoAccept userId autoAccept_ -> withUserId userId $ \user -> do
-    -- TODO [short links] update adress short link data if message changed
-    UserContactLink {shortLinkDataSet} <- withFastStore (`getUserAddress` user)
+    ucl@UserContactLink {userContactLinkId, shortLinkDataSet, autoAccept} <- withFastStore (`getUserAddress` user)
     forM_ autoAccept_ $ \AutoAccept {businessAddress, acceptIncognito} -> do
       when (shortLinkDataSet && acceptIncognito) $ throwCmdError "incognito not allowed for address with short link data"
       when (businessAddress && acceptIncognito) $ throwCmdError "requests to business address cannot be accepted incognito"
-    contactLink <- withFastStore (\db -> updateUserAddressAutoAccept db user autoAccept_)
-    pure $ CRUserContactLinkUpdated user contactLink
+    let ucl' = ucl {autoAccept = autoAccept_}
+    ucl'' <-
+      if shortLinkDataSet && replyMsgChanged autoAccept autoAccept_
+        then setMyAddressData user ucl' >>= \case
+          CRUserContactLink _ ucl'' -> pure ucl''
+          cr -> throwCmdError $ "unexpected response from setMyAddressData: " <> show cr
+        else pure ucl'
+    withFastStore' $ \db -> updateUserAddressAutoAccept db userContactLinkId autoAccept_
+    pure $ CRUserContactLinkUpdated user ucl''
+    where
+      replyMsgChanged prevAutoAccept newAutoAccept =
+        let prevReplyMsg = prevAutoAccept >>= autoReply
+            newReplyMsg = newAutoAccept >>= autoReply
+         in newReplyMsg /= prevReplyMsg
   AddressAutoAccept autoAccept_ -> withUser $ \User {userId} ->
     processChatCommand $ APIAddressAutoAccept userId autoAccept_
   AcceptContact incognito cName -> withUser $ \User {userId} -> do
