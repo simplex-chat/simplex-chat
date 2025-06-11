@@ -1035,8 +1035,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 Just BusinessChatInfo {customerId, chatType = BCCustomer}
                   | joiningMemberId == customerId -> useReply <$> withStore (`getUserAddress` user)
                   where
-                    useReply UserContactLink {autoAccept} = case autoAccept of
-                      Just AutoAccept {businessAddress, autoReply} | businessAddress -> autoReply
+                    useReply UserContactLink {autoAccept, shortLinkDataSet} = case autoAccept of
+                      Just AutoAccept {businessAddress, autoReply}
+                        | businessAddress && (not shortLinkDataSet || connChatVersion < shortLinkDataVersion) ->
+                          autoReply
                       _ -> Nothing
                 _ -> pure Nothing
             send mc = do

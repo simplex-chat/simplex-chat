@@ -111,8 +111,9 @@ chatProfileTests = do
       it "prepare contact using address short link data and connect" testShortLinkAddressPrepareContact
       it "prepare group using group short link data and connect" testShortLinkPrepareGroup
       it "prepare group using group short link data and connect, host rejects" testShortLinkPrepareGroupReject
-      -- TODO [short links] enable test - AGENT A_MESSAGE error
+      -- TODO [short links] enable tests - AGENT A_MESSAGE error
       xit "setting incognito for invitation should update short link data" testShortLinkInvitationSetIncognito
+      xit "changing user for invitation should update short link data" testShortLinkInvitationChangeUser
       it "changing profile should update address short link data" testShortLinkAddressChangeProfile
       it "changing auto-reply message should update address short link data" testShortLinkAddressChangeAutoReply
       it "changing group profile should update short link data" testShortLinkGroupChangeProfile
@@ -2899,9 +2900,11 @@ testShortLinkInvitationSetIncognito =
     \alice bob -> do
       alice ##> "/_connect 1 short=on"
       (shortLink, fullLink) <- getShortInvitation alice
+
       alice ##> "/_set incognito :1 on"
       aliceIncognito <- getTermLine alice
       alice <## "connection 1 changed to incognito"
+
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "invitation link: ok to connect"
       contactSLinkData <- getTermLine bob
@@ -2924,6 +2927,39 @@ testShortLinkInvitationSetIncognito =
       bob <# (aliceIncognito <> "> hi")
       bob #> ("@" <> aliceIncognito <> " hey")
       alice ?<# ("bob> hey")
+
+testShortLinkInvitationChangeUser :: HasCallStack => TestParams -> IO ()
+testShortLinkInvitationChangeUser =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+
+      alice ##> "/_connect 1 short=on"
+      (shortLink, fullLink) <- getShortInvitation alice
+
+      alice ##> "/_set conn user :1 2"
+      alice <## "connection 1 changed from user alice to user alisa"
+      alice ##> "/user alisa"
+      showActiveUser alice "alisa"
+
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "invitation link: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+      bob <## "alisa: contact is prepared"
+      bob ##> "/_connect contact @2 text hello"
+      bob
+        <### [ "alisa: connection started",
+               WithTime "@alisa hello"
+             ]
+      alice <# "bob> hello"
+      concurrently_
+        (bob <## "alisa: contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice <##> bob
 
 testShortLinkAddressChangeProfile :: HasCallStack => TestParams -> IO ()
 testShortLinkAddressChangeProfile =
