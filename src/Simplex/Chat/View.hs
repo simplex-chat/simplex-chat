@@ -187,7 +187,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRUserPrivacy u u' -> ttyUserPrefix hu outputRH u $ viewUserPrivacy u u'
   CRVersionInfo info _ _ -> viewVersionInfo logLevel info
   CRInvitation u ccLink _ -> ttyUser u $ viewConnReqInvitation ccLink
-  CRConnectionIncognitoUpdated u c -> ttyUser u $ viewConnectionIncognitoUpdated c
+  CRConnectionIncognitoUpdated u c customUserProfile -> ttyUser u $ viewConnectionIncognitoUpdated c customUserProfile testView
   CRConnectionUserChanged u c c' nu -> ttyUser u $ viewConnectionUserChanged u c nu c'
   CRConnectionPlan u connLink connectionPlan -> ttyUser u $ viewConnectionPlan cfg connLink connectionPlan
   CRNewPreparedContact u c -> ttyUser u  [ttyContact' c <> ": contact is prepared"]
@@ -1803,9 +1803,15 @@ viewConnectionAliasUpdated PendingContactConnection {pccConnId, localAlias}
   | localAlias == "" = ["connection " <> sShow pccConnId <> " alias removed"]
   | otherwise = ["connection " <> sShow pccConnId <> " alias updated: " <> plain localAlias]
 
-viewConnectionIncognitoUpdated :: PendingContactConnection -> [StyledString]
-viewConnectionIncognitoUpdated PendingContactConnection {pccConnId, customUserProfileId}
-  | isJust customUserProfileId = ["connection " <> sShow pccConnId <> " changed to incognito"]
+viewConnectionIncognitoUpdated :: PendingContactConnection -> Maybe Profile -> Bool -> [StyledString]
+viewConnectionIncognitoUpdated PendingContactConnection {pccConnId, customUserProfileId} incognitoProfile testView
+  | isJust customUserProfileId =
+      case incognitoProfile of
+        Just profile
+          | testView -> incognitoProfile' profile : message
+          | otherwise -> message
+          where message = ["connection " <> sShow pccConnId <> " changed to incognito"]
+        Nothing -> ["unexpected response when changing connection, please report to developers"]
   | otherwise = ["connection " <> sShow pccConnId <> " changed to non incognito"]
 
 viewConnectionUserChanged :: User -> PendingContactConnection -> User -> PendingContactConnection -> [StyledString]
