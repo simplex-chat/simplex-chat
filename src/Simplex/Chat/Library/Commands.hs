@@ -2433,7 +2433,6 @@ processChatCommand' vr = \case
     processChatCommand $ APIListGroups userId (contactId' <$> ct_) search_
   APIUpdateGroupProfile groupId p' -> withUser $ \user -> do
     g <- withFastStore $ \db -> getGroup db vr user groupId
-    -- TODO [short links] update group link short link data
     runUpdateGroupProfile user g p'
   UpdateGroupNames gName GroupProfile {displayName, fullName} ->
     updateGroupProfileByName gName $ \p -> p {displayName, fullName}
@@ -2477,18 +2476,11 @@ processChatCommand' vr = \case
     gLnk <- withFastStore $ \db -> getGroupLink db user gInfo
     pure $ CRGroupLink user gInfo gLnk
   APIAddGroupShortLink groupId -> withUser $ \user -> do
-    (gInfo, gLink, conn) <- withFastStore $ \db -> do
+    (gInfo, gLink) <- withFastStore $ \db -> do
       gInfo <- getGroupInfo db vr user groupId
       gLink <- getGroupLink db user gInfo
-      conn <- getGroupLinkConnection db vr user gInfo
-      pure (gInfo, gLink, conn)
-    let GroupInfo {groupProfile} = gInfo
-        userData = encodeShortLinkData (GroupShortLinkData groupProfile)
-        GroupLink {groupLinkId} = gLink
-        crClientData = encodeJSON $ CRDataGroup groupLinkId
-    sLnk <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a (aConnId conn) SCMContact userData (Just crClientData))
-    gLink' <- withFastStore' $ \db -> setGroupLinkShortLink db gLink sLnk
-    pure $ CRGroupLink user gInfo gLink'
+      pure (gInfo, gLink)
+    setGroupLinkData user gInfo gLink
   APICreateMemberContact gId gMemberId -> withUser $ \user -> do
     (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
     assertUserGroupRole g GRAuthor
@@ -3084,14 +3076,30 @@ processChatCommand' vr = \case
               recipients = filter memberCurrentOrPending newMs
           sendGroupMessage user g' Nothing recipients $ XGrpPrefs ps'
         Nothing -> do
+          setGroupLinkData' g'
           let recipients = filter memberCurrentOrPending ms
           sendGroupMessage user g' Nothing recipients (XGrpInfo p')
+          where
+            setGroupLinkData' :: GroupInfo -> CM ()
+            setGroupLinkData' g' = do
+              withFastStore' (\db -> runExceptT $ getGroupLink db user g') >>= \case
+                Right gLink@GroupLink {shortLinkDataSet}
+                  | shortLinkDataSet -> void $ setGroupLinkData user g' gLink
+                _ -> pure ()
       let cd = CDGroupSnd g' Nothing
       unless (sameGroupProfileInfo p p') $ do
         ci <- saveSndChatItem user cd msg (CISndGroupEvent $ SGEGroupUpdated p')
         toView $ CEvtNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat g' Nothing) ci]
       createGroupFeatureChangedItems user cd CISndGroupFeature g g'
       pure $ CRGroupUpdated user g g' Nothing
+    setGroupLinkData :: User -> GroupInfo -> GroupLink -> CM ChatResponse
+    setGroupLinkData user gInfo@GroupInfo {groupProfile} gLink@GroupLink {groupLinkId} = do
+      conn <- withFastStore $ \db -> getGroupLinkConnection db vr user gInfo
+      let userData = encodeShortLinkData (GroupShortLinkData groupProfile)
+          crClientData = encodeJSON $ CRDataGroup groupLinkId
+      sLnk <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a (aConnId conn) SCMContact userData (Just crClientData))
+      gLink' <- withFastStore' $ \db -> setGroupLinkShortLink db gLink sLnk
+      pure $ CRGroupLink user gInfo gLink'
     checkValidName :: GroupName -> CM ()
     checkValidName displayName = do
       when (T.null displayName) $ throwChatError CEInvalidDisplayName {displayName, validName = ""}
