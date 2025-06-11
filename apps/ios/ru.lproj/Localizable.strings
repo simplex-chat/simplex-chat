@@ -607,10 +607,10 @@ swipe action */
 /* No comment provided by engineer. */
 "Already connected?" = "Соединение уже установлено?";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Already connecting!" = "Уже соединяется!";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Already joining the group!" = "Вступление в группу уже начато!";
 
 /* pref value */
@@ -927,7 +927,8 @@ marked deleted chat item preview text */
 "can't send messages" = "нельзя отправлять";
 
 /* alert action
-alert button */
+alert button
+new chat action */
 "Cancel" = "Отменить";
 
 /* No comment provided by engineer. */
@@ -1009,7 +1010,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Chat already exists" = "Разговор уже существует";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Chat already exists!" = "Разговор уже существует!";
 
 /* No comment provided by engineer. */
@@ -1217,9 +1218,6 @@ set passcode view */
 "Connect automatically" = "Соединяться автоматически";
 
 /* No comment provided by engineer. */
-"Connect incognito" = "Соединиться Инкогнито";
-
-/* No comment provided by engineer. */
 "Connect to desktop" = "Подключиться к компьютеру";
 
 /* No comment provided by engineer. */
@@ -1228,25 +1226,22 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connect to your friends faster." = "Соединяйтесь с друзьями быстрее.";
 
-/* No comment provided by engineer. */
-"Connect to yourself?" = "Соединиться с самим собой?";
-
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect to yourself?\nThis is your own one-time link!" = "Соединиться с самим собой?\nЭто ваша собственная одноразовая ссылка!";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect to yourself?\nThis is your own SimpleX address!" = "Соединиться с самим собой?\nЭто ваш собственный адрес SimpleX!";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via contact address" = "Соединиться через адрес";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via link" = "Соединиться через ссылку";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via one-time link" = "Соединиться через одноразовую ссылку";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Connect with %@" = "Соединиться с %@";
 
 /* No comment provided by engineer. */
@@ -1463,9 +1458,6 @@ set passcode view */
 "Create queue" = "Создание очереди";
 
 /* No comment provided by engineer. */
-"Create secret group" = "Создать скрытую группу";
-
-/* No comment provided by engineer. */
 "Create SimpleX address" = "Создать адрес SimpleX";
 
 /* No comment provided by engineer. */
@@ -1596,13 +1588,13 @@ set passcode view */
 
 /* delete after time
 pref value */
-"default (%@)" = "базовый (%@)";
+"default (%@)" = "по умолчанию (%@)";
 
 /* No comment provided by engineer. */
-"default (no)" = "базовый (нет)";
+"default (no)" = "по умолчанию (нет)";
 
 /* No comment provided by engineer. */
-"default (yes)" = "базовый (да)";
+"default (yes)" = "по умолчанию (да)";
 
 /* alert action
 swipe action */
@@ -1705,7 +1697,7 @@ swipe action */
 "Delete messages" = "Удалить сообщения";
 
 /* No comment provided by engineer. */
-"Delete messages after" = "Удалять сообщения";
+"Delete messages after" = "Удалять сообщения через";
 
 /* No comment provided by engineer. */
 "Delete old database" = "Удалить предыдущую версию данных";
@@ -2176,7 +2168,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error changing role" = "Ошибка при изменении роли";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error changing setting" = "Ошибка при изменении настройки";
 
 /* No comment provided by engineer. */
@@ -2215,7 +2207,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error decrypting file" = "Ошибка расшифровки файла";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat database" = "Ошибка при удалении данных чата";
 
 /* alert title */
@@ -2227,10 +2219,10 @@ chat item action */
 /* No comment provided by engineer. */
 "Error deleting connection" = "Ошибка при удалении соединения";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting database" = "Ошибка при удалении данных чата";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting old database" = "Ошибка при удалении предыдущей версии данных чата";
 
 /* No comment provided by engineer. */
@@ -2251,13 +2243,13 @@ chat item action */
 /* No comment provided by engineer. */
 "Error encrypting database" = "Ошибка при шифровании";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error exporting chat database" = "Ошибка при экспорте архива чата";
 
 /* No comment provided by engineer. */
 "Error exporting theme: %@" = "Ошибка экспорта темы: %@";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error importing chat database" = "Ошибка при импорте архива чата";
 
 /* No comment provided by engineer. */
@@ -2634,7 +2626,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Group already exists" = "Группа уже существует";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Group already exists!" = "Группа уже существует!";
 
 /* No comment provided by engineer. */
@@ -3033,22 +3025,16 @@ snd error text */
 /* No comment provided by engineer. */
 "join as %@" = "вступить как %@";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Join group" = "Вступить в группу";
 
 /* No comment provided by engineer. */
 "Join group conversations" = "Присоединяйтесь к разговорам в группах";
 
 /* No comment provided by engineer. */
-"Join group?" = "Вступить в группу?";
-
-/* No comment provided by engineer. */
 "Join incognito" = "Вступить инкогнито";
 
-/* No comment provided by engineer. */
-"Join with current profile" = "Вступить с активным профилем";
-
-/* No comment provided by engineer. */
+/* new chat action */
 "Join your group?\nThis is your link for group %@!" = "Вступить в вашу группу?\nЭто ваша ссылка на группу %@!";
 
 /* No comment provided by engineer. */
@@ -3670,7 +3656,8 @@ time to disappear */
 "offered %@: %@" = "предложил(a) %1$@: %2$@";
 
 /* alert action
-alert button */
+alert button
+new chat action */
 "Ok" = "Ок";
 
 /* No comment provided by engineer. */
@@ -3763,7 +3750,7 @@ alert button */
 /* No comment provided by engineer. */
 "Open conditions" = "Открыть условия";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Open group" = "Открыть группу";
 
 /* alert title */
@@ -3797,7 +3784,7 @@ alert button */
 "Or securely share this file link" = "Или передайте эту ссылку";
 
 /* No comment provided by engineer. */
-"Or show this code" = "Или покажите код";
+"Or show this code" = "Или покажите этот код";
 
 /* No comment provided by engineer. */
 "Or to share privately" = "Или поделиться конфиденциально";
@@ -4287,16 +4274,10 @@ swipe action */
 "Renegotiate encryption?" = "Пересогласовать шифрование?";
 
 /* No comment provided by engineer. */
-"Repeat connection request?" = "Повторить запрос на соединение?";
-
-/* No comment provided by engineer. */
 "Repeat download" = "Повторить загрузку";
 
 /* No comment provided by engineer. */
 "Repeat import" = "Повторить импорт";
-
-/* No comment provided by engineer. */
-"Repeat join request?" = "Повторить запрос на вступление?";
 
 /* No comment provided by engineer. */
 "Repeat upload" = "Повторить загрузку";
@@ -4633,7 +4614,7 @@ chat item action */
 "Send questions and ideas" = "Отправьте вопросы и идеи";
 
 /* No comment provided by engineer. */
-"Send receipts" = "Отчёты о доставке";
+"Send receipts" = "Отправлять отчёты о доставке";
 
 /* No comment provided by engineer. */
 "Send them from gallery or custom keyboards." = "Отправьте из галереи или из дополнительных клавиатур.";
@@ -4844,7 +4825,7 @@ chat item action */
 "Share SimpleX address on social media." = "Поделитесь SimpleX адресом в социальных сетях.";
 
 /* No comment provided by engineer. */
-"Share this 1-time invite link" = "Поделитесь одноразовой ссылкой";
+"Share this 1-time invite link" = "Поделиться одноразовой ссылкой-приглашением";
 
 /* No comment provided by engineer. */
 "Share to SimpleX" = "Поделиться в SimpleX";
@@ -5280,12 +5261,6 @@ report reason */
 "This group no longer exists." = "Эта группа больше не существует.";
 
 /* No comment provided by engineer. */
-"This is your own one-time link!" = "Это ваша собственная одноразовая ссылка!";
-
-/* No comment provided by engineer. */
-"This is your own SimpleX address!" = "Это ваш собственный адрес SimpleX!";
-
-/* No comment provided by engineer. */
 "This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." = "Эта ссылка требует новую версию. Обновите приложение или попросите Ваш контакт прислать совместимую ссылку.";
 
 /* No comment provided by engineer. */
@@ -5540,7 +5515,7 @@ report reason */
 /* No comment provided by engineer. */
 "Use chat" = "Использовать чат";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Use current profile" = "Использовать активный профиль";
 
 /* No comment provided by engineer. */
@@ -5558,7 +5533,7 @@ report reason */
 /* No comment provided by engineer. */
 "Use iOS call interface" = "Использовать интерфейс iOS для звонков";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Use new incognito profile" = "Использовать новый Инкогнито профиль";
 
 /* No comment provided by engineer. */
@@ -5834,25 +5809,22 @@ report reason */
 /* No comment provided by engineer. */
 "You are already connected with %@." = "Вы уже соединены с %@.";
 
-/* No comment provided by engineer. */
+/* new chat sheet message */
 "You are already connecting to %@." = "Вы уже соединяетесь с %@.";
 
-/* No comment provided by engineer. */
+/* new chat sheet message */
 "You are already connecting via this one-time link!" = "Вы уже соединяетесь по этой одноразовой ссылке!";
 
 /* No comment provided by engineer. */
 "You are already in group %@." = "Вы уже состоите в группе %@.";
 
-/* No comment provided by engineer. */
+/* new chat sheet message */
 "You are already joining the group %@." = "Вы уже вступаете в группу %@.";
 
-/* No comment provided by engineer. */
-"You are already joining the group via this link!" = "Вы уже вступаете в группу по этой ссылке!";
-
-/* No comment provided by engineer. */
+/* new chat sheet message */
 "You are already joining the group via this link." = "Вы уже вступаете в группу по этой ссылке.";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Вы уже вступаете в группу!\nПовторить запрос на вступление?";
 
 /* No comment provided by engineer. */
@@ -5957,10 +5929,7 @@ report reason */
 /* No comment provided by engineer. */
 "You decide who can connect." = "Вы определяете, кто может соединиться.";
 
-/* No comment provided by engineer. */
-"You have already requested connection via this address!" = "Вы уже запросили соединение через этот адрес!";
-
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "You have already requested connection!\nRepeat connection request?" = "Вы уже запросили соединение!\nПовторить запрос?";
 
 /* No comment provided by engineer. */
@@ -6028,9 +5997,6 @@ report reason */
 
 /* No comment provided by engineer. */
 "You will be required to authenticate when you start or resume the app after 30 seconds in background." = "Вы будете аутентифицированы при запуске и возобновлении приложения, которое было 30 секунд в фоновом режиме.";
-
-/* No comment provided by engineer. */
-"You will connect to all group members." = "Вы соединитесь со всеми членами группы.";
 
 /* No comment provided by engineer. */
 "You will still receive calls and notifications from muted profiles when they are active." = "Вы все равно получите звонки и уведомления в профилях без звука, когда они активные.";
@@ -6127,3 +6093,4 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Ваш адрес SimpleX";
+

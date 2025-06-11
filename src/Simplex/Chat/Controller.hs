@@ -747,7 +747,7 @@ data ChatResponse
   | CRArchiveImported {archiveErrors :: [ArchiveError]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
 #endif
-  | CRDebugLocks {chatLockName :: Maybe String, chatEntityLocks :: Map String String, agentLocks :: AgentLocks}
+  | CRDebugLocks {chatLockName :: Maybe Text, chatEntityLocks :: Map Text Text, agentLocks :: AgentLocks}
   | CRAgentSubsTotal {user :: User, subsTotal :: SMPServerSubs, hasSession :: Bool}
   | CRAgentServersSummary {user :: User, serversSummary :: PresentedServersSummary}
   | CRAgentWorkersDetails {agentWorkersDetails :: AgentWorkersDetails}

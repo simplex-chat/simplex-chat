@@ -109,11 +109,17 @@
 /* No comment provided by engineer. */
 "%@ servers" = "%@ servery";
 
+/* No comment provided by engineer. */
+"%@ uploaded" = "%@ nahrán";
+
 /* notification title */
 "%@ wants to connect!" = "%@ se chce připojit!";
 
 /* format for date separator in chat */
 "%@, %@" = "%1$@, %2$@";
+
+/* No comment provided by engineer. */
+"%@, %@ and %lld members" = "%@, %@ a %lld členů";
 
 /* No comment provided by engineer. */
 "%@, %@ and %lld other members connected" = "%@, %@ a %lld ostatní členové připojeni";
@@ -560,7 +566,8 @@ swipe action */
 "Can't invite contacts!" = "Nelze pozvat kontakty!";
 
 /* alert action
-alert button */
+alert button
+new chat action */
 "Cancel" = "Zrušit";
 
 /* feature offered item */
@@ -703,15 +710,12 @@ set passcode view */
 "Connect" = "Připojit";
 
 /* No comment provided by engineer. */
-"Connect incognito" = "Spojit se inkognito";
-
-/* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "připojit se k vývojářům SimpleX Chat.";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via link" = "Připojte se prostřednictvím odkazu";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via one-time link" = "Připojit se jednorázovým odkazem";
 
 /* No comment provided by engineer. */
@@ -827,9 +831,6 @@ set passcode view */
 
 /* server test step */
 "Create queue" = "Vytvořit frontu";
-
-/* No comment provided by engineer. */
-"Create secret group" = "Vytvořit tajnou skupinu";
 
 /* No comment provided by engineer. */
 "Create SimpleX address" = "Vytvořit SimpleX adresu";
@@ -1304,7 +1305,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Error changing role" = "Chyba při změně role";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error changing setting" = "Chyba změny nastavení";
 
 /* No comment provided by engineer. */
@@ -1325,7 +1326,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Error decrypting file" = "Chyba dešifrování souboru";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat database" = "Chyba při mazání databáze chatu";
 
 /* No comment provided by engineer. */
@@ -1334,10 +1335,10 @@ swipe action */
 /* No comment provided by engineer. */
 "Error deleting connection" = "Chyba při mazání připojení";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting database" = "Chyba při mazání databáze";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting old database" = "Chyba při mazání staré databáze";
 
 /* No comment provided by engineer. */
@@ -1355,10 +1356,10 @@ swipe action */
 /* No comment provided by engineer. */
 "Error encrypting database" = "Chyba šifrování databáze";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error exporting chat database" = "Chyba při exportu databáze chatu";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error importing chat database" = "Chyba při importu databáze chatu";
 
 /* No comment provided by engineer. */
@@ -1825,7 +1826,7 @@ snd error text */
 /* No comment provided by engineer. */
 "join as %@" = "připojit se jako %@";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Join group" = "Připojit ke skupině";
 
 /* No comment provided by engineer. */
@@ -2159,7 +2160,8 @@ time to disappear */
 "offered %@: %@" = "nabídl %1$@: %2$@";
 
 /* alert action
-alert button */
+alert button
+new chat action */
 "Ok" = "Ok";
 
 /* No comment provided by engineer. */
@@ -3152,7 +3154,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Use chat" = "Použijte chat";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Use current profile" = "Použít aktuální profil";
 
 /* No comment provided by engineer. */
@@ -3161,7 +3163,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Use iOS call interface" = "Použít rozhraní volání iOS";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Use new incognito profile" = "Použít nový inkognito profil";
 
 /* No comment provided by engineer. */

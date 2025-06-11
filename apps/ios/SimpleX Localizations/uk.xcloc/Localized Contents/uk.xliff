@@ -192,6 +192,7 @@
       </trans-unit>
       <trans-unit id="%d seconds(s)" xml:space="preserve">
         <source>%d seconds(s)</source>
+        <target>%d секунд(и)</target>
         <note>delete after time</note>
       </trans-unit>
       <trans-unit id="%d skipped message(s)" xml:space="preserve">
@@ -465,6 +466,7 @@ time interval</note>
       </trans-unit>
       <trans-unit id="1 year" xml:space="preserve">
         <source>1 year</source>
+        <target>1 рік</target>
         <note>delete after time</note>
       </trans-unit>
       <trans-unit id="1-time link" xml:space="preserve">
@@ -565,10 +567,12 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Accept as member" xml:space="preserve">
         <source>Accept as member</source>
+        <target>Прийняти як учасника</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Accept as observer" xml:space="preserve">
         <source>Accept as observer</source>
+        <target>Прийняти як спостерігача</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Accept conditions" xml:space="preserve">
@@ -594,6 +598,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Accept member" xml:space="preserve">
         <source>Accept member</source>
+        <target>Прийняти учасника</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Accepted conditions" xml:space="preserve">
@@ -613,6 +618,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Active" xml:space="preserve">
         <source>Active</source>
+        <target>Активний</target>
         <note>token status text</note>
       </trans-unit>
       <trans-unit id="Active connections" xml:space="preserve">
@@ -632,6 +638,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Add list" xml:space="preserve">
         <source>Add list</source>
+        <target>Додати список</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add profile" xml:space="preserve">
@@ -649,6 +656,10 @@ swipe action</note>
         <target>Додайте сервери, відсканувавши QR-код.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Add short link" xml:space="preserve">
+        <source>Add short link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Add team members" xml:space="preserve">
         <source>Add team members</source>
         <target>Додайте учасників команди</target>
@@ -661,6 +672,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Add to list" xml:space="preserve">
         <source>Add to list</source>
+        <target>Додати до списку</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add welcome message" xml:space="preserve">
@@ -740,6 +752,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="All" xml:space="preserve">
         <source>All</source>
+        <target>Всі</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All app data is deleted." xml:space="preserve">
@@ -754,6 +767,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="All chats will be removed from the list %@, and the list deleted." xml:space="preserve">
         <source>All chats will be removed from the list %@, and the list deleted.</source>
+        <target>Всі чати будуть видалені з списку %@, і список буде видалений.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="All data is erased when it is entered." xml:space="preserve">
@@ -798,10 +812,12 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="All reports will be archived for you." xml:space="preserve">
         <source>All reports will be archived for you.</source>
+        <target>Всі скарги будуть заархівовані для вас.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All servers" xml:space="preserve">
         <source>All servers</source>
+        <target>Всі сервери</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
@@ -881,6 +897,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Allow to report messsages to moderators." xml:space="preserve">
         <source>Allow to report messsages to moderators.</source>
+        <target>Дозволити надсилати скаргу на повідомлення модераторам.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to send SimpleX links." xml:space="preserve">
@@ -941,12 +958,12 @@ swipe action</note>
       <trans-unit id="Already connecting!" xml:space="preserve">
         <source>Already connecting!</source>
         <target>Вже підключаємось!</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat sheet title</note>
       </trans-unit>
       <trans-unit id="Already joining the group!" xml:space="preserve">
         <source>Already joining the group!</source>
         <target>Вже приєднуємося до групи!</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat sheet title</note>
       </trans-unit>
       <trans-unit id="Always use private routing." xml:space="preserve">
         <source>Always use private routing.</source>
@@ -965,6 +982,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Another reason" xml:space="preserve">
         <source>Another reason</source>
+        <target>Інша причина</target>
         <note>report reason</note>
       </trans-unit>
       <trans-unit id="Answer call" xml:space="preserve">
@@ -994,6 +1012,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="App group:" xml:space="preserve">
         <source>App group:</source>
+        <target>Група застосунків:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App icon" xml:space="preserve">
@@ -1043,14 +1062,17 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Archive" xml:space="preserve">
         <source>Archive</source>
+        <target>Архівувати</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Archive %lld reports?" xml:space="preserve">
         <source>Archive %lld reports?</source>
+        <target>Архівувати %lld скарг?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Archive all reports?" xml:space="preserve">
         <source>Archive all reports?</source>
+        <target>Архівувати всі скарги?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Archive and upload" xml:space="preserve">
@@ -1065,14 +1087,17 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Archive report" xml:space="preserve">
         <source>Archive report</source>
+        <target>Архівувати скаргу</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Archive report?" xml:space="preserve">
         <source>Archive report?</source>
+        <target>Архівувати скаргу?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Archive reports" xml:space="preserve">
         <source>Archive reports</source>
+        <target>Архівувати скарги</target>
         <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Archived contacts" xml:space="preserve">
@@ -1187,6 +1212,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Better groups performance" xml:space="preserve">
         <source>Better groups performance</source>
+        <target>Краща продуктивність груп</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better message dates." xml:space="preserve">
@@ -1211,6 +1237,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Better privacy and security" xml:space="preserve">
         <source>Better privacy and security</source>
+        <target>Краща конфіденційність і безпека</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better security ✅" xml:space="preserve">
@@ -1315,6 +1342,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Businesses" xml:space="preserve">
         <source>Businesses</source>
+        <target>Бізнеси</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
@@ -1326,6 +1354,9 @@ swipe action</note>
         <source>By using SimpleX Chat you agree to:
 - send only legal content in public groups.
 - respect other users – no spam.</source>
+        <target>Використовуючи SimpleX Chat, ви погоджуєтеся:
+- надсилати лише легальний контент у публічних групах.
+- поважати інших користувачів - без спаму.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve">
@@ -1377,7 +1408,8 @@ swipe action</note>
         <source>Cancel</source>
         <target>Скасувати</target>
         <note>alert action
-alert button</note>
+alert button
+new chat action</note>
       </trans-unit>
       <trans-unit id="Cancel migration" xml:space="preserve">
         <source>Cancel migration</source>
@@ -1416,6 +1448,7 @@ alert button</note>
       </trans-unit>
       <trans-unit id="Change automatic message deletion?" xml:space="preserve">
         <source>Change automatic message deletion?</source>
+        <target>Змінити автоматичне видалення повідомлень?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Change chat profiles" xml:space="preserve">
@@ -1440,7 +1473,7 @@ alert button</note>
       </trans-unit>
       <trans-unit id="Change passcode" xml:space="preserve">
         <source>Change passcode</source>
-        <target>Змінити пароль</target>
+        <target>Змінити код доступу</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Change receiving address" xml:space="preserve">
@@ -1482,7 +1515,7 @@ set passcode view</note>
       <trans-unit id="Chat already exists!" xml:space="preserve">
         <source>Chat already exists!</source>
         <target>Чат вже існує!</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat sheet title</note>
       </trans-unit>
       <trans-unit id="Chat colors" xml:space="preserve">
         <source>Chat colors</source>
@@ -1571,10 +1604,12 @@ set passcode view</note>
       </trans-unit>
       <trans-unit id="Chat with admins" xml:space="preserve">
         <source>Chat with admins</source>
+        <target>Чат з адміністраторами</target>
         <note>chat toolbar</note>
       </trans-unit>
       <trans-unit id="Chat with member" xml:space="preserve">
         <source>Chat with member</source>
+        <target>Чат з учасником</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
@@ -1584,6 +1619,7 @@ set passcode view</note>
       </trans-unit>
       <trans-unit id="Chats with members" xml:space="preserve">
         <source>Chats with members</source>
+        <target>Чати з учасниками</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Check messages every 20 min." xml:space="preserve">
@@ -1653,10 +1689,12 @@ set passcode view</note>
       </trans-unit>
       <trans-unit id="Clear group?" xml:space="preserve">
         <source>Clear group?</source>
+        <target>Очистити групу?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Clear or delete group?" xml:space="preserve">
         <source>Clear or delete group?</source>
+        <target>Очистити чи видалити групу?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Clear private notes?" xml:space="preserve">
@@ -1681,6 +1719,7 @@ set passcode view</note>
       </trans-unit>
       <trans-unit id="Community guidelines violation" xml:space="preserve">
         <source>Community guidelines violation</source>
+        <target>Порушення правил спільноти</target>
         <note>report reason</note>
       </trans-unit>
       <trans-unit id="Compare file" xml:space="preserve">
@@ -1740,6 +1779,7 @@ set passcode view</note>
       </trans-unit>
       <trans-unit id="Configure server operators" xml:space="preserve">
         <source>Configure server operators</source>
+        <target>Налаштувати операторів сервера</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm" xml:space="preserve">
@@ -1794,6 +1834,7 @@ set passcode view</note>
       </trans-unit>
       <trans-unit id="Confirmed" xml:space="preserve">
         <source>Confirmed</source>
+        <target>Підтверджений</target>
         <note>token status text</note>
       </trans-unit>
       <trans-unit id="Connect" xml:space="preserve">
@@ -1806,11 +1847,6 @@ set passcode view</note>
         <target>Підключення автоматично</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect incognito" xml:space="preserve">
-        <source>Connect incognito</source>
-        <target>Підключайтеся інкогніто</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Connect to desktop" xml:space="preserve">
         <source>Connect to desktop</source>
         <target>Підключення до комп'ютера</target>
@@ -1821,44 +1857,39 @@ set passcode view</note>
         <target>Швидше спілкуйтеся з друзями.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect to yourself?" xml:space="preserve">
-        <source>Connect to yourself?</source>
-        <target>З'єднатися з самим собою?</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Connect to yourself?&#10;This is your own SimpleX address!" xml:space="preserve">
         <source>Connect to yourself?
 This is your own SimpleX address!</source>
         <target>З'єднатися з самим собою? 
 Це ваша власна SimpleX-адреса!</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat sheet title</note>
       </trans-unit>
       <trans-unit id="Connect to yourself?&#10;This is your own one-time link!" xml:space="preserve">
         <source>Connect to yourself?
 This is your own one-time link!</source>
         <target>Підключитися до себе? 
 Це ваше власне одноразове посилання!</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat sheet title</note>
       </trans-unit>
       <trans-unit id="Connect via contact address" xml:space="preserve">
         <source>Connect via contact address</source>
         <target>Підключіться за контактною адресою</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat sheet title</note>
       </trans-unit>
       <trans-unit id="Connect via link" xml:space="preserve">
         <source>Connect via link</source>
         <target>Підключіться за посиланням</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat sheet title</note>
       </trans-unit>
       <trans-unit id="Connect via one-time link" xml:space="preserve">
         <source>Connect via one-time link</source>
         <target>Під'єднатися за одноразовим посиланням</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat sheet title</note>
       </trans-unit>
       <trans-unit id="Connect with %@" xml:space="preserve">
         <source>Connect with %@</source>
         <target>Підключитися до %@</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat action</note>
       </trans-unit>
       <trans-unit id="Connected" xml:space="preserve">
         <source>Connected</source>
@@ -1917,6 +1948,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Connection blocked" xml:space="preserve">
         <source>Connection blocked</source>
+        <target>Підключення заблоковано</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection error" xml:space="preserve">
@@ -1932,10 +1964,13 @@ This is your own one-time link!</source>
       <trans-unit id="Connection is blocked by server operator:&#10;%@" xml:space="preserve">
         <source>Connection is blocked by server operator:
 %@</source>
+        <target>Підключення заблоковано оператором сервера:
+%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection not ready." xml:space="preserve">
         <source>Connection not ready.</source>
+        <target>Підключення не готове.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection notifications" xml:space="preserve">
@@ -1950,6 +1985,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Connection requires encryption renegotiation." xml:space="preserve">
         <source>Connection requires encryption renegotiation.</source>
+        <target>Підключення вимагає повторного узгодження шифрування.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection security" xml:space="preserve">
@@ -2034,6 +2070,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Content violates conditions of use" xml:space="preserve">
         <source>Content violates conditions of use</source>
+        <target>Вміст порушує умови використання</target>
         <note>blocking reason</note>
       </trans-unit>
       <trans-unit id="Continue" xml:space="preserve">
@@ -2113,6 +2150,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Create list" xml:space="preserve">
         <source>Create list</source>
+        <target>Створити список</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve">
@@ -2129,11 +2167,6 @@ This is your own one-time link!</source>
         <source>Create queue</source>
         <target>Створити чергу</target>
         <note>server test step</note>
-      </trans-unit>
-      <trans-unit id="Create secret group" xml:space="preserve">
-        <source>Create secret group</source>
-        <target>Створити секретну групу</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
         <source>Create your profile</source>
@@ -2376,6 +2409,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Delete chat messages from your device." xml:space="preserve">
         <source>Delete chat messages from your device.</source>
+        <target>Видалити повідомлення чату з вашого пристрою.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete chat profile" xml:space="preserve">
@@ -2390,6 +2424,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Delete chat with member?" xml:space="preserve">
         <source>Delete chat with member?</source>
+        <target>Видалити чат з учасником?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Delete chat?" xml:space="preserve">
@@ -2474,6 +2509,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Delete list?" xml:space="preserve">
         <source>Delete list?</source>
+        <target>Видалити список?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Delete member message?" xml:space="preserve">
@@ -2528,6 +2564,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Delete report" xml:space="preserve">
         <source>Delete report</source>
+        <target>Видалити скаргу</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete up to 20 messages at once." xml:space="preserve">
@@ -2692,10 +2729,12 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Disable automatic message deletion?" xml:space="preserve">
         <source>Disable automatic message deletion?</source>
+        <target>Вимкнути автоматичне видалення повідомлень?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Disable delete messages" xml:space="preserve">
         <source>Disable delete messages</source>
+        <target>Вимкнути видалення повідомлень</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Disable for all" xml:space="preserve">
@@ -2790,6 +2829,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Documents:" xml:space="preserve">
         <source>Documents:</source>
+        <target>Документи:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Don't create address" xml:space="preserve">
@@ -2804,6 +2844,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Don't miss important messages." xml:space="preserve">
         <source>Don't miss important messages.</source>
+        <target>Не пропускайте важливі повідомлення.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Don't show again" xml:space="preserve">
@@ -2813,6 +2854,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Done" xml:space="preserve">
         <source>Done</source>
+        <target>Готово</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Downgrade and open chat" xml:space="preserve">
@@ -2903,6 +2945,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Enable Flux in Network &amp; servers settings for better metadata privacy." xml:space="preserve">
         <source>Enable Flux in Network &amp; servers settings for better metadata privacy.</source>
+        <target>Увімкніть Flux у налаштуваннях мережі та серверів для кращої конфіденційності метаданих.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
@@ -3047,6 +3090,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Encryption renegotiation in progress." xml:space="preserve">
         <source>Encryption renegotiation in progress.</source>
+        <target>Виконується повторне узгодження шифрування.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter Passcode" xml:space="preserve">
@@ -3126,6 +3170,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error accepting member" xml:space="preserve">
         <source>Error accepting member</source>
+        <target>Помилка при прийомі учасника</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
@@ -3137,6 +3182,10 @@ chat item action</note>
         <source>Error adding server</source>
         <target>Помилка додавання сервера</target>
         <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Error adding short link" xml:space="preserve">
+        <source>Error adding short link</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error changing address" xml:space="preserve">
         <source>Error changing address</source>
@@ -3156,7 +3205,7 @@ chat item action</note>
       <trans-unit id="Error changing setting" xml:space="preserve">
         <source>Error changing setting</source>
         <target>Помилка зміни налаштування</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error changing to incognito!" xml:space="preserve">
         <source>Error changing to incognito!</source>
@@ -3165,6 +3214,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error checking token status" xml:space="preserve">
         <source>Error checking token status</source>
+        <target>Помилка перевірки статусу токена</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error connecting to forwarding server %@. Please try later." xml:space="preserve">
@@ -3189,6 +3239,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error creating list" xml:space="preserve">
         <source>Error creating list</source>
+        <target>Помилка при створенні списку</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error creating member contact" xml:space="preserve">
@@ -3208,6 +3259,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error creating report" xml:space="preserve">
         <source>Error creating report</source>
+        <target>Помилка при створенні скарги</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error decrypting file" xml:space="preserve">
@@ -3218,10 +3270,11 @@ chat item action</note>
       <trans-unit id="Error deleting chat database" xml:space="preserve">
         <source>Error deleting chat database</source>
         <target>Помилка видалення бази даних чату</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error deleting chat with member" xml:space="preserve">
         <source>Error deleting chat with member</source>
+        <target>Помилка при видаленні чату з учасником</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error deleting chat!" xml:space="preserve">
@@ -3237,12 +3290,12 @@ chat item action</note>
       <trans-unit id="Error deleting database" xml:space="preserve">
         <source>Error deleting database</source>
         <target>Помилка видалення бази даних</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error deleting old database" xml:space="preserve">
         <source>Error deleting old database</source>
         <target>Помилка видалення старої бази даних</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error deleting token" xml:space="preserve">
         <source>Error deleting token</source>
@@ -3277,7 +3330,7 @@ chat item action</note>
       <trans-unit id="Error exporting chat database" xml:space="preserve">
         <source>Error exporting chat database</source>
         <target>Помилка експорту бази даних чату</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error exporting theme: %@" xml:space="preserve">
         <source>Error exporting theme: %@</source>
@@ -3287,7 +3340,7 @@ chat item action</note>
       <trans-unit id="Error importing chat database" xml:space="preserve">
         <source>Error importing chat database</source>
         <target>Помилка імпорту бази даних чату</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error joining group" xml:space="preserve">
         <source>Error joining group</source>
@@ -3326,6 +3379,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error registering for notifications" xml:space="preserve">
         <source>Error registering for notifications</source>
+        <target>Помилка під час реєстрації для отримання сповіщень</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error removing member" xml:space="preserve">
@@ -3335,6 +3389,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error reordering lists" xml:space="preserve">
         <source>Error reordering lists</source>
+        <target>Помилка при переупорядкуванні списків</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error resetting statistics" xml:space="preserve">
@@ -3349,6 +3404,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error saving chat list" xml:space="preserve">
         <source>Error saving chat list</source>
+        <target>Помилка під час збереження списку чатів</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error saving group profile" xml:space="preserve">
@@ -3433,6 +3489,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error testing server connection" xml:space="preserve">
         <source>Error testing server connection</source>
+        <target>Помилка під час перевірки з'єднання з сервером</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error updating group link" xml:space="preserve">
@@ -3519,6 +3576,7 @@ snd error text</note>
       </trans-unit>
       <trans-unit id="Expired" xml:space="preserve">
         <source>Expired</source>
+        <target>Термін дії закінчився</target>
         <note>token status text</note>
       </trans-unit>
       <trans-unit id="Export database" xml:space="preserve">
@@ -3563,6 +3621,7 @@ snd error text</note>
       </trans-unit>
       <trans-unit id="Faster deletion of groups." xml:space="preserve">
         <source>Faster deletion of groups.</source>
+        <target>Швидше видалення груп.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Faster joining and more reliable messages." xml:space="preserve">
@@ -3572,6 +3631,7 @@ snd error text</note>
       </trans-unit>
       <trans-unit id="Faster sending messages." xml:space="preserve">
         <source>Faster sending messages.</source>
+        <target>Швидше надсилання повідомлень.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Favorite" xml:space="preserve">
@@ -3581,6 +3641,7 @@ snd error text</note>
       </trans-unit>
       <trans-unit id="Favorites" xml:space="preserve">
         <source>Favorites</source>
+        <target>Вибране</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File error" xml:space="preserve">
@@ -3727,6 +3788,7 @@ snd error text</note>
       </trans-unit>
       <trans-unit id="For all moderators" xml:space="preserve">
         <source>For all moderators</source>
+        <target>Для всіх модераторів</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For chat profile %@:" xml:space="preserve">
@@ -3746,6 +3808,7 @@ snd error text</note>
       </trans-unit>
       <trans-unit id="For me" xml:space="preserve">
         <source>For me</source>
+        <target>Для мене</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For private routing" xml:space="preserve">
@@ -3874,6 +3937,7 @@ Error: %2$@</source>
       </trans-unit>
       <trans-unit id="Get notified when mentioned." xml:space="preserve">
         <source>Get notified when mentioned.</source>
+        <target>Отримуйте сповіщення, коли вас згадують.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Good afternoon!" xml:space="preserve">
@@ -3899,7 +3963,7 @@ Error: %2$@</source>
       <trans-unit id="Group already exists!" xml:space="preserve">
         <source>Group already exists!</source>
         <target>Група вже існує!</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat sheet title</note>
       </trans-unit>
       <trans-unit id="Group display name" xml:space="preserve">
         <source>Group display name</source>
@@ -3966,6 +4030,10 @@ Error: %2$@</source>
         <target>Профіль групи зберігається на пристроях учасників, а не на серверах.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Group profile was changed. If you save it, the updated profile will be sent to group members." xml:space="preserve">
+        <source>Group profile was changed. If you save it, the updated profile will be sent to group members.</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Group welcome message" xml:space="preserve">
         <source>Group welcome message</source>
         <target>Привітальне повідомлення групи</target>
@@ -3983,6 +4051,7 @@ Error: %2$@</source>
       </trans-unit>
       <trans-unit id="Groups" xml:space="preserve">
         <source>Groups</source>
+        <target>Групи</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Help" xml:space="preserve">
@@ -3992,6 +4061,7 @@ Error: %2$@</source>
       </trans-unit>
       <trans-unit id="Help admins moderating their groups." xml:space="preserve">
         <source>Help admins moderating their groups.</source>
+        <target>Допоможіть адміністраторам модерувати їхні групи.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Hidden" xml:space="preserve">
@@ -4056,6 +4126,7 @@ Error: %2$@</source>
       </trans-unit>
       <trans-unit id="How it works" xml:space="preserve">
         <source>How it works</source>
+        <target>Як це працює</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="How to" xml:space="preserve">
@@ -4202,10 +4273,12 @@ More improvements are coming soon!</source>
       </trans-unit>
       <trans-unit id="Inappropriate content" xml:space="preserve">
         <source>Inappropriate content</source>
+        <target>Невідповідний вміст</target>
         <note>report reason</note>
       </trans-unit>
       <trans-unit id="Inappropriate profile" xml:space="preserve">
         <source>Inappropriate profile</source>
+        <target>Невідповідний профіль</target>
         <note>report reason</note>
       </trans-unit>
       <trans-unit id="Incognito" xml:space="preserve">
@@ -4302,22 +4375,27 @@ More improvements are coming soon!</source>
       </trans-unit>
       <trans-unit id="Invalid" xml:space="preserve">
         <source>Invalid</source>
+        <target>Недійсний</target>
         <note>token status text</note>
       </trans-unit>
       <trans-unit id="Invalid (bad token)" xml:space="preserve">
         <source>Invalid (bad token)</source>
+        <target>Недійсний (неправильний токен)</target>
         <note>token status text</note>
       </trans-unit>
       <trans-unit id="Invalid (expired)" xml:space="preserve">
         <source>Invalid (expired)</source>
+        <target>Недійсний (термін дії закінчився)</target>
         <note>token status text</note>
       </trans-unit>
       <trans-unit id="Invalid (unregistered)" xml:space="preserve">
         <source>Invalid (unregistered)</source>
+        <target>Недійсний (незареєстрований)</target>
         <note>token status text</note>
       </trans-unit>
       <trans-unit id="Invalid (wrong topic)" xml:space="preserve">
         <source>Invalid (wrong topic)</source>
+        <target>Недійсний (неправильна тема)</target>
         <note>token status text</note>
       </trans-unit>
       <trans-unit id="Invalid QR code" xml:space="preserve">
@@ -4454,16 +4532,11 @@ More improvements are coming soon!</source>
       <trans-unit id="Join group" xml:space="preserve">
         <source>Join group</source>
         <target>Приєднуйтесь до групи</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat sheet title</note>
       </trans-unit>
       <trans-unit id="Join group conversations" xml:space="preserve">
         <source>Join group conversations</source>
         <target>Приєднуйтесь до групових розмов</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Join group?" xml:space="preserve">
-        <source>Join group?</source>
-        <target>Приєднатися до групи?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Join incognito" xml:space="preserve">
@@ -4471,17 +4544,12 @@ More improvements are coming soon!</source>
         <target>Приєднуйтесь інкогніто</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Join with current profile" xml:space="preserve">
-        <source>Join with current profile</source>
-        <target>Приєднатися з поточним профілем</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Join your group?&#10;This is your link for group %@!" xml:space="preserve">
         <source>Join your group?
 This is your link for group %@!</source>
         <target>Приєднатися до групи?
 Це ваше посилання на групу %@!</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat action</note>
       </trans-unit>
       <trans-unit id="Joining group" xml:space="preserve">
         <source>Joining group</source>
@@ -4595,10 +4663,12 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="List" xml:space="preserve">
         <source>List</source>
+        <target>Список</target>
         <note>swipe action</note>
       </trans-unit>
       <trans-unit id="List name and emoji should be different for all lists." xml:space="preserve">
         <source>List name and emoji should be different for all lists.</source>
+        <target>Назва списку та емодзі повинні бути різними для всіх списків.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="List name..." xml:space="preserve">
@@ -5378,7 +5448,8 @@ This is your link for group %@!</source>
         <source>Ok</source>
         <target>Гаразд</target>
         <note>alert action
-alert button</note>
+alert button
+new chat action</note>
       </trans-unit>
       <trans-unit id="Old database" xml:space="preserve">
         <source>Old database</source>
@@ -5530,7 +5601,7 @@ Requires compatible VPN.</source>
       <trans-unit id="Open group" xml:space="preserve">
         <source>Open group</source>
         <target>Відкрита група</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat action</note>
       </trans-unit>
       <trans-unit id="Open link?" xml:space="preserve">
         <source>Open link?</source>
@@ -6292,11 +6363,6 @@ swipe action</note>
         <target>Переузгодьте шифрування?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Repeat connection request?" xml:space="preserve">
-        <source>Repeat connection request?</source>
-        <target>Повторити запит на підключення?</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Repeat download" xml:space="preserve">
         <source>Repeat download</source>
         <target>Повторити завантаження</target>
@@ -6305,11 +6371,6 @@ swipe action</note>
       <trans-unit id="Repeat import" xml:space="preserve">
         <source>Repeat import</source>
         <target>Повторний імпорт</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Repeat join request?" xml:space="preserve">
-        <source>Repeat join request?</source>
-        <target>Повторити запит на приєднання?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Repeat upload" xml:space="preserve">
@@ -6520,6 +6581,10 @@ chat item action</note>
         <target>Зберегти (і повідомити контактам)</target>
         <note>alert button</note>
       </trans-unit>
+      <trans-unit id="Save (and notify members)" xml:space="preserve">
+        <source>Save (and notify members)</source>
+        <note>alert button</note>
+      </trans-unit>
       <trans-unit id="Save admission settings?" xml:space="preserve">
         <source>Save admission settings?</source>
         <note>alert title</note>
@@ -6548,6 +6613,10 @@ chat item action</note>
         <source>Save group profile</source>
         <target>Зберегти профіль групи</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Save group profile?" xml:space="preserve">
+        <source>Save group profile?</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Save list" xml:space="preserve">
         <source>Save list</source>
@@ -7828,16 +7897,6 @@ It can happen because of some bug or when the connection is compromised.</source
         <target>Цієї групи більше не існує.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This is your own SimpleX address!" xml:space="preserve">
-        <source>This is your own SimpleX address!</source>
-        <target>Це ваша власна SimpleX-адреса!</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="This is your own one-time link!" xml:space="preserve">
-        <source>This is your own one-time link!</source>
-        <target>Це ваше власне одноразове посилання!</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." xml:space="preserve">
         <source>This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.</source>
         <note>No comment provided by engineer.</note>
@@ -8248,7 +8307,7 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Use current profile" xml:space="preserve">
         <source>Use current profile</source>
         <target>Використовувати поточний профіль</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat action</note>
       </trans-unit>
       <trans-unit id="Use for files" xml:space="preserve">
         <source>Use for files</source>
@@ -8278,7 +8337,7 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Use new incognito profile" xml:space="preserve">
         <source>Use new incognito profile</source>
         <target>Використовуйте новий профіль інкогніто</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat action</note>
       </trans-unit>
       <trans-unit id="Use only local notifications?" xml:space="preserve">
         <source>Use only local notifications?</source>
@@ -8636,12 +8695,12 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="You are already connecting to %@." xml:space="preserve">
         <source>You are already connecting to %@.</source>
         <target>Ви вже з'єднані з %@.</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat sheet message</note>
       </trans-unit>
       <trans-unit id="You are already connecting via this one-time link!" xml:space="preserve">
         <source>You are already connecting via this one-time link!</source>
         <target>Ви вже підключаєтеся до %@.Ви вже підключаєтеся за цим одноразовим посиланням!</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat sheet message</note>
       </trans-unit>
       <trans-unit id="You are already in group %@." xml:space="preserve">
         <source>You are already in group %@.</source>
@@ -8651,24 +8710,19 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="You are already joining the group %@." xml:space="preserve">
         <source>You are already joining the group %@.</source>
         <target>Ви вже приєдналися до групи %@.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You are already joining the group via this link!" xml:space="preserve">
-        <source>You are already joining the group via this link!</source>
-        <target>Ви вже приєдналися до групи за цим посиланням!</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat sheet message</note>
       </trans-unit>
       <trans-unit id="You are already joining the group via this link." xml:space="preserve">
         <source>You are already joining the group via this link.</source>
         <target>Ви вже приєдналися до групи за цим посиланням.</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat sheet message</note>
       </trans-unit>
       <trans-unit id="You are already joining the group!&#10;Repeat join request?" xml:space="preserve">
         <source>You are already joining the group!
 Repeat join request?</source>
         <target>Ви вже приєдналися до групи!
 Повторити запит на приєднання?</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat sheet title</note>
       </trans-unit>
       <trans-unit id="You are connected to the server used to receive messages from this contact." xml:space="preserve">
         <source>You are connected to the server used to receive messages from this contact.</source>
@@ -8804,17 +8858,12 @@ Repeat join request?</source>
         <target>Ви вирішуєте, хто може під'єднатися.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You have already requested connection via this address!" xml:space="preserve">
-        <source>You have already requested connection via this address!</source>
-        <target>Ви вже надсилали запит на підключення за цією адресою!</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="You have already requested connection!&#10;Repeat connection request?" xml:space="preserve">
         <source>You have already requested connection!
 Repeat connection request?</source>
         <target>Ви вже надіслали запит на підключення!
 Повторити запит на підключення?</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat sheet title</note>
       </trans-unit>
       <trans-unit id="You have to enter passphrase every time the app starts - it is not stored on the device." xml:space="preserve">
         <source>You have to enter passphrase every time the app starts - it is not stored on the device.</source>
@@ -8898,11 +8947,6 @@ Repeat connection request?</source>
       <trans-unit id="You will be required to authenticate when you start or resume the app after 30 seconds in background." xml:space="preserve">
         <source>You will be required to authenticate when you start or resume the app after 30 seconds in background.</source>
         <target>Вам потрібно буде пройти автентифікацію при запуску або відновленні програми після 30 секунд роботи у фоновому режимі.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You will connect to all group members." xml:space="preserve">
-        <source>You will connect to all group members.</source>
-        <target>Ви з'єднаєтеся з усіма учасниками групи.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will still receive calls and notifications from muted profiles when they are active." xml:space="preserve">

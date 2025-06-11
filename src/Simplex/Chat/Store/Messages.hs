@@ -177,7 +177,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Util (eitherToMaybe)
 import UnliftIO.STM
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (FromRow, Only (..), Query, ToRow, (:.) (..))
+import Database.PostgreSQL.Simple (FromRow, In (..), Only (..), Query, ToRow, (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
 import Database.SQLite.Simple (FromRow, Only (..), Query, ToRow, (:.) (..))
@@ -2676,8 +2676,14 @@ updateGroupChatItemModerated db User {userId} GroupInfo {groupId} ci m@GroupMemb
 updateMemberCIsModerated :: MsgDirectionI d => DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> SMsgDirection d -> UTCTime -> IO ()
 updateMemberCIsModerated db User {userId} GroupInfo {groupId, membership} member byGroupMember md deletedTs = do
   itemIds <- updateCIs =<< getCurrentTime
+#if defined(dbPostgres)
+  let inItemIds = Only $ In (map fromOnly itemIds)
+  DB.execute db "DELETE FROM messages WHERE message_id IN (SELECT message_id FROM chat_item_messages WHERE chat_item_id IN ?)" inItemIds
+  DB.execute db "DELETE FROM chat_item_versions WHERE chat_item_id IN ?" inItemIds
+#else
   DB.executeMany db deleteChatItemMessagesQuery itemIds
   DB.executeMany db "DELETE FROM chat_item_versions WHERE chat_item_id = ?" itemIds
+#endif
   where
     memId = groupMemberId' member
     updateQuery =
@@ -3200,7 +3206,7 @@ getGroupCIMentions db ciId =
         SELECT r.display_name, r.member_id, m.group_member_id, m.member_role, p.display_name, p.local_alias
         FROM chat_item_mentions r
         LEFT JOIN group_members m ON r.group_id = m.group_id AND r.member_id = m.member_id
-        LEFT JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id) 
+        LEFT JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
         WHERE r.chat_item_id = ?
       |]
       (Only ciId)

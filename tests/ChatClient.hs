@@ -529,7 +529,7 @@ smpServerCfg =
       pendingENDInterval = 500000,
       ntfDeliveryInterval = 200000,
       smpServerVRange = supportedServerSMPRelayVRange,
-      transportConfig = mkTransportServerConfig True $ Just alpnSupportedSMPHandshakes,
+      transportConfig = mkTransportServerConfig True (Just alpnSupportedSMPHandshakes) True,
       smpHandshakeTimeout = 1000000,
       controlPort = Nothing,
       smpAgentCfg = defaultSMPClientAgentConfig,
@@ -582,7 +582,7 @@ xftpServerConfig =
       serverStatsLogFile = "tests/tmp/xftp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
       controlPort = Nothing,
-      transportConfig = mkTransportServerConfig True $ Just alpnSupportedXFTPhandshakes,
+      transportConfig = mkTransportServerConfig True (Just alpnSupportedXFTPhandshakes) False,
       responseDelay = 0
     }
 

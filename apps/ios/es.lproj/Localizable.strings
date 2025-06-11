@@ -345,6 +345,12 @@ accept incoming call via notification
 swipe action */
 "Accept" = "Aceptar";
 
+/* alert action */
+"Accept as member" = "Aceptar como miembro";
+
+/* alert action */
+"Accept as observer" = "Aceptar como observador";
+
 /* No comment provided by engineer. */
 "Accept conditions" = "Aceptar condiciones";
 
@@ -358,6 +364,12 @@ swipe action */
 swipe action */
 "Accept incognito" = "Aceptar incógnito";
 
+/* alert title */
+"Accept member" = "Aceptar miembro";
+
+/* rcv group event chat item */
+"accepted %@" = "%@ aceptado";
+
 /* call status */
 "accepted call" = "llamada aceptada";
 
@@ -366,6 +378,9 @@ swipe action */
 
 /* chat list item title */
 "accepted invitation" = "invitación aceptada";
+
+/* rcv group event chat item */
+"accepted you" = "te ha aceptado";
 
 /* No comment provided by engineer. */
 "Acknowledged" = "Confirmaciones";
@@ -462,6 +477,9 @@ swipe action */
 
 /* chat item text */
 "agreeing encryption…" = "acordando cifrado…";
+
+/* member criteria value */
+"all" = "todos";
 
 /* No comment provided by engineer. */
 "All" = "Todo";
@@ -589,10 +607,10 @@ swipe action */
 /* No comment provided by engineer. */
 "Already connected?" = "¿Ya está conectado?";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Already connecting!" = "¡Ya en proceso de conexión!";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Already joining the group!" = "¡Ya en proceso de unirte al grupo!";
 
 /* pref value */
@@ -905,8 +923,12 @@ marked deleted chat item preview text */
 /* No comment provided by engineer. */
 "Can't message member" = "No se pueden enviar mensajes al miembro";
 
+/* No comment provided by engineer. */
+"can't send messages" = "no se pueden enviar mensajes";
+
 /* alert action
-alert button */
+alert button
+new chat action */
 "Cancel" = "Cancelar";
 
 /* No comment provided by engineer. */
@@ -988,7 +1010,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Chat already exists" = "El chat ya existe";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Chat already exists!" = "¡El chat ya existe!";
 
 /* No comment provided by engineer. */
@@ -1042,8 +1064,17 @@ set passcode view */
 /* No comment provided by engineer. */
 "Chat will be deleted for you - this cannot be undone!" = "El chat será eliminado para tí. ¡No puede deshacerse!";
 
+/* chat toolbar */
+"Chat with admins" = "Chat con administradores";
+
+/* No comment provided by engineer. */
+"Chat with member" = "Chat con miembro";
+
 /* No comment provided by engineer. */
 "Chats" = "Chats";
+
+/* No comment provided by engineer. */
+"Chats with members" = "Chats con miembros";
 
 /* No comment provided by engineer. */
 "Check messages every 20 min." = "Comprobar mensajes cada 20 min.";
@@ -1187,9 +1218,6 @@ set passcode view */
 "Connect automatically" = "Conectar automáticamente";
 
 /* No comment provided by engineer. */
-"Connect incognito" = "Conectar incognito";
-
-/* No comment provided by engineer. */
 "Connect to desktop" = "Conectar con ordenador";
 
 /* No comment provided by engineer. */
@@ -1198,25 +1226,22 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connect to your friends faster." = "Conecta más rápido con tus amigos.";
 
-/* No comment provided by engineer. */
-"Connect to yourself?" = "¿Conectarte a tí mismo?";
-
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect to yourself?\nThis is your own one-time link!" = "¿Conectarte a tí mismo?\n¡Este es tu propio enlace de un solo uso!";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect to yourself?\nThis is your own SimpleX address!" = "¿Conectarte a tí mismo?\n¡Esta es tu propia dirección SimpleX!";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via contact address" = "Conectar mediante dirección de contacto";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via link" = "Conectar mediante enlace";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via one-time link" = "Conectar mediante enlace de un sólo uso";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Connect with %@" = "Conectar con %@";
 
 /* No comment provided by engineer. */
@@ -1334,7 +1359,13 @@ set passcode view */
 "Contact already exists" = "El contácto ya existe";
 
 /* No comment provided by engineer. */
+"contact deleted" = "contacto eliminado";
+
+/* No comment provided by engineer. */
 "Contact deleted!" = "¡Contacto eliminado!";
+
+/* No comment provided by engineer. */
+"contact disabled" = "contacto desactivado";
 
 /* No comment provided by engineer. */
 "contact has e2e encryption" = "el contacto dispone de cifrado de extremo a extremo";
@@ -1353,6 +1384,9 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Contact name" = "Contacto";
+
+/* No comment provided by engineer. */
+"contact not ready" = "el contacto no está listo";
 
 /* No comment provided by engineer. */
 "Contact preferences" = "Preferencias de contacto";
@@ -1422,9 +1456,6 @@ set passcode view */
 
 /* server test step */
 "Create queue" = "Crear cola";
-
-/* No comment provided by engineer. */
-"Create secret group" = "Crea grupo secreto";
 
 /* No comment provided by engineer. */
 "Create SimpleX address" = "Crear dirección SimpleX";
@@ -1601,6 +1632,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Delete chat profile?" = "¿Eliminar perfil?";
+
+/* alert title */
+"Delete chat with member?" = "¿Eliminar el chat con el miembro?";
 
 /* No comment provided by engineer. */
 "Delete chat?" = "¿Eliminar chat?";
@@ -2116,6 +2150,9 @@ chat item action */
 /* No comment provided by engineer. */
 "Error accepting contact request" = "Error al aceptar solicitud del contacto";
 
+/* alert title */
+"Error accepting member" = "Error al aceptar el miembro";
+
 /* No comment provided by engineer. */
 "Error adding member(s)" = "Error al añadir miembro(s)";
 
@@ -2131,7 +2168,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error changing role" = "Error al cambiar rol";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error changing setting" = "Error cambiando configuración";
 
 /* No comment provided by engineer. */
@@ -2170,8 +2207,11 @@ chat item action */
 /* No comment provided by engineer. */
 "Error decrypting file" = "Error al descifrar el archivo";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat database" = "Error al eliminar base de datos";
+
+/* alert title */
+"Error deleting chat with member" = "Error al eliminar el chat con el miembro";
 
 /* No comment provided by engineer. */
 "Error deleting chat!" = "¡Error al eliminar chat!";
@@ -2179,10 +2219,10 @@ chat item action */
 /* No comment provided by engineer. */
 "Error deleting connection" = "Error al eliminar conexión";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting database" = "Error al eliminar base de datos";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting old database" = "Error al eliminar base de datos antigua";
 
 /* No comment provided by engineer. */
@@ -2203,13 +2243,13 @@ chat item action */
 /* No comment provided by engineer. */
 "Error encrypting database" = "Error al cifrar base de datos";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error exporting chat database" = "Error al exportar base de datos";
 
 /* No comment provided by engineer. */
 "Error exporting theme: %@" = "Error al exportar tema: %@";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error importing chat database" = "Error al importar base de datos";
 
 /* No comment provided by engineer. */
@@ -2586,7 +2626,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Group already exists" = "El grupo ya existe";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Group already exists!" = "¡El grupo ya existe!";
 
 /* No comment provided by engineer. */
@@ -2609,6 +2649,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Group invitation is no longer valid, it was removed by sender." = "La invitación al grupo ya no es válida, ha sido eliminada por el remitente.";
+
+/* No comment provided by engineer. */
+"group is deleted" = "el grupo ha sido eliminado";
 
 /* No comment provided by engineer. */
 "Group link" = "Enlace de grupo";
@@ -2982,22 +3025,16 @@ snd error text */
 /* No comment provided by engineer. */
 "join as %@" = "unirte como %@";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Join group" = "Unirte al grupo";
 
 /* No comment provided by engineer. */
 "Join group conversations" = "Unirse a la conversación del grupo";
 
 /* No comment provided by engineer. */
-"Join group?" = "¿Unirte al grupo?";
-
-/* No comment provided by engineer. */
 "Join incognito" = "Unirte en modo incógnito";
 
-/* No comment provided by engineer. */
-"Join with current profile" = "Unirte con el perfil actual";
-
-/* No comment provided by engineer. */
+/* new chat action */
 "Join your group?\nThis is your link for group %@!" = "¿Unirse a tu grupo?\n¡Este es tu enlace para el grupo %@!";
 
 /* No comment provided by engineer. */
@@ -3138,8 +3175,14 @@ snd error text */
 /* profile update event chat item */
 "member %@ changed to %@" = "el miembro %1$@ ha cambiado a %2$@";
 
+/* No comment provided by engineer. */
+"Member admission" = "Admisión del miembro";
+
 /* rcv group event chat item */
 "member connected" = "conectado";
+
+/* No comment provided by engineer. */
+"member has old version" = "el miembro usa una versión antigua";
 
 /* item status text */
 "Member inactive" = "Miembro inactivo";
@@ -3161,6 +3204,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "El miembro será expulsado del grupo. ¡No puede deshacerse!";
+
+/* alert message */
+"Member will join the group, accept member?" = "El miembro se unirá al grupo, ¿aceptas al miembro?";
 
 /* No comment provided by engineer. */
 "Members can add message reactions." = "Los miembros pueden añadir reacciones a los mensajes.";
@@ -3432,6 +3478,9 @@ snd error text */
 /* No comment provided by engineer. */
 "New member role" = "Nuevo rol de miembro";
 
+/* rcv group event chat item */
+"New member wants to join the group." = "Un miembro nuevo desea unirse al grupo.";
+
 /* notification */
 "new message" = "mensaje nuevo";
 
@@ -3470,6 +3519,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "No chats in list %@" = "Sin chats en la lista %@";
+
+/* No comment provided by engineer. */
+"No chats with members" = "Sin chats con miembros";
 
 /* No comment provided by engineer. */
 "No contacts selected" = "Ningún contacto seleccionado";
@@ -3556,6 +3608,9 @@ snd error text */
 "Not compatible!" = "¡No compatible!";
 
 /* No comment provided by engineer. */
+"not synchronized" = "no sincronizado";
+
+/* No comment provided by engineer. */
 "Notes" = "Notas";
 
 /* No comment provided by engineer. */
@@ -3601,7 +3656,8 @@ time to disappear */
 "offered %@: %@" = "ofrecido %1$@: %2$@";
 
 /* alert action
-alert button */
+alert button
+new chat action */
 "Ok" = "Ok";
 
 /* No comment provided by engineer. */
@@ -3694,8 +3750,11 @@ alert button */
 /* No comment provided by engineer. */
 "Open conditions" = "Abrir condiciones";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Open group" = "Grupo abierto";
+
+/* alert title */
+"Open link?" = "¿Abrir enlace?";
 
 /* authentication reason */
 "Open migration to another device" = "Abrir menú migración a otro dispositivo";
@@ -3800,6 +3859,9 @@ alert button */
 "pending approval" = "pendiente de aprobación";
 
 /* No comment provided by engineer. */
+"pending review" = "pendiente de revisión";
+
+/* No comment provided by engineer. */
 "Periodic" = "Periódicamente";
 
 /* message decrypt error item */
@@ -3851,7 +3913,7 @@ alert button */
 "Please enter the previous password after restoring database backup. This action can not be undone." = "Introduce la contraseña anterior después de restaurar la copia de seguridad de la base de datos. Esta acción no se puede deshacer.";
 
 /* No comment provided by engineer. */
-"Please remember or store it securely - there is no way to recover a lost passcode!" = "Por favor, recuerda y guarda el código de acceso en un lugar seguro. ¡No hay forma de recuperar un código perdido!";
+"Please remember or store it securely - there is no way to recover a lost passcode!" = "Por favor, recuerda y guarda el código de acceso en un lugar seguro. ¡No hay manera de recuperar un código perdido!";
 
 /* No comment provided by engineer. */
 "Please report it to the developers." = "Por favor, informa a los desarrolladores.";
@@ -3867,6 +3929,9 @@ alert button */
 
 /* token info */
 "Please try to disable and re-enable notfications." = "Por favor, intenta desactivar y reactivar las notificaciones.";
+
+/* snd group event chat item */
+"Please wait for group moderators to review your request to join the group." = "Por favor, espera a que tu solicitud sea revisada por los moderadores del grupo.";
 
 /* token info */
 "Please wait for token activation to complete." = "Por favor, espera a que el token de activación se complete.";
@@ -4148,6 +4213,9 @@ swipe action */
 /* No comment provided by engineer. */
 "Reject contact request" = "Rechazar solicitud de contacto";
 
+/* alert title */
+"Reject member?" = "¿Rechazar al miembro?";
+
 /* No comment provided by engineer. */
 "rejected" = "rechazado";
 
@@ -4187,6 +4255,9 @@ swipe action */
 /* profile update event chat item */
 "removed contact address" = "dirección de contacto eliminada";
 
+/* No comment provided by engineer. */
+"removed from group" = "expulsado del grupo";
+
 /* profile update event chat item */
 "removed profile picture" = "ha eliminado la imagen del perfil";
 
@@ -4203,16 +4274,10 @@ swipe action */
 "Renegotiate encryption?" = "¿Renegociar cifrado?";
 
 /* No comment provided by engineer. */
-"Repeat connection request?" = "¿Repetir solicitud de conexión?";
-
-/* No comment provided by engineer. */
 "Repeat download" = "Repetir descarga";
 
 /* No comment provided by engineer. */
 "Repeat import" = "Repetir importación";
-
-/* No comment provided by engineer. */
-"Repeat join request?" = "¿Repetir solicitud de admisión?";
 
 /* No comment provided by engineer. */
 "Repeat upload" = "Repetir subida";
@@ -4235,6 +4300,9 @@ swipe action */
 /* No comment provided by engineer. */
 "Report reason?" = "¿Motivo del informe?";
 
+/* alert title */
+"Report sent to moderators" = "Informe enviado a los moderadores";
+
 /* report reason */
 "Report spam: only group moderators will see it." = "Informar de spam: sólo los moderadores del grupo lo verán.";
 
@@ -4249,6 +4317,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Reports" = "Informes";
+
+/* No comment provided by engineer. */
+"request to join rejected" = "petición para unirse rechazada";
 
 /* chat list item title */
 "requested to connect" = "solicitado para conectar";
@@ -4305,7 +4376,19 @@ swipe action */
 "Reveal" = "Revelar";
 
 /* No comment provided by engineer. */
+"review" = "por revisar";
+
+/* No comment provided by engineer. */
 "Review conditions" = "Revisar condiciones";
+
+/* admission stage */
+"Review members" = "Revisar miembros";
+
+/* admission stage description */
+"Review members before admitting (\"knocking\")." = "Revisar miembros antes de admitir.";
+
+/* No comment provided by engineer. */
+"reviewed by admins" = "revisado por los administradores";
 
 /* No comment provided by engineer. */
 "Revoke" = "Revocar";
@@ -4334,6 +4417,9 @@ chat item action */
 
 /* alert button */
 "Save (and notify contacts)" = "Guardar (y notificar contactos)";
+
+/* alert title */
+"Save admission settings?" = "¿Guardar configuración?";
 
 /* alert button */
 "Save and notify contact" = "Guardar y notificar contacto";
@@ -4670,6 +4756,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Set it instead of system authentication." = "Úsalo en lugar de la autenticación del sistema.";
+
+/* No comment provided by engineer. */
+"Set member admission" = "Admisión miembro";
 
 /* No comment provided by engineer. */
 "Set message expiration in chats." = "Establece el vencimiento para los mensajes en los chats.";
@@ -5172,12 +5261,6 @@ report reason */
 "This group no longer exists." = "Este grupo ya no existe.";
 
 /* No comment provided by engineer. */
-"This is your own one-time link!" = "¡Este es tu propio enlace de un solo uso!";
-
-/* No comment provided by engineer. */
-"This is your own SimpleX address!" = "¡Esta es tu propia dirección SimpleX!";
-
-/* No comment provided by engineer. */
 "This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." = "Este enlace requiere una versión más reciente de la aplicación. Por favor, actualiza la aplicación o pide a tu contacto un enlace compatible.";
 
 /* No comment provided by engineer. */
@@ -5432,7 +5515,7 @@ report reason */
 /* No comment provided by engineer. */
 "Use chat" = "Usar Chat";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Use current profile" = "Usar perfil actual";
 
 /* No comment provided by engineer. */
@@ -5450,7 +5533,7 @@ report reason */
 /* No comment provided by engineer. */
 "Use iOS call interface" = "Usar interfaz de llamada de iOS";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Use new incognito profile" = "Usar nuevo perfil incógnito";
 
 /* No comment provided by engineer. */
@@ -5711,6 +5794,9 @@ report reason */
 /* No comment provided by engineer. */
 "You accepted connection" = "Has aceptado la conexión";
 
+/* snd group event chat item */
+"you accepted this member" = "has aceptado al miembro";
+
 /* No comment provided by engineer. */
 "You allow" = "Permites";
 
@@ -5723,25 +5809,22 @@ report reason */
 /* No comment provided by engineer. */
 "You are already connected with %@." = "Ya estás conectado con %@.";
 
-/* No comment provided by engineer. */
+/* new chat sheet message */
 "You are already connecting to %@." = "Ya estás conectando con %@.";
 
-/* No comment provided by engineer. */
+/* new chat sheet message */
 "You are already connecting via this one-time link!" = "¡Ya estás conectando mediante este enlace de un solo uso!";
 
 /* No comment provided by engineer. */
 "You are already in group %@." = "Ya estás en el grupo %@.";
 
-/* No comment provided by engineer. */
+/* new chat sheet message */
 "You are already joining the group %@." = "Ya estás uniéndote al grupo %@.";
 
-/* No comment provided by engineer. */
-"You are already joining the group via this link!" = "¡Ya estás uniéndote al grupo mediante este enlace!";
-
-/* No comment provided by engineer. */
+/* new chat sheet message */
 "You are already joining the group via this link." = "Ya estás uniéndote al grupo mediante este enlace.";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "¡En proceso de unirte al grupo!\n¿Repetir solicitud de admisión?";
 
 /* No comment provided by engineer. */
@@ -5822,6 +5905,9 @@ report reason */
 /* alert message */
 "You can view invitation link again in connection details." = "Podrás ver el enlace de invitación en detalles de conexión.";
 
+/* alert message */
+"You can view your reports in Chat with admins." = "Puedes ver tus informes en Chat con administradores.";
+
 /* No comment provided by engineer. */
 "You can't send messages!" = "¡No puedes enviar mensajes!";
 
@@ -5843,10 +5929,7 @@ report reason */
 /* No comment provided by engineer. */
 "You decide who can connect." = "Tu decides quién se conecta.";
 
-/* No comment provided by engineer. */
-"You have already requested connection via this address!" = "¡Ya has solicitado la conexión mediante esta dirección!";
-
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "You have already requested connection!\nRepeat connection request?" = "Ya has solicitado la conexión\n¿Repetir solicitud?";
 
 /* No comment provided by engineer. */
@@ -5914,9 +5997,6 @@ report reason */
 
 /* No comment provided by engineer. */
 "You will be required to authenticate when you start or resume the app after 30 seconds in background." = "Se te pedirá autenticarte cuando inicies la aplicación o sigas usándola tras 30 segundos en segundo plano.";
-
-/* No comment provided by engineer. */
-"You will connect to all group members." = "Te conectarás con todos los miembros del grupo.";
 
 /* No comment provided by engineer. */
 "You will still receive calls and notifications from muted profiles when they are active." = "Seguirás recibiendo llamadas y notificaciones de los perfiles silenciados cuando estén activos.";

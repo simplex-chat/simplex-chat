@@ -586,10 +586,10 @@ swipe action */
 /* No comment provided by engineer. */
 "Already connected?" = "已连接？";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Already connecting!" = "已经在连接了！";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Already joining the group!" = "已经加入了该群组！";
 
 /* pref value */
@@ -900,7 +900,8 @@ marked deleted chat item preview text */
 "Can't message member" = "无法向成员发送消息";
 
 /* alert action
-alert button */
+alert button
+new chat action */
 "Cancel" = "取消";
 
 /* No comment provided by engineer. */
@@ -982,7 +983,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Chat already exists" = "聊天已存在";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Chat already exists!" = "聊天已存在！";
 
 /* No comment provided by engineer. */
@@ -1181,9 +1182,6 @@ set passcode view */
 "Connect automatically" = "自动连接";
 
 /* No comment provided by engineer. */
-"Connect incognito" = "在隐身状态下连接";
-
-/* No comment provided by engineer. */
 "Connect to desktop" = "连接到桌面";
 
 /* No comment provided by engineer. */
@@ -1192,25 +1190,22 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connect to your friends faster." = "更快地与您的朋友联系。";
 
-/* No comment provided by engineer. */
-"Connect to yourself?" = "连接到你自己？";
-
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect to yourself?\nThis is your own one-time link!" = "与自己建立联系？\n这是您自己的一次性链接！";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect to yourself?\nThis is your own SimpleX address!" = "与自己建立联系？\n这是您自己的 SimpleX 地址！";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via contact address" = "通过联系地址连接";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via link" = "通过链接连接";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via one-time link" = "通过一次性链接连接";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Connect with %@" = "与 %@连接";
 
 /* No comment provided by engineer. */
@@ -1416,9 +1411,6 @@ set passcode view */
 
 /* server test step */
 "Create queue" = "创建队列";
-
-/* No comment provided by engineer. */
-"Create secret group" = "创建私密群组";
 
 /* No comment provided by engineer. */
 "Create SimpleX address" = "创建 SimpleX 地址";
@@ -2125,7 +2117,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error changing role" = "更改角色错误";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error changing setting" = "更改设置错误";
 
 /* No comment provided by engineer. */
@@ -2161,7 +2153,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error decrypting file" = "解密文件时出错";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat database" = "删除聊天数据库错误";
 
 /* No comment provided by engineer. */
@@ -2170,10 +2162,10 @@ chat item action */
 /* No comment provided by engineer. */
 "Error deleting connection" = "删除连接错误";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting database" = "删除数据库错误";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting old database" = "删除旧数据库错误";
 
 /* No comment provided by engineer. */
@@ -2194,13 +2186,13 @@ chat item action */
 /* No comment provided by engineer. */
 "Error encrypting database" = "加密数据库错误";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error exporting chat database" = "导出聊天数据库错误";
 
 /* No comment provided by engineer. */
 "Error exporting theme: %@" = "导出主题时出错： %@";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error importing chat database" = "导入聊天数据库错误";
 
 /* No comment provided by engineer. */
@@ -2577,7 +2569,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Group already exists" = "群组已存在";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Group already exists!" = "群已存在！";
 
 /* No comment provided by engineer. */
@@ -2973,22 +2965,16 @@ snd error text */
 /* No comment provided by engineer. */
 "join as %@" = "以 %@ 身份加入";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Join group" = "加入群组";
 
 /* No comment provided by engineer. */
 "Join group conversations" = "加入群对话";
 
 /* No comment provided by engineer. */
-"Join group?" = "加入群组？";
-
-/* No comment provided by engineer. */
 "Join incognito" = "加入隐身聊天";
 
-/* No comment provided by engineer. */
-"Join with current profile" = "使用当前档案加入";
-
-/* No comment provided by engineer. */
+/* new chat action */
 "Join your group?\nThis is your link for group %@!" = "加入您的群组？\n这是您组 %@ 的链接！";
 
 /* No comment provided by engineer. */
@@ -3589,7 +3575,8 @@ time to disappear */
 "offered %@: %@" = "已提供 %1$@：%2$@";
 
 /* alert action
-alert button */
+alert button
+new chat action */
 "Ok" = "好的";
 
 /* No comment provided by engineer. */
@@ -3682,7 +3669,7 @@ alert button */
 /* No comment provided by engineer. */
 "Open conditions" = "打开条款";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Open group" = "打开群";
 
 /* authentication reason */
@@ -4140,16 +4127,10 @@ swipe action */
 "Renegotiate encryption?" = "重新协商加密？";
 
 /* No comment provided by engineer. */
-"Repeat connection request?" = "重复连接请求吗？";
-
-/* No comment provided by engineer. */
 "Repeat download" = "重复下载";
 
 /* No comment provided by engineer. */
 "Repeat import" = "重复导入";
-
-/* No comment provided by engineer. */
-"Repeat join request?" = "重复加入请求吗？";
 
 /* No comment provided by engineer. */
 "Repeat upload" = "重复上传";
@@ -4976,12 +4957,6 @@ chat item action */
 "This group no longer exists." = "该群组已不存在。";
 
 /* No comment provided by engineer. */
-"This is your own one-time link!" = "这是你自己的一次性链接！";
-
-/* No comment provided by engineer. */
-"This is your own SimpleX address!" = "这是你自己的 SimpleX 地址！";
-
-/* No comment provided by engineer. */
 "This link was used with another mobile device, please create a new link on the desktop." = "此链接已在其他移动设备上使用，请在桌面上创建新链接。";
 
 /* No comment provided by engineer. */
@@ -5197,7 +5172,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Use chat" = "使用聊天";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Use current profile" = "使用当前配置文件";
 
 /* No comment provided by engineer. */
@@ -5209,7 +5184,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Use iOS call interface" = "使用 iOS 通话界面";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Use new incognito profile" = "使用新的隐身配置文件";
 
 /* No comment provided by engineer. */
@@ -5449,25 +5424,22 @@ chat item action */
 /* No comment provided by engineer. */
 "You are already connected to %@." = "您已经连接到 %@。";
 
-/* No comment provided by engineer. */
+/* new chat sheet message */
 "You are already connecting to %@." = "您已连接到 %@。";
 
-/* No comment provided by engineer. */
+/* new chat sheet message */
 "You are already connecting via this one-time link!" = "你已经在通过这个一次性链接进行连接！";
 
 /* No comment provided by engineer. */
 "You are already in group %@." = "您已在组 %@ 中。";
 
-/* No comment provided by engineer. */
+/* new chat sheet message */
 "You are already joining the group %@." = "您已加入组 %@。";
 
-/* No comment provided by engineer. */
-"You are already joining the group via this link!" = "您已经通过此链接加入群组！";
-
-/* No comment provided by engineer. */
+/* new chat sheet message */
 "You are already joining the group via this link." = "你已经在通过此链接加入该群。";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "您已经加入了这个群组！\n重复加入请求？";
 
 /* No comment provided by engineer. */
@@ -5563,10 +5535,7 @@ chat item action */
 /* No comment provided by engineer. */
 "You decide who can connect." = "你决定谁可以连接。";
 
-/* No comment provided by engineer. */
-"You have already requested connection via this address!" = "你已经请求通过此地址进行连接！";
-
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "You have already requested connection!\nRepeat connection request?" = "您已经请求连接了！\n重复连接请求？";
 
 /* No comment provided by engineer. */
@@ -5631,9 +5600,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "You will be required to authenticate when you start or resume the app after 30 seconds in background." = "当您启动应用或在应用程序驻留后台超过30 秒后，您将需要进行身份验证。";
-
-/* No comment provided by engineer. */
-"You will connect to all group members." = "你将连接到所有群成员。";
 
 /* No comment provided by engineer. */
 "You will still receive calls and notifications from muted profiles when they are active." = "当静音配置文件处于活动状态时，您仍会收到来自静音配置文件的电话和通知。";
