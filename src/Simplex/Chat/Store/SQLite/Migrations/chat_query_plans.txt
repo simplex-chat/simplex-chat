@@ -3062,14 +3062,6 @@ Plan:
 SEARCH commands USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-        SELECT conn_req_contact, short_link_contact, short_link_data_set, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
-        FROM user_contact_links
-        WHERE user_id = ? AND user_contact_link_id = ?
-      
-Plan:
-SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
         SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, custom_user_profile_id,
           conn_status, conn_type, contact_conn_initiated, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id,
           created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter, quota_err_counter,
@@ -3440,6 +3432,14 @@ Query:
       
 Plan:
 SEARCH usage_conditions USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+        SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
+        FROM user_contact_links
+        WHERE user_id = ? AND user_contact_link_id = ?
+      
+Plan:
+SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
         UPDATE chat_items
@@ -4854,27 +4854,6 @@ CORRELATED SCALAR SUBQUERY 1
 SEARCH cc USING COVERING INDEX idx_connections_group_member (user_id=? AND group_member_id=?)
 
 Query: 
-    SELECT conn_req_contact, short_link_contact, short_link_data_set, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
-    FROM user_contact_links
-   WHERE user_id = ? AND conn_req_contact IN (?,?)
-Plan:
-SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
-
-Query: 
-    SELECT conn_req_contact, short_link_contact, short_link_data_set, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
-    FROM user_contact_links
-   WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
-Plan:
-SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
-
-Query: 
-    SELECT conn_req_contact, short_link_contact, short_link_data_set, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
-    FROM user_contact_links
-   WHERE user_id = ? AND short_link_contact = ?
-Plan:
-SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
-
-Query: 
     SELECT f.file_id, f.ci_file_status, f.file_path
     FROM chat_items i
     JOIN files f ON f.chat_item_id = i.chat_item_id
@@ -5128,6 +5107,27 @@ Query:
    DESC LIMIT 1
 Plan:
 SCAN usage_conditions
+
+Query: 
+    SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
+    FROM user_contact_links
+   WHERE user_id = ? AND conn_req_contact IN (?,?)
+Plan:
+SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
+
+Query: 
+    SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
+    FROM user_contact_links
+   WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
+Plan:
+SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
+
+Query: 
+    SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
+    FROM user_contact_links
+   WHERE user_id = ? AND short_link_contact = ?
+Plan:
+SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
 
 Query:  SELECT chat_item_id FROM chat_items WHERE  (( user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL  AND  item_ts < ? ) OR ( user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL  AND  item_ts = ? AND chat_item_id < ? ))  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
 Plan:
