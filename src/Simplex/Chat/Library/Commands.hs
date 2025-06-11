@@ -1276,7 +1276,6 @@ processChatCommand' vr = \case
   APICallStatus contactId receivedStatus ->
     withCurrentCall contactId $ \user ct call ->
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
-  -- TODO [short links] update address short link data
   APIUpdateProfile userId profile -> withUserId userId (`updateProfile` profile)
   APISetContactPrefs contactId prefs' -> withUser $ \user -> do
     ct <- withFastStore $ \db -> getContact db vr user contactId
@@ -1851,7 +1850,7 @@ processChatCommand' vr = \case
       deleteAgentConnectionAsync $ aConnId conn
       withFastStore' (`deleteUserAddress` user)
     let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing}
-    r <- updateProfile_ user p' $ withFastStore' $ \db -> setUserProfileContactLink db user Nothing
+    r <- updateProfile_ user p' False $ withFastStore' $ \db -> setUserProfileContactLink db user Nothing
     let user' = case r of
           CRUserProfileUpdated u' _ _ _ -> u'
           _ -> user
@@ -1863,27 +1862,16 @@ processChatCommand' vr = \case
   ShowMyAddress -> withUser' $ \User {userId} ->
     processChatCommand $ APIShowMyAddress userId
   APIAddMyAddressShortLink userId -> withUserId' userId $ \user -> do
-    (ucl@UserContactLink {connLinkContact = CCLink connFullLink _sLnk_, autoAccept}, conn) <-
-      withFastStore $ \db -> (,) <$> getUserAddress db user <*> getUserAddressConnection db vr user
-    let shortLinkProfile = userProfileToSend user Nothing Nothing False
-        shortLinkMsg = autoAccept >>= autoReply >>= (Just . msgContentText)
-        userData = encodeShortLinkData (ContactShortLinkData shortLinkProfile shortLinkMsg)
-    sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a (aConnId conn) SCMContact userData Nothing)
-    case entityId conn of
-      Just uclId -> do
-        withFastStore' $ \db -> setUserContactLinkShortLink db uclId sLnk
-        let autoAccept' = autoAccept >>= \aa -> Just aa {acceptIncognito = False}
-            ucl' = (ucl :: UserContactLink) {connLinkContact = CCLink connFullLink (Just sLnk), shortLinkDataSet = True, autoAccept = autoAccept'}
-        pure $ CRUserContactLink user ucl'
-      Nothing -> throwChatError $ CEException "no user contact link id"
+    ucl <- withFastStore $ \db -> getUserAddress db user
+    setMyAddressData user ucl
   APISetProfileAddress userId False -> withUserId userId $ \user@User {profile = p} -> do
     let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing}
-    updateProfile_ user p' $ withFastStore' $ \db -> setUserProfileContactLink db user Nothing
+    updateProfile_ user p' True $ withFastStore' $ \db -> setUserProfileContactLink db user Nothing
   APISetProfileAddress userId True -> withUserId userId $ \user@User {profile = p} -> do
     ucl@UserContactLink {connLinkContact = CCLink cReq _} <- withFastStore (`getUserAddress` user)
     -- TODO [short links] replace with short links
     let p' = (fromLocalProfile p :: Profile) {contactLink = Just $ CLFull cReq}
-    updateProfile_ user p' $ withFastStore' $ \db -> setUserProfileContactLink db user $ Just ucl
+    updateProfile_ user p' True $ withFastStore' $ \db -> setUserProfileContactLink db user $ Just ucl
   SetProfileAddress onOff -> withUser $ \User {userId} ->
     processChatCommand $ APISetProfileAddress userId onOff
   APIAddressAutoAccept userId autoAccept_ -> withUserId userId $ \user -> do
@@ -2983,9 +2971,9 @@ processChatCommand' vr = \case
       when (fromInteger fileSize > maxFileSize) $ throwChatError $ CEFileSize f
       pure fileSize
     updateProfile :: User -> Profile -> CM ChatResponse
-    updateProfile user p' = updateProfile_ user p' $ withFastStore $ \db -> updateUserProfile db user p'
-    updateProfile_ :: User -> Profile -> CM User -> CM ChatResponse
-    updateProfile_ user@User {profile = p@LocalProfile {displayName = n}} p'@Profile {displayName = n'} updateUser
+    updateProfile user p' = updateProfile_ user p' True $ withFastStore $ \db -> updateUserProfile db user p'
+    updateProfile_ :: User -> Profile -> Bool -> CM User -> CM ChatResponse
+    updateProfile_ user@User {profile = p@LocalProfile {displayName = n}} p'@Profile {displayName = n'} shouldUpdateAddressData updateUser
       | p' == fromLocalProfile p = pure $ CRUserProfileNoChange user
       | otherwise = do
           when (n /= n') $ checkValidName n'
@@ -2994,41 +2982,66 @@ processChatCommand' vr = \case
           user' <- updateUser
           asks currentUser >>= atomically . (`writeTVar` Just user')
           withChatLock "updateProfile" . procCmd $ do
-            let changedCts_ = L.nonEmpty $ foldr (addChangedProfileContact user') [] contacts
-            summary <- case changedCts_ of
-              Nothing -> pure $ UserProfileUpdateSummary 0 0 []
-              Just changedCts -> do
-                let idsEvts = L.map ctSndEvent changedCts
-                msgReqs_ <- lift $ L.zipWith ctMsgReq changedCts <$> createSndMessages idsEvts
-                (errs, cts) <- partitionEithers . L.toList . L.zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
-                unless (null errs) $ toView $ CEvtChatErrors errs
-                let changedCts' = filter (\ChangedProfileContact {ct, ct'} -> directOrUsed ct' && mergedPreferences ct' /= mergedPreferences ct) cts
-                lift $ createContactsSndFeatureItems user' changedCts'
-                pure
-                  UserProfileUpdateSummary
-                    { updateSuccesses = length cts,
-                      updateFailures = length errs,
-                      changedContacts = map (\ChangedProfileContact {ct'} -> ct') changedCts'
-                    }
+            when shouldUpdateAddressData $ setMyAddressData' user'
+            summary <- sendUpdateToContacts user' contacts
             pure $ CRUserProfileUpdated user' (fromLocalProfile p) p' summary
       where
-        -- [incognito] filter out contacts with whom user has incognito connections
-        addChangedProfileContact :: User -> Contact -> [ChangedProfileContact] -> [ChangedProfileContact]
-        addChangedProfileContact user' ct changedCts = case contactSendConn_ ct' of
-          Right conn
-            | not (connIncognito conn) && mergedProfile' /= mergedProfile ->
-                ChangedProfileContact ct ct' mergedProfile' conn : changedCts
-          _ -> changedCts
+        setMyAddressData' :: User -> CM ()
+        setMyAddressData' user' = do
+          withFastStore' (\db -> runExceptT $ getUserAddress db user) >>= \case
+            Right ucl@UserContactLink {shortLinkDataSet}
+              | shortLinkDataSet -> void $ setMyAddressData user' ucl
+            _ -> pure ()
+        sendUpdateToContacts :: User -> [Contact] -> CM UserProfileUpdateSummary
+        sendUpdateToContacts user' contacts = do
+          let changedCts_ = L.nonEmpty $ foldr addChangedProfileContact [] contacts
+          case changedCts_ of
+            Nothing -> pure $ UserProfileUpdateSummary 0 0 []
+            Just changedCts -> do
+              let idsEvts = L.map ctSndEvent changedCts
+              msgReqs_ <- lift $ L.zipWith ctMsgReq changedCts <$> createSndMessages idsEvts
+              (errs, cts) <- partitionEithers . L.toList . L.zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
+              unless (null errs) $ toView $ CEvtChatErrors errs
+              let changedCts' = filter (\ChangedProfileContact {ct, ct'} -> directOrUsed ct' && mergedPreferences ct' /= mergedPreferences ct) cts
+              lift $ createContactsSndFeatureItems user' changedCts'
+              pure
+                UserProfileUpdateSummary
+                  { updateSuccesses = length cts,
+                    updateFailures = length errs,
+                    changedContacts = map (\ChangedProfileContact {ct'} -> ct') changedCts'
+                  }
           where
-            mergedProfile = userProfileToSend user Nothing (Just ct) False
-            ct' = updateMergedPreferences user' ct
-            mergedProfile' = userProfileToSend user' Nothing (Just ct') False
-        ctSndEvent :: ChangedProfileContact -> (ConnOrGroupId, ChatMsgEvent 'Json)
-        ctSndEvent ChangedProfileContact {mergedProfile', conn = Connection {connId}} = (ConnectionId connId, XInfo mergedProfile')
-        ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError ChatMsgReq
-        ctMsgReq ChangedProfileContact {conn} =
-          fmap $ \SndMessage {msgId, msgBody} ->
-            (conn, MsgFlags {notification = hasNotification XInfo_}, (vrValue msgBody, [msgId]))
+            -- [incognito] filter out contacts with whom user has incognito connections
+            addChangedProfileContact :: Contact -> [ChangedProfileContact] -> [ChangedProfileContact]
+            addChangedProfileContact ct changedCts = case contactSendConn_ ct' of
+              Right conn
+                | not (connIncognito conn) && mergedProfile' /= mergedProfile ->
+                    ChangedProfileContact ct ct' mergedProfile' conn : changedCts
+              _ -> changedCts
+              where
+                mergedProfile = userProfileToSend user Nothing (Just ct) False
+                ct' = updateMergedPreferences user' ct
+                mergedProfile' = userProfileToSend user' Nothing (Just ct') False
+            ctSndEvent :: ChangedProfileContact -> (ConnOrGroupId, ChatMsgEvent 'Json)
+            ctSndEvent ChangedProfileContact {mergedProfile', conn = Connection {connId}} = (ConnectionId connId, XInfo mergedProfile')
+            ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError ChatMsgReq
+            ctMsgReq ChangedProfileContact {conn} =
+              fmap $ \SndMessage {msgId, msgBody} ->
+                (conn, MsgFlags {notification = hasNotification XInfo_}, (vrValue msgBody, [msgId]))
+    setMyAddressData :: User -> UserContactLink -> CM ChatResponse
+    setMyAddressData user ucl@UserContactLink {connLinkContact = CCLink connFullLink _sLnk_, autoAccept} = do
+      conn <- withFastStore $ \db -> getUserAddressConnection db vr user
+      let shortLinkProfile = userProfileToSend user Nothing Nothing False
+          shortLinkMsg = autoAccept >>= autoReply >>= (Just . msgContentText)
+          userData = encodeShortLinkData (ContactShortLinkData shortLinkProfile shortLinkMsg)
+      sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a (aConnId conn) SCMContact userData Nothing)
+      case entityId conn of
+        Just uclId -> do
+          withFastStore' $ \db -> setUserContactLinkShortLink db uclId sLnk
+          let autoAccept' = autoAccept >>= \aa -> Just aa {acceptIncognito = False}
+              ucl' = (ucl :: UserContactLink) {connLinkContact = CCLink connFullLink (Just sLnk), shortLinkDataSet = True, autoAccept = autoAccept'}
+          pure $ CRUserContactLink user ucl'
+        Nothing -> throwChatError $ CEException "no user contact link id"
     updateContactPrefs :: User -> Contact -> Preferences -> CM ChatResponse
     updateContactPrefs _ ct@Contact {activeConn = Nothing} _ = throwChatError $ CEContactNotActive ct
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Just Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
@@ -3040,7 +3053,7 @@ processChatCommand' vr = \case
           let mergedProfile = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct) False
               mergedProfile' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct') False
           when (mergedProfile' /= mergedProfile) $
-            withContactLock "updateProfile" (contactId' ct) $ do
+            withContactLock "updateContactPrefs" (contactId' ct) $ do
               void (sendDirectContactMessage user ct' $ XInfo mergedProfile') `catchChatError` eToView
               lift . when (directOrUsed ct') $ createSndFeatureItems user ct ct'
           pure $ CRContactPrefsUpdated user ct ct'
