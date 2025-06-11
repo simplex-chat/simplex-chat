@@ -1237,7 +1237,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     forM_ mc_ $ \mc ->
                       createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent mc) Nothing
                   toView $ CEvtReceivedContactRequest user cReq ct_
-            Just AutoAccept {acceptIncognito, businessAddress}
+            Just AutoAccept {businessAddress, acceptIncognito, autoReply}
               | businessAddress ->
                   if isSimplexTeam && v < businessChatsVersion
                     then
@@ -1245,6 +1245,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         Just ct -> toView $ CEvtContactRequestAlreadyAccepted user ct
                         Nothing -> do
                           ct <- acceptContactRequestAsync user uclId invId chatVRange p xContactId_ reqPQSup Nothing
+                          forM_ autoReply $ \arMC ->
+                            when (shortLinkDataSet && v >= shortLinkDataVersion) $
+                              createInternalChatItem user (CDDirectSnd ct) (CISndMsgContent arMC) Nothing
                           forM_ mc_ $ \mc ->
                             createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent mc) Nothing
                           toView $ CEvtAcceptingContactRequest user ct
@@ -1253,6 +1256,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         Just gInfo -> toView $ CEvtBusinessRequestAlreadyAccepted user gInfo
                         Nothing -> do
                           (gInfo, clientMember) <- acceptBusinessJoinRequestAsync user uclId invId chatVRange p xContactId_
+                          forM_ autoReply $ \arMC ->
+                            when (shortLinkDataSet && v >= shortLinkDataVersion) $
+                              createInternalChatItem user (CDGroupSnd gInfo Nothing) (CISndMsgContent arMC) Nothing
                           forM_ mc_ $ \mc ->
                             createInternalChatItem user (CDGroupRcv gInfo Nothing clientMember) (CIRcvMsgContent mc) Nothing
                           toView $ CEvtAcceptingBusinessRequest user gInfo
@@ -1267,6 +1273,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                             then Just . NewIncognito <$> liftIO generateRandomProfile
                             else pure Nothing
                         ct <- acceptContactRequestAsync user uclId invId chatVRange p xContactId_ reqPQSup incognitoProfile
+                        forM_ autoReply $ \arMC ->
+                          when (shortLinkDataSet && v >= shortLinkDataVersion) $
+                            createInternalChatItem user (CDDirectSnd ct) (CISndMsgContent arMC) Nothing
                         forM_ mc_ $ \mc ->
                           createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent mc) Nothing
                         toView $ CEvtAcceptingContactRequest user ct
