@@ -111,6 +111,7 @@ chatProfileTests = do
       it "prepare contact using address short link data and connect" testShortLinkAddressPrepareContact
       it "prepare group using group short link data and connect" testShortLinkPrepareGroup
       it "prepare group using group short link data and connect, host rejects" testShortLinkPrepareGroupReject
+      it "setting incognito for invitation should update short link data" testShortLinkInvitationSetIncognito
 
 testUpdateProfile :: HasCallStack => TestParams -> IO ()
 testUpdateProfile =
@@ -1345,6 +1346,7 @@ testSetConnectionIncognito = testChat2 aliceProfile bobProfile $
     alice ##> "/connect"
     inv <- getInvitation alice
     alice ##> "/_set incognito :1 on"
+    _ <- getTermLine alice
     alice <## "connection 1 changed to incognito"
     bob ##> ("/connect " <> inv)
     bob <## "confirmation sent!"
@@ -1429,6 +1431,7 @@ testConnectionIncognitoUnchangedErrors = testChat2 aliceProfile bobProfile $
     alice ##> "/_set incognito :1 off"
     alice <## "incognito mode change prohibited"
     alice ##> "/_set incognito :1 on"
+    _ <- getTermLine alice
     alice <## "connection 1 changed to incognito"
     alice ##> "/_set incognito :1 on"
     alice <## "incognito mode change prohibited"
@@ -1451,10 +1454,12 @@ testSetResetSetConnectionIncognito = testChat2 aliceProfile bobProfile $
     alice ##> "/_connect 1 incognito=off"
     inv <- getInvitation alice
     alice ##> "/_set incognito :1 on"
+    _ <- getTermLine alice
     alice <## "connection 1 changed to incognito"
     alice ##> "/_set incognito :1 off"
     alice <## "connection 1 changed to non incognito"
     alice ##> "/_set incognito :1 on"
+    _ <- getTermLine alice
     alice <## "connection 1 changed to incognito"
     bob ##> ("/_connect 1 incognito=off " <> inv)
     bob <## "confirmation sent!"
@@ -1873,6 +1878,7 @@ testChangePCCUserFromIncognito = testChat2 aliceProfile bobProfile $
     alice ##> "/connect"
     inv <- getInvitation alice
     alice ##> "/_set incognito :1 on"
+    _ <- getTermLine alice
     alice <## "connection 1 changed to incognito"
     -- Create new user and go back to original user
     alice ##> "/create user alisa"
@@ -1915,6 +1921,7 @@ testChangePCCUserAndThenIncognito = testChat2 aliceProfile bobProfile $
     showActiveUser alice "alisa"
     -- Change connection to incognito and make sure it's attached to the newly created user profile
     alice ##> "/_set incognito :1 on"
+    _ <- getTermLine alice
     alice <## "connection 1 changed to incognito"
     bob ##> ("/connect " <> inv)
     bob <## "confirmation sent!"
@@ -1935,6 +1942,7 @@ testChangePCCUserDiffSrv ps = do
         alice ##> "/connect"
         _ <- getInvitation alice
         alice ##> "/_set incognito :1 on"
+        _ <- getTermLine alice
         alice <## "connection 1 changed to incognito"
         -- Create new user with different servers
         alice ##> "/create user alisa"
@@ -2880,3 +2888,29 @@ testShortLinkPrepareGroupReject =
       bob <## "bad chat command: not current member"
   where
     cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Left GRRBlockedName)}}
+
+testShortLinkInvitationSetIncognito :: HasCallStack => TestParams -> IO ()
+testShortLinkInvitationSetIncognito =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/_connect 1 short=on"
+      (shortLink, fullLink) <- getShortInvitation alice
+      alice ##> "/_set incognito :1 on"
+      aliceIncognito <- getTermLine alice
+      alice <## "connection 1 changed to incognito"
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "invitation link: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+      bob <## (aliceIncognito <> ": contact is prepared")
+      bob ##> "/_connect contact @2 text hello"
+      _ <- getTermLine alice
+      bob
+        <### [ ConsoleString (aliceIncognito <> ": connection started"),
+               WithTime ("@" <> aliceIncognito <> " hello")
+             ]
+      alice <# "bob> hello"
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice <##> bob

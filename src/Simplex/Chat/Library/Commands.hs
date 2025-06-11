@@ -1696,13 +1696,13 @@ processChatCommand' vr = \case
         conn' <- withFastStore' $ \db -> do
           pId <- createIncognitoProfile db user incognitoProfile
           updatePCCIncognito db user conn (Just pId) sLnk
-        pure $ CRConnectionIncognitoUpdated user conn'
+        pure $ CRConnectionIncognitoUpdated user conn' (Just incognitoProfile)
       (ConnNew, Just pId, False) -> do
         sLnk <- updatePCCShortLinkData conn (ContactShortLinkData (userProfileToSend user Nothing Nothing False) Nothing)
         conn' <- withFastStore' $ \db -> do
           deletePCCIncognitoProfile db user pId
           updatePCCIncognito db user conn Nothing sLnk
-        pure $ CRConnectionIncognitoUpdated user conn'
+        pure $ CRConnectionIncognitoUpdated user conn' Nothing
       _ -> throwChatError CEConnectionIncognitoChangeProhibited
   APIChangeConnectionUser connId newUserId -> withUser $ \user@User {userId} -> do
     conn <- withFastStore $ \db -> getPendingContactConnection db userId connId
