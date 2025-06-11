@@ -2257,7 +2257,7 @@
     <string name="address_or_1_time_link">Adress- oder Einmal-Link?</string>
     <string name="appearance_app_toolbars">App-Symbolleiste</string>
     <string name="appearance_bars_blur_radius">Verpixeln</string>
-    <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[Ein Einmal-Link kann <i>nur mit einem Kontakt</i> genutzt werden - teilen Sie in nur persönlich oder über einen beliebigen Messenger.]]></string>
+    <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[Ein Einmal-Link kann <i>nur mit einem Kontakt</i> genutzt werden - teilen Sie ihn nur persönlich oder über einen beliebigen Messenger.]]></string>
     <string name="operator_conditions_accepted_for_some"><![CDATA[Die Nutzungsbedingungen der/des folgenden Betreiber(s) wurden schon akzeptiert: <b>%s</b>.]]></string>
     <string name="operators_conditions_will_be_accepted_for"><![CDATA[Die Nutzungsbedingungen der/des Betreiber(s) werden akzeptiert: <b>%s</b>.]]></string>
     <string name="operator_conditions_will_be_accepted_on">Die Nutzungsbedingungen wurden akzeptiert am: %s</string>
@@ -2510,4 +2510,5 @@
     <string name="cant_send_message_generic">Es können keine Nachrichten gesendet werden</string>
     <string name="cant_send_message_contact_deleted">Kontakt gelöscht</string>
     <string name="cant_send_message_member_has_old_version">Das Mitglied hat eine alte App-Version</string>
+    <string name="add_short_link">Verkürzten Link hinzufügen</string>
 </resources>

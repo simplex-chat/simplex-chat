@@ -2696,12 +2696,12 @@ processChatCommand' vr = \case
     where
       getLocks ls = atomically $ M.mapKeys enityLockString . M.mapMaybe id <$> (mapM tryReadTMVar =<< readTVar ls)
       enityLockString cle = case cle of
-        CLInvitation bs -> "Invitation " <> B.unpack bs
-        CLConnection connId -> "Connection " <> show connId
-        CLContact ctId -> "Contact " <> show ctId
-        CLGroup gId -> "Group " <> show gId
-        CLUserContact ucId -> "UserContact " <> show ucId
-        CLFile fId -> "File " <> show fId
+        CLInvitation bs -> "Invitation " <> safeDecodeUtf8 bs
+        CLConnection connId -> "Connection " <> tshow connId
+        CLContact ctId -> "Contact " <> tshow ctId
+        CLGroup gId -> "Group " <> tshow gId
+        CLUserContact ucId -> "UserContact " <> tshow ucId
+        CLFile fId -> "File " <> tshow fId
   DebugEvent event -> toView event >> ok_
   GetAgentSubsTotal userId -> withUserId userId $ \user -> do
     users <- withStore' $ \db -> getUsers db

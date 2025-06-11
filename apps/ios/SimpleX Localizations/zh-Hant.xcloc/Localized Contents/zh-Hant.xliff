@@ -4783,7 +4783,7 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id="Migrations:" xml:space="preserve" approved="no">
         <source>Migrations:</source>
-        <target state="translated">遷移：%@</target>
+        <target state="translated">遷移：</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Multiple chat profiles" xml:space="preserve" approved="no">
