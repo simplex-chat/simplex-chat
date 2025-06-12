@@ -2133,4 +2133,5 @@
     <string name="v6_1_customizable_message_descr">צורת הודעה הניתנת להתאמה אישית.</string>
     <string name="network_options_save_and_reconnect">שמור וחבר מחדש</string>
     <string name="appearance_in_app_bars_alpha">שקיפות</string>
+    <string name="error_parsing_uri_desc">אנא בדוק שקישור SimpleX תקין.</string>
 </resources>
