@@ -1944,7 +1944,7 @@
     <string name="periodic_notifications_desc">Ứng dụng tìm nhận tin nhắn mới một cách định kỳ - nó tiêu tốn một vài phần trăm pin mỗi ngày. Ứng dụng không sử dụng thông báo đẩy - dữ liệu ở thiết bị của bạn không được gửi đi tới máy chủ nào.</string>
     <string name="code_you_scanned_is_not_simplex_link_qr_code">Mã mà bạn đã quét không phải là một mã QR dẫn SimpleX.</string>
     <string name="theme">Chủ đề</string>
-    <string name="alert_text_msg_bad_hash">Mã băm của tin nhắn trước có sự khác biệt.\"</string>
+    <string name="alert_text_msg_bad_hash">Mã băm của tin nhắn trước có sự khác biệt.</string>
     <string name="alert_text_msg_bad_id">ID của tin nhắn tiếp theo là không chính xác (nhỏ hơn hoặc bằng với cái trước).\nViệc này có thể xảy ra do một vài lỗi hoặc khi kết nối bị xâm phạm.</string>
     <string name="database_backup_can_be_restored">Nỗ lực đổi mật khẩu cơ sở dữ liệu đã không được hoàn thành.</string>
     <string name="this_device_name_shared_with_mobile">Tên thiết bị sẽ được chia sẻ với thiết bị di động đã được kết nối.</string>
@@ -2243,7 +2243,7 @@
     <string name="you_can_share_your_address">Bạn có thể chia sẻ địa chỉ của mình dưới dạng một đường dẫn hoặc mã QR - bất kỳ ai cũng có thể kết nối với bạn.</string>
     <string name="you_can_view_invitation_link_again">Bạn có thể xem đường dẫn mời lần nữa trong chi tiết kết nối.</string>
     <string name="you_control_your_chat">Bạn kiểm soát cuộc trò chuyện của mình!</string>
-    <string name="observer_cant_send_message_title">Bạn không thể gửi tin nhắn!</string>
+    <string name="observer_cant_send_message_title">bạn là quan sát viên</string>
     <string name="you_can_share_this_address_with_your_contacts">Bạn có thể chia sẻ địa chỉ này với các liên hệ của mình để họ kết nối với %s.</string>
     <string name="you_need_to_allow_to_send_voice">Bạn cần cho phép liên hệ của mình gửi tin nhắn thoại để có thể gửi cho họ.</string>
     <string name="chat_database_exported_migrate">Bạn có thể di chuyển cơ sở dữ liệu đã được xuất.</string>
@@ -2403,4 +2403,11 @@
     <string name="reject_pending_member_button">Từ chối</string>
     <string name="reject_pending_member_alert_title">Từ chối thành viên?</string>
     <string name="error_deleting_member_support_chat">Lỗi xóa cuộc trò chuyện với thành viên</string>
+    <string name="snd_group_event_member_accepted">bạn đã chấp nhận thành viên này</string>
+    <string name="admission_stage_review_descr">Xem xét các thành viên trước khi chấp nhận (knocking).</string>
+    <string name="save_admission_question">Lưu cài đặt thu nạp?</string>
+    <string name="set_member_admission">Đặt thu nạp thành viên</string>
+    <string name="cant_send_message_alert_title">Bạn không thể gửi tin nhắn!</string>
+    <string name="report_sent_alert_msg_view_in_support_chat">Bạn có thể xem các báo cáo của mình trong Cuộc trò chuyện với các quản trị viên.</string>
+    <string name="cant_send_message_you_left">bạn đã rời đi</string>
 </resources>
