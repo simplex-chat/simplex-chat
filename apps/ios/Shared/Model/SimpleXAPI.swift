@@ -889,7 +889,6 @@ func apiSetConnectionIncognito(connId: Int64, incognito: Bool) async throws -> P
 
 func apiChangeConnectionUser(connId: Int64, userId: Int64) async throws -> PendingContactConnection {
     let r: ChatResponse1 = try await chatSendCmd(.apiChangeConnectionUser(connId: connId, userId: userId))
-
     if case let .connectionUserChanged(_, _, toConnection, _) = r {return toConnection}
     throw r.unexpected
 }
@@ -1014,6 +1013,18 @@ func apiPrepareGroup(connLink: CreatedConnLink, groupShortLinkData: GroupShortLi
     let userId = try currentUserId("apiPrepareGroup")
     let r: ChatResponse1 = try await chatSendCmd(.apiPrepareGroup(userId: userId, connLink: connLink, groupShortLinkData: groupShortLinkData))
     if case let .newPreparedGroup(_, groupInfo) = r { return groupInfo }
+    throw r.unexpected
+}
+
+func apiChangePreparedContactUser(contactId: Int64, newUserId: Int64) async throws -> Contact {
+    let r: ChatResponse1 = try await chatSendCmd(.apiChangePreparedContactUser(contactId: contactId, newUserId: newUserId))
+    if case let .contactUserChanged(_, _, _, toContact) = r {return toContact}
+    throw r.unexpected
+}
+
+func apiChangePreparedGroupUser(groupId: Int64, newUserId: Int64) async throws -> GroupInfo {
+    let r: ChatResponse1 = try await chatSendCmd(.apiChangePreparedGroupUser(groupId: groupId, newUserId: newUserId))
+    if case let .groupUserChanged(_, _, _, toGroup) = r {return toGroup}
     throw r.unexpected
 }
 
