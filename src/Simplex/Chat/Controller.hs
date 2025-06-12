@@ -450,8 +450,8 @@ data ChatCommand
   | APIConnectPlan UserId AConnectionLink
   | APIPrepareContact UserId ACreatedConnLink ContactShortLinkData
   | APIPrepareGroup UserId ACreatedConnLink GroupShortLinkData
-  | APIChangeContactUser ContactId UserId
-  | APIChangeGroupUser GroupId UserId
+  | APIChangePreparedContactUser ContactId UserId
+  | APIChangePreparedGroupUser GroupId UserId
   | APIConnectPreparedContact {contactId :: ContactId, incognito :: IncognitoEnabled, msgContent_ :: Maybe MsgContent}
   | APIConnectPreparedGroup GroupId IncognitoEnabled
   | APIConnect UserId IncognitoEnabled (Maybe ACreatedConnLink) (Maybe MsgContent)
@@ -685,6 +685,8 @@ data ChatResponse
   | CRConnectionPlan {user :: User, connLink :: ACreatedConnLink, connectionPlan :: ConnectionPlan}
   | CRNewPreparedContact {user :: User, contact :: Contact}
   | CRNewPreparedGroup {user :: User, groupInfo :: GroupInfo}
+  | CRContactUserChanged {user :: User, fromContact :: Contact, newUser :: User, toContact :: Contact}
+  | CRGroupUserChanged {user :: User, fromGroup :: GroupInfo, newUser :: User, toGroup :: GroupInfo}
   | CRSentConfirmation {user :: User, connection :: PendingContactConnection}
   | CRSentInvitation {user :: User, connection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRStartedConnectionToContact {user :: User, contact :: Contact}

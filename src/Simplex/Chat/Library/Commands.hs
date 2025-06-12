@@ -1760,13 +1760,21 @@ processChatCommand' vr = \case
     let GroupShortLinkData {groupProfile} = groupSLinkData
     gInfo <- withStore $ \db -> createPreparedGroup db vr user groupProfile accLink
     pure $ CRNewPreparedGroup user gInfo
-  -- TODO [short links] change prepared entity user
-  -- TODO  - UI would call these APIs before APIConnectPrepared... APIs
-  -- TODO  - UI to transition to new user keeping chat opened
-  APIChangeContactUser _contactId _newUserId -> withUser $ \_user -> do
-    ok_
-  APIChangeGroupUser _groupId _newUserId -> withUser $ \_user -> do
-    ok_
+  APIChangePreparedContactUser contactId newUserId -> withUser $ \user -> do
+    ct@Contact {connLinkToConnect} <- withFastStore $ \db -> getContact db vr user contactId
+    when (isNothing connLinkToConnect) $ throwCmdError "contact doesn't have link to connect"
+    when (isJust $ contactConn ct) $ throwCmdError "contact already has connection"
+    newUser <- privateGetUser newUserId
+    ct' <- withFastStore $ \db -> updatePreparedContactUser db vr user ct newUser
+    pure $ CRContactUserChanged user ct newUser ct'
+  APIChangePreparedGroupUser groupId newUserId -> withUser $ \user -> do
+    (gInfo, hostMember) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getHostMember db vr user groupId
+    let GroupInfo {connLinkToConnect} = gInfo
+    when (isNothing connLinkToConnect) $ throwCmdError "group doesn't have link to connect"
+    when (isJust $ memberConn hostMember) $ throwCmdError "host member already has connection"
+    newUser <- privateGetUser newUserId
+    gInfo' <- withFastStore $ \db -> updatePreparedGroupUser db vr user gInfo hostMember newUser
+    pure $ CRGroupUserChanged user gInfo newUser gInfo'
   APIConnectPreparedContact contactId incognito msgContent_ -> withUser $ \user -> do
     Contact {connLinkToConnect} <- withFastStore $ \db -> getContact db vr user contactId
     case connLinkToConnect of
@@ -4424,8 +4432,8 @@ chatCommandP =
       "/_connect plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> strP),
       "/_prepare contact " *> (APIPrepareContact <$> A.decimal <* A.space <*> connLinkP <* A.space <*> jsonP),
       "/_prepare group " *> (APIPrepareGroup <$> A.decimal <* A.space <*> connLinkP <* A.space <*> jsonP),
-      "/_set contact user @" *> (APIChangeContactUser <$> A.decimal <* A.space <*> A.decimal),
-      "/_set group user #" *> (APIChangeGroupUser <$> A.decimal <* A.space <*> A.decimal),
+      "/_set contact user @" *> (APIChangePreparedContactUser <$> A.decimal <* A.space <*> A.decimal),
+      "/_set group user #" *> (APIChangePreparedGroupUser <$> A.decimal <* A.space <*> A.decimal),
       "/_connect contact @" *> (APIConnectPreparedContact <$> A.decimal <*> incognitoOnOffP <*> optional (A.space *> msgContentP)),
       "/_connect group #" *> (APIConnectPreparedGroup <$> A.decimal <*> incognitoOnOffP),
       "/_connect " *> (APIAddContact <$> A.decimal <*> shortOnOffP <*> incognitoOnOffP),

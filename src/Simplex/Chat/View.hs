@@ -192,6 +192,8 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRConnectionPlan u connLink connectionPlan -> ttyUser u $ viewConnectionPlan cfg connLink connectionPlan
   CRNewPreparedContact u c -> ttyUser u  [ttyContact' c <> ": contact is prepared"]
   CRNewPreparedGroup u g -> ttyUser u [ttyGroup' g <> ": group is prepared"]
+  CRContactUserChanged u c nu c' -> ttyUser u $ viewContactUserChanged u c nu c'
+  CRGroupUserChanged u g nu g' -> ttyUser u $ viewGroupUserChanged u g nu g'
   CRSentConfirmation u _ -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u _ customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
   CRStartedConnectionToContact u c -> ttyUser u [ttyContact' c <> ": connection started"]
@@ -1830,6 +1832,28 @@ viewConnectionUserChanged User {localDisplayName = n} PendingContactConnection {
         <> ["The invitation link for old clients: " <> plain cReqStr | isJust shortLink]
       where
         cReqStr = strEncode $ simplexChatInvitation cReq
+
+viewContactUserChanged :: User -> Contact -> User -> Contact -> [StyledString]
+viewContactUserChanged
+  User {localDisplayName = un}
+  ct@Contact {localDisplayName = cn}
+  User {localDisplayName = un'}
+  Contact {localDisplayName = cn'}
+    | cn' /= cn = [userChangedStr <> ", new local name: " <> ttyContact cn']
+    | otherwise = [userChangedStr]
+  where
+    userChangedStr = "contact " <> ttyContact' ct <> " changed from user " <> plain un <> " to user " <> plain un'
+
+viewGroupUserChanged :: User -> GroupInfo -> User -> GroupInfo -> [StyledString]
+viewGroupUserChanged
+  User {localDisplayName = un}
+  g@GroupInfo {localDisplayName = gn}
+  User {localDisplayName = un'}
+  GroupInfo {localDisplayName = gn'}
+    | gn' /= gn = [userChangedStr <> ", new local name: " <> ttyGroup gn']
+    | otherwise = [userChangedStr]
+  where
+    userChangedStr = "group " <> ttyGroup' g <> " changed from user " <> plain un <> " to user " <> plain un'
 
 viewConnectionPlan :: ChatConfig -> ACreatedConnLink -> ConnectionPlan -> [StyledString]
 viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
