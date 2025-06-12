@@ -5669,6 +5669,18 @@ Enable in *Network &amp; servers* settings.</source>
         <source>pending approval</source>
         <target state="translated">ממתין לאישור</target>
       </trans-unit>
+      <trans-unit id="%@ downloaded" xml:space="preserve" approved="no">
+        <source>%@ downloaded</source>
+        <target state="translated">%@ יורד</target>
+      </trans-unit>
+      <trans-unit id="%@ server" xml:space="preserve" approved="no">
+        <source>%@ server</source>
+        <target state="translated">%@ שרת</target>
+      </trans-unit>
+      <trans-unit id="%@ connected" xml:space="preserve" approved="no">
+        <source>%@ connected</source>
+        <target state="translated">%@ מחובר</target>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="he" datatype="plaintext">
