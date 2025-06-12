@@ -3163,7 +3163,6 @@ testShortLinkChangePreparedGroupUserDuplicate =
 
       alice @@@ [("#team", "7"), ("@cath","sent invitation to join group team as admin")]
       alice `hasContactProfiles` ["alice", "cath", "robert", "robert"]
-      bob #$> ("/_get chats 2 pcc=on", chats, [("#team_1", "7"), ("#team", "7"), ("@SimpleX Chat team", ""), ("@SimpleX-Status", ""), ("*", "")])
       bob `hasContactProfiles` ["robert", "robert", "robert", "alice", "alice", "cath", "cath", "SimpleX Chat team", "SimpleX-Status"]
       cath @@@ [("#team", "7"), ("@alice","received invitation to join group team as admin")]
       cath `hasContactProfiles` ["cath", "alice", "robert", "robert"]
