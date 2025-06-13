@@ -128,9 +128,10 @@ struct ContextProfilePickerView: View {
                         scroll
                     }
                 } else {
-                    // Keep showing current selection to delay rendering picker and flickering of scroll to bottom
+                    // Keep showing current selection to avoid flickering of scroll to bottom
                     currentSelection()
                         .onAppear {
+                            // Delay rendering of expanded profile list
                             DispatchQueue.main.async {
                                 expandedListReady = true
                             }
