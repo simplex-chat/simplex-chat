@@ -82,7 +82,7 @@ public func foundChat(_ chat: ChatLike, _ searchStr: String) -> Bool {
 
 private func canForwardToChat(_ cInfo: ChatInfo) -> Bool {
     switch cInfo {
-    case let .direct(contact): cInfo.sendMsgEnabled && !contact.nextSendGrpInv
+    case let .direct(contact): cInfo.sendMsgEnabled && !contact.sendMsgToConnect
     case .group: cInfo.sendMsgEnabled
     case .local: cInfo.sendMsgEnabled
     case .contactRequest: false

@@ -78,12 +78,13 @@ import Simplex.Messaging.Version hiding (version)
 -- 12 - support sending and receiving content reports (2025-01-03)
 -- 14 - support sending and receiving group join rejection (2025-02-24)
 -- 15 - support specifying message scopes for group messages (2025-03-12)
+-- 16 - support short link data (2025-06-10)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 15
+currentChatVersion = VersionChat 16
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -141,6 +142,10 @@ groupJoinRejectVersion = VersionChat 14
 -- support group knocking (MsgScope)
 groupKnockingVersion :: VersionChat
 groupKnockingVersion = VersionChat 15
+
+-- support short link data in invitation, contact and group links
+shortLinkDataVersion :: VersionChat
+shortLinkDataVersion = VersionChat 16
 
 agentToChatVersion :: VersionSMPA -> VersionChat
 agentToChatVersion v
@@ -339,7 +344,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XFileAcptInv :: SharedMsgId -> Maybe ConnReqInvitation -> String -> ChatMsgEvent 'Json
   XFileCancel :: SharedMsgId -> ChatMsgEvent 'Json
   XInfo :: Profile -> ChatMsgEvent 'Json
-  XContact :: Profile -> Maybe XContactId -> ChatMsgEvent 'Json
+  XContact :: Profile -> Maybe XContactId -> Maybe MsgContent -> ChatMsgEvent 'Json
   XDirectDel :: ChatMsgEvent 'Json
   XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
   XGrpAcpt :: MemberId -> ChatMsgEvent 'Json
@@ -989,7 +994,7 @@ toCMEventTag msg = case msg of
   XFileAcptInv {} -> XFileAcptInv_
   XFileCancel _ -> XFileCancel_
   XInfo _ -> XInfo_
-  XContact _ _ -> XContact_
+  XContact {} -> XContact_
   XDirectDel -> XDirectDel_
   XGrpInv _ -> XGrpInv_
   XGrpAcpt _ -> XGrpAcpt_
@@ -1099,7 +1104,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XFileAcptInv_ -> XFileAcptInv <$> p "msgId" <*> opt "fileConnReq" <*> p "fileName"
       XFileCancel_ -> XFileCancel <$> p "msgId"
       XInfo_ -> XInfo <$> p "profile"
-      XContact_ -> XContact <$> p "profile" <*> opt "contactReqId"
+      XContact_ -> XContact <$> p "profile" <*> opt "contactReqId" <*> opt "content"
       XDirectDel_ -> pure XDirectDel
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
       XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
@@ -1163,7 +1168,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XFileAcptInv sharedMsgId fileConnReq fileName -> o $ ("fileConnReq" .=? fileConnReq) ["msgId" .= sharedMsgId, "fileName" .= fileName]
       XFileCancel sharedMsgId -> o ["msgId" .= sharedMsgId]
       XInfo profile -> o ["profile" .= profile]
-      XContact profile xContactId -> o $ ("contactReqId" .=? xContactId) ["profile" .= profile]
+      XContact profile xContactId content -> o $ ("contactReqId" .=? xContactId) $ ("content" .=? content) ["profile" .= profile]
       XDirectDel -> JM.empty
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId -> o ["memberId" .= memId]

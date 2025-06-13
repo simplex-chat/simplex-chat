@@ -47,7 +47,7 @@ struct ChatView: View {
     @State private var selectedMember: GMember? = nil
     // opening GroupLinkView on link button (incognito)
     @State private var showGroupLinkSheet: Bool = false
-    @State private var groupLink: CreatedConnLink?
+    @State private var groupLink: GroupLink?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
     @State private var forwardedChatItems: [ChatItem] = []
     @State private var selectedChatItems: Set<Int64>? = nil
@@ -117,6 +117,11 @@ struct ChatView: View {
                 connectingText()
                 if selectedChatItems == nil {
                     let reason = chat.chatInfo.userCantSendReason
+                    let composeEnabled = (
+                        chat.chatInfo.sendMsgEnabled ||
+                        (chat.chatInfo.groupInfo?.nextConnectPrepared ?? false) || // allow to join prepared group without message
+                        (chat.chatInfo.contact?.nextAcceptContactRequest ?? false) // allow to accept or reject contact request
+                    )
                     ComposeView(
                         chat: chat,
                         im: im,
@@ -126,8 +131,8 @@ struct ChatView: View {
                         selectedRange: $selectedRange,
                         disabledText: reason?.composeLabel
                     )
-                    .disabled(!cInfo.sendMsgEnabled)
-                    .if(!cInfo.sendMsgEnabled) { v in
+                    .disabled(!composeEnabled)
+                    .if(!composeEnabled) { v in
                         v.disabled(true).onTapGesture {
                             AlertManager.shared.showAlertMsg(
                                 title: "You can't send messages!",
@@ -760,7 +765,8 @@ struct ChatView: View {
         if case let .direct(contact) = chat.chatInfo,
            !contact.sndReady,
            contact.active,
-           !contact.nextSendGrpInv {
+           !contact.sendMsgToConnect,
+           !contact.nextAcceptContactRequest {
             Text("connecting…")
                 .font(.caption)
                 .foregroundColor(theme.colors.secondary)
@@ -1034,8 +1040,9 @@ struct ChatView: View {
             if case let .group(gInfo, _) = chat.chatInfo {
                 Task {
                     do {
-                        if let link = try apiGetGroupLink(gInfo.groupId) {
-                            (groupLink, groupLinkMemberRole) = link
+                        if let gLink = try apiGetGroupLink(gInfo.groupId) {
+                            groupLink = gLink
+                            groupLinkMemberRole = gLink.acceptMemberRole
                         }
                     } catch let error {
                         logger.error("ChatView apiGetGroupLink: \(responseError(error))")

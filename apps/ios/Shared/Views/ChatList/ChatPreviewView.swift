@@ -164,7 +164,16 @@ struct ChatPreviewView: View {
         let t = Text(chat.chatInfo.chatViewName).font(.title3).fontWeight(.bold)
         switch chat.chatInfo {
         case let .direct(contact):
-            previewTitle(contact.verified == true ? verifiedIcon + t : t).foregroundColor(deleting ? Color.secondary : nil)
+            let color = (
+                deleting
+                ? Color.secondary
+                : (
+                    contact.nextAcceptContactRequest
+                    ? theme.colors.primary
+                    : nil
+                )
+            )
+            previewTitle(contact.verified == true ? verifiedIcon + t : t).foregroundColor(color)
         case let .group(groupInfo, _):
             let v = previewTitle(t)
             switch (groupInfo.membership.memberStatus) {
@@ -334,20 +343,24 @@ struct ChatPreviewView: View {
                 if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
                     chatPreviewInfoText("Tap to Connect")
                         .foregroundColor(theme.colors.primary)
-                } else if !contact.sndReady && contact.activeConn != nil {
-                    if contact.nextSendGrpInv {
-                        chatPreviewInfoText("send direct message")
-                    } else if contact.active {
-                        chatPreviewInfoText("connecting…")
-                    }
+                } else if contact.nextAcceptContactRequest {
+                    chatPreviewInfoText("swipe or open to connect")
+                } else if contact.sendMsgToConnect {
+                    chatPreviewInfoText("send to connect")
+                } else if !contact.sndReady && contact.activeConn != nil && contact.active {
+                    chatPreviewInfoText("connecting…")
                 }
             case let .group(groupInfo, _):
-                switch (groupInfo.membership.memberStatus) {
-                case .memRejected: chatPreviewInfoText("rejected")
-                case .memInvited: groupInvitationPreviewText(groupInfo)
-                case .memAccepted: chatPreviewInfoText("connecting…")
-                case .memPendingReview, .memPendingApproval: chatPreviewInfoText("reviewed by admins")
-                default: EmptyView()
+                if groupInfo.nextConnectPrepared {
+                    chatPreviewInfoText("open to join")
+                } else {
+                    switch (groupInfo.membership.memberStatus) {
+                    case .memRejected: chatPreviewInfoText("rejected")
+                    case .memInvited: groupInvitationPreviewText(groupInfo)
+                    case .memAccepted: chatPreviewInfoText("connecting…")
+                    case .memPendingReview, .memPendingApproval: chatPreviewInfoText("reviewed by admins")
+                    default: EmptyView()
+                    }
                 }
             default: EmptyView()
             }

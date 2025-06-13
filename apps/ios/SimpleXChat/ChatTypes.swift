@@ -1326,7 +1326,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
             }
         }
     }
-    
+
     public var chatDeleted: Bool {
         get {
             switch self {
@@ -1336,12 +1336,22 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public var nextConnect: Bool {
+        get {
+            switch self {
+            case let .direct(contact): return contact.sendMsgToConnect
+            case let .group(groupInfo, _): return groupInfo.nextConnectPrepared
+            default: return false
+            }
+        }
+    }
+
     public var userCantSendReason: (composeLabel: LocalizedStringKey, alertMessage: LocalizedStringKey?)? {
         get {
             switch self {
             case let .direct(contact):
-                // TODO [short links] this will have additional statuses for pending contact requests before they are accepted
-                if contact.nextSendGrpInv { return nil }
+                if contact.sendMsgToConnect { return nil }
+                if contact.nextAcceptContactRequest { return ("can't send messages", nil) }
                 if !contact.active { return ("contact deleted", nil) }
                 if !contact.sndReady { return ("contact not ready", nil) }
                 if contact.activeConn?.connectionStats?.ratchetSyncSendProhibited ?? false { return ("not synchronized", nil) }
@@ -1708,19 +1718,24 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     var createdAt: Date
     var updatedAt: Date
     var chatTs: Date?
+    public var connLinkToConnect: CreatedConnLink?
+    public var contactRequestId: Int64?
     var contactGroupMemberId: Int64?
     var contactGrpInvSent: Bool
     public var chatTags: [Int64]
     public var chatItemTTL: Int64?
     public var uiThemes: ThemeModeOverrides?
     public var chatDeleted: Bool
-    
+
     public var id: ChatId { get { "@\(contactId)" } }
     public var apiId: Int64 { get { contactId } }
     public var ready: Bool { get { activeConn?.connStatus == .ready } }
     public var sndReady: Bool { get { ready || activeConn?.connStatus == .sndReady } }
     public var active: Bool { get { contactStatus == .active } }
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
+    public var nextConnectPrepared: Bool { get { connLinkToConnect != nil && activeConn == nil } }
+    public var nextAcceptContactRequest: Bool { get { contactRequestId != nil && activeConn == nil } }
+    public var sendMsgToConnect: Bool { get { nextSendGrpInv || nextConnectPrepared } }
     public var displayName: String { localAlias == "" ? profile.displayName : localAlias }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
@@ -1895,7 +1910,7 @@ public struct UserContactRequest: Decodable, NamedChat, Hashable {
     var createdAt: Date
     public var updatedAt: Date
 
-    public var id: ChatId { get { "<@\(contactRequestId)" } }
+    public var id: ChatId { get { contactRequestChatId(contactRequestId) } }
     public var apiId: Int64 { get { contactRequestId } }
     var ready: Bool { get { true } }
     public var displayName: String { get { profile.displayName } }
@@ -1912,6 +1927,10 @@ public struct UserContactRequest: Decodable, NamedChat, Hashable {
         createdAt: .now,
         updatedAt: .now
     )
+}
+
+public func contactRequestChatId(_ contactRequestId: Int64) -> ChatId {
+    return "<@\(contactRequestId)"
 }
 
 public struct PendingContactConnection: Decodable, NamedChat, Hashable {
@@ -2052,12 +2071,15 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     var createdAt: Date
     var updatedAt: Date
     var chatTs: Date?
+    public var connLinkToConnect: CreatedConnLink?
+    public var connLinkStartedConnection: Bool
     public var uiThemes: ThemeModeOverrides?
     public var membersRequireAttention: Int
 
     public var id: ChatId { get { "#\(groupId)" } }
     public var apiId: Int64 { get { groupId } }
     public var ready: Bool { get { true } }
+    public var nextConnectPrepared: Bool { get { connLinkToConnect != nil && !connLinkStartedConnection } }
     public var displayName: String { localAlias == "" ? groupProfile.displayName : localAlias }
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
@@ -2090,6 +2112,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
         chatSettings: ChatSettings.defaults,
         createdAt: .now,
         updatedAt: .now,
+        connLinkStartedConnection: false,
         membersRequireAttention: 0,
         chatTags: [],
         localAlias: ""
@@ -2163,6 +2186,15 @@ public enum MemberCriteria: String, Codable, Identifiable, Hashable {
         case .all: return NSLocalizedString("all", comment: "member criteria value")
         }
     }
+}
+
+public struct ContactShortLinkData: Codable, Hashable {
+    public var profile: Profile
+    public var welcomeMsg: String?
+}
+
+public struct GroupShortLinkData: Codable, Hashable {
+    public var groupProfile: GroupProfile
 }
 
 public struct BusinessChatInfo: Decodable, Hashable {

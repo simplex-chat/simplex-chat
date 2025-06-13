@@ -354,14 +354,14 @@ getUserContactProfiles db User {userId} =
     toContactProfile :: (ContactName, Text, Maybe ImageData, Maybe ConnLinkContact, Maybe Preferences) -> Profile
     toContactProfile (displayName, fullName, image, contactLink, preferences) = Profile {displayName, fullName, image, contactLink, preferences}
 
-createUserContactLink :: DB.Connection -> User -> ConnId -> CreatedLinkContact -> SubscriptionMode -> ExceptT StoreError IO ()
-createUserContactLink db User {userId} agentConnId (CCLink cReq shortLink) subMode =
+createUserContactLink :: DB.Connection -> User -> ConnId -> CreatedLinkContact -> Bool -> SubscriptionMode -> ExceptT StoreError IO ()
+createUserContactLink db User {userId} agentConnId (CCLink cReq shortLink) shortLinkDataSet subMode =
   checkConstraint SEDuplicateContactLink . liftIO $ do
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO user_contact_links (user_id, conn_req_contact, short_link_contact, created_at, updated_at) VALUES (?,?,?,?,?)"
-      (userId, cReq, shortLink, currentTs, currentTs)
+      "INSERT INTO user_contact_links (user_id, conn_req_contact, short_link_contact, short_link_data_set, created_at, updated_at) VALUES (?,?,?,?,?,?)"
+      (userId, cReq, shortLink, BI shortLinkDataSet, currentTs, currentTs)
     userContactLinkId <- insertedRowId db
     void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId ConnNew initialChatVersion chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
 
@@ -450,7 +450,9 @@ data UserMsgReceiptSettings = UserMsgReceiptSettings
   deriving (Show)
 
 data UserContactLink = UserContactLink
-  { connLinkContact :: CreatedLinkContact,
+  { userContactLinkId :: Int64,
+    connLinkContact :: CreatedLinkContact,
+    shortLinkDataSet :: Bool,
     autoAccept :: Maybe AutoAccept
   }
   deriving (Show)
@@ -472,9 +474,9 @@ $(J.deriveJSON defaultJSON ''AutoAccept)
 
 $(J.deriveJSON defaultJSON ''UserContactLink)
 
-toUserContactLink :: (ConnReqContact, Maybe ShortLinkContact, BoolInt, BoolInt, BoolInt, Maybe MsgContent) -> UserContactLink
-toUserContactLink (connReq, shortLink, BI autoAccept, BI businessAddress, BI acceptIncognito, autoReply) =
-  UserContactLink (CCLink connReq shortLink) $
+toUserContactLink :: (Int64, ConnReqContact, Maybe ShortLinkContact, BoolInt, BoolInt, BoolInt, BoolInt, Maybe MsgContent) -> UserContactLink
+toUserContactLink (userContactLinkId, connReq, shortLink, BI shortLinkDataSet, BI autoAccept, BI businessAddress, BI acceptIncognito, autoReply) =
+  UserContactLink userContactLinkId (CCLink connReq shortLink) shortLinkDataSet $
     if autoAccept then Just AutoAccept {businessAddress, acceptIncognito, autoReply} else Nothing
 
 getUserAddress :: DB.Connection -> User -> ExceptT StoreError IO UserContactLink
@@ -488,7 +490,7 @@ getUserContactLinkById db userId userContactLinkId =
     DB.query
       db
       [sql|
-        SELECT conn_req_contact, short_link_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
+        SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
         FROM user_contact_links
         WHERE user_id = ? AND user_contact_link_id = ?
       |]
@@ -524,7 +526,7 @@ getUserContactLinkViaShortLink db User {userId} shortLink =
 userContactLinkQuery :: Query
 userContactLinkQuery =
   [sql|
-    SELECT conn_req_contact, short_link_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
+    SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
     FROM user_contact_links
   |]
 
@@ -534,10 +536,12 @@ setUserContactLinkShortLink db userContactLinkId shortLink =
     db
     [sql|
       UPDATE user_contact_links
-      SET short_link_contact = ?
+      SET short_link_contact = ?,
+          short_link_data_set = ?,
+          auto_accept_incognito = ?
       WHERE user_contact_link_id = ?
     |]
-    (shortLink, userContactLinkId)
+    (shortLink, BI True, BI False, userContactLinkId)
 
 getContactWithoutConnViaAddress :: DB.Connection -> VersionRangeChat -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe Contact)
 getContactWithoutConnViaAddress db vr user@User {userId} (cReqSchema1, cReqSchema2) = do
@@ -555,21 +559,18 @@ getContactWithoutConnViaAddress db vr user@User {userId} (cReqSchema1, cReqSchem
         (userId, cReqSchema1, cReqSchema2)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db vr user) ctId_
 
-updateUserAddressAutoAccept :: DB.Connection -> User -> Maybe AutoAccept -> ExceptT StoreError IO UserContactLink
-updateUserAddressAutoAccept db user@User {userId} autoAccept = do
-  link <- getUserAddress db user
-  liftIO updateUserAddressAutoAccept_ $> link {autoAccept}
+updateUserAddressAutoAccept :: DB.Connection -> Int64 -> Maybe AutoAccept -> IO ()
+updateUserAddressAutoAccept db userContactLinkId autoAccept =
+  DB.execute
+    db
+    [sql|
+      UPDATE user_contact_links
+      SET auto_accept = ?, business_address = ?, auto_accept_incognito = ?, auto_reply_msg_content = ?
+      WHERE user_contact_link_id = ?
+    |]
+    (autoAcceptValues :. Only userContactLinkId)
   where
-    updateUserAddressAutoAccept_ =
-      DB.execute
-        db
-        [sql|
-          UPDATE user_contact_links
-          SET auto_accept = ?, business_address = ?, auto_accept_incognito = ?, auto_reply_msg_content = ?
-          WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
-        |]
-        (ucl :. Only userId)
-    ucl = case autoAccept of
+    autoAcceptValues = case autoAccept of
       Just AutoAccept {businessAddress, acceptIncognito, autoReply} -> (BI True, BI businessAddress, BI acceptIncognito, autoReply)
       _ -> (BI False, BI False, BI False, Nothing)
 
