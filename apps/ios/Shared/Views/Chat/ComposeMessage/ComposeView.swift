@@ -352,7 +352,10 @@ struct ComposeView: View {
             Divider()
             if (chat.chatInfo.contact?.nextConnectPrepared ?? false) || (chat.chatInfo.groupInfo?.nextConnectPrepared ?? false),
                let user = chatModel.currentUser {
-                ContextProfilePickerView(selectedUser: user)
+                ContextProfilePickerView(
+                    chat: chat,
+                    selectedUser: user
+                )
             }
 
             if let contact = chat.chatInfo.contact,

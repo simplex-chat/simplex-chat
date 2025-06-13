@@ -13,6 +13,7 @@ let USER_ROW_SIZE: CGFloat = 60
 let MAX_VISIBLE_USER_ROWS: CGFloat = 4.8
 
 struct ContextProfilePickerView: View {
+    @ObservedObject var chat: Chat
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @State var selectedUser: User
@@ -181,11 +182,48 @@ struct ContextProfilePickerView: View {
         }
     }
 
-    private func changeProfile(_ user: User) {
-        // Task
-        selectedUser = user
-        incognitoDefault = false
-        listExpanded = false
+    private func changeProfile(_ newUser: User) {
+        Task {
+            do {
+                if let contact = chat.chatInfo.contact {
+                    let updatedContact = try await apiChangePreparedContactUser(contactId: contact.contactId, newUserId: newUser.userId)
+                    await MainActor.run {
+                        selectedUser = newUser
+                        incognitoDefault = false
+                        listExpanded = false
+                        chatModel.updateContact(updatedContact)
+                    }
+                } else if let groupInfo = chat.chatInfo.groupInfo {
+                    let updatedGroupInfo = try await apiChangePreparedGroupUser(groupId: groupInfo.groupId, newUserId: newUser.userId)
+                    await MainActor.run {
+                        selectedUser = newUser
+                        incognitoDefault = false
+                        listExpanded = false
+                        chatModel.updateGroup(updatedGroupInfo)
+                    }
+                }
+                do {
+                    try await changeActiveUserAsync_(newUser.userId, viewPwd: nil)
+                } catch {
+                    await MainActor.run {
+                        showAlert(
+                            NSLocalizedString("Error switching profile", comment: "alert title"),
+                            message: String.localizedStringWithFormat(NSLocalizedString("Your chat was moved to %@ but an unexpected error occurred while redirecting you to the profile.", comment: "alert message"), newUser.chatViewName)
+                        )
+                    }
+                }
+            } catch let error {
+                await MainActor.run {
+                    if let currentUser = chatModel.currentUser {
+                        selectedUser = currentUser
+                    }
+                    showAlert(
+                        NSLocalizedString("Error changing chat profile", comment: "alert title"),
+                        message: responseError(error)
+                    )
+                }
+            }
+        }
     }
 
     private func incognitoOption() -> some View {
@@ -242,6 +280,7 @@ struct ContextProfilePickerView: View {
 
 #Preview {
     ContextProfilePickerView(
+        chat: Chat.sampleData,
         selectedUser: User.sampleData
     )
 }
