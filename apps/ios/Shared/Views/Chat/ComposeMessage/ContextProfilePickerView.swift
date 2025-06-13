@@ -37,12 +37,15 @@ struct ContextProfilePickerView: View {
             }
     }
 
-    @ViewBuilder private func viewBody() -> some View {
-        if !listExpanded {
-            currentSelection()
-        } else {
-            profilePicker()
+    private func viewBody() -> some View {
+        Group {
+            if !listExpanded {
+                currentSelection()
+            } else {
+                profilePicker()
+            }
         }
+        .padding(.bottom, -8)
     }
 
     private func currentSelection() -> some View {
