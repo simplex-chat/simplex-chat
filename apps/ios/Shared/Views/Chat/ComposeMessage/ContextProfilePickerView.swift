@@ -15,8 +15,8 @@ let MAX_VISIBLE_USER_ROWS: CGFloat = 4.8
 struct ContextProfilePickerView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
-    @State var selectedProfile: User
-    @State private var profiles: [User] = []
+    @State var selectedUser: User
+    @State private var users: [User] = []
     @State private var listExpanded = false
     @State private var expandedListReady = false
     @State private var showIncognitoSheet = false
@@ -27,10 +27,9 @@ struct ContextProfilePickerView: View {
     var body: some View {
         viewBody()
             .onAppear {
-                profiles = chatModel.users
+                users = chatModel.users
                     .map { $0.user }
                     .filter { u in u.activeUser || !u.hidden }
-                    .sorted { u, _ in u.activeUser }
                     .reversed()
             }
             .sheet(isPresented: $showIncognitoSheet) {
@@ -39,15 +38,11 @@ struct ContextProfilePickerView: View {
     }
 
     @ViewBuilder private func viewBody() -> some View {
-        Group {
-            if !listExpanded {
-                currentSelection()
-            } else {
-                profilePicker()
-            }
+        if !listExpanded {
+            currentSelection()
+        } else {
+            profilePicker()
         }
-        .padding(.leading, 12)
-        .padding(.trailing)
     }
 
     private func currentSelection() -> some View {
@@ -60,11 +55,13 @@ struct ContextProfilePickerView: View {
             }
             .padding(.top, 10)
             .padding(.bottom, -4)
+            .padding(.leading, 12)
+            .padding(.trailing)
 
             if incognitoDefault {
                 incognitoOption()
             } else {
-                profilerPickerUserOption(selectedProfile)
+                profilerPickerUserOption(selectedUser)
             }
         }
     }
@@ -75,8 +72,10 @@ struct ContextProfilePickerView: View {
                 if expandedListReady {
                     let scroll = ScrollView {
                         LazyVStack(spacing: 0) {
-                            let otherProfiles = profiles.filter { u in u.userId != selectedProfile.userId }
-                            ForEach(otherProfiles) { p in
+                            let otherUsers = users
+                                .filter { u in u.userId != selectedUser.userId }
+                                .sorted(using: KeyPathComparator<User>(\.activeOrder))
+                            ForEach(otherUsers) { p in
                                 profilerPickerUserOption(p)
                                     .contentShape(Rectangle())
                                 Divider()
@@ -85,7 +84,7 @@ struct ContextProfilePickerView: View {
                             }
 
                             if incognitoDefault {
-                                profilerPickerUserOption(selectedProfile)
+                                profilerPickerUserOption(selectedUser)
                                     .contentShape(Rectangle())
                                 Divider()
                                     .padding(.leading)
@@ -101,13 +100,13 @@ struct ContextProfilePickerView: View {
                                     .padding(.leading)
                                     .padding(.leading, 48)
 
-                                profilerPickerUserOption(selectedProfile)
+                                profilerPickerUserOption(selectedUser)
                                     .contentShape(Rectangle())
                                     .id("BOTTOM_ANCHOR")
                             }
                         }
                     }
-                        .frame(maxHeight: USER_ROW_SIZE * min(MAX_VISIBLE_USER_ROWS, CGFloat(profiles.count + 1))) // + 1 for incognito
+                        .frame(maxHeight: USER_ROW_SIZE * min(MAX_VISIBLE_USER_ROWS, CGFloat(users.count + 1))) // + 1 for incognito
                         .onAppear {
                             DispatchQueue.main.async {
                                 withAnimation(nil) {
@@ -139,27 +138,27 @@ struct ContextProfilePickerView: View {
     
     private func profilerPickerUserOption(_ user: User) -> some View {
         Button {
-            if selectedProfile == user {
+            if selectedUser == user {
                 if !incognitoDefault {
                     listExpanded.toggle()
                 } else {
                     incognitoDefault = false
                     listExpanded = false
                 }
-            } else if selectedProfile != user {
+            } else if selectedUser != user {
                 changeProfile(user)
             }
         } label: {
             HStack {
                 ProfileImage(imageStr: user.image, size: 38)
                 Text(user.chatViewName)
-                    .fontWeight(selectedProfile == user && !incognitoDefault ? .medium : .regular)
+                    .fontWeight(selectedUser == user && !incognitoDefault ? .medium : .regular)
                     .foregroundColor(theme.colors.onBackground)
                     .lineLimit(1)
 
                 Spacer()
 
-                if selectedProfile == user && !incognitoDefault {
+                if selectedUser == user && !incognitoDefault {
                     if listExpanded {
                         Image(systemName: "chevron.down")
                             .font(.system(size: 12, weight: .bold))
@@ -173,13 +172,15 @@ struct ContextProfilePickerView: View {
                     }
                 }
             }
+            .padding(.leading, 12)
+            .padding(.trailing)
             .frame(height: USER_ROW_SIZE)
         }
     }
 
     private func changeProfile(_ user: User) {
         // Task
-        selectedProfile = user
+        selectedUser = user
         incognitoDefault = false
         listExpanded = false
     }
@@ -221,6 +222,8 @@ struct ContextProfilePickerView: View {
                     }
                 }
             }
+            .padding(.leading, 12)
+            .padding(.trailing)
             .frame(height: USER_ROW_SIZE)
         }
     }
@@ -236,6 +239,6 @@ struct ContextProfilePickerView: View {
 
 #Preview {
     ContextProfilePickerView(
-        selectedProfile: User.sampleData
+        selectedUser: User.sampleData
     )
 }
