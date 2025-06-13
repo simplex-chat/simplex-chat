@@ -3459,14 +3459,10 @@ processChatCommand' vr = \case
     decodeShortLinkData :: J.FromJSON a => ByteString -> Maybe a
     decodeShortLinkData = J.decodeStrict
     updatePCCShortLinkData :: J.ToJSON a => PendingContactConnection -> a -> CM (Maybe ShortLinkInvitation)
-    updatePCCShortLinkData conn@PendingContactConnection {connLinkInv} shortLinkData = do
-      let short = isJust $ connShortLink =<< connLinkInv
-      if short
-        then do
-          let userData = encodeShortLinkData shortLinkData
-          sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a (aConnId' conn) SCMInvitation userData Nothing)
-          pure $ Just sLnk
-        else pure Nothing
+    updatePCCShortLinkData conn@PendingContactConnection {connLinkInv} shortLinkData =
+      forM (connShortLink =<< connLinkInv) $ \_ -> do
+        let userData = encodeShortLinkData shortLinkData
+        shortenShortLink' =<< withAgent (\a -> setConnShortLink a (aConnId' conn) SCMInvitation userData Nothing)
     shortenShortLink' :: ConnShortLink m -> CM (ConnShortLink m)
     shortenShortLink' l = (`shortenShortLink` l) <$> asks (shortLinkPresetServers . config)
     shortenCreatedLink :: CreatedConnLink m -> CM (CreatedConnLink m)
