@@ -1980,7 +1980,7 @@ private func changeActiveUser_(_ userId: Int64, viewPwd: String?) throws {
     try getUserChatData()
 }
 
-func changeActiveUserAsync_(_ userId: Int64?, viewPwd: String?) async throws {
+func changeActiveUserAsync_(_ userId: Int64?, viewPwd: String?, keepingChatId: String? = nil) async throws {
     let currentUser = if let userId = userId {
         try await apiSetActiveUserAsync(userId, viewPwd: viewPwd)
     } else {
@@ -1992,7 +1992,7 @@ func changeActiveUserAsync_(_ userId: Int64?, viewPwd: String?) async throws {
         m.currentUser = currentUser
         m.users = users
     }
-    try await getUserChatDataAsync()
+    try await getUserChatDataAsync(keepingChatId: keepingChatId)
     await MainActor.run {
         if let currentUser = currentUser, var (_, invitation) = ChatModel.shared.callInvitations.first(where: { _, inv in inv.user.userId == userId }) {
             invitation.user = currentUser
@@ -2014,7 +2014,7 @@ func getUserChatData() throws {
     tm.updateChatTags(m.chats)
 }
 
-private func getUserChatDataAsync() async throws {
+private func getUserChatDataAsync(keepingChatId: String?) async throws {
     let m = ChatModel.shared
     let tm = ChatTagsModel.shared
     if m.currentUser != nil {
@@ -2025,7 +2025,7 @@ private func getUserChatDataAsync() async throws {
         await MainActor.run {
             m.userAddress = userAddress
             m.chatItemTTL = chatItemTTL
-            m.updateChats(chats)
+            m.updateChats(chats, keepingChatId: keepingChatId)
             tm.activeFilter = nil
             tm.userTags = tags
             tm.updateChatTags(m.chats)

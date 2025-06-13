@@ -564,8 +564,15 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func updateChats(_ newChats: [ChatData]) {
-        chats = newChats.map { Chat($0) }
+    func updateChats(_ newChats: [ChatData], keepingChatId: String? = nil) {
+        if let keepingChatId,
+           let chatToKeep = getChat(keepingChatId),
+           let i = newChats.firstIndex(where: { $0.id == keepingChatId }) {
+            let remainingNewChats = Array(newChats[..<i] + newChats[(i + 1)...])
+            chats = [chatToKeep] + remainingNewChats.map { Chat($0) }
+        } else {
+            chats = newChats.map { Chat($0) }
+        }
         NtfManager.shared.setNtfBadgeCount(totalUnreadCountForAllUsers())
         popChatCollector.clear()
     }

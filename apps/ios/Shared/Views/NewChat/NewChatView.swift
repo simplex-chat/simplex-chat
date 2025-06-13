@@ -424,7 +424,7 @@ private struct ActiveProfilePicker: View {
                                 chatModel.updateContactConnection(conn)
                             }
                             do {
-                                try await changeActiveUserAsync_(profile.userId, viewPwd: profile.hidden ? trimmedSearchTextOrPassword : nil )
+                                try await changeActiveUserAsync_(profile.userId, viewPwd: profile.hidden ? trimmedSearchTextOrPassword : nil)
                                 await MainActor.run {
                                     profileSwitchStatus = .idle
                                     dismiss()

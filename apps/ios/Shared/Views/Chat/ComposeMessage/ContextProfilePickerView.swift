@@ -204,7 +204,7 @@ struct ContextProfilePickerView: View {
                     }
                 }
                 do {
-                    try await changeActiveUserAsync_(newUser.userId, viewPwd: nil)
+                    try await changeActiveUserAsync_(newUser.userId, viewPwd: nil, keepingChatId: chat.id)
                 } catch {
                     await MainActor.run {
                         showAlert(
