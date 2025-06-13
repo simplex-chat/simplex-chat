@@ -22,7 +22,6 @@ struct ContextProfilePickerView: View {
     @State private var expandedListReady = false
     @State private var showIncognitoSheet = false
 
-    @UserDefault(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
 
     var body: some View {
