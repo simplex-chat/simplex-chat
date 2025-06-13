@@ -350,6 +350,11 @@ struct ComposeView: View {
     var body: some View {
         VStack(spacing: 0) {
             Divider()
+            if (chat.chatInfo.contact?.nextConnectPrepared ?? false) || (chat.chatInfo.groupInfo?.nextConnectPrepared ?? false),
+               let user = chatModel.currentUser {
+                ContextProfilePickerView(selectedProfile: user)
+            }
+
             if let contact = chat.chatInfo.contact,
                contact.nextAcceptContactRequest,
                let contactRequestId = contact.contactRequestId {
