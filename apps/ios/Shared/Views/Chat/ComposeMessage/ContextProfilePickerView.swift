@@ -30,7 +30,6 @@ struct ContextProfilePickerView: View {
                 users = chatModel.users
                     .map { $0.user }
                     .filter { u in u.activeUser || !u.hidden }
-                    .reversed()
             }
             .sheet(isPresented: $showIncognitoSheet) {
                 IncognitoHelp()
