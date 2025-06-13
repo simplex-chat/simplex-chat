@@ -39,18 +39,33 @@ struct ContextProfilePickerView: View {
     }
 
     @ViewBuilder private func viewBody() -> some View {
-        if !listExpanded {
-            currentSelection()
-        } else {
-            profilePicker()
+        Group {
+            if !listExpanded {
+                currentSelection()
+            } else {
+                profilePicker()
+            }
         }
+        .padding(.leading, 12)
+        .padding(.trailing)
     }
 
-    @ViewBuilder private func currentSelection() -> some View {
-        if incognitoDefault {
-            incognitoOption()
-        } else {
-            profilerPickerUserOption(selectedProfile)
+    private func currentSelection() -> some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Share profile")
+                    .font(.callout)
+                    .foregroundColor(theme.colors.secondary)
+                Spacer()
+            }
+            .padding(.top, 10)
+            .padding(.bottom, -4)
+
+            if incognitoDefault {
+                incognitoOption()
+            } else {
+                profilerPickerUserOption(selectedProfile)
+            }
         }
     }
 
@@ -113,7 +128,6 @@ struct ContextProfilePickerView: View {
                     // Keep showing current selection to delay rendering picker and flickering of scroll to bottom
                     currentSelection()
                         .onAppear {
-                            // Delay rendering for 1 frame
                             DispatchQueue.main.async {
                                 expandedListReady = true
                             }
@@ -137,9 +151,9 @@ struct ContextProfilePickerView: View {
             }
         } label: {
             HStack {
-                ProfileImage(imageStr: user.image, size: 30)
-                    .padding(.trailing, 2)
+                ProfileImage(imageStr: user.image, size: 38)
                 Text(user.chatViewName)
+                    .fontWeight(selectedProfile == user && !incognitoDefault ? .medium : .regular)
                     .foregroundColor(theme.colors.onBackground)
                     .lineLimit(1)
 
@@ -148,11 +162,14 @@ struct ContextProfilePickerView: View {
                 if selectedProfile == user && !incognitoDefault {
                     if listExpanded {
                         Image(systemName: "chevron.down")
+                            .font(.system(size: 12, weight: .bold))
                             .foregroundColor(theme.colors.secondary)
+                            .opacity(0.7)
                     } else {
                         Image(systemName: "chevron.up")
+                            .font(.system(size: 12, weight: .bold))
                             .foregroundColor(theme.colors.secondary)
-
+                            .opacity(0.7)
                     }
                 }
             }
@@ -179,10 +196,11 @@ struct ContextProfilePickerView: View {
             HStack {
                 incognitoProfileImage()
                 Text("Incognito")
+                    .fontWeight(incognitoDefault ? .medium : .regular)
                     .foregroundColor(theme.colors.onBackground)
                 Image(systemName: "info.circle")
+                    .font(.system(size: 16))
                     .foregroundColor(theme.colors.primary)
-                    .font(.system(size: 14))
                     .onTapGesture {
                         showIncognitoSheet = true
                     }
@@ -192,11 +210,14 @@ struct ContextProfilePickerView: View {
                 if incognitoDefault {
                     if listExpanded {
                         Image(systemName: "chevron.down")
+                            .font(.system(size: 12, weight: .bold))
                             .foregroundColor(theme.colors.secondary)
+                            .opacity(0.7)
                     } else {
                         Image(systemName: "chevron.up")
+                            .font(.system(size: 12, weight: .bold))
                             .foregroundColor(theme.colors.secondary)
-
+                            .opacity(0.7)
                     }
                 }
             }
@@ -208,7 +229,7 @@ struct ContextProfilePickerView: View {
         Image(systemName: "theatermasks.fill")
             .resizable()
             .scaledToFit()
-            .frame(width: 30)
+            .frame(width: 38)
             .foregroundColor(.indigo)
     }
 }

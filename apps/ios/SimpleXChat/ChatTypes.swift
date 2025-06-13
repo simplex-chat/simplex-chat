@@ -1350,8 +1350,8 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         get {
             switch self {
             case let .direct(contact):
-                // TODO [short links] this will have additional statuses for pending contact requests before they are accepted
                 if contact.sendMsgToConnect { return nil }
+                if contact.nextAcceptContactRequest { return ("can't send messages", nil) }
                 if !contact.active { return ("contact deleted", nil) }
                 if !contact.sndReady { return ("contact not ready", nil) }
                 if contact.activeConn?.connectionStats?.ratchetSyncSendProhibited ?? false { return ("not synchronized", nil) }
