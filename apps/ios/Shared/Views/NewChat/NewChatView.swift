@@ -367,7 +367,6 @@ private struct ActiveProfilePicker: View {
             .onAppear {
                 profiles = chatModel.users
                     .map { $0.user }
-                    .sorted { u, _ in u.activeUser }
             }
             .onChange(of: incognitoEnabled) { incognito in
                 if profileSwitchStatus != .switchingIncognito {
@@ -425,7 +424,7 @@ private struct ActiveProfilePicker: View {
                                 chatModel.updateContactConnection(conn)
                             }
                             do {
-                                try await changeActiveUserAsync_(profile.userId, viewPwd: profile.hidden ? trimmedSearchTextOrPassword : nil )
+                                try await changeActiveUserAsync_(profile.userId, viewPwd: profile.hidden ? trimmedSearchTextOrPassword : nil)
                                 await MainActor.run {
                                     profileSwitchStatus = .idle
                                     dismiss()
@@ -559,8 +558,10 @@ private struct ActiveProfilePicker: View {
             let activeProfile = filteredProfiles.first { u in u.activeUser }
             
             if let selectedProfile = activeProfile {
-                let otherProfiles = filteredProfiles.filter { u in u.userId != activeProfile?.userId }
-                
+                let otherProfiles = filteredProfiles
+                    .filter { u in u.userId != activeProfile?.userId }
+                    .sorted(using: KeyPathComparator<User>(\.activeOrder, order: .reverse))
+
                 if incognitoFirst {
                     incognitoOption
                     profilerPickerUserOption(selectedProfile)

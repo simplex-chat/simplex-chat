@@ -106,17 +106,21 @@ chatProfileTests = do
     it "should plan and connect via one-time invitation" testPlanShortLinkInvitation
     it "should connect via contact address" testShortLinkContactAddress
     it "should join group" testShortLinkJoinGroup
-    describe "connection via prepared entity" $ do
-      it "prepare contact using invitation short link data and connect" testShortLinkInvitationPrepareContact
-      it "prepare contact using address short link data and connect" testShortLinkAddressPrepareContact
-      it "prepare group using group short link data and connect" testShortLinkPrepareGroup
-      it "prepare group using group short link data and connect, host rejects" testShortLinkPrepareGroupReject
-      -- TODO [short links] enable tests - AGENT A_MESSAGE error
-      xit "setting incognito for invitation should update short link data" testShortLinkInvitationSetIncognito
-      xit "changing user for invitation should update short link data" testShortLinkInvitationChangeUser
-      it "changing profile should update address short link data" testShortLinkAddressChangeProfile
-      it "changing auto-reply message should update address short link data" testShortLinkAddressChangeAutoReply
-      it "changing group profile should update short link data" testShortLinkGroupChangeProfile
+  describe "short links with attached data" $ do
+    it "prepare contact using invitation short link data and connect" testShortLinkInvitationPrepareContact
+    it "prepare contact using address short link data and connect" testShortLinkAddressPrepareContact
+    it "prepare group using group short link data and connect" testShortLinkPrepareGroup
+    it "prepare group using group short link data and connect, host rejects" testShortLinkPrepareGroupReject
+    it "change prepared contact user" testShortLinkChangePreparedContactUser
+    it "change prepared contact user, new user has contact with the same name" testShortLinkChangePreparedContactUserDuplicate
+    it "change prepared group user" testShortLinkChangePreparedGroupUser
+    it "change prepared group user, new user has group with the same name" testShortLinkChangePreparedGroupUserDuplicate
+    -- TODO [short links] enable tests - AGENT A_MESSAGE error
+    xit "setting incognito for invitation should update short link data" testShortLinkInvitationSetIncognito
+    xit "changing user for invitation should update short link data" testShortLinkInvitationChangeUser
+    it "changing profile should update address short link data" testShortLinkAddressChangeProfile
+    it "changing auto-reply message should update address short link data" testShortLinkAddressChangeAutoReply
+    it "changing group profile should update short link data" testShortLinkGroupChangeProfile
 
 testUpdateProfile :: HasCallStack => TestParams -> IO ()
 testUpdateProfile =
@@ -2893,6 +2897,279 @@ testShortLinkPrepareGroupReject =
       bob <## "bad chat command: not current member"
   where
     cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Left GRRBlockedName)}}
+
+testShortLinkChangePreparedContactUser :: HasCallStack => TestParams -> IO ()
+testShortLinkChangePreparedContactUser =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      bob ##> "/create user robert"
+      showActiveUser bob "robert"
+      bob ##> "/user bob"
+      showActiveUser bob "bob (Bob)"
+
+      alice ##> "/_connect 1 short=on"
+      (shortLink, fullLink) <- getShortInvitation alice
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "invitation link: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+      bob <## "alice: contact is prepared"
+
+      -- 2 ids are for "user contacts", 2 ids are for second user contact cards, so alice is id 5
+      bob ##> "/_set contact user @5 2"
+      bob <## "contact alice changed from user bob to user robert"
+
+      bob ##> "/user robert"
+      showActiveUser bob "robert"
+
+      bob ##> "/_connect contact @5 text hello"
+      bob
+        <### [ "alice: connection started",
+               WithTime "@alice hello"
+             ]
+      alice <# "robert> hello"
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "robert: contact is connected")
+
+      alice <##> bob
+
+      alice @@@ [("@robert", "hey")]
+      alice `hasContactProfiles` ["alice", "robert"]
+      bob #$> ("/_get chats 2 pcc=on", chats, [("@alice", "hey"), ("@SimpleX Chat team", ""), ("@SimpleX-Status", ""), ("*", "")])
+      bob `hasContactProfiles` ["robert", "alice", "SimpleX Chat team", "SimpleX-Status"]
+      bob ##> "/user bob"
+      showActiveUser bob "bob (Bob)"
+      bob @@@ []
+      bob `hasContactProfiles` ["bob"]
+
+testShortLinkChangePreparedContactUserDuplicate :: HasCallStack => TestParams -> IO ()
+testShortLinkChangePreparedContactUserDuplicate =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      bob ##> "/create user robert"
+      showActiveUser bob "robert"
+
+      connectUsers alice bob
+      alice <##> bob
+
+      bob ##> "/user bob"
+      showActiveUser bob "bob (Bob)"
+
+      alice ##> "/_connect 1 short=on"
+      (shortLink, fullLink) <- getShortInvitation alice
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "invitation link: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+      bob <## "alice: contact is prepared"
+
+      -- 2 ids are for "user contacts"
+      -- 2 ids are for second user contact cards
+      -- 1 for second user's alice
+      -- so this alice is id 6
+      bob ##> "/_set contact user @6 2"
+      bob <## "contact alice changed from user bob to user robert, new local name: alice_1"
+
+      bob ##> "/user robert"
+      showActiveUser bob "robert"
+
+      bob ##> "/_connect contact @6 text hello"
+      bob
+        <### [ "alice_1: connection started",
+               WithTime "@alice_1 hello"
+             ]
+      alice <# "robert_1> hello"
+      concurrently_
+        (bob <## "alice_1 (Alice): contact is connected")
+        (alice <## "robert_1: contact is connected")
+
+      alice #> "@robert_1 hi"
+      bob <# "alice_1> hi"
+      bob #> "@alice_1 hey"
+      alice <# "robert_1> hey"
+
+      alice <##> bob
+
+      alice @@@ [("@robert", "hey"), ("@robert_1", "hey")]
+      alice `hasContactProfiles` ["alice", "robert", "robert"]
+      bob #$> ("/_get chats 2 pcc=on", chats, [("@alice", "hey"), ("@alice_1", "hey"), ("@SimpleX Chat team", ""), ("@SimpleX-Status", ""), ("*", "")])
+      bob `hasContactProfiles` ["robert", "alice", "alice", "SimpleX Chat team", "SimpleX-Status"]
+      bob ##> "/user bob"
+      showActiveUser bob "bob (Bob)"
+      bob @@@ []
+      bob `hasContactProfiles` ["bob"]
+
+testShortLinkChangePreparedGroupUser :: HasCallStack => TestParams -> IO ()
+testShortLinkChangePreparedGroupUser =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice cath
+      alice ##> "/create link #team short"
+      (shortLink, fullLink) <- getShortGroupLink alice "team" GRMember True
+
+      bob ##> "/create user robert"
+      showActiveUser bob "robert"
+      bob ##> "/user bob"
+      showActiveUser bob "bob (Bob)"
+
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "group link: ok to connect"
+      groupSLinkData <- getTermLine bob
+      bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
+      bob <## "#team: group is prepared"
+
+      bob ##> "/_set group user #1 2"
+      bob <## "group #team changed from user bob to user robert"
+
+      bob ##> "/user robert"
+      showActiveUser bob "robert"
+
+      bob ##> "/_connect group #1"
+      bob <## "#team: connection started"
+      alice <## "robert: accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: robert joined the group",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group"
+            bob <## "#team: member cath (Catherine) is connected",
+          do
+            cath <## "#team: alice added robert to the group (connecting...)"
+            cath <## "#team: new member robert is connected"
+        ]
+
+      alice #> "#team 1"
+      [bob, cath] *<# "#team alice> 1"
+      bob #> "#team 2"
+      [alice, cath] *<# "#team robert> 2"
+      threadDelay 1000000
+      cath #> "#team 3"
+      [alice, bob] *<# "#team cath> 3"
+
+      alice @@@ [("#team", "3"), ("@cath","sent invitation to join group team as admin")]
+      alice `hasContactProfiles` ["alice", "cath", "robert"]
+      bob #$> ("/_get chats 2 pcc=on", chats, [("#team", "3"), ("@SimpleX Chat team", ""), ("@SimpleX-Status", ""), ("*", "")])
+      bob `hasContactProfiles` ["robert", "alice", "cath", "SimpleX Chat team", "SimpleX-Status"]
+      cath @@@ [("#team", "3"), ("@alice","received invitation to join group team as admin")]
+      cath `hasContactProfiles` ["cath", "alice", "robert"]
+      bob ##> "/user bob"
+      showActiveUser bob "bob (Bob)"
+      bob @@@ []
+      bob `hasContactProfiles` ["bob"]
+
+testShortLinkChangePreparedGroupUserDuplicate :: HasCallStack => TestParams -> IO ()
+testShortLinkChangePreparedGroupUserDuplicate =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice cath
+      alice ##> "/create link #team short"
+      (shortLink, fullLink) <- getShortGroupLink alice "team" GRMember True
+
+      bob ##> "/create user robert"
+      showActiveUser bob "robert"
+
+      bob ##> ("/_connect plan 2 " <> shortLink)
+      bob <## "group link: ok to connect"
+      groupSLinkData1 <- getTermLine bob
+      bob ##> ("/_prepare group 2 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData1)
+      bob <## "#team: group is prepared"
+
+      bob ##> "/user bob"
+      showActiveUser bob "bob (Bob)"
+
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "group link: ok to connect"
+      groupSLinkData2 <- getTermLine bob
+      bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData2)
+      bob <## "#team: group is prepared"
+
+      bob ##> "/_set group user #2 2"
+      bob <## "group #team changed from user bob to user robert, new local name: #team_1"
+
+      bob ##> "/user robert"
+      showActiveUser bob "robert"
+
+      bob ##> "/_connect group #2"
+      bob <## "#team_1: connection started"
+      alice <## "robert: accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: robert joined the group",
+          do
+            bob <## "#team_1: joining the group..."
+            bob <## "#team_1: you joined the group"
+            bob <## "#team_1: member cath (Catherine) is connected",
+          do
+            cath <## "#team: alice added robert to the group (connecting...)"
+            cath <## "#team: new member robert is connected"
+        ]
+
+      alice #> "#team 1"
+      bob <# "#team_1 alice> 1"
+      cath <# "#team alice> 1"
+
+      bob #> "#team_1 2"
+      [alice, cath] *<# "#team robert> 2"
+
+      cath #> "#team 3"
+      alice <# "#team cath> 3"
+      bob <# "#team_1 cath> 3"
+
+      -- also connect to the first prepared instance of group
+      bob ##> "/_connect group #1"
+      bob <## "#team: connection started"
+      alice <## "robert_1: accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: robert_1 joined the group",
+          bob
+            <### [ "#team: joining the group...",
+                   "#team: you joined the group",
+                   "#team: member cath_1 (Catherine) is connected",
+                   "#team: member robert_2 is connected",
+                   WithTime "#team alice_1> 1 [>>]",
+                   WithTime "#team robert_2> 2 [>>]",
+                   WithTime "#team cath_1> 3 [>>]",
+                   -- for previously joined instance of group:
+                   "#team_1: alice added robert_1 to the group (connecting...)",
+                   "#team_1: new member robert_1 is connected"
+                 ],
+          do
+            cath <## "#team: alice added robert_1 to the group (connecting...)"
+            cath <## "#team: new member robert_1 is connected"
+        ]
+
+      alice #> "#team 4"
+      bob
+        <### [ WithTime "#team_1 alice> 4",
+               WithTime "#team alice_1> 4"
+             ]
+      cath <# "#team alice> 4"
+
+      bob #> "#team_1 5"
+      [alice, cath] *<# "#team robert> 5"
+      bob <# "#team robert_2> 5"
+
+      bob #> "#team 6"
+      [alice, cath] *<# "#team robert_1> 6"
+      bob <# "#team_1 robert_1> 6"
+
+      threadDelay 1000000
+      cath #> "#team 7"
+      alice <# "#team cath> 7"
+      bob
+        <### [ WithTime "#team_1 cath> 7",
+               WithTime "#team cath_1> 7"
+             ]
+
+      alice @@@ [("#team", "7"), ("@cath","sent invitation to join group team as admin")]
+      alice `hasContactProfiles` ["alice", "cath", "robert", "robert"]
+      bob `hasContactProfiles` ["robert", "robert", "robert", "alice", "alice", "cath", "cath", "SimpleX Chat team", "SimpleX-Status"]
+      cath @@@ [("#team", "7"), ("@alice","received invitation to join group team as admin")]
+      cath `hasContactProfiles` ["cath", "alice", "robert", "robert"]
+      bob ##> "/user bob"
+      showActiveUser bob "bob (Bob)"
+      bob @@@ []
+      bob `hasContactProfiles` ["bob"]
 
 testShortLinkInvitationSetIncognito :: HasCallStack => TestParams -> IO ()
 testShortLinkInvitationSetIncognito =

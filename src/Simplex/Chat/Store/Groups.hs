@@ -36,6 +36,7 @@ module Simplex.Chat.Store.Groups
     createGroupInvitation,
     deleteContactCardKeepConn,
     createPreparedGroup,
+    updatePreparedGroupUser,
     setGroupConnLinkStartedConnection,
     updatePreparedUserAndHostMembersInvited,
     updatePreparedUserAndHostMembersRejected,
@@ -606,6 +607,70 @@ createPreparedGroup db vr user@User {userId, userContactId} groupProfile connLin
               :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
           )
         insertedRowId db
+
+updatePreparedGroupUser :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupMember -> User -> ExceptT StoreError IO GroupInfo
+updatePreparedGroupUser db vr user gInfo@GroupInfo {groupId, membership} hostMember newUser@User {userId = newUserId} = do
+  currentTs <- liftIO getCurrentTime
+  updateGroup gInfo currentTs
+  liftIO $ updateMembership membership currentTs
+  updateHostMember hostMember currentTs
+  getGroupInfo db vr newUser groupId
+  where
+    updateGroup GroupInfo {localDisplayName = oldGroupLDN, groupProfile = GroupProfile {displayName = groupDisplayName}} currentTs =
+      ExceptT . withLocalDisplayName db newUserId groupDisplayName $ \newGroupLDN -> runExceptT $ do
+        liftIO $ do
+          DB.execute
+            db
+            [sql|
+              UPDATE groups
+              SET user_id = ?, local_display_name = ?, updated_at = ?
+              WHERE group_id = ?
+            |]
+            (newUserId, newGroupLDN, currentTs, groupId)
+          DB.execute
+            db
+            [sql|
+              UPDATE group_profiles
+              SET user_id = ?, updated_at = ?
+              WHERE group_profile_id IN (SELECT group_profile_id FROM groups WHERE group_id = ?)
+            |]
+            (newUserId, currentTs, groupId)
+          safeDeleteLDN db user oldGroupLDN
+    updateMembership GroupMember {groupMemberId = membershipId} currentTs =
+      DB.execute
+        db
+        [sql|
+          UPDATE group_members
+          SET user_id = ?, local_display_name = ?, contact_id = ?, contact_profile_id = ?, updated_at = ?
+          WHERE group_member_id = ?
+        |]
+        (newUserId, localDisplayName' newUser, contactId' newUser, localProfileId $ profile' newUser, currentTs, membershipId)
+    updateHostMember
+      GroupMember
+        { groupMemberId = hostId,
+          localDisplayName = oldHostLDN,
+          memberProfile = LocalProfile {profileId = hostProfileId, displayName = hostDisplayName}
+        }
+      currentTs =
+        ExceptT . withLocalDisplayName db newUserId hostDisplayName $ \newHostLDN -> runExceptT $ do
+          liftIO $ do
+            DB.execute
+              db
+              [sql|
+                UPDATE group_members
+                SET user_id = ?, local_display_name = ?, updated_at = ?
+                WHERE group_member_id = ?
+              |]
+              (newUserId, newHostLDN, currentTs, hostId)
+            DB.execute
+              db
+              [sql|
+                UPDATE contact_profiles
+                SET user_id = ?, updated_at = ?
+                WHERE contact_profile_id = ?
+              |]
+              (newUserId, currentTs, hostProfileId)
+            safeDeleteLDN db user oldHostLDN
 
 setGroupConnLinkStartedConnection :: DB.Connection -> GroupInfo -> Bool -> IO GroupInfo
 setGroupConnLinkStartedConnection db groupInfo@GroupInfo {groupId} connLinkStartedConnection = do

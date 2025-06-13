@@ -31,6 +31,7 @@ module Simplex.Chat.Store.Direct
     getConnReqContactXContactId,
     getContactByConnReqHash,
     createPreparedContact,
+    updatePreparedContactUser,
     createDirectContact,
     deleteContactConnections,
     deleteContactFiles,
@@ -280,6 +281,35 @@ createPreparedContact db user@User {userId} p@Profile {preferences} connLinkToCo
         chatDeleted = False,
         customData = Nothing
       }
+
+updatePreparedContactUser :: DB.Connection -> VersionRangeChat -> User -> Contact -> User -> ExceptT StoreError IO Contact
+updatePreparedContactUser
+  db
+  vr
+  user
+  Contact {contactId, localDisplayName = oldLDN, profile = LocalProfile {profileId, displayName}}
+  newUser@User {userId = newUserId} = do
+    ExceptT . withLocalDisplayName db newUserId displayName $ \newLDN -> runExceptT $ do
+      liftIO $ do
+        currentTs <- getCurrentTime
+        DB.execute
+          db
+          [sql|
+            UPDATE contacts
+            SET user_id = ?, local_display_name = ?, updated_at = ?
+            WHERE contact_id = ?
+          |]
+          (newUserId, newLDN, currentTs, contactId)
+        DB.execute
+          db
+          [sql|
+            UPDATE contact_profiles
+            SET user_id = ?, updated_at = ?
+            WHERE contact_profile_id = ?
+          |]
+          (newUserId, currentTs, profileId)
+        safeDeleteLDN db user oldLDN
+      getContact db vr newUser contactId
 
 createDirectContact :: DB.Connection -> User -> Connection -> Profile -> ExceptT StoreError IO Contact
 createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p@Profile {preferences} = do

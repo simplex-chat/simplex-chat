@@ -350,6 +350,14 @@ struct ComposeView: View {
     var body: some View {
         VStack(spacing: 0) {
             Divider()
+            if (chat.chatInfo.contact?.nextConnectPrepared ?? false) || (chat.chatInfo.groupInfo?.nextConnectPrepared ?? false),
+               let user = chatModel.currentUser {
+                ContextProfilePickerView(
+                    chat: chat,
+                    selectedUser: user
+                )
+            }
+
             if let contact = chat.chatInfo.contact,
                contact.nextAcceptContactRequest,
                let contactRequestId = contact.contactRequestId {
@@ -692,8 +700,7 @@ struct ComposeView: View {
     private func sendConnectPreparedContact() async {
         do {
             let mc = checkLinkPreview()
-            // TODO [short links] allow to choose incognito, different user profile (as "compose context")
-            let contact = try await apiConnectPreparedContact(contactId: chat.chatInfo.apiId, incognito: false, msg: mc)
+            let contact = try await apiConnectPreparedContact(contactId: chat.chatInfo.apiId, incognito: incognitoGroupDefault.get(), msg: mc)
             await MainActor.run {
                 self.chatModel.updateContact(contact)
                 clearState()
@@ -706,8 +713,7 @@ struct ComposeView: View {
 
     private func connectPreparedGroup() async {
         do {
-            // TODO [short links] allow to choose incognito, different user profile (as "compose context")
-            let groupInfo = try await apiConnectPreparedGroup(groupId: chat.chatInfo.apiId, incognito: false)
+            let groupInfo = try await apiConnectPreparedGroup(groupId: chat.chatInfo.apiId, incognito: incognitoGroupDefault.get())
             await MainActor.run {
                 self.chatModel.updateGroup(groupInfo)
                 clearState()

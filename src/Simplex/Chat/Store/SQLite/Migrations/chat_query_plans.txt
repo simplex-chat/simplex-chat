@@ -87,6 +87,14 @@ SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
 SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+                UPDATE contact_profiles
+                SET user_id = ?, updated_at = ?
+                WHERE contact_profile_id = ?
+              
+Plan:
+SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
                 UPDATE contact_requests
                 SET agent_invitation_id = ?, pq_support = ?, peer_chat_min_version = ?, peer_chat_max_version = ?, local_display_name = ?, updated_at = ?
                 WHERE user_id = ? AND contact_request_id = ?
@@ -131,6 +139,14 @@ Query:
                     support_chat_items_member_attention = support_chat_items_member_attention + ?,
                     support_chat_items_mentions = support_chat_items_mentions + ?,
                     support_chat_last_msg_from_member_ts = ?
+                WHERE group_member_id = ?
+              
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+                UPDATE group_members
+                SET user_id = ?, local_display_name = ?, updated_at = ?
                 WHERE group_member_id = ?
               
 Plan:
@@ -272,6 +288,24 @@ Query:
             
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+              UPDATE group_profiles
+              SET user_id = ?, updated_at = ?
+              WHERE group_profile_id IN (SELECT group_profile_id FROM groups WHERE group_id = ?)
+            
+Plan:
+SEARCH group_profiles USING INTEGER PRIMARY KEY (rowid=?)
+LIST SUBQUERY 1
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+              UPDATE groups
+              SET user_id = ?, local_display_name = ?, updated_at = ?
+              WHERE group_id = ?
+            
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
               UPDATE xftp_file_descriptions
@@ -659,6 +693,22 @@ Query:
           
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+            UPDATE contact_profiles
+            SET user_id = ?, updated_at = ?
+            WHERE contact_profile_id = ?
+          
+Plan:
+SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+            UPDATE contacts
+            SET user_id = ?, local_display_name = ?, updated_at = ?
+            WHERE contact_id = ?
+          
+Plan:
+SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
             UPDATE group_members
@@ -1343,6 +1393,14 @@ Query:
               support_chat_items_member_attention = support_chat_items_member_attention - ?,
               support_chat_items_mentions = support_chat_items_mentions - ?,
               updated_at = ?
+          WHERE group_member_id = ?
+        
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+          UPDATE group_members
+          SET user_id = ?, local_display_name = ?, contact_id = ?, contact_profile_id = ?, updated_at = ?
           WHERE group_member_id = ?
         
 Plan:
