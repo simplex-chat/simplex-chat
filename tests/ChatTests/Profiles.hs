@@ -108,6 +108,7 @@ chatProfileTests = do
     it "should join group" testShortLinkJoinGroup
   describe "short links with attached data" $ do
     it "prepare contact using invitation short link data and connect" testShortLinkInvitationPrepareContact
+    it "prepare contact with image in profile" testShortLinkInvitationImage
     it "prepare contact using address short link data and connect" testShortLinkAddressPrepareContact
     it "prepare group using group short link data and connect" testShortLinkPrepareGroup
     it "prepare group using group short link data and connect, host rejects" testShortLinkPrepareGroupReject
@@ -2804,6 +2805,26 @@ testShortLinkInvitationPrepareContact =
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
       alice <##> bob
+
+testShortLinkInvitationImage :: HasCallStack => TestParams -> IO ()
+testShortLinkInvitationImage = testChat2 aliceProfile bobProfile $ \alice bob -> do
+  bob ##> "/_connect 1 short=on"
+  (shortLink, fullLink) <- getShortInvitation bob
+  alice ##> ("/_connect plan 1 " <> shortLink)
+  alice <## "invitation link: ok to connect"
+  contactSLinkData <- getTermLine alice -- what is that?
+  alice ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+  alice <## "bob: contact is prepared"
+  alice ##> "/_connect contact @2 text hello"
+  alice
+    <### [ "bob: connection started",
+            WithTime "@bob hello"
+          ]
+  bob <# "alice> hello"
+  concurrently_
+    (alice <## "bob (Bob): contact is connected")
+    (bob <## "alice (Alice): contact is connected")
+  bob <##> alice
 
 testShortLinkAddressPrepareContact :: HasCallStack => TestParams -> IO ()
 testShortLinkAddressPrepareContact =
