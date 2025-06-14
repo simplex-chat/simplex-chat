@@ -2423,4 +2423,5 @@
     <string name="cant_send_message_contact_deleted">删除了联系人</string>
     <string name="cant_send_message_contact_not_ready">联系人未就绪</string>
     <string name="reject_pending_member_alert_title">拒绝成员?</string>
+    <string name="add_short_link">添加短链接</string>
 </resources>

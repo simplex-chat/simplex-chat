@@ -14,7 +14,7 @@
 "- optionally notify deleted contacts.\n- profile names with spaces.\n- and more!" = "- partnerek értesítése a törlésről (nem kötelező)\n- profilnevek szóközökkel\n- és még sok más!";
 
 /* No comment provided by engineer. */
-"- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- legfeljebb 5 perc hosszúságú hangüzenetek.\n- egyéni üzenet-eltűnési időkorlát.\n- előzmények szerkesztése.";
+"- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- legfeljebb 5 perc hosszúságú hangüzenetek.\n- egyéni időkorlát beállítása az üzenetek eltűnéséhez.\n- előzmények szerkesztése.";
 
 /* No comment provided by engineer. */
 "!1 colored!" = "!1 színezett!";
@@ -47,7 +47,7 @@
 "**e2e encrypted** video call" = "**e2e titkosított** videóhívás";
 
 /* No comment provided by engineer. */
-"**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata." = "**Privátabb:** 20 percenként ellenőrzi az új üzeneteket. Az eszköztoken meg lesz osztva a SimpleX Chat-kiszolgálóval, de az nem, hogy hány partnere vagy üzenete van.";
+"**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata." = "**Privátabb:** 20 percenként ellenőrzi az új üzeneteket. Az eszköztoken meg lesz osztva a SimpleX Chat kiszolgálóval, de az nem, hogy hány partnere vagy üzenete van.";
 
 /* No comment provided by engineer. */
 "**Most private**: do not use SimpleX Chat push server. The app will check messages in background, when the system allows it, depending on how often you use the app." = "**Legprivátabb:** ne használja a SimpleX Chat értesítési kiszolgálót, rendszeresen ellenőrizze az üzeneteket a háttérben (attól függően, hogy milyen gyakran használja az alkalmazást).";
@@ -607,10 +607,10 @@ swipe action */
 /* No comment provided by engineer. */
 "Already connected?" = "Már kapcsolódott?";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Already connecting!" = "Kapcsolódás folyamatban!";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Already joining the group!" = "A csatlakozás folyamatban van a csoporthoz!";
 
 /* pref value */
@@ -927,7 +927,8 @@ marked deleted chat item preview text */
 "can't send messages" = "nem lehet üzeneteket küldeni";
 
 /* alert action
-alert button */
+alert button
+new chat action */
 "Cancel" = "Mégse";
 
 /* No comment provided by engineer. */
@@ -1009,7 +1010,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Chat already exists" = "A csevegés már létezik";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Chat already exists!" = "A csevegés már létezik!";
 
 /* No comment provided by engineer. */
@@ -1217,9 +1218,6 @@ set passcode view */
 "Connect automatically" = "Kapcsolódás automatikusan";
 
 /* No comment provided by engineer. */
-"Connect incognito" = "Kapcsolódás inkognitóban";
-
-/* No comment provided by engineer. */
 "Connect to desktop" = "Társítás számítógéppel";
 
 /* No comment provided by engineer. */
@@ -1228,25 +1226,22 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connect to your friends faster." = "Kapcsolódjon gyorsabban a partnereihez.";
 
-/* No comment provided by engineer. */
-"Connect to yourself?" = "Kapcsolódik saját magához?";
-
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect to yourself?\nThis is your own one-time link!" = "Kapcsolódik saját magához?\nEz a saját egyszer használható meghívója!";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect to yourself?\nThis is your own SimpleX address!" = "Kapcsolódik saját magához?\nEz a saját SimpleX-címe!";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via contact address" = "Kapcsolódás a kapcsolattartási címen keresztül";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via link" = "Kapcsolódás egy hivatkozáson keresztül";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via one-time link" = "Kapcsolódás egyszer használható meghívón keresztül";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Connect with %@" = "Kapcsolódás a következővel: %@";
 
 /* No comment provided by engineer. */
@@ -1461,9 +1456,6 @@ set passcode view */
 
 /* server test step */
 "Create queue" = "Sorba állítás létrehozása";
-
-/* No comment provided by engineer. */
-"Create secret group" = "Titkos csoport létrehozása";
 
 /* No comment provided by engineer. */
 "Create SimpleX address" = "SimpleX-cím létrehozása";
@@ -2176,7 +2168,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error changing role" = "Hiba történt a szerepkör módosításakor";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error changing setting" = "Hiba történt a beállítás módosításakor";
 
 /* No comment provided by engineer. */
@@ -2215,7 +2207,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error decrypting file" = "Hiba történt a fájl visszafejtésekor";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat database" = "Hiba történt a csevegési adatbázis törlésekor";
 
 /* alert title */
@@ -2227,10 +2219,10 @@ chat item action */
 /* No comment provided by engineer. */
 "Error deleting connection" = "Hiba történt a kapcsolat törlésekor";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting database" = "Hiba történt az adatbázis törlésekor";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting old database" = "Hiba történt a régi adatbázis törlésekor";
 
 /* No comment provided by engineer. */
@@ -2251,13 +2243,13 @@ chat item action */
 /* No comment provided by engineer. */
 "Error encrypting database" = "Hiba történt az adatbázis titkosításakor";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error exporting chat database" = "Hiba történt a csevegési adatbázis exportálásakor";
 
 /* No comment provided by engineer. */
 "Error exporting theme: %@" = "Hiba történt a téma exportálásakor: %@";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error importing chat database" = "Hiba történt a csevegési adatbázis importálásakor";
 
 /* No comment provided by engineer. */
@@ -2539,7 +2531,7 @@ snd error text */
 "For console" = "Konzolhoz";
 
 /* No comment provided by engineer. */
-"For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." = "Például, ha a partnere egy SimpleX Chat-kiszolgálón keresztül fogadja az üzeneteket, akkor az Ön alkalmazása egy Flux-kiszolgálón keresztül fogja azokat kézbesíteni.";
+"For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." = "Például, ha a partnere egy SimpleX Chat kiszolgálón keresztül fogadja az üzeneteket, akkor az Ön alkalmazása egy Flux kiszolgálón keresztül fogja azokat kézbesíteni.";
 
 /* No comment provided by engineer. */
 "For me" = "Csak magamnak";
@@ -2634,7 +2626,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Group already exists" = "A csoport már létezik";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Group already exists!" = "A csoport már létezik!";
 
 /* No comment provided by engineer. */
@@ -3033,22 +3025,16 @@ snd error text */
 /* No comment provided by engineer. */
 "join as %@" = "csatlakozás mint %@";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Join group" = "Csatlakozás csoporthoz";
 
 /* No comment provided by engineer. */
 "Join group conversations" = "Csatlakozás csoportos beszélgetésekhez";
 
 /* No comment provided by engineer. */
-"Join group?" = "Csatlakozik a csoporthoz?";
-
-/* No comment provided by engineer. */
 "Join incognito" = "Csatlakozás inkognitóban";
 
-/* No comment provided by engineer. */
-"Join with current profile" = "Csatlakozás a jelenlegi profillal";
-
-/* No comment provided by engineer. */
+/* new chat action */
 "Join your group?\nThis is your link for group %@!" = "Csatlakozik a csoportjához?\nEz a saját hivatkozása a(z) %@ nevű csoporthoz!";
 
 /* No comment provided by engineer. */
@@ -3574,7 +3560,7 @@ snd error text */
 "No message" = "Nincs üzenet";
 
 /* servers error */
-"No message servers." = "Nincsenek üzenet-kiszolgálók.";
+"No message servers." = "Nincsenek üzenetkiszolgálók.";
 
 /* No comment provided by engineer. */
 "No network connection" = "Nincs hálózati kapcsolat";
@@ -3670,7 +3656,8 @@ time to disappear */
 "offered %@: %@" = "ajánlotta: %1$@, ekkor: %2$@";
 
 /* alert action
-alert button */
+alert button
+new chat action */
 "Ok" = "Rendben";
 
 /* No comment provided by engineer. */
@@ -3686,13 +3673,13 @@ alert button */
 "One-time invitation link" = "Egyszer használható meghívó";
 
 /* No comment provided by engineer. */
-"Onion hosts will be **required** for connection.\nRequires compatible VPN." = "Onion-kiszolgálók **szükségesek** a kapcsolódáshoz.\nKompatibilis VPN szükséges.";
+"Onion hosts will be **required** for connection.\nRequires compatible VPN." = "Onion kiszolgálók **szükségesek** a kapcsolódáshoz.\nKompatibilis VPN szükséges.";
 
 /* No comment provided by engineer. */
-"Onion hosts will be used when available.\nRequires compatible VPN." = "Onion-kiszolgálók használata, ha azok rendelkezésre állnak.\nVPN engedélyezése szükséges.";
+"Onion hosts will be used when available.\nRequires compatible VPN." = "Onion kiszolgálók használata, ha azok rendelkezésre állnak.\nVPN engedélyezése szükséges.";
 
 /* No comment provided by engineer. */
-"Onion hosts will not be used." = "Az onion-kiszolgálók nem lesznek használva.";
+"Onion hosts will not be used." = "Az onion kiszolgálók nem lesznek használva.";
 
 /* No comment provided by engineer. */
 "Only chat owners can change preferences." = "Csak a csevegés tulajdonosai módosíthatják a csevegési beállításokat.";
@@ -3763,7 +3750,7 @@ alert button */
 /* No comment provided by engineer. */
 "Open conditions" = "Feltételek megnyitása";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Open group" = "Csoport megnyitása";
 
 /* alert title */
@@ -4287,16 +4274,10 @@ swipe action */
 "Renegotiate encryption?" = "Újraegyezteti a titkosítást?";
 
 /* No comment provided by engineer. */
-"Repeat connection request?" = "Megismétli a meghívási kérést?";
-
-/* No comment provided by engineer. */
 "Repeat download" = "Letöltés ismét";
 
 /* No comment provided by engineer. */
 "Repeat import" = "Importálás ismét";
-
-/* No comment provided by engineer. */
-"Repeat join request?" = "Megismétli a meghívási kérést?";
 
 /* No comment provided by engineer. */
 "Repeat upload" = "Feltöltés ismét";
@@ -4961,7 +4942,7 @@ chat item action */
 "SMP server" = "SMP-kiszolgáló";
 
 /* No comment provided by engineer. */
-"SOCKS proxy" = "SOCKS-proxy";
+"SOCKS proxy" = "SOCKS proxy";
 
 /* blur media */
 "Soft" = "Enyhe";
@@ -5169,7 +5150,7 @@ report reason */
 "The attempt to change database passphrase was not completed." = "Az adatbázis jelmondatának módosítására tett kísérlet nem fejeződött be.";
 
 /* No comment provided by engineer. */
-"The code you scanned is not a SimpleX link QR code." = "A beolvasott QR-kód nem egy SimpleX-QR-kód-hivatkozás.";
+"The code you scanned is not a SimpleX link QR code." = "A beolvasott QR-kód nem egy SimpleX-hivatkozás.";
 
 /* No comment provided by engineer. */
 "The connection reached the limit of undelivered messages, your contact may be offline." = "A kapcsolat elérte a kézbesítetlen üzenetek számának határát, a partnere lehet, hogy offline állapotban van.";
@@ -5280,12 +5261,6 @@ report reason */
 "This group no longer exists." = "Ez a csoport már nem létezik.";
 
 /* No comment provided by engineer. */
-"This is your own one-time link!" = "Ez a saját egyszer használható meghívója!";
-
-/* No comment provided by engineer. */
-"This is your own SimpleX address!" = "Ez a saját SimpleX-címe!";
-
-/* No comment provided by engineer. */
 "This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link." = "Ez a hivatkozás újabb alkalmazásverziót igényel. Frissítse az alkalmazást vagy kérjen egy kompatibilis hivatkozást a partnerétől.";
 
 /* No comment provided by engineer. */
@@ -5325,7 +5300,7 @@ report reason */
 "To protect your IP address, private routing uses your SMP servers to deliver messages." = "Az IP-cím védelmének érdekében a privát útválasztás az SMP-kiszolgálókat használja az üzenetek kézbesítéséhez.";
 
 /* No comment provided by engineer. */
-"To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "Adatainak védelme érdekében a SimpleX külön üzenet-azonosítókat használ minden egyes kapcsolatához.";
+"To protect your privacy, SimpleX uses separate IDs for each of your contacts." = "Adatainak védelme érdekében a SimpleX külön azonosítókat használ minden egyes kapcsolatához.";
 
 /* No comment provided by engineer. */
 "To receive" = "A fogadáshoz";
@@ -5532,7 +5507,7 @@ report reason */
 "Uploading archive" = "Archívum feltöltése";
 
 /* No comment provided by engineer. */
-"Use .onion hosts" = "Onion-kiszolgálók használata";
+"Use .onion hosts" = "Onion kiszolgálók használata";
 
 /* No comment provided by engineer. */
 "Use %@" = "%@ használata";
@@ -5540,7 +5515,7 @@ report reason */
 /* No comment provided by engineer. */
 "Use chat" = "SimpleX Chat használata";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Use current profile" = "Jelenlegi profil használata";
 
 /* No comment provided by engineer. */
@@ -5558,7 +5533,7 @@ report reason */
 /* No comment provided by engineer. */
 "Use iOS call interface" = "Az iOS hívási felületét használata";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Use new incognito profile" = "Új inkognitóprofil használata";
 
 /* No comment provided by engineer. */
@@ -5580,10 +5555,10 @@ report reason */
 "Use short links (BETA)" = "Rövid hivatkozások használata (béta)";
 
 /* No comment provided by engineer. */
-"Use SimpleX Chat servers?" = "SimpleX Chat-kiszolgálók használata?";
+"Use SimpleX Chat servers?" = "SimpleX Chat kiszolgálók használata?";
 
 /* No comment provided by engineer. */
-"Use SOCKS proxy" = "SOCKS-proxy használata";
+"Use SOCKS proxy" = "SOCKS proxy használata";
 
 /* No comment provided by engineer. */
 "Use TCP port %@ when no port is specified." = "A következő TCP-port használata, amikor nincs port megadva: %@.";
@@ -5607,7 +5582,7 @@ report reason */
 "Username" = "Felhasználónév";
 
 /* No comment provided by engineer. */
-"Using SimpleX Chat servers." = "SimpleX Chat-kiszolgálók használatban.";
+"Using SimpleX Chat servers." = "SimpleX Chat kiszolgálók használatban.";
 
 /* No comment provided by engineer. */
 "v%@" = "v%@";
@@ -5834,25 +5809,22 @@ report reason */
 /* No comment provided by engineer. */
 "You are already connected with %@." = "Ön már kapcsolódva van vele: %@.";
 
-/* No comment provided by engineer. */
+/* new chat sheet message */
 "You are already connecting to %@." = "A kapcsolódás már folyamatban van a következőhöz: %@.";
 
-/* No comment provided by engineer. */
+/* new chat sheet message */
 "You are already connecting via this one-time link!" = "A kapcsolódás már folyamatban van ezen az egyszer használható meghívón keresztül!";
 
 /* No comment provided by engineer. */
 "You are already in group %@." = "Ön már a(z) %@ nevű csoport tagja.";
 
-/* No comment provided by engineer. */
+/* new chat sheet message */
 "You are already joining the group %@." = "A csatlakozás már folyamatban van a(z) %@ nevű csoporthoz.";
 
-/* No comment provided by engineer. */
-"You are already joining the group via this link!" = "A csatlakozás már folyamatban van a csoporthoz ezen a hivatkozáson keresztül!";
-
-/* No comment provided by engineer. */
+/* new chat sheet message */
 "You are already joining the group via this link." = "A csatlakozás már folyamatban van a csoporthoz ezen a hivatkozáson keresztül.";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "A csatlakozás már folyamatban van a csoporthoz!\nMegismétli a meghívási kérést?";
 
 /* No comment provided by engineer. */
@@ -5957,10 +5929,7 @@ report reason */
 /* No comment provided by engineer. */
 "You decide who can connect." = "Ön dönti el, hogy kivel beszélget.";
 
-/* No comment provided by engineer. */
-"You have already requested connection via this address!" = "Már küldött egy meghívási kérést ezen a címen keresztül!";
-
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "You have already requested connection!\nRepeat connection request?" = "Ön már küldött egy meghívási kérést!\nMegismétli a meghívási kérést?";
 
 /* No comment provided by engineer. */
@@ -6028,9 +5997,6 @@ report reason */
 
 /* No comment provided by engineer. */
 "You will be required to authenticate when you start or resume the app after 30 seconds in background." = "Az alkalmazás elindításához vagy 30 másodpercnyi háttérben töltött idő után, az alkalmazáshoz való visszatéréshez hitelesítésre lesz szükség.";
-
-/* No comment provided by engineer. */
-"You will connect to all group members." = "Kapcsolódni fog a csoport összes tagjához.";
 
 /* No comment provided by engineer. */
 "You will still receive calls and notifications from muted profiles when they are active." = "Továbbra is kap hívásokat és értesítéseket a némított profiloktól, ha azok aktívak.";
@@ -6108,7 +6074,7 @@ report reason */
 "Your profile is stored on your device and only shared with your contacts." = "A profilja az eszközén van tárolva és csak a partnereivel van megosztva.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "A profilja az eszközén van tárolva és csak a partnereivel van megosztva. A SimpleX-kiszolgálók nem láthatják a profilját.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "A profilja az eszközén van tárolva és csak a partnereivel van megosztva. A SimpleX kiszolgálók nem láthatják a profilját.";
 
 /* alert message */
 "Your profile was changed. If you save it, the updated profile will be sent to all your contacts." = "A profilja módosult. Ha elmenti, a profilfrissítés el lesz küldve a partnerei számára.";
