@@ -665,8 +665,9 @@ swipe action</note>
         <target>Añadir servidores mediante el escaneo de códigos QR.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add short link" xml:space="preserve">
+      <trans-unit id="Add short link" xml:space="preserve" approved="no">
         <source>Add short link</source>
+        <target state="translated">Añadir enlace corto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add team members" xml:space="preserve">
@@ -3199,8 +3200,9 @@ chat item action</note>
         <target>Error al añadir servidor</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error adding short link" xml:space="preserve">
+      <trans-unit id="Error adding short link" xml:space="preserve" approved="no">
         <source>Error adding short link</source>
+        <target state="translated">Error al añadir enlace corto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error changing address" xml:space="preserve">
@@ -4064,8 +4066,9 @@ Error: %2$@</target>
         <target>El perfil de grupo se almacena en los dispositivos, no en los servidores.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group profile was changed. If you save it, the updated profile will be sent to group members." xml:space="preserve">
+      <trans-unit id="Group profile was changed. If you save it, the updated profile will be sent to group members." xml:space="preserve" approved="no">
         <source>Group profile was changed. If you save it, the updated profile will be sent to group members.</source>
+        <target state="translated">El perfil del grupo ha cambiado. Si lo guardas, el perfil actualizado se enviará a los miembros del grupo.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Group welcome message" xml:space="preserve">
@@ -6699,8 +6702,9 @@ chat item action</note>
         <target>Guardar (y notificar contactos)</target>
         <note>alert button</note>
       </trans-unit>
-      <trans-unit id="Save (and notify members)" xml:space="preserve">
+      <trans-unit id="Save (and notify members)" xml:space="preserve" approved="no">
         <source>Save (and notify members)</source>
+        <target state="translated">Guardar (y notificar miembros)</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Save admission settings?" xml:space="preserve">
@@ -6733,8 +6737,9 @@ chat item action</note>
         <target>Guardar perfil de grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save group profile?" xml:space="preserve">
+      <trans-unit id="Save group profile?" xml:space="preserve" approved="no">
         <source>Save group profile?</source>
+        <target state="translated">¿Guardar perfil del grupo?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Save list" xml:space="preserve">
