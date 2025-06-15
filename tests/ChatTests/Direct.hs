@@ -1218,7 +1218,7 @@ testOperators =
       alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: required"
       alice <## "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: disabled, conditions: required"
       alice <##. "The new conditions will be accepted for SimpleX Chat Ltd at "
-      -- set conditions notified 
+      -- set conditions notified
       alice ##> "/_conditions_notified 2"
       alice <## "ok"
       alice ##> "/_operators"
@@ -2566,7 +2566,7 @@ testSetDirectChatTTL =
         -- chat @3 doesn't expire since it was set to not expire
         alice #$> ("/_get chat @3 count=100", chat, chatFeatures <> [(1, "10"), (0, "11")])
         bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "1"), (1, "2"), (0, "3"), (1, "4")])
-        
+
         -- remove global ttl
         alice #$> ("/ttl none", id, "ok")
         alice #> "@bob 5"
