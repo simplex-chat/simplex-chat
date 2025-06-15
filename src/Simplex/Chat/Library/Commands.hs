@@ -1675,7 +1675,9 @@ processChatCommand' vr = \case
     -- [incognito] generate profile for connection
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     subMode <- chatReadVar subscriptionMode
-    let userData = shortLinkUserData short $ userProfileToSend user incognitoProfile Nothing False
+    let userData
+          | short = Just $ shortLinkUserData $ userProfileToSend user incognitoProfile Nothing False
+          | otherwise = Nothing
     -- TODO [certs rcv]
     (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation userData Nothing IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
@@ -1731,7 +1733,9 @@ processChatCommand' vr = \case
       recreateConn user conn@PendingContactConnection {customUserProfileId, connLinkInv} newUser = do
         subMode <- chatReadVar subscriptionMode
         let short = isJust $ connShortLink =<< connLinkInv
-            userData = shortLinkUserData short $ userProfileToSend user Nothing Nothing False
+            userData
+              | short = Just $ shortLinkUserData $ userProfileToSend user Nothing Nothing False
+              | otherwise = Nothing
         -- TODO [certs rcv]
         (agConnId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a (aUserId newUser) True SCMInvitation userData Nothing IKPQOn subMode
         ccLink' <- shortenCreatedLink ccLink
@@ -1838,7 +1842,9 @@ processChatCommand' vr = \case
     processChatCommand $ APIListContacts userId
   APICreateMyAddress userId short -> withUserId userId $ \user -> procCmd $ do
     subMode <- chatReadVar subscriptionMode
-    let userData = shortLinkUserData short $ userProfileToSend user Nothing Nothing False
+    let userData
+          | short = Just $ shortLinkUserData $ userProfileToSend user Nothing Nothing False
+          | otherwise = Nothing
     -- TODO [certs rcv]
     (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact userData Nothing IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
@@ -3444,10 +3450,8 @@ processChatCommand' vr = \case
       CSLInvitation _ srv lnkId linkKey -> CSLInvitation SLSServer srv lnkId linkKey
       CSLContact _ ct srv linkKey -> CSLContact SLSServer ct srv linkKey
     restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . config)
-    shortLinkUserData :: Bool -> Profile -> Maybe UserLinkData
-    shortLinkUserData short profile
-      | short = Just $ UserLinkData $ LB.toStrict $ J.encode $ ContactShortLinkData profile Nothing
-      | otherwise = Nothing
+    shortLinkUserData :: Profile -> UserLinkData
+    shortLinkUserData profile = UserLinkData $ LB.toStrict $ J.encode $ ContactShortLinkData profile Nothing
     updatePCCShortLinkData :: PendingContactConnection -> Profile -> CM (Maybe ShortLinkInvitation)
     updatePCCShortLinkData conn@PendingContactConnection {connLinkInv} profile =
       forM (connShortLink =<< connLinkInv) $ \_ -> do
