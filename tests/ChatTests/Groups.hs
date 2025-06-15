@@ -2428,10 +2428,12 @@ testPlanGroupLinkLeaveRejoin =
 
       bob ##> ("/_connect plan 1 " <> gLink)
       bob <## "group link: ok to connect"
+      _sLinkData <- getTermLine bob
 
       let gLinkSchema2 = linkAnotherSchema gLink
       bob ##> ("/_connect plan 1 " <> gLinkSchema2)
       bob <## "group link: ok to connect"
+      _sLinkData <- getTermLine bob
 
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"
@@ -3360,6 +3362,7 @@ testPlanGroupLinkKnown =
 
       bob ##> ("/_connect plan 1 " <> gLink)
       bob <## "group link: ok to connect"
+      _sLinkData <- getTermLine bob
 
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"

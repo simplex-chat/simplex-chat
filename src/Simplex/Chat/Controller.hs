@@ -62,7 +62,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.AppVersion
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Stats (PresentedServersSummary)
-import Simplex.Chat.Store (AutoAccept, ChatLockEntity, StoreError (..), UserContactLink, GroupLinkInfo, UserMsgReceiptSettings)
+import Simplex.Chat.Store (AutoAccept, ChatLockEntity, GroupLink, GroupLinkInfo, StoreError (..), UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -448,7 +448,13 @@ data ChatCommand
   | APISetConnectionIncognito Int64 IncognitoEnabled
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
   | APIConnectPlan UserId AConnectionLink
-  | APIConnect UserId IncognitoEnabled (Maybe ACreatedConnLink)
+  | APIPrepareContact UserId ACreatedConnLink ContactShortLinkData
+  | APIPrepareGroup UserId ACreatedConnLink GroupShortLinkData
+  | APIChangePreparedContactUser ContactId UserId
+  | APIChangePreparedGroupUser GroupId UserId
+  | APIConnectPreparedContact {contactId :: ContactId, incognito :: IncognitoEnabled, msgContent_ :: Maybe MsgContent}
+  | APIConnectPreparedGroup GroupId IncognitoEnabled
+  | APIConnect UserId IncognitoEnabled (Maybe ACreatedConnLink) (Maybe MsgContent)
   | Connect IncognitoEnabled (Maybe AConnectionLink)
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
@@ -662,7 +668,7 @@ data ChatResponse
   | CRContactsList {user :: User, contacts :: [Contact]}
   | CRUserContactLink {user :: User, contactLink :: UserContactLink}
   | CRUserContactLinkUpdated {user :: User, contactLink :: UserContactLink}
-  | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest}
+  | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest, contact_ :: Maybe Contact}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool}
   | CRGroupsList {user :: User, groups :: [(GroupInfo, GroupSummary)]}
@@ -674,11 +680,17 @@ data ChatResponse
   | CRUserPrivacy {user :: User, updatedUser :: User}
   | CRVersionInfo {versionInfo :: CoreVersionInfo, chatMigrations :: [UpMigration], agentMigrations :: [UpMigration]}
   | CRInvitation {user :: User, connLinkInvitation :: CreatedLinkInvitation, connection :: PendingContactConnection}
-  | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection}
+  | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRConnectionUserChanged {user :: User, fromConnection :: PendingContactConnection, toConnection :: PendingContactConnection, newUser :: User}
   | CRConnectionPlan {user :: User, connLink :: ACreatedConnLink, connectionPlan :: ConnectionPlan}
+  | CRNewPreparedContact {user :: User, contact :: Contact}
+  | CRNewPreparedGroup {user :: User, groupInfo :: GroupInfo}
+  | CRContactUserChanged {user :: User, fromContact :: Contact, newUser :: User, toContact :: Contact}
+  | CRGroupUserChanged {user :: User, fromGroup :: GroupInfo, newUser :: User, toGroup :: GroupInfo}
   | CRSentConfirmation {user :: User, connection :: PendingContactConnection}
   | CRSentInvitation {user :: User, connection :: PendingContactConnection, customUserProfile :: Maybe Profile}
+  | CRStartedConnectionToContact {user :: User, contact :: Contact}
+  | CRStartedConnectionToGroup {user :: User, groupInfo :: GroupInfo}
   | CRSentInvitationToContact {user :: User, contact :: Contact, customUserProfile :: Maybe Profile}
   | CRItemsReadForChat {user :: User, chatInfo :: AChatInfo}
   | CRContactDeleted {user :: User, contact :: Contact}
@@ -713,8 +725,8 @@ data ChatResponse
   | CRGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
   | CRGroupProfile {user :: User, groupInfo :: GroupInfo}
   | CRGroupDescription {user :: User, groupInfo :: GroupInfo} -- only used in CLI
-  | CRGroupLinkCreated {user :: User, groupInfo :: GroupInfo, connLinkContact :: CreatedLinkContact, memberRole :: GroupMemberRole}
-  | CRGroupLink {user :: User, groupInfo :: GroupInfo, connLinkContact :: CreatedLinkContact, memberRole :: GroupMemberRole}
+  | CRGroupLinkCreated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink}
+  | CRGroupLink {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink}
   | CRGroupLinkDeleted {user :: User, groupInfo :: GroupInfo}
   | CRNewMemberContact {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | CRNewMemberContactSentInv {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
@@ -771,7 +783,7 @@ data ChatEvent
   | CEvtGroupMemberUpdated {user :: User, groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
   | CEvtContactsMerged {user :: User, intoContact :: Contact, mergedContact :: Contact, updatedContact :: Contact}
   | CEvtContactDeletedByContact {user :: User, contact :: Contact}
-  | CEvtReceivedContactRequest {user :: User, contactRequest :: UserContactRequest}
+  | CEvtReceivedContactRequest {user :: User, contactRequest :: UserContactRequest, contact_ :: Maybe Contact}
   | CEvtAcceptingContactRequest {user :: User, contact :: Contact} -- there is the same command response
   | CEvtAcceptingBusinessRequest {user :: User, groupInfo :: GroupInfo}
   | CEvtContactRequestAlreadyAccepted {user :: User, contact :: Contact}
@@ -961,14 +973,14 @@ data ConnectionPlan
   deriving (Show)
 
 data InvitationLinkPlan
-  = ILPOk
+  = ILPOk {contactSLinkData_ :: Maybe ContactShortLinkData}
   | ILPOwnLink
   | ILPConnecting {contact_ :: Maybe Contact}
   | ILPKnown {contact :: Contact}
   deriving (Show)
 
 data ContactAddressPlan
-  = CAPOk
+  = CAPOk {contactSLinkData_ :: Maybe ContactShortLinkData}
   | CAPOwnLink
   | CAPConnectingConfirmReconnect
   | CAPConnectingProhibit {contact :: Contact}
@@ -977,7 +989,7 @@ data ContactAddressPlan
   deriving (Show)
 
 data GroupLinkPlan
-  = GLPOk
+  = GLPOk {groupSLinkData_ :: Maybe GroupShortLinkData}
   | GLPOwnLink {groupInfo :: GroupInfo}
   | GLPConnectingConfirmReconnect
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
@@ -987,17 +999,17 @@ data GroupLinkPlan
 connectionPlanProceed :: ConnectionPlan -> Bool
 connectionPlanProceed = \case
   CPInvitationLink ilp -> case ilp of
-    ILPOk -> True
+    ILPOk _ -> True
     ILPOwnLink -> True
     _ -> False
   CPContactAddress cap -> case cap of
-    CAPOk -> True
+    CAPOk _ -> True
     CAPOwnLink -> True
     CAPConnectingConfirmReconnect -> True
     CAPContactViaAddress _ -> True
     _ -> False
   CPGroupLink glp -> case glp of
-    GLPOk -> True
+    GLPOk _ -> True
     GLPOwnLink _ -> True
     GLPConnectingConfirmReconnect -> True
     _ -> False
@@ -1281,6 +1293,7 @@ data ChatErrorType
   | CEInvalidConnReq
   | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
+  | CEConnReqMessageProhibited
   | CEContactNotFound {contactName :: ContactName, suspectedMember :: Maybe (GroupInfo, GroupMember)}
   | CEContactNotReady {contact :: Contact}
   | CEContactNotActive {contact :: Contact}
