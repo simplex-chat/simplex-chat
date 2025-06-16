@@ -196,7 +196,7 @@ fun GroupLinkLayout(
             )
           }
         }
-        if (groupLink.connShortLink == null && appPreferences.privacyShortLinks.get()) {
+        if (groupLink.connShortLink == null) {
           AddShortLinkButton(addShortLink)
         }
       }

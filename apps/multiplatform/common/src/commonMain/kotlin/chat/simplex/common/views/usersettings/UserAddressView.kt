@@ -63,8 +63,7 @@ fun UserAddressView(
   fun createAddress() {
     withBGApi {
       progressIndicator = true
-      val short = appPreferences.privacyShortLinks.get()
-      val connReqContact = chatModel.controller.apiCreateUserAddress(user.value?.remoteHostId, short = short)
+      val connReqContact = chatModel.controller.apiCreateUserAddress(user.value?.remoteHostId)
       if (connReqContact != null) {
         chatModel.userAddress.value = UserContactLinkRec(connReqContact)
 
@@ -225,7 +224,7 @@ private fun UserAddressLayout(
           // ShareViaEmailButton { sendEmail(userAddress) }
           BusinessAddressToggle(autoAcceptState) { saveAas(autoAcceptState.value, autoAcceptStateSaved) }
           AddressSettingsButton(user, userAddress, shareViaProfile, setProfileAddress, saveAas)
-          if (userAddress.connLinkContact.connShortLink == null && appPreferences.privacyShortLinks.get()) {
+          if (userAddress.connLinkContact.connShortLink == null) {
             AddShortLinkButton(addShortLink)
           }
 
