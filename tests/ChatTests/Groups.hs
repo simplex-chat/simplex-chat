@@ -3442,7 +3442,7 @@ testPlanGroupLinkConnectingSlow ps = do
     alice <## "group #team is created"
     alice <## "to add members use /a team <name> or /create link #team"
     alice ##> "/create link #team"
-    getGroupLink alice "team" GRMember True
+    getGroupLinkNoShortLink alice "team" GRMember True
   withNewTestChatCfg ps testCfgSlow "bob" bobProfile $ \bob -> do
     threadDelay 100000
 
