@@ -888,7 +888,7 @@ acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = 
           connId <- withAgent $ \a -> prepareConnectionToAccept a True invId pqSup'
           currentTs <- liftIO getCurrentTime
           conn <- withStore' $ \db -> createAcceptedContactConn db user userContactLinkId contactId connId chatV cReqChatVRange pqSup' incognitoProfile subMode currentTs
-          pure (ct {activeConn = Just conn}, conn, incognitoProfile)
+          pure (ct {activeConn = Just conn} :: Contact, conn, incognitoProfile)
         Just conn@Connection {customUserProfileId} -> do
           incognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
           pure (ct, conn, ExistingIncognito <$> incognitoProfile)
