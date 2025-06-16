@@ -4299,14 +4299,6 @@ Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-      UPDATE connections
-      SET user_id = ?, custom_user_profile_id = NULL, updated_at = ?
-      WHERE user_id = ? AND connection_id = ?
-    
-Plan:
-SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
       UPDATE contact_profiles
       SET contact_link = ?, updated_at = ?
       WHERE user_id = ? AND contact_profile_id = ?
