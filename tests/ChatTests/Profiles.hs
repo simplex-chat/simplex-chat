@@ -2623,8 +2623,8 @@ testSetUITheme =
 testShortLinkInvitation :: HasCallStack => TestParams -> IO ()
 testShortLinkInvitation =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
-    alice ##> "/c short"
-    (inv, _) <- getShortInvitation alice
+    alice ##> "/c"
+    (inv, _) <- getInvitations alice
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
     concurrently_
@@ -2638,8 +2638,8 @@ testShortLinkInvitation =
 testPlanShortLinkInvitation :: HasCallStack => TestParams -> IO ()
 testPlanShortLinkInvitation =
   testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
-    alice ##> "/c short"
-    (inv, _) <- getShortInvitation alice
+    alice ##> "/c"
+    (inv, _) <- getInvitations alice
     alice ##> ("/_connect plan 1 " <> inv)
     alice <## "invitation link: own link"
     alice ##> ("/_connect plan 1 " <> slSimplexScheme inv)
@@ -2680,7 +2680,7 @@ slSimplexScheme sl = T.unpack $ T.replace "https://localhost/" "simplex:/" (T.pa
 testShortLinkContactAddress :: HasCallStack => TestParams -> IO ()
 testShortLinkContactAddress =
   testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
-    alice ##> "/ad short"
+    alice ##> "/ad"
     (shortLink, fullLink) <- getShortContactLink alice True
     alice ##> ("/_connect plan 1 " <> shortLink)
     alice <## "contact address: own address"
@@ -2719,12 +2719,12 @@ testShortLinkJoinGroup :: HasCallStack => TestParams -> IO ()
 testShortLinkJoinGroup =
   testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
     threadDelay 100000
-    alice ##> "/ad short" -- create the address to test that it can co-exist with group link
+    alice ##> "/ad" -- create the address to test that it can co-exist with group link
     _ <- getShortContactLink alice True
     alice ##> "/g team"
     alice <## "group #team is created"
     alice <## "to add members use /a team <name> or /create link #team"
-    alice ##> "/create link #team short"
+    alice ##> "/create link #team"
     (shortLink, fullLink) <- getShortGroupLink alice "team" GRMember True
     alice ##> ("/_connect plan 1 " <> shortLink)
     alice <## "group link: own link for group #team"
@@ -2788,8 +2788,8 @@ testShortLinkInvitationPrepareContact :: HasCallStack => TestParams -> IO ()
 testShortLinkInvitationPrepareContact =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
-      alice ##> "/_connect 1 short=on"
-      (shortLink, fullLink) <- getShortInvitation alice
+      alice ##> "/_connect 1"
+      (shortLink, fullLink) <- getInvitations alice
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "invitation link: ok to connect"
       contactSLinkData <- getTermLine bob
@@ -2808,8 +2808,8 @@ testShortLinkInvitationPrepareContact =
 
 testShortLinkInvitationImage :: HasCallStack => TestParams -> IO ()
 testShortLinkInvitationImage = testChat2 aliceProfile bobProfile $ \alice bob -> do
-  bob ##> "/_connect 1 short=on"
-  (shortLink, fullLink) <- getShortInvitation bob
+  bob ##> "/_connect 1"
+  (shortLink, fullLink) <- getInvitations bob
   alice ##> ("/_connect plan 1 " <> shortLink)
   alice <## "invitation link: ok to connect"
   contactSLinkData <- getTermLine alice
@@ -2830,7 +2830,7 @@ testShortLinkAddressPrepareContact :: HasCallStack => TestParams -> IO ()
 testShortLinkAddressPrepareContact =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
-      alice ##> "/ad short"
+      alice ##> "/ad"
       (shortLink, fullLink) <- getShortContactLink alice True
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "contact address: ok to connect"
@@ -2862,7 +2862,7 @@ testShortLinkPrepareGroup =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup2 "team" alice cath
-      alice ##> "/create link #team short"
+      alice ##> "/create link #team"
       (shortLink, fullLink) <- getShortGroupLink alice "team" GRMember True
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "group link: ok to connect"
@@ -2894,7 +2894,7 @@ testShortLinkPrepareGroupReject =
   testChatCfg3 cfg aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup2 "team" alice cath
-      alice ##> "/create link #team short"
+      alice ##> "/create link #team"
       (shortLink, fullLink) <- getShortGroupLink alice "team" GRMember True
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "group link: ok to connect"
@@ -2927,8 +2927,8 @@ testShortLinkChangePreparedContactUser =
       bob ##> "/user bob"
       showActiveUser bob "bob (Bob)"
 
-      alice ##> "/_connect 1 short=on"
-      (shortLink, fullLink) <- getShortInvitation alice
+      alice ##> "/_connect 1"
+      (shortLink, fullLink) <- getInvitations alice
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "invitation link: ok to connect"
       contactSLinkData <- getTermLine bob
@@ -2976,8 +2976,8 @@ testShortLinkChangePreparedContactUserDuplicate =
       bob ##> "/user bob"
       showActiveUser bob "bob (Bob)"
 
-      alice ##> "/_connect 1 short=on"
-      (shortLink, fullLink) <- getShortInvitation alice
+      alice ##> "/_connect 1"
+      (shortLink, fullLink) <- getInvitations alice
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "invitation link: ok to connect"
       contactSLinkData <- getTermLine bob
@@ -3025,7 +3025,7 @@ testShortLinkChangePreparedGroupUser =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup2 "team" alice cath
-      alice ##> "/create link #team short"
+      alice ##> "/create link #team"
       (shortLink, fullLink) <- getShortGroupLink alice "team" GRMember True
 
       bob ##> "/create user robert"
@@ -3083,7 +3083,7 @@ testShortLinkChangePreparedGroupUserDuplicate =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup2 "team" alice cath
-      alice ##> "/create link #team short"
+      alice ##> "/create link #team"
       (shortLink, fullLink) <- getShortGroupLink alice "team" GRMember True
 
       bob ##> "/create user robert"
@@ -3195,8 +3195,8 @@ testShortLinkInvitationSetIncognito :: HasCallStack => TestParams -> IO ()
 testShortLinkInvitationSetIncognito =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
-      alice ##> "/_connect 1 short=on"
-      (shortLink, fullLink) <- getShortInvitation alice
+      alice ##> "/_connect 1"
+      (shortLink, fullLink) <- getInvitations alice
 
       alice ##> "/_set incognito :1 on"
       aliceIncognito <- getTermLine alice
@@ -3234,8 +3234,8 @@ testShortLinkInvitationChangeUser =
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
 
-      alice ##> "/_connect 1 short=on"
-      (shortLink, fullLink) <- getShortInvitation alice
+      alice ##> "/_connect 1"
+      (shortLink, fullLink) <- getInvitations alice
 
       alice ##> "/_set conn user :1 2"
       alice <## "connection 1 changed from user alice to user alisa"
@@ -3263,7 +3263,7 @@ testShortLinkAddressChangeProfile :: HasCallStack => TestParams -> IO ()
 testShortLinkAddressChangeProfile =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
-      alice ##> "/ad short"
+      alice ##> "/ad"
       (shortLink, fullLink) <- getShortContactLink alice True
 
       alice ##> "/p alisa"
@@ -3298,7 +3298,7 @@ testShortLinkAddressChangeAutoReply :: HasCallStack => TestParams -> IO ()
 testShortLinkAddressChangeAutoReply =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      alice ##> "/ad short"
+      alice ##> "/ad"
       (shortLink, fullLink) <- getShortContactLink alice True
 
       alice ##> "/_auto_accept 1 on incognito=off text welcome!"
@@ -3352,7 +3352,7 @@ testShortLinkGroupChangeProfile =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup2 "team" alice cath
-      alice ##> "/create link #team short"
+      alice ##> "/create link #team"
       (shortLink, fullLink) <- getShortGroupLink alice "team" GRMember True
 
       alice ##> "/gp team club"

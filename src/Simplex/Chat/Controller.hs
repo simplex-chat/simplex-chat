@@ -249,7 +249,8 @@ data ChatController = ChatController
     tempDirectory :: TVar (Maybe FilePath),
     assetsDirectory :: TVar (Maybe FilePath),
     logFilePath :: Maybe FilePath,
-    contactMergeEnabled :: TVar Bool
+    contactMergeEnabled :: TVar Bool,
+    useLargeLinkData :: TVar Bool
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSRemote | HSSettings | HSDatabase
@@ -276,7 +277,7 @@ data ChatCommand
   | UnmuteUser
   | APIDeleteUser UserId Bool (Maybe UserPwd)
   | DeleteUser UserName Bool (Maybe UserPwd)
-  | StartChat {mainApp :: Bool, enableSndFiles :: Bool} -- enableSndFiles has no effect when mainApp is True
+  | StartChat {mainApp :: Bool, enableSndFiles :: Bool, largeLinkData :: Bool} -- enableSndFiles has no effect when mainApp is True
   | CheckChatRunning
   | APIStopChat
   | APIActivateChat {restoreChat :: Bool}
@@ -369,7 +370,7 @@ data ChatCommand
   -- | APIDeleteGroupConversations GroupId (NonEmpty GroupConversationId)
   -- | APIArchiveGroupConversations GroupId (NonEmpty GroupConversationId)
   | APIUpdateGroupProfile GroupId GroupProfile
-  | APICreateGroupLink GroupId GroupMemberRole CreateShortLink
+  | APICreateGroupLink GroupId GroupMemberRole
   | APIGroupLinkMemberRole GroupId GroupMemberRole
   | APIDeleteGroupLink GroupId
   | APIGetGroupLink GroupId
@@ -443,8 +444,8 @@ data ChatCommand
   | EnableGroupMember GroupName ContactName
   | ChatHelp HelpSection
   | Welcome
-  | APIAddContact UserId CreateShortLink IncognitoEnabled
-  | AddContact CreateShortLink IncognitoEnabled
+  | APIAddContact UserId IncognitoEnabled
+  | AddContact IncognitoEnabled
   | APISetConnectionIncognito Int64 IncognitoEnabled
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
   | APIConnectPlan UserId AConnectionLink
@@ -462,8 +463,8 @@ data ChatCommand
   | ClearContact ContactName
   | APIListContacts UserId
   | ListContacts
-  | APICreateMyAddress UserId CreateShortLink
-  | CreateMyAddress CreateShortLink
+  | APICreateMyAddress UserId
+  | CreateMyAddress
   | APIDeleteMyAddress UserId
   | DeleteMyAddress
   | APIShowMyAddress UserId
@@ -507,7 +508,7 @@ data ChatCommand
   | ShowGroupProfile GroupName
   | UpdateGroupDescription GroupName (Maybe Text)
   | ShowGroupDescription GroupName
-  | CreateGroupLink GroupName GroupMemberRole CreateShortLink
+  | CreateGroupLink GroupName GroupMemberRole
   | GroupLinkMemberRole GroupName GroupMemberRole
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName

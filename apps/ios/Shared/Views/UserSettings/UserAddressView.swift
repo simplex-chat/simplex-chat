@@ -153,12 +153,10 @@ struct UserAddressView: View {
                     }
             }
             addressSettingsButton(userAddress)
-            if UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_SHORT_LINKS) {
-                if userAddress.connLinkContact.connShortLink == nil {
-                    addShortLinkButton()
-                } else if !userAddress.shortLinkDataSet {
-                    addProfileToShortLinkButton()
-                }
+            if userAddress.connLinkContact.connShortLink == nil {
+                addShortLinkButton()
+            } else if !userAddress.shortLinkDataSet {
+                addProfileToShortLinkButton()
             }
         } header: {
             ToggleShortLinkHeader(text: Text("For social media"), link: userAddress.connLinkContact, short: $showShortLink)
@@ -200,10 +198,9 @@ struct UserAddressView: View {
         progressIndicator = true
         Task {
             do {
-                let short = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_SHORT_LINKS)
-                let connLinkContact = try await apiCreateUserAddress(short: short)
+                let connLinkContact = try await apiCreateUserAddress()
                 DispatchQueue.main.async {
-                    chatModel.userAddress = UserContactLink(connLinkContact: connLinkContact, shortLinkDataSet: short)
+                    chatModel.userAddress = UserContactLink(connLinkContact: connLinkContact, shortLinkDataSet: connLinkContact.connShortLink != nil)
                     alert = .shareOnCreate
                     progressIndicator = false
                 }

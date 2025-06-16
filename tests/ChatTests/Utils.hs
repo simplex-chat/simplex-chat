@@ -506,25 +506,18 @@ dropPartialReceipt_ msg = case splitAt 2 msg of
 
 getInvitation :: HasCallStack => TestCC -> IO String
 getInvitation cc = do
-  (inv, _) <- getInvitation_ False cc
-  pure inv
+  (_, fullLink) <- getInvitations cc
+  pure fullLink
 
-getShortInvitation :: HasCallStack => TestCC -> IO (String, String)
-getShortInvitation = getInvitation_ True
-
-getInvitation_ :: HasCallStack => Bool -> TestCC -> IO (String, String)
-getInvitation_ short cc = do
+getInvitations :: HasCallStack => TestCC -> IO (String, String)
+getInvitations cc = do
   cc <## "pass this invitation link to your contact (via another channel):"
   cc <## ""
   inv <- getTermLine cc
   cc <## ""
   cc <## "and ask them to connect: /c <invitation_link_above>"
-  fullLink <-
-    if short
-      then do
-        cc <##. "The invitation link for old clients:"
-        getTermLine cc
-      else pure ""
+  cc <##. "The invitation link for old clients:"
+  fullLink <- getTermLine cc
   pure (inv, fullLink)
 
 getShortContactLink :: HasCallStack => TestCC -> Bool -> IO (String, String)

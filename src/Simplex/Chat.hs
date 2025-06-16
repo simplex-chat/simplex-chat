@@ -173,6 +173,7 @@ newChatController
     tempDirectory <- newTVarIO optTempDirectory
     assetsDirectory <- newTVarIO Nothing
     contactMergeEnabled <- newTVarIO True
+    useLargeLinkData <- newTVarIO True
     pure
       ChatController
         { firstTime,
@@ -213,7 +214,8 @@ newChatController
           tempDirectory,
           assetsDirectory,
           logFilePath = logFile,
-          contactMergeEnabled
+          contactMergeEnabled,
+          useLargeLinkData
         }
     where
       presetServers' :: PresetServers
