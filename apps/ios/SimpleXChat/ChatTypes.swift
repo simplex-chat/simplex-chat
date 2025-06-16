@@ -2190,7 +2190,7 @@ public enum MemberCriteria: String, Codable, Identifiable, Hashable {
 
 public struct ContactShortLinkData: Codable, Hashable {
     public var profile: Profile
-    public var welcomeMsg: String?
+    public var message: String?
 }
 
 public struct GroupShortLinkData: Codable, Hashable {
