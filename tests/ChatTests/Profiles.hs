@@ -2812,7 +2812,7 @@ testShortLinkInvitationImage = testChat2 aliceProfile bobProfile $ \alice bob ->
   (shortLink, fullLink) <- getShortInvitation bob
   alice ##> ("/_connect plan 1 " <> shortLink)
   alice <## "invitation link: ok to connect"
-  contactSLinkData <- getTermLine alice -- what is that?
+  contactSLinkData <- getTermLine alice
   alice ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
   alice <## "bob: contact is prepared"
   alice ##> "/_connect contact @2 text hello"
@@ -3213,7 +3213,7 @@ testShortLinkInvitationSetIncognito =
                WithTime ("@" <> aliceIncognito <> " hello")
              ]
       alice ?<# "bob> hello"
-      _ <- getTermLine alice -- what is that
+      _ <- getTermLine alice
       concurrentlyN_
         [ bob <## (aliceIncognito <> ": contact is connected"),
           do
