@@ -1871,9 +1871,9 @@ processChatCommand' vr = \case
     let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing}
     updateProfile_ user p' True $ withFastStore' $ \db -> setUserProfileContactLink db user Nothing
   APISetProfileAddress userId True -> withUserId userId $ \user@User {profile = p} -> do
-    ucl@UserContactLink {connLinkContact = CCLink cReq _} <- withFastStore (`getUserAddress` user)
+    ucl <- withFastStore (`getUserAddress` user)
     -- TODO [short links] replace with short links
-    let p' = (fromLocalProfile p :: Profile) {contactLink = Just $ CLFull cReq}
+    let p' = (fromLocalProfile p :: Profile) {contactLink = Just $ profileContactLink ucl}
     updateProfile_ user p' True $ withFastStore' $ \db -> setUserProfileContactLink db user $ Just ucl
   SetProfileAddress onOff -> withUser $ \User {userId} ->
     processChatCommand $ APISetProfileAddress userId onOff
@@ -3325,9 +3325,13 @@ processChatCommand' vr = \case
               Just UserContactLink {connLinkContact = CCLink cReq _} -> pure (ACCL SCMContact $ CCLink cReq (Just l'), CPContactAddress CAPOwnLink)
               Nothing -> do
                 (cReq, cData) <- getShortLinkConnReq user l'
-                let contactSLinkData_ = J.decodeStrict $ linkUserData' cData
-                plan <- contactRequestPlan user cReq contactSLinkData_
-                pure (ACCL SCMContact $ CCLink cReq (Just l'), plan)
+                let cl = ACCL SCMContact $ CCLink cReq (Just l')
+                withFastStore' (\db -> getContactWithoutConnViaShortAddress db vr user l') >>= \case
+                  Just ct -> pure (cl, CPContactAddress (CAPContactViaAddress ct))
+                  Nothing -> do
+                    let contactSLinkData_ = J.decodeStrict $ linkUserData' cData
+                    plan <- contactRequestPlan user cReq contactSLinkData_
+                    pure (cl, plan)
           CCTGroup ->
             withFastStore' (\db -> getGroupInfoViaUserShortLink db vr user l') >>= \case
               Just (cReq, g) -> pure (ACCL SCMContact $ CCLink cReq (Just l'), CPGroupLink (GLPOwnLink g))

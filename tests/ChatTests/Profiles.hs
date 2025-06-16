@@ -63,6 +63,7 @@ chatProfileTests = do
     it "connecting via contact address (slow handshake)" testPlanAddressConnectingSlow
     it "re-connect with deleted contact" testPlanAddressContactDeletedReconnected
     it "contact via address" testPlanAddressContactViaAddress
+    it "contact via short address" testPlanAddressContactViaShortAddress
   describe "incognito" $ do
     it "connect incognito via invitation link" testConnectIncognitoInvitationLink
     it "connect incognito via contact address" testConnectIncognitoContactAddress
@@ -361,9 +362,9 @@ testProfileLink =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       alice ##> "/ad"
-      cLink <- getContactLink alice True
+      (sLink, _cLink) <- getContactLinks alice True
 
-      bob ##> ("/c " <> cLink)
+      bob ##> ("/c " <> sLink)
       alice <#? bob
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
@@ -376,9 +377,9 @@ testProfileLink =
       alice <## "new contact address set"
 
       bob <## "alice set new contact address, use /info alice to view"
-      checkAliceProfileLink bob cLink
+      checkAliceProfileLink bob sLink
 
-      cath ##> ("/c " <> cLink)
+      cath ##> ("/c " <> sLink)
       alice <#? cath
       alice ##> "/ac cath"
       alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
@@ -387,7 +388,7 @@ testProfileLink =
         (alice <## "cath (Catherine): contact is connected")
       alice <##> cath
 
-      checkAliceProfileLink cath cLink
+      checkAliceProfileLink cath sLink
 
       alice ##> "/pa off"
       alice <## "contact address removed"
@@ -402,10 +403,10 @@ testProfileLink =
       alice <## "new contact address set"
 
       bob <## "alice set new contact address, use /info alice to view"
-      checkAliceProfileLink bob cLink
+      checkAliceProfileLink bob sLink
 
       cath <## "alice set new contact address, use /info alice to view"
-      checkAliceProfileLink cath cLink
+      checkAliceProfileLink cath sLink
 
       alice ##> "/da"
       alice <## "Your chat address is deleted - accepted contacts will remain connected."
@@ -417,12 +418,12 @@ testProfileLink =
       cath <## "alice removed contact address"
       checkAliceNoProfileLink cath
   where
-    checkAliceProfileLink cc cLink = do
+    checkAliceProfileLink cc sLink = do
       cc ##> "/info alice"
       cc <## "contact ID: 2"
       cc <##. "receiving messages via"
       cc <##. "sending messages via"
-      cc <## ("contact address: " <> cLink)
+      cc <## ("contact address: " <> sLink)
       cc <## "you've shared main profile with this contact"
       cc <## "connection not verified, use /code command to see security code"
       cc <## "quantum resistant end-to-end encryption"
@@ -1134,7 +1135,7 @@ testPlanAddressContactViaAddress =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       alice ##> "/ad"
-      cLink <- getContactLink alice True
+      (_sLink, cLink) <- getContactLinks alice True
 
       alice ##> "/pa on" -- not necessary, without it bob would receive profile update removing contact link
       alice <## "new contact address set"
@@ -1153,10 +1154,6 @@ testPlanAddressContactViaAddress =
           bob @@@ [("@alice", "")]
 
           bob ##> ("/_connect plan 1 " <> cLink)
-          bob <## "contact address: known contact without connection alice"
-
-          let cLinkSchema2 = linkAnotherSchema cLink
-          bob ##> ("/_connect plan 1 " <> cLinkSchema2)
           bob <## "contact address: known contact without connection alice"
 
           -- terminal api
@@ -1186,10 +1183,71 @@ testPlanAddressContactViaAddress =
       alice <## "to reject: /rc bob (the sender will NOT be notified)"
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+      concurrentlyN_
+        [ do
+            bob <## "alice set new contact address, use /info alice to view"
+            bob <## "alice (Alice): contact is connected",
+          alice <## "bob (Bob): contact is connected"
+        ]
+      alice <##> bob
+      bob @@@ [("@alice", "hey")]
+
+testPlanAddressContactViaShortAddress :: HasCallStack => TestParams -> IO ()
+testPlanAddressContactViaShortAddress =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/ad"
+      (sLink, _) <- getContactLinks alice True
+
+      alice ##> "/pa on" -- not necessary, without it bob would receive profile update removing contact link
+      alice <## "new contact address set"
+
+      case A.parseOnly strP (B.pack sLink) of
+        Left _ -> error "error parsing contact link"
+        Right shortLink -> do
+          let profile = aliceProfile {contactLink = Just shortLink}
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db user profile
+          bob @@@ [("@alice", "")]
+
+          bob ##> "/delete @alice"
+          bob <## "alice: contact is deleted"
+
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db user profile
+          bob @@@ [("@alice", "")]
+
+          bob ##> ("/_connect plan 1 " <> sLink)
+          bob <## "contact address: known contact without connection alice"
+
+          -- terminal api
+          bob ##> ("/c " <> sLink)
+          connecting alice bob
+
+          bob ##> "/delete @alice"
+          bob <## "alice: contact is deleted"
+          alice ##> "/delete @bob"
+          alice <## "bob: contact is deleted"
+
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db user profile
+          bob @@@ [("@alice", "")]
+
+          -- GUI api
+#if defined(dbPostgres)
+          bob ##> "/_connect contact 1 4"
+#else
+          bob ##> "/_connect contact 1 2"
+#endif
+          connecting alice bob
+  where
+    connecting alice bob = do
+      bob <## "connection request sent!"
+      alice <## "bob (Bob) wants to connect to you!"
+      alice <## "to accept: /ac bob"
+      alice <## "to reject: /rc bob (the sender will NOT be notified)"
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
-
       alice <##> bob
       bob @@@ [("@alice", "hey")]
 
