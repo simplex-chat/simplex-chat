@@ -1708,33 +1708,17 @@ processChatCommand' vr = \case
     conn <- withFastStore $ \db -> getPendingContactConnection db userId connId
     let PendingContactConnection {pccConnStatus, connLinkInv} = conn
     case (pccConnStatus, connLinkInv) of
-      (ConnNew, Just (CCLink cReqInv _)) -> do
+      (ConnNew, Just _ссLink) -> do
         newUser <- privateGetUser newUserId
-        conn' <- ifM (canKeepLink cReqInv newUser) (updateConn user conn newUser) (recreateConn user conn newUser)
+        conn' <- recreateConn user conn newUser
         pure $ CRConnectionUserChanged user conn conn' newUser
       _ -> throwChatError CEConnectionUserChangeProhibited
     where
-      canKeepLink :: ConnReqInvitation -> User -> CM Bool
-      canKeepLink (CRInvitationUri crData _) newUser = do
-        let ConnReqUriData {crSmpQueues = q :| _} = crData
-            SMPQueueUri {queueAddress = SMPQueueAddress {smpServer}} = q
-        newUserServers <-
-          map protoServer' . L.filter (\ServerCfg {enabled} -> enabled)
-            <$> getKnownAgentServers SPSMP newUser
-        pure $ smpServer `elem` newUserServers
-      updateConn user@User {userId} conn@PendingContactConnection {customUserProfileId} newUser = do
-        withAgent $ \a -> changeConnectionUser a (aUserId user) (aConnId' conn) (aUserId newUser)
-        sLnk <- updatePCCShortLinkData conn $ userProfileToSend newUser Nothing Nothing False
-        withFastStore' $ \db -> do
-          conn' <- updatePCCUser db userId conn newUserId sLnk
-          forM_ customUserProfileId $ \profileId ->
-            deletePCCIncognitoProfile db user profileId
-          pure conn'
       recreateConn user conn@PendingContactConnection {customUserProfileId, connLinkInv} newUser = do
         subMode <- chatReadVar subscriptionMode
         let short = isJust $ connShortLink =<< connLinkInv
             userData
-              | short = Just $ shortLinkUserData $ userProfileToSend user Nothing Nothing False
+              | short = Just $ shortLinkUserData $ userProfileToSend newUser Nothing Nothing False
               | otherwise = Nothing
         -- TODO [certs rcv]
         (agConnId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a (aUserId newUser) True SCMInvitation userData Nothing IKPQOn subMode
