@@ -3440,7 +3440,7 @@ processChatCommand' vr = \case
       let contactData
             | largeLinkData = ContactShortLinkData p msg
             | otherwise = ContactShortLinkData p {fullName = "", image = Nothing, contactLink = Nothing} Nothing
-      -- TODO [short link] compress
+      -- TODO [short links] compress
       pure $ UserLinkData $ LB.toStrict $ J.encode contactData
     groupShortLinkData :: GroupProfile -> CM UserLinkData
     groupShortLinkData gp = do
@@ -3448,7 +3448,7 @@ processChatCommand' vr = \case
       let gp'
             | largeLinkData = gp
             | otherwise = gp {fullName = "", description = Nothing, image = Nothing, memberAdmission = Nothing}
-      -- TODO [short link] compress
+      -- TODO [short links] compress
       pure $ UserLinkData $ LB.toStrict $ J.encode $ GroupShortLinkData gp'
     updatePCCShortLinkData :: PendingContactConnection -> Profile -> CM (Maybe ShortLinkInvitation)
     updatePCCShortLinkData conn@PendingContactConnection {connLinkInv} profile =

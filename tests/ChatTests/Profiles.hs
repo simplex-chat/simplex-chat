@@ -26,6 +26,7 @@ import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
@@ -67,8 +68,7 @@ chatProfileTests = do
   describe "incognito" $ do
     it "connect incognito via invitation link" testConnectIncognitoInvitationLink
     it "connect incognito via contact address" testConnectIncognitoContactAddress
-    -- TODO [short links] accepting incognito is not accepted with short links
-    xit "accept contact request incognito" testAcceptContactRequestIncognito
+    it "accept contact request incognito" testAcceptContactRequestIncognito
     it "set connection incognito" testSetConnectionIncognito
     it "reset connection incognito" testResetConnectionIncognito
     it "set connection incognito prohibited during negotiation" testSetConnectionIncognitoProhibitedDuringNegotiation
@@ -1368,6 +1368,10 @@ testAcceptContactRequestIncognito = testChat3 aliceProfile bobProfile cathProfil
   \alice bob cath -> do
     alice ##> "/ad"
     cLink <- getContactLink alice True
+    -- Here we imitate ability to accept contact requests incognito, as was possible with legacy addresses;
+    -- in this test alice "shares" only full link, and connecting side (bob) doesn't retrieve profile via short link
+    void $ withCCTransaction alice $ \db ->
+      DB.execute_ db "UPDATE user_contact_links SET short_link_data_set = 0"
     -- GUI /_accept api
     bob ##> ("/c " <> cLink)
     alice <#? bob
