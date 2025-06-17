@@ -212,6 +212,7 @@ operatorRoles :: UserProtocol p => SProtocolType p -> ServerOperator -> ServerRo
 operatorRoles p op = case p of
   SPSMP -> smpRoles op
   SPXFTP -> xftpRoles op
+  SPNTF -> ServerRoles{proxy = False, storage = False}
 
 conditionsAccepted :: ServerOperator -> Bool
 conditionsAccepted ServerOperator {conditionsAcceptance} = case conditionsAcceptance of
@@ -221,14 +222,16 @@ conditionsAccepted ServerOperator {conditionsAcceptance} = case conditionsAccept
 data UserOperatorServers = UserOperatorServers
   { operator :: Maybe ServerOperator,
     smpServers :: [UserServer 'PSMP],
-    xftpServers :: [UserServer 'PXFTP]
+    xftpServers :: [UserServer 'PXFTP],
+    ntfServers :: [UserServer 'PNTF]
   }
   deriving (Show)
 
 data UpdatedUserOperatorServers = UpdatedUserOperatorServers
   { operator :: Maybe ServerOperator,
     smpServers :: [AUserServer 'PSMP],
-    xftpServers :: [AUserServer 'PXFTP]
+    xftpServers :: [AUserServer 'PXFTP],
+    ntfServers :: [AUserServer 'PNTF]
   }
   deriving (Show)
 
@@ -245,17 +248,19 @@ instance UserServersClass UserOperatorServers where
   type AServer UserOperatorServers = UserServer' 'DBStored
   operator' UserOperatorServers {operator} = operator
   aUserServer' = AUS SDBStored
-  servers' p UserOperatorServers {smpServers, xftpServers} = case p of
+  servers' p UserOperatorServers {smpServers, xftpServers, ntfServers} = case p of
     SPSMP -> smpServers
     SPXFTP -> xftpServers
+    SPNTF -> ntfServers
 
 instance UserServersClass UpdatedUserOperatorServers where
   type AServer UpdatedUserOperatorServers = AUserServer
   operator' UpdatedUserOperatorServers {operator} = operator
   aUserServer' = id
-  servers' p UpdatedUserOperatorServers {smpServers, xftpServers} = case p of
+  servers' p UpdatedUserOperatorServers {smpServers, xftpServers, ntfServers} = case p of
     SPSMP -> smpServers
     SPXFTP -> xftpServers
+    SPNTF -> ntfServers
 
 type UserServer p = UserServer' 'DBStored p
 
@@ -284,7 +289,9 @@ data PresetOperator = PresetOperator
     smp :: [NewUserServer 'PSMP],
     useSMP :: Int,
     xftp :: [NewUserServer 'PXFTP],
-    useXFTP :: Int
+    useXFTP :: Int,
+    ntf :: [NewUserServer 'PNTF],
+    useNTF :: Int
   }
   deriving (Show)
 
@@ -292,14 +299,16 @@ pOperator :: PresetOperator -> Maybe NewServerOperator
 pOperator PresetOperator {operator} = operator
 
 pServers :: UserProtocol p => SProtocolType p -> PresetOperator -> [NewUserServer p]
-pServers p PresetOperator {smp, xftp} = case p of
+pServers p PresetOperator {smp, xftp, ntf} = case p of
   SPSMP -> smp
   SPXFTP -> xftp
+  SPNTF -> ntf
 
 operatorServersToUse :: UserProtocol p => SProtocolType p -> PresetOperator -> Int
-operatorServersToUse p PresetOperator {useSMP, useXFTP} = case p of
+operatorServersToUse p PresetOperator {useSMP, useXFTP, useNTF} = case p of
   SPSMP -> useSMP
   SPXFTP -> useXFTP
+  SPNTF -> useNTF
 
 presetServer' :: Bool -> ProtocolServer p -> NewUserServer p
 presetServer' enabled = presetServer enabled . (`ProtoServerWithAuth` Nothing)
@@ -341,8 +350,8 @@ usageConditionsToAdd' prevCommit sourceCommit newUser createdAt = \case
 presetUserServers :: [(Maybe PresetOperator, Maybe ServerOperator)] -> [UpdatedUserOperatorServers]
 presetUserServers = mapMaybe $ \(presetOp_, op) -> mkUS op <$> presetOp_
   where
-    mkUS op PresetOperator {smp, xftp} =
-      UpdatedUserOperatorServers op (map (AUS SDBNew) smp) (map (AUS SDBNew) xftp)
+    mkUS op PresetOperator {smp, xftp, ntf} =
+      UpdatedUserOperatorServers op (map (AUS SDBNew) smp) (map (AUS SDBNew) xftp) (map (AUS SDBNew) ntf)
 
 -- This function should be used inside DB transaction to update operators.
 -- It allows to add/remove/update preset operators in the database preserving enabled and roles settings,
@@ -362,13 +371,13 @@ updatedServerOperators presetOps storedOps =
 
 -- This function should be used inside DB transaction to update servers.
 updatedUserServers :: (Maybe PresetOperator, UserOperatorServers) -> UpdatedUserOperatorServers
-updatedUserServers (presetOp_, UserOperatorServers {operator, smpServers, xftpServers}) =
-  UpdatedUserOperatorServers {operator, smpServers = smp', xftpServers = xftp'}
+updatedUserServers (presetOp_, UserOperatorServers {operator, smpServers, xftpServers, ntfServers}) =
+  UpdatedUserOperatorServers {operator, smpServers = smp', xftpServers = xftp', ntfServers = ntf'}
   where
     stored = map (AUS SDBStored)
-    (smp', xftp') = case presetOp_ of
-      Nothing -> (stored smpServers, stored xftpServers)
-      Just presetOp -> (updated SPSMP smpServers, updated SPXFTP xftpServers)
+    (smp', xftp', ntf') = case presetOp_ of
+      Nothing -> (stored smpServers, stored xftpServers, stored ntfServers)
+      Just presetOp -> (updated SPSMP smpServers, updated SPXFTP xftpServers, updated SPNTF ntfServers)
         where
           updated :: forall p. UserProtocol p => SProtocolType p -> [UserServer p] -> [AUserServer p]
           updated p srvs = map userServer presetSrvs <> stored (filter customServer srvs)
@@ -419,34 +428,36 @@ instance Box ((,) (Maybe a)) where
   box = (Nothing,)
   unbox = snd
 
-groupByOperator :: ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP]) -> IO [UserOperatorServers]
-groupByOperator (ops, smpSrvs, xftpSrvs) = map runIdentity <$> groupByOperator_ (map Identity ops, smpSrvs, xftpSrvs)
+groupByOperator :: ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserServer 'PNTF]) -> IO [UserOperatorServers]
+groupByOperator (ops, smpSrvs, xftpSrvs, ntfSrvs) = map runIdentity <$> groupByOperator_ (map Identity ops, smpSrvs, xftpSrvs, ntfSrvs)
 
 -- For the initial app start this function relies on tuple being Functor/Box
 -- to preserve the information about operator being DBNew or DBStored
-groupByOperator' :: ([(Maybe PresetOperator, Maybe ServerOperator)], [UserServer 'PSMP], [UserServer 'PXFTP]) -> IO [(Maybe PresetOperator, UserOperatorServers)]
+groupByOperator' :: ([(Maybe PresetOperator, Maybe ServerOperator)], [UserServer 'PSMP], [UserServer 'PXFTP], [UserServer 'PNTF]) -> IO [(Maybe PresetOperator, UserOperatorServers)]
 groupByOperator' = groupByOperator_
 {-# INLINE groupByOperator' #-}
 
-groupByOperator_ :: forall f. (Box f, Traversable f) => ([f (Maybe ServerOperator)], [UserServer 'PSMP], [UserServer 'PXFTP]) -> IO [f UserOperatorServers]
-groupByOperator_ (ops, smpSrvs, xftpSrvs) = do
+groupByOperator_ :: forall f. (Box f, Traversable f) => ([f (Maybe ServerOperator)], [UserServer 'PSMP], [UserServer 'PXFTP], [UserServer 'PNTF]) -> IO [f UserOperatorServers]
+groupByOperator_ (ops, smpSrvs, xftpSrvs, ntfSrvs) = do
   let ops' = mapMaybe sequence ops
       customOp_ = find (isNothing . unbox) ops
   ss <- mapM ((\op -> (serverDomains (unbox op),) <$> newIORef (mkUS . Just <$> op))) ops'
   custom <- newIORef $ maybe (box $ mkUS Nothing) (mkUS <$>) customOp_
   mapM_ (addServer ss custom addSMP) (reverse smpSrvs)
   mapM_ (addServer ss custom addXFTP) (reverse xftpSrvs)
+  mapM_ (addServer ss custom addNTF) (reverse ntfSrvs)
   opSrvs <- mapM (readIORef . snd) ss
   customSrvs <- readIORef custom
   pure $ opSrvs <> [customSrvs]
   where
-    mkUS op = UserOperatorServers op [] []
+    mkUS op = UserOperatorServers op [] [] []
     addServer :: [([Text], IORef (f UserOperatorServers))] -> IORef (f UserOperatorServers) -> (UserServer p -> UserOperatorServers -> UserOperatorServers) -> UserServer p -> IO ()
     addServer ss custom add srv =
       let v = maybe custom snd $ find (\(ds, _) -> any (\d -> any (matchingHost d) (srvHost srv)) ds) ss
        in atomicModifyIORef'_ v (add srv <$>)
     addSMP srv s@UserOperatorServers {smpServers} = (s :: UserOperatorServers) {smpServers = srv : smpServers}
     addXFTP srv s@UserOperatorServers {xftpServers} = (s :: UserOperatorServers) {xftpServers = srv : xftpServers}
+    addNTF srv s@UserOperatorServers {ntfServers} = (s :: UserOperatorServers) {ntfServers = srv : ntfServers}
 
 data UserServersError
   = USENoServers {protocol :: AProtocolType, user :: Maybe User}

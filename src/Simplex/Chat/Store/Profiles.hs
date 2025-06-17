@@ -624,12 +624,13 @@ getServerOperators db = do
     let conditionsAction = usageConditionsAction ops currentConditions now
     pure ServerOperatorConditions {serverOperators = ops, currentConditions, conditionsAction}
 
-getUserServers :: DB.Connection -> User -> ExceptT StoreError IO ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP])
+getUserServers :: DB.Connection -> User -> ExceptT StoreError IO ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserServer 'PNTF])
 getUserServers db user =
-  (,,)
+  (,,,)
     <$> (map Just . serverOperators <$> getServerOperators db)
     <*> liftIO (getProtocolServers db SPSMP user)
     <*> liftIO (getProtocolServers db SPXFTP user)
+    <*> liftIO (getProtocolServers db SPNTF user)
 
 setServerOperators :: DB.Connection -> NonEmpty ServerOperator -> IO ()
 setServerOperators db ops = do
@@ -842,11 +843,12 @@ setUserServers :: DB.Connection -> User -> UTCTime -> UpdatedUserOperatorServers
 setUserServers db user ts = checkConstraint SEUniqueID . liftIO . setUserServers' db user ts
 
 setUserServers' :: DB.Connection -> User -> UTCTime -> UpdatedUserOperatorServers -> IO UserOperatorServers
-setUserServers' db user@User {userId} ts UpdatedUserOperatorServers {operator, smpServers, xftpServers} = do
+setUserServers' db user@User {userId} ts UpdatedUserOperatorServers {operator, smpServers, xftpServers, ntfServers} = do
   mapM_ (updateServerOperator db ts) operator
   smpSrvs' <- catMaybes <$> mapM (upsertOrDelete SPSMP) smpServers
   xftpSrvs' <- catMaybes <$> mapM (upsertOrDelete SPXFTP) xftpServers
-  pure UserOperatorServers {operator, smpServers = smpSrvs', xftpServers = xftpSrvs'}
+  ntfSrvs' <- catMaybes <$> mapM (upsertOrDelete SPNTF) ntfServers
+  pure UserOperatorServers {operator, smpServers = smpSrvs', xftpServers = xftpSrvs', ntfServers = ntfSrvs'}
   where
     upsertOrDelete :: ProtocolTypeI p => SProtocolType p -> AUserServer p -> IO (Maybe (UserServer p))
     upsertOrDelete p (AUS _ s@UserServer {serverId, deleted}) = case serverId of

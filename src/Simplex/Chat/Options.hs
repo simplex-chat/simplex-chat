@@ -32,7 +32,7 @@ import Simplex.FileTransfer.Description (mb)
 import Simplex.Messaging.Client (HostMode (..), SMPWebPortServers (..), SocksMode (..), textToHostMode)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
-import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI, SMPServerWithAuth, XFTPServerWithAuth)
+import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI, SMPServerWithAuth, XFTPServerWithAuth, NtfServerWithAuth)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth (..), SocksAuth (..), defaultSocksProxyWithAuth)
 import Simplex.Chat.Options.DB
 
@@ -56,6 +56,7 @@ data CoreChatOpts = CoreChatOpts
   { dbOptions :: ChatDbOpts,
     smpServers :: [SMPServerWithAuth],
     xftpServers :: [XFTPServerWithAuth],
+    ntfServers :: [NtfServerWithAuth],
     simpleNetCfg :: SimpleNetCfg,
     logLevel :: ChatLogLevel,
     logConnections :: Bool,
@@ -104,6 +105,18 @@ coreChatOptsP appDir defaultDbName = do
             ( ("Space-separated list of XFTP server(s) to use (each server can have more than one hostname)." <> "\n")
                 <> ("If you pass multiple servers, surround the entire list in quotes." <> "\n")
                 <> "Examples: xftp1.example.com, \"xftp1.example.com xftp2.example.com xftp3.example.com\""
+            )
+          <> value []
+      )
+  ntfServers <-
+    option
+      parseProtocolServers
+      ( long "ntf-server"
+          <> metavar "SERVER"
+          <> help
+            ( ("Space-separated list of NTF server(s) to use (each server can have more than one hostname)." <> "\n")
+                <> ("If you pass multiple servers, surround the entire list in quotes." <> "\n")
+                <> "Examples: ntf1.example.com, \"ntf1.example.com ntf2.example.com ntf3.example.com\""
             )
           <> value []
       )
@@ -241,6 +254,7 @@ coreChatOptsP appDir defaultDbName = do
       { dbOptions,
         smpServers,
         xftpServers,
+        ntfServers,
         simpleNetCfg =
           SimpleNetCfg
             { socksProxy,

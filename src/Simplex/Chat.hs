@@ -72,17 +72,20 @@ defaultChatConfig =
                     smp = simplexChatSMPServers,
                     useSMP = 4,
                     xftp = map (presetServer True) $ L.toList defaultXFTPServers,
-                    useXFTP = 3
+                    useXFTP = 3,
+                    ntf = map (presetServer True) $ L.toList _defaultNtfServers,
+                    useNTF = 3
                   },
                 PresetOperator
                   { operator = Just operatorFlux,
                     smp = fluxSMPServers,
                     useSMP = 3,
                     xftp = fluxXFTPServers,
-                    useXFTP = 3
+                    useXFTP = 3,
+                    ntf = fluxNTFServers,
+                    useNTF = 3
                   }
               ],
-            ntf = _defaultNtfServers,
             netCfg = defaultNetworkConfig
           },
       -- please note: if these servers are changed, this option needs to be split to two,
@@ -125,7 +128,7 @@ newChatController
   ChatDatabase {chatStore, agentStore}
   user
   cfg@ChatConfig {agentConfig = aCfg, presetServers, inlineFiles, deviceNameForRemote, confirmMigrations}
-  ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, simpleNetCfg, logLevel, logConnections, logServerHosts, logFile, tbqSize, deviceName, highlyAvailable, yesToUpMigrations}, optFilesFolder, optTempDirectory, showReactions, allowInstantFiles, autoAcceptFileSize}
+  ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, ntfServers, simpleNetCfg, logLevel, logConnections, logServerHosts, logFile, tbqSize, deviceName, highlyAvailable, yesToUpMigrations}, optFilesFolder, optTempDirectory, showReactions, allowInstantFiles, autoAcceptFileSize}
   backgroundMode = do
     let inlineFiles' = if allowInstantFiles || autoAcceptFileSize > 0 then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
         confirmMigrations' = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations
@@ -138,7 +141,8 @@ newChatController
         opDomains = operatorDomains $ mapMaybe operatorWithId $ zip [1 ..] rndSrvs
     agentSMP <- randomServerCfgs "agent SMP servers" SPSMP opDomains rndSrvs
     agentXFTP <- randomServerCfgs "agent XFTP servers" SPXFTP opDomains rndSrvs
-    let randomAgentServers = RandomAgentServers {smpServers = agentSMP, xftpServers = agentXFTP}
+    agentNTF <- randomServerCfgs "agent NTF servers" SPNTF opDomains rndSrvs
+    let randomAgentServers = RandomAgentServers {smpServers = agentSMP, xftpServers = agentXFTP, ntfServers = agentNTF}
     currentRemoteHost <- newTVarIO Nothing
     servers <- withTransaction chatStore $ \db -> agentServers db config randomPresetServers randomAgentServers
     smpAgent <- getSMPAgentClient aCfg {tbqSize} servers agentStore backgroundMode
@@ -220,47 +224,56 @@ newChatController
         where
           PresetServers {operators, netCfg} = presetServers
           netCfg' = updateNetworkConfig netCfg simpleNetCfg
-          operators' = case (smpServers, xftpServers) of
-            ([], []) -> operators
-            (smpSrvs, []) -> L.map disableSMP operators <> [custom smpSrvs []]
-            ([], xftpSrvs) -> L.map disableXFTP operators <> [custom [] xftpSrvs]
-            (smpSrvs, xftpSrvs) -> [custom smpSrvs xftpSrvs]
+          operators' = case (smpServers, xftpServers, ntfServers) of
+            ([], [], []) -> operators
+            (smpSrvs, [], []) -> L.map disableSMP operators <> [custom smpSrvs [] []]
+            ([], xftpSrvs, []) -> L.map disableXFTP operators <> [custom [] xftpSrvs []]
+            (smpSrvs, xftpSrvs, []) -> L.map disableSMP operators <> L.map disableXFTP operators <> [custom smpSrvs xftpSrvs []]
+            ([], [], ntfSrvs) ->  L.map disableNTF operators <> [custom [] [] ntfSrvs]
+            (smpSrvs, [], ntfSrvs) -> L.map disableSMP operators <> L.map disableNTF operators <> [custom smpSrvs [] ntfSrvs]
+            ([], xftpSrvs, ntfSrvs) -> L.map disableXFTP operators <> L.map disableNTF operators <> [custom [] xftpSrvs ntfSrvs]
+            (smpSrvs, xftpSrvs, ntfSrvs) -> [custom smpSrvs xftpSrvs ntfSrvs]
           disableSMP op@PresetOperator {smp} = (op :: PresetOperator) {smp = map disableSrv smp}
           disableXFTP op@PresetOperator {xftp} = (op :: PresetOperator) {xftp = map disableSrv xftp}
+          disableNTF op@PresetOperator {ntf} = (op :: PresetOperator) {ntf = map disableSrv ntf}
           disableSrv :: forall p. NewUserServer p -> NewUserServer p
           disableSrv srv = (srv :: NewUserServer p) {enabled = False}
-          custom smpSrvs xftpSrvs =
+          custom smpSrvs xftpSrvs ntfSrvs =
             PresetOperator
               { operator = Nothing,
                 smp = map newUserServer smpSrvs,
                 useSMP = 0,
                 xftp = map newUserServer xftpSrvs,
-                useXFTP = 0
+                useXFTP = 0,
+                ntf = map newUserServer ntfSrvs,
+                useNTF = 0
               }
       randomServerCfgs :: UserProtocol p => String -> SProtocolType p -> [(Text, ServerOperator)] -> [PresetOperator] -> IO (NonEmpty (ServerCfg p))
       randomServerCfgs name p opDomains rndSrvs =
         toJustOrError name $ L.nonEmpty $ agentServerCfgs p opDomains $ concatMap (pServers p) rndSrvs
       agentServers :: DB.Connection -> ChatConfig -> NonEmpty PresetOperator -> RandomAgentServers -> IO InitialAgentServers
-      agentServers db ChatConfig {presetServers = PresetServers {ntf, netCfg}, presetDomains} presetOps as = do
+      agentServers db ChatConfig {presetServers = PresetServers {netCfg}, presetDomains} presetOps as = do
         users <- getUsers db
         ops <- getUpdateServerOperators db presetOps (null users)
         let opDomains = operatorDomains $ mapMaybe snd ops
-        (smp', xftp') <- unzip <$> mapM (getServers ops opDomains) users
-        pure InitialAgentServers {smp = M.fromList (optServers smp' smpServers), xftp = M.fromList (optServers xftp' xftpServers), ntf, netCfg, presetDomains}
+        (smp', xftp', ntf') <- unzip3 <$> mapM (getServers ops opDomains) users
+        pure InitialAgentServers {smp = M.fromList (optServers smp' smpServers), xftp = M.fromList (optServers xftp' xftpServers), ntf = M.fromList (optServers ntf' ntfServers), netCfg, presetDomains}
         where
           optServers :: [(UserId, NonEmpty (ServerCfg p))] -> [ProtoServerWithAuth p] -> [(UserId, NonEmpty (ServerCfg p))]
           optServers srvs overrides_ = case L.nonEmpty overrides_ of
             Just overrides -> map (second $ const $ L.map (presetServerCfg True allRoles Nothing) overrides) srvs
             Nothing -> srvs
-          getServers :: [(Maybe PresetOperator, Maybe ServerOperator)] -> [(Text, ServerOperator)] -> User -> IO ((UserId, NonEmpty (ServerCfg 'PSMP)), (UserId, NonEmpty (ServerCfg 'PXFTP)))
+          getServers :: [(Maybe PresetOperator, Maybe ServerOperator)] -> [(Text, ServerOperator)] -> User -> IO ((UserId, NonEmpty (ServerCfg 'PSMP)), (UserId, NonEmpty (ServerCfg 'PXFTP)), (UserId, NonEmpty (ServerCfg 'PNTF)))
           getServers ops opDomains user' = do
             smpSrvs <- getProtocolServers db SPSMP user'
             xftpSrvs <- getProtocolServers db SPXFTP user'
-            uss <- groupByOperator' (ops, smpSrvs, xftpSrvs)
+            ntfSrvs <- getProtocolServers db SPNTF user'
+            uss <- groupByOperator' (ops, smpSrvs, xftpSrvs, ntfSrvs)
             ts <- getCurrentTime
             uss' <- mapM (setUserServers' db user' ts . updatedUserServers) uss
             let auId = aUserId user'
-            pure $ bimap (auId,) (auId,) $ useServers as opDomains uss'
+            pure $ auIdMap auId $ useServers as opDomains uss'
+          auIdMap auId (a, b, c) = ((auId, a), (auId, b), (auId, c))
 
 chooseRandomServers :: PresetServers -> IO (NonEmpty PresetOperator)
 chooseRandomServers PresetServers {operators} =
