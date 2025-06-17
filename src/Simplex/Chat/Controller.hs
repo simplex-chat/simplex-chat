@@ -158,7 +158,8 @@ data ChatConfig = ChatConfig
     coreApi :: Bool,
     highlyAvailable :: Bool,
     deviceNameForRemote :: Text,
-    chatHooks :: ChatHooks
+    chatHooks :: ChatHooks,
+    largeLinkData :: Bool
   }
 
 data RandomAgentServers = RandomAgentServers

@@ -112,6 +112,7 @@ chatProfileTests = do
   describe "short links with attached data" $ do
     it "prepare contact using invitation short link data and connect" testShortLinkInvitationPrepareContact
     it "prepare contact with image in profile" testShortLinkInvitationImage
+    it "prepare contact with a long name in profile" testShortLinkInvitationLongName
     it "prepare contact using address short link data and connect" testShortLinkAddressPrepareContact
     it "prepare group using group short link data and connect" testShortLinkPrepareGroup
     it "prepare group using group short link data and connect, host rejects" testShortLinkPrepareGroupReject
@@ -2919,6 +2920,28 @@ testShortLinkInvitationImage = testChat2 aliceProfile bobProfile $ \alice bob ->
     (alice <## "bob (Bob): contact is connected")
     (bob <## "alice (Alice): contact is connected")
   bob <##> alice
+
+testShortLinkInvitationLongName :: HasCallStack => TestParams -> IO ()
+testShortLinkInvitationLongName = testChatCfg2 testCfg {largeLinkData = False} aliceProfile bobProfile {displayName = T.pack longName, fullName = ""} $ \alice bob -> do
+  bob ##> "/_connect 1"
+  (shortLink, fullLink) <- getInvitations bob
+  alice ##> ("/_connect plan 1 " <> shortLink)
+  alice <## "invitation link: ok to connect"
+  contactSLinkData <- getTermLine alice
+  alice ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+  alice <## (longName <> ": contact is prepared")
+  alice ##> "/_connect contact @2 text hello"
+  alice
+    <### [ ConsoleString (longName <> ": connection started"),
+           WithTime ("@" <> longName <> " hello")
+         ]
+  bob <# "alice> hello"
+  concurrently_
+    (alice <## (longName <> ": contact is connected"))
+    (bob <## "alice (Alice): contact is connected")
+  bob <##> alice
+  where
+    longName = "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"
 
 testShortLinkAddressPrepareContact :: HasCallStack => TestParams -> IO ()
 testShortLinkAddressPrepareContact =
