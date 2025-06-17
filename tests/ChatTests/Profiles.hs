@@ -26,7 +26,6 @@ import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
-import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
@@ -49,14 +48,13 @@ chatProfileTests = do
     it "deduplicate contact requests with profile change" testDeduplicateContactRequestsProfileChange
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
     it "delete connection requests when contact link deleted" testDeleteConnectionRequests
-    -- TODO [short links] order of events is incorrect when short link exists, and auto-reply message is not sent/not shown
-    xit "auto-reply message" testAutoReplyMessage
-    -- TODO [short links]
-    xit "auto-reply message in incognito" testAutoReplyMessageInIncognito
+    -- TODO [short links] test auto-reply with current version, with connecting client not preparing contact
+    it "auto-reply message" testAutoReplyMessage
+    it "auto-reply message in incognito" testAutoReplyMessageInIncognito
     describe "business address" $ do
       it "create and connect via business address" testBusinessAddress
-      -- TODO [short links]
-      xit "update profiles with business address" testBusinessUpdateProfiles
+      -- TODO [short links] test business auto-reply with current version, with connecting client not preparing contact
+      it "update profiles with business address" testBusinessUpdateProfiles
   describe "contact address connection plan" $ do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
@@ -671,10 +669,10 @@ testDeleteConnectionRequests = testChat3 aliceProfile bobProfile cathProfile $
     alice <#? cath
 
 testAutoReplyMessage :: HasCallStack => TestParams -> IO ()
-testAutoReplyMessage = testChat2 aliceProfile bobProfile $
+testAutoReplyMessage = testChatCfg2 testCfgNoShortLinks aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/ad"
-    cLink <- getContactLink alice True
+    cLink <- getContactLinkNoShortLink alice True
     alice ##> "/_auto_accept 1 on incognito=off text hello!"
     alice <## "auto_accept on"
     alice <## "auto reply:"
@@ -693,10 +691,10 @@ testAutoReplyMessage = testChat2 aliceProfile bobProfile $
       ]
 
 testAutoReplyMessageInIncognito :: HasCallStack => TestParams -> IO ()
-testAutoReplyMessageInIncognito = testChat2 aliceProfile bobProfile $
+testAutoReplyMessageInIncognito = testChatCfg2 testCfgNoShortLinks aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/ad"
-    cLink <- getContactLink alice True
+    cLink <- getContactLinkNoShortLink alice True
     alice ##> "/auto_accept on incognito=on text hello!"
     alice <## "auto_accept on, incognito"
     alice <## "auto reply:"
@@ -772,10 +770,10 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
       (biz <# "#bob bob_1> hey there")
 
 testBusinessUpdateProfiles :: HasCallStack => TestParams -> IO ()
-testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile cathProfile $
+testBusinessUpdateProfiles = testChatCfg4 testCfgNoShortLinks businessProfile aliceProfile bobProfile cathProfile $
   \biz alice bob cath -> do
     biz ##> "/ad"
-    cLink <- getContactLink biz True
+    cLink <- getContactLinkNoShortLink biz True
     biz ##> "/auto_accept on business text Welcome"
     biz <## "auto_accept on, business"
     biz <## "auto reply:"
@@ -805,7 +803,7 @@ testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile c
     biz ##> "/mr alisa alisa_1 admin"
     biz <## "#alisa: you changed the role of alisa_1 to admin"
     alice <## "#biz: biz_1 changed your role from member to admin"
-    connectUsers alice bob
+    connectUsersNoShortLink alice bob
     alice ##> "/a #biz bob"
     alice <## "invitation to join the group #biz sent to bob"
     bob <## "#biz (Biz Inc): alisa invites you to join the group as member"
@@ -836,7 +834,7 @@ testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile c
     alice <# "#biz robert> hi there"
     biz <# "#alisa robert> hi there"
     -- add business team member
-    connectUsers biz cath
+    connectUsersNoShortLink biz cath
     biz ##> "/a #alisa cath"
     biz <## "invitation to join the group #alisa sent to cath"
     cath <## "#alisa: biz invites you to join the group as member"
@@ -1364,14 +1362,10 @@ testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
     bob `hasContactProfiles` ["bob"]
 
 testAcceptContactRequestIncognito :: HasCallStack => TestParams -> IO ()
-testAcceptContactRequestIncognito = testChat3 aliceProfile bobProfile cathProfile $
+testAcceptContactRequestIncognito = testChatCfg3 testCfgNoShortLinks aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
     alice ##> "/ad"
-    cLink <- getContactLink alice True
-    -- Here we imitate ability to accept contact requests incognito, as was possible with legacy addresses;
-    -- in this test alice "shares" only full link, and connecting side (bob) doesn't retrieve profile via short link
-    void $ withCCTransaction alice $ \db ->
-      DB.execute_ db "UPDATE user_contact_links SET short_link_data_set = 0"
+    cLink <- getContactLinkNoShortLink alice True
     -- GUI /_accept api
     bob ##> ("/c " <> cLink)
     alice <#? bob

@@ -53,7 +53,7 @@ import Simplex.Messaging.Client (ProtocolClientConfig (..))
 import Simplex.Messaging.Client.Agent (defaultSMPClientAgentConfig)
 import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
-import Simplex.Messaging.Protocol (srvHostnamesSMPClientVersion)
+import Simplex.Messaging.Protocol (srvHostnamesSMPClientVersion, sndAuthKeySMPClientVersion)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM (ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultMessageExpiration, defaultIdleQueueInterval, defaultNtfExpiration, defaultInactiveClientExpiration)
 import Simplex.Messaging.Server.MsgStore.STM (STMMsgStore)
@@ -182,6 +182,13 @@ testAgentCfgSlow =
       smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange minClientSMPRelayVersion sendingProxySMPVersion} -- v8
     }
 
+testAgentCfgNoShortLinks :: AgentConfig
+testAgentCfgNoShortLinks =
+  testAgentCfg
+    { smpClientVRange = mkVersionRange (Version 1) sndAuthKeySMPClientVersion, -- v3
+      smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange minClientSMPRelayVersion (Version 14)} -- before shortLinksSMPVersion
+    }
+
 testCfg :: ChatConfig
 testCfg =
   defaultChatConfig
@@ -194,6 +201,9 @@ testCfg =
 
 testCfgSlow :: ChatConfig
 testCfgSlow = testCfg {agentConfig = testAgentCfgSlow}
+
+testCfgNoShortLinks :: ChatConfig
+testCfgNoShortLinks = testCfg {agentConfig = testAgentCfgNoShortLinks}
 
 testAgentCfgVPrev :: AgentConfig
 testAgentCfgVPrev =

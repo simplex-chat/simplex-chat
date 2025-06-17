@@ -663,12 +663,20 @@ showActiveUser cc name = do
   cc <## "use /p <display name> to change it"
   cc <## "(the updated profile will be sent to all your contacts)"
 
+connectUsersNoShortLink :: HasCallStack => TestCC -> TestCC -> IO ()
+connectUsersNoShortLink cc1 cc2 = connectUsers_ cc1 cc2 True
+
 connectUsers :: HasCallStack => TestCC -> TestCC -> IO ()
-connectUsers cc1 cc2 = do
+connectUsers cc1 cc2 = connectUsers_ cc1 cc2 False
+
+connectUsers_ :: HasCallStack => TestCC -> TestCC -> Bool -> IO ()
+connectUsers_ cc1 cc2 noShortLink = do
   name1 <- showName cc1
   name2 <- showName cc2
   cc1 ##> "/c"
-  inv <- getInvitation cc1
+  inv <- if noShortLink
+    then getInvitationNoShortLink cc1
+    else getInvitation cc1
   cc2 ##> ("/c " <> inv)
   cc2 <## "confirmation sent!"
   concurrently_
