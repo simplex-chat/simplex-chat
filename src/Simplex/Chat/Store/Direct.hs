@@ -71,7 +71,6 @@ module Simplex.Chat.Store.Direct
     updateContactAccepted,
     getUserByContactRequestId,
     getPendingContactConnections,
-    updatePCCUser,
     getContactConnections,
     getConnectionById,
     getConnectionsContacts,
@@ -514,23 +513,6 @@ updatePCCIncognito db User {userId} conn@PendingContactConnection {connLinkInv} 
     |]
     (customUserProfileId, sLnk, updatedAt, userId, pccConnId conn)
   pure (conn :: PendingContactConnection) {customUserProfileId, connLinkInv = connLinkInv', updatedAt}
-  where
-    connLinkInv' = case connLinkInv of
-      Just (CCLink cReq _) -> Just (CCLink cReq sLnk)
-      Nothing -> Nothing
-
-updatePCCUser :: DB.Connection -> UserId -> PendingContactConnection -> UserId -> Maybe ShortLinkInvitation -> IO PendingContactConnection
-updatePCCUser db userId conn@PendingContactConnection {connLinkInv} newUserId sLnk = do
-  updatedAt <- getCurrentTime
-  DB.execute
-    db
-    [sql|
-      UPDATE connections
-      SET user_id = ?, short_link_inv = ?, custom_user_profile_id = NULL, updated_at = ?
-      WHERE user_id = ? AND connection_id = ?
-    |]
-    (newUserId, sLnk, updatedAt, userId, pccConnId conn)
-  pure (conn :: PendingContactConnection) {customUserProfileId = Nothing, connLinkInv = connLinkInv', updatedAt}
   where
     connLinkInv' = case connLinkInv of
       Just (CCLink cReq _) -> Just (CCLink cReq sLnk)

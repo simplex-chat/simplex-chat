@@ -1817,10 +1817,9 @@ viewConnectionIncognitoUpdated PendingContactConnection {pccConnId, customUserPr
   | otherwise = ["connection " <> sShow pccConnId <> " changed to non incognito"]
 
 viewConnectionUserChanged :: User -> PendingContactConnection -> User -> PendingContactConnection -> [StyledString]
-viewConnectionUserChanged User {localDisplayName = n} PendingContactConnection {pccConnId, connLinkInv} User {localDisplayName = n'} PendingContactConnection {connLinkInv = connLinkInv'} =
-  case (connLinkInv, connLinkInv') of
-    (Just ccLink, Just ccLink')
-      | ccLink /= ccLink' -> [userChangedStr <> ", new link:"] <> newLink ccLink'
+viewConnectionUserChanged User {localDisplayName = n} PendingContactConnection {pccConnId} User {localDisplayName = n'} PendingContactConnection {connLinkInv = connLinkInv'} =
+  case connLinkInv' of
+    Just ccLink' -> [userChangedStr <> ", new link:"] <> newLink ccLink'
     _ -> [userChangedStr]
   where
     userChangedStr = "connection " <> sShow pccConnId <> " changed from user " <> plain n <> " to user " <> plain n'
@@ -1829,7 +1828,13 @@ viewConnectionUserChanged User {localDisplayName = n} PendingContactConnection {
         plain $ maybe cReqStr strEncode shortLink,
         ""
       ]
-        <> ["The invitation link for old clients: " <> plain cReqStr | isJust shortLink]
+        <>
+          if isJust shortLink
+            then
+              [ "The invitation link for old clients:",
+                plain cReqStr
+              ]
+            else []
       where
         cReqStr = strEncode $ simplexChatInvitation cReq
 

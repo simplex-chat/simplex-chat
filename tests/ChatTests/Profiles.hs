@@ -1917,7 +1917,7 @@ testChangePCCUser = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     -- Create a new invite
     alice ##> "/connect"
-    inv <- getInvitation alice
+    _ <- getInvitation alice
     -- Create new user and go back to original user
     alice ##> "/create user alisa"
     showActiveUser alice "alisa"
@@ -1927,12 +1927,18 @@ testChangePCCUser = testChat2 aliceProfile bobProfile $
     showActiveUser alice "alice (Alice)"
     -- Change connection to newly created user
     alice ##> "/_set conn user :1 2"
-    alice <## "connection 1 changed from user alice to user alisa"
+    alice <## "connection 1 changed from user alice to user alisa, new link:"
+    alice <## ""
+    _ <- getTermLine alice
+    alice <## ""
     alice ##> "/user alisa"
     showActiveUser alice "alisa"
     -- Change connection back to other user
     alice ##> "/_set conn user :1 3"
-    alice <## "connection 1 changed from user alisa to user alisa2"
+    alice <## "connection 1 changed from user alisa to user alisa2, new link:"
+    alice <## ""
+    inv <- getTermLine alice
+    alice <## ""
     alice ##> "/user alisa2"
     showActiveUser alice "alisa2"
     -- Connect
@@ -1941,13 +1947,14 @@ testChangePCCUser = testChat2 aliceProfile bobProfile $
     concurrently_
       (alice <## "bob (Bob): contact is connected")
       (bob <## "alisa2: contact is connected")
+    alice <##> bob
 
 testChangePCCUserFromIncognito :: HasCallStack => TestParams -> IO ()
 testChangePCCUserFromIncognito = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     -- Create a new invite and set as incognito
     alice ##> "/connect"
-    inv <- getInvitation alice
+    _ <- getInvitation alice
     alice ##> "/_set incognito :1 on"
     _ <- getTermLine alice
     alice <## "connection 1 changed to incognito"
@@ -1958,13 +1965,19 @@ testChangePCCUserFromIncognito = testChat2 aliceProfile bobProfile $
     showActiveUser alice "alice (Alice)"
     -- Change connection to newly created user
     alice ##> "/_set conn user :1 2"
-    alice <## "connection 1 changed from user alice to user alisa"
+    alice <## "connection 1 changed from user alice to user alisa, new link:"
+    alice <## ""
+    _ <- getTermLine alice
+    alice <## ""
     alice `hasContactProfiles` ["alice"]
     alice ##> "/user alisa"
     showActiveUser alice "alisa"
     -- Change connection back to initial user
     alice ##> "/_set conn user :1 1"
-    alice <## "connection 1 changed from user alisa to user alice"
+    alice <## "connection 1 changed from user alisa to user alice, new link:"
+    alice <## ""
+    inv <- getTermLine alice
+    alice <## ""
     alice ##> "/user alice"
     showActiveUser alice "alice (Alice)"
     -- Connect
@@ -1973,13 +1986,14 @@ testChangePCCUserFromIncognito = testChat2 aliceProfile bobProfile $
     concurrently_
       (alice <## "bob (Bob): contact is connected")
       (bob <## "alice (Alice): contact is connected")
+    alice <##> bob
 
 testChangePCCUserAndThenIncognito :: HasCallStack => TestParams -> IO ()
 testChangePCCUserAndThenIncognito = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     -- Create a new invite and set as incognito
     alice ##> "/connect"
-    inv <- getInvitation alice
+    _ <- getInvitation alice
     -- Create new user and go back to original user
     alice ##> "/create user alisa"
     showActiveUser alice "alisa"
@@ -1987,7 +2001,10 @@ testChangePCCUserAndThenIncognito = testChat2 aliceProfile bobProfile $
     showActiveUser alice "alice (Alice)"
     -- Change connection to newly created user
     alice ##> "/_set conn user :1 2"
-    alice <## "connection 1 changed from user alice to user alisa"
+    alice <## "connection 1 changed from user alice to user alisa, new link:"
+    alice <## ""
+    inv <- getTermLine alice
+    alice <## ""
     alice ##> "/user alisa"
     showActiveUser alice "alisa"
     -- Change connection to incognito and make sure it's attached to the newly created user profile
@@ -2003,6 +2020,10 @@ testChangePCCUserAndThenIncognito = testChat2 aliceProfile bobProfile $
           alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> alisaIncognito)
           alice <## ("use /i bob to print out this incognito profile again")
       ]
+    alice ?#> "@bob hi"
+    bob <# (alisaIncognito <> "> hi")
+    bob #> ("@" <> alisaIncognito <> " hey")
+    alice ?<# "bob> hey"
 
 testChangePCCUserDiffSrv :: HasCallStack => TestParams -> IO ()
 testChangePCCUserDiffSrv ps = do
@@ -2045,6 +2066,7 @@ testChangePCCUserDiffSrv ps = do
         concurrently_
           (alice <## "bob (Bob): contact is connected")
           (bob <## "alisa: contact is connected")
+        alice <##> bob
   where
     serverCfg' =
       smpServerCfg
@@ -3298,10 +3320,15 @@ testShortLinkInvitationChangeUser =
       showActiveUser alice "alice (Alice)"
 
       alice ##> "/_connect 1"
-      (shortLink, fullLink) <- getInvitations alice
+      _ <- getInvitations alice
 
       alice ##> "/_set conn user :1 2"
-      alice <## "connection 1 changed from user alice to user alisa"
+      alice <## "connection 1 changed from user alice to user alisa, new link:"
+      alice <## ""
+      shortLink <- getTermLine alice
+      alice <## ""
+      alice <## "The invitation link for old clients:"
+      fullLink <- getTermLine alice
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
 
@@ -3315,12 +3342,11 @@ testShortLinkInvitationChangeUser =
         <### [ "alisa: connection started",
                WithTime "@alisa hello"
              ]
-      -- TODO [short links]
-      -- alice <# "bob> hello"
+      alice <# "bob> hello"
       concurrently_
         (bob <## "alisa: contact is connected")
         (alice <## "bob (Bob): contact is connected")
-      -- alice <##> bob
+      alice <##> bob
 
 testShortLinkAddressChangeProfile :: HasCallStack => TestParams -> IO ()
 testShortLinkAddressChangeProfile =
