@@ -48,10 +48,12 @@ chatProfileTests = do
     it "deduplicate contact requests with profile change" testDeduplicateContactRequestsProfileChange
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
     it "delete connection requests when contact link deleted" testDeleteConnectionRequests
+    -- TODO [short links] test auto-reply with current version, with connecting client not preparing contact
     it "auto-reply message" testAutoReplyMessage
     it "auto-reply message in incognito" testAutoReplyMessageInIncognito
     describe "business address" $ do
       it "create and connect via business address" testBusinessAddress
+      -- TODO [short links] test business auto-reply with current version, with connecting client not preparing contact
       it "update profiles with business address" testBusinessUpdateProfiles
   describe "contact address connection plan" $ do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
@@ -60,6 +62,7 @@ chatProfileTests = do
     it "connecting via contact address (slow handshake)" testPlanAddressConnectingSlow
     it "re-connect with deleted contact" testPlanAddressContactDeletedReconnected
     it "contact via address" testPlanAddressContactViaAddress
+    it "contact via short address" testPlanAddressContactViaShortAddress
   describe "incognito" $ do
     it "connect incognito via invitation link" testConnectIncognitoInvitationLink
     it "connect incognito via contact address" testConnectIncognitoContactAddress
@@ -357,9 +360,9 @@ testProfileLink =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       alice ##> "/ad"
-      cLink <- getContactLink alice True
+      (sLink, _cLink) <- getContactLinks alice True
 
-      bob ##> ("/c " <> cLink)
+      bob ##> ("/c " <> sLink)
       alice <#? bob
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
@@ -372,9 +375,9 @@ testProfileLink =
       alice <## "new contact address set"
 
       bob <## "alice set new contact address, use /info alice to view"
-      checkAliceProfileLink bob cLink
+      checkAliceProfileLink bob sLink
 
-      cath ##> ("/c " <> cLink)
+      cath ##> ("/c " <> sLink)
       alice <#? cath
       alice ##> "/ac cath"
       alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
@@ -383,7 +386,7 @@ testProfileLink =
         (alice <## "cath (Catherine): contact is connected")
       alice <##> cath
 
-      checkAliceProfileLink cath cLink
+      checkAliceProfileLink cath sLink
 
       alice ##> "/pa off"
       alice <## "contact address removed"
@@ -398,10 +401,10 @@ testProfileLink =
       alice <## "new contact address set"
 
       bob <## "alice set new contact address, use /info alice to view"
-      checkAliceProfileLink bob cLink
+      checkAliceProfileLink bob sLink
 
       cath <## "alice set new contact address, use /info alice to view"
-      checkAliceProfileLink cath cLink
+      checkAliceProfileLink cath sLink
 
       alice ##> "/da"
       alice <## "Your chat address is deleted - accepted contacts will remain connected."
@@ -413,12 +416,12 @@ testProfileLink =
       cath <## "alice removed contact address"
       checkAliceNoProfileLink cath
   where
-    checkAliceProfileLink cc cLink = do
+    checkAliceProfileLink cc sLink = do
       cc ##> "/info alice"
       cc <## "contact ID: 2"
       cc <##. "receiving messages via"
       cc <##. "sending messages via"
-      cc <## ("contact address: " <> cLink)
+      cc <## ("contact address: " <> sLink)
       cc <## "you've shared main profile with this contact"
       cc <## "connection not verified, use /code command to see security code"
       cc <## "quantum resistant end-to-end encryption"
@@ -666,10 +669,10 @@ testDeleteConnectionRequests = testChat3 aliceProfile bobProfile cathProfile $
     alice <#? cath
 
 testAutoReplyMessage :: HasCallStack => TestParams -> IO ()
-testAutoReplyMessage = testChat2 aliceProfile bobProfile $
+testAutoReplyMessage = testChatCfg2 testCfgNoShortLinks aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/ad"
-    cLink <- getContactLink alice True
+    cLink <- getContactLinkNoShortLink alice True
     alice ##> "/_auto_accept 1 on incognito=off text hello!"
     alice <## "auto_accept on"
     alice <## "auto reply:"
@@ -688,10 +691,10 @@ testAutoReplyMessage = testChat2 aliceProfile bobProfile $
       ]
 
 testAutoReplyMessageInIncognito :: HasCallStack => TestParams -> IO ()
-testAutoReplyMessageInIncognito = testChat2 aliceProfile bobProfile $
+testAutoReplyMessageInIncognito = testChatCfg2 testCfgNoShortLinks aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/ad"
-    cLink <- getContactLink alice True
+    cLink <- getContactLinkNoShortLink alice True
     alice ##> "/auto_accept on incognito=on text hello!"
     alice <## "auto_accept on, incognito"
     alice <## "auto reply:"
@@ -767,10 +770,10 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
       (biz <# "#bob bob_1> hey there")
 
 testBusinessUpdateProfiles :: HasCallStack => TestParams -> IO ()
-testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile cathProfile $
+testBusinessUpdateProfiles = testChatCfg4 testCfgNoShortLinks businessProfile aliceProfile bobProfile cathProfile $
   \biz alice bob cath -> do
     biz ##> "/ad"
-    cLink <- getContactLink biz True
+    cLink <- getContactLinkNoShortLink biz True
     biz ##> "/auto_accept on business text Welcome"
     biz <## "auto_accept on, business"
     biz <## "auto reply:"
@@ -800,7 +803,7 @@ testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile c
     biz ##> "/mr alisa alisa_1 admin"
     biz <## "#alisa: you changed the role of alisa_1 to admin"
     alice <## "#biz: biz_1 changed your role from member to admin"
-    connectUsers alice bob
+    connectUsersNoShortLink alice bob
     alice ##> "/a #biz bob"
     alice <## "invitation to join the group #biz sent to bob"
     bob <## "#biz (Biz Inc): alisa invites you to join the group as member"
@@ -831,7 +834,7 @@ testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile c
     alice <# "#biz robert> hi there"
     biz <# "#alisa robert> hi there"
     -- add business team member
-    connectUsers biz cath
+    connectUsersNoShortLink biz cath
     biz ##> "/a #alisa cath"
     biz <## "invitation to join the group #alisa sent to cath"
     cath <## "#alisa: biz invites you to join the group as member"
@@ -1025,7 +1028,7 @@ testPlanAddressConnectingSlow :: HasCallStack => TestParams -> IO ()
 testPlanAddressConnectingSlow ps = do
   cLink <- withNewTestChatCfg ps testCfgSlow "alice" aliceProfile $ \alice -> do
     alice ##> "/ad"
-    getContactLink alice True
+    getContactLinkNoShortLink alice True
   withNewTestChatCfg ps testCfgSlow "bob" bobProfile $ \bob -> do
     threadDelay 100000
 
@@ -1130,7 +1133,7 @@ testPlanAddressContactViaAddress =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       alice ##> "/ad"
-      cLink <- getContactLink alice True
+      (_sLink, cLink) <- getContactLinks alice True
 
       alice ##> "/pa on" -- not necessary, without it bob would receive profile update removing contact link
       alice <## "new contact address set"
@@ -1149,10 +1152,6 @@ testPlanAddressContactViaAddress =
           bob @@@ [("@alice", "")]
 
           bob ##> ("/_connect plan 1 " <> cLink)
-          bob <## "contact address: known contact without connection alice"
-
-          let cLinkSchema2 = linkAnotherSchema cLink
-          bob ##> ("/_connect plan 1 " <> cLinkSchema2)
           bob <## "contact address: known contact without connection alice"
 
           -- terminal api
@@ -1182,10 +1181,71 @@ testPlanAddressContactViaAddress =
       alice <## "to reject: /rc bob (the sender will NOT be notified)"
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+      concurrentlyN_
+        [ do
+            bob <## "alice set new contact address, use /info alice to view"
+            bob <## "alice (Alice): contact is connected",
+          alice <## "bob (Bob): contact is connected"
+        ]
+      alice <##> bob
+      bob @@@ [("@alice", "hey")]
+
+testPlanAddressContactViaShortAddress :: HasCallStack => TestParams -> IO ()
+testPlanAddressContactViaShortAddress =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/ad"
+      (sLink, _) <- getContactLinks alice True
+
+      alice ##> "/pa on" -- not necessary, without it bob would receive profile update removing contact link
+      alice <## "new contact address set"
+
+      case A.parseOnly strP (B.pack sLink) of
+        Left _ -> error "error parsing contact link"
+        Right shortLink -> do
+          let profile = aliceProfile {contactLink = Just shortLink}
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db user profile
+          bob @@@ [("@alice", "")]
+
+          bob ##> "/delete @alice"
+          bob <## "alice: contact is deleted"
+
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db user profile
+          bob @@@ [("@alice", "")]
+
+          bob ##> ("/_connect plan 1 " <> sLink)
+          bob <## "contact address: known contact without connection alice"
+
+          -- terminal api
+          bob ##> ("/c " <> sLink)
+          connecting alice bob
+
+          bob ##> "/delete @alice"
+          bob <## "alice: contact is deleted"
+          alice ##> "/delete @bob"
+          alice <## "bob: contact is deleted"
+
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db user profile
+          bob @@@ [("@alice", "")]
+
+          -- GUI api
+#if defined(dbPostgres)
+          bob ##> "/_connect contact 1 4"
+#else
+          bob ##> "/_connect contact 1 2"
+#endif
+          connecting alice bob
+  where
+    connecting alice bob = do
+      bob <## "connection request sent!"
+      alice <## "bob (Bob) wants to connect to you!"
+      alice <## "to accept: /ac bob"
+      alice <## "to reject: /rc bob (the sender will NOT be notified)"
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
-
       alice <##> bob
       bob @@@ [("@alice", "hey")]
 
@@ -1302,10 +1362,10 @@ testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
     bob `hasContactProfiles` ["bob"]
 
 testAcceptContactRequestIncognito :: HasCallStack => TestParams -> IO ()
-testAcceptContactRequestIncognito = testChat3 aliceProfile bobProfile cathProfile $
+testAcceptContactRequestIncognito = testChatCfg3 testCfgNoShortLinks aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
     alice ##> "/ad"
-    cLink <- getContactLink alice True
+    cLink <- getContactLinkNoShortLink alice True
     -- GUI /_accept api
     bob ##> ("/c " <> cLink)
     alice <#? bob
@@ -1415,7 +1475,7 @@ testSetConnectionIncognitoProhibitedDuringNegotiationSlow ps = do
   inv <- withNewTestChatCfg ps testCfgSlow "alice" aliceProfile $ \alice -> do
     threadDelay 250000
     alice ##> "/connect"
-    getInvitation alice
+    getInvitationNoShortLink alice
   withNewTestChatCfg ps testCfgSlow "bob" bobProfile $ \bob -> do
     threadDelay 250000
     bob ##> ("/c " <> inv)
@@ -1869,14 +1929,18 @@ testChangePCCUser = testChat2 aliceProfile bobProfile $
     alice <## ""
     _ <- getTermLine alice
     alice <## ""
+    alice <## "The invitation link for old clients:"
+    _ <- getTermLine alice
     alice ##> "/user alisa"
     showActiveUser alice "alisa"
     -- Change connection back to other user
     alice ##> "/_set conn user :1 3"
     alice <## "connection 1 changed from user alisa to user alisa2, new link:"
     alice <## ""
-    inv <- getTermLine alice
+    _shortInv <- getTermLine alice
     alice <## ""
+    alice <## "The invitation link for old clients:"
+    inv <- getTermLine alice
     alice ##> "/user alisa2"
     showActiveUser alice "alisa2"
     -- Connect
@@ -1907,6 +1971,8 @@ testChangePCCUserFromIncognito = testChat2 aliceProfile bobProfile $
     alice <## ""
     _ <- getTermLine alice
     alice <## ""
+    alice <## "The invitation link for old clients:"
+    _ <- getTermLine alice
     alice `hasContactProfiles` ["alice"]
     alice ##> "/user alisa"
     showActiveUser alice "alisa"
@@ -1914,8 +1980,10 @@ testChangePCCUserFromIncognito = testChat2 aliceProfile bobProfile $
     alice ##> "/_set conn user :1 1"
     alice <## "connection 1 changed from user alisa to user alice, new link:"
     alice <## ""
-    inv <- getTermLine alice
+    _shortInv <- getTermLine alice
     alice <## ""
+    alice <## "The invitation link for old clients:"
+    inv <- getTermLine alice
     alice ##> "/user alice"
     showActiveUser alice "alice (Alice)"
     -- Connect
@@ -1941,8 +2009,10 @@ testChangePCCUserAndThenIncognito = testChat2 aliceProfile bobProfile $
     alice ##> "/_set conn user :1 2"
     alice <## "connection 1 changed from user alice to user alisa, new link:"
     alice <## ""
-    inv <- getTermLine alice
+    _shortInv <- getTermLine alice
     alice <## ""
+    alice <## "The invitation link for old clients:"
+    inv <- getTermLine alice
     alice ##> "/user alisa"
     showActiveUser alice "alisa"
     -- Change connection to incognito and make sure it's attached to the newly created user profile
@@ -1992,8 +2062,10 @@ testChangePCCUserDiffSrv ps = do
         alice ##> "/_set conn user :1 2"
         alice <## "connection 1 changed from user alice to user alisa, new link:"
         alice <## ""
-        inv <- getTermLine alice
+        _shortInv <- getTermLine alice
         alice <## ""
+        alice <## "The invitation link for old clients:"
+        inv <- getTermLine alice
         alice `hasContactProfiles` ["alice"]
         alice ##> "/user alisa"
         showActiveUser alice "alisa"
@@ -2645,8 +2717,8 @@ testSetUITheme =
 testShortLinkInvitation :: HasCallStack => TestParams -> IO ()
 testShortLinkInvitation =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
-    alice ##> "/c short"
-    (inv, _) <- getShortInvitation alice
+    alice ##> "/c"
+    (inv, _) <- getInvitations alice
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
     concurrently_
@@ -2660,8 +2732,8 @@ testShortLinkInvitation =
 testPlanShortLinkInvitation :: HasCallStack => TestParams -> IO ()
 testPlanShortLinkInvitation =
   testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
-    alice ##> "/c short"
-    (inv, _) <- getShortInvitation alice
+    alice ##> "/c"
+    (inv, _) <- getInvitations alice
     alice ##> ("/_connect plan 1 " <> inv)
     alice <## "invitation link: own link"
     alice ##> ("/_connect plan 1 " <> slSimplexScheme inv)
@@ -2702,8 +2774,8 @@ slSimplexScheme sl = T.unpack $ T.replace "https://localhost/" "simplex:/" (T.pa
 testShortLinkContactAddress :: HasCallStack => TestParams -> IO ()
 testShortLinkContactAddress =
   testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
-    alice ##> "/ad short"
-    (shortLink, fullLink) <- getShortContactLink alice True
+    alice ##> "/ad"
+    (shortLink, fullLink) <- getContactLinks alice True
     alice ##> ("/_connect plan 1 " <> shortLink)
     alice <## "contact address: own address"
     alice ##> ("/_connect plan 1 " <> slSimplexScheme shortLink)
@@ -2741,13 +2813,13 @@ testShortLinkJoinGroup :: HasCallStack => TestParams -> IO ()
 testShortLinkJoinGroup =
   testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
     threadDelay 100000
-    alice ##> "/ad short" -- create the address to test that it can co-exist with group link
-    _ <- getShortContactLink alice True
+    alice ##> "/ad" -- create the address to test that it can co-exist with group link
+    _ <- getContactLinks alice True
     alice ##> "/g team"
     alice <## "group #team is created"
     alice <## "to add members use /a team <name> or /create link #team"
-    alice ##> "/create link #team short"
-    (shortLink, fullLink) <- getShortGroupLink alice "team" GRMember True
+    alice ##> "/create link #team"
+    (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
     alice ##> ("/_connect plan 1 " <> shortLink)
     alice <## "group link: own link for group #team"
     alice ##> ("/_connect plan 1 " <> slSimplexScheme shortLink)
@@ -2810,8 +2882,8 @@ testShortLinkInvitationPrepareContact :: HasCallStack => TestParams -> IO ()
 testShortLinkInvitationPrepareContact =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
-      alice ##> "/_connect 1 short=on"
-      (shortLink, fullLink) <- getShortInvitation alice
+      alice ##> "/_connect 1"
+      (shortLink, fullLink) <- getInvitations alice
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "invitation link: ok to connect"
       contactSLinkData <- getTermLine bob
@@ -2830,8 +2902,8 @@ testShortLinkInvitationPrepareContact =
 
 testShortLinkInvitationImage :: HasCallStack => TestParams -> IO ()
 testShortLinkInvitationImage = testChat2 aliceProfile bobProfile $ \alice bob -> do
-  bob ##> "/_connect 1 short=on"
-  (shortLink, fullLink) <- getShortInvitation bob
+  bob ##> "/_connect 1"
+  (shortLink, fullLink) <- getInvitations bob
   alice ##> ("/_connect plan 1 " <> shortLink)
   alice <## "invitation link: ok to connect"
   contactSLinkData <- getTermLine alice
@@ -2852,8 +2924,8 @@ testShortLinkAddressPrepareContact :: HasCallStack => TestParams -> IO ()
 testShortLinkAddressPrepareContact =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
-      alice ##> "/ad short"
-      (shortLink, fullLink) <- getShortContactLink alice True
+      alice ##> "/ad"
+      (shortLink, fullLink) <- getContactLinks alice True
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "contact address: ok to connect"
       contactSLinkData <- getTermLine bob
@@ -2884,8 +2956,8 @@ testShortLinkPrepareGroup =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup2 "team" alice cath
-      alice ##> "/create link #team short"
-      (shortLink, fullLink) <- getShortGroupLink alice "team" GRMember True
+      alice ##> "/create link #team"
+      (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "group link: ok to connect"
       groupSLinkData <- getTermLine bob
@@ -2916,8 +2988,8 @@ testShortLinkPrepareGroupReject =
   testChatCfg3 cfg aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup2 "team" alice cath
-      alice ##> "/create link #team short"
-      (shortLink, fullLink) <- getShortGroupLink alice "team" GRMember True
+      alice ##> "/create link #team"
+      (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "group link: ok to connect"
       groupSLinkData <- getTermLine bob
@@ -2949,8 +3021,8 @@ testShortLinkChangePreparedContactUser =
       bob ##> "/user bob"
       showActiveUser bob "bob (Bob)"
 
-      alice ##> "/_connect 1 short=on"
-      (shortLink, fullLink) <- getShortInvitation alice
+      alice ##> "/_connect 1"
+      (shortLink, fullLink) <- getInvitations alice
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "invitation link: ok to connect"
       contactSLinkData <- getTermLine bob
@@ -2998,8 +3070,8 @@ testShortLinkChangePreparedContactUserDuplicate =
       bob ##> "/user bob"
       showActiveUser bob "bob (Bob)"
 
-      alice ##> "/_connect 1 short=on"
-      (shortLink, fullLink) <- getShortInvitation alice
+      alice ##> "/_connect 1"
+      (shortLink, fullLink) <- getInvitations alice
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "invitation link: ok to connect"
       contactSLinkData <- getTermLine bob
@@ -3047,8 +3119,8 @@ testShortLinkChangePreparedGroupUser =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup2 "team" alice cath
-      alice ##> "/create link #team short"
-      (shortLink, fullLink) <- getShortGroupLink alice "team" GRMember True
+      alice ##> "/create link #team"
+      (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
 
       bob ##> "/create user robert"
       showActiveUser bob "robert"
@@ -3105,8 +3177,8 @@ testShortLinkChangePreparedGroupUserDuplicate =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup2 "team" alice cath
-      alice ##> "/create link #team short"
-      (shortLink, fullLink) <- getShortGroupLink alice "team" GRMember True
+      alice ##> "/create link #team"
+      (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
 
       bob ##> "/create user robert"
       showActiveUser bob "robert"
@@ -3217,8 +3289,8 @@ testShortLinkInvitationSetIncognito :: HasCallStack => TestParams -> IO ()
 testShortLinkInvitationSetIncognito =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
-      alice ##> "/_connect 1 short=on"
-      (shortLink, fullLink) <- getShortInvitation alice
+      alice ##> "/_connect 1"
+      (shortLink, fullLink) <- getInvitations alice
 
       alice ##> "/_set incognito :1 on"
       aliceIncognito <- getTermLine alice
@@ -3256,8 +3328,8 @@ testShortLinkInvitationChangeUser =
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
 
-      alice ##> "/_connect 1 short=on"
-      _ <- getShortInvitation alice
+      alice ##> "/_connect 1"
+      _ <- getInvitations alice
 
       alice ##> "/_set conn user :1 2"
       alice <## "connection 1 changed from user alice to user alisa, new link:"
@@ -3289,8 +3361,8 @@ testShortLinkAddressChangeProfile :: HasCallStack => TestParams -> IO ()
 testShortLinkAddressChangeProfile =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
-      alice ##> "/ad short"
-      (shortLink, fullLink) <- getShortContactLink alice True
+      alice ##> "/ad"
+      (shortLink, fullLink) <- getContactLinks alice True
 
       alice ##> "/p alisa"
       alice <## "user profile is changed to alisa (your 0 contacts are notified)"
@@ -3324,8 +3396,8 @@ testShortLinkAddressChangeAutoReply :: HasCallStack => TestParams -> IO ()
 testShortLinkAddressChangeAutoReply =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      alice ##> "/ad short"
-      (shortLink, fullLink) <- getShortContactLink alice True
+      alice ##> "/ad"
+      (shortLink, fullLink) <- getContactLinks alice True
 
       alice ##> "/_auto_accept 1 on incognito=off text welcome!"
       alice <## "auto_accept on"
@@ -3378,8 +3450,8 @@ testShortLinkGroupChangeProfile =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup2 "team" alice cath
-      alice ##> "/create link #team short"
-      (shortLink, fullLink) <- getShortGroupLink alice "team" GRMember True
+      alice ##> "/create link #team"
+      (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
 
       alice ##> "/gp team club"
       alice <## "changed to #club"

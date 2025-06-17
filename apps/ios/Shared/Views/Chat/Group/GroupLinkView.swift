@@ -86,19 +86,17 @@ struct GroupLinkView: View {
                         Label("Share link", systemImage: "square.and.arrow.up")
                     }
 
-                    if UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_SHORT_LINKS) {
-                        if groupLink.connLinkContact.connShortLink == nil {
-                            Button {
-                                addShortLink()
-                            } label: {
-                                Label("Add short link", systemImage: "plus")
-                            }
-                        } else if !groupLink.shortLinkDataSet {
-                            Button {
-                                addShortLink()
-                            } label: {
-                                Label("Share group profile via link", systemImage: "plus")
-                            }
+                    if groupLink.connLinkContact.connShortLink == nil {
+                        Button {
+                            addShortLink()
+                        } label: {
+                            Label("Add short link", systemImage: "plus")
+                        }
+                    } else if !groupLink.shortLinkDataSet {
+                        Button {
+                            addShortLink()
+                        } label: {
+                            Label("Share group profile via link", systemImage: "plus")
                         }
                     }
 

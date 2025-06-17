@@ -55,14 +55,15 @@ initializeBotAddress' logAddress cc = do
     Left (ChatErrorStore SEUserContactLinkNotFound) -> do
       when logAddress $ putStrLn "No bot address, creating..."
       -- TODO [short links] create short link by default
-      sendChatCmd cc (CreateMyAddress False) >>= \case
+      sendChatCmd cc CreateMyAddress >>= \case
         Right (CRUserContactLinkCreated _ ccLink) -> showBotAddress ccLink
         _ -> putStrLn "can't create bot address" >> exitFailure
     _ -> putStrLn "unexpected response" >> exitFailure
   where
     showBotAddress (CCLink uri shortUri) = do
-      when logAddress $ putStrLn $ "Bot's contact address is: " <> B.unpack (maybe (strEncode uri) strEncode shortUri)
-      when (isJust shortUri) $ putStrLn $ "Full contact address for old clients: " <> B.unpack (strEncode uri)
+      when logAddress $ do
+        putStrLn $ "Bot's contact address is: " <> B.unpack (maybe (strEncode uri) strEncode shortUri)
+        when (isJust shortUri) $ putStrLn $ "Full contact address for old clients: " <> B.unpack (strEncode uri)
       void $ sendChatCmd cc $ AddressAutoAccept $ Just AutoAccept {businessAddress = False, acceptIncognito = False, autoReply = Nothing}
 
 sendMessage :: ChatController -> Contact -> Text -> IO ()

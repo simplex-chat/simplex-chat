@@ -98,7 +98,6 @@
   <string name="simplex_link_mode_full">Full link</string>
   <string name="simplex_link_mode_browser">Via browser</string>
   <string name="simplex_link_mode_browser_warning">Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.</string>
-  <string name="privacy_short_links">Use short links (BETA)</string>
 
   <!-- Reports - ChatModel.kt -->
   <string name="report_reason_spam">Spam</string>

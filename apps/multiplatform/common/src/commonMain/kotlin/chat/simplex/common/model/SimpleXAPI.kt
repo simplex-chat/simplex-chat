@@ -107,7 +107,6 @@ class AppPreferences {
   val simplexLinkMode: SharedPreference<SimplexLinkMode> = mkSafeEnumPreference(SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE, SimplexLinkMode.default)
   val privacyShowChatPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS, true)
   val privacySaveLastDraft = mkBoolPreference(SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT, true)
-  val privacyShortLinks = mkBoolPreference(SHARED_PREFS_PRIVACY_SHORT_LINKS, false)
   val privacyDeliveryReceiptsSet = mkBoolPreference(SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET, false)
   val privacyEncryptLocalFiles = mkBoolPreference(SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES, true)
   val privacyAskToApproveRelays = mkBoolPreference(SHARED_PREFS_PRIVACY_ASK_TO_APPROVE_RELAYS, true)
@@ -370,7 +369,6 @@ class AppPreferences {
     private const val SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE = "PrivacySimplexLinkMode"
     private const val SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS = "PrivacyShowChatPreviews"
     private const val SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT = "PrivacySaveLastDraft"
-    private const val SHARED_PREFS_PRIVACY_SHORT_LINKS = "PrivacyShortLinks"
     private const val SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET = "PrivacyDeliveryReceiptsSet"
     private const val SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES = "PrivacyEncryptLocalFiles"
     private const val SHARED_PREFS_PRIVACY_ASK_TO_APPROVE_RELAYS = "PrivacyAskToApproveRelays"
@@ -795,7 +793,7 @@ object ChatController {
   }
 
   suspend fun apiStartChat(ctrl: ChatCtrl? = null): Boolean {
-    val r = sendCmd(null, CC.StartChat(mainApp = true), ctrl)
+    val r = sendCmd(null, CC.StartChat(mainApp = true, largeLinkData = false), ctrl)
     when (r.result) {
       is CR.ChatStarted -> return true
       is CR.ChatRunning -> return false
@@ -1295,8 +1293,7 @@ object ChatController {
 
   suspend fun apiAddContact(rh: Long?, incognito: Boolean): Pair<Pair<CreatedConnLink, PendingContactConnection>?, (() -> Unit)?> {
     val userId = try { currentUserId("apiAddContact") } catch (e: Exception) { return null to null }
-    val short = appPrefs.privacyShortLinks.get()
-    val r = sendCmd(rh, CC.APIAddContact(userId, short = short, incognito = incognito))
+    val r = sendCmd(rh, CC.APIAddContact(userId, incognito = incognito))
     return when {
       r is API.Result && r.res is CR.Invitation -> (r.res.connLinkInvitation to r.res.connection) to null
       !(networkErrorAlert(r)) -> null to { apiErrorAlert("apiAddContact", generalGetString(MR.strings.connection_error), r) }
@@ -1539,9 +1536,9 @@ object ChatController {
     return false
   }
 
-  suspend fun apiCreateUserAddress(rh: Long?, short: Boolean): CreatedConnLink? {
+  suspend fun apiCreateUserAddress(rh: Long?): CreatedConnLink? {
     val userId = kotlin.runCatching { currentUserId("apiCreateUserAddress") }.getOrElse { return null }
-    val r = sendCmd(rh, CC.ApiCreateMyAddress(userId, short))
+    val r = sendCmd(rh, CC.ApiCreateMyAddress(userId))
     if (r is API.Result && r.res is CR.UserContactLinkCreated) return r.res.connLinkContact
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiCreateUserAddress", generalGetString(MR.strings.error_creating_address), r)
@@ -1992,8 +1989,7 @@ object ChatController {
   }
 
   suspend fun apiCreateGroupLink(rh: Long?, groupId: Long, memberRole: GroupMemberRole = GroupMemberRole.Member): Pair<CreatedConnLink, GroupMemberRole>? {
-    val short = appPrefs.privacyShortLinks.get()
-    val r = sendCmd(rh, CC.APICreateGroupLink(groupId, memberRole, short))
+    val r = sendCmd(rh, CC.APICreateGroupLink(groupId, memberRole))
     if (r is API.Result && r.res is CR.GroupLinkCreated) return r.res.connLinkContact to r.res.memberRole
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiCreateGroupLink", generalGetString(MR.strings.error_creating_link_for_group), r)
@@ -3338,7 +3334,7 @@ sealed class CC {
   class ApiMuteUser(val userId: Long): CC()
   class ApiUnmuteUser(val userId: Long): CC()
   class ApiDeleteUser(val userId: Long, val delSMPQueues: Boolean, val viewPwd: String?): CC()
-  class StartChat(val mainApp: Boolean): CC()
+  class StartChat(val mainApp: Boolean, val largeLinkData: Boolean): CC()
   class CheckChatRunning: CC()
   class ApiStopChat: CC()
   @Serializable
@@ -3383,7 +3379,7 @@ sealed class CC {
   class ApiLeaveGroup(val groupId: Long): CC()
   class ApiListMembers(val groupId: Long): CC()
   class ApiUpdateGroupProfile(val groupId: Long, val groupProfile: GroupProfile): CC()
-  class APICreateGroupLink(val groupId: Long, val memberRole: GroupMemberRole, val short: Boolean): CC()
+  class APICreateGroupLink(val groupId: Long, val memberRole: GroupMemberRole): CC()
   class APIGroupLinkMemberRole(val groupId: Long, val memberRole: GroupMemberRole): CC()
   class APIDeleteGroupLink(val groupId: Long): CC()
   class APIGetGroupLink(val groupId: Long): CC()
@@ -3423,7 +3419,7 @@ sealed class CC {
   class APIGetGroupMemberCode(val groupId: Long, val groupMemberId: Long): CC()
   class APIVerifyContact(val contactId: Long, val connectionCode: String?): CC()
   class APIVerifyGroupMember(val groupId: Long, val groupMemberId: Long, val connectionCode: String?): CC()
-  class APIAddContact(val userId: Long, val short: Boolean, val incognito: Boolean): CC()
+  class APIAddContact(val userId: Long, val incognito: Boolean): CC()
   class ApiSetConnectionIncognito(val connId: Long, val incognito: Boolean): CC()
   class ApiChangeConnectionUser(val connId: Long, val userId: Long): CC()
   class APIConnectPlan(val userId: Long, val connLink: String): CC()
@@ -3439,7 +3435,7 @@ sealed class CC {
   class ApiSetConnectionAlias(val connId: Long, val localAlias: String): CC()
   class ApiSetUserUIThemes(val userId: Long, val themes: ThemeModeOverrides?): CC()
   class ApiSetChatUIThemes(val chatId: String, val themes: ThemeModeOverrides?): CC()
-  class ApiCreateMyAddress(val userId: Long, val short: Boolean): CC()
+  class ApiCreateMyAddress(val userId: Long): CC()
   class ApiDeleteMyAddress(val userId: Long): CC()
   class ApiShowMyAddress(val userId: Long): CC()
   class ApiAddMyAddressShortLink(val userId: Long): CC()
@@ -3509,7 +3505,7 @@ sealed class CC {
     is ApiMuteUser -> "/_mute user $userId"
     is ApiUnmuteUser -> "/_unmute user $userId"
     is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}${maybePwd(viewPwd)}"
-    is StartChat -> "/_start main=${onOff(mainApp)}"
+    is StartChat -> "/_start main=${onOff(mainApp)} large_link_data=${onOff(largeLinkData)}"
     is CheckChatRunning -> "/_check running"
     is ApiStopChat -> "/_stop"
     is ApiSetAppFilePaths -> "/set file paths ${json.encodeToString(this)}"
@@ -3572,7 +3568,7 @@ sealed class CC {
     is ApiLeaveGroup -> "/_leave #$groupId"
     is ApiListMembers -> "/_members #$groupId"
     is ApiUpdateGroupProfile -> "/_group_profile #$groupId ${json.encodeToString(groupProfile)}"
-    is APICreateGroupLink -> "/_create link #$groupId ${memberRole.name.lowercase()} short=${onOff(short)}"
+    is APICreateGroupLink -> "/_create link #$groupId ${memberRole.name.lowercase()}"
     is APIGroupLinkMemberRole -> "/_set link role #$groupId ${memberRole.name.lowercase()}"
     is APIDeleteGroupLink -> "/_delete link #$groupId"
     is APIGetGroupLink -> "/_get link #$groupId"
@@ -3612,7 +3608,7 @@ sealed class CC {
     is APIGetGroupMemberCode -> "/_get code #$groupId $groupMemberId"
     is APIVerifyContact -> "/_verify code @$contactId" + if (connectionCode != null) " $connectionCode" else ""
     is APIVerifyGroupMember -> "/_verify code #$groupId $groupMemberId" + if (connectionCode != null) " $connectionCode" else ""
-    is APIAddContact -> "/_connect $userId short=${onOff(short)} incognito=${onOff(incognito)}"
+    is APIAddContact -> "/_connect $userId incognito=${onOff(incognito)}"
     is ApiSetConnectionIncognito -> "/_set incognito :$connId ${onOff(incognito)}"
     is ApiChangeConnectionUser -> "/_set conn user :$connId $userId"
     is APIConnectPlan -> "/_connect plan $userId $connLink"
@@ -3628,7 +3624,7 @@ sealed class CC {
     is ApiSetConnectionAlias -> "/_set alias :$connId ${localAlias.trim()}"
     is ApiSetUserUIThemes -> "/_set theme user $userId ${if (themes != null) json.encodeToString(themes) else ""}"
     is ApiSetChatUIThemes -> "/_set theme $chatId ${if (themes != null) json.encodeToString(themes) else ""}"
-    is ApiCreateMyAddress -> "/_address $userId short=${onOff(short)}"
+    is ApiCreateMyAddress -> "/_address $userId"
     is ApiDeleteMyAddress -> "/_delete_address $userId"
     is ApiShowMyAddress -> "/_show_address $userId"
     is ApiAddMyAddressShortLink -> "/_short_link_address $userId"

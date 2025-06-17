@@ -1183,6 +1183,18 @@ Query:
           FROM contacts ct
           JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
           LEFT JOIN connections c ON c.contact_id = ct.contact_id
+          WHERE cp.user_id = ? AND cp.contact_link = ? AND c.connection_id IS NULL
+        
+Plan:
+SEARCH cp USING COVERING INDEX idx_contact_profiles_contact_link (user_id=? AND contact_link=?)
+SEARCH ct USING COVERING INDEX idx_contacts_contact_profile_id (contact_profile_id=?)
+SEARCH c USING COVERING INDEX idx_connections_contact_id (contact_id=?) LEFT-JOIN
+
+Query: 
+          SELECT ct.contact_id
+          FROM contacts ct
+          JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
+          LEFT JOIN connections c ON c.contact_id = ct.contact_id
           WHERE cp.user_id = ? AND cp.contact_link IN (?,?) AND c.connection_id IS NULL
         
 Plan:

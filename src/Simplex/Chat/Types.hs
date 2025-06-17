@@ -222,8 +222,6 @@ contactConnId c = aConnId <$> contactConn c
 
 type IncognitoEnabled = Bool
 
-type CreateShortLink = Bool
-
 contactConnIncognito :: Contact -> IncognitoEnabled
 contactConnIncognito = maybe False connIncognito . contactConn
 

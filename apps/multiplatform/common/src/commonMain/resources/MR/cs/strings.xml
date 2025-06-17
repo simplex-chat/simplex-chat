@@ -2371,7 +2371,6 @@
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Zásady ochrany soukromí a podmínky používání.</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Soukromé konverzace, skupiny a kontakty nejsou přístupné provozovatelům serverů.</string>
     <string name="unsupported_connection_link">Nepodporovaný odkaz k připojení</string>
-    <string name="privacy_short_links">Používejte krátké odkazy (BETA)</string>
     <string name="link_requires_newer_app_version_please_upgrade">Tento odkaz vyžaduje novější verzi aplikace. Prosím aktualizujte aplikaci nebo požádejte kontakt o odeslání kompatibilního odkazu.</string>
     <string name="simplex_link_channel">odkaz SimpleX kanálu</string>
     <string name="full_link_button_text">Úplný odkaz</string>

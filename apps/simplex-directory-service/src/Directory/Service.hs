@@ -189,7 +189,7 @@ useMemberFilter img_ = \case
 
 readBlockedWordsConfig :: DirectoryOpts -> IO BlockedWordsConfig
 readBlockedWordsConfig DirectoryOpts {blockedFragmentsFile, blockedWordsFile, nameSpellingFile, blockedExtensionRules, testing} = do
-  extensionRules <- maybe (pure []) (fmap read . readFile) blockedExtensionRules  
+  extensionRules <- maybe (pure []) (fmap read . readFile) blockedExtensionRules
   spelling <- maybe (pure M.empty) (fmap (M.fromList . read) . readFile) nameSpellingFile
   blockedFragments <- S.fromList <$> maybe (pure []) (fmap T.lines . T.readFile) blockedFragmentsFile
   bws <- maybe (pure []) (fmap lines . readFile) blockedWordsFile
@@ -348,7 +348,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           setGroupRegOwner st gr owner
           let GroupInfo {groupId, groupProfile = GroupProfile {displayName}} = g
           notifyOwner gr $ "Joined the group " <> displayName <> ", creating the link…"
-          sendChatCmd cc (APICreateGroupLink groupId GRMember False) >>= \case
+          sendChatCmd cc (APICreateGroupLink groupId GRMember) >>= \case
             Right CRGroupLinkCreated {groupLink = GroupLink {connLinkContact = CCLink gLink _}} -> do
               setGroupStatus st gr GRSPendingUpdate
               notifyOwner
@@ -489,7 +489,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           Nothing -> pure textMsg
           Just script -> content <$> readProcess script [s] ""
           where
-            textMsg = MCText $ T.pack s 
+            textMsg = MCText $ T.pack s
             content r = case T.lines $ T.pack r of
               [] -> textMsg
               "" : _ -> textMsg

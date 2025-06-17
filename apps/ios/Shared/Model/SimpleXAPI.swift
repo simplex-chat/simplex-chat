@@ -227,7 +227,7 @@ func apiDeleteUser(_ userId: Int64, _ delSMPQueues: Bool, viewPwd: String?) asyn
 }
 
 func apiStartChat(ctrl: chat_ctrl? = nil) throws -> Bool {
-    let r: ChatResponse0 = try chatSendCmdSync(.startChat(mainApp: true, enableSndFiles: true), ctrl: ctrl)
+    let r: ChatResponse0 = try chatSendCmdSync(.startChat(mainApp: true, enableSndFiles: true, largeLinkData: false), ctrl: ctrl)
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false
@@ -874,8 +874,7 @@ func apiAddContact(incognito: Bool) async -> ((CreatedConnLink, PendingContactCo
         logger.error("apiAddContact: no current user")
         return (nil, nil)
     }
-    let short = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_SHORT_LINKS)
-    let r: APIResult<ChatResponse1> = await chatApiSendCmd(.apiAddContact(userId: userId, short: short, incognito: incognito), bgTask: false)
+    let r: APIResult<ChatResponse1> = await chatApiSendCmd(.apiAddContact(userId: userId, incognito: incognito), bgTask: false)
     if case let .result(.invitation(_, connLinkInv, connection)) = r { return ((connLinkInv, connection), nil) }
     let alert = connectionErrorAlert(r)
     return (nil, alert)
@@ -1215,9 +1214,9 @@ func apiSetChatUIThemes(chatId: ChatId, themes: ThemeModeOverrides?) async -> Bo
 }
 
 
-func apiCreateUserAddress(short: Bool) async throws -> CreatedConnLink {
+func apiCreateUserAddress() async throws -> CreatedConnLink {
     let userId = try currentUserId("apiCreateUserAddress")
-    let r: ChatResponse1 = try await chatSendCmd(.apiCreateMyAddress(userId: userId, short: short))
+    let r: ChatResponse1 = try await chatSendCmd(.apiCreateMyAddress(userId: userId))
     if case let .userContactLinkCreated(_, connLink) = r { return connLink }
     throw r.unexpected
 }
@@ -1770,8 +1769,7 @@ func apiUpdateGroup(_ groupId: Int64, _ groupProfile: GroupProfile) async throws
 }
 
 func apiCreateGroupLink(_ groupId: Int64, memberRole: GroupMemberRole = .member) async throws -> GroupLink {
-    let short = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_SHORT_LINKS)
-    let r: ChatResponse2 = try await chatSendCmd(.apiCreateGroupLink(groupId: groupId, memberRole: memberRole, short: short))
+    let r: ChatResponse2 = try await chatSendCmd(.apiCreateGroupLink(groupId: groupId, memberRole: memberRole))
     if case let .groupLinkCreated(_, _, groupLink) = r { return groupLink }
     throw r.unexpected
 }

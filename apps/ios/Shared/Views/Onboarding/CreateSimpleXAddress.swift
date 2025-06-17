@@ -77,10 +77,9 @@ struct CreateSimpleXAddress: View {
                 progressIndicator = true
                 Task {
                     do {
-                        let short = false
-                        let connLinkContact = try await apiCreateUserAddress(short: short)
+                        let connLinkContact = try await apiCreateUserAddress()
                         DispatchQueue.main.async {
-                            m.userAddress = UserContactLink(connLinkContact: connLinkContact, shortLinkDataSet: short)
+                            m.userAddress = UserContactLink(connLinkContact: connLinkContact, shortLinkDataSet: connLinkContact.connShortLink != nil)
                         }
                         await MainActor.run { progressIndicator = false }
                     } catch let error {

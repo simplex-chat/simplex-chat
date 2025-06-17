@@ -3442,7 +3442,7 @@ testPlanGroupLinkConnectingSlow ps = do
     alice <## "group #team is created"
     alice <## "to add members use /a team <name> or /create link #team"
     alice ##> "/create link #team"
-    getGroupLink alice "team" GRMember True
+    getGroupLinkNoShortLink alice "team" GRMember True
   withNewTestChatCfg ps testCfgSlow "bob" bobProfile $ \bob -> do
     threadDelay 100000
 
@@ -5865,13 +5865,13 @@ testMembershipProfileUpdateContactActive =
       checkItems bob
 
       alice ##> "/ad"
-      cLink <- getContactLink alice True
+      (sLink, _cLink) <- getContactLinks alice True
       alice ##> "/pa on"
       alice <## "new contact address set"
       bob <## "alisa set new contact address, use /info alisa to view"
 
       bob `hasContactProfiles` ["alisa", "bob"]
-      checkAliceProfileLink bob "alisa" cLink
+      checkAliceProfileLink bob "alisa" sLink
 
       -- profile update does not remove contact address from profile
       alice ##> "/p 'Alice Smith'"
@@ -5880,14 +5880,14 @@ testMembershipProfileUpdateContactActive =
       bob <## "use @'Alice Smith' <message> to send messages"
 
       bob `hasContactProfiles` ["Alice Smith", "bob"]
-      checkAliceProfileLink bob "'Alice Smith'" cLink
+      checkAliceProfileLink bob "'Alice Smith'" sLink
 
       -- receiving group message does not remove contact address from profile
       alice #> "#team team 2"
       bob <# "#team 'Alice Smith'> team 2"
 
       bob `hasContactProfiles` ["Alice Smith", "bob"]
-      checkAliceProfileLink bob "'Alice Smith'" cLink
+      checkAliceProfileLink bob "'Alice Smith'" sLink
 
       checkItems bob
   where
@@ -5899,13 +5899,13 @@ testMembershipProfileUpdateContactActive =
       bob ##> "/_get chat #1 count=100"
       rGrp <- chat <$> getTermLine bob
       rGrp `shouldNotContain` [(0, "updated profile")]
-    checkAliceProfileLink bob name cLink = do
+    checkAliceProfileLink bob name sLink = do
       bob ##> ("/info #team " <> name)
       bob <## "group ID: 1"
       bob <## "member ID: 1"
       bob <##. "receiving messages via"
       bob <##. "sending messages via"
-      bob <## ("contact address: " <> cLink)
+      bob <## ("contact address: " <> sLink)
       bob <## "connection not verified, use /code command to see security code"
       bob <## currentChatVRangeInfo
 

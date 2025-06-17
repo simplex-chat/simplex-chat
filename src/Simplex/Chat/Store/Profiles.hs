@@ -53,6 +53,7 @@ module Simplex.Chat.Store.Profiles
     getUserContactLinkViaShortLink,
     setUserContactLinkShortLink,
     getContactWithoutConnViaAddress,
+    getContactWithoutConnViaShortAddress,
     updateUserAddressAutoAccept,
     getProtocolServers,
     insertProtocolServer,
@@ -75,6 +76,7 @@ module Simplex.Chat.Store.Profiles
     updateCommandStatus,
     getCommandDataByCorrId,
     setUserUIThemes,
+    profileContactLink,
   )
 where
 
@@ -86,7 +88,7 @@ import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
-import Data.Maybe (catMaybes, fromMaybe)
+import Data.Maybe (catMaybes, fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
@@ -332,11 +334,7 @@ setUserProfileContactLink db user@User {userId, profile = p@LocalProfile {profil
     (contactLink, ts, userId, profileId)
   pure (user :: User) {profile = p {contactLink}}
   where
-    -- TODO [short links] this should be replaced with short links once they are supported by all clients.
-    -- Or, maybe, we want to allow both, when both are optional.
-    contactLink = case ucl_ of
-      Just UserContactLink {connLinkContact = CCLink cReq _} -> Just $ CLFull cReq
-      _ -> Nothing
+    contactLink = profileContactLink <$> ucl_
 
 -- only used in tests
 getUserContactProfiles :: DB.Connection -> User -> IO [Profile]
@@ -354,14 +352,14 @@ getUserContactProfiles db User {userId} =
     toContactProfile :: (ContactName, Text, Maybe ImageData, Maybe ConnLinkContact, Maybe Preferences) -> Profile
     toContactProfile (displayName, fullName, image, contactLink, preferences) = Profile {displayName, fullName, image, contactLink, preferences}
 
-createUserContactLink :: DB.Connection -> User -> ConnId -> CreatedLinkContact -> Bool -> SubscriptionMode -> ExceptT StoreError IO ()
-createUserContactLink db User {userId} agentConnId (CCLink cReq shortLink) shortLinkDataSet subMode =
+createUserContactLink :: DB.Connection -> User -> ConnId -> CreatedLinkContact -> SubscriptionMode -> ExceptT StoreError IO ()
+createUserContactLink db User {userId} agentConnId (CCLink cReq shortLink) subMode =
   checkConstraint SEDuplicateContactLink . liftIO $ do
     currentTs <- getCurrentTime
     DB.execute
       db
       "INSERT INTO user_contact_links (user_id, conn_req_contact, short_link_contact, short_link_data_set, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-      (userId, cReq, shortLink, BI shortLinkDataSet, currentTs, currentTs)
+      (userId, cReq, shortLink, BI (isJust shortLink), currentTs, currentTs)
     userContactLinkId <- insertedRowId db
     void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId ConnNew initialChatVersion chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
 
@@ -456,6 +454,9 @@ data UserContactLink = UserContactLink
     autoAccept :: Maybe AutoAccept
   }
   deriving (Show)
+
+profileContactLink :: UserContactLink -> ConnLinkContact
+profileContactLink UserContactLink {connLinkContact = CCLink cReq sLink} = maybe (CLFull cReq) CLShort sLink
 
 data GroupLinkInfo = GroupLinkInfo
   { groupId :: GroupId,
@@ -557,6 +558,22 @@ getContactWithoutConnViaAddress db vr user@User {userId} (cReqSchema1, cReqSchem
           WHERE cp.user_id = ? AND cp.contact_link IN (?,?) AND c.connection_id IS NULL
         |]
         (userId, cReqSchema1, cReqSchema2)
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db vr user) ctId_
+
+getContactWithoutConnViaShortAddress :: DB.Connection -> VersionRangeChat -> User -> ShortLinkContact -> IO (Maybe Contact)
+getContactWithoutConnViaShortAddress db vr user@User {userId} shortLink = do
+  ctId_ <-
+    maybeFirstRow fromOnly $
+      DB.query
+        db
+        [sql|
+          SELECT ct.contact_id
+          FROM contacts ct
+          JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
+          LEFT JOIN connections c ON c.contact_id = ct.contact_id
+          WHERE cp.user_id = ? AND cp.contact_link = ? AND c.connection_id IS NULL
+        |]
+        (userId, shortLink)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db vr user) ctId_
 
 updateUserAddressAutoAccept :: DB.Connection -> Int64 -> Maybe AutoAccept -> IO ()
