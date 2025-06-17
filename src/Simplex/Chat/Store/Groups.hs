@@ -37,12 +37,10 @@ module Simplex.Chat.Store.Groups
     deleteContactCardKeepConn,
     createPreparedGroup,
     updatePreparedGroupUser,
-    updatePreparedGroupStartedConnection,
     updatePreparedUserAndHostMembersInvited,
     updatePreparedUserAndHostMembersRejected,
     createGroupInvitedViaLink,
     createGroupRejectedViaLink,
-    setViaGroupLinkHash,
     setGroupInvitationChatItemId,
     getGroup,
     getGroupInfo,
@@ -672,20 +670,6 @@ updatePreparedGroupUser db vr user gInfo@GroupInfo {groupId, membership} hostMem
               (newUserId, currentTs, hostProfileId)
             safeDeleteLDN db user oldHostLDN
 
-updatePreparedGroupStartedConnection :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Maybe Int64 -> ExceptT StoreError IO GroupInfo
-updatePreparedGroupStartedConnection db vr user groupInfo@GroupInfo {groupId, membership} customUserProfileId = do
-  liftIO $ do
-    currentTs <- getCurrentTime
-    DB.execute
-      db
-      "UPDATE groups SET conn_link_started_connection = ?, updated_at = ? WHERE group_id = ?"
-      (BI True, currentTs, groupId)
-    DB.execute
-      db
-      "UPDATE group_members SET member_profile_id = ?, updated_at = ? WHERE group_member_id = ?"
-      (customUserProfileId, currentTs, groupMemberId' membership)
-  getGroupInfo db vr user groupId
-
 updatePreparedUserAndHostMembersInvited :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupMember -> GroupLinkInvitation -> ExceptT StoreError IO (GroupInfo, GroupMember)
 updatePreparedUserAndHostMembersInvited db vr user gInfo hostMember GroupLinkInvitation {fromMember, fromMemberName, invitedMember, groupProfile, accepted} = do
   let fromMemberProfile = profileFromName fromMemberName
@@ -819,17 +803,6 @@ createGroup_ db userId groupProfile connLinkToConnect business currentTs = Excep
         ((profileId, localDisplayName, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. connLinkToConnectRow connLinkToConnect :. businessChatInfoRow business)
       groupId <- insertedRowId db
       pure (groupId, localDisplayName)
-
-setViaGroupLinkHash :: DB.Connection -> GroupId -> Int64 -> IO ()
-setViaGroupLinkHash db groupId connId =
-  DB.execute
-    db
-    [sql|
-      UPDATE groups
-      SET via_group_link_uri_hash = (SELECT via_contact_uri_hash FROM connections WHERE connection_id = ?)
-      WHERE group_id = ?
-    |]
-    (connId, groupId)
 
 setGroupInvitationChatItemId :: DB.Connection -> User -> GroupId -> ChatItemId -> IO ()
 setGroupInvitationChatItemId db User {userId} groupId chatItemId = do

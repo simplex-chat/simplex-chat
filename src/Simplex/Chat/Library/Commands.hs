@@ -1774,7 +1774,7 @@ processChatCommand' vr = \case
             pure $ CRStartedConnectionToContact user ct' customUserProfile
           cr -> pure cr
       Just (ACCL SCMContact ccLink) ->
-        connectViaContact user incognito ccLink msgContent_ (Just $ CGMContactId contactId) >>= \case
+        connectViaContact user incognito ccLink msgContent_ (Just $ ACCGContact contactId) >>= \case
           CRSentInvitation {customUserProfile} -> do
             -- get updated contact with connection
             ct' <- withFastStore $ \db -> getContact db vr user contactId
@@ -1788,11 +1788,10 @@ processChatCommand' vr = \case
     case connLinkToConnect of
       Nothing -> throwCmdError "group doesn't have link to connect"
       Just ccLink ->
-        connectViaContact user incognito ccLink Nothing (Just $ CGMGroupMemberId (groupMemberId' hostMember)) >>= \case
-          CRSentInvitation {connection = PendingContactConnection {pccConnId, customUserProfileId}, customUserProfile} -> do
-            gInfo' <- withStore $ \db -> do
-              liftIO $ setViaGroupLinkHash db groupId pccConnId
-              updatePreparedGroupStartedConnection db vr user gInfo customUserProfileId
+        connectViaContact user incognito ccLink Nothing (Just $ ACCGGroup gInfo (groupMemberId' hostMember)) >>= \case
+          CRSentInvitation {customUserProfile} -> do
+            -- get updated group info (connLinkStartedConnection and incognito membership)
+            gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
             pure $ CRStartedConnectionToGroup user gInfo' customUserProfile
           cr -> pure cr
   APIConnect userId incognito (Just (ACCL SCMInvitation ccLink)) mc_ -> withUserId userId $ \user -> do
@@ -2879,8 +2878,8 @@ processChatCommand' vr = \case
                 ( CRInvitationUri crData {crScheme = SSSimplex} e2e,
                   CRInvitationUri crData {crScheme = simplexChat} e2e
                 )
-    connectViaContact :: User -> IncognitoEnabled -> CreatedLinkContact -> Maybe MsgContent -> Maybe ContactOrGroupMemberId -> CM ChatResponse
-    connectViaContact user@User {userId} incognito (CCLink cReq@(CRContactUri ConnReqUriData {crClientData}) sLnk) mc_ comId_ = withInvitationLock "connectViaContact" (strEncode cReq) $ do
+    connectViaContact :: User -> IncognitoEnabled -> CreatedLinkContact -> Maybe MsgContent -> Maybe AttachConnToContactOrGroup -> CM ChatResponse
+    connectViaContact user@User {userId} incognito (CCLink cReq@(CRContactUri ConnReqUriData {crClientData}) sLnk) mc_ attachConnTo_ = withInvitationLock "connectViaContact" (strEncode cReq) $ do
       let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
           cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
       case groupLinkId of
@@ -2912,7 +2911,7 @@ processChatCommand' vr = \case
           incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
           subMode <- chatReadVar subscriptionMode
           let sLnk' = serverShortLink <$> sLnk
-          conn@PendingContactConnection {pccConnId} <- withFastStore' $ \db -> createConnReqConnection db userId connId cReqHash sLnk' comId_ xContactId incognitoProfile groupLinkId subMode chatV pqSup
+          conn@PendingContactConnection {pccConnId} <- withFastStore' $ \db -> createConnReqConnection db userId connId cReqHash sLnk' attachConnTo_ xContactId incognitoProfile groupLinkId subMode chatV pqSup
           joinContact user pccConnId connId cReq incognitoProfile xContactId mc_ inGroup pqSup chatV
           pure $ CRSentInvitation user conn incognitoProfile
     connectContactViaAddress :: User -> IncognitoEnabled -> Contact -> CreatedLinkContact -> CM ChatResponse
