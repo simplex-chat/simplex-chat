@@ -37,7 +37,7 @@ module Simplex.Chat.Store.Groups
     deleteContactCardKeepConn,
     createPreparedGroup,
     updatePreparedGroupUser,
-    setGroupConnLinkStartedConnection,
+    updatePreparedGroupStartedConnection,
     updatePreparedUserAndHostMembersInvited,
     updatePreparedUserAndHostMembersRejected,
     createGroupInvitedViaLink,
@@ -672,14 +672,19 @@ updatePreparedGroupUser db vr user gInfo@GroupInfo {groupId, membership} hostMem
               (newUserId, currentTs, hostProfileId)
             safeDeleteLDN db user oldHostLDN
 
-setGroupConnLinkStartedConnection :: DB.Connection -> GroupInfo -> Bool -> IO GroupInfo
-setGroupConnLinkStartedConnection db groupInfo@GroupInfo {groupId} connLinkStartedConnection = do
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    "UPDATE groups SET conn_link_started_connection = ?, updated_at = ? WHERE group_id = ?"
-    (BI connLinkStartedConnection, currentTs, groupId)
-  pure groupInfo {connLinkStartedConnection = connLinkStartedConnection}
+updatePreparedGroupStartedConnection :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Maybe Int64 -> ExceptT StoreError IO GroupInfo
+updatePreparedGroupStartedConnection db vr user groupInfo@GroupInfo {groupId, membership} customUserProfileId = do
+  liftIO $ do
+    currentTs <- getCurrentTime
+    DB.execute
+      db
+      "UPDATE groups SET conn_link_started_connection = ?, updated_at = ? WHERE group_id = ?"
+      (BI True, currentTs, groupId)
+    DB.execute
+      db
+      "UPDATE group_members SET member_profile_id = ?, updated_at = ? WHERE group_member_id = ?"
+      (customUserProfileId, currentTs, groupMemberId' membership)
+  getGroupInfo db vr user groupId
 
 updatePreparedUserAndHostMembersInvited :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupMember -> GroupLinkInvitation -> ExceptT StoreError IO (GroupInfo, GroupMember)
 updatePreparedUserAndHostMembersInvited db vr user gInfo hostMember GroupLinkInvitation {fromMember, fromMemberName, invitedMember, groupProfile, accepted} = do

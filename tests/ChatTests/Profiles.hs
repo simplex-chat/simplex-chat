@@ -115,8 +115,11 @@ chatProfileTests = do
     it "prepare contact using address short link data and connect" testShortLinkAddressPrepareContact
     it "prepare group using group short link data and connect" testShortLinkPrepareGroup
     it "prepare group using group short link data and connect, host rejects" testShortLinkPrepareGroupReject
+    it "connect to prepared contact incognito (via invitation)" testShortLinkInvitationConnectPreparedContactIncognito
+    it "connect to prepared contact incognito (via address)" testShortLinkAddressConnectPreparedContactIncognito
     it "change prepared contact user" testShortLinkChangePreparedContactUser
     it "change prepared contact user, new user has contact with the same name" testShortLinkChangePreparedContactUserDuplicate
+    it "connect to prepared group incognito" testShortLinkConnectPreparedGroupIncognito
     it "change prepared group user" testShortLinkChangePreparedGroupUser
     it "change prepared group user, new user has group with the same name" testShortLinkChangePreparedGroupUserDuplicate
     it "setting incognito for invitation should update short link data" testShortLinkInvitationSetIncognito
@@ -3012,6 +3015,63 @@ testShortLinkPrepareGroupReject =
   where
     cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Left GRRBlockedName)}}
 
+testShortLinkInvitationConnectPreparedContactIncognito :: HasCallStack => TestParams -> IO ()
+testShortLinkInvitationConnectPreparedContactIncognito =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/_connect 1"
+      (shortLink, fullLink) <- getInvitations alice
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "invitation link: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+      bob <## "alice: contact is prepared"
+      bob ##> "/_connect contact @2 incognito=on"
+      bobIncognito <- getTermLine bob
+      bob <## "alice: connection started incognito"
+      _ <- getTermLine bob
+      concurrentlyN_
+        [ alice <## (bobIncognito <> ": contact is connected"),
+          do
+            bob <## ("alice (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
+            bob <## ("use /i alice to print out this incognito profile again")
+        ]
+      alice #> ("@" <> bobIncognito <> " hi")
+      bob ?<# "alice> hi"
+      bob ?#> "@alice hey"
+      alice <# (bobIncognito <> "> hey")
+
+testShortLinkAddressConnectPreparedContactIncognito :: HasCallStack => TestParams -> IO ()
+testShortLinkAddressConnectPreparedContactIncognito =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/ad"
+      (shortLink, fullLink) <- getContactLinks alice True
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "contact address: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+      bob <## "alice: contact is prepared"
+      bob ##> "/_connect contact @2 incognito=on"
+      bobIncognito <- getTermLine bob
+      bob <## "alice: connection started incognito"
+      alice <## (bobIncognito <> " wants to connect to you!")
+      alice <## ("to accept: /ac " <> bobIncognito)
+      alice <## ("to reject: /rc " <> bobIncognito <> " (the sender will NOT be notified)")
+      alice ##> ("/ac " <> bobIncognito)
+      alice <## (bobIncognito <> ": accepting contact request, you can send messages to contact")
+      _ <- getTermLine bob
+      concurrentlyN_
+        [ alice <## (bobIncognito <> ": contact is connected"),
+          do
+            bob <## ("alice (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
+            bob <## ("use /i alice to print out this incognito profile again")
+        ]
+      alice #> ("@" <> bobIncognito <> " hi")
+      bob ?<# "alice> hi"
+      bob ?#> "@alice hey"
+      alice <# (bobIncognito <> "> hey")
+
 testShortLinkChangePreparedContactUser :: HasCallStack => TestParams -> IO ()
 testShortLinkChangePreparedContactUser =
   testChat2 aliceProfile bobProfile $
@@ -3113,6 +3173,44 @@ testShortLinkChangePreparedContactUserDuplicate =
       showActiveUser bob "bob (Bob)"
       bob @@@ []
       bob `hasContactProfiles` ["bob"]
+
+testShortLinkConnectPreparedGroupIncognito :: HasCallStack => TestParams -> IO ()
+testShortLinkConnectPreparedGroupIncognito =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice cath
+      alice ##> "/create link #team"
+      (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "group link: ok to connect"
+      groupSLinkData <- getTermLine bob
+      bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
+      bob <## "#team: group is prepared"
+      bob ##> "/_connect group #1 incognito=on"
+      bobIncognito <- getTermLine bob
+      bob <## "#team: connection started incognito"
+      alice <## (bobIncognito <> ": accepting request to join group #team...")
+      concurrentlyN_
+        [ alice <## ("#team: " <> bobIncognito <> " joined the group"),
+          do
+            bob <## "#team: joining the group..."
+            bob <## ("#team: you joined the group incognito as " <> bobIncognito)
+            bob <## "#team: member cath (Catherine) is connected",
+          do
+            cath <## ("#team: alice added " <> bobIncognito <> " to the group (connecting...)")
+            cath <## ("#team: new member " <> bobIncognito <> " is connected")
+        ]
+
+      alice #> "#team 1"
+      bob ?<# "#team alice> 1"
+      cath <# "#team alice> 1"
+
+      bob ?#> "#team 2"
+      [alice, cath] *<# ("#team " <> bobIncognito <> "> 2")
+
+      cath #> "#team 3"
+      alice <# "#team cath> 3"
+      bob ?<# "#team cath> 3"
 
 testShortLinkChangePreparedGroupUser :: HasCallStack => TestParams -> IO ()
 testShortLinkChangePreparedGroupUser =

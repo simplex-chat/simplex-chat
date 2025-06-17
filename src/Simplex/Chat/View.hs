@@ -194,10 +194,10 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRNewPreparedGroup u g -> ttyUser u [ttyGroup' g <> ": group is prepared"]
   CRContactUserChanged u c nu c' -> ttyUser u $ viewContactUserChanged u c nu c'
   CRGroupUserChanged u g nu g' -> ttyUser u $ viewGroupUserChanged u g nu g'
-  CRSentConfirmation u _ -> ttyUser u ["confirmation sent!"]
+  CRSentConfirmation u _ _customUserProfile -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u _ customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
-  CRStartedConnectionToContact u c -> ttyUser u [ttyContact' c <> ": connection started"]
-  CRStartedConnectionToGroup u g -> ttyUser u [ttyGroup' g <> ": connection started"]
+  CRStartedConnectionToContact u c customUserProfile -> ttyUser u $ viewStartedConnectionToContact c customUserProfile testView
+  CRStartedConnectionToGroup u g customUserProfile -> ttyUser u $ viewStartedConnectionToGroup g customUserProfile testView
   CRSentInvitationToContact u _c customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
   CRItemsReadForChat u _chatId -> ttyUser u ["items read for chat"]
   CRContactDeleted u c -> ttyUser u [ttyContact' c <> ": contact is deleted"]
@@ -1122,6 +1122,28 @@ viewSentInvitation incognitoProfile testView =
       where
         message = ["connection request sent incognito!"]
     Nothing -> ["connection request sent!"]
+
+viewStartedConnectionToContact :: Contact -> Maybe Profile -> Bool -> [StyledString]
+viewStartedConnectionToContact ct incognitoProfile testView =
+  case incognitoProfile of
+    Just profile ->
+      if testView
+        then incognitoProfile' profile : message
+        else message
+      where
+        message = [ttyContact' ct <> ": connection started incognito"]
+    Nothing -> [ttyContact' ct <> ": connection started"]
+
+viewStartedConnectionToGroup :: GroupInfo -> Maybe Profile -> Bool -> [StyledString]
+viewStartedConnectionToGroup g incognitoProfile testView =
+  case incognitoProfile of
+    Just profile ->
+      if testView
+        then incognitoProfile' profile : message
+        else message
+      where
+        message = [ttyGroup' g <> ": connection started incognito"]
+    Nothing -> [ttyGroup' g <> ": connection started"]
 
 viewAcceptingContactRequest :: Contact -> [StyledString]
 viewAcceptingContactRequest ct
