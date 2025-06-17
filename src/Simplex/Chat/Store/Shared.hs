@@ -728,3 +728,14 @@ addGroupChatTags :: DB.Connection -> GroupInfo -> IO GroupInfo
 addGroupChatTags db g@GroupInfo {groupId} = do
   chatTags <- getGroupChatTags db groupId
   pure (g :: GroupInfo) {chatTags}
+
+setViaGroupLinkHash :: DB.Connection -> GroupId -> Int64 -> IO ()
+setViaGroupLinkHash db groupId connId =
+  DB.execute
+    db
+    [sql|
+      UPDATE groups
+      SET via_group_link_uri_hash = (SELECT via_contact_uri_hash FROM connections WHERE connection_id = ?)
+      WHERE group_id = ?
+    |]
+    (connId, groupId)

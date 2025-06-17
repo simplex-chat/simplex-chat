@@ -688,10 +688,10 @@ data ChatResponse
   | CRNewPreparedGroup {user :: User, groupInfo :: GroupInfo}
   | CRContactUserChanged {user :: User, fromContact :: Contact, newUser :: User, toContact :: Contact}
   | CRGroupUserChanged {user :: User, fromGroup :: GroupInfo, newUser :: User, toGroup :: GroupInfo}
-  | CRSentConfirmation {user :: User, connection :: PendingContactConnection}
+  | CRSentConfirmation {user :: User, connection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRSentInvitation {user :: User, connection :: PendingContactConnection, customUserProfile :: Maybe Profile}
-  | CRStartedConnectionToContact {user :: User, contact :: Contact}
-  | CRStartedConnectionToGroup {user :: User, groupInfo :: GroupInfo}
+  | CRStartedConnectionToContact {user :: User, contact :: Contact, customUserProfile :: Maybe Profile}
+  | CRStartedConnectionToGroup {user :: User, groupInfo :: GroupInfo, customUserProfile :: Maybe Profile}
   | CRSentInvitationToContact {user :: User, contact :: Contact, customUserProfile :: Maybe Profile}
   | CRItemsReadForChat {user :: User, chatInfo :: AChatInfo}
   | CRContactDeleted {user :: User, contact :: Contact}

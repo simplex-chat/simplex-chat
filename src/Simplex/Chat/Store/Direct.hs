@@ -153,13 +153,13 @@ deletePendingContactConnection db userId connId =
 
 createAddressContactConnection :: DB.Connection -> VersionRangeChat -> User -> Contact -> ConnId -> ConnReqUriHash -> Maybe ShortLinkContact -> XContactId -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> ExceptT StoreError IO (Int64, Contact)
 createAddressContactConnection db vr user@User {userId} Contact {contactId} acId cReqHash sLnk xContactId incognitoProfile subMode chatV pqSup = do
-  PendingContactConnection {pccConnId} <- liftIO $ createConnReqConnection db userId acId cReqHash sLnk (Just $ CGMContactId contactId) xContactId incognitoProfile Nothing subMode chatV pqSup
+  PendingContactConnection {pccConnId} <- liftIO $ createConnReqConnection db userId acId cReqHash sLnk (Just $ ACCGContact contactId) xContactId incognitoProfile Nothing subMode chatV pqSup
   (pccConnId,) <$> getContact db vr user contactId
 
-createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> Maybe ShortLinkContact -> Maybe ContactOrGroupMemberId -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> SubscriptionMode -> VersionChat -> PQSupport -> IO PendingContactConnection
-createConnReqConnection db userId acId cReqHash sLnk comId_ xContactId incognitoProfile groupLinkId subMode chatV pqSup = do
-  createdAt <- getCurrentTime
-  customUserProfileId <- mapM (createIncognitoProfile_ db userId createdAt) incognitoProfile
+createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> Maybe ShortLinkContact -> Maybe AttachConnToContactOrGroup -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> SubscriptionMode -> VersionChat -> PQSupport -> IO PendingContactConnection
+createConnReqConnection db userId acId cReqHash sLnk attachConnTo_ xContactId incognitoProfile groupLinkId subMode chatV pqSup = do
+  currentTs <- getCurrentTime
+  customUserProfileId <- mapM (createIncognitoProfile_ db userId currentTs) incognitoProfile
   let pccConnStatus = ConnJoined
   DB.execute
     db
@@ -174,15 +174,29 @@ createConnReqConnection db userId acId cReqHash sLnk comId_ xContactId incognito
     ( (userId, acId, pccConnStatus, connType, BI True)
         :. (cReqHash, sLnk, contactId_, groupMemberId_)
         :. (xContactId, customUserProfileId, BI (isJust groupLinkId), groupLinkId)
-        :. (createdAt, createdAt, BI (subMode == SMOnlyCreate), chatV, pqSup, pqSup)
+        :. (currentTs, currentTs, BI (subMode == SMOnlyCreate), chatV, pqSup, pqSup)
     )
   pccConnId <- insertedRowId db
-  pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = True, viaUserContactLink = Nothing, groupLinkId, customUserProfileId, connLinkInv = Nothing, localAlias = "", createdAt, updatedAt = createdAt}
+  case attachConnTo_ of
+    Just (ACCGGroup gInfo _gmId) -> updatePreparedGroup gInfo pccConnId customUserProfileId currentTs
+    _ -> pure ()
+  pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = True, viaUserContactLink = Nothing, groupLinkId, customUserProfileId, connLinkInv = Nothing, localAlias = "", createdAt = currentTs, updatedAt = currentTs}
   where
-    (connType, contactId_, groupMemberId_) = case comId_ of
-      Just (CGMContactId ctId) -> (ConnContact, Just ctId, Nothing)
-      Just (CGMGroupMemberId gmId) -> (ConnMember, Nothing, Just gmId)
+    (connType, contactId_, groupMemberId_) = case attachConnTo_ of
+      Just (ACCGContact ctId) -> (ConnContact, Just ctId, Nothing)
+      Just (ACCGGroup _gInfo gmId) -> (ConnMember, Nothing, Just gmId)
       Nothing -> (ConnContact, Nothing, Nothing)
+    updatePreparedGroup GroupInfo {groupId, membership} pccConnId customUserProfileId currentTs = do
+      setViaGroupLinkHash db groupId pccConnId
+      DB.execute
+        db
+        "UPDATE groups SET conn_link_started_connection = ?, updated_at = ? WHERE group_id = ?"
+        (BI True, currentTs, groupId)
+      when (isJust customUserProfileId) $
+        DB.execute
+          db
+          "UPDATE group_members SET member_profile_id = ?, updated_at = ? WHERE group_member_id = ?"
+          (customUserProfileId, currentTs, groupMemberId' membership)
 
 getConnReqContactXContactId :: DB.Connection -> VersionRangeChat -> User -> ConnReqUriHash -> IO (Maybe Contact, Maybe XContactId)
 getConnReqContactXContactId db vr user@User {userId} cReqHash = do

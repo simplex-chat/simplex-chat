@@ -1763,7 +1763,7 @@ processChatCommand' vr = \case
       Nothing -> throwCmdError "contact doesn't have link to connect"
       Just (ACCL SCMInvitation ccLink) ->
         connectViaInvitation user incognito ccLink (Just contactId) >>= \case
-          CRSentConfirmation {} -> do
+          CRSentConfirmation {customUserProfile} -> do
             -- get updated contact with connection
             ct' <- withFastStore $ \db -> getContact db vr user contactId
             forM_ msgContent_ $ \mc -> do
@@ -1771,16 +1771,16 @@ processChatCommand' vr = \case
               (msg, _) <- sendDirectContactMessage user ct' evt
               ci <- saveSndChatItem user (CDDirectSnd ct') msg (CISndMsgContent mc)
               toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct') ci]
-            pure $ CRStartedConnectionToContact user ct'
+            pure $ CRStartedConnectionToContact user ct' customUserProfile
           cr -> pure cr
       Just (ACCL SCMContact ccLink) ->
-        connectViaContact user incognito ccLink msgContent_ (Just $ CGMContactId contactId) >>= \case
-          CRSentInvitation {} -> do
+        connectViaContact user incognito ccLink msgContent_ (Just $ ACCGContact contactId) >>= \case
+          CRSentInvitation {customUserProfile} -> do
             -- get updated contact with connection
             ct' <- withFastStore $ \db -> getContact db vr user contactId
             forM_ msgContent_ $ \mc ->
               createInternalChatItem user (CDDirectSnd ct') (CISndMsgContent mc) Nothing
-            pure $ CRStartedConnectionToContact user ct'
+            pure $ CRStartedConnectionToContact user ct' customUserProfile
           cr -> pure cr
   APIConnectPreparedGroup groupId incognito -> withUser $ \user -> do
     (gInfo, hostMember) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getHostMember db vr user groupId
@@ -1788,12 +1788,11 @@ processChatCommand' vr = \case
     case connLinkToConnect of
       Nothing -> throwCmdError "group doesn't have link to connect"
       Just ccLink ->
-        connectViaContact user incognito ccLink Nothing (Just $ CGMGroupMemberId (groupMemberId' hostMember)) >>= \case
-          CRSentInvitation {connection = PendingContactConnection {pccConnId}} -> do
-            gInfo' <- withStore' $ \db -> do
-              setViaGroupLinkHash db groupId pccConnId
-              setGroupConnLinkStartedConnection db gInfo True
-            pure $ CRStartedConnectionToGroup user gInfo'
+        connectViaContact user incognito ccLink Nothing (Just $ ACCGGroup gInfo (groupMemberId' hostMember)) >>= \case
+          CRSentInvitation {customUserProfile} -> do
+            -- get updated group info (connLinkStartedConnection and incognito membership)
+            gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
+            pure $ CRStartedConnectionToGroup user gInfo' customUserProfile
           cr -> pure cr
   APIConnect userId incognito (Just (ACCL SCMInvitation ccLink)) mc_ -> withUserId userId $ \user -> do
     when (isJust mc_) $ throwChatError CEConnReqMessageProhibited
@@ -2874,13 +2873,13 @@ processChatCommand' vr = \case
                 (sqSecured, _serviceId) <- withAgent $ \a -> joinConnection a (aUserId user) connId True cReq dm pqSup' subMode
                 let newStatus = if sqSecured then ConnSndReady else ConnJoined
                 withFastStore' $ \db -> updateConnectionStatusFromTo db pccConnId ConnPrepared newStatus
-                pure $ CRSentConfirmation user pcc {pccConnStatus = newStatus}
+                pure $ CRSentConfirmation user pcc {pccConnStatus = newStatus} incognitoProfile
               cReqs =
                 ( CRInvitationUri crData {crScheme = SSSimplex} e2e,
                   CRInvitationUri crData {crScheme = simplexChat} e2e
                 )
-    connectViaContact :: User -> IncognitoEnabled -> CreatedLinkContact -> Maybe MsgContent -> Maybe ContactOrGroupMemberId -> CM ChatResponse
-    connectViaContact user@User {userId} incognito (CCLink cReq@(CRContactUri ConnReqUriData {crClientData}) sLnk) mc_ comId_ = withInvitationLock "connectViaContact" (strEncode cReq) $ do
+    connectViaContact :: User -> IncognitoEnabled -> CreatedLinkContact -> Maybe MsgContent -> Maybe AttachConnToContactOrGroup -> CM ChatResponse
+    connectViaContact user@User {userId} incognito (CCLink cReq@(CRContactUri ConnReqUriData {crClientData}) sLnk) mc_ attachConnTo_ = withInvitationLock "connectViaContact" (strEncode cReq) $ do
       let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
           cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
       case groupLinkId of
@@ -2912,7 +2911,7 @@ processChatCommand' vr = \case
           incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
           subMode <- chatReadVar subscriptionMode
           let sLnk' = serverShortLink <$> sLnk
-          conn@PendingContactConnection {pccConnId} <- withFastStore' $ \db -> createConnReqConnection db userId connId cReqHash sLnk' comId_ xContactId incognitoProfile groupLinkId subMode chatV pqSup
+          conn@PendingContactConnection {pccConnId} <- withFastStore' $ \db -> createConnReqConnection db userId connId cReqHash sLnk' attachConnTo_ xContactId incognitoProfile groupLinkId subMode chatV pqSup
           joinContact user pccConnId connId cReq incognitoProfile xContactId mc_ inGroup pqSup chatV
           pure $ CRSentInvitation user conn incognitoProfile
     connectContactViaAddress :: User -> IncognitoEnabled -> Contact -> CreatedLinkContact -> CM ChatResponse
@@ -3314,7 +3313,7 @@ processChatCommand' vr = \case
                 (cReq, cData) <- getShortLinkConnReq user l'
                 let cl = ACCL SCMContact $ CCLink cReq (Just l')
                 withFastStore' (\db -> getContactWithoutConnViaShortAddress db vr user l') >>= \case
-                  Just ct -> pure (cl, CPContactAddress (CAPContactViaAddress ct))
+                  Just ct' -> pure (cl, CPContactAddress (CAPContactViaAddress ct'))
                   Nothing -> do
                     let contactSLinkData_ = J.decodeStrict $ linkUserData' cData
                     plan <- contactRequestPlan user cReq contactSLinkData_
