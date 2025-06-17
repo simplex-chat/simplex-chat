@@ -1931,14 +1931,18 @@ testChangePCCUser = testChat2 aliceProfile bobProfile $
     alice <## ""
     _ <- getTermLine alice
     alice <## ""
+    alice <## "The invitation link for old clients:"
+    _ <- getTermLine alice
     alice ##> "/user alisa"
     showActiveUser alice "alisa"
     -- Change connection back to other user
     alice ##> "/_set conn user :1 3"
     alice <## "connection 1 changed from user alisa to user alisa2, new link:"
     alice <## ""
-    inv <- getTermLine alice
+    _shortInv <- getTermLine alice
     alice <## ""
+    alice <## "The invitation link for old clients:"
+    inv <- getTermLine alice
     alice ##> "/user alisa2"
     showActiveUser alice "alisa2"
     -- Connect
@@ -1969,6 +1973,8 @@ testChangePCCUserFromIncognito = testChat2 aliceProfile bobProfile $
     alice <## ""
     _ <- getTermLine alice
     alice <## ""
+    alice <## "The invitation link for old clients:"
+    _ <- getTermLine alice
     alice `hasContactProfiles` ["alice"]
     alice ##> "/user alisa"
     showActiveUser alice "alisa"
@@ -1976,8 +1982,10 @@ testChangePCCUserFromIncognito = testChat2 aliceProfile bobProfile $
     alice ##> "/_set conn user :1 1"
     alice <## "connection 1 changed from user alisa to user alice, new link:"
     alice <## ""
-    inv <- getTermLine alice
+    _shortInv <- getTermLine alice
     alice <## ""
+    alice <## "The invitation link for old clients:"
+    inv <- getTermLine alice
     alice ##> "/user alice"
     showActiveUser alice "alice (Alice)"
     -- Connect
@@ -2003,8 +2011,10 @@ testChangePCCUserAndThenIncognito = testChat2 aliceProfile bobProfile $
     alice ##> "/_set conn user :1 2"
     alice <## "connection 1 changed from user alice to user alisa, new link:"
     alice <## ""
-    inv <- getTermLine alice
+    _shortInv <- getTermLine alice
     alice <## ""
+    alice <## "The invitation link for old clients:"
+    inv <- getTermLine alice
     alice ##> "/user alisa"
     showActiveUser alice "alisa"
     -- Change connection to incognito and make sure it's attached to the newly created user profile
@@ -2056,7 +2066,8 @@ testChangePCCUserDiffSrv ps = do
         alice <## ""
         _shortInv <- getTermLine alice
         alice <## ""
-        inv <- dropLinePrefix "The invitation link for old clients: " =<< getTermLine alice
+        alice <## "The invitation link for old clients:"
+        inv <- getTermLine alice
         alice `hasContactProfiles` ["alice"]
         alice ##> "/user alisa"
         showActiveUser alice "alisa"
