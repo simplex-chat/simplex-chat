@@ -668,6 +668,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- TODO add debugging output
         _ -> pure ()
       where
+        -- TODO [short links auto reply] based on saved hash from createdAutoReplyData, send auto-reply update
         sendAutoReply UserContactLink {shortLinkDataSet, autoAccept} ct = case autoAccept of
           Just AutoAccept {autoReply = Just mc}
             | not shortLinkDataSet || connChatVersion < shortLinkDataVersion -> do
@@ -1031,6 +1032,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         updateGroupItemsErrorStatus db msgId groupMemberId newStatus = do
           itemIds <- getChatItemIdsByAgentMsgId db connId msgId
           forM_ itemIds $ \itemId -> updateGroupMemSndStatus' db itemId groupMemberId newStatus
+        -- TODO [short links auto reply] based on saved hash from createdAutoReplyData, send auto-reply update
         sendGroupAutoReply = autoReplyMC >>= mapM_ send
           where
             autoReplyMC = do
@@ -1219,8 +1221,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       REQ invId pqSupport _ connInfo -> do
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
         case chatMsgEvent of
-          XContact p xContactId_ mc_ -> profileContactRequest invId chatVRange p xContactId_ mc_ pqSupport
-          XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing pqSupport
+          XContact p xContactId_ mc_ createdAutoReplyData_ ->
+            profileContactRequest invId chatVRange p xContactId_ mc_ createdAutoReplyData_ pqSupport
+          XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing Nothing pqSupport
           -- TODO show/log error, other events in contact request
           _ -> pure ()
       MERR _ err -> do
@@ -1232,8 +1235,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       -- TODO add debugging output
       _ -> pure ()
       where
-        profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MsgContent -> PQSupport -> CM ()
-        profileContactRequest invId chatVRange p@Profile {displayName} xContactId_ mc_ reqPQSup = do
+        -- TODO [short links auto reply] create auto reply message with provided shared message id;
+        -- TODO   save data to decide whether to update on continuation (sendAutoReply, sendGroupAutoReply)
+        profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MsgContent -> Maybe CreatedAutoReplyData -> PQSupport -> CM ()
+        profileContactRequest invId chatVRange p@Profile {displayName} xContactId_ mc_ createdAutoReplyData_ reqPQSup = do
           uclGLinkInfo <- withStore $ \db -> getUserContactLinkById db userId uclId
           let (UserContactLink {connLinkContact = CCLink connReq _, shortLinkDataSet, autoAccept}, gLinkInfo_) = uclGLinkInfo
               isSimplexTeam = sameConnReqContact connReq adminContactReq

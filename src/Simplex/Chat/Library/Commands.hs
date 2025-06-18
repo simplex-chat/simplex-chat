@@ -1737,6 +1737,8 @@ processChatCommand' vr = \case
   APIPrepareContact userId accLink contactSLinkData -> withUserId userId $ \user -> do
     let ContactShortLinkData {profile, message} = contactSLinkData
     ct <- withStore $ \db -> createPreparedContact db user profile accLink
+    -- TODO [short links auto reply] create dummy rcv message, attach message id to rcv item (instead of internal);
+    -- TODO   same for business chats, if later we decide to create them as prepared group
     forM_ message $ \msg ->
       createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent $ MCText msg) Nothing
     pure $ CRNewPreparedContact user ct
@@ -2943,7 +2945,11 @@ processChatCommand' vr = \case
     joinContact :: User -> Int64 -> ConnId -> ConnReqContact -> Maybe Profile -> XContactId -> Maybe MsgContent -> Bool -> PQSupport -> VersionChat -> CM ()
     joinContact user pccConnId connId cReq incognitoProfile xContactId mc_ inGroup pqSup chatV = do
       let profileToSend = userProfileToSend user incognitoProfile Nothing inGroup
-      dm <- encodeConnInfoPQ pqSup chatV (XContact profileToSend (Just xContactId) mc_)
+      -- TODO [short links auto reply] get auto-reply message data (shared message id, hash) created on prepare step;
+      -- TODO   - how to identify this item in database? new flag? get all -> first "received" content item?
+      -- TODO   - include CreatedAutoReplyData into XContact
+      let createdAutoReplyData_ = Nothing
+      dm <- encodeConnInfoPQ pqSup chatV (XContact profileToSend (Just xContactId) mc_ createdAutoReplyData_)
       subMode <- chatReadVar subscriptionMode
       joinPreparedAgentConnection user pccConnId connId cReq dm pqSup subMode
     joinPreparedAgentConnection :: User -> Int64 -> ConnId -> ConnectionRequestUri m -> ByteString -> PQSupport -> SubscriptionMode -> CM ()
