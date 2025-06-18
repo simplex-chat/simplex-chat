@@ -17,6 +17,7 @@
 
 module Simplex.Chat.Library.Commands where
 
+import qualified Codec.Compression.Zstd as Z1
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM (retry)
 import Control.Logger.Simple
@@ -94,6 +95,7 @@ import Simplex.Messaging.Agent.Store.Shared (upMigration)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface (getCurrentMigrations)
 import Simplex.Messaging.Client (NetworkConfig (..), SMPWebPortServers (..), SocksMode (SMAlways), textToHostMode)
+import Simplex.Messaging.Compression (compressionLevel)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -3293,7 +3295,7 @@ processChatCommand' vr = \case
             pure (ACCL SCMInvitation (CCLink cReq (Just l')), plan)
           Nothing -> do
             (cReq, cData) <- getShortLinkConnReq user l'
-            let contactSLinkData_ = J.decodeStrict $ linkUserData' cData
+            contactSLinkData_ <- liftIO $ decodeShortLinkData cData
             invitationReqAndPlan cReq (Just l') contactSLinkData_
       where
         invitationReqAndPlan cReq sLnk_ contactSLinkData_ = do
@@ -3315,7 +3317,7 @@ processChatCommand' vr = \case
                 withFastStore' (\db -> getContactWithoutConnViaShortAddress db vr user l') >>= \case
                   Just ct' -> pure (cl, CPContactAddress (CAPContactViaAddress ct'))
                   Nothing -> do
-                    let contactSLinkData_ = J.decodeStrict $ linkUserData' cData
+                    contactSLinkData_ <- liftIO $ decodeShortLinkData cData
                     plan <- contactRequestPlan user cReq contactSLinkData_
                     pure (cl, plan)
           CCTGroup ->
@@ -3323,7 +3325,7 @@ processChatCommand' vr = \case
               Just (cReq, g) -> pure (ACCL SCMContact $ CCLink cReq (Just l'), CPGroupLink (GLPOwnLink g))
               Nothing -> do
                 (cReq, cData) <- getShortLinkConnReq user l'
-                let groupSLinkData_ = J.decodeStrict $ linkUserData' cData
+                groupSLinkData_ <- liftIO $ decodeShortLinkData cData
                 plan <- groupJoinRequestPlan user cReq groupSLinkData_
                 pure (ACCL SCMContact $ CCLink cReq (Just l'), plan)
           CCTChannel -> throwCmdError "channel links are not supported in this version"
@@ -3435,20 +3437,40 @@ processChatCommand' vr = \case
     restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . config)
     contactShortLinkData :: Profile -> Maybe Text -> CM UserLinkData
     contactShortLinkData p msg = do
-      largeLinkData <- chatReadVar useLargeLinkData
+      large <- chatReadVar useLargeLinkData
       let contactData
-            | largeLinkData = ContactShortLinkData p msg
+            | large = ContactShortLinkData p msg
             | otherwise = ContactShortLinkData p {fullName = "", image = Nothing, contactLink = Nothing} Nothing
-      -- TODO [short links] compress
-      pure $ UserLinkData $ LB.toStrict $ J.encode contactData
+      pure $ encodeShortLinkData large contactData
     groupShortLinkData :: GroupProfile -> CM UserLinkData
     groupShortLinkData gp = do
-      largeLinkData <- chatReadVar useLargeLinkData
+      large <- chatReadVar useLargeLinkData
       let gp'
-            | largeLinkData = gp
+            | large = gp
             | otherwise = gp {fullName = "", description = Nothing, image = Nothing, memberAdmission = Nothing}
-      -- TODO [short links] compress
-      pure $ UserLinkData $ LB.toStrict $ J.encode $ GroupShortLinkData gp'
+      pure $ encodeShortLinkData large $ GroupShortLinkData gp'
+    encodeShortLinkData :: J.ToJSON a => Bool -> a -> UserLinkData
+    encodeShortLinkData large d =
+      let s = LB.toStrict $ J.encode d
+          -- 10kb size limit for compression to be used is based on 13784 limit for link data
+          -- and the space reserved for the other fields in ConnLinkData encoding (most of these fields are currently unused).
+          s'
+            | B.length s > (if large then 10240 else 254) = B.cons 'X' $ Z1.compress compressionLevel s
+            | otherwise = s
+       in UserLinkData s'
+    decodeShortLinkData :: J.FromJSON a => ConnLinkData c -> IO (Maybe a)
+    decodeShortLinkData cData
+      | B.null s = pure Nothing
+      | B.head s == 'X' = case Z1.decompress $ B.drop 1 s of
+          Z1.Error e -> Nothing <$ logError ("Error decompressing link data: " <> tshow e)
+          Z1.Skip -> pure Nothing
+          Z1.Decompress s' -> decode s'
+      | otherwise = decode s
+      where
+        decode s' = case J.eitherDecodeStrict s' of
+          Right d -> pure $ Just d
+          Left e -> Nothing <$ logError ("Error decoding link data: " <> tshow e)
+        s = linkUserData' cData
     updatePCCShortLinkData :: PendingContactConnection -> Profile -> CM (Maybe ShortLinkInvitation)
     updatePCCShortLinkData conn@PendingContactConnection {connLinkInv} profile =
       forM (connShortLink =<< connLinkInv) $ \_ -> do
