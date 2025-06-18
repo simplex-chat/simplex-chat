@@ -323,6 +323,32 @@ instance ToJSON ReportReason where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+newtype MsgHash = MsgHash ByteString
+  deriving (Eq, Show)
+  deriving newtype (FromField)
+
+instance ToField MsgHash where toField (MsgHash m) = toField $ DB.Binary m
+
+instance StrEncoding MsgHash where
+  strEncode (MsgHash m) = strEncode m
+  strDecode s = MsgHash <$> strDecode s
+  strP = MsgHash <$> strP
+
+instance FromJSON MsgHash where
+  parseJSON = strParseJSON "MsgHash"
+
+instance ToJSON MsgHash where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+data CreatedAutoReplyData = CreatedAutoReplyData
+  { msgId :: SharedMsgId,
+    msgHash :: MsgHash
+  }
+  deriving (Eq, Show)
+
+$(JQ.deriveJSON defaultJSON ''CreatedAutoReplyData)
+
 data ChatMessage e = ChatMessage
   { chatVRange :: VersionRangeChat,
     msgId :: Maybe SharedMsgId,
@@ -344,7 +370,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XFileAcptInv :: SharedMsgId -> Maybe ConnReqInvitation -> String -> ChatMsgEvent 'Json
   XFileCancel :: SharedMsgId -> ChatMsgEvent 'Json
   XInfo :: Profile -> ChatMsgEvent 'Json
-  XContact :: Profile -> Maybe XContactId -> Maybe MsgContent -> ChatMsgEvent 'Json
+  XContact :: Profile -> Maybe XContactId -> Maybe MsgContent -> Maybe CreatedAutoReplyData -> ChatMsgEvent 'Json
   XDirectDel :: ChatMsgEvent 'Json
   XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
   XGrpAcpt :: MemberId -> ChatMsgEvent 'Json
@@ -1104,7 +1130,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XFileAcptInv_ -> XFileAcptInv <$> p "msgId" <*> opt "fileConnReq" <*> p "fileName"
       XFileCancel_ -> XFileCancel <$> p "msgId"
       XInfo_ -> XInfo <$> p "profile"
-      XContact_ -> XContact <$> p "profile" <*> opt "contactReqId" <*> opt "content"
+      XContact_ -> XContact <$> p "profile" <*> opt "contactReqId" <*> opt "content" <*> opt "createdAutoReplyData"
       XDirectDel_ -> pure XDirectDel
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
       XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
@@ -1168,7 +1194,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XFileAcptInv sharedMsgId fileConnReq fileName -> o $ ("fileConnReq" .=? fileConnReq) ["msgId" .= sharedMsgId, "fileName" .= fileName]
       XFileCancel sharedMsgId -> o ["msgId" .= sharedMsgId]
       XInfo profile -> o ["profile" .= profile]
-      XContact profile xContactId content -> o $ ("contactReqId" .=? xContactId) $ ("content" .=? content) ["profile" .= profile]
+      XContact profile xContactId content createdAutoReplyData -> o $ ("contactReqId" .=? xContactId) $ ("content" .=? content) $ ("createdAutoReplyData" .=? createdAutoReplyData) ["profile" .= profile]
       XDirectDel -> JM.empty
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId -> o ["memberId" .= memId]
