@@ -1083,6 +1083,9 @@ struct ComposeView: View {
                 return .file(msgText)
             case .report(_, let reason):
                 return .report(text: msgText, reason: reason)
+            // TODO [short links] update chat link
+            case let .chat(_, chatLink):
+                return .chat(text: msgText, chatLink: chatLink)
             case .unknown(let type, _):
                 return .unknown(type: type, text: msgText)
             }

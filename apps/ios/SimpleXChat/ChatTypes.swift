@@ -2201,6 +2201,7 @@ public enum MemberCriteria: String, Codable, Identifiable, Hashable {
 public struct ContactShortLinkData: Codable, Hashable {
     public var profile: Profile
     public var message: String?
+    public var business: Bool
 }
 
 public struct GroupShortLinkData: Codable, Hashable {
@@ -3633,7 +3634,7 @@ public enum CIContent: Decodable, ItemContent, Hashable {
     }
 
     private func directE2EEInfoStr(_ e2eeInfo: E2EEInfo) -> String {
-        e2eeInfo.pqEnabled
+        e2eeInfo.pqEnabled == true
         ? NSLocalizedString("This chat is protected by quantum resistant end-to-end encryption.", comment: "E2EE info chat item")
         : e2eeInfoNoPQStr
     }
@@ -4114,6 +4115,7 @@ public enum MsgContent: Equatable, Hashable {
     case voice(text: String, duration: Int)
     case file(String)
     case report(text: String, reason: ReportReason)
+    case chat(text: String, chatLink: MsgChatLink)
     // TODO include original JSON, possibly using https://github.com/zoul/generic-json-swift
     case unknown(type: String, text: String)
 
@@ -4126,6 +4128,7 @@ public enum MsgContent: Equatable, Hashable {
         case let .voice(text, _): return text
         case let .file(text): return text
         case let .report(text, _): return text
+        case let .chat(text, _): return text
         case let .unknown(_, text): return text
         }
     }
@@ -4186,6 +4189,7 @@ public enum MsgContent: Equatable, Hashable {
         case image
         case duration
         case reason
+        case chatLink
     }
 
     public static func == (lhs: MsgContent, rhs: MsgContent) -> Bool {
@@ -4197,6 +4201,7 @@ public enum MsgContent: Equatable, Hashable {
         case let (.voice(lt, ld), .voice(rt, rd)): return lt == rt && ld == rd
         case let (.file(lf), .file(rf)): return lf == rf
         case let (.report(lt, lr), .report(rt, rr)): return lt == rt && lr == rr
+        case let (.chat(lt, ll), .chat(rt, rl)): return lt == rt && ll == rl
         case let (.unknown(lType, lt), .unknown(rType, rt)): return lType == rType && lt == rt
         default: return false
         }
@@ -4236,6 +4241,10 @@ extension MsgContent: Decodable {
                 let text = try container.decode(String.self, forKey: CodingKeys.text)
                 let reason = try container.decode(ReportReason.self, forKey: CodingKeys.reason)
                 self = .report(text: text, reason: reason)
+            case "chat":
+                let text = try container.decode(String.self, forKey: CodingKeys.text)
+                let chatLink = try container.decode(MsgChatLink.self, forKey: CodingKeys.chatLink)
+                self = .chat(text: text, chatLink: chatLink)
             default:
                 let text = try? container.decode(String.self, forKey: CodingKeys.text)
                 self = .unknown(type: type, text: text ?? "unknown message format")
@@ -4277,6 +4286,10 @@ extension MsgContent: Encodable {
             try container.encode("report", forKey: .type)
             try container.encode(text, forKey: .text)
             try container.encode(reason, forKey: .reason)
+        case let .chat(text, chatLink):
+            try container.encode("chat", forKey: .type)
+            try container.encode(text, forKey: .text)
+            try container.encode(chatLink, forKey: .chatLink)
         // TODO use original JSON and type
         case let .unknown(_, text):
             try container.encode("text", forKey: .type)
@@ -4293,6 +4306,12 @@ public enum MsgContentTag: String {
     case voice
     case file
     case report
+}
+
+public enum MsgChatLink: Codable, Equatable, Hashable {
+    case contact(connLink: String, profile: Profile, business: Bool)
+    case invitation(invLink: String, profile: Profile)
+    case group(connLink: String, groupProfile: GroupProfile)
 }
 
 public struct FormattedText: Decodable, Hashable {
@@ -4597,7 +4616,7 @@ public enum CIGroupInvitationStatus: String, Decodable, Hashable {
 }
 
 public struct E2EEInfo: Decodable, Hashable {
-    public var pqEnabled: Bool
+    public var pqEnabled: Bool?
 }
 
 public enum RcvDirectEvent: Decodable, Hashable {
