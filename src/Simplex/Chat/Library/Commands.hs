@@ -1745,10 +1745,10 @@ processChatCommand' vr = \case
           sl@CSLInvitation {} -> MCLInvitation sl profile
     mapM_ (\sl -> createItem $ CIRcvMsgContent $ MCChat (safeDecodeUtf8 $ strEncode sl) $ msgChatLink sl) shortLink
     createItem $ case cReq of
+      CRContactUri _ -> CIRcvDirectSimpleE2E
       CRInvitationUri _ (E2ERatchetParamsUri vr _ _ pq) ->
         let pqEnc = maxVersion vr > pqRatchetE2EEncryptVersion && isJust pq
          in CIRcvDirectE2EEInfo $ E2EInfo $ PQEncryption pqEnc
-      CRContactUri _ -> CIRcvDirectSimpleE2E
     createFeatureEnabledItems user ct
     mapM_ (createItem . CIRcvMsgContent . MCText) message
     pure $ CRNewPreparedContact user ct

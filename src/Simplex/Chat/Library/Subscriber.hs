@@ -556,8 +556,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               -- TODO check member ID
               -- TODO update member profile
               pure ()
-            XInfo profile ->
-              void $ processContactProfileUpdate ct profile False
+            XInfo profile -> do
+              let prepared = isJust $ preparedContact ct
+              void $ processContactProfileUpdate ct profile prepared
             XOk -> pure ()
             _ -> messageError "INFO for existing contact must have x.grp.mem.info, x.info or x.ok"
         CON pqEnc ->
@@ -570,9 +571,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
               lift $ setContactNetworkStatus ct' NSConnected
               toView $ CEvtContactConnected user ct' (fmap fromLocalProfile incognitoProfile)
-              when (directOrUsed ct') $ do
-                createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ E2EInfo pqEnc) Nothing
-                createFeatureEnabledItems user ct'
+              let createE2EItem pqEnc' = createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ E2EInfo pqEnc') Nothing
+              when (directOrUsed ct') $ case preparedContact ct' of
+                Nothing -> do
+                  createE2EItem pqEnc
+                  createFeatureEnabledItems user ct'
+                Just PreparedContact {connLinkToConnect = ACCL _ (CCLink cReq _)} -> case cReq of
+                  CRContactUri _ -> createE2EItem pqEnc
+                  CRInvitationUri _ (CR.E2ERatchetParamsUri vr' _ _ pq) -> do
+                    let prevPQEnc = PQEncryption $ maxVersion vr' > CR.pqRatchetE2EEncryptVersion && isJust pq
+                    unless (prevPQEnc == pqEnc) $ createE2EItem pqEnc
               when (contactConnInitiated conn') $ do
                 let Connection {groupLinkId} = conn'
                     doProbeContacts = isJust groupLinkId
