@@ -1735,7 +1735,7 @@ processChatCommand' vr = \case
         pure conn'
   APIConnectPlan userId cLink -> withUserId userId $ \user ->
     uncurry (CRConnectionPlan user) <$> connectPlan user cLink
-  APIPrepareContact userId accLink@(ACCL cMode (CCLink cReq shortLink)) contactSLinkData -> withUserId userId $ \user -> do
+  APIPrepareContact userId accLink@(ACCL cMode (CCLink _ shortLink)) contactSLinkData -> withUserId userId $ \user -> do
     let ContactShortLinkData {profile, message, business} = contactSLinkData
     ct <- withStore $ \db -> createPreparedContact db user profile accLink
     let cMode' = connMode cMode
@@ -1744,11 +1744,7 @@ processChatCommand' vr = \case
           sl@CSLContact {} -> MCLContact sl profile business
           sl@CSLInvitation {} -> MCLInvitation sl profile
     mapM_ (\sl -> createItem $ CIRcvMsgContent $ MCChat (safeDecodeUtf8 $ strEncode sl) $ msgChatLink sl) shortLink
-    createItem $ case cReq of
-      CRContactUri _ -> CIRcvDirectSimpleE2E
-      CRInvitationUri _ (E2ERatchetParamsUri vr _ _ pq) ->
-        let pqEnc = maxVersion vr > pqRatchetE2EEncryptVersion && isJust pq
-         in CIRcvDirectE2EEInfo $ E2EInfo $ PQEncryption pqEnc
+    createItem $ CIRcvDirectE2EEInfo $ E2EInfo $ connLinkPQEncryption accLink
     createFeatureEnabledItems user ct
     mapM_ (createItem . CIRcvMsgContent . MCText) message
     pure $ CRNewPreparedContact user ct
@@ -2049,7 +2045,7 @@ processChatCommand' vr = \case
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     gInfo <- withFastStore $ \db -> createNewGroup db vr gVar user gProfile incognitoProfile
     let cd = CDGroupSnd gInfo Nothing
-    createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
+    createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
     createGroupFeatureItems user cd CISndGroupFeature gInfo
     pure $ CRGroupCreated user gInfo
   NewGroup incognito gProfile -> withUser $ \User {userId} ->

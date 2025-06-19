@@ -571,16 +571,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
               lift $ setContactNetworkStatus ct' NSConnected
               toView $ CEvtContactConnected user ct' (fmap fromLocalProfile incognitoProfile)
-              let createE2EItem pqEnc' = createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ E2EInfo pqEnc') Nothing
+              let createE2EItem = createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ E2EInfo $ Just pqEnc) Nothing
               when (directOrUsed ct') $ case preparedContact ct' of
                 Nothing -> do
-                  createE2EItem pqEnc
+                  createE2EItem
                   createFeatureEnabledItems user ct'
-                Just PreparedContact {connLinkToConnect = ACCL _ (CCLink cReq _)} -> case cReq of
-                  CRContactUri _ -> createE2EItem pqEnc
-                  CRInvitationUri _ (CR.E2ERatchetParamsUri vr' _ _ pq) -> do
-                    let prevPQEnc = PQEncryption $ maxVersion vr' > CR.pqRatchetE2EEncryptVersion && isJust pq
-                    unless (prevPQEnc == pqEnc) $ createE2EItem pqEnc
+                Just PreparedContact {connLinkToConnect = cl} ->
+                  unless (Just pqEnc == connLinkPQEncryption cl) createE2EItem
               when (contactConnInitiated conn') $ do
                 let Connection {groupLinkId} = conn'
                     doProbeContacts = isJust groupLinkId
@@ -807,7 +804,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             toView $ CEvtUserJoinedGroup user gInfo' m'
             (gInfo'', m'', scopeInfo) <- mkGroupChatScope gInfo' m'
             let cd = CDGroupRcv gInfo'' scopeInfo m''
-            createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
+            createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
             createGroupFeatureItems user cd CIRcvGroupFeature gInfo''
             memberConnectedChatItem gInfo'' scopeInfo m''
             unless (memberPending membership) $ maybeCreateGroupDescrLocal gInfo'' m''
@@ -2189,7 +2186,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             -- create item in both scopes
             let gInfo' = gInfo {membership = membership'}
                 cd = CDGroupRcv gInfo' Nothing m
-            createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
+            createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
             createGroupFeatureItems user cd CIRcvGroupFeature gInfo'
             maybeCreateGroupDescrLocal gInfo' m
             createInternalChatItem user cd (CIRcvGroupEvent RGEUserAccepted) Nothing

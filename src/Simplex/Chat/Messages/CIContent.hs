@@ -161,7 +161,6 @@ data CIContent (d :: MsgDirection) where
   CISndModerated :: CIContent 'MDSnd
   CIRcvModerated :: CIContent 'MDRcv
   CIRcvBlocked :: CIContent 'MDRcv
-  CIRcvDirectSimpleE2E :: CIContent 'MDRcv
   CISndDirectE2EEInfo :: E2EInfo -> CIContent 'MDSnd
   CIRcvDirectE2EEInfo :: E2EInfo -> CIContent 'MDRcv
   CISndGroupE2EEInfo :: E2EInfo -> CIContent 'MDSnd -- when new group is created
@@ -174,7 +173,7 @@ data CIContent (d :: MsgDirection) where
 
 deriving instance Show (CIContent d)
 
-data E2EInfo = E2EInfo {pqEnabled :: PQEncryption}
+data E2EInfo = E2EInfo {pqEnabled :: Maybe PQEncryption}
   deriving (Eq, Show)
 
 ciMsgContent :: CIContent d -> Maybe MsgContent
@@ -232,7 +231,6 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvGroupFeatureRejected _ -> True
     CIRcvModerated -> True
     CIRcvBlocked -> False
-    CIRcvDirectSimpleE2E -> False
     CIRcvDirectE2EEInfo _ -> False
     CIRcvGroupE2EEInfo _ -> False
     CIInvalidJSON _ -> False
@@ -290,7 +288,6 @@ ciContentToText = \case
   CISndModerated -> ciModeratedText
   CIRcvModerated -> ciModeratedText
   CIRcvBlocked -> "blocked"
-  CIRcvDirectSimpleE2E -> simpleE2EText
   CISndDirectE2EEInfo e2eeInfo -> directE2EInfoToText e2eeInfo
   CIRcvDirectE2EEInfo e2eeInfo -> directE2EInfoToText e2eeInfo
   CISndGroupE2EEInfo e2eeInfo -> groupE2EInfoToText e2eeInfo
@@ -299,11 +296,14 @@ ciContentToText = \case
 
 directE2EInfoToText :: E2EInfo -> Text
 directE2EInfoToText E2EInfo {pqEnabled} = case pqEnabled of
-  PQEncOn -> e2eInfoPQText
-  PQEncOff -> e2eInfoNoPQText
+  Just PQEncOn -> e2eInfoPQText
+  Just PQEncOff -> e2eInfoNoPQText
+  Nothing -> simpleE2EText
 
 groupE2EInfoToText :: E2EInfo -> Text
-groupE2EInfoToText _e2eeInfo = e2eInfoNoPQText
+groupE2EInfoToText E2EInfo {pqEnabled} = case pqEnabled of
+  Just _ -> e2eInfoNoPQText
+  Nothing -> simpleE2EText
 
 simpleE2EText :: Text
 simpleE2EText = "This conversation is protected by end-to-end encryption"
@@ -467,7 +467,6 @@ data JSONCIContent
   | JCISndModerated
   | JCIRcvModerated
   | JCIRcvBlocked
-  | JCIRcvDirectSimpleE2E
   | JCISndDirectE2EEInfo {e2eeInfo :: E2EInfo}
   | JCIRcvDirectE2EEInfo {e2eeInfo :: E2EInfo}
   | JCISndGroupE2EEInfo {e2eeInfo :: E2EInfo}
@@ -502,7 +501,6 @@ jsonCIContent = \case
   CISndModerated -> JCISndModerated
   CIRcvModerated -> JCIRcvModerated
   CIRcvBlocked -> JCIRcvBlocked
-  CIRcvDirectSimpleE2E -> JCIRcvDirectSimpleE2E
   CISndDirectE2EEInfo e2eeInfo -> JCISndDirectE2EEInfo e2eeInfo
   CIRcvDirectE2EEInfo e2eeInfo -> JCIRcvDirectE2EEInfo e2eeInfo
   CISndGroupE2EEInfo e2eeInfo -> JCISndGroupE2EEInfo e2eeInfo
@@ -537,7 +535,6 @@ aciContentJSON = \case
   JCISndModerated -> ACIContent SMDSnd CISndModerated
   JCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
   JCIRcvBlocked -> ACIContent SMDRcv CIRcvBlocked
-  JCIRcvDirectSimpleE2E -> ACIContent SMDRcv CIRcvDirectSimpleE2E
   JCISndDirectE2EEInfo {e2eeInfo} -> ACIContent SMDSnd $ CISndDirectE2EEInfo e2eeInfo
   JCIRcvDirectE2EEInfo {e2eeInfo} -> ACIContent SMDRcv $ CIRcvDirectE2EEInfo e2eeInfo
   JCISndGroupE2EEInfo {e2eeInfo} -> ACIContent SMDSnd $ CISndGroupE2EEInfo e2eeInfo
@@ -573,7 +570,6 @@ data DBJSONCIContent
   | DBJCISndModerated
   | DBJCIRcvModerated
   | DBJCIRcvBlocked
-  | DBJCIRcvDirectSimpleE2E
   | DBJCISndDirectE2EEInfo {e2eeInfo :: E2EInfo}
   | DBJCIRcvDirectE2EEInfo {e2eeInfo :: E2EInfo}
   | DBJCISndGroupE2EEInfo {e2eeInfo :: E2EInfo}
@@ -608,7 +604,6 @@ dbJsonCIContent = \case
   CISndModerated -> DBJCISndModerated
   CIRcvModerated -> DBJCIRcvModerated
   CIRcvBlocked -> DBJCIRcvBlocked
-  CIRcvDirectSimpleE2E -> DBJCIRcvDirectSimpleE2E
   CISndDirectE2EEInfo e2eeInfo -> DBJCISndDirectE2EEInfo e2eeInfo
   CIRcvDirectE2EEInfo e2eeInfo -> DBJCIRcvDirectE2EEInfo e2eeInfo
   CISndGroupE2EEInfo e2eeInfo -> DBJCISndGroupE2EEInfo e2eeInfo
@@ -643,7 +638,6 @@ aciContentDBJSON = \case
   DBJCISndModerated -> ACIContent SMDSnd CISndModerated
   DBJCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
   DBJCIRcvBlocked -> ACIContent SMDRcv CIRcvBlocked
-  DBJCIRcvDirectSimpleE2E -> ACIContent SMDRcv CIRcvDirectSimpleE2E
   DBJCISndDirectE2EEInfo e2eeInfo -> ACIContent SMDSnd $ CISndDirectE2EEInfo e2eeInfo
   DBJCIRcvDirectE2EEInfo e2eeInfo -> ACIContent SMDRcv $ CIRcvDirectE2EEInfo e2eeInfo
   DBJCISndGroupE2EEInfo e2eeInfo -> ACIContent SMDSnd $ CISndGroupE2EEInfo e2eeInfo
@@ -751,7 +745,6 @@ toCIContentTag ciContent = case ciContent of
   CISndModerated -> "sndModerated"
   CIRcvModerated -> "rcvModerated"
   CIRcvBlocked -> "rcvBlocked"
-  CIRcvDirectSimpleE2E -> "rcvDirectSimpleE2E"
   CISndDirectE2EEInfo _ -> "sndDirectE2EEInfo"
   CIRcvDirectE2EEInfo _ -> "rcvDirectE2EEInfo"
   CISndGroupE2EEInfo _ -> "sndGroupE2EEInfo"
