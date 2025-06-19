@@ -693,6 +693,9 @@
   <string name="accept_contact_button">Accept</string>
   <string name="accept_contact_incognito_button">Accept incognito</string>
   <string name="reject_contact_button">Reject</string>
+  <string name="accept_contact_request">Accept contact request</string>
+  <string name="reject_contact_request">Reject contact request</string>
+  <string name="the_sender_will_not_be_notified">The sender will NOT be notified.</string>
 
   <!-- Clear Chat - ChatListNavLinkView.kt -->
   <string name="clear_chat_question">Clear chat?</string>

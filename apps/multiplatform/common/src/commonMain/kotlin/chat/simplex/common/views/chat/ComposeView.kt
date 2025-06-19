@@ -1016,6 +1016,17 @@ fun ComposeView(
 
   Column {
     if (
+      chat.chatInfo is ChatInfo.Direct
+      && chat.chatInfo.contact.nextAcceptContactRequest
+      && chat.chatInfo.contact.contactRequestId != null
+    ) {
+      ComposeContextContactRequestActionsView(
+        rhId = rhId,
+        contactRequestId = chat.chatInfo.contact.contactRequestId
+      )
+    }
+
+    if (
       chat.chatInfo is ChatInfo.Group
       && chatsCtx.secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext
       && chatsCtx.secondaryContextFilter.groupScopeInfo is GroupChatScopeInfo.MemberSupport
@@ -1030,13 +1041,16 @@ fun ComposeView(
         member = chatsCtx.secondaryContextFilter.groupScopeInfo.groupMember_
       )
     }
+
     if (nextSendGrpInv.value) {
       ComposeContextInvitingContactMemberView()
     }
+
     val ctx = composeState.value.contextItem
     if (ctx is ComposeContextItem.ReportedItem) {
       ReportReasonView(ctx.reason)
     }
+
     val simplexLinkProhibited = chatsCtx.secondaryContextFilter == null && hasSimplexLink.value && !chat.groupFeatureEnabled(GroupFeature.SimplexLinks)
     val fileProhibited = chatsCtx.secondaryContextFilter == null && composeState.value.attachmentPreview && !chat.groupFeatureEnabled(GroupFeature.Files)
     val voiceProhibited = composeState.value.preview is ComposePreview.VoicePreview && !chat.chatInfo.featureEnabled(ChatFeature.Voice)
