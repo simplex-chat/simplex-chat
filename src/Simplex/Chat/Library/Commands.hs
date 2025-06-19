@@ -1739,13 +1739,13 @@ processChatCommand' vr = \case
     let ContactShortLinkData {profile, message, business} = contactSLinkData
     ct <- withStore $ \db -> createPreparedContact db user profile accLink
     let cMode' = connMode cMode
-        createItem content = createInternalChatItem user (CDDirectRcv ct) content Nothing
+        createItem content = void $ createInternalItemForChat user (CDDirectRcv ct) content Nothing
         msgChatLink = \case
           sl@CSLContact {} -> MCLContact sl profile business
           sl@CSLInvitation {} -> MCLInvitation sl profile
     mapM_ (\sl -> createItem $ CIRcvMsgContent $ MCChat (safeDecodeUtf8 $ strEncode sl) $ msgChatLink sl) shortLink
     createItem $ CIRcvDirectE2EEInfo $ E2EInfo $ connLinkPQEncryption accLink
-    createFeatureEnabledItems user ct
+    void $ createFeatureEnabledItems_ user ct
     mapM_ (createItem . CIRcvMsgContent . MCText) message
     pure $ CRNewPreparedContact user ct
   APIPrepareGroup userId ccLink@(CCLink _ shortLink) groupSLinkData -> withUserId userId $ \user -> do
@@ -1753,9 +1753,9 @@ processChatCommand' vr = \case
     gInfo <- withStore $ \db -> createPreparedGroup db vr user gp ccLink
     -- TODO use received item without member
     let cd = CDGroupRcv gInfo Nothing $ membership gInfo
-        createItem content = createInternalChatItem user cd content Nothing
+        createItem content = void $ createInternalItemForChat user cd content Nothing
     mapM_ (\sl -> createItem $ CIRcvMsgContent $ MCChat (safeDecodeUtf8 $ strEncode sl) $ MCLGroup sl gp) shortLink
-    createGroupFeatureItems user cd CIRcvGroupFeature gInfo
+    void $ createGroupFeatureItems_ user cd CIRcvGroupFeature gInfo
     mapM_ (createItem . CIRcvMsgContent . MCText) description
     pure $ CRNewPreparedGroup user gInfo
   APIChangePreparedContactUser contactId newUserId -> withUser $ \user -> do

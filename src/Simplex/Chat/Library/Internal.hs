@@ -2283,10 +2283,13 @@ createSndFeatureItems user ct ct' =
 type FeatureContent a d = ChatFeature -> a -> Maybe Int -> CIContent d
 
 createFeatureEnabledItems :: User -> Contact -> CM ()
-createFeatureEnabledItems user ct@Contact {mergedPreferences} =
-  forM_ allChatFeatures $ \(ACF f) -> do
+createFeatureEnabledItems user ct = createFeatureEnabledItems_ user ct >>= toView . CEvtNewChatItems user
+
+createFeatureEnabledItems_ :: User -> Contact -> CM [AChatItem]
+createFeatureEnabledItems_ user ct@Contact {mergedPreferences} =
+  forM allChatFeatures $ \(ACF f) -> do
     let state = featureState $ getContactUserPreference f mergedPreferences
-    createInternalChatItem user (CDDirectRcv ct) (uncurry (CIRcvChatFeature $ chatFeature f) state) Nothing
+    createInternalItemForChat user (CDDirectRcv ct) (uncurry (CIRcvChatFeature $ chatFeature f) state) Nothing
 
 createFeatureItems ::
   MsgDirectionI d =>
@@ -2350,16 +2353,24 @@ sameGroupProfileInfo :: GroupProfile -> GroupProfile -> Bool
 sameGroupProfileInfo p p' = p {groupPreferences = Nothing} == p' {groupPreferences = Nothing}
 
 createGroupFeatureItems :: MsgDirectionI d => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> Maybe Int -> Maybe GroupMemberRole -> CIContent d) -> GroupInfo -> CM ()
-createGroupFeatureItems user cd ciContent GroupInfo {fullGroupPreferences} =
-  forM_ allGroupFeatures $ \(AGF f) -> do
+createGroupFeatureItems user cd ciContent g = createGroupFeatureItems_ user cd ciContent g >>= toView . CEvtNewChatItems user
+
+createGroupFeatureItems_ :: MsgDirectionI d => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> Maybe Int -> Maybe GroupMemberRole -> CIContent d) -> GroupInfo -> CM [AChatItem]
+createGroupFeatureItems_ user cd ciContent GroupInfo {fullGroupPreferences} =
+  forM allGroupFeatures $ \(AGF f) -> do
     let p = getGroupPreference f fullGroupPreferences
         (_, param, role) = groupFeatureState p
-    createInternalChatItem user cd (ciContent (toGroupFeature f) (toGroupPreference p) param role) Nothing
+    createInternalItemForChat user cd (ciContent (toGroupFeature f) (toGroupPreference p) param role) Nothing
 
 createInternalChatItem :: (ChatTypeI c, MsgDirectionI d) => User -> ChatDirection c d -> CIContent d -> Maybe UTCTime -> CM ()
-createInternalChatItem user cd content itemTs_ =
+createInternalChatItem user cd content itemTs_ = do
+  ci <- createInternalItemForChat user cd content itemTs_
+  toView $ CEvtNewChatItems user [ci]
+
+createInternalItemForChat :: (ChatTypeI c, MsgDirectionI d) => User -> ChatDirection c d -> CIContent d -> Maybe UTCTime -> CM AChatItem
+createInternalItemForChat user cd content itemTs_ =
   lift (createInternalItemsForChats user itemTs_ [(cd, [content])]) >>= \case
-    [Right aci] -> toView $ CEvtNewChatItems user [aci]
+    [Right ci] -> pure ci
     [Left e] -> throwError e
     rs -> throwChatError $ CEInternalError $ "createInternalChatItem: expected 1 result, got " <> show (length rs)
 
