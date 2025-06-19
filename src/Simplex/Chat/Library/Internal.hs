@@ -2266,7 +2266,7 @@ connLinkPQEncryption :: ACreatedConnLink -> Maybe PQEncryption
 connLinkPQEncryption (ACCL _ (CCLink cReq _)) = case cReq of
   CRContactUri _ -> Nothing
   CRInvitationUri _ (CR.E2ERatchetParamsUri vr' _ _ pq) ->
-    Just $ PQEncryption $ maxVersion vr' > CR.pqRatchetE2EEncryptVersion && isJust pq
+    Just $ PQEncryption $ maxVersion vr' >= CR.pqRatchetE2EEncryptVersion && isJust pq
 
 createRcvFeatureItems :: User -> Contact -> Contact -> CM' ()
 createRcvFeatureItems user ct ct' =
