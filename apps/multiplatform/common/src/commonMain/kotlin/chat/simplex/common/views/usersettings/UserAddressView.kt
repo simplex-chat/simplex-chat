@@ -65,7 +65,7 @@ fun UserAddressView(
       progressIndicator = true
       val connReqContact = chatModel.controller.apiCreateUserAddress(user.value?.remoteHostId)
       if (connReqContact != null) {
-        chatModel.userAddress.value = UserContactLinkRec(connReqContact)
+        chatModel.userAddress.value = UserContactLinkRec(connReqContact, shortLinkDataSet = connReqContact.connShortLink != null)
 
         AlertManager.shared.showAlertDialog(
           title = generalGetString(MR.strings.share_address_with_contacts_question),
@@ -618,7 +618,7 @@ fun PreviewUserAddressLayoutAddressCreated() {
   SimpleXTheme {
     UserAddressLayout(
       user = User.sampleData,
-      userAddress = UserContactLinkRec(CreatedConnLink("https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D", null)),
+      userAddress = UserContactLinkRec(CreatedConnLink("https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D", null), shortLinkDataSet = false),
       createAddress = {},
       addShortLink = {},
       share = { _ -> },

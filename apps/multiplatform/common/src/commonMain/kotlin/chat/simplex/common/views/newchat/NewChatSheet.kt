@@ -557,7 +557,6 @@ private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<
     planAndConnect(
       chatModel.remoteHostId(),
       link,
-      incognito = null,
       filterKnownContact = { searchChatFilteredBySimplexLink.value = it.id },
       close = close,
       cleanup = cleanup,

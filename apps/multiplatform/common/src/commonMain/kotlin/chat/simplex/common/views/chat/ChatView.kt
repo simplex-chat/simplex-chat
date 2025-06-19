@@ -287,7 +287,7 @@ fun ChatView(
                 // The idea is to preload information before showing a modal because large groups can take time to load all members
                 var preloadedContactInfo: Pair<ConnectionStats?, Profile?>? = null
                 var preloadedCode: String? = null
-                var preloadedLink: Pair<CreatedConnLink, GroupMemberRole>? = null
+                var preloadedLink: GroupLink? = null
                 if (chatInfo is ChatInfo.Direct) {
                   preloadedContactInfo = chatModel.controller.apiContactInfo(chatRh, chatInfo.apiId)
                   preloadedCode = chatModel.controller.apiGetContactCode(chatRh, chatInfo.apiId)?.second
@@ -315,13 +315,13 @@ fun ChatView(
                         showSearch.value = true
                       }
                     } else if (chatInfo is ChatInfo.Group) {
-                      var link: Pair<CreatedConnLink, GroupMemberRole>? by remember(chatInfo.id) { mutableStateOf(preloadedLink) }
+                      var link: GroupLink? by remember(chatInfo.id) { mutableStateOf(preloadedLink) }
                       KeyChangeEffect(chatInfo.id) {
                         setGroupMembers(chatRh, chatInfo.groupInfo, chatModel)
                         link = chatModel.controller.apiGetGroupLink(chatRh, chatInfo.groupInfo.groupId)
                         preloadedLink = link
                       }
-                      GroupChatInfoView(chatsCtx, chatRh, chatInfo.id, link?.first, link?.second, selectedItems, appBar, scrollToItemId, {
+                      GroupChatInfoView(chatsCtx, chatRh, chatInfo.id, link, selectedItems, appBar, scrollToItemId, {
                         link = it
                         preloadedLink = it
                       }, close, { showSearch.value = true })
@@ -2509,7 +2509,7 @@ fun openGroupLink(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close: (
     val link = chatModel.controller.apiGetGroupLink(rhId, groupInfo.groupId)
     close?.invoke()
     ModalManager.end.showModalCloseable(true) {
-      GroupLinkView(chatModel, rhId, groupInfo, link?.first, link?.second, onGroupLinkUpdated = null)
+      GroupLinkView(chatModel, rhId, groupInfo, link, onGroupLinkUpdated = null)
     }
   }
 }

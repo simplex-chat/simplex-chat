@@ -171,6 +171,8 @@ object ChatModel {
   // return true if you handled the click
   var centerPanelBackgroundClickHandler: (() -> Boolean)? = null
 
+  var addressShortLinkDataSet: Boolean = userAddress.value?.shortLinkDataSet ?: true
+
   fun getUser(userId: Long): User? = if (currentUser.value?.userId == userId) {
     currentUser.value
   } else {
@@ -1272,6 +1274,7 @@ interface SomeChat {
   val apiId: Long
   val ready: Boolean
   val chatDeleted: Boolean
+  val nextConnect: Boolean
   val incognito: Boolean
   fun featureEnabled(feature: ChatFeature): Boolean
   val timedMessagesTTL: Int?
@@ -1351,6 +1354,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = contact.apiId
     override val ready get() = contact.ready
     override val chatDeleted get() = contact.chatDeleted
+    override val nextConnect get() = contact.nextConnect
     override val incognito get() = contact.incognito
     override fun featureEnabled(feature: ChatFeature) = contact.featureEnabled(feature)
     override val timedMessagesTTL: Int? get() = contact.timedMessagesTTL
@@ -1375,6 +1379,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = groupInfo.apiId
     override val ready get() = groupInfo.ready
     override val chatDeleted get() = groupInfo.chatDeleted
+    override val nextConnect get() = groupInfo.nextConnect
     override val incognito get() = groupInfo.incognito
     override fun featureEnabled(feature: ChatFeature) = groupInfo.featureEnabled(feature)
     override val timedMessagesTTL: Int? get() = groupInfo.timedMessagesTTL
@@ -1398,6 +1403,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = noteFolder.apiId
     override val ready get() = noteFolder.ready
     override val chatDeleted get() = noteFolder.chatDeleted
+    override val nextConnect get() = noteFolder.nextConnect
     override val incognito get() = noteFolder.incognito
     override fun featureEnabled(feature: ChatFeature) = noteFolder.featureEnabled(feature)
     override val timedMessagesTTL: Int? get() = noteFolder.timedMessagesTTL
@@ -1421,6 +1427,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = contactRequest.apiId
     override val ready get() = contactRequest.ready
     override val chatDeleted get() = contactRequest.chatDeleted
+    override val nextConnect get() = contactRequest.nextConnect
     override val incognito get() = contactRequest.incognito
     override fun featureEnabled(feature: ChatFeature) = contactRequest.featureEnabled(feature)
     override val timedMessagesTTL: Int? get() = contactRequest.timedMessagesTTL
@@ -1444,6 +1451,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = contactConnection.apiId
     override val ready get() = contactConnection.ready
     override val chatDeleted get() = contactConnection.chatDeleted
+    override val nextConnect get() = contactConnection.nextConnect
     override val incognito get() = contactConnection.incognito
     override fun featureEnabled(feature: ChatFeature) = contactConnection.featureEnabled(feature)
     override val timedMessagesTTL: Int? get() = contactConnection.timedMessagesTTL
@@ -1472,6 +1480,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val id get() = "?$apiId"
     override val ready get() = false
     override val chatDeleted get() = false
+    override val nextConnect get() = false
     override val incognito get() = false
     override fun featureEnabled(feature: ChatFeature) = false
     override val timedMessagesTTL: Int? get() = null
@@ -1641,6 +1650,8 @@ data class Contact(
   override val createdAt: Instant,
   override val updatedAt: Instant,
   val chatTs: Instant?,
+  val connLinkToConnect: CreatedConnLink?,
+  val contactRequestId: Long?,
   val contactGroupMemberId: Long? = null,
   val contactGrpInvSent: Boolean,
   val chatTags: List<Long>,
@@ -1654,7 +1665,11 @@ data class Contact(
   override val ready get() = activeConn?.connStatus == ConnStatus.Ready
   val sndReady get() = ready || activeConn?.connStatus == ConnStatus.SndReady
   val active get() = contactStatus == ContactStatus.Active
+  override val nextConnect get() = sendMsgToConnect
   val nextSendGrpInv get() = contactGroupMemberId != null && !contactGrpInvSent
+  val nextConnectPrepared get() = connLinkToConnect != null && activeConn == null
+  val nextAcceptContactRequest get() = contactRequestId != null && activeConn == null
+  val sendMsgToConnect get() = nextSendGrpInv || nextConnectPrepared
   override val incognito get() = contactConnIncognito
   override fun featureEnabled(feature: ChatFeature) = when (feature) {
     ChatFeature.TimedMessages -> mergedPreferences.timedMessages.enabled.forUser
@@ -1717,6 +1732,8 @@ data class Contact(
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now(),
       chatTs = Clock.System.now(),
+      connLinkToConnect = null,
+      contactRequestId = null,
       contactGrpInvSent = false,
       chatDeleted = false,
       uiThemes = null,
@@ -1877,6 +1894,8 @@ data class GroupInfo (
   override val createdAt: Instant,
   override val updatedAt: Instant,
   val chatTs: Instant?,
+  val connLinkToConnect: CreatedConnLink?,
+  val connLinkStartedConnection: Boolean,
   val uiThemes: ThemeModeOverrides? = null,
   val membersRequireAttention: Int,
   val chatTags: List<Long>,
@@ -1887,6 +1906,8 @@ data class GroupInfo (
   override val id get() = "#$groupId"
   override val apiId get() = groupId
   override val ready get() = membership.memberActive
+  override val nextConnect get() = nextConnectPrepared
+  val nextConnectPrepared = connLinkToConnect != null && !connLinkStartedConnection
   override val chatDeleted get() = false
   override val incognito get() = membership.memberIncognito
   override fun featureEnabled(feature: ChatFeature) = when (feature) {
@@ -1939,6 +1960,8 @@ data class GroupInfo (
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now(),
       chatTs = Clock.System.now(),
+      connLinkToConnect = null,
+      connLinkStartedConnection = false,
       uiThemes = null,
       membersRequireAttention = 0,
       chatTags = emptyList(),
@@ -1989,6 +2012,17 @@ enum class MemberCriteria {
       MemberCriteria.All -> generalGetString(MR.strings.member_criteria_all)
     }
 }
+
+@Serializable
+data class ContactShortLinkData (
+  val profile: Profile,
+  val message: String?
+)
+
+@Serializable
+data class GroupShortLinkData (
+  val groupProfile: GroupProfile
+)
 
 @Serializable
 data class BusinessChatInfo (
@@ -2313,6 +2347,7 @@ class NoteFolder(
   override val apiId get() = noteFolderId
   override val chatDeleted get() = false
   override val ready get() = true
+  override val nextConnect get() = false
   override val incognito get() = false
   override fun featureEnabled(feature: ChatFeature) = feature == ChatFeature.Voice
   override val timedMessagesTTL: Int? get() = null
@@ -2344,10 +2379,11 @@ class UserContactRequest (
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.ContactRequest
-  override val id get() = "<@$contactRequestId"
+  override val id get() = contactRequestChatId(contactRequestId)
   override val apiId get() = contactRequestId
   override val chatDeleted get() = false
   override val ready get() = true
+  override val nextConnect get() = false
   override val incognito get() = false
   override fun featureEnabled(feature: ChatFeature) = false
   override val timedMessagesTTL: Int? get() = null
@@ -2368,6 +2404,8 @@ class UserContactRequest (
   }
 }
 
+fun contactRequestChatId(contactRequestId: Long): String = "<@$contactRequestId"
+
 @Serializable
 class PendingContactConnection(
   val pccConnId: Long,
@@ -2386,6 +2424,7 @@ class PendingContactConnection(
   override val apiId get() = pccConnId
   override val chatDeleted get() = false
   override val ready get() = false
+  override val nextConnect get() = false
   override val incognito get() = customUserProfileId != null
   override fun featureEnabled(feature: ChatFeature) = false
   override val timedMessagesTTL: Int? get() = null

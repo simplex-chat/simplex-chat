@@ -687,8 +687,7 @@ private suspend fun connect(rhId: Long?, link: String, close: () -> Unit, cleanu
     rhId,
     link,
     close = close,
-    cleanup = cleanup,
-    incognito = null
+    cleanup = cleanup
   ).await()
 
 private fun createInvitation(

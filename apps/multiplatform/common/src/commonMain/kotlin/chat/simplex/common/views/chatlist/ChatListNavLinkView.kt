@@ -515,7 +515,7 @@ fun ContactRequestMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactRequest, chat
     painterResource(MR.images.ic_check),
     color = MaterialTheme.colors.onBackground,
     onClick = {
-      acceptContactRequest(rhId, incognito = false, chatInfo.apiId, chatInfo, true, chatModel, onSuccess)
+      acceptContactRequest(rhId, incognito = false, chatInfo.apiId, true, chatModel, onSuccess)
       showMenu.value = false
     }
   )
@@ -524,7 +524,7 @@ fun ContactRequestMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactRequest, chat
     painterResource(MR.images.ic_theater_comedy),
     color = MaterialTheme.colors.onBackground,
     onClick = {
-      acceptContactRequest(rhId, incognito = true, chatInfo.apiId, chatInfo, true, chatModel, onSuccess)
+      acceptContactRequest(rhId, incognito = true, chatInfo.apiId, true, chatModel, onSuccess)
       showMenu.value = false
     }
   )
@@ -532,7 +532,7 @@ fun ContactRequestMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactRequest, chat
     stringResource(MR.strings.reject_contact_button),
     painterResource(MR.images.ic_close),
     onClick = {
-      rejectContactRequest(rhId, chatInfo, chatModel)
+      rejectContactRequest(rhId, chatInfo.apiId, chatModel)
       showMenu.value = false
     },
     color = Color.Red
@@ -665,19 +665,19 @@ fun contactRequestAlertDialog(rhId: Long?, contactRequest: ChatInfo.ContactReque
       Column {
         SectionItemView({
           AlertManager.shared.hideAlert()
-          acceptContactRequest(rhId, incognito = false, contactRequest.apiId, contactRequest, true, chatModel, onSucess)
+          acceptContactRequest(rhId, incognito = false, contactRequest.apiId, true, chatModel, onSucess)
         }) {
           Text(generalGetString(MR.strings.accept_contact_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         SectionItemView({
           AlertManager.shared.hideAlert()
-          acceptContactRequest(rhId, incognito = true, contactRequest.apiId, contactRequest, true, chatModel, onSucess)
+          acceptContactRequest(rhId, incognito = true, contactRequest.apiId, true, chatModel, onSucess)
         }) {
           Text(generalGetString(MR.strings.accept_contact_incognito_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         SectionItemView({
           AlertManager.shared.hideAlert()
-          rejectContactRequest(rhId, contactRequest, chatModel)
+          rejectContactRequest(rhId, contactRequest.apiId, chatModel)
         }) {
           Text(generalGetString(MR.strings.reject_contact_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
         }
@@ -687,13 +687,17 @@ fun contactRequestAlertDialog(rhId: Long?, contactRequest: ChatInfo.ContactReque
   )
 }
 
-fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRequest: ChatInfo.ContactRequest?, isCurrentUser: Boolean, chatModel: ChatModel, close: ((chat: Chat) -> Unit)? = null ) {
+fun acceptContactRequest(rhId: Long?, incognito: Boolean, contactRequestId: Long, isCurrentUser: Boolean, chatModel: ChatModel, close: ((chat: Chat) -> Unit)? = null ) {
   withBGApi {
-    val contact = chatModel.controller.apiAcceptContactRequest(rhId, incognito, apiId)
-    if (contact != null && isCurrentUser && contactRequest != null) {
+    val contact = chatModel.controller.apiAcceptContactRequest(rhId, incognito, contactRequestId)
+    if (contact != null && isCurrentUser) {
       val chat = Chat(remoteHostId = rhId, ChatInfo.Direct(contact), listOf())
       withContext(Dispatchers.Main) {
-        chatModel.chatsContext.replaceChat(rhId, contactRequest.id, chat)
+        if (contact.contactRequestId != null) { // means contact request was initially created with contact, so we don't need to replace it
+          chatModel.chatsContext.updateContact(rhId, contact)
+        } else {
+          chatModel.chatsContext.replaceChat(rhId, contactRequestChatId(contactRequestId), chat)
+        }
       }
       chatModel.setContactNetworkStatus(contact, NetworkStatus.Connected())
       close?.invoke(chat)
@@ -701,11 +705,18 @@ fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRe
   }
 }
 
-fun rejectContactRequest(rhId: Long?, contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
+fun rejectContactRequest(rhId: Long?, contactRequestId: Long, chatModel: ChatModel, dismissToChatList: Boolean = false) {
   withBGApi {
-    chatModel.controller.apiRejectContactRequest(rhId, contactRequest.apiId)
+    val contact_ = chatModel.controller.apiRejectContactRequest(rhId, contactRequestId)
     withContext(Dispatchers.Main) {
-      chatModel.chatsContext.removeChat(rhId, contactRequest.id)
+      if (contact_ != null) { // means contact request was initially created with contact, so we need to remove contact chat
+        chatModel.chatsContext.removeChat(rhId, contact_.id)
+      } else {
+        chatModel.chatsContext.removeChat(rhId, contactRequestChatId(contactRequestId))
+      }
+      if (dismissToChatList) {
+        chatModel.chatId.value = null
+      }
     }
   }
 }
