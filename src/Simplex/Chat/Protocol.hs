@@ -52,7 +52,7 @@ import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
-import Simplex.Messaging.Agent.Protocol (AConnShortLink, ConnectionMode, VersionSMPA, pqdrSMPAgentVersion)
+import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1)
@@ -541,8 +541,7 @@ data MsgContentTag
   | MCVoice_
   | MCFile_
   | MCReport_
-  | MCGroup_
-  | MCContact_
+  | MCChat_
   | MCUnknown_ Text
   deriving (Eq, Show)
 
@@ -555,8 +554,7 @@ instance StrEncoding MsgContentTag where
     MCFile_ -> "file"
     MCVoice_ -> "voice"
     MCReport_ -> "report"
-    MCGroup_ -> "group"
-    MCContact_ -> "contact"
+    MCChat_ -> "chat"
     MCUnknown_ t -> encodeUtf8 t
   strDecode = \case
     "text" -> Right MCText_
@@ -566,8 +564,7 @@ instance StrEncoding MsgContentTag where
     "voice" -> Right MCVoice_
     "file" -> Right MCFile_
     "report" -> Right MCReport_
-    "group" -> Right MCGroup_
-    "contact" -> Right MCContact_
+    "chat" -> Right MCChat_
     t -> Right . MCUnknown_ $ safeDecodeUtf8 t
   strP = strDecode <$?> A.takeTill (== ' ')
 
@@ -607,9 +604,14 @@ data MsgContent
   | MCVoice {text :: Text, duration :: Int}
   | MCFile {text :: Text}
   | MCReport {text :: Text, reason :: ReportReason}
-  | MCGroup {text :: Text, groupProfile :: GroupProfile, groupLink :: ShortLinkContact}
-  | MCContact {text :: Text, profile :: Profile, business :: Bool, connectionMode :: ConnectionMode, connLink :: AConnShortLink}
+  | MCChat {text :: Text, chatLink :: MsgChatLink}
   | MCUnknown {tag :: Text, text :: Text, json :: J.Object}
+  deriving (Eq, Show)
+
+data MsgChatLink
+  = MCLContact {connLink :: ShortLinkContact, profile :: Profile, business :: Bool}
+  | MCLInvitation {invLink :: ShortLinkInvitation, profile :: Profile}
+  | MCLGroup {connLink :: ShortLinkContact, groupProfile :: GroupProfile}
   deriving (Eq, Show)
 
 msgContentText :: MsgContent -> Text
@@ -627,8 +629,7 @@ msgContentText = \case
     if T.null text then msg else msg <> ": " <> text
     where
       msg = "report " <> safeDecodeUtf8 (strEncode reason)
-  MCGroup {text} -> text
-  MCContact {text} -> text
+  MCChat {text} -> text
   MCUnknown {text} -> text
 
 durationText :: Int -> Text
@@ -664,8 +665,7 @@ msgContentTag = \case
   MCVoice {} -> MCVoice_
   MCFile {} -> MCFile_
   MCReport {} -> MCReport_
-  MCGroup {} -> MCGroup_
-  MCContact {} -> MCContact_
+  MCChat {} -> MCChat_
   MCUnknown {tag} -> MCUnknown_ tag
 
 data ExtMsgContent = ExtMsgContent
@@ -683,6 +683,8 @@ data ExtMsgContent = ExtMsgContent
 
 data MsgMention = MsgMention {memberId :: MemberId}
   deriving (Eq, Show)
+
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "MCL") ''MsgChatLink)
 
 $(JQ.deriveJSON defaultJSON ''MsgMention)
 
@@ -793,18 +795,10 @@ instance FromJSON MsgContent where
         text <- v .: "text"
         reason <- v .: "reason"
         pure MCReport {text, reason}
-      MCGroup_ -> do
+      MCChat_ -> do
         text <- v .: "text"
-        groupProfile <- v .: "groupProfile"
-        groupLink <- v .: "groupLink"
-        pure MCGroup {text, groupProfile, groupLink}
-      MCContact_ -> do
-        text <- v .: "text"
-        profile <- v .: "profile"
-        business <- v .: "business"
-        connectionMode <- v .: "connMode"
-        connLink <- v .: "connLink"
-        pure MCContact {text, profile, business, connectionMode, connLink}
+        chatLink <- v .: "chatLink"
+        pure MCChat {text, chatLink}
       MCUnknown_ tag -> do
         text <- fromMaybe unknownMsgType <$> v .:? "text"
         pure MCUnknown {tag, text, json = v}
@@ -839,8 +833,7 @@ instance ToJSON MsgContent where
     MCVoice {text, duration} -> J.object ["type" .= MCVoice_, "text" .= text, "duration" .= duration]
     MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
     MCReport {text, reason} -> J.object ["type" .= MCReport_, "text" .= text, "reason" .= reason]
-    MCGroup {text, groupProfile, groupLink} -> J.object ["type" .= MCGroup_, "text" .= text, "groupProfile" .= groupProfile, "groupLink" .= groupLink]
-    MCContact {text, profile, business, connectionMode, connLink} -> J.object ["type" .= MCContact_, "text" .= text, "profile" .= profile, "business" .= business, "connMode" .= connectionMode, "connLink" .= connLink]
+    MCChat {text, chatLink} -> J.object ["type" .= MCChat_, "text" .= text, "chatLink" .= chatLink]
   toEncoding = \case
     MCUnknown {json} -> JE.value $ J.Object json
     MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
@@ -850,8 +843,7 @@ instance ToJSON MsgContent where
     MCVoice {text, duration} -> J.pairs $ "type" .= MCVoice_ <> "text" .= text <> "duration" .= duration
     MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
     MCReport {text, reason} -> J.pairs $ "type" .= MCReport_ <> "text" .= text <> "reason" .= reason
-    MCGroup {text, groupProfile, groupLink} -> J.pairs $ "type" .= MCGroup_ <> "text" .= text <> "groupProfile" .= groupProfile <> "groupLink" .= groupLink
-    MCContact {text, profile, business, connectionMode, connLink} -> J.pairs $ "type" .= MCContact_ <> "text" .= text <> "profile" .= profile <> "business" .= business <> "connMode" .= connectionMode <> "connLink" .= connLink
+    MCChat {text, chatLink} -> J.pairs $ "type" .= MCChat_ <> "text" .= text <> "chatLink" .= chatLink
 
 instance ToField MsgContent where
   toField = toField . encodeJSON

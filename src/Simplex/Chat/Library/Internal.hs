@@ -316,9 +316,7 @@ quoteContent mc qmc ciFile_
       MCVideo {} -> True
       MCVoice {} -> False
       MCReport {} -> False
-      -- possibly, we should remove images and descriptions/messages from profiles instead of replacing with text
-      MCGroup {} -> True
-      MCContact {} -> True
+      MCChat {} -> True
       MCUnknown {} -> True
     qText = msgContentText qmc
     getFileName :: CIFile d -> String

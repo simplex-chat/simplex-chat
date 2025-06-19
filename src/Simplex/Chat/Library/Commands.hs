@@ -849,8 +849,7 @@ processChatCommand' vr = \case
                 MCVoice {text} -> text /= ""
                 MCFile t -> t /= ""
                 MCReport {} -> True
-                MCGroup {} -> True
-                MCContact {} -> True
+                MCChat {} -> True
                 MCUnknown {} -> True
   -- TODO [knocking] forward from / to scope
   APIForwardChatItems toChat@(ChatRef toCType toChatId toScope) fromChat@(ChatRef fromCType fromChatId _fromScope) itemIds itemTTL -> withUser $ \user -> case toCType of
@@ -1741,8 +1740,10 @@ processChatCommand' vr = \case
     ct <- withStore $ \db -> createPreparedContact db user profile accLink
     let cMode' = connMode cMode
         createItem content = createInternalChatItem user (CDDirectRcv ct) content Nothing
-    forM_ shortLink $ \sl ->
-      createItem $ CIRcvMsgContent $ MCContact (safeDecodeUtf8 $ strEncode sl) profile business cMode' (ACSL cMode sl)
+        msgChatLink = \case
+          sl@CSLContact {} -> MCLContact sl profile business
+          sl@CSLInvitation {} -> MCLInvitation sl profile
+    mapM_ (\sl -> createItem $ CIRcvMsgContent $ MCChat (safeDecodeUtf8 $ strEncode sl) $ msgChatLink sl) shortLink
     createItem $ case cReq of
       CRInvitationUri _ (E2ERatchetParamsUri vr _ _ pq) ->
         let pqEnc = maxVersion vr > pqRatchetE2EEncryptVersion && isJust pq
@@ -1757,8 +1758,7 @@ processChatCommand' vr = \case
     -- TODO use received item without member
     let cd = CDGroupRcv gInfo Nothing $ membership gInfo
         createItem content = createInternalChatItem user cd content Nothing
-    forM_ shortLink $ \sl ->
-      createItem $ CIRcvMsgContent $ MCGroup (safeDecodeUtf8 $ strEncode sl) gp sl
+    mapM_ (\sl -> createItem $ CIRcvMsgContent $ MCChat (safeDecodeUtf8 $ strEncode sl) $ MCLGroup sl gp) shortLink
     createGroupFeatureItems user cd CIRcvGroupFeature gInfo
     mapM_ (createItem . CIRcvMsgContent . MCText) description
     pure $ CRNewPreparedGroup user gInfo
