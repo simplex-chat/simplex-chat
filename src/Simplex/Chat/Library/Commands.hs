@@ -1745,8 +1745,8 @@ processChatCommand' vr = \case
     gInfo <- withStore $ \db -> createPreparedGroup db vr user groupProfile accLink
     pure $ CRNewPreparedGroup user gInfo
   APIChangePreparedContactUser contactId newUserId -> withUser $ \user -> do
-    ct@Contact {connLinkToConnect} <- withFastStore $ \db -> getContact db vr user contactId
-    when (isNothing connLinkToConnect) $ throwCmdError "contact doesn't have link to connect"
+    ct@Contact {preparedContact} <- withFastStore $ \db -> getContact db vr user contactId
+    when (isNothing preparedContact) $ throwCmdError "contact doesn't have link to connect"
     when (isJust $ contactConn ct) $ throwCmdError "contact already has connection"
     newUser <- privateGetUser newUserId
     ct' <- withFastStore $ \db -> updatePreparedContactUser db vr user ct newUser
@@ -1760,10 +1760,10 @@ processChatCommand' vr = \case
     gInfo' <- withFastStore $ \db -> updatePreparedGroupUser db vr user gInfo hostMember newUser
     pure $ CRGroupUserChanged user gInfo newUser gInfo'
   APIConnectPreparedContact contactId incognito msgContent_ -> withUser $ \user -> do
-    Contact {connLinkToConnect} <- withFastStore $ \db -> getContact db vr user contactId
-    case connLinkToConnect of
+    Contact {preparedContact} <- withFastStore $ \db -> getContact db vr user contactId
+    case preparedContact of
       Nothing -> throwCmdError "contact doesn't have link to connect"
-      Just (ACCL SCMInvitation ccLink) ->
+      Just PreparedContact {connLinkToConnect = ACCL SCMInvitation ccLink} ->
         connectViaInvitation user incognito ccLink (Just contactId) >>= \case
           CRSentConfirmation {customUserProfile} -> do
             -- get updated contact with connection
@@ -1775,7 +1775,7 @@ processChatCommand' vr = \case
               toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct') ci]
             pure $ CRStartedConnectionToContact user ct' customUserProfile
           cr -> pure cr
-      Just (ACCL SCMContact ccLink) ->
+      Just PreparedContact {connLinkToConnect = ACCL SCMContact ccLink} ->
         connectViaContact user incognito ccLink msgContent_ (Just $ ACCGContact contactId) >>= \case
           CRSentInvitation {customUserProfile} -> do
             -- get updated contact with connection

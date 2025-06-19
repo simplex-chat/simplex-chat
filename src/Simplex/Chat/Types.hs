@@ -188,7 +188,7 @@ data Contact = Contact
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
-    connLinkToConnect :: Maybe ACreatedConnLink,
+    preparedContact :: Maybe PreparedContact,
     contactRequestId :: Maybe Int64,
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
@@ -198,6 +198,9 @@ data Contact = Contact
     chatDeleted :: Bool,
     customData :: Maybe CustomData
   }
+  deriving (Eq, Show)
+
+data PreparedContact = PreparedContact {connLinkToConnect :: ACreatedConnLink, uiConnLinkType :: ConnectionMode}
   deriving (Eq, Show)
 
 newtype CustomData = CustomData J.Object
@@ -1977,6 +1980,8 @@ $(JQ.deriveJSON defaultJSON ''RcvFileTransfer)
 $(JQ.deriveJSON defaultJSON ''XFTPSndFile)
 
 $(JQ.deriveJSON defaultJSON ''FileTransferMeta)
+
+$(JQ.deriveJSON defaultJSON ''PreparedContact)
 
 $(JQ.deriveJSON defaultJSON ''LocalFileMeta)
 

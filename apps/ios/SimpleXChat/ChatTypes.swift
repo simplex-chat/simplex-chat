@@ -1718,7 +1718,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     var createdAt: Date
     var updatedAt: Date
     var chatTs: Date?
-    public var connLinkToConnect: CreatedConnLink?
+    public var preparedContact: PreparedContact?
     public var contactRequestId: Int64?
     var contactGroupMemberId: Int64?
     var contactGrpInvSent: Bool
@@ -1733,9 +1733,9 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var sndReady: Bool { get { ready || activeConn?.connStatus == .sndReady } }
     public var active: Bool { get { contactStatus == .active } }
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
-    public var nextConnectPrepared: Bool { get { connLinkToConnect != nil && activeConn == nil } }
+    public var nextConnectPrepared: Bool { get { preparedContact != nil && activeConn == nil } }
     public var nextAcceptContactRequest: Bool { get { contactRequestId != nil && activeConn == nil } }
-    public var sendMsgToConnect: Bool { get { nextSendGrpInv || nextConnectPrepared } }
+    public var sendMsgToConnect: Bool { nextSendGrpInv || preparedContact != nil }
     public var displayName: String { localAlias == "" ? profile.displayName : localAlias }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
@@ -1791,6 +1791,16 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
         chatTags: [],
         chatDeleted: false
     )
+}
+
+public struct PreparedContact: Decodable, Hashable {
+    public var connLinkToConnect: CreatedConnLink
+    public var uiConnLinkType: ConnectionMode
+}
+
+public enum ConnectionMode: String, Decodable, Hashable {
+    case inv
+    case con
 }
 
 public enum ContactStatus: String, Decodable, Hashable {
