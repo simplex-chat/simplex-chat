@@ -661,7 +661,8 @@ deriving newtype instance FromField ImageData
 
 data ContactShortLinkData = ContactShortLinkData
   { profile :: Profile,
-    message :: Maybe Text
+    message :: Maybe Text,
+    business :: Bool
   }
   deriving (Show)
 

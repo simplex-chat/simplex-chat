@@ -572,7 +572,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               toView $ CEvtContactConnected user ct' (fmap fromLocalProfile incognitoProfile)
               when (directOrUsed ct') $ do
                 createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ E2EInfo pqEnc) Nothing
-                createFeatureEnabledItems ct'
+                createFeatureEnabledItems user ct'
               when (contactConnInitiated conn') $ do
                 let Connection {groupLinkId} = conn'
                     doProbeContacts = isJust groupLinkId
@@ -2249,12 +2249,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             (gInfo', m'', scopeInfo) <- mkGroupChatScope gInfo m'
             let ciContent = CIRcvGroupEvent $ RGEMemberProfileUpdated (fromLocalProfile p) p'
             createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m'') ciContent itemTs_
-
-    createFeatureEnabledItems :: Contact -> CM ()
-    createFeatureEnabledItems ct@Contact {mergedPreferences} =
-      forM_ allChatFeatures $ \(ACF f) -> do
-        let state = featureState $ getContactUserPreference f mergedPreferences
-        createInternalChatItem user (CDDirectRcv ct) (uncurry (CIRcvChatFeature $ chatFeature f) state) Nothing
 
     xInfoProbe :: ContactOrMember -> Probe -> CM ()
     xInfoProbe cgm2 probe = do

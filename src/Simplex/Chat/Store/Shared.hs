@@ -38,7 +38,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), AConnShortLink (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionMode (..), CreatedConnLink (..), UserId, connMode)
+import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), AConnShortLink (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink (..), UserId, connMode)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -397,12 +397,20 @@ createContact_ db userId Profile {displayName, fullName, image, contactLink, pre
     contactId <- insertedRowId db
     pure $ Right (ldn, contactId, profileId)
 
-type ConnLinkToConnectRow = (Maybe AConnectionRequestUri, Maybe AConnShortLink)
+type AConnLinkToConnectRow = (Maybe AConnectionRequestUri, Maybe AConnShortLink)
 
-connLinkToConnectRow :: Maybe ACreatedConnLink -> ConnLinkToConnectRow
+connLinkToConnectRow :: Maybe ACreatedConnLink -> AConnLinkToConnectRow
 connLinkToConnectRow = \case
   Just (ACCL m (CCLink fullLink shortLink)) -> (Just (ACR m fullLink), ACSL m <$> shortLink)
   Nothing -> (Nothing, Nothing)
+
+type ConnLinkToConnectRow m = (Maybe (ConnectionRequestUri m), Maybe (ConnShortLink m))
+
+connLinkToConnectRow' :: Maybe (CreatedConnLink m) -> ConnLinkToConnectRow m
+connLinkToConnectRow' = \case
+  Just (CCLink fullLink shortLink) -> (Just fullLink, shortLink)
+  Nothing -> (Nothing, Nothing)
+{-# INLINE connLinkToConnectRow' #-}
 
 deleteUnusedIncognitoProfileById_ :: DB.Connection -> User -> ProfileId -> IO ()
 deleteUnusedIncognitoProfileById_ db User {userId} profileId =

@@ -316,6 +316,9 @@ quoteContent mc qmc ciFile_
       MCVideo {} -> True
       MCVoice {} -> False
       MCReport {} -> False
+      -- possibly, we should remove images and descriptions/messages from profiles instead of replacing with text
+      MCGroup {} -> True
+      MCContact {} -> True
       MCUnknown {} -> True
     qText = msgContentText qmc
     getFileName :: CIFile d -> String
@@ -2274,6 +2277,12 @@ createSndFeatureItems user ct ct' =
       CUPUser {preference} -> preference
 
 type FeatureContent a d = ChatFeature -> a -> Maybe Int -> CIContent d
+
+createFeatureEnabledItems :: User -> Contact -> CM ()
+createFeatureEnabledItems user ct@Contact {mergedPreferences} =
+  forM_ allChatFeatures $ \(ACF f) -> do
+    let state = featureState $ getContactUserPreference f mergedPreferences
+    createInternalChatItem user (CDDirectRcv ct) (uncurry (CIRcvChatFeature $ chatFeature f) state) Nothing
 
 createFeatureItems ::
   MsgDirectionI d =>

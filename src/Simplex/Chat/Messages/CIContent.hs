@@ -161,8 +161,6 @@ data CIContent (d :: MsgDirection) where
   CISndModerated :: CIContent 'MDSnd
   CIRcvModerated :: CIContent 'MDRcv
   CIRcvBlocked :: CIContent 'MDRcv
-  CIRcvContactInfo :: Profile -> CIContent 'MDRcv
-  CIRcvGroupInfo :: GroupProfile -> CIContent 'MDRcv
   CIRcvDirectSimpleE2E :: CIContent 'MDRcv
   CISndDirectE2EEInfo :: E2EInfo -> CIContent 'MDSnd
   CIRcvDirectE2EEInfo :: E2EInfo -> CIContent 'MDRcv
@@ -234,8 +232,6 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvGroupFeatureRejected _ -> True
     CIRcvModerated -> True
     CIRcvBlocked -> False
-    CIRcvContactInfo _ -> False
-    CIRcvGroupInfo _ -> False
     CIRcvDirectSimpleE2E -> False
     CIRcvDirectE2EEInfo _ -> False
     CIRcvGroupE2EEInfo _ -> False
@@ -294,8 +290,6 @@ ciContentToText = \case
   CISndModerated -> ciModeratedText
   CIRcvModerated -> ciModeratedText
   CIRcvBlocked -> "blocked"
-  CIRcvContactInfo Profile {displayName} -> "Contact " <> displayName
-  CIRcvGroupInfo GroupProfile {displayName} -> "Group " <> displayName
   CIRcvDirectSimpleE2E -> simpleE2EText
   CISndDirectE2EEInfo e2eeInfo -> directE2EInfoToText e2eeInfo
   CIRcvDirectE2EEInfo e2eeInfo -> directE2EInfoToText e2eeInfo
@@ -473,8 +467,6 @@ data JSONCIContent
   | JCISndModerated
   | JCIRcvModerated
   | JCIRcvBlocked
-  | JCIRcvContactInfo {profile :: Profile}
-  | JCIRcvGroupInfo {groupProfile :: GroupProfile}
   | JCIRcvDirectSimpleE2E
   | JCISndDirectE2EEInfo {e2eeInfo :: E2EInfo}
   | JCIRcvDirectE2EEInfo {e2eeInfo :: E2EInfo}
@@ -510,8 +502,6 @@ jsonCIContent = \case
   CISndModerated -> JCISndModerated
   CIRcvModerated -> JCIRcvModerated
   CIRcvBlocked -> JCIRcvBlocked
-  CIRcvContactInfo profile -> JCIRcvContactInfo {profile}
-  CIRcvGroupInfo groupProfile -> JCIRcvGroupInfo {groupProfile}
   CIRcvDirectSimpleE2E -> JCIRcvDirectSimpleE2E
   CISndDirectE2EEInfo e2eeInfo -> JCISndDirectE2EEInfo e2eeInfo
   CIRcvDirectE2EEInfo e2eeInfo -> JCIRcvDirectE2EEInfo e2eeInfo
@@ -547,8 +537,6 @@ aciContentJSON = \case
   JCISndModerated -> ACIContent SMDSnd CISndModerated
   JCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
   JCIRcvBlocked -> ACIContent SMDRcv CIRcvBlocked
-  JCIRcvContactInfo {profile} -> ACIContent SMDRcv $ CIRcvContactInfo profile
-  JCIRcvGroupInfo {groupProfile} -> ACIContent SMDRcv $ CIRcvGroupInfo groupProfile
   JCIRcvDirectSimpleE2E -> ACIContent SMDRcv CIRcvDirectSimpleE2E
   JCISndDirectE2EEInfo {e2eeInfo} -> ACIContent SMDSnd $ CISndDirectE2EEInfo e2eeInfo
   JCIRcvDirectE2EEInfo {e2eeInfo} -> ACIContent SMDRcv $ CIRcvDirectE2EEInfo e2eeInfo
@@ -585,8 +573,6 @@ data DBJSONCIContent
   | DBJCISndModerated
   | DBJCIRcvModerated
   | DBJCIRcvBlocked
-  | DBJCIRcvContactInfo {profile :: Profile}
-  | DBJCIRcvGroupInfo {groupProfile :: GroupProfile}
   | DBJCIRcvDirectSimpleE2E
   | DBJCISndDirectE2EEInfo {e2eeInfo :: E2EInfo}
   | DBJCIRcvDirectE2EEInfo {e2eeInfo :: E2EInfo}
@@ -622,8 +608,6 @@ dbJsonCIContent = \case
   CISndModerated -> DBJCISndModerated
   CIRcvModerated -> DBJCIRcvModerated
   CIRcvBlocked -> DBJCIRcvBlocked
-  CIRcvContactInfo profile -> DBJCIRcvContactInfo {profile}
-  CIRcvGroupInfo groupProfile -> DBJCIRcvGroupInfo {groupProfile}
   CIRcvDirectSimpleE2E -> DBJCIRcvDirectSimpleE2E
   CISndDirectE2EEInfo e2eeInfo -> DBJCISndDirectE2EEInfo e2eeInfo
   CIRcvDirectE2EEInfo e2eeInfo -> DBJCIRcvDirectE2EEInfo e2eeInfo
@@ -659,8 +643,6 @@ aciContentDBJSON = \case
   DBJCISndModerated -> ACIContent SMDSnd CISndModerated
   DBJCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
   DBJCIRcvBlocked -> ACIContent SMDRcv CIRcvBlocked
-  DBJCIRcvContactInfo {profile} -> ACIContent SMDRcv $ CIRcvContactInfo profile
-  DBJCIRcvGroupInfo {groupProfile} -> ACIContent SMDRcv $ CIRcvGroupInfo groupProfile
   DBJCIRcvDirectSimpleE2E -> ACIContent SMDRcv CIRcvDirectSimpleE2E
   DBJCISndDirectE2EEInfo e2eeInfo -> ACIContent SMDSnd $ CISndDirectE2EEInfo e2eeInfo
   DBJCIRcvDirectE2EEInfo e2eeInfo -> ACIContent SMDRcv $ CIRcvDirectE2EEInfo e2eeInfo
@@ -769,8 +751,6 @@ toCIContentTag ciContent = case ciContent of
   CISndModerated -> "sndModerated"
   CIRcvModerated -> "rcvModerated"
   CIRcvBlocked -> "rcvBlocked"
-  CIRcvContactInfo _ -> "rcvContactInfo"
-  CIRcvGroupInfo _ -> "rcvGroupInfo"
   CIRcvDirectSimpleE2E -> "rcvDirectSimpleE2E"
   CISndDirectE2EEInfo _ -> "sndDirectE2EEInfo"
   CIRcvDirectE2EEInfo _ -> "rcvDirectE2EEInfo"
