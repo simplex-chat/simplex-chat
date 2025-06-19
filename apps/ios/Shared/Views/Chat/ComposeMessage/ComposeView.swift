@@ -411,7 +411,6 @@ struct ComposeView: View {
 
                 if chat.chatInfo.nextConnect {
                     nextConnectButton()
-//                        .padding(.bottom, 16)
                         .padding(.horizontal, 8)
                 }
             }
