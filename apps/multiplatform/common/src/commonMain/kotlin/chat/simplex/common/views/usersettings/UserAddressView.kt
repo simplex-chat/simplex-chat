@@ -92,6 +92,17 @@ fun UserAddressView(
     }
   }
 
+  fun showAddShortLinkAlert() {
+    AlertManager.shared.showAlertDialog(
+      title = generalGetString(MR.strings.share_profile_via_link),
+      text = generalGetString(MR.strings.share_profile_via_link_alert_text),
+      confirmText = generalGetString(MR.strings.share_profile_via_link_alert_confirm),
+      onConfirm = {
+        addShortLink()
+      }
+    )
+  }
+
   LaunchedEffect(autoCreateAddress) {
     if (chatModel.userAddress.value == null && autoCreateAddress) {
       createAddress()
@@ -106,7 +117,7 @@ fun UserAddressView(
       userAddress = userAddress.value,
       shareViaProfile,
       createAddress = { createAddress() },
-      addShortLink = { addShortLink() },
+      showAddShortLinkAlert = { showAddShortLinkAlert() },
       learnMore = {
         ModalManager.start.showModal {
           UserAddressLearnMore()
@@ -181,7 +192,7 @@ private fun UserAddressLayout(
   userAddress: UserContactLinkRec?,
   shareViaProfile: MutableState<Boolean>,
   createAddress: () -> Unit,
-  addShortLink: () -> Unit,
+  showAddShortLinkAlert: () -> Unit,
   learnMore: () -> Unit,
   share: (String) -> Unit,
   sendEmail: (UserContactLinkRec) -> Unit,
@@ -225,7 +236,9 @@ private fun UserAddressLayout(
           BusinessAddressToggle(autoAcceptState) { saveAas(autoAcceptState.value, autoAcceptStateSaved) }
           AddressSettingsButton(user, userAddress, shareViaProfile, setProfileAddress, saveAas)
           if (userAddress.connLinkContact.connShortLink == null) {
-            AddShortLinkButton(addShortLink)
+            AddShortLinkButton(text = stringResource(MR.strings.add_short_link), showAddShortLinkAlert)
+          } else if (!userAddress.shortLinkDataSet) {
+            AddShortLinkButton(text = stringResource(MR.strings.share_profile_via_link), showAddShortLinkAlert)
           }
 
           if (autoAcceptState.value.business) {
@@ -265,10 +278,10 @@ private fun CreateAddressButton(onClick: () -> Unit) {
 }
 
 @Composable
-private fun AddShortLinkButton(onClick: () -> Unit) {
+private fun AddShortLinkButton(text: String, onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_add),
-    stringResource(MR.strings.add_short_link),
+    text,
     onClick,
     iconColor = MaterialTheme.colors.primary,
     textColor = MaterialTheme.colors.primary,
@@ -536,7 +549,7 @@ private fun AutoAcceptSection(
   saveAas: (AutoAcceptState, MutableState<AutoAcceptState>) -> Unit
 ) {
   SectionView(stringResource(MR.strings.auto_accept_contact).uppercase()) {
-    if (!autoAcceptState.value.business) {
+    if (!chatModel.addressShortLinkDataSet && !autoAcceptState.value.business) {
       AcceptIncognitoToggle(autoAcceptState)
     }
     WelcomeMessageEditor(autoAcceptState)
@@ -586,7 +599,7 @@ fun PreviewUserAddressLayoutNoAddress() {
       user = User.sampleData,
       userAddress = null,
       createAddress = {},
-      addShortLink = {},
+      showAddShortLinkAlert = {},
       share = { _ -> },
       deleteAddress = {},
       saveAas = { _, _ -> },
@@ -620,7 +633,7 @@ fun PreviewUserAddressLayoutAddressCreated() {
       user = User.sampleData,
       userAddress = UserContactLinkRec(CreatedConnLink("https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D", null), shortLinkDataSet = false),
       createAddress = {},
-      addShortLink = {},
+      showAddShortLinkAlert = {},
       share = { _ -> },
       deleteAddress = {},
       saveAas = { _, _ -> },

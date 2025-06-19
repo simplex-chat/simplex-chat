@@ -1058,6 +1058,10 @@
   <string name="business_address">Business address</string>
   <string name="add_your_team_members_to_conversations">Add your team members to the conversations.</string>
   <string name="add_short_link">Add short link</string>
+  <string name="share_profile_via_link">Share profile via link</string>
+  <string name="share_profile_via_link_alert_text">Profile will be shared via the address short link. This change to the address cannot be reversed, other than fully deleting it. Do you wish to update the address?</string>
+  <string name="share_profile_via_link_alert_confirm">Update (and share profile)</string>
+  <string name="share_group_profile_via_link">Share group profile via link</string>
 
   <!-- CreateSimpleXAddress.kt -->
   <string name="continue_to_next_step">Continue</string>

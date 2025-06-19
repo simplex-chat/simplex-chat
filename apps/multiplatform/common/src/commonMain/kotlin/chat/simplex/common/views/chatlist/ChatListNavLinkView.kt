@@ -519,15 +519,17 @@ fun ContactRequestMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactRequest, chat
       showMenu.value = false
     }
   )
-  ItemAction(
-    stringResource(MR.strings.accept_contact_incognito_button),
-    painterResource(MR.images.ic_theater_comedy),
-    color = MaterialTheme.colors.onBackground,
-    onClick = {
-      acceptContactRequest(rhId, incognito = true, chatInfo.apiId, true, chatModel, onSuccess)
-      showMenu.value = false
-    }
-  )
+  if (!chatModel.addressShortLinkDataSet) {
+    ItemAction(
+      stringResource(MR.strings.accept_contact_incognito_button),
+      painterResource(MR.images.ic_theater_comedy),
+      color = MaterialTheme.colors.onBackground,
+      onClick = {
+        acceptContactRequest(rhId, incognito = true, chatInfo.apiId, true, chatModel, onSuccess)
+        showMenu.value = false
+      }
+    )
+  }
   ItemAction(
     stringResource(MR.strings.reject_contact_button),
     painterResource(MR.images.ic_close),
@@ -669,11 +671,13 @@ fun contactRequestAlertDialog(rhId: Long?, contactRequest: ChatInfo.ContactReque
         }) {
           Text(generalGetString(MR.strings.accept_contact_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-          acceptContactRequest(rhId, incognito = true, contactRequest.apiId, true, chatModel, onSucess)
-        }) {
-          Text(generalGetString(MR.strings.accept_contact_incognito_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        if (!chatModel.addressShortLinkDataSet) {
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            acceptContactRequest(rhId, incognito = true, contactRequest.apiId, true, chatModel, onSucess)
+          }) {
+            Text(generalGetString(MR.strings.accept_contact_incognito_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+          }
         }
         SectionItemView({
           AlertManager.shared.hideAlert()

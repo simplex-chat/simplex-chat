@@ -196,7 +196,9 @@ fun GroupLinkLayout(
           }
         }
         if (groupLink.connLinkContact.connShortLink == null) {
-          AddShortLinkButton(addShortLink)
+          AddShortLinkButton(text = stringResource(MR.strings.add_short_link), addShortLink)
+        } else if (!groupLink.shortLinkDataSet) {
+          AddShortLinkButton(text = stringResource(MR.strings.share_group_profile_via_link), addShortLink)
         }
       }
     }
@@ -205,10 +207,10 @@ fun GroupLinkLayout(
 }
 
 @Composable
-private fun AddShortLinkButton(onClick: () -> Unit) {
+private fun AddShortLinkButton(text: String, onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_add),
-    stringResource(MR.strings.add_short_link),
+    text,
     onClick,
     iconColor = MaterialTheme.colors.primary,
     textColor = MaterialTheme.colors.primary,
