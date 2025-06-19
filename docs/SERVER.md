@@ -59,7 +59,7 @@ To create SMP server as a systemd service, you'll need:
 - Your server domain, with A and AAAA records specifying server IPv4 and IPv6 addresses (`smp1.example.com`)
 - A basic Linux knowledge.
 
-*Please note*: while you can run an SMP server without a domain name, in the near future client applications will start using server domain name in the invitation links (instead of `simplex.chat` domain they use now). In case a server does not have domain name and server pages (see below), the clients will be generaing the links with `simplex:` scheme that cannot be opened in the browsers.
+*Please note*: while you can run an SMP server without a domain name, in the near future client applications will start using server domain name in the invitation links (instead of `simplex.chat` domain they use now). In case a server does not have domain name and server pages (see below), the clients will be generating the links with `simplex:` scheme that cannot be opened in the browsers.
 
 1. Install server with [Installation script](https://github.com/simplex-chat/simplexmq#using-installation-script).
 
@@ -440,7 +440,7 @@ This configuration provides quick and easy way to setup your SMP server: Caddy w
 
 3. In the same directory, create `.env` file with the following content:
 
-  You can also grab it from here - [docker-compose-smp-complete.env](https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-smp-complete.env). Don't forget to rename it to `.env`.
+  You can also grab it from here - [docker-compose-smp.env](https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-smp.env). Don't forget to rename it to `.env`.
 
   Change variables according to your preferences.
 
