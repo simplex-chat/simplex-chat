@@ -556,8 +556,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               -- TODO check member ID
               -- TODO update member profile
               pure ()
-            XInfo profile ->
-              void $ processContactProfileUpdate ct profile False
+            XInfo profile -> do
+              let prepared = isJust $ preparedContact ct
+              void $ processContactProfileUpdate ct profile prepared
             XOk -> pure ()
             _ -> messageError "INFO for existing contact must have x.grp.mem.info, x.info or x.ok"
         CON pqEnc ->
@@ -570,9 +571,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
               lift $ setContactNetworkStatus ct' NSConnected
               toView $ CEvtContactConnected user ct' (fmap fromLocalProfile incognitoProfile)
-              when (directOrUsed ct') $ do
-                createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ E2EInfo pqEnc) Nothing
-                createFeatureEnabledItems ct'
+              let createE2EItem = createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ E2EInfo $ Just pqEnc) Nothing
+              when (directOrUsed ct') $ case preparedContact ct' of
+                Nothing -> do
+                  createE2EItem
+                  createFeatureEnabledItems user ct'
+                Just PreparedContact {connLinkToConnect = cl} ->
+                  unless (Just pqEnc == connLinkPQEncryption cl) createE2EItem
               when (contactConnInitiated conn') $ do
                 let Connection {groupLinkId} = conn'
                     doProbeContacts = isJust groupLinkId
@@ -799,7 +804,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             toView $ CEvtUserJoinedGroup user gInfo' m'
             (gInfo'', m'', scopeInfo) <- mkGroupChatScope gInfo' m'
             let cd = CDGroupRcv gInfo'' scopeInfo m''
-            createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
+            createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
             createGroupFeatureItems user cd CIRcvGroupFeature gInfo''
             memberConnectedChatItem gInfo'' scopeInfo m''
             unless (memberPending membership) $ maybeCreateGroupDescrLocal gInfo'' m''
@@ -2181,7 +2186,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             -- create item in both scopes
             let gInfo' = gInfo {membership = membership'}
                 cd = CDGroupRcv gInfo' Nothing m
-            createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
+            createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
             createGroupFeatureItems user cd CIRcvGroupFeature gInfo'
             maybeCreateGroupDescrLocal gInfo' m
             createInternalChatItem user cd (CIRcvGroupEvent RGEUserAccepted) Nothing
@@ -2249,12 +2254,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             (gInfo', m'', scopeInfo) <- mkGroupChatScope gInfo m'
             let ciContent = CIRcvGroupEvent $ RGEMemberProfileUpdated (fromLocalProfile p) p'
             createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m'') ciContent itemTs_
-
-    createFeatureEnabledItems :: Contact -> CM ()
-    createFeatureEnabledItems ct@Contact {mergedPreferences} =
-      forM_ allChatFeatures $ \(ACF f) -> do
-        let state = featureState $ getContactUserPreference f mergedPreferences
-        createInternalChatItem user (CDDirectRcv ct) (uncurry (CIRcvChatFeature $ chatFeature f) state) Nothing
 
     xInfoProbe :: ContactOrMember -> Probe -> CM ()
     xInfoProbe cgm2 probe = do

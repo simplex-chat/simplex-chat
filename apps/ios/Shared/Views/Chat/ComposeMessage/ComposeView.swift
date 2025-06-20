@@ -402,7 +402,7 @@ struct ComposeView: View {
             case (true, .voicePreview): EmptyView() // ? we may allow playback when editing is allowed
             default: previewView()
             }
-            HStack (alignment: .bottom) {
+            HStack (alignment: .center) {
                 if !chat.chatInfo.nextConnect {
                     attachmentButton()
                 }
@@ -411,7 +411,6 @@ struct ComposeView: View {
 
                 if chat.chatInfo.nextConnect {
                     nextConnectButton()
-                        .padding(.bottom, 16)
                         .padding(.horizontal, 8)
                 }
             }
@@ -634,7 +633,6 @@ struct ComposeView: View {
         }
             .disabled(composeState.attachmentDisabled || !chat.chatInfo.sendMsgEnabled)
             .frame(width: 25, height: 25)
-            .padding(.bottom, 16)
             .tint(theme.colors.primary)
         if im.secondaryIMFilter == nil,
            case let .group(g, _) = chat.chatInfo,
@@ -1085,6 +1083,9 @@ struct ComposeView: View {
                 return .file(msgText)
             case .report(_, let reason):
                 return .report(text: msgText, reason: reason)
+            // TODO [short links] update chat link
+            case let .chat(_, chatLink):
+                return .chat(text: msgText, chatLink: chatLink)
             case .unknown(let type, _):
                 return .unknown(type: type, text: msgText)
             }

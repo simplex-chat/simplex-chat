@@ -104,7 +104,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (ACreatedConnLink, ConnId, CreatedConnLink (..), InvitationId, UserId)
+import Simplex.Messaging.Agent.Protocol (ACreatedConnLink (..), ConnId, CreatedConnLink (..), InvitationId, UserId, connMode)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -263,7 +263,7 @@ createIncognitoProfile db User {userId} p = do
   createIncognitoProfile_ db userId createdAt p
 
 createPreparedContact :: DB.Connection -> User -> Profile -> ACreatedConnLink -> ExceptT StoreError IO Contact
-createPreparedContact db user@User {userId} p@Profile {preferences} connLinkToConnect = do
+createPreparedContact db user@User {userId} p@Profile {preferences} connLinkToConnect@(ACCL m _) = do
   currentTs <- liftIO getCurrentTime
   (localDisplayName, contactId, profileId) <- createContact_ db userId p (Just connLinkToConnect) "" Nothing currentTs
   let profile = toLocalProfile profileId p ""
@@ -284,7 +284,7 @@ createPreparedContact db user@User {userId} p@Profile {preferences} connLinkToCo
         createdAt = currentTs,
         updatedAt = currentTs,
         chatTs = Just currentTs,
-        connLinkToConnect = Just connLinkToConnect,
+        preparedContact = Just $ PreparedContact connLinkToConnect $ connMode m,
         contactRequestId = Nothing,
         contactGroupMemberId = Nothing,
         contactGrpInvSent = False,
@@ -347,7 +347,7 @@ createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p
         createdAt = currentTs,
         updatedAt = currentTs,
         chatTs = Just currentTs,
-        connLinkToConnect = Nothing,
+        preparedContact = Nothing,
         contactRequestId = Nothing,
         contactGroupMemberId = Nothing,
         contactGrpInvSent = False,
@@ -931,7 +931,7 @@ createContactFromRequest db user@User {userId, profile = LocalProfile {preferenc
             createdAt = currentTs,
             updatedAt = currentTs,
             chatTs = Just currentTs,
-            connLinkToConnect = Nothing,
+            preparedContact = Nothing,
             contactRequestId = Nothing,
             contactGroupMemberId = Nothing,
             contactGrpInvSent = False,

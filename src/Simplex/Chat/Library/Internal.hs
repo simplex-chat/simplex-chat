@@ -316,6 +316,7 @@ quoteContent mc qmc ciFile_
       MCVideo {} -> True
       MCVoice {} -> False
       MCReport {} -> False
+      MCChat {} -> True
       MCUnknown {} -> True
     qText = msgContentText qmc
     getFileName :: CIFile d -> String
@@ -1019,7 +1020,7 @@ acceptBusinessJoinRequestAsync
     connIds <- agentAcceptContactAsync user True cReqInvId msg subMode PQSupportOff chatV
     withStore' $ \db -> createJoiningMemberConnection db user uclId connIds chatV cReqChatVRange groupMemberId subMode
     let cd = CDGroupSnd gInfo Nothing
-    createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
+    createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
     createGroupFeatureItems user cd CISndGroupFeature gInfo
     pure (gInfo, clientMember)
     where
@@ -1265,7 +1266,7 @@ createContactPQSndItem :: User -> Contact -> Connection -> PQEncryption -> CM (C
 createContactPQSndItem user ct conn@Connection {pqSndEnabled} pqSndEnabled' =
   flip catchChatError (const $ pure (ct, conn)) $ case (pqSndEnabled, pqSndEnabled') of
     (Just b, b') | b' /= b -> createPQItem $ CISndConnEvent (SCEPqEnabled pqSndEnabled')
-    (Nothing, PQEncOn) -> createPQItem $ CISndDirectE2EEInfo (E2EInfo pqSndEnabled')
+    (Nothing, PQEncOn) -> createPQItem $ CISndDirectE2EEInfo (E2EInfo $ Just pqSndEnabled')
     _ -> pure (ct, conn)
   where
     createPQItem ciContent = do
@@ -1280,7 +1281,7 @@ updateContactPQRcv :: User -> Contact -> Connection -> PQEncryption -> CM (Conta
 updateContactPQRcv user ct conn@Connection {connId, pqRcvEnabled} pqRcvEnabled' =
   flip catchChatError (const $ pure (ct, conn)) $ case (pqRcvEnabled, pqRcvEnabled') of
     (Just b, b') | b' /= b -> updatePQ $ CIRcvConnEvent (RCEPqEnabled pqRcvEnabled')
-    (Nothing, PQEncOn) -> updatePQ $ CIRcvDirectE2EEInfo (E2EInfo pqRcvEnabled')
+    (Nothing, PQEncOn) -> updatePQ $ CIRcvDirectE2EEInfo (E2EInfo $ Just pqRcvEnabled')
     _ -> pure (ct, conn)
   where
     updatePQ ciContent = do
@@ -2261,6 +2262,12 @@ userProfileToSend user@User {profile = p} incognitoProfile ct inGroup = do
       let userPrefs = maybe (preferences' user) (const Nothing) incognitoProfile
        in (p' :: Profile) {preferences = Just . toChatPrefs $ mergePreferences (userPreferences <$> ct) userPrefs}
 
+connLinkPQEncryption :: ACreatedConnLink -> Maybe PQEncryption
+connLinkPQEncryption (ACCL _ (CCLink cReq _)) = case cReq of
+  CRContactUri _ -> Nothing
+  CRInvitationUri _ (CR.E2ERatchetParamsUri vr' _ _ pq) ->
+    Just $ PQEncryption $ maxVersion vr' >= CR.pqRatchetE2EEncryptVersion && isJust pq
+
 createRcvFeatureItems :: User -> Contact -> Contact -> CM' ()
 createRcvFeatureItems user ct ct' =
   createFeatureItems user ct ct' CDDirectRcv CIRcvChatFeature CIRcvChatPreference contactPreference
@@ -2274,6 +2281,15 @@ createSndFeatureItems user ct ct' =
       CUPUser {preference} -> preference
 
 type FeatureContent a d = ChatFeature -> a -> Maybe Int -> CIContent d
+
+createFeatureEnabledItems :: User -> Contact -> CM ()
+createFeatureEnabledItems user ct = createFeatureEnabledItems_ user ct >>= toView . CEvtNewChatItems user
+
+createFeatureEnabledItems_ :: User -> Contact -> CM [AChatItem]
+createFeatureEnabledItems_ user ct@Contact {mergedPreferences} =
+  forM allChatFeatures $ \(ACF f) -> do
+    let state = featureState $ getContactUserPreference f mergedPreferences
+    createInternalItemForChat user (CDDirectRcv ct) (uncurry (CIRcvChatFeature $ chatFeature f) state) Nothing
 
 createFeatureItems ::
   MsgDirectionI d =>
@@ -2337,16 +2353,24 @@ sameGroupProfileInfo :: GroupProfile -> GroupProfile -> Bool
 sameGroupProfileInfo p p' = p {groupPreferences = Nothing} == p' {groupPreferences = Nothing}
 
 createGroupFeatureItems :: MsgDirectionI d => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> Maybe Int -> Maybe GroupMemberRole -> CIContent d) -> GroupInfo -> CM ()
-createGroupFeatureItems user cd ciContent GroupInfo {fullGroupPreferences} =
-  forM_ allGroupFeatures $ \(AGF f) -> do
+createGroupFeatureItems user cd ciContent g = createGroupFeatureItems_ user cd ciContent g >>= toView . CEvtNewChatItems user
+
+createGroupFeatureItems_ :: MsgDirectionI d => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> Maybe Int -> Maybe GroupMemberRole -> CIContent d) -> GroupInfo -> CM [AChatItem]
+createGroupFeatureItems_ user cd ciContent GroupInfo {fullGroupPreferences} =
+  forM allGroupFeatures $ \(AGF f) -> do
     let p = getGroupPreference f fullGroupPreferences
         (_, param, role) = groupFeatureState p
-    createInternalChatItem user cd (ciContent (toGroupFeature f) (toGroupPreference p) param role) Nothing
+    createInternalItemForChat user cd (ciContent (toGroupFeature f) (toGroupPreference p) param role) Nothing
 
 createInternalChatItem :: (ChatTypeI c, MsgDirectionI d) => User -> ChatDirection c d -> CIContent d -> Maybe UTCTime -> CM ()
-createInternalChatItem user cd content itemTs_ =
+createInternalChatItem user cd content itemTs_ = do
+  ci <- createInternalItemForChat user cd content itemTs_
+  toView $ CEvtNewChatItems user [ci]
+
+createInternalItemForChat :: (ChatTypeI c, MsgDirectionI d) => User -> ChatDirection c d -> CIContent d -> Maybe UTCTime -> CM AChatItem
+createInternalItemForChat user cd content itemTs_ =
   lift (createInternalItemsForChats user itemTs_ [(cd, [content])]) >>= \case
-    [Right aci] -> toView $ CEvtNewChatItems user [aci]
+    [Right ci] -> pure ci
     [Left e] -> throwError e
     rs -> throwChatError $ CEInternalError $ "createInternalChatItem: expected 1 result, got " <> show (length rs)
 
