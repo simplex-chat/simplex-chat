@@ -53,13 +53,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, showDel
                 click = {
                     hideKeyboard(view)
                     when (contactType) {
-                        ContactType.RECENT -> {
-                            withApi {
-                                openChat(secondaryChatsCtx = null, rhId, chat.chatInfo)
-                                ModalManager.start.closeModals()
-                            }
-                        }
-                        ContactType.CHAT_DELETED -> {
+                        ContactType.RECENT, ContactType.CONTACT_WITH_REQUEST, ContactType.CHAT_DELETED -> {
                             withApi {
                                 openChat(secondaryChatsCtx = null, rhId, chat.chatInfo)
                                 ModalManager.start.closeModals()
@@ -79,7 +73,17 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, showDel
                 },
                 dropdownMenuItems = {
                     tryOrShowError("${chat.id}ContactListNavLinkDropdown", error = {}) {
-                        DeleteContactAction(chat, chatModel, showMenu)
+                        if (contactType == ContactType.CONTACT_WITH_REQUEST && chat.chatInfo.contact.contactRequestId != null) {
+                            ContactRequestMenuItems(
+                                rhId = chat.remoteHostId,
+                                contactRequestId = chat.chatInfo.contact.contactRequestId,
+                                chatModel = chatModel,
+                                showMenu = showMenu,
+                                onSuccess = { onRequestAccepted(it) }
+                            )
+                        } else {
+                            DeleteContactAction(chat, chatModel, showMenu)
+                        }
                     }
                 },
                 showMenu,
@@ -108,7 +112,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, showDel
                     tryOrShowError("${chat.id}ContactListNavLinkDropdown", error = {}) {
                         ContactRequestMenuItems(
                             rhId = chat.remoteHostId,
-                            chatInfo = chat.chatInfo,
+                            contactRequestId = chat.chatInfo.apiId,
                             chatModel = chatModel,
                             showMenu = showMenu,
                             onSuccess = { onRequestAccepted(it) }

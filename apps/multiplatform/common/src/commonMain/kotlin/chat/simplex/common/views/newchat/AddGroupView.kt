@@ -56,7 +56,7 @@ fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, c
             }
           } else {
             ModalManager.end.showModalCloseable(true) { close ->
-              GroupLinkView(chatModel, rhId, groupInfo, connLinkContact = null, memberRole = null, onGroupLinkUpdated = null, creatingGroup = true, close)
+              GroupLinkView(chatModel, rhId, groupInfo, groupLink = null, onGroupLinkUpdated = null, creatingGroup = true, close)
             }
           }
         }

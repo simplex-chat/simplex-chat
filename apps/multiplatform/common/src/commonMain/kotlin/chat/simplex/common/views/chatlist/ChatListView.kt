@@ -590,7 +590,7 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
     chatModel.appOpenUrl.value = rhId to uri
   } else {
     withBGApi {
-      planAndConnect(rhId, uri, incognito = null, close = null)
+      planAndConnect(rhId, uri, close = null)
     }
   }
 }
@@ -677,7 +677,6 @@ private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<
     planAndConnect(
       chatModel.remoteHostId(),
       link,
-      incognito = null,
       filterKnownContact = { searchChatFilteredBySimplexLink.value = it.id },
       filterKnownGroup = { searchChatFilteredBySimplexLink.value = it.id },
       close = null,
