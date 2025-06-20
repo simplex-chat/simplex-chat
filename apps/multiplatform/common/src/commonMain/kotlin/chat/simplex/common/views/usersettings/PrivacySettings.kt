@@ -88,13 +88,6 @@ fun PrivacySettingsView(
         simplexLinkMode.set(it)
         chatModel.simplexLinkMode.value = it
       })
-      if (appPrefs.developerTools.get()) {
-        SettingsPreferenceItem(
-          null,
-          stringResource(MR.strings.privacy_short_links),
-          chatModel.controller.appPrefs.privacyShortLinks
-        )
-      }
     }
     SectionDividerSpaced()
 

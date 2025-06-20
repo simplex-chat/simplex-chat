@@ -2386,7 +2386,6 @@
     <string name="short_link_button_text">Link breve</string>
     <string name="simplex_link_channel">Link del canale SimpleX</string>
     <string name="unsupported_connection_link">Link di connessione non supportato</string>
-    <string name="privacy_short_links">Usa link brevi (BETA)</string>
     <string name="network_smp_web_port_all">Tutti i server</string>
     <string name="network_smp_web_port_off">Off</string>
     <string name="network_smp_web_port_preset">Server preimpostati</string>

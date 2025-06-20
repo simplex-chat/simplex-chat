@@ -2346,7 +2346,6 @@
     <string name="simplex_link_channel">Enllaç al canal SimpleX</string>
     <string name="link_requires_newer_app_version_please_upgrade">Aquest enllaç requereix una versió de l\'aplicació més recent. Actualitzeu l\'aplicació o demaneu al vostre contacte que enviï un enllaç compatible.</string>
     <string name="unsupported_connection_link">Enllaç de connexió no compatible</string>
-    <string name="privacy_short_links">Emprar enllaços curts (BETA)</string>
     <string name="full_link_button_text">Enllaç complet</string>
     <string name="short_link_button_text">Enllaç curt</string>
     <string name="network_smp_web_port_all">Tots els servidors</string>

@@ -2362,7 +2362,6 @@
     <string name="onboarding_conditions_private_chats_not_accessible">لا يمكن الوصول إلى الدردشات الخاصة والمجموعات وجهات اتصالك لمشغلي الخادم.</string>
     <string name="onboarding_conditions_by_using_you_agree">باستخدام SimpleX Chat، توافق على:\n- إرسال المحتوى القانوني فقط في المجموعات العامة.\n- احترام المستخدمين الآخرين – لا سبام.</string>
     <string name="onboarding_conditions_accept">اقبل</string>
-    <string name="privacy_short_links">استخدم روابط قصيرة (تجريبي)</string>
     <string name="link_requires_newer_app_version_please_upgrade">يتطلب هذا الرابط إصدار تطبيق أحدث. يُرجى ترقية التطبيق أو اطلب من جهة اتصالك إرسال رابط متوافق.</string>
     <string name="full_link_button_text">رابط كامل</string>
     <string name="short_link_button_text">رابط قصير</string>

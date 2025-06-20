@@ -4578,7 +4578,7 @@ chat item action */
 "Send delivery receipts to" = "Empfangsbestätigungen senden an";
 
 /* No comment provided by engineer. */
-"send direct message" = "Direktnachricht senden";
+"send to connect" = "Direktnachricht senden";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Eine Direktnachricht zum Verbinden senden";
@@ -5550,9 +5550,6 @@ report reason */
 
 /* No comment provided by engineer. */
 "Use servers" = "Verwende Server";
-
-/* No comment provided by engineer. */
-"Use short links (BETA)" = "Kurze Links verwenden (BETA)";
 
 /* No comment provided by engineer. */
 "Use SimpleX Chat servers?" = "Verwenden Sie SimpleX-Chat-Server?";

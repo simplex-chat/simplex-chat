@@ -367,7 +367,6 @@ private struct ActiveProfilePicker: View {
             .onAppear {
                 profiles = chatModel.users
                     .map { $0.user }
-                    .sorted { u, _ in u.activeUser }
             }
             .onChange(of: incognitoEnabled) { incognito in
                 if profileSwitchStatus != .switchingIncognito {
@@ -425,7 +424,7 @@ private struct ActiveProfilePicker: View {
                                 chatModel.updateContactConnection(conn)
                             }
                             do {
-                                try await changeActiveUserAsync_(profile.userId, viewPwd: profile.hidden ? trimmedSearchTextOrPassword : nil )
+                                try await changeActiveUserAsync_(profile.userId, viewPwd: profile.hidden ? trimmedSearchTextOrPassword : nil)
                                 await MainActor.run {
                                     profileSwitchStatus = .idle
                                     dismiss()
@@ -559,8 +558,10 @@ private struct ActiveProfilePicker: View {
             let activeProfile = filteredProfiles.first { u in u.activeUser }
             
             if let selectedProfile = activeProfile {
-                let otherProfiles = filteredProfiles.filter { u in u.userId != activeProfile?.userId }
-                
+                let otherProfiles = filteredProfiles
+                    .filter { u in u.userId != activeProfile?.userId }
+                    .sorted(using: KeyPathComparator<User>(\.activeOrder, order: .reverse))
+
                 if incognitoFirst {
                     incognitoOption
                     profilerPickerUserOption(selectedProfile)
@@ -654,6 +655,7 @@ private struct ConnectView: View {
     private func connect(_ link: String) {
         planAndConnect(
             link,
+            theme: theme,
             dismiss: true
         )
     }
@@ -1003,8 +1005,79 @@ private func showOwnGroupLinkConfirmConnectSheet(
     )
 }
 
+private func showPrepareContactAlert(
+    connectionLink: CreatedConnLink,
+    contactShortLinkData: ContactShortLinkData,
+    theme: AppTheme,
+    dismiss: Bool,
+    cleanup: (() -> Void)?
+) {
+    showOpenChatAlert(
+        profileName: contactShortLinkData.profile.displayName,
+        profileImage: ProfileImage(imageStr: contactShortLinkData.profile.image, size: 60),
+        theme: theme,
+        cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
+        confirmTitle: NSLocalizedString("Open chat", comment: "new chat action"),
+        onCancel: { cleanup?() },
+        onConfirm: {
+            Task {
+                do {
+                    let contact = try await apiPrepareContact(connLink: connectionLink, contactShortLinkData: contactShortLinkData)
+                    await MainActor.run {
+                        ChatModel.shared.addChat(Chat(chatInfo: .direct(contact: contact)))
+                        openKnownContact(contact, dismiss: dismiss, showAlreadyExistsAlert: nil)
+                        cleanup?()
+                    }
+                } catch let error {
+                    logger.error("showPrepareContactAlert apiPrepareContact error: \(error.localizedDescription)")
+                    showAlert(NSLocalizedString("Error preparing contact", comment: ""), message: responseError(error))
+                    await MainActor.run {
+                        cleanup?()
+                    }
+                }
+            }
+        }
+    )
+}
+
+private func showPrepareGroupAlert(
+    connectionLink: CreatedConnLink,
+    groupShortLinkData: GroupShortLinkData,
+    theme: AppTheme,
+    dismiss: Bool,
+    cleanup: (() -> Void)?
+) {
+    showOpenChatAlert(
+        profileName: groupShortLinkData.groupProfile.displayName,
+        profileImage: ProfileImage(imageStr: groupShortLinkData.groupProfile.image, iconName: "person.2.circle.fill", size: 60),
+        theme: theme,
+        cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
+        confirmTitle: NSLocalizedString("Open chat", comment: "new chat action"),
+        onCancel: { cleanup?() },
+        onConfirm: {
+            Task {
+                do {
+                    let groupInfo = try await apiPrepareGroup(connLink: connectionLink, groupShortLinkData: groupShortLinkData)
+                    await MainActor.run {
+                        ChatModel.shared.addChat(Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil)))
+                        openKnownGroup(groupInfo, dismiss: dismiss, showAlreadyExistsAlert: nil)
+                        cleanup?()
+                    }
+                } catch let error {
+                    logger.error("showPrepareGroupAlert apiPrepareGroup error: \(error.localizedDescription)")
+                    showAlert(NSLocalizedString("Error preparing group", comment: ""), message: responseError(error))
+                    await MainActor.run {
+                        cleanup?()
+                    }
+                }
+            }
+        }
+    )
+}
+
 func planAndConnect(
     _ shortOrFullLink: String,
+    theme: AppTheme,
     dismiss: Bool,
     cleanup: (() -> Void)? = nil,
     filterKnownContact: ((Contact) -> Void)? = nil,
@@ -1016,16 +1089,29 @@ func planAndConnect(
             switch connectionPlan {
             case let .invitationLink(ilp):
                 switch ilp {
-                case .ok:
-                    logger.debug("planAndConnect, .invitationLink, .ok")
-                    await MainActor.run {
-                        showAskCurrentOrIncognitoProfileSheet(
-                            title: NSLocalizedString("Connect via one-time link", comment: "new chat sheet title"),
-                            connectionLink: connectionLink,
-                            connectionPlan: connectionPlan,
-                            dismiss: dismiss,
-                            cleanup: cleanup
-                        )
+                case let .ok(contactSLinkData_):
+                    if let contactSLinkData = contactSLinkData_ {
+                        logger.debug("planAndConnect, .invitationLink, .ok, short link data present")
+                        await MainActor.run {
+                            showPrepareContactAlert(
+                                connectionLink: connectionLink,
+                                contactShortLinkData: contactSLinkData,
+                                theme: theme,
+                                dismiss: dismiss,
+                                cleanup: cleanup
+                            )
+                        }
+                    } else {
+                        logger.debug("planAndConnect, .invitationLink, .ok, no short link data")
+                        await MainActor.run {
+                            showAskCurrentOrIncognitoProfileSheet(
+                                title: NSLocalizedString("Connect via one-time link", comment: "new chat sheet title"),
+                                connectionLink: connectionLink,
+                                connectionPlan: connectionPlan,
+                                dismiss: dismiss,
+                                cleanup: cleanup
+                            )
+                        }
                     }
                 case .ownLink:
                     logger.debug("planAndConnect, .invitationLink, .ownLink")
@@ -1064,16 +1150,29 @@ func planAndConnect(
                 }
             case let .contactAddress(cap):
                 switch cap {
-                case .ok:
-                    logger.debug("planAndConnect, .contactAddress, .ok")
-                    await MainActor.run {
-                        showAskCurrentOrIncognitoProfileSheet(
-                            title: NSLocalizedString("Connect via contact address", comment: "new chat sheet title"),
-                            connectionLink: connectionLink,
-                            connectionPlan: connectionPlan,
-                            dismiss: dismiss,
-                            cleanup: cleanup
-                        )
+                case let .ok(contactSLinkData_):
+                    if let contactSLinkData = contactSLinkData_ {
+                        logger.debug("planAndConnect, .contactAddress, .ok, short link data present")
+                        await MainActor.run {
+                            showPrepareContactAlert(
+                                connectionLink: connectionLink,
+                                contactShortLinkData: contactSLinkData,
+                                theme: theme,
+                                dismiss: dismiss,
+                                cleanup: cleanup
+                            )
+                        }
+                    } else {
+                        logger.debug("planAndConnect, .contactAddress, .ok, no short link data")
+                        await MainActor.run {
+                            showAskCurrentOrIncognitoProfileSheet(
+                                title: NSLocalizedString("Connect via contact address", comment: "new chat sheet title"),
+                                connectionLink: connectionLink,
+                                connectionPlan: connectionPlan,
+                                dismiss: dismiss,
+                                cleanup: cleanup
+                            )
+                        }
                     }
                 case .ownLink:
                     logger.debug("planAndConnect, .contactAddress, .ownLink")
@@ -1129,15 +1228,29 @@ func planAndConnect(
                 }
             case let .groupLink(glp):
                 switch glp {
-                case .ok:
-                    await MainActor.run {
-                        showAskCurrentOrIncognitoProfileSheet(
-                            title: NSLocalizedString("Join group", comment: "new chat sheet title"),
-                            connectionLink: connectionLink,
-                            connectionPlan: connectionPlan,
-                            dismiss: dismiss,
-                            cleanup: cleanup
-                        )
+                case let .ok(groupSLinkData_):
+                    if let groupSLinkData = groupSLinkData_ {
+                        logger.debug("planAndConnect, .groupLink, .ok, short link data present")
+                        await MainActor.run {
+                            showPrepareGroupAlert(
+                                connectionLink: connectionLink,
+                                groupShortLinkData: groupSLinkData,
+                                theme: theme,
+                                dismiss: dismiss,
+                                cleanup: cleanup
+                            )
+                        }
+                    } else {
+                        logger.debug("planAndConnect, .groupLink, .ok, no short link data")
+                        await MainActor.run {
+                            showAskCurrentOrIncognitoProfileSheet(
+                                title: NSLocalizedString("Join group", comment: "new chat sheet title"),
+                                connectionLink: connectionLink,
+                                connectionPlan: connectionPlan,
+                                dismiss: dismiss,
+                                cleanup: cleanup
+                            )
+                        }
                     }
                 case let .ownLink(groupInfo):
                     logger.debug("planAndConnect, .groupLink, .ownLink")

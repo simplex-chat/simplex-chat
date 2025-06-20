@@ -109,7 +109,8 @@ defaultChatConfig =
       coreApi = False,
       highlyAvailable = False,
       deviceNameForRemote = "",
-      chatHooks = defaultChatHooks
+      chatHooks = defaultChatHooks,
+      largeLinkData = True
     }
 
 logCfg :: LogConfig
@@ -125,7 +126,7 @@ newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Boo
 newChatController
   ChatDatabase {chatStore, agentStore}
   user
-  cfg@ChatConfig {agentConfig = aCfg, presetServers, inlineFiles, deviceNameForRemote, confirmMigrations}
+  cfg@ChatConfig {agentConfig = aCfg, presetServers, inlineFiles, deviceNameForRemote, confirmMigrations, largeLinkData}
   ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, simpleNetCfg, logLevel, logConnections, logServerHosts, logFile, tbqSize, deviceName, highlyAvailable, yesToUpMigrations}, optFilesFolder, optTempDirectory, showReactions, allowInstantFiles, autoAcceptFileSize}
   backgroundMode = do
     let inlineFiles' = if allowInstantFiles || autoAcceptFileSize > 0 then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
@@ -173,6 +174,7 @@ newChatController
     tempDirectory <- newTVarIO optTempDirectory
     assetsDirectory <- newTVarIO Nothing
     contactMergeEnabled <- newTVarIO True
+    useLargeLinkData <- newTVarIO largeLinkData
     pure
       ChatController
         { firstTime,
@@ -213,7 +215,8 @@ newChatController
           tempDirectory,
           assetsDirectory,
           logFilePath = logFile,
-          contactMergeEnabled
+          contactMergeEnabled,
+          useLargeLinkData
         }
     where
       presetServers' :: PresetServers
