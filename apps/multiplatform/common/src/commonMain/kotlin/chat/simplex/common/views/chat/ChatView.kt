@@ -181,7 +181,8 @@ fun ChatView(
                     chatInfo is ChatInfo.Direct
                     && !chatInfo.contact.sndReady
                     && chatInfo.contact.active
-                    && !chatInfo.contact.nextSendGrpInv
+                    && !chatInfo.contact.sendMsgToConnect
+                    && !chatInfo.contact.nextAcceptContactRequest
                   ) {
                     Text(
                       generalGetString(MR.strings.contact_connection_pending),

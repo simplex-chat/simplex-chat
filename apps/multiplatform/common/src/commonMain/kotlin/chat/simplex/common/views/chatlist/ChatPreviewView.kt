@@ -145,8 +145,11 @@ fun ChatPreviewView(
           chatPreviewTitleText(
             if (deleting)
               MaterialTheme.colors.secondary
-            else
+            else if (cInfo.contact.nextAcceptContactRequest) {
+              MaterialTheme.colors.primary
+            } else {
               Color.Unspecified
+            }
           )
         }
       is ChatInfo.Group ->
@@ -229,21 +232,25 @@ fun ChatPreviewView(
         is ChatInfo.Direct ->
           if (cInfo.contact.activeConn == null && cInfo.contact.profile.contactLink != null && cInfo.contact.active) {
             Text(stringResource(MR.strings.contact_tap_to_connect), color = MaterialTheme.colors.primary)
-          } else if (!cInfo.contact.sndReady && cInfo.contact.activeConn != null) {
-            if (cInfo.contact.nextSendGrpInv) {
-              Text(stringResource(MR.strings.member_contact_send_direct_message), color = MaterialTheme.colors.secondary)
-            } else if (cInfo.contact.active) {
-              Text(stringResource(MR.strings.contact_connection_pending), color = MaterialTheme.colors.secondary)
-            }
+          } else if (cInfo.contact.nextAcceptContactRequest) {
+            Text(stringResource(MR.strings.hold_or_open_to_connect))
+          } else if (cInfo.contact.sendMsgToConnect) {
+            Text(stringResource(MR.strings.member_contact_send_direct_message))
+          } else if (!cInfo.contact.sndReady && cInfo.contact.activeConn != null && cInfo.contact.active) {
+            Text(stringResource(MR.strings.contact_connection_pending), color = MaterialTheme.colors.secondary)
           }
         is ChatInfo.Group ->
-          when (cInfo.groupInfo.membership.memberStatus) {
-            GroupMemberStatus.MemRejected -> Text(stringResource(MR.strings.group_preview_rejected))
-            GroupMemberStatus.MemInvited -> Text(groupInvitationPreviewText(currentUserProfileDisplayName, cInfo.groupInfo))
-            GroupMemberStatus.MemAccepted -> Text(stringResource(MR.strings.group_connection_pending), color = MaterialTheme.colors.secondary)
-            GroupMemberStatus.MemPendingReview, GroupMemberStatus.MemPendingApproval ->
-              Text(stringResource(MR.strings.reviewed_by_admins), color = MaterialTheme.colors.secondary)
-            else -> {}
+          if (cInfo.groupInfo.nextConnectPrepared) {
+            Text(stringResource(MR.strings.group_preview_open_to_join))
+          } else {
+            when (cInfo.groupInfo.membership.memberStatus) {
+              GroupMemberStatus.MemRejected -> Text(stringResource(MR.strings.group_preview_rejected))
+              GroupMemberStatus.MemInvited -> Text(groupInvitationPreviewText(currentUserProfileDisplayName, cInfo.groupInfo))
+              GroupMemberStatus.MemAccepted -> Text(stringResource(MR.strings.group_connection_pending), color = MaterialTheme.colors.secondary)
+              GroupMemberStatus.MemPendingReview, GroupMemberStatus.MemPendingApproval ->
+                Text(stringResource(MR.strings.reviewed_by_admins), color = MaterialTheme.colors.secondary)
+              else -> {}
+            }
           }
         else -> {}
       }

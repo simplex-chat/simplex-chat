@@ -132,7 +132,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         click = { contactRequestAlertDialog(chat.remoteHostId, chat.chatInfo, chatModel) { onRequestAccepted(it) } },
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
-            ContactRequestMenuItems(chat.remoteHostId, chat.chatInfo, chatModel, showMenu)
+            ContactRequestMenuItems(chat.remoteHostId, contactRequestId = chat.chatInfo.apiId, chatModel, showMenu)
           }
         },
         showMenu,
@@ -271,18 +271,22 @@ suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
 
 @Composable
 fun ContactMenuItems(chat: Chat, contact: Contact, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
-  if (contact.activeConn != null) {
-    if (showMarkRead) {
-      MarkReadChatAction(chat, showMenu)
-    } else {
-      MarkUnreadChatAction(chat, chatModel, showMenu)
+  if (contact.nextAcceptContactRequest && contact.contactRequestId != null) {
+    ContactRequestMenuItems(chat.remoteHostId, contactRequestId = contact.contactRequestId, chatModel, showMenu)
+  } else {
+    if (contact.activeConn != null) {
+      if (showMarkRead) {
+        MarkReadChatAction(chat, showMenu)
+      } else {
+        MarkUnreadChatAction(chat, chatModel, showMenu)
+      }
+      ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
+      ToggleNotificationsChatAction(chat, chatModel, contact.chatSettings.enableNtfs.nextMode(false), showMenu)
+      TagListAction(chat, showMenu)
+      ClearChatAction(chat, showMenu)
     }
-    ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
-    ToggleNotificationsChatAction(chat, chatModel, contact.chatSettings.enableNtfs.nextMode(false), showMenu)
-    TagListAction(chat, showMenu)
-    ClearChatAction(chat, showMenu)
+    DeleteContactAction(chat, chatModel, showMenu)
   }
-  DeleteContactAction(chat, chatModel, showMenu)
 }
 
 @Composable
@@ -509,13 +513,13 @@ fun LeaveGroupAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, sh
 }
 
 @Composable
-fun ContactRequestMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactRequest, chatModel: ChatModel, showMenu: MutableState<Boolean>, onSuccess: ((chat: Chat) -> Unit)? = null) {
+fun ContactRequestMenuItems(rhId: Long?, contactRequestId: Long, chatModel: ChatModel, showMenu: MutableState<Boolean>, onSuccess: ((chat: Chat) -> Unit)? = null) {
   ItemAction(
     stringResource(MR.strings.accept_contact_button),
     painterResource(MR.images.ic_check),
     color = MaterialTheme.colors.onBackground,
     onClick = {
-      acceptContactRequest(rhId, incognito = false, chatInfo.apiId, true, chatModel, onSuccess)
+      acceptContactRequest(rhId, incognito = false, contactRequestId, true, chatModel, onSuccess)
       showMenu.value = false
     }
   )
@@ -525,7 +529,7 @@ fun ContactRequestMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactRequest, chat
       painterResource(MR.images.ic_theater_comedy),
       color = MaterialTheme.colors.onBackground,
       onClick = {
-        acceptContactRequest(rhId, incognito = true, chatInfo.apiId, true, chatModel, onSuccess)
+        acceptContactRequest(rhId, incognito = true, contactRequestId, true, chatModel, onSuccess)
         showMenu.value = false
       }
     )
@@ -534,7 +538,7 @@ fun ContactRequestMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactRequest, chat
     stringResource(MR.strings.reject_contact_button),
     painterResource(MR.images.ic_close),
     onClick = {
-      rejectContactRequest(rhId, chatInfo.apiId, chatModel)
+      rejectContactRequest(rhId, contactRequestId, chatModel)
       showMenu.value = false
     },
     color = Color.Red

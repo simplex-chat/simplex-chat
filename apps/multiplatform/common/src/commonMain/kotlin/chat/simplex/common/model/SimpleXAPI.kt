@@ -1660,6 +1660,9 @@ object ChatController {
     val r = sendCmd(rh, CC.ApiRejectContact(contactReqId))
     if (r is API.Result && r.res is CR.ContactRequestRejected) return r.res.contact_
     Log.e(TAG, "apiRejectContactRequest bad response: ${r.responseType} ${r.details}")
+    if (!(networkErrorAlert(r))) {
+      apiErrorAlert("apiRejectContactRequest", generalGetString(MR.strings.error_rejecting_contact_request), r)
+    }
     return null
   }
 

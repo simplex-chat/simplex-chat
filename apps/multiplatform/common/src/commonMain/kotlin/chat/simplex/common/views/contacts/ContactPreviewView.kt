@@ -38,6 +38,7 @@ fun ContactPreviewView(
         val textColor = when {
             deleting -> MaterialTheme.colors.secondary
             contactType == ContactType.CARD -> MaterialTheme.colors.primary
+            contactType == ContactType.CONTACT_WITH_REQUEST -> MaterialTheme.colors.primary
             contactType == ContactType.REQUEST -> MaterialTheme.colors.primary
             contactType == ContactType.RECENT && chat.chatInfo.incognito -> Indigo
             else -> Color.Unspecified
@@ -85,7 +86,7 @@ fun ContactPreviewView(
 
         Spacer(Modifier.fillMaxWidth().weight(1f))
 
-        if (chat.chatInfo is ChatInfo.ContactRequest) {
+        if (chat.chatInfo is ChatInfo.ContactRequest || contactType == ContactType.CONTACT_WITH_REQUEST) {
             Icon(
                 painterResource(MR.images.ic_check),
                 contentDescription = null,

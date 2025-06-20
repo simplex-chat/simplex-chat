@@ -73,7 +73,7 @@ fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
 }
 
 enum class ContactType {
-  CARD, REQUEST, RECENT, CHAT_DELETED, UNLISTED
+  CARD, CONTACT_WITH_REQUEST, REQUEST, RECENT, CHAT_DELETED, UNLISTED
 }
 
 fun chatContactType(chat: Chat): ContactType {
@@ -81,8 +81,8 @@ fun chatContactType(chat: Chat): ContactType {
     is ChatInfo.ContactRequest -> ContactType.REQUEST
     is ChatInfo.Direct -> {
       val contact = cInfo.contact
-
       when {
+        contact.nextAcceptContactRequest -> ContactType.CONTACT_WITH_REQUEST
         contact.activeConn == null && contact.profile.contactLink != null && contact.active -> ContactType.CARD
         contact.chatDeleted -> ContactType.CHAT_DELETED
         contact.contactStatus == ContactStatus.Active -> ContactType.RECENT
@@ -127,7 +127,7 @@ private fun ModalData.NewChatSheetLayout(
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
   val showUnreadAndFavorites = remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
-  val baseContactTypes = remember { listOf(ContactType.CARD, ContactType.RECENT, ContactType.REQUEST) }
+  val baseContactTypes = remember { listOf(ContactType.CARD, ContactType.CONTACT_WITH_REQUEST, ContactType.REQUEST, ContactType.RECENT) }
   val contactTypes by remember(searchText.value.text.isEmpty()) {
     derivedStateOf { contactTypesSearchTargets(baseContactTypes, searchText.value.text.isEmpty()) }
   }
