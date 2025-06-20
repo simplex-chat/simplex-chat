@@ -1739,7 +1739,7 @@ processChatCommand' vr = \case
     let ContactShortLinkData {profile, message, business} = contactSLinkData
     ct <- withStore $ \db -> createPreparedContact db user profile accLink
     let cMode' = connMode cMode
-        createItem content = void $ createInternalItemForChat user (CDDirectRcv ct) content Nothing
+        createItem content = void $ createInternalItemForChat user (CDDirectRcv ct) False content Nothing
         msgChatLink = \case
           sl@CSLContact {} -> MCLContact sl profile business
           sl@CSLInvitation {} -> MCLInvitation sl profile
@@ -1750,12 +1750,12 @@ processChatCommand' vr = \case
     pure $ CRNewPreparedContact user ct
   APIPrepareGroup userId ccLink@(CCLink _ shortLink) groupSLinkData -> withUserId userId $ \user -> do
     let GroupShortLinkData {groupProfile = gp@GroupProfile {description}} = groupSLinkData
-    gInfo <- withStore $ \db -> createPreparedGroup db vr user gp ccLink
+    (gInfo, hostMember) <- withStore $ \db -> createPreparedGroup db vr user gp ccLink
     -- TODO use received item without member
-    let cd = CDGroupRcv gInfo Nothing $ membership gInfo
-        createItem content = void $ createInternalItemForChat user cd content Nothing
+    let cd = CDGroupRcv gInfo Nothing hostMember
+        createItem content = void $ createInternalItemForChat user cd True content Nothing
     mapM_ (\sl -> createItem $ CIRcvMsgContent $ MCChat (safeDecodeUtf8 $ strEncode sl) $ MCLGroup sl gp) shortLink
-    void $ createGroupFeatureItems_ user cd CIRcvGroupFeature gInfo
+    void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
     mapM_ (createItem . CIRcvMsgContent . MCText) description
     pure $ CRNewPreparedGroup user gInfo
   APIChangePreparedContactUser contactId newUserId -> withUser $ \user -> do

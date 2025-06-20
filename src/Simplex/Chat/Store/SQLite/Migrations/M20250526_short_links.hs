@@ -19,6 +19,8 @@ ALTER TABLE user_contact_links ADD COLUMN short_link_data_set INTEGER NOT NULL D
 ALTER TABLE groups ADD COLUMN conn_full_link_to_connect BLOB;
 ALTER TABLE groups ADD COLUMN conn_short_link_to_connect BLOB;
 ALTER TABLE groups ADD COLUMN conn_link_started_connection INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE chat_items ADD COLUMN show_group_as_sender INTEGER NOT NULL DEFAULT 0;
 |]
 
 down_m20250526_short_links :: Query
@@ -35,4 +37,6 @@ ALTER TABLE user_contact_links DROP COLUMN short_link_data_set;
 ALTER TABLE groups DROP COLUMN conn_full_link_to_connect;
 ALTER TABLE groups DROP COLUMN conn_short_link_to_connect;
 ALTER TABLE groups DROP COLUMN conn_link_started_connection;
+
+ALTER TABLE chat_items DROP COLUMN show_group_as_sender;
 |]
