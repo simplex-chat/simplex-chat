@@ -486,6 +486,80 @@ fun ComposeView(
     return null
   }
 
+  fun checkLinkPreview(): MsgContent {
+    val msgText = composeState.value.message.text
+    return when (val composePreview = composeState.value.preview) {
+      is ComposePreview.CLinkPreview -> {
+        val parsedMsg = parseToMarkdown(msgText)
+        val url = getSimplexLink(parsedMsg).first
+        val lp = composePreview.linkPreview
+        if (lp != null && url == lp.uri) {
+          MsgContent.MCLink(msgText, preview = lp)
+        } else {
+          MsgContent.MCText(msgText)
+        }
+      }
+
+      else -> MsgContent.MCText(msgText)
+    }
+  }
+
+  suspend fun sendMemberContactInvitation() {
+    val mc = checkLinkPreview()
+    val contact = chatModel.controller.apiSendMemberContactInvitation(chat.remoteHostId, chat.chatInfo.apiId, mc)
+    if (contact != null) {
+      withContext(Dispatchers.Main) {
+        chatsCtx.updateContact(chat.remoteHostId, contact)
+        clearState()
+      }
+    }
+  }
+
+  suspend fun sendConnectPreparedContact() {
+    val mc = checkLinkPreview()
+    // TODO [short links] use incognito default (incognito choice will be available via context profile picker)
+    val contact = chatModel.controller.apiConnectPreparedContact(chat.remoteHostId, chat.chatInfo.apiId, incognito = false, msg = mc)
+    if (contact != null) {
+      withContext(Dispatchers.Main) {
+        chatsCtx.updateContact(chat.remoteHostId, contact)
+        clearState()
+      }
+    }
+  }
+
+  suspend fun connectPreparedGroup() {
+    // TODO [short links] use incognito default (incognito choice will be available via context profile picker)
+    val groupInfo = chatModel.controller.apiConnectPreparedGroup(chat.remoteHostId, chat.chatInfo.apiId, incognito = false)
+    if (groupInfo != null) {
+      withContext(Dispatchers.Main) {
+        chatsCtx.updateGroup(chat.remoteHostId, groupInfo)
+        clearState()
+      }
+    }
+  }
+
+  // TODO [short links] next connect button design, rework compose to not show send button, align with Swift
+  @Composable
+  fun NextConnectPreparedButton() {
+    TextButton(onClick = {
+      withBGApi {
+        if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.nextSendGrpInv) {
+          sendMemberContactInvitation()
+        } else if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.nextConnectPrepared) {
+          sendConnectPreparedContact()
+        } else if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.nextConnectPrepared) {
+          connectPreparedGroup()
+        }
+      }
+    }) {
+      if (chat.chatInfo is ChatInfo.Group) {
+        Text("Join")
+      } else {
+        Text("Connect")
+      }
+    }
+  }
+
   suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?): List<ChatItem>? {
     val cInfo = chat.chatInfo
     val cs = composeState.value
@@ -524,23 +598,6 @@ fun ComposeView(
       }
 
       return chatItems
-    }
-
-    fun checkLinkPreview(): MsgContent {
-      return when (val composePreview = cs.preview) {
-        is ComposePreview.CLinkPreview -> {
-          val parsedMsg = parseToMarkdown(msgText)
-          val url = getSimplexLink(parsedMsg).first
-          val lp = composePreview.linkPreview
-          if (lp != null && url == lp.uri) {
-            MsgContent.MCLink(msgText, preview = lp)
-          } else {
-            MsgContent.MCText(msgText)
-          }
-        }
-
-        else -> MsgContent.MCText(msgText)
-      }
     }
 
     fun constructFailedMessage(cs: ComposeState): ComposeState {
@@ -587,16 +644,6 @@ fun ComposeView(
       val cItems = chatModel.controller.apiReportMessage(chat.remoteHostId, chat.chatInfo.apiId, chatItemId, reportReason, msgText)
       if (chatModel.controller.appPrefs.showReportsInSupportChatAlert.get()) showReportsInSupportChatAlert()
       return cItems?.map { it.chatItem }
-    }
-
-    suspend fun sendMemberContactInvitation() {
-      val mc = checkLinkPreview()
-      val contact = chatModel.controller.apiSendMemberContactInvitation(chat.remoteHostId, chat.chatInfo.apiId, mc)
-      if (contact != null) {
-        withContext(Dispatchers.Main) {
-          chatsCtx.updateContact(chat.remoteHostId, contact)
-        }
-      }
     }
 
     suspend fun updateMessage(ei: ChatItem, chat: Chat, live: Boolean): ChatItem? {
@@ -1018,6 +1065,12 @@ fun ComposeView(
   val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
 
   Column {
+    // TODO [short links] move button to the right of send field, rework SendMsgView to not show send button, align with Swift
+    if (chat.chatInfo.nextConnect) {
+      NextConnectPreparedButton()
+    }
+    // TODO ^^^ (this shouldn't be here)
+
     if (
       chat.chatInfo is ChatInfo.Direct
       && chat.chatInfo.contact.nextAcceptContactRequest

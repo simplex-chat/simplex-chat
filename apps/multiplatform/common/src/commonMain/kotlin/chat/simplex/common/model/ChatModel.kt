@@ -1499,8 +1499,8 @@ sealed class ChatInfo: SomeChat, NamedChat {
     get() {
       when (this) {
         is Direct -> {
-          // TODO [short links] this will have additional statuses for pending contact requests before they are accepted
-          if (contact.nextSendGrpInv) return null
+          if (contact.sendMsgToConnect) return null
+          if (contact.nextAcceptContactRequest) { return generalGetString(MR.strings.cant_send_message_generic) to null }
           if (!contact.active) return generalGetString(MR.strings.cant_send_message_contact_deleted) to null
           if (!contact.sndReady) return generalGetString(MR.strings.cant_send_message_contact_not_ready) to null
           if (contact.activeConn?.connectionStats?.ratchetSyncSendProhibited == true) return generalGetString(MR.strings.cant_send_message_contact_not_synchronized) to null
