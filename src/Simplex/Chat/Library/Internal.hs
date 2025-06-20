@@ -2262,8 +2262,8 @@ userProfileToSend user@User {profile = p} incognitoProfile ct inGroup = do
       let userPrefs = maybe (preferences' user) (const Nothing) incognitoProfile
        in (p' :: Profile) {preferences = Just . toChatPrefs $ mergePreferences (userPreferences <$> ct) userPrefs}
 
-connLinkPQEncryption :: ACreatedConnLink -> Maybe PQEncryption
-connLinkPQEncryption (ACCL _ (CCLink cReq _)) = case cReq of
+connRequestPQEncryption :: ConnectionRequestUri c -> Maybe PQEncryption
+connRequestPQEncryption = \case
   CRContactUri _ -> Nothing
   CRInvitationUri _ (CR.E2ERatchetParamsUri vr' _ _ pq) ->
     Just $ PQEncryption $ maxVersion vr' >= CR.pqRatchetE2EEncryptVersion && isJust pq

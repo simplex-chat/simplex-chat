@@ -1735,16 +1735,16 @@ processChatCommand' vr = \case
         pure conn'
   APIConnectPlan userId cLink -> withUserId userId $ \user ->
     uncurry (CRConnectionPlan user) <$> connectPlan user cLink
-  APIPrepareContact userId accLink@(ACCL cMode (CCLink _ shortLink)) contactSLinkData -> withUserId userId $ \user -> do
+  APIPrepareContact userId accLink@(ACCL cMode (CCLink cReq shortLink)) contactSLinkData -> withUserId userId $ \user -> do
     let ContactShortLinkData {profile, message, business} = contactSLinkData
     ct <- withStore $ \db -> createPreparedContact db user profile accLink
     let cMode' = connMode cMode
         createItem content = void $ createInternalItemForChat user (CDDirectRcv ct) False content Nothing
-        msgChatLink = \case
-          sl@CSLContact {} -> MCLContact sl profile business
-          sl@CSLInvitation {} -> MCLInvitation sl profile
-    mapM_ (\sl -> createItem $ CIRcvMsgContent $ MCChat (safeDecodeUtf8 $ strEncode sl) $ msgChatLink sl) shortLink
-    createItem $ CIRcvDirectE2EEInfo $ E2EInfo $ connLinkPQEncryption accLink
+        contactCard sl = case sl of
+          CSLContact {} -> CIRcvMsgContent $ MCChat (safeDecodeUtf8 $ strEncode sl) $ MCLContact sl profile business
+          CSLInvitation {} -> CIRcvContactInfo profile
+    mapM_ (createItem . contactCard) shortLink
+    createItem $ CIRcvDirectE2EEInfo $ E2EInfo $ connRequestPQEncryption cReq
     void $ createFeatureEnabledItems_ user ct
     mapM_ (createItem . CIRcvMsgContent . MCText) message
     pure $ CRNewPreparedContact user ct
