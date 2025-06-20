@@ -45,16 +45,26 @@ suspend fun planAndConnect(
       ""
     when (connectionPlan) {
       is ConnectionPlan.InvitationLink -> when (connectionPlan.invitationLinkPlan) {
-        is InvitationLinkPlan.Ok -> { // TODO [short links] "Open chat" alert -> prepare contact
-          Log.d(TAG, "planAndConnect, .InvitationLink, .Ok")
-          askCurrentOrIncognitoProfileAlert(
-            chatModel, rhId, connectionLink, connectionPlan, close,
-            title = generalGetString(MR.strings.connect_via_invitation_link),
-            text = generalGetString(MR.strings.profile_will_be_sent_to_contact_sending_link) + linkText,
-            connectDestructive = false,
-            cleanup = cleanup,
-          )
-        }
+        is InvitationLinkPlan.Ok ->
+          if (connectionPlan.invitationLinkPlan.contactSLinkData_ != null) {
+            Log.d(TAG, "planAndConnect, .InvitationLink, .Ok, short link data present")
+            showPrepareContactAlert(
+              rhId,
+              connectionLink,
+              connectionPlan.invitationLinkPlan.contactSLinkData_,
+              close,
+              cleanup
+            )
+          } else {
+            Log.d(TAG, "planAndConnect, .InvitationLink, .Ok, no short link data")
+            askCurrentOrIncognitoProfileAlert(
+              chatModel, rhId, connectionLink, connectionPlan, close,
+              title = generalGetString(MR.strings.connect_via_invitation_link),
+              text = generalGetString(MR.strings.profile_will_be_sent_to_contact_sending_link) + linkText,
+              connectDestructive = false,
+              cleanup = cleanup,
+            )
+          }
         InvitationLinkPlan.OwnLink -> {
           Log.d(TAG, "planAndConnect, .InvitationLink, .OwnLink")
           askCurrentOrIncognitoProfileAlert(
@@ -106,16 +116,26 @@ suspend fun planAndConnect(
         }
       }
       is ConnectionPlan.ContactAddress -> when (connectionPlan.contactAddressPlan) {
-        is ContactAddressPlan.Ok -> { // TODO [short links] "Open chat" alert -> prepare contact
-          Log.d(TAG, "planAndConnect, .ContactAddress, .Ok")
-          askCurrentOrIncognitoProfileAlert(
-            chatModel, rhId, connectionLink, connectionPlan, close,
-            title = generalGetString(MR.strings.connect_via_contact_link),
-            text = generalGetString(MR.strings.profile_will_be_sent_to_contact_sending_link) + linkText,
-            connectDestructive = false,
-            cleanup,
-          )
-        }
+        is ContactAddressPlan.Ok ->
+          if (connectionPlan.contactAddressPlan.contactSLinkData_ != null) {
+            Log.d(TAG, "planAndConnect, .ContactAddress, .Ok, short link data present")
+            showPrepareContactAlert(
+              rhId,
+              connectionLink,
+              connectionPlan.contactAddressPlan.contactSLinkData_,
+              close,
+              cleanup
+            )
+          } else {
+            Log.d(TAG, "planAndConnect, .ContactAddress, .Ok, no short link data")
+            askCurrentOrIncognitoProfileAlert(
+              chatModel, rhId, connectionLink, connectionPlan, close,
+              title = generalGetString(MR.strings.connect_via_contact_link),
+              text = generalGetString(MR.strings.profile_will_be_sent_to_contact_sending_link) + linkText,
+              connectDestructive = false,
+              cleanup,
+            )
+          }
         ContactAddressPlan.OwnLink -> {
           Log.d(TAG, "planAndConnect, .ContactAddress, .OwnLink")
           askCurrentOrIncognitoProfileAlert(
@@ -174,16 +194,26 @@ suspend fun planAndConnect(
         }
       }
       is ConnectionPlan.GroupLink -> when (connectionPlan.groupLinkPlan) {
-        is GroupLinkPlan.Ok -> { // TODO [short links] "Open chat" alert -> prepare group
-          Log.d(TAG, "planAndConnect, .GroupLink, .Ok")
-          askCurrentOrIncognitoProfileAlert(
-            chatModel, rhId, connectionLink, connectionPlan, close,
-            title = generalGetString(MR.strings.connect_via_group_link),
-            text = generalGetString(MR.strings.you_will_join_group) + linkText,
-            connectDestructive = false,
-            cleanup = cleanup,
-          )
-        }
+        is GroupLinkPlan.Ok ->
+          if (connectionPlan.groupLinkPlan.groupSLinkData_ != null) {
+            Log.d(TAG, "planAndConnect, .GroupLink, .Ok, short link data present")
+            showPrepareGroupAlert(
+              rhId,
+              connectionLink,
+              connectionPlan.groupLinkPlan.groupSLinkData_,
+              close,
+              cleanup
+            )
+          } else {
+            Log.d(TAG, "planAndConnect, .GroupLink, .Ok, no short link data")
+            askCurrentOrIncognitoProfileAlert(
+              chatModel, rhId, connectionLink, connectionPlan, close,
+              title = generalGetString(MR.strings.connect_via_group_link),
+              text = generalGetString(MR.strings.you_will_join_group) + linkText,
+              connectDestructive = false,
+              cleanup = cleanup,
+            )
+          }
         is GroupLinkPlan.OwnLink -> {
           Log.d(TAG, "planAndConnect, .GroupLink, .OwnLink")
           val groupInfo = connectionPlan.groupLinkPlan.groupInfo
@@ -424,4 +454,62 @@ fun openKnownGroup(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, grou
       openGroupChat(rhId, groupInfo.groupId)
     }
   }
+}
+
+// TODO [short links] alert with avatar
+fun showPrepareContactAlert(
+  rhId: Long?,
+  connectionLink: CreatedConnLink,
+  contactShortLinkData: ContactShortLinkData,
+  close: (() -> Unit)?,
+  cleanup: (() -> Unit)?
+) {
+  AlertManager.privacySensitive.showAlertDialog(
+    title = contactShortLinkData.profile.displayName,
+    confirmText = generalGetString(MR.strings.connect_plan_open_chat),
+    onConfirm = {
+      AlertManager.privacySensitive.hideAlert()
+      withBGApi {
+        val contact = chatModel.controller.apiPrepareContact(rhId, connectionLink, contactShortLinkData)
+        if (contact != null) {
+          withContext(Dispatchers.Main) {
+            val chatInfo = ChatInfo.Direct(contact)
+            ChatController.chatModel.chatsContext.addChat(Chat(rhId, chatInfo, chatItems = listOf()))
+            openKnownContact(chatModel, rhId, close, contact)
+          }
+        }
+        cleanup?.invoke()
+      }
+    },
+    hostDevice = hostDevice(rhId),
+  )
+}
+
+// TODO [short links] alert with avatar
+fun showPrepareGroupAlert(
+  rhId: Long?,
+  connectionLink: CreatedConnLink,
+  groupShortLinkData: GroupShortLinkData,
+  close: (() -> Unit)?,
+  cleanup: (() -> Unit)?
+) {
+  AlertManager.privacySensitive.showAlertDialog(
+    title = groupShortLinkData.groupProfile.displayName,
+    confirmText = generalGetString(MR.strings.connect_plan_open_chat),
+    onConfirm = {
+      AlertManager.privacySensitive.hideAlert()
+      withBGApi {
+        val groupInfo = chatModel.controller.apiPrepareGroup(rhId, connectionLink, groupShortLinkData)
+        if (groupInfo != null) {
+          withContext(Dispatchers.Main) {
+            val chatInfo = ChatInfo.Group(groupInfo, groupChatScope = null)
+            ChatController.chatModel.chatsContext.addChat(Chat(rhId, chatInfo, chatItems = listOf()))
+            openKnownGroup(chatModel, rhId, close, groupInfo)
+          }
+        }
+        cleanup?.invoke()
+      }
+    },
+    hostDevice = hostDevice(rhId),
+  )
 }

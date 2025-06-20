@@ -409,7 +409,10 @@ fun ActiveProfilePicker(
         val activeProfile = filteredProfiles.firstOrNull { it.activeUser }
 
         if (activeProfile != null) {
-          val otherProfiles = filteredProfiles.filter { it.userId != activeProfile.userId }
+          val otherProfiles =
+            filteredProfiles
+              .filter { it.userId != activeProfile.userId }
+              .sortedByDescending { it.activeOrder }
           item {
             when {
               !showIncognito ->

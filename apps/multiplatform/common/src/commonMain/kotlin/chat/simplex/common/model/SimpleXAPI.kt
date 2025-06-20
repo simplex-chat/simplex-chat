@@ -1395,6 +1395,8 @@ object ChatController {
     val userId = try { currentUserId("apiPrepareContact") } catch (e: Exception) { return null }
     val r = sendCmd(rh, CC.APIPrepareContact(userId, connLink, contactShortLinkData))
     if (r is API.Result && r.res is CR.NewPreparedContact) return r.res.contact
+    Log.e(TAG, "apiPrepareContact bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_preparing_contact), "${r.responseType}: ${r.details}")
     return null
   }
 
@@ -1402,24 +1404,31 @@ object ChatController {
     val userId = try { currentUserId("apiPrepareGroup") } catch (e: Exception) { return null }
     val r = sendCmd(rh, CC.APIPrepareGroup(userId, connLink, groupShortLinkData))
     if (r is API.Result && r.res is CR.NewPreparedGroup) return r.res.groupInfo
+    Log.e(TAG, "apiPrepareGroup bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_preparing_group), "${r.responseType}: ${r.details}")
     return null
   }
 
   suspend fun apiChangePreparedContactUser(rh: Long?, contactId: Long, newUserId: Long): Contact? {
     val r = sendCmd(rh, CC.APIChangePreparedContactUser(contactId, newUserId))
     if (r is API.Result && r.res is CR.ContactUserChanged) return r.res.toContact
+    Log.e(TAG, "apiChangePreparedContactUser bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_contact_user), "${r.responseType}: ${r.details}")
     return null
   }
 
   suspend fun apiChangePreparedGroupUser(rh: Long?, groupId: Long, newUserId: Long): GroupInfo? {
     val r = sendCmd(rh, CC.APIChangePreparedGroupUser(groupId, newUserId))
     if (r is API.Result && r.res is CR.GroupUserChanged) return r.res.toGroup
+    Log.e(TAG, "apiChangePreparedGroupUser bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_group_user), "${r.responseType}: ${r.details}")
     return null
   }
 
   suspend fun apiConnectPreparedContact(rh: Long?, contactId: Long, incognito: Boolean, msg: MsgContent): Contact? {
     val r = sendCmd(rh, CC.APIConnectPreparedContact(contactId, incognito, msg))
     if (r is API.Result && r.res is CR.StartedConnectionToContact) return r.res.contact
+    Log.e(TAG, "apiConnectPreparedContact bad response: ${r.responseType} ${r.details}")
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiConnectPreparedContact", generalGetString(MR.strings.connection_error), r)
     }
@@ -1429,6 +1438,7 @@ object ChatController {
   suspend fun apiConnectPreparedGroup(rh: Long?, groupId: Long, incognito: Boolean): GroupInfo? {
     val r = sendCmd(rh, CC.APIConnectPreparedGroup(groupId, incognito))
     if (r is API.Result && r.res is CR.StartedConnectionToGroup) return r.res.groupInfo
+    Log.e(TAG, "apiConnectPreparedGroup bad response: ${r.responseType} ${r.details}")
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiConnectPreparedGroup", generalGetString(MR.strings.connection_error), r)
     }
