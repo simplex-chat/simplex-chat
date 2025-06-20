@@ -125,8 +125,8 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
           chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
           mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
           activeConn = Just conn
-          connLinkToConnect = toACreatedConnLink_ connFullLink connShortLink
-       in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, connLinkToConnect, contactRequestId, contactGroupMemberId, contactGrpInvSent, chatTags, chatItemTTL, uiThemes, chatDeleted, customData}
+          preparedContact = toPreparedContact connFullLink connShortLink
+       in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactGroupMemberId, contactGrpInvSent, chatTags, chatItemTTL, uiThemes, chatDeleted, customData}
     getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
     getGroupAndMember_ groupMemberId c = do
       gm <-
@@ -218,7 +218,7 @@ getConnectionEntityViaShortLink db vr user@User {userId} shortLink = fmap either
   (cReq, connId) <- ExceptT getConnReqConnId
   (cReq,) <$> getConnectionEntity db vr user connId
   where
-    getConnReqConnId = 
+    getConnReqConnId =
       firstRow' toConnReqConnId (SEInternalError "connection not found") $
         DB.query
           db

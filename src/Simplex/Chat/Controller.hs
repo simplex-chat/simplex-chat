@@ -451,7 +451,7 @@ data ChatCommand
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
   | APIConnectPlan UserId AConnectionLink
   | APIPrepareContact UserId ACreatedConnLink ContactShortLinkData
-  | APIPrepareGroup UserId ACreatedConnLink GroupShortLinkData
+  | APIPrepareGroup UserId CreatedLinkContact GroupShortLinkData
   | APIChangePreparedContactUser ContactId UserId
   | APIChangePreparedGroupUser GroupId UserId
   | APIConnectPreparedContact {contactId :: ContactId, incognito :: IncognitoEnabled, msgContent_ :: Maybe MsgContent}

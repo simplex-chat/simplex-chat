@@ -1350,7 +1350,7 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
     var fileIdsToApprove: [Int64] = []
     var srvsToApprove: Set<String> = []
     var otherFileErrs: [APIResult<ChatResponse2>] = []
-    
+
     for fileId in fileIds {
         let r: APIResult<ChatResponse2> = await chatApiSendCmd(
             .receiveFile(
@@ -1374,7 +1374,7 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
             otherFileErrs.append(r)
         }
     }
-    
+
     if !auto {
         let otherErrsStr = fileErrorStrs(otherFileErrs)
         // If there are not approved files, alert is shown the same way both in case of singular and plural files reception
@@ -1439,7 +1439,7 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
             }
         }
     }
-    
+
     func fileErrorStrs(_ errs: [APIResult<ChatResponse2>]) -> String {
         var errStr = ""
         if errs.count >= 1 {
@@ -1454,7 +1454,7 @@ func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool
         return errStr
     }
 }
-    
+
 func cancelFile(user: User, fileId: Int64) async {
     if let chatItem = await apiCancelFile(fileId: fileId) {
         await chatItemSimpleUpdate(user, chatItem)

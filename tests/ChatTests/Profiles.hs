@@ -3530,7 +3530,7 @@ testShortLinkAddressChangeAutoReply =
       bobContactSLinkData <- getTermLine bob
       bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> bobContactSLinkData)
       bob <## "alice: contact is prepared"
-      bob <# "alice> welcome!"
+      -- bob <# "alice> welcome!" -- this message is not sent as event
       bob ##> "/_connect contact @2 text hello"
       bob
         <### [ "alice: connection started",
