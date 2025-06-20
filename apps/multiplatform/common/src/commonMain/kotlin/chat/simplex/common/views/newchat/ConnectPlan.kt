@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
@@ -456,7 +457,6 @@ fun openKnownGroup(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, grou
   }
 }
 
-// TODO [short links] alert with avatar
 fun showPrepareContactAlert(
   rhId: Long?,
   connectionLink: CreatedConnLink,
@@ -464,9 +464,9 @@ fun showPrepareContactAlert(
   close: (() -> Unit)?,
   cleanup: (() -> Unit)?
 ) {
-  AlertManager.privacySensitive.showAlertDialog(
-    title = contactShortLinkData.profile.displayName,
-    confirmText = generalGetString(MR.strings.connect_plan_open_chat),
+  AlertManager.privacySensitive.showOpenChatAlert(
+    profileName = contactShortLinkData.profile.displayName,
+    profileImage = { ProfileImage(size = 72.dp, image = contactShortLinkData.profile.image) },
     onConfirm = {
       AlertManager.privacySensitive.hideAlert()
       withBGApi {
@@ -481,11 +481,12 @@ fun showPrepareContactAlert(
         cleanup?.invoke()
       }
     },
-    hostDevice = hostDevice(rhId),
+    onDismiss = {
+      cleanup?.invoke()
+    }
   )
 }
 
-// TODO [short links] alert with avatar
 fun showPrepareGroupAlert(
   rhId: Long?,
   connectionLink: CreatedConnLink,
@@ -493,9 +494,9 @@ fun showPrepareGroupAlert(
   close: (() -> Unit)?,
   cleanup: (() -> Unit)?
 ) {
-  AlertManager.privacySensitive.showAlertDialog(
-    title = groupShortLinkData.groupProfile.displayName,
-    confirmText = generalGetString(MR.strings.connect_plan_open_chat),
+  AlertManager.privacySensitive.showOpenChatAlert(
+    profileName = groupShortLinkData.groupProfile.displayName,
+    profileImage = { ProfileImage(size = 72.dp, image = groupShortLinkData.groupProfile.image, icon = MR.images.ic_supervised_user_circle_filled) },
     onConfirm = {
       AlertManager.privacySensitive.hideAlert()
       withBGApi {
@@ -510,6 +511,8 @@ fun showPrepareGroupAlert(
         cleanup?.invoke()
       }
     },
-    hostDevice = hostDevice(rhId),
+    onDismiss = {
+      cleanup?.invoke()
+    }
   )
 }
