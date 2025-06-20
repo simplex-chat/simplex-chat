@@ -245,6 +245,7 @@ fun chatItemPreview(chatItem: ChatItem): ComposePreview {
     is MsgContent.MCVoice -> ComposePreview.VoicePreview(voice = fileName, mc.duration / 1000, true)
     is MsgContent.MCFile -> ComposePreview.FilePreview(fileName, getAppFileUri(fileName))
     is MsgContent.MCReport -> ComposePreview.NoPreview
+    is MsgContent.MCChat -> ComposePreview.NoPreview
     is MsgContent.MCUnknown, null -> ComposePreview.NoPreview
   }
 }
@@ -564,6 +565,8 @@ fun ComposeView(
         is MsgContent.MCVoice -> MsgContent.MCVoice(msgText, duration = msgContent.duration)
         is MsgContent.MCFile -> MsgContent.MCFile(msgText)
         is MsgContent.MCReport -> MsgContent.MCReport(msgText, reason = msgContent.reason)
+        // TODO [short links] update chat link
+        is MsgContent.MCChat -> MsgContent.MCChat(msgText, chatLink = msgContent.chatLink)
         is MsgContent.MCUnknown -> MsgContent.MCUnknown(type = msgContent.type, text = msgText, json = msgContent.json)
       }
     }
