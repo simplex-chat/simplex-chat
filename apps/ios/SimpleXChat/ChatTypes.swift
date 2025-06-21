@@ -1735,7 +1735,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
     public var nextConnectPrepared: Bool { get { preparedContact != nil && activeConn == nil } }
     public var nextAcceptContactRequest: Bool { get { contactRequestId != nil && activeConn == nil } }
-    public var sendMsgToConnect: Bool { nextSendGrpInv || preparedContact != nil }
+    public var sendMsgToConnect: Bool { nextSendGrpInv || nextConnectPrepared }
     public var displayName: String { localAlias == "" ? profile.displayName : localAlias }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }

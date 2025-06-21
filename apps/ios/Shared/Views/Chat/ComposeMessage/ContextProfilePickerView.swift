@@ -50,7 +50,7 @@ struct ContextProfilePickerView: View {
     private func currentSelection() -> some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Share profile")
+                Text("Your profile")
                     .font(.callout)
                     .foregroundColor(theme.colors.secondary)
                 Spacer()

@@ -227,7 +227,7 @@ func apiDeleteUser(_ userId: Int64, _ delSMPQueues: Bool, viewPwd: String?) asyn
 }
 
 func apiStartChat(ctrl: chat_ctrl? = nil) throws -> Bool {
-    let r: ChatResponse0 = try chatSendCmdSync(.startChat(mainApp: true, enableSndFiles: true, largeLinkData: false), ctrl: ctrl)
+    let r: ChatResponse0 = try chatSendCmdSync(.startChat(mainApp: true, enableSndFiles: true, largeLinkData: true), ctrl: ctrl)
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false
@@ -1001,17 +1001,17 @@ private func connectionErrorAlert<R>(_ r: APIResult<R>) -> Alert {
     }
 }
 
-func apiPrepareContact(connLink: CreatedConnLink, contactShortLinkData: ContactShortLinkData) async throws -> Contact {
+func apiPrepareContact(connLink: CreatedConnLink, contactShortLinkData: ContactShortLinkData) async throws -> ChatData {
     let userId = try currentUserId("apiPrepareContact")
     let r: ChatResponse1 = try await chatSendCmd(.apiPrepareContact(userId: userId, connLink: connLink, contactShortLinkData: contactShortLinkData))
-    if case let .newPreparedContact(_, contact) = r { return contact }
+    if case let .newPreparedChat(_, chat) = r { return chat }
     throw r.unexpected
 }
 
-func apiPrepareGroup(connLink: CreatedConnLink, groupShortLinkData: GroupShortLinkData) async throws -> GroupInfo {
+func apiPrepareGroup(connLink: CreatedConnLink, groupShortLinkData: GroupShortLinkData) async throws -> ChatData {
     let userId = try currentUserId("apiPrepareGroup")
     let r: ChatResponse1 = try await chatSendCmd(.apiPrepareGroup(userId: userId, connLink: connLink, groupShortLinkData: groupShortLinkData))
-    if case let .newPreparedGroup(_, groupInfo) = r { return groupInfo }
+    if case let .newPreparedChat(_, chat) = r { return chat }
     throw r.unexpected
 }
 
@@ -2134,17 +2134,16 @@ func processReceivedMsg(_ res: ChatEvent) async {
         await MainActor.run {
             n.setContactNetworkStatus(contact, .connected)
         }
-    case let .receivedContactRequest(user, contactRequest, contact_):
+    case let .receivedContactRequest(user, contactRequest, chat_):
         if active(user) {
             await MainActor.run {
-                if let contact = contact_ { // means contact request was created with contact, so we need to add/update contact chat
-                    if m.hasChat(contact.id) {
-                        m.updateContact(contact)
+                if let chat = chat_ { // means contact request was created with contact, so we need to add/update contact chat
+                    if !m.hasChat(chat.id) {
+                        m.addChat(Chat(chat))
+                    } else if m.chatId == chat.id {
+                        m.updateChatInfo(chat.chatInfo)
                     } else {
-                        m.addChat(Chat(
-                            chatInfo: ChatInfo.direct(contact: contact),
-                            chatItems: []
-                        ))
+                        m.replaceChat(chat.id, Chat(chat))
                     }
                 } else {
                     let cInfo = ChatInfo.contactRequest(contactRequest: contactRequest)

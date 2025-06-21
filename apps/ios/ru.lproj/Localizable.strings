@@ -3023,7 +3023,7 @@ snd error text */
 "Join" = "Вступить";
 
 /* No comment provided by engineer. */
-"join as %@" = "вступить как %@";
+"Join as %@" = "вступить как %@";
 
 /* new chat sheet title */
 "Join group" = "Вступить в группу";
@@ -5828,7 +5828,7 @@ report reason */
 "You are connected to the server used to receive messages from this contact." = "Установлено соединение с сервером, через который Вы получаете сообщения от этого контакта.";
 
 /* No comment provided by engineer. */
-"you are invited to group" = "Вы приглашены в группу";
+"You are invited to group" = "Вы приглашены в группу";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Вы приглашены в группу";
@@ -6090,4 +6090,3 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Ваш адрес SimpleX";
-

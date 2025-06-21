@@ -34,7 +34,7 @@ actor TerminalItems {
         await add(.cmd(start, cmd))
         await addResult(res)
     }
-    
+
     func addResult<R: ChatAPIResult>(_ res: APIResult<R>) async {
         let item: TerminalItem = switch res {
         case let .result(r): .res(.now, r)
@@ -181,12 +181,12 @@ class PreloadState {
 
 class ChatTagsModel: ObservableObject {
     static let shared = ChatTagsModel()
-    
+
     @Published var userTags: [ChatTag] = []
     @Published var activeFilter: ActiveFilter? = nil
     @Published var presetTags: [PresetTag:Int] = [:]
     @Published var unreadTags: [Int64:Int] = [:]
-    
+
     func updateChatTags(_ chats: [Chat]) {
         let tm = ChatTagsModel.shared
         var newPresetTags: [PresetTag:Int] = [:]
@@ -240,13 +240,13 @@ class ChatTagsModel: ObservableObject {
         }
         clearActiveChatFilterIfNeeded()
     }
-    
+
     func markChatTagRead(_ chat: Chat) -> Void {
         if chat.unreadTag, let tags = chat.chatInfo.chatTags {
             decTagsReadCount(tags)
         }
     }
-    
+
     func updateChatTagRead(_ chat: Chat, wasUnread: Bool) -> Void {
         guard let tags = chat.chatInfo.chatTags else { return }
         let nowUnread = chat.unreadTag
@@ -760,7 +760,7 @@ final class ChatModel: ObservableObject {
                   let updatedItem = removedUpdatedItem(chat.chatItems[0]) {
                 chat.chatItems = [updatedItem]
         }
-        
+
         func removedUpdatedItem(_ item: ChatItem) -> ChatItem? {
             let newContent: CIContent
             if case .groupSnd = item.chatDir, removedMember.groupMemberId == groupInfo.membership.groupMemberId {
@@ -934,7 +934,7 @@ final class ChatModel: ObservableObject {
     }
 
     let popChatCollector = PopChatCollector()
-    
+
     class PopChatCollector {
         private let subject = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
@@ -947,7 +947,7 @@ final class ChatModel: ObservableObject {
                 .sink { self.popCollectedChats() }
                 .store(in: &bag)
         }
-        
+
         func throttlePopChat(_ chatId: ChatId, currentPosition: Int) {
             let m = ChatModel.shared
             if currentPosition > 0 && m.chatId == chatId {
@@ -958,7 +958,7 @@ final class ChatModel: ObservableObject {
                 subject.send()
             }
         }
-        
+
         func clear() {
             chatsToPop = [:]
         }
@@ -1265,7 +1265,7 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
         default: chatStats.unreadChat
         }
     }
-    
+
     var id: ChatId { get { chatInfo.id } }
 
     var viewId: String { get { "\(chatInfo.id) \(created.timeIntervalSince1970)" } }

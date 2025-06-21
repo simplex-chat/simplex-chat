@@ -1701,7 +1701,7 @@ snd error text */
 "Join" = "เข้าร่วม";
 
 /* No comment provided by engineer. */
-"join as %@" = "เข้าร่วมเป็น %@";
+"Join as %@" = "เข้าร่วมเป็น %@";
 
 /* new chat sheet title */
 "Join group" = "เข้าร่วมกลุ่ม";
@@ -3125,7 +3125,7 @@ chat item action */
 "You are connected to the server used to receive messages from this contact." = "คุณเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้";
 
 /* No comment provided by engineer. */
-"you are invited to group" = "คุณได้รับเชิญให้เข้าร่วมกลุ่ม";
+"You are invited to group" = "คุณได้รับเชิญให้เข้าร่วมกลุ่ม";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "คุณได้รับเชิญให้เข้าร่วมกลุ่ม";
@@ -3306,4 +3306,3 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "ที่อยู่ SimpleX ของคุณ";
-

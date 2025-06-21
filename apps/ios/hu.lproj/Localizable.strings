@@ -3023,7 +3023,7 @@ snd error text */
 "Join" = "Csatlakozás";
 
 /* No comment provided by engineer. */
-"join as %@" = "csatlakozás mint %@";
+"Join as %@" = "csatlakozás mint %@";
 
 /* new chat sheet title */
 "Join group" = "Csatlakozás csoporthoz";
@@ -5828,7 +5828,7 @@ report reason */
 "You are connected to the server used to receive messages from this contact." = "Ön már kapcsolódott ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál.";
 
 /* No comment provided by engineer. */
-"you are invited to group" = "Ön meghívást kapott a csoportba";
+"You are invited to group" = "Ön meghívást kapott a csoportba";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Ön meghívást kapott a csoportba";
@@ -6090,4 +6090,3 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Profil SimpleX-címe";
-

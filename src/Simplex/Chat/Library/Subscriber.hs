@@ -1253,6 +1253,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 CORRequest cReq ct_ -> do
                   chat_ <- forM ct_ $ \ct@Contact {profile} -> do
                     -- TODO [short links] prevent duplicate items - needs some flag?
+                    -- update welcome message if changed (send update event to UI) and add updated feature items.
+                    -- Do not created e2e item on repeat request
                     let createItem content = createInternalItemForChat user (CDDirectRcv ct) False content Nothing
                     void $ createItem $ CIRcvContactInfo $ fromLocalProfile profile
                     void $ createItem $ CIRcvDirectE2EEInfo $ E2EInfo $ Just $ CR.pqSupportToEnc $ reqPQSup

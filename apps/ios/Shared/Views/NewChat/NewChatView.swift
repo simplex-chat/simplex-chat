@@ -1022,10 +1022,10 @@ private func showPrepareContactAlert(
         onConfirm: {
             Task {
                 do {
-                    let contact = try await apiPrepareContact(connLink: connectionLink, contactShortLinkData: contactShortLinkData)
+                    let chat = try await apiPrepareContact(connLink: connectionLink, contactShortLinkData: contactShortLinkData)
                     await MainActor.run {
-                        ChatModel.shared.addChat(Chat(chatInfo: .direct(contact: contact)))
-                        openKnownContact(contact, dismiss: dismiss, showAlreadyExistsAlert: nil)
+                        ChatModel.shared.addChat(Chat(chat))
+                        openKnownChat(chat.id, dismiss: dismiss, showAlreadyExistsAlert: nil)
                         cleanup?()
                     }
                 } catch let error {
@@ -1057,10 +1057,10 @@ private func showPrepareGroupAlert(
         onConfirm: {
             Task {
                 do {
-                    let groupInfo = try await apiPrepareGroup(connLink: connectionLink, groupShortLinkData: groupShortLinkData)
+                    let chat = try await apiPrepareGroup(connLink: connectionLink, groupShortLinkData: groupShortLinkData)
                     await MainActor.run {
-                        ChatModel.shared.addChat(Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil)))
-                        openKnownGroup(groupInfo, dismiss: dismiss, showAlreadyExistsAlert: nil)
+                        ChatModel.shared.addChat(Chat(chat))
+                        openKnownChat(chat.id, dismiss: dismiss, showAlreadyExistsAlert: nil)
                         cleanup?()
                     }
                 } catch let error {
@@ -1368,35 +1368,27 @@ private func connectViaLink(
 }
 
 func openKnownContact(_ contact: Contact, dismiss: Bool, showAlreadyExistsAlert: (() -> Void)?) {
-    let m = ChatModel.shared
-    if let c = m.getContactChat(contact.contactId) {
-        if dismiss {
-            dismissAllSheets(animated: true) {
-                ItemsModel.shared.loadOpenChat(c.id) {
-                    showAlreadyExistsAlert?()
-                }
-            }
-        } else {
-            ItemsModel.shared.loadOpenChat(c.id) {
-                showAlreadyExistsAlert?()
-            }
-        }
+    if let c = ChatModel.shared.getContactChat(contact.contactId) {
+        openKnownChat(c.id, dismiss: dismiss, showAlreadyExistsAlert: showAlreadyExistsAlert)
     }
 }
 
 func openKnownGroup(_ groupInfo: GroupInfo, dismiss: Bool, showAlreadyExistsAlert: (() -> Void)?) {
-    let m = ChatModel.shared
-    if let g = m.getGroupChat(groupInfo.groupId) {
-        if dismiss {
-            dismissAllSheets(animated: true) {
-                ItemsModel.shared.loadOpenChat(g.id) {
-                    showAlreadyExistsAlert?()
-                }
-            }
-        } else {
-            ItemsModel.shared.loadOpenChat(g.id) {
+    if let g = ChatModel.shared.getGroupChat(groupInfo.groupId) {
+        openKnownChat(g.id, dismiss: dismiss, showAlreadyExistsAlert: showAlreadyExistsAlert)
+    }
+}
+
+func openKnownChat(_ chatId: ChatId, dismiss: Bool, showAlreadyExistsAlert: (() -> Void)?) {
+    if dismiss {
+        dismissAllSheets(animated: true) {
+            ItemsModel.shared.loadOpenChat(chatId) {
                 showAlreadyExistsAlert?()
             }
+        }
+    } else {
+        ItemsModel.shared.loadOpenChat(chatId) {
+            showAlreadyExistsAlert?()
         }
     }
 }

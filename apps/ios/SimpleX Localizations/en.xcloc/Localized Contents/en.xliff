@@ -9752,7 +9752,7 @@ pref value</note>
         <target>italic</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="join as %@" xml:space="preserve">
+      <trans-unit id="Join as %@" xml:space="preserve">
         <source>join as %@</source>
         <target>join as %@</target>
         <note>No comment provided by engineer.</note>
@@ -10194,9 +10194,9 @@ last received msg: %2$@</target>
         <target>you accepted this member</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you are invited to group" xml:space="preserve">
-        <source>you are invited to group</source>
-        <target>you are invited to group</target>
+      <trans-unit id="You are invited to group" xml:space="preserve">
+        <source>You are invited to group</source>
+        <target>You are invited to group</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you are observer" xml:space="preserve">
