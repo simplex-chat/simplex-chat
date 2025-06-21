@@ -2117,6 +2117,14 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
         return membership.memberRole >= .moderator && membership.memberActive
     }
 
+    public var chatIconName: String {
+        switch businessChat?.chatType {
+        case .none: "person.2.circle.fill"
+        case .business: "briefcase.circle.fill"
+        case .customer: "person.crop.circle.fill"
+        }
+    }
+
     public static let sampleData = GroupInfo(
         groupId: 1,
         localDisplayName: "team",
@@ -3068,7 +3076,8 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 itemLive: false,
                 userMention: false,
                 deletable: false,
-                editable: false
+                editable: false,
+                showGroupAsSender: false
             ),
             content: .sndMsgContent(msgContent: .report(text: text, reason: reason)),
             quotedItem: CIQuote.getSample(item.id, item.meta.createdAt, item.text, chatDir: item.chatDir),
@@ -3091,7 +3100,8 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 itemLive: false,
                 userMention: false,
                 deletable: false,
-                editable: false
+                editable: false,
+                showGroupAsSender: false
             ),
             content: .rcvDeleted(deleteMode: .cidmBroadcast),
             quotedItem: nil,
@@ -3114,7 +3124,8 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 itemLive: true,
                 userMention: false,
                 deletable: false,
-                editable: false
+                editable: false,
+                showGroupAsSender: false
             ),
             content: .sndMsgContent(msgContent: .text("")),
             quotedItem: nil,
@@ -3189,6 +3200,7 @@ public struct CIMeta: Decodable, Hashable {
     public var userMention: Bool
     public var deletable: Bool
     public var editable: Bool
+    public var showGroupAsSender: Bool
 
     public var timestampText: Text { Text(formatTimestampMeta(itemTs)) }
     public var recent: Bool { updatedAt + 10 > .now }
@@ -3213,7 +3225,8 @@ public struct CIMeta: Decodable, Hashable {
             itemLive: itemLive,
             userMention: false,
             deletable: deletable,
-            editable: editable
+            editable: editable,
+            showGroupAsSender: false
         )
     }
 
@@ -3230,7 +3243,8 @@ public struct CIMeta: Decodable, Hashable {
             itemLive: false,
             userMention: false,
             deletable: false,
-            editable: false
+            editable: false,
+            showGroupAsSender: false
         )
     }
 }
