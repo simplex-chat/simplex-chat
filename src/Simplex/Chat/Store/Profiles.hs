@@ -469,7 +469,7 @@ data AutoAccept = AutoAccept
     acceptIncognito :: IncognitoEnabled,
     autoReply :: Maybe MsgContent
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
 $(J.deriveJSON defaultJSON ''AutoAccept)
 

@@ -1251,14 +1251,18 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               withStore (\db -> createOrUpdateContactRequest db vr user uclId invId chatVRange p xContactId_ reqPQSup) >>= \case
                 CORContact ct -> toView $ CEvtContactRequestAlreadyAccepted user ct
                 CORRequest cReq ct_ -> do
-                  forM_ ct_ $ \ct@Contact {profile} -> do
+                  chat_ <- forM ct_ $ \ct@Contact {profile} -> do
                     -- TODO [short links] prevent duplicate items - needs some flag?
-                    let createItem content = void $ createInternalItemForChat user (CDDirectRcv ct) False content Nothing
-                    createItem $ CIRcvContactInfo $ fromLocalProfile profile
-                    createItem $ CIRcvDirectE2EEInfo $ E2EInfo $ Just $ CR.pqSupportToEnc $ reqPQSup
+                    let createItem content = createInternalItemForChat user (CDDirectRcv ct) False content Nothing
+                    void $ createItem $ CIRcvContactInfo $ fromLocalProfile profile
+                    void $ createItem $ CIRcvDirectE2EEInfo $ E2EInfo $ Just $ CR.pqSupportToEnc $ reqPQSup
                     void $ createFeatureEnabledItems_ user ct
-                    mapM_ (createItem . CIRcvMsgContent) mc_
-                  toView $ CEvtReceivedContactRequest user cReq ct_
+                    aci <- mapM (createItem . CIRcvMsgContent) mc_
+                    let cInfo = DirectChat ct
+                    pure $ AChat SCTDirect $ case aci of
+                      Just (AChatItem SCTDirect dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
+                      _ -> Chat cInfo [] emptyChatStats
+                  toView $ CEvtReceivedContactRequest user cReq chat_
             Just AutoAccept {businessAddress, acceptIncognito, autoReply}
               | businessAddress ->
                   if isSimplexTeam && v < businessChatsVersion
