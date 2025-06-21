@@ -557,7 +557,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               -- TODO update member profile
               pure ()
             XInfo profile -> do
-              let prepared = isJust $ preparedContact ct
+              let prepared = isJust (preparedContact ct) || isJust (contactRequestId' ct)
               void $ processContactProfileUpdate ct profile prepared
             XOk -> pure ()
             _ -> messageError "INFO for existing contact must have x.grp.mem.info, x.info or x.ok"
@@ -572,12 +572,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               lift $ setContactNetworkStatus ct' NSConnected
               toView $ CEvtContactConnected user ct' (fmap fromLocalProfile incognitoProfile)
               let createE2EItem = createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ E2EInfo $ Just pqEnc) Nothing
-              when (directOrUsed ct') $ case preparedContact ct' of
-                Nothing -> do
+              when (directOrUsed ct') $ case (preparedContact ct', contactRequestId' ct') of
+                (Nothing, Nothing) -> do
                   createE2EItem
                   createFeatureEnabledItems user ct'
-                Just PreparedContact {connLinkToConnect = cl} ->
-                  unless (Just pqEnc == connLinkPQEncryption cl) createE2EItem
+                (Just PreparedContact {connLinkToConnect = ACCL _ (CCLink cReq _)}, _) ->
+                  unless (Just pqEnc == connRequestPQEncryption cReq) createE2EItem
+                (_, Just connReqId) -> do
+                  UserContactRequest {pqSupport} <- withStore $ \db -> getContactRequest db user connReqId
+                  unless (CR.pqSupportToEnc pqSupport == pqEnc) createE2EItem
               when (contactConnInitiated conn') $ do
                 let Connection {groupLinkId} = conn'
                     doProbeContacts = isJust groupLinkId
@@ -1248,10 +1251,20 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               withStore (\db -> createOrUpdateContactRequest db vr user uclId invId chatVRange p xContactId_ reqPQSup) >>= \case
                 CORContact ct -> toView $ CEvtContactRequestAlreadyAccepted user ct
                 CORRequest cReq ct_ -> do
-                  forM_ ct_ $ \ct ->
-                    forM_ mc_ $ \mc ->
-                      createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent mc) Nothing
-                  toView $ CEvtReceivedContactRequest user cReq ct_
+                  chat_ <- forM ct_ $ \ct@Contact {profile} -> do
+                    -- TODO [short links] prevent duplicate items - needs some flag?
+                    -- update welcome message if changed (send update event to UI) and add updated feature items.
+                    -- Do not created e2e item on repeat request
+                    let createItem content = createInternalItemForChat user (CDDirectRcv ct) False content Nothing
+                    void $ createItem $ CIRcvContactInfo $ fromLocalProfile profile
+                    void $ createItem $ CIRcvDirectE2EEInfo $ E2EInfo $ Just $ CR.pqSupportToEnc $ reqPQSup
+                    void $ createFeatureEnabledItems_ user ct
+                    aci <- mapM (createItem . CIRcvMsgContent) mc_
+                    let cInfo = DirectChat ct
+                    pure $ AChat SCTDirect $ case aci of
+                      Just (AChatItem SCTDirect dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
+                      _ -> Chat cInfo [] emptyChatStats
+                  toView $ CEvtReceivedContactRequest user cReq chat_
             Just AutoAccept {businessAddress, acceptIncognito, autoReply}
               | businessAddress ->
                   if isSimplexTeam && v < businessChatsVersion

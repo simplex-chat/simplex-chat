@@ -190,8 +190,10 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRConnectionIncognitoUpdated u c customUserProfile -> ttyUser u $ viewConnectionIncognitoUpdated c customUserProfile testView
   CRConnectionUserChanged u c c' nu -> ttyUser u $ viewConnectionUserChanged u c nu c'
   CRConnectionPlan u connLink connectionPlan -> ttyUser u $ viewConnectionPlan cfg connLink connectionPlan
-  CRNewPreparedContact u c -> ttyUser u  [ttyContact' c <> ": contact is prepared"]
-  CRNewPreparedGroup u g -> ttyUser u [ttyGroup' g <> ": group is prepared"]
+  CRNewPreparedChat u (AChat _ (Chat cInfo _ _)) -> ttyUser u $ case cInfo of
+    DirectChat ct -> [ttyContact' ct <> ": contact is prepared"]
+    GroupChat g _ -> [ttyGroup' g <> ": group is prepared"]
+    _ -> ["prepared chat error: unexpected type"]
   CRContactUserChanged u c nu c' -> ttyUser u $ viewContactUserChanged u c nu c'
   CRGroupUserChanged u g nu g' -> ttyUser u $ viewGroupUserChanged u g nu g'
   CRSentConfirmation u _ _customUserProfile -> ttyUser u ["confirmation sent!"]
@@ -418,7 +420,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtContactUpdated {user = u, fromContact = c, toContact = c'} -> ttyUser u $ viewContactUpdated c c' <> viewContactPrefsUpdated u c c'
   CEvtGroupMemberUpdated {} -> []
   CEvtContactsMerged u intoCt mergedCt ct' -> ttyUser u $ viewContactsMerged intoCt mergedCt ct'
-  CEvtReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} _ct_ -> ttyUser u $ viewReceivedContactRequest c profile
+  CEvtReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} _chat -> ttyUser u $ viewReceivedContactRequest c profile
   CEvtRcvFileStart u ci -> ttyUser u $ receivingFile_' hu testView "started" ci
   CEvtRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" ci
   CEvtRcvStandaloneFileComplete u _ ft -> ttyUser u $ receivingFileStandalone "completed" ft

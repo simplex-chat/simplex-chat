@@ -3023,7 +3023,7 @@ snd error text */
 "Join" = "Unirte";
 
 /* No comment provided by engineer. */
-"join as %@" = "unirte como %@";
+"Join as %@" = "unirte como %@";
 
 /* new chat sheet title */
 "Join group" = "Unirte al grupo";
@@ -5828,7 +5828,7 @@ report reason */
 "You are connected to the server used to receive messages from this contact." = "Estás conectado al servidor usado para recibir mensajes de este contacto.";
 
 /* No comment provided by engineer. */
-"you are invited to group" = "has sido invitado a un grupo";
+"You are invited to group" = "has sido invitado a un grupo";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Has sido invitado a un grupo";
@@ -6090,4 +6090,3 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Mi dirección SimpleX";
-

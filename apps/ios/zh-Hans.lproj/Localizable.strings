@@ -2963,7 +2963,7 @@ snd error text */
 "Join" = "加入";
 
 /* No comment provided by engineer. */
-"join as %@" = "以 %@ 身份加入";
+"Join as %@" = "以 %@ 身份加入";
 
 /* new chat sheet title */
 "Join group" = "加入群组";
@@ -5446,7 +5446,7 @@ chat item action */
 "You are connected to the server used to receive messages from this contact." = "您已连接到用于接收该联系人消息的服务器。";
 
 /* No comment provided by engineer. */
-"you are invited to group" = "您被邀请加入群组";
+"You are invited to group" = "您被邀请加入群组";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "您被邀请加入群组";
@@ -5678,4 +5678,3 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "您的 SimpleX 地址";
-

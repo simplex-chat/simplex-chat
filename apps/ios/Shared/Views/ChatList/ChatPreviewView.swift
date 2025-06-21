@@ -24,7 +24,7 @@ struct ChatPreviewView: View {
 
     var dynamicMediaSize: CGFloat { dynamicSize(userFont).mediaSize }
     var dynamicChatInfoSize: CGFloat { dynamicSize(userFont).chatInfoSize }
-    
+
     var body: some View {
         let cItem = chat.chatItems.last
         return ZStack {
@@ -35,7 +35,7 @@ struct ChatPreviewView: View {
                         .padding([.bottom, .trailing], 1)
                 }
                 .padding(.leading, 4)
-                
+
                 let chatTs = if let cItem {
                     cItem.meta.itemTs
                 } else {
@@ -53,7 +53,7 @@ struct ChatPreviewView: View {
                     }
                     .padding(.bottom, 4)
                     .padding(.horizontal, 8)
-                    
+
                     ZStack(alignment: .topTrailing) {
                         let chat = activeContentPreview?.chat ?? chat
                         let ci = activeContentPreview?.ci ?? chat.chatItems.last
@@ -88,14 +88,14 @@ struct ChatPreviewView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.trailing, 8)
-                    
+
                     Spacer()
                 }
                 .frame(maxHeight: .infinity)
             }
             .opacity(deleting ? 0.4 : 1)
             .padding(.bottom, -8)
-            
+
             if deleting {
                 ProgressView()
                     .scaleEffect(2)
@@ -168,7 +168,7 @@ struct ChatPreviewView: View {
                 deleting
                 ? Color.secondary
                 : (
-                    contact.nextAcceptContactRequest
+                    contact.nextAcceptContactRequest || contact.nextConnectPrepared
                     ? theme.colors.primary
                     : nil
                 )
@@ -260,7 +260,7 @@ struct ChatPreviewView: View {
             Color.clear.frame(width: 0)
         }
     }
-    
+
     private func mentionColor(_ chat: Chat) -> Color {
         switch chat.chatInfo.chatSettings?.enableNtfs {
         case .all: theme.colors.primary
@@ -321,7 +321,7 @@ struct ChatPreviewView: View {
             default: return nil
             }
         }
-        
+
         func prefix() -> NSAttributedString? {
             switch cItem.content.msgContent {
             case let .report(_, reason): reason.attrString
@@ -334,36 +334,40 @@ struct ChatPreviewView: View {
         if chatModel.draftChatId == chat.id, let draft = chatModel.draft {
             let (t, hasSecrets) = messageDraft(draft)
             chatPreviewLayout(t, draft: true, hasFilePreview: hasFilePreview, hasSecrets: hasSecrets)
+        } else if cItem?.content.msgContent == nil, let previewText = chatPreviewInfoText() {
+            chatPreviewInfoTextLayout(previewText)
         } else if let cItem = cItem {
             let (t, hasSecrets) = chatItemPreview(cItem)
             chatPreviewLayout(itemStatusMark(cItem) + t, hasFilePreview: hasFilePreview, hasSecrets: hasSecrets)
-        } else {
-            switch (chat.chatInfo) {
-            case let .direct(contact):
-                if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
-                    chatPreviewInfoText("Tap to Connect")
-                        .foregroundColor(theme.colors.primary)
-                } else if contact.nextAcceptContactRequest {
-                    chatPreviewInfoText("swipe or open to connect")
-                } else if contact.sendMsgToConnect {
-                    chatPreviewInfoText("send to connect")
-                } else if !contact.sndReady && contact.activeConn != nil && contact.active {
-                    chatPreviewInfoText("connecting…")
-                }
-            case let .group(groupInfo, _):
-                if groupInfo.nextConnectPrepared {
-                    chatPreviewInfoText("open to join")
-                } else {
-                    switch (groupInfo.membership.memberStatus) {
-                    case .memRejected: chatPreviewInfoText("rejected")
-                    case .memInvited: groupInvitationPreviewText(groupInfo)
-                    case .memAccepted: chatPreviewInfoText("connecting…")
-                    case .memPendingReview, .memPendingApproval: chatPreviewInfoText("reviewed by admins")
-                    default: EmptyView()
-                    }
-                }
-            default: EmptyView()
+        }
+    }
+
+    private func chatPreviewInfoText() -> Text? {
+        switch (chat.chatInfo) {
+        case let .direct(contact):
+            if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
+                Text("Tap to Connect")
+                    .foregroundColor(theme.colors.primary)
+            } else if contact.nextAcceptContactRequest || contact.sendMsgToConnect {
+                Text("Open to connect")
+            } else if !contact.sndReady && contact.activeConn != nil && contact.active {
+                Text("connecting…")
+            } else {
+                nil
             }
+        case let .group(groupInfo, _):
+            if groupInfo.nextConnectPrepared {
+                Text("Open to join")
+            } else {
+                switch (groupInfo.membership.memberStatus) {
+                case .memRejected: Text("rejected")
+                case .memInvited: groupInvitationPreviewText(groupInfo)
+                case .memAccepted: Text("connecting…")
+                case .memPendingReview, .memPendingApproval: Text("reviewed by admins")
+                default: nil
+                }
+            }
+        default: nil
         }
     }
 
@@ -413,14 +417,14 @@ struct ChatPreviewView: View {
     }
 
 
-    @ViewBuilder private func groupInvitationPreviewText(_ groupInfo: GroupInfo) -> some View {
+    private func groupInvitationPreviewText(_ groupInfo: GroupInfo) -> Text {
         groupInfo.membership.memberIncognito
-        ? chatPreviewInfoText("join as \(groupInfo.membership.memberProfile.displayName)")
-        : chatPreviewInfoText("you are invited to group")
+        ? Text("Join as \(groupInfo.membership.memberProfile.displayName)")
+        : Text("You are invited to group")
     }
 
-    private func chatPreviewInfoText(_ text: LocalizedStringKey) -> some View {
-        Text(text)
+    private func chatPreviewInfoTextLayout(_ text: Text) -> some View {
+        text
             .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
             .padding([.leading, .trailing], 8)
             .padding(.bottom, 4)

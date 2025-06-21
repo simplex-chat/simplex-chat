@@ -9,10 +9,6 @@
 import SwiftUI
 import SimpleXChat
 
-enum ContactType: Int {
-    case card, contactWithRequest, request, recent, chatDeleted, unlisted
-}
-
 struct NewChatMenuButton: View {
     // do not use chatModel here because it prevents showing AddGroupMembersView after group creation and QR code after link creation on iOS 16
 //    @EnvironmentObject var chatModel: ChatModel
@@ -42,7 +38,6 @@ private var indent: CGFloat = 36
 
 struct NewChatSheet: View {
     @EnvironmentObject var theme: AppTheme
-    @State private var baseContactTypes: [ContactType] = [.card, .contactWithRequest, .request, .recent]
     @EnvironmentObject var chatModel: ChatModel
     @State private var searchMode = false
     @FocusState var searchFocussed: Bool
@@ -60,7 +55,7 @@ struct NewChatSheet: View {
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
 
     var body: some View {
-        let showArchive = !filterContactTypes(chats: chatModel.chats, contactTypes: [.chatDeleted]).isEmpty
+        let showArchive = chatModel.chats.contains { $0.chatInfo.contact?.chatDeleted == true }
         let v = NavigationView {
             viewBody(showArchive)
                 .navigationTitle("New message")
@@ -145,7 +140,7 @@ struct NewChatSheet: View {
             }
             
             ContactsList(
-                baseContactTypes: $baseContactTypes,
+                chatPredicate: contactListChatPredicate,
                 searchMode: $searchMode,
                 searchText: $searchText,
                 header: "Your Contacts",
@@ -156,7 +151,15 @@ struct NewChatSheet: View {
             )
         }
     }
-    
+
+    private func contactListChatPredicate(_ chat: Chat, _ withSearch: Bool) -> Bool {
+        switch chat.chatInfo {
+        case .contactRequest: true
+        case let .direct(contact): contact.isContactCard || contact.active || (contact.chatDeleted && withSearch)
+        default: false
+        }
+    }
+
     /// Extends label's tap area to match `.insetGrouped` list row insets
     private func navigateOnTap<L: View>(_ label: L, setActive: @escaping () -> Void) -> some View {
         label
@@ -186,37 +189,24 @@ struct NewChatSheet: View {
     }
 }
 
-func chatContactType(_ chat: Chat) -> ContactType {
+func chatOrderRank(_ chat: Chat) -> Int {
     switch chat.chatInfo {
-    case .contactRequest:
-        return .request
+    case .contactRequest: 4
     case let .direct(contact):
-        if contact.nextAcceptContactRequest {
-            return .contactWithRequest
-        } else if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
-            return .card
-        } else if contact.chatDeleted {
-            return .chatDeleted
-        } else if contact.contactStatus == .active {
-            return .recent
-        } else {
-            return .unlisted
-        }
-    default:
-        return .unlisted
-    }
-}
-
-private func filterContactTypes(chats: [Chat], contactTypes: [ContactType]) -> [Chat] {
-    return chats.filter { chat in
-        contactTypes.contains(chatContactType(chat))
+        contact.isContactCard ? 5
+        : contact.nextAcceptContactRequest ? 4
+        : contact.nextConnectPrepared ? 3
+        : contact.active ? 2
+        : contact.chatDeleted ? 1
+        : 0
+    default: 0
     }
 }
 
 struct ContactsList: View {
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatModel: ChatModel
-    @Binding var baseContactTypes: [ContactType]
+    var chatPredicate: (Chat, Bool) -> Bool // (chat, search) -> show
     @Binding var searchMode: Bool
     @Binding var searchText: String
     var header: String? = nil
@@ -227,8 +217,7 @@ struct ContactsList: View {
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
     
     var body: some View {
-        let contactTypes = contactTypesSearchTargets(baseContactTypes: baseContactTypes, searchEmpty: searchText.isEmpty)
-        let contactChats = filterContactTypes(chats: chatModel.chats, contactTypes: contactTypes)
+        let contactChats = chatModel.chats.filter { chat in chatPredicate(chat, !searchText.isEmpty) }
         let filteredContactChats = filteredContactChats(
             showUnreadAndFavorites: showUnreadAndFavorites,
             searchShowingSimplexLink: searchShowingSimplexLink,
@@ -271,26 +260,11 @@ struct ContactsList: View {
         .listRowBackground(Color.clear)
         .listRowInsets(EdgeInsets(top: 7, leading: 0, bottom: 7, trailing: 0))
     }
-    
-    private func contactTypesSearchTargets(baseContactTypes: [ContactType], searchEmpty: Bool) -> [ContactType] {
-        if baseContactTypes.contains(.chatDeleted) || searchEmpty {
-            return baseContactTypes
-        } else {
-            return baseContactTypes + [.chatDeleted]
-        }
-    }
-    
-    private func chatsByTypeComparator(chat1: Chat, chat2: Chat) -> Bool {
-        let chat1Type = chatContactType(chat1)
-        let chat2Type = chatContactType(chat2)
 
-        if chat1Type.rawValue < chat2Type.rawValue {
-            return true
-        } else if chat1Type.rawValue > chat2Type.rawValue {
-            return false
-        } else {
-            return chat2.chatInfo.chatTs < chat1.chatInfo.chatTs
-        }
+    private func chatComparator(chat1: Chat, chat2: Chat) -> Bool {
+        let r1 = chatOrderRank(chat1)
+        let r2 = chatOrderRank(chat2)
+        return r1 > r2 ? true : r1 < r2 ? false : chat1.chatInfo.chatTs > chat2.chatInfo.chatTs
     }
         
     private func filterChat(chat: Chat, searchText: String, showUnreadAndFavorites: Bool) -> Bool {
@@ -335,7 +309,7 @@ struct ContactsList: View {
             }
         }
 
-        return filteredChats.sorted(by: chatsByTypeComparator)
+        return filteredChats.sorted(by: chatComparator)
     }
 }
 
@@ -449,7 +423,6 @@ struct ContactsListSearchBar: View {
 
 
 struct DeletedChats: View {
-    @State private var baseContactTypes: [ContactType] = [.chatDeleted]
     @State private var searchMode = false
     @FocusState var searchFocussed: Bool
     @State private var searchText = ""
@@ -471,7 +444,7 @@ struct DeletedChats: View {
             .frame(maxWidth: .infinity)
             
             ContactsList(
-                baseContactTypes: $baseContactTypes,
+                chatPredicate: { chat, _ in chat.chatInfo.contact?.chatDeleted == true },
                 searchMode: $searchMode,
                 searchText: $searchText,
                 searchFocussed: $searchFocussed,

@@ -200,6 +200,9 @@ data Contact = Contact
   }
   deriving (Eq, Show)
 
+contactRequestId' :: Contact -> Maybe Int64
+contactRequestId' Contact {contactRequestId} = contactRequestId
+
 data PreparedContact = PreparedContact {connLinkToConnect :: ACreatedConnLink, uiConnLinkType :: ConnectionMode}
   deriving (Eq, Show)
 

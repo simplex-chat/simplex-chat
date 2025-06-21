@@ -9747,7 +9747,7 @@ pref value</note>
         <target>dőlt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="join as %@" xml:space="preserve">
+      <trans-unit id="Join as %@" xml:space="preserve">
         <source>join as %@</source>
         <target>csatlakozás mint %@</target>
         <note>No comment provided by engineer.</note>
@@ -10189,8 +10189,8 @@ utoljára fogadott üzenet: %2$@</target>
         <target>Ön befogadta ezt a tagot</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you are invited to group" xml:space="preserve">
-        <source>you are invited to group</source>
+      <trans-unit id="You are invited to group" xml:space="preserve">
+        <source>You are invited to group</source>
         <target>Ön meghívást kapott a csoportba</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

@@ -232,8 +232,8 @@ struct UserAddressView: View {
     private func showAddShortLinkAlert() {
         showAlert(
             title: NSLocalizedString("Share profile via link", comment: "alert title"),
-            message: NSLocalizedString("Profile will be shared via the address short link. This change to the address cannot be reversed, other than fully deleting it. Do you wish to update the address?", comment: "alert message"),
-            buttonTitle: NSLocalizedString("Update (and share profile)", comment: "alert button"),
+            message: NSLocalizedString("Profile will be shared via the address link.", comment: "alert message"),
+            buttonTitle: NSLocalizedString("Share profile", comment: "alert button"),
             buttonAction: { addShortLink() },
             cancelButton: true
         )
@@ -348,7 +348,7 @@ struct ToggleShortLinkHeader: View {
     let text: Text
     var link: CreatedConnLink
     @Binding var short: Bool
-    
+
     var body: some View {
         if link.connShortLink == nil {
             text.foregroundColor(theme.colors.secondary)
@@ -618,7 +618,7 @@ struct UserAddressView_Previews: PreviewProvider {
             shortLinkDataSet: false
         )
 
-        
+
         return Group {
             UserAddressView()
                 .environmentObject(chatModel)
