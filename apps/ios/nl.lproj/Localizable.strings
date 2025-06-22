@@ -755,7 +755,7 @@ swipe action */
 "Auto-accept images" = "Afbeeldingen automatisch accepteren";
 
 /* alert title */
-"Auto-accept settings" = "Instellingen automatisch accepteren";
+"SimpleX address settings" = "Instellingen automatisch accepteren";
 
 /* No comment provided by engineer. */
 "Back" = "Terug";

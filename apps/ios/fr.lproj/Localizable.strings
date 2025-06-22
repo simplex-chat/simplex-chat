@@ -728,7 +728,7 @@ swipe action */
 "Auto-accept images" = "Images auto-acceptées";
 
 /* alert title */
-"Auto-accept settings" = "Paramètres de réception automatique";
+"SimpleX address settings" = "Paramètres de réception automatique";
 
 /* No comment provided by engineer. */
 "Back" = "Retour";

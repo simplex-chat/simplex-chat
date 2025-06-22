@@ -79,7 +79,7 @@ struct CreateSimpleXAddress: View {
                     do {
                         let connLinkContact = try await apiCreateUserAddress()
                         DispatchQueue.main.async {
-                            m.userAddress = UserContactLink(connLinkContact: connLinkContact, shortLinkDataSet: connLinkContact.connShortLink != nil)
+                            m.userAddress = UserContactLink(connLinkContact: connLinkContact, shortLinkDataSet: connLinkContact.connShortLink != nil, addressSettings: AddressSettings(businessAddress: false))
                         }
                         await MainActor.run { progressIndicator = false }
                     } catch let error {

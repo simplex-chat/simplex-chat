@@ -1139,8 +1139,8 @@ swipe action</note>
         <target>Автоматично приемане на изображения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Auto-accept settings" xml:space="preserve">
-        <source>Auto-accept settings</source>
+      <trans-unit id="SimpleX address settings" xml:space="preserve">
+        <source>SimpleX address settings</source>
         <target>Автоматично приемане на настройки</target>
         <note>alert title</note>
       </trans-unit>

@@ -4587,8 +4587,8 @@ SimpleX servers cannot see your profile.</source>
         <source>Ask</source>
         <target state="translated">اسأل</target>
       </trans-unit>
-      <trans-unit id="Auto-accept settings" xml:space="preserve" approved="no">
-        <source>Auto-accept settings</source>
+      <trans-unit id="SimpleX address settings" xml:space="preserve" approved="no">
+        <source>SimpleX address settings</source>
         <target state="translated">إعدادات القبول التلقائي</target>
       </trans-unit>
       <trans-unit id="Better message dates." xml:space="preserve" approved="no">

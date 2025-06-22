@@ -731,7 +731,7 @@ swipe action */
 "Auto-accept images" = "自动接受图片";
 
 /* alert title */
-"Auto-accept settings" = "自动接受设置";
+"SimpleX address settings" = "自动接受设置";
 
 /* No comment provided by engineer. */
 "Back" = "返回";

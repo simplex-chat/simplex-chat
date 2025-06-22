@@ -704,7 +704,7 @@ swipe action */
 "Auto-accept images" = "Fotoğrafları otomatik kabul et";
 
 /* alert title */
-"Auto-accept settings" = "Ayarları otomatik olarak kabul et";
+"SimpleX address settings" = "Ayarları otomatik olarak kabul et";
 
 /* No comment provided by engineer. */
 "Back" = "Geri";

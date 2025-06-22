@@ -1253,9 +1253,9 @@ func apiAddMyAddressShortLink() async throws -> UserContactLink {
     throw r.unexpected
 }
 
-func userAddressAutoAccept(_ autoAccept: AutoAccept?) async throws -> UserContactLink? {
-    let userId = try currentUserId("userAddressAutoAccept")
-    let r: APIResult<ChatResponse1> = await chatApiSendCmd(.apiAddressAutoAccept(userId: userId, autoAccept: autoAccept))
+func apiSetUserAddressSettings(_ settings: AddressSettings) async throws -> UserContactLink? {
+    let userId = try currentUserId("apiSetUserAddressSettings")
+    let r: APIResult<ChatResponse1> = await chatApiSendCmd(.apiSetAddressSettings(userId: userId, addressSettings: settings))
     switch r {
     case let .result(.userContactLinkUpdated(_, contactLink)): return contactLink
     case .error(.errorStore(storeError: .userContactLinkNotFound)): return nil

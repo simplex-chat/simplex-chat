@@ -1167,8 +1167,8 @@ swipe action</note>
         <target>自动接受图片</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Auto-accept settings" xml:space="preserve">
-        <source>Auto-accept settings</source>
+      <trans-unit id="SimpleX address settings" xml:space="preserve">
+        <source>SimpleX address settings</source>
         <target>自动接受设置</target>
         <note>alert title</note>
       </trans-unit>

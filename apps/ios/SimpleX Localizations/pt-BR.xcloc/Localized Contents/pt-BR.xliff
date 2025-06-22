@@ -5565,8 +5565,8 @@ Isso pode acontecer por causa de algum bug ou quando a conexão está comprometi
         <source>Chat migrated!</source>
         <target state="translated">Conversa migrada!</target>
       </trans-unit>
-      <trans-unit id="Auto-accept settings" xml:space="preserve" approved="no">
-        <source>Auto-accept settings</source>
+      <trans-unit id="SimpleX address settings" xml:space="preserve" approved="no">
+        <source>SimpleX address settings</source>
         <target state="translated">Aceitar automaticamente configurações</target>
       </trans-unit>
       <trans-unit id="App encrypts new local files (except videos)." xml:space="preserve" approved="no">

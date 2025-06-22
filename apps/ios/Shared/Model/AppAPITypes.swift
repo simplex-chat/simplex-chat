@@ -143,7 +143,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiShowMyAddress(userId: Int64)
     case apiAddMyAddressShortLink(userId: Int64)
     case apiSetProfileAddress(userId: Int64, on: Bool)
-    case apiAddressAutoAccept(userId: Int64, autoAccept: AutoAccept?)
+    case apiSetAddressSettings(userId: Int64, addressSettings: AddressSettings)
     case apiAcceptContact(incognito: Bool, contactReqId: Int64)
     case apiRejectContact(contactReqId: Int64)
     // WebRTC calls
@@ -343,7 +343,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiShowMyAddress(userId): return "/_show_address \(userId)"
             case let .apiAddMyAddressShortLink(userId): return "/_short_link_address \(userId)"
             case let .apiSetProfileAddress(userId, on): return "/_profile_address \(userId) \(onOff(on))"
-            case let .apiAddressAutoAccept(userId, autoAccept): return "/_auto_accept \(userId) \(AutoAccept.cmdString(autoAccept))"
+            case let .apiSetAddressSettings(userId, addressSettings): return "/_address_settings \(userId) \(encodeJSON(addressSettings))"
             case let .apiAcceptContact(incognito, contactReqId): return "/_accept incognito=\(onOff(incognito)) \(contactReqId)"
             case let .apiRejectContact(contactReqId): return "/_reject \(contactReqId)"
             case let .apiSendCallInvitation(contact, callType): return "/_call invite @\(contact.apiId) \(encodeJSON(callType))"
@@ -516,7 +516,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiShowMyAddress: return "apiShowMyAddress"
             case .apiAddMyAddressShortLink: return "apiAddMyAddressShortLink"
             case .apiSetProfileAddress: return "apiSetProfileAddress"
-            case .apiAddressAutoAccept: return "apiAddressAutoAccept"
+            case .apiSetAddressSettings: return "apiSetAddressSettings"
             case .apiAcceptContact: return "apiAcceptContact"
             case .apiRejectContact: return "apiRejectContact"
             case .apiSendCallInvitation: return "apiSendCallInvitation"
@@ -1405,25 +1405,18 @@ struct UserMsgReceiptSettings: Codable {
 struct UserContactLink: Decodable, Hashable {
     var connLinkContact: CreatedConnLink
     var shortLinkDataSet: Bool
+    var addressSettings: AddressSettings
+}
+
+struct AddressSettings: Codable, Hashable {
+    var businessAddress: Bool
+    var welcomeMessage: String?
     var autoAccept: AutoAccept?
+    var autoReply: MsgContent?
 }
 
 struct AutoAccept: Codable, Hashable {
-    var businessAddress: Bool
     var acceptIncognito: Bool
-    var autoReply: MsgContent?
-
-    static func cmdString(_ autoAccept: AutoAccept?) -> String {
-        guard let autoAccept = autoAccept else { return "off" }
-        var s = "on"
-        if autoAccept.acceptIncognito {
-            s += " incognito=on"
-        } else if autoAccept.businessAddress {
-            s += " business"
-        }
-        guard let msg = autoAccept.autoReply else { return s }
-        return s + " " + msg.cmdString
-    }
 }
 
 struct GroupLink: Decodable, Hashable {

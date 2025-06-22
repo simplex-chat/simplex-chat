@@ -4641,8 +4641,8 @@ This is your own one-time link!</source>
         <source>All new messages from %@ will be hidden!</source>
         <target state="translated">%@로부터의 모든 새 메세지가 숨겨집니다!</target>
       </trans-unit>
-      <trans-unit id="Auto-accept settings" xml:space="preserve" approved="no">
-        <source>Auto-accept settings</source>
+      <trans-unit id="SimpleX address settings" xml:space="preserve" approved="no">
+        <source>SimpleX address settings</source>
         <target state="translated">자동-수락 설정</target>
       </trans-unit>
       <trans-unit id="Archive contacts to chat later." xml:space="preserve" approved="no">

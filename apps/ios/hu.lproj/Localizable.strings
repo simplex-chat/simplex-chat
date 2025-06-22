@@ -755,7 +755,7 @@ swipe action */
 "Auto-accept images" = "Képek automatikus elfogadása";
 
 /* alert title */
-"Auto-accept settings" = "Beállítások automatikus elfogadása";
+"SimpleX address settings" = "Beállítások automatikus elfogadása";
 
 /* No comment provided by engineer. */
 "Back" = "Vissza";
