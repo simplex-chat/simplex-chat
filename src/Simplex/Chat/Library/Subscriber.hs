@@ -676,13 +676,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- TODO add debugging output
         _ -> pure ()
       where
-        sendAutoReply UserContactLink {shortLinkDataSet, autoAccept} ct = case autoAccept of
-          Just AutoAccept {autoReply = Just mc}
-            | not shortLinkDataSet || connChatVersion < shortLinkDataVersion -> do
-              (msg, _) <- sendDirectContactMessage user ct (XMsgNew $ MCSimple (extMsgContent mc Nothing))
-              ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
-              toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
-          _ -> pure ()
+        sendAutoReply UserContactLink {addressSettings = AddressSettings {autoReply}} ct =
+          forM_ autoReply $ \mc -> do
+            (msg, _) <- sendDirectContactMessage user ct (XMsgNew $ MCSimple (extMsgContent mc Nothing))
+            ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
+            toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
 
     processGroupMessage :: AEvent e -> ConnectionEntity -> Connection -> GroupInfo -> GroupMember -> CM ()
     processGroupMessage agentMsg connEntity conn@Connection {connId, connChatVersion, customUserProfileId, connectionCode} gInfo@GroupInfo {groupId, groupProfile, membership, chatSettings} m = case agentMsg of
@@ -1048,11 +1046,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 Just BusinessChatInfo {customerId, chatType = BCCustomer}
                   | joiningMemberId == customerId -> useReply <$> withStore (`getUserAddress` user)
                   where
-                    useReply UserContactLink {autoAccept, shortLinkDataSet} = case autoAccept of
-                      Just AutoAccept {businessAddress, autoReply}
-                        | businessAddress && (not shortLinkDataSet || connChatVersion < shortLinkDataVersion) ->
-                          autoReply
-                      _ -> Nothing
+                    useReply UserContactLink {addressSettings = AddressSettings {autoReply}} = autoReply
                 _ -> pure Nothing
             send mc = do
               msg <- sendGroupMessage' user gInfo [m] (XMsgNew $ MCSimple (extMsgContent mc Nothing))
@@ -1243,7 +1237,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MsgContent -> PQSupport -> CM ()
         profileContactRequest invId chatVRange p@Profile {displayName} xContactId_ mc_ reqPQSup = do
           uclGLinkInfo <- withStore $ \db -> getUserContactLinkById db userId uclId
-          let (UserContactLink {connLinkContact = CCLink connReq _, shortLinkDataSet, autoAccept}, gLinkInfo_) = uclGLinkInfo
+          let (UserContactLink {connLinkContact = CCLink connReq _, shortLinkDataSet, addressSettings}, gLinkInfo_) = uclGLinkInfo
+              AddressSettings {businessAddress, autoAccept, autoReply} = addressSettings
               isSimplexTeam = sameConnReqContact connReq adminContactReq
               v = maxVersion chatVRange
           case autoAccept of
@@ -1251,12 +1246,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               withStore (\db -> createOrUpdateContactRequest db vr user uclId invId chatVRange p xContactId_ reqPQSup) >>= \case
                 CORContact ct -> toView $ CEvtContactRequestAlreadyAccepted user ct
                 CORRequest cReq ct_ -> do
-                  chat_ <- forM ct_ $ \ct@Contact {profile} -> do
+                  chat_ <- forM ct_ $ \ct -> do
                     -- TODO [short links] prevent duplicate items - needs some flag?
                     -- update welcome message if changed (send update event to UI) and add updated feature items.
                     -- Do not created e2e item on repeat request
                     let createItem content = createInternalItemForChat user (CDDirectRcv ct) False content Nothing
-                    void $ createItem $ CIRcvContactInfo $ fromLocalProfile profile
                     void $ createItem $ CIRcvDirectE2EEInfo $ E2EInfo $ Just $ CR.pqSupportToEnc $ reqPQSup
                     void $ createFeatureEnabledItems_ user ct
                     aci <- mapM (createItem . CIRcvMsgContent) mc_
@@ -1265,7 +1259,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       Just (AChatItem SCTDirect dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
                       _ -> Chat cInfo [] emptyChatStats
                   toView $ CEvtReceivedContactRequest user cReq chat_
-            Just AutoAccept {businessAddress, acceptIncognito, autoReply}
+            Just AutoAccept {acceptIncognito}
               | businessAddress ->
                   if isSimplexTeam && v < businessChatsVersion
                     then

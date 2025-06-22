@@ -62,7 +62,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.AppVersion
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Stats (PresentedServersSummary)
-import Simplex.Chat.Store (AutoAccept, ChatLockEntity, GroupLink, GroupLinkInfo, StoreError (..), UserContactLink, UserMsgReceiptSettings)
+import Simplex.Chat.Store (AddressSettings, ChatLockEntity, GroupLink, GroupLinkInfo, StoreError (..), UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -473,8 +473,8 @@ data ChatCommand
   | APIAddMyAddressShortLink UserId
   | APISetProfileAddress UserId Bool
   | SetProfileAddress Bool
-  | APIAddressAutoAccept UserId (Maybe AutoAccept)
-  | AddressAutoAccept (Maybe AutoAccept)
+  | APISetAddressSettings UserId AddressSettings
+  | SetAddressSettings AddressSettings
   | AcceptContact IncognitoEnabled ContactName
   | RejectContact ContactName
   | ForwardMessage {toChatName :: ChatName, fromContactName :: ContactName, forwardedMsg :: Text}

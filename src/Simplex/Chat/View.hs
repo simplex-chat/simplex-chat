@@ -50,7 +50,7 @@ import Simplex.Chat.Operators
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.AppVersion (AppVersion (..), pattern AppVersionRange)
 import Simplex.Chat.Remote.Types
-import Simplex.Chat.Store (AutoAccept (..), GroupLink (..), StoreError (..), UserContactLink (..))
+import Simplex.Chat.Store (AddressSettings (..), AutoAccept (..), GroupLink (..), StoreError (..), UserContactLink (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -170,8 +170,8 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
     HSDatabase -> databaseHelpInfo
   CRWelcome user -> chatWelcome user
   CRContactsList u cs -> ttyUser u $ viewContactsList cs
-  CRUserContactLink u UserContactLink {connLinkContact, autoAccept} -> ttyUser u $ connReqContact_ "Your chat address:" connLinkContact <> autoAcceptStatus_ autoAccept
-  CRUserContactLinkUpdated u UserContactLink {autoAccept} -> ttyUser u $ autoAcceptStatus_ autoAccept
+  CRUserContactLink u UserContactLink {connLinkContact, addressSettings} -> ttyUser u $ connReqContact_ "Your chat address:" connLinkContact <> viewAddressSettings addressSettings
+  CRUserContactLinkUpdated u UserContactLink {addressSettings} -> ttyUser u $ viewAddressSettings addressSettings
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} _ct_ -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRGroupMembers u g -> ttyUser u $ viewGroupMembers g
@@ -1082,9 +1082,10 @@ simplexChatContact' = \case
   CLFull (CRContactUri crData) -> CLFull $ CRContactUri crData {crScheme = simplexChat}
   l@(CLShort _) -> l
 
-autoAcceptStatus_ :: Maybe AutoAccept -> [StyledString]
-autoAcceptStatus_ = \case
-  Just AutoAccept {businessAddress, acceptIncognito, autoReply} ->
+-- TODO [short links] show all settings
+viewAddressSettings :: AddressSettings -> [StyledString]
+viewAddressSettings AddressSettings {businessAddress, welcomeMessage = _, autoAccept, autoReply} = case autoAccept of
+  Just AutoAccept {acceptIncognito} ->
     ("auto_accept on" <> aaInfo)
       : maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
     where

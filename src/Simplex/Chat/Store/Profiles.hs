@@ -16,6 +16,7 @@
 
 module Simplex.Chat.Store.Profiles
   ( AutoAccept (..),
+    AddressSettings (..),
     UserMsgReceiptSettings (..),
     UserContactLink (..),
     GroupLinkInfo (..),
@@ -54,7 +55,7 @@ module Simplex.Chat.Store.Profiles
     setUserContactLinkShortLink,
     getContactWithoutConnViaAddress,
     getContactWithoutConnViaShortAddress,
-    updateUserAddressAutoAccept,
+    updateUserAddressSettings,
     getProtocolServers,
     insertProtocolServer,
     getUpdateServerOperators,
@@ -451,7 +452,7 @@ data UserContactLink = UserContactLink
   { userContactLinkId :: Int64,
     connLinkContact :: CreatedLinkContact,
     shortLinkDataSet :: Bool,
-    autoAccept :: Maybe AutoAccept
+    addressSettings :: AddressSettings
   }
   deriving (Show)
 
@@ -464,21 +465,30 @@ data GroupLinkInfo = GroupLinkInfo
   }
   deriving (Show)
 
-data AutoAccept = AutoAccept
+data AddressSettings = AddressSettings
   { businessAddress :: Bool, -- possibly, it can be wrapped together with acceptIncognito, or AutoAccept made sum type
-    acceptIncognito :: IncognitoEnabled,
-    autoReply :: Maybe MsgContent
+    welcomeMessage :: Maybe Text, -- included in short link information
+    autoAccept :: Maybe AutoAccept, -- accept automatically
+    autoReply :: Maybe MsgContent -- sent on acceptance, can be supported with manual acceptance as well
+  }
+  deriving (Eq, Show)
+
+data AutoAccept = AutoAccept
+  { acceptIncognito :: IncognitoEnabled -- "incognito" is allowed onle for old addresses without short link data
   }
   deriving (Eq, Show)
 
 $(J.deriveJSON defaultJSON ''AutoAccept)
 
+$(J.deriveJSON defaultJSON ''AddressSettings)
+
 $(J.deriveJSON defaultJSON ''UserContactLink)
 
-toUserContactLink :: (Int64, ConnReqContact, Maybe ShortLinkContact, BoolInt, BoolInt, BoolInt, BoolInt, Maybe MsgContent) -> UserContactLink
-toUserContactLink (userContactLinkId, connReq, shortLink, BI shortLinkDataSet, BI autoAccept, BI businessAddress, BI acceptIncognito, autoReply) =
+toUserContactLink :: (Int64, ConnReqContact, Maybe ShortLinkContact, BoolInt, BoolInt, Maybe Text, BoolInt, BoolInt, Maybe MsgContent) -> UserContactLink
+toUserContactLink (userContactLinkId, connReq, shortLink, BI shortLinkDataSet, BI businessAddress, welcomeMessage, BI autoAccept', BI acceptIncognito, autoReply) =
   UserContactLink userContactLinkId (CCLink connReq shortLink) shortLinkDataSet $
-    if autoAccept then Just AutoAccept {businessAddress, acceptIncognito, autoReply} else Nothing
+    let autoAccept = if autoAccept' then Just AutoAccept {acceptIncognito} else Nothing
+     in AddressSettings {businessAddress, welcomeMessage, autoAccept, autoReply}
 
 getUserAddress :: DB.Connection -> User -> ExceptT StoreError IO UserContactLink
 getUserAddress db User {userId} =
@@ -491,7 +501,7 @@ getUserContactLinkById db userId userContactLinkId =
     DB.query
       db
       [sql|
-        SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
+        SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, business_address, address_welcome_message, auto_accept, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
         FROM user_contact_links
         WHERE user_id = ? AND user_contact_link_id = ?
       |]
@@ -527,7 +537,7 @@ getUserContactLinkViaShortLink db User {userId} shortLink =
 userContactLinkQuery :: Query
 userContactLinkQuery =
   [sql|
-    SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
+    SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, business_address, address_welcome_message, auto_accept, auto_accept_incognito, auto_reply_msg_content
     FROM user_contact_links
   |]
 
@@ -576,20 +586,20 @@ getContactWithoutConnViaShortAddress db vr user@User {userId} shortLink = do
         (userId, shortLink)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db vr user) ctId_
 
-updateUserAddressAutoAccept :: DB.Connection -> Int64 -> Maybe AutoAccept -> IO ()
-updateUserAddressAutoAccept db userContactLinkId autoAccept =
+updateUserAddressSettings :: DB.Connection -> Int64 -> AddressSettings -> IO ()
+updateUserAddressSettings db userContactLinkId AddressSettings {businessAddress, welcomeMessage, autoAccept, autoReply} =
   DB.execute
     db
     [sql|
       UPDATE user_contact_links
-      SET auto_accept = ?, business_address = ?, auto_accept_incognito = ?, auto_reply_msg_content = ?
+      SET auto_accept = ?, auto_accept_incognito = ?, business_address = ?, address_welcome_message = ?, auto_reply_msg_content = ?
       WHERE user_contact_link_id = ?
     |]
-    (autoAcceptValues :. Only userContactLinkId)
+    (autoAcceptValues :. (businessAddress, welcomeMessage, autoReply, userContactLinkId))
   where
     autoAcceptValues = case autoAccept of
-      Just AutoAccept {businessAddress, acceptIncognito, autoReply} -> (BI True, BI businessAddress, BI acceptIncognito, autoReply)
-      _ -> (BI False, BI False, BI False, Nothing)
+      Just AutoAccept {acceptIncognito} -> (BI True, BI acceptIncognito)
+      Nothing -> (BI False, BI False)
 
 getProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> SProtocolType p -> User -> IO [UserServer p]
 getProtocolServers db p User {userId} =
