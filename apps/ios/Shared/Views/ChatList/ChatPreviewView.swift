@@ -164,23 +164,26 @@ struct ChatPreviewView: View {
         let t = Text(chat.chatInfo.chatViewName).font(.title3).fontWeight(.bold)
         switch chat.chatInfo {
         case let .direct(contact):
-            let color = (
+            let color =
                 deleting
-                ? Color.secondary
-                : (
-                    contact.nextAcceptContactRequest || contact.nextConnectPrepared
-                    ? theme.colors.primary
-                    : nil
-                )
-            )
+                ? theme.colors.secondary
+                : contact.nextAcceptContactRequest || contact.nextConnectPrepared
+                ? theme.colors.primary
+                : !contact.sndReady
+                ? theme.colors.secondary
+                : nil
             previewTitle(contact.verified == true ? verifiedIcon + t : t).foregroundColor(color)
         case let .group(groupInfo, _):
-            let v = previewTitle(t)
-            switch (groupInfo.membership.memberStatus) {
-            case .memInvited: v.foregroundColor(deleting ? theme.colors.secondary : chat.chatInfo.incognito ? .indigo : theme.colors.primary)
-            case .memAccepted, .memRejected: v.foregroundColor(theme.colors.secondary)
-            default: if deleting  { v.foregroundColor(theme.colors.secondary) } else { v }
+            let color = if deleting {
+                theme.colors.secondary
+            } else {
+                switch (groupInfo.membership.memberStatus) {
+                case .memInvited: chat.chatInfo.incognito ? .indigo : theme.colors.primary
+                case .memAccepted, .memRejected: theme.colors.secondary
+                default: groupInfo.nextConnectPrepared ? theme.colors.primary : nil
+                }
             }
+            previewTitle(t).foregroundColor(color)
         default: previewTitle(t)
         }
     }
@@ -294,7 +297,7 @@ struct ChatPreviewView: View {
     func chatItemPreview(_ cItem: ChatItem) -> (Text, Bool) {
         let itemText = cItem.meta.itemDeleted == nil ? cItem.text : markedDeletedText()
         let itemFormattedText = cItem.meta.itemDeleted == nil ? cItem.formattedText : nil
-        let r = messageText(itemText, itemFormattedText, sender: cItem.memberDisplayName, preview: true, mentions: cItem.mentions, userMemberId: chat.chatInfo.groupInfo?.membership.memberId, showSecrets: nil, backgroundColor: UIColor(theme.colors.background), prefix: prefix())
+        let r = messageText(itemText, itemFormattedText, sender: cItem.meta.showGroupAsSender ? nil : cItem.memberDisplayName, preview: true, mentions: cItem.mentions, userMemberId: chat.chatInfo.groupInfo?.membership.memberId, showSecrets: nil, backgroundColor: UIColor(theme.colors.background), prefix: prefix())
         return (Text(AttributedString(r.string)), r.hasSecrets)
 
         // same texts are in markedDeletedText in MarkedDeletedItemView, but it returns LocalizedStringKey;
@@ -348,10 +351,14 @@ struct ChatPreviewView: View {
             if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
                 Text("Tap to Connect")
                     .foregroundColor(theme.colors.primary)
-            } else if contact.nextAcceptContactRequest || contact.sendMsgToConnect {
+            } else if contact.sendMsgToConnect {
                 Text("Open to connect")
+            } else if contact.nextAcceptContactRequest {
+                Text("Open to accept")
             } else if !contact.sndReady && contact.activeConn != nil && contact.active {
-                Text("connecting…")
+                contact.preparedContact?.uiConnLinkType == .con
+                ? Text("contact should accept…")
+                : Text("connecting…")
             } else {
                 nil
             }

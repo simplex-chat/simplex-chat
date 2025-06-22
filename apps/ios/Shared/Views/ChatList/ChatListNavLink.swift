@@ -147,7 +147,7 @@ struct ChatListNavLink: View {
                         Button {
                             AlertManager.shared.showAlert(rejectContactRequestAlert(contactRequestId))
                         } label: {
-                            SwipeLabel(NSLocalizedString("Reject", comment: "swipe action"), systemImage: "multiply.fill", inverted: oneHandUI)
+                            SwipeLabel(NSLocalizedString("Reject", comment: "swipe action"), systemImage: "multiply", inverted: oneHandUI)
                         }
                         .tint(.red)
                     } else {
@@ -474,7 +474,7 @@ struct ChatListNavLink: View {
             Button {
                 AlertManager.shared.showAlert(rejectContactRequestAlert(contactRequest.apiId))
             } label: {
-                SwipeLabel(NSLocalizedString("Reject", comment: "swipe action"), systemImage: "multiply.fill", inverted: oneHandUI)
+                SwipeLabel(NSLocalizedString("Reject", comment: "swipe action"), systemImage: "multiply", inverted: oneHandUI)
             }
             .tint(.red)
         }

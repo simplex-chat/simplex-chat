@@ -114,7 +114,12 @@ struct ChatView: View {
                         }
                     )
                 }
-                connectingText()
+                if let connectingText {
+                    Text(connectingText)
+                        .font(.caption)
+                        .foregroundColor(theme.colors.secondary)
+                        .padding(.top)
+                }
                 if selectedChatItems == nil {
                     let reason = chat.chatInfo.userCantSendReason
                     let composeEnabled = (
@@ -761,18 +766,15 @@ struct ChatView: View {
         }
     }
 
-    @ViewBuilder private func connectingText() -> some View {
-        if case let .direct(contact) = chat.chatInfo,
-           !contact.sndReady,
-           contact.active,
-           !contact.sendMsgToConnect,
-           !contact.nextAcceptContactRequest {
-            Text("connecting…")
-                .font(.caption)
-                .foregroundColor(theme.colors.secondary)
-                .padding(.top)
+    private var connectingText: LocalizedStringKey? {
+        if let contact = chat.chatInfo.contact, !contact.sndReady && contact.active {
+            contact.preparedContact?.uiConnLinkType == .con
+            ? "contact should accept…"
+            : !contact.sendMsgToConnect && !contact.nextAcceptContactRequest
+            ? "connecting…"
+            : nil
         } else {
-            EmptyView()
+            nil
         }
     }
 

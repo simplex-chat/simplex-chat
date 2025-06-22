@@ -350,18 +350,14 @@ struct ComposeView: View {
     var body: some View {
         VStack(spacing: 0) {
             Divider()
-            if (chat.chatInfo.contact?.nextConnectPrepared ?? false) || (chat.chatInfo.groupInfo?.nextConnectPrepared ?? false),
+            let contact = chat.chatInfo.contact
+            if (contact?.nextConnectPrepared ?? false) || (chat.chatInfo.groupInfo?.nextConnectPrepared ?? false),
                let user = chatModel.currentUser {
                 ContextProfilePickerView(
                     chat: chat,
                     selectedUser: user
                 )
-            }
-
-            if let contact = chat.chatInfo.contact,
-               contact.nextAcceptContactRequest,
-               let contactRequestId = contact.contactRequestId {
-                ContextContactRequestActionsView(contactRequestId: contactRequestId)
+                Divider()
             }
 
             if let groupInfo = chat.chatInfo.groupInfo,
@@ -386,6 +382,7 @@ struct ComposeView: View {
             let simplexLinkProhibited = im.secondaryIMFilter == nil && hasSimplexLink && !chat.groupFeatureEnabled(.simplexLinks)
             let fileProhibited = im.secondaryIMFilter == nil && composeState.attachmentPreview && !chat.groupFeatureEnabled(.files)
             let voiceProhibited = composeState.voicePreview && !chat.chatInfo.featureEnabled(.voice)
+            let disableSendButton = simplexLinkProhibited || fileProhibited || voiceProhibited
             if simplexLinkProhibited {
                 msgNotAllowedView("SimpleX links not allowed", icon: "link")
                 Divider()
@@ -402,19 +399,55 @@ struct ComposeView: View {
             case (true, .voicePreview): EmptyView() // ? we may allow playback when editing is allowed
             default: previewView()
             }
-            HStack (alignment: .center) {
-                if !chat.chatInfo.nextConnect {
+
+            if chat.chatInfo.groupInfo?.nextConnectPrepared == true {
+                Button(action: connectPreparedGroup) {
+                    Label("Join group", systemImage: "person.2.fill")
+                }
+                .frame(height: 60)
+            } else if contact?.nextSendGrpInv == true {
+                contextSendMessageToConnect("Send direct message to connect")
+                Divider()
+                HStack (alignment: .center) {
+                    attachmentButton().disabled(true)
+                    sendMessageView(disableSendButton, sendToConnect: sendMemberContactInvitation)
+                }
+                .padding(.horizontal, 12)
+            } else if contact?.nextConnectPrepared == true, let linkType = contact?.preparedContact?.uiConnLinkType {
+                switch linkType {
+                case .inv:
+                    Button(action: sendConnectPreparedContact) {
+                        Label("Connect", systemImage: "person.fill.badge.plus")
+                    }
+                    .frame(height: 60)
+                case .con:
+                    HStack (alignment: .center) {
+                        sendMessageView(
+                            disableSendButton,
+                            placeholder: NSLocalizedString("Add message", comment: "placeholder for sending contact request"),
+                            sendToConnect: sendConnectPreparedContactRequest
+                        )
+                        if composeState.message.isEmpty {
+                            Button(action: sendConnectPreparedContactRequest) {
+                                HStack {
+                                    Text("Connect").fontWeight(.medium)
+                                    Image(systemName: "person.fill.badge.plus")
+                                }
+                            }
+                            .padding(.horizontal, 8)
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                }
+            } else if contact?.nextAcceptContactRequest == true, let crId = contact?.contactRequestId {
+                ContextContactRequestActionsView(contactRequestId: crId)
+            } else {
+                HStack (alignment: .center) {
                     attachmentButton()
+                    sendMessageView(disableSendButton)
                 }
-
-                sendMessageView(simplexLinkProhibited, fileProhibited, voiceProhibited)
-
-                if chat.chatInfo.nextConnect {
-                    nextConnectButton()
-                        .padding(.horizontal, 8)
-                }
+                .padding(.horizontal, 12)
             }
-            .padding(.horizontal, 12)
         }
         .background {
             Color.clear
@@ -579,9 +612,10 @@ struct ComposeView: View {
         }
     }
 
-    private func sendMessageView(_ simplexLinkProhibited: Bool, _ fileProhibited: Bool, _ voiceProhibited: Bool) -> some View {
+    private func sendMessageView(_ disableSendButton: Bool, placeholder: String? = nil, sendToConnect: (() -> Void)? = nil) -> some View {
         ZStack(alignment: .leading) {
             SendMessageView(
+                placeholder: placeholder,
                 composeState: $composeState,
                 selectedRange: $selectedRange,
                 sendMessage: { ttl in
@@ -594,9 +628,10 @@ struct ComposeView: View {
                     composeState.liveMessage = nil
                     chatModel.removeLiveDummy()
                 },
-                showComposeActionButtons: !chat.chatInfo.nextConnect,
+                sendToConnect: sendToConnect,
+                hideSendButton: chat.chatInfo.nextConnect && chat.chatInfo.contact?.nextSendGrpInv != true && composeState.message.isEmpty,
                 voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
-                disableSendButton: simplexLinkProhibited || fileProhibited || voiceProhibited,
+                disableSendButton: disableSendButton,
                 showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
                 startVoiceMessageRecording: {
                     Task {
@@ -648,77 +683,67 @@ struct ComposeView: View {
         }
     }
 
-    @ViewBuilder private func nextConnectButton() -> some View {
-        let connectButtonEnabled = (
-            composeState.sendEnabled ||
-            (chat.chatInfo.groupInfo?.nextConnectPrepared ?? false) // allow to join prepared group without message
-        )
-        Button {
-            Task {
-                if chat.chatInfo.contact?.nextSendGrpInv ?? false {
-                    await sendMemberContactInvitation()
-                } else if chat.chatInfo.contact?.nextConnectPrepared ?? false {
-                    await sendConnectPreparedContact()
-                } else if chat.chatInfo.groupInfo?.nextConnectPrepared ?? false {
-                    await connectPreparedGroup()
+    private func sendMemberContactInvitation() {
+        Task {
+            do {
+                let mc = checkLinkPreview()
+                let contact = try await apiSendMemberContactInvitation(chat.chatInfo.apiId, mc)
+                await MainActor.run {
+                    self.chatModel.updateContact(contact)
+                    clearState()
                 }
+            } catch {
+                logger.error("ChatView.sendMemberContactInvitation error: \(error.localizedDescription)")
+                AlertManager.shared.showAlertMsg(title: "Error sending member contact invitation", message: "Error: \(responseError(error))")
             }
-        } label: {
-            if case .group = chat.chatInfo {
-                HStack {
-                    Text("Join")
-                        .fontWeight(.medium)
-                    Image(systemName: "person.2.fill")
-                }
-            } else {
-                HStack {
-                    Text("Connect")
-                        .fontWeight(.medium)
-                    Image(systemName: "person.fill.badge.plus")
-                }
-            }
-        }
-        .disabled(!connectButtonEnabled)
-    }
-
-    private func sendMemberContactInvitation() async {
-        do {
-            let mc = checkLinkPreview()
-            let contact = try await apiSendMemberContactInvitation(chat.chatInfo.apiId, mc)
-            await MainActor.run {
-                self.chatModel.updateContact(contact)
-                clearState()
-            }
-        } catch {
-            logger.error("ChatView.sendMemberContactInvitation error: \(error.localizedDescription)")
-            AlertManager.shared.showAlertMsg(title: "Error sending member contact invitation", message: "Error: \(responseError(error))")
         }
     }
 
-    private func sendConnectPreparedContact() async {
-        do {
-            let mc = checkLinkPreview()
-            let contact = try await apiConnectPreparedContact(contactId: chat.chatInfo.apiId, incognito: incognitoGroupDefault.get(), msg: mc)
-            await MainActor.run {
-                self.chatModel.updateContact(contact)
-                clearState()
+    // TODO [short links] different messages for business
+    private func sendConnectPreparedContactRequest() {
+        hideKeyboard()
+        AlertManager.shared.showAlert(Alert(
+            title: Text("Send contact request?"),
+            message: Text("You will be able to send messages **only after your request is accepted**."),
+            primaryButton: .default(
+                Text(composeState.message.isEmpty ? "Send request without message" : "Send request"),
+                action: sendConnectPreparedContact
+            ),
+            secondaryButton:
+                composeState.message.isEmpty
+                ? .cancel(Text("Add message")) { keyboardVisible = true }
+                : .cancel()
+        ))
+    }
+
+    private func sendConnectPreparedContact() {
+        Task {
+            do {
+                let mc = checkLinkPreview()
+                let contact = try await apiConnectPreparedContact(contactId: chat.chatInfo.apiId, incognito: incognitoGroupDefault.get(), msg: mc)
+                await MainActor.run {
+                    self.chatModel.updateContact(contact)
+                    clearState()
+                }
+            } catch {
+                logger.error("ChatView.sendConnectPreparedContact error: \(error.localizedDescription)")
+                AlertManager.shared.showAlertMsg(title: "Error connecting with contact", message: "Error: \(responseError(error))")
             }
-        } catch {
-            logger.error("ChatView.sendConnectPreparedContact error: \(error.localizedDescription)")
-            AlertManager.shared.showAlertMsg(title: "Error connecting with contact", message: "Error: \(responseError(error))")
         }
     }
 
-    private func connectPreparedGroup() async {
-        do {
-            let groupInfo = try await apiConnectPreparedGroup(groupId: chat.chatInfo.apiId, incognito: incognitoGroupDefault.get())
-            await MainActor.run {
-                self.chatModel.updateGroup(groupInfo)
-                clearState()
+    private func connectPreparedGroup() {
+        Task {
+            do {
+                let groupInfo = try await apiConnectPreparedGroup(groupId: chat.chatInfo.apiId, incognito: incognitoGroupDefault.get())
+                await MainActor.run {
+                    self.chatModel.updateGroup(groupInfo)
+                    clearState()
+                }
+            } catch {
+                logger.error("ChatView.connectPreparedGroup error: \(error.localizedDescription)")
+                AlertManager.shared.showAlertMsg(title: "Error joining group", message: "Error: \(responseError(error))")
             }
-        } catch {
-            logger.error("ChatView.connectPreparedGroup error: \(error.localizedDescription)")
-            AlertManager.shared.showAlertMsg(title: "Error joining group", message: "Error: \(responseError(error))")
         }
     }
 
@@ -876,6 +901,17 @@ struct ComposeView: View {
         .background(.thinMaterial)
     }
 
+    private func contextSendMessageToConnect(_ s: LocalizedStringKey) -> some View {
+        HStack {
+            Image(systemName: "message")
+                .foregroundColor(theme.colors.secondary)
+            Text(s)
+        }
+        .padding(12)
+        .frame(minHeight: 54)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(ToolbarMaterial.material(toolbarMaterial))
+    }
 
     private func reportReasonView(_ reason: ReportReason) -> some View {
         let reportText = switch reason {

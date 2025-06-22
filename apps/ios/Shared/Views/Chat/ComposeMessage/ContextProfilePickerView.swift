@@ -44,7 +44,6 @@ struct ContextProfilePickerView: View {
                 profilePicker()
             }
         }
-        .padding(.bottom, -8)
     }
 
     private func currentSelection() -> some View {
@@ -55,7 +54,7 @@ struct ContextProfilePickerView: View {
                     .foregroundColor(theme.colors.secondary)
                 Spacer()
             }
-            .padding(.top, 10)
+            .padding(.top, 8)
             .padding(.bottom, -4)
             .padding(.leading, 12)
             .padding(.trailing)

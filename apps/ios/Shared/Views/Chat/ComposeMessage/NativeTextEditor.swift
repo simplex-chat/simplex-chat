@@ -70,6 +70,13 @@ struct NativeTextEditor: UIViewRepresentable {
         if field.selectedRange != selectedRange {
             field.selectedRange = selectedRange
         }
+        if focused && !field.isFocused {
+            DispatchQueue.main.async {
+                if !field.isFocused {
+                    field.becomeFirstResponder()
+                }
+            }
+        }
     }
 }
 
@@ -260,7 +267,11 @@ class CustomUITextField: UITextView, UITextViewDelegate {
     
     private func updateSelectedRange(_ textView: UITextView) {
         if parent?.selectedRange != textView.selectedRange {
-            parent?.selectedRange = textView.selectedRange
+            DispatchQueue.main.async {
+                if self.parent?.selectedRange != textView.selectedRange {
+                    self.parent?.selectedRange = textView.selectedRange
+                }
+            }
         }
     }
 }

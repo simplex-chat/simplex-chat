@@ -404,6 +404,9 @@ swipe action */
 "Add list" = "Добавить список";
 
 /* No comment provided by engineer. */
+"Add message" = "Добавить cообщение";
+
+/* No comment provided by engineer. */
 "Add profile" = "Добавить профиль";
 
 /* No comment provided by engineer. */
@@ -4575,6 +4578,9 @@ chat item action */
 "Send a live message - it will update for the recipient(s) as you type it" = "Отправить живое сообщение — оно будет обновляться для получателей по мере того, как Вы его вводите";
 
 /* No comment provided by engineer. */
+"Send contact request?" = "Отправить запрос на соединение?";
+
+/* No comment provided by engineer. */
 "Send delivery receipts to" = "Отправка отчётов о доставке";
 
 /* No comment provided by engineer. */
@@ -4615,6 +4621,12 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Send receipts" = "Отправлять отчёты о доставке";
+
+/* No comment provided by engineer. */
+"Send request" = "Отправить запрос";
+
+/* No comment provided by engineer. */
+"Send request without message" = "Отправить запрос без сообщения";
 
 /* No comment provided by engineer. */
 "Send them from gallery or custom keyboards." = "Отправьте из галереи или из дополнительных клавиатур.";

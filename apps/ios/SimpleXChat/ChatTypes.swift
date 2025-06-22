@@ -1353,7 +1353,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
                 if contact.sendMsgToConnect { return nil }
                 if contact.nextAcceptContactRequest { return ("can't send messages", nil) }
                 if !contact.active { return ("contact deleted", nil) }
-                if !contact.sndReady { return ("contact not ready", nil) }
+                if !contact.sndReady { return (contact.preparedContact?.uiConnLinkType == .con ? "request is sent" : "contact not ready", nil) }
                 if contact.activeConn?.connectionStats?.ratchetSyncSendProhibited ?? false { return ("not synchronized", nil) }
                 if contact.activeConn?.connDisabled ?? true { return ("contact disabled", nil) }
                 return nil
@@ -1733,8 +1733,8 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var sndReady: Bool { get { ready || activeConn?.connStatus == .sndReady } }
     public var active: Bool { get { contactStatus == .active } }
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
-    public var nextConnectPrepared: Bool { get { preparedContact != nil && activeConn == nil } }
-    public var nextAcceptContactRequest: Bool { get { contactRequestId != nil && activeConn == nil } }
+    public var nextConnectPrepared: Bool { preparedContact != nil && activeConn == nil }
+    public var nextAcceptContactRequest: Bool { contactRequestId != nil && activeConn == nil }
     public var sendMsgToConnect: Bool { nextSendGrpInv || nextConnectPrepared }
     public var displayName: String { localAlias == "" ? profile.displayName : localAlias }
     public var fullName: String { get { profile.fullName } }
@@ -2093,7 +2093,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var id: ChatId { get { "#\(groupId)" } }
     public var apiId: Int64 { get { groupId } }
     public var ready: Bool { get { true } }
-    public var nextConnectPrepared: Bool { get { connLinkToConnect != nil && !connLinkStartedConnection } }
+    public var nextConnectPrepared: Bool { connLinkToConnect != nil && !connLinkStartedConnection }
     public var displayName: String { localAlias == "" ? groupProfile.displayName : localAlias }
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
