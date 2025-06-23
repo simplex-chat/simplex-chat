@@ -167,7 +167,7 @@ struct ChatPreviewView: View {
             let color =
                 deleting
                 ? theme.colors.secondary
-                : contact.nextAcceptContactRequest || contact.nextConnectPrepared
+                : contact.nextAcceptContactRequest || contact.sendMsgToConnect
                 ? theme.colors.primary
                 : !contact.sndReady
                 ? theme.colors.secondary
@@ -337,7 +337,7 @@ struct ChatPreviewView: View {
         if chatModel.draftChatId == chat.id, let draft = chatModel.draft {
             let (t, hasSecrets) = messageDraft(draft)
             chatPreviewLayout(t, draft: true, hasFilePreview: hasFilePreview, hasSecrets: hasSecrets)
-        } else if cItem?.content.msgContent == nil, let previewText = chatPreviewInfoText() {
+        } else if cItem?.content.hasMsgContent != true, let previewText = chatPreviewInfoText() {
             chatPreviewInfoTextLayout(previewText)
         } else if let cItem = cItem {
             let (t, hasSecrets) = chatItemPreview(cItem)

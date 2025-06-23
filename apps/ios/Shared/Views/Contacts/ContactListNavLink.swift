@@ -56,7 +56,7 @@ struct ContactListNavLink: View {
                 ItemsModel.shared.loadOpenChat(contact.id)
             }
         } label: {
-            contactPreview(contact, titleColor: contact.nextConnectPrepared ? theme.colors.primary : theme.colors.onBackground)
+            contactPreview(contact, titleColor: contact.sendMsgToConnect ? theme.colors.primary : theme.colors.onBackground)
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button {

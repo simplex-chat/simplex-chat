@@ -575,7 +575,7 @@ struct UserAddressSettingsView: View {
     private func messageEditor(placeholder: String, text: Binding<String>) -> some View {
         ZStack {
             Group {
-                if settings.autoReply.isEmpty {
+                if text.wrappedValue.isEmpty {
                     TextEditor(text: Binding.constant(placeholder))
                         .foregroundColor(theme.colors.secondary)
                         .disabled(true)

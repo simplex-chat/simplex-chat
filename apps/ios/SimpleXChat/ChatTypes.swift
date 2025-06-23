@@ -3700,6 +3700,14 @@ public enum CIContent: Decodable, ItemContent, Hashable {
         }
     }
 
+    public var hasMsgContent: Bool {
+        if let mc = msgContent {
+            !mc.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        } else {
+            false
+        }
+    }
+
     public var showMemberName: Bool {
         switch self {
         case .rcvMsgContent: return true

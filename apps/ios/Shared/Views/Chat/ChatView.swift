@@ -767,12 +767,11 @@ struct ChatView: View {
     }
 
     private var connectingText: LocalizedStringKey? {
-        if let contact = chat.chatInfo.contact, !contact.sndReady && contact.active {
+        if let contact = chat.chatInfo.contact,
+           !contact.sndReady && contact.active && !contact.sendMsgToConnect && !contact.nextAcceptContactRequest {
             contact.preparedContact?.uiConnLinkType == .con
             ? "contact should accept…"
-            : !contact.sendMsgToConnect && !contact.nextAcceptContactRequest
-            ? "connecting…"
-            : nil
+            : "connecting…"
         } else {
             nil
         }

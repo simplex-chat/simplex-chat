@@ -267,11 +267,7 @@ class CustomUITextField: UITextView, UITextViewDelegate {
     
     private func updateSelectedRange(_ textView: UITextView) {
         if parent?.selectedRange != textView.selectedRange {
-            DispatchQueue.main.async {
-                if self.parent?.selectedRange != textView.selectedRange {
-                    self.parent?.selectedRange = textView.selectedRange
-                }
-            }
+            parent?.selectedRange = textView.selectedRange
         }
     }
 }
