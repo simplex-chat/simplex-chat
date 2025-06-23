@@ -822,8 +822,8 @@ Query:
             i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention,
             -- CIFile
             f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol,
-            -- CIMeta forwardedByMember
-            i.forwarded_by_group_member_id,
+            -- CIMeta forwardedByMember, showGroupAsSender
+            i.forwarded_by_group_member_id, i.show_group_as_sender,
             -- GroupMember
             m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
             m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
@@ -3496,7 +3496,7 @@ Plan:
 SEARCH usage_conditions USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-        SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
+        SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, business_address, address_welcome_message, auto_accept, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
         FROM user_contact_links
         WHERE user_id = ? AND user_contact_link_id = ?
       
@@ -4123,12 +4123,12 @@ Query:
         user_id, created_by_msg_id, contact_id, group_id, group_member_id, note_folder_id, group_scope_tag, group_scope_group_member_id,
         -- meta
         item_sent, item_ts, item_content, item_content_tag, item_text, item_status, msg_content_tag, shared_msg_id,
-        forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, timed_ttl, timed_delete_at,
+        forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, show_group_as_sender, timed_ttl, timed_delete_at,
         -- quote
         quoted_shared_msg_id, quoted_sent_at, quoted_content, quoted_sent, quoted_member_id,
         -- forwarded from
         fwd_from_tag, fwd_from_chat_name, fwd_from_msg_dir, fwd_from_contact_id, fwd_from_group_id, fwd_from_chat_item_id
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -4639,7 +4639,7 @@ SEARCH server_operators USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE user_contact_links
-      SET auto_accept = ?, business_address = ?, auto_accept_incognito = ?, auto_reply_msg_content = ?
+      SET auto_accept = ?, auto_accept_incognito = ?, business_address = ?, address_welcome_message = ?, auto_reply_msg_content = ?
       WHERE user_contact_link_id = ?
     
 Plan:
@@ -5190,21 +5190,21 @@ Plan:
 SCAN usage_conditions
 
 Query: 
-    SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
+    SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, business_address, address_welcome_message, auto_accept, auto_accept_incognito, auto_reply_msg_content
     FROM user_contact_links
    WHERE user_id = ? AND conn_req_contact IN (?,?)
 Plan:
 SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
 
 Query: 
-    SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
+    SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, business_address, address_welcome_message, auto_accept, auto_accept_incognito, auto_reply_msg_content
     FROM user_contact_links
    WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
 Plan:
 SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
 
 Query: 
-    SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
+    SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, business_address, address_welcome_message, auto_accept, auto_accept_incognito, auto_reply_msg_content
     FROM user_contact_links
    WHERE user_id = ? AND short_link_contact = ?
 Plan:

@@ -2952,7 +2952,7 @@ processChatCommand' vr = \case
     joinContact user pccConnId connId cReq incognitoProfile xContactId mc_ inGroup pqSup chatV = do
       let profileToSend = userProfileToSend user incognitoProfile Nothing inGroup
       -- TODO [short links] send welcome and sent sharedMsg Ids
-      dm <- encodeConnInfoPQ pqSup chatV (XContact profileToSend (Just xContactId) Nothing ((SharedMsgId "",) <$> mc_))
+      dm <- encodeConnInfoPQ pqSup chatV (XContact profileToSend (Just xContactId) Nothing ((SharedMsgId "\1\2\3\4",) <$> mc_))
       subMode <- chatReadVar subscriptionMode
       joinPreparedAgentConnection user pccConnId connId cReq dm pqSup subMode
     joinPreparedAgentConnection :: User -> Int64 -> ConnId -> ConnectionRequestUri m -> ByteString -> PQSupport -> SubscriptionMode -> CM ()
