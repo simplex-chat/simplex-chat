@@ -203,8 +203,30 @@ data Contact = Contact
 contactRequestId' :: Contact -> Maybe Int64
 contactRequestId' Contact {contactRequestId} = contactRequestId
 
-data PreparedContact = PreparedContact {connLinkToConnect :: ACreatedConnLink, uiConnLinkType :: ConnectionMode}
+data PreparedContact = PreparedContact
+  { connLinkToConnect :: ACreatedConnLink,
+    uiConnLinkType :: ConnectionMode,
+    welcomeSharedMsgId :: Maybe SharedMsgId
+  }
   deriving (Eq, Show)
+
+newtype SharedMsgId = SharedMsgId ByteString
+  deriving (Eq, Show)
+  deriving newtype (FromField)
+
+instance ToField SharedMsgId where toField (SharedMsgId m) = toField $ Binary m
+
+instance StrEncoding SharedMsgId where
+  strEncode (SharedMsgId m) = strEncode m
+  strDecode s = SharedMsgId <$> strDecode s
+  strP = SharedMsgId <$> strP
+
+instance FromJSON SharedMsgId where
+  parseJSON = strParseJSON "SharedMsgId"
+
+instance ToJSON SharedMsgId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
 
 newtype CustomData = CustomData J.Object
   deriving (Eq, Show)
@@ -432,8 +454,7 @@ data GroupInfo = GroupInfo
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
     userMemberProfileSentAt :: Maybe UTCTime,
-    connLinkToConnect :: Maybe CreatedLinkContact,
-    connLinkStartedConnection :: Bool,
+    preparedGroup :: Maybe PreparedGroup,
     chatTags :: [ChatTagId],
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
@@ -459,6 +480,13 @@ instance TextEncoding BusinessChatType where
 instance FromField BusinessChatType where fromField = fromTextField_ textDecode
 
 instance ToField BusinessChatType where toField = toField . textEncode
+
+data PreparedGroup = PreparedGroup
+  { connLinkToConnect :: CreatedLinkContact,
+    connLinkStartedConnection :: Bool,
+    welcomeSharedMsgId :: Maybe SharedMsgId -- it is stored only for business chats, and only if welcome message is specified
+  }
+  deriving (Eq, Show)
 
 groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
@@ -1937,6 +1965,8 @@ $(JQ.deriveJSON defaultJSON ''ChatSettings)
 $(JQ.deriveJSON (enumJSON $ dropPrefix "BC") ''BusinessChatType)
 
 $(JQ.deriveJSON defaultJSON ''BusinessChatInfo)
+
+$(JQ.deriveJSON defaultJSON ''PreparedGroup)
 
 $(JQ.deriveJSON defaultJSON ''GroupInfo)
 

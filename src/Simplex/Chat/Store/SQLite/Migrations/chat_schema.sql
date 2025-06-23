@@ -81,6 +81,7 @@ CREATE TABLE contacts(
   chat_item_ttl INTEGER,
   conn_full_link_to_connect BLOB,
   conn_short_link_to_connect BLOB,
+  welcome_shared_msg_id BLOB,
   contact_request_id INTEGER REFERENCES contact_requests ON DELETE SET NULL,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
@@ -141,7 +142,8 @@ CREATE TABLE groups(
   members_require_attention INTEGER NOT NULL DEFAULT 0,
   conn_full_link_to_connect BLOB,
   conn_short_link_to_connect BLOB,
-  conn_link_started_connection INTEGER NOT NULL DEFAULT 0, -- received
+  conn_link_started_connection INTEGER NOT NULL DEFAULT 0,
+  welcome_shared_msg_id BLOB, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

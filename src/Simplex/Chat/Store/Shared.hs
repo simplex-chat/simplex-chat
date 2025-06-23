@@ -32,7 +32,6 @@ import qualified Data.Text as T
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Type.Equality
 import Simplex.Chat.Messages
-import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -382,8 +381,8 @@ createContact db User {userId} profile = do
   currentTs <- liftIO getCurrentTime
   void $ createContact_ db userId profile Nothing "" Nothing currentTs
 
-createContact_ :: DB.Connection -> UserId -> Profile -> Maybe ACreatedConnLink -> LocalAlias -> Maybe Int64 -> UTCTime -> ExceptT StoreError IO (Text, ContactId, ProfileId)
-createContact_ db userId Profile {displayName, fullName, image, contactLink, preferences} connLinkToConnect localAlias viaGroup currentTs =
+createContact_ :: DB.Connection -> UserId -> Profile -> Maybe (ACreatedConnLink, Maybe SharedMsgId) -> LocalAlias -> Maybe Int64 -> UTCTime -> ExceptT StoreError IO (Text, ContactId, ProfileId)
+createContact_ db userId Profile {displayName, fullName, image, contactLink, preferences} prepared localAlias viaGroup currentTs =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
     DB.execute
       db
@@ -392,25 +391,25 @@ createContact_ db userId Profile {displayName, fullName, image, contactLink, pre
     profileId <- insertedRowId db
     DB.execute
       db
-      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at, chat_ts, contact_used, conn_full_link_to_connect, conn_short_link_to_connect) VALUES (?,?,?,?,?,?,?,?,?,?)"
-      ((profileId, ldn, userId, viaGroup, currentTs, currentTs, currentTs, BI True) :. connLinkToConnectRow connLinkToConnect)
+      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at, chat_ts, contact_used, conn_full_link_to_connect, conn_short_link_to_connect, welcome_shared_msg_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+      ((profileId, ldn, userId, viaGroup, currentTs, currentTs, currentTs, BI True) :. toPreparedContactRow prepared)
     contactId <- insertedRowId db
     pure $ Right (ldn, contactId, profileId)
 
-type AConnLinkToConnectRow = (Maybe AConnectionRequestUri, Maybe AConnShortLink)
+type NewPreparedContactRow = (Maybe AConnectionRequestUri, Maybe AConnShortLink, Maybe SharedMsgId)
 
-connLinkToConnectRow :: Maybe ACreatedConnLink -> AConnLinkToConnectRow
-connLinkToConnectRow = \case
-  Just (ACCL m (CCLink fullLink shortLink)) -> (Just (ACR m fullLink), ACSL m <$> shortLink)
-  Nothing -> (Nothing, Nothing)
+toPreparedContactRow :: Maybe (ACreatedConnLink, Maybe SharedMsgId) -> NewPreparedContactRow
+toPreparedContactRow = \case
+  Just (ACCL m (CCLink fullLink shortLink), welcomeSharedMsgId) -> (Just (ACR m fullLink), ACSL m <$> shortLink, welcomeSharedMsgId)
+  Nothing -> (Nothing, Nothing, Nothing)
 
-type ConnLinkToConnectRow m = (Maybe (ConnectionRequestUri m), Maybe (ConnShortLink m))
+type NewPreparedGroupRow m = (Maybe (ConnectionRequestUri m), Maybe (ConnShortLink m), Maybe SharedMsgId)
 
-connLinkToConnectRow' :: Maybe (CreatedConnLink m) -> ConnLinkToConnectRow m
-connLinkToConnectRow' = \case
-  Just (CCLink fullLink shortLink) -> (Just fullLink, shortLink)
-  Nothing -> (Nothing, Nothing)
-{-# INLINE connLinkToConnectRow' #-}
+toPreparedGroupRow :: Maybe (CreatedConnLink m, Maybe SharedMsgId) -> NewPreparedGroupRow m
+toPreparedGroupRow = \case
+  Just (CCLink fullLink shortLink, welcomeSharedMsgId) -> (Just fullLink, shortLink, welcomeSharedMsgId)
+  Nothing -> (Nothing, Nothing, Nothing)
+{-# INLINE toPreparedGroupRow #-}
 
 deleteUnusedIncognitoProfileById_ :: DB.Connection -> User -> ProfileId -> IO ()
 deleteUnusedIncognitoProfileById_ db User {userId} profileId =
@@ -430,23 +429,25 @@ deleteUnusedIncognitoProfileById_ db User {userId} profileId =
     |]
     (userId, profileId, userId, profileId, userId, profileId)
 
-type ContactRow' = (ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, Maybe ConnLinkContact, LocalAlias, BoolInt, ContactStatus) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime) :. (Maybe AConnectionRequestUri, Maybe AConnShortLink, Maybe Int64, Maybe GroupMemberId, BoolInt, Maybe UIThemeEntityOverrides, BoolInt, Maybe CustomData, Maybe Int64)
+type PreparedContactRow = (Maybe AConnectionRequestUri, Maybe AConnShortLink, Maybe SharedMsgId)
+
+type ContactRow' = (ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, Maybe ConnLinkContact, LocalAlias, BoolInt, ContactStatus) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime) :. PreparedContactRow :. (Maybe Int64, Maybe GroupMemberId, BoolInt, Maybe UIThemeEntityOverrides, BoolInt, Maybe CustomData, Maybe Int64)
 
 type ContactRow = Only ContactId :. ContactRow'
 
 toContact :: VersionRangeChat -> User -> [ChatTagId] -> ContactRow :. MaybeConnectionRow -> Contact
-toContact vr user chatTags ((Only contactId :. (profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. (connFullLink, connShortLink, contactRequestId, contactGroupMemberId, BI contactGrpInvSent, uiThemes, BI chatDeleted, customData, chatItemTTL)) :. connRow) =
+toContact vr user chatTags ((Only contactId :. (profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, contactGroupMemberId, BI contactGrpInvSent, uiThemes, BI chatDeleted, customData, chatItemTTL)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
       activeConn = toMaybeConnection vr connRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       incognito = maybe False connIncognito activeConn
       mergedPreferences = contactUserPreferences user userPreferences preferences incognito
-      preparedContact = toPreparedContact connFullLink connShortLink
+      preparedContact = toPreparedContact preparedContactRow
    in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactGroupMemberId, contactGrpInvSent, chatTags, chatItemTTL, uiThemes, chatDeleted, customData}
 
-toPreparedContact :: Maybe AConnectionRequestUri -> Maybe AConnShortLink -> Maybe PreparedContact
-toPreparedContact connFullLink connShortLink =
-  (\cl@(ACCL m _) -> PreparedContact cl $ connMode m) <$> toACreatedConnLink_ connFullLink connShortLink
+toPreparedContact :: PreparedContactRow -> Maybe PreparedContact
+toPreparedContact (connFullLink, connShortLink, welcomeSharedMsgId) =
+  (\cl@(ACCL m _) -> PreparedContact cl (connMode m) welcomeSharedMsgId) <$> toACreatedConnLink_ connFullLink connShortLink
 
 toACreatedConnLink_ :: Maybe AConnectionRequestUri -> Maybe AConnShortLink -> Maybe ACreatedConnLink
 toACreatedConnLink_ Nothing _ = Nothing
@@ -601,23 +602,29 @@ safeDeleteLDN db User {userId} localDisplayName = do
     |]
     (userId, localDisplayName, userId)
 
+type PreparedGroupRow = (Maybe ConnReqContact, Maybe ShortLinkContact, BoolInt, Maybe SharedMsgId)
+
 type BusinessChatInfoRow = (Maybe BusinessChatType, Maybe MemberId, Maybe MemberId)
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Text, Maybe Text, Maybe ImageData, Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe GroupPreferences, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. (Maybe ConnReqContact, Maybe ShortLinkContact, BoolInt) :. BusinessChatInfoRow :. (Maybe UIThemeEntityOverrides, Maybe CustomData, Maybe Int64, Int) :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Text, Maybe Text, Maybe ImageData, Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe GroupPreferences, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (Maybe UIThemeEntityOverrides, Maybe CustomData, Maybe Int64, Int) :. GroupMemberRow
 
 type GroupMemberRow = (Int64, Int64, MemberId, VersionChat, VersionChat, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId, ProfileId, ContactName, Text, Maybe ImageData, Maybe ConnLinkContact, LocalAlias, Maybe Preferences) :. (UTCTime, UTCTime) :. (Maybe UTCTime, Int64, Int64, Int64, Maybe UTCTime)
 
 toGroupInfo :: VersionRangeChat -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo
-toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, fullName, localAlias, description, image, enableNtfs_, sendRcpts, BI favorite, groupPreferences, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. (connFullLink, connShortLink, BI connLinkStartedConnection) :. businessRow :. (uiThemes, customData, chatItemTTL, membersRequireAttention) :. userMemberRow) =
+toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, fullName, localAlias, description, image, enableNtfs_, sendRcpts, BI favorite, groupPreferences, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (uiThemes, customData, chatItemTTL, membersRequireAttention) :. userMemberRow) =
   let membership = (toGroupMember userContactId userMemberRow) {memberChatVRange = vr}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
       groupProfile = GroupProfile {displayName, fullName, description, image, groupPreferences, memberAdmission}
       businessChat = toBusinessChatInfo businessRow
-      connLinkToConnect = case (connFullLink, connShortLink) of
-        (Nothing, _) -> Nothing
-        (Just fullLink, shortLink_) -> Just $ CCLink fullLink shortLink_
-   in GroupInfo {groupId, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, connLinkToConnect, connLinkStartedConnection, chatTags, chatItemTTL, uiThemes, customData, membersRequireAttention}
+      preparedGroup = toPreparedGroup preparedGroupRow
+   in GroupInfo {groupId, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, customData, membersRequireAttention}
+
+toPreparedGroup :: PreparedGroupRow -> Maybe PreparedGroup
+toPreparedGroup = \case
+  (Just fullLink, shortLink_, BI connLinkStartedConnection, welcomeSharedMsgId) ->
+    Just PreparedGroup {connLinkToConnect = CCLink fullLink shortLink_, connLinkStartedConnection, welcomeSharedMsgId}
+  _ -> Nothing
 
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
 toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, BI showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image, contactLink, localAlias, preferences) :. (createdAt, updatedAt) :. (supportChatTs_, supportChatUnread, supportChatMemberAttention, supportChatMentions, supportChatLastMsgFromMemberTs)) =
@@ -651,7 +658,7 @@ groupInfoQuery =
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
       g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
       g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
-      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_started_connection,
+      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_started_connection, g.welcome_shared_msg_id,
       g.business_chat, g.business_member_id, g.customer_member_id,
       g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
       -- GroupMember - membership

@@ -54,7 +54,6 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
-import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
@@ -234,24 +233,6 @@ instance StrEncoding AppMessageBinary where
     (tag, msgId', Tail body) <- smpP
     let msgId = if B.null msgId' then Nothing else Just (SharedMsgId msgId')
     pure AppMessageBinary {tag, msgId, body}
-
-newtype SharedMsgId = SharedMsgId ByteString
-  deriving (Eq, Show)
-  deriving newtype (FromField)
-
-instance ToField SharedMsgId where toField (SharedMsgId m) = toField $ DB.Binary m
-
-instance StrEncoding SharedMsgId where
-  strEncode (SharedMsgId m) = strEncode m
-  strDecode s = SharedMsgId <$> strDecode s
-  strP = SharedMsgId <$> strP
-
-instance FromJSON SharedMsgId where
-  parseJSON = strParseJSON "SharedMsgId"
-
-instance ToJSON SharedMsgId where
-  toJSON = strToJSON
-  toEncoding = strToJEncoding
 
 data MsgScope
   = MSMember {memberId :: MemberId} -- Admins can use any member id; members can use only their own id

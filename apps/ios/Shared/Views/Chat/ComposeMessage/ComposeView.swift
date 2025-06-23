@@ -166,7 +166,7 @@ struct ComposeState {
         case let .mediaPreviews(media): return !media.isEmpty
         case .voicePreview: return voiceMessageRecordingState == .finished
         case .filePreview: return true
-        default: return !message.isEmpty || forwarding || liveMessage != nil || submittingValidReport
+        default: return !whitespaceOnly || forwarding || liveMessage != nil || submittingValidReport
         }
     }
 
@@ -247,7 +247,11 @@ struct ComposeState {
     }
 
     var empty: Bool {
-        message == "" && noPreview
+        whitespaceOnly && noPreview
+    }
+
+    var whitespaceOnly: Bool {
+        message.allSatisfy { $0.isWhitespace }
     }
 }
 
@@ -431,7 +435,7 @@ struct ComposeView: View {
                             placeholder: NSLocalizedString("Add message", comment: "placeholder for sending contact request"),
                             sendToConnect: sendConnectPreparedContactRequest
                         )
-                        if composeState.message.isEmpty {
+                        if composeState.whitespaceOnly {
                             Button(action: sendConnectPreparedContactRequest) {
                                 HStack {
                                     Text("Connect").fontWeight(.medium)
@@ -633,7 +637,7 @@ struct ComposeView: View {
                     chatModel.removeLiveDummy()
                 },
                 sendToConnect: sendToConnect,
-                hideSendButton: chat.chatInfo.nextConnect && chat.chatInfo.contact?.nextSendGrpInv != true && composeState.message.isEmpty,
+                hideSendButton: chat.chatInfo.nextConnect && chat.chatInfo.contact?.nextSendGrpInv != true && composeState.whitespaceOnly,
                 voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
                 disableSendButton: disableSendButton,
                 showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
@@ -690,11 +694,14 @@ struct ComposeView: View {
     private func sendMemberContactInvitation() {
         Task {
             do {
-                let mc = checkLinkPreview()
-                let contact = try await apiSendMemberContactInvitation(chat.chatInfo.apiId, mc)
-                await MainActor.run {
-                    self.chatModel.updateContact(contact)
-                    clearState()
+                if let mc = connectCheckLinkPreview() {
+                    let contact = try await apiSendMemberContactInvitation(chat.chatInfo.apiId, mc)
+                    await MainActor.run {
+                        self.chatModel.updateContact(contact)
+                        clearState()
+                    }
+                } else {
+                    AlertManager.shared.showAlertMsg(title: "Empty message!")
                 }
             } catch {
                 logger.error("ChatView.sendMemberContactInvitation error: \(error.localizedDescription)")
@@ -706,15 +713,16 @@ struct ComposeView: View {
     // TODO [short links] different messages for business
     private func sendConnectPreparedContactRequest() {
         hideKeyboard()
+        let empty = composeState.whitespaceOnly
         AlertManager.shared.showAlert(Alert(
             title: Text("Send contact request?"),
             message: Text("You will be able to send messages **only after your request is accepted**."),
             primaryButton: .default(
-                Text(composeState.message.isEmpty ? "Send request without message" : "Send request"),
+                Text(empty ? "Send request without message" : "Send request"),
                 action: sendConnectPreparedContact
             ),
             secondaryButton:
-                composeState.message.isEmpty
+                empty
                 ? .cancel(Text("Add message")) { keyboardVisible = true }
                 : .cancel()
         ))
@@ -723,7 +731,7 @@ struct ComposeView: View {
     private func sendConnectPreparedContact() {
         Task {
             do {
-                let mc = checkLinkPreview()
+                let mc = connectCheckLinkPreview()
                 let contact = try await apiConnectPreparedContact(contactId: chat.chatInfo.apiId, incognito: incognitoGroupDefault.get(), msg: mc)
                 await MainActor.run {
                     self.chatModel.updateContact(contact)
@@ -739,7 +747,8 @@ struct ComposeView: View {
     private func connectPreparedGroup() {
         Task {
             do {
-                let groupInfo = try await apiConnectPreparedGroup(groupId: chat.chatInfo.apiId, incognito: incognitoGroupDefault.get())
+                let mc = connectCheckLinkPreview()
+                let groupInfo = try await apiConnectPreparedGroup(groupId: chat.chatInfo.apiId, incognito: incognitoGroupDefault.get(), msg: mc)
                 await MainActor.run {
                     self.chatModel.updateGroup(groupInfo)
                     clearState()
@@ -751,8 +760,18 @@ struct ComposeView: View {
         }
     }
 
+    @inline(__always)
+    private func connectCheckLinkPreview() -> MsgContent? {
+        let msgText = composeState.message.trimmingCharacters(in: .whitespacesAndNewlines)
+        return msgText.isEmpty ? nil : checkLinkPreview_(msgText)
+    }
+
+    @inline(__always)
     private func checkLinkPreview() -> MsgContent {
-        let msgText = composeState.message
+        checkLinkPreview_(composeState.message.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    private func checkLinkPreview_(_ msgText: String) -> MsgContent {
         switch (composeState.preview) {
         case let .linkPreview(linkPreview: linkPreview):
             if let parsedMsg = parseSimpleXMarkdown(msgText),
