@@ -2997,6 +2997,9 @@ testShortLinkAddressPrepareBusiness =
       bob <## "#biz: connection started"
       biz <## "#bob (Bob): accepting business address request..."
       bob <## "#biz: joining the group..."
+      -- the next command can be prone to race conditions
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "business link: connecting to business #biz"
       biz <## "#bob: bob_1 joined the group"
       bob <## "#biz: you joined the group"
       biz #> "#bob hi"
