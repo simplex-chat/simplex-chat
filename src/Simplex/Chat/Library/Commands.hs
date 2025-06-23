@@ -1735,22 +1735,38 @@ processChatCommand' vr = \case
         pure conn'
   APIConnectPlan userId cLink -> withUserId userId $ \user ->
     uncurry (CRConnectionPlan user) <$> connectPlan user cLink
-  APIPrepareContact userId accLink@(ACCL _ (CCLink cReq _)) contactSLinkData -> withUserId userId $ \user -> do
+  APIPrepareContact userId accLink contactSLinkData -> withUserId userId $ \user -> do
     let ContactShortLinkData {profile, message, business} = contactSLinkData
-    -- TODO [short links] create business contact as group
-    ct <- withStore $ \db -> createPreparedContact db user profile accLink
-    let createItem content = createInternalItemForChat user (CDDirectRcv ct) False content Nothing
-        cInfo = DirectChat ct
-    void $ createItem $ CIRcvDirectE2EEInfo $ E2EInfo $ connRequestPQEncryption cReq
-    void $ createFeatureEnabledItems_ user ct
-    aci <- mapM (createItem . CIRcvMsgContent . MCText) message
-    let chat = case aci of
-          Just (AChatItem SCTDirect dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
-          _ -> Chat cInfo [] emptyChatStats
-    pure $ CRNewPreparedChat user $ AChat SCTDirect chat
+    case accLink of
+      ACCL SCMContact ccLink
+        | business -> do
+            let Profile {preferences} = profile
+                groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
+                groupProfile = businessGroupProfile profile groupPreferences
+            (gInfo, hostMember) <- withStore $ \db -> createPreparedGroup db vr user groupProfile True ccLink
+            let cd = CDGroupRcv gInfo Nothing hostMember
+                createItem content = createInternalItemForChat user cd True content Nothing
+                cInfo = GroupChat gInfo Nothing
+            void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
+            aci <- mapM (createItem . CIRcvMsgContent . MCText) message
+            let chat = case aci of
+                  Just (AChatItem SCTGroup dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
+                  _ -> Chat cInfo [] emptyChatStats
+            pure $ CRNewPreparedChat user $ AChat SCTGroup chat
+      ACCL _ (CCLink cReq _) -> do
+        ct <- withStore $ \db -> createPreparedContact db user profile accLink
+        let createItem content = createInternalItemForChat user (CDDirectRcv ct) False content Nothing
+            cInfo = DirectChat ct
+        void $ createItem $ CIRcvDirectE2EEInfo $ E2EInfo $ connRequestPQEncryption cReq
+        void $ createFeatureEnabledItems_ user ct
+        aci <- mapM (createItem . CIRcvMsgContent . MCText) message
+        let chat = case aci of
+              Just (AChatItem SCTDirect dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
+              _ -> Chat cInfo [] emptyChatStats
+        pure $ CRNewPreparedChat user $ AChat SCTDirect chat
   APIPrepareGroup userId ccLink groupSLinkData -> withUserId userId $ \user -> do
     let GroupShortLinkData {groupProfile = gp@GroupProfile {description}} = groupSLinkData
-    (gInfo, hostMember) <- withStore $ \db -> createPreparedGroup db vr user gp ccLink
+    (gInfo, hostMember) <- withStore $ \db -> createPreparedGroup db vr user gp False ccLink
     let cd = CDGroupRcv gInfo Nothing hostMember
         createItem content = createInternalItemForChat user cd True content Nothing
         cInfo = GroupChat gInfo Nothing
