@@ -767,13 +767,21 @@ struct ChatView: View {
     }
 
     private var connectingText: LocalizedStringKey? {
-        if let contact = chat.chatInfo.contact,
-           !contact.sndReady && contact.active && !contact.sendMsgToConnect && !contact.nextAcceptContactRequest {
-            contact.preparedContact?.uiConnLinkType == .con
-            ? "contact should accept…"
-            : "connecting…"
-        } else {
-            nil
+        switch (chat.chatInfo) {
+        case let .direct(contact):
+            if !contact.sndReady && contact.active && !contact.sendMsgToConnect && !contact.nextAcceptContactRequest {
+                contact.preparedContact?.uiConnLinkType == .con
+                ? "contact should accept…"
+                : "connecting…"
+            } else {
+                nil
+            }
+        case let .group(groupInfo, _):
+            switch (groupInfo.membership.memberStatus) {
+            case .memAccepted: "connecting…" // TODO [short links] add member status to show transition from prepared group to started connection earlier?
+            default: nil
+            }
+        default: nil
         }
     }
 

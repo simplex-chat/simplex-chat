@@ -1888,7 +1888,7 @@ viewGroupUserChanged
 viewConnectionPlan :: ChatConfig -> ACreatedConnLink -> ConnectionPlan -> [StyledString]
 viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
   CPInvitationLink ilp -> case ilp of
-    ILPOk contactSLinkData -> [invLink "ok to connect"] <> [viewJSON contactSLinkData | testView]
+    ILPOk contactSLinkData -> [invOrBiz contactSLinkData "ok to connect"] <> [viewJSON contactSLinkData | testView]
     ILPOwnLink -> [invLink "own link"]
     ILPConnecting Nothing -> [invLink "connecting"]
     ILPConnecting (Just ct) -> [invLink ("connecting to contact " <> ttyContact' ct)]
@@ -1898,8 +1898,12 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
       ]
     where
       invLink = ("invitation link: " <>)
+      invOrBiz = \case
+        Just ContactShortLinkData {business}
+          | business -> ("business link: " <>)
+        _ -> ("invitation link: " <>)
   CPContactAddress cap -> case cap of
-    CAPOk contactSLinkData -> [ctAddr "ok to connect"] <> [viewJSON contactSLinkData | testView]
+    CAPOk contactSLinkData -> [addrOrBiz contactSLinkData "ok to connect"] <> [viewJSON contactSLinkData | testView]
     CAPOwnLink -> [ctAddr "own address"]
     CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
     CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
@@ -1910,6 +1914,10 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     CAPContactViaAddress ct -> [ctAddr ("known contact without connection " <> ttyContact' ct)]
     where
       ctAddr = ("contact address: " <>)
+      addrOrBiz = \case
+        Just ContactShortLinkData {business}
+          | business -> ("business link: " <>)
+        _ -> ("contact address: " <>)
   CPGroupLink glp -> case glp of
     GLPOk groupSLinkData -> [grpLink "ok to connect"] <> [viewJSON groupSLinkData | testView]
     GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]

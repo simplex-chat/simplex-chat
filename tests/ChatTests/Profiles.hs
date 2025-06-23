@@ -114,6 +114,7 @@ chatProfileTests = do
     it "prepare contact with image in profile" testShortLinkInvitationImage
     it "prepare contact with a long name in profile" testShortLinkInvitationLongName
     it "prepare contact using address short link data and connect" testShortLinkAddressPrepareContact
+    it "prepare business chat using address short link data and connect" testShortLinkAddressPrepareBusiness
     it "prepare group using group short link data and connect" testShortLinkPrepareGroup
     it "prepare group using group short link data and connect, host rejects" testShortLinkPrepareGroupReject
     it "connect to prepared contact incognito (via invitation)" testShortLinkInvitationConnectPreparedContactIncognito
@@ -2978,6 +2979,59 @@ testShortLinkAddressPrepareContact =
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
       alice <##> bob
+
+testShortLinkAddressPrepareBusiness :: HasCallStack => TestParams -> IO ()
+testShortLinkAddressPrepareBusiness =
+  testChat3 businessProfile aliceProfile {fullName = "Alice @ Biz"} bobProfile $
+    \biz alice bob -> do
+      biz ##> "/ad"
+      (shortLink, fullLink) <- getContactLinks biz True
+      biz ##> "/auto_accept on business"
+      biz <## "auto_accept on, business"
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "business link: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+      bob <## "#biz: group is prepared"
+      bob ##> "/_connect group #1"
+      bob <## "#biz: connection started"
+      biz <## "#bob (Bob): accepting business address request..."
+      bob <## "#biz: joining the group..."
+      -- the next command can be prone to race conditions
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "business link: connecting to business #biz"
+      biz <## "#bob: bob_1 joined the group"
+      bob <## "#biz: you joined the group"
+      biz #> "#bob hi"
+      bob <# "#biz biz_1> hi"
+      bob #> "#biz hello"
+      biz <# "#bob bob_1> hello"
+
+      connectUsers biz alice
+      biz <##> alice
+      biz ##> "/a #bob alice"
+      biz <## "invitation to join the group #bob sent to alice"
+      alice <## "#bob (Bob): biz invites you to join the group as member"
+      alice <## "use /j bob to accept"
+      alice ##> "/j bob"
+      concurrentlyN_
+        [ do
+            alice <## "#bob: you joined the group"
+            alice <### [WithTime "#bob biz> hi [>>]", WithTime "#bob bob_1> hello [>>]"]
+            alice <## "#bob: member bob_1 (Bob) is connected",
+          biz <## "#bob: alice joined the group",
+          do
+            bob <## "#biz: biz_1 added alice (Alice @ Biz) to the group (connecting...)"
+            bob <## "#biz: new member alice is connected"
+        ]
+      alice #> "#bob hey"
+      concurrently_
+        (bob <# "#biz alice> hey")
+        (biz <# "#bob alice> hey")
+      bob #> "#biz hey there"
+      concurrently_
+        (alice <# "#bob bob_1> hey there")
+        (biz <# "#bob bob_1> hey there")
 
 testShortLinkPrepareGroup :: HasCallStack => TestParams -> IO ()
 testShortLinkPrepareGroup =

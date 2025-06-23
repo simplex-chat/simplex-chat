@@ -1023,10 +1023,10 @@ acceptBusinessJoinRequestAsync
     createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
     createGroupFeatureItems user cd CISndGroupFeature gInfo
     pure (gInfo, clientMember)
-    where
-      businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
-      businessGroupProfile Profile {displayName, fullName, image} groupPreferences =
-        GroupProfile {displayName, fullName, description = Nothing, image, groupPreferences = Just groupPreferences, memberAdmission = Nothing}
+
+businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
+businessGroupProfile Profile {displayName, fullName, image} groupPreferences =
+  GroupProfile {displayName, fullName, description = Nothing, image, groupPreferences = Just groupPreferences, memberAdmission = Nothing}
 
 profileToSendOnAccept :: User -> Maybe IncognitoProfile -> Bool -> Profile
 profileToSendOnAccept user ip = userProfileToSend user (getIncognitoProfile <$> ip) Nothing
@@ -2355,7 +2355,7 @@ sameGroupProfileInfo p p' = p {groupPreferences = Nothing} == p' {groupPreferenc
 createGroupFeatureItems :: MsgDirectionI d => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> Maybe Int -> Maybe GroupMemberRole -> CIContent d) -> GroupInfo -> CM ()
 createGroupFeatureItems user cd ciContent g = createGroupFeatureItems_ user cd False ciContent g >>= toView . CEvtNewChatItems user
 
-createGroupFeatureItems_ :: MsgDirectionI d => User -> ChatDirection 'CTGroup d -> Bool -> (GroupFeature -> GroupPreference -> Maybe Int -> Maybe GroupMemberRole -> CIContent d) -> GroupInfo -> CM [AChatItem]
+createGroupFeatureItems_ :: MsgDirectionI d => User -> ChatDirection 'CTGroup d -> ShowGroupAsSender -> (GroupFeature -> GroupPreference -> Maybe Int -> Maybe GroupMemberRole -> CIContent d) -> GroupInfo -> CM [AChatItem]
 createGroupFeatureItems_ user cd showGroupAsSender ciContent GroupInfo {fullGroupPreferences} =
   forM allGroupFeatures $ \(AGF f) -> do
     let p = getGroupPreference f fullGroupPreferences
@@ -2367,7 +2367,7 @@ createInternalChatItem user cd content itemTs_ = do
   ci <- createInternalItemForChat user cd False content itemTs_
   toView $ CEvtNewChatItems user [ci]
 
-createInternalItemForChat :: (ChatTypeI c, MsgDirectionI d) => User -> ChatDirection c d -> Bool -> CIContent d -> Maybe UTCTime -> CM AChatItem
+createInternalItemForChat :: (ChatTypeI c, MsgDirectionI d) => User -> ChatDirection c d -> ShowGroupAsSender -> CIContent d -> Maybe UTCTime -> CM AChatItem
 createInternalItemForChat user cd showGroupAsSender content itemTs_ =
   lift (createInternalItemsForChats user itemTs_ [(cd, showGroupAsSender, [content])]) >>= \case
     [Right ci] -> pure ci

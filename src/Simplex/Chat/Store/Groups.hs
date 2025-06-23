@@ -525,15 +525,16 @@ deleteContactCardKeepConn db connId Contact {contactId, profile = LocalProfile {
   DB.execute db "DELETE FROM contacts WHERE contact_id = ?" (Only contactId)
   DB.execute db "DELETE FROM contact_profiles WHERE contact_profile_id = ?" (Only profileId)
 
-createPreparedGroup :: DB.Connection -> VersionRangeChat -> User -> GroupProfile -> CreatedLinkContact -> ExceptT StoreError IO (GroupInfo, GroupMember)
-createPreparedGroup db vr user@User {userId, userContactId} groupProfile connLinkToConnect = do
+createPreparedGroup :: DB.Connection -> VersionRangeChat -> User -> GroupProfile -> Bool -> CreatedLinkContact -> ExceptT StoreError IO (GroupInfo, GroupMember)
+createPreparedGroup db vr user@User {userId, userContactId} groupProfile business connLinkToConnect = do
   currentTs <- liftIO getCurrentTime
   (groupId, groupLDN) <- createGroup_ db userId groupProfile (Just connLinkToConnect) Nothing currentTs
   hostMemberId <- insertHost_ currentTs groupId groupLDN
   let userMember = MemberIdRole (MemberId $ encodeUtf8 groupLDN <> "_user_unknown_id") GRMember
-  void $ createContactMemberInv_ db user groupId (Just hostMemberId) user userMember GCUserMember GSMemUnknown IBUnknown Nothing currentTs vr
-  g <- getGroupInfo db vr user groupId
+  membership <- createContactMemberInv_ db user groupId (Just hostMemberId) user userMember GCUserMember GSMemUnknown IBUnknown Nothing currentTs vr
   hostMember <- getGroupMember db vr user groupId hostMemberId
+  when business $ liftIO $ setGroupBusinessChatInfo groupId membership hostMember
+  g <- getGroupInfo db vr user groupId
   pure (g, hostMember)
   where
     insertHost_ currentTs groupId groupLDN = do
@@ -553,6 +554,23 @@ createPreparedGroup db vr user@User {userId, userContactId} groupProfile connLin
               :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
           )
         insertedRowId db
+    setGroupBusinessChatInfo :: GroupId -> GroupMember -> GroupMember -> IO ()
+    setGroupBusinessChatInfo groupId membership hostMember = do
+      let businessChatInfo = Just BusinessChatInfo {chatType = BCBusiness, businessId = memberId' hostMember, customerId = memberId' membership}
+      updateBusinessChatInfo db groupId businessChatInfo
+
+updateBusinessChatInfo :: DB.Connection -> GroupId -> Maybe BusinessChatInfo -> IO ()
+updateBusinessChatInfo db groupId businessChatInfo =
+  DB.execute
+    db
+    [sql|
+      UPDATE groups
+      SET business_chat = ?,
+          business_member_id = ?,
+          customer_member_id = ?
+      WHERE group_id = ?
+    |]
+    (businessChatInfoRow businessChatInfo :. (Only groupId))
 
 updatePreparedGroupUser :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupMember -> User -> ExceptT StoreError IO GroupInfo
 updatePreparedGroupUser db vr user gInfo@GroupInfo {groupId, membership} hostMember newUser@User {userId = newUserId} = do
@@ -619,33 +637,36 @@ updatePreparedGroupUser db vr user gInfo@GroupInfo {groupId, membership} hostMem
             safeDeleteLDN db user oldHostLDN
 
 updatePreparedUserAndHostMembersInvited :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupMember -> GroupLinkInvitation -> ExceptT StoreError IO (GroupInfo, GroupMember)
-updatePreparedUserAndHostMembersInvited db vr user gInfo hostMember GroupLinkInvitation {fromMember, fromMemberName, invitedMember, groupProfile, accepted} = do
+updatePreparedUserAndHostMembersInvited db vr user gInfo hostMember GroupLinkInvitation {fromMember, fromMemberName, invitedMember, groupProfile, accepted, business} = do
   let fromMemberProfile = profileFromName fromMemberName
       initialStatus = maybe GSMemAccepted (acceptanceToStatus $ memberAdmission groupProfile) accepted
-  updatePreparedUserAndHostMembers' db vr user gInfo hostMember fromMember fromMemberProfile invitedMember groupProfile initialStatus
+  updatePreparedUserAndHostMembers' db vr user gInfo hostMember fromMember fromMemberProfile invitedMember groupProfile business initialStatus
 
 updatePreparedUserAndHostMembersRejected :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupMember -> GroupLinkRejection -> ExceptT StoreError IO (GroupInfo, GroupMember)
 updatePreparedUserAndHostMembersRejected db vr user gInfo hostMember GroupLinkRejection {fromMember = fromMember@MemberIdRole {memberId}, invitedMember, groupProfile} = do
   let fromMemberProfile = profileFromName $ nameFromMemberId memberId
-  updatePreparedUserAndHostMembers' db vr user gInfo hostMember fromMember fromMemberProfile invitedMember groupProfile GSMemRejected
+  updatePreparedUserAndHostMembers' db vr user gInfo hostMember fromMember fromMemberProfile invitedMember groupProfile Nothing GSMemRejected
 
-updatePreparedUserAndHostMembers' :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupMember -> MemberIdRole -> Profile -> MemberIdRole -> GroupProfile -> GroupMemberStatus -> ExceptT StoreError IO (GroupInfo, GroupMember)
+updatePreparedUserAndHostMembers' :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupMember -> MemberIdRole -> Profile -> MemberIdRole -> GroupProfile -> Maybe BusinessChatInfo -> GroupMemberStatus -> ExceptT StoreError IO (GroupInfo, GroupMember)
 updatePreparedUserAndHostMembers'
   db
   vr
   user
-  gInfo@GroupInfo {groupId, groupProfile = gp}
+  gInfo@GroupInfo {groupId, groupProfile = gp, businessChat}
   hostMember
   fromMember
   fromMemberProfile
   invitedMember
   groupProfile
+  business
   membershipStatus = do
     currentTs <- liftIO getCurrentTime
     liftIO $ updateUserMember currentTs
     hostMember' <- updateHostMember currentTs
     when (gp /= groupProfile) $
       void $ updateGroupProfile db user gInfo groupProfile
+    when (isJust businessChat && isJust business) $
+      liftIO $ updateBusinessChatInfo db groupId business
     gInfo' <- getGroupInfo db vr user groupId
     pure (gInfo', hostMember')
     where

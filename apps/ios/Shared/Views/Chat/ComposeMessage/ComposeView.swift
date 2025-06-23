@@ -402,7 +402,11 @@ struct ComposeView: View {
 
             if chat.chatInfo.groupInfo?.nextConnectPrepared == true {
                 Button(action: connectPreparedGroup) {
-                    Label("Join group", systemImage: "person.2.fill")
+                    if chat.chatInfo.groupInfo?.businessChat == nil {
+                        Label("Join group", systemImage: "person.2.fill")
+                    } else {
+                        Label("Connect", systemImage: "briefcase.fill")
+                    }
                 }
                 .frame(height: 60)
             } else if contact?.nextSendGrpInv == true {
