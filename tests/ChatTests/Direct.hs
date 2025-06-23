@@ -1762,7 +1762,7 @@ testMultipleUserAddresses =
       cLinkAlice <- getContactLink alice True
       bob ##> ("/c " <> cLinkAlice)
       alice <#? bob
-      alice @@@ [("@bob", "")]
+      alice @@@ [("@bob", "Audio/video calls: enabled")]
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
@@ -1780,7 +1780,7 @@ testMultipleUserAddresses =
       cLinkAlisa <- getContactLink alice True
       bob ##> ("/c " <> cLinkAlisa)
       alice <#? bob
-      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", ""), ("@SimpleX Chat team", ""), ("@SimpleX-Status", ""), ("*", "")])
+      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", "Audio/video calls: enabled"), ("@SimpleX Chat team", ""), ("@SimpleX-Status", ""), ("*", "")])
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_

@@ -1221,8 +1221,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       REQ invId pqSupport _ connInfo -> do
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
         case chatMsgEvent of
-          XContact p xContactId_ mc_ -> profileContactRequest invId chatVRange p xContactId_ mc_ pqSupport
-          XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing pqSupport
+          XContact p xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ pqSupport
+          XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing Nothing pqSupport
           -- TODO show/log error, other events in contact request
           _ -> pure ()
       MERR _ err -> do
@@ -1234,30 +1234,37 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       -- TODO add debugging output
       _ -> pure ()
       where
-        profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MsgContent -> PQSupport -> CM ()
-        profileContactRequest invId chatVRange p@Profile {displayName} xContactId_ mc_ reqPQSup = do
+        profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> PQSupport -> CM ()
+        profileContactRequest invId chatVRange p@Profile {displayName} xContactId_ welcomeMsgId_ requestMsg_ reqPQSup = do
           uclGLinkInfo <- withStore $ \db -> getUserContactLinkById db userId uclId
           let (UserContactLink {connLinkContact = CCLink connReq _, shortLinkDataSet, addressSettings}, gLinkInfo_) = uclGLinkInfo
-              AddressSettings {businessAddress, autoAccept, autoReply} = addressSettings
+              AddressSettings {businessAddress, autoAccept} = addressSettings
               isSimplexTeam = sameConnReqContact connReq adminContactReq
               v = maxVersion chatVRange
           case autoAccept of
             Nothing ->
               withStore (\db -> createOrUpdateContactRequest db vr user uclId invId chatVRange p xContactId_ reqPQSup) >>= \case
                 CORContact ct -> toView $ CEvtContactRequestAlreadyAccepted user ct
-                CORRequest cReq ct_ -> do
+                CORRequest cReq ct_ newRequest -> do
                   chat_ <- forM ct_ $ \ct -> do
-                    -- TODO [short links] prevent duplicate items - needs some flag?
+                    -- TODO [short links] prevent duplicate items
                     -- update welcome message if changed (send update event to UI) and add updated feature items.
                     -- Do not created e2e item on repeat request
-                    let createItem content = createInternalItemForChat user (CDDirectRcv ct) False content Nothing
-                    void $ createItem $ CIRcvDirectE2EEInfo $ E2EInfo $ Just $ CR.pqSupportToEnc $ reqPQSup
-                    void $ createFeatureEnabledItems_ user ct
-                    aci <- mapM (createItem . CIRcvMsgContent) mc_
-                    let cInfo = DirectChat ct
-                    pure $ AChat SCTDirect $ case aci of
-                      Just (AChatItem SCTDirect dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
-                      _ -> Chat cInfo [] emptyChatStats
+                    if newRequest
+                      then do
+                        let createItem content = createInternalItemForChat user (CDDirectRcv ct) False content Nothing
+                        void $ createItem $ CIRcvDirectE2EEInfo $ E2EInfo $ Just $ CR.pqSupportToEnc $ reqPQSup
+                        void $ createFeatureEnabledItems_ user ct
+                        -- TODO [short links] save sharedMsgId
+                        aci <- forM requestMsg_ $ \(sharedMsgId, mc) -> do
+                          aci <- createItem $ CIRcvMsgContent mc
+                          unlessM (asks $ coreApi . config) $ toView $ CEvtNewChatItems user [aci]
+                          pure aci
+                        let cInfo = DirectChat ct
+                        pure $ AChat SCTDirect $ case aci of
+                          Just (AChatItem SCTDirect dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
+                          _ -> Chat cInfo [] emptyChatStats
+                      else pure $ AChat SCTDirect $ Chat (DirectChat ct) [] emptyChatStats
                   toView $ CEvtReceivedContactRequest user cReq chat_
             Just AutoAccept {acceptIncognito}
               | businessAddress ->
@@ -1267,10 +1274,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         Just ct -> toView $ CEvtContactRequestAlreadyAccepted user ct
                         Nothing -> do
                           ct <- acceptContactRequestAsync user uclId invId chatVRange p xContactId_ reqPQSup Nothing
-                          forM_ autoReply $ \arMC ->
-                            when (shortLinkDataSet && v >= shortLinkDataVersion) $
-                              createInternalChatItem user (CDDirectSnd ct) (CISndMsgContent arMC) Nothing
-                          forM_ mc_ $ \mc ->
+                          -- TODO [short links] add welcome message if welcomeMsgId is present
+                          -- forM_ autoReply $ \arMC ->
+                          --   when (shortLinkDataSet && v >= shortLinkDataVersion) $
+                          --     createInternalChatItem user (CDDirectSnd ct) (CISndMsgContent arMC) Nothing
+                          -- TODO [short links] save sharedMsgId
+                          forM_ requestMsg_ $ \(sharedMsgId, mc) ->
                             createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent mc) Nothing
                           toView $ CEvtAcceptingContactRequest user ct
                     else
@@ -1278,10 +1287,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         Just gInfo -> toView $ CEvtBusinessRequestAlreadyAccepted user gInfo
                         Nothing -> do
                           (gInfo, clientMember) <- acceptBusinessJoinRequestAsync user uclId invId chatVRange p xContactId_
-                          forM_ autoReply $ \arMC ->
-                            when (shortLinkDataSet && v >= shortLinkDataVersion) $
-                              createInternalChatItem user (CDGroupSnd gInfo Nothing) (CISndMsgContent arMC) Nothing
-                          forM_ mc_ $ \mc ->
+                          -- TODO [short links] add welcome message if welcomeMsgId is present
+                          -- forM_ autoReply $ \arMC ->
+                          --   when (shortLinkDataSet && v >= shortLinkDataVersion) $
+                          --     createInternalChatItem user (CDGroupSnd gInfo Nothing) (CISndMsgContent arMC) Nothing
+                          -- TODO [short links] save sharedMsgId
+                          forM_ requestMsg_ $ \(sharedMsgId, mc) ->
                             createInternalChatItem user (CDGroupRcv gInfo Nothing clientMember) (CIRcvMsgContent mc) Nothing
                           toView $ CEvtAcceptingBusinessRequest user gInfo
               | otherwise -> case gLinkInfo_ of
@@ -1295,10 +1306,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                             then Just . NewIncognito <$> liftIO generateRandomProfile
                             else pure Nothing
                         ct <- acceptContactRequestAsync user uclId invId chatVRange p xContactId_ reqPQSup incognitoProfile
-                        forM_ autoReply $ \arMC ->
-                          when (shortLinkDataSet && v >= shortLinkDataVersion) $
-                            createInternalChatItem user (CDDirectSnd ct) (CISndMsgContent arMC) Nothing
-                        forM_ mc_ $ \mc ->
+                        -- TODO [short links] add welcome message if welcomeMsgId is present
+                        -- forM_ autoReply $ \arMC ->
+                        --   when (shortLinkDataSet && v >= shortLinkDataVersion) $
+                        --     createInternalChatItem user (CDDirectSnd ct) (CISndMsgContent arMC) Nothing
+                        -- TODO [short links] save sharedMsgId
+                        forM_ requestMsg_ $ \(sharedMsgId, mc) ->
                           createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent mc) Nothing
                         toView $ CEvtAcceptingContactRequest user ct
                   Just gli@GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do

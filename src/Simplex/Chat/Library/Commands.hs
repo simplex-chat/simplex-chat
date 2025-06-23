@@ -2951,7 +2951,8 @@ processChatCommand' vr = \case
     joinContact :: User -> Int64 -> ConnId -> ConnReqContact -> Maybe Profile -> XContactId -> Maybe MsgContent -> Bool -> PQSupport -> VersionChat -> CM ()
     joinContact user pccConnId connId cReq incognitoProfile xContactId mc_ inGroup pqSup chatV = do
       let profileToSend = userProfileToSend user incognitoProfile Nothing inGroup
-      dm <- encodeConnInfoPQ pqSup chatV (XContact profileToSend (Just xContactId) mc_)
+      -- TODO [short links] send welcome and sent sharedMsg Ids
+      dm <- encodeConnInfoPQ pqSup chatV (XContact profileToSend (Just xContactId) Nothing ((SharedMsgId "",) <$> mc_))
       subMode <- chatReadVar subscriptionMode
       joinPreparedAgentConnection user pccConnId connId cReq dm pqSup subMode
     joinPreparedAgentConnection :: User -> Int64 -> ConnId -> ConnectionRequestUri m -> ByteString -> PQSupport -> SubscriptionMode -> CM ()
@@ -3034,6 +3035,7 @@ processChatCommand' vr = \case
     setMyAddressData user ucl@UserContactLink {userContactLinkId, connLinkContact = CCLink connFullLink _sLnk_, addressSettings} = do
       conn <- withFastStore $ \db -> getUserAddressConnection db vr user
       let shortLinkProfile = userProfileToSend user Nothing Nothing False
+      -- TODO [short links] do not save address to server if data did not change, spinners, error handling
       userData <- contactShortLinkData shortLinkProfile $ Just addressSettings
       sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a (aConnId conn) SCMContact userData Nothing)
       withFastStore' $ \db -> setUserContactLinkShortLink db userContactLinkId sLnk

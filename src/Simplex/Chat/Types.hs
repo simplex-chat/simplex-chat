@@ -371,10 +371,15 @@ instance ToJSON ConnReqUriHash where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+-- TODO [short links] this type is most likely incorrect, as it does not communicate when contact exists as opposed to when it is
+-- just created, as was the original intention.
+-- It also has no information when group exists on repeat requests.
+-- Most likely, whatever information from request is needed should have been added to CORContact (or inside Contact),
+-- instead of passing Maybe contact in request.
 data ChatOrRequest
   = CORContact Contact
   -- Contact is Maybe for backward compatibility with legacy requests, all new requests are created with contact
-  | CORRequest UserContactRequest (Maybe Contact)
+  | CORRequest UserContactRequest (Maybe Contact) Bool
 
 type UserName = Text
 
