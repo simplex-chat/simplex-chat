@@ -8,6 +8,7 @@ module Simplex.Chat.Store
     UserContactLink (..),
     GroupLink (..),
     GroupLinkInfo (..),
+    AddressSettings (..),
     AutoAccept (..),
     createChatStore,
     migrations, -- used in tests

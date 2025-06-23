@@ -44,18 +44,17 @@ struct ContextProfilePickerView: View {
                 profilePicker()
             }
         }
-        .padding(.bottom, -8)
     }
 
     private func currentSelection() -> some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Share profile")
+                Text("Your profile")
                     .font(.callout)
                     .foregroundColor(theme.colors.secondary)
                 Spacer()
             }
-            .padding(.top, 10)
+            .padding(.top, 8)
             .padding(.bottom, -4)
             .padding(.leading, 12)
             .padding(.trailing)

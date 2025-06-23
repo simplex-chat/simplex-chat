@@ -12,80 +12,60 @@ import SimpleXChat
 struct ContextContactRequestActionsView: View {
     @EnvironmentObject var theme: AppTheme
     var contactRequestId: Int64
+    @UserDefault(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
     var body: some View {
         HStack(spacing: 0) {
-            ZStack {
-                Text("Reject")
-                    .foregroundColor(.red)
-            }
+            Label("Reject", systemImage: "multiply")
+            .foregroundColor(.red)
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
             .onTapGesture {
                 showRejectRequestAlert(contactRequestId)
             }
 
-            ZStack {
-                Text("Accept")
-                    .foregroundColor(theme.colors.primary)
-            }
+            Label("Accept", systemImage: "checkmark").foregroundColor(theme.colors.primary)
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
             .onTapGesture {
-                showAcceptRequestAlert(contactRequestId)
+                if ChatModel.shared.addressShortLinkDataSet {
+                    Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequestId) }
+                } else {
+                    showAcceptRequestAlert(contactRequestId)
+                }
             }
         }
-        .frame(minHeight: 54)
+        .frame(minHeight: 60)
         .frame(maxWidth: .infinity)
-        .background(.thinMaterial)
+        .background(ToolbarMaterial.material(toolbarMaterial))
     }
 }
 
 func showRejectRequestAlert(_ contactRequestId: Int64) {
     showAlert(
-        title: NSLocalizedString("Reject contact request", comment: "alert title"),
+        NSLocalizedString("Reject contact request", comment: "alert title"),
         message: NSLocalizedString("The sender will NOT be notified", comment: "alert message"),
-        buttonTitle: "Reject",
-        buttonAction: {
-            Task {
-                await rejectContactRequest(contactRequestId, dismissToChatList: true)
-            }
-        },
-        cancelButton: true
+        actions: {[
+            UIAlertAction(title: NSLocalizedString("Reject", comment: "alert action"), style: .destructive) { _ in
+                Task { await rejectContactRequest(contactRequestId, dismissToChatList: true) }
+            },
+            cancelAlertAction
+        ]}
     )
 }
 
 func showAcceptRequestAlert(_ contactRequestId: Int64) {
-    var actions: [UIAlertAction] = []
-    actions.append(
-        UIAlertAction(
-            title: NSLocalizedString("Accept", comment: "alert action"),
-            style: .default,
-            handler: { _ in
-                Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequestId) }
-            }
-        )
-    )
-    if !ChatModel.shared.addressShortLinkDataSet {
-        actions.append(
-            UIAlertAction(
-                title: NSLocalizedString("Accept incognito", comment: "alert action"),
-                style: .default,
-                handler: { _ in
-                    Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequestId) }
-               }
-            )
-        )
-    }
-    actions.append(
-        UIAlertAction(
-            title: NSLocalizedString("Cancel", comment: "alert action"),
-            style: .default
-        )
-    )
     showAlert(
         NSLocalizedString("Accept contact request", comment: "alert title"),
-        actions: { actions }
+        actions: {[
+            UIAlertAction(title: NSLocalizedString("Accept", comment: "alert action"), style: .default) { _ in
+                Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequestId) }
+            },
+            UIAlertAction(title: NSLocalizedString("Accept incognito", comment: "alert action"), style: .default) { _ in
+                Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequestId) }
+            },
+            cancelAlertAction
+        ]}
     )
 }
 

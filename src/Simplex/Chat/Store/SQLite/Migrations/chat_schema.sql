@@ -333,6 +333,7 @@ CREATE TABLE user_contact_links(
   business_address INTEGER DEFAULT 0,
   short_link_contact BLOB,
   short_link_data_set INTEGER NOT NULL DEFAULT 0,
+  address_welcome_message TEXT,
   UNIQUE(user_id, local_display_name)
 );
 CREATE TABLE contact_requests(
@@ -426,7 +427,8 @@ CREATE TABLE chat_items(
   include_in_history INTEGER NOT NULL DEFAULT 0,
   user_mention INTEGER NOT NULL DEFAULT 0,
   group_scope_tag TEXT,
-  group_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE
+  group_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  show_group_as_sender INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(

@@ -644,7 +644,7 @@ swipe action */
 "Auto-accept images" = "Автоматично приемане на изображения";
 
 /* alert title */
-"Auto-accept settings" = "Автоматично приемане на настройки";
+"SimpleX address settings" = "Автоматично приемане на настройки";
 
 /* No comment provided by engineer. */
 "Back" = "Назад";
@@ -2327,7 +2327,7 @@ snd error text */
 "Join" = "Присъединяване";
 
 /* No comment provided by engineer. */
-"join as %@" = "присъединяване като %@";
+"Join as %@" = "присъединяване като %@";
 
 /* new chat sheet title */
 "Join group" = "Влез в групата";
@@ -4216,7 +4216,7 @@ chat item action */
 "You are connected to the server used to receive messages from this contact." = "Вие сте свързани към сървъра, използван за получаване на съобщения от този контакт.";
 
 /* No comment provided by engineer. */
-"you are invited to group" = "вие сте поканени в групата";
+"You are invited to group" = "вие сте поканени в групата";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Поканени сте в групата";
@@ -4427,4 +4427,3 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Вашият адрес в SimpleX";
-

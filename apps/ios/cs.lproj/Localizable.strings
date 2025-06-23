@@ -1824,7 +1824,7 @@ snd error text */
 "Join" = "Připojte se na";
 
 /* No comment provided by engineer. */
-"join as %@" = "připojit se jako %@";
+"Join as %@" = "připojit se jako %@";
 
 /* new chat sheet title */
 "Join group" = "Připojit ke skupině";
@@ -3302,7 +3302,7 @@ chat item action */
 "You are connected to the server used to receive messages from this contact." = "Jste připojeni k serveru, který se používá k přijímání zpráv od tohoto kontaktu.";
 
 /* No comment provided by engineer. */
-"you are invited to group" = "jste pozváni do skupiny";
+"You are invited to group" = "jste pozváni do skupiny";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Jste pozváni do skupiny";
@@ -3489,4 +3489,3 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Vaše SimpleX adresa";
-

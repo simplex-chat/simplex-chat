@@ -755,7 +755,7 @@ swipe action */
 "Auto-accept images" = "Afbeeldingen automatisch accepteren";
 
 /* alert title */
-"Auto-accept settings" = "Instellingen automatisch accepteren";
+"SimpleX address settings" = "Instellingen automatisch accepteren";
 
 /* No comment provided by engineer. */
 "Back" = "Terug";
@@ -3023,7 +3023,7 @@ snd error text */
 "Join" = "Word lid";
 
 /* No comment provided by engineer. */
-"join as %@" = "deelnemen als %@";
+"Join as %@" = "deelnemen als %@";
 
 /* new chat sheet title */
 "Join group" = "Word lid van groep";
@@ -5828,7 +5828,7 @@ report reason */
 "You are connected to the server used to receive messages from this contact." = "U bent verbonden met de server die wordt gebruikt om berichten van dit contact te ontvangen.";
 
 /* No comment provided by engineer. */
-"you are invited to group" = "je bent uitgenodigd voor de groep";
+"You are invited to group" = "je bent uitgenodigd voor de groep";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Je bent uitgenodigd voor de groep";
@@ -6090,4 +6090,3 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Uw SimpleX adres";
-

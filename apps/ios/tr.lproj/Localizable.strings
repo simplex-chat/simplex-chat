@@ -704,7 +704,7 @@ swipe action */
 "Auto-accept images" = "Fotoğrafları otomatik kabul et";
 
 /* alert title */
-"Auto-accept settings" = "Ayarları otomatik olarak kabul et";
+"SimpleX address settings" = "Ayarları otomatik olarak kabul et";
 
 /* No comment provided by engineer. */
 "Back" = "Geri";
@@ -2783,7 +2783,7 @@ snd error text */
 "Join" = "Katıl";
 
 /* No comment provided by engineer. */
-"join as %@" = "%@ olarak katıl";
+"Join as %@" = "%@ olarak katıl";
 
 /* new chat sheet title */
 "Join group" = "Gruba katıl";
@@ -5167,7 +5167,7 @@ chat item action */
 "You are connected to the server used to receive messages from this contact." = "Bu kişiden mesaj almak için kullanılan sunucuya bağlısınız.";
 
 /* No comment provided by engineer. */
-"you are invited to group" = "gruba davet edildiniz";
+"You are invited to group" = "gruba davet edildiniz";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Gruba davet edildiniz";
@@ -5411,4 +5411,3 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "SimpleX adresin";
-

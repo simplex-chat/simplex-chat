@@ -1170,8 +1170,8 @@ swipe action</note>
         <target>Автоприем изображений</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Auto-accept settings" xml:space="preserve">
-        <source>Auto-accept settings</source>
+      <trans-unit id="SimpleX address settings" xml:space="preserve">
+        <source>SimpleX address settings</source>
         <target>Настройки автоприема</target>
         <note>alert title</note>
       </trans-unit>
@@ -9746,7 +9746,7 @@ pref value</note>
         <target>курсив</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="join as %@" xml:space="preserve">
+      <trans-unit id="Join as %@" xml:space="preserve">
         <source>join as %@</source>
         <target>вступить как %@</target>
         <note>No comment provided by engineer.</note>
@@ -10188,8 +10188,8 @@ last received msg: %2$@</source>
         <target>Вы приняли этого члена</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you are invited to group" xml:space="preserve">
-        <source>you are invited to group</source>
+      <trans-unit id="You are invited to group" xml:space="preserve">
+        <source>You are invited to group</source>
         <target>Вы приглашены в группу</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

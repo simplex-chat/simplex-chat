@@ -114,7 +114,12 @@ struct ChatView: View {
                         }
                     )
                 }
-                connectingText()
+                if let connectingText {
+                    Text(connectingText)
+                        .font(.caption)
+                        .foregroundColor(theme.colors.secondary)
+                        .padding(.top)
+                }
                 if selectedChatItems == nil {
                     let reason = chat.chatInfo.userCantSendReason
                     let composeEnabled = (
@@ -761,18 +766,14 @@ struct ChatView: View {
         }
     }
 
-    @ViewBuilder private func connectingText() -> some View {
-        if case let .direct(contact) = chat.chatInfo,
-           !contact.sndReady,
-           contact.active,
-           !contact.sendMsgToConnect,
-           !contact.nextAcceptContactRequest {
-            Text("connecting…")
-                .font(.caption)
-                .foregroundColor(theme.colors.secondary)
-                .padding(.top)
+    private var connectingText: LocalizedStringKey? {
+        if let contact = chat.chatInfo.contact,
+           !contact.sndReady && contact.active && !contact.sendMsgToConnect && !contact.nextAcceptContactRequest {
+            contact.preparedContact?.uiConnLinkType == .con
+            ? "contact should accept…"
+            : "connecting…"
         } else {
-            EmptyView()
+            nil
         }
     }
 
@@ -1353,7 +1354,7 @@ struct ChatView: View {
             } else {
                 nil
             }
-            let showAvatar = shouldShowAvatar(item, listItem.nextItem)
+            let showAvatar = shouldShowAvatar(item, merged.oldest().nextItem)
             let single = switch merged {
             case .single: true
             default: false
@@ -1505,7 +1506,7 @@ struct ChatView: View {
         ) -> some View {
             let bottomPadding: Double = itemSeparation.largeGap ? 10 : 2
             if case let .groupRcv(member) = ci.chatDir,
-               case .group = chat.chatInfo {
+               case let .group(groupInfo, _) = chat.chatInfo {
                 if showAvatar {
                     VStack(alignment: .leading, spacing: 4) {
                         if ci.content.showMemberName {
@@ -1516,22 +1517,27 @@ struct ChatView: View {
                                 } else {
                                     (nil, 1)
                                 }
-                                if memCount == 1 && member.memberRole > .member {
+                                if memCount == 1 && (member.memberRole > .member || ci.meta.showGroupAsSender) {
+                                    let (name, role) = if ci.meta.showGroupAsSender {
+                                        (groupInfo.chatViewName, NSLocalizedString("group", comment: "shown on group welcome message"))
+                                    } else {
+                                        (member.chatViewName, member.memberRole.text)
+                                    }
                                     Group {
                                         if #available(iOS 16.0, *) {
                                             MemberLayout(spacing: 16, msgWidth: msgWidth) {
-                                                Text(member.chatViewName)
+                                                Text(name)
                                                     .lineLimit(1)
-                                                Text(member.memberRole.text)
+                                                Text(role)
                                                     .fontWeight(.semibold)
                                                     .lineLimit(1)
                                                     .padding(.trailing, 8)
                                             }
                                         } else {
                                             HStack(spacing: 16) {
-                                                Text(member.chatViewName)
+                                                Text(name)
                                                     .lineLimit(1)
-                                                Text(member.memberRole.text)
+                                                Text(role)
                                                     .fontWeight(.semibold)
                                                     .lineLimit(1)
                                                     .layoutPriority(1)
@@ -1558,17 +1564,24 @@ struct ChatView: View {
                                     .padding(.trailing, 12)
                             }
                             HStack(alignment: .top, spacing: 10) {
-                                MemberProfileImage(member, size: memberImageSize, backgroundColor: theme.colors.background)
-                                    .simultaneousGesture(TapGesture().onEnded {
-                                        if let mem = m.getGroupMember(member.groupMemberId) {
-                                            selectedMember = mem
-                                        } else {
-                                            let mem = GMember.init(member)
-                                            m.groupMembers.append(mem)
-                                            m.groupMembersIndexes[member.groupMemberId] = m.groupMembers.count - 1
-                                            selectedMember = mem
-                                        }
-                                    })
+                                if ci.meta.showGroupAsSender {
+                                    ProfileImage(imageStr: groupInfo.image, iconName: groupInfo.chatIconName, size: memberImageSize, backgroundColor: theme.colors.background)
+                                        .simultaneousGesture(TapGesture().onEnded {
+                                            showChatInfoSheet = true
+                                        })
+                                } else {
+                                    MemberProfileImage(member, size: memberImageSize, backgroundColor: theme.colors.background)
+                                        .simultaneousGesture(TapGesture().onEnded {
+                                            if let mem = m.getGroupMember(member.groupMemberId) {
+                                                selectedMember = mem
+                                            } else {
+                                                let mem = GMember.init(member)
+                                                m.groupMembers.append(mem)
+                                                m.groupMembersIndexes[member.groupMemberId] = m.groupMembers.count - 1
+                                                selectedMember = mem
+                                            }
+                                        })
+                                }
                                 chatItemWithMenu(ci, range, maxWidth, itemSeparation)
                                     .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
                             }

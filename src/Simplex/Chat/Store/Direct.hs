@@ -110,6 +110,7 @@ import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Ratchet (PQSupport)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
+import Simplex.Messaging.Util ((<$$>))
 import Simplex.Messaging.Version
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), (:.) (..))
@@ -694,20 +695,20 @@ createOrUpdateContactRequest
     liftIO (maybeM (getAcceptedContactByXContactId db vr user) xContactId_) >>= \case
       Just ct -> pure $ CORContact ct
       Nothing -> do
-        (ucr, ct_) <- createOrUpdateRequest
-        pure $ CORRequest ucr ct_
+        (ucr, ct_, newRequest) <- createOrUpdateRequest
+        pure $ CORRequest ucr ct_ newRequest
   where
     maybeM = maybe (pure Nothing)
-    createOrUpdateRequest :: ExceptT StoreError IO (UserContactRequest, Maybe Contact)
+    createOrUpdateRequest :: ExceptT StoreError IO (UserContactRequest, Maybe Contact, Bool)
     createOrUpdateRequest = do
-      cReqId <-
+      (cReqId, newRequest) <-
         ExceptT $
           maybeM getContactRequestByXContactId xContactId_ >>= \case
-            Nothing -> createContactRequest
-            Just cr@UserContactRequest {contactRequestId} -> updateContactRequest cr $> Right contactRequestId
+            Nothing -> (,True) <$$> createContactRequest
+            Just cr@UserContactRequest {contactRequestId} -> updateContactRequest cr $> Right (contactRequestId, False)
       ucr@UserContactRequest {contactId_} <- getContactRequest db user cReqId
       ct_ <- forM contactId_ $ \contactId -> getContact db vr user contactId
-      pure (ucr, ct_)
+      pure (ucr, ct_, newRequest)
     createContactRequest :: IO (Either StoreError Int64)
     createContactRequest = do
       currentTs <- getCurrentTime

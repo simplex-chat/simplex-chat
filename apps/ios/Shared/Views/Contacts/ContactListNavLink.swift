@@ -20,22 +20,17 @@ struct ContactListNavLink: View {
     @State private var showContactRequestDialog = false
 
     var body: some View {
-        let contactType = chatContactType(chat)
-
         Group {
             switch (chat.chatInfo) {
             case let .direct(contact):
-                switch contactType {
-                case .recent:
-                    recentContactNavLink(contact)
-                case .contactWithRequest:
+                if contact.nextAcceptContactRequest {
                     contactWithRequestNavLink(contact)
-                case .chatDeleted:
-                    deletedChatNavLink(contact)
-                case .card:
+                } else if contact.isContactCard {
                     contactCardNavLink(contact)
-                default:
-                    EmptyView()
+                } else if contact.chatDeleted {
+                    deletedChatNavLink(contact)
+                } else if contact.active {
+                    recentContactNavLink(contact)
                 }
             case let .contactRequest(contactRequest):
                 contactRequestNavLink(contactRequest)
@@ -61,7 +56,7 @@ struct ContactListNavLink: View {
                 ItemsModel.shared.loadOpenChat(contact.id)
             }
         } label: {
-            contactPreview(contact, titleColor: theme.colors.onBackground)
+            contactPreview(contact, titleColor: contact.sendMsgToConnect ? theme.colors.primary : theme.colors.onBackground)
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button {

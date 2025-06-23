@@ -1166,8 +1166,8 @@ swipe action</note>
         <target>Automatyczne akceptowanie obrazów</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Auto-accept settings" xml:space="preserve">
-        <source>Auto-accept settings</source>
+      <trans-unit id="SimpleX address settings" xml:space="preserve">
+        <source>SimpleX address settings</source>
         <target>Ustawienia automatycznej akceptacji</target>
         <note>alert title</note>
       </trans-unit>
@@ -9504,7 +9504,7 @@ pref value</note>
         <target>kursywa</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="join as %@" xml:space="preserve">
+      <trans-unit id="Join as %@" xml:space="preserve">
         <source>join as %@</source>
         <target>dołącz jako %@</target>
         <note>No comment provided by engineer.</note>
@@ -9933,8 +9933,8 @@ ostatnia otrzymana wiadomość: %2$@</target>
         <source>you accepted this member</source>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you are invited to group" xml:space="preserve">
-        <source>you are invited to group</source>
+      <trans-unit id="You are invited to group" xml:space="preserve">
+        <source>You are invited to group</source>
         <target>jesteś zaproszony do grupy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

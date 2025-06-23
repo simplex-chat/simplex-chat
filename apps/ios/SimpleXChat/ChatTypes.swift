@@ -1353,7 +1353,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
                 if contact.sendMsgToConnect { return nil }
                 if contact.nextAcceptContactRequest { return ("can't send messages", nil) }
                 if !contact.active { return ("contact deleted", nil) }
-                if !contact.sndReady { return ("contact not ready", nil) }
+                if !contact.sndReady { return (contact.preparedContact?.uiConnLinkType == .con ? "request is sent" : "contact not ready", nil) }
                 if contact.activeConn?.connectionStats?.ratchetSyncSendProhibited ?? false { return ("not synchronized", nil) }
                 if contact.activeConn?.connDisabled ?? true { return ("contact disabled", nil) }
                 return nil
@@ -1733,9 +1733,9 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var sndReady: Bool { get { ready || activeConn?.connStatus == .sndReady } }
     public var active: Bool { get { contactStatus == .active } }
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
-    public var nextConnectPrepared: Bool { get { preparedContact != nil && activeConn == nil } }
-    public var nextAcceptContactRequest: Bool { get { contactRequestId != nil && activeConn == nil } }
-    public var sendMsgToConnect: Bool { nextSendGrpInv || preparedContact != nil }
+    public var nextConnectPrepared: Bool { preparedContact != nil && activeConn == nil }
+    public var nextAcceptContactRequest: Bool { contactRequestId != nil && activeConn == nil }
+    public var sendMsgToConnect: Bool { nextSendGrpInv || nextConnectPrepared }
     public var displayName: String { localAlias == "" ? profile.displayName : localAlias }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
@@ -1749,6 +1749,10 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
         } else {
             true
         }
+    }
+
+    public var isContactCard: Bool {
+        activeConn == nil && profile.contactLink != nil && active
     }
 
     public var contactConnIncognito: Bool {
@@ -2089,7 +2093,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var id: ChatId { get { "#\(groupId)" } }
     public var apiId: Int64 { get { groupId } }
     public var ready: Bool { get { true } }
-    public var nextConnectPrepared: Bool { get { connLinkToConnect != nil && !connLinkStartedConnection } }
+    public var nextConnectPrepared: Bool { connLinkToConnect != nil && !connLinkStartedConnection }
     public var displayName: String { localAlias == "" ? groupProfile.displayName : localAlias }
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
@@ -2111,6 +2115,14 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
 
     public var canModerate: Bool {
         return membership.memberRole >= .moderator && membership.memberActive
+    }
+
+    public var chatIconName: String {
+        switch businessChat?.chatType {
+        case .none: "person.2.circle.fill"
+        case .business: "briefcase.circle.fill"
+        case .customer: "person.crop.circle.fill"
+        }
     }
 
     public static let sampleData = GroupInfo(
@@ -3064,7 +3076,8 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 itemLive: false,
                 userMention: false,
                 deletable: false,
-                editable: false
+                editable: false,
+                showGroupAsSender: false
             ),
             content: .sndMsgContent(msgContent: .report(text: text, reason: reason)),
             quotedItem: CIQuote.getSample(item.id, item.meta.createdAt, item.text, chatDir: item.chatDir),
@@ -3087,7 +3100,8 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 itemLive: false,
                 userMention: false,
                 deletable: false,
-                editable: false
+                editable: false,
+                showGroupAsSender: false
             ),
             content: .rcvDeleted(deleteMode: .cidmBroadcast),
             quotedItem: nil,
@@ -3110,7 +3124,8 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 itemLive: true,
                 userMention: false,
                 deletable: false,
-                editable: false
+                editable: false,
+                showGroupAsSender: false
             ),
             content: .sndMsgContent(msgContent: .text("")),
             quotedItem: nil,
@@ -3185,6 +3200,7 @@ public struct CIMeta: Decodable, Hashable {
     public var userMention: Bool
     public var deletable: Bool
     public var editable: Bool
+    public var showGroupAsSender: Bool
 
     public var timestampText: Text { Text(formatTimestampMeta(itemTs)) }
     public var recent: Bool { updatedAt + 10 > .now }
@@ -3209,7 +3225,8 @@ public struct CIMeta: Decodable, Hashable {
             itemLive: itemLive,
             userMention: false,
             deletable: deletable,
-            editable: editable
+            editable: editable,
+            showGroupAsSender: false
         )
     }
 
@@ -3226,7 +3243,8 @@ public struct CIMeta: Decodable, Hashable {
             itemLive: false,
             userMention: false,
             deletable: false,
-            editable: false
+            editable: false,
+            showGroupAsSender: false
         )
     }
 }
@@ -3679,6 +3697,14 @@ public enum CIContent: Decodable, ItemContent, Hashable {
             case let .rcvMsgContent(mc): return mc
             default: return nil
             }
+        }
+    }
+
+    public var hasMsgContent: Bool {
+        if let mc = msgContent {
+            !mc.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        } else {
+            false
         }
     }
 

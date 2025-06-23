@@ -99,7 +99,7 @@ import Simplex.Messaging.Compression (compressionLevel)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
-import Simplex.Messaging.Crypto.Ratchet (E2ERatchetParamsUri (..), PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern IKPQOn, pattern PQEncOff, pattern PQSupportOff, pattern PQSupportOn, pqRatchetE2EEncryptVersion)
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern IKPQOn, pattern PQEncOff, pattern PQSupportOff, pattern PQSupportOn)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), MsgFlags (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
@@ -1735,29 +1735,31 @@ processChatCommand' vr = \case
         pure conn'
   APIConnectPlan userId cLink -> withUserId userId $ \user ->
     uncurry (CRConnectionPlan user) <$> connectPlan user cLink
-  APIPrepareContact userId accLink@(ACCL cMode (CCLink _ shortLink)) contactSLinkData -> withUserId userId $ \user -> do
+  APIPrepareContact userId accLink@(ACCL _ (CCLink cReq _)) contactSLinkData -> withUserId userId $ \user -> do
     let ContactShortLinkData {profile, message, business} = contactSLinkData
+    -- TODO [short links] create business contact as group
     ct <- withStore $ \db -> createPreparedContact db user profile accLink
-    let cMode' = connMode cMode
-        createItem content = void $ createInternalItemForChat user (CDDirectRcv ct) content Nothing
-        msgChatLink = \case
-          sl@CSLContact {} -> MCLContact sl profile business
-          sl@CSLInvitation {} -> MCLInvitation sl profile
-    mapM_ (\sl -> createItem $ CIRcvMsgContent $ MCChat (safeDecodeUtf8 $ strEncode sl) $ msgChatLink sl) shortLink
-    createItem $ CIRcvDirectE2EEInfo $ E2EInfo $ connLinkPQEncryption accLink
+    let createItem content = createInternalItemForChat user (CDDirectRcv ct) False content Nothing
+        cInfo = DirectChat ct
+    void $ createItem $ CIRcvDirectE2EEInfo $ E2EInfo $ connRequestPQEncryption cReq
     void $ createFeatureEnabledItems_ user ct
-    mapM_ (createItem . CIRcvMsgContent . MCText) message
-    pure $ CRNewPreparedContact user ct
-  APIPrepareGroup userId ccLink@(CCLink _ shortLink) groupSLinkData -> withUserId userId $ \user -> do
+    aci <- mapM (createItem . CIRcvMsgContent . MCText) message
+    let chat = case aci of
+          Just (AChatItem SCTDirect dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
+          _ -> Chat cInfo [] emptyChatStats
+    pure $ CRNewPreparedChat user $ AChat SCTDirect chat
+  APIPrepareGroup userId ccLink groupSLinkData -> withUserId userId $ \user -> do
     let GroupShortLinkData {groupProfile = gp@GroupProfile {description}} = groupSLinkData
-    gInfo <- withStore $ \db -> createPreparedGroup db vr user gp ccLink
-    -- TODO use received item without member
-    let cd = CDGroupRcv gInfo Nothing $ membership gInfo
-        createItem content = void $ createInternalItemForChat user cd content Nothing
-    mapM_ (\sl -> createItem $ CIRcvMsgContent $ MCChat (safeDecodeUtf8 $ strEncode sl) $ MCLGroup sl gp) shortLink
-    void $ createGroupFeatureItems_ user cd CIRcvGroupFeature gInfo
-    mapM_ (createItem . CIRcvMsgContent . MCText) description
-    pure $ CRNewPreparedGroup user gInfo
+    (gInfo, hostMember) <- withStore $ \db -> createPreparedGroup db vr user gp ccLink
+    let cd = CDGroupRcv gInfo Nothing hostMember
+        createItem content = createInternalItemForChat user cd True content Nothing
+        cInfo = GroupChat gInfo Nothing
+    void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
+    aci <- mapM (createItem . CIRcvMsgContent . MCText) description
+    let chat = case aci of
+          Just (AChatItem SCTGroup dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
+          _ -> Chat cInfo [] emptyChatStats
+    pure $ CRNewPreparedChat user $ AChat SCTGroup chat
   APIChangePreparedContactUser contactId newUserId -> withUser $ \user -> do
     ct@Contact {preparedContact} <- withFastStore $ \db -> getContact db vr user contactId
     when (isNothing preparedContact) $ throwCmdError "contact doesn't have link to connect"
@@ -1866,9 +1868,8 @@ processChatCommand' vr = \case
     CRUserContactLink user <$> withFastStore (`getUserAddress` user)
   ShowMyAddress -> withUser' $ \User {userId} ->
     processChatCommand $ APIShowMyAddress userId
-  APIAddMyAddressShortLink userId -> withUserId' userId $ \user -> do
-    ucl <- withFastStore $ \db -> getUserAddress db user
-    setMyAddressData user ucl
+  APIAddMyAddressShortLink userId -> withUserId' userId $ \user ->
+    CRUserContactLink user <$> (withFastStore (`getUserAddress` user) >>= setMyAddressData user)
   APISetProfileAddress userId False -> withUserId userId $ \user@User {profile = p} -> do
     let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing}
     updateProfile_ user p' True $ withFastStore' $ \db -> setUserProfileContactLink db user Nothing
@@ -1879,27 +1880,20 @@ processChatCommand' vr = \case
     updateProfile_ user p' True $ withFastStore' $ \db -> setUserProfileContactLink db user $ Just ucl
   SetProfileAddress onOff -> withUser $ \User {userId} ->
     processChatCommand $ APISetProfileAddress userId onOff
-  APIAddressAutoAccept userId autoAccept_ -> withUserId userId $ \user -> do
-    ucl@UserContactLink {userContactLinkId, shortLinkDataSet, autoAccept} <- withFastStore (`getUserAddress` user)
-    forM_ autoAccept_ $ \AutoAccept {businessAddress, acceptIncognito} -> do
+  APISetAddressSettings userId settings@AddressSettings {businessAddress, autoAccept} -> withUserId userId $ \user -> do
+    ucl@UserContactLink {userContactLinkId, shortLinkDataSet, addressSettings} <- withFastStore (`getUserAddress` user)
+    forM_ autoAccept $ \AutoAccept {acceptIncognito} -> do
       when (shortLinkDataSet && acceptIncognito) $ throwCmdError "incognito not allowed for address with short link data"
       when (businessAddress && acceptIncognito) $ throwCmdError "requests to business address cannot be accepted incognito"
-    let ucl' = ucl {autoAccept = autoAccept_}
-    ucl'' <-
-      if shortLinkDataSet && replyMsgChanged autoAccept autoAccept_
-        then setMyAddressData user ucl' >>= \case
-          CRUserContactLink _ ucl'' -> pure ucl''
-          cr -> throwCmdError $ "unexpected response from setMyAddressData: " <> show cr
-        else pure ucl'
-    withFastStore' $ \db -> updateUserAddressAutoAccept db userContactLinkId autoAccept_
-    pure $ CRUserContactLinkUpdated user ucl''
-    where
-      replyMsgChanged prevAutoAccept newAutoAccept =
-        let prevReplyMsg = prevAutoAccept >>= autoReply
-            newReplyMsg = newAutoAccept >>= autoReply
-         in newReplyMsg /= prevReplyMsg
-  AddressAutoAccept autoAccept_ -> withUser $ \User {userId} ->
-    processChatCommand $ APIAddressAutoAccept userId autoAccept_
+    if addressSettings == settings
+      then pure $ CRUserContactLinkUpdated user ucl
+      else do
+        let ucl' = ucl {addressSettings = settings}
+        ucl'' <- if shortLinkDataSet then setMyAddressData user ucl' else pure ucl'
+        withFastStore' $ \db -> updateUserAddressSettings db userContactLinkId settings
+        pure $ CRUserContactLinkUpdated user ucl''
+  SetAddressSettings settings -> withUser $ \User {userId} ->
+    processChatCommand $ APISetAddressSettings userId settings
   AcceptContact incognito cName -> withUser $ \User {userId} -> do
     connReqId <- withFastStore $ \db -> getContactRequestIdByName db userId cName
     processChatCommand $ APIAcceptContact incognito connReqId
@@ -2957,7 +2951,8 @@ processChatCommand' vr = \case
     joinContact :: User -> Int64 -> ConnId -> ConnReqContact -> Maybe Profile -> XContactId -> Maybe MsgContent -> Bool -> PQSupport -> VersionChat -> CM ()
     joinContact user pccConnId connId cReq incognitoProfile xContactId mc_ inGroup pqSup chatV = do
       let profileToSend = userProfileToSend user incognitoProfile Nothing inGroup
-      dm <- encodeConnInfoPQ pqSup chatV (XContact profileToSend (Just xContactId) mc_)
+      -- TODO [short links] send welcome and sent sharedMsg Ids
+      dm <- encodeConnInfoPQ pqSup chatV (XContact profileToSend (Just xContactId) Nothing ((SharedMsgId "\1\2\3\4",) <$> mc_))
       subMode <- chatReadVar subscriptionMode
       joinPreparedAgentConnection user pccConnId connId cReq dm pqSup subMode
     joinPreparedAgentConnection :: User -> Int64 -> ConnId -> ConnectionRequestUri m -> ByteString -> PQSupport -> SubscriptionMode -> CM ()
@@ -3036,17 +3031,17 @@ processChatCommand' vr = \case
             ctMsgReq ChangedProfileContact {conn} =
               fmap $ \SndMessage {msgId, msgBody} ->
                 (conn, MsgFlags {notification = hasNotification XInfo_}, (vrValue msgBody, [msgId]))
-    setMyAddressData :: User -> UserContactLink -> CM ChatResponse
-    setMyAddressData user ucl@UserContactLink {userContactLinkId, connLinkContact = CCLink connFullLink _sLnk_, autoAccept} = do
+    setMyAddressData :: User -> UserContactLink -> CM UserContactLink
+    setMyAddressData user ucl@UserContactLink {userContactLinkId, connLinkContact = CCLink connFullLink _sLnk_, addressSettings} = do
       conn <- withFastStore $ \db -> getUserAddressConnection db vr user
       let shortLinkProfile = userProfileToSend user Nothing Nothing False
-          shortLinkMsg = autoAccept >>= autoReply >>= (Just . msgContentText)
-      userData <- contactShortLinkData shortLinkProfile shortLinkMsg
+      -- TODO [short links] do not save address to server if data did not change, spinners, error handling
+      userData <- contactShortLinkData shortLinkProfile $ Just addressSettings
       sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a (aConnId conn) SCMContact userData Nothing)
       withFastStore' $ \db -> setUserContactLinkShortLink db userContactLinkId sLnk
-      let autoAccept' = autoAccept >>= \aa -> Just aa {acceptIncognito = False}
-          ucl' = (ucl :: UserContactLink) {connLinkContact = CCLink connFullLink (Just sLnk), shortLinkDataSet = True, autoAccept = autoAccept'}
-      pure $ CRUserContactLink user ucl'
+      let autoAccept' = (\aa -> aa {acceptIncognito = False}) <$> autoAccept addressSettings
+          ucl' = (ucl :: UserContactLink) {connLinkContact = CCLink connFullLink (Just sLnk), shortLinkDataSet = True, addressSettings = addressSettings {autoAccept = autoAccept'}}
+      pure ucl'
     updateContactPrefs :: User -> Contact -> Preferences -> CM ChatResponse
     updateContactPrefs _ ct@Contact {activeConn = Nothing} _ = throwChatError $ CEContactNotActive ct
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Just Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
@@ -3449,13 +3444,14 @@ processChatCommand' vr = \case
       CSLInvitation _ srv lnkId linkKey -> CSLInvitation SLSServer srv lnkId linkKey
       CSLContact _ ct srv linkKey -> CSLContact SLSServer ct srv linkKey
     restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . config)
-    contactShortLinkData :: Profile -> Maybe Text -> CM UserLinkData
-    contactShortLinkData p msg = do
+    contactShortLinkData :: Profile -> Maybe AddressSettings -> CM UserLinkData
+    contactShortLinkData p settings = do
       large <- chatReadVar useLargeLinkData
-      -- TODO [short links] business
-      let contactData
-            | large = ContactShortLinkData p msg False
-            | otherwise = ContactShortLinkData p {fullName = "", image = Nothing, contactLink = Nothing} Nothing False
+      let msg = welcomeMessage =<< settings
+          business = maybe False businessAddress settings
+          contactData
+            | large = ContactShortLinkData p msg business
+            | otherwise = ContactShortLinkData p {fullName = "", image = Nothing, contactLink = Nothing} Nothing business
       pure $ encodeShortLinkData large contactData
     groupShortLinkData :: GroupProfile -> CM UserLinkData
     groupShortLinkData gp = do
@@ -4508,8 +4504,8 @@ chatCommandP =
       "/_short_link_address " *> (APIAddMyAddressShortLink <$> A.decimal),
       "/_profile_address " *> (APISetProfileAddress <$> A.decimal <* A.space <*> onOffP),
       ("/profile_address " <|> "/pa ") *> (SetProfileAddress <$> onOffP),
-      "/_auto_accept " *> (APIAddressAutoAccept <$> A.decimal <* A.space <*> autoAcceptP),
-      "/auto_accept " *> (AddressAutoAccept <$> autoAcceptP),
+      "/_address_settings " *> (APISetAddressSettings <$> A.decimal <* A.space <*> jsonP),
+      "/auto_accept " *> (SetAddressSettings <$> autoAcceptP),
       ("/accept" <|> "/ac") *> (AcceptContact <$> incognitoP <* A.space <* char_ '@' <*> displayNameP),
       ("/reject " <|> "/rc ") *> char_ '@' *> (RejectContact <$> displayNameP),
       ("/markdown" <|> "/m") $> ChatHelp HSMarkdown,
@@ -4756,10 +4752,11 @@ chatCommandP =
     nonEmptyKey k@(DBEncryptionKey s) = if BA.null s then Left "empty key" else Right k
     dbEncryptionConfig currentKey newKey = DBEncryptionConfig {currentKey, newKey, keepKey = Just False}
 #endif
-    autoAcceptP = ifM onOffP (Just <$> (businessAA <|> addressAA)) (pure Nothing)
+    -- TODO [short links] parser for address settings
+    autoAcceptP = ifM onOffP (businessAA <|> addressAA) (pure $ AddressSettings False Nothing Nothing Nothing)
       where
-        addressAA = AutoAccept False <$> (" incognito=" *> onOffP <|> pure False) <*> autoReply
-        businessAA = AutoAccept True <$> (" business" *> pure False) <*> autoReply
+        addressAA = AddressSettings False Nothing <$> (Just . AutoAccept <$> (" incognito=" *> onOffP <|> pure False)) <*> autoReply
+        businessAA = " business" *> (AddressSettings True Nothing (Just $ AutoAccept False) <$> autoReply)
         autoReply = optional (A.space *> msgContentP)
     rcCtrlAddressP = RCCtrlAddress <$> ("addr=" *> strP) <*> (" iface=" *> (jsonP <|> text1P))
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')

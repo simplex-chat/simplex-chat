@@ -1158,8 +1158,8 @@ swipe action</note>
         <target>Fotoğrafları otomatik kabul et</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Auto-accept settings" xml:space="preserve">
-        <source>Auto-accept settings</source>
+      <trans-unit id="SimpleX address settings" xml:space="preserve">
+        <source>SimpleX address settings</source>
         <target>Ayarları otomatik olarak kabul et</target>
         <note>alert title</note>
       </trans-unit>
@@ -9528,7 +9528,7 @@ pref value</note>
         <target>italik</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="join as %@" xml:space="preserve">
+      <trans-unit id="Join as %@" xml:space="preserve">
         <source>join as %@</source>
         <target>%@ olarak katıl</target>
         <note>No comment provided by engineer.</note>
@@ -9957,8 +9957,8 @@ son alınan msj: %2$@</target>
         <source>you accepted this member</source>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you are invited to group" xml:space="preserve">
-        <source>you are invited to group</source>
+      <trans-unit id="You are invited to group" xml:space="preserve">
+        <source>You are invited to group</source>
         <target>gruba davet edildiniz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
