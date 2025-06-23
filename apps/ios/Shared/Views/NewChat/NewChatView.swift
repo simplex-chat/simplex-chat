@@ -1014,7 +1014,12 @@ private func showPrepareContactAlert(
 ) {
     showOpenChatAlert(
         profileName: contactShortLinkData.profile.displayName,
-        profileImage: ProfileImage(imageStr: contactShortLinkData.profile.image, size: 60),
+        profileImage:
+            ProfileImage(
+                imageStr: contactShortLinkData.profile.image,
+                iconName: contactShortLinkData.business ? "briefcase.circle.fill" : "person.crop.circle.fill",
+                size: 60
+            ),
         theme: theme,
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
         confirmTitle: NSLocalizedString("Open chat", comment: "new chat action"),
