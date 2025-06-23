@@ -4564,6 +4564,16 @@ SEARCH group_snd_item_statuses USING INDEX idx_group_snd_item_statuses_chat_item
 
 Query: 
       UPDATE groups
+      SET business_chat = ?,
+          business_member_id = ?,
+          customer_member_id = ?
+      WHERE group_id = ?
+    
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+      UPDATE groups
       SET members_require_attention = members_require_attention + 1
       WHERE user_id = ? AND group_id = ?
     
