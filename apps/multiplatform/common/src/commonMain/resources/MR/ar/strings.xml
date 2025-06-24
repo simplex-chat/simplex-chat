@@ -143,7 +143,7 @@
     <string name="auto_accept_contact">قبول تلقائي</string>
     <string name="settings_section_title_calls">المكالمات</string>
     <string name="alert_title_cant_invite_contacts">لا يمكن دعوة جهات الاتصال!</string>
-    <string name="rcv_conn_event_switch_queue_phase_completed">تم تغيير العنوان من أجلك</string>
+    <string name="rcv_conn_event_switch_queue_phase_completed">غُيِّر العنوان من أجلك</string>
     <string name="icon_descr_video_asked_to_receive">طلب لاستلام الفيديو</string>
     <string name="callstatus_in_progress">مكالمتك تحت الإجراء</string>
     <string name="change_database_passphrase_question">تغيير عبارة مرور قاعدة البيانات؟</string>
@@ -175,13 +175,13 @@
     <string name="copied">نٌسخت إلى الحافظة</string>
     <string name="clear_verb">مسح</string>
     <string name="clear_chat_button">امسح الدردشة</string>
-    <string name="create_address">إنشاء عنوان</string>
+    <string name="create_address">أنشئ عنوان</string>
     <string name="settings_section_title_chats">الدردشات</string>
     <string name="confirm_new_passphrase">تأكيد عبارة المرور الجديدة…</string>
     <string name="encrypt_database_question">تعمية قاعدة البيانات؟</string>
     <string name="encrypted_database">قاعدة البيانات مُعمّاة</string>
     <string name="rcv_group_event_changed_member_role">غيرت دور %s إلى %s</string>
-    <string name="switch_receiving_address">تغيير عنوان الاستلام</string>
+    <string name="switch_receiving_address">غيّر عنوان الاستلام</string>
     <string name="failed_to_create_user_title">خطأ في إنشاء ملف التعريف!</string>
     <string name="connection_error">خطأ في الإتصال</string>
     <string name="connection_timeout">انتهت مهلة الاتصال</string>
@@ -364,7 +364,7 @@
     <string name="users_delete_profile_for">حذف ملف تعريف الدردشة ل</string>
     <string name="full_deletion">حذف للجميع</string>
     <string name="custom_time_unit_days">أيام</string>
-    <string name="delete_address">حذف العنوان</string>
+    <string name="delete_address">احذف العنوان</string>
     <string name="database_passphrase_will_be_updated">سيتم تحديث عبارة مرور تعمية قاعدة البيانات.</string>
     <string name="delete_link_question">حذف الرابط؟</string>
     <string name="database_downgrade">الرجوع إلى إصدار سابق من قاعدة البيانات</string>
@@ -973,7 +973,7 @@
     <string name="scan_code">مسح الرمز</string>
     <string name="chat_with_the_founder">أرسل أسئلة وأفكار</string>
     <string name="share_address_with_contacts_question">مشاركة العنوان مع جهات الاتصال؟</string>
-    <string name="share_address">مشاركة العنوان</string>
+    <string name="share_address">شارك العنوان</string>
     <string name="save_welcome_message_question">حفظ رسالة الترحيب؟</string>
     <string name="smp_servers_save">احفظ الخوادم</string>
     <string name="settings_section_title_delivery_receipts">أرسل إيصالات التسليم إلى</string>
@@ -1127,7 +1127,7 @@
     <string name="alert_text_msg_bad_hash">تجزئة الرسالة السابقة مختلفة.</string>
     <string name="alert_text_msg_bad_id">معرف الرسالة التالية غير صحيح (أقل أو يساوي السابق).
 \nيمكن أن يحدث ذلك بسبب بعض العلل أو عندما يُخترق الاتصال.</string>
-    <string name="unfavorite_chat">إزالة من المفضلة</string>
+    <string name="unfavorite_chat">أزل من المفضلة</string>
     <string name="trying_to_connect_to_server_to_receive_messages">محاولة الاتصال بالخادم المستخدم لاستلام الرسائل من جهة الاتصال هذه.</string>
     <string name="choose_file_title">اختيار ملف</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">إرسال غير مصرح به</string>
@@ -1468,7 +1468,7 @@
     <string name="error">خطأ</string>
     <string name="non_content_uri_alert_text">لقد شاركت مسار ملف غير صالح. أبلغ عن المشكلة لمطوري التطبيق.</string>
     <string name="invalid_name">اسم غير صالح!</string>
-    <string name="paste_desktop_address">لصق عنوان سطح المكتب</string>
+    <string name="paste_desktop_address">ألصق عنوان سطح المكتب</string>
     <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[هذا هو الرابط الخاص بك للمجموعة <b>%1$s</b>!]]></string>
     <string name="verify_code_with_desktop">تحقق من الرمز مع سطح المكتب</string>
     <string name="scan_qr_code_from_desktop">مسح رمز QR من سطح المكتب</string>
