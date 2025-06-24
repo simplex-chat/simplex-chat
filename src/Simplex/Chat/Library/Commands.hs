@@ -1798,7 +1798,7 @@ processChatCommand' vr = \case
       Just PreparedContact {connLinkToConnect = ACCL SCMInvitation ccLink} ->
         connectViaInvitation user incognito ccLink (Just contactId) >>= \case
           CRSentConfirmation {customUserProfile} -> do
-            -- TODO [short links] get updated contact with connection
+            -- get updated contact with connection
             ct' <- withFastStore $ \db -> getContact db vr user contactId
             forM_ msgContent_ $ \mc -> do
               let evt = XMsgNew $ MCSimple (extMsgContent mc Nothing)
@@ -1811,7 +1811,7 @@ processChatCommand' vr = \case
         msg_ <- forM msgContent_ $ \mc -> (,mc) <$> getSharedMsgId
         connectViaContact user incognito ccLink welcomeSharedMsgId msg_ (Just $ ACCGContact contactId) >>= \case
           CRSentInvitation {customUserProfile} -> do
-            -- TODO [short links] get updated contact with connection - what's it about?
+            -- get updated contact with connection
             ct' <- withFastStore $ \db -> getContact db vr user contactId
             forM_ msg_ $ \(sharedMsgId, mc) ->
               createInternalItemForChat user (CDDirectSnd ct') False (CISndMsgContent mc) (Just sharedMsgId) Nothing
@@ -1825,7 +1825,7 @@ processChatCommand' vr = \case
         -- TODO [short links] store request message with shared message ID
         connectViaContact user incognito connLinkToConnect Nothing Nothing (Just $ ACCGGroup gInfo (groupMemberId' hostMember)) >>= \case
           CRSentInvitation {customUserProfile} -> do
-            -- TODO [short links] get updated group info (connLinkStartedConnection and incognito membership)
+            -- get updated group info (connLinkStartedConnection and incognito membership)
             gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
             pure $ CRStartedConnectionToGroup user gInfo' customUserProfile
           cr -> pure cr
