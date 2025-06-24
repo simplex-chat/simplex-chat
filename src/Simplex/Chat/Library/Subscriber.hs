@@ -1253,7 +1253,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     if newRequest
                       then do
                         -- TODO [short links] save sharedMsgId instead of the last Nothing
-                        let createItem content = createInternalItemForChat user (CDDirectRcv ct) False content Nothing Nothing
+                        let createItem content = createChatItem user (CDDirectRcv ct) False content Nothing Nothing
                         void $ createItem $ CIRcvDirectE2EEInfo $ E2EInfo $ Just $ CR.pqSupportToEnc $ reqPQSup
                         void $ createFeatureEnabledItems_ user ct
                         -- TODO [short links] save sharedMsgId

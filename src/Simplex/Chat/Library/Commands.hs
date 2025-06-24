@@ -1746,7 +1746,7 @@ processChatCommand' vr = \case
                 groupProfile = businessGroupProfile profile groupPreferences
             (gInfo, hostMember) <- withStore $ \db -> createPreparedGroup db vr user groupProfile True ccLink welcomeSharedMsgId
             let cd = CDGroupRcv gInfo Nothing hostMember
-                createItem sharedMsgId content = createInternalItemForChat user cd True content sharedMsgId Nothing
+                createItem sharedMsgId content = createChatItem user cd True content sharedMsgId Nothing
                 cInfo = GroupChat gInfo Nothing
             void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
             aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent . MCText) message
@@ -1756,7 +1756,7 @@ processChatCommand' vr = \case
             pure $ CRNewPreparedChat user $ AChat SCTGroup chat
       ACCL _ (CCLink cReq _) -> do
         ct <- withStore $ \db -> createPreparedContact db user profile accLink welcomeSharedMsgId
-        let createItem sharedMsgId content = createInternalItemForChat user (CDDirectRcv ct) False content sharedMsgId Nothing
+        let createItem sharedMsgId content = createChatItem user (CDDirectRcv ct) False content sharedMsgId Nothing
             cInfo = DirectChat ct
         void $ createItem Nothing $ CIRcvDirectE2EEInfo $ E2EInfo $ connRequestPQEncryption cReq
         void $ createFeatureEnabledItems_ user ct
@@ -1769,7 +1769,7 @@ processChatCommand' vr = \case
     let GroupShortLinkData {groupProfile = gp@GroupProfile {description}} = groupSLinkData
     (gInfo, hostMember) <- withStore $ \db -> createPreparedGroup db vr user gp False ccLink Nothing
     let cd = CDGroupRcv gInfo Nothing hostMember
-        createItem content = createInternalItemForChat user cd True content Nothing Nothing
+        createItem content = createChatItem user cd True content Nothing Nothing
         cInfo = GroupChat gInfo Nothing
     void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
     aci <- mapM (createItem . CIRcvMsgContent . MCText) description
@@ -1813,8 +1813,9 @@ processChatCommand' vr = \case
           CRSentInvitation {customUserProfile} -> do
             -- get updated contact with connection
             ct' <- withFastStore $ \db -> getContact db vr user contactId
-            forM_ msg_ $ \(sharedMsgId, mc) ->
-              createInternalItemForChat user (CDDirectSnd ct') False (CISndMsgContent mc) (Just sharedMsgId) Nothing
+            forM_ msg_ $ \(sharedMsgId, mc) -> do
+              ci <- createChatItem user (CDDirectSnd ct') False (CISndMsgContent mc) (Just sharedMsgId) Nothing
+              toView $ CEvtNewChatItems user [ci]
             pure $ CRStartedConnectionToContact user ct' customUserProfile
           cr -> pure cr
   APIConnectPreparedGroup groupId incognito msgContent_ -> withUser $ \user -> do
