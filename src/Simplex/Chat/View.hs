@@ -2477,7 +2477,7 @@ viewChatError isCmd logLevel testView = \case
     BROKER _ TIMEOUT | not isCmd -> []
     AGENT A_DUPLICATE -> [withConnEntity <> "error: AGENT A_DUPLICATE" | logLevel == CLLDebug || isCmd]
     AGENT (A_PROHIBITED e) -> [withConnEntity <> "error: AGENT A_PROHIBITED, " <> plain e | logLevel <= CLLWarning || isCmd]
-    CONN NOT_FOUND -> [withConnEntity <> "error: CONN NOT_FOUND" | logLevel <= CLLWarning || isCmd]
+    CONN NOT_FOUND _ -> [withConnEntity <> "error: CONN NOT_FOUND" | logLevel <= CLLWarning || isCmd]
     CRITICAL restart e -> [plain $ "critical error: " <> e] <> ["please restart the app" | restart]
     INTERNAL e -> [plain $ "internal error: " <> e]
     e -> [withConnEntity <> "smp agent error: " <> sShow e | logLevel <= CLLWarning || isCmd]
