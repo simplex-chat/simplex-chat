@@ -355,6 +355,11 @@ CREATE TABLE contact_requests(
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   pq_support INTEGER NOT NULL DEFAULT 0,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
+  group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
+  business_group_id INTEGER REFERENCES groups(group_id) ON DELETE CASCADE,
+  accepted INTEGER NOT NULL DEFAULT 0,
+  welcome_shared_msg_id BLOB,
+  request_shared_msg_id BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON UPDATE CASCADE

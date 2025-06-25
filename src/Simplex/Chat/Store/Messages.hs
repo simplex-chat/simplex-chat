@@ -1049,8 +1049,10 @@ getContactRequestChatPreviews_ db User {userId} pagination clq = case clq of
     query =
       [sql|
         SELECT
-          cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.contact_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, cr.pq_support, p.preferences,
+          cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
+          cr.contact_id, cr.group_member_id, cr.business_group_id, cr.user_contact_link_id,
+          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
+          cr.pq_support, cr.accepted, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
           cr.created_at, cr.updated_at,
           cr.peer_chat_min_version, cr.peer_chat_max_version
         FROM contact_requests cr

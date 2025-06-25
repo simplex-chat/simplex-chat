@@ -76,6 +76,7 @@ module Simplex.Chat.Store.Groups
     createNewContactMember,
     createNewContactMemberAsync,
     createJoiningMember,
+    setMemberRoleStatus,
     createJoiningMemberConnection,
     createBusinessRequestGroup,
     getContactViaMember,
@@ -1230,31 +1231,24 @@ createNewContactMemberAsync db gVar user@User {userId, userContactId} GroupInfo 
             :. (minV, maxV)
         )
 
-createJoiningMember :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> VersionRangeChat -> Profile -> GroupMemberRole -> GroupMemberStatus -> ExceptT StoreError IO (GroupMemberId, MemberId)
+createJoiningMember :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> VersionRangeChat -> Int64 -> ContactName -> GroupMemberRole -> GroupMemberStatus -> ExceptT StoreError IO GroupMemberId
 createJoiningMember
   db
   gVar
   User {userId, userContactId}
   GroupInfo {groupId, membership}
   cReqChatVRange
-  Profile {displayName, fullName, image, contactLink, preferences}
+  profileId
+  ldn
   memberRole
   memberStatus = do
     currentTs <- liftIO getCurrentTime
-    ExceptT . withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
-      liftIO $
-        DB.execute
-          db
-          "INSERT INTO contact_profiles (display_name, full_name, image, contact_link, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-          (displayName, fullName, image, contactLink, userId, preferences, currentTs, currentTs)
-      profileId <- liftIO $ insertedRowId db
-      createWithRandomId gVar $ \memId -> do
-        insertMember_ ldn profileId (MemberId memId) currentTs
-        groupMemberId <- liftIO $ insertedRowId db
-        pure (groupMemberId, MemberId memId)
+    createWithRandomId gVar $ \memId -> do
+      insertMember_ (MemberId memId) currentTs
+      liftIO $ insertedRowId db
     where
       VersionRange minV maxV = cReqChatVRange
-      insertMember_ ldn profileId memberId currentTs =
+      insertMember_ memberId currentTs =
         DB.execute
           db
           [sql|
@@ -1268,6 +1262,19 @@ createJoiningMember
               :. (userId, ldn, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
               :. (minV, maxV)
           )
+
+setMemberRoleStatus :: DB.Connection -> GroupMember -> GroupMemberRole -> GroupMemberStatus -> IO GroupMember
+setMemberRoleStatus db gm@GroupMember {groupMemberId} newRole newStatus = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE group_members
+      SET member_role = ?, member_status = ?, updated_at = ?
+      WHERE group_member_id = ?
+    |]
+    (newRole, newStatus, currentTs, groupMemberId)
+  pure gm {memberRole = newRole, memberStatus = newStatus, updatedAt = currentTs}
 
 createJoiningMemberConnection :: DB.Connection -> User -> Int64 -> (CommandId, ConnId) -> VersionChat -> VersionRangeChat -> GroupMemberId -> SubscriptionMode -> IO ()
 createJoiningMemberConnection
@@ -1283,7 +1290,7 @@ createJoiningMemberConnection
     Connection {connId} <- createConnection_ db userId ConnMember (Just groupMemberId) agentConnId ConnNew chatV cReqChatVRange Nothing (Just uclId) Nothing 0 createdAt subMode PQSupportOff
     setCommandConnId db user cmdId connId
 
-createBusinessRequestGroup :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> VersionRangeChat -> Profile -> Maybe XContactId -> GroupPreferences -> ExceptT StoreError IO (GroupInfo, GroupMember)
+createBusinessRequestGroup :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> VersionRangeChat -> Profile -> GroupPreferences -> ExceptT StoreError IO (GroupInfo, GroupMember)
 createBusinessRequestGroup
   db
   vr
@@ -1291,7 +1298,6 @@ createBusinessRequestGroup
   user@User {userId, userContactId}
   cReqChatVRange
   Profile {displayName, fullName, image, contactLink, preferences}
-  xContactId
   groupPreferences = do
     currentTs <- liftIO getCurrentTime
     (groupId, membership@GroupMember {memberId = userMemberId}) <- insertGroup_ currentTs
@@ -1314,10 +1320,10 @@ createBusinessRequestGroup
               [sql|
                 INSERT INTO groups
                   (group_profile_id, local_display_name, user_id, enable_ntfs,
-                   created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat, business_xcontact_id)
-                VALUES (?,?,?,?,?,?,?,?,?,?)
+                   created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat)
+                VALUES (?,?,?,?,?,?,?,?,?)
               |]
-              (profileId, localDisplayName, userId, BI True, currentTs, currentTs, currentTs, currentTs, BCCustomer, xContactId)
+              (profileId, localDisplayName, userId, BI True, currentTs, currentTs, currentTs, currentTs, BCCustomer)
             insertedRowId db
           memberId <- liftIO $ encodedRandomBytes gVar 12
           membership <- createContactMemberInv_ db user groupId Nothing user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser Nothing currentTs vr
