@@ -15,11 +15,12 @@ ALTER TABLE contacts ADD COLUMN welcome_shared_msg_id BLOB;
 ALTER TABLE contacts ADD COLUMN contact_request_id INTEGER REFERENCES contact_requests ON DELETE SET NULL;
 CREATE INDEX idx_contacts_contact_request_id ON contacts(contact_request_id);
 
-ALTER TABLE contact_requests ADD COLUMN group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE;
 ALTER TABLE contact_requests ADD COLUMN business_group_id INTEGER REFERENCES groups(group_id) ON DELETE CASCADE;
 ALTER TABLE contact_requests ADD COLUMN accepted INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE contact_requests ADD COLUMN welcome_shared_msg_id BLOB;
 ALTER TABLE contact_requests ADD COLUMN request_shared_msg_id BLOB;
+
+ALTER TABLE group_members ADD COLUMN member_xcontact_id BLOB;
 
 ALTER TABLE user_contact_links ADD COLUMN short_link_data_set INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE user_contact_links ADD COLUMN address_welcome_message TEXT;

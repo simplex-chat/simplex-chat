@@ -28,7 +28,6 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
-import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (InvitationId)
 import Simplex.Messaging.Agent.Store.AgentStore (maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
@@ -50,7 +49,7 @@ createOrUpdateContactRequest ::
   -> VersionRangeChat
   -> User
   -> Int64
-  -> (UserContactLink, Maybe GroupLinkInfo)
+  -> UserContactLink
   -> Bool
   -> InvitationId
   -> VersionRangeChat
@@ -66,7 +65,7 @@ createOrUpdateContactRequest
   vr
   user@User {userId, userContactId}
   uclId
-  uclGLinkInfo
+  UserContactLink {addressSettings = AddressSettings {businessAddress}}
   isSimplexTeam
   invId
   cReqChatVRange@(VersionRange minV maxV)
@@ -150,7 +149,7 @@ createOrUpdateContactRequest
           [sql|
             SELECT
               cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
-              cr.contact_id, cr.group_member_id, cr.business_group_id, cr.user_contact_link_id,
+              cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
               c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
               cr.pq_support, cr.accepted, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
               cr.created_at, cr.updated_at,
@@ -188,18 +187,12 @@ createOrUpdateContactRequest
         contactRequestId <- liftIO $ insertedRowId db
         createRequestEntity ldn profileId contactRequestId currentTs
       where
-        createRequestEntity ldn profileId contactRequestId currentTs = do
-          let (UserContactLink {addressSettings}, gLinkInfo_) = uclGLinkInfo
-              AddressSettings {businessAddress} = addressSettings
-          if businessAddress
-            then
+        createRequestEntity ldn profileId contactRequestId currentTs
+          | businessAddress =
               if isSimplexTeam && maxV < businessChatsVersion
                 then createContact'
                 else createBusinessChat
-            else
-              case gLinkInfo_ of
-                Nothing -> createContact'
-                Just gli -> createGroupMember gli
+          | otherwise = createContact'
           where
             createContact' = do
               liftIO $
@@ -216,17 +209,6 @@ createOrUpdateContactRequest
               ucr <- getContactRequest db user contactRequestId
               ct <- getContact db vr user contactId
               pure $ RSCurrentRequest ucr (Just $ REContact ct) False
-            createGroupMember GroupLinkInfo {groupId} = do
-              gInfo <- getGroupInfo db vr user groupId
-              gmId <- createJoiningMember db gVar user gInfo cReqChatVRange profileId ldn GRObserver GSMemUnknown
-              gm <- getGroupMemberById db vr user gmId
-              liftIO $
-                DB.execute
-                  db
-                  "UPDATE contact_requests SET group_member_id = ? WHERE contact_request_id = ?"
-                  (gmId, contactRequestId)
-              ucr <- getContactRequest db user contactRequestId
-              pure $ RSCurrentRequest ucr (Just $ REGroupMember gInfo gm) False
             createBusinessChat = do
               let Profile {preferences = userPreferences} = profileToSendOnAccept user Nothing True
                   groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs userPreferences
@@ -301,23 +283,19 @@ createOrUpdateContactRequest
                       (ldn, currentTs, contactId)
                   safeDeleteLDN db user oldLdn
     getRequestEntity :: UserContactRequest -> ExceptT StoreError IO (Maybe RequestEntity)
-    getRequestEntity UserContactRequest {contactRequestId, contactId_, groupMemberId_, businessGroupId_} =
-      case (contactId_, groupMemberId_, businessGroupId_) of
-        (Just contactId, Nothing, Nothing) -> do
+    getRequestEntity UserContactRequest {contactRequestId, contactId_, businessGroupId_} =
+      case (contactId_, businessGroupId_) of
+        (Just contactId, Nothing) -> do
           ct <- getContact db vr user contactId
           pure $ Just (REContact ct)
-        (Nothing, Just groupMemberId, Nothing) -> do
-          gm@GroupMember {groupId} <- getGroupMemberById db vr user groupMemberId
-          gInfo <- getGroupInfo db vr user groupId
-          pure $ Just (REGroupMember gInfo gm)
-        (Nothing, Nothing, Just businessGroupId) -> do
+        (Nothing, Just businessGroupId) -> do
           gInfo <- getGroupInfo db vr user businessGroupId
           case gInfo of
             GroupInfo {businessChat = Just BusinessChatInfo {customerId}} -> do
               clientMember <- getGroupMemberByMemberId db vr user gInfo customerId
               pure $ Just (REBusinessChat gInfo clientMember)
             _ -> throwError SEInvalidBusinessChatContactRequest
-        (Nothing, Nothing, Nothing) -> pure Nothing
+        (Nothing, Nothing) -> pure Nothing
         _ -> throwError $ SEInvalidContactRequestEntity contactRequestId
 
 setContactRequestAccepted :: DB.Connection -> UserContactRequest -> IO ()

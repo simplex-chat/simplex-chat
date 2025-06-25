@@ -345,7 +345,6 @@ data UserContactRequest = UserContactRequest
   { contactRequestId :: Int64,
     agentInvitationId :: AgentInvId,
     contactId_ :: Maybe ContactId,
-    groupMemberId_ :: Maybe GroupMemberId,
     businessGroupId_ :: Maybe GroupId,
     userContactLinkId :: Int64,
     agentContactConnId :: AgentConnId, -- connection id of user contact
@@ -402,7 +401,6 @@ instance ToJSON ConnReqUriHash where
 data RequestEntity
   = REContact Contact
   | REBusinessChat GroupInfo GroupMember
-  | REGroupMember GroupInfo GroupMember
 
 type RepeatRequest = Bool
 

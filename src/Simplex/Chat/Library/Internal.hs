@@ -922,18 +922,22 @@ acceptContactRequestAsync
       liftIO $ setCommandConnId db user cmdId connId
       getContact db vr user contactId
 
-acceptGroupJoinRequestAsync :: User -> Int64 -> GroupInfo -> GroupMember -> UserContactRequest -> GroupAcceptance -> GroupMemberRole -> Maybe IncognitoProfile -> CM GroupMember
+acceptGroupJoinRequestAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> GroupAcceptance -> GroupMemberRole -> Maybe IncognitoProfile -> CM GroupMember
 acceptGroupJoinRequestAsync
   user
   uclId
   gInfo@GroupInfo {groupProfile, membership, businessChat}
-  member@GroupMember {groupMemberId, memberId}
-  ucr@UserContactRequest {agentInvitationId = AgentInvId cReqInvId, cReqChatVRange}
+  cReqInvId
+  cReqChatVRange
+  cReqProfile
+  cReqXContactId_
   gAccepted
   gLinkMemRole
   incognitoProfile = do
+    gVar <- asks random
     let initialStatus = acceptanceToStatus (memberAdmission groupProfile) gAccepted
-    _member' <- withStore' $ \db -> setMemberRoleStatus db member gLinkMemRole initialStatus
+    (groupMemberId, memberId) <- withStore $ \db ->
+      createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ gLinkMemRole initialStatus
     currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
     let Profile {displayName} = profileToSendOnAccept user incognitoProfile True
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
@@ -953,19 +957,22 @@ acceptGroupJoinRequestAsync
     let chatV = vr `peerConnChatVersion` cReqChatVRange
     connIds <- agentAcceptContactAsync user True cReqInvId msg subMode PQSupportOff chatV
     withStore $ \db -> do
-      liftIO $ setContactRequestAccepted db ucr
       liftIO $ createJoiningMemberConnection db user uclId connIds chatV cReqChatVRange groupMemberId subMode
       getGroupMemberById db vr user groupMemberId
 
-acceptGroupJoinSendRejectAsync :: User -> Int64 -> GroupInfo -> GroupMember -> UserContactRequest -> GroupRejectionReason -> CM GroupMember
+acceptGroupJoinSendRejectAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> GroupRejectionReason -> CM GroupMember
 acceptGroupJoinSendRejectAsync
   user
   uclId
-  GroupInfo {groupProfile, membership}
-  member@GroupMember {groupMemberId, memberId}
-  ucr@UserContactRequest {agentInvitationId = AgentInvId cReqInvId, cReqChatVRange}
+  gInfo@GroupInfo {groupProfile, membership}
+  cReqInvId
+  cReqChatVRange
+  cReqProfile
+  cReqXContactId_
   rejectionReason = do
-    _member' <- withStore' $ \db -> setMemberRoleStatus db member GRObserver GSMemRejected
+    gVar <- asks random
+    (groupMemberId, memberId) <- withStore $ \db ->
+      createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ GRObserver GSMemRejected
     let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
         msg =
           XGrpLinkReject $
@@ -980,7 +987,6 @@ acceptGroupJoinSendRejectAsync
     let chatV = vr `peerConnChatVersion` cReqChatVRange
     connIds <- agentAcceptContactAsync user False cReqInvId msg subMode PQSupportOff chatV
     withStore $ \db -> do
-      liftIO $ setContactRequestAccepted db ucr
       liftIO $ createJoiningMemberConnection db user uclId connIds chatV cReqChatVRange groupMemberId subMode
       getGroupMemberById db vr user groupMemberId
 
