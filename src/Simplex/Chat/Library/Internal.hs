@@ -998,6 +998,7 @@ acceptBusinessJoinRequestAsync
   UserContactRequest {agentInvitationId = AgentInvId cReqInvId, cReqChatVRange, xContactId} = do
     vr <- chatVersionRange
     let userProfile@Profile {displayName, preferences} = profileToSendOnAccept user Nothing True
+        -- TODO how to take groupPreferences from group info?
         groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
         msg =
           XGrpLinkInv $

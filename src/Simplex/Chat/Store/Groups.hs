@@ -1284,7 +1284,7 @@ createJoiningMemberConnection
     Connection {connId} <- createConnection_ db userId ConnMember (Just groupMemberId) agentConnId ConnNew chatV cReqChatVRange Nothing (Just uclId) Nothing 0 createdAt subMode PQSupportOff
     setCommandConnId db user cmdId connId
 
-createBusinessRequestGroup :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> VersionRangeChat -> Profile -> GroupPreferences -> ExceptT StoreError IO (GroupInfo, GroupMember)
+createBusinessRequestGroup :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> VersionRangeChat -> Profile -> Int64 -> Text -> GroupPreferences -> ExceptT StoreError IO (GroupInfo, GroupMember)
 createBusinessRequestGroup
   db
   vr
@@ -1292,6 +1292,8 @@ createBusinessRequestGroup
   user@User {userId, userContactId}
   cReqChatVRange
   Profile {displayName, fullName, image, contactLink, preferences}
+  profileId -- contact request profile id, to be used for member profile
+  ldn -- contact request local display name, to be used for group local display name
   groupPreferences = do
     currentTs <- liftIO getCurrentTime
     (groupId, membership@GroupMember {memberId = userMemberId}) <- insertGroup_ currentTs
@@ -1301,36 +1303,30 @@ createBusinessRequestGroup
     clientMember <- getGroupMemberById db vr user groupMemberId
     pure (groupInfo, clientMember)
     where
-      insertGroup_ currentTs = ExceptT $
-        withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
-          groupId <- liftIO $ do
-            DB.execute
-              db
-              "INSERT INTO group_profiles (display_name, full_name, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-              (displayName, fullName, image, userId, groupPreferences, currentTs, currentTs)
-            profileId <- insertedRowId db
-            DB.execute
-              db
-              [sql|
-                INSERT INTO groups
-                  (group_profile_id, local_display_name, user_id, enable_ntfs,
-                   created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat)
-                VALUES (?,?,?,?,?,?,?,?,?)
-              |]
-              (profileId, localDisplayName, userId, BI True, currentTs, currentTs, currentTs, currentTs, BCCustomer)
-            insertedRowId db
-          memberId <- liftIO $ encodedRandomBytes gVar 12
-          membership <- createContactMemberInv_ db user groupId Nothing user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser Nothing currentTs vr
-          pure (groupId, membership)
+      insertGroup_ currentTs = do
+        liftIO $
+          DB.execute
+            db
+            "INSERT INTO group_profiles (display_name, full_name, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
+            (displayName, fullName, image, userId, groupPreferences, currentTs, currentTs)
+        groupProfileId <- liftIO $ insertedRowId db
+        liftIO $
+          DB.execute
+            db
+            [sql|
+              INSERT INTO groups
+                (group_profile_id, local_display_name, user_id, enable_ntfs,
+                  created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat)
+              VALUES (?,?,?,?,?,?,?,?,?)
+            |]
+            (groupProfileId, ldn, userId, BI True, currentTs, currentTs, currentTs, currentTs, BCCustomer)
+        groupId <- liftIO $ insertedRowId db
+        memberId <- liftIO $ encodedRandomBytes gVar 12
+        membership <- createContactMemberInv_ db user groupId Nothing user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser Nothing currentTs vr
+        pure (groupId, membership)
       VersionRange minV maxV = cReqChatVRange
       insertClientMember_ currentTs groupId membership = ExceptT $ do
         withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
-          liftIO $
-            DB.execute
-              db
-              "INSERT INTO contact_profiles (display_name, full_name, image, contact_link, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-              (displayName, fullName, image, contactLink, userId, preferences, currentTs, currentTs)
-          profileId <- liftIO $ insertedRowId db
           createWithRandomId gVar $ \memId -> do
             DB.execute
               db

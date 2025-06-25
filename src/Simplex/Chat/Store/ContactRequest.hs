@@ -200,9 +200,8 @@ createOrUpdateContactRequest
             createBusinessChat = do
               let Profile {preferences = userPreferences} = profileToSendOnAccept user Nothing True
                   groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs userPreferences
-              -- TODO pass profileId, ldn? profileId for member, ldn for group?
               (gInfo@GroupInfo {groupId}, clientMember) <-
-                createBusinessRequestGroup db vr gVar user cReqChatVRange profile groupPreferences
+                createBusinessRequestGroup db vr gVar user cReqChatVRange profile profileId ldn groupPreferences
               liftIO $
                 DB.execute
                   db
@@ -211,7 +210,7 @@ createOrUpdateContactRequest
               ucr <- getContactRequest db user contactRequestId
               pure $ RSCurrentRequest ucr (Just $ REBusinessChat gInfo clientMember) False
     updateContactRequest :: UserContactRequest -> ExceptT StoreError IO RequestStage
-    updateContactRequest ucr@UserContactRequest {contactRequestId, contactId_, localDisplayName = oldLdn, profile = Profile {displayName = oldDisplayName}} = do
+    updateContactRequest UserContactRequest {contactRequestId, contactId_, localDisplayName = oldLdn, profile = Profile {displayName = oldDisplayName}} = do
       currentTs <- liftIO getCurrentTime
       liftIO $ updateProfile currentTs
       updateRequest currentTs
@@ -260,7 +259,6 @@ createOrUpdateContactRequest
                       WHERE user_id = ? AND contact_request_id = ?
                     |]
                     (Binary invId, pqSup, minV, maxV, ldn, currentTs, userId, contactRequestId)
-                  -- TODO update business chat? member ldn, group ldn and profile?
                   -- Here we could also update business chat, but is always synchronously auto-accepted so it's less of an issue
                   forM_ contactId_ $ \contactId ->
                     DB.execute
