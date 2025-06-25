@@ -899,8 +899,7 @@ func apiConnectPlan(connLink: String) async -> ((CreatedConnLink, ConnectionPlan
     }
     let r: APIResult<ChatResponse1> = await chatApiSendCmd(.apiConnectPlan(userId: userId, connLink: connLink))
     if case let .result(.connectionPlan(_, connLink, connPlan)) = r { return ((connLink, connPlan), nil) }
-    let alert = apiConnectResponseAlert(r.unexpected) ?? connectionErrorAlert(r)
-    return (nil, alert)
+    return (nil, apiConnectResponseAlert(r))
 }
 
 func apiConnect(incognito: Bool, connLink: CreatedConnLink) async -> (ConnReqType, PendingContactConnection)? {
@@ -933,12 +932,11 @@ func apiConnect_(incognito: Bool, connLink: CreatedConnLink) async -> ((ConnReqT
         return (nil, alert)
     default: ()
     }
-    let alert = apiConnectResponseAlert(r.unexpected) ?? connectionErrorAlert(r)
-    return (nil, alert)
+    return (nil, apiConnectResponseAlert(r))
 }
 
-private func apiConnectResponseAlert(_ r: ChatError) -> Alert? {
-    switch r {
+private func apiConnectResponseAlert<R>(_ r: APIResult<R>) -> Alert {
+    switch r.unexpected {
     case .error(.invalidConnReq):
         mkAlert(
             title: "Invalid connection link",
@@ -974,12 +972,12 @@ private func apiConnectResponseAlert(_ r: ChatError) -> Alert? {
         if internalErr == "SEUniqueID" {
             mkAlert(
                 title: "Already connected?",
-                message: "It seems like you are already connected via this link. If it is not the case, there was an error (\(responseError(r)))."
+                message: "It seems like you are already connected via this link. If it is not the case, there was an error (\(internalErr))."
             )
         } else {
-            nil
+            connectionErrorAlert(r)
         }
-    default: nil
+    default: connectionErrorAlert(r)
     }
 }
 
@@ -1027,16 +1025,18 @@ func apiChangePreparedGroupUser(groupId: Int64, newUserId: Int64) async throws -
     throw r.unexpected
 }
 
-func apiConnectPreparedContact(contactId: Int64, incognito: Bool, msg: MsgContent?) async throws -> Contact {
-    let r: ChatResponse1 = try await chatSendCmd(.apiConnectPreparedContact(contactId: contactId, incognito: incognito, msg: msg))
-    if case let .startedConnectionToContact(_, contact) = r { return contact }
-    throw r.unexpected
+func apiConnectPreparedContact(contactId: Int64, incognito: Bool, msg: MsgContent?) async -> Contact? {
+    let r: APIResult<ChatResponse1> = await chatApiSendCmd(.apiConnectPreparedContact(contactId: contactId, incognito: incognito, msg: msg))
+    if case let .result(.startedConnectionToContact(_, contact)) = r { return contact }
+    AlertManager.shared.showAlert(apiConnectResponseAlert(r))
+    return nil
 }
 
-func apiConnectPreparedGroup(groupId: Int64, incognito: Bool, msg: MsgContent?) async throws -> GroupInfo {
-    let r: ChatResponse1 = try await chatSendCmd(.apiConnectPreparedGroup(groupId: groupId, incognito: incognito, msg: msg))
-    if case let .startedConnectionToGroup(_, groupInfo) = r { return groupInfo }
-    throw r.unexpected
+func apiConnectPreparedGroup(groupId: Int64, incognito: Bool, msg: MsgContent?) async -> GroupInfo? {
+    let r: APIResult<ChatResponse1> = await chatApiSendCmd(.apiConnectPreparedGroup(groupId: groupId, incognito: incognito, msg: msg))
+    if case let .result(.startedConnectionToGroup(_, groupInfo)) = r { return groupInfo }
+    AlertManager.shared.showAlert(apiConnectResponseAlert(r))
+    return nil
 }
 
 func apiConnectContactViaAddress(incognito: Bool, contactId: Int64) async -> (Contact?, Alert?) {

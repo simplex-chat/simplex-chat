@@ -887,7 +887,6 @@ struct GroupPreferencesButton: View {
             }
         }
     }
-
 }
 
 

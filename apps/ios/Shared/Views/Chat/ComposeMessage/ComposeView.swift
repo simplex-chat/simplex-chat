@@ -405,14 +405,15 @@ struct ComposeView: View {
             }
 
             if chat.chatInfo.groupInfo?.nextConnectPrepared == true {
-                Button(action: connectPreparedGroup) {
-                    if chat.chatInfo.groupInfo?.businessChat == nil {
+                if chat.chatInfo.groupInfo?.businessChat == nil {
+                    Button(action: connectPreparedGroup) {
                         Label("Join group", systemImage: "person.2.fill")
-                    } else {
-                        Label("Connect", systemImage: "briefcase.fill")
                     }
+                    .frame(height: 60)
+                    .disabled(composeState.inProgress)
+                } else {
+                    sendContactRequestView(disableSendButton, icon: "briefcase.fill", sendRequest: connectPreparedGroup)
                 }
-                .frame(height: 60)
             } else if contact?.nextSendGrpInv == true {
                 contextSendMessageToConnect("Send direct message to connect")
                 Divider()
@@ -428,24 +429,9 @@ struct ComposeView: View {
                         Label("Connect", systemImage: "person.fill.badge.plus")
                     }
                     .frame(height: 60)
+                    .disabled(composeState.inProgress)
                 case .con:
-                    HStack (alignment: .center) {
-                        sendMessageView(
-                            disableSendButton,
-                            placeholder: NSLocalizedString("Add message", comment: "placeholder for sending contact request"),
-                            sendToConnect: sendConnectPreparedContactRequest
-                        )
-                        if composeState.whitespaceOnly {
-                            Button(action: sendConnectPreparedContactRequest) {
-                                HStack {
-                                    Text("Connect").fontWeight(.medium)
-                                    Image(systemName: "person.fill.badge.plus")
-                                }
-                            }
-                            .padding(.horizontal, 8)
-                        }
-                    }
-                    .padding(.horizontal, 12)
+                    sendContactRequestView(disableSendButton, icon: "person.fill.badge.plus", sendRequest: sendConnectPreparedContactRequest)
                 }
             } else if contact?.nextAcceptContactRequest == true, let crId = contact?.contactRequestId {
                 ContextContactRequestActionsView(contactRequestId: crId)
@@ -620,6 +606,27 @@ struct ComposeView: View {
         }
     }
 
+    private func sendContactRequestView(_ disableSendButton: Bool, icon: String, sendRequest: @escaping () -> Void) -> some View {
+        HStack (alignment: .center) {
+            sendMessageView(
+                disableSendButton,
+                placeholder: NSLocalizedString("Add message", comment: "placeholder for sending contact request"),
+                sendToConnect: sendRequest
+            )
+            if composeState.whitespaceOnly {
+                Button(action: sendRequest) {
+                    HStack {
+                        Text("Connect").fontWeight(.medium)
+                        Image(systemName: icon)
+                    }
+                }
+                .padding(.horizontal, 8)
+                .disabled(composeState.inProgress)
+            }
+        }
+        .padding(.horizontal, 12)
+    }
+
     private func sendMessageView(_ disableSendButton: Bool, placeholder: String? = nil, sendToConnect: (() -> Void)? = nil) -> some View {
         ZStack(alignment: .leading) {
             SendMessageView(
@@ -695,6 +702,7 @@ struct ComposeView: View {
         Task {
             do {
                 if let mc = connectCheckLinkPreview() {
+                    await sending()
                     let contact = try await apiSendMemberContactInvitation(chat.chatInfo.apiId, mc)
                     await MainActor.run {
                         self.chatModel.updateContact(contact)
@@ -704,6 +712,7 @@ struct ComposeView: View {
                     AlertManager.shared.showAlertMsg(title: "Empty message!")
                 }
             } catch {
+                composeState.inProgress = false
                 logger.error("ChatView.sendMemberContactInvitation error: \(error.localizedDescription)")
                 AlertManager.shared.showAlertMsg(title: "Error sending member contact invitation", message: "Error: \(responseError(error))")
             }
@@ -730,32 +739,30 @@ struct ComposeView: View {
 
     private func sendConnectPreparedContact() {
         Task {
-            do {
-                let mc = connectCheckLinkPreview()
-                let contact = try await apiConnectPreparedContact(contactId: chat.chatInfo.apiId, incognito: incognitoGroupDefault.get(), msg: mc)
+            await sending()
+            let mc = connectCheckLinkPreview()
+            if let contact = await apiConnectPreparedContact(contactId: chat.chatInfo.apiId, incognito: incognitoGroupDefault.get(), msg: mc) {
                 await MainActor.run {
                     self.chatModel.updateContact(contact)
                     clearState()
                 }
-            } catch {
-                logger.error("ChatView.sendConnectPreparedContact error: \(error.localizedDescription)")
-                AlertManager.shared.showAlertMsg(title: "Error connecting with contact", message: "Error: \(responseError(error))")
+            } else {
+                composeState.inProgress = false
             }
         }
     }
 
     private func connectPreparedGroup() {
         Task {
-            do {
-                let mc = connectCheckLinkPreview()
-                let groupInfo = try await apiConnectPreparedGroup(groupId: chat.chatInfo.apiId, incognito: incognitoGroupDefault.get(), msg: mc)
+            await sending()
+            let mc = connectCheckLinkPreview()
+            if let groupInfo = await apiConnectPreparedGroup(groupId: chat.chatInfo.apiId, incognito: incognitoGroupDefault.get(), msg: mc) {
                 await MainActor.run {
                     self.chatModel.updateGroup(groupInfo)
                     clearState()
                 }
-            } catch {
-                logger.error("ChatView.connectPreparedGroup error: \(error.localizedDescription)")
-                AlertManager.shared.showAlertMsg(title: "Error joining group", message: "Error: \(responseError(error))")
+            } else {
+                composeState.inProgress = false
             }
         }
     }
@@ -1094,10 +1101,6 @@ struct ComposeView: View {
             }
         }
 
-        func sending() async {
-            await MainActor.run { composeState.inProgress = true }
-        }
-
         func updateMessage(_ ei: ChatItem, live: Bool) async -> ChatItem? {
             if let oldMsgContent = ei.content.msgContent {
                 do {
@@ -1268,6 +1271,10 @@ struct ComposeView: View {
                 return []
             }
         }
+    }
+
+    func sending() async {
+        await MainActor.run { composeState.inProgress = true }
     }
 
     private func startVoiceMessageRecording() async {

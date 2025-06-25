@@ -819,7 +819,7 @@ public enum SQLiteError: Decodable, Hashable {
 
 public enum AgentErrorType: Decodable, Hashable {
     case CMD(cmdErr: CommandErrorType, errContext: String)
-    case CONN(connErr: ConnectionErrorType)
+    case CONN(connErr: ConnectionErrorType, errContext: String)
     case SMP(serverAddress: String, smpErr: ProtocolErrorType)
     case NTF(ntfErr: ProtocolErrorType)
     case XFTP(xftpErr: XFTPErrorType)

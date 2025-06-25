@@ -1378,6 +1378,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
                     case .memGroupDeleted: return ("group is deleted", nil)
                     case .memRemoved: return ("removed from group", nil)
                     case .memLeft: return ("you left", nil)
+                    case .memUnknown: return groupInfo.businessChat == nil ? ("can't send messages", nil) : nil
                     default: return ("can't send messages", nil)
                     }
                 }
@@ -1421,7 +1422,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         default: false
         }
     }
-    
+
     public var groupInfo: GroupInfo? {
         switch self {
         case let .group(groupInfo, _): return groupInfo
@@ -1531,7 +1532,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
     public func ntfsEnabled(chatItem: ChatItem) -> Bool {
         ntfsEnabled(chatItem.meta.userMention)
     }
-    
+
     public func ntfsEnabled(_ userMention: Bool) -> Bool {
         switch self.chatSettings?.enableNtfs {
         case .all: true
@@ -1547,7 +1548,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         default: return nil
         }
     }
-    
+
     public var nextNtfMode: MsgFilter? {
         self.chatSettings?.enableNtfs.nextMode(mentions: hasMentions)
     }
@@ -1596,7 +1597,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         case .invalidJSON: return .now
         }
     }
-    
+
     public func ttl(_ globalTTL: ChatItemTTL) -> ChatTTL {
         switch self {
         case let .direct(contact):
@@ -1644,7 +1645,7 @@ public struct ChatData: Decodable, Identifiable, Hashable, ChatLike {
         self.chatItems = chatItems
         self.chatStats = chatStats
     }
-    
+
     public static func invalidJSON(_ json: Data?) -> ChatData {
         ChatData(
             chatInfo: .invalidJSON(json: json),
@@ -2085,15 +2086,14 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     var createdAt: Date
     var updatedAt: Date
     var chatTs: Date?
-    public var connLinkToConnect: CreatedConnLink?
-    public var connLinkStartedConnection: Bool
+    public var preparedGroup: PreparedGroup?
     public var uiThemes: ThemeModeOverrides?
     public var membersRequireAttention: Int
 
     public var id: ChatId { get { "#\(groupId)" } }
     public var apiId: Int64 { get { groupId } }
     public var ready: Bool { get { true } }
-    public var nextConnectPrepared: Bool { connLinkToConnect != nil && !connLinkStartedConnection }
+    public var nextConnectPrepared: Bool { if let preparedGroup { !preparedGroup.connLinkStartedConnection } else { false } }
     public var displayName: String { localAlias == "" ? groupProfile.displayName : localAlias }
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
@@ -2134,11 +2134,15 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
         chatSettings: ChatSettings.defaults,
         createdAt: .now,
         updatedAt: .now,
-        connLinkStartedConnection: false,
         membersRequireAttention: 0,
         chatTags: [],
         localAlias: ""
     )
+}
+
+public struct PreparedGroup: Decodable, Hashable {
+    public var connLinkToConnect: CreatedConnLink?
+    public var connLinkStartedConnection: Bool
 }
 
 public struct GroupRef: Decodable, Hashable {
@@ -2298,7 +2302,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         ? String.localizedStringWithFormat(NSLocalizedString("Past member %@", comment: "past/unknown group member"), name)
         : name
     }
-    
+
     public var localAliasAndFullName: String {
         get {
             let p = memberProfile
@@ -2378,7 +2382,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         return memberStatus != .memRemoved && memberStatus != .memLeft && memberRole < .admin
             && userRole >= .admin && userRole >= memberRole && groupInfo.membership.memberActive
     }
-    
+
     public var canReceiveReports: Bool {
         memberRole >= .moderator && versionRange.maxVersion >= REPORTS_VERSION
     }
@@ -2390,7 +2394,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
             memberChatVRange
         }
     }
-    
+
     public var memberIncognito: Bool {
         memberProfile.profileId != memberContactProfileId
     }
@@ -2446,7 +2450,7 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Cod
     public var id: Self { self }
 
     public static var supportedRoles: [GroupMemberRole] = [.observer, .member, .admin, .owner]
-    
+
     public var text: String {
         switch self {
         case .observer: return NSLocalizedString("observer", comment: "member role")
@@ -2602,7 +2606,7 @@ public enum ConnectionEntity: Decodable, Hashable {
             nil
         }
     }
-    
+
     // public var localDisplayName: String? {
     //     switch self {
     //     case let .rcvDirectMsgConnection(conn, contact):
@@ -2643,7 +2647,7 @@ public struct NtfMsgInfo: Decodable, Hashable {
 public enum RcvNtfMsgInfo: Decodable {
     case info(ntfMsgInfo: NtfMsgInfo?)
     case error(ntfMsgError: AgentErrorType)
-    
+
     @inline(__always)
     public var noMsg: Bool {
         if case let .info(msg) = self { msg == nil } else { true }
@@ -2703,7 +2707,7 @@ public struct CIMentionMember: Decodable, Hashable {
 public struct CIMention: Decodable, Hashable {
     public var memberId: String
     public var memberRef: CIMentionMember?
-    
+
     public init(groupMember m: GroupMember) {
         self.memberId = m.memberId
         self.memberRef = CIMentionMember(
@@ -2954,7 +2958,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         default: return true
         }
     }
-    
+
     public var isReport: Bool {
         switch content {
         case let .sndMsgContent(msgContent), let .rcvMsgContent(msgContent):
@@ -3054,14 +3058,14 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
             file: nil
         )
     }
-    
+
     public static func getReportSample(text: String, reason: ReportReason, item: ChatItem, sender: GroupMember? = nil) -> ChatItem {
         let chatDir = if let sender = sender {
             CIDirection.groupRcv(groupMember: sender)
         } else {
             CIDirection.groupSnd
         }
-        
+
         return ChatItem(
             chatDir: chatDir,
             meta: CIMeta(
@@ -3175,7 +3179,7 @@ public enum CIDirection: Decodable, Hashable {
             }
         }
     }
-    
+
     public func sameDirection(_ dir: CIDirection) -> Bool {
         switch (self, dir) {
         case let (.groupRcv(m1), .groupRcv(m2)): m1.groupMemberId == m2.groupMemberId
@@ -3311,7 +3315,7 @@ public enum CIStatus: Decodable, Hashable {
         case .invalid: return "invalid"
         }
     }
-    
+
     public var sent: Bool {
         switch self {
         case .sndNew: true
@@ -4124,7 +4128,7 @@ public enum FileError: Decodable, Equatable, Hashable {
         case let .other(fileError): String.localizedStringWithFormat(NSLocalizedString("Error: %@", comment: "file error text"), fileError)
         }
     }
-    
+
     public var moreInfoButton: (label: LocalizedStringKey, link: URL)? {
         switch self {
         case .blocked: ("How it works", contentModerationPostLink)
@@ -4426,7 +4430,7 @@ public enum ReportReason: Hashable {
     case profile
     case other
     case unknown(type: String)
-    
+
     public static var supportedReasons: [ReportReason] = [.spam, .illegal, .community, .profile, .other]
 
     public var text: String {
@@ -4439,7 +4443,7 @@ public enum ReportReason: Hashable {
         case let .unknown(type): return type
         }
     }
-    
+
     public var attrString: NSAttributedString {
         let descr = UIFontDescriptor.preferredFontDescriptor(withTextStyle: .body)
         return NSAttributedString(string: text.isEmpty ? self.text : "\(self.text): ", attributes: [
@@ -4486,7 +4490,7 @@ public struct LinkPreview: Codable, Equatable, Hashable {
         self.description = description
         self.image = image
     }
-    
+
     public var uri: URL
     public var title: String
     // TODO remove once optional in haskell
@@ -4535,7 +4539,7 @@ public enum NtfTknStatus: String, Decodable, Hashable {
         case .expired: NSLocalizedString("Expired", comment: "token status text")
         }
     }
-    
+
     public func info(register: Bool) -> String {
         switch self {
         case .new: return NSLocalizedString("Please wait for token to be registered.", comment: "token info")
@@ -4913,9 +4917,9 @@ public enum ChatItemTTL: Identifiable, Comparable, Hashable {
 public enum ChatTTL: Identifiable, Hashable {
     case userDefault(ChatItemTTL)
     case chat(ChatItemTTL)
-    
+
     public var id: Self { self }
-    
+
     public var text: String {
         switch self {
         case let .chat(ttl): return ttl.deleteAfterText
@@ -4924,21 +4928,21 @@ public enum ChatTTL: Identifiable, Hashable {
             ttl.deleteAfterText)
         }
     }
-    
+
     public var neverExpires: Bool {
         switch self {
         case let .chat(ttl): return ttl.seconds == 0
         case let .userDefault(ttl): return ttl.seconds == 0
         }
     }
-        
+
     public var value: Int64? {
         switch self {
         case let .chat(ttl): return ttl.seconds
         case .userDefault: return nil
         }
     }
-    
+
     public var usingDefault: Bool {
         switch self {
         case .userDefault: return true
@@ -4951,9 +4955,9 @@ public struct ChatTag: Decodable, Hashable {
     public var chatTagId: Int64
     public var chatTagText: String
     public var chatTagEmoji: String?
-    
+
     public var id: Int64 { chatTagId }
-    
+
     public init(chatTagId: Int64, chatTagText: String, chatTagEmoji: String?) {
         self.chatTagId = chatTagId
         self.chatTagText = chatTagText
