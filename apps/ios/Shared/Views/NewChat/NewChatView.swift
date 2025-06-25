@@ -1005,6 +1005,8 @@ private func showOwnGroupLinkConfirmConnectSheet(
     )
 }
 
+let alertProfileImageSize: CGFloat = 128
+
 private func showPrepareContactAlert(
     connectionLink: CreatedConnLink,
     contactShortLinkData: ContactShortLinkData,
@@ -1014,11 +1016,12 @@ private func showPrepareContactAlert(
 ) {
     showOpenChatAlert(
         profileName: contactShortLinkData.profile.displayName,
+        profileFullName: contactShortLinkData.profile.fullName,
         profileImage:
             ProfileImage(
                 imageStr: contactShortLinkData.profile.image,
                 iconName: contactShortLinkData.business ? "briefcase.circle.fill" : "person.crop.circle.fill",
-                size: 60
+                size: alertProfileImageSize
             ),
         theme: theme,
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
@@ -1054,10 +1057,11 @@ private func showPrepareGroupAlert(
 ) {
     showOpenChatAlert(
         profileName: groupShortLinkData.groupProfile.displayName,
-        profileImage: ProfileImage(imageStr: groupShortLinkData.groupProfile.image, iconName: "person.2.circle.fill", size: 60),
+        profileFullName: groupShortLinkData.groupProfile.fullName,
+        profileImage: ProfileImage(imageStr: groupShortLinkData.groupProfile.image, iconName: "person.2.circle.fill", size: alertProfileImageSize),
         theme: theme,
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
-        confirmTitle: NSLocalizedString("Open chat", comment: "new chat action"),
+        confirmTitle: NSLocalizedString("Open group", comment: "new chat action"),
         onCancel: { cleanup?() },
         onConfirm: {
             Task {
