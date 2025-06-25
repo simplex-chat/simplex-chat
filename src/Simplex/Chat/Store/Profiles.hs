@@ -413,32 +413,6 @@ deleteUserAddress db user@User {userId} = do
       )
     |]
     (Only userId)
-  DB.execute
-    db
-    [sql|
-      DELETE FROM display_names
-      WHERE user_id = ?
-        AND local_display_name in (
-          SELECT cr.local_display_name
-          FROM contact_requests cr
-          JOIN user_contact_links uc USING (user_contact_link_id)
-          WHERE uc.user_id = ? AND uc.local_display_name = '' AND uc.group_id IS NULL
-        )
-        AND local_display_name NOT IN (SELECT local_display_name FROM users WHERE user_id = ?)
-    |]
-    (userId, userId, userId)
-  DB.execute
-    db
-    [sql|
-      DELETE FROM contact_profiles
-      WHERE contact_profile_id in (
-        SELECT cr.contact_profile_id
-        FROM contact_requests cr
-        JOIN user_contact_links uc USING (user_contact_link_id)
-        WHERE uc.user_id = ? AND uc.local_display_name = '' AND uc.group_id IS NULL
-      )
-    |]
-    (Only userId)
   void $ setUserProfileContactLink db user Nothing
   DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL" (Only userId)
 

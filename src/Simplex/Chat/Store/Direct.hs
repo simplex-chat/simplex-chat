@@ -64,7 +64,6 @@ module Simplex.Chat.Store.Direct
     createContactFromRequest,
     createAcceptedContactConn,
     createAcceptedContact,
-    deleteContactRequestRec,
     updateContactAccepted,
     getUserByContactRequestId,
     getPendingContactConnections,
@@ -808,10 +807,6 @@ createAcceptedContact
     conn <- liftIO $ createAcceptedContactConn db user uclId contactId agentConnId connChatVersion cReqChatVRange pqSup incognitoProfile subMode currentTs
     ct <- getContact db vr user contactId
     pure (ct, conn)
-
-deleteContactRequestRec :: DB.Connection -> User -> UserContactRequest -> IO ()
-deleteContactRequestRec db User {userId} UserContactRequest {contactRequestId} =
-  DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
 updateContactAccepted :: DB.Connection -> User -> Contact -> Bool -> IO ()
 updateContactAccepted db User {userId} Contact {contactId} contactUsed =

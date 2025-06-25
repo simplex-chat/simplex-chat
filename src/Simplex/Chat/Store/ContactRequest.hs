@@ -200,6 +200,7 @@ createOrUpdateContactRequest
             createBusinessChat = do
               let Profile {preferences = userPreferences} = profileToSendOnAccept user Nothing True
                   groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs userPreferences
+              -- TODO pass profileId, ldn? profileId for member, ldn for group?
               (gInfo@GroupInfo {groupId}, clientMember) <-
                 createBusinessRequestGroup db vr gVar user cReqChatVRange profile groupPreferences
               liftIO $
@@ -210,12 +211,13 @@ createOrUpdateContactRequest
               ucr <- getContactRequest db user contactRequestId
               pure $ RSCurrentRequest ucr (Just $ REBusinessChat gInfo clientMember) False
     updateContactRequest :: UserContactRequest -> ExceptT StoreError IO RequestStage
-    updateContactRequest ucr@UserContactRequest {contactRequestId = cReqId, contactId_, localDisplayName = oldLdn, profile = Profile {displayName = oldDisplayName}} = do
+    updateContactRequest ucr@UserContactRequest {contactRequestId, contactId_, localDisplayName = oldLdn, profile = Profile {displayName = oldDisplayName}} = do
       currentTs <- liftIO getCurrentTime
       liftIO $ updateProfile currentTs
       updateRequest currentTs
-      re_ <- getRequestEntity ucr
-      pure $ RSCurrentRequest ucr re_ True
+      ucr' <- getContactRequest db user contactRequestId
+      re_ <- getRequestEntity ucr'
+      pure $ RSCurrentRequest ucr' re_ True
       where
         updateProfile currentTs =
           DB.execute
@@ -234,7 +236,7 @@ createOrUpdateContactRequest
                   AND contact_request_id = ?
               )
             |]
-            (displayName, fullName, image, contactLink, currentTs, userId, cReqId)
+            (displayName, fullName, image, contactLink, currentTs, userId, contactRequestId)
         updateRequest currentTs =
           if displayName == oldDisplayName
             then
@@ -246,7 +248,7 @@ createOrUpdateContactRequest
                     SET agent_invitation_id = ?, pq_support = ?, peer_chat_min_version = ?, peer_chat_max_version = ?, updated_at = ?
                     WHERE user_id = ? AND contact_request_id = ?
                   |]
-                  (Binary invId, pqSup, minV, maxV, currentTs, userId, cReqId)
+                  (Binary invId, pqSup, minV, maxV, currentTs, userId, contactRequestId)
             else
               ExceptT $ withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
                 liftIO $ do
@@ -257,8 +259,8 @@ createOrUpdateContactRequest
                       SET agent_invitation_id = ?, pq_support = ?, peer_chat_min_version = ?, peer_chat_max_version = ?, local_display_name = ?, updated_at = ?
                       WHERE user_id = ? AND contact_request_id = ?
                     |]
-                    (Binary invId, pqSup, minV, maxV, ldn, currentTs, userId, cReqId)
-                  -- TODO update business chat?
+                    (Binary invId, pqSup, minV, maxV, ldn, currentTs, userId, contactRequestId)
+                  -- TODO update business chat? member ldn, group ldn and profile?
                   -- Here we could also update business chat, but is always synchronously auto-accepted so it's less of an issue
                   forM_ contactId_ $ \contactId ->
                     DB.execute
