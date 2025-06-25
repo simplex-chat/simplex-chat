@@ -1027,14 +1027,14 @@ func apiChangePreparedGroupUser(groupId: Int64, newUserId: Int64) async throws -
     throw r.unexpected
 }
 
-func apiConnectPreparedContact(contactId: Int64, incognito: Bool, msg: MsgContent) async throws -> Contact {
+func apiConnectPreparedContact(contactId: Int64, incognito: Bool, msg: MsgContent?) async throws -> Contact {
     let r: ChatResponse1 = try await chatSendCmd(.apiConnectPreparedContact(contactId: contactId, incognito: incognito, msg: msg))
     if case let .startedConnectionToContact(_, contact) = r { return contact }
     throw r.unexpected
 }
 
-func apiConnectPreparedGroup(groupId: Int64, incognito: Bool) async throws -> GroupInfo {
-    let r: ChatResponse1 = try await chatSendCmd(.apiConnectPreparedGroup(groupId: groupId, incognito: incognito))
+func apiConnectPreparedGroup(groupId: Int64, incognito: Bool, msg: MsgContent?) async throws -> GroupInfo {
+    let r: ChatResponse1 = try await chatSendCmd(.apiConnectPreparedGroup(groupId: groupId, incognito: incognito, msg: msg))
     if case let .startedConnectionToGroup(_, groupInfo) = r { return groupInfo }
     throw r.unexpected
 }

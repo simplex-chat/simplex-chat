@@ -4204,6 +4204,7 @@ public enum MsgContent: Equatable, Hashable {
         }
     }
 
+    @inline(__always)
     public var cmdString: String {
         "json \(encodeJSON(self))"
     }
