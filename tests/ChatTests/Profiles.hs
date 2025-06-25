@@ -39,7 +39,7 @@ chatProfileTests = do
     it "update user profile and notify contacts" testUpdateProfile
     it "update user profile with image" testUpdateProfileImage
     it "use multiword profile names" testMultiWordProfileNames
-  fdescribe "user contact link" $ do
+  describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
     it "retry accepting connection via contact link" testRetryAcceptingViaContactLink
     it "add contact link to profile" testProfileLink
