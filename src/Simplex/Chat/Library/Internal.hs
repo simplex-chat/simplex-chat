@@ -870,7 +870,7 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
           | otherwise = liftIO $ B.writeFile fPath ""
 
 acceptContactRequest :: User -> UserContactRequest -> IncognitoEnabled -> CM (Contact, Connection, SndQueueSecured)
-acceptContactRequest user@User {userId} ucr@UserContactRequest {agentInvitationId = AgentInvId invId, contactId_, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId, pqSupport} incognito = do
+acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = AgentInvId invId, contactId_, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId, pqSupport} incognito = do
   subMode <- chatReadVar subscriptionMode
   let pqSup = PQSupportOn
       pqSup' = pqSup `CR.pqSupportAnd` pqSupport
@@ -881,7 +881,6 @@ acceptContactRequest user@User {userId} ucr@UserContactRequest {agentInvitationI
       incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
       connId <- withAgent $ \a -> prepareConnectionToAccept a True invId pqSup'
       (ct, conn) <- withStore' $ \db -> do
-        setContactRequestAccepted db ucr
         createContactFromRequest db user userContactLinkId connId chatV cReqChatVRange cName profileId cp xContactId incognitoProfile subMode pqSup' False
       pure (ct, conn, incognitoProfile)
     Just contactId -> do
@@ -892,7 +891,7 @@ acceptContactRequest user@User {userId} ucr@UserContactRequest {agentInvitationI
           connId <- withAgent $ \a -> prepareConnectionToAccept a True invId pqSup'
           currentTs <- liftIO getCurrentTime
           conn <- withStore' $ \db -> do
-            setContactRequestAccepted db ucr
+            forM_ xContactId $ \xcId -> setContactAcceptedXContactId db ct xcId
             createAcceptedContactConn db user userContactLinkId contactId connId chatV cReqChatVRange pqSup' incognitoProfile subMode currentTs
           pure (ct {activeConn = Just conn} :: Contact, conn, incognitoProfile)
         Just conn@Connection {customUserProfileId} -> do
@@ -907,8 +906,8 @@ acceptContactRequestAsync :: User -> Int64 -> Contact -> UserContactRequest -> M
 acceptContactRequestAsync
   user
   uclId
-  Contact {contactId}
-  ucr@UserContactRequest {agentInvitationId = AgentInvId cReqInvId, cReqChatVRange, pqSupport = cReqPQSup}
+  ct@Contact {contactId}
+  UserContactRequest {agentInvitationId = AgentInvId cReqInvId, cReqChatVRange, xContactId, pqSupport = cReqPQSup}
   incognitoProfile = do
     subMode <- chatReadVar subscriptionMode
     let profileToSend = profileToSendOnAccept user incognitoProfile False
@@ -917,7 +916,7 @@ acceptContactRequestAsync
     (cmdId, acId) <- agentAcceptContactAsync user True cReqInvId (XInfo profileToSend) subMode cReqPQSup chatV
     currentTs <- liftIO getCurrentTime
     withStore $ \db -> do
-      liftIO $ setContactRequestAccepted db ucr
+      forM_ xContactId $ \xcId -> liftIO $ setContactAcceptedXContactId db ct xcId
       Connection {connId} <- liftIO $ createAcceptedContactConn db user uclId contactId acId chatV cReqChatVRange cReqPQSup incognitoProfile subMode currentTs
       liftIO $ setCommandConnId db user cmdId connId
       getContact db vr user contactId
@@ -996,7 +995,7 @@ acceptBusinessJoinRequestAsync
   uclId
   gInfo@GroupInfo {membership = GroupMember {memberRole = userRole, memberId = userMemberId}}
   clientMember@GroupMember {groupMemberId, memberId}
-  ucr@UserContactRequest {agentInvitationId = AgentInvId cReqInvId, cReqChatVRange} = do
+  UserContactRequest {agentInvitationId = AgentInvId cReqInvId, cReqChatVRange, xContactId} = do
     vr <- chatVersionRange
     let userProfile@Profile {displayName, preferences} = profileToSendOnAccept user Nothing True
         groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
@@ -1018,13 +1017,13 @@ acceptBusinessJoinRequestAsync
     let chatV = vr `peerConnChatVersion` cReqChatVRange
     connIds <- agentAcceptContactAsync user True cReqInvId msg subMode PQSupportOff chatV
     withStore' $ \db -> do
-      setContactRequestAccepted db ucr
+      forM_ xContactId $ \xcId -> setBusinessChatAcceptedXContactId db gInfo xcId
       createJoiningMemberConnection db user uclId connIds chatV cReqChatVRange groupMemberId subMode
     let cd = CDGroupSnd gInfo Nothing
-    -- TODO move to profileContactRequest?
+    -- TODO [short links] move to profileContactRequest?
     createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
     createGroupFeatureItems user cd CISndGroupFeature gInfo
-    -- TODO return updated?
+    -- TODO get updated? (currently not used)
     pure (gInfo, clientMember)
 
 businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile

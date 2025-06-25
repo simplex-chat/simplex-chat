@@ -1052,7 +1052,7 @@ getContactRequestChatPreviews_ db User {userId} pagination clq = case clq of
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
           cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
           c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
-          cr.pq_support, cr.accepted, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
+          cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
           cr.created_at, cr.updated_at,
           cr.peer_chat_min_version, cr.peer_chat_max_version
         FROM contact_requests cr
@@ -1064,6 +1064,7 @@ getContactRequestChatPreviews_ db User {userId} pagination clq = case clq of
           AND uc.local_display_name = ''
           AND uc.group_id IS NULL
           AND cr.contact_id IS NULL
+          AND cr.business_group_id IS NULL
           AND (
             LOWER(cr.local_display_name) LIKE '%' || LOWER(?) || '%'
             OR LOWER(p.display_name) LIKE '%' || LOWER(?) || '%'

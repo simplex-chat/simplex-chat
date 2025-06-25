@@ -11,7 +11,8 @@
 
 module Simplex.Chat.Store.ContactRequest
   ( createOrUpdateContactRequest,
-    setContactRequestAccepted
+    setContactAcceptedXContactId,
+    setBusinessChatAcceptedXContactId
   )
   where
 
@@ -78,15 +79,10 @@ createOrUpdateContactRequest
       -- 0) this is very old legacy, when we didn't have xContactId at all (this should be deprecated)
       Nothing -> createContactRequest
       Just xContactId ->
-        -- Here real logic starts:
-        -- 1) first we try to find legacy accepted contact or business chat by xContactId
-        --    (only legacy contacts and business chats may have xContactId set after contact request acceptance,
-        --     while new contacts and business chats instead keep contact request record, which now has `accepted` field);
-        --    this requires separate queries, because we were deleting contact request records after acceptance;
-        --    this can also be deprecated in future releases: getLegacyAcceptedContact, getLegacyAcceptedBusinessChat
-        liftIO (getLegacyAcceptedContact xContactId) >>= \case
+        -- 1) first we try to find accepted contact or business chat by xContactId
+        liftIO (getAcceptedContact xContactId) >>= \case
           Just ct -> pure $ RSAcceptedRequest Nothing (REContact ct)
-          Nothing -> liftIO (getLegacyAcceptedBusinessChat xContactId) >>= \case
+          Nothing -> liftIO (getAcceptedBusinessChat xContactId) >>= \case
             Just gInfo@GroupInfo {businessChat = Just BusinessChatInfo {customerId}} -> do
               clientMember <- getGroupMemberByMemberId db vr user gInfo customerId
               pure $ RSAcceptedRequest Nothing (REBusinessChat gInfo clientMember)
@@ -94,21 +90,13 @@ createOrUpdateContactRequest
             -- 2) if no legacy accepted contact or business chat was found, next we try to find an existing request
             Nothing ->
               liftIO (getContactRequestByXContactId xContactId) >>= \case
-                Just cr@UserContactRequest {contactRequestId, accepted}
-                  -- 3a) if accepted request was found, we return it as accepted request
-                  | accepted ->
-                      getRequestEntity cr >>= \case
-                        Just re -> pure $ RSAcceptedRequest (Just cr) re
-                        Nothing -> throwError $ SEInvalidContactRequestEntity contactRequestId
-                  -- 3b) if request was found and it's not accepted, we update it
-                  | otherwise -> updateContactRequest cr
-                -- 3c) if no request was found, we create a new contact request
+                -- 3a) if request was found, we update it
+                Just cr -> updateContactRequest cr
+                -- 3b) if no request was found, we create a new contact request
                 Nothing -> createContactRequest
   where
-    -- only legacy contacts and business chats may have xContactId set after contact request acceptance;
-    -- new contacts and business chats instead keep contact request record, which has accepted field
-    getLegacyAcceptedContact :: XContactId -> IO (Maybe Contact)
-    getLegacyAcceptedContact xContactId = do
+    getAcceptedContact :: XContactId -> IO (Maybe Contact)
+    getAcceptedContact xContactId = do
       ct_ <-
         maybeFirstRow (toContact vr user []) $
           DB.query
@@ -132,8 +120,8 @@ createOrUpdateContactRequest
             |]
             (userId, xContactId)
       mapM (addDirectChatTags db) ct_
-    getLegacyAcceptedBusinessChat :: XContactId -> IO (Maybe GroupInfo)
-    getLegacyAcceptedBusinessChat xContactId = do
+    getAcceptedBusinessChat :: XContactId -> IO (Maybe GroupInfo)
+    getAcceptedBusinessChat xContactId = do
       g_ <-
         maybeFirstRow (toGroupInfo vr userContactId []) $
           DB.query
@@ -151,7 +139,7 @@ createOrUpdateContactRequest
               cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
               cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
               c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
-              cr.pq_support, cr.accepted, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
+              cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
               cr.created_at, cr.updated_at,
               cr.peer_chat_min_version, cr.peer_chat_max_version
             FROM contact_requests cr
@@ -270,8 +258,8 @@ createOrUpdateContactRequest
                       WHERE user_id = ? AND contact_request_id = ?
                     |]
                     (Binary invId, pqSup, minV, maxV, ldn, currentTs, userId, cReqId)
-                  -- Here we could also update group member or business chat,
-                  -- but they are synchronously auto-accepted so it's less of an issue
+                  -- TODO update business chat?
+                  -- Here we could also update business chat, but is always synchronously auto-accepted so it's less of an issue
                   forM_ contactId_ $ \contactId ->
                     DB.execute
                       db
@@ -298,14 +286,14 @@ createOrUpdateContactRequest
         (Nothing, Nothing) -> pure Nothing
         _ -> throwError $ SEInvalidContactRequestEntity contactRequestId
 
-setContactRequestAccepted :: DB.Connection -> UserContactRequest -> IO ()
-setContactRequestAccepted db UserContactRequest {contactRequestId} = do
-  currentTs <- getCurrentTime
+setContactAcceptedXContactId :: DB.Connection -> Contact -> XContactId -> IO ()
+setContactAcceptedXContactId db Contact {contactId} xContactId =
   DB.execute
-    db
-    [sql|
-      UPDATE contact_requests
-      SET accepted = ?, updated_at = ?
-      WHERE contact_request_id = ?
-    |]
-    (BI True, currentTs, contactRequestId)
+    db "UPDATE contacts SET xcontact_id = ? WHERE contact_id = ?"
+    (xContactId, contactId)
+
+setBusinessChatAcceptedXContactId :: DB.Connection -> GroupInfo -> XContactId -> IO ()
+setBusinessChatAcceptedXContactId db GroupInfo {groupId} xContactId =
+  DB.execute
+    db "UPDATE groups SET business_xcontact_id = ? WHERE group_id = ?"
+    (xContactId, groupId)
