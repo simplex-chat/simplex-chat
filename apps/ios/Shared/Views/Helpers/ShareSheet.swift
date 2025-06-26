@@ -90,6 +90,12 @@ let okAlertAction = UIAlertAction(title: NSLocalizedString("Ok", comment: "alert
 
 let cancelAlertAction = UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert button"), style: .cancel)
 
+let alertProfileImageSize: CGFloat = 103
+
+let alertWidth: CGFloat = 270
+
+let alertButtonHeight: CGFloat = 44
+
 class OpenChatAlertViewController: UIViewController {
     private let profileName: String
     private let profileFullName: String
@@ -195,13 +201,15 @@ class OpenChatAlertViewController: UIViewController {
         confirmButton.titleLabel?.font = UIFont.preferredFont(forTextStyle: .body)
         confirmButton.addTarget(self, action: #selector(confirmTapped), for: .touchUpInside)
 
+        let verticalButtons = cancelButton.intrinsicContentSize.width + 20 >= alertWidth / 2 || confirmButton.intrinsicContentSize.width + 20 >= alertWidth / 2
+
         // Button stack with equal width buttons
-        let buttonStack = UIStackView(arrangedSubviews: [cancelButton, confirmButton])
-        buttonStack.axis = .horizontal
+        let buttonStack = UIStackView(arrangedSubviews: verticalButtons ? [confirmButton, cancelButton] : [cancelButton, confirmButton])
+        buttonStack.axis = verticalButtons ? .vertical : .horizontal
         buttonStack.distribution = .fillEqually
         buttonStack.spacing = 0 // no spacing, use divider instead
         buttonStack.translatesAutoresizingMaskIntoConstraints = false
-        buttonStack.heightAnchor.constraint(greaterThanOrEqualToConstant: 50).isActive = true
+        buttonStack.heightAnchor.constraint(greaterThanOrEqualToConstant: alertButtonHeight * (verticalButtons ? 2 : 1)).isActive = true
 
         // Vertical stack containing hStack and buttonStack
         let vStack = UIStackView(arrangedSubviews: [topRowContainer, buttonStack])
@@ -218,19 +226,34 @@ class OpenChatAlertViewController: UIViewController {
         horizontalDivider.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(horizontalDivider)
 
-        // Add vertical divider between buttons
-        let verticalDivider = UIView()
-        verticalDivider.backgroundColor = UIColor.separator
-        verticalDivider.translatesAutoresizingMaskIntoConstraints = false
-        buttonStack.addSubview(verticalDivider)
+        // Add divider between buttons
+        let buttonDivider = UIView()
+        buttonDivider.backgroundColor = UIColor.separator
+        buttonDivider.translatesAutoresizingMaskIntoConstraints = false
+        buttonStack.addSubview(buttonDivider)
 
         // Constraints
+        let buttonDividerConstraints = if verticalButtons {
+            [
+                buttonDivider.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+                buttonDivider.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+                buttonDivider.centerYAnchor.constraint(equalTo: buttonStack.centerYAnchor),
+                buttonDivider.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale)
+            ]
+        } else {
+            [
+                buttonDivider.topAnchor.constraint(equalTo: buttonStack.topAnchor),
+                buttonDivider.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+                buttonDivider.centerXAnchor.constraint(equalTo: buttonStack.centerXAnchor),
+                buttonDivider.widthAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale)
+            ]
+        }
 
         NSLayoutConstraint.activate([
             // Container view centering and fixed width
             containerView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             containerView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            containerView.widthAnchor.constraint(equalToConstant: 280),
+            containerView.widthAnchor.constraint(equalToConstant: alertWidth),
 
             // Vertical stack padding inside containerView
             vStack.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 20),
@@ -245,14 +268,8 @@ class OpenChatAlertViewController: UIViewController {
             horizontalDivider.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
             horizontalDivider.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
             horizontalDivider.bottomAnchor.constraint(equalTo: buttonStack.topAnchor),
-            horizontalDivider.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale),
-
-            // Vertical divider between buttons
-            verticalDivider.widthAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale),
-            verticalDivider.topAnchor.constraint(equalTo: buttonStack.topAnchor),
-            verticalDivider.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
-            verticalDivider.centerXAnchor.constraint(equalTo: buttonStack.centerXAnchor)
-        ])
+            horizontalDivider.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale)
+        ] + buttonDividerConstraints)
     }
 
     @objc private func cancelTapped() {

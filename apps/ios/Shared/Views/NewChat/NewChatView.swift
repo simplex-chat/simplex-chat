@@ -1005,8 +1005,6 @@ private func showOwnGroupLinkConfirmConnectSheet(
     )
 }
 
-let alertProfileImageSize: CGFloat = 128
-
 private func showPrepareContactAlert(
     connectionLink: CreatedConnLink,
     contactShortLinkData: ContactShortLinkData,
