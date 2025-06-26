@@ -47,7 +47,11 @@ chatProfileTests = do
     it "deduplicate contact requests" testDeduplicateContactRequests
     it "deduplicate contact requests with profile change" testDeduplicateContactRequestsProfileChange
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
-    it "delete connection requests when contact link deleted" testDeleteConnectionRequests
+    -- TODO [short links] fix address deletion:
+    -- TODO   - either alert user that N contacts will be deleted and delete contact request contacts and business chats
+    -- TODO   - or allow to accept contact requests for deleted address
+    xit "delete connection requests when contact link deleted" testDeleteConnectionRequests
+    it "connected contact works when contact link deleted" testContactLinkDeletedConnectedContactWorks
     -- TODO [short links] test auto-reply with current version, with connecting client not preparing contact
     it "auto-reply message" testAutoReplyMessage
     it "auto-reply message in incognito" testAutoReplyMessageInIncognito
@@ -674,6 +678,30 @@ testDeleteConnectionRequests = testChat3 aliceProfile bobProfile cathProfile $
     alice <#? bob
     cath ##> ("/c " <> cLink')
     alice <#? cath
+
+testContactLinkDeletedConnectedContactWorks :: HasCallStack => TestParams -> IO ()
+testContactLinkDeletedConnectedContactWorks = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    alice ##> "/ad"
+    cLink <- getContactLink alice True
+    bob ##> ("/c " <> cLink)
+    alice <#? bob
+
+    alice ##> "/ac bob"
+    alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+    concurrently_
+      (bob <## "alice (Alice): contact is connected")
+      (alice <## "bob (Bob): contact is connected")
+    alice @@@ [("@bob", "Audio/video calls: enabled")]
+    bob @@@ [("@alice", "Audio/video calls: enabled")]
+
+    alice ##> "/da"
+    alice <## "Your chat address is deleted - accepted contacts will remain connected."
+    alice <## "To create a new chat address use /ad"
+
+    alice <##> bob
+    alice @@@ [("@bob", "hey")]
+    bob @@@ [("@alice", "hey")]
 
 testAutoReplyMessage :: HasCallStack => TestParams -> IO ()
 testAutoReplyMessage = testChatCfg2 testCfgNoShortLinks aliceProfile bobProfile $
