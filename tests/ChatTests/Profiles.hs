@@ -118,6 +118,8 @@ chatProfileTests = do
     it "prepare contact with image in profile" testShortLinkInvitationImage
     it "prepare contact with a long name in profile" testShortLinkInvitationLongName
     it "prepare contact using address short link data and connect" testShortLinkAddressPrepareContact
+    it "prepare contact via invitation and connect after it is deleted" testShortLinkDeletedInvitation
+    it "prepare contact via address and connect after it is deleted" testShortLinkDeletedAddress
     it "prepare business chat using address short link data and connect" testShortLinkAddressPrepareBusiness
     it "prepare group using group short link data and connect" testShortLinkPrepareGroup
     it "prepare group using group short link data and connect, host rejects" testShortLinkPrepareGroupReject
@@ -3007,6 +3009,44 @@ testShortLinkAddressPrepareContact =
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
       alice <##> bob
+
+testShortLinkDeletedInvitation :: HasCallStack => TestParams -> IO ()
+testShortLinkDeletedInvitation =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/_connect 1"
+      (shortLink, fullLink) <- getInvitations alice
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "invitation link: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+      bob <## "alice: contact is prepared"
+      alice @@@ [(":1","")]
+      alice ##> "/_delete :1"
+      alice <## "connection :1 deleted"
+      bob ##> "/_connect contact @2"
+      bob <##. "error: connection authorization failed"
+      bob ##> "/_connect contact @2"
+      bob <##. "error: connection authorization failed"
+
+testShortLinkDeletedAddress :: HasCallStack => TestParams -> IO ()
+testShortLinkDeletedAddress =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/ad"
+      (shortLink, fullLink) <- getContactLinks alice True
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "contact address: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+      bob <## "alice: contact is prepared"
+      alice ##> "/da"
+      alice <## "Your chat address is deleted - accepted contacts will remain connected."
+      alice <## "To create a new chat address use /ad"
+      bob ##> "/_connect contact @2"
+      bob <##. "error: connection authorization failed"
+      bob ##> "/_connect contact @2"
+      bob <##. "error: connection authorization failed"
 
 testShortLinkAddressPrepareBusiness :: HasCallStack => TestParams -> IO ()
 testShortLinkAddressPrepareBusiness =
