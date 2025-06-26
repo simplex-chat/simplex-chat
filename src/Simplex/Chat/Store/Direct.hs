@@ -23,6 +23,7 @@ module Simplex.Chat.Store.Direct
     -- * Contacts and connections functions
     getPendingContactConnection,
     deletePendingContactConnection,
+    createDirectConnection_,
     createDirectConnection,
     createIncognitoProfile,
     createConnReqConnection,
@@ -235,8 +236,13 @@ getContactByConnReqHash db vr user@User {userId} cReqHash = do
   mapM (addDirectChatTags db) ct_
 
 createDirectConnection :: DB.Connection -> User -> ConnId -> CreatedLinkInvitation -> Maybe ContactId -> ConnStatus -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> IO PendingContactConnection
-createDirectConnection db User {userId} acId ccLink@(CCLink cReq shortLinkInv) contactId_ pccConnStatus incognitoProfile subMode chatV pqSup = do
+createDirectConnection db User {userId} acId ccLink contactId_ pccConnStatus incognitoProfile subMode chatV pqSup = do
   createdAt <- getCurrentTime
+  (pccConnId, customUserProfileId) <- createDirectConnection_ db userId acId ccLink contactId_ pccConnStatus incognitoProfile subMode chatV pqSup createdAt
+  pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = False, viaUserContactLink = Nothing, groupLinkId = Nothing, customUserProfileId, connLinkInv = Just ccLink, localAlias = "", createdAt, updatedAt = createdAt}
+
+createDirectConnection_ :: DB.Connection -> UserId -> ConnId -> CreatedLinkInvitation -> Maybe ContactId -> ConnStatus -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> UTCTime -> IO (Int64, Maybe Int64)
+createDirectConnection_ db userId acId (CCLink cReq shortLinkInv) contactId_ pccConnStatus incognitoProfile subMode chatV pqSup createdAt = do
   customUserProfileId <- mapM (createIncognitoProfile_ db userId createdAt) incognitoProfile
   let contactConnInitiated = pccConnStatus == ConnNew
   DB.execute
@@ -250,8 +256,8 @@ createDirectConnection db User {userId} acId ccLink@(CCLink cReq shortLinkInv) c
     ( (userId, acId, cReq, shortLinkInv, pccConnStatus, ConnContact, contactId_, BI contactConnInitiated, customUserProfileId)
         :. (createdAt, createdAt, BI (subMode == SMOnlyCreate), chatV, pqSup, pqSup)
     )
-  pccConnId <- insertedRowId db
-  pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = False, viaUserContactLink = Nothing, groupLinkId = Nothing, customUserProfileId, connLinkInv = Just ccLink, localAlias = "", createdAt, updatedAt = createdAt}
+  dbConnId <- insertedRowId db
+  pure (dbConnId, customUserProfileId)
 
 createIncognitoProfile :: DB.Connection -> User -> Profile -> IO Int64
 createIncognitoProfile db User {userId} p = do

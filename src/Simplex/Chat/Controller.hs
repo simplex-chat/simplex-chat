@@ -456,7 +456,7 @@ data ChatCommand
   | APIChangePreparedGroupUser GroupId UserId
   | APIConnectPreparedContact {contactId :: ContactId, incognito :: IncognitoEnabled, msgContent_ :: Maybe MsgContent}
   | APIConnectPreparedGroup GroupId IncognitoEnabled (Maybe MsgContent)
-  | APIConnect UserId IncognitoEnabled (Maybe ACreatedConnLink)
+  | APIConnect UserId IncognitoEnabled ACreatedConnLink
   | Connect IncognitoEnabled (Maybe AConnectionLink)
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)

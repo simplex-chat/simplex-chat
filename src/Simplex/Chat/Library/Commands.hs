@@ -1795,18 +1795,16 @@ processChatCommand' vr = \case
     Contact {preparedContact} <- withFastStore $ \db -> getContact db vr user contactId
     case preparedContact of
       Nothing -> throwCmdError "contact doesn't have link to connect"
-      Just PreparedContact {connLinkToConnect = ACCL SCMInvitation ccLink} ->
-        connectViaInvitation user incognito ccLink (Just contactId) >>= \case
-          CRSentConfirmation {customUserProfile} -> do
-            -- get updated contact with connection
-            ct' <- withFastStore $ \db -> getContact db vr user contactId
-            forM_ msgContent_ $ \mc -> do
-              let evt = XMsgNew $ MCSimple (extMsgContent mc Nothing)
-              (msg, _) <- sendDirectContactMessage user ct' evt
-              ci <- saveSndChatItem user (CDDirectSnd ct') msg (CISndMsgContent mc)
-              toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct') ci]
-            pure $ CRStartedConnectionToContact user ct' customUserProfile
-          cr -> pure cr
+      Just PreparedContact {connLinkToConnect = ACCL SCMInvitation ccLink} -> do
+        (_, customUserProfile) <- connectViaInvitation user incognito ccLink (Just contactId)
+        -- get updated contact with connection
+        ct' <- withFastStore $ \db -> getContact db vr user contactId
+        forM_ msgContent_ $ \mc -> do
+          let evt = XMsgNew $ MCSimple (extMsgContent mc Nothing)
+          (msg, _) <- sendDirectContactMessage user ct' evt
+          ci <- saveSndChatItem user (CDDirectSnd ct') msg (CISndMsgContent mc)
+          toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct') ci]
+        pure $ CRStartedConnectionToContact user ct' customUserProfile
       Just PreparedContact {connLinkToConnect = ACCL SCMContact ccLink, welcomeSharedMsgId} -> do
         -- TODO [short links] reuse welcomeSharedMsgId
         msg_ <- forM msgContent_ $ \mc -> (,mc) <$> getSharedMsgId
@@ -1831,11 +1829,12 @@ processChatCommand' vr = \case
             gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
             pure $ CRStartedConnectionToGroup user gInfo' customUserProfile
           cr -> pure cr
-  APIConnect userId incognito (Just (ACCL SCMInvitation ccLink)) -> withUserId userId $ \user ->
-    connectViaInvitation user incognito ccLink Nothing
-  APIConnect userId incognito (Just (ACCL SCMContact ccLink)) -> withUserId userId $ \user ->
-    connectViaContact user incognito ccLink Nothing Nothing Nothing
-  APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
+  APIConnect userId incognito acl -> withUserId userId $ \user -> case acl of
+    ACCL SCMInvitation ccLink -> do
+      (dbConnId, incognitoProfile) <- connectViaInvitation user incognito ccLink Nothing
+      pcc <- withFastStore $ \db -> getPendingContactConnection db userId dbConnId
+      pure $ CRSentConfirmation user pcc incognitoProfile
+    ACCL SCMContact ccLink -> connectViaContact user incognito ccLink Nothing Nothing Nothing
   Connect incognito (Just cLink@(ACL m cLink')) -> withUser $ \user -> do
     (ccLink, plan) <- connectPlan user cLink `catchChatError` \e -> case cLink' of CLFull cReq -> pure (ACCL m (CCLink cReq Nothing), CPInvitationLink (ILPOk Nothing)); _ -> throwError e
     connectWithPlan user incognito ccLink plan
@@ -2869,9 +2868,9 @@ processChatCommand' vr = \case
       CTGroup -> withFastStore $ \db -> getGroupChatItemIdByText' db user cId msg
       CTLocal -> withFastStore $ \db -> getLocalChatItemIdByText' db user cId msg
       _ -> throwCmdError "not supported"
-    connectViaInvitation :: User -> IncognitoEnabled -> CreatedLinkInvitation -> Maybe ContactId -> CM ChatResponse
+    connectViaInvitation :: User -> IncognitoEnabled -> CreatedLinkInvitation -> Maybe ContactId -> CM (Int64, Maybe Profile)
     connectViaInvitation user@User {userId} incognito (CCLink cReq@(CRInvitationUri crData e2e) sLnk_) contactId_ =
-      withInvitationLock "connect" (strEncode cReq) . procCmd $ do
+      withInvitationLock "connect" (strEncode cReq) $ do
         subMode <- chatReadVar subscriptionMode
         -- [incognito] generate profile to send
         incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
@@ -2884,24 +2883,22 @@ processChatCommand' vr = \case
             dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
             withFastStore' (\db -> getConnectionEntityByConnReq db vr user cReqs) >>= \case
               Nothing -> joinNewConn chatV dm
-              Just (RcvDirectMsgConnection conn@Connection {connId, connStatus, contactConnInitiated} _ct_)
+              Just (RcvDirectMsgConnection conn@Connection {connId = dbConnId, connStatus, contactConnInitiated} _ct_)
                 | connStatus == ConnNew && contactConnInitiated -> joinNewConn chatV dm -- own connection link
-                | connStatus == ConnPrepared -> do
-                    -- retrying join after error
-                    pcc <- withFastStore $ \db -> getPendingContactConnection db userId connId
-                    joinPreparedConn (aConnId conn) pcc dm
+                | connStatus == ConnPrepared -> joinPreparedConn dbConnId (aConnId conn) dm -- retrying join after error
               Just ent -> throwCmdError $ "connection is not RcvDirectMsgConnection: " <> show (connEntityInfo ent)
             where
               joinNewConn chatV dm = do
                 connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
                 let ccLink = CCLink cReq $ serverShortLink <$> sLnk_
-                pcc <- withFastStore' $ \db -> createDirectConnection db user connId ccLink contactId_ ConnPrepared (incognitoProfile $> profileToSend) subMode chatV pqSup'
-                joinPreparedConn connId pcc dm
-              joinPreparedConn connId pcc@PendingContactConnection {pccConnId} dm = do
+                createdAt <- liftIO getCurrentTime
+                (dbConnId, _) <- withFastStore' $ \db -> createDirectConnection_ db userId connId ccLink contactId_ ConnPrepared (incognitoProfile $> profileToSend) subMode chatV pqSup' createdAt
+                joinPreparedConn dbConnId connId dm
+              joinPreparedConn dbConnId connId dm = do
                 (sqSecured, _serviceId) <- withAgent $ \a -> joinConnection a (aUserId user) connId True cReq dm pqSup' subMode
                 let newStatus = if sqSecured then ConnSndReady else ConnJoined
-                withFastStore' $ \db -> updateConnectionStatusFromTo db pccConnId ConnPrepared newStatus
-                pure $ CRSentConfirmation user pcc {pccConnStatus = newStatus} incognitoProfile
+                withFastStore' $ \db -> updateConnectionStatusFromTo db dbConnId ConnPrepared newStatus
+                pure (dbConnId, incognitoProfile)
               cReqs =
                 ( CRInvitationUri crData {crScheme = SSSimplex} e2e,
                   CRInvitationUri crData {crScheme = simplexChat} e2e
@@ -3363,7 +3360,7 @@ processChatCommand' vr = \case
           case plan of
             CPContactAddress (CAPContactViaAddress Contact {contactId}) ->
               processChatCommand $ APIConnectContactViaAddress userId incognito contactId
-            _ -> processChatCommand $ APIConnect userId incognito (Just ccLink)
+            _ -> processChatCommand $ APIConnect userId incognito ccLink
       | otherwise = pure $ CRConnectionPlan user ccLink plan
     invitationRequestPlan :: User -> ConnReqInvitation -> Maybe ContactShortLinkData -> CM ConnectionPlan
     invitationRequestPlan user cReq contactSLinkData_ = do
@@ -4480,7 +4477,7 @@ chatCommandP =
       "/_connect contact @" *> (APIConnectPreparedContact <$> A.decimal <*> incognitoOnOffP <*> optional (A.space *> msgContentP)),
       "/_connect group #" *> (APIConnectPreparedGroup <$> A.decimal <*> incognitoOnOffP <*> optional (A.space *> msgContentP)),
       "/_connect " *> (APIAddContact <$> A.decimal <*> incognitoOnOffP),
-      "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <* A.space <*> connLinkP_),
+      "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <* A.space <*> connLinkP),
       "/_set incognito :" *> (APISetConnectionIncognito <$> A.decimal <* A.space <*> onOffP),
       "/_set conn user :" *> (APIChangeConnectionUser <$> A.decimal <* A.space <*> A.decimal),
       ("/connect" <|> "/c") *> (AddContact <$> incognitoP),
@@ -4598,8 +4595,6 @@ chatCommandP =
       cReq <- strP
       sLink_ <- optional (A.space *> strP)
       pure $ CCLink cReq sLink_
-    connLinkP_ =
-      ((Just <$> connLinkP) <|> A.takeTill (== ' ') $> Nothing)
     incognitoP = (A.space *> ("incognito" <|> "i")) $> True <|> pure False
     incognitoOnOffP = (A.space *> "incognito=" *> onOffP) <|> pure False
     imagePrefix = (<>) <$> "data:" <*> ("image/png;base64," <|> "image/jpg;base64,")
