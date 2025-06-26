@@ -880,7 +880,7 @@ acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = 
     Nothing -> do
       incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
       connId <- withAgent $ \a -> prepareConnectionToAccept a True invId pqSup'
-      (ct, conn) <- withStore' $ \db ->c
+      (ct, conn) <- withStore' $ \db ->
         createContactFromRequest db user userContactLinkId connId chatV cReqChatVRange cName profileId cp xContactId incognitoProfile subMode pqSup' False
       pure (ct, conn, incognitoProfile)
     Just contactId -> do

@@ -48,8 +48,8 @@ chatProfileTests = do
     it "deduplicate contact requests with profile change" testDeduplicateContactRequestsProfileChange
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
     -- TODO [short links] fix address deletion:
-    -- TODO   - either alert user that N contacts will be deleted and delete contact request contacts and business chats
-    -- TODO   - or allow to accept contact requests for deleted address
+    -- TODO   - either alert user that N chats will be deleted and delete contact request contacts and business chats
+    -- TODO   - or allow to accept contact requests for deleted address (remove cascade deletes, rework agent)
     xit "delete connection requests when contact link deleted" testDeleteConnectionRequests
     it "connected contact works when contact link deleted" testContactLinkDeletedConnectedContactWorks
     -- TODO [short links] test auto-reply with current version, with connecting client not preparing contact
