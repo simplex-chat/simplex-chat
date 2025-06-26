@@ -581,15 +581,18 @@ final class ChatModel: ObservableObject {
 //        groups[group.groupInfo.id] = group
 //    }
 
-    func addChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+    func addChatItem(_ chatInfo: ChatInfo, _ cItem: ChatItem) {
         // updates membersRequireAttention
-        updateChatInfo(cInfo)
-        // mark chat non deleted
-        if case let .direct(contact) = cInfo, contact.chatDeleted {
+        let cInfo: ChatInfo
+        if case let .direct(contact) = chatInfo, contact.chatDeleted {
+            // mark chat non deleted
             var updatedContact = contact
             updatedContact.chatDeleted = false
-            updateContact(updatedContact)
+            cInfo = .direct(contact: updatedContact)
+        } else {
+            cInfo = chatInfo
         }
+        updateChatInfo(cInfo)
         // update chat list
         if let i = getChatIndex(cInfo.id) {
             // update preview

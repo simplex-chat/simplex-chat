@@ -1372,13 +1372,14 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
                     case .some(.memberSupport(groupMember_: .none)):
                         return nil
                     }
+                } else if groupInfo.nextConnectPrepared {
+                    return nil
                 } else {
                     switch groupInfo.membership.memberStatus {
                     case .memRejected: return ("request to join rejected", nil)
                     case .memGroupDeleted: return ("group is deleted", nil)
                     case .memRemoved: return ("removed from group", nil)
                     case .memLeft: return ("you left", nil)
-                    case .memUnknown: return groupInfo.businessChat == nil ? ("can't send messages", nil) : nil
                     default: return ("can't send messages", nil)
                     }
                 }

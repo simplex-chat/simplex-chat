@@ -712,7 +712,7 @@ struct ComposeView: View {
                     AlertManager.shared.showAlertMsg(title: "Empty message!")
                 }
             } catch {
-                composeState.inProgress = false
+                await MainActor.run { composeState.inProgress = false }
                 logger.error("ChatView.sendMemberContactInvitation error: \(error.localizedDescription)")
                 AlertManager.shared.showAlertMsg(title: "Error sending member contact invitation", message: "Error: \(responseError(error))")
             }
@@ -747,7 +747,7 @@ struct ComposeView: View {
                     clearState()
                 }
             } else {
-                composeState.inProgress = false
+                await MainActor.run { composeState.inProgress = false }
             }
         }
     }
@@ -762,7 +762,7 @@ struct ComposeView: View {
                     clearState()
                 }
             } else {
-                composeState.inProgress = false
+                await MainActor.run { composeState.inProgress = false }
             }
         }
     }
