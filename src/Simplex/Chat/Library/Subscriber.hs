@@ -50,6 +50,7 @@ import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Connections
+import Simplex.Chat.Store.ContactRequest
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Groups
@@ -572,6 +573,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               lift $ setContactNetworkStatus ct' NSConnected
               toView $ CEvtContactConnected user ct' (fmap fromLocalProfile incognitoProfile)
               let createE2EItem = createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ E2EInfo $ Just pqEnc) Nothing
+              -- TODO [short links] get contact request by contactRequestId, check encryption (UserContactRequest.pqSupport)?
               when (directOrUsed ct') $ case (preparedContact ct', contactRequestId' ct') of
                 (Nothing, Nothing) -> do
                   createE2EItem
@@ -1236,22 +1238,35 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       where
         profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> PQSupport -> CM ()
         profileContactRequest invId chatVRange p@Profile {displayName} xContactId_ welcomeMsgId_ requestMsg_ reqPQSup = do
-          uclGLinkInfo <- withStore $ \db -> getUserContactLinkById db userId uclId
-          let (UserContactLink {connLinkContact = CCLink connReq _, shortLinkDataSet, addressSettings}, gLinkInfo_) = uclGLinkInfo
-              AddressSettings {businessAddress, autoAccept} = addressSettings
-              isSimplexTeam = sameConnReqContact connReq adminContactReq
-              v = maxVersion chatVRange
-          case autoAccept of
-            Nothing ->
-              withStore (\db -> createOrUpdateContactRequest db vr user uclId invId chatVRange p xContactId_ reqPQSup) >>= \case
-                CORContact ct -> toView $ CEvtContactRequestAlreadyAccepted user ct
-                CORRequest cReq ct_ newRequest -> do
-                  chat_ <- forM ct_ $ \ct -> do
+          (ucl, gLinkInfo_) <- withStore $ \db -> getUserContactLinkById db userId uclId
+          let v = maxVersion chatVRange
+          case gLinkInfo_ of
+            -- ##### Contact requests (regular and business contacts) #####
+            Nothing -> do
+              let UserContactLink {connLinkContact = CCLink connReq _, shortLinkDataSet, addressSettings} = ucl
+                  AddressSettings {autoAccept} = addressSettings
+                  isSimplexTeam = sameConnReqContact connReq adminContactReq
+              gVar <- asks random
+              withStore (\db -> createOrUpdateContactRequest db gVar vr user uclId ucl isSimplexTeam invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ reqPQSup) >>= \case
+                RSAcceptedRequest _ucr re -> case re of
+                  REContact ct ->
+                    -- TODO [short links] update request msg
+                    toView $ CEvtContactRequestAlreadyAccepted user ct
+                  REBusinessChat gInfo _clientMember ->
+                    -- TODO [short links] update request msg
+                    toView $ CEvtBusinessRequestAlreadyAccepted user gInfo
+                RSCurrentRequest ucr re_ repeatRequest -> case re_ of
+                  Nothing -> toView $ CEvtReceivedContactRequest user ucr Nothing
+                  Just (REContact ct) -> do
                     -- TODO [short links] prevent duplicate items
                     -- update welcome message if changed (send update event to UI) and add updated feature items.
                     -- Do not created e2e item on repeat request
-                    if newRequest
+                    if repeatRequest
                       then do
+                        -- TODO [short links] update request msg
+                        -- ....
+                        acceptOrShow Nothing -- pass item?
+                      else do
                         -- TODO [short links] save sharedMsgId instead of the last Nothing
                         let createItem content = createChatItem user (CDDirectRcv ct) False content Nothing Nothing
                         void $ createItem $ CIRcvDirectE2EEInfo $ E2EInfo $ Just $ CR.pqSupportToEnc $ reqPQSup
@@ -1261,79 +1276,56 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                           aci <- createItem $ CIRcvMsgContent mc
                           unlessM (asks $ coreApi . config) $ toView $ CEvtNewChatItems user [aci]
                           pure aci
-                        let cInfo = DirectChat ct
-                        pure $ AChat SCTDirect $ case aci of
-                          Just (AChatItem SCTDirect dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
-                          _ -> Chat cInfo [] emptyChatStats
-                      else pure $ AChat SCTDirect $ Chat (DirectChat ct) [] emptyChatStats
-                  toView $ CEvtReceivedContactRequest user cReq chat_
-            Just AutoAccept {acceptIncognito}
-              | businessAddress ->
-                  if isSimplexTeam && v < businessChatsVersion
-                    then
-                      maybe (pure Nothing) (\xContactId -> withStore' (\db -> getAcceptedContactByXContactId db vr user xContactId)) xContactId_ >>= \case
-                        Just ct -> toView $ CEvtContactRequestAlreadyAccepted user ct
-                        Nothing -> do
-                          ct <- acceptContactRequestAsync user uclId invId chatVRange p xContactId_ reqPQSup Nothing
-                          -- TODO [short links] add welcome message if welcomeMsgId is present
-                          -- forM_ autoReply $ \arMC ->
-                          --   when (shortLinkDataSet && v >= shortLinkDataVersion) $
-                          --     createInternalChatItem user (CDDirectSnd ct) (CISndMsgContent arMC) Nothing
-                          -- TODO [short links] save sharedMsgId
-                          forM_ requestMsg_ $ \(sharedMsgId, mc) ->
-                            createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent mc) Nothing
-                          toView $ CEvtAcceptingContactRequest user ct
-                    else
-                      maybe (pure Nothing) (\xContactId -> withStore' (\db -> getAcceptedBusinessChatByXContactId db vr user xContactId)) xContactId_ >>= \case
-                        Just gInfo -> toView $ CEvtBusinessRequestAlreadyAccepted user gInfo
-                        Nothing -> do
-                          (gInfo, clientMember) <- acceptBusinessJoinRequestAsync user uclId invId chatVRange p xContactId_
-                          -- TODO [short links] add welcome message if welcomeMsgId is present
-                          -- forM_ autoReply $ \arMC ->
-                          --   when (shortLinkDataSet && v >= shortLinkDataVersion) $
-                          --     createInternalChatItem user (CDGroupSnd gInfo Nothing) (CISndMsgContent arMC) Nothing
-                          -- TODO [short links] save sharedMsgId
-                          forM_ requestMsg_ $ \(sharedMsgId, mc) ->
-                            createInternalChatItem user (CDGroupRcv gInfo Nothing clientMember) (CIRcvMsgContent mc) Nothing
-                          toView $ CEvtAcceptingBusinessRequest user gInfo
-              | otherwise -> case gLinkInfo_ of
-                  Nothing ->
-                    maybe (pure Nothing) (\xContactId -> withStore' (\db -> getAcceptedContactByXContactId db vr user xContactId)) xContactId_ >>= \case
-                      Just ct -> toView $ CEvtContactRequestAlreadyAccepted user ct
-                      Nothing -> do
-                        -- [incognito] generate profile to send, create connection with incognito profile
-                        incognitoProfile <-
-                          if not shortLinkDataSet && acceptIncognito
-                            then Just . NewIncognito <$> liftIO generateRandomProfile
-                            else pure Nothing
-                        ct <- acceptContactRequestAsync user uclId invId chatVRange p xContactId_ reqPQSup incognitoProfile
-                        -- TODO [short links] add welcome message if welcomeMsgId is present
-                        -- forM_ autoReply $ \arMC ->
-                        --   when (shortLinkDataSet && v >= shortLinkDataVersion) $
-                        --     createInternalChatItem user (CDDirectSnd ct) (CISndMsgContent arMC) Nothing
-                        -- TODO [short links] save sharedMsgId
-                        forM_ requestMsg_ $ \(sharedMsgId, mc) ->
-                          createInternalChatItem user (CDDirectRcv ct) (CIRcvMsgContent mc) Nothing
-                        toView $ CEvtAcceptingContactRequest user ct
-                  Just gli@GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
-                    gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
-                    acceptMember_ <- asks $ acceptMember . chatHooks . config
-                    maybe (pure $ Right (GAAccepted, gLinkMemRole)) (\am -> liftIO $ am gInfo gli p) acceptMember_ >>= \case
-                      Right (acceptance, useRole)
-                        | v < groupFastLinkJoinVersion ->
-                            messageError "processUserContactRequest: chat version range incompatible for accepting group join request"
-                        | otherwise -> do
-                            let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
-                            mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p acceptance useRole profileMode
-                            (gInfo', mem', scopeInfo) <- mkGroupChatScope gInfo mem
-                            createInternalChatItem user (CDGroupRcv gInfo' scopeInfo mem') (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
-                            toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'
-                      Left rjctReason
-                        | v < groupJoinRejectVersion ->
-                            messageWarning $ "processUserContactRequest (group " <> groupName' gInfo <> "): joining of " <> displayName <> " is blocked"
-                        | otherwise -> do
-                            mem <- acceptGroupJoinSendRejectAsync user uclId gInfo invId chatVRange p rjctReason
-                            toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
+                        acceptOrShow aci
+                    where
+                      acceptOrShow aci_ =
+                        case autoAccept of
+                          Nothing -> do
+                            let cInfo = DirectChat ct
+                                chat = AChat SCTDirect $ case aci_ of
+                                    Just (AChatItem SCTDirect dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
+                                    _ -> Chat cInfo [] emptyChatStats
+                            toView $ CEvtReceivedContactRequest user ucr (Just chat)
+                          Just AutoAccept {acceptIncognito} -> do
+                            incognitoProfile <-
+                              if not shortLinkDataSet && acceptIncognito
+                                then Just . NewIncognito <$> liftIO generateRandomProfile
+                                else pure Nothing
+                            ct' <- acceptContactRequestAsync user uclId ct ucr incognitoProfile
+                            -- chat in event?
+                            toView $ CEvtAcceptingContactRequest user ct'
+                  Just (REBusinessChat gInfo clientMember) -> do
+                    -- TODO [short links] prevent duplicate items (use repeatRequest like for REContact)
+                    (_gInfo', _clientMember') <- acceptBusinessJoinRequestAsync user uclId gInfo clientMember ucr
+                    -- TODO [short links] add welcome message if welcomeMsgId is present
+                    -- forM_ autoReply $ \arMC ->
+                    --   when (shortLinkDataSet && v >= shortLinkDataVersion) $
+                    --     createInternalChatItem user (CDGroupSnd gInfo Nothing) (CISndMsgContent arMC) Nothing
+                    -- TODO [short links] save sharedMsgId
+                    forM_ requestMsg_ $ \(sharedMsgId, mc) ->
+                      createInternalChatItem user (CDGroupRcv gInfo Nothing clientMember) (CIRcvMsgContent mc) Nothing
+                    toView $ CEvtAcceptingBusinessRequest user gInfo
+            -- ##### Group link join requests (don't create contact requests) #####
+            Just gli@GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
+              -- TODO [short links] deduplicate request by xContactId?
+              gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
+              acceptMember_ <- asks $ acceptMember . chatHooks . config
+              maybe (pure $ Right (GAAccepted, gLinkMemRole)) (\am -> liftIO $ am gInfo gli p) acceptMember_ >>= \case
+                Right (acceptance, useRole)
+                  | v < groupFastLinkJoinVersion ->
+                      messageError "processUserContactRequest: chat version range incompatible for accepting group join request"
+                  | otherwise -> do
+                      let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
+                      mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p xContactId_ acceptance useRole profileMode
+                      (gInfo', mem', scopeInfo) <- mkGroupChatScope gInfo mem
+                      createInternalChatItem user (CDGroupRcv gInfo' scopeInfo mem') (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
+                      toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'
+                Left rjctReason
+                  | v < groupJoinRejectVersion ->
+                      messageWarning $ "processUserContactRequest (group " <> groupName' gInfo <> "): joining of " <> displayName <> " is blocked"
+                  | otherwise -> do
+                      mem <- acceptGroupJoinSendRejectAsync user uclId gInfo invId chatVRange p xContactId_ rjctReason
+                      toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
 
     memberCanSend :: GroupMember -> Maybe MsgScope -> CM () -> CM ()
     memberCanSend m@GroupMember {memberRole} msgScope a = case msgScope of

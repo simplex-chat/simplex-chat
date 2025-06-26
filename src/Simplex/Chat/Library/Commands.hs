@@ -1157,10 +1157,10 @@ processChatCommand' vr = \case
     when (shortLinkDataSet && incognito) $ throwCmdError "incognito not allowed for address with short link data"
     withUserContactLock "acceptContact" uclId $ do
       cReq <- withFastStore $ \db -> getContactRequest db user connReqId
+      -- TODO [short links] accept async, move to continuation on JOIN?
       (ct, conn@Connection {connId}, sqSecured) <- acceptContactRequest user cReq incognito
       let contactUsed = isNothing gLinkInfo_
       ct' <- withStore' $ \db -> do
-        deleteContactRequestRec db user cReq
         updateContactAccepted db user ct contactUsed
         conn' <-
           if sqSecured
@@ -1808,6 +1808,7 @@ processChatCommand' vr = \case
             pure $ CRStartedConnectionToContact user ct' customUserProfile
           cr -> pure cr
       Just PreparedContact {connLinkToConnect = ACCL SCMContact ccLink, welcomeSharedMsgId} -> do
+        -- TODO [short links] reuse welcomeSharedMsgId
         msg_ <- forM msgContent_ $ \mc -> (,mc) <$> getSharedMsgId
         connectViaContact user incognito ccLink welcomeSharedMsgId msg_ (Just $ ACCGContact contactId) >>= \case
           CRSentInvitation {customUserProfile} -> do
@@ -1823,7 +1824,7 @@ processChatCommand' vr = \case
     case preparedGroup gInfo of
       Nothing -> throwCmdError "group doesn't have link to connect"
       Just PreparedGroup {connLinkToConnect} ->
-        -- TODO [short links] store request message with shared message ID
+        -- TODO [short links] store request message with shared message ID (for business chat)
         connectViaContact user incognito connLinkToConnect Nothing Nothing (Just $ ACCGGroup gInfo (groupMemberId' hostMember)) >>= \case
           CRSentInvitation {customUserProfile} -> do
             -- get updated group info (connLinkStartedConnection and incognito membership)

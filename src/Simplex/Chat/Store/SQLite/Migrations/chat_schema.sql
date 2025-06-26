@@ -181,6 +181,7 @@ CREATE TABLE group_members(
   support_chat_items_member_attention INTEGER NOT NULL DEFAULT 0,
   support_chat_items_mentions INTEGER NOT NULL DEFAULT 0,
   support_chat_last_msg_from_member_ts TEXT,
+  member_xcontact_id BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -355,6 +356,9 @@ CREATE TABLE contact_requests(
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   pq_support INTEGER NOT NULL DEFAULT 0,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
+  business_group_id INTEGER REFERENCES groups(group_id) ON DELETE CASCADE,
+  welcome_shared_msg_id BLOB,
+  request_shared_msg_id BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON UPDATE CASCADE
@@ -1060,3 +1064,6 @@ CREATE INDEX idx_chat_items_group_scope_item_status ON chat_items(
   item_ts
 );
 CREATE INDEX idx_contacts_contact_request_id ON contacts(contact_request_id);
+CREATE INDEX idx_contact_requests_business_group_id ON contact_requests(
+  business_group_id
+);

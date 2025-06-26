@@ -21,6 +21,7 @@
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 {-# HLINT ignore "Use newtype instead of data" #-}
 
@@ -38,7 +39,7 @@ import Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Lazy as LB
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.Maybe (isJust)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -344,6 +345,7 @@ data UserContactRequest = UserContactRequest
   { contactRequestId :: Int64,
     agentInvitationId :: AgentInvId,
     contactId_ :: Maybe ContactId,
+    businessGroupId_ :: Maybe GroupId,
     userContactLinkId :: Int64,
     agentContactConnId :: AgentConnId, -- connection id of user contact
     cReqChatVRange :: VersionRangeChat,
@@ -353,7 +355,9 @@ data UserContactRequest = UserContactRequest
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     xContactId :: Maybe XContactId,
-    pqSupport :: PQSupport
+    pqSupport :: PQSupport,
+    welcomeSharedMsgId :: Maybe SharedMsgId,
+    requestSharedMsgId :: Maybe SharedMsgId
   }
   deriving (Eq, Show)
 
@@ -393,15 +397,15 @@ instance ToJSON ConnReqUriHash where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
--- TODO [short links] this type is most likely incorrect, as it does not communicate when contact exists as opposed to when it is
--- just created, as was the original intention.
--- It also has no information when group exists on repeat requests.
--- Most likely, whatever information from request is needed should have been added to CORContact (or inside Contact),
--- instead of passing Maybe contact in request.
-data ChatOrRequest
-  = CORContact Contact
-  -- Contact is Maybe for backward compatibility with legacy requests, all new requests are created with contact
-  | CORRequest UserContactRequest (Maybe Contact) Bool
+data RequestEntity
+  = REContact Contact
+  | REBusinessChat GroupInfo GroupMember
+
+type RepeatRequest = Bool
+
+data RequestStage
+  = RSAcceptedRequest (Maybe UserContactRequest) RequestEntity -- Optional request is for legacy deleted requests
+  | RSCurrentRequest UserContactRequest (Maybe RequestEntity) RepeatRequest -- Optional entity is for legacy requests without entity
 
 type UserName = Text
 
@@ -633,6 +637,22 @@ redactedMemberProfile Profile {displayName, fullName, image} =
   Profile {displayName, fullName, image, contactLink = Nothing, preferences = Nothing}
 
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
+
+profileToSendOnAccept :: User -> Maybe IncognitoProfile -> Bool -> Profile
+profileToSendOnAccept user ip = userProfileToSend user (getIncognitoProfile <$> ip) Nothing
+  where
+    getIncognitoProfile = \case
+      NewIncognito p -> p
+      ExistingIncognito lp -> fromLocalProfile lp
+
+userProfileToSend :: User -> Maybe Profile -> Maybe Contact -> Bool -> Profile
+userProfileToSend user@User {profile = p} incognitoProfile ct inGroup = do
+  let p' = fromMaybe (fromLocalProfile p) incognitoProfile
+  if inGroup
+    then redactedMemberProfile p'
+    else
+      let userPrefs = maybe (preferences' user) (const Nothing) incognitoProfile
+       in (p' :: Profile) {preferences = Just . toChatPrefs $ mergePreferences (userPreferences <$> ct) userPrefs}
 
 type LocalAlias = Text
 

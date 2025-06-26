@@ -57,9 +57,6 @@ module Simplex.Chat.Store.Direct
     incQuotaErrCounter,
     setQuotaErrCounter,
     getUserContacts,
-    createOrUpdateContactRequest,
-    getAcceptedContactByXContactId,
-    getAcceptedBusinessChatByXContactId,
     getUserContactLinkIdByCReq,
     getContactRequest,
     getContactRequestIdByName,
@@ -67,7 +64,6 @@ module Simplex.Chat.Store.Direct
     createContactFromRequest,
     createAcceptedContactConn,
     createAcceptedContact,
-    deleteContactRequestRec,
     updateContactAccepted,
     getUserByContactRequestId,
     getPendingContactConnections,
@@ -83,6 +79,7 @@ module Simplex.Chat.Store.Direct
     setContactUIThemes,
     setContactChatDeleted,
     getDirectChatTags,
+    addDirectChatTags,
     updateDirectChatTags,
     setDirectChatTTL,
     getDirectChatTTL,
@@ -104,14 +101,12 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (ACreatedConnLink (..), ConnId, CreatedConnLink (..), InvitationId, UserId, connMode)
+import Simplex.Messaging.Agent.Protocol (ACreatedConnLink (..), ConnId, CreatedConnLink (..), UserId, connMode)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
-import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
+import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Ratchet (PQSupport)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
-import Simplex.Messaging.Util ((<$$>))
-import Simplex.Messaging.Version
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
@@ -679,179 +674,6 @@ getUserContacts db vr user@User {userId} = do
   contacts <- rights <$> mapM (runExceptT . getContact db vr user) contactIds
   pure $ filter (\Contact {activeConn} -> isJust activeConn) contacts
 
-createOrUpdateContactRequest :: DB.Connection -> VersionRangeChat -> User -> Int64 -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> PQSupport -> ExceptT StoreError IO ChatOrRequest
-createOrUpdateContactRequest
-  db
-  vr
-  user@User {userId}
-  uclId
-  invId
-  (VersionRange minV maxV)
-  Profile {displayName, fullName, image, contactLink, preferences}
-  xContactId_
-  pqSup =
-    -- this doesn't return a newly created contact request with contact,
-    -- because we only set xContactId after contact is accepted
-    -- (this allows older clients to update contact request by reusing xContactId)
-    liftIO (maybeM (getAcceptedContactByXContactId db vr user) xContactId_) >>= \case
-      Just ct -> pure $ CORContact ct
-      Nothing -> do
-        (ucr, ct_, newRequest) <- createOrUpdateRequest
-        pure $ CORRequest ucr ct_ newRequest
-  where
-    maybeM = maybe (pure Nothing)
-    createOrUpdateRequest :: ExceptT StoreError IO (UserContactRequest, Maybe Contact, Bool)
-    createOrUpdateRequest = do
-      (cReqId, newRequest) <-
-        ExceptT $
-          maybeM getContactRequestByXContactId xContactId_ >>= \case
-            Nothing -> (,True) <$$> createContactRequest
-            Just cr@UserContactRequest {contactRequestId} -> updateContactRequest cr $> Right (contactRequestId, False)
-      ucr@UserContactRequest {contactId_} <- getContactRequest db user cReqId
-      ct_ <- forM contactId_ $ \contactId -> getContact db vr user contactId
-      pure (ucr, ct_, newRequest)
-    createContactRequest :: IO (Either StoreError Int64)
-    createContactRequest = do
-      currentTs <- getCurrentTime
-      withLocalDisplayName db userId displayName (fmap Right . createContactRequest_ currentTs)
-      where
-        createContactRequest_ currentTs ldn = do
-          DB.execute
-            db
-            "INSERT INTO contact_profiles (display_name, full_name, image, contact_link, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-            (displayName, fullName, image, contactLink, userId, preferences, currentTs, currentTs)
-          profileId <- insertedRowId db
-          DB.execute
-            db
-            [sql|
-              INSERT INTO contact_requests
-                (user_contact_link_id, agent_invitation_id, peer_chat_min_version, peer_chat_max_version, contact_profile_id, local_display_name, user_id,
-                 created_at, updated_at, xcontact_id, pq_support)
-              VALUES (?,?,?,?,?,?,?,?,?,?,?)
-            |]
-            ( (uclId, Binary invId, minV, maxV, profileId, ldn, userId)
-                :. (currentTs, currentTs, xContactId_, pqSup)
-            )
-          contactRequestId <- insertedRowId db
-          DB.execute
-            db
-            "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, created_at, updated_at, chat_ts, contact_used, contact_request_id) VALUES (?,?,?,?,?,?,?,?)"
-            (profileId, ldn, userId, currentTs, currentTs, currentTs, BI True, contactRequestId)
-          contactId <- insertedRowId db
-          DB.execute
-            db
-            "UPDATE contact_requests SET contact_id = ? WHERE contact_request_id = ?"
-            (contactId, contactRequestId)
-          pure contactRequestId
-    getContactRequestByXContactId :: XContactId -> IO (Maybe UserContactRequest)
-    getContactRequestByXContactId xContactId =
-      maybeFirstRow toContactRequest $
-        DB.query
-          db
-          [sql|
-            SELECT
-              cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.contact_id, cr.user_contact_link_id,
-              c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, cr.pq_support, p.preferences, cr.created_at, cr.updated_at,
-              cr.peer_chat_min_version, cr.peer_chat_max_version
-            FROM contact_requests cr
-            JOIN connections c USING (user_contact_link_id)
-            JOIN contact_profiles p USING (contact_profile_id)
-            WHERE cr.user_id = ?
-              AND cr.xcontact_id = ?
-            LIMIT 1
-          |]
-          (userId, xContactId)
-    updateContactRequest :: UserContactRequest -> IO (Either StoreError ())
-    updateContactRequest UserContactRequest {contactRequestId = cReqId, contactId_, localDisplayName = oldLdn, profile = Profile {displayName = oldDisplayName}} = do
-      currentTs <- liftIO getCurrentTime
-      updateProfile currentTs
-      if displayName == oldDisplayName
-        then
-          Right
-            <$> DB.execute
-              db
-              [sql|
-                UPDATE contact_requests
-                SET agent_invitation_id = ?, pq_support = ?, peer_chat_min_version = ?, peer_chat_max_version = ?, updated_at = ?
-                WHERE user_id = ? AND contact_request_id = ?
-              |]
-              (Binary invId, pqSup, minV, maxV, currentTs, userId, cReqId)
-        else withLocalDisplayName db userId displayName $ \ldn ->
-          Right <$> do
-            DB.execute
-              db
-              [sql|
-                UPDATE contact_requests
-                SET agent_invitation_id = ?, pq_support = ?, peer_chat_min_version = ?, peer_chat_max_version = ?, local_display_name = ?, updated_at = ?
-                WHERE user_id = ? AND contact_request_id = ?
-              |]
-              (Binary invId, pqSup, minV, maxV, ldn, currentTs, userId, cReqId)
-            forM_ contactId_ $ \contactId ->
-              DB.execute
-                db
-                [sql|
-                  UPDATE contacts
-                  SET local_display_name = ?, updated_at = ?
-                  WHERE contact_id = ?
-                |]
-                (ldn, currentTs, contactId)
-            safeDeleteLDN db user oldLdn
-      where
-        updateProfile currentTs =
-          DB.execute
-            db
-            [sql|
-              UPDATE contact_profiles
-              SET display_name = ?,
-                  full_name = ?,
-                  image = ?,
-                  contact_link = ?,
-                  updated_at = ?
-              WHERE contact_profile_id IN (
-                SELECT contact_profile_id
-                FROM contact_requests
-                WHERE user_id = ?
-                  AND contact_request_id = ?
-              )
-            |]
-            (displayName, fullName, image, contactLink, currentTs, userId, cReqId)
-
-getAcceptedContactByXContactId :: DB.Connection -> VersionRangeChat -> User -> XContactId -> IO (Maybe Contact)
-getAcceptedContactByXContactId db vr user@User {userId} xContactId = do
-  ct_ <-
-    maybeFirstRow (toContact vr user []) $
-      DB.query
-        db
-        [sql|
-          SELECT
-            -- Contact
-            ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-            cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.contact_request_id,
-            ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
-            -- Connection
-            c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-            c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-            c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
-          FROM contacts ct
-          JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-          LEFT JOIN connections c ON c.contact_id = ct.contact_id
-          WHERE ct.user_id = ? AND ct.xcontact_id = ? AND ct.deleted = 0
-          ORDER BY c.created_at DESC
-          LIMIT 1
-        |]
-        (userId, xContactId)
-  mapM (addDirectChatTags db) ct_
-
-getAcceptedBusinessChatByXContactId :: DB.Connection -> VersionRangeChat -> User -> XContactId -> IO (Maybe GroupInfo)
-getAcceptedBusinessChatByXContactId db vr User {userId, userContactId} xContactId = do
-  g_ <-
-    maybeFirstRow (toGroupInfo vr userContactId []) $
-      DB.query
-        db
-        (groupInfoQuery <> " WHERE g.business_xcontact_id = ? AND g.user_id = ? AND mu.contact_id = ?")
-        (xContactId, userId, userContactId)
-  mapM (addGroupChatTags db) g_
-
 getUserContactLinkIdByCReq :: DB.Connection -> Int64 -> ExceptT StoreError IO Int64
 getUserContactLinkIdByCReq db contactRequestId =
   ExceptT . firstRow fromOnly (SEContactRequestNotFound contactRequestId) $
@@ -864,8 +686,11 @@ getContactRequest db User {userId} contactRequestId =
       db
       [sql|
         SELECT
-          cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.contact_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, cr.pq_support, p.preferences, cr.created_at, cr.updated_at,
+          cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
+          cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
+          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
+          cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
+          cr.created_at, cr.updated_at,
           cr.peer_chat_min_version, cr.peer_chat_max_version
         FROM contact_requests cr
         JOIN connections c USING (user_contact_link_id)
@@ -982,10 +807,6 @@ createAcceptedContact
     conn <- liftIO $ createAcceptedContactConn db user uclId contactId agentConnId connChatVersion cReqChatVRange pqSup incognitoProfile subMode currentTs
     ct <- getContact db vr user contactId
     pure (ct, conn)
-
-deleteContactRequestRec :: DB.Connection -> User -> UserContactRequest -> IO ()
-deleteContactRequestRec db User {userId} UserContactRequest {contactRequestId} =
-  DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
 updateContactAccepted :: DB.Connection -> User -> Contact -> Bool -> IO ()
 updateContactAccepted db User {userId} Contact {contactId} contactUsed =
