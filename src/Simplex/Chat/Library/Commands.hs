@@ -1157,7 +1157,6 @@ processChatCommand' vr = \case
     when (shortLinkDataSet && incognito) $ throwCmdError "incognito not allowed for address with short link data"
     withUserContactLock "acceptContact" uclId $ do
       cReq <- withFastStore $ \db -> getContactRequest db user connReqId
-      -- TODO [short links] accept async, move to continuation on JOIN?
       (ct, conn@Connection {connId}, sqSecured) <- acceptContactRequest user cReq incognito
       let contactUsed = isNothing gLinkInfo_
       ct' <- withStore' $ \db -> do

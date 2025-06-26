@@ -1533,9 +1533,10 @@ func acceptContactRequest(incognito: Bool, contactRequestId: Int64) async {
             NetworkModel.shared.setContactNetworkStatus(contact, .connected)
         }
         if contact.sndReady {
+            let chatId = chat.id
             DispatchQueue.main.async {
                 dismissAllSheets(animated: true) {
-                    ItemsModel.shared.loadOpenChat(chat.id)
+                    ItemsModel.shared.loadOpenChat(chatId)
                 }
             }
         }

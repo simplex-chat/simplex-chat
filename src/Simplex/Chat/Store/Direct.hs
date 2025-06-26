@@ -64,7 +64,6 @@ module Simplex.Chat.Store.Direct
     deleteContactRequest,
     createContactFromRequest,
     createAcceptedContactConn,
-    createAcceptedContact,
     updateContactAccepted,
     getUserByContactRequestId,
     getPendingContactConnections,
@@ -782,37 +781,6 @@ createAcceptedContactConn db User {userId} uclId contactId agentConnId connChatV
     NewIncognito p -> createIncognitoProfile_ db userId currentTs p
     ExistingIncognito LocalProfile {profileId = pId} -> pure pId
   createConnection_ db userId ConnContact (Just contactId) agentConnId ConnNew connChatVersion cReqChatVRange Nothing (Just uclId) customUserProfileId 0 currentTs subMode pqSup
-
-createAcceptedContact :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ConnId -> VersionChat -> VersionRangeChat -> Profile -> Maybe XContactId -> PQSupport -> Maybe IncognitoProfile -> SubscriptionMode -> ExceptT StoreError IO (Contact, Connection)
-createAcceptedContact
-  db
-  vr
-  user@User {userId}
-  uclId
-  agentConnId
-  connChatVersion
-  cReqChatVRange
-  Profile {displayName, fullName, image, contactLink, preferences}
-  xContactId
-  pqSup
-  incognitoProfile
-  subMode = do
-    currentTs <- liftIO getCurrentTime
-    let userPreferences = fromMaybe emptyChatPrefs $ incognitoProfile >> preferences
-    contactId <- ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
-      DB.execute
-        db
-        "INSERT INTO contact_profiles (display_name, full_name, image, contact_link, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-        (displayName, fullName, image, contactLink, userId, preferences, currentTs, currentTs)
-      profileId <- insertedRowId db
-      DB.execute
-        db
-        "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, user_preferences, created_at, updated_at, chat_ts, xcontact_id, contact_used) VALUES (?,?,?,?,?,?,?,?,?,?)"
-        (userId, ldn, profileId, BI True, userPreferences, currentTs, currentTs, currentTs, xContactId, BI True)
-      Right <$> insertedRowId db
-    conn <- liftIO $ createAcceptedContactConn db user uclId contactId agentConnId connChatVersion cReqChatVRange pqSup incognitoProfile subMode currentTs
-    ct <- getContact db vr user contactId
-    pure (ct, conn)
 
 updateContactAccepted :: DB.Connection -> User -> Contact -> Bool -> IO ()
 updateContactAccepted db User {userId} Contact {contactId} contactUsed =
