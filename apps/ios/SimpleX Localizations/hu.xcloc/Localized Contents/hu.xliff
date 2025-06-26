@@ -1067,7 +1067,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Apply to" xml:space="preserve" approved="no">
         <source>Apply to</source>
-        <target state="translated">Alkalmazza erre</target>
+        <target state="translated">Használat ehhez</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Archive" xml:space="preserve">
