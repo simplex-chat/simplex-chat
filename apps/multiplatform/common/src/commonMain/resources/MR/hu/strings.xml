@@ -1767,7 +1767,7 @@
     <string name="wallpaper_preview_hello_alice">Jó napot!</string>
     <string name="wallpaper_preview_hello_bob">Jó reggelt!</string>
     <string name="wallpaper_advanced_settings">Speciális beállítások</string>
-    <string name="chat_theme_apply_to_mode">Alkalmazza erre</string>
+    <string name="chat_theme_apply_to_mode">Használat ehhez</string>
     <string name="settings_section_title_chat_colors">Csevegés színei</string>
     <string name="settings_section_title_chat_theme">Csevegés témája</string>
     <string name="wallpaper_scale_fill">Kitöltés</string>
