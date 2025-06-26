@@ -670,7 +670,7 @@ receiveFileEvt' user ft userApprovedRelays rcvInline_ filePath_ = do
 rctFileCancelled :: ChatError -> Bool
 rctFileCancelled = \case
   ChatErrorAgent (SMP _ SMP.AUTH) _ -> True
-  ChatErrorAgent (CONN DUPLICATE) _ -> True
+  ChatErrorAgent (CONN DUPLICATE _) _ -> True
   _ -> False
 
 acceptFileReceive :: User -> RcvFileTransfer -> Bool -> Maybe Bool -> Maybe FilePath -> CM AChatItem
