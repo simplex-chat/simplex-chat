@@ -8185,12 +8185,12 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
       </trans-unit>
       <trans-unit id="Toggle chat list:" xml:space="preserve" approved="no">
         <source>Toggle chat list:</source>
-        <target state="translated">Csevegési lista ki/be:</target>
+        <target state="translated">Csevegési lista be/ki:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Toggle incognito when connecting." xml:space="preserve" approved="no">
         <source>Toggle incognito when connecting.</source>
-        <target state="translated">Inkognitó profil használata kapcsolódáskor ki/be.</target>
+        <target state="translated">Inkognitó profil használata kapcsolódáskor be/ki.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Token status: %@." xml:space="preserve">
