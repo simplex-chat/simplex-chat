@@ -573,7 +573,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               lift $ setContactNetworkStatus ct' NSConnected
               toView $ CEvtContactConnected user ct' (fmap fromLocalProfile incognitoProfile)
               let createE2EItem = createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ E2EInfo $ Just pqEnc) Nothing
-              -- TODO get contact request by contactRequestId, check encryption (UserContactRequest.pqSupport)?
+              -- TODO [short links] get contact request by contactRequestId, check encryption (UserContactRequest.pqSupport)?
               when (directOrUsed ct') $ case (preparedContact ct', contactRequestId' ct') of
                 (Nothing, Nothing) -> do
                   createE2EItem
@@ -1250,10 +1250,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               withStore (\db -> createOrUpdateContactRequest db gVar vr user uclId ucl isSimplexTeam invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ reqPQSup) >>= \case
                 RSAcceptedRequest _ucr re -> case re of
                   REContact ct ->
-                    -- TODO update request msg
+                    -- TODO [short links] update request msg
                     toView $ CEvtContactRequestAlreadyAccepted user ct
                   REBusinessChat gInfo _clientMember ->
-                    -- TODO update request msg
+                    -- TODO [short links] update request msg
                     toView $ CEvtBusinessRequestAlreadyAccepted user gInfo
                 RSCurrentRequest ucr re_ repeatRequest -> case re_ of
                   Nothing -> toView $ CEvtReceivedContactRequest user ucr Nothing
@@ -1263,7 +1263,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     -- Do not created e2e item on repeat request
                     if repeatRequest
                       then do
-                        -- TODO update request msg
+                        -- TODO [short links] update request msg
                         -- ....
                         acceptOrShow Nothing -- pass item?
                       else do
@@ -1305,9 +1305,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     forM_ requestMsg_ $ \(sharedMsgId, mc) ->
                       createInternalChatItem user (CDGroupRcv gInfo Nothing clientMember) (CIRcvMsgContent mc) Nothing
                     toView $ CEvtAcceptingBusinessRequest user gInfo
-            -- ##### Group link join requests #####
+            -- ##### Group link join requests (don't create contact requests) #####
             Just gli@GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
-              -- TODO deduplicate request by xContactId?
+              -- TODO [short links] deduplicate request by xContactId?
               gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
               acceptMember_ <- asks $ acceptMember . chatHooks . config
               maybe (pure $ Right (GAAccepted, gLinkMemRole)) (\am -> liftIO $ am gInfo gli p) acceptMember_ >>= \case

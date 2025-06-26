@@ -998,7 +998,7 @@ acceptBusinessJoinRequestAsync
   UserContactRequest {agentInvitationId = AgentInvId cReqInvId, cReqChatVRange, xContactId} = do
     vr <- chatVersionRange
     let userProfile@Profile {displayName, preferences} = profileToSendOnAccept user Nothing True
-        -- TODO how to take groupPreferences from group info?
+        -- TODO [short links] take groupPreferences from group info
         groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
         msg =
           XGrpLinkInv $
@@ -1024,7 +1024,7 @@ acceptBusinessJoinRequestAsync
     -- TODO [short links] move to profileContactRequest?
     createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
     createGroupFeatureItems user cd CISndGroupFeature gInfo
-    -- TODO get updated? (currently not used)
+    -- TODO [short links] get updated business chat group and member? (currently not used)
     pure (gInfo, clientMember)
 
 businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile

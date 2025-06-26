@@ -1157,7 +1157,7 @@ processChatCommand' vr = \case
     when (shortLinkDataSet && incognito) $ throwCmdError "incognito not allowed for address with short link data"
     withUserContactLock "acceptContact" uclId $ do
       cReq <- withFastStore $ \db -> getContactRequest db user connReqId
-      -- TODO accept async, move to continuation on JOIN?
+      -- TODO [short links] accept async, move to continuation on JOIN?
       (ct, conn@Connection {connId}, sqSecured) <- acceptContactRequest user cReq incognito
       let contactUsed = isNothing gLinkInfo_
       ct' <- withStore' $ \db -> do
@@ -1808,7 +1808,7 @@ processChatCommand' vr = \case
             pure $ CRStartedConnectionToContact user ct' customUserProfile
           cr -> pure cr
       Just PreparedContact {connLinkToConnect = ACCL SCMContact ccLink, welcomeSharedMsgId} -> do
-        -- TODO reuse welcomeSharedMsgId
+        -- TODO [short links] reuse welcomeSharedMsgId
         msg_ <- forM msgContent_ $ \mc -> (,mc) <$> getSharedMsgId
         connectViaContact user incognito ccLink welcomeSharedMsgId msg_ (Just $ ACCGContact contactId) >>= \case
           CRSentInvitation {customUserProfile} -> do
