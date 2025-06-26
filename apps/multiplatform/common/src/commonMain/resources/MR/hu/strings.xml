@@ -1396,7 +1396,7 @@
     <string name="v4_2_auto_accept_contact_requests_desc">Nem kötelező üdvözlőüzenettel.</string>
     <string name="unknown_database_error_with_info">Ismeretlen adatbázishiba: %s</string>
     <string name="you_can_hide_or_mute_user_profile">Elrejtheti vagy lenémíthatja a felhasználóprofiljait – koppintson (vagy számítógép-alkalmazásban kattintson) hosszan a profilra a felugró menühöz.</string>
-    <string name="v5_3_simpler_incognito_mode_descr">Inkognitó profil használata kapcsolódáskor ki/be.</string>
+    <string name="v5_3_simpler_incognito_mode_descr">Inkognitó profil használata kapcsolódáskor be/ki.</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Megoszthat egy hivatkozást vagy QR-kódot – így bárki csatlakozhat a csoporthoz. Ha a csoportot Ön később törli, akkor nem fogja elveszíteni annak tagjait.</string>
     <string name="you_joined_this_group">Ön csatlakozott ehhez a csoporthoz</string>
     <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Ez a saját hivatkozása a(z) <b>%1$s</b> nevű csoporthoz!]]></string>
@@ -2002,7 +2002,7 @@
     <string name="network_option_tcp_connection">TCP-kapcsolat</string>
     <string name="chat_database_exported_save">Az exportált archívumot elmentheti.</string>
     <string name="reset_all_hints">Tippek visszaállítása</string>
-    <string name="one_hand_ui_card_title">Csevegési lista ki/be:</string>
+    <string name="one_hand_ui_card_title">Csevegési lista be/ki:</string>
     <string name="one_hand_ui_change_instruction">Ezt a „Megjelenés” menüben módosíthatja.</string>
     <string name="v6_0_new_media_options">Új médiabeállítások</string>
     <string name="v6_0_chat_list_media">Lejátszás a csevegési listából.</string>
