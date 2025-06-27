@@ -3662,8 +3662,9 @@ testShortLinkAddressChangeAutoReply =
       alice <# "bob> hello"
       alice <## "bob (Bob): accepting contact request..."
       alice <## "bob (Bob): you can send messages to contact"
-      alice <# "@bob welcome!" -- auto reply
-      bob <# "alice> welcome!"
+      -- welcome messages, not sent as events
+      -- alice <# "@bob welcome!"
+      -- bob <# "alice> welcome!"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
