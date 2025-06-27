@@ -19,6 +19,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.newchat.IncognitoOptionImage
 import chat.simplex.common.views.usersettings.IncognitoView
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
@@ -166,12 +167,7 @@ fun ComposeContextProfilePickerView(
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically
     ) {
-      Icon(
-        painterResource(MR.images.ic_theater_comedy_filled),
-        contentDescription = stringResource(MR.strings.incognito),
-        Modifier.size(32.dp),
-        tint = Indigo,
-      )
+      IncognitoOptionImage()
       TextIconSpaced(false)
       Text(
         stringResource(MR.strings.incognito),
@@ -261,12 +257,11 @@ fun ComposeContextProfilePickerView(
   fun CurrentSelection() {
     Column(
       Modifier
-        .heightIn(max = MAX_USER_PICKER_HEIGHT)
         .background(MaterialTheme.colors.surface),
     ) {
       Text(
         generalGetString(MR.strings.context_user_picker_your_profile),
-        Modifier.padding(horizontal = DEFAULT_PADDING_HALF).padding(top = 4.dp),
+        Modifier.padding(horizontal = 14.dp).padding(top = 8.dp),
         color = MaterialTheme.colors.secondary
       )
 
