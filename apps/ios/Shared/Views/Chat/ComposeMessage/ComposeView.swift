@@ -707,6 +707,7 @@ struct ComposeView: View {
                     await MainActor.run {
                         self.chatModel.updateContact(contact)
                         clearState()
+                        NetworkModel.shared.setContactNetworkStatus(contact, .connected)
                     }
                 } else {
                     AlertManager.shared.showAlertMsg(title: "Empty message!")
@@ -744,6 +745,7 @@ struct ComposeView: View {
             if let contact = await apiConnectPreparedContact(contactId: chat.chatInfo.apiId, incognito: incognitoGroupDefault.get(), msg: mc) {
                 await MainActor.run {
                     self.chatModel.updateContact(contact)
+                    NetworkModel.shared.setContactNetworkStatus(contact, .connected)
                     clearState()
                 }
             } else {

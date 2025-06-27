@@ -455,7 +455,7 @@ struct ChatPreviewView: View {
         let size = dynamicSize(userFont).incognitoSize
         switch chat.chatInfo {
         case let .direct(contact):
-            if contact.active && contact.activeConn != nil {
+            if contact.active, let status = contact.activeConn?.connStatus, status == .ready || status == .sndReady {
                 NetworkStatusView(contact: contact, size: size)
             } else {
                 incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)

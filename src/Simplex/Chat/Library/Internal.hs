@@ -869,6 +869,14 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
               liftIO $ B.hPut h "" >> hFlush h
           | otherwise = liftIO $ B.writeFile fPath ""
 
+-- TODO [short links]
+-- Please note:
+-- - the connection here is created as ConnNew, even though when joining it is created as ConnPrepared.
+--   (changing it is risky, as there may be existing "prepared" connections that were not accepted in ConnNew status).
+-- - after accepted, the status is changed by this func caller to ConnSndReady if it is sndSecure, and not changed otherwise - joined changed to ConnJoined in this case.
+-- - xContactId is set on the contact at the first acceptance attempt, not after accept success, which prevents profile updates after such attempt.
+--   It may be reasonable to set it when contact is first prepared, but then we can't use it to ignore requests after acceptance,
+--   and it may lead to race conditions with XInfo events.
 acceptContactRequest :: User -> UserContactRequest -> IncognitoEnabled -> CM (Contact, Connection, SndQueueSecured)
 acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = AgentInvId invId, contactId_, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId, pqSupport} incognito = do
   subMode <- chatReadVar subscriptionMode
