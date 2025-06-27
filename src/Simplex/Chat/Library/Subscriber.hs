@@ -1282,24 +1282,25 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         void $ createFeatureEnabledItems_ user ct
                         forM_ (autoReply addressSettings) $ \mc -> forM_ welcomeSharedMsgId $ \sharedMsgId ->
                           createChatItem user (CDDirectSnd ct) False (CISndMsgContent mc) (Just sharedMsgId) Nothing
-                        mapM (createRequestItem False cd) requestMsg_
-                    let mkChat cInfo =
-                          AChat SCTDirect $ case aci_ of
-                            Just (AChatItem SCTDirect dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
-                            _ -> Chat cInfo [] emptyChatStats
+                        mapM (createRequestItem cd) requestMsg_
                     case autoAccept of
-                      Nothing -> toView $ CEvtReceivedContactRequest user ucr (Just $ mkChat $ DirectChat ct)
+                      Nothing -> do
+                        let cInfo = DirectChat ct
+                            chat = AChat SCTDirect $ case aci_ of
+                              Just (AChatItem SCTDirect dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
+                              _ -> Chat cInfo [] emptyChatStats
+                        toView $ CEvtReceivedContactRequest user ucr $ Just chat
                       Just AutoAccept {acceptIncognito} -> do
                         incognitoProfile <-
                           if not shortLinkDataSet && acceptIncognito
                             then Just . NewIncognito <$> liftIO generateRandomProfile
                             else pure Nothing
                         ct' <- acceptContactRequestAsync user uclId ct ucr incognitoProfile
-                        toView $ CEvtAcceptingContactRequest user $ mkChat $ DirectChat ct'
+                        toView $ CEvtAcceptingContactRequest user ct'
                   Just (REBusinessChat gInfo clientMember) -> do
                     (_gInfo', _clientMember') <- acceptBusinessJoinRequestAsync user uclId gInfo clientMember ucr
                     let cd = CDGroupRcv gInfo Nothing clientMember
-                    aci_ <- case prevUcr_ of
+                    void $ case prevUcr_ of
                       Just UserContactRequest {requestSharedMsgId = prevSharedMsgId_} ->
                         -- TODO [short links] this branch does not update feature items and e2e items, as they are highly unlikely to change
                         -- they will be updated after connection is accepted.
@@ -1311,12 +1312,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         -- void $ createFeatureEnabledItems_ user ct
                         forM_ (autoReply addressSettings) $ \arMC -> forM_ welcomeSharedMsgId $ \sharedMsgId ->
                           createChatItem user (CDGroupSnd gInfo Nothing) False (CISndMsgContent arMC) (Just sharedMsgId) Nothing
-                        mapM (createRequestItem False cd) requestMsg_
-                    let cInfo = GroupChat gInfo Nothing
-                        chat = AChat SCTGroup $ case aci_ of
-                          Just (AChatItem SCTGroup dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
-                          _ -> Chat cInfo [] emptyChatStats
-                    toView $ CEvtAcceptingContactRequest user chat
+                        mapM (createRequestItem cd) requestMsg_
+                    toView $ CEvtAcceptingBusinessRequest user gInfo
               where
                 upsertDirectRequestItem :: ChatDirection 'CTDirect 'MDRcv -> (Maybe (SharedMsgId, MsgContent), Maybe SharedMsgId) -> CM (Maybe AChatItem)
                 upsertDirectRequestItem cd@(CDDirectRcv ct@Contact {contactId}) = upsertRequestItem cd updateRequestItem markRequestItemDeleted
@@ -1373,17 +1370,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                                 else markGroupCIsDeleted user gInfo Nothing [cci] Nothing currentTs
                               toView $ CEvtChatItemsDeleted user deletions False False
                         _ -> pure ()
-                createRequestItem :: ChatTypeI c => Bool -> ChatDirection c 'MDRcv -> (SharedMsgId, MsgContent) -> CM AChatItem
-                createRequestItem withEvent cd (sharedMsgId, mc) = do
+                createRequestItem :: ChatTypeI c => ChatDirection c 'MDRcv -> (SharedMsgId, MsgContent) -> CM AChatItem
+                createRequestItem cd (sharedMsgId, mc) = do
                   aci <- createChatItem user cd False (CIRcvMsgContent mc) (Just sharedMsgId) Nothing
-                  ChatConfig {coreApi} <- asks config
-                  when (withEvent || not coreApi) $ toView $ CEvtNewChatItems user [aci]
+                  toView $ CEvtNewChatItems user [aci]
                   pure aci
                 upsertRequestItem :: ChatTypeI c => ChatDirection c 'MDRcv -> ((SharedMsgId, MsgContent) -> CM (Maybe AChatItem)) -> (SharedMsgId -> CM ()) -> (Maybe (SharedMsgId, MsgContent), Maybe SharedMsgId) -> CM (Maybe AChatItem)
                 upsertRequestItem cd update delete = \case
-                  (Just msg, Nothing) -> Just <$> createRequestItem True cd msg
+                  (Just msg, Nothing) -> Just <$> createRequestItem cd msg
                   (Just msg@(sharedMsgId, _), Just prevSharedMsgId) | sharedMsgId == prevSharedMsgId ->
-                    update msg `catchCINotFound` \_ -> Just <$> createRequestItem True cd msg
+                    update msg `catchCINotFound` \_ -> Just <$> createRequestItem cd msg
                   (Nothing, Just prevSharedMsgId) -> Nothing <$ delete prevSharedMsgId
                   _ -> pure Nothing
             -- ##### Group link join requests (don't create contact requests) #####

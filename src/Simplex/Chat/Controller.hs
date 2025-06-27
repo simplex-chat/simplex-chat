@@ -785,7 +785,8 @@ data ChatEvent
   | CEvtContactsMerged {user :: User, intoContact :: Contact, mergedContact :: Contact, updatedContact :: Contact}
   | CEvtContactDeletedByContact {user :: User, contact :: Contact}
   | CEvtReceivedContactRequest {user :: User, contactRequest :: UserContactRequest, chat_ :: Maybe AChat}
-  | CEvtAcceptingContactRequest {user :: User, requestChat :: AChat} -- there is the same command response
+  | CEvtAcceptingContactRequest {user :: User, contact :: Contact} -- there is the same command response
+  | CEvtAcceptingBusinessRequest {user :: User, groupInfo :: GroupInfo}
   | CEvtContactRequestAlreadyAccepted {user :: User, contact :: Contact}
   | CEvtBusinessRequestAlreadyAccepted {user :: User, groupInfo :: GroupInfo}
   | CEvtRcvFileDescrReady {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer, rcvFileDescr :: RcvFileDescr}
