@@ -429,8 +429,8 @@
   <string name="contact_connection_pending">connecting…</string>
   <string name="member_contact_send_direct_message">send to connect</string>
   <string name="group_preview_open_to_join">open to join</string>
-  <string name="group_preview_you_are_invited">you are invited to group</string>
-  <string name="group_preview_join_as">join as %s</string>
+  <string name="group_preview_you_are_invited">You are invited to group</string>
+  <string name="group_preview_join_as">Join as %s</string>
   <string name="group_preview_rejected">rejected</string>
   <string name="group_connection_pending">connecting…</string>
   <string name="tap_to_start_new_chat">Tap to start a new chat</string>
@@ -523,6 +523,7 @@
 
   <string name="cant_send_message_alert_title">You can\'t send messages!</string>
   <string name="cant_send_message_contact_not_ready">contact not ready</string>
+  <string name="cant_send_message_request_is_sent">request is sent</string>
   <string name="cant_send_message_contact_deleted">contact deleted</string>
   <string name="cant_send_message_contact_not_synchronized">not synchronized</string>
   <string name="cant_send_message_contact_disabled">contact disabled</string>
@@ -1055,9 +1056,10 @@
   <string name="stop_sharing_address">Stop sharing address?</string>
   <string name="stop_sharing">Stop sharing</string>
   <string name="auto_accept_contact">Auto-accept</string>
+  <string name="address_welcome_message">Welcome message</string>
   <string name="enter_welcome_message_optional">Enter welcome message… (optional)</string>
   <string name="save_settings_question">Save settings?</string>
-  <string name="save_auto_accept_settings">Save auto-accept settings</string>
+  <string name="save_auto_accept_settings">Save SimpleX address settings</string>
   <string name="delete_address">Delete address</string>
   <string name="invite_friends">Invite friends</string>
   <string name="email_invite_subject">Let\'s talk in SimpleX Chat</string>

@@ -2142,7 +2142,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
 }
 
 public struct PreparedGroup: Decodable, Hashable {
-    public var connLinkToConnect: CreatedConnLink?
+    public var connLinkToConnect: CreatedConnLink
     public var connLinkStartedConnection: Bool
 }
 

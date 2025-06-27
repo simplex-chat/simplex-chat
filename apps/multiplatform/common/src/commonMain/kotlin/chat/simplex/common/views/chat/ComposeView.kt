@@ -527,9 +527,10 @@ fun ComposeView(
     }
   }
 
-  suspend fun connectPreparedGroup() {
+  suspend fun sendConnectPreparedGroup() {
+    val mc = checkLinkPreview()
     // TODO [short links] use incognito default (incognito choice will be available via context profile picker)
-    val groupInfo = chatModel.controller.apiConnectPreparedGroup(chat.remoteHostId, chat.chatInfo.apiId, incognito = false)
+    val groupInfo = chatModel.controller.apiConnectPreparedGroup(chat.remoteHostId, chat.chatInfo.apiId, incognito = false, msg = mc)
     if (groupInfo != null) {
       withContext(Dispatchers.Main) {
         chatsCtx.updateGroup(chat.remoteHostId, groupInfo)
@@ -548,7 +549,7 @@ fun ComposeView(
         } else if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.nextConnectPrepared) {
           sendConnectPreparedContact()
         } else if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.nextConnectPrepared) {
-          connectPreparedGroup()
+          sendConnectPreparedGroup()
         }
       }
     }) {

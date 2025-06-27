@@ -438,14 +438,16 @@ object ChatModel {
       chatState.itemsRemoved(listOf(removed), chatItems.value)
     }
 
-    suspend fun addChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
+    suspend fun addChatItem(rhId: Long?, chatInfo: ChatInfo, cItem: ChatItem) {
       // updates membersRequireAttention
-      updateChatInfo(rhId, cInfo)
-      // mark chat non deleted
-      if (cInfo is ChatInfo.Direct && cInfo.chatDeleted) {
-        val updatedContact = cInfo.contact.copy(chatDeleted = false)
-        updateContact(rhId, updatedContact)
+      val cInfo = if (chatInfo is ChatInfo.Direct && chatInfo.chatDeleted) {
+        // mark chat non deleted
+        val updatedContact = chatInfo.contact.copy(chatDeleted = false)
+        ChatInfo.Direct(updatedContact)
+      } else {
+        chatInfo
       }
+      updateChatInfo(rhId, cInfo)
       // update chat list
       val i = getChatIndex(rhId, cInfo.id)
       val chat: Chat
@@ -1502,7 +1504,13 @@ sealed class ChatInfo: SomeChat, NamedChat {
           if (contact.sendMsgToConnect) return null
           if (contact.nextAcceptContactRequest) { return generalGetString(MR.strings.cant_send_message_generic) to null }
           if (!contact.active) return generalGetString(MR.strings.cant_send_message_contact_deleted) to null
-          if (!contact.sndReady) return generalGetString(MR.strings.cant_send_message_contact_not_ready) to null
+          if (!contact.sndReady) {
+            return if (contact.preparedContact?.uiConnLinkType == ConnectionMode.Con) {
+              generalGetString(MR.strings.cant_send_message_request_is_sent) to null
+            } else {
+              generalGetString(MR.strings.cant_send_message_contact_not_ready) to null
+            }
+          }
           if (contact.activeConn?.connectionStats?.ratchetSyncSendProhibited == true) return generalGetString(MR.strings.cant_send_message_contact_not_synchronized) to null
           if (contact.activeConn?.connDisabled == true) return generalGetString(MR.strings.cant_send_message_contact_disabled) to null
           return null
@@ -1532,6 +1540,8 @@ sealed class ChatInfo: SomeChat, NamedChat {
                   return null
                 }
             }
+          } else if (groupInfo.nextConnectPrepared) {
+            return null
           } else {
             return when (groupInfo.membership.memberStatus) {
               GroupMemberStatus.MemRejected -> generalGetString(MR.strings.cant_send_message_rejected) to null
@@ -1698,6 +1708,9 @@ data class Contact(
     } else {
       true
     }
+
+  val isContactCard: Boolean =
+    activeConn == null && profile.contactLink != null && active
 
   val contactConnIncognito =
     activeConn?.customUserProfileId != null
@@ -1906,8 +1919,7 @@ data class GroupInfo (
   override val createdAt: Instant,
   override val updatedAt: Instant,
   val chatTs: Instant?,
-  val connLinkToConnect: CreatedConnLink?,
-  val connLinkStartedConnection: Boolean,
+  val preparedGroup: PreparedGroup?,
   val uiThemes: ThemeModeOverrides? = null,
   val membersRequireAttention: Int,
   val chatTags: List<Long>,
@@ -1919,7 +1931,7 @@ data class GroupInfo (
   override val apiId get() = groupId
   override val ready get() = membership.memberActive
   override val nextConnect get() = nextConnectPrepared
-  val nextConnectPrepared = connLinkToConnect != null && !connLinkStartedConnection
+  val nextConnectPrepared = if (preparedGroup != null) !preparedGroup.connLinkStartedConnection else false
   override val chatDeleted get() = false
   override val incognito get() = membership.memberIncognito
   override fun featureEnabled(feature: ChatFeature) = when (feature) {
@@ -1945,6 +1957,13 @@ data class GroupInfo (
 
   val canModerate: Boolean
     get() = membership.memberRole >= GroupMemberRole.Moderator && membership.memberActive
+
+  val chatIconName: ImageResource
+    get() = when (businessChat?.chatType) {
+      null -> MR.images.ic_supervised_user_circle_filled
+      BusinessChatType.Business -> MR.images.ic_work_filled_padded
+      BusinessChatType.Customer -> MR.images.ic_account_circle_filled
+    }
 
   fun groupFeatureEnabled(feature: GroupFeature): Boolean {
     val p = fullGroupPreferences
@@ -1972,8 +1991,7 @@ data class GroupInfo (
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now(),
       chatTs = Clock.System.now(),
-      connLinkToConnect = null,
-      connLinkStartedConnection = false,
+      preparedGroup = null,
       uiThemes = null,
       membersRequireAttention = 0,
       chatTags = emptyList(),
@@ -1982,6 +2000,12 @@ data class GroupInfo (
     )
   }
 }
+
+@Serializable
+data class PreparedGroup (
+  val connLinkToConnect: CreatedConnLink,
+  val connLinkStartedConnection: Boolean
+)
 
 @Serializable
 data class GroupRef(val groupId: Long, val localDisplayName: String)
@@ -2886,6 +2910,7 @@ data class ChatItem (
           deletable = false,
           editable = false,
           userMention = false,
+          showGroupAsSender = false,
         ),
         content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast),
         quotedItem = null,
@@ -2911,6 +2936,7 @@ data class ChatItem (
           deletable = false,
           editable = false,
           userMention = false,
+          showGroupAsSender = false
         ),
         content = CIContent.SndMsgContent(MsgContent.MCText("")),
         quotedItem = null,
@@ -3056,7 +3082,8 @@ data class CIMeta (
   val itemLive: Boolean?,
   val userMention: Boolean,
   val deletable: Boolean,
-  val editable: Boolean
+  val editable: Boolean,
+  val showGroupAsSender: Boolean
 ) {
   val timestampText: String get() = getTimestampText(itemTs, true)
 
@@ -3095,6 +3122,7 @@ data class CIMeta (
         deletable = deletable,
         editable = editable,
         userMention = false,
+        showGroupAsSender = false
       )
 
     fun invalidJSON(): CIMeta =
@@ -3114,7 +3142,8 @@ data class CIMeta (
         itemLive = false,
         deletable = false,
         editable = false,
-        userMention = false
+        userMention = false,
+        showGroupAsSender = false
       )
   }
 }
@@ -3467,6 +3496,13 @@ sealed class CIContent: ItemContent {
       is SndGroupE2EEInfo -> e2eeInfoNoPQStr
       is RcvGroupE2EEInfo -> e2eeInfoNoPQStr
       is InvalidJSON -> "invalid data"
+    }
+
+  val hasMsgContent: Boolean get() =
+    if (msgContent != null) {
+      (msgContent as MsgContent).text.trim().isNotEmpty()
+    } else {
+      false
     }
 
   val showMemberName: Boolean get() =
