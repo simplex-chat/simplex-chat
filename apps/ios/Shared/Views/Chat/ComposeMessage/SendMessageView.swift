@@ -12,6 +12,7 @@ import SimpleXChat
 private let liveMsgInterval: UInt64 = 3000_000000
 
 struct SendMessageView: View {
+    var placeholder: String?
     @Binding var composeState: ComposeState
     @Binding var selectedRange: NSRange
     @EnvironmentObject var theme: AppTheme
@@ -20,7 +21,8 @@ struct SendMessageView: View {
     var sendLiveMessage: (() async -> Void)? = nil
     var updateLiveMessage: (() async -> Void)? = nil
     var cancelLiveMessage: (() -> Void)? = nil
-    var nextSendGrpInv: Bool = false
+    var sendToConnect: (() -> Void)? = nil
+    var hideSendButton: Bool = false
     var showVoiceMessageButton: Bool = true
     var voiceMessageAllowed: Bool = true
     var disableSendButton = false
@@ -64,7 +66,7 @@ struct SendMessageView: View {
                     height: $teHeight,
                     focused: $keyboardVisible,
                     lastUnfocusedDate: $keyboardHiddenDate,
-                    placeholder: Binding(get: { composeState.placeholder }, set: { _ in }),
+                    placeholder: Binding(get: { placeholder ?? composeState.placeholder }, set: { _ in }),
                     selectedRange: $selectedRange,
                     onImagesAdded: onMediaAdded
                 )
@@ -78,7 +80,7 @@ struct SendMessageView: View {
                 deleteTextButton()
             }
         })
-        .overlay(alignment: .bottomTrailing, content: {
+        .overlay(alignment: .bottomTrailing) {
             if progressByTimeout {
                 ProgressView()
                     .scaleEffect(1.4)
@@ -89,7 +91,7 @@ struct SendMessageView: View {
                 // required for intercepting clicks
                     .background(.white.opacity(0.000001))
             }
-        })
+        }
         .padding(.vertical, 1)
         .background(theme.colors.background)
         .clipShape(composeShape)
@@ -109,8 +111,10 @@ struct SendMessageView: View {
 
     @ViewBuilder private func composeActionButtons() -> some View {
         let vmrs = composeState.voiceMessageRecordingState
-        if nextSendGrpInv {
-            inviteMemberContactButton()
+        if hideSendButton {
+            EmptyView()
+        } else if let connect = sendToConnect {
+            sendToConnectButton(connect)
         } else if case .reportedItem = composeState.contextItem {
             sendMessageButton()
         } else if showVoiceMessageButton
@@ -158,20 +162,16 @@ struct SendMessageView: View {
         .padding([.top, .trailing], 4)
     }
 
-    private func inviteMemberContactButton() -> some View {
-        Button {
-            sendMessage(nil)
-        } label: {
+    private func sendToConnectButton(_ connect: @escaping () -> Void) -> some View {
+        let disabled = !composeState.sendEnabled || composeState.inProgress || disableSendButton
+        return Button(action: connect) {
             Image(systemName: "arrow.up.circle.fill")
                 .resizable()
-                .foregroundColor(sendButtonColor)
+                .foregroundColor(disabled ? theme.colors.secondary.opacity(0.67) : sendButtonColor)
                 .frame(width: sendButtonSize, height: sendButtonSize)
                 .opacity(sendButtonOpacity)
         }
-        .disabled(
-            !composeState.sendEnabled ||
-            composeState.inProgress
-        )
+        .disabled(disabled)
         .frame(width: 31, height: 31)
         .padding([.bottom, .trailing], 4)
     }

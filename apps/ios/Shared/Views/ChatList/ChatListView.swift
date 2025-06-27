@@ -668,6 +668,7 @@ struct ChatListSearchBar: View {
     private func connect(_ link: String) {
         planAndConnect(
             link,
+            theme: theme,
             dismiss: false,
             cleanup: {
                 searchText = ""

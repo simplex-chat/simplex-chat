@@ -1167,8 +1167,8 @@ swipe action</note>
         <target>自动接受图片</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Auto-accept settings" xml:space="preserve">
-        <source>Auto-accept settings</source>
+      <trans-unit id="SimpleX address settings" xml:space="preserve">
+        <source>SimpleX address settings</source>
         <target>自动接受设置</target>
         <note>alert title</note>
       </trans-unit>
@@ -9619,7 +9619,7 @@ pref value</note>
         <target>斜体</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="join as %@" xml:space="preserve">
+      <trans-unit id="Join as %@" xml:space="preserve">
         <source>join as %@</source>
         <target>以 %@ 身份加入</target>
         <note>No comment provided by engineer.</note>
@@ -9890,8 +9890,8 @@ time to disappear</note>
         <target>安全密码已更改</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="send direct message" xml:space="preserve">
-        <source>send direct message</source>
+      <trans-unit id="send to connect" xml:space="preserve">
+        <source>send to connect</source>
         <target>发送私信</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -10048,8 +10048,8 @@ last received msg: %2$@</source>
         <source>you accepted this member</source>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you are invited to group" xml:space="preserve">
-        <source>you are invited to group</source>
+      <trans-unit id="You are invited to group" xml:space="preserve">
+        <source>You are invited to group</source>
         <target>您被邀请加入群组</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

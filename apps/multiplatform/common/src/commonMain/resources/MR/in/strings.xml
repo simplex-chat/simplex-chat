@@ -105,7 +105,7 @@
     <string name="error_parsing_uri_desc">Periksa apakah tautan SimpleX sudah benar.</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Anda terhubung ke server yang digunakan untuk menerima pesan dari kontak ini.</string>
     <string name="trying_to_connect_to_server_to_receive_messages_with_error">Mencoba menyambung ke server yang digunakan untuk menerima pesan dari kontak ini (error: %1$s).</string>
-    <string name="database_migration_in_progress">Migrasi basis data sedang berlangsung, 
+    <string name="database_migration_in_progress">Migrasi basis data sedang berlangsung,
 \nmemerlukan waktu beberapa menit.</string>
     <string name="server_connecting">menghubungkan</string>
     <string name="non_content_uri_alert_title">Lokasi file tidak valid</string>
@@ -2356,7 +2356,6 @@
     <string name="full_link_button_text">Tautan lengkap</string>
     <string name="link_requires_newer_app_version_please_upgrade">Tautan ini perlu versi aplikasi yang baru. Harap perbarui aplikasi atau minta kontak untuk kirim tautan kompatibel.</string>
     <string name="simplex_link_channel">Tautan saluran SimpleX</string>
-    <string name="privacy_short_links">Gunakan tautan singkat (BETA)</string>
     <string name="unsupported_connection_link">Tautan koneksi tidak didukung</string>
     <string name="short_link_button_text">Tautan singkat</string>
     <string name="cant_send_message_generic">gagal mengirim pesan</string>

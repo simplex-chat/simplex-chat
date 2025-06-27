@@ -3696,7 +3696,7 @@ SimpleX servers cannot see your profile.</source>
         <source>italic</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="join as %@" xml:space="preserve">
+      <trans-unit id="Join as %@" xml:space="preserve">
         <source>join as %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3873,8 +3873,8 @@ SimpleX servers cannot see your profile.</source>
         <source>yes</source>
         <note>pref value</note>
       </trans-unit>
-      <trans-unit id="you are invited to group" xml:space="preserve">
-        <source>you are invited to group</source>
+      <trans-unit id="You are invited to group" xml:space="preserve">
+        <source>You are invited to group</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you are observer" xml:space="preserve">
@@ -4641,8 +4641,8 @@ This is your own one-time link!</source>
         <source>All new messages from %@ will be hidden!</source>
         <target state="translated">%@로부터의 모든 새 메세지가 숨겨집니다!</target>
       </trans-unit>
-      <trans-unit id="Auto-accept settings" xml:space="preserve" approved="no">
-        <source>Auto-accept settings</source>
+      <trans-unit id="SimpleX address settings" xml:space="preserve" approved="no">
+        <source>SimpleX address settings</source>
         <target state="translated">자동-수락 설정</target>
       </trans-unit>
       <trans-unit id="Archive contacts to chat later." xml:space="preserve" approved="no">

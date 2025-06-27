@@ -34,7 +34,7 @@ actor TerminalItems {
         await add(.cmd(start, cmd))
         await addResult(res)
     }
-    
+
     func addResult<R: ChatAPIResult>(_ res: APIResult<R>) async {
         let item: TerminalItem = switch res {
         case let .result(r): .res(.now, r)
@@ -181,12 +181,12 @@ class PreloadState {
 
 class ChatTagsModel: ObservableObject {
     static let shared = ChatTagsModel()
-    
+
     @Published var userTags: [ChatTag] = []
     @Published var activeFilter: ActiveFilter? = nil
     @Published var presetTags: [PresetTag:Int] = [:]
     @Published var unreadTags: [Int64:Int] = [:]
-    
+
     func updateChatTags(_ chats: [Chat]) {
         let tm = ChatTagsModel.shared
         var newPresetTags: [PresetTag:Int] = [:]
@@ -240,13 +240,13 @@ class ChatTagsModel: ObservableObject {
         }
         clearActiveChatFilterIfNeeded()
     }
-    
+
     func markChatTagRead(_ chat: Chat) -> Void {
         if chat.unreadTag, let tags = chat.chatInfo.chatTags {
             decTagsReadCount(tags)
         }
     }
-    
+
     func updateChatTagRead(_ chat: Chat, wasUnread: Bool) -> Void {
         guard let tags = chat.chatInfo.chatTags else { return }
         let nowUnread = chat.unreadTag
@@ -402,6 +402,10 @@ final class ChatModel: ObservableObject {
 
     var activeRemoteCtrl: Bool {
         remoteCtrlSession?.active ?? false
+    }
+
+    var addressShortLinkDataSet: Bool {
+        userAddress?.shortLinkDataSet ?? true
     }
 
     func getUser(_ userId: Int64) -> User? {
@@ -560,8 +564,15 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func updateChats(_ newChats: [ChatData]) {
-        chats = newChats.map { Chat($0) }
+    func updateChats(_ newChats: [ChatData], keepingChatId: String? = nil) {
+        if let keepingChatId,
+           let chatToKeep = getChat(keepingChatId),
+           let i = newChats.firstIndex(where: { $0.id == keepingChatId }) {
+            let remainingNewChats = Array(newChats[..<i] + newChats[(i + 1)...])
+            chats = [chatToKeep] + remainingNewChats.map { Chat($0) }
+        } else {
+            chats = newChats.map { Chat($0) }
+        }
         NtfManager.shared.setNtfBadgeCount(totalUnreadCountForAllUsers())
         popChatCollector.clear()
     }
@@ -570,15 +581,18 @@ final class ChatModel: ObservableObject {
 //        groups[group.groupInfo.id] = group
 //    }
 
-    func addChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+    func addChatItem(_ chatInfo: ChatInfo, _ cItem: ChatItem) {
         // updates membersRequireAttention
-        updateChatInfo(cInfo)
-        // mark chat non deleted
-        if case let .direct(contact) = cInfo, contact.chatDeleted {
+        let cInfo: ChatInfo
+        if case let .direct(contact) = chatInfo, contact.chatDeleted {
+            // mark chat non deleted
             var updatedContact = contact
             updatedContact.chatDeleted = false
-            updateContact(updatedContact)
+            cInfo = .direct(contact: updatedContact)
+        } else {
+            cInfo = chatInfo
         }
+        updateChatInfo(cInfo)
         // update chat list
         if let i = getChatIndex(cInfo.id) {
             // update preview
@@ -749,7 +763,7 @@ final class ChatModel: ObservableObject {
                   let updatedItem = removedUpdatedItem(chat.chatItems[0]) {
                 chat.chatItems = [updatedItem]
         }
-        
+
         func removedUpdatedItem(_ item: ChatItem) -> ChatItem? {
             let newContent: CIContent
             if case .groupSnd = item.chatDir, removedMember.groupMemberId == groupInfo.membership.groupMemberId {
@@ -923,7 +937,7 @@ final class ChatModel: ObservableObject {
     }
 
     let popChatCollector = PopChatCollector()
-    
+
     class PopChatCollector {
         private let subject = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
@@ -936,7 +950,7 @@ final class ChatModel: ObservableObject {
                 .sink { self.popCollectedChats() }
                 .store(in: &bag)
         }
-        
+
         func throttlePopChat(_ chatId: ChatId, currentPosition: Int) {
             let m = ChatModel.shared
             if currentPosition > 0 && m.chatId == chatId {
@@ -947,7 +961,7 @@ final class ChatModel: ObservableObject {
                 subject.send()
             }
         }
-        
+
         func clear() {
             chatsToPop = [:]
         }
@@ -1217,7 +1231,6 @@ struct ShowingInvitation {
 }
 
 struct NTFContactRequest {
-    var incognito: Bool
     var chatId: String
 }
 
@@ -1255,7 +1268,7 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
         default: chatStats.unreadChat
         }
     }
-    
+
     var id: ChatId { get { chatInfo.id } }
 
     var viewId: String { get { "\(chatInfo.id) \(created.timeIntervalSince1970)" } }

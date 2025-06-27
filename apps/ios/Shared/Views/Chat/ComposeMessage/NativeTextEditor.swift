@@ -70,6 +70,13 @@ struct NativeTextEditor: UIViewRepresentable {
         if field.selectedRange != selectedRange {
             field.selectedRange = selectedRange
         }
+        if focused && !field.isFocused {
+            DispatchQueue.main.async {
+                if !field.isFocused {
+                    field.becomeFirstResponder()
+                }
+            }
+        }
     }
 }
 

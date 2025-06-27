@@ -200,14 +200,14 @@ testPaginationAllChatTypes =
 
       ts7 <- iso8601Show <$> getCurrentTime
 
-      getChats_ alice "count=10" [("*", "psst"), ("@dan", "hey"), ("#team", "Recent history: on"), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
+      getChats_ alice "count=10" [("*", "psst"), ("@dan", "hey"), ("#team", "Recent history: on"), (":3", ""), ("@cath", "Audio/video calls: enabled"), ("@bob", "hey")]
       getChats_ alice "count=3" [("*", "psst"), ("@dan", "hey"), ("#team", "Recent history: on")]
-      getChats_ alice ("after=" <> ts2 <> " count=2") [(":3", ""), ("<@cath", "")]
+      getChats_ alice ("after=" <> ts2 <> " count=2") [(":3", ""), ("@cath", "Audio/video calls: enabled")]
       getChats_ alice ("before=" <> ts5 <> " count=2") [("#team", "Recent history: on"), (":3", "")]
       getChats_ alice ("after=" <> ts3 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", "Recent history: on"), (":3", "")]
-      getChats_ alice ("before=" <> ts4 <> " count=10") [(":3", ""), ("<@cath", ""), ("@bob", "hey")]
-      getChats_ alice ("after=" <> ts1 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", "Recent history: on"), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
-      getChats_ alice ("before=" <> ts7 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", "Recent history: on"), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
+      getChats_ alice ("before=" <> ts4 <> " count=10") [(":3", ""), ("@cath", "Audio/video calls: enabled"), ("@bob", "hey")]
+      getChats_ alice ("after=" <> ts1 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", "Recent history: on"), (":3", ""), ("@cath", "Audio/video calls: enabled"), ("@bob", "hey")]
+      getChats_ alice ("before=" <> ts7 <> " count=10") [("*", "psst"), ("@dan", "hey"), ("#team", "Recent history: on"), (":3", ""), ("@cath", "Audio/video calls: enabled"), ("@bob", "hey")]
       getChats_ alice ("after=" <> ts7 <> " count=10") []
       getChats_ alice ("before=" <> ts1 <> " count=10") []
 
@@ -227,8 +227,6 @@ testPaginationAllChatTypes =
 
       let queryUnread = "{\"type\": \"filters\", \"favorite\": false, \"unread\": true}"
 
-      getChats_ alice queryUnread [("<@cath", "")]
+      getChats_ alice queryUnread []
       getChats_ alice ("before=" <> ts2 <> " count=10 " <> queryUnread) []
-      getChats_ alice ("before=" <> ts3 <> " count=10 " <> queryUnread) [("<@cath", "")]
-      getChats_ alice ("after=" <> ts2 <> " count=10 " <> queryUnread) [("<@cath", "")]
-      getChats_ alice ("after=" <> ts3 <> " count=10 " <> queryUnread) []
+      getChats_ alice ("after=" <> ts2 <> " count=10 " <> queryUnread) []

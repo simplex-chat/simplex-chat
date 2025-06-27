@@ -436,16 +436,19 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     deletable :: Bool,
     editable :: Bool,
     forwardedByMember :: Maybe GroupMemberId,
+    showGroupAsSender :: ShowGroupAsSender,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
   deriving (Show)
 
-mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> UTCTime -> CIMeta c d
-mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention currentTs itemTs forwardedByMember createdAt updatedAt =
+type ShowGroupAsSender = Bool
+
+mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> Bool -> UTCTime -> UTCTime -> CIMeta c d
+mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention currentTs itemTs forwardedByMember showGroupAsSender createdAt updatedAt =
   let deletable = deletable' itemContent itemDeleted itemTs nominalDay currentTs
       editable = deletable && isNothing itemForwarded
-   in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, userMention, deletable, editable, forwardedByMember, createdAt, updatedAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, userMention, deletable, editable, forwardedByMember, showGroupAsSender, createdAt, updatedAt}
 
 deletable' :: forall c d. ChatTypeI c => CIContent d -> Maybe (CIDeleted c) -> UTCTime -> NominalDiffTime -> UTCTime -> Bool
 deletable' itemContent itemDeleted itemTs allowedInterval currentTs =
@@ -474,6 +477,7 @@ dummyMeta itemId ts itemText =
       deletable = False,
       editable = False,
       forwardedByMember = Nothing,
+      showGroupAsSender = False,
       createdAt = ts,
       updatedAt = ts
     }

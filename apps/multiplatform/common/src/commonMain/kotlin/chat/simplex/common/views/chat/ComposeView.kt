@@ -245,6 +245,7 @@ fun chatItemPreview(chatItem: ChatItem): ComposePreview {
     is MsgContent.MCVoice -> ComposePreview.VoicePreview(voice = fileName, mc.duration / 1000, true)
     is MsgContent.MCFile -> ComposePreview.FilePreview(fileName, getAppFileUri(fileName))
     is MsgContent.MCReport -> ComposePreview.NoPreview
+    is MsgContent.MCChat -> ComposePreview.NoPreview
     is MsgContent.MCUnknown, null -> ComposePreview.NoPreview
   }
 }
@@ -485,6 +486,91 @@ fun ComposeView(
     return null
   }
 
+  fun checkLinkPreview(): MsgContent {
+    val msgText = composeState.value.message.text
+    return when (val composePreview = composeState.value.preview) {
+      is ComposePreview.CLinkPreview -> {
+        val parsedMsg = parseToMarkdown(msgText)
+        val url = getSimplexLink(parsedMsg).first
+        val lp = composePreview.linkPreview
+        if (lp != null && url == lp.uri) {
+          MsgContent.MCLink(msgText, preview = lp)
+        } else {
+          MsgContent.MCText(msgText)
+        }
+      }
+
+      else -> MsgContent.MCText(msgText)
+    }
+  }
+
+  suspend fun sendMemberContactInvitation() {
+    val mc = checkLinkPreview()
+    val contact = chatModel.controller.apiSendMemberContactInvitation(chat.remoteHostId, chat.chatInfo.apiId, mc)
+    if (contact != null) {
+      withContext(Dispatchers.Main) {
+        chatsCtx.updateContact(chat.remoteHostId, contact)
+        clearState()
+        chatModel.setContactNetworkStatus(contact, NetworkStatus.Connected())
+      }
+    }
+  }
+
+  suspend fun sendConnectPreparedContact() {
+    val mc = checkLinkPreview()
+    val contact = chatModel.controller.apiConnectPreparedContact(
+      rh = chat.remoteHostId,
+      contactId = chat.chatInfo.apiId,
+      incognito = chatModel.controller.appPrefs.incognito.get(),
+      msg = mc
+    )
+    if (contact != null) {
+      withContext(Dispatchers.Main) {
+        chatsCtx.updateContact(chat.remoteHostId, contact)
+        clearState()
+        chatModel.setContactNetworkStatus(contact, NetworkStatus.Connected())
+      }
+    }
+  }
+
+  suspend fun sendConnectPreparedGroup() {
+    val mc = checkLinkPreview()
+    val groupInfo = chatModel.controller.apiConnectPreparedGroup(
+      rh = chat.remoteHostId,
+      groupId = chat.chatInfo.apiId,
+      incognito = chatModel.controller.appPrefs.incognito.get(),
+      msg = mc
+    )
+    if (groupInfo != null) {
+      withContext(Dispatchers.Main) {
+        chatsCtx.updateGroup(chat.remoteHostId, groupInfo)
+        clearState()
+      }
+    }
+  }
+
+  // TODO [short links] next connect button design, rework compose to not show send button, align with Swift
+  @Composable
+  fun NextConnectPreparedButton() {
+    TextButton(onClick = {
+      withBGApi {
+        if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.nextSendGrpInv) {
+          sendMemberContactInvitation()
+        } else if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.nextConnectPrepared) {
+          sendConnectPreparedContact()
+        } else if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.nextConnectPrepared) {
+          sendConnectPreparedGroup()
+        }
+      }
+    }) {
+      if (chat.chatInfo is ChatInfo.Group) {
+        Text("Join")
+      } else {
+        Text("Connect")
+      }
+    }
+  }
+
   suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?): List<ChatItem>? {
     val cInfo = chat.chatInfo
     val cs = composeState.value
@@ -525,23 +611,6 @@ fun ComposeView(
       return chatItems
     }
 
-    fun checkLinkPreview(): MsgContent {
-      return when (val composePreview = cs.preview) {
-        is ComposePreview.CLinkPreview -> {
-          val parsedMsg = parseToMarkdown(msgText)
-          val url = getSimplexLink(parsedMsg).first
-          val lp = composePreview.linkPreview
-          if (lp != null && url == lp.uri) {
-            MsgContent.MCLink(msgText, preview = lp)
-          } else {
-            MsgContent.MCText(msgText)
-          }
-        }
-
-        else -> MsgContent.MCText(msgText)
-      }
-    }
-
     fun constructFailedMessage(cs: ComposeState): ComposeState {
       val preview = when (cs.preview) {
         is ComposePreview.MediaPreview -> {
@@ -564,6 +633,8 @@ fun ComposeView(
         is MsgContent.MCVoice -> MsgContent.MCVoice(msgText, duration = msgContent.duration)
         is MsgContent.MCFile -> MsgContent.MCFile(msgText)
         is MsgContent.MCReport -> MsgContent.MCReport(msgText, reason = msgContent.reason)
+        // TODO [short links] update chat link
+        is MsgContent.MCChat -> MsgContent.MCChat(msgText, chatLink = msgContent.chatLink)
         is MsgContent.MCUnknown -> MsgContent.MCUnknown(type = msgContent.type, text = msgText, json = msgContent.json)
       }
     }
@@ -584,16 +655,6 @@ fun ComposeView(
       val cItems = chatModel.controller.apiReportMessage(chat.remoteHostId, chat.chatInfo.apiId, chatItemId, reportReason, msgText)
       if (chatModel.controller.appPrefs.showReportsInSupportChatAlert.get()) showReportsInSupportChatAlert()
       return cItems?.map { it.chatItem }
-    }
-
-    suspend fun sendMemberContactInvitation() {
-      val mc = checkLinkPreview()
-      val contact = chatModel.controller.apiSendMemberContactInvitation(chat.remoteHostId, chat.chatInfo.apiId, mc)
-      if (contact != null) {
-        withContext(Dispatchers.Main) {
-          chatsCtx.updateContact(chat.remoteHostId, contact)
-        }
-      }
     }
 
     suspend fun updateMessage(ei: ChatItem, chat: Chat, live: Boolean): ChatItem? {
@@ -1015,6 +1076,37 @@ fun ComposeView(
   val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
 
   Column {
+    // TODO [short links] move button to the right of send field, rework SendMsgView to not show send button, align with Swift
+    if (chat.chatInfo.nextConnect) {
+      NextConnectPreparedButton()
+    }
+    // TODO ^^^ (this shouldn't be here)
+
+    val currentUser = chatModel.currentUser.value
+    if ((
+          (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.nextConnectPrepared)
+              || (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.nextConnectPrepared)
+        )
+      && currentUser != null
+    ) {
+      ComposeContextProfilePickerView(
+        rhId = rhId,
+        chat = chat,
+        currentUser = currentUser
+      )
+    }
+
+    if (
+      chat.chatInfo is ChatInfo.Direct
+      && chat.chatInfo.contact.nextAcceptContactRequest
+      && chat.chatInfo.contact.contactRequestId != null
+    ) {
+      ComposeContextContactRequestActionsView(
+        rhId = rhId,
+        contactRequestId = chat.chatInfo.contact.contactRequestId
+      )
+    }
+
     if (
       chat.chatInfo is ChatInfo.Group
       && chatsCtx.secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext
@@ -1030,13 +1122,16 @@ fun ComposeView(
         member = chatsCtx.secondaryContextFilter.groupScopeInfo.groupMember_
       )
     }
+
     if (nextSendGrpInv.value) {
       ComposeContextInvitingContactMemberView()
     }
+
     val ctx = composeState.value.contextItem
     if (ctx is ComposeContextItem.ReportedItem) {
       ReportReasonView(ctx.reason)
     }
+
     val simplexLinkProhibited = chatsCtx.secondaryContextFilter == null && hasSimplexLink.value && !chat.groupFeatureEnabled(GroupFeature.SimplexLinks)
     val fileProhibited = chatsCtx.secondaryContextFilter == null && composeState.value.attachmentPreview && !chat.groupFeatureEnabled(GroupFeature.Files)
     val voiceProhibited = composeState.value.preview is ComposePreview.VoicePreview && !chat.chatInfo.featureEnabled(ChatFeature.Voice)

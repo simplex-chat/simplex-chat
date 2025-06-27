@@ -1755,7 +1755,7 @@ snd error text */
 "Join" = "Liity";
 
 /* No comment provided by engineer. */
-"join as %@" = "Liity %@:nä";
+"Join as %@" = "Liity %@:nä";
 
 /* new chat sheet title */
 "Join group" = "Liity ryhmään";
@@ -3215,7 +3215,7 @@ chat item action */
 "You are connected to the server used to receive messages from this contact." = "Olet yhteydessä palvelimeen, jota käytetään vastaanottamaan viestejä tältä kontaktilta.";
 
 /* No comment provided by engineer. */
-"you are invited to group" = "sinut on kutsuttu ryhmään";
+"You are invited to group" = "sinut on kutsuttu ryhmään";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Sinut on kutsuttu ryhmään";
@@ -3402,4 +3402,3 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "SimpleX-osoitteesi";
-

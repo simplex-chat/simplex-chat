@@ -685,6 +685,7 @@ public enum ChatErrorType: Decodable, Hashable {
     case invalidConnReq
     case unsupportedConnReq
     case invalidChatMessage(connection: Connection, message: String)
+    case connReqMessageProhibited
     case contactNotReady(contact: Contact)
     case contactNotActive(contact: Contact)
     case contactDisabled(contact: Contact)
@@ -757,10 +758,13 @@ public enum StoreError: Decodable, Hashable {
     case userContactLinkNotFound
     case contactRequestNotFound(contactRequestId: Int64)
     case contactRequestNotFoundByName(contactName: ContactName)
+    case invalidContactRequestEntity(contactRequestId: Int64)
+    case invalidBusinessChatContactRequest
     case groupNotFound(groupId: Int64)
     case groupNotFoundByName(groupName: GroupName)
     case groupMemberNameNotFound(groupId: Int64, groupMemberName: ContactName)
     case groupMemberNotFound(groupMemberId: Int64)
+    case groupHostMemberNotFound(groupId: Int64)
     case groupMemberNotFoundByMemberId(memberId: String)
     case memberContactGroupMemberNotFound(contactId: Int64)
     case groupWithoutUser
@@ -817,7 +821,7 @@ public enum SQLiteError: Decodable, Hashable {
 
 public enum AgentErrorType: Decodable, Hashable {
     case CMD(cmdErr: CommandErrorType, errContext: String)
-    case CONN(connErr: ConnectionErrorType)
+    case CONN(connErr: ConnectionErrorType, errContext: String)
     case SMP(serverAddress: String, smpErr: ProtocolErrorType)
     case NTF(ntfErr: ProtocolErrorType)
     case XFTP(xftpErr: XFTPErrorType)

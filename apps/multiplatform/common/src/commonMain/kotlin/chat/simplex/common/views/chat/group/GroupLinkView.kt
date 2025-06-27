@@ -28,22 +28,21 @@ fun GroupLinkView(
   chatModel: ChatModel,
   rhId: Long?,
   groupInfo: GroupInfo,
-  connLinkContact: CreatedConnLink?,
-  memberRole: GroupMemberRole?,
-  onGroupLinkUpdated: ((Pair<CreatedConnLink, GroupMemberRole>?) -> Unit)?,
+  groupLink: GroupLink?,
+  onGroupLinkUpdated: ((GroupLink?) -> Unit)?,
   creatingGroup: Boolean = false,
   close: (() -> Unit)? = null
 ) {
-  var groupLink by rememberSaveable(stateSaver = CreatedConnLink.nullableStateSaver) { mutableStateOf(connLinkContact) }
-  val groupLinkMemberRole = rememberSaveable { mutableStateOf(memberRole) }
+  var groupLinkVar by rememberSaveable { mutableStateOf(groupLink) }
+  val groupLinkMemberRole = rememberSaveable { mutableStateOf(groupLink?.acceptMemberRole) }
   var creatingLink by rememberSaveable { mutableStateOf(false) }
   fun createLink() {
     creatingLink = true
     withBGApi {
       val link = chatModel.controller.apiCreateGroupLink(rhId, groupInfo.groupId)
       if (link != null) {
-        groupLink = link.first
-        groupLinkMemberRole.value = link.second
+        groupLinkVar = link
+        groupLinkMemberRole.value = link.acceptMemberRole
         onGroupLinkUpdated?.invoke(link)
       }
       creatingLink = false
@@ -54,8 +53,8 @@ fun GroupLinkView(
     withBGApi {
       val link = chatModel.controller.apiAddGroupShortLink(rhId, groupInfo.groupId)
       if (link != null) {
-        groupLink = link.first
-        groupLinkMemberRole.value = link.second
+        groupLinkVar = link
+        groupLinkMemberRole.value = link.acceptMemberRole
         onGroupLinkUpdated?.invoke(link)
       }
       creatingLink = false
@@ -67,7 +66,7 @@ fun GroupLinkView(
     }
   }
   GroupLinkLayout(
-    groupLink = groupLink,
+    groupLink = groupLinkVar,
     groupInfo,
     groupLinkMemberRole,
     creatingLink,
@@ -79,8 +78,8 @@ fun GroupLinkView(
         withBGApi {
           val link = chatModel.controller.apiGroupLinkMemberRole(rhId, groupInfo.groupId, role)
           if (link != null) {
-            groupLink = link.first
-            groupLinkMemberRole.value = link.second
+            groupLinkVar = link
+            groupLinkMemberRole.value = link.acceptMemberRole
             onGroupLinkUpdated?.invoke(link)
           }
         }
@@ -95,7 +94,7 @@ fun GroupLinkView(
           withBGApi {
             val r = chatModel.controller.apiDeleteGroupLink(rhId, groupInfo.groupId)
             if (r) {
-              groupLink = null
+              groupLinkVar = null
               onGroupLinkUpdated?.invoke(null)
             }
           }
@@ -113,7 +112,7 @@ fun GroupLinkView(
 
 @Composable
 fun GroupLinkLayout(
-  groupLink: CreatedConnLink?,
+  groupLink: GroupLink?,
   groupInfo: GroupInfo,
   groupLinkMemberRole: MutableState<GroupMemberRole?>,
   creatingLink: Boolean,
@@ -167,11 +166,11 @@ fun GroupLinkLayout(
         }
         val showShortLink = remember { mutableStateOf(true) }
         Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-        if (groupLink.connShortLink == null) {
-          SimpleXCreatedLinkQRCode(groupLink, short = false)
+        if (groupLink.connLinkContact.connShortLink == null) {
+          SimpleXCreatedLinkQRCode(groupLink.connLinkContact, short = false)
         } else {
           SectionViewWithButton(titleButton = { ToggleShortLinkButton(showShortLink) }) {
-            SimpleXCreatedLinkQRCode(groupLink, short = showShortLink.value)
+            SimpleXCreatedLinkQRCode(groupLink.connLinkContact, short = showShortLink.value)
           }
         }
         Row(
@@ -183,7 +182,7 @@ fun GroupLinkLayout(
           SimpleButton(
             stringResource(MR.strings.share_link),
             icon = painterResource(MR.images.ic_share),
-            click = { clipboard.shareText(groupLink.simplexChatUri(short = showShortLink.value)) }
+            click = { clipboard.shareText(groupLink.connLinkContact.simplexChatUri(short = showShortLink.value)) }
           )
           if (creatingGroup && close != null) {
             ContinueButton(close)
@@ -196,8 +195,10 @@ fun GroupLinkLayout(
             )
           }
         }
-        if (groupLink.connShortLink == null && appPreferences.privacyShortLinks.get()) {
-          AddShortLinkButton(addShortLink)
+        if (groupLink.connLinkContact.connShortLink == null) {
+          AddShortLinkButton(text = stringResource(MR.strings.add_short_link), addShortLink)
+        } else if (!groupLink.shortLinkDataSet) {
+          AddShortLinkButton(text = stringResource(MR.strings.share_group_profile_via_link), addShortLink)
         }
       }
     }
@@ -206,10 +207,10 @@ fun GroupLinkLayout(
 }
 
 @Composable
-private fun AddShortLinkButton(onClick: () -> Unit) {
+private fun AddShortLinkButton(text: String, onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_add),
-    stringResource(MR.strings.add_short_link),
+    text,
     onClick,
     iconColor = MaterialTheme.colors.primary,
     textColor = MaterialTheme.colors.primary,

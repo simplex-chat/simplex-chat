@@ -99,7 +99,6 @@ import Data.Type.Equality
 import Data.Word (Word32)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
-import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Messages
 import Simplex.Chat.Store.Profiles

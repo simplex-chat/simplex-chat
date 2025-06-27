@@ -2379,7 +2379,6 @@
     <string name="link_requires_newer_app_version_please_upgrade">Voor deze link is een nieuwere app-versie vereist. Werk de app bij of vraag je contactpersoon om een compatibele link te sturen.</string>
     <string name="full_link_button_text">Volledige link</string>
     <string name="unsupported_connection_link">Niet-ondersteunde verbindingslink</string>
-    <string name="privacy_short_links">Gebruik korte links (BETA)</string>
     <string name="short_link_button_text">Korte link</string>
     <string name="onboarding_conditions_configure_server_operators">Serveroperators configureren</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Privacybeleid en gebruiksvoorwaarden.</string>

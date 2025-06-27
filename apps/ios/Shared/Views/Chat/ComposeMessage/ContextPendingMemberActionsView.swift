@@ -14,6 +14,7 @@ struct ContextPendingMemberActionsView: View {
     @Environment(\.dismiss) var dismiss
     var groupInfo: GroupInfo
     var member: GroupMember
+    @UserDefault(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
     var body: some View {
         HStack(spacing: 0) {
@@ -39,7 +40,7 @@ struct ContextPendingMemberActionsView: View {
         }
         .frame(minHeight: 54)
         .frame(maxWidth: .infinity)
-        .background(.thinMaterial)
+        .background(ToolbarMaterial.material(toolbarMaterial))
     }
 }
 
