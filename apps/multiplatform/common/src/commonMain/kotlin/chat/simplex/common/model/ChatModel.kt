@@ -398,8 +398,19 @@ object ChatModel {
       }
     }
 
-    fun updateChats(newChats: List<Chat>) {
-      chats.replaceAll(newChats)
+    fun updateChats(newChats: List<Chat>, keepingChatId: String? = null) {
+      if (keepingChatId != null) {
+        val chatToKeep = getChat(keepingChatId)
+        val indexToRemove = newChats.indexOfFirst { it.id == keepingChatId }
+        if (chatToKeep != null && indexToRemove != -1) {
+          val remainingNewChats = newChats.toMutableList().apply { removeAt(indexToRemove) }
+          chats.replaceAll(listOf(chatToKeep) + remainingNewChats)
+        } else {
+          chats.replaceAll(newChats)
+        }
+      } else {
+        chats.replaceAll(newChats)
+      }
       popChatCollector.clear()
 
       val cId = chatId.value

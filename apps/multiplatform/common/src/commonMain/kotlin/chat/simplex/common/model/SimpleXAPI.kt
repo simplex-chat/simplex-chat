@@ -591,7 +591,7 @@ object ChatController {
     }
   }
 
-  suspend fun changeActiveUser_(rhId: Long?, toUserId: Long?, viewPwd: String?) {
+  suspend fun changeActiveUser_(rhId: Long?, toUserId: Long?, viewPwd: String?, keepingChatId: String? = null) {
     val prevActiveUser = chatModel.currentUser.value
     val currentUser = changingActiveUserMutex.withLock {
       (if (toUserId != null) apiSetActiveUser(rhId, toUserId, viewPwd) else apiGetActiveUser(rhId)).also {
@@ -604,20 +604,20 @@ object ChatController {
     val users = listUsers(rhId)
     chatModel.users.clear()
     chatModel.users.addAll(users)
-    getUserChatData(rhId)
+    getUserChatData(rhId, keepingChatId = keepingChatId)
     val invitation = chatModel.callInvitations.values.firstOrNull { inv -> inv.user.userId == toUserId }
     if (invitation != null && currentUser != null) {
       chatModel.callManager.reportNewIncomingCall(invitation.copy(user = currentUser))
     }
   }
 
-  suspend fun getUserChatData(rhId: Long?) {
+  suspend fun getUserChatData(rhId: Long?, keepingChatId: String? = null) {
     val hasUser = chatModel.currentUser.value != null
     chatModel.userAddress.value = if (hasUser) apiGetUserAddress(rhId) else null
     chatModel.chatItemTTL.value = if (hasUser) getChatItemTTL(rhId) else ChatItemTTL.None
     withContext(Dispatchers.Main) {
       val chats = apiGetChats(rhId)
-      chatModel.chatsContext.updateChats(chats)
+      chatModel.chatsContext.updateChats(chats, keepingChatId = keepingChatId)
     }
     chatModel.userTags.value = apiGetChatTags(rhId).takeIf { hasUser } ?: emptyList()
     chatModel.activeChatTagFilter.value = null

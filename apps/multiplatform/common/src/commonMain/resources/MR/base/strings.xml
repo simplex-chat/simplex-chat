@@ -856,6 +856,9 @@
   <string name="no_filtered_contacts">No filtered contacts</string>
   <string name="contact_list_header_title">Your contacts</string>
 
+  <!--  ComposeContextProfilePickerView.kt -->
+  <string name="context_user_picker_your_profile">Your profile</string>
+
   <!-- ScanCodeView.kt -->
   <string name="scan_code">Scan code</string>
   <string name="incorrect_code">Incorrect security code!</string>
