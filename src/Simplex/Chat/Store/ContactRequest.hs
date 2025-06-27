@@ -305,4 +305,4 @@ setRequestSharedMsgIdForContact db contactId sharedMsgId = do
 
 setRequestSharedMsgIdForGroup :: DB.Connection -> GroupId -> SharedMsgId -> IO ()
 setRequestSharedMsgIdForGroup db groupId sharedMsgId = do
-  DB.execute db "UPDATE group SET request_shared_msg_id = ? WHERE contact_id = ?" (sharedMsgId, groupId)
+  DB.execute db "UPDATE groups SET request_shared_msg_id = ? WHERE group_id = ?" (sharedMsgId, groupId)
