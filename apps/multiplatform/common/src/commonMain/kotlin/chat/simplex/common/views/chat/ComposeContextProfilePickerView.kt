@@ -48,7 +48,7 @@ fun ComposeContextProfilePickerView(
     if (isVisible.value) {
       offsetY.animateTo(
         targetValue = 0f,
-        animationSpec = mentionPickerAnimSpec()
+        animationSpec = contextUserPickerAnimSpec()
       )
     }
   }
@@ -211,56 +211,50 @@ fun ComposeContextProfilePickerView(
 
   @Composable
   fun ProfilePicker() {
-//    Box(
-//      modifier = Modifier
-//        .fillMaxSize()
-//        .offset { IntOffset(0, offsetY.value.toInt()) },
-//      contentAlignment = Alignment.BottomStart
-//    ) {
-      LazyColumnWithScrollBarNoAppBar(
-        Modifier
-          .heightIn(max = MAX_USER_PICKER_HEIGHT)
-          .background(MaterialTheme.colors.surface),
-        maxHeight = remember { mutableStateOf(MAX_USER_PICKER_HEIGHT) },
-        containerAlignment = Alignment.BottomEnd
-      ) {
-        val otherUsers = users.filter { u -> u.userId != selectedUser.value.userId }.sortedBy { it.activeOrder }
+    LazyColumnWithScrollBarNoAppBar(
+      Modifier
+        .heightIn(max = MAX_USER_PICKER_HEIGHT)
+        .background(MaterialTheme.colors.surface),
+      reverseLayout = true,
+      maxHeight = remember { mutableStateOf(MAX_USER_PICKER_HEIGHT) },
+      containerAlignment = Alignment.BottomEnd
+    ) {
+      val otherUsers = users.filter { u -> u.userId != selectedUser.value.userId }.sortedByDescending { it.activeOrder }
 
-        items(otherUsers, key = { it.userId }) { user ->
-          ProfilePickerUserOption(user)
+      if (incognitoDefault) {
+        item {
+          IncognitoOption()
           Divider(
             Modifier.padding(
               start = DEFAULT_PADDING_HALF,
               end = DEFAULT_PADDING_HALF,
             )
           )
+          ProfilePickerUserOption(selectedUser.value)
         }
-
-        if (incognitoDefault) {
-          item {
-            ProfilePickerUserOption(selectedUser.value)
-            Divider(
-              Modifier.padding(
-                start = DEFAULT_PADDING_HALF,
-                end = DEFAULT_PADDING_HALF,
-              )
+      } else {
+        item {
+          ProfilePickerUserOption(selectedUser.value)
+          Divider(
+            Modifier.padding(
+              start = DEFAULT_PADDING_HALF,
+              end = DEFAULT_PADDING_HALF,
             )
-            IncognitoOption()
-          }
-        } else {
-          item {
-            IncognitoOption()
-            Divider(
-              Modifier.padding(
-                start = DEFAULT_PADDING_HALF,
-                end = DEFAULT_PADDING_HALF,
-              )
-            )
-            ProfilePickerUserOption(selectedUser.value)
-          }
+          )
+          IncognitoOption()
         }
       }
-//    }
+
+      items(otherUsers, key = { it.userId }) { user ->
+        Divider(
+          Modifier.padding(
+            start = DEFAULT_PADDING_HALF,
+            end = DEFAULT_PADDING_HALF,
+          )
+        )
+        ProfilePickerUserOption(user)
+      }
+    }
   }
 
   @Composable
