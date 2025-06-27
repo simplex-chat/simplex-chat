@@ -473,7 +473,14 @@ fun showPrepareContactAlert(
 ) {
   AlertManager.privacySensitive.showOpenChatAlert(
     profileName = contactShortLinkData.profile.displayName,
-    profileImage = { ProfileImage(size = 72.dp, image = contactShortLinkData.profile.image) },
+    profileImage = {
+      ProfileImage(
+        size = 72.dp,
+        image = contactShortLinkData.profile.image,
+        icon = if (contactShortLinkData.business) MR.images.ic_work_filled_padded else MR.images.ic_account_circle_filled
+      )
+    },
+    confirmText = generalGetString(MR.strings.connect_plan_open_chat),
     onConfirm = {
       AlertManager.privacySensitive.hideAlert()
       withBGApi {
@@ -503,6 +510,7 @@ fun showPrepareGroupAlert(
   AlertManager.privacySensitive.showOpenChatAlert(
     profileName = groupShortLinkData.groupProfile.displayName,
     profileImage = { ProfileImage(size = 72.dp, image = groupShortLinkData.groupProfile.image, icon = MR.images.ic_supervised_user_circle_filled) },
+    confirmText = generalGetString(MR.strings.connect_plan_open_group),
     onConfirm = {
       AlertManager.privacySensitive.hideAlert()
       withBGApi {
