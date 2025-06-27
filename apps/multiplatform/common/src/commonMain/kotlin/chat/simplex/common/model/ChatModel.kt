@@ -1677,8 +1677,8 @@ data class Contact(
   val active get() = contactStatus == ContactStatus.Active
   override val nextConnect get() = sendMsgToConnect
   val nextSendGrpInv get() = contactGroupMemberId != null && !contactGrpInvSent
-  val nextConnectPrepared get() = preparedContact != null && activeConn == null
-  val nextAcceptContactRequest get() = contactRequestId != null && activeConn == null
+  val nextConnectPrepared get() = preparedContact != null && (activeConn == null || activeConn.connStatus == ConnStatus.Prepared)
+  val nextAcceptContactRequest get() = contactRequestId != null && (activeConn == null || activeConn.connStatus == ConnStatus.New)
   val sendMsgToConnect get() = nextSendGrpInv || nextConnectPrepared
   override val incognito get() = contactConnIncognito
   override fun featureEnabled(feature: ChatFeature) = when (feature) {

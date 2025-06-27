@@ -511,6 +511,7 @@ fun ComposeView(
       withContext(Dispatchers.Main) {
         chatsCtx.updateContact(chat.remoteHostId, contact)
         clearState()
+        chatModel.setContactNetworkStatus(contact, NetworkStatus.Connected())
       }
     }
   }
@@ -523,6 +524,7 @@ fun ComposeView(
       withContext(Dispatchers.Main) {
         chatsCtx.updateContact(chat.remoteHostId, contact)
         clearState()
+        chatModel.setContactNetworkStatus(contact, NetworkStatus.Connected())
       }
     }
   }

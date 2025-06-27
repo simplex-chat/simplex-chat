@@ -346,7 +346,10 @@ fun ChatPreviewView(
   @Composable
   fun chatStatusImage() {
     if (cInfo is ChatInfo.Direct) {
-      if (cInfo.contact.active && cInfo.contact.activeConn != null) {
+      if (
+        cInfo.contact.active &&
+        (cInfo.contact.activeConn?.connStatus == ConnStatus.Ready || cInfo.contact.activeConn?.connStatus == ConnStatus.SndReady)
+      ) {
         val descr = contactNetworkStatus?.statusString
         when (contactNetworkStatus) {
           is NetworkStatus.Connected ->
