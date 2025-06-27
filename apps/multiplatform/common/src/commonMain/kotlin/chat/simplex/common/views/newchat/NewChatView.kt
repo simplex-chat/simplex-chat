@@ -379,14 +379,7 @@ fun ActiveProfilePicker(
         }
       },
       image = {
-        Spacer(Modifier.width(8.dp))
-        Icon(
-          painterResource(MR.images.ic_theater_comedy_filled),
-          contentDescription = stringResource(MR.strings.incognito),
-          Modifier.size(32.dp),
-          tint = Indigo,
-        )
-        Spacer(Modifier.width(2.dp))
+        IncognitoOptionImage()
       },
       onInfo = { ModalManager.start.showModal { IncognitoView() } },
     )
@@ -548,6 +541,18 @@ fun ToggleShortLinkButton(short: MutableState<Boolean>) {
     ) { short.value = !short.value },
     style = MaterialTheme.typography.body2, fontSize = 14.sp, color = MaterialTheme.colors.primary
   )
+}
+
+@Composable
+fun IncognitoOptionImage() {
+  Spacer(Modifier.width(8.dp))
+  Icon(
+    painterResource(MR.images.ic_theater_comedy_filled),
+    contentDescription = stringResource(MR.strings.incognito),
+    Modifier.size(32.dp),
+    tint = Indigo,
+  )
+  Spacer(Modifier.width(2.dp))
 }
 
 @Composable

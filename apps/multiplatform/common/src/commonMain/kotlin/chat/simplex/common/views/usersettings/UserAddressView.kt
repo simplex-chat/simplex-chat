@@ -48,7 +48,7 @@ fun UserAddressView(
     progressIndicator = true
     withBGApi {
       try {
-        val u = chatModel.controller.apiSetProfileAddress(user?.value?.remoteHostId, on)
+        val u = chatModel.controller.apiSetProfileAddress(user.value?.remoteHostId, on)
         if (u != null) {
           chatModel.updateUser(u)
         }
@@ -65,7 +65,11 @@ fun UserAddressView(
       progressIndicator = true
       val connReqContact = chatModel.controller.apiCreateUserAddress(user.value?.remoteHostId)
       if (connReqContact != null) {
-        chatModel.userAddress.value = UserContactLinkRec(connReqContact, shortLinkDataSet = connReqContact.connShortLink != null)
+        chatModel.userAddress.value = UserContactLinkRec(
+          connReqContact,
+          shortLinkDataSet = connReqContact.connShortLink != null,
+          addressSettings = AddressSettings(businessAddress = false, autoAccept = null, autoReply = null)
+        )
 
         AlertManager.shared.showAlertDialog(
           title = generalGetString(MR.strings.share_address_with_contacts_question),
@@ -139,7 +143,7 @@ fun UserAddressView(
           onConfirm = {
             progressIndicator = true
             withBGApi {
-              val u = chatModel.controller.apiDeleteUserAddress(user?.value?.remoteHostId)
+              val u = chatModel.controller.apiDeleteUserAddress(user.value?.remoteHostId)
               if (u != null) {
                 chatModel.userAddress.value = null
                 chatModel.updateUser(u)
@@ -151,12 +155,12 @@ fun UserAddressView(
           destructive = true,
         )
       },
-      saveAas = { aas: AutoAcceptState, savedAAS: MutableState<AutoAcceptState> ->
+      saveAddressSettings = { settings: AddressSettingsState, savedSettings: MutableState<AddressSettingsState> ->
         withBGApi {
-          val address = chatModel.controller.userAddressAutoAccept(user?.value?.remoteHostId, aas.autoAccept)
+          val address = chatModel.controller.apiSetUserAddressSettings(user.value?.remoteHostId, settings.addressSettings)
           if (address != null) {
             chatModel.userAddress.value = address
-            savedAAS.value = aas
+            savedSettings.value = settings
           }
         }
       },
@@ -198,7 +202,7 @@ private fun UserAddressLayout(
   sendEmail: (UserContactLinkRec) -> Unit,
   setProfileAddress: (Boolean) -> Unit,
   deleteAddress: () -> Unit,
-  saveAas: (AutoAcceptState, MutableState<AutoAcceptState>) -> Unit,
+  saveAddressSettings: (AddressSettingsState, MutableState<AddressSettingsState>) -> Unit,
 ) {
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.simplex_address), hostDevice(user?.remoteHostId))
@@ -222,8 +226,8 @@ private fun UserAddressLayout(
           LearnMoreButton(learnMore)
         }
       } else {
-        val autoAcceptState = remember { mutableStateOf(AutoAcceptState(userAddress)) }
-        val autoAcceptStateSaved = remember { mutableStateOf(autoAcceptState.value) }
+        val addressSettingsState = remember { mutableStateOf(AddressSettingsState(settings = userAddress.addressSettings)) }
+        val savedAddressSettingsState = remember { mutableStateOf(addressSettingsState.value) }
         val showShortLink = remember { mutableStateOf(true) }
 
         SectionViewWithButton(
@@ -233,20 +237,20 @@ private fun UserAddressLayout(
           SimpleXCreatedLinkQRCode(userAddress.connLinkContact, short = showShortLink.value)
           ShareAddressButton { share(userAddress.connLinkContact.simplexChatUri(short = showShortLink.value)) }
           // ShareViaEmailButton { sendEmail(userAddress) }
-          BusinessAddressToggle(autoAcceptState) { saveAas(autoAcceptState.value, autoAcceptStateSaved) }
-          AddressSettingsButton(user, userAddress, shareViaProfile, setProfileAddress, saveAas)
+          BusinessAddressToggle(addressSettingsState) { saveAddressSettings(addressSettingsState.value, savedAddressSettingsState) }
+          AddressSettingsButton(user, userAddress, shareViaProfile, setProfileAddress, saveAddressSettings)
           if (userAddress.connLinkContact.connShortLink == null) {
             AddShortLinkButton(text = stringResource(MR.strings.add_short_link), showAddShortLinkAlert)
           } else if (!userAddress.shortLinkDataSet) {
             AddShortLinkButton(text = stringResource(MR.strings.share_profile_via_link), showAddShortLinkAlert)
           }
 
-          if (autoAcceptState.value.business) {
+          if (addressSettingsState.value.businessAddress) {
             SectionTextFooter(stringResource(MR.strings.add_your_team_members_to_conversations))
           }
         }
 
-        SectionDividerSpaced(maxTopPadding = autoAcceptState.value.business)
+        SectionDividerSpaced(maxTopPadding = addressSettingsState.value.businessAddress)
         SectionView(generalGetString(MR.strings.or_to_share_privately).uppercase()) {
           CreateOneTimeLinkButton()
         }
@@ -330,14 +334,14 @@ private fun AddressSettingsButton(
   userAddress: UserContactLinkRec,
   shareViaProfile: MutableState<Boolean>,
   setProfileAddress: (Boolean) -> Unit,
-  saveAas: (AutoAcceptState, MutableState<AutoAcceptState>) -> Unit,
+  saveAddressSettings: (AddressSettingsState, MutableState<AddressSettingsState>) -> Unit,
 ) {
   SettingsActionItem(
     painterResource(MR.images.ic_settings),
     stringResource(MR.strings.address_settings),
     click = {
       ModalManager.start.showCustomModal { close ->
-        UserAddressSettings(user, userAddress, shareViaProfile, setProfileAddress, saveAas, close = close)
+        UserAddressSettings(user, userAddress, shareViaProfile, setProfileAddress, saveAddressSettings, close = close)
       }
     }
   )
@@ -349,20 +353,20 @@ private fun ModalData.UserAddressSettings(
   userAddress: UserContactLinkRec,
   shareViaProfile: MutableState<Boolean>,
   setProfileAddress: (Boolean) -> Unit,
-  saveAas: (AutoAcceptState, MutableState<AutoAcceptState>) -> Unit,
+  saveAddressSettings: (AddressSettingsState, MutableState<AddressSettingsState>) -> Unit,
   close: () -> Unit
 ) {
-  val autoAcceptState = remember { stateGetOrPut("autoAcceptState") { (AutoAcceptState(userAddress)) } }
-  val autoAcceptStateSaved = remember { stateGetOrPut("autoAcceptStateSaved") { (autoAcceptState.value) } }
+  val addressSettingsState = remember { stateGetOrPut("autoAcceptState") { (AddressSettingsState(userAddress.addressSettings)) } }
+  val savedAddressSettingsState = remember { stateGetOrPut("autoAcceptStateSaved") { (addressSettingsState.value) } }
 
-  fun onClose(close: () -> Unit): Boolean = if (autoAcceptState.value == autoAcceptStateSaved.value) {
+  fun onClose(close: () -> Unit): Boolean = if (addressSettingsState.value == savedAddressSettingsState.value) {
     chatModel.centerPanelBackgroundClickHandler = null
     close()
     false
   } else {
     showUnsavedChangesAlert(
       save = {
-        saveAas(autoAcceptState.value, autoAcceptStateSaved)
+        saveAddressSettings(addressSettingsState.value, savedAddressSettingsState)
         chatModel.centerPanelBackgroundClickHandler = null
         close()
       },
@@ -391,12 +395,20 @@ private fun ModalData.UserAddressSettings(
       ) {
         SectionView {
           ShareWithContactsButton(shareViaProfile, setProfileAddress)
-          AutoAcceptToggle(autoAcceptState) { saveAas(autoAcceptState.value, autoAcceptStateSaved) }
+          AutoAcceptToggle(addressSettingsState) { saveAddressSettings(addressSettingsState.value, savedAddressSettingsState) }
+          if (!chatModel.addressShortLinkDataSet && !addressSettingsState.value.businessAddress) {
+            AcceptIncognitoToggle(addressSettingsState)
+          }
         }
+        SectionDividerSpaced()
 
-        if (autoAcceptState.value.enable) {
-          SectionDividerSpaced()
-          AutoAcceptSection(autoAcceptState, autoAcceptStateSaved, saveAas)
+        SectionView(stringResource(MR.strings.address_welcome_message).uppercase()) {
+          AutoReplyEditor(addressSettingsState)
+        }
+        SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+
+        saveAddressSettingsButton(addressSettingsState.value == savedAddressSettingsState.value) {
+          saveAddressSettings(addressSettingsState.value, savedAddressSettingsState)
         }
       }
     }
@@ -444,33 +456,53 @@ fun ShareWithContactsButton(shareViaProfile: MutableState<Boolean>, setProfileAd
 }
 
 @Composable
-private fun BusinessAddressToggle(autoAcceptState: MutableState<AutoAcceptState>, saveAas: (AutoAcceptState) -> Unit) {
+private fun BusinessAddressToggle(addressSettingsState: MutableState<AddressSettingsState>, saveAddressSettings: (AddressSettingsState) -> Unit) {
   PreferenceToggleWithIcon(
     stringResource(MR.strings.business_address),
     painterResource(MR.images.ic_work),
-    checked = autoAcceptState.value.business,
-  ) { ba ->
-    autoAcceptState.value = if (ba)
-      AutoAcceptState(enable = true, incognito = false, business = true, autoAcceptState.value.welcomeText)
+    checked = addressSettingsState.value.businessAddress,
+  ) { businessToggle ->
+    addressSettingsState.value = if (businessToggle)
+      AddressSettingsState(
+        businessAddress = true,
+        autoAccept = true,
+        autoAcceptIncognito = false,
+        autoReply = addressSettingsState.value.autoReply
+      )
     else
-      AutoAcceptState(autoAcceptState.value.enable, autoAcceptState.value.incognito, business = false, autoAcceptState.value.welcomeText)
-    saveAas(autoAcceptState.value)
+      AddressSettingsState(
+        businessAddress = false,
+        autoAccept = addressSettingsState.value.autoAccept,
+        autoAcceptIncognito = addressSettingsState.value.autoAcceptIncognito,
+        autoReply = addressSettingsState.value.autoReply
+      )
+    saveAddressSettings(addressSettingsState.value)
   }
 }
 
 @Composable
-private fun AutoAcceptToggle(autoAcceptState: MutableState<AutoAcceptState>, saveAas: (AutoAcceptState) -> Unit) {
+private fun AutoAcceptToggle(addressSettingsState: MutableState<AddressSettingsState>, saveAddressSettings: (AddressSettingsState) -> Unit) {
   PreferenceToggleWithIcon(
     stringResource(MR.strings.auto_accept_contact),
     painterResource(MR.images.ic_check),
-    disabled = autoAcceptState.value.business,
-    checked = autoAcceptState.value.enable
-  ) {
-    autoAcceptState.value = if (!it)
-      AutoAcceptState()
+    disabled = addressSettingsState.value.businessAddress,
+    checked = addressSettingsState.value.autoAccept
+  ) { autoAcceptToggle ->
+    addressSettingsState.value = if (autoAcceptToggle)
+      AddressSettingsState(
+        businessAddress = addressSettingsState.value.businessAddress,
+        autoAccept = true,
+        autoAcceptIncognito = addressSettingsState.value.autoAcceptIncognito,
+        autoReply = addressSettingsState.value.autoReply
+      )
     else
-      AutoAcceptState(it, autoAcceptState.value.incognito, autoAcceptState.value.business, autoAcceptState.value.welcomeText)
-    saveAas(autoAcceptState.value)
+      AddressSettingsState(
+        businessAddress = false,
+        autoAccept = false,
+        autoAcceptIncognito = addressSettingsState.value.autoAcceptIncognito,
+        autoReply = addressSettingsState.value.autoReply
+      )
+    saveAddressSettings(addressSettingsState.value)
   }
 }
 
@@ -485,103 +517,110 @@ private fun DeleteAddressButton(onClick: () -> Unit) {
   )
 }
 
-private class AutoAcceptState {
-  var enable: Boolean = false
+private class AddressSettingsState {
+  var businessAddress: Boolean = false
     private set
-  var incognito: Boolean = false
+  var autoAccept: Boolean = false
     private set
-  var business: Boolean = false
+  var autoAcceptIncognito: Boolean = false
     private set
-  var welcomeText: String = ""
+  var autoReply: String = ""
     private set
 
-  constructor(enable: Boolean = false, incognito: Boolean = false, business: Boolean = false, welcomeText: String = "") {
-    this.enable = enable
-    this.incognito = incognito
-    this.business = business
-    this.welcomeText = welcomeText
+  constructor(businessAddress: Boolean = false, autoAccept: Boolean = false, autoAcceptIncognito: Boolean = false, autoReply: String = "") {
+    this.businessAddress = businessAddress
+    this.autoAccept = autoAccept
+    this.autoAcceptIncognito = autoAcceptIncognito
+    this.autoReply = autoReply
   }
 
-  constructor(contactLink: UserContactLinkRec) {
-    contactLink.autoAccept?.let { aa ->
-      enable = true
-      incognito = aa.acceptIncognito
-      business = aa.businessAddress
-      aa.autoReply?.let { msg ->
-        welcomeText = msg.text
-      } ?: run {
-        welcomeText = ""
-      }
-    }
+  constructor(settings: AddressSettings) {
+    this.businessAddress = settings.businessAddress
+    this.autoAccept = settings.autoAccept != null
+    this.autoAcceptIncognito = settings.autoAccept?.acceptIncognito == true
+    this.autoReply = settings.autoReply?.text ?: ""
   }
 
-  val autoAccept: AutoAccept?
+  val addressSettings: AddressSettings
     get() {
-      if (enable) {
-        var autoReply: MsgContent? = null
-        val s = welcomeText.trim()
-        if (s != "") {
-          autoReply = MsgContent.MCText(s)
-        }
-        return AutoAccept(business, incognito, autoReply)
-      }
-      return null
+      return AddressSettings(
+        businessAddress = this.businessAddress,
+        autoAccept = if (this.autoAccept) AutoAccept(acceptIncognito = this.autoAcceptIncognito) else null,
+        autoReply = if (this.autoReply.isEmpty()) null else MsgContent.MCText(this.autoReply)
+      )
     }
 
   override fun equals(other: Any?): Boolean {
-    if (other !is AutoAcceptState) return false
-    return this.enable == other.enable && this.incognito == other.incognito && this.business == other.business && this.welcomeText == other.welcomeText
+    if (other !is AddressSettingsState) return false
+    return (
+        this.businessAddress == other.businessAddress
+            && this.autoAccept == other.autoAccept
+            && this.autoAcceptIncognito == other.autoAcceptIncognito
+            && this.autoReply == other.autoReply
+    )
   }
 
   override fun hashCode(): Int {
-    var result = enable.hashCode()
-    result = 31 * result + incognito.hashCode()
-    result = 31 * result + business.hashCode()
-    result = 31 * result + welcomeText.hashCode()
+    var result = businessAddress.hashCode()
+    result = 31 * result + autoAccept.hashCode()
+    result = 31 * result + autoAcceptIncognito.hashCode()
+    result = 31 * result + autoReply.hashCode()
     return result
   }
 }
 
 @Composable
 private fun AutoAcceptSection(
-  autoAcceptState: MutableState<AutoAcceptState>,
-  savedAutoAcceptState: MutableState<AutoAcceptState>,
-  saveAas: (AutoAcceptState, MutableState<AutoAcceptState>) -> Unit
+  addressSettingsState: MutableState<AddressSettingsState>,
+  savedAddressSettingsStatee: MutableState<AddressSettingsState>,
+  saveAddressSettings: (AddressSettingsState, MutableState<AddressSettingsState>) -> Unit
 ) {
   SectionView(stringResource(MR.strings.auto_accept_contact).uppercase()) {
-    if (!chatModel.addressShortLinkDataSet && !autoAcceptState.value.business) {
-      AcceptIncognitoToggle(autoAcceptState)
+    if (!chatModel.addressShortLinkDataSet && !addressSettingsState.value.businessAddress) {
+      AcceptIncognitoToggle(addressSettingsState)
     }
-    WelcomeMessageEditor(autoAcceptState)
-    SaveAASButton(autoAcceptState.value == savedAutoAcceptState.value) { saveAas(autoAcceptState.value, savedAutoAcceptState) }
+    AutoReplyEditor(addressSettingsState)
+    saveAddressSettingsButton(addressSettingsState.value == savedAddressSettingsStatee.value) {
+      saveAddressSettings(addressSettingsState.value, savedAddressSettingsStatee)
+    }
   }
 }
 
 @Composable
-private fun AcceptIncognitoToggle(autoAcceptState: MutableState<AutoAcceptState>) {
+private fun AcceptIncognitoToggle(addressSettingsState: MutableState<AddressSettingsState>) {
   PreferenceToggleWithIcon(
     stringResource(MR.strings.accept_contact_incognito_button),
-    if (autoAcceptState.value.incognito) painterResource(MR.images.ic_theater_comedy_filled) else painterResource(MR.images.ic_theater_comedy),
-    if (autoAcceptState.value.incognito) Indigo else MaterialTheme.colors.secondary,
-    checked = autoAcceptState.value.incognito,
-  ) {
-    autoAcceptState.value = AutoAcceptState(autoAcceptState.value.enable, it, autoAcceptState.value.business, autoAcceptState.value.welcomeText)
+    if (addressSettingsState.value.autoAcceptIncognito) painterResource(MR.images.ic_theater_comedy_filled) else painterResource(MR.images.ic_theater_comedy),
+    if (addressSettingsState.value.autoAcceptIncognito) Indigo else MaterialTheme.colors.secondary,
+    checked = addressSettingsState.value.autoAcceptIncognito,
+  ) { incognitoToggle ->
+    addressSettingsState.value = AddressSettingsState(
+      businessAddress = addressSettingsState.value.businessAddress,
+      autoAccept = addressSettingsState.value.autoAccept,
+      autoAcceptIncognito = incognitoToggle,
+      autoReply = addressSettingsState.value.autoReply
+    )
   }
 }
 
 @Composable
-private fun WelcomeMessageEditor(autoAcceptState: MutableState<AutoAcceptState>) {
-  val welcomeText = rememberSaveable { mutableStateOf(autoAcceptState.value.welcomeText) }
-  TextEditor(welcomeText, Modifier.height(100.dp), placeholder = stringResource(MR.strings.enter_welcome_message_optional))
-  LaunchedEffect(welcomeText.value) {
-    if (welcomeText.value != autoAcceptState.value.welcomeText) {
-      autoAcceptState.value = AutoAcceptState(autoAcceptState.value.enable, autoAcceptState.value.incognito, autoAcceptState.value.business, welcomeText.value)
+private fun AutoReplyEditor(addressSettingsState: MutableState<AddressSettingsState>) {
+  val autoReply = rememberSaveable { mutableStateOf(addressSettingsState.value.autoReply) }
+  TextEditor(autoReply, Modifier.height(100.dp), placeholder = stringResource(MR.strings.enter_welcome_message_optional))
+  LaunchedEffect(autoReply.value) {
+    if (autoReply.value != addressSettingsState.value.autoReply) {
+      addressSettingsState.value = AddressSettingsState(
+        businessAddress = addressSettingsState.value.businessAddress,
+        autoAccept = addressSettingsState.value.autoAccept,
+        autoAcceptIncognito = addressSettingsState.value.autoAcceptIncognito,
+        autoReply = autoReply.value
+      )
     }
   }
 }
 
 @Composable
-private fun SaveAASButton(disabled: Boolean, onClick: () -> Unit) {
+private fun saveAddressSettingsButton(disabled: Boolean, onClick: () -> Unit) {
   SectionItemView(onClick, disabled = disabled) {
     Text(stringResource(MR.strings.save_verb), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
   }
@@ -602,7 +641,7 @@ fun PreviewUserAddressLayoutNoAddress() {
       showAddShortLinkAlert = {},
       share = { _ -> },
       deleteAddress = {},
-      saveAas = { _, _ -> },
+      saveAddressSettings = { _, _ -> },
       setProfileAddress = { _ -> },
       learnMore = {},
       shareViaProfile = remember { mutableStateOf(false) },
@@ -631,12 +670,16 @@ fun PreviewUserAddressLayoutAddressCreated() {
   SimpleXTheme {
     UserAddressLayout(
       user = User.sampleData,
-      userAddress = UserContactLinkRec(CreatedConnLink("https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D", null), shortLinkDataSet = false),
+      userAddress = UserContactLinkRec(
+        CreatedConnLink("https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D", null),
+        shortLinkDataSet = false,
+        addressSettings = AddressSettings(businessAddress = false, autoAccept = null, autoReply = null)
+      ),
       createAddress = {},
       showAddShortLinkAlert = {},
       share = { _ -> },
       deleteAddress = {},
-      saveAas = { _, _ -> },
+      saveAddressSettings = { _, _ -> },
       setProfileAddress = { _ -> },
       learnMore = {},
       shareViaProfile = remember { mutableStateOf(false) },

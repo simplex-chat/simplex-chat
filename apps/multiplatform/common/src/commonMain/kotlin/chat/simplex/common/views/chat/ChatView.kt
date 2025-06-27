@@ -177,15 +177,10 @@ fun ChatView(
                   Modifier.fillMaxWidth(),
                   horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                  if (
-                    chatInfo is ChatInfo.Direct
-                    && !chatInfo.contact.sndReady
-                    && chatInfo.contact.active
-                    && !chatInfo.contact.sendMsgToConnect
-                    && !chatInfo.contact.nextAcceptContactRequest
-                  ) {
+                  val connectingText = connectingText(chatInfo)
+                  if (connectingText != null) {
                     Text(
-                      generalGetString(MR.strings.contact_connection_pending),
+                      connectingText,
                       Modifier.padding(top = 4.dp),
                       fontSize = 14.sp,
                       color = MaterialTheme.colors.secondary
@@ -711,6 +706,34 @@ fun ChatView(
       else -> {}
     }
     }
+  }
+}
+
+private fun connectingText(chatInfo: ChatInfo): String? {
+  return when (chatInfo) {
+    is ChatInfo.Direct ->
+      if (
+        !chatInfo.contact.sndReady
+        && chatInfo.contact.active
+        && !chatInfo.contact.sendMsgToConnect
+        && !chatInfo.contact.nextAcceptContactRequest
+      ) {
+        if (chatInfo.contact.preparedContact?.uiConnLinkType == ConnectionMode.Con) {
+          generalGetString(MR.strings.contact_should_accept)
+        } else {
+          generalGetString(MR.strings.contact_connection_pending)
+        }
+      } else {
+        null
+      }
+
+    is ChatInfo.Group ->
+      when (chatInfo.groupInfo.membership.memberStatus) {
+        GroupMemberStatus.MemAccepted -> generalGetString(MR.strings.group_connection_pending) // TODO [short links] add member status to show transition from prepared group to started connection earlier?
+        else -> null
+      }
+
+    else -> null
   }
 }
 
@@ -1705,7 +1728,7 @@ fun BoxScope.ChatItemsList(
       } else {
         null
       }
-      val showAvatar = shouldShowAvatar(item, listItem.nextItem)
+      val showAvatar = shouldShowAvatar(item, merged.oldest().nextItem)
       val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
       val itemSeparation: ItemSeparation
       val prevItemSeparationLargeGap: Boolean

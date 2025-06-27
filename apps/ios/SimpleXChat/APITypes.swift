@@ -758,6 +758,8 @@ public enum StoreError: Decodable, Hashable {
     case userContactLinkNotFound
     case contactRequestNotFound(contactRequestId: Int64)
     case contactRequestNotFoundByName(contactName: ContactName)
+    case invalidContactRequestEntity(contactRequestId: Int64)
+    case invalidBusinessChatContactRequest
     case groupNotFound(groupId: Int64)
     case groupNotFoundByName(groupName: GroupName)
     case groupMemberNameNotFound(groupId: Int64, groupMemberName: ContactName)
