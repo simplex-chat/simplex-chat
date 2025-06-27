@@ -511,25 +511,36 @@ fun ComposeView(
       withContext(Dispatchers.Main) {
         chatsCtx.updateContact(chat.remoteHostId, contact)
         clearState()
+        chatModel.setContactNetworkStatus(contact, NetworkStatus.Connected())
       }
     }
   }
 
   suspend fun sendConnectPreparedContact() {
     val mc = checkLinkPreview()
-    // TODO [short links] use incognito default (incognito choice will be available via context profile picker)
-    val contact = chatModel.controller.apiConnectPreparedContact(chat.remoteHostId, chat.chatInfo.apiId, incognito = false, msg = mc)
+    val contact = chatModel.controller.apiConnectPreparedContact(
+      rh = chat.remoteHostId,
+      contactId = chat.chatInfo.apiId,
+      incognito = chatModel.controller.appPrefs.incognito.get(),
+      msg = mc
+    )
     if (contact != null) {
       withContext(Dispatchers.Main) {
         chatsCtx.updateContact(chat.remoteHostId, contact)
         clearState()
+        chatModel.setContactNetworkStatus(contact, NetworkStatus.Connected())
       }
     }
   }
 
-  suspend fun connectPreparedGroup() {
-    // TODO [short links] use incognito default (incognito choice will be available via context profile picker)
-    val groupInfo = chatModel.controller.apiConnectPreparedGroup(chat.remoteHostId, chat.chatInfo.apiId, incognito = false)
+  suspend fun sendConnectPreparedGroup() {
+    val mc = checkLinkPreview()
+    val groupInfo = chatModel.controller.apiConnectPreparedGroup(
+      rh = chat.remoteHostId,
+      groupId = chat.chatInfo.apiId,
+      incognito = chatModel.controller.appPrefs.incognito.get(),
+      msg = mc
+    )
     if (groupInfo != null) {
       withContext(Dispatchers.Main) {
         chatsCtx.updateGroup(chat.remoteHostId, groupInfo)
@@ -548,7 +559,7 @@ fun ComposeView(
         } else if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.nextConnectPrepared) {
           sendConnectPreparedContact()
         } else if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.nextConnectPrepared) {
-          connectPreparedGroup()
+          sendConnectPreparedGroup()
         }
       }
     }) {
@@ -1070,6 +1081,20 @@ fun ComposeView(
       NextConnectPreparedButton()
     }
     // TODO ^^^ (this shouldn't be here)
+
+    val currentUser = chatModel.currentUser.value
+    if ((
+          (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.nextConnectPrepared)
+              || (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.nextConnectPrepared)
+        )
+      && currentUser != null
+    ) {
+      ComposeContextProfilePickerView(
+        rhId = rhId,
+        chat = chat,
+        currentUser = currentUser
+      )
+    }
 
     if (
       chat.chatInfo is ChatInfo.Direct

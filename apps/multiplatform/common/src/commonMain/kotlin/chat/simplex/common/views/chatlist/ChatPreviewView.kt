@@ -137,45 +137,82 @@ fun ChatPreviewView(
   fun chatPreviewTitle() {
     val deleting by remember(disabled, chat.id) { mutableStateOf(chatModel.deletedChats.value.contains(chat.remoteHostId to chat.chatInfo.id)) }
     when (cInfo) {
-      is ChatInfo.Direct ->
-        Row(verticalAlignment = Alignment.CenterVertically) {
-          if (cInfo.contact.verified) {
-            VerifiedIcon()
+      is ChatInfo.Direct -> {
+        if (cInfo.contact.verified) {
+          VerifiedIcon()
+        }
+        val color = if (deleting)
+          MaterialTheme.colors.secondary
+        else if (cInfo.contact.nextAcceptContactRequest || cInfo.contact.sendMsgToConnect) {
+          MaterialTheme.colors.primary
+        } else if (!cInfo.contact.sndReady) {
+          MaterialTheme.colors.secondary
+        } else {
+          Color.Unspecified
+        }
+        chatPreviewTitleText(color = color)
+      }
+      is ChatInfo.Group -> {
+        val color = if (deleting) {
+          MaterialTheme.colors.secondary
+        } else {
+          when (cInfo.groupInfo.membership.memberStatus) {
+            GroupMemberStatus.MemInvited -> if (chat.chatInfo.incognito) Indigo else MaterialTheme.colors.primary
+            GroupMemberStatus.MemAccepted, GroupMemberStatus.MemRejected -> MaterialTheme.colors.secondary
+            else -> if (cInfo.groupInfo.nextConnectPrepared) MaterialTheme.colors.primary else Color.Unspecified
           }
-          chatPreviewTitleText(
-            if (deleting)
-              MaterialTheme.colors.secondary
-            else if (cInfo.contact.nextAcceptContactRequest) {
-              MaterialTheme.colors.primary
-            } else {
-              Color.Unspecified
-            }
-          )
         }
-      is ChatInfo.Group ->
-        when (cInfo.groupInfo.membership.memberStatus) {
-          GroupMemberStatus.MemInvited -> chatPreviewTitleText(
-            if (inProgress || deleting)
-              MaterialTheme.colors.secondary
-            else
-              if (chat.chatInfo.incognito) Indigo else MaterialTheme.colors.primary
-          )
-          GroupMemberStatus.MemAccepted, GroupMemberStatus.MemRejected -> chatPreviewTitleText(MaterialTheme.colors.secondary)
-          else -> chatPreviewTitleText(
-            if (deleting)
-              MaterialTheme.colors.secondary
-            else
-              Color.Unspecified
-          )
-        }
+        chatPreviewTitleText(color = color)
+      }
       else -> chatPreviewTitleText()
     }
   }
 
   @Composable
+  fun chatPreviewInfoText(): Pair<String, Color>? {
+    return when (cInfo) {
+      is ChatInfo.Direct ->
+        if (cInfo.contact.activeConn == null && cInfo.contact.profile.contactLink != null && cInfo.contact.active) {
+          stringResource(MR.strings.contact_tap_to_connect) to MaterialTheme.colors.primary
+        } else if (cInfo.contact.sendMsgToConnect) {
+          stringResource(MR.strings.open_to_connect) to Color.Unspecified
+        } else if (cInfo.contact.nextAcceptContactRequest) {
+          stringResource(MR.strings.open_to_accept) to Color.Unspecified
+        } else if (!cInfo.contact.sndReady && cInfo.contact.activeConn != null && cInfo.contact.active) {
+          if (cInfo.contact.preparedContact?.uiConnLinkType == ConnectionMode.Con) {
+            stringResource(MR.strings.contact_should_accept) to Color.Unspecified
+          } else {
+            stringResource(MR.strings.contact_connection_pending) to Color.Unspecified
+          }
+        } else {
+          null
+        }
+
+      is ChatInfo.Group ->
+        if (cInfo.groupInfo.nextConnectPrepared) {
+          stringResource(MR.strings.group_preview_open_to_join) to Color.Unspecified
+        } else {
+          when (cInfo.groupInfo.membership.memberStatus) {
+            GroupMemberStatus.MemRejected -> stringResource(MR.strings.group_preview_rejected) to Color.Unspecified
+            GroupMemberStatus.MemInvited -> groupInvitationPreviewText(currentUserProfileDisplayName, cInfo.groupInfo) to Color.Unspecified
+            GroupMemberStatus.MemAccepted -> stringResource(MR.strings.group_connection_pending) to Color.Unspecified
+            GroupMemberStatus.MemPendingReview, GroupMemberStatus.MemPendingApproval ->
+              stringResource(MR.strings.reviewed_by_admins) to MaterialTheme.colors.secondary
+            else -> null
+          }
+        }
+
+      else -> null
+    }
+  }
+
+  @Composable
   fun chatPreviewText() {
+    val previewText = chatPreviewInfoText()
     val ci = chat.chatItems.lastOrNull()
-    if (ci != null) {
+    if (ci?.content?.hasMsgContent != true && previewText != null) {
+      Text(previewText.first, color = previewText.second)
+    } else if (ci != null) {
       if (showChatPreviews || (chatModelDraftChatId == chat.id && chatModelDraft != null)) {
         val sp20 = with(LocalDensity.current) { 20.sp.toDp() }
         val (text: CharSequence, inlineTextContent) = when {
@@ -195,6 +232,7 @@ fun ChatPreviewView(
                 append(if (text.isEmpty()) mc.reason.text else "${mc.reason.text}: ")
               }
             }
+
           else -> null
         }
 
@@ -203,7 +241,7 @@ fun ChatPreviewView(
           formattedText,
           sender = when {
             chatModelDraftChatId == chat.id && chatModelDraft != null -> null
-            cInfo is ChatInfo.Group && !ci.chatDir.sent -> ci.memberDisplayName
+            cInfo is ChatInfo.Group && !ci.chatDir.sent && !ci.meta.showGroupAsSender -> ci.memberDisplayName
             else -> null
           },
           mentions = ci.mentions,
@@ -226,33 +264,6 @@ fun ChatPreviewView(
           modifier = Modifier.fillMaxWidth(),
           prefix = prefix
         )
-      }
-    } else {
-      when (cInfo) {
-        is ChatInfo.Direct ->
-          if (cInfo.contact.activeConn == null && cInfo.contact.profile.contactLink != null && cInfo.contact.active) {
-            Text(stringResource(MR.strings.contact_tap_to_connect), color = MaterialTheme.colors.primary)
-          } else if (cInfo.contact.nextAcceptContactRequest) {
-            Text(stringResource(MR.strings.hold_or_open_to_connect))
-          } else if (cInfo.contact.sendMsgToConnect) {
-            Text(stringResource(MR.strings.member_contact_send_direct_message))
-          } else if (!cInfo.contact.sndReady && cInfo.contact.activeConn != null && cInfo.contact.active) {
-            Text(stringResource(MR.strings.contact_connection_pending), color = MaterialTheme.colors.secondary)
-          }
-        is ChatInfo.Group ->
-          if (cInfo.groupInfo.nextConnectPrepared) {
-            Text(stringResource(MR.strings.group_preview_open_to_join))
-          } else {
-            when (cInfo.groupInfo.membership.memberStatus) {
-              GroupMemberStatus.MemRejected -> Text(stringResource(MR.strings.group_preview_rejected))
-              GroupMemberStatus.MemInvited -> Text(groupInvitationPreviewText(currentUserProfileDisplayName, cInfo.groupInfo))
-              GroupMemberStatus.MemAccepted -> Text(stringResource(MR.strings.group_connection_pending), color = MaterialTheme.colors.secondary)
-              GroupMemberStatus.MemPendingReview, GroupMemberStatus.MemPendingApproval ->
-                Text(stringResource(MR.strings.reviewed_by_admins), color = MaterialTheme.colors.secondary)
-              else -> {}
-            }
-          }
-        else -> {}
       }
     }
   }
@@ -346,7 +357,10 @@ fun ChatPreviewView(
   @Composable
   fun chatStatusImage() {
     if (cInfo is ChatInfo.Direct) {
-      if (cInfo.contact.active && cInfo.contact.activeConn != null) {
+      if (
+        cInfo.contact.active &&
+        (cInfo.contact.activeConn?.connStatus == ConnStatus.Ready || cInfo.contact.activeConn?.connStatus == ConnStatus.SndReady)
+      ) {
         val descr = contactNetworkStatus?.statusString
         when (contactNetworkStatus) {
           is NetworkStatus.Connected ->

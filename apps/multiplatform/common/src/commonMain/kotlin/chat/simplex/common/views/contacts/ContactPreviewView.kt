@@ -40,7 +40,7 @@ fun ContactPreviewView(
             contactType == ContactType.CARD -> MaterialTheme.colors.primary
             contactType == ContactType.CONTACT_WITH_REQUEST -> MaterialTheme.colors.primary
             contactType == ContactType.REQUEST -> MaterialTheme.colors.primary
-            contactType == ContactType.RECENT && chat.chatInfo.incognito -> Indigo
+            contactType == ContactType.RECENT -> if (chat.chatInfo.nextConnect) MaterialTheme.colors.primary else Color.Unspecified
             else -> Color.Unspecified
         }
 

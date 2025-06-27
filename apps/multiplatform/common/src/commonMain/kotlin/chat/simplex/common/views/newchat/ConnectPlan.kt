@@ -382,6 +382,13 @@ fun askCurrentOrIncognitoProfileAlert(
   )
 }
 
+fun openChat_(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, chat: Chat) {
+  withBGApi {
+    close?.invoke()
+    openChat(secondaryChatsCtx = null, rhId, chat.chatInfo)
+  }
+}
+
 fun openKnownContact(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, contact: Contact) {
   withBGApi {
     val c = chatModel.getContactChat(contact.contactId)
@@ -466,16 +473,22 @@ fun showPrepareContactAlert(
 ) {
   AlertManager.privacySensitive.showOpenChatAlert(
     profileName = contactShortLinkData.profile.displayName,
-    profileImage = { ProfileImage(size = 72.dp, image = contactShortLinkData.profile.image) },
+    profileImage = {
+      ProfileImage(
+        size = 72.dp,
+        image = contactShortLinkData.profile.image,
+        icon = if (contactShortLinkData.business) MR.images.ic_work_filled_padded else MR.images.ic_account_circle_filled
+      )
+    },
+    confirmText = generalGetString(MR.strings.connect_plan_open_chat),
     onConfirm = {
       AlertManager.privacySensitive.hideAlert()
       withBGApi {
-        val contact = chatModel.controller.apiPrepareContact(rhId, connectionLink, contactShortLinkData)
-        if (contact != null) {
+        val chat = chatModel.controller.apiPrepareContact(rhId, connectionLink, contactShortLinkData)
+        if (chat != null) {
           withContext(Dispatchers.Main) {
-            val chatInfo = ChatInfo.Direct(contact)
-            ChatController.chatModel.chatsContext.addChat(Chat(rhId, chatInfo, chatItems = listOf()))
-            openKnownContact(chatModel, rhId, close, contact)
+            ChatController.chatModel.chatsContext.addChat(chat)
+            openChat_(chatModel, rhId, close, chat)
           }
         }
         cleanup?.invoke()
@@ -497,15 +510,15 @@ fun showPrepareGroupAlert(
   AlertManager.privacySensitive.showOpenChatAlert(
     profileName = groupShortLinkData.groupProfile.displayName,
     profileImage = { ProfileImage(size = 72.dp, image = groupShortLinkData.groupProfile.image, icon = MR.images.ic_supervised_user_circle_filled) },
+    confirmText = generalGetString(MR.strings.connect_plan_open_group),
     onConfirm = {
       AlertManager.privacySensitive.hideAlert()
       withBGApi {
-        val groupInfo = chatModel.controller.apiPrepareGroup(rhId, connectionLink, groupShortLinkData)
-        if (groupInfo != null) {
+        val chat = chatModel.controller.apiPrepareGroup(rhId, connectionLink, groupShortLinkData)
+        if (chat != null) {
           withContext(Dispatchers.Main) {
-            val chatInfo = ChatInfo.Group(groupInfo, groupChatScope = null)
-            ChatController.chatModel.chatsContext.addChat(Chat(rhId, chatInfo, chatItems = listOf()))
-            openKnownGroup(chatModel, rhId, close, groupInfo)
+            ChatController.chatModel.chatsContext.addChat(chat)
+            openChat_(chatModel, rhId, close, chat)
           }
         }
         cleanup?.invoke()

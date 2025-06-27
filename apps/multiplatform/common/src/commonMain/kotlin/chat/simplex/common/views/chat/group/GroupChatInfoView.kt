@@ -592,7 +592,9 @@ fun ModalData.GroupChatInfoLayout(
       }
     }
     item {
-      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+      if (!groupInfo.nextConnectPrepared) {
+        SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+      }
       SectionView {
         ClearChatButton(clearChat)
         if (groupInfo.canDelete) {
