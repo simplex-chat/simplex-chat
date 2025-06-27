@@ -64,7 +64,7 @@ initializeBotAddress' logAddress cc = do
       when logAddress $ do
         putStrLn $ "Bot's contact address is: " <> B.unpack (maybe (strEncode uri) strEncode shortUri)
         when (isJust shortUri) $ putStrLn $ "Full contact address for old clients: " <> B.unpack (strEncode uri)
-      let settings = AddressSettings {businessAddress = False, welcomeMessage = Nothing, autoAccept = Just AutoAccept {acceptIncognito = False}, autoReply = Nothing}
+      let settings = AddressSettings {businessAddress = False, autoAccept = Just AutoAccept {acceptIncognito = False}, autoReply = Nothing}
       void $ sendChatCmd cc $ SetAddressSettings settings
 
 sendMessage :: ChatController -> Contact -> Text -> IO ()

@@ -371,7 +371,6 @@ struct ToggleShortLinkHeader: View {
 
 struct AddressSettingsState: Equatable {
     var businessAddress = false
-    var welcomeMessage = ""
     var autoAccept = false
     var autoAcceptIncognito = false
     var autoReply = ""
@@ -380,7 +379,6 @@ struct AddressSettingsState: Equatable {
 
     init(settings: AddressSettings) {
         self.businessAddress = settings.businessAddress
-        self.welcomeMessage = settings.welcomeMessage ?? ""
         self.autoAccept = settings.autoAccept != nil
         self.autoAcceptIncognito = settings.autoAccept?.acceptIncognito == true
         self.autoReply = settings.autoReply?.text ?? ""
@@ -389,7 +387,6 @@ struct AddressSettingsState: Equatable {
     var addressSettings: AddressSettings {
         AddressSettings(
             businessAddress: self.businessAddress,
-            welcomeMessage: self.welcomeMessage.isEmpty ? nil : self.welcomeMessage,
             autoAccept: self.autoAccept ? AutoAccept(acceptIncognito: self.autoAcceptIncognito) : nil,
             autoReply: self.autoReply.isEmpty ? nil : MsgContent.text(self.autoReply)
         )
@@ -463,14 +460,8 @@ struct UserAddressSettingsView: View {
                 autoAcceptToggle().disabled(settings.businessAddress)
             }
 
-            Section {
-                messageEditor(placeholder: NSLocalizedString("Enter welcome message… (optional)", comment: "placeholder"), text: $settings.welcomeMessage)
-            } header: {
-                Text("Welcome message")
-                    .foregroundColor(theme.colors.secondary)
-            } footer: {
-                Text("Shown to your contact before connection.")
-            }
+            // TODO v6.4.1 move auto-reply editor here
+            messageEditor(placeholder: NSLocalizedString("Enter welcome message… (optional)", comment: "placeholder"), text: $settings.autoReply)
 
             if settings.autoAccept {
                 autoAcceptSection()
@@ -554,7 +545,8 @@ struct UserAddressSettingsView: View {
             if !ChatModel.shared.addressShortLinkDataSet && !settings.businessAddress {
                 acceptIncognitoToggle()
             }
-            messageEditor(placeholder: NSLocalizedString("Enter auto-reply message… (optional)", comment: "placeholder"), text: $settings.autoReply)
+            // TODO v6.4.1 show this message editor even with auto-accept disabled
+            messageEditor(placeholder: NSLocalizedString("Enter welcome message… (optional)", comment: "placeholder"), text: $settings.autoReply)
         } header: {
             Text("Auto-accept")
                 .foregroundColor(theme.colors.secondary)

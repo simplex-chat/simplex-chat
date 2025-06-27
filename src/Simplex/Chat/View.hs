@@ -404,8 +404,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtUserAcceptedGroupSent u _g _ -> ttyUser u [] -- [ttyGroup' g <> ": joining the group..."]
   CEvtSentGroupInvitation u g c _ -> ttyUser u $ viewSentGroupInvitation g c
   CEvtContactDeletedByContact u c -> ttyUser u [ttyFullContact c <> " deleted contact with you"]
-  CEvtAcceptingContactRequest u c -> ttyUser u $ viewAcceptingContactRequest c
-  CEvtAcceptingBusinessRequest u g -> ttyUser u $ viewAcceptingBusinessRequest g
+  CEvtAcceptingContactRequest u c -> ttyUser u $ viewAcceptingContactRequestEvt c
   CEvtContactRequestAlreadyAccepted u c -> ttyUser u [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
   CEvtBusinessRequestAlreadyAccepted u g -> ttyUser u [ttyFullGroup g <> ": sent you a duplicate connection request, but you are already connected, no action needed"]
   CEvtGroupLinkConnecting u g _ -> ttyUser u [ttyGroup' g <> ": joining the group..."]
@@ -1084,7 +1083,7 @@ simplexChatContact' = \case
 
 -- TODO [short links] show all settings
 viewAddressSettings :: AddressSettings -> [StyledString]
-viewAddressSettings AddressSettings {businessAddress, welcomeMessage = _, autoAccept, autoReply} = case autoAccept of
+viewAddressSettings AddressSettings {businessAddress, autoAccept, autoReply} = case autoAccept of
   Just AutoAccept {acceptIncognito} ->
     ("auto_accept on" <> aaInfo)
       : maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
@@ -1153,8 +1152,11 @@ viewAcceptingContactRequest ct
   | contactReady ct = [ttyFullContact ct <> ": accepting contact request, you can send messages to contact"]
   | otherwise = [ttyFullContact ct <> ": accepting contact request..."]
 
-viewAcceptingBusinessRequest :: GroupInfo -> [StyledString]
-viewAcceptingBusinessRequest g = [ttyFullGroup g <> ": accepting business address request..."]
+viewAcceptingContactRequestEvt :: AChat -> [StyledString]
+viewAcceptingContactRequestEvt (AChat _ (Chat cInfo _items _)) = case cInfo of
+  DirectChat ct -> viewAcceptingContactRequest ct
+  GroupChat g _ -> [ttyFullGroup g <> ": accepting business address request..."]
+  _ -> ["error: bad chat type in contact request"]
 
 viewReceivedContactRequest :: ContactName -> Profile -> [StyledString]
 viewReceivedContactRequest c Profile {fullName} =

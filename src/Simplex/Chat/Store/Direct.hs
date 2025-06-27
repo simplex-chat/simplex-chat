@@ -60,6 +60,8 @@ module Simplex.Chat.Store.Direct
     getUserContacts,
     getUserContactLinkIdByCReq,
     getContactRequest,
+    getContactRequest',
+    getBusinessContactRequest,
     getContactRequestIdByName,
     deleteContactRequest,
     createContactFromRequest,
@@ -108,10 +110,10 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Ratchet (PQSupport)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..), (:.) (..))
+import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
-import Database.SQLite.Simple (Only (..), (:.) (..))
+import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
@@ -218,7 +220,7 @@ getContactByConnReqHash db vr user@User {userId} cReqHash = do
           SELECT
             -- Contact
             ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-            cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.contact_request_id,
+            cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
             ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
             -- Connection
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
@@ -286,7 +288,7 @@ createPreparedContact db user@User {userId} p@Profile {preferences} connLinkToCo
         createdAt = currentTs,
         updatedAt = currentTs,
         chatTs = Just currentTs,
-        preparedContact = Just $ PreparedContact connLinkToConnect (connMode m) welcomeSharedMsgId,
+        preparedContact = Just PreparedContact {connLinkToConnect, uiConnLinkType = connMode m, welcomeSharedMsgId, requestSharedMsgId = Nothing},
         contactRequestId = Nothing,
         contactGroupMemberId = Nothing,
         contactGrpInvSent = False,
@@ -687,23 +689,32 @@ getUserContactLinkIdByCReq db contactRequestId =
 getContactRequest :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO UserContactRequest
 getContactRequest db User {userId} contactRequestId =
   ExceptT . firstRow toContactRequest (SEContactRequestNotFound contactRequestId) $
-    DB.query
-      db
-      [sql|
-        SELECT
-          cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
-          cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
-          cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
-          cr.created_at, cr.updated_at,
-          cr.peer_chat_min_version, cr.peer_chat_max_version
-        FROM contact_requests cr
-        JOIN connections c USING (user_contact_link_id)
-        JOIN contact_profiles p USING (contact_profile_id)
-        WHERE cr.user_id = ?
-          AND cr.contact_request_id = ?
-      |]
-      (userId, contactRequestId)
+    DB.query db (contactRequestQuery <> " WHERE cr.user_id = ? AND cr.contact_request_id = ?") (userId, contactRequestId)
+
+getContactRequest' :: DB.Connection -> User -> Int64 -> IO (Maybe UserContactRequest)
+getContactRequest' db User {userId} contactRequestId =
+  maybeFirstRow toContactRequest $
+    DB.query db (contactRequestQuery <> " WHERE cr.user_id = ? AND cr.contact_request_id = ?") (userId, contactRequestId)
+
+getBusinessContactRequest :: DB.Connection -> User -> GroupId -> IO (Maybe UserContactRequest)
+getBusinessContactRequest db User {userId} groupId =
+  maybeFirstRow toContactRequest $
+    DB.query db (contactRequestQuery <> " WHERE cr.user_id = ? AND cr.business_group_id = ?") (userId, groupId)
+
+contactRequestQuery :: Query
+contactRequestQuery =
+  [sql|
+    SELECT
+      cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
+      cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
+      c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
+      cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
+      cr.created_at, cr.updated_at,
+      cr.peer_chat_min_version, cr.peer_chat_max_version
+    FROM contact_requests cr
+    JOIN connections c USING (user_contact_link_id)
+    JOIN contact_profiles p USING (contact_profile_id)
+  |]
 
 getContactRequestIdByName :: DB.Connection -> UserId -> ContactName -> ExceptT StoreError IO Int64
 getContactRequestIdByName db userId cName =
@@ -807,7 +818,7 @@ getContact_ db vr user@User {userId} contactId deleted = do
         SELECT
           -- Contact
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.contact_request_id,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
           ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,

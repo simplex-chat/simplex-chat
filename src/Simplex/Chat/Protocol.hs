@@ -1224,3 +1224,19 @@ instance ToJSON (ChatMessage 'Json) where
 
 instance FromJSON (ChatMessage 'Json) where
   parseJSON v = appJsonToCM <$?> parseJSON v
+
+data ContactShortLinkData = ContactShortLinkData
+  { profile :: Profile,
+    message :: Maybe MsgContent,
+    business :: Bool
+  }
+  deriving (Show)
+
+data GroupShortLinkData = GroupShortLinkData
+  { groupProfile :: GroupProfile
+  }
+  deriving (Show)
+
+$(JQ.deriveJSON defaultJSON ''ContactShortLinkData)
+
+$(JQ.deriveJSON defaultJSON ''GroupShortLinkData)
