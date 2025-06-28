@@ -111,7 +111,7 @@
     <string name="users_delete_all_chats_deleted">Az összes csevegés és üzenet törölve lesz – ez a művelet nem vonható vissza!</string>
     <string name="icon_descr_audio_call">hanghívás</string>
     <string name="bold_text">félkövér</string>
-    <string name="app_passcode_replaced_with_self_destruct">Az alkalmazás-jelkód helyettesítve lesz egy önmegsemmisítő-jelkóddal.</string>
+    <string name="app_passcode_replaced_with_self_destruct">Az alkalmazásjelkód helyettesítve lesz egy önmegsemmisítő-jelkóddal.</string>
     <string name="v5_3_new_interface_languages_descr">Arab, bolgár, finn, héber, thai és ukrán – köszönet a felhasználóknak és a Weblate-nek.</string>
     <string name="allow_voice_messages_question">Engedélyezi a hangüzeneteket?</string>
     <string name="always_use_relay">Mindig használjon továbbítókiszolgálót</string>
@@ -899,7 +899,7 @@
     <string name="update_network_settings_confirmation">Frissítés</string>
     <string name="icon_descr_video_snd_complete">Videó elküldve</string>
     <string name="update_database_passphrase">Az adatbázis jelmondatának módosítása</string>
-    <string name="turn_off_system_restriction_button">Alkalmazás beállítások megnyitása</string>
+    <string name="turn_off_system_restriction_button">Alkalmazásbeállítások megnyitása</string>
     <string name="passcode_not_changed">A jelkód nem módosult!</string>
     <string name="refresh_qr_code">Frissítés</string>
     <string name="custom_time_picker_select">Kijelölés</string>
@@ -1281,7 +1281,7 @@
     <string name="network_options_reset_to_defaults">Visszaállítás alapértelmezettre</string>
     <string name="connection_error_auth_desc">Hacsak a partnere nem törölte a kapcsolatot, vagy ez a hivatkozás már használatban volt egyszer, lehet hogy ez egy hiba – jelentse a problémát.\nA kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcsolattartási hivatkozást, és ellenőrizze, hogy a hálózati kapcsolat stabil-e.</string>
     <string name="video_call_no_encryption">videóhívás (nem e2e titkosított)</string>
-    <string name="smp_servers_use_server_for_new_conn">Alkalmazás új kapcsolatokhoz</string>
+    <string name="smp_servers_use_server_for_new_conn">Használat új kapcsolatokhoz</string>
     <string name="periodic_notifications_desc">Az új üzeneteket az alkalmazás időszakosan lekéri – naponta néhány százalékot használ az akkumulátorból. Az alkalmazás nem használ push-értesítéseket – az eszközről származó adatok nem lesznek elküldve a kiszolgálóknak.</string>
     <string name="paste_desktop_address">Számítógép címének beillesztése</string>
     <string name="description_via_contact_address_link">a kapcsolattartási címhivatkozáson keresztül</string>
@@ -1396,7 +1396,7 @@
     <string name="v4_2_auto_accept_contact_requests_desc">Nem kötelező üdvözlőüzenettel.</string>
     <string name="unknown_database_error_with_info">Ismeretlen adatbázishiba: %s</string>
     <string name="you_can_hide_or_mute_user_profile">Elrejtheti vagy lenémíthatja a felhasználóprofiljait – koppintson (vagy számítógép-alkalmazásban kattintson) hosszan a profilra a felugró menühöz.</string>
-    <string name="v5_3_simpler_incognito_mode_descr">Inkognitó profil használata kapcsolódáskor be/ki.</string>
+    <string name="v5_3_simpler_incognito_mode_descr">Inkognitó profil használata kapcsolódáskor ki/be.</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Megoszthat egy hivatkozást vagy QR-kódot – így bárki csatlakozhat a csoporthoz. Ha a csoportot Ön később törli, akkor nem fogja elveszíteni annak tagjait.</string>
     <string name="you_joined_this_group">Ön csatlakozott ehhez a csoporthoz</string>
     <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Ez a saját hivatkozása a(z) <b>%1$s</b> nevű csoporthoz!]]></string>
@@ -2002,12 +2002,12 @@
     <string name="network_option_tcp_connection">TCP-kapcsolat</string>
     <string name="chat_database_exported_save">Az exportált archívumot elmentheti.</string>
     <string name="reset_all_hints">Tippek visszaállítása</string>
-    <string name="one_hand_ui_card_title">Csevegési lista be/ki:</string>
+    <string name="one_hand_ui_card_title">Csevegési lista ki/be:</string>
     <string name="one_hand_ui_change_instruction">Ezt a „Megjelenés” menüben módosíthatja.</string>
     <string name="v6_0_new_media_options">Új médiabeállítások</string>
     <string name="v6_0_chat_list_media">Lejátszás a csevegési listából.</string>
     <string name="v6_0_privacy_blur">Elhomályosítás a jobb adatvédelemért.</string>
-    <string name="v6_0_upgrade_app">Automatikus alkalmazás-frissítés</string>
+    <string name="v6_0_upgrade_app">Automatikus alkalmazásfrissítés</string>
     <string name="create_address_button">Létrehozás</string>
     <string name="v6_0_upgrade_app_descr">Új verziók letöltése a GitHubról.</string>
     <string name="v6_0_increase_font_size">Betűméret növelése.</string>
