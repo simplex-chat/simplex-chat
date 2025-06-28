@@ -2177,9 +2177,9 @@ Ez a saját egyszer használható meghívója!</target>
         <target>Sorba állítás létrehozása</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Create your profile" xml:space="preserve">
+      <trans-unit id="Create your profile" xml:space="preserve" approved="no">
         <source>Create your profile</source>
-        <target>Saját profil létrehozása</target>
+        <target state="translated">Profil létrehozása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Created" xml:space="preserve">
@@ -2418,7 +2418,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Delete chat messages from your device." xml:space="preserve" approved="no">
         <source>Delete chat messages from your device.</source>
-        <target state="translated">Csevegési üzenetek törlése a saját eszközről.</target>
+        <target state="translated">Csevegési üzenetek törlése az eszközről.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete chat profile" xml:space="preserve">
@@ -3136,9 +3136,9 @@ chat item action</note>
         <target>Adja meg a jelszót fentebb a megjelenítéshez!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enter server manually" xml:space="preserve">
+      <trans-unit id="Enter server manually" xml:space="preserve" approved="no">
         <source>Enter server manually</source>
-        <target>Adja meg a kiszolgálót kézzel</target>
+        <target state="translated">Kiszolgáló megadása kézzel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter this device name…" xml:space="preserve">
@@ -6842,9 +6842,9 @@ chat item action</note>
         <target>Biztonsági kód beolvasása a partnere alkalmazásából.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Scan server QR code" xml:space="preserve">
+      <trans-unit id="Scan server QR code" xml:space="preserve" approved="no">
         <source>Scan server QR code</source>
-        <target>A kiszolgáló QR-kódjának beolvasása</target>
+        <target state="translated">Kiszolgáló QR-kódjának beolvasása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Search" xml:space="preserve">
@@ -8914,7 +8914,7 @@ Megismétli a meghívási kérést?</target>
       </trans-unit>
       <trans-unit id="You can accept calls from lock screen, without device and app authentication." xml:space="preserve" approved="no">
         <source>You can accept calls from lock screen, without device and app authentication.</source>
-        <target state="translated">Hívásokat fogadhat a lezárási képernyőről, eszköz- és alkalmazáshitelesítés nélkül.</target>
+        <target state="translated">A lezárási képernyőről is fogadhat hívásokat, eszköz- és alkalmazáshitelesítés nélkül.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can change it in Appearance settings." xml:space="preserve">
@@ -8932,9 +8932,9 @@ Megismétli a meghívási kérést?</target>
         <target>Létrehozás később</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can enable later via Settings" xml:space="preserve">
+      <trans-unit id="You can enable later via Settings" xml:space="preserve" approved="no">
         <source>You can enable later via Settings</source>
-        <target>Később engedélyezheti a „Beállításokban”</target>
+        <target state="translated">Később engedélyezheti a beállításokban</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can enable them later via app Privacy &amp; Security settings." xml:space="preserve">
@@ -8952,9 +8952,9 @@ Megismétli a meghívási kérést?</target>
         <target>Elrejtheti vagy lenémíthatja a felhasználó -profiljait – csúsztassa jobbra a profilt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can make it visible to your SimpleX contacts via Settings." xml:space="preserve">
+      <trans-unit id="You can make it visible to your SimpleX contacts via Settings." xml:space="preserve" approved="no">
         <source>You can make it visible to your SimpleX contacts via Settings.</source>
-        <target>Láthatóvá teheti a SimpleXbeli partnerei számára a „Beállításokban”.</target>
+        <target state="translated">Láthatóvá teheti a SimpleXbeli partnerei számára a beállításokban.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can now chat with %@" xml:space="preserve">
