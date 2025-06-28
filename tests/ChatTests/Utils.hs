@@ -313,6 +313,23 @@ groupFeatures'' dir =
     ((dir, "Recent history: on"), Nothing, Nothing)
   ]
 
+businessGroupFeatures :: [(Int, String)]
+businessGroupFeatures = map (\(a, _, _) -> a) $ businessGroupFeatures'' 0
+
+businessGroupFeatures'' :: Int -> [((Int, String), Maybe (Int, String), Maybe String)]
+businessGroupFeatures'' dir =
+  -- [ ((dir, e2eeInfoNoPQStr), Nothing, Nothing),
+  [ ((dir, "Disappearing messages: on"), Nothing, Nothing),
+    ((dir, "Direct messages: off"), Nothing, Nothing),
+    ((dir, "Full deletion: off"), Nothing, Nothing),
+    ((dir, "Message reactions: on"), Nothing, Nothing),
+    ((dir, "Voice messages: on"), Nothing, Nothing),
+    ((dir, "Files and media: on"), Nothing, Nothing),
+    ((dir, "SimpleX links: on"), Nothing, Nothing),
+    ((dir, "Member reports: off"), Nothing, Nothing),
+    ((dir, "Recent history: on"), Nothing, Nothing)
+  ]
+
 itemId :: Int -> String
 itemId i = show $ length chatFeatures + i
 

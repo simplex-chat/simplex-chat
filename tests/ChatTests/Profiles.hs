@@ -121,6 +121,7 @@ chatProfileTests = do
     it "prepare contact via invitation and connect after it is deleted" testShortLinkDeletedInvitation
     it "prepare contact via address and connect after it is deleted" testShortLinkDeletedAddress
     it "prepare business chat using address short link data and connect" testShortLinkAddressPrepareBusiness
+    fit "connect to business address with request message" testBusinessAddressRequestMessage
     it "prepare group using group short link data and connect" testShortLinkPrepareGroup
     it "prepare group using group short link data and connect, host rejects" testShortLinkPrepareGroupReject
     it "connect to prepared contact incognito (via invitation)" testShortLinkInvitationConnectPreparedContactIncognito
@@ -3100,6 +3101,35 @@ testShortLinkAddressPrepareBusiness =
       concurrently_
         (alice <# "#bob bob_1> hey there")
         (biz <# "#bob bob_1> hey there")
+
+testBusinessAddressRequestMessage :: HasCallStack => TestParams -> IO ()
+testBusinessAddressRequestMessage =
+  testChat3 businessProfile aliceProfile {fullName = "Alice @ Biz"} bobProfile $
+    \biz alice bob -> do
+      biz ##> "/ad"
+      (shortLink, fullLink) <- getContactLinks biz True
+      biz ##> "/auto_accept on business text Welcome!"
+      biz <## "auto_accept on, business"
+      biz <## "auto reply:"
+      biz <## "Welcome!"
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "business link: ok to connect"в
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+      bob <## "#biz: group is prepared"
+      bob #$> ("/_get chat #1 count=100", chat, businessGroupFeatures <> [(0, "Welcome!")])
+      bob ##> "/_connect group #1 text Hello!"
+      bob <## "#biz: connection started"
+      bob <# "#biz Hello!"
+      biz <# "#bob bob_1> Hello!"
+      biz <## "#bob (Bob): accepting business address request..."
+      bob <## "#biz: joining the group..."
+      biz <## "#bob: bob_1 joined the group"
+      bob <## "#biz: you joined the group"
+      -- TODO [short links] below events happen because history is sent.
+      -- welcome message is also sent in history, but it is probably deduplicated.
+      bob <## "chat db error: SEDBException {message = \"SQLite3 returned ErrorConstraint while attempting to perform step: UNIQUE constraint failed: chat_items.user_id, chat_items.group_id, chat_items.group_member_id, chat_items.shared_msg_id\"}"
+      bob <# "#biz bob> Hello! [>>]"
 
 testShortLinkPrepareGroup :: HasCallStack => TestParams -> IO ()
 testShortLinkPrepareGroup =
