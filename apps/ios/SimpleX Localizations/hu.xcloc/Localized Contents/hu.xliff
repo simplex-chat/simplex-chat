@@ -1035,9 +1035,9 @@ swipe action</note>
         <target>Alkalmazás jelkód</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App passcode is replaced with self-destruct passcode." xml:space="preserve">
+      <trans-unit id="App passcode is replaced with self-destruct passcode." xml:space="preserve" approved="no">
         <source>App passcode is replaced with self-destruct passcode.</source>
-        <target>Az alkalmazás-jelkód helyettesítve lesz egy önmegsemmisítő-jelkóddal.</target>
+        <target state="translated">Az alkalmazásjelkód helyettesítve lesz egy önmegsemmisítő jelkóddal.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App session" xml:space="preserve">
@@ -1505,9 +1505,9 @@ new chat action</note>
         <target>Önmegsemmisítő-mód módosítása</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Change self-destruct passcode" xml:space="preserve">
+      <trans-unit id="Change self-destruct passcode" xml:space="preserve" approved="no">
         <source>Change self-destruct passcode</source>
-        <target>Önmegsemmisítő-jelkód módosítása</target>
+        <target state="translated">Önmegsemmisítő jelkód módosítása</target>
         <note>authentication reason
 set passcode view</note>
       </trans-unit>
@@ -3016,9 +3016,9 @@ chat item action</note>
         <target>Önmegsemmisítés engedélyezése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable self-destruct passcode" xml:space="preserve">
+      <trans-unit id="Enable self-destruct passcode" xml:space="preserve" approved="no">
         <source>Enable self-destruct passcode</source>
-        <target>Önmegsemmisítő-jelkód engedélyezése</target>
+        <target state="translated">Önmegsemmisítő jelkód engedélyezése</target>
         <note>set passcode view</note>
       </trans-unit>
       <trans-unit id="Enabled" xml:space="preserve">
@@ -4206,9 +4206,9 @@ Hiba: %2$@</target>
         <target>Ha az alkalmazás megnyitásakor megadja ezt a jelkódot, az összes alkalmazásadat véglegesen el lesz távolítva!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you enter your self-destruct passcode while opening the app:" xml:space="preserve">
+      <trans-unit id="If you enter your self-destruct passcode while opening the app:" xml:space="preserve" approved="no">
         <source>If you enter your self-destruct passcode while opening the app:</source>
-        <target>Ha az alkalmazás megnyitásakor megadja az önmegsemmisítő-jelkódot:</target>
+        <target state="translated">Ha az alkalmazás megnyitásakor megadja az önmegsemmisítő jelkódot:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." xml:space="preserve">
@@ -6912,19 +6912,19 @@ chat item action</note>
         <target>Önmegsemmisítés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct passcode" xml:space="preserve">
+      <trans-unit id="Self-destruct passcode" xml:space="preserve" approved="no">
         <source>Self-destruct passcode</source>
-        <target>Önmegsemmisítő-jelkód</target>
+        <target state="translated">Önmegsemmisítő jelkód</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct passcode changed!" xml:space="preserve">
+      <trans-unit id="Self-destruct passcode changed!" xml:space="preserve" approved="no">
         <source>Self-destruct passcode changed!</source>
-        <target>Az önmegsemmisítő-jelkód módosult!</target>
+        <target state="translated">Az önmegsemmisítő jelkód módosult!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct passcode enabled!" xml:space="preserve">
+      <trans-unit id="Self-destruct passcode enabled!" xml:space="preserve" approved="no">
         <source>Self-destruct passcode enabled!</source>
-        <target>Az önmegsemmisítő-jelkód engedélyezve!</target>
+        <target state="translated">Az önmegsemmisítő jelkód engedélyezve!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send" xml:space="preserve">
@@ -8185,12 +8185,12 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
       </trans-unit>
       <trans-unit id="Toggle chat list:" xml:space="preserve" approved="no">
         <source>Toggle chat list:</source>
-        <target state="translated">Csevegési lista be/ki:</target>
+        <target state="translated">Csevegési lista ki/be:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Toggle incognito when connecting." xml:space="preserve" approved="no">
         <source>Toggle incognito when connecting.</source>
-        <target state="translated">Inkognitó profil használata kapcsolódáskor be/ki.</target>
+        <target state="translated">Inkognitó profil használata kapcsolódáskor ki/be.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Token status: %@." xml:space="preserve">
@@ -8495,9 +8495,9 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
         <target>Használat az üzenetekhez</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use for new connections" xml:space="preserve">
+      <trans-unit id="Use for new connections" xml:space="preserve" approved="no">
         <source>Use for new connections</source>
-        <target>Alkalmazás új kapcsolatokhoz</target>
+        <target state="translated">Használat új kapcsolatokhoz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use from desktop" xml:space="preserve">
@@ -8912,9 +8912,9 @@ Megismétli a meghívási kérést?</target>
         <target>Ön nem kapcsolódik ezekhez a kiszolgálókhoz. A privát útválasztás az üzenetek kézbesítésére szolgál.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can accept calls from lock screen, without device and app authentication." xml:space="preserve">
+      <trans-unit id="You can accept calls from lock screen, without device and app authentication." xml:space="preserve" approved="no">
         <source>You can accept calls from lock screen, without device and app authentication.</source>
-        <target>Hívásokat fogadhat a lezárási képernyőről, eszköz- és alkalmazás-hitelesítés nélkül.</target>
+        <target state="translated">Hívásokat fogadhat a lezárási képernyőről, eszköz- és alkalmazáshitelesítés nélkül.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can change it in Appearance settings." xml:space="preserve">
