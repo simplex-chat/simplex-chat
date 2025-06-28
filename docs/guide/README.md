@@ -49,7 +49,7 @@ This button will disappear once you make the first connection. To connect to the
 
 ### Join some user groups
 
-There are links to join several [user groups](../../README.md#join-user-groups) on our GitHub page - join them to ask any questions and discuss ideas.
+There are links to join several [user groups](/README.md#join-user-groups) on our GitHub page - join them to ask any questions and discuss ideas.
 
 You can also find some other user-managed groups via online search.
 
