@@ -619,7 +619,7 @@
     <string name="delete_member_message__question">Ștergeți mesajul membrului?</string>
     <string name="button_delete_group">Șterge grupul</string>
     <string name="delete_and_notify_contact">Șterge și notifică contactele</string>
-    <string name="decentralized">Decentralizat</string>
+    <string name="decentralized">Descentralizat</string>
     <string name="rcv_group_event_group_deleted">grup șters</string>
     <string name="num_contacts_selected">%d contact(e) selectat(e)</string>
     <string name="share_text_deleted_at">Șters la: %s</string>
@@ -1566,7 +1566,7 @@
     <string name="how_to">Cum să</string>
     <string name="ignore">Ignoră</string>
     <string name="message_queue_info">Informații despre coada de mesaje</string>
-    <string name="group_is_decentralized">Complet descentralizat – vizibil doar membrilor.</string>
+    <string name="group_is_decentralized">Complet descentralizat – vizibil doar pentru membri.</string>
     <string name="group_display_name_field">Introduceți numele grupului:</string>
     <string name="wallpaper_scale_fill">Umple</string>
     <string name="v6_0_upgrade_app_descr">Descărcați noi versiuni de pe GitHub.</string>
@@ -2327,7 +2327,7 @@
     <string name="remote_host_error_busy"><![CDATA[Telefonul<b>%s</b> este ocupat]]></string>
     <string name="cant_send_message_alert_title">Nu puteți trimite mesaje!</string>
     <string name="cant_send_message_you_left">ați ieșit</string>
-    <string name="cant_send_message_generic">nu pot trimite mesaje</string>
+    <string name="cant_send_message_generic">mesajul nu a putut fi trimis</string>
     <string name="cant_send_message_contact_deleted">contact șters</string>
     <string name="cant_send_message_contact_disabled">contact dezactivat</string>
     <string name="cant_send_message_contact_not_ready">contactul nu este gata</string>
