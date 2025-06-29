@@ -842,7 +842,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               GSMemPendingReview -> introduceToModerators vr user gInfo'' m'
               _ -> do
                 introduceToAll vr user gInfo'' m'
-                when (groupFeatureAllowed SGFHistory gInfo'') $ sendHistory user gInfo'' m'
+                let memberIsCustomer = case businessChat gInfo'' of
+                      Just BusinessChatInfo {chatType = BCCustomer, customerId} -> memberId' m' == customerId
+                      _ -> False
+                when (groupFeatureAllowed SGFHistory gInfo'' && not memberIsCustomer) $ sendHistory user gInfo'' m'
             where
               sendXGrpLinkMem gInfo'' = do
                 let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo''

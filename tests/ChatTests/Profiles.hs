@@ -3234,17 +3234,36 @@ testBusinessAddressRequestMessage =
       bob <## "#biz: group is prepared"
       bob #$> ("/_get chat #1 count=100", chat, businessGroupFeatures <> [(0, "Welcome!")])
       bob ##> "/_connect group #1 text Hello!"
-      bob <## "#biz: connection started"
-      bob <# "#biz Hello!"
+      bob
+        <###
+          [ "#biz: connection started",
+            WithTime "#biz Hello!"
+          ]
       biz <# "#bob bob_1> Hello!"
       biz <## "#bob (Bob): accepting business address request..."
       bob <## "#biz: joining the group..."
       biz <## "#bob: bob_1 joined the group"
       bob <## "#biz: you joined the group"
-      -- TODO [short links] below events happen because history is sent.
-      -- welcome message is also sent in history, but it is probably deduplicated.
-      bob <## "chat db error: SEDBException {message = \"SQLite3 returned ErrorConstraint while attempting to perform step: UNIQUE constraint failed: chat_items.user_id, chat_items.group_id, chat_items.group_member_id, chat_items.shared_msg_id\"}"
-      bob <# "#biz bob> Hello! [>>]"
+      -- Another member should receive history
+      connectUsers biz alice
+      biz ##> "/a bob alice"
+      biz <## "invitation to join the group #bob sent to alice"
+      alice <## "#bob (Bob): biz invites you to join the group as member"
+      alice <## "use /j bob to accept"
+      alice ##> "/j bob"
+      concurrentlyN_
+        [ alice
+            <###
+              [ "#bob: you joined the group",
+                WithTime "#bob biz> Welcome! [>>]",
+                WithTime "#bob bob_1> Hello! [>>]",
+                "#bob: member bob_1 (Bob) is connected"
+              ],
+          biz <## "#bob: alice joined the group",
+          do
+            bob <## "#biz: biz_1 added alice (Alice @ Biz) to the group (connecting...)"
+            bob <## "#biz: new member alice is connected"
+        ]
 
 testShortLinkPrepareGroup :: HasCallStack => TestParams -> IO ()
 testShortLinkPrepareGroup =
