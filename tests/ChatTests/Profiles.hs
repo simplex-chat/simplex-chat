@@ -126,6 +126,7 @@ chatProfileTests = do
     it "connect to business address with request message" testBusinessAddressRequestMessage
     it "prepare group using group short link data and connect" testShortLinkPrepareGroup
     it "prepare group using group short link data and connect, host rejects" testShortLinkPrepareGroupReject
+    it "connect to group with welcome message via short link" testGroupShortLinkWelcome
     it "retry connecting to group via short link" testShortLinkGroupRetry
     it "connect to prepared contact incognito (via invitation)" testShortLinkInvitationConnectPreparedContactIncognito
     it "connect to prepared contact incognito (via address)" testShortLinkAddressConnectPreparedContactIncognito
@@ -3326,6 +3327,41 @@ testShortLinkPrepareGroupReject =
       bob <## "bad chat command: not current member"
   where
     cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Left GRRBlockedName)}}
+
+testGroupShortLinkWelcome :: HasCallStack => TestParams -> IO ()
+testGroupShortLinkWelcome =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    alice ##> "/set welcome #team Welcome!"
+    alice <## "description changed to:"
+    alice <## "Welcome!"
+    alice ##> "/create link #team"
+    (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
+    bob ##> ("/_connect plan 1 " <> shortLink)
+    bob <## "group link: ok to connect"
+    groupSLinkData <- getTermLine bob
+    bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
+    bob <## "#team: group is prepared"
+    bob #$> ("/_get chat #1 count=100", chat, groupFeaturesNoE2E <> [(0, "Welcome!")])
+    threadDelay 1000000 -- TODO [short links] to compensate for rounding of timestamps of received messages
+    bob ##> "/_connect group #1"
+    bob <## "#team: connection started"
+    alice <## "bob (Bob): accepting request to join group #team..."
+    concurrentlyN_
+      [ alice <## "#team: bob joined the group",
+        do
+          bob <## "#team: joining the group..."
+          bob <## "#team: you joined the group"
+          bob <# "#team alice> Welcome!" -- this should not be sent, it's a duplicate
+      ]
+    -- TODO [short links] and there should be no duplicate feature items in history
+    bob #$> ("/_get chat #1 count=100", chat, groupFeaturesNoE2E <> [(0, "Welcome!")] <> [(0, "Welcome!")] <> groupFeatures <> [(0, "connected")])
+    alice #> "#team 1"
+    bob <# "#team alice> 1"
+    bob #> "#team 2"
+    alice <# "#team bob> 2"
 
 testShortLinkGroupRetry :: HasCallStack => TestParams -> IO ()
 testShortLinkGroupRetry ps = testChatOpts2 opts' aliceProfile bobProfile test ps
