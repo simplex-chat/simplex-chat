@@ -12,7 +12,9 @@
 module Simplex.Chat.Store.ContactRequest
   ( createOrUpdateContactRequest,
     setContactAcceptedXContactId,
-    setBusinessChatAcceptedXContactId
+    setBusinessChatAcceptedXContactId,
+    setRequestSharedMsgIdForContact,
+    setRequestSharedMsgIdForGroup
   )
   where
 
@@ -81,11 +83,14 @@ createOrUpdateContactRequest
       Just xContactId ->
         -- 1) first we try to find accepted contact or business chat by xContactId
         liftIO (getAcceptedContact xContactId) >>= \case
-          Just ct -> pure $ RSAcceptedRequest Nothing (REContact ct)
+          Just ct -> do
+            cr <- liftIO $ getContactRequestByXContactId xContactId
+            pure $ RSAcceptedRequest cr (REContact ct)
           Nothing -> liftIO (getAcceptedBusinessChat xContactId) >>= \case
             Just gInfo@GroupInfo {businessChat = Just BusinessChatInfo {customerId}} -> do
               clientMember <- getGroupMemberByMemberId db vr user gInfo customerId
-              pure $ RSAcceptedRequest Nothing (REBusinessChat gInfo clientMember)
+              cr <- liftIO $ getContactRequestByXContactId xContactId
+              pure $ RSAcceptedRequest cr (REBusinessChat gInfo clientMember)
             Just GroupInfo {businessChat = Nothing} -> throwError SEInvalidBusinessChatContactRequest
             -- 2) if no legacy accepted contact or business chat was found, next we try to find an existing request
             Nothing ->
@@ -105,7 +110,7 @@ createOrUpdateContactRequest
               SELECT
                 -- Contact
                 ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-                cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.contact_request_id,
+                cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
                 ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
                 -- Connection
                 c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
@@ -196,7 +201,7 @@ createOrUpdateContactRequest
                   (contactId, contactRequestId)
               ucr <- getContactRequest db user contactRequestId
               ct <- getContact db vr user contactId
-              pure $ RSCurrentRequest ucr (Just $ REContact ct) False
+              pure $ RSCurrentRequest Nothing ucr (Just $ REContact ct)
             createBusinessChat = do
               let Profile {preferences = userPreferences} = profileToSendOnAccept user Nothing True
                   groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs userPreferences
@@ -208,15 +213,15 @@ createOrUpdateContactRequest
                   "UPDATE contact_requests SET business_group_id = ? WHERE contact_request_id = ?"
                   (groupId, contactRequestId)
               ucr <- getContactRequest db user contactRequestId
-              pure $ RSCurrentRequest ucr (Just $ REBusinessChat gInfo clientMember) False
+              pure $ RSCurrentRequest Nothing ucr (Just $ REBusinessChat gInfo clientMember)
     updateContactRequest :: UserContactRequest -> ExceptT StoreError IO RequestStage
-    updateContactRequest UserContactRequest {contactRequestId, contactId_, localDisplayName = oldLdn, profile = Profile {displayName = oldDisplayName}} = do
+    updateContactRequest ucr@UserContactRequest {contactRequestId, contactId_, localDisplayName = oldLdn, profile = Profile {displayName = oldDisplayName}} = do
       currentTs <- liftIO getCurrentTime
       liftIO $ updateProfile currentTs
       updateRequest currentTs
       ucr' <- getContactRequest db user contactRequestId
       re_ <- getRequestEntity ucr'
-      pure $ RSCurrentRequest ucr' re_ True
+      pure $ RSCurrentRequest (Just ucr) ucr' re_
       where
         updateProfile currentTs =
           DB.execute
@@ -288,12 +293,16 @@ createOrUpdateContactRequest
 
 setContactAcceptedXContactId :: DB.Connection -> Contact -> XContactId -> IO ()
 setContactAcceptedXContactId db Contact {contactId} xContactId =
-  DB.execute
-    db "UPDATE contacts SET xcontact_id = ? WHERE contact_id = ?"
-    (xContactId, contactId)
+  DB.execute db "UPDATE contacts SET xcontact_id = ? WHERE contact_id = ?" (xContactId, contactId)
 
 setBusinessChatAcceptedXContactId :: DB.Connection -> GroupInfo -> XContactId -> IO ()
 setBusinessChatAcceptedXContactId db GroupInfo {groupId} xContactId =
-  DB.execute
-    db "UPDATE groups SET business_xcontact_id = ? WHERE group_id = ?"
-    (xContactId, groupId)
+  DB.execute db "UPDATE groups SET business_xcontact_id = ? WHERE group_id = ?" (xContactId, groupId)
+
+setRequestSharedMsgIdForContact :: DB.Connection -> ContactId -> SharedMsgId -> IO ()
+setRequestSharedMsgIdForContact db contactId sharedMsgId = do
+  DB.execute db "UPDATE contacts SET request_shared_msg_id = ? WHERE contact_id = ?" (sharedMsgId, contactId)
+
+setRequestSharedMsgIdForGroup :: DB.Connection -> GroupId -> SharedMsgId -> IO ()
+setRequestSharedMsgIdForGroup db groupId sharedMsgId = do
+  DB.execute db "UPDATE groups SET request_shared_msg_id = ? WHERE group_id = ?" (sharedMsgId, groupId)

@@ -701,6 +701,7 @@ struct ComposeView: View {
     private func sendMemberContactInvitation() {
         Task {
             do {
+                await MainActor.run { hideKeyboard() }
                 if let mc = connectCheckLinkPreview() {
                     await sending()
                     let contact = try await apiSendMemberContactInvitation(chat.chatInfo.apiId, mc)
@@ -733,13 +734,14 @@ struct ComposeView: View {
             ),
             secondaryButton:
                 empty
-                ? .cancel(Text("Add message")) { keyboardVisible = true }
+                ? .cancel(Text("Add message"), action: hideKeyboard)
                 : .cancel()
         ))
     }
 
     private func sendConnectPreparedContact() {
         Task {
+            await MainActor.run { hideKeyboard() }
             await sending()
             let mc = connectCheckLinkPreview()
             if let contact = await apiConnectPreparedContact(contactId: chat.chatInfo.apiId, incognito: incognitoGroupDefault.get(), msg: mc) {
@@ -756,6 +758,7 @@ struct ComposeView: View {
 
     private func connectPreparedGroup() {
         Task {
+            await MainActor.run { hideKeyboard() }
             await sending()
             let mc = connectCheckLinkPreview()
             if let groupInfo = await apiConnectPreparedGroup(groupId: chat.chatInfo.apiId, incognito: incognitoGroupDefault.get(), msg: mc) {

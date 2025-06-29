@@ -293,6 +293,9 @@ lastChatFeature = snd $ last chatFeatures
 groupFeatures :: [(Int, String)]
 groupFeatures = map (\(a, _, _) -> a) $ groupFeatures'' 0
 
+groupFeaturesNoE2E :: [(Int, String)]
+groupFeaturesNoE2E = map (\(a, _, _) -> a) $ groupFeatures_ 0
+
 sndGroupFeatures :: [(Int, String)]
 sndGroupFeatures = map (\(a, _, _) -> a) $ groupFeatures'' 1
 
@@ -300,9 +303,11 @@ groupFeatureStrs :: [String]
 groupFeatureStrs = map (\(a, _, _) -> snd a) $ groupFeatures'' 0
 
 groupFeatures'' :: Int -> [((Int, String), Maybe (Int, String), Maybe String)]
-groupFeatures'' dir =
-  [ ((dir, e2eeInfoNoPQStr), Nothing, Nothing),
-    ((dir, "Disappearing messages: off"), Nothing, Nothing),
+groupFeatures'' dir = ((dir, e2eeInfoNoPQStr), Nothing, Nothing) : groupFeatures_ dir
+
+groupFeatures_ :: Int -> [((Int, String), Maybe (Int, String), Maybe String)]
+groupFeatures_ dir =
+  [ ((dir, "Disappearing messages: off"), Nothing, Nothing),
     ((dir, "Direct messages: on"), Nothing, Nothing),
     ((dir, "Full deletion: off"), Nothing, Nothing),
     ((dir, "Message reactions: on"), Nothing, Nothing),
@@ -310,6 +315,23 @@ groupFeatures'' dir =
     ((dir, "Files and media: on"), Nothing, Nothing),
     ((dir, "SimpleX links: on"), Nothing, Nothing),
     ((dir, "Member reports: on"), Nothing, Nothing),
+    ((dir, "Recent history: on"), Nothing, Nothing)
+  ]
+
+businessGroupFeatures :: [(Int, String)]
+businessGroupFeatures = map (\(a, _, _) -> a) $ businessGroupFeatures'' 0
+
+businessGroupFeatures'' :: Int -> [((Int, String), Maybe (Int, String), Maybe String)]
+businessGroupFeatures'' dir =
+  -- [ ((dir, e2eeInfoNoPQStr), Nothing, Nothing),
+  [ ((dir, "Disappearing messages: on"), Nothing, Nothing),
+    ((dir, "Direct messages: off"), Nothing, Nothing),
+    ((dir, "Full deletion: off"), Nothing, Nothing),
+    ((dir, "Message reactions: on"), Nothing, Nothing),
+    ((dir, "Voice messages: on"), Nothing, Nothing),
+    ((dir, "Files and media: on"), Nothing, Nothing),
+    ((dir, "SimpleX links: on"), Nothing, Nothing),
+    ((dir, "Member reports: off"), Nothing, Nothing),
     ((dir, "Recent history: on"), Nothing, Nothing)
   ]
 

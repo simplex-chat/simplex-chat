@@ -1420,7 +1420,6 @@ struct UserContactLink: Decodable, Hashable {
 
 struct AddressSettings: Codable, Hashable {
     var businessAddress: Bool
-    var welcomeMessage: String?
     var autoAccept: AutoAccept?
     var autoReply: MsgContent?
 }
