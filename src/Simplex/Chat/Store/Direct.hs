@@ -7,6 +7,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Store.Direct
@@ -30,7 +31,6 @@ module Simplex.Chat.Store.Direct
     createAddressContactConnection,
     getProfileById,
     getConnReqContactXContactId,
-    getContactByConnReqHash,
     createPreparedContact,
     updatePreparedContactUser,
     createDirectContact,
@@ -158,7 +158,7 @@ createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -
 createConnReqConnection db userId acId cReqHash sLnk attachConnTo_ xContactId incognitoProfile groupLinkId subMode chatV pqSup = do
   currentTs <- getCurrentTime
   customUserProfileId <- mapM (createIncognitoProfile_ db userId currentTs) incognitoProfile
-  let pccConnStatus = ConnJoined
+  let pccConnStatus = ConnPrepared
   DB.execute
     db
     [sql|
@@ -196,10 +196,10 @@ createConnReqConnection db userId acId cReqHash sLnk attachConnTo_ xContactId in
           "UPDATE group_members SET member_profile_id = ?, updated_at = ? WHERE group_member_id = ?"
           (customUserProfileId, currentTs, groupMemberId' membership)
 
-getConnReqContactXContactId :: DB.Connection -> VersionRangeChat -> User -> ConnReqUriHash -> IO (Maybe Contact, Maybe XContactId)
-getConnReqContactXContactId db vr user@User {userId} cReqHash = do
-  getContactByConnReqHash db vr user cReqHash >>= \case
-    c@(Just _) -> pure (c, Nothing)
+getConnReqContactXContactId :: DB.Connection -> VersionRangeChat -> User -> ConnReqUriHash -> ConnReqUriHash -> IO (Maybe Contact, Maybe XContactId)
+getConnReqContactXContactId db vr user@User {userId} cReqHash1 cReqHash2 = do
+  getContactByConnReqHash db vr user cReqHash1 cReqHash2 >>= \case
+    Just (xContactId_, ct) -> pure (Just ct, xContactId_)
     Nothing -> (Nothing,) <$> getXContactId
   where
     getXContactId :: IO (Maybe XContactId)
@@ -207,17 +207,24 @@ getConnReqContactXContactId db vr user@User {userId} cReqHash = do
       maybeFirstRow fromOnly $
         DB.query
           db
-          "SELECT xcontact_id FROM connections WHERE user_id = ? AND via_contact_uri_hash = ? LIMIT 1"
-          (userId, cReqHash)
+          [sql|
+            SELECT xcontact_id
+            FROM connections
+            WHERE (user_id = ? AND via_contact_uri_hash = ?)
+               OR (user_id = ? AND via_contact_uri_hash = ?)
+            LIMIT 1
+          |]
+          (userId, cReqHash1, userId, cReqHash2)
 
-getContactByConnReqHash :: DB.Connection -> VersionRangeChat -> User -> ConnReqUriHash -> IO (Maybe Contact)
-getContactByConnReqHash db vr user@User {userId} cReqHash = do
-  ct_ <-
-    maybeFirstRow (toContact vr user []) $
+getContactByConnReqHash :: DB.Connection -> VersionRangeChat -> User -> ConnReqUriHash -> ConnReqUriHash -> IO (Maybe (Maybe XContactId, Contact))
+getContactByConnReqHash db vr user@User {userId} cReqHash1 cReqHash2 = do
+  r <-
+    maybeFirstRow toContactAndXContactId $
       DB.query
         db
         [sql|
           SELECT
+            c.xcontact_id,
             -- Contact
             ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
             cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
@@ -229,12 +236,18 @@ getContactByConnReqHash db vr user@User {userId} cReqHash = do
           FROM contacts ct
           JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
           JOIN connections c ON c.contact_id = ct.contact_id
-          WHERE c.user_id = ? AND c.via_contact_uri_hash = ? AND ct.contact_status = ? AND ct.deleted = 0
+          WHERE
+            ( (c.user_id = ? AND c.via_contact_uri_hash = ?) OR
+              (c.user_id = ? AND c.via_contact_uri_hash = ?)
+            ) AND ct.contact_status = ? AND ct.deleted = 0
           ORDER BY c.created_at DESC
           LIMIT 1
         |]
-        (userId, cReqHash, CSActive)
-  mapM (addDirectChatTags db) ct_
+        (userId, cReqHash1, userId, cReqHash2, CSActive)
+  mapM (traverse $ addDirectChatTags db) r
+  where
+    toContactAndXContactId :: Only (Maybe XContactId) :. (ContactRow :. MaybeConnectionRow) -> (Maybe XContactId, Contact)
+    toContactAndXContactId (Only xContactId_ :. ctRow) = (xContactId_, toContact vr user [] ctRow)
 
 createDirectConnection :: DB.Connection -> User -> ConnId -> CreatedLinkInvitation -> Maybe ContactId -> ConnStatus -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> IO PendingContactConnection
 createDirectConnection db User {userId} acId ccLink contactId_ pccConnStatus incognitoProfile subMode chatV pqSup = do

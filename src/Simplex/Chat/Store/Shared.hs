@@ -431,6 +431,21 @@ deleteUnusedIncognitoProfileById_ db User {userId} profileId =
     |]
     (userId, profileId, userId, profileId, userId, profileId)
 
+deleteIncognitoConnectionProfile :: DB.Connection -> UserId -> Connection -> IO ()
+deleteIncognitoConnectionProfile db userId Connection {connId, customUserProfileId} =
+  forM_ customUserProfileId $ \profileId -> do
+    DB.execute db "UPDATE connections SET custom_user_profile_id = NULL WHERE connection_id = ?" (Only connId)
+    DB.execute
+      db
+      [sql|
+        DELETE FROM contact_profiles
+        WHERE user_id = ? AND contact_profile_id = ?
+          AND NOT EXISTS (SELECT 1 FROM contacts WHERE contact_profile_id = ?)
+          AND NOT EXISTS (SELECT 1 FROM contact_requests WHERE contact_profile_id = ?)
+          AND NOT EXISTS (SELECT 1 FROM contact_requests WHERE contact_profile_id = ? OR member_profile_id = ?)
+      |]
+      (userId, profileId, profileId, profileId, profileId, profileId)
+
 type PreparedContactRow = (Maybe AConnectionRequestUri, Maybe AConnShortLink, Maybe SharedMsgId, Maybe SharedMsgId)
 
 type ContactRow' = (ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, Maybe ConnLinkContact, LocalAlias, BoolInt, ContactStatus) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime) :. PreparedContactRow :. (Maybe Int64, Maybe GroupMemberId, BoolInt, Maybe UIThemeEntityOverrides, BoolInt, Maybe CustomData, Maybe Int64)
