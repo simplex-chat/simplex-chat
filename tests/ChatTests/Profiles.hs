@@ -41,7 +41,7 @@ chatProfileTests = do
     it "use multiword profile names" testMultiWordProfileNames
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
-    it "retry accepting connection via contact link" testRetryAcceptingViaContactLink
+    it "retry connecting via contact link" testRetryConnectingViaContactLink
     it "add contact link to profile" testProfileLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
     it "deduplicate contact requests" testDeduplicateContactRequests
@@ -126,6 +126,7 @@ chatProfileTests = do
     it "connect to business address with request message" testBusinessAddressRequestMessage
     it "prepare group using group short link data and connect" testShortLinkPrepareGroup
     it "prepare group using group short link data and connect, host rejects" testShortLinkPrepareGroupReject
+    it "retry connecting to group via short link" testShortLinkGroupRetry
     it "connect to prepared contact incognito (via invitation)" testShortLinkInvitationConnectPreparedContactIncognito
     it "connect to prepared contact incognito (via address)" testShortLinkAddressConnectPreparedContactIncognito
     it "change prepared contact user" testShortLinkChangePreparedContactUser
@@ -306,8 +307,8 @@ testUserContactLink =
       alice @@@ [("@cath", lastChatFeature), ("@bob", "hey")]
       alice <##> cath
 
-testRetryAcceptingViaContactLink :: HasCallStack => TestParams -> IO ()
-testRetryAcceptingViaContactLink ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile test ps
+testRetryConnectingViaContactLink :: HasCallStack => TestParams -> IO ()
+testRetryConnectingViaContactLink ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile test ps
   where
     tmp = tmpPath ps
     test alice bob = do
@@ -3325,6 +3326,63 @@ testShortLinkPrepareGroupReject =
       bob <## "bad chat command: not current member"
   where
     cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Left GRRBlockedName)}}
+
+testShortLinkGroupRetry :: HasCallStack => TestParams -> IO ()
+testShortLinkGroupRetry ps = testChatOpts2 opts' aliceProfile bobProfile test ps
+  where
+    test alice bob = do
+      withSmpServer' serverCfg' $ do
+        connectUsers alice bob
+        alice ##> "/g team"
+        alice <## "group #team is created"
+        alice <## "to add members use /a team <name> or /create link #team"
+        alice ##> "/create link #team"
+        (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
+        bob ##> ("/_connect plan 1 " <> shortLink)
+        bob <## "group link: ok to connect"
+        groupSLinkData <- getTermLine bob
+        bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
+        bob <## "#team: group is prepared"
+      alice <## "server disconnected localhost (@bob)"
+      bob <## "server disconnected localhost (@alice)"
+      bob ##> "/_connect group #1"
+      bob <##. "smp agent error: BROKER"
+      withSmpServer' serverCfg' $ do
+        alice <## "server connected localhost (@bob)"
+        bob <## "server connected localhost (@alice)"
+        threadDelay 250000
+        bob ##> "/_connect group #1"
+        bob <## "#team: connection started"
+        alice <## "bob_1 (Bob): accepting request to join group #team..."
+        concurrentlyN_
+          [ alice <## "#team: bob_1 joined the group",
+            do
+              bob <## "#team: joining the group..."
+              bob <## "#team: you joined the group"
+          ]
+        alice <## "contact and member are merged: bob, #team bob_1"
+        alice <## "use @bob <message> to send messages"
+        bob <## "contact and member are merged: alice, #team alice_1"
+        bob <## "use @alice <message> to send messages"
+        alice #> "#team 1"
+        bob <# "#team alice> 1"
+        bob #> "#team 2"
+        alice <# "#team bob> 2"
+      alice <## "server disconnected localhost (@bob)"
+      bob <## "server disconnected localhost (@alice)"
+    tmp = tmpPath ps
+    serverCfg' =
+      smpServerCfg
+        { transports = [("7003", transport @TLS, False)],
+          serverStoreCfg = persistentServerStoreCfg tmp
+        }
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
+              }
+        }
 
 testShortLinkInvitationConnectPreparedContactIncognito :: HasCallStack => TestParams -> IO ()
 testShortLinkInvitationConnectPreparedContactIncognito =

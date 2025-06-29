@@ -1842,7 +1842,9 @@ processChatCommand' vr = \case
         connectViaContact user incognito connLinkToConnect welcomeSharedMsgId msg_ (Just $ ACCGGroup gInfo $ groupMemberId' hostMember) >>= \case
           CRSentInvitation {customUserProfile} -> do
             -- get updated group info (connLinkStartedConnection and incognito membership)
-            gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
+            gInfo' <- withFastStore $ \db -> do
+              liftIO $ setPreparedGroupStartedConnection db groupId
+              getGroupInfo db vr user groupId
             forM_ msg_ $ \(sharedMsgId, mc) -> do
               ci <- createChatItem user (CDGroupSnd gInfo' Nothing) False (CISndMsgContent mc) (Just sharedMsgId) Nothing
               toView $ CEvtNewChatItems user [ci]
@@ -2892,6 +2894,10 @@ processChatCommand' vr = \case
       withInvitationLock "connect" (strEncode cReq) $ do
         subMode <- chatReadVar subscriptionMode
         -- [incognito] generate profile to send
+        -- TODO [short links] if incognito profile was prepared on the previous attempt, it should be used instead of creating a new one
+        -- TODO [short links] for connection via prepared contacts we need to:
+        -- - potentially use different flow or pass contact as parameter here,
+        -- - prohibit changing user/incognito on the second attempt in the UI
         incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
         let profileToSend = userProfileToSend user incognitoProfile Nothing False
         lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOn cReq) >>= \case
@@ -2932,31 +2938,20 @@ processChatCommand' vr = \case
         -- contact address
         Nothing ->
           withFastStore' (\db -> getConnReqContactXContactId db vr user cReqHash1 cReqHash2) >>= \case
-            (Just contact@Contact {activeConn = Just conn@Connection {connStatus = ConnPrepared}}, Just xContactId) -> do
-              let Connection {connId = dbConnId, agentConnId = AgentConnId connId, connChatVersion = chatV} = conn
-              incognitoProfile <- getOrCreateIncognitoProfile conn
-              joinContact user dbConnId connId cReq incognitoProfile xContactId welcomeSharedMsgId msg_ False PQSupportOn chatV
+            (Just Contact {activeConn = Just conn@Connection {connStatus = ConnPrepared}}, Just (xContactId, _)) -> do
+              incognitoProfile <- joinPreparedConn' xContactId conn
               pure $ CRSentInvitation user (toPCC conn) incognitoProfile
               where
-                -- This can only be "prepared contact" scenario, so we fake PendingContactConnection here.
-                -- It needs to be refactored.
-                toPCC Connection {connId, agentConnId, connStatus, customUserProfileId, createdAt} =
-                  PendingContactConnection
-                    { pccConnId = connId,
-                      pccAgentConnId = agentConnId,
-                      pccConnStatus = connStatus,
-                      viaContactUri = True,
-                      viaUserContactLink = Nothing,
-                      groupLinkId = Nothing,
-                      customUserProfileId,
-                      connLinkInv = Nothing,
-                      localAlias = "",
-                      createdAt,
-                      updatedAt = createdAt
-                    }
             (Just contact, _) -> pure $ CRContactAlreadyExists user contact
-            (_, xContactId_) -> procCmd $ do
-              xContactId <- mkXContactId xContactId_
+            (Nothing, Just (xContactId, Just conn@Connection {connId, connStatus = ConnPrepared})) -> do
+              incognitoProfile <- joinPreparedConn' xContactId conn
+              -- TODO [short links] align Connection and PendingContactConnection so it doesn't need to be read again
+              pcc <- withStore $ \db -> getPendingContactConnection db userId connId
+              pure $ CRSentInvitation user pcc incognitoProfile
+            (Nothing, xContactId_) -> procCmd $ do
+              -- TODO [short links] this is executed on repeat request after success
+              -- it probably should send the second message without creating the second connection?
+              xContactId <- mkXContactId $ fst <$> xContactId_
               connect' Nothing cReqHash1 xContactId False
         -- group link
         Just gLinkId -> do
@@ -2965,29 +2960,53 @@ processChatCommand' vr = \case
           withFastStore' (\db -> getConnReqContactXContactId db vr user cReqHash1 cReqHash2) >>= \case
             (Just _contact, _) -> procCmd $ do
               -- allow repeat contact request
+              -- TODO [short links] is this branch needed? it probably remained from the time we created host contact
               newXContactId <- XContactId <$> drgRandomBytes 16
               connect' (Just gLinkId) cReqHash1 newXContactId True
+            (Nothing, Just (xContactId, Just conn@Connection {connId, connStatus = ConnPrepared})) -> do
+              incognitoProfile <- joinPreparedConn' xContactId conn
+              pure $ CRSentInvitation user (toPCC conn) incognitoProfile
             (_, xContactId_) -> procCmd $ do
-              xContactId <- mkXContactId xContactId_
+              -- TODO [short links] this is executed on repeat request after success
+              -- it probably should send the second message without creating the second connection?
+              xContactId <- mkXContactId $ fst <$> xContactId_
               connect' (Just gLinkId) cReqHash1 xContactId True
       where
-        getOrCreateIncognitoProfile conn@Connection {customUserProfileId = pId_}
-          | incognito =
-              withStore' $ \db -> case pId_ of
-                Nothing -> newIncognitoProfile db
-                Just pId ->
-                  runExceptT (getProfileById db userId pId)
-                    >>= either (\_ -> newIncognitoProfile db) (pure . Just . fromLocalProfile)
-          | otherwise = do
-              when (isJust pId_) $ withStore' $ \db ->
-                deleteIncognitoConnectionProfile db userId conn
-              pure Nothing
+        joinPreparedConn' xContactId conn@Connection {connId = dbConnId, agentConnId = AgentConnId connId, connChatVersion = chatV, customUserProfileId = pId_} = do
+          incognitoProfile <- getOrCreateIncognitoProfile
+          joinContact user dbConnId connId cReq incognitoProfile xContactId welcomeSharedMsgId msg_ False PQSupportOn chatV
+          pure incognitoProfile
           where
+            getOrCreateIncognitoProfile
+              | incognito =
+                  withStore' $ \db -> case pId_ of
+                    Nothing -> newIncognitoProfile db
+                    Just pId ->
+                      runExceptT (getProfileById db userId pId)
+                        >>= either (\_ -> newIncognitoProfile db) (pure . Just . fromLocalProfile)
+              | otherwise = do
+                  when (isJust pId_) $ withStore' $ \db ->
+                    deleteIncognitoConnectionProfile db userId conn
+                  pure Nothing
             newIncognitoProfile db = do
               p <- generateRandomProfile
               createdAt <- liftIO getCurrentTime
               createIncognitoProfile_ db userId createdAt p
               pure $ Just p
+        toPCC Connection {connId, agentConnId, connStatus, customUserProfileId, createdAt} =
+          PendingContactConnection
+            { pccConnId = connId,
+              pccAgentConnId = agentConnId,
+              pccConnStatus = connStatus,
+              viaContactUri = True,
+              viaUserContactLink = Nothing,
+              groupLinkId = Nothing,
+              customUserProfileId,
+              connLinkInv = Nothing,
+              localAlias = "",
+              createdAt,
+              updatedAt = createdAt
+            }
         mkXContactId = maybe (XContactId <$> drgRandomBytes 16) pure
         connect' groupLinkId cReqHash xContactId inGroup = do
           let pqSup = if inGroup then PQSupportOff else PQSupportOn

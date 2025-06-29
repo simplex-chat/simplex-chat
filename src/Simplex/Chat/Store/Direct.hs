@@ -28,6 +28,7 @@ module Simplex.Chat.Store.Direct
     createDirectConnection,
     createIncognitoProfile,
     createConnReqConnection,
+    setPreparedGroupStartedConnection,
     createAddressContactConnection,
     getProfileById,
     getConnReqContactXContactId,
@@ -186,35 +187,44 @@ createConnReqConnection db userId acId cReqHash sLnk attachConnTo_ xContactId in
       Nothing -> (ConnContact, Nothing, Nothing)
     updatePreparedGroup GroupInfo {groupId, membership} pccConnId customUserProfileId currentTs = do
       setViaGroupLinkHash db groupId pccConnId
-      DB.execute
-        db
-        "UPDATE groups SET conn_link_started_connection = ?, updated_at = ? WHERE group_id = ?"
-        (BI True, currentTs, groupId)
       when (isJust customUserProfileId) $
         DB.execute
           db
           "UPDATE group_members SET member_profile_id = ?, updated_at = ? WHERE group_member_id = ?"
           (customUserProfileId, currentTs, groupMemberId' membership)
 
-getConnReqContactXContactId :: DB.Connection -> VersionRangeChat -> User -> ConnReqUriHash -> ConnReqUriHash -> IO (Maybe Contact, Maybe XContactId)
+setPreparedGroupStartedConnection :: DB.Connection -> GroupId -> IO ()
+setPreparedGroupStartedConnection db groupId = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE groups SET conn_link_started_connection = ?, updated_at = ? WHERE group_id = ?"
+    (BI True, currentTs, groupId)
+
+getConnReqContactXContactId :: DB.Connection -> VersionRangeChat -> User -> ConnReqUriHash -> ConnReqUriHash -> IO (Maybe Contact, Maybe (XContactId, Maybe Connection))
 getConnReqContactXContactId db vr user@User {userId} cReqHash1 cReqHash2 = do
   getContactByConnReqHash db vr user cReqHash1 cReqHash2 >>= \case
-    Just (xContactId_, ct) -> pure (Just ct, xContactId_)
-    Nothing -> (Nothing,) <$> getXContactId
+    Just (xContactId_, ct@Contact {activeConn}) -> pure (Just ct, (,activeConn) <$> xContactId_)
+    Nothing -> (Nothing,) <$> getConnectionXContactId
   where
-    getXContactId :: IO (Maybe XContactId)
-    getXContactId =
-      maybeFirstRow fromOnly $
+    getConnectionXContactId :: IO (Maybe (XContactId, Maybe Connection))
+    getConnectionXContactId =
+      maybeFirstRow toConnectionAndXContactId $
         DB.query
           db
           [sql|
-            SELECT xcontact_id
+            SELECT xcontact_id,
+              connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, custom_user_profile_id, conn_status, conn_type, contact_conn_initiated, local_alias,
+              contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter, quota_err_counter,
+              conn_chat_version, peer_chat_min_version, peer_chat_max_version
             FROM connections
             WHERE (user_id = ? AND via_contact_uri_hash = ?)
                OR (user_id = ? AND via_contact_uri_hash = ?)
             LIMIT 1
           |]
           (userId, cReqHash1, userId, cReqHash2)
+    toConnectionAndXContactId :: Only XContactId :. ConnectionRow -> (XContactId, Maybe Connection)
+    toConnectionAndXContactId (Only xContactId_ :. connRow) = (xContactId_, Just $ toConnection vr connRow)
 
 getContactByConnReqHash :: DB.Connection -> VersionRangeChat -> User -> ConnReqUriHash -> ConnReqUriHash -> IO (Maybe (Maybe XContactId, Contact))
 getContactByConnReqHash db vr user@User {userId} cReqHash1 cReqHash2 = do
