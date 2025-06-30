@@ -521,7 +521,7 @@ object ChatModel {
         }
       }
     }
-    
+
     private fun chatItemBelongsToScope(cInfo: ChatInfo, cItem: ChatItem): Boolean =
       when (secondaryContextFilter) {
         null ->
@@ -2063,7 +2063,7 @@ enum class MemberCriteria {
 @Serializable
 data class ContactShortLinkData (
   val profile: Profile,
-  val message: String?,
+  val message: MsgContent?,
   val business: Boolean
 )
 

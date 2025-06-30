@@ -72,6 +72,7 @@ import Simplex.Chat.Library.Internal
 import Simplex.Chat.Stats
 import Simplex.Chat.Store
 import Simplex.Chat.Store.AppSettings
+import Simplex.Chat.Store.ContactRequest
 import Simplex.Chat.Store.Connections
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Files
@@ -1153,10 +1154,10 @@ processChatCommand' vr = \case
       uclId <- getUserContactLinkIdByCReq db connReqId
       uclGLinkInfo <- getUserContactLinkById db userId uclId
       pure (uclId, uclGLinkInfo)
-    let UserContactLink {shortLinkDataSet} = ucl
+    let UserContactLink {shortLinkDataSet, addressSettings} = ucl
     when (shortLinkDataSet && incognito) $ throwCmdError "incognito not allowed for address with short link data"
     withUserContactLock "acceptContact" uclId $ do
-      cReq <- withFastStore $ \db -> getContactRequest db user connReqId
+      cReq@UserContactRequest {welcomeSharedMsgId} <- withFastStore $ \db -> getContactRequest db user connReqId
       (ct, conn@Connection {connId}, sqSecured) <- acceptContactRequest user cReq incognito
       let contactUsed = isNothing gLinkInfo_
       ct' <- withStore' $ \db -> do
@@ -1166,6 +1167,13 @@ processChatCommand' vr = \case
             then conn {connStatus = ConnSndReady} <$ updateConnectionStatusFromTo db connId ConnNew ConnSndReady
             else pure conn
         pure ct {contactUsed, activeConn = Just conn'}
+      when sqSecured $ forM_ (autoReply addressSettings) $ \mc -> case welcomeSharedMsgId of
+        Just smId ->
+          void $ sendDirectContactMessage user ct' $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing
+        Nothing -> do
+          (msg, _) <- sendDirectContactMessage user ct' $ XMsgNew $ MCSimple $ extMsgContent mc Nothing
+          ci <- saveSndChatItem user (CDDirectSnd ct') msg (CISndMsgContent mc)
+          toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct') ci]
       pure $ CRAcceptingContactRequest user ct'
   APIRejectContact connReqId -> withUser $ \user -> do
     userContactLinkId <- withFastStore $ \db -> getUserContactLinkIdByCReq db connReqId
@@ -1748,7 +1756,7 @@ processChatCommand' vr = \case
                 createItem sharedMsgId content = createChatItem user cd True content sharedMsgId Nothing
                 cInfo = GroupChat gInfo Nothing
             void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
-            aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent . MCText) message
+            aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent) message
             let chat = case aci of
                   Just (AChatItem SCTGroup dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
                   _ -> Chat cInfo [] emptyChatStats
@@ -1759,19 +1767,19 @@ processChatCommand' vr = \case
             cInfo = DirectChat ct
         void $ createItem Nothing $ CIRcvDirectE2EEInfo $ E2EInfo $ connRequestPQEncryption cReq
         void $ createFeatureEnabledItems_ user ct
-        aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent . MCText) message
+        aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent) message
         let chat = case aci of
               Just (AChatItem SCTDirect dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
               _ -> Chat cInfo [] emptyChatStats
         pure $ CRNewPreparedChat user $ AChat SCTDirect chat
   APIPrepareGroup userId ccLink groupSLinkData -> withUserId userId $ \user -> do
     let GroupShortLinkData {groupProfile = gp@GroupProfile {description}} = groupSLinkData
-    (gInfo, hostMember) <- withStore $ \db -> createPreparedGroup db vr user gp False ccLink Nothing
+    welcomeSharedMsgId <- forM description $ \_ -> getSharedMsgId
+    (gInfo, hostMember) <- withStore $ \db -> createPreparedGroup db vr user gp False ccLink welcomeSharedMsgId
     let cd = CDGroupRcv gInfo Nothing hostMember
-        createItem content = createChatItem user cd True content Nothing Nothing
         cInfo = GroupChat gInfo Nothing
     void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
-    aci <- mapM (createItem . CIRcvMsgContent . MCText) description
+    aci <- forM description $ \descr -> createChatItem user cd True (CIRcvMsgContent $ MCText descr) welcomeSharedMsgId Nothing
     let chat = case aci of
           Just (AChatItem SCTGroup dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
           _ -> Chat cInfo [] emptyChatStats
@@ -1804,9 +1812,13 @@ processChatCommand' vr = \case
           ci <- saveSndChatItem user (CDDirectSnd ct') msg (CISndMsgContent mc)
           toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct') ci]
         pure $ CRStartedConnectionToContact user ct' customUserProfile
-      Just PreparedContact {connLinkToConnect = ACCL SCMContact ccLink, welcomeSharedMsgId} -> do
-        -- TODO [short links] reuse welcomeSharedMsgId
-        msg_ <- forM msgContent_ $ \mc -> (,mc) <$> getSharedMsgId
+      Just PreparedContact {connLinkToConnect = ACCL SCMContact ccLink, welcomeSharedMsgId, requestSharedMsgId} -> do
+        msg_ <- forM msgContent_ $ \mc -> case requestSharedMsgId of
+          Just smId -> pure (smId, mc)
+          Nothing -> do
+            smId <- getSharedMsgId
+            withFastStore' $ \db -> setRequestSharedMsgIdForContact db contactId smId
+            pure (smId, mc)
         connectViaContact user incognito ccLink welcomeSharedMsgId msg_ (Just $ ACCGContact contactId) >>= \case
           CRSentInvitation {customUserProfile} -> do
             -- get updated contact with connection
@@ -1820,12 +1832,22 @@ processChatCommand' vr = \case
     (gInfo, hostMember) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getHostMember db vr user groupId
     case preparedGroup gInfo of
       Nothing -> throwCmdError "group doesn't have link to connect"
-      Just PreparedGroup {connLinkToConnect} ->
-        -- TODO [short links] store request message with shared message ID (for business chat)
-        connectViaContact user incognito connLinkToConnect Nothing Nothing (Just $ ACCGGroup gInfo (groupMemberId' hostMember)) >>= \case
+      Just PreparedGroup {connLinkToConnect, welcomeSharedMsgId, requestSharedMsgId} -> do
+        msg_ <- forM msgContent_ $ \mc -> case requestSharedMsgId of
+          Just smId -> pure (smId, mc)
+          Nothing -> do
+            smId <- getSharedMsgId
+            withFastStore' $ \db -> setRequestSharedMsgIdForGroup db groupId smId
+            pure (smId, mc)
+        connectViaContact user incognito connLinkToConnect welcomeSharedMsgId msg_ (Just $ ACCGGroup gInfo $ groupMemberId' hostMember) >>= \case
           CRSentInvitation {customUserProfile} -> do
             -- get updated group info (connLinkStartedConnection and incognito membership)
-            gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
+            gInfo' <- withFastStore $ \db -> do
+              liftIO $ setPreparedGroupStartedConnection db groupId
+              getGroupInfo db vr user groupId
+            forM_ msg_ $ \(sharedMsgId, mc) -> do
+              ci <- createChatItem user (CDGroupSnd gInfo' Nothing) False (CISndMsgContent mc) (Just sharedMsgId) Nothing
+              toView $ CEvtNewChatItems user [ci]
             pure $ CRStartedConnectionToGroup user gInfo' customUserProfile
           cr -> pure cr
   APIConnect userId incognito acl -> withUserId userId $ \user -> case acl of
@@ -2872,6 +2894,10 @@ processChatCommand' vr = \case
       withInvitationLock "connect" (strEncode cReq) $ do
         subMode <- chatReadVar subscriptionMode
         -- [incognito] generate profile to send
+        -- TODO [short links] if incognito profile was prepared on the previous attempt, it should be used instead of creating a new one
+        -- TODO [short links] for connection via prepared contacts we need to:
+        -- - potentially use different flow or pass contact as parameter here,
+        -- - prohibit changing user/incognito on the second attempt in the UI
         incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
         let profileToSend = userProfileToSend user incognitoProfile Nothing False
         lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOn cReq) >>= \case
@@ -2903,31 +2929,84 @@ processChatCommand' vr = \case
                   CRInvitationUri crData {crScheme = simplexChat} e2e
                 )
     connectViaContact :: User -> IncognitoEnabled -> CreatedLinkContact -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> Maybe AttachConnToContactOrGroup -> CM ChatResponse
-    connectViaContact user@User {userId} incognito (CCLink cReq@(CRContactUri ConnReqUriData {crClientData}) sLnk) welcomeSharedMsgId msg_ attachConnTo_ = withInvitationLock "connectViaContact" (strEncode cReq) $ do
+    connectViaContact user@User {userId} incognito (CCLink cReq@(CRContactUri crData@ConnReqUriData {crClientData}) sLnk) welcomeSharedMsgId msg_ attachConnTo_ = withInvitationLock "connectViaContact" (strEncode cReq) $ do
       let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
-          cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
+          cReqHash = ConnReqUriHash . C.sha256Hash . strEncode
+          cReqHash1 = cReqHash $ CRContactUri crData {crScheme = SSSimplex}
+          cReqHash2 = cReqHash $ CRContactUri crData {crScheme = simplexChat}
       case groupLinkId of
         -- contact address
         Nothing ->
-          withFastStore' (\db -> getConnReqContactXContactId db vr user cReqHash) >>= \case
+          withFastStore' (\db -> getConnReqContactXContactId db vr user cReqHash1 cReqHash2) >>= \case
+            (Just Contact {activeConn = Just conn@Connection {connStatus = ConnPrepared}}, Just (xContactId, _)) -> do
+              incognitoProfile <- joinPreparedConn' xContactId conn
+              pure $ CRSentInvitation user (toPCC conn) incognitoProfile
             (Just contact, _) -> pure $ CRContactAlreadyExists user contact
-            (_, xContactId_) -> procCmd $ do
-              let randomXContactId = XContactId <$> drgRandomBytes 16
-              xContactId <- maybe randomXContactId pure xContactId_
-              connect' Nothing cReqHash xContactId False
+            (Nothing, Just (xContactId, Just conn@Connection {connId, connStatus = ConnPrepared})) -> do
+              incognitoProfile <- joinPreparedConn' xContactId conn
+              -- TODO [short links] align Connection and PendingContactConnection so it doesn't need to be read again
+              pcc <- withStore $ \db -> getPendingContactConnection db userId connId
+              pure $ CRSentInvitation user pcc incognitoProfile
+            (Nothing, xContactId_) -> procCmd $ do
+              -- TODO [short links] this is executed on repeat request after success
+              -- it probably should send the second message without creating the second connection?
+              xContactId <- mkXContactId $ fst <$> xContactId_
+              connect' Nothing cReqHash1 xContactId False
         -- group link
         Just gLinkId -> do
+          -- TODO [short links] reset "connection started" column
           when (isJust msg_) $ throwChatError CEConnReqMessageProhibited
-          withFastStore' (\db -> getConnReqContactXContactId db vr user cReqHash) >>= \case
+          withFastStore' (\db -> getConnReqContactXContactId db vr user cReqHash1 cReqHash2) >>= \case
             (Just _contact, _) -> procCmd $ do
               -- allow repeat contact request
+              -- TODO [short links] is this branch needed? it probably remained from the time we created host contact
               newXContactId <- XContactId <$> drgRandomBytes 16
-              connect' (Just gLinkId) cReqHash newXContactId True
+              connect' (Just gLinkId) cReqHash1 newXContactId True
+            (Nothing, Just (xContactId, Just conn@Connection {connId, connStatus = ConnPrepared})) -> do
+              incognitoProfile <- joinPreparedConn' xContactId conn
+              pure $ CRSentInvitation user (toPCC conn) incognitoProfile
             (_, xContactId_) -> procCmd $ do
-              let randomXContactId = XContactId <$> drgRandomBytes 16
-              xContactId <- maybe randomXContactId pure xContactId_
-              connect' (Just gLinkId) cReqHash xContactId True
+              -- TODO [short links] this is executed on repeat request after success
+              -- it probably should send the second message without creating the second connection?
+              xContactId <- mkXContactId $ fst <$> xContactId_
+              connect' (Just gLinkId) cReqHash1 xContactId True
       where
+        joinPreparedConn' xContactId conn@Connection {connId = dbConnId, agentConnId = AgentConnId connId, connChatVersion = chatV, customUserProfileId = pId_} = do
+          incognitoProfile <- getOrCreateIncognitoProfile
+          joinContact user dbConnId connId cReq incognitoProfile xContactId welcomeSharedMsgId msg_ False PQSupportOn chatV
+          pure incognitoProfile
+          where
+            getOrCreateIncognitoProfile
+              | incognito =
+                  withStore' $ \db -> case pId_ of
+                    Nothing -> newIncognitoProfile db
+                    Just pId ->
+                      runExceptT (getProfileById db userId pId)
+                        >>= either (\_ -> newIncognitoProfile db) (pure . Just . fromLocalProfile)
+              | otherwise = do
+                  when (isJust pId_) $ withStore' $ \db ->
+                    deleteIncognitoConnectionProfile db userId conn
+                  pure Nothing
+            newIncognitoProfile db = do
+              p <- generateRandomProfile
+              createdAt <- liftIO getCurrentTime
+              createIncognitoProfile_ db userId createdAt p
+              pure $ Just p
+        toPCC Connection {connId, agentConnId, connStatus, viaUserContactLink, groupLinkId, customUserProfileId, createdAt} =
+          PendingContactConnection
+            { pccConnId = connId,
+              pccAgentConnId = agentConnId,
+              pccConnStatus = connStatus,
+              viaContactUri = True,
+              viaUserContactLink,
+              groupLinkId,
+              customUserProfileId,
+              connLinkInv = Nothing,
+              localAlias = "",
+              createdAt,
+              updatedAt = createdAt
+            }
+        mkXContactId = maybe (XContactId <$> drgRandomBytes 16) pure
         connect' groupLinkId cReqHash xContactId inGroup = do
           let pqSup = if inGroup then PQSupportOff else PQSupportOn
           (connId, chatV) <- prepareContact user cReq pqSup
@@ -2965,17 +3044,10 @@ processChatCommand' vr = \case
     joinContact :: User -> Int64 -> ConnId -> ConnReqContact -> Maybe Profile -> XContactId -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> Bool -> PQSupport -> VersionChat -> CM ()
     joinContact user pccConnId connId cReq incognitoProfile xContactId welcomeSharedMsgId msg_ inGroup pqSup chatV = do
       let profileToSend = userProfileToSend user incognitoProfile Nothing inGroup
-      -- TODO [short links] send welcome and sent sharedMsg Ids
       dm <- encodeConnInfoPQ pqSup chatV (XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_)
       subMode <- chatReadVar subscriptionMode
-      joinPreparedAgentConnection user pccConnId connId cReq dm pqSup subMode
-    joinPreparedAgentConnection :: User -> Int64 -> ConnId -> ConnectionRequestUri m -> ByteString -> PQSupport -> SubscriptionMode -> CM ()
-    joinPreparedAgentConnection user pccConnId connId cReq connInfo pqSup subMode = do
-      void (withAgent $ \a -> joinConnection a (aUserId user) connId True cReq connInfo pqSup subMode)
-        `catchChatError` \e -> do
-          withFastStore' $ \db -> deleteConnectionRecord db user pccConnId
-          withAgent $ \a -> deleteConnectionAsync a False connId
-          throwError e
+      void $ withAgent $ \a -> joinConnection a (aUserId user) connId True cReq dm pqSup subMode
+      withFastStore' $ \db -> updateConnectionStatusFromTo db pccConnId ConnPrepared ConnJoined
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
@@ -3402,7 +3474,9 @@ processChatCommand' vr = \case
               withFastStore' (\db -> getContactWithoutConnViaAddress db vr user cReqSchemas) >>= \case
                 Nothing -> pure $ CPContactAddress (CAPOk contactSLinkData_)
                 Just ct -> pure $ CPContactAddress (CAPContactViaAddress ct)
-            Just (RcvDirectMsgConnection _conn Nothing) -> pure $ CPContactAddress CAPConnectingConfirmReconnect
+            Just (RcvDirectMsgConnection Connection {connStatus} Nothing)
+              | connStatus == ConnPrepared -> pure $ CPContactAddress (CAPOk contactSLinkData_)
+              | otherwise -> pure $ CPContactAddress CAPConnectingConfirmReconnect
             Just (RcvDirectMsgConnection _ (Just ct))
               | not (contactReady ct) && contactActive ct -> pure $ CPContactAddress (CAPConnectingProhibit ct)
               | contactDeleted ct -> pure $ CPContactAddress (CAPOk contactSLinkData_)
@@ -3461,7 +3535,7 @@ processChatCommand' vr = \case
     contactShortLinkData :: Profile -> Maybe AddressSettings -> CM UserLinkData
     contactShortLinkData p settings = do
       large <- chatReadVar useLargeLinkData
-      let msg = welcomeMessage =<< settings
+      let msg = autoReply =<< settings
           business = maybe False businessAddress settings
           contactData
             | large = ContactShortLinkData p msg business
@@ -4769,10 +4843,10 @@ chatCommandP =
     dbEncryptionConfig currentKey newKey = DBEncryptionConfig {currentKey, newKey, keepKey = Just False}
 #endif
     -- TODO [short links] parser for address settings
-    autoAcceptP = ifM onOffP (businessAA <|> addressAA) (pure $ AddressSettings False Nothing Nothing Nothing)
+    autoAcceptP = ifM onOffP (businessAA <|> addressAA) (pure $ AddressSettings False Nothing Nothing)
       where
-        addressAA = AddressSettings False Nothing <$> (Just . AutoAccept <$> (" incognito=" *> onOffP <|> pure False)) <*> autoReply
-        businessAA = " business" *> (AddressSettings True Nothing (Just $ AutoAccept False) <$> autoReply)
+        addressAA = AddressSettings False <$> (Just . AutoAccept <$> (" incognito=" *> onOffP <|> pure False)) <*> autoReply
+        businessAA = " business" *> (AddressSettings True (Just $ AutoAccept False) <$> autoReply)
         autoReply = optional (A.space *> msgContentP)
     rcCtrlAddressP = RCCtrlAddress <$> ("addr=" *> strP) <*> (" iface=" *> (jsonP <|> text1P))
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')

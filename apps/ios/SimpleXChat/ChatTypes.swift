@@ -2217,7 +2217,7 @@ public enum MemberCriteria: String, Codable, Identifiable, Hashable {
 
 public struct ContactShortLinkData: Codable, Hashable {
     public var profile: Profile
-    public var message: String?
+    public var message: MsgContent?
     public var business: Bool
 }
 

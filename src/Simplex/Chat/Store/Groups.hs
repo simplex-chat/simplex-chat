@@ -76,6 +76,7 @@ module Simplex.Chat.Store.Groups
     createNewContactMember,
     createNewContactMemberAsync,
     createJoiningMember,
+    getMemberJoinRequest,
     createJoiningMemberConnection,
     createBusinessRequestGroup,
     getContactViaMember,
@@ -937,7 +938,7 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
             g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
-            g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_started_connection, g.welcome_shared_msg_id,
+            g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
             g.business_chat, g.business_member_id, g.customer_member_id,
             g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
             mu.group_member_id, g.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category, mu.member_status, mu.show_messages, mu.member_restriction,
@@ -1230,7 +1231,7 @@ createNewContactMemberAsync db gVar user@User {userId, userContactId} GroupInfo 
             :. (minV, maxV)
         )
 
-createJoiningMember :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> VersionRangeChat -> Profile -> Maybe XContactId -> GroupMemberRole -> GroupMemberStatus -> ExceptT StoreError IO (GroupMemberId, MemberId)
+createJoiningMember :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe SharedMsgId -> GroupMemberRole -> GroupMemberStatus -> ExceptT StoreError IO (GroupMemberId, MemberId)
 createJoiningMember
   db
   gVar
@@ -1239,6 +1240,7 @@ createJoiningMember
   cReqChatVRange
   Profile {displayName, fullName, image, contactLink, preferences}
   cReqXContactId_
+  welcomeMsgId_
   memberRole
   memberStatus = do
     currentTs <- liftIO getCurrentTime
@@ -1261,14 +1263,19 @@ createJoiningMember
           [sql|
             INSERT INTO group_members
               ( group_id, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
-                user_id, local_display_name, contact_id, contact_profile_id, member_xcontact_id, created_at, updated_at,
+                user_id, local_display_name, contact_id, contact_profile_id, member_xcontact_id, member_welcome_shared_msg_id, created_at, updated_at,
                 peer_chat_min_version, peer_chat_max_version)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           |]
           ( (groupId, memberId, memberRole, GCInviteeMember, memberStatus, fromInvitedBy userContactId IBUser, groupMemberId' membership)
-              :. (userId, ldn, Nothing :: (Maybe Int64), profileId, cReqXContactId_, currentTs, currentTs)
+              :. (userId, ldn, Nothing :: (Maybe Int64), profileId, cReqXContactId_, welcomeMsgId_, currentTs, currentTs)
               :. (minV, maxV)
           )
+
+getMemberJoinRequest :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO (Maybe (Maybe XContactId, Maybe SharedMsgId))
+getMemberJoinRequest db User {userId} GroupInfo {groupId} GroupMember {groupMemberId = mId} =
+  maybeFirstRow id $
+    DB.query db "SELECT member_xcontact_id, member_welcome_shared_msg_id FROM group_members WHERE user_id = ? AND group_id = ? AND group_member_id = ?" (userId, groupId, mId)
 
 createJoiningMemberConnection :: DB.Connection -> User -> Int64 -> (CommandId, ConnId) -> VersionChat -> VersionRangeChat -> GroupMemberId -> SubscriptionMode -> IO ()
 createJoiningMemberConnection
@@ -1291,7 +1298,7 @@ createBusinessRequestGroup
   gVar
   user@User {userId, userContactId}
   cReqChatVRange
-  Profile {displayName, fullName, image, contactLink, preferences}
+  Profile {displayName, fullName, image}
   profileId -- contact request profile id, to be used for member profile
   ldn -- contact request local display name, to be used for group local display name
   groupPreferences = do
@@ -1813,7 +1820,7 @@ getViaGroupMember db vr User {userId, userContactId} Contact {contactId} = do
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
             g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
-            g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_started_connection, g.welcome_shared_msg_id,
+            g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
             g.business_chat, g.business_member_id, g.customer_member_id,
             g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
             -- GroupInfo {membership}

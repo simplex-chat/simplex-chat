@@ -82,6 +82,7 @@ CREATE TABLE contacts(
   conn_full_link_to_connect BLOB,
   conn_short_link_to_connect BLOB,
   welcome_shared_msg_id BLOB,
+  request_shared_msg_id BLOB,
   contact_request_id INTEGER REFERENCES contact_requests ON DELETE SET NULL,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
@@ -143,7 +144,8 @@ CREATE TABLE groups(
   conn_full_link_to_connect BLOB,
   conn_short_link_to_connect BLOB,
   conn_link_started_connection INTEGER NOT NULL DEFAULT 0,
-  welcome_shared_msg_id BLOB, -- received
+  welcome_shared_msg_id BLOB,
+  request_shared_msg_id BLOB, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -182,6 +184,7 @@ CREATE TABLE group_members(
   support_chat_items_mentions INTEGER NOT NULL DEFAULT 0,
   support_chat_last_msg_from_member_ts TEXT,
   member_xcontact_id BLOB,
+  member_welcome_shared_msg_id BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -336,7 +339,6 @@ CREATE TABLE user_contact_links(
   business_address INTEGER DEFAULT 0,
   short_link_contact BLOB,
   short_link_data_set INTEGER NOT NULL DEFAULT 0,
-  address_welcome_message TEXT,
   UNIQUE(user_id, local_display_name)
 );
 CREATE TABLE contact_requests(

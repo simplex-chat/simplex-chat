@@ -929,7 +929,7 @@ acceptContactRequestAsync
       liftIO $ setCommandConnId db user cmdId connId
       getContact db vr user contactId
 
-acceptGroupJoinRequestAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> GroupAcceptance -> GroupMemberRole -> Maybe IncognitoProfile -> CM GroupMember
+acceptGroupJoinRequestAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe SharedMsgId -> GroupAcceptance -> GroupMemberRole -> Maybe IncognitoProfile -> CM GroupMember
 acceptGroupJoinRequestAsync
   user
   uclId
@@ -938,13 +938,14 @@ acceptGroupJoinRequestAsync
   cReqChatVRange
   cReqProfile
   cReqXContactId_
+  welcomeMsgId_
   gAccepted
   gLinkMemRole
   incognitoProfile = do
     gVar <- asks random
     let initialStatus = acceptanceToStatus (memberAdmission groupProfile) gAccepted
     (groupMemberId, memberId) <- withStore $ \db ->
-      createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ gLinkMemRole initialStatus
+      createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ welcomeMsgId_ gLinkMemRole initialStatus
     currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
     let Profile {displayName} = profileToSendOnAccept user incognitoProfile True
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
@@ -979,7 +980,7 @@ acceptGroupJoinSendRejectAsync
   rejectionReason = do
     gVar <- asks random
     (groupMemberId, memberId) <- withStore $ \db ->
-      createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ GRObserver GSMemRejected
+      createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ Nothing GRObserver GSMemRejected
     let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
         msg =
           XGrpLinkReject $
@@ -1111,8 +1112,15 @@ sendHistory user gInfo@GroupInfo {groupId, membership} m@GroupMember {activeConn
     (errs', events) <- partitionEithers <$> mapM (tryChatError . itemForwardEvents) items
     let errors = map ChatErrorStore errs <> errs'
     unless (null errors) $ toView $ CEvtChatErrors errors
-    let events' = maybe (concat events) (\x -> concat events <> [x]) descrEvent_
-    forM_ (L.nonEmpty events') $ \events'' ->
+    let events' = concat events
+    events_ <- case descrEvent_ of
+      Just descr -> mkEvents <$> withStore' (\db -> getMemberJoinRequest db user gInfo m)
+        where
+          mkEvents = \case
+            Just (_, Just _welcomeMsgId) -> events'
+            _ -> events' <> [descr]
+      Nothing -> pure events'
+    forM_ (L.nonEmpty events_) $ \events'' ->
       sendGroupMemberMessages user conn events'' groupId
   where
     descrEvent_ :: Maybe (ChatMsgEvent 'Json)

@@ -207,7 +207,8 @@ contactRequestId' Contact {contactRequestId} = contactRequestId
 data PreparedContact = PreparedContact
   { connLinkToConnect :: ACreatedConnLink,
     uiConnLinkType :: ConnectionMode,
-    welcomeSharedMsgId :: Maybe SharedMsgId
+    welcomeSharedMsgId :: Maybe SharedMsgId,
+    requestSharedMsgId :: Maybe SharedMsgId
   }
   deriving (Eq, Show)
 
@@ -404,8 +405,15 @@ data RequestEntity
 type RepeatRequest = Bool
 
 data RequestStage
-  = RSAcceptedRequest (Maybe UserContactRequest) RequestEntity -- Optional request is for legacy deleted requests
-  | RSCurrentRequest UserContactRequest (Maybe RequestEntity) RepeatRequest -- Optional entity is for legacy requests without entity
+  = RSAcceptedRequest
+      { acceptedRequest :: Maybe UserContactRequest, -- Request is optional to support deleted legacy requests
+        requestEntity :: RequestEntity
+      }
+  | RSCurrentRequest
+      { previousRequest :: Maybe UserContactRequest,
+        currentRequest :: UserContactRequest,
+        requestEntity_ :: Maybe RequestEntity -- Entity is optional to support legacy requests without entity
+      }
 
 type UserName = Text
 
@@ -488,7 +496,8 @@ instance ToField BusinessChatType where toField = toField . textEncode
 data PreparedGroup = PreparedGroup
   { connLinkToConnect :: CreatedLinkContact,
     connLinkStartedConnection :: Bool,
-    welcomeSharedMsgId :: Maybe SharedMsgId -- it is stored only for business chats, and only if welcome message is specified
+    welcomeSharedMsgId :: Maybe SharedMsgId, -- it is stored only for business chats, and only if welcome message is specified
+    requestSharedMsgId :: Maybe SharedMsgId
   }
   deriving (Eq, Show)
 
@@ -714,18 +723,6 @@ instance ToJSON ImageData where
 instance ToField ImageData where toField (ImageData t) = toField t
 
 deriving newtype instance FromField ImageData
-
-data ContactShortLinkData = ContactShortLinkData
-  { profile :: Profile,
-    message :: Maybe Text,
-    business :: Bool
-  }
-  deriving (Show)
-
-data GroupShortLinkData = GroupShortLinkData
-  { groupProfile :: GroupProfile
-  }
-  deriving (Show)
 
 data CReqClientData = CRDataGroup {groupLinkId :: GroupLinkId}
 
@@ -1997,10 +1994,6 @@ $(JQ.deriveJSON defaultJSON ''GroupSummary)
 instance FromField MsgFilter where fromField = fromIntField_ msgFilterIntP
 
 instance ToField MsgFilter where toField = toField . msgFilterInt
-
-$(JQ.deriveJSON defaultJSON ''ContactShortLinkData)
-
-$(JQ.deriveJSON defaultJSON ''GroupShortLinkData)
 
 $(JQ.deriveJSON defaultJSON ''CReqClientData)
 
