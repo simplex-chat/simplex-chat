@@ -814,10 +814,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             (gInfo'', m'', scopeInfo) <- mkGroupChatScope gInfo' m'
             let cd = CDGroupRcv gInfo'' scopeInfo m''
             createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
-            let prepared = isJust $ preparedGroup gInfo''
-            unless prepared $ createGroupFeatureItems user cd CIRcvGroupFeature gInfo''
+            let prepared = preparedGroup gInfo''
+            unless (isJust prepared) $ createGroupFeatureItems user cd CIRcvGroupFeature gInfo''
             memberConnectedChatItem gInfo'' scopeInfo m''
-            unless (memberPending membership || prepared) $ maybeCreateGroupDescrLocal gInfo'' m''
+            let welcomeMsgId_ = (\PreparedGroup {welcomeSharedMsgId = mId} -> mId) <$> prepared
+            unless (memberPending membership || isJust welcomeMsgId_) $ maybeCreateGroupDescrLocal gInfo'' m''
           GCInviteeMember -> do
             (gInfo', mStatus) <-
               if not (memberPending m)
@@ -2281,7 +2282,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 cd = CDGroupRcv gInfo' Nothing m
             createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
             createGroupFeatureItems user cd CIRcvGroupFeature gInfo'
-            maybeCreateGroupDescrLocal gInfo' m
+            let welcomeMsgId_ = (\PreparedGroup {welcomeSharedMsgId = mId} -> mId) <$> preparedGroup gInfo'
+            unless (isJust welcomeMsgId_) $ maybeCreateGroupDescrLocal gInfo' m
             createInternalChatItem user cd (CIRcvGroupEvent RGEUserAccepted) Nothing
             let scopeInfo = Just $ GCSIMemberSupport {groupMember_ = Nothing}
             createInternalChatItem user (CDGroupRcv gInfo' scopeInfo m) (CIRcvGroupEvent RGEUserAccepted) Nothing
