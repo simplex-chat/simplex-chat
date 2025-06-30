@@ -283,7 +283,7 @@
     <string name="error_xftp_test_server_auth">Serverul necesită autorizare pentru încărcare, verificați parola</string>
     <string name="notification_preview_mode_message_desc">Afișează contactul și mesajul</string>
     <string name="share_file">Partajează fișier…</string>
-    <string name="text_field_set_contact_placeholder">Setează numele contactului…</string>
+    <string name="text_field_set_contact_placeholder">Nume contact…</string>
     <string name="icon_descr_send_message">Trimite mesaj</string>
     <string name="send_disappearing_message">Trimiteți un mesaj care dispare</string>
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(scanează sau lipește din clipboard)</string>
@@ -1807,7 +1807,7 @@
     <string name="info_row_updated_at">Înregistrare actualizată la</string>
     <string name="onboarding_select_network_operators_to_use">Selectați operatorii de rețea pe care îi veți utiliza.</string>
     <string name="remote_hosts_section">Telefoane mobile la distanță</string>
-    <string name="send_receipts">Trimiteți confirmări de primire</string>
+    <string name="send_receipts">Trimite confirmări de citire</string>
     <string name="accept_feature_set_1_day">Setați 1 zi</string>
     <string name="v5_1_self_destruct_passcode">Parolă de autodistrugere</string>
     <string name="servers_info_reconnect_servers_message">Reconectați toate serverele conectate pentru a forța livrarea mesajelor. Aceasta utilizează trafic suplimentar.</string>
