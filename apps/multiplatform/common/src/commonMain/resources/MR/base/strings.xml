@@ -526,6 +526,10 @@
   <string name="compose_view_join_group">Join group</string>
   <string name="compose_view_add_message">Add message</string>
   <string name="compose_view_connect">Connect</string>
+  <string name="compose_view_send_contact_request_alert_question">Send contact request?</string>
+  <string name="compose_view_send_contact_request_alert_text"><![CDATA[You will be able to send messages <b>only after your request is accepted</b>.]]></string>
+  <string name="compose_view_send_request_without_message">Send request without message</string>
+  <string name="compose_view_send_request">Send request</string>
 
   <string name="cant_send_message_alert_title">You can\'t send messages!</string>
   <string name="cant_send_message_contact_not_ready">contact not ready</string>

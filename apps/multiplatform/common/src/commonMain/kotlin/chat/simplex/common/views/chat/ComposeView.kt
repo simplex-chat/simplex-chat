@@ -529,7 +529,6 @@ fun ComposeView(
     }
   }
 
-  // TODO [short links] alert "You will be able to send messages **only after your request is accepted**"
   suspend fun sendConnectPreparedContact() {
     val mc = checkLinkPreview()
     sending()
@@ -550,6 +549,28 @@ fun ComposeView(
     }
   }
 
+  // TODO [short links] different messages for business
+  fun showSendConnectPreparedContactAlert(sendConnect: () -> Unit) {
+    val empty = composeState.value.whitespaceOnly
+    AlertManager.shared.showAlertDialog(
+      title = generalGetString(MR.strings.compose_view_send_contact_request_alert_question),
+      text = generalGetString(MR.strings.compose_view_send_contact_request_alert_text),
+      confirmText = (
+          if (empty)
+            generalGetString(MR.strings.compose_view_send_request_without_message)
+          else
+            generalGetString(MR.strings.compose_view_send_request)
+          ),
+      onConfirm = { sendConnect() },
+      dismissText = (
+          if (empty)
+            generalGetString(MR.strings.compose_view_add_message)
+          else
+            generalGetString(MR.strings.cancel_verb)
+          )
+    )
+  }
+
   suspend fun connectPreparedGroup() {
     val mc = checkLinkPreview()
     sending()
@@ -568,28 +589,6 @@ fun ComposeView(
       composeState.value = composeState.value.copy(inProgress = false)
     }
   }
-
-//  // TODO [short links] next connect button design, rework compose to not show send button, align with Swift
-//  @Composable
-//  fun NextConnectPreparedButton() {
-//    TextButton(onClick = {
-//      withBGApi {
-//        if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.nextSendGrpInv) {
-//          sendMemberContactInvitation()
-//        } else if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.nextConnectPrepared) {
-//          sendConnectPreparedContact()
-//        } else if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.nextConnectPrepared) {
-//          sendConnectPreparedGroup()
-//        }
-//      }
-//    }) {
-//      if (chat.chatInfo is ChatInfo.Group) {
-//        Text("Join")
-//      } else {
-//        Text("Connect")
-//      }
-//    }
-//  }
 
   suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?): List<ChatItem>? {
     val cInfo = chat.chatInfo
@@ -1405,7 +1404,7 @@ fun ComposeView(
           SendContactRequestView(
             disableSendButton = disableSendButton,
             icon = MR.images.ic_work_filled_padded,
-            sendRequest = { withApi { connectPreparedGroup() } }
+            sendRequest = { showSendConnectPreparedContactAlert(sendConnect = { withApi { connectPreparedGroup() } }) }
           )
         }
       } else if (nextSendGrpInv.value) {
@@ -1436,7 +1435,7 @@ fun ComposeView(
             SendContactRequestView(
               disableSendButton = disableSendButton,
               icon = MR.images.ic_person_add_filled,
-              sendRequest = { withApi { sendConnectPreparedContact() } }
+              sendRequest = { showSendConnectPreparedContactAlert(sendConnect = { withApi { sendConnectPreparedContact() } }) }
             )
         }
       } else if (
