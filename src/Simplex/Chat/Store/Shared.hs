@@ -442,7 +442,7 @@ deleteIncognitoConnectionProfile db userId Connection {connId, customUserProfile
         WHERE user_id = ? AND contact_profile_id = ?
           AND NOT EXISTS (SELECT 1 FROM contacts WHERE contact_profile_id = ?)
           AND NOT EXISTS (SELECT 1 FROM contact_requests WHERE contact_profile_id = ?)
-          AND NOT EXISTS (SELECT 1 FROM contact_requests WHERE contact_profile_id = ? OR member_profile_id = ?)
+          AND NOT EXISTS (SELECT 1 FROM group_members WHERE contact_profile_id = ? OR member_profile_id = ?)
       |]
       (userId, profileId, profileId, profileId, profileId, profileId)
 
