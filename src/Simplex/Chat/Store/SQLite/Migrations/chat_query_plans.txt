@@ -367,9 +367,9 @@ Plan:
 Query: 
             INSERT INTO group_members
               ( group_id, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
-                user_id, local_display_name, contact_id, contact_profile_id, member_xcontact_id, created_at, updated_at,
+                user_id, local_display_name, contact_id, contact_profile_id, member_xcontact_id, member_welcome_shared_msg_id, created_at, updated_at,
                 peer_chat_min_version, peer_chat_max_version)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           
 Plan:
 
@@ -5941,6 +5941,10 @@ SCAN CONSTANT ROW
 Query: SELECT max(active_order) FROM users
 Plan:
 SEARCH users
+
+Query: SELECT member_xcontact_id, member_welcome_shared_msg_id FROM group_members WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: SELECT note_folder_id FROM note_folders WHERE user_id = ?
 Plan:

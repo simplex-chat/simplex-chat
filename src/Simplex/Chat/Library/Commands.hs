@@ -2941,7 +2941,6 @@ processChatCommand' vr = \case
             (Just Contact {activeConn = Just conn@Connection {connStatus = ConnPrepared}}, Just (xContactId, _)) -> do
               incognitoProfile <- joinPreparedConn' xContactId conn
               pure $ CRSentInvitation user (toPCC conn) incognitoProfile
-              where
             (Just contact, _) -> pure $ CRContactAlreadyExists user contact
             (Nothing, Just (xContactId, Just conn@Connection {connId, connStatus = ConnPrepared})) -> do
               incognitoProfile <- joinPreparedConn' xContactId conn
@@ -2993,14 +2992,14 @@ processChatCommand' vr = \case
               createdAt <- liftIO getCurrentTime
               createIncognitoProfile_ db userId createdAt p
               pure $ Just p
-        toPCC Connection {connId, agentConnId, connStatus, customUserProfileId, createdAt} =
+        toPCC Connection {connId, agentConnId, connStatus, viaUserContactLink, groupLinkId, customUserProfileId, createdAt} =
           PendingContactConnection
             { pccConnId = connId,
               pccAgentConnId = agentConnId,
               pccConnStatus = connStatus,
               viaContactUri = True,
-              viaUserContactLink = Nothing,
-              groupLinkId = Nothing,
+              viaUserContactLink,
+              groupLinkId,
               customUserProfileId,
               connLinkInv = Nothing,
               localAlias = "",
