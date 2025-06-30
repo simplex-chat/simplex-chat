@@ -1231,7 +1231,7 @@ fun ComposeView(
       Modifier
         .height(60.dp)
         .fillMaxWidth()
-        .padding(horizontal = 8.dp),
+        .padding(horizontal = DEFAULT_PADDING_HALF),
       verticalAlignment = Alignment.CenterVertically
     ) {
       SendMsgView_(
