@@ -5866,6 +5866,10 @@ Query: SELECT contact_id FROM group_members WHERE contact_id = ? LIMIT 1
 Plan:
 SEARCH group_members USING COVERING INDEX idx_group_members_contact_id (contact_id=?)
 
+Query: SELECT contact_id, conn_full_link_to_connect FROM contacts WHERE user_id = ? AND conn_short_link_to_connect = ?
+Plan:
+SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
+
 Query: SELECT contact_id, group_id FROM chat_items WHERE user_id = ? AND chat_item_id = ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
@@ -5917,6 +5921,10 @@ SEARCH groups USING COVERING INDEX sqlite_autoindex_groups_1 (user_id=? AND loca
 Query: SELECT group_id FROM user_contact_links WHERE user_id = ? AND user_contact_link_id = ? AND group_id IS NOT NULL
 Plan:
 SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT group_id, conn_full_link_to_connect FROM groups WHERE user_id = ? AND conn_short_link_to_connect = ?
+Plan:
+SEARCH groups USING INDEX idx_groups_chat_ts (user_id=?)
 
 Query: SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1
 Plan:
