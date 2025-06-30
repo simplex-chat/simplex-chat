@@ -1228,17 +1228,18 @@ fun ComposeView(
     sendRequest: () -> Unit
   ) {
     Row(
-      Modifier
-        .height(60.dp)
-        .fillMaxWidth()
-        .padding(horizontal = DEFAULT_PADDING_HALF),
+      Modifier.padding(horizontal = DEFAULT_PADDING_HALF),
       verticalAlignment = Alignment.CenterVertically
     ) {
-      SendMsgView_(
-        disableSendButton = disableSendButton,
-        placeholder = generalGetString(MR.strings.compose_view_add_message),
-        sendToConnect = sendRequest
-      )
+      Box(
+        Modifier.weight(1f)
+      ) {
+        SendMsgView_(
+          disableSendButton = disableSendButton,
+          placeholder = generalGetString(MR.strings.compose_view_add_message),
+          sendToConnect = sendRequest
+        )
+      }
       if (composeState.value.whitespaceOnly) {
         SimpleButtonIconEnded(
           text = stringResource(MR.strings.compose_view_connect),
@@ -1285,14 +1286,14 @@ fun ComposeView(
       Modifier
         .height(60.dp)
         .fillMaxWidth()
-        .padding(top = 8.dp),
+        .padding(horizontal = DEFAULT_PADDING),
       verticalAlignment = Alignment.CenterVertically
     ) {
       Icon(
         painterResource(MR.images.ic_chat),
         contentDescription = null,
         modifier = Modifier
-          .padding(start = 12.dp, end = 8.dp)
+          .padding(end = 8.dp)
           .height(20.dp)
           .width(20.dp),
         tint = MaterialTheme.colors.secondary
@@ -1403,7 +1404,7 @@ fun ComposeView(
         } else {
           SendContactRequestView(
             disableSendButton = disableSendButton,
-            icon = MR.images.ic_work_filled_padded,
+            icon = MR.images.ic_work_filled,
             sendRequest = { showSendConnectPreparedContactAlert(sendConnect = { withApi { connectPreparedGroup() } }) }
           )
         }
