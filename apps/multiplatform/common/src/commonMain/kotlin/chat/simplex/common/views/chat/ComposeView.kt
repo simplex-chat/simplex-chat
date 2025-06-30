@@ -1244,6 +1244,7 @@ fun ComposeView(
         SimpleButtonIconEnded(
           text = stringResource(MR.strings.compose_view_connect),
           icon = painterResource(icon),
+          disabled = composeState.value.inProgress,
           click = { withApi { sendRequest() } }
         )
       }
@@ -1256,11 +1257,10 @@ fun ComposeView(
     icon: ImageResource,
     connect: () -> Unit
   ) {
+    var modifier = Modifier.height(60.dp).fillMaxWidth()
+    modifier = if (composeState.value.inProgress) modifier else modifier.clickable(onClick = { connect() })
     Box(
-      Modifier
-        .height(60.dp)
-        .fillMaxWidth()
-        .clickable(onClick = { connect() }),
+      modifier,
       contentAlignment = Alignment.Center
     ) {
       Row(
