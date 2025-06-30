@@ -523,6 +523,9 @@
   <string name="report_compose_reason_header_other">Report other: only group moderators will see it.</string>
   <string name="report_sent_alert_title">Report sent to moderators</string>
   <string name="report_sent_alert_msg_view_in_support_chat">You can view your reports in Chat with admins.</string>
+  <string name="compose_view_join_group">Join group</string>
+  <string name="compose_view_add_message">Add message</string>
+  <string name="compose_view_connect">Connect</string>
 
   <string name="cant_send_message_alert_title">You can\'t send messages!</string>
   <string name="cant_send_message_contact_not_ready">contact not ready</string>
