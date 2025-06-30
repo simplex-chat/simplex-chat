@@ -1774,12 +1774,12 @@ processChatCommand' vr = \case
         pure $ CRNewPreparedChat user $ AChat SCTDirect chat
   APIPrepareGroup userId ccLink groupSLinkData -> withUserId userId $ \user -> do
     let GroupShortLinkData {groupProfile = gp@GroupProfile {description}} = groupSLinkData
-    (gInfo, hostMember) <- withStore $ \db -> createPreparedGroup db vr user gp False ccLink Nothing
+    welcomeSharedMsgId <- forM description $ \_ -> getSharedMsgId
+    (gInfo, hostMember) <- withStore $ \db -> createPreparedGroup db vr user gp False ccLink welcomeSharedMsgId
     let cd = CDGroupRcv gInfo Nothing hostMember
-        createItem content = createChatItem user cd True content Nothing Nothing
         cInfo = GroupChat gInfo Nothing
     void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
-    aci <- mapM (createItem . CIRcvMsgContent . MCText) description
+    aci <- forM description $ \descr -> createChatItem user cd True (CIRcvMsgContent $ MCText descr) welcomeSharedMsgId Nothing
     let chat = case aci of
           Just (AChatItem SCTGroup dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
           _ -> Chat cInfo [] emptyChatStats

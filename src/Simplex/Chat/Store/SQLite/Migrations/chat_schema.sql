@@ -184,6 +184,7 @@ CREATE TABLE group_members(
   support_chat_items_mentions INTEGER NOT NULL DEFAULT 0,
   support_chat_last_msg_from_member_ts TEXT,
   member_xcontact_id BLOB,
+  member_welcome_shared_msg_id BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

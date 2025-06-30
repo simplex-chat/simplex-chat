@@ -3354,10 +3354,8 @@ testGroupShortLinkWelcome =
         do
           bob <## "#team: joining the group..."
           bob <## "#team: you joined the group"
-          bob <# "#team alice> Welcome!" -- this should not be sent, it's a duplicate
       ]
-    -- TODO [short links] and there should be no duplicate feature items in history
-    bob #$> ("/_get chat #1 count=100", chat, groupFeaturesNoE2E <> [(0, "Welcome!")] <> [(0, "Welcome!")] <> groupFeatures <> [(0, "connected")])
+    bob #$> ("/_get chat #1 count=100", chat, groupFeaturesNoE2E <> [(0, "Welcome!"), (0, e2eeInfoNoPQStr), (0, "connected")])
     alice #> "#team 1"
     bob <# "#team alice> 1"
     bob #> "#team 2"

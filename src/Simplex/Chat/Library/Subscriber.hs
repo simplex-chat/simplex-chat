@@ -814,10 +814,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             (gInfo'', m'', scopeInfo) <- mkGroupChatScope gInfo' m'
             let cd = CDGroupRcv gInfo'' scopeInfo m''
             createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
-            let business = isJust $ businessChat gInfo''
-            unless business $ createGroupFeatureItems user cd CIRcvGroupFeature gInfo''
+            let prepared = isJust $ preparedGroup gInfo''
+            unless prepared $ createGroupFeatureItems user cd CIRcvGroupFeature gInfo''
             memberConnectedChatItem gInfo'' scopeInfo m''
-            unless (memberPending membership || business) $ maybeCreateGroupDescrLocal gInfo'' m''
+            unless (memberPending membership || prepared) $ maybeCreateGroupDescrLocal gInfo'' m''
           GCInviteeMember -> do
             (gInfo', mStatus) <-
               if not (memberPending m)
@@ -1396,7 +1396,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       messageError "processUserContactRequest: chat version range incompatible for accepting group join request"
                   | otherwise -> do
                       let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
-                      mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p xContactId_ acceptance useRole profileMode
+                      mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p xContactId_ welcomeMsgId_ acceptance useRole profileMode
                       (gInfo', mem', scopeInfo) <- mkGroupChatScope gInfo mem
                       createInternalChatItem user (CDGroupRcv gInfo' scopeInfo mem') (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
                       toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'

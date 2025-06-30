@@ -22,6 +22,7 @@ ALTER TABLE contact_requests ADD COLUMN welcome_shared_msg_id BLOB;
 ALTER TABLE contact_requests ADD COLUMN request_shared_msg_id BLOB;
 
 ALTER TABLE group_members ADD COLUMN member_xcontact_id BLOB;
+ALTER TABLE group_members ADD COLUMN member_welcome_shared_msg_id BLOB;
 
 ALTER TABLE user_contact_links ADD COLUMN short_link_data_set INTEGER NOT NULL DEFAULT 0;
 
@@ -51,6 +52,7 @@ ALTER TABLE contact_requests DROP COLUMN welcome_shared_msg_id;
 ALTER TABLE contact_requests DROP COLUMN request_shared_msg_id;
 
 ALTER TABLE group_members DROP COLUMN member_xcontact_id;
+ALTER TABLE group_members DROP COLUMN member_welcome_shared_msg_id;
 
 ALTER TABLE user_contact_links DROP COLUMN short_link_data_set;
 
