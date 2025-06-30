@@ -1,12 +1,14 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
@@ -42,6 +44,7 @@ module Simplex.Chat.Store.Direct
     getDeletedContacts,
     getContactByName,
     getContact,
+    getContactViaShortLinkToConnect,
     getContactIdByName,
     updateContactProfile,
     updateContactUserPreferences,
@@ -99,12 +102,13 @@ import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
+import Data.Type.Equality
 import Simplex.Chat.Messages
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (ACreatedConnLink (..), ConnId, CreatedConnLink (..), UserId, connMode)
+import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionModeI (..), ConnectionRequestUri, CreatedConnLink (..), UserId, connMode)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -827,6 +831,15 @@ getContactIdByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError
 getContactIdByName db User {userId} cName =
   ExceptT . firstRow fromOnly (SEContactNotFoundByName cName) $
     DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND local_display_name = ? AND deleted = 0" (userId, cName)
+
+getContactViaShortLinkToConnect :: forall c. ConnectionModeI c => DB.Connection -> VersionRangeChat -> User -> ConnShortLink c -> ExceptT StoreError IO (Maybe (ConnectionRequestUri c, Contact))
+getContactViaShortLinkToConnect db vr user@User {userId} shortLink = do
+  liftIO (maybeFirstRow id $ DB.query db "SELECT contact_id, conn_full_link_to_connect FROM contacts WHERE user_id = ? AND conn_short_link_to_connect = ?" (userId, shortLink)) >>= \case
+    Just (ctId :: Int64, Just (ACR cMode cReq)) ->
+      case testEquality cMode (sConnectionMode @c) of
+        Just Refl -> Just . (cReq,) <$> getContact db vr user ctId
+        Nothing -> pure Nothing
+    _ -> pure Nothing
 
 getContact :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO Contact
 getContact db vr user contactId = getContact_ db vr user contactId False

@@ -168,7 +168,7 @@ import Simplex.Chat.Store.NoteFolders
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared
-import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, ConnShortLink, ConnectionMode (..), MsgMeta (..), UserId)
+import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, MsgMeta (..), UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, firstRow', maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -1110,7 +1110,7 @@ getContactConnectionChatPreviews_ db User {userId} pagination clq = case clq of
       PTLast count -> DB.query db (query <> " ORDER BY updated_at DESC LIMIT ?") (params search :. Only count)
       PTAfter ts count -> DB.query db (query <> " AND updated_at > ? ORDER BY updated_at ASC LIMIT ?") (params search :. (ts, count))
       PTBefore ts count -> DB.query db (query <> " AND updated_at < ? ORDER BY updated_at DESC LIMIT ?") (params search :. (ts, count))
-    toPreview :: (Int64, ConnId, ConnStatus, Maybe ByteString, Maybe Int64, Maybe GroupLinkId, Maybe Int64, Maybe ConnReqInvitation, Maybe (ConnShortLink 'CMInvitation), LocalAlias, UTCTime, UTCTime) -> AChatPreviewData
+    toPreview :: (Int64, ConnId, ConnStatus, Maybe ByteString, Maybe Int64, Maybe GroupLinkId, Maybe Int64, Maybe ConnReqInvitation, Maybe ShortLinkInvitation, LocalAlias, UTCTime, UTCTime) -> AChatPreviewData
     toPreview connRow =
       let conn@PendingContactConnection {updatedAt} = toPendingContactConnection connRow
           aChat = AChat SCTContactConnection $ Chat (ContactConnection conn) [] emptyChatStats

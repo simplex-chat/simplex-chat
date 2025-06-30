@@ -1892,10 +1892,12 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     ILPOwnLink -> [invLink "own link"]
     ILPConnecting Nothing -> [invLink "connecting"]
     ILPConnecting (Just ct) -> [invLink ("connecting to contact " <> ttyContact' ct)]
-    ILPKnown ct ->
-      [ invLink ("known contact " <> ttyContact' ct),
-        "use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"
-      ]
+    ILPKnown ct
+      | nextConnectPrepared ct -> [invLink ("known prepared contact " <> ttyContact' ct)]
+      | otherwise ->
+          [ invLink ("known contact " <> ttyContact' ct),
+            "use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"
+          ]
     where
       invLink = ("invitation link: " <>)
       invOrBiz = \case
@@ -1907,10 +1909,12 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     CAPOwnLink -> [ctAddr "own address"]
     CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
     CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
-    CAPKnown ct ->
-      [ ctAddr ("known contact " <> ttyContact' ct),
-        "use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"
-      ]
+    CAPKnown ct
+      | nextConnectPrepared ct -> [ctAddr ("known prepared contact " <> ttyContact' ct)]
+      | otherwise ->
+          [ ctAddr ("known contact " <> ttyContact' ct),
+            "use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"
+          ]
     CAPContactViaAddress ct -> [ctAddr ("known contact without connection " <> ttyContact' ct)]
     where
       ctAddr = ("contact address: " <>)
@@ -1923,17 +1927,28 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
     GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
     GLPConnectingProhibit Nothing -> [grpLink "connecting"]
-    GLPConnectingProhibit (Just g) -> [grpOrBiz g <> " link: connecting to " <> grpOrBiz g <> " " <> ttyGroup' g]
-    GLPKnown g ->
-      [ grpOrBiz g <> " link: known " <> grpOrBiz g <> " " <> ttyGroup' g,
-        "use " <> ttyToGroup g Nothing <> highlight' "<message>" <> " to send messages"
-      ]
+    GLPConnectingProhibit (Just g) -> connecting g
+    GLPKnown g@GroupInfo {preparedGroup} -> case preparedGroup of
+      Just PreparedGroup {connLinkStartedConnection}
+        | connLinkStartedConnection -> connecting g
+        | otherwise -> [knownGroup "prepared "]
+      Nothing ->
+        [ knownGroup "",
+          "use " <> ttyToGroup g Nothing <> highlight' "<message>" <> " to send messages"
+        ]
+      where
+        knownGroup prepared = grpOrBiz g <> " link: known " <> prepared <> grpOrBiz g <> " " <> ttyGroup' g
     where
+      connecting g = [grpOrBiz g <> " link: connecting to " <> grpOrBiz g <> " " <> ttyGroup' g]
       grpLink = ("group link: " <>)
       grpOrBiz GroupInfo {businessChat} = case businessChat of
         Just _ -> "business"
         Nothing -> "group"
   CPError e -> viewChatError False logLevel testView e
+  where
+    nextConnectPrepared Contact {preparedContact, activeConn} = case preparedContact of
+      Just _ -> maybe True (\c -> connStatus c == ConnPrepared) activeConn
+      _ -> False
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated
