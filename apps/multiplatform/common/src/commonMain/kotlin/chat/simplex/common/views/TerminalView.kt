@@ -101,7 +101,7 @@ fun TerminalLayout(
             sendMsgEnabled = true,
             userCantSendReason = null,
             sendButtonEnabled = true,
-            nextSendGrpInv = false,
+            nextConnect = false,
             needToAllowVoiceToContact = false,
             allowedVoiceByPrefs = false,
             allowVoiceToContact = {},
