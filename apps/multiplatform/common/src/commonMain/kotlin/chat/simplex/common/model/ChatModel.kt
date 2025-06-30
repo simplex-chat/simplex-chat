@@ -1621,7 +1621,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
 
   val contactCard: Boolean
     get() = when (this) {
-      is Direct -> contact.activeConn == null && contact.profile.contactLink != null && contact.active
+      is Direct -> contact.isContactCard
       else -> false
     }
 
@@ -1721,7 +1721,7 @@ data class Contact(
     }
 
   val isContactCard: Boolean =
-    activeConn == null && profile.contactLink != null && active
+    activeConn == null && profile.contactLink != null && active && preparedContact == null && contactRequestId == null
 
   val contactConnIncognito =
     activeConn?.customUserProfileId != null

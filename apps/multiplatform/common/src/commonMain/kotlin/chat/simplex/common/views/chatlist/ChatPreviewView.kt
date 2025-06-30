@@ -172,7 +172,7 @@ fun ChatPreviewView(
   fun chatPreviewInfoText(): Pair<String, Color>? {
     return when (cInfo) {
       is ChatInfo.Direct ->
-        if (cInfo.contact.activeConn == null && cInfo.contact.profile.contactLink != null && cInfo.contact.active) {
+        if (cInfo.contact.isContactCard) {
           stringResource(MR.strings.contact_tap_to_connect) to MaterialTheme.colors.primary
         } else if (cInfo.contact.sendMsgToConnect) {
           stringResource(MR.strings.open_to_connect) to Color.Unspecified

@@ -1419,7 +1419,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
 
     public var contactCard: Bool {
         switch self {
-        case let .direct(contact): contact.activeConn == nil && contact.profile.contactLink != nil && contact.active
+        case let .direct(contact): contact.isContactCard
         default: false
         }
     }
@@ -1754,7 +1754,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     }
 
     public var isContactCard: Bool {
-        activeConn == nil && profile.contactLink != nil && active
+        activeConn == nil && profile.contactLink != nil && active && preparedContact == nil && contactRequestId == nil
     }
 
     public var contactConnIncognito: Bool {

@@ -254,7 +254,8 @@ class AlertManager {
               CircularProgressIndicator(Modifier.size(36.dp).padding(4.dp), color = MaterialTheme.colors.secondary, strokeWidth = 3.dp)
             }
           }
-        }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
   }
@@ -269,6 +270,7 @@ class AlertManager {
 
   fun showOpenChatAlert(
     profileName: String,
+    profileFullName: String,
     profileImage: @Composable () -> Unit,
     confirmText: String = generalGetString(MR.strings.connect_plan_open_chat),
     onConfirm: () -> Unit,
@@ -285,30 +287,41 @@ class AlertManager {
           AlertContent(text = null as String?, null) {
             Column(
               Modifier
-                .width(360.dp)
-                .padding(top = DEFAULT_PADDING),
+                .padding(top = DEFAULT_PADDING_HALF)
+                .width(360.dp),
               verticalArrangement = Arrangement.SpaceEvenly
             ) {
-              Row(
+              Column(
                 Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Start
+                horizontalAlignment = Alignment.CenterHorizontally
               ) {
                 profileImage()
-
-                Spacer(Modifier.width(DEFAULT_PADDING_HALF))
-
+                Spacer(Modifier.height(DEFAULT_PADDING_HALF))
                 Text(
                   profileName,
+                  textAlign = TextAlign.Center,
+                  style = MaterialTheme.typography.h4,
+                  lineHeight = 20.sp,
                   fontWeight = FontWeight.SemiBold,
-                  maxLines = 2
+                  maxLines = 2,
+                  modifier = Modifier.fillMaxWidth()
                 )
+
+                if (profileFullName.isNotEmpty() && profileFullName != profileName) {
+                  Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+                  Text(
+                    profileFullName,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.body2,
+                    maxLines = 2,
+                    modifier = Modifier.fillMaxWidth()
+                  )
+                }
               }
 
-              Row(
-                Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceEvenly
+              Column(
+                Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING_HALF).padding(top = DEFAULT_PADDING, bottom = 2.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
               ) {
                 val focusRequester = remember { FocusRequester() }
                 LaunchedEffect(Unit) {
@@ -317,24 +330,22 @@ class AlertManager {
                   focusRequester.requestFocus()
                 }
                 TextButton(onClick = {
-                  onDismiss?.invoke()
-                  hideAlert()
-                }) {
-                  Text(dismissText)
-                }
-
-                Spacer(Modifier.width(0.dp))
-
-                TextButton(onClick = {
                   onConfirm.invoke()
                   hideAlert()
                 }, Modifier.focusRequester(focusRequester)) {
                   Text(confirmText)
                 }
+                TextButton(onClick = {
+                  onDismiss?.invoke()
+                  hideAlert()
+                }) {
+                  Text(dismissText)
+                }
               }
             }
           }
-        }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
   }

@@ -83,12 +83,7 @@ suspend fun planAndConnect(
             if (filterKnownContact != null) {
               filterKnownContact(contact)
             } else {
-              openKnownContact(chatModel, rhId, close, contact)
-              AlertManager.privacySensitive.showAlertMsg(
-                generalGetString(MR.strings.contact_already_exists),
-                String.format(generalGetString(MR.strings.connect_plan_you_are_already_connecting_to_vName), contact.displayName) + linkText,
-                hostDevice = hostDevice(rhId),
-              )
+              showOpenKnownContactAlert(chatModel, rhId, close, contact)
               cleanup()
             }
           } else {
@@ -106,12 +101,7 @@ suspend fun planAndConnect(
           if (filterKnownContact != null) {
             filterKnownContact(contact)
           } else {
-            openKnownContact(chatModel, rhId, close, contact)
-            AlertManager.privacySensitive.showAlertMsg(
-              generalGetString(MR.strings.contact_already_exists),
-              String.format(generalGetString(MR.strings.you_are_already_connected_to_vName_via_this_link), contact.displayName) + linkText,
-              hostDevice = hostDevice(rhId),
-            )
+            showOpenKnownContactAlert(chatModel, rhId, close, contact)
             cleanup()
           }
         }
@@ -163,12 +153,7 @@ suspend fun planAndConnect(
           if (filterKnownContact != null) {
             filterKnownContact(contact)
           } else {
-            openKnownContact(chatModel, rhId, close, contact)
-            AlertManager.privacySensitive.showAlertMsg(
-              generalGetString(MR.strings.contact_already_exists),
-              String.format(generalGetString(MR.strings.connect_plan_you_are_already_connecting_to_vName), contact.displayName) + linkText,
-              hostDevice = hostDevice(rhId),
-            )
+            showOpenKnownContactAlert(chatModel, rhId, close, contact)
             cleanup()
           }
         }
@@ -178,12 +163,7 @@ suspend fun planAndConnect(
           if (filterKnownContact != null) {
             filterKnownContact(contact)
           } else {
-            openKnownContact(chatModel, rhId, close, contact)
-            AlertManager.privacySensitive.showAlertMsg(
-              generalGetString(MR.strings.contact_already_exists),
-              String.format(generalGetString(MR.strings.you_are_already_connected_to_vName_via_this_link), contact.displayName) + linkText,
-              hostDevice = hostDevice(rhId),
-            )
+            showOpenKnownContactAlert(chatModel, rhId, close, contact)
             cleanup()
           }
         }
@@ -264,20 +244,7 @@ suspend fun planAndConnect(
           if (filterKnownGroup != null) {
             filterKnownGroup(groupInfo)
           } else {
-            openKnownGroup(chatModel, rhId, close, groupInfo)
-            if (groupInfo.businessChat == null) {
-              AlertManager.privacySensitive.showAlertMsg(
-                generalGetString(MR.strings.connect_plan_group_already_exists),
-                String.format(generalGetString(MR.strings.connect_plan_you_are_already_in_group_vName), groupInfo.displayName) + linkText,
-                hostDevice = hostDevice(rhId),
-              )
-            } else {
-              AlertManager.privacySensitive.showAlertMsg(
-                generalGetString(MR.strings.connect_plan_chat_already_exists),
-                String.format(generalGetString(MR.strings.connect_plan_you_are_already_connected_with_vName), groupInfo.displayName) + linkText,
-                hostDevice = hostDevice(rhId),
-              )
-            }
+            showOpenKnownGroupAlert(chatModel, rhId, close, groupInfo)
             cleanup()
           }
         }
@@ -389,6 +356,27 @@ fun openChat_(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, chat: Cha
   }
 }
 
+val alertProfileImageSize = 138.dp
+
+private fun showOpenKnownContactAlert(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, contact: Contact) {
+  AlertManager.privacySensitive.showOpenChatAlert(
+    profileName = contact.profile.displayName,
+    profileFullName = contact.profile.fullName,
+    profileImage = {
+      ProfileImage(
+        size = alertProfileImageSize,
+        image = contact.profile.image,
+        icon = MR.images.ic_account_circle_filled
+      )
+    },
+    confirmText = generalGetString(if (contact.nextConnectPrepared) MR.strings.connect_plan_open_new_chat else MR.strings.connect_plan_open_chat),
+    onConfirm = {
+      openKnownContact(chatModel, rhId, close, contact)
+    },
+    onDismiss = null
+  )
+}
+
 fun openKnownContact(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, contact: Contact) {
   withBGApi {
     val c = chatModel.getContactChat(contact.contactId)
@@ -454,6 +442,31 @@ fun ownGroupLinkConfirmConnect(
   )
 }
 
+private fun showOpenKnownGroupAlert(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, groupInfo: GroupInfo) {
+  AlertManager.privacySensitive.showOpenChatAlert(
+    profileName = groupInfo.groupProfile.displayName,
+    profileFullName = groupInfo.groupProfile.fullName,
+    profileImage = {
+      ProfileImage(
+        size = alertProfileImageSize,
+        image = groupInfo.groupProfile.image,
+        icon = if (groupInfo.businessChat == null) MR.images.ic_supervised_user_circle_filled else MR.images.ic_work_filled_padded
+      )
+    },
+    confirmText = generalGetString(
+      if (groupInfo.businessChat == null) {
+        if (groupInfo.nextConnectPrepared) MR.strings.connect_plan_open_new_group else MR.strings.connect_plan_open_group
+      } else {
+        if (groupInfo.nextConnectPrepared) MR.strings.connect_plan_open_new_chat else MR.strings.connect_plan_open_chat
+      }
+    ),
+    onConfirm = {
+      openKnownGroup(chatModel, rhId, close, groupInfo)
+    },
+    onDismiss = null
+  )
+}
+
 fun openKnownGroup(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, groupInfo: GroupInfo) {
   withBGApi {
     val g = chatModel.getGroupChat(groupInfo.groupId)
@@ -473,14 +486,15 @@ fun showPrepareContactAlert(
 ) {
   AlertManager.privacySensitive.showOpenChatAlert(
     profileName = contactShortLinkData.profile.displayName,
+    profileFullName = contactShortLinkData.profile.fullName,
     profileImage = {
       ProfileImage(
-        size = 72.dp,
+        size = alertProfileImageSize,
         image = contactShortLinkData.profile.image,
         icon = if (contactShortLinkData.business) MR.images.ic_work_filled_padded else MR.images.ic_account_circle_filled
       )
     },
-    confirmText = generalGetString(MR.strings.connect_plan_open_chat),
+    confirmText = generalGetString(MR.strings.connect_plan_open_new_chat),
     onConfirm = {
       AlertManager.privacySensitive.hideAlert()
       withBGApi {
@@ -509,8 +523,9 @@ fun showPrepareGroupAlert(
 ) {
   AlertManager.privacySensitive.showOpenChatAlert(
     profileName = groupShortLinkData.groupProfile.displayName,
-    profileImage = { ProfileImage(size = 72.dp, image = groupShortLinkData.groupProfile.image, icon = MR.images.ic_supervised_user_circle_filled) },
-    confirmText = generalGetString(MR.strings.connect_plan_open_group),
+    profileFullName = groupShortLinkData.groupProfile.fullName,
+    profileImage = { ProfileImage(size = alertProfileImageSize, image = groupShortLinkData.groupProfile.image, icon = MR.images.ic_supervised_user_circle_filled) },
+    confirmText = generalGetString(MR.strings.connect_plan_open_new_group),
     onConfirm = {
       AlertManager.privacySensitive.hideAlert()
       withBGApi {
