@@ -2435,12 +2435,11 @@ object ChatController {
         val contactRequest = r.contactRequest
         if (active(r.user)) {
           withContext(Dispatchers.Main) {
-            if (r.contact_ != null) { // means contact request was created with contact, so we need to add/update contact chat
-              val contact = r.contact_
-              if (chatModel.chatsContext.hasChat(rhId, contact.id)) {
-                chatModel.chatsContext.updateContact(rhId, contact)
+            if (r.chat_ != null) { // means contact request was created with contact, so we need to add/update contact chat
+              if (chatModel.chatsContext.hasChat(rhId, r.chat_.id)) {
+                chatModel.chatsContext.updateChatInfo(rhId, r.chat_.chatInfo)
               } else {
-                chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Direct(contact), chatItems = listOf()))
+                chatModel.chatsContext.addChat(r.chat_)
               }
             } else {
               val cInfo = ChatInfo.ContactRequest(contactRequest)
@@ -3688,8 +3687,8 @@ sealed class CC {
     is APIPrepareGroup -> "/_prepare group $userId ${connLink.connFullLink} ${connLink.connShortLink ?: ""} ${json.encodeToString(groupShortLinkData)}"
     is APIChangePreparedContactUser -> "/_set contact user @$contactId $newUserId"
     is APIChangePreparedGroupUser -> "/_set group user #$groupId $newUserId"
-    is APIConnectPreparedContact -> "/_connect contact @$contactId incognito=${onOff(incognito)} ${maybeContent(msg)}"
-    is APIConnectPreparedGroup -> "/_connect group #$groupId incognito=${onOff(incognito)} ${maybeContent(msg)}"
+    is APIConnectPreparedContact -> "/_connect contact @$contactId incognito=${onOff(incognito)}${maybeContent(msg)}"
+    is APIConnectPreparedGroup -> "/_connect group #$groupId incognito=${onOff(incognito)}${maybeContent(msg)}"
     is APIConnect -> "/_connect $userId incognito=${onOff(incognito)} ${connLink.connFullLink} ${connLink.connShortLink ?: ""}"
     is ApiConnectContactViaAddress -> "/_connect contact $userId incognito=${onOff(incognito)} $contactId"
     is ApiDeleteChat -> "/_delete ${chatRef(type, id, scope = null)} ${chatDeleteMode.cmdString}"
@@ -5948,7 +5947,7 @@ sealed class CR {
   @Serializable @SerialName("contactConnected") class ContactConnected(val user: UserRef, val contact: Contact, val userCustomProfile: Profile? = null): CR()
   @Serializable @SerialName("contactConnecting") class ContactConnecting(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactSndReady") class ContactSndReady(val user: UserRef, val contact: Contact): CR()
-  @Serializable @SerialName("receivedContactRequest") class ReceivedContactRequest(val user: UserRef, val contactRequest: UserContactRequest, val contact_: Contact?): CR()
+  @Serializable @SerialName("receivedContactRequest") class ReceivedContactRequest(val user: UserRef, val contactRequest: UserContactRequest, val chat_: Chat?): CR()
   @Serializable @SerialName("acceptingContactRequest") class AcceptingContactRequest(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactRequestRejected") class ContactRequestRejected(val user: UserRef, val contactRequest: UserContactRequest, val contact_: Contact?): CR()
   @Serializable @SerialName("contactUpdated") class ContactUpdated(val user: UserRef, val toContact: Contact): CR()
@@ -6312,7 +6311,7 @@ sealed class CR {
     is ContactConnected -> withUser(user, json.encodeToString(contact))
     is ContactConnecting -> withUser(user, json.encodeToString(contact))
     is ContactSndReady -> withUser(user, json.encodeToString(contact))
-    is ReceivedContactRequest -> withUser(user, "contactRequest: ${json.encodeToString(contactRequest)}\ncontact_: ${json.encodeToString(contact_)}")
+    is ReceivedContactRequest -> withUser(user, "contactRequest: ${json.encodeToString(contactRequest)}\nchat_: ${json.encodeToString(chat_)}")
     is AcceptingContactRequest -> withUser(user, json.encodeToString(contact))
     is ContactRequestRejected -> withUser(user, "contactRequest: ${json.encodeToString(contactRequest)}\ncontact_: ${json.encodeToString(contact_)}")
     is ContactUpdated -> withUser(user, json.encodeToString(toContact))
