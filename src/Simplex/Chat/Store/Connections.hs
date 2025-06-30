@@ -35,7 +35,7 @@ import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (ConnId, ConnShortLink, ConnectionMode (..))
+import Simplex.Messaging.Agent.Protocol (ConnId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, firstRow', maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -213,7 +213,7 @@ getConnectionEntityByConnReq db vr user@User {userId} (cReqSchema1, cReqSchema2)
       DB.query db "SELECT agent_conn_id FROM connections WHERE user_id = ? AND conn_req_inv IN (?,?) LIMIT 1" (userId, cReqSchema1, cReqSchema2)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db vr user) connId_
 
-getConnectionEntityViaShortLink :: DB.Connection -> VersionRangeChat -> User -> ConnShortLink 'CMInvitation -> IO (Maybe (ConnReqInvitation, ConnectionEntity))
+getConnectionEntityViaShortLink :: DB.Connection -> VersionRangeChat -> User -> ShortLinkInvitation -> IO (Maybe (ConnReqInvitation, ConnectionEntity))
 getConnectionEntityViaShortLink db vr user@User {userId} shortLink = fmap eitherToMaybe $ runExceptT $ do
   (cReq, connId) <- ExceptT getConnReqConnId
   (cReq,) <$> getConnectionEntity db vr user connId

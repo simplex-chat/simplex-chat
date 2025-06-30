@@ -45,6 +45,7 @@ module Simplex.Chat.Store.Groups
     getGroupInfo,
     getGroupInfoByUserContactLinkConnReq,
     getGroupInfoViaUserShortLink,
+    getGroupViaShortLinkToConnect,
     getGroupInfoByGroupLinkHash,
     updateGroupProfile,
     updateGroupPreferences,
@@ -1995,6 +1996,12 @@ getGroupInfoViaUserShortLink db vr user@User {userId} shortLink = fmap eitherToM
       -- cReq is "not null", group_id is nullable
       (cReq, Just groupId) -> Right (cReq, groupId)
       _ -> Left $ SEInternalError "no conn req or group ID"
+
+getGroupViaShortLinkToConnect :: DB.Connection -> VersionRangeChat -> User -> ShortLinkContact -> ExceptT StoreError IO (Maybe (ConnReqContact, GroupInfo))
+getGroupViaShortLinkToConnect db vr user@User {userId} shortLink =
+  liftIO (maybeFirstRow id $ DB.query db "SELECT group_id, conn_full_link_to_connect FROM groups WHERE user_id = ? AND conn_short_link_to_connect = ?" (userId, shortLink)) >>= \case
+    Just (gId :: Int64, Just cReq) -> Just . (cReq,) <$> getGroupInfo db vr user gId
+    _ -> pure Nothing
 
 getGroupInfoByGroupLinkHash :: DB.Connection -> VersionRangeChat -> User -> (ConnReqUriHash, ConnReqUriHash) -> IO (Maybe GroupInfo)
 getGroupInfoByGroupLinkHash db vr user@User {userId, userContactId} (groupLinkHash1, groupLinkHash2) = do

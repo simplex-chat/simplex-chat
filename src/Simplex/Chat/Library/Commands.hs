@@ -2962,7 +2962,7 @@ processChatCommand' vr = \case
               -- TODO [short links] is this branch needed? it probably remained from the time we created host contact
               newXContactId <- XContactId <$> drgRandomBytes 16
               connect' (Just gLinkId) cReqHash1 newXContactId True
-            (Nothing, Just (xContactId, Just conn@Connection {connId, connStatus = ConnPrepared})) -> do
+            (Nothing, Just (xContactId, Just conn@Connection {connStatus = ConnPrepared})) -> do
               incognitoProfile <- joinPreparedConn' xContactId conn
               pure $ CRSentInvitation user (toPCC conn) incognitoProfile
             (_, xContactId_) -> procCmd $ do
@@ -2990,7 +2990,7 @@ processChatCommand' vr = \case
             newIncognitoProfile db = do
               p <- generateRandomProfile
               createdAt <- liftIO getCurrentTime
-              createIncognitoProfile_ db userId createdAt p
+              void $ createIncognitoProfile_ db userId createdAt p
               pure $ Just p
         toPCC Connection {connId, agentConnId, connStatus, viaUserContactLink, groupLinkId, customUserProfileId, createdAt} =
           PendingContactConnection
@@ -3384,15 +3384,18 @@ processChatCommand' vr = \case
       CLFull cReq -> invitationReqAndPlan cReq Nothing Nothing
       CLShort l -> do
         let l' = serverShortLink l
-        withFastStore' (\db -> getConnectionEntityViaShortLink db vr user l') >>= \case
-          Just (cReq, ent) -> do
-            plan <- invitationEntityPlan Nothing ent `catchChatError` (pure . CPError)
-            pure (ACCL SCMInvitation (CCLink cReq (Just l')), plan)
+        knownLinkPlans l' >>= \case
+          Just r -> pure r
           Nothing -> do
             (cReq, cData) <- getShortLinkConnReq user l'
             contactSLinkData_ <- liftIO $ decodeShortLinkData cData
             invitationReqAndPlan cReq (Just l') contactSLinkData_
       where
+        knownLinkPlans l' = withFastStore $ \db -> do
+          let inv cReq = ACCL SCMInvitation $ CCLink cReq (Just l')
+          liftIO (getConnectionEntityViaShortLink db vr user l') >>= \case
+            Just (cReq, ent) -> pure $ Just (inv cReq, invitationEntityPlan Nothing ent)
+            Nothing -> bimap inv (CPInvitationLink . ILPKnown) <$$> getContactViaShortLinkToConnect db vr user l'
         invitationReqAndPlan cReq sLnk_ contactSLinkData_ = do
           plan <- invitationRequestPlan user cReq contactSLinkData_ `catchChatError` (pure . CPError)
           pure (ACCL SCMInvitation (CCLink cReq sLnk_), plan)
@@ -3402,27 +3405,41 @@ processChatCommand' vr = \case
         pure (ACCL SCMContact $ CCLink cReq Nothing, plan)
       CLShort l@(CSLContact _ ct _ _) -> do
         let l' = serverShortLink l
+            con cReq = ACCL SCMContact $ CCLink cReq (Just l')
         case ct of
           CCTContact ->
-            withFastStore' (\db -> getUserContactLinkViaShortLink db user l') >>= \case
-              Just UserContactLink {connLinkContact = CCLink cReq _} -> pure (ACCL SCMContact $ CCLink cReq (Just l'), CPContactAddress CAPOwnLink)
+            knownLinkPlans >>= \case
+              Just r -> pure r
               Nothing -> do
                 (cReq, cData) <- getShortLinkConnReq user l'
-                let cl = ACCL SCMContact $ CCLink cReq (Just l')
                 withFastStore' (\db -> getContactWithoutConnViaShortAddress db vr user l') >>= \case
-                  Just ct' -> pure (cl, CPContactAddress (CAPContactViaAddress ct'))
+                  Just ct' -> pure (con cReq, CPContactAddress (CAPContactViaAddress ct'))
                   Nothing -> do
                     contactSLinkData_ <- liftIO $ decodeShortLinkData cData
                     plan <- contactRequestPlan user cReq contactSLinkData_
-                    pure (cl, plan)
+                    pure (con cReq, plan)
+            where
+              knownLinkPlans = withFastStore $ \db ->
+                liftIO (getUserContactLinkViaShortLink db user l') >>= \case
+                  Just UserContactLink {connLinkContact = CCLink cReq _} -> pure $ Just (con cReq, CPContactAddress CAPOwnLink)
+                  Nothing ->
+                    getContactViaShortLinkToConnect db vr user l' >>= \case
+                      Just (cReq, ct') -> pure $ Just (con cReq, CPContactAddress (CAPKnown ct'))
+                      Nothing -> bimap con (CPGroupLink . GLPKnown) <$$> getGroupViaShortLinkToConnect db vr user l'
           CCTGroup ->
-            withFastStore' (\db -> getGroupInfoViaUserShortLink db vr user l') >>= \case
-              Just (cReq, g) -> pure (ACCL SCMContact $ CCLink cReq (Just l'), CPGroupLink (GLPOwnLink g))
+            knownLinkPlans >>= \case
+              Just r -> pure r
               Nothing -> do
                 (cReq, cData) <- getShortLinkConnReq user l'
                 groupSLinkData_ <- liftIO $ decodeShortLinkData cData
                 plan <- groupJoinRequestPlan user cReq groupSLinkData_
-                pure (ACCL SCMContact $ CCLink cReq (Just l'), plan)
+                pure (con cReq, plan)
+            where
+              knownLinkPlans = withFastStore $ \db ->
+                liftIO (getGroupInfoViaUserShortLink db vr user l') >>= \case
+                  Just (cReq, g) -> pure $ Just (con cReq, CPGroupLink (GLPOwnLink g))
+                  Nothing ->
+                    bimap con (CPGroupLink . GLPKnown ) <$$> getGroupViaShortLinkToConnect db vr user l'
           CCTChannel -> throwCmdError "channel links are not supported in this version"
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink plan
@@ -3435,26 +3452,25 @@ processChatCommand' vr = \case
       | otherwise = pure $ CRConnectionPlan user ccLink plan
     invitationRequestPlan :: User -> ConnReqInvitation -> Maybe ContactShortLinkData -> CM ConnectionPlan
     invitationRequestPlan user cReq contactSLinkData_ = do
-      withFastStore' (\db -> getConnectionEntityByConnReq db vr user $ invCReqSchemas cReq) >>= \case
-        Nothing -> pure $ CPInvitationLink (ILPOk contactSLinkData_)
-        Just ent -> invitationEntityPlan contactSLinkData_ ent
+      maybe (CPInvitationLink (ILPOk contactSLinkData_)) (invitationEntityPlan contactSLinkData_)
+        <$> withFastStore' (\db -> getConnectionEntityByConnReq db vr user $ invCReqSchemas cReq)
       where
         invCReqSchemas :: ConnReqInvitation -> (ConnReqInvitation, ConnReqInvitation)
         invCReqSchemas (CRInvitationUri crData e2e) =
           ( CRInvitationUri crData {crScheme = SSSimplex} e2e,
             CRInvitationUri crData {crScheme = simplexChat} e2e
           )
-    invitationEntityPlan :: Maybe ContactShortLinkData -> ConnectionEntity -> CM ConnectionPlan
+    invitationEntityPlan :: Maybe ContactShortLinkData -> ConnectionEntity -> ConnectionPlan
     invitationEntityPlan contactSLinkData_ = \case
       RcvDirectMsgConnection Connection {connStatus, contactConnInitiated} ct_ -> case ct_ of
         Just ct
-          | contactActive ct -> pure $ CPInvitationLink (ILPKnown ct)
-          | otherwise -> pure $ CPInvitationLink (ILPOk contactSLinkData_)
+          | contactActive ct -> CPInvitationLink (ILPKnown ct)
+          | otherwise -> CPInvitationLink (ILPOk contactSLinkData_)
         Nothing
-          | connStatus == ConnNew && contactConnInitiated -> pure $ CPInvitationLink ILPOwnLink
-          | connStatus == ConnPrepared -> pure $ CPInvitationLink (ILPOk contactSLinkData_)
-          | otherwise -> pure $ CPInvitationLink (ILPConnecting Nothing)
-      _ -> throwCmdError "found connection entity is not RcvDirectMsgConnection"
+          | connStatus == ConnNew && contactConnInitiated -> CPInvitationLink ILPOwnLink
+          | connStatus == ConnPrepared -> CPInvitationLink (ILPOk contactSLinkData_)
+          | otherwise -> CPInvitationLink (ILPConnecting Nothing)
+      _ -> CPError $ ChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
     contactOrGroupRequestPlan ::  User -> ConnReqContact -> CM ConnectionPlan
     contactOrGroupRequestPlan user cReq@(CRContactUri crData) = do
       let ConnReqUriData {crClientData} = crData

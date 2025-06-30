@@ -117,6 +117,7 @@ chatProfileTests = do
     it "prepare contact using invitation short link data and connect" testShortLinkInvitationPrepareContact
     it "prepare contact with image in profile" testShortLinkInvitationImage
     it "prepare contact with a long name in profile" testShortLinkInvitationLongName
+    it "prepare contact via invitation and retry connecting" testShortLinkInvitationConnectRetry
     it "prepare contact using address short link data and connect" testShortLinkAddressPrepareContact
     it "prepare contact via invitation and connect after it is deleted" testShortLinkDeletedInvitation
     it "prepare contact via address and connect after it is deleted" testShortLinkDeletedAddress
@@ -2931,6 +2932,8 @@ testShortLinkInvitationPrepareContact =
       contactSLinkData <- getTermLine bob
       bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
       bob <## "alice: contact is prepared"
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "invitation link: known prepared contact alice"
       bob ##> "/_connect contact @2 text hello"
       bob
         <### [ "alice: connection started",
@@ -2984,6 +2987,53 @@ testShortLinkInvitationLongName = testChatCfg2 testCfg {largeLinkData = False} a
   where
     longName = "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"
 
+testShortLinkInvitationConnectRetry :: HasCallStack => TestParams -> IO ()
+testShortLinkInvitationConnectRetry ps = testChatOpts2 opts' aliceProfile bobProfile test ps
+  where
+    test alice bob = do
+      shortLink <- withSmpServer' serverCfg' $ do
+        alice ##> "/_connect 1"
+        (shortLink, fullLink) <- getInvitations alice
+        bob ##> ("/_connect plan 1 " <> shortLink)
+        bob <## "invitation link: ok to connect"
+        contactSLinkData <- getTermLine bob
+        bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+        bob <## "alice: contact is prepared"
+        pure shortLink
+      alice <## "server disconnected localhost ()"
+      bob ##> "/_connect contact @2 text hello"
+      bob <##. "smp agent error: BROKER"
+      withSmpServer' serverCfg' $ do
+        alice <## "server connected localhost ()"
+        threadDelay 250000
+        bob ##> ("/_connect plan 1 " <> shortLink)
+        bob <## "invitation link: known prepared contact alice"
+        bob ##> "/_connect contact @2 text hello"
+        bob
+          <### [ "alice: connection started",
+                WithTime "@alice hello"
+              ]
+        alice <# "bob> hello"
+        concurrently_
+          (bob <## "alice (Alice): contact is connected")
+          (alice <## "bob (Bob): contact is connected")
+        alice <##> bob
+      alice <## "server disconnected localhost (@bob)"
+      bob <## "server disconnected localhost (@alice)"
+    tmp = tmpPath ps
+    serverCfg' =
+      smpServerCfg
+        { transports = [("7003", transport @TLS, False)],
+          serverStoreCfg = persistentServerStoreCfg tmp
+        }
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
+              }
+        }
+
 testShortLinkAddressPrepareContact :: HasCallStack => TestParams -> IO ()
 testShortLinkAddressPrepareContact =
   testChat2 aliceProfile bobProfile $
@@ -2995,6 +3045,8 @@ testShortLinkAddressPrepareContact =
       contactSLinkData <- getTermLine bob
       bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
       bob <## "alice: contact is prepared"
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "contact address: known prepared contact alice"
       bob ##> "/_connect contact @2 text hello"
       bob
         <### [ "alice: connection started",
@@ -3057,7 +3109,7 @@ testShortLinkAddressConnectRetry :: HasCallStack => TestParams -> IO ()
 testShortLinkAddressConnectRetry ps =
   withNewTestChatOpts ps opts' "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps opts' "bob" bobProfile $ \bob -> do
-      withSmpServer' serverCfg' $ do
+      shortLink <- withSmpServer' serverCfg' $ do
         alice ##> "/ad"
         (shortLink, fullLink) <- getContactLinks alice True
         bob ##> ("/_connect plan 1 " <> shortLink)
@@ -3065,12 +3117,15 @@ testShortLinkAddressConnectRetry ps =
         contactSLinkData <- getTermLine bob
         bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
         bob <## "alice: contact is prepared"
+        pure shortLink
       alice <## "server disconnected localhost ()"
       bob ##> "/_connect contact @2 text hello"
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
         alice <## "server connected localhost ()"
         threadDelay 250000
+        bob ##> ("/_connect plan 1 " <> shortLink)
+        bob <## "contact address: known prepared contact alice"
         bob ##> "/_connect contact @2 text hello"
         bob
           <### [ "alice: connection started",
@@ -3109,7 +3164,7 @@ testShortLinkAddressConnectRetryIncognito :: HasCallStack => TestParams -> IO ()
 testShortLinkAddressConnectRetryIncognito ps =
   withNewTestChatOpts ps opts' "alice" aliceProfile $ \alice ->
     withNewTestChatOpts ps opts' "bob" bobProfile $ \bob -> do
-      withSmpServer' serverCfg' $ do
+      shortLink <- withSmpServer' serverCfg' $ do
         alice ##> "/ad"
         (shortLink, fullLink) <- getContactLinks alice True
         bob ##> ("/_connect plan 1 " <> shortLink)
@@ -3117,12 +3172,15 @@ testShortLinkAddressConnectRetryIncognito ps =
         contactSLinkData <- getTermLine bob
         bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
         bob <## "alice: contact is prepared"
+        pure shortLink
       alice <## "server disconnected localhost ()"
       bob ##> "/_connect contact @2 incognito=on text hello"
       bob <##. "smp agent error: BROKER"
       bobIncognito <- withSmpServer' serverCfg' $ do
         alice <## "server connected localhost ()"
         threadDelay 250000
+        bob ##> ("/_connect plan 1 " <> shortLink)
+        bob <## "contact address: known prepared contact alice"
         bob ##> "/_connect contact @2 incognito=on text hello"
         bobIncognito <- getTermLine bob
         bob
@@ -3179,6 +3237,8 @@ testShortLinkAddressPrepareBusiness =
       contactSLinkData <- getTermLine bob
       bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
       bob <## "#biz: group is prepared"
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "business link: known prepared business #biz"
       bob ##> "/_connect group #1"
       bob <## "#biz: connection started"
       biz <## "#bob (Bob): accepting business address request..."
@@ -3279,6 +3339,8 @@ testShortLinkPrepareGroup =
       groupSLinkData <- getTermLine bob
       bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
       bob <## "#team: group is prepared"
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "group link: known prepared group #team"
       bob ##> "/_connect group #1"
       bob <## "#team: connection started"
       alice <## "bob (Bob): accepting request to join group #team..."
@@ -3365,7 +3427,7 @@ testShortLinkGroupRetry :: HasCallStack => TestParams -> IO ()
 testShortLinkGroupRetry ps = testChatOpts2 opts' aliceProfile bobProfile test ps
   where
     test alice bob = do
-      withSmpServer' serverCfg' $ do
+      shortLink <- withSmpServer' serverCfg' $ do
         connectUsers alice bob
         alice ##> "/g team"
         alice <## "group #team is created"
@@ -3377,11 +3439,14 @@ testShortLinkGroupRetry ps = testChatOpts2 opts' aliceProfile bobProfile test ps
         groupSLinkData <- getTermLine bob
         bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
         bob <## "#team: group is prepared"
+        pure shortLink
       alice <## "server disconnected localhost (@bob)"
       bob <## "server disconnected localhost (@alice)"
       bob ##> "/_connect group #1"
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
+        bob ##> ("/_connect plan 1 " <> shortLink)
+        bob <## "group link: known prepared group #team"
         alice <## "server connected localhost (@bob)"
         bob <## "server connected localhost (@alice)"
         threadDelay 250000
