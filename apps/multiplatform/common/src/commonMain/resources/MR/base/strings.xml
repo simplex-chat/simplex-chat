@@ -14,7 +14,9 @@
   <string name="connect_via_link_verb">Connect</string>
   <string name="connect_via_link_incognito">Connect incognito</string>
   <string name="connect_plan_open_chat">Open chat</string>
+  <string name="connect_plan_open_new_chat">Open new chat</string>
   <string name="connect_plan_open_group">Open group</string>
+  <string name="connect_plan_open_new_group">Open new group</string>
   <string name="error_parsing_uri_title">Invalid link</string>
   <string name="error_parsing_uri_desc">Please check that SimpleX link is correct.</string>
 
@@ -1086,8 +1088,8 @@
   <string name="add_your_team_members_to_conversations">Add your team members to the conversations.</string>
   <string name="add_short_link">Add short link</string>
   <string name="share_profile_via_link">Share profile via link</string>
-  <string name="share_profile_via_link_alert_text">Profile will be shared via the address short link. This change to the address cannot be reversed, other than fully deleting it. Do you wish to update the address?</string>
-  <string name="share_profile_via_link_alert_confirm">Update (and share profile)</string>
+  <string name="share_profile_via_link_alert_text">Profile will be shared via the address link.</string>
+  <string name="share_profile_via_link_alert_confirm">Share profile</string>
   <string name="share_group_profile_via_link">Share group profile via link</string>
 
   <!-- CreateSimpleXAddress.kt -->

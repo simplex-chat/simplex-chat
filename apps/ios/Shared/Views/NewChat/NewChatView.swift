@@ -1023,7 +1023,7 @@ private func showPrepareContactAlert(
             ),
         theme: theme,
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
-        confirmTitle: NSLocalizedString("Open chat", comment: "new chat action"),
+        confirmTitle: NSLocalizedString("Open new chat", comment: "new chat action"),
         onCancel: { cleanup?() },
         onConfirm: {
             Task {
@@ -1059,7 +1059,7 @@ private func showPrepareGroupAlert(
         profileImage: ProfileImage(imageStr: groupShortLinkData.groupProfile.image, iconName: "person.2.circle.fill", size: alertProfileImageSize),
         theme: theme,
         cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
-        confirmTitle: NSLocalizedString("Open group", comment: "new chat action"),
+        confirmTitle: NSLocalizedString("Open new group", comment: "new chat action"),
         onCancel: { cleanup?() },
         onConfirm: {
             Task {
@@ -1078,6 +1078,64 @@ private func showPrepareGroupAlert(
                     }
                 }
             }
+        }
+    )
+}
+
+private func showOpenKnownContactAlert(
+    _ contact: Contact,
+    theme: AppTheme,
+    dismiss: Bool
+) {
+    showOpenChatAlert(
+        profileName: contact.profile.displayName,
+        profileFullName: contact.profile.fullName,
+        profileImage:
+            ProfileImage(
+                imageStr: contact.profile.image,
+                iconName: "person.crop.circle.fill",
+                size: alertProfileImageSize
+            ),
+        theme: theme,
+        cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
+        confirmTitle:
+            contact.nextConnectPrepared
+            ? NSLocalizedString("Open new chat", comment: "new chat action")
+            : NSLocalizedString("Open chat", comment: "new chat action"),
+        onConfirm: {
+            openKnownContact(contact, dismiss: dismiss, showAlreadyExistsAlert: nil)
+        }
+    )
+}
+
+private func showOpenKnownGroupAlert(
+    _ groupInfo: GroupInfo,
+    theme: AppTheme,
+    dismiss: Bool
+) {
+    showOpenChatAlert(
+        profileName: groupInfo.groupProfile.displayName,
+        profileFullName: groupInfo.groupProfile.fullName,
+        profileImage:
+            ProfileImage(
+                imageStr: groupInfo.groupProfile.image,
+                iconName: groupInfo.businessChat == nil ? "person.2.circle.fill" : "briefcase.circle.fill",
+                size: alertProfileImageSize
+            ),
+        theme: theme,
+        cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
+        confirmTitle:
+            groupInfo.businessChat == nil
+            ? ( groupInfo.nextConnectPrepared
+                ? NSLocalizedString("Open new group", comment: "new chat action")
+                : NSLocalizedString("Open group", comment: "new chat action")
+              )
+            : ( groupInfo.nextConnectPrepared
+                ? NSLocalizedString("Open new chat", comment: "new chat action")
+                : NSLocalizedString("Open chat", comment: "new chat action")
+              ),
+        onConfirm: {
+            openKnownGroup(groupInfo, dismiss: dismiss, showAlreadyExistsAlert: nil)
         }
     )
 }
@@ -1139,7 +1197,7 @@ func planAndConnect(
                             if let f = filterKnownContact {
                                 f(contact)
                             } else {
-                                openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyConnectingAlert(contact)) }
+                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss)
                             }
                         } else {
                             showInvitationLinkConnectingAlert(cleanup: cleanup)
@@ -1151,7 +1209,7 @@ func planAndConnect(
                         if let f = filterKnownContact {
                             f(contact)
                         } else {
-                            openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyExistsAlert(contact)) }
+                            showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss)
                         }
                     }
                 }
@@ -1211,7 +1269,7 @@ func planAndConnect(
                         if let f = filterKnownContact {
                             f(contact)
                         } else {
-                            openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyConnectingAlert(contact)) }
+                            showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss)
                         }
                     }
                 case let .known(contact):
@@ -1220,7 +1278,7 @@ func planAndConnect(
                         if let f = filterKnownContact {
                             f(contact)
                         } else {
-                            openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyExistsAlert(contact)) }
+                            showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss)
                         }
                     }
                 case let .contactViaAddress(contact):
@@ -1296,7 +1354,7 @@ func planAndConnect(
                         if let f = filterKnownGroup {
                             f(groupInfo)
                         } else {
-                            openKnownGroup(groupInfo, dismiss: dismiss) { AlertManager.shared.showAlert(groupAlreadyExistsAlert(groupInfo)) }
+                            showOpenKnownGroupAlert(groupInfo, theme: theme, dismiss: dismiss)
                         }
                     }
                 }

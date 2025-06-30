@@ -348,7 +348,7 @@ struct ChatPreviewView: View {
     private func chatPreviewInfoText() -> Text? {
         switch (chat.chatInfo) {
         case let .direct(contact):
-            if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
+            if contact.isContactCard {
                 Text("Tap to Connect")
                     .foregroundColor(theme.colors.primary)
             } else if contact.sendMsgToConnect {

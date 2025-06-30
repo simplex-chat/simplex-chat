@@ -552,7 +552,7 @@ fun ComposeView(
   // TODO [short links] different messages for business
   fun showSendConnectPreparedContactAlert(sendConnect: () -> Unit) {
     val empty = composeState.value.whitespaceOnly
-    AlertManager.shared.showAlertDialog(
+    AlertManager.shared.showAlertDialogStacked(
       title = generalGetString(MR.strings.compose_view_send_contact_request_alert_question),
       text = generalGetString(MR.strings.compose_view_send_contact_request_alert_text),
       confirmText = (

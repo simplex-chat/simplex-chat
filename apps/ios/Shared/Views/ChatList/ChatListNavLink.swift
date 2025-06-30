@@ -92,7 +92,7 @@ struct ChatListNavLink: View {
     
     private func contactNavLink(_ contact: Contact) -> some View {
         Group {
-            if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
+            if contact.isContactCard {
                 ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
                     .frameCompat(height: dynamicRowHeight)
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {

@@ -83,7 +83,7 @@ fun chatContactType(chat: Chat): ContactType {
       val contact = cInfo.contact
       when {
         contact.nextAcceptContactRequest -> ContactType.CONTACT_WITH_REQUEST
-        contact.activeConn == null && contact.profile.contactLink != null && contact.active -> ContactType.CARD
+        contact.isContactCard -> ContactType.CARD
         contact.chatDeleted -> ContactType.CHAT_DELETED
         contact.contactStatus == ContactStatus.Active -> ContactType.RECENT
         else -> ContactType.UNLISTED

@@ -97,7 +97,7 @@ fun UserAddressView(
   }
 
   fun showAddShortLinkAlert() {
-    AlertManager.shared.showAlertDialog(
+    AlertManager.shared.showAlertDialogStacked(
       title = generalGetString(MR.strings.share_profile_via_link),
       text = generalGetString(MR.strings.share_profile_via_link_alert_text),
       confirmText = generalGetString(MR.strings.share_profile_via_link_alert_confirm),
