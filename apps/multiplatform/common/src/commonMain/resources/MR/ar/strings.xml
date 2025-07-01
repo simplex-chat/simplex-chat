@@ -2420,4 +2420,9 @@
     <string name="no_support_chats">لا دردشات مع الأعضاء</string>
     <string name="cant_send_message_member_has_old_version">العضو لديه نُسخة قديمة</string>
     <string name="add_short_link">أضف رابط قصير</string>
+    <string name="accept_contact_request">اقبل طلب جهة الاتصال</string>
+    <string name="compose_view_add_message">أضف رسالة</string>
+    <string name="e2ee_info_e2ee"><![CDATA[Messages are protected by <b>تعمية بين الطرفين</b>.]]></string>
+    <string name="compose_view_send_contact_request_alert_text"><![CDATA[لن تتمكن من إرسال الرسائل <b> <b>إلا بعد قبول طلبك</b>.]]>.</string>
+    <string name="compose_view_connect">اتصل</string>
 </resources>
