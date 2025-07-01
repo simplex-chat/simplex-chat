@@ -743,7 +743,7 @@ swipe action */
 "Auto-accept images" = "Автоматичне прийняття зображень";
 
 /* alert title */
-"Auto-accept settings" = "Автоприйняття налаштувань";
+"SimpleX address settings" = "Автоприйняття налаштувань";
 
 /* No comment provided by engineer. */
 "Back" = "Назад";
@@ -2993,7 +2993,7 @@ snd error text */
 "Join" = "Приєднуйтесь";
 
 /* No comment provided by engineer. */
-"join as %@" = "приєднатися як %@";
+"Join as %@" = "приєднатися як %@";
 
 /* new chat sheet title */
 "Join group" = "Приєднуйтесь до групи";
@@ -4359,7 +4359,7 @@ chat item action */
 "Send delivery receipts to" = "Надсилання звітів про доставку";
 
 /* No comment provided by engineer. */
-"send direct message" = "надіслати пряме повідомлення";
+"send to connect" = "надіслати пряме повідомлення";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Надішліть пряме повідомлення, щоб підключитися";
@@ -5548,7 +5548,7 @@ chat item action */
 "You are connected to the server used to receive messages from this contact." = "Ви підключені до сервера, який використовується для отримання повідомлень від цього контакту.";
 
 /* No comment provided by engineer. */
-"you are invited to group" = "вас запрошують до групи";
+"You are invited to group" = "вас запрошують до групи";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Запрошуємо вас до групи";
@@ -5804,4 +5804,3 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Ваша адреса SimpleX";
-

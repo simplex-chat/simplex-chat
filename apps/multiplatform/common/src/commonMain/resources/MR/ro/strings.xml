@@ -2215,7 +2215,6 @@
     <string name="blocking_reason_spam">Spam</string>
     <string name="link_requires_newer_app_version_please_upgrade">Acest link necesită o versiune mai nouă a aplicației. Vă rugăm să actualizați aplicația sau să solicitați persoanei de contact să vă trimită un link compatibil.</string>
     <string name="unsupported_connection_link">Legătură de conexiune neacceptată</string>
-    <string name="privacy_short_links">Utilizați linkuri scurte (BETA)</string>
     <string name="network_smp_web_port_toggle">Utilizați portul web</string>
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[Condițiile vor fi acceptate pentru operatorul(ii): <b>%s</b>.]]></string>
     <string name="remote_host_error_timeout"><![CDATA[S-a atins timeout-ul la conectarea la telefonul mobil <b>%s</b>]]></string>

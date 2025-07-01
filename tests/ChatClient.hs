@@ -21,6 +21,7 @@ import Control.Logger.Simple (LogLevel (..))
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
+import qualified Data.ByteString.Char8 as B
 import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
 import Data.Maybe (isNothing)
@@ -46,14 +47,14 @@ import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Protocol (currentSMPAgentVersion, duplexHandshakeSMPAgentVersion, pqdrSMPAgentVersion, supportedSMPAgentVRange)
 import Simplex.Messaging.Agent.RetryInterval
-import Simplex.Messaging.Agent.Store.Interface (closeDBStore)
+import Simplex.Messaging.Agent.Store.Interface (DBOpts (..), closeDBStore)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..))
 import Simplex.Messaging.Client.Agent (defaultSMPClientAgentConfig)
 import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
-import Simplex.Messaging.Protocol (srvHostnamesSMPClientVersion)
+import Simplex.Messaging.Protocol (srvHostnamesSMPClientVersion, sndAuthKeySMPClientVersion)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM (ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultMessageExpiration, defaultIdleQueueInterval, defaultNtfExpiration, defaultInactiveClientExpiration)
 import Simplex.Messaging.Server.MsgStore.STM (STMMsgStore)
@@ -77,6 +78,15 @@ import System.FilePath ((</>))
 #endif
 
 #if defined(dbPostgres)
+schemaDumpDBOpts :: DBOpts
+schemaDumpDBOpts =
+  DBOpts
+    { connstr = B.pack testDBConnstr,
+      schema = "test_chat_schema",
+      poolSize = 3,
+      createSchema = True
+    }
+
 testDBConnstr :: String
 testDBConnstr = "postgresql://test_chat_user@/test_chat_db"
 
@@ -151,7 +161,7 @@ termSettings :: VirtualTerminalSettings
 termSettings =
   VirtualTerminalSettings
     { virtualType = "xterm",
-      virtualWindowSize = pure C.Size {height = 24, width = 2250},
+      virtualWindowSize = pure C.Size {height = 20, width = 6000},
       virtualEvent = retry,
       virtualInterrupt = retry
     }
@@ -182,6 +192,13 @@ testAgentCfgSlow =
       smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange minClientSMPRelayVersion sendingProxySMPVersion} -- v8
     }
 
+testAgentCfgNoShortLinks :: AgentConfig
+testAgentCfgNoShortLinks =
+  testAgentCfg
+    { smpClientVRange = mkVersionRange (Version 1) sndAuthKeySMPClientVersion, -- v3
+      smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange minClientSMPRelayVersion (Version 14)} -- before shortLinksSMPVersion
+    }
+
 testCfg :: ChatConfig
 testCfg =
   defaultChatConfig
@@ -194,6 +211,9 @@ testCfg =
 
 testCfgSlow :: ChatConfig
 testCfgSlow = testCfg {agentConfig = testAgentCfgSlow}
+
+testCfgNoShortLinks :: ChatConfig
+testCfgNoShortLinks = testCfg {agentConfig = testAgentCfgNoShortLinks}
 
 testAgentCfgVPrev :: AgentConfig
 testAgentCfgVPrev =

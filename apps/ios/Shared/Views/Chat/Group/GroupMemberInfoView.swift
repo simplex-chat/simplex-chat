@@ -345,6 +345,7 @@ struct GroupMemberInfoView: View {
         Button {
             planAndConnect(
                 contactLink,
+                theme: theme,
                 dismiss: true
             )
         } label: {

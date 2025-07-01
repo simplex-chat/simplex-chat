@@ -62,6 +62,7 @@ import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Connections
+import Simplex.Chat.Store.ContactRequest
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Groups
@@ -316,6 +317,7 @@ quoteContent mc qmc ciFile_
       MCVideo {} -> True
       MCVoice {} -> False
       MCReport {} -> False
+      MCChat {} -> True
       MCUnknown {} -> True
     qText = msgContentText qmc
     getFileName :: CIFile d -> String
@@ -668,7 +670,7 @@ receiveFileEvt' user ft userApprovedRelays rcvInline_ filePath_ = do
 rctFileCancelled :: ChatError -> Bool
 rctFileCancelled = \case
   ChatErrorAgent (SMP _ SMP.AUTH) _ -> True
-  ChatErrorAgent (CONN DUPLICATE) _ -> True
+  ChatErrorAgent (CONN DUPLICATE _) _ -> True
   _ -> False
 
 acceptFileReceive :: User -> RcvFileTransfer -> Bool -> Maybe Bool -> Maybe FilePath -> CM AChatItem
@@ -867,6 +869,14 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
               liftIO $ B.hPut h "" >> hFlush h
           | otherwise = liftIO $ B.writeFile fPath ""
 
+-- TODO [short links]
+-- Please note:
+-- - the connection here is created as ConnNew, even though when joining it is created as ConnPrepared.
+--   (changing it is risky, as there may be existing "prepared" connections that were not accepted in ConnNew status).
+-- - after accepted, the status is changed by this func caller to ConnSndReady if it is sndSecure, and not changed otherwise - joined changed to ConnJoined in this case.
+-- - xContactId is set on the contact at the first acceptance attempt, not after accept success, which prevents profile updates after such attempt.
+--   It may be reasonable to set it when contact is first prepared, but then we can't use it to ignore requests after acceptance,
+--   and it may lead to race conditions with XInfo events.
 acceptContactRequest :: User -> UserContactRequest -> IncognitoEnabled -> CM (Contact, Connection, SndQueueSecured)
 acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = AgentInvId invId, contactId_, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId, pqSupport} incognito = do
   subMode <- chatReadVar subscriptionMode
@@ -878,12 +888,20 @@ acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = 
     Nothing -> do
       incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
       connId <- withAgent $ \a -> prepareConnectionToAccept a True invId pqSup'
-      (ct, conn) <- withStore' $ \db -> createAcceptedContact db user connId chatV cReqChatVRange cName profileId cp userContactLinkId xContactId incognitoProfile subMode pqSup' False
+      (ct, conn) <- withStore' $ \db ->
+        createContactFromRequest db user userContactLinkId connId chatV cReqChatVRange cName profileId cp xContactId incognitoProfile subMode pqSup' False
       pure (ct, conn, incognitoProfile)
     Just contactId -> do
       ct <- withFastStore $ \db -> getContact db vr user contactId
       case contactConn ct of
-        Nothing -> throwChatError $ CECommandError "contact has no connection"
+        Nothing -> do
+          incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
+          connId <- withAgent $ \a -> prepareConnectionToAccept a True invId pqSup'
+          currentTs <- liftIO getCurrentTime
+          conn <- withStore' $ \db -> do
+            forM_ xContactId $ \xcId -> setContactAcceptedXContactId db ct xcId
+            createAcceptedContactConn db user userContactLinkId contactId connId chatV cReqChatVRange pqSup' incognitoProfile subMode currentTs
+          pure (ct {activeConn = Just conn} :: Contact, conn, incognitoProfile)
         Just conn@Connection {customUserProfileId} -> do
           incognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
           pure (ct, conn, ExistingIncognito <$> incognitoProfile)
@@ -892,32 +910,42 @@ acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = 
   -- TODO [certs rcv]
   (ct,conn,) . fst <$> withAgent (\a -> acceptContact a (aConnId conn) True invId dm pqSup' subMode)
 
-acceptContactRequestAsync :: User -> UserContactRequest -> Maybe IncognitoProfile -> PQSupport -> CM Contact
-acceptContactRequestAsync user cReq@UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile pqSup = do
-  subMode <- chatReadVar subscriptionMode
-  let profileToSend = profileToSendOnAccept user incognitoProfile False
-  vr <- chatVersionRange
-  let chatV = vr `peerConnChatVersion` cReqChatVRange
-  (cmdId, acId) <- agentAcceptContactAsync user True invId (XInfo profileToSend) subMode pqSup chatV
-  withStore' $ \db -> do
-    (ct, Connection {connId}) <- createAcceptedContact db user acId chatV cReqChatVRange cName profileId p userContactLinkId xContactId incognitoProfile subMode pqSup True
-    deleteContactRequestRec db user cReq
-    setCommandConnId db user cmdId connId
-    pure ct
+acceptContactRequestAsync :: User -> Int64 -> Contact -> UserContactRequest -> Maybe IncognitoProfile -> CM Contact
+acceptContactRequestAsync
+  user
+  uclId
+  ct@Contact {contactId}
+  UserContactRequest {agentInvitationId = AgentInvId cReqInvId, cReqChatVRange, xContactId, pqSupport = cReqPQSup}
+  incognitoProfile = do
+    subMode <- chatReadVar subscriptionMode
+    let profileToSend = profileToSendOnAccept user incognitoProfile False
+    vr <- chatVersionRange
+    let chatV = vr `peerConnChatVersion` cReqChatVRange
+    (cmdId, acId) <- agentAcceptContactAsync user True cReqInvId (XInfo profileToSend) subMode cReqPQSup chatV
+    currentTs <- liftIO getCurrentTime
+    withStore $ \db -> do
+      forM_ xContactId $ \xcId -> liftIO $ setContactAcceptedXContactId db ct xcId
+      Connection {connId} <- liftIO $ createAcceptedContactConn db user uclId contactId acId chatV cReqChatVRange cReqPQSup incognitoProfile subMode currentTs
+      liftIO $ setCommandConnId db user cmdId connId
+      getContact db vr user contactId
 
-acceptGroupJoinRequestAsync :: User -> GroupInfo -> UserContactRequest -> GroupAcceptance -> GroupMemberRole -> Maybe IncognitoProfile -> CM GroupMember
+acceptGroupJoinRequestAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe SharedMsgId -> GroupAcceptance -> GroupMemberRole -> Maybe IncognitoProfile -> CM GroupMember
 acceptGroupJoinRequestAsync
   user
+  uclId
   gInfo@GroupInfo {groupProfile, membership, businessChat}
-  ucr@UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange}
+  cReqInvId
+  cReqChatVRange
+  cReqProfile
+  cReqXContactId_
+  welcomeMsgId_
   gAccepted
   gLinkMemRole
   incognitoProfile = do
     gVar <- asks random
     let initialStatus = acceptanceToStatus (memberAdmission groupProfile) gAccepted
-    (groupMemberId, memberId) <- withStore $ \db -> do
-      liftIO $ deleteContactRequestRec db user ucr
-      createJoiningMember db gVar user gInfo ucr gLinkMemRole initialStatus
+    (groupMemberId, memberId) <- withStore $ \db ->
+      createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ welcomeMsgId_ gLinkMemRole initialStatus
     currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
     let Profile {displayName} = profileToSendOnAccept user incognitoProfile True
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
@@ -935,21 +963,24 @@ acceptGroupJoinRequestAsync
     subMode <- chatReadVar subscriptionMode
     vr <- chatVersionRange
     let chatV = vr `peerConnChatVersion` cReqChatVRange
-    connIds <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
+    connIds <- agentAcceptContactAsync user True cReqInvId msg subMode PQSupportOff chatV
     withStore $ \db -> do
-      liftIO $ createJoiningMemberConnection db user connIds chatV ucr groupMemberId subMode
+      liftIO $ createJoiningMemberConnection db user uclId connIds chatV cReqChatVRange groupMemberId subMode
       getGroupMemberById db vr user groupMemberId
 
-acceptGroupJoinSendRejectAsync :: User -> GroupInfo -> UserContactRequest -> GroupRejectionReason -> CM GroupMember
+acceptGroupJoinSendRejectAsync :: User -> Int64 -> GroupInfo -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> GroupRejectionReason -> CM GroupMember
 acceptGroupJoinSendRejectAsync
   user
+  uclId
   gInfo@GroupInfo {groupProfile, membership}
-  ucr@UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange}
+  cReqInvId
+  cReqChatVRange
+  cReqProfile
+  cReqXContactId_
   rejectionReason = do
     gVar <- asks random
-    (groupMemberId, memberId) <- withStore $ \db -> do
-      liftIO $ deleteContactRequestRec db user ucr
-      createJoiningMember db gVar user gInfo ucr GRObserver GSMemRejected
+    (groupMemberId, memberId) <- withStore $ \db ->
+      createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ Nothing GRObserver GSMemRejected
     let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
         msg =
           XGrpLinkReject $
@@ -962,25 +993,22 @@ acceptGroupJoinSendRejectAsync
     subMode <- chatReadVar subscriptionMode
     vr <- chatVersionRange
     let chatV = vr `peerConnChatVersion` cReqChatVRange
-    connIds <- agentAcceptContactAsync user False invId msg subMode PQSupportOff chatV
+    connIds <- agentAcceptContactAsync user False cReqInvId msg subMode PQSupportOff chatV
     withStore $ \db -> do
-      liftIO $ createJoiningMemberConnection db user connIds chatV ucr groupMemberId subMode
+      liftIO $ createJoiningMemberConnection db user uclId connIds chatV cReqChatVRange groupMemberId subMode
       getGroupMemberById db vr user groupMemberId
 
-acceptBusinessJoinRequestAsync :: User -> UserContactRequest -> CM GroupInfo
+acceptBusinessJoinRequestAsync :: User -> Int64 -> GroupInfo -> GroupMember -> UserContactRequest -> CM (GroupInfo, GroupMember)
 acceptBusinessJoinRequestAsync
   user
-  ucr@UserContactRequest {contactRequestId, agentInvitationId = AgentInvId invId, cReqChatVRange} = do
+  uclId
+  gInfo@GroupInfo {membership = GroupMember {memberRole = userRole, memberId = userMemberId}}
+  clientMember@GroupMember {groupMemberId, memberId}
+  UserContactRequest {agentInvitationId = AgentInvId cReqInvId, cReqChatVRange, xContactId} = do
     vr <- chatVersionRange
-    gVar <- asks random
     let userProfile@Profile {displayName, preferences} = profileToSendOnAccept user Nothing True
+        -- TODO [short links] take groupPreferences from group info
         groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
-    (gInfo, clientMember) <- withStore $ \db -> do
-      liftIO $ deleteContactRequest db user contactRequestId
-      createBusinessRequestGroup db vr gVar user ucr groupPreferences
-    let GroupInfo {membership} = gInfo
-        GroupMember {memberRole = userRole, memberId = userMemberId} = membership
-        GroupMember {groupMemberId, memberId} = clientMember
         msg =
           XGrpLinkInv $
             GroupLinkInvitation
@@ -997,23 +1025,20 @@ acceptBusinessJoinRequestAsync
               }
     subMode <- chatReadVar subscriptionMode
     let chatV = vr `peerConnChatVersion` cReqChatVRange
-    connIds <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
-    withStore' $ \db -> createJoiningMemberConnection db user connIds chatV ucr groupMemberId subMode
+    connIds <- agentAcceptContactAsync user True cReqInvId msg subMode PQSupportOff chatV
+    withStore' $ \db -> do
+      forM_ xContactId $ \xcId -> setBusinessChatAcceptedXContactId db gInfo xcId
+      createJoiningMemberConnection db user uclId connIds chatV cReqChatVRange groupMemberId subMode
     let cd = CDGroupSnd gInfo Nothing
-    createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
+    -- TODO [short links] move to profileContactRequest?
+    createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
     createGroupFeatureItems user cd CISndGroupFeature gInfo
-    pure gInfo
-    where
-      businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
-      businessGroupProfile Profile {displayName, fullName, image} groupPreferences =
-        GroupProfile {displayName, fullName, description = Nothing, image, groupPreferences = Just groupPreferences, memberAdmission = Nothing}
+    -- TODO [short links] get updated business chat group and member? (currently not used)
+    pure (gInfo, clientMember)
 
-profileToSendOnAccept :: User -> Maybe IncognitoProfile -> Bool -> Profile
-profileToSendOnAccept user ip = userProfileToSend user (getIncognitoProfile <$> ip) Nothing
-  where
-    getIncognitoProfile = \case
-      NewIncognito p -> p
-      ExistingIncognito lp -> fromLocalProfile lp
+businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
+businessGroupProfile Profile {displayName, fullName, image} groupPreferences =
+  GroupProfile {displayName, fullName, description = Nothing, image, groupPreferences = Just groupPreferences, memberAdmission = Nothing}
 
 introduceToModerators :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceToModerators vr user gInfo@GroupInfo {groupId} m@GroupMember {memberRole, memberId} = do
@@ -1087,8 +1112,15 @@ sendHistory user gInfo@GroupInfo {groupId, membership} m@GroupMember {activeConn
     (errs', events) <- partitionEithers <$> mapM (tryChatError . itemForwardEvents) items
     let errors = map ChatErrorStore errs <> errs'
     unless (null errors) $ toView $ CEvtChatErrors errors
-    let events' = maybe (concat events) (\x -> concat events <> [x]) descrEvent_
-    forM_ (L.nonEmpty events') $ \events'' ->
+    let events' = concat events
+    events_ <- case descrEvent_ of
+      Just descr -> mkEvents <$> withStore' (\db -> getMemberJoinRequest db user gInfo m)
+        where
+          mkEvents = \case
+            Just (_, Just _welcomeMsgId) -> events'
+            _ -> events' <> [descr]
+      Nothing -> pure events'
+    forM_ (L.nonEmpty events_) $ \events'' ->
       sendGroupMemberMessages user conn events'' groupId
   where
     descrEvent_ :: Maybe (ChatMsgEvent 'Json)
@@ -1246,7 +1278,7 @@ createContactPQSndItem :: User -> Contact -> Connection -> PQEncryption -> CM (C
 createContactPQSndItem user ct conn@Connection {pqSndEnabled} pqSndEnabled' =
   flip catchChatError (const $ pure (ct, conn)) $ case (pqSndEnabled, pqSndEnabled') of
     (Just b, b') | b' /= b -> createPQItem $ CISndConnEvent (SCEPqEnabled pqSndEnabled')
-    (Nothing, PQEncOn) -> createPQItem $ CISndDirectE2EEInfo (E2EInfo pqSndEnabled')
+    (Nothing, PQEncOn) -> createPQItem $ CISndDirectE2EEInfo (E2EInfo $ Just pqSndEnabled')
     _ -> pure (ct, conn)
   where
     createPQItem ciContent = do
@@ -1261,7 +1293,7 @@ updateContactPQRcv :: User -> Contact -> Connection -> PQEncryption -> CM (Conta
 updateContactPQRcv user ct conn@Connection {connId, pqRcvEnabled} pqRcvEnabled' =
   flip catchChatError (const $ pure (ct, conn)) $ case (pqRcvEnabled, pqRcvEnabled') of
     (Just b, b') | b' /= b -> updatePQ $ CIRcvConnEvent (RCEPqEnabled pqRcvEnabled')
-    (Nothing, PQEncOn) -> updatePQ $ CIRcvDirectE2EEInfo (E2EInfo pqRcvEnabled')
+    (Nothing, PQEncOn) -> updatePQ $ CIRcvDirectE2EEInfo (E2EInfo $ Just pqRcvEnabled')
     _ -> pure (ct, conn)
   where
     updatePQ ciContent = do
@@ -2080,7 +2112,7 @@ saveSndChatItems user cd itemsData itemTimed live = do
     createItem db createdAt NewSndChatItemData {msg = msg@SndMessage {sharedMsgId}, content, itemTexts, itemMentions, ciFile, quotedItem, itemForwarded} = do
       ciId <- createNewSndChatItem db user cd msg content quotedItem itemForwarded itemTimed live createdAt
       forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
-      let ci = mkChatItem_ cd ciId content itemTexts ciFile quotedItem (Just sharedMsgId) itemForwarded itemTimed live False createdAt Nothing createdAt
+      let ci = mkChatItem_ cd False ciId content itemTexts ciFile quotedItem (Just sharedMsgId) itemForwarded itemTimed live False createdAt Nothing createdAt
       Right <$> case cd of
         CDGroupSnd g _scope | not (null itemMentions) -> createGroupCIMentions db g ci itemMentions
         _ -> pure ci
@@ -2114,7 +2146,7 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, forwardedByMember} shared
       else pure $ toChatInfo cd
     (ciId, quotedItem, itemForwarded) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live userMention brokerTs createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
-    let ci = mkChatItem_ cd ciId content (t, ft_) ciFile quotedItem sharedMsgId_ itemForwarded itemTimed live userMention brokerTs forwardedByMember createdAt
+    let ci = mkChatItem_ cd False ciId content (t, ft_) ciFile quotedItem sharedMsgId_ itemForwarded itemTimed live userMention brokerTs forwardedByMember createdAt
     ci' <- case cd of
       CDGroupRcv g _scope _m | not (null mentions') -> createGroupCIMentions db g ci mentions'
       _ -> pure ci
@@ -2128,15 +2160,15 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, forwardedByMember} shared
       _ -> Nothing
 
 -- TODO [mentions] optimize by avoiding unnecessary parsing
-mkChatItem :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> ChatItem c d
-mkChatItem cd ciId content file quotedItem sharedMsgId itemForwarded itemTimed live userMention itemTs forwardedByMember currentTs =
+mkChatItem :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ShowGroupAsSender -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> ChatItem c d
+mkChatItem cd showGroupAsSender ciId content file quotedItem sharedMsgId itemForwarded itemTimed live userMention itemTs forwardedByMember currentTs =
   let ts = ciContentTexts content
-   in mkChatItem_ cd ciId content ts file quotedItem sharedMsgId itemForwarded itemTimed live userMention itemTs forwardedByMember currentTs
+   in mkChatItem_ cd showGroupAsSender ciId content ts file quotedItem sharedMsgId itemForwarded itemTimed live userMention itemTs forwardedByMember currentTs
 
-mkChatItem_ :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ChatItemId -> CIContent d -> (Text, Maybe MarkdownList) -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> ChatItem c d
-mkChatItem_ cd ciId content (itemText, formattedText) file quotedItem sharedMsgId itemForwarded itemTimed live userMention itemTs forwardedByMember currentTs =
+mkChatItem_ :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ShowGroupAsSender -> ChatItemId -> CIContent d -> (Text, Maybe MarkdownList) -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> ChatItem c d
+mkChatItem_ cd showGroupAsSender ciId content (itemText, formattedText) file quotedItem sharedMsgId itemForwarded itemTimed live userMention itemTs forwardedByMember currentTs =
   let itemStatus = ciCreateStatus content
-      meta = mkCIMeta ciId content itemText itemStatus Nothing sharedMsgId itemForwarded Nothing False itemTimed (justTrue live) userMention currentTs itemTs forwardedByMember currentTs currentTs
+      meta = mkCIMeta ciId content itemText itemStatus Nothing sharedMsgId itemForwarded Nothing False itemTimed (justTrue live) userMention currentTs itemTs forwardedByMember showGroupAsSender currentTs currentTs
    in ChatItem {chatDir = toCIDirection cd, meta, content, mentions = M.empty, formattedText, quotedItem, reactions = [], file}
 
 createAgentConnectionAsync :: ConnectionModeI c => User -> CommandFunction -> Bool -> SConnectionMode c -> SubscriptionMode -> CM (CommandId, ConnId)
@@ -2233,14 +2265,11 @@ agentXFTPDeleteSndFilesRemote user sndFiles = do
             Left _ -> partitionSndDescr xsfs (aFileId : filesWithoutDescr) filesWithDescr
             Right sfd -> partitionSndDescr xsfs filesWithoutDescr ((aFileId, sfd) : filesWithDescr)
 
-userProfileToSend :: User -> Maybe Profile -> Maybe Contact -> Bool -> Profile
-userProfileToSend user@User {profile = p} incognitoProfile ct inGroup = do
-  let p' = fromMaybe (fromLocalProfile p) incognitoProfile
-  if inGroup
-    then redactedMemberProfile p'
-    else
-      let userPrefs = maybe (preferences' user) (const Nothing) incognitoProfile
-       in (p' :: Profile) {preferences = Just . toChatPrefs $ mergePreferences (userPreferences <$> ct) userPrefs}
+connRequestPQEncryption :: ConnectionRequestUri c -> Maybe PQEncryption
+connRequestPQEncryption = \case
+  CRContactUri _ -> Nothing
+  CRInvitationUri _ (CR.E2ERatchetParamsUri vr' _ _ pq) ->
+    Just $ PQEncryption $ maxVersion vr' >= CR.pqRatchetE2EEncryptVersion && isJust pq
 
 createRcvFeatureItems :: User -> Contact -> Contact -> CM' ()
 createRcvFeatureItems user ct ct' =
@@ -2255,6 +2284,15 @@ createSndFeatureItems user ct ct' =
       CUPUser {preference} -> preference
 
 type FeatureContent a d = ChatFeature -> a -> Maybe Int -> CIContent d
+
+createFeatureEnabledItems :: User -> Contact -> CM ()
+createFeatureEnabledItems user ct = createFeatureEnabledItems_ user ct >>= toView . CEvtNewChatItems user
+
+createFeatureEnabledItems_ :: User -> Contact -> CM [AChatItem]
+createFeatureEnabledItems_ user ct@Contact {mergedPreferences} =
+  forM allChatFeatures $ \(ACF f) -> do
+    let state = featureState $ getContactUserPreference f mergedPreferences
+    createChatItem user (CDDirectRcv ct) False (uncurry (CIRcvChatFeature $ chatFeature f) state) Nothing Nothing
 
 createFeatureItems ::
   MsgDirectionI d =>
@@ -2280,19 +2318,19 @@ createContactsFeatureItems ::
   CM' ()
 createContactsFeatureItems user cts chatDir ciFeature ciOffer getPref = do
   let dirsCIContents = map contactChangedFeatures cts
-  (errs, acis) <- partitionEithers <$> createInternalItemsForChats user Nothing dirsCIContents
+  (errs, acis) <- partitionEithers <$> createChatItems user Nothing dirsCIContents
   unless (null errs) $ toView' $ CEvtChatErrors errs
   toView' $ CEvtNewChatItems user acis
   where
-    contactChangedFeatures :: (Contact, Contact) -> (ChatDirection 'CTDirect d, [CIContent d])
+    contactChangedFeatures :: (Contact, Contact) -> (ChatDirection 'CTDirect d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId)])
     contactChangedFeatures (Contact {mergedPreferences = cups}, ct'@Contact {mergedPreferences = cups'}) = do
       let contents = mapMaybe (\(ACF f) -> featureCIContent_ f) allChatFeatures
-      (chatDir ct', contents)
+      (chatDir ct', False, contents)
       where
-        featureCIContent_ :: forall f. FeatureI f => SChatFeature f -> Maybe (CIContent d)
+        featureCIContent_ :: forall f. FeatureI f => SChatFeature f -> Maybe (CIContent d, Maybe SharedMsgId)
         featureCIContent_ f
-          | state /= state' = Just $ fContent ciFeature state'
-          | prefState /= prefState' = Just $ fContent ciOffer prefState'
+          | state /= state' = Just (fContent ciFeature state', Nothing)
+          | prefState /= prefState' = Just (fContent ciOffer prefState', Nothing)
           | otherwise = Nothing
           where
             fContent :: FeatureContent a d -> (a, Maybe Int) -> CIContent d
@@ -2318,49 +2356,61 @@ sameGroupProfileInfo :: GroupProfile -> GroupProfile -> Bool
 sameGroupProfileInfo p p' = p {groupPreferences = Nothing} == p' {groupPreferences = Nothing}
 
 createGroupFeatureItems :: MsgDirectionI d => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> Maybe Int -> Maybe GroupMemberRole -> CIContent d) -> GroupInfo -> CM ()
-createGroupFeatureItems user cd ciContent GroupInfo {fullGroupPreferences} =
-  forM_ allGroupFeatures $ \(AGF f) -> do
+createGroupFeatureItems user cd ciContent g = createGroupFeatureItems_ user cd False ciContent g >>= toView . CEvtNewChatItems user
+
+createGroupFeatureItems_ :: MsgDirectionI d => User -> ChatDirection 'CTGroup d -> ShowGroupAsSender -> (GroupFeature -> GroupPreference -> Maybe Int -> Maybe GroupMemberRole -> CIContent d) -> GroupInfo -> CM [AChatItem]
+createGroupFeatureItems_ user cd showGroupAsSender ciContent GroupInfo {fullGroupPreferences} =
+  forM allGroupFeatures $ \(AGF f) -> do
     let p = getGroupPreference f fullGroupPreferences
         (_, param, role) = groupFeatureState p
-    createInternalChatItem user cd (ciContent (toGroupFeature f) (toGroupPreference p) param role) Nothing
+    createChatItem user cd showGroupAsSender (ciContent (toGroupFeature f) (toGroupPreference p) param role) Nothing Nothing
 
 createInternalChatItem :: (ChatTypeI c, MsgDirectionI d) => User -> ChatDirection c d -> CIContent d -> Maybe UTCTime -> CM ()
-createInternalChatItem user cd content itemTs_ =
-  lift (createInternalItemsForChats user itemTs_ [(cd, [content])]) >>= \case
-    [Right aci] -> toView $ CEvtNewChatItems user [aci]
+createInternalChatItem user cd content itemTs_ = do
+  ci <- createChatItem user cd False content Nothing itemTs_
+  toView $ CEvtNewChatItems user [ci]
+
+createChatItem :: (ChatTypeI c, MsgDirectionI d) => User -> ChatDirection c d -> ShowGroupAsSender -> CIContent d -> Maybe SharedMsgId -> Maybe UTCTime -> CM AChatItem
+createChatItem user cd showGroupAsSender content sharedMsgId itemTs_ =
+  lift (createChatItems user itemTs_ [(cd, showGroupAsSender, [(content, sharedMsgId)])]) >>= \case
+    [Right ci] -> pure ci
     [Left e] -> throwError e
     rs -> throwChatError $ CEInternalError $ "createInternalChatItem: expected 1 result, got " <> show (length rs)
 
-createInternalItemsForChats ::
+-- Supports items with shared msg ID that are created for all conversation parties, but were not communicated via the usual messages.
+-- This includes address welcome message and contact request message.
+createChatItems ::
   forall c d.
   (ChatTypeI c, MsgDirectionI d) =>
   User ->
   Maybe UTCTime ->
-  [(ChatDirection c d, [CIContent d])] ->
+  [(ChatDirection c d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId)])] ->
   CM' [Either ChatError AChatItem]
-createInternalItemsForChats user itemTs_ dirsCIContents = do
+createChatItems user itemTs_ dirsCIContents = do
   createdAt <- liftIO getCurrentTime
   let itemTs = fromMaybe createdAt itemTs_
   vr <- chatVersionRange'
-  void . withStoreBatch' $ \db -> map (uncurry $ updateChat db vr createdAt) dirsCIContents
-  withStoreBatch' $ \db -> concatMap (uncurry $ createACIs db itemTs createdAt) dirsCIContents
+  void . withStoreBatch' $ \db -> map (updateChat db vr createdAt) dirsCIContents
+  withStoreBatch' $ \db -> concatMap (createACIs db itemTs createdAt) dirsCIContents
   where
-    updateChat :: DB.Connection -> VersionRangeChat -> UTCTime -> ChatDirection c d -> [CIContent d] -> IO ()
-    updateChat db vr createdAt cd contents
-      | any ciRequiresAttention contents || contactChatDeleted cd = void $ updateChatTsStats db vr user cd createdAt memberChatStats
+    updateChat :: DB.Connection -> VersionRangeChat -> UTCTime -> (ChatDirection c d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId)]) -> IO ()
+    updateChat db vr createdAt (cd, _, contents)
+      | any (ciRequiresAttention . fst) contents || contactChatDeleted cd = void $ updateChatTsStats db vr user cd createdAt memberChatStats
       | otherwise = pure ()
       where
         memberChatStats :: Maybe (Int, MemberAttention, Int)
         memberChatStats = case cd of
           CDGroupRcv _g (Just scope) m -> do
-            let unread = length $ filter ciRequiresAttention contents
+            let unread = length $ filter (ciRequiresAttention . fst) contents
              in Just (unread, memberAttentionChange unread itemTs_ m scope, 0)
           _ -> Nothing
-    createACIs :: DB.Connection -> UTCTime -> UTCTime -> ChatDirection c d -> [CIContent d] -> [IO AChatItem]
-    createACIs db itemTs createdAt cd = map $ \content -> do
-      ciId <- createNewChatItemNoMsg db user cd content itemTs createdAt
-      let ci = mkChatItem cd ciId content Nothing Nothing Nothing Nothing Nothing False False itemTs Nothing createdAt
-      pure $ AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci
+    createACIs :: DB.Connection -> UTCTime -> UTCTime -> (ChatDirection c d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId)]) -> [IO AChatItem]
+    createACIs db itemTs createdAt (cd, showGroupAsSender, contents) = map createACI contents
+      where
+        createACI (content, sharedMsgId) = do
+          ciId <- createNewChatItemNoMsg db user cd showGroupAsSender content sharedMsgId itemTs createdAt
+          let ci = mkChatItem cd showGroupAsSender ciId content Nothing Nothing Nothing Nothing Nothing False False itemTs Nothing createdAt
+          pure $ AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci
 
 memberAttentionChange :: Int -> (Maybe UTCTime) -> GroupMember -> GroupChatScopeInfo -> MemberAttention
 memberAttentionChange unread brokerTs_ rcvMem = \case
@@ -2389,9 +2439,9 @@ createLocalChatItems user cd itemsData createdAt = do
   where
     createItem :: DB.Connection -> (CIContent 'MDSnd, Maybe (CIFile 'MDSnd), Maybe CIForwardedFrom, (Text, Maybe MarkdownList)) -> IO (ChatItem 'CTLocal 'MDSnd)
     createItem db (content, ciFile, itemForwarded, ts) = do
-      ciId <- createNewChatItem_ db user cd Nothing Nothing content (Nothing, Nothing, Nothing, Nothing, Nothing) itemForwarded Nothing False False createdAt Nothing createdAt
+      ciId <- createNewChatItem_ db user cd False Nothing Nothing content (Nothing, Nothing, Nothing, Nothing, Nothing) itemForwarded Nothing False False createdAt Nothing createdAt
       forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
-      pure $ mkChatItem_ cd ciId content ts ciFile Nothing Nothing itemForwarded Nothing False False createdAt Nothing createdAt
+      pure $ mkChatItem_ cd False ciId content ts ciFile Nothing Nothing itemForwarded Nothing False False createdAt Nothing createdAt
 
 withUser' :: (User -> CM ChatResponse) -> CM ChatResponse
 withUser' action =

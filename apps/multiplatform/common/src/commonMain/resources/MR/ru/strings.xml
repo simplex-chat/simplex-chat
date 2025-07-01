@@ -2520,6 +2520,5 @@
     <string name="rcv_group_event_user_accepted">Вы приняты</string>
     <string name="group_new_support_chat_one">1 чат с членом группы</string>
     <string name="simplex_link_channel">SimpleX ссылка канала</string>
-    <string name="privacy_short_links">Короткие ссылки (БЕТА)</string>
     <string name="add_short_link">добавить короткую ссылку</string>
 </resources>

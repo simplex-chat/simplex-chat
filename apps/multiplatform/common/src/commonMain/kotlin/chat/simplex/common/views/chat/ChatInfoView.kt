@@ -934,7 +934,7 @@ fun CallButton(
             }
           }
         } }
-        contact.nextSendGrpInv -> { { showCantCallContactSendMessageAlert() } }
+        contact.sendMsgToConnect -> { { showCantCallContactSendMessageAlert() } }
         !contact.active -> { { showCantCallContactDeletedAlert() } }
         !contact.ready -> { { showCantCallContactConnectingAlert() } }
         needToAllowCallsToContact -> { { showNeedToAllowCallsAlert(onConfirm = { allowCallsToContact(chat) }) } }

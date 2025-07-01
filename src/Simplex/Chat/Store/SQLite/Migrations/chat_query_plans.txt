@@ -1,4 +1,28 @@
 Query: 
+                        UPDATE contacts
+                        SET local_display_name = ?, updated_at = ?
+                        WHERE contact_id = ?
+                      
+Plan:
+SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+                      UPDATE contact_requests
+                      SET agent_invitation_id = ?, pq_support = ?, peer_chat_min_version = ?, peer_chat_max_version = ?, local_display_name = ?, updated_at = ?
+                      WHERE user_id = ? AND contact_request_id = ?
+                    
+Plan:
+SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+                    UPDATE contact_requests
+                    SET agent_invitation_id = ?, pq_support = ?, peer_chat_min_version = ?, peer_chat_max_version = ?, updated_at = ?
+                    WHERE user_id = ? AND contact_request_id = ?
+                  
+Plan:
+SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
                   UPDATE groups
                   SET chat_ts = ?,
                       members_require_attention = members_require_attention + 1
@@ -34,27 +58,13 @@ Query:
 Plan:
 
 Query: 
-                INSERT INTO groups
-                  (group_profile_id, local_display_name, user_id, enable_ntfs,
-                   created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat, business_member_id, customer_member_id)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?)
-              
-Plan:
-
-Query: 
-                INSERT INTO groups
-                  (group_profile_id, local_display_name, user_id, enable_ntfs,
-                   created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat, business_xcontact_id)
-                VALUES (?,?,?,?,?,?,?,?,?,?)
-              
-Plan:
-
-Query: 
                 SELECT
                   -- GroupInfo
                   g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
                   g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-                  g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id,
+                  g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+                  g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
+                  g.business_chat, g.business_member_id, g.customer_member_id,
                   g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
                   -- GroupInfo {membership}
                   mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
@@ -85,20 +95,12 @@ SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
 SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-                UPDATE contact_requests
-                SET agent_invitation_id = ?, pq_support = ?, peer_chat_min_version = ?, peer_chat_max_version = ?, local_display_name = ?, updated_at = ?
-                WHERE user_id = ? AND contact_request_id = ?
+                UPDATE contact_profiles
+                SET user_id = ?, updated_at = ?
+                WHERE contact_profile_id = ?
               
 Plan:
-SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-                UPDATE contact_requests
-                SET agent_invitation_id = ?, pq_support = ?, peer_chat_min_version = ?, peer_chat_max_version = ?, updated_at = ?
-                WHERE user_id = ? AND contact_request_id = ?
-              
-Plan:
-SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
                 UPDATE group_members
@@ -135,10 +137,18 @@ Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+                UPDATE group_members
+                SET user_id = ?, local_display_name = ?, updated_at = ?
+                WHERE group_member_id = ?
+              
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
               INSERT INTO contact_requests
                 (user_contact_link_id, agent_invitation_id, peer_chat_min_version, peer_chat_max_version, contact_profile_id, local_display_name, user_id,
-                 created_at, updated_at, xcontact_id, pq_support)
-              VALUES (?,?,?,?,?,?,?,?,?,?,?)
+                  created_at, updated_at, xcontact_id, welcome_shared_msg_id, request_shared_msg_id, pq_support)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
             
 Plan:
 
@@ -176,10 +186,19 @@ Query:
 Plan:
 
 Query: 
+              INSERT INTO groups
+                (group_profile_id, local_display_name, user_id, enable_ntfs,
+                  created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat)
+              VALUES (?,?,?,?,?,?,?,?,?)
+            
+Plan:
+
+Query: 
               SELECT
                 -- Contact
                 ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-                cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
+                cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
+                ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
                 -- Connection
                 c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
                 c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -284,6 +303,34 @@ LIST SUBQUERY 1
 SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+              UPDATE group_members
+              SET member_id = ?,
+                  member_role = ?,
+                  updated_at = ?
+              WHERE group_member_id = ?
+            
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+              UPDATE group_profiles
+              SET user_id = ?, updated_at = ?
+              WHERE group_profile_id IN (SELECT group_profile_id FROM groups WHERE group_id = ?)
+            
+Plan:
+SEARCH group_profiles USING INTEGER PRIMARY KEY (rowid=?)
+LIST SUBQUERY 1
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+              UPDATE groups
+              SET user_id = ?, local_display_name = ?, updated_at = ?
+              WHERE group_id = ?
+            
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
               UPDATE xftp_file_descriptions
               SET file_descr_text = ?, file_descr_part_no = ?, file_descr_complete = ?
               WHERE file_descr_id = ?
@@ -302,10 +349,9 @@ SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
 
 Query: 
             INSERT INTO group_members
-              ( group_id, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
-                user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
-                peer_chat_min_version, peer_chat_max_version)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+              ( group_id, member_id, member_role, member_category, member_status, invited_by,
+                user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
           
 Plan:
 
@@ -315,6 +361,15 @@ Query:
                 user_id, local_display_name, contact_id, contact_profile_id, member_profile_id, created_at, updated_at,
                 peer_chat_min_version, peer_chat_max_version)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+          
+Plan:
+
+Query: 
+            INSERT INTO group_members
+              ( group_id, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
+                user_id, local_display_name, contact_id, contact_profile_id, member_xcontact_id, member_welcome_shared_msg_id, created_at, updated_at,
+                peer_chat_min_version, peer_chat_max_version)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           
 Plan:
 
@@ -329,7 +384,8 @@ Plan:
 Query: 
             SELECT
               c.contact_profile_id, c.local_display_name, c.via_group, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, c.contact_used, c.contact_status, c.enable_ntfs, c.send_rcpts, c.favorite,
-              p.preferences, c.user_preferences, c.created_at, c.updated_at, c.chat_ts, c.contact_group_member_id, c.contact_grp_inv_sent, c.ui_themes, c.chat_deleted, c.custom_data, c.chat_item_ttl
+              p.preferences, c.user_preferences, c.created_at, c.updated_at, c.chat_ts, c.conn_full_link_to_connect, c.conn_short_link_to_connect, c.welcome_shared_msg_id, c.request_shared_msg_id, c.contact_request_id,
+              c.contact_group_member_id, c.contact_grp_inv_sent, c.ui_themes, c.chat_deleted, c.custom_data, c.chat_item_ttl
             FROM contacts c
             JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
             WHERE c.user_id = ? AND c.contact_id = ? AND c.deleted = 0
@@ -340,8 +396,11 @@ SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
             SELECT
-              cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.contact_id, cr.user_contact_link_id,
-              c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, cr.pq_support, p.preferences, cr.created_at, cr.updated_at,
+              cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
+              cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
+              c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
+              cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
+              cr.created_at, cr.updated_at,
               cr.peer_chat_min_version, cr.peer_chat_max_version
             FROM contact_requests cr
             JOIN connections c USING (user_contact_link_id)
@@ -351,7 +410,7 @@ Query:
             LIMIT 1
           
 Plan:
-SEARCH cr USING INDEX idx_contact_requests_xcontact_id (xcontact_id=?)
+SEARCH cr USING INDEX idx_contact_requests_updated_at (user_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INDEX idx_connections_user_contact_link_id (user_contact_link_id=?)
 
@@ -654,12 +713,56 @@ SEARCH g USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH h USING INDEX idx_sent_probe_hashes_sent_probe_id (sent_probe_id=?)
 
 Query: 
+            SELECT xcontact_id,
+              connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, custom_user_profile_id, conn_status, conn_type, contact_conn_initiated, local_alias,
+              contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter, quota_err_counter,
+              conn_chat_version, peer_chat_min_version, peer_chat_max_version
+            FROM connections
+            WHERE (user_id = ? AND via_contact_uri_hash = ?)
+               OR (user_id = ? AND via_contact_uri_hash = ?)
+            LIMIT 1
+          
+Plan:
+MULTI-INDEX OR
+INDEX 1
+SEARCH connections USING INDEX idx_connections_via_contact_uri_hash (user_id=? AND via_contact_uri_hash=?)
+INDEX 2
+SEARCH connections USING INDEX idx_connections_via_contact_uri_hash (user_id=? AND via_contact_uri_hash=?)
+
+Query: 
             UPDATE chat_items SET item_status = ?, updated_at = ?
             WHERE user_id = ? AND group_id = ? AND item_status = ? AND chat_item_id = ?
             RETURNING chat_item_id, timed_ttl, timed_delete_at, group_member_id, user_mention
           
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+            UPDATE contact_profiles
+            SET user_id = ?, updated_at = ?
+            WHERE contact_profile_id = ?
+          
+Plan:
+SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+            UPDATE contacts
+            SET user_id = ?, local_display_name = ?, updated_at = ?
+            WHERE contact_id = ?
+          
+Plan:
+SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+            UPDATE group_members
+            SET member_id = ?,
+                member_role = ?,
+                member_status = ?,
+                updated_at = ?
+            WHERE group_member_id = ?
+          
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
           DELETE FROM chat_item_reactions
@@ -695,6 +798,15 @@ Query:
               user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
               peer_chat_min_version, peer_chat_max_version)
           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        
+Plan:
+
+Query: 
+          INSERT INTO groups
+            (group_profile_id, local_display_name, user_id, enable_ntfs,
+              created_at, updated_at, chat_ts, user_member_profile_sent_at, conn_full_link_to_connect, conn_short_link_to_connect, welcome_shared_msg_id,
+              business_chat, business_member_id, customer_member_id)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         
 Plan:
 
@@ -753,8 +865,8 @@ Query:
             i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention,
             -- CIFile
             f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol,
-            -- CIMeta forwardedByMember
-            i.forwarded_by_group_member_id,
+            -- CIMeta forwardedByMember, showGroupAsSender
+            i.forwarded_by_group_member_id, i.show_group_as_sender,
             -- GroupMember
             m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
             m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
@@ -823,32 +935,12 @@ SEARCH ri USING COVERING INDEX idx_chat_items_direct_shared_msg_id (user_id=? AN
 
 Query: 
           SELECT
-            -- Contact
-            ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-            cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
-            -- Connection
-            c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-            c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-            c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
-          FROM contacts ct
-          JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-          JOIN connections c ON c.contact_id = ct.contact_id
-          WHERE c.user_id = ? AND c.via_contact_uri_hash = ? AND ct.contact_status = ? AND ct.deleted = 0
-          ORDER BY c.created_at DESC
-          LIMIT 1
-        
-Plan:
-SEARCH c USING INDEX idx_connections_via_contact_uri_hash (user_id=? AND via_contact_uri_hash=?)
-SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
-USE TEMP B-TREE FOR ORDER BY
-
-Query: 
-          SELECT
             -- GroupInfo
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+            g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
+            g.business_chat, g.business_member_id, g.customer_member_id,
             g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
@@ -894,9 +986,42 @@ SEARCH cc USING COVERING INDEX idx_connections_group_member (user_id=? AND group
 
 Query: 
           SELECT
+            c.xcontact_id,
+            -- Contact
+            ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
+            cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
+            ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
+            -- Connection
+            c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
+            c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+            c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+          FROM contacts ct
+          JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+          JOIN connections c ON c.contact_id = ct.contact_id
+          WHERE
+            ( (c.user_id = ? AND c.via_contact_uri_hash = ?) OR
+              (c.user_id = ? AND c.via_contact_uri_hash = ?)
+            ) AND ct.contact_status = ? AND ct.deleted = 0
+          ORDER BY c.created_at DESC
+          LIMIT 1
+        
+Plan:
+MULTI-INDEX OR
+INDEX 1
+SEARCH c USING INDEX idx_connections_via_contact_uri_hash (user_id=? AND via_contact_uri_hash=?)
+INDEX 2
+SEARCH c USING INDEX idx_connections_via_contact_uri_hash (user_id=? AND via_contact_uri_hash=?)
+SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
+USE TEMP B-TREE FOR ORDER BY
+
+Query: 
+          SELECT
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+            g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
+            g.business_chat, g.business_member_id, g.customer_member_id,
             g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
             mu.group_member_id, g.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category, mu.member_status, mu.show_messages, mu.member_restriction,
             mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id, pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
@@ -1080,6 +1205,18 @@ Query:
 Plan:
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH m USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
+
+Query: 
+          SELECT ct.contact_id
+          FROM contacts ct
+          JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
+          LEFT JOIN connections c ON c.contact_id = ct.contact_id
+          WHERE cp.user_id = ? AND cp.contact_link = ? AND c.connection_id IS NULL
+        
+Plan:
+SEARCH cp USING COVERING INDEX idx_contact_profiles_contact_link (user_id=? AND contact_link=?)
+SEARCH ct USING COVERING INDEX idx_contacts_contact_profile_id (contact_profile_id=?)
+SEARCH c USING COVERING INDEX idx_connections_contact_id (contact_id=?) LEFT-JOIN
 
 Query: 
           SELECT ct.contact_id
@@ -1302,6 +1439,14 @@ Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+          UPDATE group_members
+          SET user_id = ?, local_display_name = ?, contact_id = ?, contact_profile_id = ?, updated_at = ?
+          WHERE group_member_id = ?
+        
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
           UPDATE group_profiles
           SET display_name = ?, full_name = ?, description = ?, image = ?, preferences = ?, member_admission = ?, updated_at = ?
           WHERE group_profile_id IN (
@@ -1314,14 +1459,6 @@ Plan:
 SEARCH group_profiles USING INTEGER PRIMARY KEY (rowid=?)
 LIST SUBQUERY 1
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-          UPDATE user_contact_links
-          SET auto_accept = ?, business_address = ?, auto_accept_incognito = ?, auto_reply_msg_content = ?
-          WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
-        
-Plan:
-SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
 
 Query: 
         INSERT INTO connections (
@@ -1392,7 +1529,8 @@ Query:
         SELECT
           -- Contact
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
+          ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -1491,8 +1629,10 @@ USE TEMP B-TREE FOR ORDER BY
 
 Query: 
         SELECT
-          cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.contact_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, cr.pq_support, p.preferences,
+          cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
+          cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
+          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
+          cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
           cr.created_at, cr.updated_at,
           cr.peer_chat_min_version, cr.peer_chat_max_version
         FROM contact_requests cr
@@ -1503,6 +1643,8 @@ Query:
           AND uc.user_id = ?
           AND uc.local_display_name = ''
           AND uc.group_id IS NULL
+          AND cr.contact_id IS NULL
+          AND cr.business_group_id IS NULL
           AND (
             LOWER(cr.local_display_name) LIKE '%' || LOWER(?) || '%'
             OR LOWER(p.display_name) LIKE '%' || LOWER(?) || '%'
@@ -1517,8 +1659,10 @@ SEARCH c USING INDEX idx_connections_user_contact_link_id (user_contact_link_id=
 
 Query: 
         SELECT
-          cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.contact_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, cr.pq_support, p.preferences,
+          cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
+          cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
+          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
+          cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
           cr.created_at, cr.updated_at,
           cr.peer_chat_min_version, cr.peer_chat_max_version
         FROM contact_requests cr
@@ -1529,6 +1673,8 @@ Query:
           AND uc.user_id = ?
           AND uc.local_display_name = ''
           AND uc.group_id IS NULL
+          AND cr.contact_id IS NULL
+          AND cr.business_group_id IS NULL
           AND (
             LOWER(cr.local_display_name) LIKE '%' || LOWER(?) || '%'
             OR LOWER(p.display_name) LIKE '%' || LOWER(?) || '%'
@@ -1543,8 +1689,10 @@ SEARCH c USING INDEX idx_connections_user_contact_link_id (user_contact_link_id=
 
 Query: 
         SELECT
-          cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.contact_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, cr.pq_support, p.preferences,
+          cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
+          cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
+          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
+          cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
           cr.created_at, cr.updated_at,
           cr.peer_chat_min_version, cr.peer_chat_max_version
         FROM contact_requests cr
@@ -1555,6 +1703,8 @@ Query:
           AND uc.user_id = ?
           AND uc.local_display_name = ''
           AND uc.group_id IS NULL
+          AND cr.contact_id IS NULL
+          AND cr.business_group_id IS NULL
           AND (
             LOWER(cr.local_display_name) LIKE '%' || LOWER(?) || '%'
             OR LOWER(p.display_name) LIKE '%' || LOWER(?) || '%'
@@ -1564,22 +1714,6 @@ Query:
 Plan:
 SEARCH uc USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
 SEARCH cr USING INDEX idx_contact_requests_updated_at (user_id=?)
-SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH c USING INDEX idx_connections_user_contact_link_id (user_contact_link_id=?)
-
-Query: 
-        SELECT
-          cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.contact_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, cr.pq_support, p.preferences, cr.created_at, cr.updated_at,
-          cr.peer_chat_min_version, cr.peer_chat_max_version
-        FROM contact_requests cr
-        JOIN connections c USING (user_contact_link_id)
-        JOIN contact_profiles p USING (contact_profile_id)
-        WHERE cr.user_id = ?
-          AND cr.contact_request_id = ?
-      
-Plan:
-SEARCH cr USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INDEX idx_connections_user_contact_link_id (user_contact_link_id=?)
 
@@ -3011,14 +3145,6 @@ Plan:
 SEARCH commands USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-        SELECT conn_req_contact, short_link_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
-        FROM user_contact_links
-        WHERE user_id = ? AND user_contact_link_id = ?
-      
-Plan:
-SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
         SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, custom_user_profile_id,
           conn_status, conn_type, contact_conn_initiated, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id,
           created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter, quota_err_counter,
@@ -3391,6 +3517,14 @@ Plan:
 SEARCH usage_conditions USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+        SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, business_address, auto_accept, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
+        FROM user_contact_links
+        WHERE user_id = ? AND user_contact_link_id = ?
+      
+Plan:
+SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
         UPDATE chat_items
         SET item_deleted = 1, item_deleted_ts = ?, item_deleted_by_group_member_id = ?, item_content = ?, item_text = ?, updated_at = ?
         WHERE user_id = ? AND group_id = ?
@@ -3692,26 +3826,6 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_profile_id (contact_pr
 
 Query: 
       DELETE FROM contact_profiles
-      WHERE contact_profile_id in (
-        SELECT cr.contact_profile_id
-        FROM contact_requests cr
-        JOIN user_contact_links uc USING (user_contact_link_id)
-        WHERE uc.user_id = ? AND uc.local_display_name = '' AND uc.group_id IS NULL
-      )
-    
-Plan:
-SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
-LIST SUBQUERY 1
-SEARCH uc USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
-SEARCH cr USING INDEX idx_contact_requests_user_contact_link_id (user_contact_link_id=?)
-SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_profile_id (contact_profile_id=?)
-SEARCH connections USING COVERING INDEX idx_connections_custom_user_profile_id (custom_user_profile_id=?)
-SEARCH group_members USING COVERING INDEX idx_group_members_member_profile_id (member_profile_id=?)
-SEARCH group_members USING COVERING INDEX idx_group_members_contact_profile_id (contact_profile_id=?)
-SEARCH contacts USING COVERING INDEX idx_contacts_contact_profile_id (contact_profile_id=?)
-
-Query: 
-      DELETE FROM contact_profiles
       WHERE user_id = ? AND contact_profile_id = ?
         AND 1 NOT IN (
           SELECT 1 FROM connections
@@ -3832,30 +3946,6 @@ Plan:
 SEARCH display_names USING PRIMARY KEY (user_id=? AND local_display_name=?)
 LIST SUBQUERY 1
 SEARCH uc USING INDEX idx_user_contact_links_group_id (group_id=?)
-SEARCH cr USING INDEX idx_contact_requests_user_contact_link_id (user_contact_link_id=?)
-LIST SUBQUERY 2
-SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH contact_requests USING COVERING INDEX sqlite_autoindex_contact_requests_1 (user_id=? AND local_display_name=?)
-SEARCH group_members USING COVERING INDEX idx_group_members_user_id_local_display_name (user_id=? AND local_display_name=?)
-SEARCH groups USING COVERING INDEX sqlite_autoindex_groups_1 (user_id=? AND local_display_name=?)
-SEARCH contacts USING COVERING INDEX sqlite_autoindex_contacts_1 (user_id=? AND local_display_name=?)
-SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-      DELETE FROM display_names
-      WHERE user_id = ?
-        AND local_display_name in (
-          SELECT cr.local_display_name
-          FROM contact_requests cr
-          JOIN user_contact_links uc USING (user_contact_link_id)
-          WHERE uc.user_id = ? AND uc.local_display_name = '' AND uc.group_id IS NULL
-        )
-        AND local_display_name NOT IN (SELECT local_display_name FROM users WHERE user_id = ?)
-    
-Plan:
-SEARCH display_names USING PRIMARY KEY (user_id=? AND local_display_name=?)
-LIST SUBQUERY 1
-SEARCH uc USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
 SEARCH cr USING INDEX idx_contact_requests_user_contact_link_id (user_contact_link_id=?)
 LIST SUBQUERY 2
 SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
@@ -4010,12 +4100,12 @@ Query:
         user_id, created_by_msg_id, contact_id, group_id, group_member_id, note_folder_id, group_scope_tag, group_scope_group_member_id,
         -- meta
         item_sent, item_ts, item_content, item_content_tag, item_text, item_status, msg_content_tag, shared_msg_id,
-        forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, timed_ttl, timed_delete_at,
+        forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, show_group_as_sender, timed_ttl, timed_delete_at,
         -- quote
         quoted_shared_msg_id, quoted_sent_at, quoted_content, quoted_sent, quoted_member_id,
         -- forwarded from
         fwd_from_tag, fwd_from_chat_name, fwd_from_msg_dir, fwd_from_contact_id, fwd_from_group_id, fwd_from_chat_item_id
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -4027,9 +4117,9 @@ Plan:
 
 Query: 
       INSERT INTO connections
-        (user_id, agent_conn_id, conn_req_inv, short_link_inv, conn_status, conn_type, contact_conn_initiated, custom_user_profile_id,
+        (user_id, agent_conn_id, conn_req_inv, short_link_inv, conn_status, conn_type, contact_id, contact_conn_initiated, custom_user_profile_id,
          created_at, updated_at, to_subscribe, conn_chat_version, pq_support, pq_encryption)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -4045,9 +4135,10 @@ Plan:
 Query: 
       INSERT INTO connections (
         user_id, agent_conn_id, conn_status, conn_type, contact_conn_initiated,
-        via_contact_uri_hash, via_short_link_contact, xcontact_id, custom_user_profile_id, via_group_link, group_link_id,
+        via_contact_uri_hash, via_short_link_contact, contact_id, group_member_id,
+        xcontact_id, custom_user_profile_id, via_group_link, group_link_id,
         created_at, updated_at, to_subscribe, conn_chat_version, pq_support, pq_encryption
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -4252,7 +4343,7 @@ SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE connections
-      SET custom_user_profile_id = ?, updated_at = ?
+      SET custom_user_profile_id = ?, short_link_inv = ?, updated_at = ?
       WHERE user_id = ? AND connection_id = ?
     
 Plan:
@@ -4450,6 +4541,16 @@ SEARCH group_snd_item_statuses USING INDEX idx_group_snd_item_statuses_chat_item
 
 Query: 
       UPDATE groups
+      SET business_chat = ?,
+          business_member_id = ?,
+          customer_member_id = ?
+      WHERE group_id = ?
+    
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+      UPDATE groups
       SET members_require_attention = members_require_attention + 1
       WHERE user_id = ? AND group_id = ?
     
@@ -4524,6 +4625,33 @@ Plan:
 SEARCH server_operators USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+      UPDATE user_contact_links
+      SET auto_accept = ?, auto_accept_incognito = ?, business_address = ?, auto_reply_msg_content = ?
+      WHERE user_contact_link_id = ?
+    
+Plan:
+SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+      UPDATE user_contact_links
+      SET short_link_contact = ?,
+          short_link_data_set = ?
+      WHERE user_contact_link_id = ?
+    
+Plan:
+SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+      UPDATE user_contact_links
+      SET short_link_contact = ?,
+          short_link_data_set = ?,
+          auto_accept_incognito = ?
+      WHERE user_contact_link_id = ?
+    
+Plan:
+SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
       UPDATE users
       SET view_pwd_hash = ?, view_pwd_salt = ?, show_ntfs = ?
       WHERE user_id = ?
@@ -4563,7 +4691,9 @@ Query:
       -- GroupInfo
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
       g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
+      g.business_chat, g.business_member_id, g.customer_member_id,
       g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
@@ -4587,7 +4717,9 @@ Query:
       -- GroupInfo
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
       g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
+      g.business_chat, g.business_member_id, g.customer_member_id,
       g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
@@ -4605,6 +4737,40 @@ SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
 SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+    SELECT
+      cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
+      cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
+      c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
+      cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
+      cr.created_at, cr.updated_at,
+      cr.peer_chat_min_version, cr.peer_chat_max_version
+    FROM contact_requests cr
+    JOIN connections c USING (user_contact_link_id)
+    JOIN contact_profiles p USING (contact_profile_id)
+   WHERE cr.user_id = ? AND cr.business_group_id = ?
+Plan:
+SEARCH cr USING INDEX idx_contact_requests_business_group_id (business_group_id=?)
+SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH c USING INDEX idx_connections_user_contact_link_id (user_contact_link_id=?)
+
+Query: 
+    SELECT
+      cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
+      cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
+      c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
+      cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
+      cr.created_at, cr.updated_at,
+      cr.peer_chat_min_version, cr.peer_chat_max_version
+    FROM contact_requests cr
+    JOIN connections c USING (user_contact_link_id)
+    JOIN contact_profiles p USING (contact_profile_id)
+   WHERE cr.user_id = ? AND cr.contact_request_id = ?
+Plan:
+SEARCH cr USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH c USING INDEX idx_connections_user_contact_link_id (user_contact_link_id=?)
 
 Query: 
     SELECT
@@ -4659,6 +4825,31 @@ Query:
    WHERE m.group_id = ? AND m.group_member_id = ? AND m.user_id = ?
 Plan:
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH c USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+CORRELATED SCALAR SUBQUERY 1
+SEARCH cc USING COVERING INDEX idx_connections_group_member (user_id=? AND group_member_id=?)
+
+Query: 
+    SELECT
+      m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
+      m.created_at, m.updated_at,
+      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
+      c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
+      c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
+      c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+      c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+    FROM group_members m
+    JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+    LEFT JOIN connections c ON c.connection_id = (
+      SELECT max(cc.connection_id)
+      FROM connections cc
+      WHERE cc.user_id = ? AND cc.group_member_id = m.group_member_id
+    )
+   WHERE m.group_id = ? AND m.member_category = ?
+Plan:
+SEARCH m USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
@@ -4763,27 +4954,6 @@ SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH cc USING COVERING INDEX idx_connections_group_member (user_id=? AND group_member_id=?)
-
-Query: 
-    SELECT conn_req_contact, short_link_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
-    FROM user_contact_links
-   WHERE user_id = ? AND conn_req_contact IN (?,?)
-Plan:
-SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
-
-Query: 
-    SELECT conn_req_contact, short_link_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
-    FROM user_contact_links
-   WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
-Plan:
-SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
-
-Query: 
-    SELECT conn_req_contact, short_link_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
-    FROM user_contact_links
-   WHERE user_id = ? AND short_link_contact = ?
-Plan:
-SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
 
 Query: 
     SELECT f.file_id, f.ci_file_status, f.file_path
@@ -4939,19 +5109,6 @@ Query:
     FROM users u
     JOIN contacts uct ON uct.contact_id = u.contact_id
     JOIN contact_profiles ucp ON ucp.contact_profile_id = uct.contact_profile_id
-   JOIN contact_requests cr ON cr.user_id = u.user_id WHERE cr.contact_request_id = ?
-Plan:
-SEARCH cr USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH u USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH uct USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH ucp USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.image, ucp.contact_link, ucp.preferences,
-      u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.ui_themes
-    FROM users u
-    JOIN contacts uct ON uct.contact_id = u.contact_id
-    JOIN contact_profiles ucp ON ucp.contact_profile_id = uct.contact_profile_id
    JOIN contacts ct ON ct.user_id = u.user_id WHERE ct.contact_id = ? AND ct.deleted = 0
 Plan:
 SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
@@ -5052,6 +5209,27 @@ Query:
    DESC LIMIT 1
 Plan:
 SCAN usage_conditions
+
+Query: 
+    SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, business_address, auto_accept, auto_accept_incognito, auto_reply_msg_content
+    FROM user_contact_links
+   WHERE user_id = ? AND conn_req_contact IN (?,?)
+Plan:
+SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
+
+Query: 
+    SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, business_address, auto_accept, auto_accept_incognito, auto_reply_msg_content
+    FROM user_contact_links
+   WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
+Plan:
+SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
+
+Query: 
+    SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, business_address, auto_accept, auto_accept_incognito, auto_reply_msg_content
+    FROM user_contact_links
+   WHERE user_id = ? AND short_link_contact = ?
+Plan:
+SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
 
 Query:  SELECT chat_item_id FROM chat_items WHERE  (( user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL  AND  item_ts < ? ) OR ( user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL  AND  item_ts = ? AND chat_item_id < ? ))  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
 Plan:
@@ -5228,6 +5406,7 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_profile_id (contact_pr
 Query: DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?
 Plan:
 SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_contact_request_id (contact_request_id=?)
 
 Query: DELETE FROM contacts WHERE user_id = ? AND contact_id = ?
 Plan:
@@ -5323,6 +5502,7 @@ SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_id
 SEARCH chat_items USING COVERING INDEX idx_chat_items_fwd_from_group_id (fwd_from_group_id=?)
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_id (group_id=?)
 SEARCH messages USING COVERING INDEX idx_messages_group_id (group_id=?)
+SEARCH contact_requests USING COVERING INDEX idx_contact_requests_business_group_id (business_group_id=?)
 SEARCH user_contact_links USING COVERING INDEX idx_user_contact_links_group_id (group_id=?)
 SEARCH files USING COVERING INDEX idx_files_group_id (group_id=?)
 SEARCH group_members USING COVERING INDEX sqlite_autoindex_group_members_1 (group_id=?)
@@ -5479,15 +5659,15 @@ Query: INSERT INTO contact_profiles (display_name, full_name, image, user_id, pr
 Plan:
 SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_profile_id (contact_profile_id=?)
 
+Query: INSERT INTO contacts (contact_profile_id, local_display_name, user_id, created_at, updated_at, chat_ts, contact_used, contact_request_id) VALUES (?,?,?,?,?,?,?,?)
+Plan:
+SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
+
 Query: INSERT INTO contacts (contact_profile_id, local_display_name, user_id, is_user, created_at, updated_at, chat_ts) VALUES (?,?,?,?,?,?,?)
 Plan:
 SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
 
-Query: INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at, chat_ts, contact_used) VALUES (?,?,?,?,?,?,?,?)
-Plan:
-SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
-
-Query: INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, user_preferences, created_at, updated_at, chat_ts, xcontact_id, contact_used) VALUES (?,?,?,?,?,?,?,?,?,?)
+Query: INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at, chat_ts, contact_used, conn_full_link_to_connect, conn_short_link_to_connect, welcome_shared_msg_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)
 Plan:
 SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
 
@@ -5554,10 +5734,10 @@ SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 Query: INSERT INTO temp_conn_ids (conn_id) VALUES (?)
 Plan:
 
-Query: INSERT INTO user_contact_links (user_id, conn_req_contact, short_link_contact, created_at, updated_at) VALUES (?,?,?,?,?)
+Query: INSERT INTO user_contact_links (user_id, conn_req_contact, short_link_contact, short_link_data_set, created_at, updated_at) VALUES (?,?,?,?,?,?)
 Plan:
 
-Query: INSERT INTO user_contact_links (user_id, group_id, group_link_id, local_display_name, conn_req_contact, short_link_contact, group_link_member_role, auto_accept, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)
+Query: INSERT INTO user_contact_links (user_id, group_id, group_link_id, local_display_name, conn_req_contact, short_link_contact, short_link_data_set, group_link_member_role, auto_accept, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)
 Plan:
 
 Query: INSERT INTO users (agent_user_id, local_display_name, active_user, active_order, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, created_at, updated_at) VALUES (?,?,?,?,0,?,?,?,?,?)
@@ -5686,6 +5866,10 @@ Query: SELECT contact_id FROM group_members WHERE contact_id = ? LIMIT 1
 Plan:
 SEARCH group_members USING COVERING INDEX idx_group_members_contact_id (contact_id=?)
 
+Query: SELECT contact_id, conn_full_link_to_connect FROM contacts WHERE user_id = ? AND conn_short_link_to_connect = ?
+Plan:
+SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
+
 Query: SELECT contact_id, group_id FROM chat_items WHERE user_id = ? AND chat_item_id = ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
@@ -5738,6 +5922,10 @@ Query: SELECT group_id FROM user_contact_links WHERE user_id = ? AND user_contac
 Plan:
 SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: SELECT group_id, conn_full_link_to_connect FROM groups WHERE user_id = ? AND conn_short_link_to_connect = ?
+Plan:
+SEARCH groups USING INDEX idx_groups_chat_ts (user_id=?)
+
 Query: SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1
 Plan:
 SEARCH group_members USING INDEX idx_group_members_user_id (user_id=?)
@@ -5761,6 +5949,10 @@ SCAN CONSTANT ROW
 Query: SELECT max(active_order) FROM users
 Plan:
 SEARCH users
+
+Query: SELECT member_xcontact_id, member_welcome_shared_msg_id FROM group_members WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: SELECT note_folder_id FROM note_folders WHERE user_id = ?
 Plan:
@@ -5786,17 +5978,13 @@ Query: SELECT user_contact_link_id FROM contact_requests WHERE contact_request_i
 Plan:
 SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: SELECT user_contact_link_id, conn_req_contact, short_link_contact, group_link_id, group_link_member_role FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1
+Query: SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, group_link_id, group_link_member_role FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1
 Plan:
 SEARCH user_contact_links USING INDEX idx_user_contact_links_group_id (group_id=?)
 
 Query: SELECT user_id FROM users WHERE local_display_name = ?
 Plan:
 SEARCH users USING COVERING INDEX sqlite_autoindex_users_2 (local_display_name=?)
-
-Query: SELECT xcontact_id FROM connections WHERE user_id = ? AND via_contact_uri_hash = ? LIMIT 1
-Plan:
-SEARCH connections USING INDEX idx_connections_via_contact_uri_hash (user_id=? AND via_contact_uri_hash=?)
 
 Query: SELECT xgrplinkmem_received FROM group_members WHERE group_member_id = ?
 Plan:
@@ -5846,10 +6034,6 @@ Query: UPDATE connections SET conn_type = ?, group_member_id = ?, updated_at = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE connections SET contact_id = ? WHERE connection_id = ?
-Plan:
-SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
-
 Query: UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
@@ -5866,9 +6050,13 @@ Query: UPDATE connections SET to_subscribe = 0 WHERE to_subscribe = 1
 Plan:
 SEARCH connections USING INDEX idx_connections_to_subscribe (to_subscribe=?)
 
-Query: UPDATE contact_requests SET contact_id = ? WHERE user_id = ? AND local_display_name = ?
+Query: UPDATE contact_requests SET business_group_id = ? WHERE contact_request_id = ?
 Plan:
-SEARCH contact_requests USING INDEX sqlite_autoindex_contact_requests_1 (user_id=? AND local_display_name=?)
+SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE contact_requests SET contact_id = ? WHERE contact_request_id = ?
+Plan:
+SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE contacts SET chat_deleted = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?
 Plan:
@@ -5898,6 +6086,10 @@ Query: UPDATE contacts SET local_display_name = ?, updated_at = ? WHERE user_id 
 Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE contacts SET request_shared_msg_id = ? WHERE contact_id = ?
+Plan:
+SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE contacts SET send_rcpts = NULL
 Plan:
 SCAN contacts
@@ -5915,6 +6107,10 @@ Plan:
 SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
 
 Query: UPDATE contacts SET user_preferences = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?
+Plan:
+SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE contacts SET xcontact_id = ? WHERE contact_id = ?
 Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 
@@ -5974,6 +6170,10 @@ Query: UPDATE group_members SET member_id = ?, member_role = ? WHERE group_membe
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE group_members SET member_profile_id = ?, updated_at = ? WHERE group_member_id = ?
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE group_members SET member_role = ? WHERE user_id = ? AND group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
@@ -5990,11 +6190,19 @@ Query: UPDATE groups SET business_member_id = ?, customer_member_id = ? WHERE gr
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE groups SET business_xcontact_id = ? WHERE group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE groups SET chat_item_id = ?, updated_at = ? WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE groups SET chat_ts = ? WHERE user_id = ? AND group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE groups SET conn_link_started_connection = ?, updated_at = ? WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
@@ -6007,6 +6215,10 @@ Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE groups SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE groups SET request_shared_msg_id = ? WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 

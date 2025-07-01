@@ -92,7 +92,7 @@ struct ChatListNavLink: View {
     
     private func contactNavLink(_ contact: Contact) -> some View {
         Group {
-            if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
+            if contact.isContactCard {
                 ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
                     .frameCompat(height: dynamicRowHeight)
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
@@ -122,29 +122,53 @@ struct ChatListNavLink: View {
                     label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) }
                 )
                 .frameCompat(height: dynamicRowHeight)
-                .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                    markReadButton()
-                    toggleFavoriteButton()
-                    toggleNtfsButton(chat: chat)
+                .if(!contact.nextAcceptContactRequest) { v in
+                    v.swipeActions(edge: .leading, allowsFullSwipe: true) {
+                        markReadButton()
+                        toggleFavoriteButton()
+                        toggleNtfsButton(chat: chat)
+                    }
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                    tagChatButton(chat)
-                    if !chat.chatItems.isEmpty {
-                        clearChatButton()
+                    if contact.nextAcceptContactRequest,
+                       let contactRequestId = contact.contactRequestId {
+                        Button {
+                            Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequestId) }
+                        } label: { SwipeLabel(NSLocalizedString("Accept", comment: "swipe action"), systemImage: "checkmark", inverted: oneHandUI) }
+                            .tint(theme.colors.primary)
+                        if !ChatModel.shared.addressShortLinkDataSet {
+                            Button {
+                                Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequestId) }
+                            } label: {
+                                SwipeLabel(NSLocalizedString("Accept incognito", comment: "swipe action"), systemImage: "theatermasks.fill", inverted: oneHandUI)
+                            }
+                            .tint(.indigo)
+                        }
+                        Button {
+                            AlertManager.shared.showAlert(rejectContactRequestAlert(contactRequestId))
+                        } label: {
+                            SwipeLabel(NSLocalizedString("Reject", comment: "swipe action"), systemImage: "multiply", inverted: oneHandUI)
+                        }
+                        .tint(.red)
+                    } else {
+                        tagChatButton(chat)
+                        if !chat.chatItems.isEmpty {
+                            clearChatButton()
+                        }
+                        Button {
+                            deleteContactDialog(
+                                chat,
+                                contact,
+                                dismissToChatList: false,
+                                showAlert: { alert = $0 },
+                                showActionSheet: { actionSheet = $0 },
+                                showSheetContent: { sheet = $0 }
+                            )
+                        } label: {
+                            deleteLabel
+                        }
+                        .tint(.red)
                     }
-                    Button {
-                        deleteContactDialog(
-                            chat,
-                            contact,
-                            dismissToChatList: false,
-                            showAlert: { alert = $0 },
-                            showActionSheet: { actionSheet = $0 },
-                            showSheetContent: { sheet = $0 }
-                        )
-                    } label: {
-                        deleteLabel
-                    }
-                    .tint(.red)
                 }
             }
         }
@@ -436,28 +460,32 @@ struct ChatListNavLink: View {
         .frameCompat(height: dynamicRowHeight)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button {
-                Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) }
+                Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequest.apiId) }
             } label: { SwipeLabel(NSLocalizedString("Accept", comment: "swipe action"), systemImage: "checkmark", inverted: oneHandUI) }
                 .tint(theme.colors.primary)
-            Button {
-                Task { await acceptContactRequest(incognito: true, contactRequest: contactRequest) }
-            } label: {
-                SwipeLabel(NSLocalizedString("Accept incognito", comment: "swipe action"), systemImage: "theatermasks.fill", inverted: oneHandUI)
+            if !ChatModel.shared.addressShortLinkDataSet {
+                Button {
+                    Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequest.apiId) }
+                } label: {
+                    SwipeLabel(NSLocalizedString("Accept incognito", comment: "swipe action"), systemImage: "theatermasks.fill", inverted: oneHandUI)
+                }
+                .tint(.indigo)
             }
-            .tint(.indigo)
             Button {
-                AlertManager.shared.showAlert(rejectContactRequestAlert(contactRequest))
+                AlertManager.shared.showAlert(rejectContactRequestAlert(contactRequest.apiId))
             } label: {
-                SwipeLabel(NSLocalizedString("Reject", comment: "swipe action"), systemImage: "multiply.fill", inverted: oneHandUI)
+                SwipeLabel(NSLocalizedString("Reject", comment: "swipe action"), systemImage: "multiply", inverted: oneHandUI)
             }
             .tint(.red)
         }
         .contentShape(Rectangle())
         .onTapGesture { showContactRequestDialog = true }
         .confirmationDialog("Accept connection request?", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
-            Button("Accept") { Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) } }
-            Button("Accept incognito") { Task { await acceptContactRequest(incognito: true, contactRequest: contactRequest) } }
-            Button("Reject (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest) } }
+            Button("Accept") { Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequest.apiId) } }
+            if !ChatModel.shared.addressShortLinkDataSet {
+                Button("Accept incognito") { Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequest.apiId) } }
+            }
+            Button("Reject (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest.apiId) } }
         }
     }
 
@@ -619,12 +647,12 @@ extension View {
     }
 }
 
-func rejectContactRequestAlert(_ contactRequest: UserContactRequest) -> Alert {
+func rejectContactRequestAlert(_ contactRequestId: Int64) -> Alert {
     Alert(
         title: Text("Reject contact request"),
         message: Text("The sender will NOT be notified"),
         primaryButton: .destructive(Text("Reject")) {
-            Task { await rejectContactRequest(contactRequest) }
+            Task { await rejectContactRequest(contactRequestId) }
         },
         secondaryButton: .cancel()
     )
