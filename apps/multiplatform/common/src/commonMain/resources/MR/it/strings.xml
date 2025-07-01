@@ -513,7 +513,7 @@
     <string name="enable_automatic_deletion_question">Attivare l\'eliminazione automatica dei messaggi\?</string>
     <string name="encrypt_database_question">Crittografare il database\?</string>
     <string name="encrypt_database">Crittografare</string>
-    <string name="error_changing_message_deletion">Errore nella modifica dell\'impostazione</string>
+    <string name="error_changing_message_deletion">Errore cambiando l\'impostazione</string>
     <string name="error_encrypting_database">Errore nella crittografia del database</string>
     <string name="your_settings">Le tue impostazioni</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Verrai connesso/a al gruppo quando il dispositivo dell\'host del gruppo sarà in linea, attendi o controlla più tardi!</string>
@@ -2445,8 +2445,8 @@
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[Potrai inviare messaggi <b>solo dopo che la tua richiesta verrà accettata</b>.]]></string>
     <string name="compose_view_connect">Connetti</string>
     <string name="contact_should_accept">il contatto dovrebbe accettare…</string>
-    <string name="error_changing_contact_user">Errore di modifica del contatto</string>
-    <string name="error_changing_group_user">Errore di modifica dell\'utente del gruppo</string>
+    <string name="error_changing_contact_user">Errore cambiando il contatto</string>
+    <string name="error_changing_group_user">Errore cambiando l\'utente del gruppo</string>
     <string name="error_preparing_contact">Errore di preparazione del contatto</string>
     <string name="error_preparing_group">Errore di preparazione del gruppo</string>
     <string name="error_rejecting_contact_request">Errore nel rifiuto della richiesta di contatto</string>
