@@ -171,7 +171,7 @@ object ChatModel {
   // return true if you handled the click
   var centerPanelBackgroundClickHandler: (() -> Boolean)? = null
 
-  var addressShortLinkDataSet: Boolean = userAddress.value?.shortLinkDataSet ?: true
+  fun addressShortLinkDataSet(): Boolean = userAddress.value?.shortLinkDataSet ?: true
 
   fun getUser(userId: Long): User? = if (currentUser.value?.userId == userId) {
     currentUser.value

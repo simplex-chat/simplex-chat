@@ -523,7 +523,7 @@ fun ContactRequestMenuItems(rhId: Long?, contactRequestId: Long, chatModel: Chat
       showMenu.value = false
     }
   )
-  if (!chatModel.addressShortLinkDataSet) {
+  if (!chatModel.addressShortLinkDataSet()) {
     ItemAction(
       stringResource(MR.strings.accept_contact_incognito_button),
       painterResource(MR.images.ic_theater_comedy),
@@ -675,7 +675,7 @@ fun contactRequestAlertDialog(rhId: Long?, contactRequest: ChatInfo.ContactReque
         }) {
           Text(generalGetString(MR.strings.accept_contact_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
-        if (!chatModel.addressShortLinkDataSet) {
+        if (!chatModel.addressShortLinkDataSet()) {
           SectionItemView({
             AlertManager.shared.hideAlert()
             acceptContactRequest(rhId, incognito = true, contactRequest.apiId, true, chatModel, onSucess)

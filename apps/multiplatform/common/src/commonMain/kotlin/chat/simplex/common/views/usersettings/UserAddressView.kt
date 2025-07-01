@@ -575,7 +575,7 @@ private class AddressSettingsState {
 @Composable
 private fun AutoAcceptSection(addressSettingsState: MutableState<AddressSettingsState>) {
   SectionView(stringResource(MR.strings.auto_accept_contact).uppercase()) {
-    if (!chatModel.addressShortLinkDataSet && !addressSettingsState.value.businessAddress) {
+    if (!chatModel.addressShortLinkDataSet() && !addressSettingsState.value.businessAddress) {
       AcceptIncognitoToggle(addressSettingsState)
     }
     // TODO v6.4.1 show this message editor even with auto-accept disabled
