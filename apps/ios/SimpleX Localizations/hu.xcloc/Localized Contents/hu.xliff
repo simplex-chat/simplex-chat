@@ -583,17 +583,17 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Accept connection request?" xml:space="preserve" approved="no">
         <source>Accept connection request?</source>
-        <target state="translated">Elfogadja a kapcsolatkérést?</target>
+        <target state="translated">Elfogadja a meghívót?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept contact request" xml:space="preserve" approved="no">
         <source>Accept contact request</source>
-        <target state="translated">Kapcsolatkérés elfogadása</target>
+        <target state="translated">Meghívó elfogadása</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Accept contact request from %@?" xml:space="preserve" approved="no">
         <source>Accept contact request from %@?</source>
-        <target state="translated">Elfogadja %@ kapcsolatkérését?</target>
+        <target state="translated">Elfogadja %@ meghívóját?</target>
         <note>notification body</note>
       </trans-unit>
       <trans-unit id="Accept incognito" xml:space="preserve">
@@ -1174,7 +1174,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Auto-accept contact requests" xml:space="preserve" approved="no">
         <source>Auto-accept contact requests</source>
-        <target state="translated">Kapcsolatkérések automatikus elfogadása</target>
+        <target state="translated">Meghívók automatikus elfogadása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Auto-accept images" xml:space="preserve">
@@ -1991,7 +1991,7 @@ Ez a saját egyszer használható meghívója!</target>
       </trans-unit>
       <trans-unit id="Connection request sent!" xml:space="preserve" approved="no">
         <source>Connection request sent!</source>
-        <target state="translated">Kapcsolatkérés elküldve!</target>
+        <target state="translated">Meghívó elküldve!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection requires encryption renegotiation." xml:space="preserve">
@@ -3181,7 +3181,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error accepting contact request" xml:space="preserve" approved="no">
         <source>Error accepting contact request</source>
-        <target state="translated">Hiba történt a kapcsolatkérés elfogadásakor</target>
+        <target state="translated">Hiba történt a meghívó elfogadásakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error accepting member" xml:space="preserve">
@@ -3421,7 +3421,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error rejecting contact request" xml:space="preserve" approved="no">
         <source>Error rejecting contact request</source>
-        <target state="translated">Hiba történt a kapcsolatkérés elutasításakor</target>
+        <target state="translated">Hiba történt a meghívó elutasításakor</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error removing member" xml:space="preserve">
@@ -5243,7 +5243,7 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
       </trans-unit>
       <trans-unit id="New contact request" xml:space="preserve" approved="no">
         <source>New contact request</source>
-        <target state="translated">Új kapcsolatkérés</target>
+        <target state="translated">Új meghívó</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="New contact:" xml:space="preserve">
@@ -6423,7 +6423,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Reject contact request" xml:space="preserve" approved="no">
         <source>Reject contact request</source>
-        <target state="translated">Kapcsolatkérés elutasítása</target>
+        <target state="translated">Meghívó elutasítása</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Reject member?" xml:space="preserve">
@@ -6954,7 +6954,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Send contact request?" xml:space="preserve" approved="no">
         <source>Send contact request?</source>
-        <target state="translated">Elküldi a kapcsolatkérést?</target>
+        <target state="translated">Elküldi a meghívót?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send delivery receipts to" xml:space="preserve">
@@ -7049,7 +7049,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Sender may have deleted the connection request." xml:space="preserve" approved="no">
         <source>Sender may have deleted the connection request.</source>
-        <target state="translated">A küldője törölhette a kapcsolatkérést.</target>
+        <target state="translated">A küldője törölhette a meghívót.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending delivery receipts will be enabled for all contacts in all visible chat profiles." xml:space="preserve">
@@ -7890,7 +7890,7 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
       </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve" approved="no">
         <source>The app can notify you when you receive messages or contact requests - please open settings to enable.</source>
-        <target state="translated">Az alkalmazás értesíteni fogja, amikor üzeneteket vagy kapcsolatkéréseket kap – ezt a beállítások menüben engedélyezheti.</target>
+        <target state="translated">Az alkalmazás értesíteni fogja, amikor üzeneteket vagy meghívókat kap – ezt a beállítások menüben engedélyezheti.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The app protects your privacy by using different operators in each conversation." xml:space="preserve">
@@ -9056,8 +9056,8 @@ Megismétli a csatlakozási kérést?</target>
       <trans-unit id="You have already requested connection!&#10;Repeat connection request?" xml:space="preserve" approved="no">
         <source>You have already requested connection!
 Repeat connection request?</source>
-        <target state="translated">Ön már küldött egy kapcsolatkérést!
-Megismétli a kapcsolatkérést?</target>
+        <target state="translated">Ön már küldött egy meghívót!
+Újra elküldi a meghívót?</target>
         <note>new chat sheet title</note>
       </trans-unit>
       <trans-unit id="You have to enter passphrase every time the app starts - it is not stored on the device." xml:space="preserve">
@@ -9137,7 +9137,7 @@ Megismétli a kapcsolatkérést?</target>
       </trans-unit>
       <trans-unit id="You will be connected when your connection request is accepted, please wait or check later!" xml:space="preserve" approved="no">
         <source>You will be connected when your connection request is accepted, please wait or check later!</source>
-        <target state="translated">Akkor lesz kapcsolódva, ha a kapcsolatkérése el lesz fogadva, várjon, vagy ellenőrizze később!</target>
+        <target state="translated">Akkor lesz kapcsolódva, ha a meghívóját a partnere elfogadja, várjon, vagy ellenőrizze később!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will be connected when your contact's device is online, please wait or check later!" xml:space="preserve">
@@ -10122,7 +10122,7 @@ time to disappear</note>
       </trans-unit>
       <trans-unit id="requested to connect" xml:space="preserve" approved="no">
         <source>requested to connect</source>
-        <target state="translated">Függőben lévő kapcsolatkérés</target>
+        <target state="translated">Függőben lévő meghívó</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="review" xml:space="preserve">
