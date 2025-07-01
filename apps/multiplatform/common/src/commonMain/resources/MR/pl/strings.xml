@@ -2166,7 +2166,7 @@
     <string name="blocking_reason_content">Treść narusza warunki użytkowania</string>
     <string name="connection_error_blocked">Połączenie zablokowane</string>
     <string name="connection_error_blocked_desc">Połączenie jest zablokowane przez operatora serwera:\n%1$s.</string>
-    <string name="change_list">Lista zmian</string>
+    <string name="change_list">Zmień listę</string>
     <string name="create_list">Utwórz listę</string>
     <string name="delete_chat_list_menu_action">Usuń</string>
     <string name="operator_conditions_failed_to_load">Nie można załadować tekstu aktualnych warunków, możesz przejrzeć warunki za pomocą tego linku:</string>
