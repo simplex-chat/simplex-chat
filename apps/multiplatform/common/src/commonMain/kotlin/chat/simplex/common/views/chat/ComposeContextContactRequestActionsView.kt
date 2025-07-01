@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chat
 
 import SectionItemView
+import TextIconSpaced
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,11 +12,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.platform.chatModel
+import chat.simplex.common.ui.theme.WarningOrange
 import chat.simplex.common.views.chatlist.acceptContactRequest
 import chat.simplex.common.views.chatlist.rejectContactRequest
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
@@ -35,7 +39,7 @@ fun ComposeContextContactRequestActionsView(
         .fillMaxWidth(),
       horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
-      Column(
+      Row(
         Modifier
           .fillMaxWidth()
           .fillMaxHeight()
@@ -43,23 +47,39 @@ fun ComposeContextContactRequestActionsView(
           .clickable {
             showRejectRequestAlert(rhId, contactRequestId)
           },
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
       ) {
+        Icon(
+          painterResource(MR.images.ic_close),
+          contentDescription = null,
+          tint = Color.Red,
+        )
+        TextIconSpaced(false)
         Text(stringResource(MR.strings.reject_contact_button), color = Color.Red)
       }
 
-      Column(
+      Row(
         Modifier
           .fillMaxWidth()
           .fillMaxHeight()
           .weight(1F)
           .clickable {
-            showAcceptRequestAlert(rhId, contactRequestId)
+            if (chatModel.addressShortLinkDataSet) {
+              acceptContactRequest(rhId, incognito = false, contactRequestId, isCurrentUser = true, chatModel)
+            } else {
+              showAcceptRequestAlert(rhId, contactRequestId)
+            }
           },
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
       ) {
+        Icon(
+          painterResource(MR.images.ic_check),
+          contentDescription = null,
+          tint = MaterialTheme.colors.primary,
+        )
+        TextIconSpaced(false)
         Text(stringResource(MR.strings.accept_contact_button), color = MaterialTheme.colors.primary)
       }
     }
@@ -81,46 +101,32 @@ fun showRejectRequestAlert(rhId: Long?, contactRequestId: Long) {
 }
 
 fun showAcceptRequestAlert(rhId: Long?, contactRequestId: Long) {
-  // Show 2 buttons in a row
-  if (chatModel.addressShortLinkDataSet) {
-    AlertManager.shared.showAlertDialog(
-      title = generalGetString(MR.strings.accept_contact_request),
-      confirmText = generalGetString(MR.strings.accept_contact_button),
-      onConfirm = {
-        AlertManager.shared.hideAlert()
-        acceptContactRequest(rhId, incognito = false, contactRequestId, isCurrentUser = true, chatModel)
-      },
-      hostDevice = hostDevice(rhId),
-    )
-  // Show 3 buttons in a column
-  } else {
-    AlertManager.shared.showAlertDialogButtonsColumn(
-      title = generalGetString(MR.strings.accept_contact_request),
-      buttons = {
-        Column {
-          // Accept
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-            acceptContactRequest(rhId, incognito = false, contactRequestId, isCurrentUser = true, chatModel)
-          }) {
-            Text(generalGetString(MR.strings.accept_contact_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-          }
-          // Accept incognito
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-            acceptContactRequest(rhId, incognito = true, contactRequestId, isCurrentUser = true, chatModel)
-          }) {
-            Text(generalGetString(MR.strings.accept_contact_incognito_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-          }
-          // Cancel
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-          }) {
-            Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-          }
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = generalGetString(MR.strings.accept_contact_request),
+    buttons = {
+      Column {
+        // Accept
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          acceptContactRequest(rhId, incognito = false, contactRequestId, isCurrentUser = true, chatModel)
+        }) {
+          Text(generalGetString(MR.strings.accept_contact_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
-      },
-      hostDevice = hostDevice(rhId),
-    )
-  }
+        // Accept incognito
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          acceptContactRequest(rhId, incognito = true, contactRequestId, isCurrentUser = true, chatModel)
+        }) {
+          Text(generalGetString(MR.strings.accept_contact_incognito_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        // Cancel
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+      }
+    },
+    hostDevice = hostDevice(rhId),
+  )
 }
