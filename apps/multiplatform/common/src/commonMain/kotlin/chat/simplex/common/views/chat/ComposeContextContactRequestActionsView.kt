@@ -63,7 +63,7 @@ fun ComposeContextContactRequestActionsView(
           .fillMaxHeight()
           .weight(1F)
           .clickable {
-            if (chatModel.addressShortLinkDataSet) {
+            if (chatModel.addressShortLinkDataSet()) {
               acceptContactRequest(rhId, incognito = false, contactRequestId, isCurrentUser = true, chatModel)
             } else {
               showAcceptRequestAlert(rhId, contactRequestId)
