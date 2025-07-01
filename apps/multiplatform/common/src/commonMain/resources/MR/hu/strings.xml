@@ -871,7 +871,7 @@
     <string name="callstatus_rejected">elutasított hívás</string>
     <string name="onboarding_notifications_mode_periodic">Időszakos</string>
     <string name="feature_received_prohibited">fogadott, tiltott</string>
-    <string name="connect_plan_repeat_connection_request">Megismétli a meghívást?</string>
+    <string name="connect_plan_repeat_connection_request">Újra elküldi a meghívót?</string>
     <string name="only_you_can_delete_messages">Véglegesen csak Ön törölhet üzeneteket (partnere csak törlésre jelölheti meg őket ). (24 óra)</string>
     <string name="role_in_group">Szerepkör</string>
     <string name="simplex_link_contact">SimpleX kapcsolattartási cím</string>
