@@ -1568,9 +1568,9 @@ set passcode view</note>
         <target>A csevegés megállt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve">
+      <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve" approved="no">
         <source>Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</source>
-        <target>A csevegés megállt. Ha már használta ezt az adatbázist egy másik eszközön, úgy visszaállítás szükséges a csevegés elindítása előtt.</target>
+        <target state="translated">A csevegés leállt. Ha ezt az adatbázist már használta egy másik eszközön, akkor a csevegés elindítása előtt vissza kell állítania azt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat list" xml:space="preserve">
@@ -7134,7 +7134,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Sent to your contact after connection." xml:space="preserve" approved="no">
         <source>Sent to your contact after connection.</source>
-        <target state="translated">Elküldés a partnernek kapcsolódást követően.</target>
+        <target state="translated">Elküldés a partnernek a kapcsolódást követően.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sent total" xml:space="preserve">
