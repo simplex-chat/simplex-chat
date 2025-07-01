@@ -461,7 +461,7 @@ struct UserAddressSettingsView: View {
             }
 
             // TODO v6.4.1 move auto-reply editor here
-            messageEditor(placeholder: NSLocalizedString("Enter welcome message… (optional)", comment: "placeholder"), text: $settings.autoReply)
+            // messageEditor(placeholder: NSLocalizedString("Enter welcome message… (optional)", comment: "placeholder"), text: $settings.autoReply)
 
             if settings.autoAccept {
                 autoAcceptSection()

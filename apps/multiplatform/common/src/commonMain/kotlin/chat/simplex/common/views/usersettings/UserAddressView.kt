@@ -396,16 +396,19 @@ private fun ModalData.UserAddressSettings(
         SectionView {
           ShareWithContactsButton(shareViaProfile, setProfileAddress)
           AutoAcceptToggle(addressSettingsState) { saveAddressSettings(addressSettingsState.value, savedAddressSettingsState) }
-          if (!chatModel.addressShortLinkDataSet && !addressSettingsState.value.businessAddress) {
-            AcceptIncognitoToggle(addressSettingsState)
-          }
         }
         SectionDividerSpaced()
 
-        SectionView(stringResource(MR.strings.address_welcome_message).uppercase()) {
-          AutoReplyEditor(addressSettingsState)
+        // TODO v6.4.1 move auto-reply editor here
+        // SectionView(stringResource(MR.strings.address_welcome_message).uppercase()) {
+        //   AutoReplyEditor(addressSettingsState)
+        // }
+        // SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+
+        if (addressSettingsState.value.autoAccept) {
+          AutoAcceptSection(addressSettingsState = addressSettingsState)
+          SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
         }
-        SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
 
         saveAddressSettingsButton(addressSettingsState.value == savedAddressSettingsState.value) {
           saveAddressSettings(addressSettingsState.value, savedAddressSettingsState)
@@ -492,15 +495,15 @@ private fun AutoAcceptToggle(addressSettingsState: MutableState<AddressSettingsS
       AddressSettingsState(
         businessAddress = addressSettingsState.value.businessAddress,
         autoAccept = true,
-        autoAcceptIncognito = addressSettingsState.value.autoAcceptIncognito,
-        autoReply = addressSettingsState.value.autoReply
+        autoAcceptIncognito = false,
+        autoReply = ""
       )
     else
       AddressSettingsState(
         businessAddress = false,
         autoAccept = false,
-        autoAcceptIncognito = addressSettingsState.value.autoAcceptIncognito,
-        autoReply = addressSettingsState.value.autoReply
+        autoAcceptIncognito = false,
+        autoReply = ""
       )
     saveAddressSettings(addressSettingsState.value)
   }
@@ -570,19 +573,14 @@ private class AddressSettingsState {
 }
 
 @Composable
-private fun AutoAcceptSection(
-  addressSettingsState: MutableState<AddressSettingsState>,
-  savedAddressSettingsStatee: MutableState<AddressSettingsState>,
-  saveAddressSettings: (AddressSettingsState, MutableState<AddressSettingsState>) -> Unit
-) {
+private fun AutoAcceptSection(addressSettingsState: MutableState<AddressSettingsState>) {
   SectionView(stringResource(MR.strings.auto_accept_contact).uppercase()) {
     if (!chatModel.addressShortLinkDataSet && !addressSettingsState.value.businessAddress) {
       AcceptIncognitoToggle(addressSettingsState)
     }
+    // TODO v6.4.1 show this message editor even with auto-accept disabled
     AutoReplyEditor(addressSettingsState)
-    saveAddressSettingsButton(addressSettingsState.value == savedAddressSettingsStatee.value) {
-      saveAddressSettings(addressSettingsState.value, savedAddressSettingsStatee)
-    }
+    SectionTextFooter(stringResource(MR.strings.sent_to_your_contact_after_connection))
   }
 }
 
