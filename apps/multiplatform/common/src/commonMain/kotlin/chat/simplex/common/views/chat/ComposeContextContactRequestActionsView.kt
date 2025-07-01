@@ -12,9 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.platform.chatModel
-import chat.simplex.common.ui.theme.WarningOrange
 import chat.simplex.common.views.chatlist.acceptContactRequest
 import chat.simplex.common.views.chatlist.rejectContactRequest
 import chat.simplex.common.views.helpers.*
