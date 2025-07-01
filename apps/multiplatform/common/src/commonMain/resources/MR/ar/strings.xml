@@ -888,7 +888,7 @@
     <string name="run_chat_section">تشغيل الدردشة</string>
     <string name="restore_database">استعادة النسخة الاحتياطية لقاعدة البيانات</string>
     <string name="database_restore_error">خطأ في استعادة قاعدة البيانات</string>
-    <string name="rcv_group_event_member_deleted">أُزيلت %1$s</string>
+    <string name="rcv_group_event_member_deleted">أُزيل %1$s</string>
     <string name="rcv_group_event_user_deleted">أزالك</string>
     <string name="info_row_received_at">استلمت في</string>
     <string name="button_remove_member">أزل العضو</string>
@@ -907,7 +907,7 @@
     <string name="v4_6_hidden_chat_profiles_descr">احمِ ملفات تعريف دردشتك بكلمة مرور!</string>
     <string name="callstatus_rejected">رُفضت المكالمة</string>
     <string name="protect_app_screen">حماية شاشة التطبيق</string>
-    <string name="group_member_status_removed">أُزيلت</string>
+    <string name="group_member_status_removed">أُزيل</string>
     <string name="la_please_remember_to_store_password">يُرجى تذكرها أو تخزينها بأمان - لا توجد طريقة لاستعادة كلمة المرور المفقودة!</string>
     <string name="group_welcome_preview">معاينة</string>
     <string name="error_smp_test_certificate">من المحتمل أن الملف المرجعي للشهادة في عنوان الخادم غير صحيح</string>
