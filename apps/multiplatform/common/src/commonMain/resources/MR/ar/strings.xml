@@ -1017,7 +1017,7 @@
     <string name="share_file">مشاركة الملف…</string>
     <string name="image_descr_simplex_logo">شعار SimpleX</string>
     <string name="icon_descr_simplex_team">فريق SimpleX</string>
-    <string name="show_QR_code">عرض رمز QR</string>
+    <string name="show_QR_code">أظهر رمز QR</string>
     <string name="is_verified">تم التحقق %s</string>
     <string name="smp_servers_test_some_failed">فشلت بعض الخوادم في الاختبار:</string>
     <string name="send_link_previews">إرسال معاينات الرابط</string>
@@ -1028,7 +1028,7 @@
     <string name="settings_section_title_socks">وسيط SOCKS</string>
     <string name="v4_2_security_assessment_desc">تم تدقيق أمان SimpleX Chat بواسطة Trail of Bits.</string>
     <string name="stop_chat_confirmation">إيقاف</string>
-    <string name="settings_notification_preview_mode_title">عرض المعاينة</string>
+    <string name="settings_notification_preview_mode_title">أظهر المعاينة</string>
     <string name="icon_descr_speaker_off">السماعة متوقفة</string>
     <string name="la_lock_mode">SimpleX وضع القفل</string>
     <string name="share_link">مشاركة الرابط</string>
@@ -1052,7 +1052,7 @@
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
     <string name="error_smp_test_server_auth">يتطلب الخادم إذنًا لإنشاء قوائم انتظار، تحقق من كلمة المرور</string>
     <string name="error_xftp_test_server_auth">يتطلب الخادم إذنًا للرفع، تحقق من كلمة المرور</string>
-    <string name="notification_preview_mode_contact_desc">عرض جهة الاتصال فقط</string>
+    <string name="notification_preview_mode_contact_desc">أظهر جهة الاتصال فقط</string>
     <string name="ntf_channel_calls">مكالمات SimpleX Chat</string>
     <string name="simplex_service_notification_title">خدمة SimpleX Chat</string>
     <string name="notifications_mode_periodic">يبدأ بشكل دوري</string>
@@ -1335,7 +1335,7 @@
     <string name="you_invited_a_contact">أنت دعوت جهة اتصال</string>
     <string name="privacy_message_draft">مسودة الرسالة</string>
     <string name="rcv_group_event_2_members_connected">%s و %s متصل</string>
-    <string name="privacy_show_last_messages">إظهار الرسائل الأخيرة</string>
+    <string name="privacy_show_last_messages">أظهر الرسائل الأخيرة</string>
     <string name="rcv_group_event_n_members_connected">%s، %s و %d أعضاء آخرين متصلون</string>
     <string name="rcv_group_event_3_members_connected">%s، %s و %s متصل</string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">سيتم تعمية قاعدة البيانات وتخزين عبارة المرور في الإعدادات.</string>
@@ -1523,7 +1523,7 @@
     <string name="search_or_paste_simplex_link">ابحث أو ألصِق رابط SimpleX</string>
     <string name="start_chat_question">بدء الدردشة؟</string>
     <string name="chat_is_stopped_you_should_transfer_database">توقفت الدردشة. إذا كنت قد استخدمت قاعدة البيانات هذه بالفعل على جهاز آخر، فيجب عليك نقلها مرة أخرى قبل بدء الدردشة.</string>
-    <string name="show_internal_errors">اعرض الأخطاء الداخلية</string>
+    <string name="show_internal_errors">أظهر الأخطاء الداخلية</string>
     <string name="agent_critical_error_title">خطأ فادح</string>
     <string name="agent_internal_error_title">خطأ داخلي</string>
     <string name="agent_internal_error_desc">يُرجى إبلاغ المطورين بذلك:
@@ -1870,7 +1870,7 @@
     <string name="member_info_member_disabled">مُعطَّل</string>
     <string name="member_info_member_inactive">غير نشط</string>
     <string name="servers_info">معلومات الخوادم</string>
-    <string name="servers_info_target">أظهر المعلومات ل</string>
+    <string name="servers_info_target">يُظهر معلومات ل</string>
     <string name="servers_info_sessions_errors">الأخطاء</string>
     <string name="servers_info_messages_sent">الرسائل المُرسلة</string>
     <string name="servers_info_subscriptions_total">الإجمالي</string>
