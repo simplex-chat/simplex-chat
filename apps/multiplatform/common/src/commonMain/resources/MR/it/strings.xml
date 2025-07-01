@@ -2439,4 +2439,11 @@
     <string name="delete_member_support_chat_button">Elimina chat</string>
     <string name="error_deleting_member_support_chat">Errore di eliminazione della chat con il membro</string>
     <string name="add_short_link">Aggiungi link breve</string>
+    <string name="accept_contact_request">Accetta la richiesta di contatto</string>
+    <string name="compose_view_add_message">Aggiungi un messaggio</string>
+    <string name="e2ee_info_e2ee"><![CDATA[I messaggi sono protetti da <b>crittografia end-to-end</b>.]]></string>
+    <string name="compose_view_send_contact_request_alert_text"><![CDATA[Potrai inviare messaggi <b>solo dopo che la tua richiesta verrà accettata</b>.]]></string>
+    <string name="compose_view_connect">Connetti</string>
+    <string name="contact_should_accept">il contatto dovrebbe accettare…</string>
+    <string name="error_changing_contact_user">Errore cambiando il contatto</string>
 </resources>
