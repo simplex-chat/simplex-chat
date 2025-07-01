@@ -3324,11 +3324,8 @@ testBusinessAddressRequestMessage ps@TestParams {largeLinkData} = testChatCfg3 t
       biz <# "#bob bob_1> Hello!"
       biz <## "#bob (Bob): accepting business address request..."
       bob <## "#biz: joining the group..."
-      unless largeLinkData $ do
-        biz <# "#bob Welcome!"
-        bob <# "#biz biz_1> Welcome!"
-      biz <## "#bob: bob_1 joined the group"
-      bob <## "#biz: you joined the group"
+      biz <### (["#bob: bob_1 joined the group"] <> [WithTime "#bob Welcome!" | not largeLinkData])
+      bob <### (["#biz: you joined the group"] <> [WithTime "#biz biz_1> Welcome!" | not largeLinkData])
       -- Another member should receive history
       connectUsers biz alice
       biz ##> "/a bob alice"
@@ -3438,11 +3435,9 @@ testGroupShortLinkWelcome ps@TestParams {largeLinkData} = testChatCfg2 testCfg {
         [ alice <## "#team: bob joined the group",
           do
             bob <## "#team: joining the group..."
-            bob <## "#team: you joined the group"
+            bob <### (["#team: you joined the group"] <> [WithTime "#team alice> Welcome!" | not largeLinkData])
         ]
-      bob #$> ("/_get chat #1 count=100", chat, groupFeaturesNoE2E <> [(0, "Welcome!") | largeLinkData] <> [(0, e2eeInfoNoPQStr), (0, "connected")])
-      unless largeLinkData $
-        bob <# "#team alice> Welcome!"
+      bob #$> ("/_get chat #1 count=100", chat, groupFeaturesNoE2E <> [(0, "Welcome!"), (0, e2eeInfoNoPQStr), (0, "connected")])
       alice #> "#team 1"
       bob <# "#team alice> 1"
       bob #> "#team 2"

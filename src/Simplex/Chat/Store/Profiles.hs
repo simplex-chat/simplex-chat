@@ -568,7 +568,7 @@ updateUserAddressSettings db userContactLinkId AddressSettings {businessAddress,
       SET auto_accept = ?, auto_accept_incognito = ?, business_address = ?, auto_reply_msg_content = ?
       WHERE user_contact_link_id = ?
     |]
-    (autoAcceptValues :. (businessAddress, autoReply, userContactLinkId))
+    (autoAcceptValues :. (BI businessAddress, autoReply, userContactLinkId))
   where
     autoAcceptValues = case autoAccept of
       Just AutoAccept {acceptIncognito} -> (BI True, BI acceptIncognito)
