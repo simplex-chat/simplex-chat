@@ -379,14 +379,7 @@ fun ActiveProfilePicker(
         }
       },
       image = {
-        Spacer(Modifier.width(8.dp))
-        Icon(
-          painterResource(MR.images.ic_theater_comedy_filled),
-          contentDescription = stringResource(MR.strings.incognito),
-          Modifier.size(32.dp),
-          tint = Indigo,
-        )
-        Spacer(Modifier.width(2.dp))
+        IncognitoOptionImage()
       },
       onInfo = { ModalManager.start.showModal { IncognitoView() } },
     )
@@ -409,7 +402,10 @@ fun ActiveProfilePicker(
         val activeProfile = filteredProfiles.firstOrNull { it.activeUser }
 
         if (activeProfile != null) {
-          val otherProfiles = filteredProfiles.filter { it.userId != activeProfile.userId }
+          val otherProfiles =
+            filteredProfiles
+              .filter { it.userId != activeProfile.userId }
+              .sortedByDescending { it.activeOrder }
           item {
             when {
               !showIncognito ->
@@ -545,6 +541,18 @@ fun ToggleShortLinkButton(short: MutableState<Boolean>) {
     ) { short.value = !short.value },
     style = MaterialTheme.typography.body2, fontSize = 14.sp, color = MaterialTheme.colors.primary
   )
+}
+
+@Composable
+fun IncognitoOptionImage() {
+  Spacer(Modifier.width(8.dp))
+  Icon(
+    painterResource(MR.images.ic_theater_comedy_filled),
+    contentDescription = stringResource(MR.strings.incognito),
+    Modifier.size(32.dp),
+    tint = Indigo,
+  )
+  Spacer(Modifier.width(2.dp))
 }
 
 @Composable
@@ -687,8 +695,7 @@ private suspend fun connect(rhId: Long?, link: String, close: () -> Unit, cleanu
     rhId,
     link,
     close = close,
-    cleanup = cleanup,
-    incognito = null
+    cleanup = cleanup
   ).await()
 
 private fun createInvitation(

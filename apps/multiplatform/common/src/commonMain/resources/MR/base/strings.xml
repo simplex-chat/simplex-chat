@@ -13,6 +13,10 @@
   <string name="you_will_join_group">You will connect to all group members.</string>
   <string name="connect_via_link_verb">Connect</string>
   <string name="connect_via_link_incognito">Connect incognito</string>
+  <string name="connect_plan_open_chat">Open chat</string>
+  <string name="connect_plan_open_new_chat">Open new chat</string>
+  <string name="connect_plan_open_group">Open group</string>
+  <string name="connect_plan_open_new_group">Open new group</string>
   <string name="error_parsing_uri_title">Invalid link</string>
   <string name="error_parsing_uri_desc">Please check that SimpleX link is correct.</string>
 
@@ -63,6 +67,7 @@
   <string name="decryption_error">Decryption error</string>
   <string name="encryption_renegotiation_error">Encryption re-negotiation error</string>
 
+  <string name="e2ee_info_e2ee"><![CDATA[Messages are protected by <b>end-to-end encryption</b>.]]></string>
   <string name="e2ee_info_no_pq"><![CDATA[Messages, files and calls are protected by <b>end-to-end encryption</b> with perfect forward secrecy, repudiation and break-in recovery.]]></string>
   <string name="e2ee_info_pq"><![CDATA[Messages, files and calls are protected by <b>quantum resistant e2e encryption</b> with perfect forward secrecy, repudiation and break-in recovery.]]></string>
   <string name="e2ee_info_no_pq_short">This chat is protected by end-to-end encryption.</string>
@@ -98,7 +103,6 @@
   <string name="simplex_link_mode_full">Full link</string>
   <string name="simplex_link_mode_browser">Via browser</string>
   <string name="simplex_link_mode_browser_warning">Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.</string>
-  <string name="privacy_short_links">Use short links (BETA)</string>
 
   <!-- Reports - ChatModel.kt -->
   <string name="report_reason_spam">Spam</string>
@@ -181,6 +185,7 @@
   <string name="connection_error_quota">Undelivered messages</string>
   <string name="connection_error_quota_desc">The connection reached the limit of undelivered messages, your contact may be offline.</string>
   <string name="error_accepting_contact_request">Error accepting contact request</string>
+  <string name="error_rejecting_contact_request">Error rejecting contact request</string>
   <string name="sender_may_have_deleted_the_connection_request">Sender may have deleted the connection request.</string>
   <string name="error_deleting_contact">Error deleting contact</string>
   <string name="error_deleting_group">Error deleting group</string>
@@ -213,6 +218,10 @@
   <string name="error_updating_chat_tags">Error updating chat list</string>
   <string name="error_creating_chat_tags">Error creating chat list</string>
   <string name="error_loading_chat_tags">Error loading chat lists</string>
+  <string name="error_preparing_contact">Error preparing contact</string>
+  <string name="error_preparing_group">Error preparing group</string>
+  <string name="error_changing_contact_user">Error changing contact user</string>
+  <string name="error_changing_group_user">Error changing group user</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="icon_descr_instant_notifications">Instant notifications</string>
@@ -421,9 +430,10 @@
   <string name="your_chats">Chats</string>
   <string name="toolbar_settings">Settings</string>
   <string name="contact_connection_pending">connecting…</string>
-  <string name="member_contact_send_direct_message">send direct message</string>
-  <string name="group_preview_you_are_invited">you are invited to group</string>
-  <string name="group_preview_join_as">join as %s</string>
+  <string name="member_contact_send_direct_message">send to connect</string>
+  <string name="group_preview_open_to_join">Open to join</string>
+  <string name="group_preview_you_are_invited">You are invited to group</string>
+  <string name="group_preview_join_as">Join as %s</string>
   <string name="group_preview_rejected">rejected</string>
   <string name="group_connection_pending">connecting…</string>
   <string name="tap_to_start_new_chat">Tap to start a new chat</string>
@@ -436,6 +446,9 @@
   <string name="no_chats">No chats</string>
   <string name="no_chats_found">No chats found</string>
   <string name="contact_tap_to_connect">Tap to Connect</string>
+  <string name="open_to_connect">Open to connect</string>
+  <string name="open_to_accept">Open to accept</string>
+  <string name="contact_should_accept">contact should accept…</string>
   <string name="connect_with_contact_name_question">Connect with %1$s?</string>
   <string name="search_or_paste_simplex_link">Search or paste SimpleX link</string>
   <string name="address_creation_instruction">Tap Create SimpleX address in the menu to create it later.</string>
@@ -512,9 +525,17 @@
   <string name="report_compose_reason_header_other">Report other: only group moderators will see it.</string>
   <string name="report_sent_alert_title">Report sent to moderators</string>
   <string name="report_sent_alert_msg_view_in_support_chat">You can view your reports in Chat with admins.</string>
+  <string name="compose_view_join_group">Join group</string>
+  <string name="compose_view_add_message">Add message</string>
+  <string name="compose_view_connect">Connect</string>
+  <string name="compose_view_send_contact_request_alert_question">Send contact request?</string>
+  <string name="compose_view_send_contact_request_alert_text"><![CDATA[You will be able to send messages <b>only after your request is accepted</b>.]]></string>
+  <string name="compose_view_send_request_without_message">Send request without message</string>
+  <string name="compose_view_send_request">Send request</string>
 
   <string name="cant_send_message_alert_title">You can\'t send messages!</string>
   <string name="cant_send_message_contact_not_ready">contact not ready</string>
+  <string name="cant_send_message_request_is_sent">request is sent</string>
   <string name="cant_send_message_contact_deleted">contact deleted</string>
   <string name="cant_send_message_contact_not_synchronized">not synchronized</string>
   <string name="cant_send_message_contact_disabled">contact disabled</string>
@@ -694,6 +715,9 @@
   <string name="accept_contact_button">Accept</string>
   <string name="accept_contact_incognito_button">Accept incognito</string>
   <string name="reject_contact_button">Reject</string>
+  <string name="accept_contact_request">Accept contact request</string>
+  <string name="reject_contact_request">Reject contact request</string>
+  <string name="the_sender_will_not_be_notified">The sender will NOT be notified.</string>
 
   <!-- Clear Chat - ChatListNavLinkView.kt -->
   <string name="clear_chat_question">Clear chat?</string>
@@ -843,6 +867,9 @@
   <string name="deleted_chats">Archived contacts</string>
   <string name="no_filtered_contacts">No filtered contacts</string>
   <string name="contact_list_header_title">Your contacts</string>
+
+  <!--  ComposeContextProfilePickerView.kt -->
+  <string name="context_user_picker_your_profile">Your profile</string>
 
   <!-- ScanCodeView.kt -->
   <string name="scan_code">Scan code</string>
@@ -1044,9 +1071,11 @@
   <string name="stop_sharing_address">Stop sharing address?</string>
   <string name="stop_sharing">Stop sharing</string>
   <string name="auto_accept_contact">Auto-accept</string>
+  <string name="sent_to_your_contact_after_connection">Sent to your contact after connection.</string>
+  <string name="address_welcome_message">Welcome message</string>
   <string name="enter_welcome_message_optional">Enter welcome message… (optional)</string>
   <string name="save_settings_question">Save settings?</string>
-  <string name="save_auto_accept_settings">Save auto-accept settings</string>
+  <string name="save_auto_accept_settings">Save SimpleX address settings</string>
   <string name="delete_address">Delete address</string>
   <string name="invite_friends">Invite friends</string>
   <string name="email_invite_subject">Let\'s talk in SimpleX Chat</string>
@@ -1059,6 +1088,10 @@
   <string name="business_address">Business address</string>
   <string name="add_your_team_members_to_conversations">Add your team members to the conversations.</string>
   <string name="add_short_link">Add short link</string>
+  <string name="share_profile_via_link">Share profile via link</string>
+  <string name="share_profile_via_link_alert_text">Profile will be shared via the address link.</string>
+  <string name="share_profile_via_link_alert_confirm">Share profile</string>
+  <string name="share_group_profile_via_link">Share group profile via link</string>
 
   <!-- CreateSimpleXAddress.kt -->
   <string name="continue_to_next_step">Continue</string>

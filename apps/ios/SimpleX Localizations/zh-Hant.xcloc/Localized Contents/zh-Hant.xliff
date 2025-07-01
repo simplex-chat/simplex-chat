@@ -4000,7 +4000,7 @@ SimpleX 伺服器並不會看到你的個人檔案。</target>
         <target state="translated">斜體</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="join as %@" xml:space="preserve" approved="no">
+      <trans-unit id="Join as %@" xml:space="preserve" approved="no">
         <source>join as %@</source>
         <target state="translated">以 %@ 身份加入</target>
         <note>No comment provided by engineer.</note>
@@ -4206,8 +4206,8 @@ SimpleX 伺服器並不會看到你的個人檔案。</target>
         <target state="translated">好</target>
         <note>pref value</note>
       </trans-unit>
-      <trans-unit id="you are invited to group" xml:space="preserve" approved="no">
-        <source>you are invited to group</source>
+      <trans-unit id="You are invited to group" xml:space="preserve" approved="no">
+        <source>You are invited to group</source>
         <target state="translated">你被邀請加入至群組</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -5225,7 +5225,7 @@ SimpleX Lock must be enabled.</source>
       <trans-unit id="&lt;p&gt;Hi!&lt;/p&gt;&#10;&lt;p&gt;&lt;a href=&quot;%@&quot;&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;" xml:space="preserve" approved="no">
         <source>&lt;p&gt;Hi!&lt;/p&gt;
 &lt;p&gt;&lt;a href="%@"&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;</source>
-        <target state="translated">&lt;p&gt;你好！&lt;/p&gt; 
+        <target state="translated">&lt;p&gt;你好！&lt;/p&gt;
 &lt;p&gt;&lt;a href="%@"&gt;來連接我透過SimpleX Chat&lt;/a&gt;&lt;/p&gt;</target>
         <note>email text</note>
       </trans-unit>

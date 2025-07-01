@@ -107,7 +107,6 @@ class AppPreferences {
   val simplexLinkMode: SharedPreference<SimplexLinkMode> = mkSafeEnumPreference(SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE, SimplexLinkMode.default)
   val privacyShowChatPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS, true)
   val privacySaveLastDraft = mkBoolPreference(SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT, true)
-  val privacyShortLinks = mkBoolPreference(SHARED_PREFS_PRIVACY_SHORT_LINKS, false)
   val privacyDeliveryReceiptsSet = mkBoolPreference(SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET, false)
   val privacyEncryptLocalFiles = mkBoolPreference(SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES, true)
   val privacyAskToApproveRelays = mkBoolPreference(SHARED_PREFS_PRIVACY_ASK_TO_APPROVE_RELAYS, true)
@@ -370,7 +369,6 @@ class AppPreferences {
     private const val SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE = "PrivacySimplexLinkMode"
     private const val SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS = "PrivacyShowChatPreviews"
     private const val SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT = "PrivacySaveLastDraft"
-    private const val SHARED_PREFS_PRIVACY_SHORT_LINKS = "PrivacyShortLinks"
     private const val SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET = "PrivacyDeliveryReceiptsSet"
     private const val SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES = "PrivacyEncryptLocalFiles"
     private const val SHARED_PREFS_PRIVACY_ASK_TO_APPROVE_RELAYS = "PrivacyAskToApproveRelays"
@@ -593,7 +591,7 @@ object ChatController {
     }
   }
 
-  suspend fun changeActiveUser_(rhId: Long?, toUserId: Long?, viewPwd: String?) {
+  suspend fun changeActiveUser_(rhId: Long?, toUserId: Long?, viewPwd: String?, keepingChatId: String? = null) {
     val prevActiveUser = chatModel.currentUser.value
     val currentUser = changingActiveUserMutex.withLock {
       (if (toUserId != null) apiSetActiveUser(rhId, toUserId, viewPwd) else apiGetActiveUser(rhId)).also {
@@ -606,20 +604,20 @@ object ChatController {
     val users = listUsers(rhId)
     chatModel.users.clear()
     chatModel.users.addAll(users)
-    getUserChatData(rhId)
+    getUserChatData(rhId, keepingChatId = keepingChatId)
     val invitation = chatModel.callInvitations.values.firstOrNull { inv -> inv.user.userId == toUserId }
     if (invitation != null && currentUser != null) {
       chatModel.callManager.reportNewIncomingCall(invitation.copy(user = currentUser))
     }
   }
 
-  suspend fun getUserChatData(rhId: Long?) {
+  suspend fun getUserChatData(rhId: Long?, keepingChatId: String? = null) {
     val hasUser = chatModel.currentUser.value != null
     chatModel.userAddress.value = if (hasUser) apiGetUserAddress(rhId) else null
     chatModel.chatItemTTL.value = if (hasUser) getChatItemTTL(rhId) else ChatItemTTL.None
     withContext(Dispatchers.Main) {
       val chats = apiGetChats(rhId)
-      chatModel.chatsContext.updateChats(chats)
+      chatModel.chatsContext.updateChats(chats, keepingChatId = keepingChatId)
     }
     chatModel.userTags.value = apiGetChatTags(rhId).takeIf { hasUser } ?: emptyList()
     chatModel.activeChatTagFilter.value = null
@@ -795,7 +793,7 @@ object ChatController {
   }
 
   suspend fun apiStartChat(ctrl: ChatCtrl? = null): Boolean {
-    val r = sendCmd(null, CC.StartChat(mainApp = true), ctrl)
+    val r = sendCmd(null, CC.StartChat(mainApp = true, largeLinkData = false), ctrl)
     when (r.result) {
       is CR.ChatStarted -> return true
       is CR.ChatRunning -> return false
@@ -1295,8 +1293,7 @@ object ChatController {
 
   suspend fun apiAddContact(rh: Long?, incognito: Boolean): Pair<Pair<CreatedConnLink, PendingContactConnection>?, (() -> Unit)?> {
     val userId = try { currentUserId("apiAddContact") } catch (e: Exception) { return null to null }
-    val short = appPrefs.privacyShortLinks.get()
-    val r = sendCmd(rh, CC.APIAddContact(userId, short = short, incognito = incognito))
+    val r = sendCmd(rh, CC.APIAddContact(userId, incognito = incognito))
     return when {
       r is API.Result && r.res is CR.Invitation -> (r.res.connLinkInvitation to r.res.connection) to null
       !(networkErrorAlert(r)) -> null to { apiErrorAlert("apiAddContact", generalGetString(MR.strings.connection_error), r) }
@@ -1392,6 +1389,60 @@ object ChatController {
         }
       }
     }
+  }
+
+  suspend fun apiPrepareContact(rh: Long?, connLink: CreatedConnLink, contactShortLinkData: ContactShortLinkData): Chat? {
+    val userId = try { currentUserId("apiPrepareContact") } catch (e: Exception) { return null }
+    val r = sendCmd(rh, CC.APIPrepareContact(userId, connLink, contactShortLinkData))
+    if (r is API.Result && r.res is CR.NewPreparedChat) return r.res.chat
+    Log.e(TAG, "apiPrepareContact bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_preparing_contact), "${r.responseType}: ${r.details}")
+    return null
+  }
+
+  suspend fun apiPrepareGroup(rh: Long?, connLink: CreatedConnLink, groupShortLinkData: GroupShortLinkData): Chat? {
+    val userId = try { currentUserId("apiPrepareGroup") } catch (e: Exception) { return null }
+    val r = sendCmd(rh, CC.APIPrepareGroup(userId, connLink, groupShortLinkData))
+    if (r is API.Result && r.res is CR.NewPreparedChat) return r.res.chat
+    Log.e(TAG, "apiPrepareGroup bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_preparing_group), "${r.responseType}: ${r.details}")
+    return null
+  }
+
+  suspend fun apiChangePreparedContactUser(rh: Long?, contactId: Long, newUserId: Long): Contact? {
+    val r = sendCmd(rh, CC.APIChangePreparedContactUser(contactId, newUserId))
+    if (r is API.Result && r.res is CR.ContactUserChanged) return r.res.toContact
+    Log.e(TAG, "apiChangePreparedContactUser bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_contact_user), "${r.responseType}: ${r.details}")
+    return null
+  }
+
+  suspend fun apiChangePreparedGroupUser(rh: Long?, groupId: Long, newUserId: Long): GroupInfo? {
+    val r = sendCmd(rh, CC.APIChangePreparedGroupUser(groupId, newUserId))
+    if (r is API.Result && r.res is CR.GroupUserChanged) return r.res.toGroup
+    Log.e(TAG, "apiChangePreparedGroupUser bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_group_user), "${r.responseType}: ${r.details}")
+    return null
+  }
+
+  suspend fun apiConnectPreparedContact(rh: Long?, contactId: Long, incognito: Boolean, msg: MsgContent?): Contact? {
+    val r = sendCmd(rh, CC.APIConnectPreparedContact(contactId, incognito, msg))
+    if (r is API.Result && r.res is CR.StartedConnectionToContact) return r.res.contact
+    Log.e(TAG, "apiConnectPreparedContact bad response: ${r.responseType} ${r.details}")
+    if (!(networkErrorAlert(r))) {
+      apiErrorAlert("apiConnectPreparedContact", generalGetString(MR.strings.connection_error), r)
+    }
+    return null
+  }
+
+  suspend fun apiConnectPreparedGroup(rh: Long?, groupId: Long, incognito: Boolean, msg: MsgContent?): GroupInfo? {
+    val r = sendCmd(rh, CC.APIConnectPreparedGroup(groupId, incognito, msg))
+    if (r is API.Result && r.res is CR.StartedConnectionToGroup) return r.res.groupInfo
+    Log.e(TAG, "apiConnectPreparedGroup bad response: ${r.responseType} ${r.details}")
+    if (!(networkErrorAlert(r))) {
+      apiErrorAlert("apiConnectPreparedGroup", generalGetString(MR.strings.connection_error), r)
+    }
+    return null
   }
 
   suspend fun apiConnectContactViaAddress(rh: Long?, incognito: Boolean, contactId: Long): Contact? {
@@ -1539,9 +1590,9 @@ object ChatController {
     return false
   }
 
-  suspend fun apiCreateUserAddress(rh: Long?, short: Boolean): CreatedConnLink? {
+  suspend fun apiCreateUserAddress(rh: Long?): CreatedConnLink? {
     val userId = kotlin.runCatching { currentUserId("apiCreateUserAddress") }.getOrElse { return null }
-    val r = sendCmd(rh, CC.ApiCreateMyAddress(userId, short))
+    val r = sendCmd(rh, CC.ApiCreateMyAddress(userId))
     if (r is API.Result && r.res is CR.UserContactLinkCreated) return r.res.connLinkContact
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiCreateUserAddress", generalGetString(MR.strings.error_creating_address), r)
@@ -1580,9 +1631,9 @@ object ChatController {
     return null
   }
 
-  suspend fun userAddressAutoAccept(rh: Long?, autoAccept: AutoAccept?): UserContactLinkRec? {
-    val userId = kotlin.runCatching { currentUserId("userAddressAutoAccept") }.getOrElse { return null }
-    val r = sendCmd(rh, CC.ApiAddressAutoAccept(userId, autoAccept))
+  suspend fun apiSetUserAddressSettings(rh: Long?, settings: AddressSettings): UserContactLinkRec? {
+    val userId = kotlin.runCatching { currentUserId("apiSetUserAddressSettings") }.getOrElse { return null }
+    val r = sendCmd(rh, CC.ApiSetAddressSettings(userId, settings))
     if (r is API.Result && r.res is CR.UserContactLinkUpdated) return r.res.contactLink
     if (r is API.Error && r.err is ChatError.ChatErrorStore
       && r.err.storeError is StoreError.UserContactLinkNotFound
@@ -1615,11 +1666,14 @@ object ChatController {
     }
   }
 
-  suspend fun apiRejectContactRequest(rh: Long?, contactReqId: Long): Boolean {
+  suspend fun apiRejectContactRequest(rh: Long?, contactReqId: Long): Contact? {
     val r = sendCmd(rh, CC.ApiRejectContact(contactReqId))
-    if (r is API.Result && r.res is CR.ContactRequestRejected) return true
+    if (r is API.Result && r.res is CR.ContactRequestRejected) return r.res.contact_
     Log.e(TAG, "apiRejectContactRequest bad response: ${r.responseType} ${r.details}")
-    return false
+    if (!(networkErrorAlert(r))) {
+      apiErrorAlert("apiRejectContactRequest", generalGetString(MR.strings.error_rejecting_contact_request), r)
+    }
+    return null
   }
 
   suspend fun apiGetCallInvitations(rh: Long?): List<RcvCallInvitation> {
@@ -1991,19 +2045,18 @@ object ChatController {
     }
   }
 
-  suspend fun apiCreateGroupLink(rh: Long?, groupId: Long, memberRole: GroupMemberRole = GroupMemberRole.Member): Pair<CreatedConnLink, GroupMemberRole>? {
-    val short = appPrefs.privacyShortLinks.get()
-    val r = sendCmd(rh, CC.APICreateGroupLink(groupId, memberRole, short))
-    if (r is API.Result && r.res is CR.GroupLinkCreated) return r.res.connLinkContact to r.res.memberRole
+  suspend fun apiCreateGroupLink(rh: Long?, groupId: Long, memberRole: GroupMemberRole = GroupMemberRole.Member): GroupLink? {
+    val r = sendCmd(rh, CC.APICreateGroupLink(groupId, memberRole))
+    if (r is API.Result && r.res is CR.GroupLinkCreated) return r.res.groupLink
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiCreateGroupLink", generalGetString(MR.strings.error_creating_link_for_group), r)
     }
     return null
   }
 
-  suspend fun apiGroupLinkMemberRole(rh: Long?, groupId: Long, memberRole: GroupMemberRole = GroupMemberRole.Member): Pair<CreatedConnLink, GroupMemberRole>? {
+  suspend fun apiGroupLinkMemberRole(rh: Long?, groupId: Long, memberRole: GroupMemberRole = GroupMemberRole.Member): GroupLink? {
     val r = sendCmd(rh, CC.APIGroupLinkMemberRole(groupId, memberRole))
-    if (r is API.Result && r.res is CR.GroupLink) return r.res.connLinkContact to r.res.memberRole
+    if (r is API.Result && r.res is CR.CRGroupLink) return r.res.groupLink
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiGroupLinkMemberRole", generalGetString(MR.strings.error_updating_link_for_group), r)
     }
@@ -2019,16 +2072,16 @@ object ChatController {
     return false
   }
 
-  suspend fun apiGetGroupLink(rh: Long?, groupId: Long): Pair<CreatedConnLink, GroupMemberRole>? {
+  suspend fun apiGetGroupLink(rh: Long?, groupId: Long): GroupLink? {
     val r = sendCmd(rh, CC.APIGetGroupLink(groupId))
-    if (r is API.Result && r.res is CR.GroupLink) return r.res.connLinkContact to r.res.memberRole
+    if (r is API.Result && r.res is CR.CRGroupLink) return r.res.groupLink
     Log.e(TAG, "apiGetGroupLink bad response: ${r.responseType} ${r.details}")
     return null
   }
 
-  suspend fun apiAddGroupShortLink(rh: Long?, groupId: Long): Pair<CreatedConnLink, GroupMemberRole>? {
+  suspend fun apiAddGroupShortLink(rh: Long?, groupId: Long): GroupLink? {
     val r = sendCmd(rh, CC.ApiAddGroupShortLink(groupId))
-    if (r is API.Result && r.res is CR.GroupLink) return r.res.connLinkContact to r.res.memberRole
+    if (r is API.Result && r.res is CR.CRGroupLink) return r.res.groupLink
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiAddGroupShortLink", generalGetString(MR.strings.error_creating_link_for_group), r)
     }
@@ -2380,17 +2433,25 @@ object ChatController {
       }
       is CR.ReceivedContactRequest -> {
         val contactRequest = r.contactRequest
-        val cInfo = ChatInfo.ContactRequest(contactRequest)
         if (active(r.user)) {
           withContext(Dispatchers.Main) {
-            if (chatModel.chatsContext.hasChat(rhId, contactRequest.id)) {
-              chatModel.chatsContext.updateChatInfo(rhId, cInfo)
+            if (r.chat_ != null) { // means contact request was created with contact, so we need to add/update contact chat
+              if (chatModel.chatsContext.hasChat(rhId, r.chat_.id)) {
+                chatModel.chatsContext.updateChatInfo(rhId, r.chat_.chatInfo)
+              } else {
+                chatModel.chatsContext.addChat(r.chat_)
+              }
             } else {
-              chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = listOf()))
+              val cInfo = ChatInfo.ContactRequest(contactRequest)
+              if (chatModel.chatsContext.hasChat(rhId, contactRequest.id)) {
+                chatModel.chatsContext.updateChatInfo(rhId, cInfo)
+              } else {
+                chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = listOf()))
+              }
             }
           }
         }
-        ntfManager.notifyContactRequestReceived(r.user, cInfo)
+        ntfManager.notifyContactRequestReceived(r.user, ChatInfo.ContactRequest(contactRequest))
       }
       is CR.ContactUpdated -> {
         if (active(r.user) && chatModel.chatsContext.hasChat(rhId, r.toContact.id)) {
@@ -3338,7 +3399,7 @@ sealed class CC {
   class ApiMuteUser(val userId: Long): CC()
   class ApiUnmuteUser(val userId: Long): CC()
   class ApiDeleteUser(val userId: Long, val delSMPQueues: Boolean, val viewPwd: String?): CC()
-  class StartChat(val mainApp: Boolean): CC()
+  class StartChat(val mainApp: Boolean, val largeLinkData: Boolean): CC()
   class CheckChatRunning: CC()
   class ApiStopChat: CC()
   @Serializable
@@ -3383,7 +3444,7 @@ sealed class CC {
   class ApiLeaveGroup(val groupId: Long): CC()
   class ApiListMembers(val groupId: Long): CC()
   class ApiUpdateGroupProfile(val groupId: Long, val groupProfile: GroupProfile): CC()
-  class APICreateGroupLink(val groupId: Long, val memberRole: GroupMemberRole, val short: Boolean): CC()
+  class APICreateGroupLink(val groupId: Long, val memberRole: GroupMemberRole): CC()
   class APIGroupLinkMemberRole(val groupId: Long, val memberRole: GroupMemberRole): CC()
   class APIDeleteGroupLink(val groupId: Long): CC()
   class APIGetGroupLink(val groupId: Long): CC()
@@ -3423,10 +3484,16 @@ sealed class CC {
   class APIGetGroupMemberCode(val groupId: Long, val groupMemberId: Long): CC()
   class APIVerifyContact(val contactId: Long, val connectionCode: String?): CC()
   class APIVerifyGroupMember(val groupId: Long, val groupMemberId: Long, val connectionCode: String?): CC()
-  class APIAddContact(val userId: Long, val short: Boolean, val incognito: Boolean): CC()
+  class APIAddContact(val userId: Long, val incognito: Boolean): CC()
   class ApiSetConnectionIncognito(val connId: Long, val incognito: Boolean): CC()
   class ApiChangeConnectionUser(val connId: Long, val userId: Long): CC()
   class APIConnectPlan(val userId: Long, val connLink: String): CC()
+  class APIPrepareContact(val userId: Long, val connLink: CreatedConnLink, val contactShortLinkData: ContactShortLinkData): CC()
+  class APIPrepareGroup(val userId: Long, val connLink: CreatedConnLink, val groupShortLinkData: GroupShortLinkData): CC()
+  class APIChangePreparedContactUser(val contactId: Long, val newUserId: Long): CC()
+  class APIChangePreparedGroupUser(val groupId: Long, val newUserId: Long): CC()
+  class APIConnectPreparedContact(val contactId: Long, val incognito: Boolean, val msg: MsgContent?): CC()
+  class APIConnectPreparedGroup(val groupId: Long, val incognito: Boolean, val msg: MsgContent?): CC()
   class APIConnect(val userId: Long, val incognito: Boolean, val connLink: CreatedConnLink): CC()
   class ApiConnectContactViaAddress(val userId: Long, val incognito: Boolean, val contactId: Long): CC()
   class ApiDeleteChat(val type: ChatType, val id: Long, val chatDeleteMode: ChatDeleteMode): CC()
@@ -3439,12 +3506,12 @@ sealed class CC {
   class ApiSetConnectionAlias(val connId: Long, val localAlias: String): CC()
   class ApiSetUserUIThemes(val userId: Long, val themes: ThemeModeOverrides?): CC()
   class ApiSetChatUIThemes(val chatId: String, val themes: ThemeModeOverrides?): CC()
-  class ApiCreateMyAddress(val userId: Long, val short: Boolean): CC()
+  class ApiCreateMyAddress(val userId: Long): CC()
   class ApiDeleteMyAddress(val userId: Long): CC()
   class ApiShowMyAddress(val userId: Long): CC()
   class ApiAddMyAddressShortLink(val userId: Long): CC()
   class ApiSetProfileAddress(val userId: Long, val on: Boolean): CC()
-  class ApiAddressAutoAccept(val userId: Long, val autoAccept: AutoAccept?): CC()
+  class ApiSetAddressSettings(val userId: Long, val addressSettings: AddressSettings): CC()
   class ApiGetCallInvitations: CC()
   class ApiSendCallInvitation(val contact: Contact, val callType: CallType): CC()
   class ApiRejectCall(val contact: Contact): CC()
@@ -3509,7 +3576,7 @@ sealed class CC {
     is ApiMuteUser -> "/_mute user $userId"
     is ApiUnmuteUser -> "/_unmute user $userId"
     is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}${maybePwd(viewPwd)}"
-    is StartChat -> "/_start main=${onOff(mainApp)}"
+    is StartChat -> "/_start main=${onOff(mainApp)} large_link_data=${onOff(largeLinkData)}"
     is CheckChatRunning -> "/_check running"
     is ApiStopChat -> "/_stop"
     is ApiSetAppFilePaths -> "/set file paths ${json.encodeToString(this)}"
@@ -3572,7 +3639,7 @@ sealed class CC {
     is ApiLeaveGroup -> "/_leave #$groupId"
     is ApiListMembers -> "/_members #$groupId"
     is ApiUpdateGroupProfile -> "/_group_profile #$groupId ${json.encodeToString(groupProfile)}"
-    is APICreateGroupLink -> "/_create link #$groupId ${memberRole.name.lowercase()} short=${onOff(short)}"
+    is APICreateGroupLink -> "/_create link #$groupId ${memberRole.name.lowercase()}"
     is APIGroupLinkMemberRole -> "/_set link role #$groupId ${memberRole.name.lowercase()}"
     is APIDeleteGroupLink -> "/_delete link #$groupId"
     is APIGetGroupLink -> "/_get link #$groupId"
@@ -3612,10 +3679,16 @@ sealed class CC {
     is APIGetGroupMemberCode -> "/_get code #$groupId $groupMemberId"
     is APIVerifyContact -> "/_verify code @$contactId" + if (connectionCode != null) " $connectionCode" else ""
     is APIVerifyGroupMember -> "/_verify code #$groupId $groupMemberId" + if (connectionCode != null) " $connectionCode" else ""
-    is APIAddContact -> "/_connect $userId short=${onOff(short)} incognito=${onOff(incognito)}"
+    is APIAddContact -> "/_connect $userId incognito=${onOff(incognito)}"
     is ApiSetConnectionIncognito -> "/_set incognito :$connId ${onOff(incognito)}"
     is ApiChangeConnectionUser -> "/_set conn user :$connId $userId"
     is APIConnectPlan -> "/_connect plan $userId $connLink"
+    is APIPrepareContact -> "/_prepare contact $userId ${connLink.connFullLink} ${connLink.connShortLink ?: ""} ${json.encodeToString(contactShortLinkData)}"
+    is APIPrepareGroup -> "/_prepare group $userId ${connLink.connFullLink} ${connLink.connShortLink ?: ""} ${json.encodeToString(groupShortLinkData)}"
+    is APIChangePreparedContactUser -> "/_set contact user @$contactId $newUserId"
+    is APIChangePreparedGroupUser -> "/_set group user #$groupId $newUserId"
+    is APIConnectPreparedContact -> "/_connect contact @$contactId incognito=${onOff(incognito)}${maybeContent(msg)}"
+    is APIConnectPreparedGroup -> "/_connect group #$groupId incognito=${onOff(incognito)}${maybeContent(msg)}"
     is APIConnect -> "/_connect $userId incognito=${onOff(incognito)} ${connLink.connFullLink} ${connLink.connShortLink ?: ""}"
     is ApiConnectContactViaAddress -> "/_connect contact $userId incognito=${onOff(incognito)} $contactId"
     is ApiDeleteChat -> "/_delete ${chatRef(type, id, scope = null)} ${chatDeleteMode.cmdString}"
@@ -3628,12 +3701,12 @@ sealed class CC {
     is ApiSetConnectionAlias -> "/_set alias :$connId ${localAlias.trim()}"
     is ApiSetUserUIThemes -> "/_set theme user $userId ${if (themes != null) json.encodeToString(themes) else ""}"
     is ApiSetChatUIThemes -> "/_set theme $chatId ${if (themes != null) json.encodeToString(themes) else ""}"
-    is ApiCreateMyAddress -> "/_address $userId short=${onOff(short)}"
+    is ApiCreateMyAddress -> "/_address $userId"
     is ApiDeleteMyAddress -> "/_delete_address $userId"
     is ApiShowMyAddress -> "/_show_address $userId"
     is ApiAddMyAddressShortLink -> "/_short_link_address $userId"
     is ApiSetProfileAddress -> "/_profile_address $userId ${onOff(on)}"
-    is ApiAddressAutoAccept -> "/_auto_accept $userId ${AutoAccept.cmdString(autoAccept)}"
+    is ApiSetAddressSettings -> "/_address_settings $userId ${json.encodeToString(addressSettings)}"
     is ApiAcceptContact -> "/_accept incognito=${onOff(incognito)} $contactReqId"
     is ApiRejectContact -> "/_reject $contactReqId"
     is ApiGetCallInvitations -> "/_call get"
@@ -3783,6 +3856,12 @@ sealed class CC {
     is ApiSetConnectionIncognito -> "apiSetConnectionIncognito"
     is ApiChangeConnectionUser -> "apiChangeConnectionUser"
     is APIConnectPlan -> "apiConnectPlan"
+    is APIPrepareContact -> "apiPrepareContact"
+    is APIPrepareGroup -> "apiPrepareGroup"
+    is APIChangePreparedContactUser -> "apiChangePreparedContactUser"
+    is APIChangePreparedGroupUser -> "apiChangePreparedGroupUser"
+    is APIConnectPreparedContact -> "apiConnectPreparedContact"
+    is APIConnectPreparedGroup -> "apiConnectPreparedGroup"
     is APIConnect -> "apiConnect"
     is ApiConnectContactViaAddress -> "apiConnectContactViaAddress"
     is ApiDeleteChat -> "apiDeleteChat"
@@ -3800,7 +3879,7 @@ sealed class CC {
     is ApiShowMyAddress -> "apiShowMyAddress"
     is ApiAddMyAddressShortLink -> "apiAddMyAddressShortLink"
     is ApiSetProfileAddress -> "apiSetProfileAddress"
-    is ApiAddressAutoAccept -> "apiAddressAutoAccept"
+    is ApiSetAddressSettings -> "apiSetAddressSettings"
     is ApiAcceptContact -> "apiAcceptContact"
     is ApiRejectContact -> "apiRejectContact"
     is ApiGetCallInvitations -> "apiGetCallInvitations"
@@ -3869,6 +3948,14 @@ sealed class CC {
     }
 
   private fun maybePwd(pwd: String?): String = if (pwd == "" || pwd == null) "" else " " + json.encodeToString(pwd)
+
+  private fun maybeContent(mc: MsgContent?): String {
+    return when {
+      mc is MsgContent.MCText && mc.text.isEmpty() -> ""
+      mc != null -> " " + mc.cmdString
+      else -> ""
+    }
+  }
 
   companion object {
     fun chatRef(chatType: ChatType, id: Long, scope: GroupChatScope?) = when (scope) {
@@ -5833,8 +5920,13 @@ sealed class CR {
   @Serializable @SerialName("connectionIncognitoUpdated") class ConnectionIncognitoUpdated(val user: UserRef, val toConnection: PendingContactConnection): CR()
   @Serializable @SerialName("connectionUserChanged") class ConnectionUserChanged(val user: UserRef, val fromConnection: PendingContactConnection, val toConnection: PendingContactConnection, val newUser: UserRef): CR()
   @Serializable @SerialName("connectionPlan") class CRConnectionPlan(val user: UserRef, val connLink: CreatedConnLink, val connectionPlan: ConnectionPlan): CR()
+  @Serializable @SerialName("newPreparedChat") class NewPreparedChat(val user: UserRef, val chat: Chat): CR()
+  @Serializable @SerialName("contactUserChanged") class ContactUserChanged(val user: UserRef, val fromContact: Contact, val newUser: UserRef, val toContact: Contact): CR()
+  @Serializable @SerialName("groupUserChanged") class GroupUserChanged(val user: UserRef, val fromGroup: GroupInfo, val newUser: UserRef, val toGroup: GroupInfo): CR()
   @Serializable @SerialName("sentConfirmation") class SentConfirmation(val user: UserRef, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("sentInvitation") class SentInvitation(val user: UserRef, val connection: PendingContactConnection): CR()
+  @Serializable @SerialName("startedConnectionToContact") class StartedConnectionToContact(val user: UserRef, val contact: Contact): CR()
+  @Serializable @SerialName("startedConnectionToGroup") class StartedConnectionToGroup(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("sentInvitationToContact") class SentInvitationToContact(val user: UserRef, val contact: Contact, val customUserProfile: Profile?): CR()
   @Serializable @SerialName("contactAlreadyExists") class ContactAlreadyExists(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactDeleted") class ContactDeleted(val user: UserRef, val contact: Contact): CR()
@@ -5855,9 +5947,9 @@ sealed class CR {
   @Serializable @SerialName("contactConnected") class ContactConnected(val user: UserRef, val contact: Contact, val userCustomProfile: Profile? = null): CR()
   @Serializable @SerialName("contactConnecting") class ContactConnecting(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactSndReady") class ContactSndReady(val user: UserRef, val contact: Contact): CR()
-  @Serializable @SerialName("receivedContactRequest") class ReceivedContactRequest(val user: UserRef, val contactRequest: UserContactRequest): CR()
+  @Serializable @SerialName("receivedContactRequest") class ReceivedContactRequest(val user: UserRef, val contactRequest: UserContactRequest, val chat_: Chat?): CR()
   @Serializable @SerialName("acceptingContactRequest") class AcceptingContactRequest(val user: UserRef, val contact: Contact): CR()
-  @Serializable @SerialName("contactRequestRejected") class ContactRequestRejected(val user: UserRef): CR()
+  @Serializable @SerialName("contactRequestRejected") class ContactRequestRejected(val user: UserRef, val contactRequest: UserContactRequest, val contact_: Contact?): CR()
   @Serializable @SerialName("contactUpdated") class ContactUpdated(val user: UserRef, val toContact: Contact): CR()
   @Serializable @SerialName("groupMemberUpdated") class GroupMemberUpdated(val user: UserRef, val groupInfo: GroupInfo, val fromMember: GroupMember, val toMember: GroupMember): CR()
   // TODO remove below
@@ -5904,8 +5996,8 @@ sealed class CR {
   @Serializable @SerialName("joinedGroupMember") class JoinedGroupMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("connectedToGroupMember") class ConnectedToGroupMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val memberContact: Contact? = null): CR()
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val user: UserRef, val toGroup: GroupInfo): CR()
-  @Serializable @SerialName("groupLinkCreated") class GroupLinkCreated(val user: UserRef, val groupInfo: GroupInfo, val connLinkContact: CreatedConnLink, val memberRole: GroupMemberRole): CR()
-  @Serializable @SerialName("groupLink") class GroupLink(val user: UserRef, val groupInfo: GroupInfo, val connLinkContact: CreatedConnLink, val memberRole: GroupMemberRole): CR()
+  @Serializable @SerialName("groupLinkCreated") class GroupLinkCreated(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink): CR()
+  @Serializable @SerialName("groupLink") class CRGroupLink(val user: UserRef, val groupInfo: GroupInfo, val groupLink: GroupLink): CR()
   @Serializable @SerialName("groupLinkDeleted") class GroupLinkDeleted(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("newMemberContact") class NewMemberContact(val user: UserRef, val contact: Contact,  val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("newMemberContactSentInv") class NewMemberContactSentInv(val user: UserRef, val contact: Contact,  val groupInfo: GroupInfo, val member: GroupMember): CR()
@@ -6015,8 +6107,13 @@ sealed class CR {
     is ConnectionIncognitoUpdated -> "connectionIncognitoUpdated"
     is ConnectionUserChanged -> "ConnectionUserChanged"
     is CRConnectionPlan -> "connectionPlan"
+    is NewPreparedChat -> "newPreparedChat"
+    is ContactUserChanged -> "contactUserChanged"
+    is GroupUserChanged -> "groupUserChanged"
     is SentConfirmation -> "sentConfirmation"
     is SentInvitation -> "sentInvitation"
+    is StartedConnectionToContact -> "startedConnectionToContact"
+    is StartedConnectionToGroup -> "startedConnectionToGroup"
     is SentInvitationToContact -> "sentInvitationToContact"
     is ContactAlreadyExists -> "contactAlreadyExists"
     is ContactDeleted -> "contactDeleted"
@@ -6084,7 +6181,7 @@ sealed class CR {
     is ConnectedToGroupMember -> "connectedToGroupMember"
     is GroupUpdated -> "groupUpdated"
     is GroupLinkCreated -> "groupLinkCreated"
-    is GroupLink -> "groupLink"
+    is CRGroupLink -> "groupLink"
     is GroupLinkDeleted -> "groupLinkDeleted"
     is NewMemberContact -> "newMemberContact"
     is NewMemberContactSentInv -> "newMemberContactSentInv"
@@ -6187,8 +6284,13 @@ sealed class CR {
     is ConnectionIncognitoUpdated -> withUser(user, json.encodeToString(toConnection))
     is ConnectionUserChanged -> withUser(user, "fromConnection: ${json.encodeToString(fromConnection)}\ntoConnection: ${json.encodeToString(toConnection)}\nnewUser: ${json.encodeToString(newUser)}" )
     is CRConnectionPlan -> withUser(user, "connLink: ${json.encodeToString(connLink)}\nconnectionPlan: ${json.encodeToString(connectionPlan)}")
+    is NewPreparedChat -> withUser(user, json.encodeToString(chat))
+    is ContactUserChanged -> withUser(user, "fromContact: ${json.encodeToString(fromContact)}\nnewUserId: ${json.encodeToString(newUser.userId)}\ntoContact: ${json.encodeToString(toContact)}")
+    is GroupUserChanged -> withUser(user, "fromGroup: ${json.encodeToString(fromGroup)}\nnewUserId: ${json.encodeToString(newUser.userId)}\ntoGroup: ${json.encodeToString(toGroup)}")
     is SentConfirmation -> withUser(user, json.encodeToString(connection))
     is SentInvitation -> withUser(user, json.encodeToString(connection))
+    is StartedConnectionToContact -> withUser(user, json.encodeToString(contact))
+    is StartedConnectionToGroup -> withUser(user, json.encodeToString(groupInfo))
     is SentInvitationToContact -> withUser(user, json.encodeToString(contact))
     is ContactAlreadyExists -> withUser(user, json.encodeToString(contact))
     is ContactDeleted -> withUser(user, json.encodeToString(contact))
@@ -6202,16 +6304,16 @@ sealed class CR {
     is GroupAliasUpdated -> withUser(user, json.encodeToString(toGroup))
     is ConnectionAliasUpdated -> withUser(user, json.encodeToString(toConnection))
     is ContactPrefsUpdated -> withUser(user, "fromContact: $fromContact\ntoContact: \n${json.encodeToString(toContact)}")
-    is UserContactLink -> withUser(user, contactLink.responseDetails)
-    is UserContactLinkUpdated -> withUser(user, contactLink.responseDetails)
+    is UserContactLink -> withUser(user, json.encodeToString(contactLink))
+    is UserContactLinkUpdated -> withUser(user, json.encodeToString(contactLink))
     is UserContactLinkCreated -> withUser(user, json.encodeToString(connLinkContact))
     is UserContactLinkDeleted -> withUser(user, noDetails())
     is ContactConnected -> withUser(user, json.encodeToString(contact))
     is ContactConnecting -> withUser(user, json.encodeToString(contact))
     is ContactSndReady -> withUser(user, json.encodeToString(contact))
-    is ReceivedContactRequest -> withUser(user, json.encodeToString(contactRequest))
+    is ReceivedContactRequest -> withUser(user, "contactRequest: ${json.encodeToString(contactRequest)}\nchat_: ${json.encodeToString(chat_)}")
     is AcceptingContactRequest -> withUser(user, json.encodeToString(contact))
-    is ContactRequestRejected -> withUser(user, noDetails())
+    is ContactRequestRejected -> withUser(user, "contactRequest: ${json.encodeToString(contactRequest)}\ncontact_: ${json.encodeToString(contact_)}")
     is ContactUpdated -> withUser(user, json.encodeToString(toContact))
     is GroupMemberUpdated -> withUser(user, "groupInfo: $groupInfo\nfromMember: $fromMember\ntoMember: $toMember")
     is ContactsSubscribed -> "server: $server\ncontacts:\n${json.encodeToString(contactRefs)}"
@@ -6255,8 +6357,8 @@ sealed class CR {
     is JoinedGroupMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
     is ConnectedToGroupMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member\nmemberContact: $memberContact")
     is GroupUpdated -> withUser(user, json.encodeToString(toGroup))
-    is GroupLinkCreated -> withUser(user, "groupInfo: $groupInfo\nconnLinkContact: $connLinkContact\nmemberRole: $memberRole")
-    is GroupLink -> withUser(user, "groupInfo: $groupInfo\nconnLinkContact: $connLinkContact\nmemberRole: $memberRole")
+    is GroupLinkCreated -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink")
+    is CRGroupLink -> withUser(user, "groupInfo: $groupInfo\ngroupLink: $groupLink")
     is GroupLinkDeleted -> withUser(user, json.encodeToString(groupInfo))
     is NewMemberContact -> withUser(user, "contact: $contact\ngroupInfo: $groupInfo\nmember: $member")
     is NewMemberContactSentInv -> withUser(user, "contact: $contact\ngroupInfo: $groupInfo\nmember: $member")
@@ -6392,7 +6494,7 @@ sealed class ConnectionPlan {
 
 @Serializable
 sealed class InvitationLinkPlan {
-  @Serializable @SerialName("ok") object Ok: InvitationLinkPlan()
+  @Serializable @SerialName("ok") class Ok(val contactSLinkData_: ContactShortLinkData? = null): InvitationLinkPlan()
   @Serializable @SerialName("ownLink") object OwnLink: InvitationLinkPlan()
   @Serializable @SerialName("connecting") class Connecting(val contact_: Contact? = null): InvitationLinkPlan()
   @Serializable @SerialName("known") class Known(val contact: Contact): InvitationLinkPlan()
@@ -6400,7 +6502,7 @@ sealed class InvitationLinkPlan {
 
 @Serializable
 sealed class ContactAddressPlan {
-  @Serializable @SerialName("ok") object Ok: ContactAddressPlan()
+  @Serializable @SerialName("ok") class Ok(val contactSLinkData_: ContactShortLinkData? = null): ContactAddressPlan()
   @Serializable @SerialName("ownLink") object OwnLink: ContactAddressPlan()
   @Serializable @SerialName("connectingConfirmReconnect") object ConnectingConfirmReconnect: ContactAddressPlan()
   @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val contact: Contact): ContactAddressPlan()
@@ -6410,7 +6512,7 @@ sealed class ContactAddressPlan {
 
 @Serializable
 sealed class GroupLinkPlan {
-  @Serializable @SerialName("ok") object Ok: GroupLinkPlan()
+  @Serializable @SerialName("ok") class Ok(val groupSLinkData_: GroupShortLinkData? = null): GroupLinkPlan()
   @Serializable @SerialName("ownLink") class OwnLink(val groupInfo: GroupInfo): GroupLinkPlan()
   @Serializable @SerialName("connectingConfirmReconnect") object ConnectingConfirmReconnect: GroupLinkPlan()
   @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val groupInfo_: GroupInfo? = null): GroupLinkPlan()
@@ -6520,26 +6622,30 @@ enum class RatchetSyncState {
 }
 
 @Serializable
-class UserContactLinkRec(val connLinkContact: CreatedConnLink, val autoAccept: AutoAccept? = null) {
-  val responseDetails: String get() = "connLinkContact: ${connLinkContact}\nautoAccept: ${AutoAccept.cmdString(autoAccept)}"
-}
+data class UserContactLinkRec(
+  val connLinkContact: CreatedConnLink,
+  val shortLinkDataSet: Boolean,
+  val addressSettings: AddressSettings
+)
 
 @Serializable
-class AutoAccept(val businessAddress: Boolean, val acceptIncognito: Boolean, val autoReply: MsgContent?) {
-  companion object {
-    fun cmdString(autoAccept: AutoAccept?): String {
-      if (autoAccept == null) return "off"
-      var s = "on"
-      if (autoAccept.acceptIncognito) {
-        s += " incognito=on"
-      } else if (autoAccept.businessAddress) {
-        s += " business"
-      }
-      val msg = autoAccept.autoReply ?: return s
-      return s + " " + msg.cmdString
-    }
-  }
-}
+data class AddressSettings(
+  val businessAddress: Boolean,
+  val autoAccept: AutoAccept?,
+  val autoReply: MsgContent?
+)
+
+@Serializable
+data class AutoAccept(val acceptIncognito: Boolean)
+
+@Serializable
+data class GroupLink(
+  val userContactLinkId: Long,
+  val connLinkContact: CreatedConnLink,
+  val shortLinkDataSet: Boolean,
+  val groupLinkId: String,
+  val acceptMemberRole: GroupMemberRole
+)
 
 @Serializable
 data class CoreVersionInfo(
@@ -6625,6 +6731,7 @@ sealed class ChatErrorType {
       is InvalidConnReq -> "invalidConnReq"
       is UnsupportedConnReq -> "unsupportedConnReq"
       is InvalidChatMessage -> "invalidChatMessage"
+      is ConnReqMessageProhibited -> "connReqMessageProhibited"
       is ContactNotReady -> "contactNotReady"
       is ContactNotActive -> "contactNotActive"
       is ContactDisabled -> "contactDisabled"
@@ -6640,6 +6747,7 @@ sealed class ChatErrorType {
       is GroupMemberNotActive -> "groupMemberNotActive"
       is GroupMemberUserRemoved -> "groupMemberUserRemoved"
       is GroupMemberNotFound -> "groupMemberNotFound"
+      is GroupHostMemberNotFound -> "groupHostMemberNotFound"
       is GroupCantResendInvitation -> "groupCantResendInvitation"
       is GroupInternal -> "groupInternal"
       is FileNotFound -> "fileNotFound"
@@ -6704,6 +6812,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("invalidConnReq") object InvalidConnReq: ChatErrorType()
   @Serializable @SerialName("unsupportedConnReq") object UnsupportedConnReq: ChatErrorType()
   @Serializable @SerialName("invalidChatMessage") class InvalidChatMessage(val connection: Connection, val message: String): ChatErrorType()
+  @Serializable @SerialName("connReqMessageProhibited") object ConnReqMessageProhibited: ChatErrorType()
   @Serializable @SerialName("contactNotReady") class ContactNotReady(val contact: Contact): ChatErrorType()
   @Serializable @SerialName("contactNotActive") class ContactNotActive(val contact: Contact): ChatErrorType()
   @Serializable @SerialName("contactDisabled") class ContactDisabled(val contact: Contact): ChatErrorType()
@@ -6719,6 +6828,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("groupMemberNotActive") object GroupMemberNotActive: ChatErrorType()
   @Serializable @SerialName("groupMemberUserRemoved") object GroupMemberUserRemoved: ChatErrorType()
   @Serializable @SerialName("groupMemberNotFound") object GroupMemberNotFound: ChatErrorType()
+  @Serializable @SerialName("groupHostMemberNotFound") class GroupHostMemberNotFound(val groupId: Long): ChatErrorType()
   @Serializable @SerialName("groupCantResendInvitation") class GroupCantResendInvitation(val groupInfo: GroupInfo, val contactName: String): ChatErrorType()
   @Serializable @SerialName("groupInternal") class GroupInternal(val message: String): ChatErrorType()
   @Serializable @SerialName("fileNotFound") class FileNotFound(val message: String): ChatErrorType()
@@ -6779,6 +6889,8 @@ sealed class StoreError {
       is UserContactLinkNotFound -> "userContactLinkNotFound"
       is ContactRequestNotFound -> "contactRequestNotFound $contactRequestId"
       is ContactRequestNotFoundByName -> "contactRequestNotFoundByName $contactName"
+      is InvalidContactRequestEntity -> "invalidContactRequestEntity $contactRequestId"
+      is InvalidBusinessChatContactRequest -> "invalidBusinessChatContactRequest"
       is GroupNotFound -> "groupNotFound $groupId"
       is GroupNotFoundByName -> "groupNotFoundByName $groupName"
       is GroupMemberNameNotFound -> "groupMemberNameNotFound $groupId $groupMemberName"
@@ -6855,6 +6967,8 @@ sealed class StoreError {
   @Serializable @SerialName("userContactLinkNotFound") object UserContactLinkNotFound: StoreError()
   @Serializable @SerialName("contactRequestNotFound") class ContactRequestNotFound(val contactRequestId: Long): StoreError()
   @Serializable @SerialName("contactRequestNotFoundByName") class ContactRequestNotFoundByName(val contactName: String): StoreError()
+  @Serializable @SerialName("invalidContactRequestEntity") class InvalidContactRequestEntity(val contactRequestId: Long): StoreError()
+  @Serializable @SerialName("invalidBusinessChatContactRequest") object InvalidBusinessChatContactRequest: StoreError()
   @Serializable @SerialName("groupNotFound") class GroupNotFound(val groupId: Long): StoreError()
   @Serializable @SerialName("groupNotFoundByName") class GroupNotFoundByName(val groupName: String): StoreError()
   @Serializable @SerialName("groupMemberNameNotFound") class GroupMemberNameNotFound(val groupId: Long, val groupMemberName: String): StoreError()
@@ -6942,7 +7056,7 @@ sealed class SQLiteError {
 sealed class AgentErrorType {
   val string: String get() = when (this) {
     is CMD -> "CMD ${cmdErr.string} $errContext"
-    is CONN -> "CONN ${connErr.string}"
+    is CONN -> "CONN ${connErr.string} $errContext"
     is SMP -> "SMP ${smpErr.string}"
     // is NTF -> "NTF ${ntfErr.string}"
     is XFTP -> "XFTP ${xftpErr.string}"
@@ -6955,7 +7069,7 @@ sealed class AgentErrorType {
     is INACTIVE -> "INACTIVE"
   }
   @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType, val errContext: String): AgentErrorType()
-  @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType): AgentErrorType()
+  @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType, val errContext: String): AgentErrorType()
   @Serializable @SerialName("SMP") class SMP(val serverAddress: String, val smpErr: SMPErrorType): AgentErrorType()
   // @Serializable @SerialName("NTF") class NTF(val ntfErr: SMPErrorType): AgentErrorType()
   @Serializable @SerialName("XFTP") class XFTP(val xftpErr: XFTPErrorType): AgentErrorType()

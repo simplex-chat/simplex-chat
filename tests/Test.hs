@@ -9,6 +9,7 @@ import ChatClient
 import ChatTests
 import ChatTests.DBUtils
 import ChatTests.Utils (xdescribe'')
+import Control.Exception (bracket_)
 import Control.Logger.Simple
 import Data.Time.Clock.System
 import JSONTests
@@ -23,7 +24,10 @@ import UnliftIO.Temporary (withTempDirectory)
 import ValidNames
 import ViewTests
 #if defined(dbPostgres)
+import PostgresSchemaDump
+import Simplex.Chat.Store.Postgres.Migrations (migrations)
 import Simplex.Messaging.Agent.Store.Postgres.Util (createDBAndUserIfNotExists, dropAllSchemasExceptSystem, dropDatabaseAndUser)
+import System.Directory (createDirectory, removePathForcibly)
 #else
 import qualified Simplex.Messaging.TMap as TM
 import MobileTests
@@ -44,8 +48,15 @@ main = do
     . afterAll_ (dropDatabaseAndUser testDBConnectInfo)
 #endif
     $ do
--- TODO [postgres] schema dump for postgres
-#if !defined(dbPostgres)
+#if defined(dbPostgres)
+      around_ (bracket_ (createDirectory "tests/tmp") (removePathForcibly "tests/tmp")) $
+        describe "Postgres schema dump" $
+          postgresSchemaDumpTest
+            migrations
+            [] -- skipComparisonForDownMigrations
+            schemaDumpDBOpts
+            "src/Simplex/Chat/Store/Postgres/Migrations/chat_schema.sql"
+#else
       describe "Schema dump" schemaDumpTest
       around tmpBracket $ describe "WebRTC encryption" webRTCTests
 #endif
@@ -76,10 +87,10 @@ main = do
 #endif
   where
 #if defined(dbPostgres)
-    testBracket test = withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, printOutput = False}
+    testBracket test = withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, printOutput = False, largeLinkData = True}
 #else
     testBracket chatQueryStats agentQueryStats test =
-      withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, chatQueryStats, agentQueryStats, printOutput = False}
+      withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, chatQueryStats, agentQueryStats, printOutput = False, largeLinkData = True}
 #endif
     tmpBracket test = do
       t <- getSystemTime

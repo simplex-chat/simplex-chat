@@ -668,6 +668,7 @@ struct ChatListSearchBar: View {
     private func connect(_ link: String) {
         planAndConnect(
             link,
+            theme: theme,
             dismiss: false,
             cleanup: {
                 searchText = ""
@@ -890,7 +891,7 @@ func presetTagMatchesChat(_ tag: PresetTag, _ chatInfo: ChatInfo, _ chatStats: C
         chatInfo.chatSettings?.favorite == true
     case .contacts:
         switch chatInfo {
-        case let .direct(contact): !(contact.activeConn == nil && contact.profile.contactLink != nil && contact.active) && !contact.chatDeleted
+        case let .direct(contact): !contact.isContactCard && !contact.chatDeleted
         case .contactRequest: true
         case .contactConnection: true
         case let .group(groupInfo, _): groupInfo.businessChat?.chatType == .customer

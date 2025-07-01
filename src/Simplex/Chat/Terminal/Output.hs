@@ -211,7 +211,7 @@ chatEventNotification t@ChatTerminal {sendNotification} cc = \case
     when (groupNtf u g False) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is pending review")
   CEvtConnectedToGroupMember u g m _ ->
     when (groupNtf u g False) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
-  CEvtReceivedContactRequest u UserContactRequest {localDisplayName = n} ->
+  CEvtReceivedContactRequest u UserContactRequest {localDisplayName = n} _ ->
     when (userNtf u) $ sendNtf (viewName n <> ">", "wants to connect to you")
   _ -> pure ()
   where

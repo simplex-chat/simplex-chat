@@ -79,6 +79,11 @@ CREATE TABLE contacts(
   ui_themes TEXT,
   chat_deleted INTEGER NOT NULL DEFAULT 0,
   chat_item_ttl INTEGER,
+  conn_full_link_to_connect BLOB,
+  conn_short_link_to_connect BLOB,
+  welcome_shared_msg_id BLOB,
+  request_shared_msg_id BLOB,
+  contact_request_id INTEGER REFERENCES contact_requests ON DELETE SET NULL,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -135,7 +140,12 @@ CREATE TABLE groups(
   customer_member_id BLOB NULL,
   chat_item_ttl INTEGER,
   local_alias TEXT DEFAULT '',
-  members_require_attention INTEGER NOT NULL DEFAULT 0, -- received
+  members_require_attention INTEGER NOT NULL DEFAULT 0,
+  conn_full_link_to_connect BLOB,
+  conn_short_link_to_connect BLOB,
+  conn_link_started_connection INTEGER NOT NULL DEFAULT 0,
+  welcome_shared_msg_id BLOB,
+  request_shared_msg_id BLOB, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -173,6 +183,8 @@ CREATE TABLE group_members(
   support_chat_items_member_attention INTEGER NOT NULL DEFAULT 0,
   support_chat_items_mentions INTEGER NOT NULL DEFAULT 0,
   support_chat_last_msg_from_member_ts TEXT,
+  member_xcontact_id BLOB,
+  member_welcome_shared_msg_id BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -326,6 +338,8 @@ CREATE TABLE user_contact_links(
   group_link_member_role TEXT NULL,
   business_address INTEGER DEFAULT 0,
   short_link_contact BLOB,
+  short_link_data_set INTEGER NOT NULL DEFAULT 0,
+  short_link_large_data_set INTEGER NOT NULL DEFAULT 0,
   UNIQUE(user_id, local_display_name)
 );
 CREATE TABLE contact_requests(
@@ -345,6 +359,9 @@ CREATE TABLE contact_requests(
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   pq_support INTEGER NOT NULL DEFAULT 0,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
+  business_group_id INTEGER REFERENCES groups(group_id) ON DELETE CASCADE,
+  welcome_shared_msg_id BLOB,
+  request_shared_msg_id BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON UPDATE CASCADE
@@ -419,7 +436,8 @@ CREATE TABLE chat_items(
   include_in_history INTEGER NOT NULL DEFAULT 0,
   user_mention INTEGER NOT NULL DEFAULT 0,
   group_scope_tag TEXT,
-  group_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE
+  group_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  show_group_as_sender INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(
@@ -1047,4 +1065,8 @@ CREATE INDEX idx_chat_items_group_scope_item_status ON chat_items(
   group_scope_group_member_id,
   item_status,
   item_ts
+);
+CREATE INDEX idx_contacts_contact_request_id ON contacts(contact_request_id);
+CREATE INDEX idx_contact_requests_business_group_id ON contact_requests(
+  business_group_id
 );

@@ -563,6 +563,7 @@ time interval</note>
         <target>Принять</target>
         <note>accept contact request via notification
 accept incoming call via notification
+alert action
 swipe action</note>
       </trans-unit>
       <trans-unit id="Accept as member" xml:space="preserve">
@@ -585,6 +586,10 @@ swipe action</note>
         <target>Принять запрос?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Accept contact request" xml:space="preserve">
+        <source>Accept contact request</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Accept contact request from %@?" xml:space="preserve">
         <source>Accept contact request from %@?</source>
         <target>Принять запрос на соединение от %@?</target>
@@ -593,7 +598,7 @@ swipe action</note>
       <trans-unit id="Accept incognito" xml:space="preserve">
         <source>Accept incognito</source>
         <target>Принять инкогнито</target>
-        <note>accept contact request via notification
+        <note>alert action
 swipe action</note>
       </trans-unit>
       <trans-unit id="Accept member" xml:space="preserve">
@@ -640,6 +645,11 @@ swipe action</note>
         <source>Add list</source>
         <target>Добавить список</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Add message" xml:space="preserve">
+        <source>Add message</source>
+        <target>Добавить cообщение</target>
+        <note>placeholder for sending contact request</note>
       </trans-unit>
       <trans-unit id="Add profile" xml:space="preserve">
         <source>Add profile</source>
@@ -1169,11 +1179,6 @@ swipe action</note>
         <source>Auto-accept images</source>
         <target>Автоприем изображений</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Auto-accept settings" xml:space="preserve">
-        <source>Auto-accept settings</source>
-        <target>Настройки автоприема</target>
-        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Back" xml:space="preserve">
         <source>Back</source>
@@ -2933,6 +2938,10 @@ chat item action</note>
         <target>Редактировать профиль группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Empty message!" xml:space="preserve">
+        <source>Empty message!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enable" xml:space="preserve">
         <source>Enable</source>
         <target>Включить</target>
@@ -3173,6 +3182,10 @@ chat item action</note>
         <target>Ошибка вступления члена группы</target>
         <note>alert title</note>
       </trans-unit>
+      <trans-unit id="Error adding address short link" xml:space="preserve">
+        <source>Error adding address short link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
         <source>Error adding member(s)</source>
         <target>Ошибка при добавлении членов группы</target>
@@ -3191,6 +3204,10 @@ chat item action</note>
         <source>Error changing address</source>
         <target>Ошибка при изменении адреса</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error changing chat profile" xml:space="preserve">
+        <source>Error changing chat profile</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error changing connection profile" xml:space="preserve">
         <source>Error changing connection profile</source>
@@ -3362,6 +3379,14 @@ chat item action</note>
         <target>Ошибка доступа к чату</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error preparing contact" xml:space="preserve">
+        <source>Error preparing contact</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error preparing group" xml:space="preserve">
+        <source>Error preparing group</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error receiving file" xml:space="preserve">
         <source>Error receiving file</source>
         <target>Ошибка при получении файла</target>
@@ -3380,6 +3405,10 @@ chat item action</note>
       <trans-unit id="Error registering for notifications" xml:space="preserve">
         <source>Error registering for notifications</source>
         <target>Ошибка регистрации для уведомлений</target>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Error rejecting contact request" xml:space="preserve">
+        <source>Error rejecting contact request</source>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error removing member" xml:space="preserve">
@@ -3475,7 +3504,7 @@ chat item action</note>
       <trans-unit id="Error switching profile" xml:space="preserve">
         <source>Error switching profile</source>
         <target>Ошибка переключения профиля</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error switching profile!" xml:space="preserve">
         <source>Error switching profile!</source>
@@ -4530,6 +4559,11 @@ More improvements are coming soon!</source>
         <target>Вступить</target>
         <note>swipe action</note>
       </trans-unit>
+      <trans-unit id="Join as %@" xml:space="preserve">
+        <source>Join as %@</source>
+        <target>вступить как %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Join group" xml:space="preserve">
         <source>Join group</source>
         <target>Вступить в группу</target>
@@ -4955,6 +4989,10 @@ This is your link for group %@!</source>
       <trans-unit id="Messages &amp; files" xml:space="preserve">
         <source>Messages &amp; files</source>
         <target>Сообщения</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Messages are protected by **end-to-end encryption**." xml:space="preserve">
+        <source>Messages are protected by **end-to-end encryption**.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Messages from %@ will be shown!" xml:space="preserve">
@@ -5610,7 +5648,7 @@ Requires compatible VPN.</source>
       <trans-unit id="Open chat" xml:space="preserve">
         <source>Open chat</source>
         <target>Открыть чат</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat action</note>
       </trans-unit>
       <trans-unit id="Open chat console" xml:space="preserve">
         <source>Open chat console</source>
@@ -5636,6 +5674,26 @@ Requires compatible VPN.</source>
         <source>Open migration to another device</source>
         <target>Открытие миграции на другое устройство</target>
         <note>authentication reason</note>
+      </trans-unit>
+      <trans-unit id="Open new chat" xml:space="preserve">
+        <source>Open new chat</source>
+        <note>new chat action</note>
+      </trans-unit>
+      <trans-unit id="Open new group" xml:space="preserve">
+        <source>Open new group</source>
+        <note>new chat action</note>
+      </trans-unit>
+      <trans-unit id="Open to accept" xml:space="preserve">
+        <source>Open to accept</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Open to connect" xml:space="preserve">
+        <source>Open to connect</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Open to join" xml:space="preserve">
+        <source>Open to join</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Opening app…" xml:space="preserve">
         <source>Opening app…</source>
@@ -6028,6 +6086,10 @@ Error: %@</source>
         <target>Обновлённый профиль будет отправлен Вашим контактам.</target>
         <note>alert message</note>
       </trans-unit>
+      <trans-unit id="Profile will be shared via the address link." xml:space="preserve">
+        <source>Profile will be shared via the address link.</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
         <source>Prohibit audio/video calls.</source>
         <target>Запретить аудио/видео звонки.</target>
@@ -6328,7 +6390,8 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Reject" xml:space="preserve">
         <source>Reject</source>
         <target>Отклонить</target>
-        <note>reject incoming call via notification
+        <note>alert action
+reject incoming call via notification
 swipe action</note>
       </trans-unit>
       <trans-unit id="Reject (sender NOT notified)" xml:space="preserve">
@@ -6339,7 +6402,7 @@ swipe action</note>
       <trans-unit id="Reject contact request" xml:space="preserve">
         <source>Reject contact request</source>
         <target>Отклонить запрос</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Reject member?" xml:space="preserve">
         <source>Reject member?</source>
@@ -6865,6 +6928,11 @@ chat item action</note>
         <target>Отправить живое сообщение — оно будет обновляться для получателей по мере того, как Вы его вводите</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Send contact request?" xml:space="preserve">
+        <source>Send contact request?</source>
+        <target>Отправить запрос на соединение?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Send delivery receipts to" xml:space="preserve">
         <source>Send delivery receipts to</source>
         <target>Отправка отчётов о доставке</target>
@@ -6928,6 +6996,16 @@ chat item action</note>
       <trans-unit id="Send receipts" xml:space="preserve">
         <source>Send receipts</source>
         <target>Отправлять отчёты о доставке</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Send request" xml:space="preserve">
+        <source>Send request</source>
+        <target>Отправить запрос</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Send request without message" xml:space="preserve">
+        <source>Send request without message</source>
+        <target>Отправить запрос без сообщения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send them from gallery or custom keyboards." xml:space="preserve">
@@ -7028,6 +7106,10 @@ chat item action</note>
       <trans-unit id="Sent reply" xml:space="preserve">
         <source>Sent reply</source>
         <target>Отправленный ответ</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sent to your contact after connection." xml:space="preserve">
+        <source>Sent to your contact after connection.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sent total" xml:space="preserve">
@@ -7251,6 +7333,10 @@ chat item action</note>
         <target>Поделитесь из других приложений.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Share group profile via link" xml:space="preserve">
+        <source>Share group profile via link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Share link" xml:space="preserve">
         <source>Share link</source>
         <target>Поделиться ссылкой</target>
@@ -7259,7 +7345,11 @@ chat item action</note>
       <trans-unit id="Share profile" xml:space="preserve">
         <source>Share profile</source>
         <target>Поделиться профилем</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert button</note>
+      </trans-unit>
+      <trans-unit id="Share profile via link" xml:space="preserve">
+        <source>Share profile via link</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Share this 1-time invite link" xml:space="preserve">
         <source>Share this 1-time invite link</source>
@@ -7380,6 +7470,11 @@ chat item action</note>
         <source>SimpleX address or 1-time link?</source>
         <target>Адрес SimpleX или одноразовая ссылка?</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX address settings" xml:space="preserve">
+        <source>SimpleX address settings</source>
+        <target>Настройки автоприема</target>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="SimpleX channel link" xml:space="preserve">
         <source>SimpleX channel link</source>
@@ -7869,7 +7964,7 @@ It can happen because of some bug or when the connection is compromised.</source
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
         <source>The sender will NOT be notified</source>
         <target>Отправитель не будет уведомлён</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="The servers for new connections of your current chat profile **%@**." xml:space="preserve">
         <source>The servers for new connections of your current chat profile **%@**.</source>
@@ -8435,11 +8530,6 @@ To connect, please ask your contact to create another connection link and check 
         <target>Использовать серверы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use short links (BETA)" xml:space="preserve">
-        <source>Use short links (BETA)</source>
-        <target>Короткие ссылки (БЕТА)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Use the app while in the call." xml:space="preserve">
         <source>Use the app while in the call.</source>
         <target>Используйте приложение во время звонка.</target>
@@ -8999,6 +9089,10 @@ Repeat connection request?</source>
         <target>Вы должны получать уведомления.</target>
         <note>token info</note>
       </trans-unit>
+      <trans-unit id="You will be able to send messages **only after your request is accepted**." xml:space="preserve">
+        <source>You will be able to send messages **only after your request is accepted**.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You will be connected to group when the group host's device is online, please wait or check later!" xml:space="preserve">
         <source>You will be connected to group when the group host's device is online, please wait or check later!</source>
         <target>Соединение с группой будет установлено, когда хост группы будет онлайн. Пожалуйста, подождите или проверьте позже!</target>
@@ -9088,6 +9182,10 @@ Repeat connection request?</source>
         <source>Your chat profiles</source>
         <target>Ваши профили чата</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your chat was moved to %@ but an unexpected error occurred while redirecting you to the profile." xml:space="preserve">
+        <source>Your chat was moved to %@ but an unexpected error occurred while redirecting you to the profile.</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." xml:space="preserve">
         <source>Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile.</source>
@@ -9475,6 +9573,10 @@ marked deleted chat item preview text</note>
         <target>контакт не готов</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="contact should accept…" xml:space="preserve">
+        <source>contact should accept…</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="creator" xml:space="preserve">
         <source>creator</source>
         <target>создатель</target>
@@ -9641,6 +9743,10 @@ pref value</note>
         <target>переслано</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="group" xml:space="preserve">
+        <source>group</source>
+        <note>shown on group welcome message</note>
+      </trans-unit>
       <trans-unit id="group deleted" xml:space="preserve">
         <source>group deleted</source>
         <target>группа удалена</target>
@@ -9744,11 +9850,6 @@ pref value</note>
       <trans-unit id="italic" xml:space="preserve">
         <source>italic</source>
         <target>курсив</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="join as %@" xml:space="preserve">
-        <source>join as %@</source>
-        <target>вступить как %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="left" xml:space="preserve">
@@ -9974,6 +10075,10 @@ time to disappear</note>
         <target>удалил(а) Вас из группы</target>
         <note>rcv group event chat item</note>
       </trans-unit>
+      <trans-unit id="request is sent" xml:space="preserve">
+        <source>request is sent</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="request to join rejected" xml:space="preserve">
         <source>request to join rejected</source>
         <target>запрос на вступление отклонён</target>
@@ -10028,11 +10133,6 @@ time to disappear</note>
         <source>security code changed</source>
         <target>код безопасности изменился</target>
         <note>chat item text</note>
-      </trans-unit>
-      <trans-unit id="send direct message" xml:space="preserve">
-        <source>send direct message</source>
-        <target>отправьте сообщение</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="server queue info: %@&#10;&#10;last received msg: %@" xml:space="preserve">
         <source>server queue info: %1$@
@@ -10187,11 +10287,6 @@ last received msg: %2$@</source>
         <source>you accepted this member</source>
         <target>Вы приняли этого члена</target>
         <note>snd group event chat item</note>
-      </trans-unit>
-      <trans-unit id="you are invited to group" xml:space="preserve">
-        <source>you are invited to group</source>
-        <target>Вы приглашены в группу</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you are observer" xml:space="preserve">
         <source>you are observer</source>
