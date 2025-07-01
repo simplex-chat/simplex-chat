@@ -90,7 +90,7 @@
     <string name="conn_event_ratchet_sync_started">titkosítás elfogadása…</string>
     <string name="invite_prohibited">Nem lehet meghívni a partnert!</string>
     <string name="integrity_msg_bad_id">téves üzenet ID</string>
-    <string name="v4_2_auto_accept_contact_requests">Meghívási kérések automatikus elfogadása</string>
+    <string name="v4_2_auto_accept_contact_requests">Kapcsolatkérések automatikus elfogadása</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Megjegyzés:</b> NEM fogja tudni helyreállítani, vagy módosítani a jelmondatot abban az esetben, ha elveszíti.]]></string>
     <string name="callstatus_calling">hívás…</string>
     <string name="color_secondary_variant">További másodlagos szín</string>
@@ -583,7 +583,7 @@
     <string name="error_aborting_address_change">Hiba történt a cím módosításának megszakításakor</string>
     <string name="error_receiving_file">Hiba történt a fájl fogadásakor</string>
     <string name="conn_event_ratchet_sync_ok">titkosítása rendben van</string>
-    <string name="error_deleting_contact_request">Hiba történt a meghívási kérés törlésekor</string>
+    <string name="error_deleting_contact_request">Hiba történt a kapcsolatkérés törlésekor</string>
     <string name="receipts_groups_title_enable">Engedélyezi a kézbesítési jelentéseket a csoportok számára?</string>
     <string name="fix_connection_not_supported_by_contact">Partner általi javítás nem támogatott</string>
     <string name="file_not_found">Fájl nem található</string>
@@ -608,7 +608,7 @@
     <string name="error_creating_address">Hiba történt a cím létrehozásakor</string>
     <string name="feature_enabled">engedélyezve</string>
     <string name="error_loading_details">Hiba történt a részletek betöltésekor</string>
-    <string name="error_accepting_contact_request">Hiba történt a meghívási kérés elfogadásakor</string>
+    <string name="error_accepting_contact_request">Hiba történt a kapcsolatkérés elfogadásakor</string>
     <string name="snd_conn_event_ratchet_sync_allowed">a titkosítás újraegyeztetése engedélyezve van %s számára</string>
     <string name="conn_event_ratchet_sync_required">a titkosítás újraegyeztetése szükséges</string>
     <string name="v4_6_hidden_chat_profiles">Rejtett csevegési profilok</string>
@@ -737,7 +737,7 @@
     <string name="network_use_onion_hosts_no_desc">Az onion kiszolgálók nem lesznek használva.</string>
     <string name="custom_time_unit_minutes">perc</string>
     <string name="learn_more">Tudjon meg többet</string>
-    <string name="notification_new_contact_request">Új meghívási kérés</string>
+    <string name="notification_new_contact_request">Új kapcsolatkérés</string>
     <string name="joining_group">Csatlakozás a csoporthoz</string>
     <string name="linked_desktop_options">Társított számítógép beállítások</string>
     <string name="rcv_group_event_invited_via_your_group_link">meghíva a saját csoporthivatkozásán keresztül</string>
@@ -2407,7 +2407,7 @@
     <string name="connect_plan_open_new_chat">Új csevegés megnyitása</string>
     <string name="connect_plan_open_new_group">Új csoport megnyitása</string>
     <string name="e2ee_info_e2ee"><![CDATA[Az üzenetek<b>végpontok közötti titkosítással</b> vannak védve.]]></string>
-    <string name="error_rejecting_contact_request">Hiba a kapcsolatkérés elutasításakor</string>
+    <string name="error_rejecting_contact_request">Hiba történt a kapcsolatkérés elutasításakor</string>
     <string name="error_preparing_contact">Hiba a kapcsolat előkészítésekor</string>
     <string name="error_preparing_group">Hiba a csoport előkészítésekor</string>
     <string name="error_changing_contact_user">Hiba a partner módosításakor</string>
