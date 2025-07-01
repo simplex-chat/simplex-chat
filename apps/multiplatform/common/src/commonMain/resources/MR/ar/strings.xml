@@ -1614,7 +1614,7 @@
     <string name="migrate_to_device_apply_onion">طبّق</string>
     <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>يُرجى ملاحظة</b>: استخدام نفس قاعدة البيانات على جهازين سيؤدي إلى كسر فك تعمية الرسائل من اتصالاتك، كحماية أمنية.]]></string>
     <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>تحذير</b>: سيتم حذف الأرشيف.]]></string>
-    <string name="e2ee_info_no_pq"><![CDATA[تتم حماية الرسائل والملفات والمكالمات عن طريق <b>التعمية بين الطرفين</b> مع توفير السرية التامة لإعادة التوجيه والرفض واستعادة عمليات الاقتحام.]]></string>
+    <string name="e2ee_info_no_pq"><![CDATA[الرسائل والملفات والمكالمات محمية بواسطة <b>التعمية بين الطرفين</b> مع توفير السرية التامة لإعادة التوجيه والرفض واستعادة عمليات الاقتحام.]]></string>
     <string name="e2ee_info_pq"><![CDATA[تتم حماية الرسائل والملفات والمكالمات عن طريق <b>التعمية بين الطرفين المقاوم للكم</b> مع توفير السرية التامة لإعادة التوجيه والرفض واستعادة عمليات الاقتحام.]]></string>
     <string name="e2ee_info_no_pq_short">هذه الدردشة محمية بالتعمية بين الطرفين.</string>
     <string name="e2ee_info_pq_short">هذه الدردشة محمية بالتعمية بين الطرفين المقاوم للكم.</string>
@@ -2422,7 +2422,7 @@
     <string name="add_short_link">أضف رابط قصير</string>
     <string name="accept_contact_request">اقبل طلب جهة الاتصال</string>
     <string name="compose_view_add_message">أضف رسالة</string>
-    <string name="e2ee_info_e2ee"><![CDATA[Messages are protected by <b>تعمية بين الطرفين</b>.]]></string>
+    <string name="e2ee_info_e2ee"><![CDATA[الرسائل محمية <b>بالتعمية بين الطرفين</b>.]]></string>
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[لن تتمكن من إرسال الرسائل <b> <b>إلا بعد قبول طلبك</b>.]]>.</string>
     <string name="compose_view_connect">اتصل</string>
 </resources>
