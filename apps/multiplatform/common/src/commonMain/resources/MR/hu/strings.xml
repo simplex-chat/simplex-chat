@@ -26,7 +26,7 @@
     <string name="accept_call_on_lock_screen">Elfogadás</string>
     <string name="above_then_preposition_continuation">gombra fent, majd:</string>
     <string name="accept_contact_incognito_button">Elfogadás inkognitóban</string>
-    <string name="accept_connection_request__question">Elfogadja a kapcsolatkérést?</string>
+    <string name="accept_connection_request__question">Elfogadja a meghívót?</string>
     <string name="accept_contact_button">Elfogadás</string>
     <string name="accept">Elfogadás</string>
     <string name="add_address_to_your_profile">Cím hozzáadása a profilhoz, hogy a partnerei megoszthassák másokkal. A profilfrissítés el lesz küldve partnerei számára.</string>
@@ -90,7 +90,7 @@
     <string name="conn_event_ratchet_sync_started">titkosítás elfogadása…</string>
     <string name="invite_prohibited">Nem lehet meghívni a partnert!</string>
     <string name="integrity_msg_bad_id">téves üzenet ID</string>
-    <string name="v4_2_auto_accept_contact_requests">Kapcsolatkérések automatikus elfogadása</string>
+    <string name="v4_2_auto_accept_contact_requests">Meghívók automatikus elfogadása</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Megjegyzés:</b> NEM fogja tudni helyreállítani, vagy módosítani a jelmondatot abban az esetben, ha elveszíti.]]></string>
     <string name="callstatus_calling">hívás…</string>
     <string name="color_secondary_variant">További másodlagos szín</string>
@@ -213,7 +213,7 @@
     <string name="icon_descr_contact_checked">Partner ellenőrizve</string>
     <string name="connect_plan_connect_to_yourself">Kapcsolódik saját magához?</string>
     <string name="copied">Kimásolva a vágólapra</string>
-    <string name="connection_request_sent">Kapcsolatkérés elküldve!</string>
+    <string name="connection_request_sent">Meghívó elküldve!</string>
     <string name="connecting_to_desktop">Kapcsolódás a számítógéphez</string>
     <string name="network_session_mode_entity">Kapcsolat</string>
     <string name="correct_name_to">Helyesbíti a nevet a következőre: %s?</string>
@@ -583,7 +583,7 @@
     <string name="error_aborting_address_change">Hiba történt a cím módosításának megszakításakor</string>
     <string name="error_receiving_file">Hiba történt a fájl fogadásakor</string>
     <string name="conn_event_ratchet_sync_ok">titkosítása rendben van</string>
-    <string name="error_deleting_contact_request">Hiba történt a kapcsolatkérés törlésekor</string>
+    <string name="error_deleting_contact_request">Hiba történt a meghívó törlésekor</string>
     <string name="receipts_groups_title_enable">Engedélyezi a kézbesítési jelentéseket a csoportok számára?</string>
     <string name="fix_connection_not_supported_by_contact">Partner általi javítás nem támogatott</string>
     <string name="file_not_found">Fájl nem található</string>
@@ -608,7 +608,7 @@
     <string name="error_creating_address">Hiba történt a cím létrehozásakor</string>
     <string name="feature_enabled">engedélyezve</string>
     <string name="error_loading_details">Hiba történt a részletek betöltésekor</string>
-    <string name="error_accepting_contact_request">Hiba történt a kapcsolatkérés elfogadásakor</string>
+    <string name="error_accepting_contact_request">Hiba történt a meghívó elfogadásakor</string>
     <string name="snd_conn_event_ratchet_sync_allowed">a titkosítás újraegyeztetése engedélyezve van %s számára</string>
     <string name="conn_event_ratchet_sync_required">a titkosítás újraegyeztetése szükséges</string>
     <string name="v4_6_hidden_chat_profiles">Rejtett csevegési profilok</string>
@@ -737,7 +737,7 @@
     <string name="network_use_onion_hosts_no_desc">Az onion kiszolgálók nem lesznek használva.</string>
     <string name="custom_time_unit_minutes">perc</string>
     <string name="learn_more">Tudjon meg többet</string>
-    <string name="notification_new_contact_request">Új kapcsolatkérés</string>
+    <string name="notification_new_contact_request">Új meghívó</string>
     <string name="joining_group">Csatlakozás a csoporthoz</string>
     <string name="linked_desktop_options">Társított számítógép beállítások</string>
     <string name="rcv_group_event_invited_via_your_group_link">meghíva a saját csoporthivatkozásán keresztül</string>
@@ -871,7 +871,7 @@
     <string name="callstatus_rejected">elutasított hívás</string>
     <string name="onboarding_notifications_mode_periodic">Időszakos</string>
     <string name="feature_received_prohibited">fogadott, tiltott</string>
-    <string name="connect_plan_repeat_connection_request">Megismétli a kapcsolatkérést?</string>
+    <string name="connect_plan_repeat_connection_request">Megismétli a meghívást?</string>
     <string name="only_you_can_delete_messages">Véglegesen csak Ön törölhet üzeneteket (partnere csak törlésre jelölheti meg őket ). (24 óra)</string>
     <string name="role_in_group">Szerepkör</string>
     <string name="simplex_link_contact">SimpleX kapcsolattartási cím</string>
@@ -1096,7 +1096,7 @@
     <string name="set_database_passphrase">Adatbázis-jelmondat beállítása</string>
     <string name="view_security_code">Biztonsági kód megtekintése</string>
     <string name="unblock_member_question">Feloldja a tag letiltását?</string>
-    <string name="sender_may_have_deleted_the_connection_request">A küldője törölhette a kapcsolatkérést.</string>
+    <string name="sender_may_have_deleted_the_connection_request">A küldője törölhette a meghívót.</string>
     <string name="wrong_passphrase">Érvénytelen adatbázis-jelmondat</string>
     <string name="your_SMP_servers">Saját SMP-kiszolgálók</string>
     <string name="send_receipts_disabled_alert_title">A kézbesítési jelentések le vannak tiltva</string>
@@ -1346,7 +1346,7 @@
     <string name="onboarding_notifications_mode_off">Amikor az alkalmazás fut</string>
     <string name="alert_title_cant_invite_contacts_descr">Inkognitóprofilt használ ehhez a csoporthoz – fő profilja megosztásának elkerülése érdekében a meghívók küldése le van tiltva</string>
     <string name="v4_5_transport_isolation">Átvitelelkülönítés</string>
-    <string name="you_will_be_connected_when_your_connection_request_is_accepted">Akkor lesz kapcsolódva, ha a kapcsolatkérése el lesz fogadva, várjon, vagy ellenőrizze később!</string>
+    <string name="you_will_be_connected_when_your_connection_request_is_accepted">Akkor lesz kapcsolódva, ha a meghívóját a partnere elfogadja, várjon, vagy ellenőrizze később!</string>
     <string name="voice_messages_are_prohibited">A hangüzenetek küldése le van tiltva.</string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[A háttérben való hívásokhoz válassza ki az <b>Alkalmazás akkumulátor-használata</b> / <b>Korlátlan</b> módot az alkalmazás beállításaiban.]]></string>
     <string name="v5_4_link_mobile_desktop_descr">Biztonságos kvantumbiztos protokollon keresztül.</string>
@@ -1406,7 +1406,7 @@
     <string name="v4_5_private_filenames_descr">Az időzóna védelmének érdekében a kép-/hangfájlok UTC-t használnak.</string>
     <string name="connect_via_member_address_alert_desc">A kapcsokatkérés el lesz küldve ezen csoporttag számára.</string>
     <string name="incognito_info_share">Inkognitóprofil megosztása esetén a rendszer azt a profilt fogja használni azokhoz a csoportokhoz, amelyekbe meghívást kapott.</string>
-    <string name="connect_plan_you_have_already_requested_connection_via_this_address">Már küldött egy kapcsolatkérést ezen a címen keresztül!</string>
+    <string name="connect_plan_you_have_already_requested_connection_via_this_address">Már küldött egy meghívót ezen a címen keresztül!</string>
     <string name="you_can_share_this_address_with_your_contacts">Megoszthatja ezt a SimpleX-címet a partnereivel, hogy kapcsolatba léphessenek vele: %s.</string>
     <string name="you_can_accept_or_reject_connection">Amikor az emberek meghívót küldenek, Ön elfogadhatja vagy elutasíthatja azokat.</string>
     <string name="v4_6_group_welcome_message_descr">Megjelenítendő üzenet beállítása az új tagok számára!</string>
@@ -2205,7 +2205,7 @@
     <string name="direct_messages_are_prohibited_in_chat">A tagok közötti közvetlen üzenetek le vannak tiltva ebben a csevegésben.</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Amikor egynél több üzemeltető van engedélyezve, akkor egyik sem rendelkezik olyan metaadatokkal, amelyekből megtudható, hogy ki kivel kommunikál.</string>
     <string name="display_name_accepted_invitation">elfogadott meghívó</string>
-    <string name="display_name_requested_to_connect">Függőben lévő kapcsolatkérés</string>
+    <string name="display_name_requested_to_connect">Függőben lévő meghívó</string>
     <string name="onboarding_network_about_operators">Az üzemeltetőkről</string>
     <string name="onboarding_network_operators_simplex_flux_agreement">A SimpleX Chat és a Flux megállapodást kötött arról, hogy a Flux által üzemeltetett kiszolgálókat beépítik az alkalmazásba.</string>
     <string name="encryption_renegotiation_in_progress">A titkosítás újraegyeztetése folyamatban van.</string>
@@ -2407,7 +2407,7 @@
     <string name="connect_plan_open_new_chat">Új csevegés megnyitása</string>
     <string name="connect_plan_open_new_group">Új csoport megnyitása</string>
     <string name="e2ee_info_e2ee"><![CDATA[Az üzenetek<b>végpontok közötti titkosítással</b> vannak védve.]]></string>
-    <string name="error_rejecting_contact_request">Hiba történt a kapcsolatkérés elutasításakor</string>
+    <string name="error_rejecting_contact_request">Hiba történt a meghívó elutasításakor</string>
     <string name="error_preparing_contact">Hiba a kapcsolat előkészítésekor</string>
     <string name="error_preparing_group">Hiba a csoport előkészítésekor</string>
     <string name="error_changing_contact_user">Hiba a partner módosításakor</string>
@@ -2419,13 +2419,13 @@
     <string name="compose_view_join_group">Csatlakozás a csoporthoz</string>
     <string name="compose_view_add_message">Üzenet hozzáadása</string>
     <string name="compose_view_connect">Kapcsolódás</string>
-    <string name="compose_view_send_contact_request_alert_question">Elküldi a kapcsolatkérést?</string>
+    <string name="compose_view_send_contact_request_alert_question">Elküldi a meghívót?</string>
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[Csak azután tud üzeneteket küldeni, <b>miután a kérését elfogadták</b>.]]></string>
     <string name="compose_view_send_request_without_message">Kérés küldése üzenet nélkül</string>
     <string name="compose_view_send_request">Kérés küldése</string>
     <string name="cant_send_message_request_is_sent">kérés elküldve</string>
-    <string name="accept_contact_request">Kapcsolatkérés elfogadása</string>
-    <string name="reject_contact_request">Kapcsolatkérés elutasítása</string>
+    <string name="accept_contact_request">Meghívó elfogadása</string>
+    <string name="reject_contact_request">Meghívó elutasítása</string>
     <string name="the_sender_will_not_be_notified">A feladó NEM lesz értesítve.</string>
     <string name="context_user_picker_your_profile">Saját profil</string>
     <string name="sent_to_your_contact_after_connection">Elküldés a partnernek a kapcsolódást követően.</string>
