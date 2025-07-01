@@ -1494,7 +1494,7 @@
     <string name="tap_to_paste_link">Koppintson ide a hivatkozás beillesztéséhez</string>
     <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Partner hozzáadása</b>: új meghívási hivatkozás létrehozásához, vagy egy kapott hivatkozáson keresztül történő kapcsolódáshoz.]]></string>
     <string name="create_group_button_to_create_new_group"><![CDATA[<b>Csoport létrehozása</b>: új csoport létrehozásához.]]></string>
-    <string name="chat_is_stopped_you_should_transfer_database">A csevegés megállt. Ha már használta ezt az adatbázist egy másik eszközön, úgy visszaállítás szükséges a csevegés elindítása előtt.</string>
+    <string name="chat_is_stopped_you_should_transfer_database">A csevegés leállt. Ha ezt az adatbázist már használta egy másik eszközön, akkor a csevegés elindítása előtt vissza kell állítania azt.</string>
     <string name="recent_history_is_not_sent_to_new_members">Az előzmények nem lesznek elküldve az új tagok számára.</string>
     <string name="retry_verb">Újrapróbálkozás</string>
     <string name="camera_not_available">A kamera nem elérhető</string>
@@ -2406,7 +2406,7 @@
     <string name="connect_plan_open_chat">Csevegés megnyitása</string>
     <string name="connect_plan_open_new_chat">Új csevegés megnyitása</string>
     <string name="connect_plan_open_new_group">Új csoport megnyitása</string>
-    <string name="e2ee_info_e2ee"><![CDATA[Az üzeneteket <b>végpontok közötti titkosítás</b> védi.]]></string>
+    <string name="e2ee_info_e2ee"><![CDATA[Az üzenetek<b>végpontok közötti titkosítással</b> vannak védve.]]></string>
     <string name="error_rejecting_contact_request">Hiba a kapcsolatkérés elutasításakor</string>
     <string name="error_preparing_contact">Hiba a kapcsolat előkészítésekor</string>
     <string name="error_preparing_group">Hiba a csoport előkészítésekor</string>
@@ -2428,7 +2428,7 @@
     <string name="reject_contact_request">Kapcsolatkérés elutasítása</string>
     <string name="the_sender_will_not_be_notified">A feladó NEM lesz értesítve.</string>
     <string name="context_user_picker_your_profile">Saját profil</string>
-    <string name="sent_to_your_contact_after_connection">Elküldés a partnernek kapcsolódást követően.</string>
+    <string name="sent_to_your_contact_after_connection">Elküldés a partnernek a kapcsolódást követően.</string>
     <string name="address_welcome_message">Üdvözlőüzenet</string>
     <string name="share_profile_via_link">Profil megosztása hivatkozáson keresztül</string>
     <string name="share_profile_via_link_alert_text">A profil meg lesz osztva a címhivatkozáson keresztül.</string>
