@@ -1092,7 +1092,7 @@ CREATE TABLE test_chat_schema.user_contact_links (
     business_address smallint DEFAULT 0,
     short_link_contact bytea,
     short_link_data_set smallint DEFAULT 0 NOT NULL,
-    large_link_data_set smallint DEFAULT 0 NOT NULL
+    short_link_large_data_set smallint DEFAULT 0 NOT NULL
 );
 
 
@@ -2689,6 +2689,3 @@ ALTER TABLE ONLY test_chat_schema.user_contact_links
 
 ALTER TABLE ONLY test_chat_schema.xftp_file_descriptions
     ADD CONSTRAINT xftp_file_descriptions_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
-
-
-

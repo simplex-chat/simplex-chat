@@ -25,7 +25,7 @@ ALTER TABLE group_members ADD COLUMN member_xcontact_id BLOB;
 ALTER TABLE group_members ADD COLUMN member_welcome_shared_msg_id BLOB;
 
 ALTER TABLE user_contact_links ADD COLUMN short_link_data_set INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE user_contact_links ADD COLUMN large_link_data_set INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE user_contact_links ADD COLUMN short_link_large_data_set INTEGER NOT NULL DEFAULT 0;
 
 ALTER TABLE groups ADD COLUMN conn_full_link_to_connect BLOB;
 ALTER TABLE groups ADD COLUMN conn_short_link_to_connect BLOB;
@@ -56,7 +56,7 @@ ALTER TABLE group_members DROP COLUMN member_xcontact_id;
 ALTER TABLE group_members DROP COLUMN member_welcome_shared_msg_id;
 
 ALTER TABLE user_contact_links DROP COLUMN short_link_data_set;
-ALTER TABLE user_contact_links DROP COLUMN large_link_data_set;
+ALTER TABLE user_contact_links DROP COLUMN short_link_large_data_set;
 
 ALTER TABLE groups DROP COLUMN conn_full_link_to_connect;
 ALTER TABLE groups DROP COLUMN conn_short_link_to_connect;

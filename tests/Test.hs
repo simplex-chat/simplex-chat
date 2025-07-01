@@ -17,7 +17,6 @@ import MarkdownTests
 import MessageBatching
 import ProtocolTests
 import OperatorTests
-import PostgresSchemaDump
 import RandomServers
 import RemoteTests
 import Test.Hspec hiding (it)
@@ -25,6 +24,7 @@ import UnliftIO.Temporary (withTempDirectory)
 import ValidNames
 import ViewTests
 #if defined(dbPostgres)
+import PostgresSchemaDump
 import Simplex.Chat.Store.Postgres.Migrations (migrations)
 import Simplex.Messaging.Agent.Store.Postgres.Util (createDBAndUserIfNotExists, dropAllSchemasExceptSystem, dropDatabaseAndUser)
 import System.Directory (createDirectory, removePathForcibly)

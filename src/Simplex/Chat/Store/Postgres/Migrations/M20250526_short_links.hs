@@ -30,7 +30,7 @@ ALTER TABLE group_members
 
 ALTER TABLE user_contact_links
   ADD COLUMN short_link_data_set SMALLINT NOT NULL DEFAULT 0,
-  ADD COLUMN large_link_data_set SMALLINT NOT NULL DEFAULT 0;
+  ADD COLUMN short_link_large_data_set SMALLINT NOT NULL DEFAULT 0;
 
 ALTER TABLE groups
   ADD COLUMN conn_full_link_to_connect BYTEA,
@@ -68,7 +68,7 @@ ALTER TABLE group_members
 
 ALTER TABLE user_contact_links
   DROP COLUMN short_link_data_set,
-  DROP COLUMN large_link_data_set;
+  DROP COLUMN short_link_large_data_set;
 
 ALTER TABLE groups
   DROP COLUMN conn_full_link_to_connect,

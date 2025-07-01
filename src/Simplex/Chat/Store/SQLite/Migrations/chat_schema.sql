@@ -339,6 +339,7 @@ CREATE TABLE user_contact_links(
   business_address INTEGER DEFAULT 0,
   short_link_contact BLOB,
   short_link_data_set INTEGER NOT NULL DEFAULT 0,
+  short_link_large_data_set INTEGER NOT NULL DEFAULT 0,
   UNIQUE(user_id, local_display_name)
 );
 CREATE TABLE contact_requests(
