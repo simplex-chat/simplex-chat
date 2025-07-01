@@ -1202,7 +1202,7 @@
     <string name="invite_friends">Freunde einladen</string>
     <string name="email_invite_subject">Lassen Sie uns über SimpleX Chat schreiben</string>
     <string name="profile_update_will_be_sent_to_contacts">Profil-Aktualisierung wird an Ihre Kontakte gesendet.</string>
-    <string name="save_auto_accept_settings">Einstellungen von „automatisch akzeptieren“ speichern</string>
+    <string name="save_auto_accept_settings">SimpleX-Adress-Einstellungen speichern</string>
     <string name="save_settings_question">Einstellungen speichern\?</string>
     <string name="share_address_with_contacts_question">Die Adresse mit Kontakten teilen\?</string>
     <string name="stop_sharing">Teilen beenden</string>
@@ -1453,7 +1453,7 @@
     <string name="v5_3_new_desktop_app_descr">Erstellen eines neuen Profils in der Desktop-App. 💻</string>
     <string name="v5_3_simpler_incognito_mode_descr">Inkognito beim Verbinden einschalten.</string>
     <string name="v5_3_discover_join_groups_descr">- Verbindung mit dem Directory-Service (BETA)!\n- Empfangsbestätigungen (für bis zu 20 Mitglieder).\n- Schneller und stabiler.</string>
-    <string name="member_contact_send_direct_message">Direktnachricht senden</string>
+    <string name="member_contact_send_direct_message">Zum Verbinden senden</string>
     <string name="rcv_group_event_member_created_contact">Direkt miteinander verbunden</string>
     <string name="expand_verb">Erweitern</string>
     <string name="connect_plan_repeat_connection_request">Verbindungsanfrage wiederholen?</string>
@@ -2513,7 +2513,7 @@
     <string name="accept_contact_request">Kontaktanfrage akzeptieren</string>
     <string name="compose_view_add_message">Nachricht hinzufügen</string>
     <string name="e2ee_info_e2ee"><![CDATA[Nachrichten sind durch <b>Ende-zu-Ende-Verschlüsselung</b> geschützt.]]></string>
-    <string name="compose_view_send_contact_request_alert_text"><![CDATA[Sie können erst dann Nachrichten senden, <b>wenn Ihre Anfrage akzeptiert wurde</b>.]]></string>
+    <string name="compose_view_send_contact_request_alert_text"><![CDATA[Sie können erst dann Nachrichten versenden, <b>sobald Ihre Anfrage akzeptiert wurde</b>.]]></string>
     <string name="compose_view_connect">Verbinden</string>
     <string name="contact_should_accept">Kontakt sollte akzeptieren…</string>
     <string name="error_changing_contact_user">Fehler beim Ändern des Benutzer-Kontakts</string>
@@ -2523,6 +2523,22 @@
     <string name="error_rejecting_contact_request">Fehler bei der Ablehnung der Kontaktanfrage</string>
     <string name="compose_view_join_group">Der Gruppe beitreten</string>
     <string name="connect_plan_open_chat">Chat öffnen</string>
-    <string name="connect_plan_open_new_chat">Neuen Chat öffnen</string>
-    <string name="connect_plan_open_new_group">Neue Gruppe öffnen</string>
+    <string name="connect_plan_open_new_chat">Neuen Chat eröffnen</string>
+    <string name="connect_plan_open_new_group">Neue Gruppe eröffnen</string>
+    <string name="open_to_accept">Zum Akzeptieren öffnen</string>
+    <string name="open_to_connect">Zum Verbinden öffnen</string>
+    <string name="group_preview_open_to_join">Zum Beitreten öffnen</string>
+    <string name="share_profile_via_link_alert_text">Das Profil wird über den Adress-Link geteilt.</string>
+    <string name="reject_contact_request">Kontakt-Anfrage ablehnen</string>
+    <string name="cant_send_message_request_is_sent">Anfrage wurde gesendet</string>
+    <string name="compose_view_send_contact_request_alert_question">Kontakt-Anfrage senden?</string>
+    <string name="compose_view_send_request">Anfrage senden</string>
+    <string name="compose_view_send_request_without_message">Anfrage ohne Nachricht senden</string>
+    <string name="sent_to_your_contact_after_connection">Wird nach der Verbindung an Ihren Kontakt gesendet.</string>
+    <string name="share_group_profile_via_link">Gruppenprofil über einen Link teilen</string>
+    <string name="share_profile_via_link_alert_confirm">Profil teilen</string>
+    <string name="share_profile_via_link">Profil über einen Link teilen</string>
+    <string name="the_sender_will_not_be_notified">Der Absender wird NICHT benachrichtigt.</string>
+    <string name="address_welcome_message">Begrüßungsmeldung</string>
+    <string name="context_user_picker_your_profile">Ihr Profil</string>
 </resources>
