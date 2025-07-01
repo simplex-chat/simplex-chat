@@ -2439,7 +2439,6 @@
     <string name="save_list">Listeyi kaydet</string>
     <string name="operator_use_for_sending">Göndermek için</string>
     <string name="simplex_link_channel">SimpleX kanal bağlantısı</string>
-    <string name="privacy_short_links">Kısa bağlantılar kullanın (BETA)</string>
     <string name="network_smp_web_port_section_title">Mesajlaşma için TCP bağlantı noktası</string>
     <string name="network_smp_web_port_toggle">Web bağlantı noktasını kullan</string>
 </resources>

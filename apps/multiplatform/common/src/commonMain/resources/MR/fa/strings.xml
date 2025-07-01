@@ -1914,7 +1914,6 @@
     <string name="report_item_visibility_moderators">فقط فرستنده و ناظران آن را می‌بینند</string>
     <string name="display_name_requested_to_connect">درخواست اتصال</string>
     <string name="simplex_link_channel">پیوند کانال سیمپلکس</string>
-    <string name="privacy_short_links">از پیوندهای کوتاه استفاده کنید (بتا)</string>
     <string name="report_reason_spam">هرزنامه</string>
     <string name="report_reason_illegal">محتوای نامناسب</string>
     <string name="report_reason_community">نقض دستورالعمل‌های انجمن</string>
