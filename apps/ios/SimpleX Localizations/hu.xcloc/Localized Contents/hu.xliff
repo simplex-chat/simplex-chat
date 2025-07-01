@@ -1570,7 +1570,7 @@ set passcode view</note>
       </trans-unit>
       <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve" approved="no">
         <source>Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</source>
-        <target state="translated">A csevegés leállt. Ha ezt az adatbázist már használta egy másik eszközön, akkor a csevegés elindítása előtt vissza kell állítania azt.</target>
+        <target state="translated">A csevegés megállt. Ha ezt az adatbázist már használta egy másik eszközön, akkor a csevegés elindítása előtt vissza kell állítania azt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat list" xml:space="preserve">
