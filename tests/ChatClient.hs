@@ -21,6 +21,7 @@ import Control.Logger.Simple (LogLevel (..))
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
+import qualified Data.ByteString.Char8 as B
 import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
 import Data.Maybe (isNothing)
@@ -46,7 +47,7 @@ import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Protocol (currentSMPAgentVersion, duplexHandshakeSMPAgentVersion, pqdrSMPAgentVersion, supportedSMPAgentVRange)
 import Simplex.Messaging.Agent.RetryInterval
-import Simplex.Messaging.Agent.Store.Interface (closeDBStore)
+import Simplex.Messaging.Agent.Store.Interface (DBOpts (..), closeDBStore)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..))
@@ -77,6 +78,15 @@ import System.FilePath ((</>))
 #endif
 
 #if defined(dbPostgres)
+schemaDumpDBOpts :: DBOpts
+schemaDumpDBOpts =
+  DBOpts
+    { connstr = B.pack testDBConnstr,
+      schema = "test_chat_schema",
+      poolSize = 3,
+      createSchema = True
+    }
+
 testDBConnstr :: String
 testDBConnstr = "postgresql://test_chat_user@/test_chat_db"
 

@@ -97,6 +97,9 @@ ifCI xrun run d t = do
   ci <- runIO $ lookupEnv "CI"
   (if ci == Just "true" then xrun else run) d t
 
+envCI :: IO Bool
+envCI = (Just "true" ==) <$> lookupEnv "CI"
+
 skip :: String -> SpecWith a -> SpecWith a
 skip = before_ . pendingWith
 
