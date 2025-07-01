@@ -549,8 +549,7 @@ fun ComposeView(
     }
   }
 
-  // TODO [short links] different messages for business
-  fun showSendConnectPreparedContactAlert(sendConnect: () -> Unit) {
+  fun showSendConnectPreparedContactAlert() {
     val empty = composeState.value.whitespaceOnly
     AlertManager.shared.showAlertDialogStacked(
       title = generalGetString(MR.strings.compose_view_send_contact_request_alert_question),
@@ -561,7 +560,7 @@ fun ComposeView(
           else
             generalGetString(MR.strings.compose_view_send_request)
           ),
-      onConfirm = { sendConnect() },
+      onConfirm = { withApi { sendConnectPreparedContact() } },
       dismissText = (
           if (empty)
             generalGetString(MR.strings.compose_view_add_message)
@@ -1405,7 +1404,7 @@ fun ComposeView(
           SendContactRequestView(
             disableSendButton = disableSendButton,
             icon = MR.images.ic_work_filled,
-            sendRequest = { showSendConnectPreparedContactAlert(sendConnect = { withApi { connectPreparedGroup() } }) }
+            sendRequest = { withApi { connectPreparedGroup() } }
           )
         }
       } else if (nextSendGrpInv.value) {
@@ -1436,7 +1435,7 @@ fun ComposeView(
             SendContactRequestView(
               disableSendButton = disableSendButton,
               icon = MR.images.ic_person_add_filled,
-              sendRequest = { showSendConnectPreparedContactAlert(sendConnect = { withApi { sendConnectPreparedContact() } }) }
+              sendRequest = { showSendConnectPreparedContactAlert() }
             )
         }
       } else if (
