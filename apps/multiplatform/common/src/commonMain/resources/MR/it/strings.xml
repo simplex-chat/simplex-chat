@@ -71,7 +71,7 @@
     <string name="error_deleting_group">Errore di eliminazione del gruppo</string>
     <string name="error_deleting_contact_request">Errore di eliminazione della richiesta di contatto</string>
     <string name="error_deleting_pending_contact_connection">Errore di eliminazione della connessione del contatto in attesa</string>
-    <string name="error_changing_address">Errore di modifica dell\'indirizzo</string>
+    <string name="error_changing_address">Errore cambiando l\'indirizzo</string>
     <string name="error_smp_test_failed_at_step">Test fallito al passo %s.</string>
     <string name="error_smp_test_server_auth">Il server richiede l\'autorizzazione di creare code, controlla la password</string>
     <string name="smp_server_test_connect">Connetti</string>
@@ -146,8 +146,8 @@
     <string name="welcome">Benvenuto/a!</string>
     <string name="this_text_is_available_in_settings">Questo testo è disponibile nelle impostazioni</string>
     <string name="your_chats">Сhat</string>
-    <string name="group_preview_you_are_invited">sei stato invitato in un gruppo</string>
-    <string name="group_preview_join_as">entra come %s</string>
+    <string name="group_preview_you_are_invited">Sei stato/a invitato/a in un gruppo</string>
+    <string name="group_preview_join_as">Entra come %s</string>
     <string name="group_connection_pending">in connessione…</string>
     <string name="tap_to_start_new_chat">Tocca per iniziare una conversazione</string>
     <string name="chat_with_developers">Scrivi agli sviluppatori</string>
@@ -1115,7 +1115,7 @@
     <string name="email_invite_body">Ciao!
 \nConnettiti a me tramite SimpleX Chat: %s</string>
     <string name="invite_friends">Invita amici</string>
-    <string name="save_auto_accept_settings">Salva le impostazioni di accettazione automatica</string>
+    <string name="save_auto_accept_settings">Salva le impostazioni dell\'indirizzo SimpleX</string>
     <string name="you_can_create_it_later">Puoi crearlo più tardi</string>
     <string name="share_address">Condividi indirizzo</string>
     <string name="enter_welcome_message">Inserisci il messaggio di benvenuto…</string>
@@ -1379,7 +1379,7 @@
     <string name="rcv_group_event_open_chat">Apri</string>
     <string name="error_creating_member_contact">Errore di creazione del contatto</string>
     <string name="compose_send_direct_message_to_connect">Invia messaggio diretto per connetterti</string>
-    <string name="member_contact_send_direct_message">invia messaggio diretto</string>
+    <string name="member_contact_send_direct_message">invia per connettere</string>
     <string name="rcv_group_event_member_created_contact">si è connesso/a direttamente</string>
     <string name="expand_verb">Espandi</string>
     <string name="connect_plan_repeat_connection_request">Ripetere la richiesta di connessione?</string>
@@ -2445,5 +2445,29 @@
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[Potrai inviare messaggi <b>solo dopo che la tua richiesta verrà accettata</b>.]]></string>
     <string name="compose_view_connect">Connetti</string>
     <string name="contact_should_accept">il contatto dovrebbe accettare…</string>
-    <string name="error_changing_contact_user">Errore di modifica del contatto dell\'utente</string>
+    <string name="error_changing_contact_user">Errore di modifica del contatto</string>
+    <string name="error_changing_group_user">Errore di modifica dell\'utente del gruppo</string>
+    <string name="error_preparing_contact">Errore di preparazione del contatto</string>
+    <string name="error_preparing_group">Errore di preparazione del gruppo</string>
+    <string name="error_rejecting_contact_request">Errore nel rifiuto della richiesta di contatto</string>
+    <string name="compose_view_join_group">Entra nel gruppo</string>
+    <string name="connect_plan_open_chat">Apri la chat</string>
+    <string name="connect_plan_open_new_chat">Apri una chat nuova</string>
+    <string name="connect_plan_open_new_group">Apri un gruppo nuovo</string>
+    <string name="open_to_accept">Apri per accettare</string>
+    <string name="open_to_connect">Apri per connettere</string>
+    <string name="group_preview_open_to_join">Apri per entrare</string>
+    <string name="share_profile_via_link_alert_text">Il profilo verrà condiviso tramite il link dell\'indirizzo.</string>
+    <string name="reject_contact_request">Rifiuta la richiesta di contatto</string>
+    <string name="cant_send_message_request_is_sent">richiesta inviata</string>
+    <string name="compose_view_send_contact_request_alert_question">Inviare una richiesta di contatto?</string>
+    <string name="compose_view_send_request">Invia richiesta</string>
+    <string name="compose_view_send_request_without_message">Invia richiesta senza messaggio</string>
+    <string name="sent_to_your_contact_after_connection">Inviato al tuo contatto dopo la connessione.</string>
+    <string name="share_group_profile_via_link">Condividi il profilo del gruppo via link</string>
+    <string name="share_profile_via_link_alert_confirm">Condividi il profilo</string>
+    <string name="share_profile_via_link">Condividi il profilo via link</string>
+    <string name="the_sender_will_not_be_notified">Il mittente NON verrà avvisato.</string>
+    <string name="address_welcome_message">Messaggio di benvenuto</string>
+    <string name="context_user_picker_your_profile">Il tuo profilo</string>
 </resources>
