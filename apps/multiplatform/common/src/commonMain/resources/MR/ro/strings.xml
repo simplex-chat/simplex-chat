@@ -804,7 +804,7 @@
     <string name="error_reading_passphrase">Eroare la citirea parolei bazei de date</string>
     <string name="incompatible_database_version">Versiunea bazei de date este incompatibilă</string>
     <string name="alert_message_group_invitation_expired">Invitația la grup nu mai este validă, a fost eliminată de expeditor.</string>
-    <string name="joining_group">Alăturare la grup în curs</string>
+    <string name="joining_group">Se alătură grupului</string>
     <string name="button_leave_group">Părăsiți grupul</string>
     <string name="error_deleting_link_for_group">Eroare la ștergerea linkului de grup</string>
     <string name="error_sending_message_contact_invitation">Eroare la trimiterea invitației</string>
@@ -820,7 +820,7 @@
     <string name="delete_report">Ștergeți raportul</string>
     <string name="forward_multiple">Redirecționați mesajele…</string>
     <string name="only_delete_conversation">Ștergeți doar conversația</string>
-    <string name="keep_unused_invitation_question">Păstrați invitația neutilizată?</string>
+    <string name="keep_unused_invitation_question">Păstrezi invitația nefolosită?</string>
     <string name="display_name">Introduceți numele dumneavoastră:</string>
     <string name="permissions_grant">Acordați permisiunea (permisiunile) de a efectua apeluri</string>
     <string name="onboarding_notifications_mode_battery">Notificări și baterie</string>
@@ -842,7 +842,7 @@
     <string name="member_info_member_disabled">dezactivat</string>
     <string name="conn_level_desc_direct">direct</string>
     <string name="files_and_media">Fișiere și media</string>
-    <string name="connect_via_group_link">Vrei să intri în grup?</string>
+    <string name="connect_via_group_link">Vrei să te alături grupului?</string>
     <string name="thousand_abbreviation">k</string>
     <string name="opening_database">Se deschide baza de date…</string>
     <string name="non_content_uri_alert_title">Cale de fișier nevalidă</string>
@@ -863,7 +863,7 @@
     <string name="v4_3_improved_server_configuration">Configurație îmbunătățită a serverului</string>
     <string name="v4_6_group_welcome_message">Mesaj de bun venit pentru grup</string>
     <string name="v4_6_reduced_battery_usage">Reducerea suplimentară a consumului de baterie</string>
-    <string name="v5_5_join_group_conversation">Intră în conversațiile de grup</string>
+    <string name="v5_5_join_group_conversation">Alătură-te conversațiilor de grup</string>
     <string name="v5_5_message_delivery">Livrarea mesajelor îmbunătățită</string>
     <string name="v5_7_new_interface_languages">Interfață lituaniană</string>
     <string name="v5_8_chat_themes_descr">Faceți conversațiile să arate diferit!</string>
@@ -1455,7 +1455,7 @@
     <string name="v5_2_disappear_one_message">Face ca un mesaj să dispară</string>
     <string name="v5_6_app_data_migration_descr">Migrați către un alt dispozitiv prin codul QR.</string>
     <string name="v6_0_delete_many_messages_descr">Ștergeți până la 20 de mesaje odată.</string>
-    <string name="connect_plan_join_your_group">Alăturați-vă grupului dvs.?</string>
+    <string name="connect_plan_join_your_group">Vrei să te alături grupului tău?</string>
     <string name="network_type_no_network_connection">Fără conexiune la rețea</string>
     <string name="service_notifications">Notificări instant!</string>
     <string name="turn_off_system_restriction_button">Deschide setările aplicației</string>
@@ -1515,7 +1515,7 @@
     <string name="new_passphrase">Frază de acces nouă…</string>
     <string name="encrypt_database_question">Criptați baza de date?</string>
     <string name="enter_correct_passphrase">Introduceți fraza de acces corectă.</string>
-    <string name="join_group_question">Vrei să intri în grup?</string>
+    <string name="join_group_question">Vrei să te alături grupului?</string>
     <string name="database_migrations">Migrații: %s</string>
     <string name="join_group_button">Alătură-te</string>
     <string name="leave_group_button">Părăsiți</string>
@@ -2403,5 +2403,5 @@
     <string name="you_rejected_group_invitation">Ați respins invitația de grup</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 desktop: scanați codul QR afișat din aplicație, prin intermediul opțiunii <b>Scanare cod QR</b>.]]></string>
     <string name="cant_send_message_request_is_sent">cererea a fost trimisă</string>
-    <string name="compose_view_join_group">Intră în grup</string>
+    <string name="compose_view_join_group">Alătură-te grupului</string>
 </resources>
