@@ -878,7 +878,7 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
 --   It may be reasonable to set it when contact is first prepared, but then we can't use it to ignore requests after acceptance,
 --   and it may lead to race conditions with XInfo events.
 acceptContactRequest :: User -> UserContactRequest -> IncognitoEnabled -> CM (Contact, Connection, SndQueueSecured)
-acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = AgentInvId invId, contactId_, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId, pqSupport} incognito = do
+acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = AgentInvId invId, contactId_, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId_, xContactId, pqSupport} incognito = do
   subMode <- chatReadVar subscriptionMode
   let pqSup = PQSupportOn
       pqSup' = pqSup `CR.pqSupportAnd` pqSupport
@@ -889,7 +889,7 @@ acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = 
       incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
       connId <- withAgent $ \a -> prepareConnectionToAccept a True invId pqSup'
       (ct, conn) <- withStore' $ \db ->
-        createContactFromRequest db user userContactLinkId connId chatV cReqChatVRange cName profileId cp xContactId incognitoProfile subMode pqSup' False
+        createContactFromRequest db user userContactLinkId_ connId chatV cReqChatVRange cName profileId cp xContactId incognitoProfile subMode pqSup' False
       pure (ct, conn, incognitoProfile)
     Just contactId -> do
       ct <- withFastStore $ \db -> getContact db vr user contactId
@@ -900,7 +900,7 @@ acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = 
           currentTs <- liftIO getCurrentTime
           conn <- withStore' $ \db -> do
             forM_ xContactId $ \xcId -> setContactAcceptedXContactId db ct xcId
-            createAcceptedContactConn db user userContactLinkId contactId connId chatV cReqChatVRange pqSup' incognitoProfile subMode currentTs
+            createAcceptedContactConn db user userContactLinkId_ contactId connId chatV cReqChatVRange pqSup' incognitoProfile subMode currentTs
           pure (ct {activeConn = Just conn} :: Contact, conn, incognitoProfile)
         Just conn@Connection {customUserProfileId} -> do
           incognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
@@ -925,7 +925,7 @@ acceptContactRequestAsync
     currentTs <- liftIO getCurrentTime
     withStore $ \db -> do
       forM_ xContactId $ \xcId -> liftIO $ setContactAcceptedXContactId db ct xcId
-      Connection {connId} <- liftIO $ createAcceptedContactConn db user uclId contactId acId chatV cReqChatVRange cReqPQSup incognitoProfile subMode currentTs
+      Connection {connId} <- liftIO $ createAcceptedContactConn db user (Just uclId) contactId acId chatV cReqChatVRange cReqPQSup incognitoProfile subMode currentTs
       liftIO $ setCommandConnId db user cmdId connId
       getContact db vr user contactId
 

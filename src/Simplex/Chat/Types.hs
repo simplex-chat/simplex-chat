@@ -347,8 +347,7 @@ data UserContactRequest = UserContactRequest
     agentInvitationId :: AgentInvId,
     contactId_ :: Maybe ContactId,
     businessGroupId_ :: Maybe GroupId,
-    userContactLinkId :: Int64,
-    agentContactConnId :: AgentConnId, -- connection id of user contact
+    userContactLinkId_ :: Maybe Int64,
     cReqChatVRange :: VersionRangeChat,
     localDisplayName :: ContactName,
     profileId :: Int64,
