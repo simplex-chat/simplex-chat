@@ -861,7 +861,7 @@
     <string name="integrity_msg_skipped">%1$d 条已跳过消息</string>
     <string name="ttl_s">%ds</string>
     <string name="whats_new">更新内容</string>
-    <string name="group_preview_you_are_invited">你被邀请加入群</string>
+    <string name="group_preview_you_are_invited">你受邀加入群</string>
     <string name="you_have_no_chats">你没有聊天记录</string>
     <string name="icon_descr_waiting_for_image">等待图像中</string>
     <string name="voice_message">语音消息</string>
@@ -1173,7 +1173,7 @@
     <string name="your_contacts_will_remain_connected">与你的联系人保持连接。</string>
     <string name="share_with_contacts">与联系人分享</string>
     <string name="invite_friends">邀请朋友</string>
-    <string name="save_auto_accept_settings">保存自动接受设置</string>
+    <string name="save_auto_accept_settings">保存 SimpleX 地址设置</string>
     <string name="save_settings_question">保存设置？</string>
     <string name="stop_sharing">停止分享</string>
     <string name="email_invite_body">你好！
@@ -1365,7 +1365,7 @@
     <string name="rcv_group_event_open_chat">打开</string>
     <string name="error_creating_member_contact">创建成员联系人时出错</string>
     <string name="compose_send_direct_message_to_connect">发送私信来连接</string>
-    <string name="member_contact_send_direct_message">发送私信</string>
+    <string name="member_contact_send_direct_message">发送私信来连接</string>
     <string name="rcv_group_event_member_created_contact">已直连</string>
     <string name="expand_verb">展开</string>
     <string name="connect_plan_repeat_connection_request">重复连接请求吗？</string>
@@ -2423,4 +2423,21 @@
     <string name="cant_send_message_contact_not_ready">联系人未就绪</string>
     <string name="reject_pending_member_alert_title">拒绝成员?</string>
     <string name="add_short_link">添加短链接</string>
+    <string name="accept_contact_request">接受联络请求</string>
+    <string name="compose_view_add_message">添加消息</string>
+    <string name="e2ee_info_e2ee"><![CDATA[Messages are protected by <b>端到端加密</b>.]]></string>
+    <string name="compose_view_send_contact_request_alert_text"><![CDATA[You will be able to send messages <b>仅在你的请求被接收后</b>.]]></string>
+    <string name="compose_view_connect">连接</string>
+    <string name="contact_should_accept">联系人应当接受…</string>
+    <string name="error_changing_contact_user">更改联系用户出错</string>
+    <string name="error_changing_group_user">更改群用户出错</string>
+    <string name="error_preparing_contact">准备联系时出错</string>
+    <string name="error_preparing_group">准备群时出错</string>
+    <string name="error_rejecting_contact_request">拒绝联络请求出错</string>
+    <string name="compose_view_join_group">加群</string>
+    <string name="connect_plan_open_chat">打开聊天</string>
+    <string name="connect_plan_open_new_chat">打开新聊天</string>
+    <string name="connect_plan_open_new_group">打开新群</string>
+    <string name="open_to_accept">打开以接受</string>
+    <string name="open_to_connect">打开以接受</string>
 </resources>
