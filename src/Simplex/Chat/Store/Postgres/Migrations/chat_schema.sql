@@ -349,7 +349,7 @@ ALTER TABLE test_chat_schema.contact_profiles ALTER COLUMN contact_profile_id AD
 
 CREATE TABLE test_chat_schema.contact_requests (
     contact_request_id bigint NOT NULL,
-    user_contact_link_id bigint NOT NULL,
+    user_contact_link_id bigint,
     agent_invitation_id bytea NOT NULL,
     contact_profile_id bigint,
     local_display_name text NOT NULL,
@@ -2313,7 +2313,7 @@ ALTER TABLE ONLY test_chat_schema.contact_requests
 
 
 ALTER TABLE ONLY test_chat_schema.contact_requests
-    ADD CONSTRAINT contact_requests_user_contact_link_id_fkey FOREIGN KEY (user_contact_link_id) REFERENCES test_chat_schema.user_contact_links(user_contact_link_id) ON UPDATE CASCADE ON DELETE CASCADE;
+    ADD CONSTRAINT contact_requests_user_contact_link_id_fkey FOREIGN KEY (user_contact_link_id) REFERENCES test_chat_schema.user_contact_links(user_contact_link_id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 
@@ -2689,3 +2689,6 @@ ALTER TABLE ONLY test_chat_schema.user_contact_links
 
 ALTER TABLE ONLY test_chat_schema.xftp_file_descriptions
     ADD CONSTRAINT xftp_file_descriptions_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
+
+
+
