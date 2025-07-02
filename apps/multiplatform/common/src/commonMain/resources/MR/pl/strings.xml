@@ -1878,7 +1878,7 @@
     <string name="servers_info_sessions_connected">Połączony</string>
     <string name="current_user">Bieżący profil</string>
     <string name="servers_info_messages_received">Otrzymane wiadomości</string>
-    <string name="servers_info_subscriptions_section_header">Odebranie wiadomości</string>
+    <string name="servers_info_subscriptions_section_header">Odbiór wiadomości</string>
     <string name="servers_info_reset_stats_alert_error_title">Błąd resetowania statystyk</string>
     <string name="duplicates_label">duplikaty</string>
     <string name="completed">Zakończono</string>
