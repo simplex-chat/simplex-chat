@@ -2059,7 +2059,7 @@
     <string name="network_proxy_auth_mode_username_password">你的凭据可能以未经加密的方式被发送。</string>
     <string name="network_proxy_random_credentials">使用随机凭据</string>
     <string name="network_proxy_username">用户名</string>
-    <string name="new_chat_share_profile">分享配置文件</string>
+    <string name="new_chat_share_profile">分享资料</string>
     <string name="error_forwarding_messages">转发消息出错</string>
     <string name="forward_files_messages_deleted_after_selection_desc">在你选中消息后这些消息已被删除。</string>
     <string name="n_file_errors">%1$d 个文件错误：\n%2$s</string>
@@ -2439,5 +2439,19 @@
     <string name="connect_plan_open_new_chat">打开新聊天</string>
     <string name="connect_plan_open_new_group">打开新群</string>
     <string name="open_to_accept">打开以接受</string>
-    <string name="open_to_connect">打开以接受</string>
+    <string name="open_to_connect">打开以连接</string>
+    <string name="group_preview_open_to_join">打开以加入</string>
+    <string name="share_profile_via_link_alert_text">个人资料将通过地址链接分享。</string>
+    <string name="reject_contact_request">拒绝联络请求</string>
+    <string name="cant_send_message_request_is_sent">发送了请求</string>
+    <string name="compose_view_send_contact_request_alert_question">发送联络请求？</string>
+    <string name="compose_view_send_request">发送请求</string>
+    <string name="compose_view_send_request_without_message">发送无消息请求</string>
+    <string name="sent_to_your_contact_after_connection">连接后发送给你的联系人。</string>
+    <string name="share_group_profile_via_link">通过链接分享群资料</string>
+    <string name="share_profile_via_link_alert_confirm">分享资料</string>
+    <string name="share_profile_via_link">通过链接分享资料</string>
+    <string name="the_sender_will_not_be_notified">不会通知发送者。</string>
+    <string name="address_welcome_message">欢迎消息</string>
+    <string name="context_user_picker_your_profile">你的个人资料</string>
 </resources>
