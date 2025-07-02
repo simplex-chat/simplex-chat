@@ -1951,4 +1951,5 @@
     <string name="connection_error_quota">پیام‌های نرسیده</string>
     <string name="connection_error_quota_desc">ارتباط به حد نصاب پیام‌های نرسیده رسید، ممکن است مخاطب شما آفلاین باشد.</string>
     <string name="error_updating_chat_tags">خطا در به‌روزرسانی فهرست گفتگو</string>
+    <string name="compose_view_add_message">افزودن پیام</string>
 </resources>
