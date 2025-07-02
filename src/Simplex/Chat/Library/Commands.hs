@@ -1205,7 +1205,7 @@ processChatCommand' vr = \case
               pure ct
             liftIO $ deleteContactRequest db user connReqId
             pure (cReq, ct_)
-        withAgent $ \a -> rejectContact a connId invId
+        withAgent $ \a -> rejectContact a invId
         pure $ CRContactRequestRejected user cReq ct_
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
