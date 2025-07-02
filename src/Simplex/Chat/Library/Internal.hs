@@ -887,7 +887,7 @@ acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = 
   (ct, conn, incognitoProfile) <- case contactId_ of
     Nothing -> do
       incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
-      connId <- withAgent $ \a -> prepareConnectionToAccept a True invId pqSup'
+      connId <- withAgent $ \a -> prepareConnectionToAccept a (aUserId user) True invId pqSup'
       (ct, conn) <- withStore' $ \db ->
         createContactFromRequest db user userContactLinkId_ connId chatV cReqChatVRange cName profileId cp xContactId incognitoProfile subMode pqSup' False
       pure (ct, conn, incognitoProfile)
@@ -896,7 +896,7 @@ acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = 
       case contactConn ct of
         Nothing -> do
           incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
-          connId <- withAgent $ \a -> prepareConnectionToAccept a True invId pqSup'
+          connId <- withAgent $ \a -> prepareConnectionToAccept a (aUserId user) True invId pqSup'
           currentTs <- liftIO getCurrentTime
           conn <- withStore' $ \db -> do
             forM_ xContactId $ \xcId -> setContactAcceptedXContactId db ct xcId
@@ -908,7 +908,7 @@ acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = 
   let profileToSend = profileToSendOnAccept user incognitoProfile False
   dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
   -- TODO [certs rcv]
-  (ct,conn,) . fst <$> withAgent (\a -> acceptContact a (aConnId conn) True invId dm pqSup' subMode)
+  (ct,conn,) . fst <$> withAgent (\a -> acceptContact a (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
 
 acceptContactRequestAsync :: User -> Int64 -> Contact -> UserContactRequest -> Maybe IncognitoProfile -> CM Contact
 acceptContactRequestAsync
@@ -2194,7 +2194,7 @@ agentAcceptContactAsync :: MsgEncodingI e => User -> Bool -> InvitationId -> Cha
 agentAcceptContactAsync user enableNtfs invId msg subMode pqSup chatV = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing CFAcceptContact
   dm <- encodeConnInfoPQ pqSup chatV msg
-  connId <- withAgent $ \a -> acceptContactAsync a (aCorrId cmdId) enableNtfs invId dm pqSup subMode
+  connId <- withAgent $ \a -> acceptContactAsync a (aUserId user) (aCorrId cmdId) enableNtfs invId dm pqSup subMode
   pure (cmdId, connId)
 
 deleteAgentConnectionAsync :: ConnId -> CM ()

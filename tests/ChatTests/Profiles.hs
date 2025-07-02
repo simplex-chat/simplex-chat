@@ -48,7 +48,7 @@ chatProfileTests = do
     it "deduplicate contact requests" testDeduplicateContactRequests
     it "deduplicate contact requests with profile change" testDeduplicateContactRequestsProfileChange
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
-    fit "keep connection requests when contact link deleted" testKeepConnectionRequests
+    it "keep connection requests when contact link deleted" testKeepConnectionRequests
     it "connected contact works when contact link deleted" testContactLinkDeletedConnectedContactWorks
     -- TODO [short links] test auto-reply with current version, with connecting client not preparing contact
     it "auto-reply message" testAutoReplyMessage
