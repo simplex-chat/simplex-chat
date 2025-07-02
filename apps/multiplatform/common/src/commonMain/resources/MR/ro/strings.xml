@@ -842,7 +842,7 @@
     <string name="member_info_member_disabled">dezactivat</string>
     <string name="conn_level_desc_direct">direct</string>
     <string name="files_and_media">Fișiere și media</string>
-    <string name="connect_via_group_link">Alăturați-vă grupului?</string>
+    <string name="connect_via_group_link">Vrei să intri în grup?</string>
     <string name="thousand_abbreviation">k</string>
     <string name="opening_database">Se deschide baza de date…</string>
     <string name="non_content_uri_alert_title">Cale de fișier nevalidă</string>
@@ -863,7 +863,7 @@
     <string name="v4_3_improved_server_configuration">Configurație îmbunătățită a serverului</string>
     <string name="v4_6_group_welcome_message">Mesaj de bun venit pentru grup</string>
     <string name="v4_6_reduced_battery_usage">Reducerea suplimentară a consumului de baterie</string>
-    <string name="v5_5_join_group_conversation">Alăturați-vă conversațiilor de grup</string>
+    <string name="v5_5_join_group_conversation">Intră în conversațiile de grup</string>
     <string name="v5_5_message_delivery">Livrarea mesajelor îmbunătățită</string>
     <string name="v5_7_new_interface_languages">Interfață lituaniană</string>
     <string name="v5_8_chat_themes_descr">Faceți conversațiile să arate diferit!</string>
@@ -960,7 +960,7 @@
     <string name="receipts_groups_disable_keep_overrides">Dezactivează (păstrează suprascrierile pentru grupuri)</string>
     <string name="receipts_groups_enable_for_all">Activează pentru toate grupurile</string>
     <string name="mtr_error_no_down_migration">Versiunea bazei de date este mai nouă decât app, dar nu există migrare ulterioară pentru: %s</string>
-    <string name="join_group_incognito_button">Alăturați-vă anonim</string>
+    <string name="join_group_incognito_button">Alătură-te anonim</string>
     <string name="rcv_group_event_open_chat">Deschide</string>
     <string name="operator_use_for_messages_private_routing">Pentru rutare privată</string>
     <string name="network_option_enable_tcp_keep_alive">Activați funcția TCP keep-alive</string>
@@ -1062,7 +1062,7 @@
     <string name="delete_messages_mark_deleted_warning">Mesajele vor fi marcate pentru ștergere. Destinatarul (destinatarii) va (vor) putea dezvălui aceste mesaje.</string>
     <string name="download_file">Descărcare</string>
     <string name="revoke_file__message">Fișierul va fi șters de pe servere.</string>
-    <string name="group_preview_join_as">Alăturați-vă ca %s</string>
+    <string name="group_preview_join_as">Alătură-te ca %s</string>
     <string name="no_selected_chat">Nicio conversație selectată</string>
     <string name="loading_remote_file_title">Încărcarea fișierului</string>
     <string name="error_saving_file">Eroare la salvarea fișierului</string>
@@ -1515,9 +1515,9 @@
     <string name="new_passphrase">Frază de acces nouă…</string>
     <string name="encrypt_database_question">Criptați baza de date?</string>
     <string name="enter_correct_passphrase">Introduceți fraza de acces corectă.</string>
-    <string name="join_group_question">Alăturați-vă grupului?</string>
+    <string name="join_group_question">Vrei să intri în grup?</string>
     <string name="database_migrations">Migrații: %s</string>
-    <string name="join_group_button">Alătură -te</string>
+    <string name="join_group_button">Alătură-te</string>
     <string name="leave_group_button">Părăsiți</string>
     <string name="leave_chat_question">Părăsiți conversația?</string>
     <string name="rcv_group_event_member_left">ieșit</string>
@@ -1992,7 +1992,7 @@
     <string name="v6_1_switch_chat_profile_descr">Comutați profilul de chat pentru invitațiile unice.</string>
     <string name="you_can_enable_delivery_receipts_later">Puteți activa mai târziu prin Setări</string>
     <string name="custom_time_unit_weeks">săptămâni</string>
-    <string name="connect_plan_this_is_your_own_one_time_link">Acesta este propriul tău link unic, valabil o singură dată!</string>
+    <string name="connect_plan_this_is_your_own_one_time_link">Acesta este linkul tău unic, valabil o singură dată!</string>
     <string name="file_not_approved_title">Servere necunoscute!</string>
     <string name="file_not_approved_descr">Fără Tor sau VPN, adresa ta IP va fi vizibilă pentru aceste retransmiteri XFTP:\n%1$s.</string>
     <string name="update_database_passphrase">Actualizați parola bazei de date</string>
@@ -2402,4 +2402,6 @@
     <string name="you_sent_group_invitation">Ai trimis o invitație la grup</string>
     <string name="you_rejected_group_invitation">Ați respins invitația de grup</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 desktop: scanați codul QR afișat din aplicație, prin intermediul opțiunii <b>Scanare cod QR</b>.]]></string>
+    <string name="cant_send_message_request_is_sent">cererea a fost trimisă</string>
+    <string name="compose_view_join_group">Intră în grup</string>
 </resources>
