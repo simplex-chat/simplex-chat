@@ -510,7 +510,7 @@
     <string name="blocked_by_admin_item_description">blocat de admin</string>
     <string name="database_initialization_error_title">Nu se poate inițializa baza de date</string>
     <string name="contact_sent_large_file">Contactul tău a trimis un fișier care este mai mare decât dimensiunea maximă acceptată în prezent (%1$s).</string>
-    <string name="icon_descr_cancel_link_preview">anulează previzualizarea link-ului</string>
+    <string name="icon_descr_cancel_link_preview">anulează previzualizarea linkului</string>
     <string name="smp_servers_check_address">Verifică adresa serverului și încearcă din nou.</string>
     <string name="you_control_your_chat">Tu îți controlezi chatul!</string>
     <string name="call_already_ended">Apelul s-a încheiat deja!</string>
@@ -784,7 +784,7 @@
     <string name="forward_files_failed_to_receive_desc">%1$d fișier(e) nu au putut fi descărcate.</string>
     <string name="forward_files_not_accepted_desc">%1$d fișier(e) nu au fost descărcate.</string>
     <string name="description_via_contact_address_link">prin linkul adresei de contact</string>
-    <string name="simplex_link_mode_browser_warning">Deschiderea link-ului în browser poate reduce confidențialitatea și securitatea conexiunii. Link-urile SimpleX de nesigure vor fi roșii.</string>
+    <string name="simplex_link_mode_browser_warning">Deschiderea linkului în browser poate reduce confidențialitatea și securitatea conexiunii. Linkurile SimpleX nesigure vor fi afișate cu roșu.</string>
     <string name="display_name_requested_to_connect">solicitat să se conecteze</string>
     <string name="failed_to_parse_chat_title">Conversația nu a putut fi încărcată</string>
     <string name="report_item_visibility_submitter">Doar tu și moderatorii vedeți asta</string>
@@ -806,7 +806,7 @@
     <string name="alert_message_group_invitation_expired">Invitația la grup nu mai este validă, a fost eliminată de expeditor.</string>
     <string name="joining_group">Alăturare la grup în curs</string>
     <string name="button_leave_group">Părăsiți grupul</string>
-    <string name="error_deleting_link_for_group">Eroare la ștergerea link-ului grupului</string>
+    <string name="error_deleting_link_for_group">Eroare la ștergerea linkului de grup</string>
     <string name="error_sending_message_contact_invitation">Eroare la trimiterea invitației</string>
     <string name="send_receipts_disabled">dezactivat</string>
     <string name="group_members_can_send_voice">Membrii pot trimite mesaje vocale.</string>
@@ -1554,7 +1554,7 @@
     <string name="servers_info_details">Detalii</string>
     <string name="other_errors">alte erori</string>
     <string name="error_deleting_member_support_chat">Eroare la ștergerea conversației cu membrul</string>
-    <string name="group_link">Link-ul grupului</string>
+    <string name="group_link">Link grup</string>
     <string name="fix_connection_question">Remediați conexiunea?</string>
     <string name="ttl_weeks">%d săptămâni</string>
     <string name="forward_chat_item">Redirecţionează</string>
@@ -1992,7 +1992,7 @@
     <string name="v6_1_switch_chat_profile_descr">Comutați profilul de chat pentru invitațiile unice.</string>
     <string name="you_can_enable_delivery_receipts_later">Puteți activa mai târziu prin Setări</string>
     <string name="custom_time_unit_weeks">săptămâni</string>
-    <string name="connect_plan_this_is_your_own_one_time_link">Acesta este link-ul tău unic!</string>
+    <string name="connect_plan_this_is_your_own_one_time_link">Acesta este propriul tău link unic, valabil o singură dată!</string>
     <string name="file_not_approved_title">Servere necunoscute!</string>
     <string name="file_not_approved_descr">Fără Tor sau VPN, adresa ta IP va fi vizibilă pentru aceste retransmiteri XFTP:\n%1$s.</string>
     <string name="update_database_passphrase">Actualizați parola bazei de date</string>
