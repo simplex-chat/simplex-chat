@@ -669,7 +669,7 @@
     <string name="import_theme_error_desc">تأكد من أن الملف يحتوي على بناء جملة YAML الصحيح. تصدير النسق للحصول على مثال لهيكل ملف النسق.</string>
     <string name="v4_3_voice_messages_desc">40 ثانية كحد أقصى، يتم استلامها على الفور.</string>
     <string name="error_saving_ICE_servers">خطأ في حفظ خوادم ICE</string>
-    <string name="make_private_connection">إجراء اتصال خاص</string>
+    <string name="make_private_connection">أجري اتصال خاص</string>
     <string name="error_stopping_chat">خطأ في إيقاف الدردشة</string>
     <string name="error_loading_details">خطأ في تحميل التفاصيل</string>
     <string name="allow_accepting_calls_from_lock_screen">تفعيل المكالمات من شاشة القفل عبر الإعدادات.</string>
@@ -955,7 +955,7 @@
     <string name="v4_4_disappearing_messages_desc">الرسائل المرسلة سيتم حذفها بعد المدة المحدّدة.</string>
     <string name="v4_6_group_welcome_message_descr">تعيين رسالة تظهر للأعضاء الجدد!</string>
     <string name="set_passcode">عيّن رمز المرور</string>
-    <string name="share_text_sent_at">تم إرساله في: %s</string>
+    <string name="share_text_sent_at">أُرسلت في: %s</string>
     <string name="current_version_timestamp">%s (الحالي)</string>
     <string name="color_sent_message">رسالة مرسلة</string>
     <string name="set_group_preferences">عيّن تفضيلات المجموعة</string>
@@ -982,7 +982,7 @@
     <string name="set_password_to_export">عيّن عبارة المرور للتصدير</string>
     <string name="rcv_conn_event_verification_code_reset">تم تغيير رمز الأمان</string>
     <string name="send_receipts">إيصالات الإرسال</string>
-    <string name="info_row_sent_at">أُرسل في</string>
+    <string name="info_row_sent_at">أُرسلت في</string>
     <string name="custom_time_picker_select">حدد</string>
     <string name="sending_delivery_receipts_will_be_enabled">سيتم تفعيل إرسال إيصالات التسليم لجميع جهات الاتصال.</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">سيتم تفعيل إرسال إيصالات التسليم لجميع جهات الاتصال في جميع ملفات تعريف الدردشة المرئية.</string>
@@ -1046,7 +1046,7 @@
     <string name="stop_chat_to_export_import_or_delete_chat_database">أوقف الدردشة لتصدير أو استيراد أو حذف قاعدة بيانات الدردشة. لن تتمكّن من استلام الرسائل وإرسالها أثناء إيقاف الدردشة.</string>
     <string name="chat_item_ttl_seconds">%s ثانية/ثواني</string>
     <string name="callstate_starting">يبدأ…</string>
-    <string name="auth_simplex_lock_turned_on">تم تشغيل القفل SimpleX</string>
+    <string name="auth_simplex_lock_turned_on">شُغّل قفل SimpleX</string>
     <string name="show_dev_options">أظهر:</string>
     <string name="show_developer_options">أظهر خيارات المطور</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
@@ -1271,7 +1271,7 @@
     <string name="description_you_shared_one_time_link_incognito">لقد شاركت رابط لمرة واحدة متخفي</string>
     <string name="simplex_link_mode_browser">عبر المتصفح</string>
     <string name="you_have_to_enter_passphrase_every_time">يجب عليك إدخال عبارة المرور في كل مرة يبدأ فيها التطبيق - لا يتم تخزينها على الجهاز.</string>
-    <string name="upgrade_and_open_chat">قم بالترقية وفتح الدردشة</string>
+    <string name="upgrade_and_open_chat">رقِّ وافتح الدردشة</string>
     <string name="button_welcome_message">رسالة الترحيب</string>
     <string name="description_via_contact_address_link">عبر رابط عنوان الاتصال</string>
     <string name="connection_error_auth_desc">ما لم يحذف جهة الاتصال الاتصال أو استُخدم هذا الرابط بالفعل، فقد يكون خطأ - الرجاء الإبلاغ عنه.
@@ -1833,7 +1833,7 @@
     <string name="share_text_file_status">حالة الملف: %s</string>
     <string name="share_text_message_status">حالة الرسالة: %s</string>
     <string name="copy_error">خطأ في النسخ</string>
-    <string name="remote_ctrl_connection_stopped_identity_desc">تم استخدام هذا الرابط مع جهاز محمول آخر، يُرجى إنشاء رابط جديد على سطح المكتب.</string>
+    <string name="remote_ctrl_connection_stopped_identity_desc">استُخدم هذا الرابط مع جوّال آخر، يُرجى إنشاء رابط جديد على سطح المكتب.</string>
     <string name="remote_ctrl_connection_stopped_desc">يُرجى التحقق من اتصال الهاتف المحمول وسطح المكتب بنفس الشبكة المحلية، وأن جدار حماية سطح المكتب يسمح بالاتصال.
 \nيُرجى مشاركة أي مشاكل أُخرى مع المطورين.</string>
     <string name="cannot_share_message_alert_title">لا يمكن إرسال الرسالة</string>
@@ -1948,7 +1948,7 @@
     <string name="servers_info_reconnect_servers_title">أعِد توصيل الخوادم؟</string>
     <string name="server_address">عنوان الخادم</string>
     <string name="servers_info_statistics_section_header">الإحصائيات</string>
-    <string name="subscription_results_ignored">تم تجاهل الاشتراكات</string>
+    <string name="subscription_results_ignored">تجاهلت الاشتراكات</string>
     <string name="servers_info_transport_sessions_section_header">جلسات النقل</string>
     <string name="app_check_for_updates_notice_desc">لكي يتم إعلامك بالإصدارات الجديدة، شغّل الفحص الدوري للإصدارات المستقرة أو التجريبية.</string>
     <string name="servers_info_proxied_servers_section_footer">أنت غير متصل بهذه الخوادم. يتم استخدام التوجيه الخاص لتسليم الرسائل إليهم.</string>
@@ -2058,7 +2058,7 @@
     <string name="error_forwarding_messages">خطأ في تحويل الرسائل</string>
     <string name="switching_profile_error_title">خطأ في تبديل ملف التعريف</string>
     <string name="select_chat_profile">حدد ملف تعريف الدردشة</string>
-    <string name="switching_profile_error_message">لقد تم نقل اتصالك إلى %s ولكن حدث خطأ غير متوقع أثناء إعادة توجيهك إلى ملف التعريف.</string>
+    <string name="switching_profile_error_message">نُقلت اتصالك إلى %s ولكن حدث خطأ غير متوقع أثناء إعادة توجيهك إلى ملف التعريف.</string>
     <string name="forward_alert_title_messages_to_forward">تحويل %1$s رسالة؟</string>
     <string name="forward_files_messages_deleted_after_selection_title">لم يحوّل %1$s من الرسائل</string>
     <string name="compose_forward_messages_n">جارِ تحويل %1$s رسالة</string>
@@ -2181,7 +2181,7 @@
     <string name="share_simplex_address_on_social_media">شارك عنوان SimpleX على وسائل التواصل الاجتماعي.</string>
     <string name="simplex_address_and_1_time_links_are_safe_to_share">عنوان SimpleX والروابط لمرة واحدة آمنة للمشاركة عبر أي برنامج مُراسلة.</string>
     <string name="address_creation_instruction">انقر فوق أنشئ عنوان SimpleX في القائمة لإنشائه لاحقًا.</string>
-    <string name="message_deleted_or_not_received_error_desc">حُذفت هذه الرسالة أو لم يتم استلامها بعد.</string>
+    <string name="message_deleted_or_not_received_error_desc">حُذفت هذه الرسالة أو لم تُستلم بعد.</string>
     <string name="operator_use_for_messages">استخدم للرسائل</string>
     <string name="onboarding_network_operators_app_will_use_different_operators">يحمي التطبيق خصوصيتك من خلال استخدام مُشغلين مختلفين في كل محادثة.</string>
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[سيتم قبول الشروط للمُشغل/ين: <b>%s</b>.]]></string>
