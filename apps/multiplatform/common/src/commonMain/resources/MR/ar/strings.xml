@@ -794,7 +794,7 @@
     <string name="only_you_can_send_voice">أنت فقط يمكنك إرسال رسائل صوتية.</string>
     <string name="open_verb">افتح</string>
     <string name="passcode_not_changed">لم يتم تغيير رمز المرور!</string>
-    <string name="passcode_changed">تم تغيير رمز المرور</string>
+    <string name="passcode_changed">غُيّرت رمز المرور!</string>
     <string name="opening_database">جارِ فتح قاعدة البيانات…</string>
     <string name="only_your_contact_can_send_voice">جهة اتصالك فقط يمكنها إرسال رسائل صوتية.</string>
     <string name="paste_button">ألصق</string>
@@ -1739,7 +1739,7 @@
     <string name="srv_error_host">عنوان الخادم غير متوافق مع إعدادات الشبكة.</string>
     <string name="srv_error_version">إصدار الخادم غير متوافق مع إعدادات الشبكة.</string>
     <string name="snd_error_auth">مفتاح خاطئ أو اتصال غير معروف - على الأرجح حُذف هذا الاتصال.</string>
-    <string name="snd_error_quota">تم تجاوز السعة - لم يتلق المُستلم الرسائل المُرسلة مسبقًا.</string>
+    <string name="snd_error_quota">تجاوزت السعة - لم يتلق المُستلم الرسائل المُرسلة مسبقًا.</string>
     <string name="snd_error_relay">خطأ في خادم الوجهة: %1$s</string>
     <string name="ci_status_other_error">خطأ: %1$s</string>
     <string name="snd_error_proxy_relay">خادم التحويل: %1$s\nخطأ في خادم الوجهة: %2$s</string>
