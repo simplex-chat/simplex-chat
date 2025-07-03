@@ -5,7 +5,7 @@
     <link type="application/atom+xml" rel="self" href="https://simplex.chat/feed.atom"/>
     <title>SimpleX Chat Blog</title>
     <subtitle>It allows you to stay up to date with the latest Blogs from SimpleX Chat.</subtitle>
-    <updated>2025-03-08T00:00:00Z</updated>
+    <updated>2025-07-03T00:00:00Z</updated>
     <author>
         <name>SimpleX Chat</name>
         <email>chat@simplex.chat</email>
@@ -3144,8 +3144,8 @@ A few bugs and UX issues but great foundation. Love that it’s public domain.&l
 &lt;p&gt;Thank you,&lt;/p&gt;
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
-&lt;p&gt;[1] You can also to self-host your own SimpleX servers on &lt;a href=&quot;https://home.runonflux.io/apps/marketplace?q=simplex&quot;&gt;Flux decentralized cloud&lt;/a&gt;.&lt;/p&gt;
-&lt;p&gt;[2] The probability of connection being de-anonymized and the number of random server choices follow this equation: &lt;code&gt;(1 - s ^ 2) ^ n = 1 - p&lt;/code&gt;, where &lt;code&gt;s&lt;/code&gt; is the share of attacker-controlled servers in the network, &lt;code&gt;n&lt;/code&gt; is the number of random choices of entry and exit nodes for the circuit, and &lt;code&gt;p&lt;/code&gt; is the probability of both entry and exit nodes, and the connection privacy being compromised. Substituting &lt;code&gt;0.02&lt;/code&gt; (2%) for &lt;code&gt;s&lt;/code&gt;, &lt;code&gt;0.5&lt;/code&gt; (50%) for &lt;code&gt;p&lt;/code&gt;, and solving this equation for &lt;code&gt;n&lt;/code&gt; we obtain that &lt;code&gt;1733&lt;/code&gt; random circuits have 50% probability of privacy being compromised.&lt;/p&gt;
+&lt;p&gt;[1]: You can also to self-host your own SimpleX servers on &lt;a href=&quot;https://home.runonflux.io/apps/marketplace?q=simplex&quot;&gt;Flux decentralized cloud&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;[2]: The probability of connection being de-anonymized and the number of random server choices follow this equation: &lt;code&gt;(1 - s ^ 2) ^ n = 1 - p&lt;/code&gt;, where &lt;code&gt;s&lt;/code&gt; is the share of attacker-controlled servers in the network, &lt;code&gt;n&lt;/code&gt; is the number of random choices of entry and exit nodes for the circuit, and &lt;code&gt;p&lt;/code&gt; is the probability of both entry and exit nodes, and the connection privacy being compromised. Substituting &lt;code&gt;0.02&lt;/code&gt; (2%) for &lt;code&gt;s&lt;/code&gt;, &lt;code&gt;0.5&lt;/code&gt; (50%) for &lt;code&gt;p&lt;/code&gt;, and solving this equation for &lt;code&gt;n&lt;/code&gt; we obtain that &lt;code&gt;1733&lt;/code&gt; random circuits have 50% probability of privacy being compromised.&lt;/p&gt;
 &lt;p&gt;Also see &lt;a href=&quot;https://ritter.vg/p/tor-v1.6.pdf&quot;&gt;this presentation about Tor&lt;/a&gt;, specifically the approximate calculations on page 76, and also &lt;a href=&quot;https://blog.torproject.org/announcing-vanguards-add-onion-services/&quot;&gt;Tor project post&lt;/a&gt; about the changes that made attack on hidden service anonymity harder, but still viable in case the it is used for a long time.&lt;/p&gt;
 </content>
             <author>
@@ -3482,6 +3482,151 @@ A few bugs and UX issues but great foundation. Love that it’s public domain.&l
 &lt;p&gt;Thank you,&lt;/p&gt;
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
+</content>
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
+        </entry>
+        <entry>
+            <id>https://simplex.chat/blog/20250703-simplex-network-protocol-extension-for-securely-connecting-people.html</id>
+            <!-- <updated>03 Jul 2025</updated> -->
+            <updated>2025-07-03T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20250703-simplex-network-protocol-extension-for-securely-connecting-people.html"/>
+            <title>SimpleX network: new experience of connecting with people &amp;mdash; available in SimpleX Chat v6.4-beta.4</title>
+            <content type="html">&lt;h1 id=&quot;simplex-network-new-experience-of-connecting-with-people-available-in-simplex-chat-v64-beta4&quot; tabindex=&quot;-1&quot;&gt;SimpleX network: new experience of connecting with people — available in SimpleX Chat v6.4-beta.4&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Jul 3, 2025&lt;/p&gt;
+&lt;p&gt;The mission of communication network is connecting people [1]. The process of connecting in SimpleX network is really secure — it is protected from server MITM attacks. But before this beta version connecting to contacts had a really bad user experience.&lt;/p&gt;
+&lt;h2 id=&quot;what-was-the-problem&quot; tabindex=&quot;-1&quot;&gt;What was the problem?&lt;/h2&gt;
+&lt;p&gt;How did it work before:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Your contact created a large link (1-time invitation or contact address [2]) and shared with you via another messenger, email, social profile or website. Sharing the link &amp;quot;out-of-band&amp;quot; (i.e., not via the server) is necessary for security. But it was not working well in some cases:&lt;/li&gt;
+&lt;/ol&gt;
+&lt;ul&gt;
+&lt;li&gt;the link was incorrectly changed by some applications, e.g. Telegram, because of link complexity, preventing people from connecting.&lt;/li&gt;
+&lt;li&gt;some people were worried that the link &amp;quot;looks like malware&amp;quot;.&lt;/li&gt;
+&lt;li&gt;the QR code for the link was large, and sometimes difficult to scan.&lt;/li&gt;
+&lt;li&gt;the link did not fit the size limit in social media profiles.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;ol start=&quot;2&quot;&gt;
+&lt;li&gt;Once you received the link, you used it in the app. But when using the link you could not see who you were connecting to. The only choice you had is to share your current profile or to use incognito profile. And as people didn&#39;t know which profile will be shared with them, many were choosing to share incognito profile, making recognizing contacts more complex — you don&#39;t know who is who unless you attach aliases to incognito contacts.&lt;/li&gt;
+&lt;li&gt;Once you tap Connect, all you see is the line in the list of chats that said &amp;quot;Connecting via link&amp;quot;. The process of connection required your contact to be online, and in some cases to approve the request, so you may had contact in &amp;quot;connecting&amp;quot; state for a really long time.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;So it is not surprising that a large number of people failed connecting to friends — either they refused to engage because of large and scary looking links, or their application made the link unusable, or they abandoned the process at step 3, deciding that the app is not working correctly.&lt;/p&gt;
+&lt;h2 id=&quot;why-cant-we-just-use-usernames&quot; tabindex=&quot;-1&quot;&gt;Why can&#39;t we just use usernames?&lt;/h2&gt;
+&lt;p&gt;Many people asked — why don&#39;t you just use usernames or a link shortener for some really short links, as other networks and apps do.&lt;/p&gt;
+&lt;p&gt;The problem is that usernames or very short links make e2e encryption security of your chats dependent on the servers. Unless the link you share contains enough randomness in it and is cryptographically linked to the encryption keys, the servers can substitute the e2e encryption keys and read all your communication without you knowing it. We see this risk as unacceptable.&lt;/p&gt;
+&lt;p&gt;Mitigation against this &amp;quot;man-in-the-middle&amp;quot; attack by the server [3] is offered by Signal and other apps via security code verification [4], when you compare the numeric code in your app with your contact&#39;s app, but:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;most people do not verify security codes, and even if they do, they do not re-verify them every time security code changes, so their security is dependent on the server not being compromised, which is not a great security,&lt;/li&gt;
+&lt;li&gt;the servers can still compromise the initial messages, where profile names are exchanged, before you had the chance to verify the security codes.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;When we design communication protocols for SimpleX network we always aim to protect you from the attack via your network operators — this is what sets SimpleX network design apart from many other communication networks and platforms.&lt;/p&gt;
+&lt;p&gt;Even though you choose the servers that you trust, and they are bound by privacy policy, and we follow the best security practices to protect servers from any 3rd party attacks, there is still a possibility that servers may be compromised by some attackers, and unless your communications are not protected from the servers, they are not protected from whoever can compromise the servers [5].&lt;/p&gt;
+&lt;h2 id=&quot;what-is-the-new-way-to-make-connections&quot; tabindex=&quot;-1&quot;&gt;What is the new way to make connections?&lt;/h2&gt;
+&lt;p&gt;Before diving into the details of technology, let&#39;s walk though the new process of connecting to people that is introduced in &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/releases/tag/v6.4.0-beta.4&quot;&gt;v6.4-beta.4&lt;/a&gt;.&lt;/p&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20250703-card.jpg&quot; width=&quot;288&quot; class=&quot;float-to-right&quot; /&gt;
+&lt;ol&gt;
+&lt;li&gt;As before, to connect you or your contact need to create a 1-time invitation or a contact address link. All the past problems of the long links are now solved:&lt;/li&gt;
+&lt;/ol&gt;
+&lt;ul&gt;
+&lt;li&gt;this link is correctly processed by all applications, as it has a simple structure,&lt;/li&gt;
+&lt;li&gt;it is short and simple, e.g. the SimpleX Chat team address for support is: &lt;a href=&quot;https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw&quot;&gt;https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;the QR code is now much smaller, fits a standard business card, and is easy to scan from all devices,&lt;/li&gt;
+&lt;li&gt;it fits in most social media profiles.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;While the link is short, it still contains 256 bits of key material with additional 192 bits of server-generated link ID for one-time invitation links, so the connection is as secure as before, and in case of one-time invitations it became more secure (see below).&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://simplex.chat/blog/images/20250703-connect2.png&quot; width=&quot;288&quot; class=&quot;float-to-right&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20250703-connect1.png&quot; width=&quot;288&quot; class=&quot;float-to-right&quot; /&gt;&lt;/p&gt;
+&lt;ol start=&quot;2&quot;&gt;
+&lt;li&gt;
+&lt;p&gt;As before, you have to use this link in the app, either by pasting the link or scanning QR code. But now you instantly see the name of your contact or group you are connecting to, and from v6.4.1 that will be released this July you will also see a profile image (currently disabled for backward compatibility).&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Once you tap &amp;quot;Open new chat&amp;quot;, the app will instantly open a conversation with your contact. As you now can see which profile is shared with you via the link, you can choose which of your profiles to use to connect. If your contact shared an incognito pseudonym, then you may also choose to connect incognito. But if your contact shared a real name, you may want to share your real name as well, making it easier for your contact to recognize you — the law of reciprocity in action! &lt;strong&gt;In any case, your and your contact&#39;s profile names are inaccessible to messaging servers — they are e2e encrypted&lt;/strong&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;If you are connecting via a contact address you can also add a message to your request, making it more likely to be accepted when connecting to somebody you don&#39;t know well. And from v6.4.1 contact addresses can include a welcome message that you would see before connecting, right in the conversation. This way, you effectively become connected to your contact and start a secure conversation even before you tap &amp;quot;Connect&amp;quot; button.&lt;/p&gt;
+&lt;p&gt;If you are connecting via a one-time invitation link, all you need to do is to tap &amp;quot;Connect&amp;quot;, and then you can send messages straight after that, without waiting for your contact to be online — they will be securely received later.&lt;/p&gt;
+&lt;p&gt;This new experience of connecting is very similar to commonly used messengers, but it protects your security. We hope that it will be much easier for the new users to connect to their friends.&lt;/p&gt;
+&lt;h2 id=&quot;what-about-security&quot; tabindex=&quot;-1&quot;&gt;What about security?&lt;/h2&gt;
+&lt;p&gt;We took a great care to design the protocol extension for the new experience of connecting in a way that not only preserves security at the same level as before, but also increases security of connecting via one-time invitation links.&lt;/p&gt;
+&lt;p&gt;First, because all the keys are now included in encrypted link data on the server, and not in the link itself as before, we can include the keys for post-quantum (PQ) key exchange and make the first message sent via one-time link (your profile) encrypted with PQ e2e encryption. Previously, PQ encryption started only after the response from your contact.&lt;/p&gt;
+&lt;p&gt;Second, whoever can observe the link is not able to determine which public keys are used in key exchange and what messaging queue address is used, and this data is removed from the server once the connection is established. Previously, the invitation link contained public keys and the actual queue address that could have been used for a long time, unless you rotated it.&lt;/p&gt;
+&lt;p&gt;Third, if somebody retrieves the associated data of one-time invitation link they observed in transit, this link would become inaccessible for the intended recipient, so the recipient would know that the connection was potentially compromised, and would alert the contact that sent the link.&lt;/p&gt;
+&lt;h2 id=&quot;how-does-it-work&quot; tabindex=&quot;-1&quot;&gt;How does it work?&lt;/h2&gt;
+&lt;p&gt;In short, a new short link references a container with the encrypted data on the server that contains:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;the original full link that now include quantum-resistant keys that previously were not included because of their size,&lt;/li&gt;
+&lt;li&gt;contact&#39;s or group&#39;s profile and conversation preferences, from v6.4.1 it will include profile images,&lt;/li&gt;
+&lt;li&gt;also, it will include an optional contact&#39;s or group&#39;s welcome message from v6.4.1.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Making user profile and welcome message included in the encrypted link data allows to start conversation as soon as you scan the link, as described in the previous section.&lt;/p&gt;
+&lt;h3 id=&quot;design-objectives-and-cryptographic-primitives-that-achieve-them&quot; tabindex=&quot;-1&quot;&gt;Design objectives and cryptographic primitives that achieve them&lt;/h3&gt;
+&lt;p&gt;This section is not a formal specification of the protocol, but an informal technical explanation of objectives we had for this design and how they were achieved. The technical details are available in &lt;a href=&quot;https://github.com/simplex-chat/simplexmq/blob/master/rfcs/2025-03-16-smp-queues.md&quot;&gt;this RFC document&lt;/a&gt;.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;Encrypted link data cannot be accessed by the server&lt;/strong&gt;.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;It means that while the client apps should use the link to derive both the link ID for the server and decryption key for the associated link data, the server should not be able to derive the link and decryption key from the link ID that it knows, and can&#39;t access the link data.&lt;/p&gt;
+&lt;p&gt;This objective is achieved by using &lt;code&gt;secret_box&lt;/code&gt; encryption of link data with the symmetric key derived from link URI, which is different from link ID known to the server. As it is a symmetric encryption, it is secure against quantum computers.&lt;/p&gt;
+&lt;ol start=&quot;2&quot;&gt;
+&lt;li&gt;&lt;strong&gt;Allow changing encrypted link data without changing the link itself&lt;/strong&gt;.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;This is necessary to allow changes in user profile, chat preferences and welcome messages.&lt;/p&gt;
+&lt;p&gt;This is possible via a specific server request that allows to change user-defined part of the link data to the link owner. Because the link is derived from fixed part of the link data, the link itself remains the same.&lt;/p&gt;
+&lt;ol start=&quot;3&quot;&gt;
+&lt;li&gt;&lt;strong&gt;Prevent MITM attack on the link data by the server, even if the server obtained the link&lt;/strong&gt;.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;It means that the server should not be able to replace the associated link data even if it somehow obtained the link and can decrypt the data.&lt;/p&gt;
+&lt;p&gt;This objective is achieved by deriving encryption key from the hash of the fixed part of the link data — if server changes the link data, it would be rejected by the client, as its hash won&#39;t match the link. Server also cannot replace the user-defined part of the link data, because it is signed and will be verified with the key included in the fixed part of link data.&lt;/p&gt;
+&lt;p&gt;Clients use &lt;code&gt;HKDF&lt;/code&gt; for key derivation, &lt;code&gt;SHA3-256&lt;/code&gt; to compute hash of the fixed part of link data, and &lt;code&gt;ED25519&lt;/code&gt; signature to sign user-defined link data.&lt;/p&gt;
+&lt;ol start=&quot;4&quot;&gt;
+&lt;li&gt;&lt;strong&gt;Prevent undetectably accessing encrypted link data of one-time links&lt;/strong&gt;.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;This is explained in the previous section — if link observers retrieve the link data, the link will become inaccessible for the intended recipient.&lt;/p&gt;
+&lt;p&gt;This objective is achieved because the link data of 1-time invitation link data can only be accessed with the server request that locks queue on the first access. Any subsequent access to the queue must uses the same authorization key (&lt;code&gt;ED25519&lt;/code&gt;).&lt;/p&gt;
+&lt;ol start=&quot;5&quot;&gt;
+&lt;li&gt;&lt;strong&gt;The link owner cannot include address of another queue in the link&lt;/strong&gt;.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;It means that the link cannot redirect the connecting party to another server or to another queue on the same server — the apps would reject the links that attempt to do it. While allowing redirects may be seen as higher security from the server, it would open the possibility of resource exhaustion attacks, as the server would not know if the links were actually used to connect or not, and when the link data can be removed. So we decided that preventing redirects is a better tradeoff. This cryptographically enforced association between link and queue allows to remove link data from the server once the connection is established, or once some time passes (e.g., 3 weeks for unused one-time invitation links).&lt;/p&gt;
+&lt;p&gt;This objective is achieved by including queue ID and link data into the same server response.&lt;/p&gt;
+&lt;ol start=&quot;6&quot;&gt;
+&lt;li&gt;&lt;strong&gt;Prevent link owner from being able to change the queue address and encryption keys in the link&lt;/strong&gt;.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;This quality prevents the MITM attack on e2e encryption via break-in attack on the client of the link owner.&lt;/p&gt;
+&lt;p&gt;The server does not provide any API to change the fixed part of the link data. Also, changing fixed data would require changing the link, as otherwise the hash of the data won&#39;t match the link.&lt;/p&gt;
+&lt;ol start=&quot;7&quot;&gt;
+&lt;li&gt;&lt;strong&gt;It should be impossible to check the existence of a messaging queue for one-time invitation links&lt;/strong&gt;.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;It means that any 3rd party that observed 1-time invitation link (e.g., by reading the message in the messenger or email where it was sent) must not be able to undetectably confirm whether this messaging queue still exists, by attempting to create another queue with the same link ID and the same link data.&lt;/p&gt;
+&lt;p&gt;This objective is achieved by servers requiring that sender ID is derived (using &lt;code&gt;SHA3-384&lt;/code&gt;) from request correlation ID, so an arbitrary sender ID cannot be used, and by generating link ID on the server — for 1-time invitation link, the link ID is included in the link in addition to link key, and is not derived from the link data.&lt;/p&gt;
+&lt;p&gt;See the detailed &lt;a href=&quot;https://github.com/simplex-chat/simplexmq/blob/master/rfcs/2025-03-16-smp-queues.md#threat-model&quot;&gt;threat model&lt;/a&gt; for protocol extension supporting the new user experience of making connections.&lt;/p&gt;
+&lt;h2 id=&quot;let-us-know-what-you-think&quot; tabindex=&quot;-1&quot;&gt;Let us know what you think!&lt;/h2&gt;
+&lt;p&gt;We worked really hard to deliver this big change — the simplicity of user experience required to hide a lot of complexity under the hood. We really hope that it will help you to bring more of your friends to SimpleX network and to benefit from using secure communications.&lt;/p&gt;
+&lt;p&gt;The stable versions v6.4 and v6.4.1 will be released this July, but you can already use the beta version available via &lt;a href=&quot;https://play.google.com/store/apps/details?id=chat.simplex.app&quot;&gt;Play Store&lt;/a&gt; (Android), &lt;a href=&quot;https://testflight.apple.com/join/DWuT2LQu&quot;&gt;Test Flight&lt;/a&gt; (iOS) and &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/releases/tag/v6.4.0-beta.4&quot;&gt;GitHub&lt;/a&gt; (Android and desktop).&lt;/p&gt;
+&lt;p&gt;Big thank you to everybody who uses SimpleX network, even though the experience of connecting to people was complex before this release.&lt;/p&gt;
+&lt;p&gt;With your help, SimpleX network should be able to get over the million active users now!&lt;/p&gt;
+&lt;h2 id=&quot;simplex-network&quot; tabindex=&quot;-1&quot;&gt;SimpleX network&lt;/h2&gt;
+&lt;p&gt;Some links to answer the most common questions:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20220511-simplex-chat-v2-images-files.html#the-first-messaging-platform-without-user-identifiers&quot;&gt;How can SimpleX deliver messages without user identifiers&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html#why-having-users-identifiers-is-bad-for-the-users&quot;&gt;What are the risks to have identifiers assigned to the users&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/simplex-chat/simplex-chat#privacy-and-security-technical-details-and-limitations&quot;&gt;Technical details and limitations&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/faq/index.html&quot;&gt;Frequently asked questions&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Please also see our &lt;a href=&quot;https://simplex.chat/&quot;&gt;website&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;please-support-us-with-your-donations&quot; tabindex=&quot;-1&quot;&gt;Please support us with your donations&lt;/h2&gt;
+&lt;p&gt;Huge &lt;em&gt;thank you&lt;/em&gt; to everybody who donated to SimpleX Chat!&lt;/p&gt;
+&lt;p&gt;Prioritizing users privacy and security, and also raising the investment, would have been impossible without your support and donations.&lt;/p&gt;
+&lt;p&gt;Also, funding the work to transition the protocols to non-profit governance model would not have been possible without the donations we received from the users.&lt;/p&gt;
+&lt;p&gt;Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.&lt;/p&gt;
+&lt;p&gt;Your donations help us raise more funds — any amount, even the price of the cup of coffee, makes a big difference for us.&lt;/p&gt;
+&lt;p&gt;See &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/#please-support-us-with-your-donations&quot;&gt;this section&lt;/a&gt; for the ways to donate.&lt;/p&gt;
+&lt;p&gt;Thank you,&lt;/p&gt;
+&lt;p&gt;Evgeny&lt;/p&gt;
+&lt;p&gt;SimpleX Chat founder&lt;/p&gt;
+&lt;p&gt;[1]: An interesting case study is the rise and fall of Nokia as the dominant supplier of mobile phones. The slogan &amp;quot;Connecting people&amp;quot; was created in 1992 by Ove Strandberg, an intern at Nokia, and as it was adopted as the core mission of the company, we saw it rise as the world&#39;s main mobile phone supplier. The fall of Nokia is usually attributed on iPhone success. But it may also be attributed to internal cultural changes, with Nokia&#39;s communications chief leaving in early 2000s, and Nokia failure to understand how the definition of &amp;quot;Connecting people&amp;quot; should evolve with time.&lt;/p&gt;
+&lt;p&gt;[2]: One-time invitation can only be used once by the person you gave it too. Once your contact scans the one-time link, nobody else can connect to you via this link. Contact address can be used by multiple people, and even if you later delete the address, everybody who connected to you will remain connected. You can read more about the differences between one-time invitation links and contact addresses &lt;a href=&quot;https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;[3]: Read more about how man-in-the-middle attack works in our &lt;a href=&quot;https://simplex.chat/blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.html#5-man-in-the-middle-attack-mitigated-by-two-factor-key-exchange&quot;&gt;post about e2e encryption properties&lt;/a&gt;. It also has the comparison of e2e encryption security in different messengers.&lt;/p&gt;
+&lt;p&gt;[4]: SimpleX apps also allow security code verification, but it protects against different attack — the link substitution by the channel you use to pass it, not from the attacks by the servers — SimpleX servers cannot compromise e2e encryption.&lt;/p&gt;
+&lt;p&gt;[5]: That is also why &amp;quot;securely scanning users&#39; communications&amp;quot;, also known as &amp;quot;Chat Control&amp;quot; is impossible — what communication operator can access, cyber-criminals will also access, and instead of reducing crime it would expose users to more crime.&lt;/p&gt;
 </content>
             <author>
                 <name>SimpleX Chat</name>
