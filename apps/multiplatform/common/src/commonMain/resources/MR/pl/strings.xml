@@ -641,7 +641,7 @@
     <string name="group_invitation_expired">Zaproszenie do grupy wygasło</string>
     <string name="snd_group_event_group_profile_updated">zaktualizowano profil grupy</string>
     <string name="rcv_group_event_invited_via_your_group_link">zaproszony przez Twój link grupy</string>
-    <string name="rcv_group_event_member_added">zaproszony %1$s</string>
+    <string name="rcv_group_event_member_added">zaprosił %1$s</string>
     <string name="rcv_group_event_member_left">opuścił</string>
     <string name="group_member_status_left">opuścił</string>
     <string name="group_member_role_member">członek</string>
@@ -2184,4 +2184,9 @@
     <string name="onboarding_network_operators_conditions_will_be_accepted">Warunki będą akceptowane dla operatorów włączonych po 30 dniach.</string>
     <string name="change_order_chat_list_menu_action">Zmień kolejność</string>
     <string name="sync_connection_desc">Połączenie wymaga renegocjacji szyfrowania.</string>
+    <string name="rcv_group_event_member_accepted">przyjął %1$s</string>
+    <string name="rcv_group_event_user_accepted">przyjął cię</string>
+    <string name="rcv_group_event_new_member_pending_review">Nowy członek chce dołączyć do grupy.</string>
+    <string name="chat_item_ttl_year">1 rok</string>
+    <string name="onboarding_conditions_accept">Akceptuj</string>
 </resources>
