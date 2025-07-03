@@ -1619,7 +1619,7 @@ data PendingContactConnection = PendingContactConnection
   { pccConnId :: Int64,
     pccAgentConnId :: AgentConnId,
     pccConnStatus :: ConnStatus,
-    viaContactUri :: Bool,
+    viaContactUri :: Bool, -- whether connection was created via contact request to a contact link
     viaUserContactLink :: Maybe Int64,
     groupLinkId :: Maybe GroupLinkId,
     customUserProfileId :: Maybe Int64,

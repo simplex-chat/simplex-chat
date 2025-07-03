@@ -1865,7 +1865,7 @@ processChatCommand' vr = \case
                 { pccConnId = connId,
                   pccAgentConnId = agentConnId,
                   pccConnStatus = connStatus,
-                  viaContactUri = False,
+                  viaContactUri = True,
                   viaUserContactLink,
                   groupLinkId,
                   customUserProfileId,
