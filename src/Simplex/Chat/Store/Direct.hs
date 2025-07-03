@@ -31,7 +31,6 @@ module Simplex.Chat.Store.Direct
     createIncognitoProfile,
     createConnReqConnection,
     setPreparedGroupStartedConnection,
-    createAddressContactConnection,
     getProfileById,
     getConnReqContactXContactId,
     createPreparedContact,
@@ -153,11 +152,6 @@ deletePendingContactConnection db userId connId =
           AND via_contact IS NULL
     |]
     (userId, connId, ConnContact)
-
-createAddressContactConnection :: DB.Connection -> VersionRangeChat -> User -> Contact -> ConnId -> ConnReqUriHash -> Maybe ShortLinkContact -> XContactId -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> ExceptT StoreError IO (Int64, Contact)
-createAddressContactConnection db vr user@User {userId} Contact {contactId} acId cReqHash sLnk xContactId incognitoProfile subMode chatV pqSup = do
-  PendingContactConnection {pccConnId} <- liftIO $ createConnReqConnection db userId acId cReqHash sLnk (Just $ ACCGContact contactId) xContactId incognitoProfile Nothing subMode chatV pqSup
-  (pccConnId,) <$> getContact db vr user contactId
 
 createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> Maybe ShortLinkContact -> Maybe AttachConnToContactOrGroup -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> SubscriptionMode -> VersionChat -> PQSupport -> IO PendingContactConnection
 createConnReqConnection db userId acId cReqHash sLnk attachConnTo_ xContactId incognitoProfile groupLinkId subMode chatV pqSup = do
