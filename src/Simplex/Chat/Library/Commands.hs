@@ -1152,31 +1152,22 @@ processChatCommand' vr = \case
   APIAcceptContact incognito connReqId -> withUser $ \user@User {userId} -> do
     uclData_ <- withFastStore $ \db -> do
       uclId_ <- getUserContactLinkIdByCReq db connReqId
-      case uclId_ of
-        Nothing -> pure Nothing -- address was deleted
-        Just uclId -> do
-          uclGLinkInfo <- getUserContactLinkById db userId uclId
-          pure $ Just (uclId, uclGLinkInfo)
-    case uclData_ of
+      forM uclId_ $ \uclId -> do -- address may be deleted
+        uclGLinkInfo <- getUserContactLinkById db userId uclId
+        pure (uclId, uclGLinkInfo)
+    withContactRequestLock "acceptContact" connReqId $ case uclData_ of
       Nothing -> do -- address was deleted
         when incognito $ throwCmdError "incognito not allowed when address is not found"
         cReq <- withFastStore $ \db -> getContactRequest db user connReqId
         (ct, _sqSecured) <- acceptCReq user cReq True
         pure $ CRAcceptingContactRequest user ct
-      Just (uclId, (ucl, gLinkInfo_)) -> do
-        let UserContactLink {shortLinkDataSet, addressSettings} = ucl
+      Just (uclId, (ucl@UserContactLink {shortLinkDataSet}, gLinkInfo_)) -> do
         when (shortLinkDataSet && incognito) $ throwCmdError "incognito not allowed for address with short link data"
         withUserContactLock "acceptContact" uclId $ do
-          cReq@UserContactRequest {welcomeSharedMsgId} <- withFastStore $ \db -> getContactRequest db user connReqId
+          cReq <- withFastStore $ \db -> getContactRequest db user connReqId
           let contactUsed = isNothing gLinkInfo_ -- for redundancy, as group link requests are auto-accepted
           (ct, sqSecured) <- acceptCReq user cReq contactUsed
-          when sqSecured $ forM_ (autoReply addressSettings) $ \mc -> case welcomeSharedMsgId of
-            Just smId ->
-              void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing
-            Nothing -> do
-              (msg, _) <- sendDirectContactMessage user ct $ XMsgNew $ MCSimple $ extMsgContent mc Nothing
-              ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
-              toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
+          when sqSecured $ sendWelcomeMsg user ct ucl cReq
           pure $ CRAcceptingContactRequest user ct
     where
       acceptCReq user cReq contactUsed = do
@@ -1189,9 +1180,17 @@ processChatCommand' vr = \case
               else pure conn
           pure ct {contactUsed, activeConn = Just conn'}
         pure (ct', sqSecured)
+      sendWelcomeMsg user ct ucl UserContactRequest {welcomeSharedMsgId} =
+        forM_ (autoReply $ addressSettings ucl) $ \mc -> case welcomeSharedMsgId of
+          Just smId ->
+            void $ sendDirectContactMessage user ct $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing
+          Nothing -> do
+            (msg, _) <- sendDirectContactMessage user ct $ XMsgNew $ MCSimple $ extMsgContent mc Nothing
+            ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
+            toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
   APIRejectContact connReqId -> withUser $ \user -> do
     uclId_ <- withFastStore $ \db -> getUserContactLinkIdByCReq db connReqId
-    case uclId_ of
+    withContactRequestLock "rejectContact" connReqId $ case uclId_ of
       Nothing -> rejectCReq user -- address was deleted
       Just uclId -> withUserContactLock "rejectContact" uclId $ rejectCReq user
     where
@@ -1205,7 +1204,7 @@ processChatCommand' vr = \case
               pure ct
             liftIO $ deleteContactRequest db user connReqId
             pure (cReq, ct_)
-        withAgent $ \a -> rejectContact a invId
+        withAgent (`rejectContact` invId)
         pure $ CRContactRequestRejected user cReq ct_
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
@@ -2803,6 +2802,7 @@ processChatCommand' vr = \case
         CLContact ctId -> "Contact " <> tshow ctId
         CLGroup gId -> "Group " <> tshow gId
         CLUserContact ucId -> "UserContact " <> tshow ucId
+        CLContactRequest crId -> "ContactRequest " <> tshow crId
         CLFile fId -> "File " <> tshow fId
   DebugEvent event -> toView event >> ok_
   GetAgentSubsTotal userId -> withUserId userId $ \user -> do

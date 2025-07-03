@@ -142,6 +142,10 @@ withUserContactLock :: Text -> Int64 -> CM a -> CM a
 withUserContactLock name = withEntityLock name . CLUserContact
 {-# INLINE withUserContactLock #-}
 
+withContactRequestLock :: Text -> Int64 -> CM a -> CM a
+withContactRequestLock name = withEntityLock name . CLContactRequest
+{-# INLINE withContactRequestLock #-}
+
 withFileLock :: Text -> Int64 -> CM a -> CM a
 withFileLock name = withEntityLock name . CLFile
 {-# INLINE withFileLock #-}

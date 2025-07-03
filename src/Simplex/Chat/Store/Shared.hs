@@ -64,6 +64,7 @@ data ChatLockEntity
   | CLContact ContactId
   | CLGroup GroupId
   | CLUserContact Int64
+  | CLContactRequest Int64
   | CLFile Int64
   deriving (Eq, Ord)
 
