@@ -3,8 +3,8 @@ layout: layouts/article.html
 title: "SimpleX network: new experience of connecting with people &mdash; available in SimpleX Chat v6.4-beta.4"
 date: 2025-07-03
 preview: Now you can start talking to your contacts much faster, as soon as you scan the link. This technical post covers the technology that enabled this new user experience &mdash; short links and associated data of messaging queues.
-# image: images/20250308-captcha.png
-# imageBottom: true
+image: images/20250703-connect1a.png
+imageBottom: true
 permalink: "/blog/20250703-simplex-network-protocol-extension-for-securely-connecting-people.html"
 ---
 
