@@ -398,12 +398,11 @@ Query:
             SELECT
               cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
               cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
-              c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
+              cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
               cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
               cr.created_at, cr.updated_at,
               cr.peer_chat_min_version, cr.peer_chat_max_version
             FROM contact_requests cr
-            JOIN connections c USING (user_contact_link_id)
             JOIN contact_profiles p USING (contact_profile_id)
             WHERE cr.user_id = ?
               AND cr.xcontact_id = ?
@@ -412,7 +411,6 @@ Query:
 Plan:
 SEARCH cr USING INDEX idx_contact_requests_updated_at (user_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH c USING INDEX idx_connections_user_contact_link_id (user_contact_link_id=?)
 
 Query: 
             SELECT COUNT(1)
@@ -1631,12 +1629,11 @@ Query:
         SELECT
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
           cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
+          cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
           cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
           cr.created_at, cr.updated_at,
           cr.peer_chat_min_version, cr.peer_chat_max_version
         FROM contact_requests cr
-        JOIN connections c ON c.user_contact_link_id = cr.user_contact_link_id
         JOIN contact_profiles p ON p.contact_profile_id = cr.contact_profile_id
         JOIN user_contact_links uc ON uc.user_contact_link_id = cr.user_contact_link_id
         WHERE cr.user_id = ?
@@ -1655,18 +1652,16 @@ Plan:
 SEARCH uc USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
 SEARCH cr USING INDEX idx_contact_requests_updated_at (user_id=? AND updated_at<?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH c USING INDEX idx_connections_user_contact_link_id (user_contact_link_id=?)
 
 Query: 
         SELECT
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
           cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
+          cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
           cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
           cr.created_at, cr.updated_at,
           cr.peer_chat_min_version, cr.peer_chat_max_version
         FROM contact_requests cr
-        JOIN connections c ON c.user_contact_link_id = cr.user_contact_link_id
         JOIN contact_profiles p ON p.contact_profile_id = cr.contact_profile_id
         JOIN user_contact_links uc ON uc.user_contact_link_id = cr.user_contact_link_id
         WHERE cr.user_id = ?
@@ -1685,18 +1680,16 @@ Plan:
 SEARCH uc USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
 SEARCH cr USING INDEX idx_contact_requests_updated_at (user_id=? AND updated_at>?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH c USING INDEX idx_connections_user_contact_link_id (user_contact_link_id=?)
 
 Query: 
         SELECT
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
           cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
-          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
+          cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
           cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
           cr.created_at, cr.updated_at,
           cr.peer_chat_min_version, cr.peer_chat_max_version
         FROM contact_requests cr
-        JOIN connections c ON c.user_contact_link_id = cr.user_contact_link_id
         JOIN contact_profiles p ON p.contact_profile_id = cr.contact_profile_id
         JOIN user_contact_links uc ON uc.user_contact_link_id = cr.user_contact_link_id
         WHERE cr.user_id = ?
@@ -1715,7 +1708,6 @@ Plan:
 SEARCH uc USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
 SEARCH cr USING INDEX idx_contact_requests_updated_at (user_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH c USING INDEX idx_connections_user_contact_link_id (user_contact_link_id=?)
 
 Query: 
         SELECT
@@ -4742,35 +4734,31 @@ Query:
     SELECT
       cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
       cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
-      c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
+      cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
       cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
       cr.created_at, cr.updated_at,
       cr.peer_chat_min_version, cr.peer_chat_max_version
     FROM contact_requests cr
-    JOIN connections c USING (user_contact_link_id)
     JOIN contact_profiles p USING (contact_profile_id)
    WHERE cr.user_id = ? AND cr.business_group_id = ?
 Plan:
 SEARCH cr USING INDEX idx_contact_requests_business_group_id (business_group_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH c USING INDEX idx_connections_user_contact_link_id (user_contact_link_id=?)
 
 Query: 
     SELECT
       cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
       cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
-      c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
+      cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
       cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
       cr.created_at, cr.updated_at,
       cr.peer_chat_min_version, cr.peer_chat_max_version
     FROM contact_requests cr
-    JOIN connections c USING (user_contact_link_id)
     JOIN contact_profiles p USING (contact_profile_id)
    WHERE cr.user_id = ? AND cr.contact_request_id = ?
 Plan:
 SEARCH cr USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH c USING INDEX idx_connections_user_contact_link_id (user_contact_link_id=?)
 
 Query: 
     SELECT

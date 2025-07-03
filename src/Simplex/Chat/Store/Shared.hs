@@ -64,6 +64,7 @@ data ChatLockEntity
   | CLContact ContactId
   | CLGroup GroupId
   | CLUserContact Int64
+  | CLContactRequest Int64
   | CLFile Int64
   deriving (Eq, Ord)
 
@@ -488,13 +489,13 @@ getProfileById db userId profileId =
     toProfile :: (ContactName, Text, Maybe ImageData, Maybe ConnLinkContact, LocalAlias, Maybe Preferences) -> LocalProfile
     toProfile (displayName, fullName, image, contactLink, localAlias, preferences) = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
 
-type ContactRequestRow = (Int64, ContactName, AgentInvId, Maybe ContactId, Maybe GroupId, Int64) :. (AgentConnId, Int64, ContactName, Text, Maybe ImageData, Maybe ConnLinkContact) :. (Maybe XContactId, PQSupport, Maybe SharedMsgId, Maybe SharedMsgId, Maybe Preferences, UTCTime, UTCTime, VersionChat, VersionChat)
+type ContactRequestRow = (Int64, ContactName, AgentInvId, Maybe ContactId, Maybe GroupId, Maybe Int64) :. (Int64, ContactName, Text, Maybe ImageData, Maybe ConnLinkContact) :. (Maybe XContactId, PQSupport, Maybe SharedMsgId, Maybe SharedMsgId, Maybe Preferences, UTCTime, UTCTime, VersionChat, VersionChat)
 
 toContactRequest :: ContactRequestRow -> UserContactRequest
-toContactRequest ((contactRequestId, localDisplayName, agentInvitationId, contactId_, businessGroupId_, userContactLinkId) :. (agentContactConnId, profileId, displayName, fullName, image, contactLink) :. (xContactId, pqSupport, welcomeSharedMsgId, requestSharedMsgId, preferences, createdAt, updatedAt, minVer, maxVer)) = do
+toContactRequest ((contactRequestId, localDisplayName, agentInvitationId, contactId_, businessGroupId_, userContactLinkId_) :. (profileId, displayName, fullName, image, contactLink) :. (xContactId, pqSupport, welcomeSharedMsgId, requestSharedMsgId, preferences, createdAt, updatedAt, minVer, maxVer)) = do
   let profile = Profile {displayName, fullName, image, contactLink, preferences}
       cReqChatVRange = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
-   in UserContactRequest {contactRequestId, agentInvitationId, contactId_, businessGroupId_, userContactLinkId, agentContactConnId, cReqChatVRange, localDisplayName, profileId, profile, xContactId, pqSupport, welcomeSharedMsgId, requestSharedMsgId, createdAt, updatedAt}
+   in UserContactRequest {contactRequestId, agentInvitationId, contactId_, businessGroupId_, userContactLinkId_, cReqChatVRange, localDisplayName, profileId, profile, xContactId, pqSupport, welcomeSharedMsgId, requestSharedMsgId, createdAt, updatedAt}
 
 userQuery :: Query
 userQuery =
