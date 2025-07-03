@@ -21,7 +21,6 @@ import Control.Logger.Simple (LogLevel (..))
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
-import qualified Data.ByteString.Char8 as B
 import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
 import Data.Maybe (isNothing)
@@ -47,7 +46,7 @@ import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Protocol (currentSMPAgentVersion, duplexHandshakeSMPAgentVersion, pqdrSMPAgentVersion, supportedSMPAgentVRange)
 import Simplex.Messaging.Agent.RetryInterval
-import Simplex.Messaging.Agent.Store.Interface (DBOpts (..), closeDBStore)
+import Simplex.Messaging.Agent.Store.Interface (closeDBStore)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..))
@@ -68,7 +67,9 @@ import System.Terminal.Internal (VirtualTerminal (..), VirtualTerminalSettings (
 import System.Timeout (timeout)
 import Test.Hspec (Expectation, HasCallStack, shouldReturn)
 #if defined(dbPostgres)
+import qualified Data.ByteString.Char8 as B
 import Database.PostgreSQL.Simple (ConnectInfo (..), defaultConnectInfo)
+import Simplex.Messaging.Agent.Store.Interface (DBOpts (..))
 #else
 import Data.ByteArray (ScrubbedBytes)
 import qualified Data.Map.Strict as M

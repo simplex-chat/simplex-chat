@@ -511,7 +511,7 @@ data GroupSummary = GroupSummary
 
 data ContactOrGroup = CGContact Contact | CGGroup GroupInfo [GroupMember]
 
-data AttachConnToContactOrGroup = ACCGContact ContactId | ACCGGroup GroupInfo GroupMemberId
+data PreparedChatEntity = PCEContact Contact | PCEGroup {groupInfo :: GroupInfo, hostMember :: GroupMember}
 
 contactAndGroupIds :: ContactOrGroup -> (Maybe ContactId, Maybe GroupId)
 contactAndGroupIds = \case
@@ -1556,6 +1556,7 @@ data Connection = Connection
     viaUserContactLink :: Maybe Int64, -- user contact link ID, if connected via "user address"
     viaGroupLink :: Bool, -- whether contact connected via group link
     groupLinkId :: Maybe GroupLinkId,
+    xContactId :: Maybe XContactId,
     customUserProfileId :: Maybe Int64,
     connType :: ConnType,
     connStatus :: ConnStatus,
