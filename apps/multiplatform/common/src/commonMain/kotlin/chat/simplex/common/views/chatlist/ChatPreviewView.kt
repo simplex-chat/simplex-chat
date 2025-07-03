@@ -138,19 +138,21 @@ fun ChatPreviewView(
     val deleting by remember(disabled, chat.id) { mutableStateOf(chatModel.deletedChats.value.contains(chat.remoteHostId to chat.chatInfo.id)) }
     when (cInfo) {
       is ChatInfo.Direct -> {
-        if (cInfo.contact.verified) {
-          VerifiedIcon()
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          if (cInfo.contact.verified) {
+            VerifiedIcon()
+          }
+          val color = if (deleting)
+            MaterialTheme.colors.secondary
+          else if (cInfo.contact.nextAcceptContactRequest || cInfo.contact.sendMsgToConnect) {
+            MaterialTheme.colors.primary
+          } else if (!cInfo.contact.sndReady) {
+            MaterialTheme.colors.secondary
+          } else {
+            Color.Unspecified
+          }
+          chatPreviewTitleText(color = color)
         }
-        val color = if (deleting)
-          MaterialTheme.colors.secondary
-        else if (cInfo.contact.nextAcceptContactRequest || cInfo.contact.sendMsgToConnect) {
-          MaterialTheme.colors.primary
-        } else if (!cInfo.contact.sndReady) {
-          MaterialTheme.colors.secondary
-        } else {
-          Color.Unspecified
-        }
-        chatPreviewTitleText(color = color)
       }
       is ChatInfo.Group -> {
         val color = if (deleting) {
