@@ -12,7 +12,7 @@ permalink: "/blog/20250703-simplex-network-protocol-extension-for-securely-conne
 
 **Published:** Jul 3, 2025
 
-The mission of communication network is connecting people [1]. The process of connecting in SimpleX network is really secure &mdash; it is protected from MITM attacks by servers. But before this beta version connecting to contacts had a really bad user experience.
+The mission of communication network is connecting people [1]. The process of connecting in SimpleX network is really secure &mdash; it is protected from server MITM attacks. But before this beta version connecting to contacts had a really bad user experience.
 
 ## What was the problem?
 
@@ -32,7 +32,7 @@ So it is not surprising that a large number of people failed connecting to frien
 
 Many people asked &mdash; why don't you just use usernames or a link shortener for some really short links, as other networks and apps do.
 
-The problem is that usernames or very short links make e2e encryption security of your chats dependent on the servers that would have to provide public keys in exchange for a username, and unless the link you share contains enough randomness in it and is cryptographically linked to the returned keys, the servers can substitute the e2e encryption keys and read all your communication without you knowing it. We see this risk as unacceptable.
+The problem is that usernames or very short links make e2e encryption security of your chats dependent on the servers. Unless the link you share contains enough randomness in it and is cryptographically linked to the encryption keys, the servers can substitute the e2e encryption keys and read all your communication without you knowing it. We see this risk as unacceptable.
 
 Mitigation against this "man-in-the-middle" attack by the server [3] is offered by Signal and other apps via security code verification [4], when you compare the numeric code in your app with your contact's app, but:
 - most people do not verify security codes, and even if they do, they do not re-verify them every time security code changes, so their security is dependent on the server not being compromised, which is not a great security,
