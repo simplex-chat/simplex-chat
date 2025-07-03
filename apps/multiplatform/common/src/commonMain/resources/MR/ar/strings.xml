@@ -793,8 +793,8 @@
     <string name="only_your_contact_can_delete">جهة اتصالك فقط يمكنها حذف الرسائل بشكل لا رجعة فيه (يمكنك تعليم الرسالة للحذف). (24 ساعة)</string>
     <string name="only_you_can_send_voice">أنت فقط يمكنك إرسال رسائل صوتية.</string>
     <string name="open_verb">افتح</string>
-    <string name="passcode_not_changed">لم يتم تغيير رمز المرور!</string>
-    <string name="passcode_changed">غُيّرت رمز المرور!</string>
+    <string name="passcode_not_changed">لم يُغيّر رمز المرور!</string>
+    <string name="passcode_changed">غُيّر رمز المرور!</string>
     <string name="opening_database">جارِ فتح قاعدة البيانات…</string>
     <string name="only_your_contact_can_send_voice">جهة اتصالك فقط يمكنها إرسال رسائل صوتية.</string>
     <string name="paste_button">ألصق</string>
@@ -982,7 +982,7 @@
     <string name="set_password_to_export">عيّن عبارة المرور للتصدير</string>
     <string name="rcv_conn_event_verification_code_reset">تم تغيير رمز الأمان</string>
     <string name="send_receipts">إيصالات الإرسال</string>
-    <string name="info_row_sent_at">تم إرساله في</string>
+    <string name="info_row_sent_at">أُرسل في</string>
     <string name="custom_time_picker_select">حدد</string>
     <string name="sending_delivery_receipts_will_be_enabled">سيتم تفعيل إرسال إيصالات التسليم لجميع جهات الاتصال.</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">سيتم تفعيل إرسال إيصالات التسليم لجميع جهات الاتصال في جميع ملفات تعريف الدردشة المرئية.</string>
