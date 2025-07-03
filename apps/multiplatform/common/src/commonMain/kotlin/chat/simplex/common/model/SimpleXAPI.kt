@@ -6467,17 +6467,6 @@ data class CreatedConnLink(val connFullLink: String, val connShortLink: String?)
   fun simplexChatUri(short: Boolean): String =
     if (short) connShortLink ?: simplexChatLink(connFullLink)
     else simplexChatLink(connFullLink)
-
-  companion object {
-    val nullableStateSaver: Saver<CreatedConnLink?, Pair<String?, String?>> = Saver(
-      save = { link -> link?.connFullLink to link?.connShortLink },
-      restore = { saved ->
-        val connFullLink = saved.first
-        if (connFullLink == null) null
-        else CreatedConnLink(connFullLink = connFullLink,  connShortLink = saved.second)
-      }
-    )
-  }
 }
 
 fun simplexChatLink(uri: String): String =
@@ -6645,7 +6634,45 @@ data class GroupLink(
   val shortLinkDataSet: Boolean,
   val groupLinkId: String,
   val acceptMemberRole: GroupMemberRole
-)
+) {
+  companion object {
+    val nullableStateSaver: Saver<GroupLink?, List<Any?>> = Saver(
+      save = { groupLink ->
+        if (groupLink == null) return@Saver null
+
+        val conn = groupLink.connLinkContact
+        val connData = conn.connFullLink to conn.connShortLink
+
+        listOf(
+          groupLink.userContactLinkId,
+          connData,
+          groupLink.shortLinkDataSet,
+          groupLink.groupLinkId,
+          groupLink.acceptMemberRole.name
+        )
+      },
+      restore = { saved ->
+        val list = saved as? List<*> ?: return@Saver null
+
+        val userContactLinkId = list.getOrNull(0) as? Long ?: return@Saver null
+        val connPair = list.getOrNull(1) as? Pair<*, *> ?: return@Saver null
+        val connFullLink = connPair.first as? String ?: return@Saver null
+        val connShortLink = connPair.second as? String
+        val shortLinkDataSet = list.getOrNull(2) as? Boolean ?: return@Saver null
+        val groupLinkId = list.getOrNull(3) as? String ?: return@Saver null
+        val roleName = list.getOrNull(4) as? String ?: return@Saver null
+
+        GroupLink(
+          userContactLinkId = userContactLinkId,
+          connLinkContact = CreatedConnLink(connFullLink, connShortLink),
+          shortLinkDataSet = shortLinkDataSet,
+          groupLinkId = groupLinkId,
+          acceptMemberRole = GroupMemberRole.valueOf(roleName)
+        )
+      }
+    )
+  }
+}
 
 @Serializable
 data class CoreVersionInfo(
