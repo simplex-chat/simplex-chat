@@ -347,8 +347,7 @@ data UserContactRequest = UserContactRequest
     agentInvitationId :: AgentInvId,
     contactId_ :: Maybe ContactId,
     businessGroupId_ :: Maybe GroupId,
-    userContactLinkId :: Int64,
-    agentContactConnId :: AgentConnId, -- connection id of user contact
+    userContactLinkId_ :: Maybe Int64,
     cReqChatVRange :: VersionRangeChat,
     localDisplayName :: ContactName,
     profileId :: Int64,
@@ -511,7 +510,7 @@ data GroupSummary = GroupSummary
 
 data ContactOrGroup = CGContact Contact | CGGroup GroupInfo [GroupMember]
 
-data AttachConnToContactOrGroup = ACCGContact ContactId | ACCGGroup GroupInfo GroupMemberId
+data PreparedChatEntity = PCEContact Contact | PCEGroup {groupInfo :: GroupInfo, hostMember :: GroupMember}
 
 contactAndGroupIds :: ContactOrGroup -> (Maybe ContactId, Maybe GroupId)
 contactAndGroupIds = \case
@@ -1556,6 +1555,7 @@ data Connection = Connection
     viaUserContactLink :: Maybe Int64, -- user contact link ID, if connected via "user address"
     viaGroupLink :: Bool, -- whether contact connected via group link
     groupLinkId :: Maybe GroupLinkId,
+    xContactId :: Maybe XContactId,
     customUserProfileId :: Maybe Int64,
     connType :: ConnType,
     connStatus :: ConnStatus,
@@ -1619,7 +1619,7 @@ data PendingContactConnection = PendingContactConnection
   { pccConnId :: Int64,
     pccAgentConnId :: AgentConnId,
     pccConnStatus :: ConnStatus,
-    viaContactUri :: Bool,
+    viaContactUri :: Bool, -- whether connection was created via contact request to a contact link
     viaUserContactLink :: Maybe Int64,
     groupLinkId :: Maybe GroupLinkId,
     customUserProfileId :: Maybe Int64,
@@ -1629,6 +1629,22 @@ data PendingContactConnection = PendingContactConnection
     updatedAt :: UTCTime
   }
   deriving (Eq, Show)
+
+mkPendingContactConnection :: Connection -> Maybe CreatedLinkInvitation -> PendingContactConnection
+mkPendingContactConnection Connection {connId, agentConnId, connStatus, xContactId, viaUserContactLink, groupLinkId, customUserProfileId, localAlias, createdAt} connLinkInv =
+  PendingContactConnection
+  { pccConnId = connId,
+    pccAgentConnId = agentConnId,
+    pccConnStatus = connStatus,
+    viaContactUri = isJust xContactId,
+    viaUserContactLink,
+    groupLinkId,
+    customUserProfileId,
+    connLinkInv,
+    localAlias,
+    createdAt,
+    updatedAt = createdAt
+  }
 
 aConnId' :: PendingContactConnection -> ConnId
 aConnId' PendingContactConnection {pccAgentConnId = AgentConnId cId} = cId
@@ -1712,12 +1728,6 @@ instance TextEncoding ConnType where
     ConnSndFile -> "snd_file"
     ConnRcvFile -> "rcv_file"
     ConnUserContact -> "user_contact"
-
-data NewConnection = NewConnection
-  { agentConnId :: ByteString,
-    connLevel :: Int,
-    viaConn :: Maybe Int64
-  }
 
 data GroupMemberIntro = GroupMemberIntro
   { introId :: Int64,

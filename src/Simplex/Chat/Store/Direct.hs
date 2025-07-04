@@ -26,12 +26,11 @@ module Simplex.Chat.Store.Direct
     -- * Contacts and connections functions
     getPendingContactConnection,
     deletePendingContactConnection,
-    createDirectConnection_,
+    createDirectConnection',
     createDirectConnection,
     createIncognitoProfile,
     createConnReqConnection,
     setPreparedGroupStartedConnection,
-    createAddressContactConnection,
     getProfileById,
     getConnReqContactXContactId,
     createPreparedContact,
@@ -113,6 +112,7 @@ import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Ratchet (PQSupport)
+import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
@@ -154,16 +154,11 @@ deletePendingContactConnection db userId connId =
     |]
     (userId, connId, ConnContact)
 
-createAddressContactConnection :: DB.Connection -> VersionRangeChat -> User -> Contact -> ConnId -> ConnReqUriHash -> Maybe ShortLinkContact -> XContactId -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> ExceptT StoreError IO (Int64, Contact)
-createAddressContactConnection db vr user@User {userId} Contact {contactId} acId cReqHash sLnk xContactId incognitoProfile subMode chatV pqSup = do
-  PendingContactConnection {pccConnId} <- liftIO $ createConnReqConnection db userId acId cReqHash sLnk (Just $ ACCGContact contactId) xContactId incognitoProfile Nothing subMode chatV pqSup
-  (pccConnId,) <$> getContact db vr user contactId
-
-createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> Maybe ShortLinkContact -> Maybe AttachConnToContactOrGroup -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> SubscriptionMode -> VersionChat -> PQSupport -> IO PendingContactConnection
-createConnReqConnection db userId acId cReqHash sLnk attachConnTo_ xContactId incognitoProfile groupLinkId subMode chatV pqSup = do
+createConnReqConnection :: DB.Connection -> UserId -> ConnId -> Maybe PreparedChatEntity -> ConnReqUriHash -> Maybe ShortLinkContact -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> SubscriptionMode -> VersionChat -> PQSupport -> IO Connection
+createConnReqConnection db userId acId preparedEntity_ cReqHash sLnk xContactId incognitoProfile groupLinkId subMode chatV pqSup = do
   currentTs <- getCurrentTime
   customUserProfileId <- mapM (createIncognitoProfile_ db userId currentTs) incognitoProfile
-  let pccConnStatus = ConnPrepared
+  let connStatus = ConnPrepared
   DB.execute
     db
     [sql|
@@ -174,21 +169,51 @@ createConnReqConnection db userId acId cReqHash sLnk attachConnTo_ xContactId in
         created_at, updated_at, to_subscribe, conn_chat_version, pq_support, pq_encryption
       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
-    ( (userId, acId, pccConnStatus, connType, BI True)
+    ( (userId, acId, connStatus, connType, BI True)
         :. (cReqHash, sLnk, contactId_, groupMemberId_)
         :. (xContactId, customUserProfileId, BI (isJust groupLinkId), groupLinkId)
         :. (currentTs, currentTs, BI (subMode == SMOnlyCreate), chatV, pqSup, pqSup)
     )
-  pccConnId <- insertedRowId db
-  case attachConnTo_ of
-    Just (ACCGGroup gInfo _gmId) -> updatePreparedGroup gInfo pccConnId customUserProfileId currentTs
+  connId <- insertedRowId db
+  case preparedEntity_ of
+    Just (PCEGroup gInfo _) -> updatePreparedGroup gInfo connId customUserProfileId currentTs
     _ -> pure ()
-  pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = True, viaUserContactLink = Nothing, groupLinkId, customUserProfileId, connLinkInv = Nothing, localAlias = "", createdAt = currentTs, updatedAt = currentTs}
+  pure
+    Connection
+      { connId,
+        agentConnId = AgentConnId acId,
+        connChatVersion = chatV,
+        -- TODO (proposed):
+        -- - add agent version 8 for short links
+        -- - update agentToChatVersion to convert 8 to 16
+        -- - return and correctly set peer's range from link (via connRequestPQSupport)
+        peerChatVRange = chatInitialVRange, -- this is 1-1
+        connLevel = 0,
+        viaContact = Nothing,
+        viaUserContactLink = Nothing,
+        viaGroupLink = isJust groupLinkId,
+        groupLinkId,
+        xContactId = Just xContactId,
+        customUserProfileId,
+        connType,
+        connStatus,
+        contactConnInitiated = True,
+        localAlias = "",
+        entityId,
+        connectionCode = Nothing,
+        pqSupport = pqSup,
+        pqEncryption = CR.pqSupportToEnc pqSup,
+        pqSndEnabled = Nothing,
+        pqRcvEnabled = Nothing,
+        authErrCounter = 0,
+        quotaErrCounter = 0,
+        createdAt = currentTs
+      }
   where
-    (connType, contactId_, groupMemberId_) = case attachConnTo_ of
-      Just (ACCGContact ctId) -> (ConnContact, Just ctId, Nothing)
-      Just (ACCGGroup _gInfo gmId) -> (ConnMember, Nothing, Just gmId)
-      Nothing -> (ConnContact, Nothing, Nothing)
+    (connType, contactId_, groupMemberId_, entityId) = case preparedEntity_ of
+      Just (PCEContact Contact {contactId}) -> (ConnContact, Just contactId, Nothing, Just contactId)
+      Just (PCEGroup _ GroupMember {groupMemberId}) -> (ConnMember, Nothing, Just groupMemberId, Just groupMemberId)
+      Nothing -> (ConnContact, Nothing, Nothing, Nothing)
     updatePreparedGroup GroupInfo {groupId, membership} pccConnId customUserProfileId currentTs = do
       setViaGroupLinkHash db groupId pccConnId
       when (isJust customUserProfileId) $
@@ -205,20 +230,17 @@ setPreparedGroupStartedConnection db groupId = do
     "UPDATE groups SET conn_link_started_connection = ?, updated_at = ? WHERE group_id = ?"
     (BI True, currentTs, groupId)
 
-getConnReqContactXContactId :: DB.Connection -> VersionRangeChat -> User -> ConnReqUriHash -> ConnReqUriHash -> IO (Maybe Contact, Maybe (XContactId, Maybe Connection))
-getConnReqContactXContactId db vr user@User {userId} cReqHash1 cReqHash2 = do
-  getContactByConnReqHash db vr user cReqHash1 cReqHash2 >>= \case
-    Just (xContactId_, ct@Contact {activeConn}) -> pure (Just ct, (,activeConn) <$> xContactId_)
-    Nothing -> (Nothing,) <$> getConnectionXContactId
+getConnReqContactXContactId :: DB.Connection -> VersionRangeChat -> User -> ConnReqUriHash -> ConnReqUriHash -> IO (Either (Maybe Connection) Contact)
+getConnReqContactXContactId db vr user@User {userId} cReqHash1 cReqHash2 =
+  getContactByConnReqHash db vr user cReqHash1 cReqHash2 >>= maybe (Left <$> getConnection) (pure . Right)
   where
-    getConnectionXContactId :: IO (Maybe (XContactId, Maybe Connection))
-    getConnectionXContactId =
-      maybeFirstRow toConnectionAndXContactId $
+    getConnection :: IO (Maybe Connection)
+    getConnection =
+      maybeFirstRow (toConnection vr) $
         DB.query
           db
           [sql|
-            SELECT xcontact_id,
-              connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, custom_user_profile_id, conn_status, conn_type, contact_conn_initiated, local_alias,
+            SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, xcontact_id, custom_user_profile_id, conn_status, conn_type, contact_conn_initiated, local_alias,
               contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter, quota_err_counter,
               conn_chat_version, peer_chat_min_version, peer_chat_max_version
             FROM connections
@@ -227,24 +249,21 @@ getConnReqContactXContactId db vr user@User {userId} cReqHash1 cReqHash2 = do
             LIMIT 1
           |]
           (userId, cReqHash1, userId, cReqHash2)
-    toConnectionAndXContactId :: Only XContactId :. ConnectionRow -> (XContactId, Maybe Connection)
-    toConnectionAndXContactId (Only xContactId_ :. connRow) = (xContactId_, Just $ toConnection vr connRow)
 
-getContactByConnReqHash :: DB.Connection -> VersionRangeChat -> User -> ConnReqUriHash -> ConnReqUriHash -> IO (Maybe (Maybe XContactId, Contact))
+getContactByConnReqHash :: DB.Connection -> VersionRangeChat -> User -> ConnReqUriHash -> ConnReqUriHash -> IO (Maybe Contact)
 getContactByConnReqHash db vr user@User {userId} cReqHash1 cReqHash2 = do
-  r <-
-    maybeFirstRow toContactAndXContactId $
+  ct <-
+    maybeFirstRow (toContact vr user []) $
       DB.query
         db
         [sql|
           SELECT
-            c.xcontact_id,
             -- Contact
             ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
             cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
             ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
             -- Connection
-            c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
+            c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
             c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
             c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
           FROM contacts ct
@@ -258,18 +277,47 @@ getContactByConnReqHash db vr user@User {userId} cReqHash1 cReqHash2 = do
           LIMIT 1
         |]
         (userId, cReqHash1, userId, cReqHash2, CSActive)
-  mapM (traverse $ addDirectChatTags db) r
-  where
-    toContactAndXContactId :: Only (Maybe XContactId) :. (ContactRow :. MaybeConnectionRow) -> (Maybe XContactId, Contact)
-    toContactAndXContactId (Only xContactId_ :. ctRow) = (xContactId_, toContact vr user [] ctRow)
+  mapM (addDirectChatTags db) ct
+
+createDirectConnection' :: DB.Connection -> UserId -> ConnId -> CreatedLinkInvitation -> Maybe ContactId -> ConnStatus -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> IO Connection
+createDirectConnection' db userId acId ccLink contactId_ connStatus incognitoProfile subMode chatV pqSup = do
+  createdAt <- getCurrentTime
+  (connId, customUserProfileId, contactConnInitiated) <- createDirectConnection_ db userId acId ccLink contactId_ connStatus incognitoProfile subMode chatV pqSup createdAt
+  pure
+    Connection
+      { connId,
+        agentConnId  = AgentConnId acId,
+        connChatVersion = chatV,
+        peerChatVRange = chatInitialVRange, -- see comment in createConnReqConnection
+        connLevel = 0,
+        viaContact = Nothing,
+        viaUserContactLink = Nothing,
+        viaGroupLink = False,
+        groupLinkId = Nothing,
+        xContactId = Nothing,
+        customUserProfileId,
+        connType = ConnContact,
+        connStatus,
+        contactConnInitiated,
+        localAlias = "",
+        entityId = contactId_,
+        connectionCode = Nothing,
+        pqSupport = pqSup,
+        pqEncryption = CR.pqSupportToEnc pqSup,
+        pqSndEnabled = Nothing,
+        pqRcvEnabled = Nothing,
+        authErrCounter = 0,
+        quotaErrCounter = 0,
+        createdAt
+      }
 
 createDirectConnection :: DB.Connection -> User -> ConnId -> CreatedLinkInvitation -> Maybe ContactId -> ConnStatus -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> IO PendingContactConnection
 createDirectConnection db User {userId} acId ccLink contactId_ pccConnStatus incognitoProfile subMode chatV pqSup = do
   createdAt <- getCurrentTime
-  (pccConnId, customUserProfileId) <- createDirectConnection_ db userId acId ccLink contactId_ pccConnStatus incognitoProfile subMode chatV pqSup createdAt
+  (pccConnId, customUserProfileId, _) <- createDirectConnection_ db userId acId ccLink contactId_ pccConnStatus incognitoProfile subMode chatV pqSup createdAt
   pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = False, viaUserContactLink = Nothing, groupLinkId = Nothing, customUserProfileId, connLinkInv = Just ccLink, localAlias = "", createdAt, updatedAt = createdAt}
 
-createDirectConnection_ :: DB.Connection -> UserId -> ConnId -> CreatedLinkInvitation -> Maybe ContactId -> ConnStatus -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> UTCTime -> IO (Int64, Maybe Int64)
+createDirectConnection_ :: DB.Connection -> UserId -> ConnId -> CreatedLinkInvitation -> Maybe ContactId -> ConnStatus -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> UTCTime -> IO (Int64, Maybe Int64, Bool)
 createDirectConnection_ db userId acId (CCLink cReq shortLinkInv) contactId_ pccConnStatus incognitoProfile subMode chatV pqSup createdAt = do
   customUserProfileId <- mapM (createIncognitoProfile_ db userId createdAt) incognitoProfile
   let contactConnInitiated = pccConnStatus == ConnNew
@@ -285,7 +333,7 @@ createDirectConnection_ db userId acId (CCLink cReq shortLinkInv) contactId_ pcc
         :. (createdAt, createdAt, BI (subMode == SMOnlyCreate), chatV, pqSup, pqSup)
     )
   dbConnId <- insertedRowId db
-  pure (dbConnId, customUserProfileId)
+  pure (dbConnId, customUserProfileId, contactConnInitiated)
 
 createIncognitoProfile :: DB.Connection -> User -> Profile -> IO Int64
 createIncognitoProfile db User {userId} p = do
@@ -708,7 +756,7 @@ getUserContacts db vr user@User {userId} = do
   contacts <- rights <$> mapM (runExceptT . getContact db vr user) contactIds
   pure $ filter (\Contact {activeConn} -> isJust activeConn) contacts
 
-getUserContactLinkIdByCReq :: DB.Connection -> Int64 -> ExceptT StoreError IO Int64
+getUserContactLinkIdByCReq :: DB.Connection -> Int64 -> ExceptT StoreError IO (Maybe Int64)
 getUserContactLinkIdByCReq db contactRequestId =
   ExceptT . firstRow fromOnly (SEContactRequestNotFound contactRequestId) $
     DB.query db "SELECT user_contact_link_id FROM contact_requests WHERE contact_request_id = ?" (Only contactRequestId)
@@ -734,12 +782,11 @@ contactRequestQuery =
     SELECT
       cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
       cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
-      c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
+      cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
       cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
       cr.created_at, cr.updated_at,
       cr.peer_chat_min_version, cr.peer_chat_max_version
     FROM contact_requests cr
-    JOIN connections c USING (user_contact_link_id)
     JOIN contact_profiles p USING (contact_profile_id)
   |]
 
@@ -774,8 +821,8 @@ deleteContactRequest db User {userId} contactRequestId = do
     (userId, userId, contactRequestId, userId)
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
-createContactFromRequest :: DB.Connection -> User -> Int64 -> ConnId -> VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> Profile -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO (Contact, Connection)
-createContactFromRequest db user@User {userId, profile = LocalProfile {preferences}} uclId agentConnId connChatVersion cReqChatVRange localDisplayName profileId profile xContactId incognitoProfile subMode pqSup contactUsed = do
+createContactFromRequest :: DB.Connection -> User -> Maybe Int64 -> ConnId -> VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> Profile -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO (Contact, Connection)
+createContactFromRequest db user@User {userId, profile = LocalProfile {preferences}} uclId_ agentConnId connChatVersion cReqChatVRange localDisplayName profileId profile xContactId incognitoProfile subMode pqSup contactUsed = do
   currentTs <- getCurrentTime
   let userPreferences = fromMaybe emptyChatPrefs $ incognitoProfile >> preferences
   DB.execute
@@ -784,7 +831,7 @@ createContactFromRequest db user@User {userId, profile = LocalProfile {preferenc
     (userId, localDisplayName, profileId, BI True, userPreferences, currentTs, currentTs, currentTs, xContactId, BI contactUsed)
   contactId <- insertedRowId db
   DB.execute db "UPDATE contact_requests SET contact_id = ? WHERE user_id = ? AND local_display_name = ?" (contactId, userId, localDisplayName)
-  conn <- createAcceptedContactConn db user uclId contactId agentConnId connChatVersion cReqChatVRange pqSup incognitoProfile subMode currentTs
+  conn <- createAcceptedContactConn db user uclId_ contactId agentConnId connChatVersion cReqChatVRange pqSup incognitoProfile subMode currentTs
   let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
       ct =
         Contact
@@ -813,12 +860,12 @@ createContactFromRequest db user@User {userId, profile = LocalProfile {preferenc
           }
   pure (ct, conn)
 
-createAcceptedContactConn :: DB.Connection -> User -> Int64 -> ContactId -> ConnId -> VersionChat -> VersionRangeChat -> PQSupport -> Maybe IncognitoProfile -> SubscriptionMode -> UTCTime -> IO Connection
-createAcceptedContactConn db User {userId} uclId contactId agentConnId connChatVersion cReqChatVRange pqSup incognitoProfile subMode currentTs = do
+createAcceptedContactConn :: DB.Connection -> User -> Maybe Int64 -> ContactId -> ConnId -> VersionChat -> VersionRangeChat -> PQSupport -> Maybe IncognitoProfile -> SubscriptionMode -> UTCTime -> IO Connection
+createAcceptedContactConn db User {userId} uclId_ contactId agentConnId connChatVersion cReqChatVRange pqSup incognitoProfile subMode currentTs = do
   customUserProfileId <- forM incognitoProfile $ \case
     NewIncognito p -> createIncognitoProfile_ db userId currentTs p
     ExistingIncognito LocalProfile {profileId = pId} -> pure pId
-  createConnection_ db userId ConnContact (Just contactId) agentConnId ConnNew connChatVersion cReqChatVRange Nothing (Just uclId) customUserProfileId 0 currentTs subMode pqSup
+  createConnection_ db userId ConnContact (Just contactId) agentConnId ConnNew connChatVersion cReqChatVRange Nothing uclId_ customUserProfileId 0 currentTs subMode pqSup
 
 updateContactAccepted :: DB.Connection -> User -> Contact -> Bool -> IO ()
 updateContactAccepted db User {userId} Contact {contactId} contactUsed =
@@ -857,7 +904,7 @@ getContact_ db vr user@User {userId} contactId deleted = do
           cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
           ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
           -- Connection
-          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
+          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
           c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
         FROM contacts ct
@@ -910,7 +957,7 @@ getContactConnections db vr userId Contact {contactId} =
       DB.query
         db
         [sql|
-          SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
+          SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
             c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
             c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
             c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
@@ -928,7 +975,7 @@ getConnectionById db vr User {userId} connId = ExceptT $ do
     DB.query
       db
       [sql|
-        SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, custom_user_profile_id,
+        SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, xcontact_id, custom_user_profile_id,
           conn_status, conn_type, contact_conn_initiated, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id,
           created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter, quota_err_counter,
           conn_chat_version, peer_chat_min_version, peer_chat_max_version
@@ -969,11 +1016,11 @@ updateConnectionStatus :: DB.Connection -> Connection -> ConnStatus -> IO ()
 updateConnectionStatus db Connection {connId} = updateConnectionStatus_ db connId
 {-# INLINE updateConnectionStatus #-}
 
-updateConnectionStatusFromTo :: DB.Connection -> Int64 -> ConnStatus -> ConnStatus -> IO ()
-updateConnectionStatusFromTo db connId fromStatus toStatus = do
+updateConnectionStatusFromTo :: DB.Connection -> Connection -> ConnStatus -> ConnStatus -> IO Connection
+updateConnectionStatusFromTo db conn@Connection {connId} fromStatus toStatus = do
   maybeFirstRow fromOnly (DB.query db "SELECT conn_status FROM connections WHERE connection_id = ?" (Only connId)) >>= \case
-    Just status | status == fromStatus -> updateConnectionStatus_ db connId toStatus
-    _ -> pure ()
+    Just status | status == fromStatus -> updateConnectionStatus_ db connId toStatus $> conn {connStatus = toStatus}
+    _ -> pure conn
 
 updateConnectionStatus_ :: DB.Connection -> Int64 -> ConnStatus -> IO ()
 updateConnectionStatus_ db connId connStatus = do

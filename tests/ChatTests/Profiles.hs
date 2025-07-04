@@ -48,10 +48,7 @@ chatProfileTests = do
     it "deduplicate contact requests" testDeduplicateContactRequests
     it "deduplicate contact requests with profile change" testDeduplicateContactRequestsProfileChange
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
-    -- TODO [short links] fix address deletion:
-    -- TODO   - either alert user that N chats will be deleted and delete contact request contacts and business chats
-    -- TODO   - or allow to accept contact requests for deleted address (remove cascade deletes, rework agent)
-    xit "delete connection requests when contact link deleted" testDeleteConnectionRequests
+    it "keep connection requests when contact link deleted" testKeepConnectionRequests
     it "connected contact works when contact link deleted" testContactLinkDeletedConnectedContactWorks
     -- TODO [short links] test auto-reply with current version, with connecting client not preparing contact
     it "auto-reply message" testAutoReplyMessage
@@ -673,8 +670,8 @@ testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathPr
     cath ##> ("/c " <> cLink)
     cath <## "error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
 
-testDeleteConnectionRequests :: HasCallStack => TestParams -> IO ()
-testDeleteConnectionRequests = testChat3 aliceProfile bobProfile cathProfile $
+testKeepConnectionRequests :: HasCallStack => TestParams -> IO ()
+testKeepConnectionRequests = testChat3 aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
     alice ##> "/ad"
     cLink <- getContactLink alice True
@@ -687,13 +684,51 @@ testDeleteConnectionRequests = testChat3 aliceProfile bobProfile cathProfile $
     alice <## "Your chat address is deleted - accepted contacts will remain connected."
     alice <## "To create a new chat address use /ad"
 
+    -- can accept and reject requests after address deletion
+    alice ##> "/ac bob"
+    alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+    concurrently_
+      (bob <## "alice (Alice): contact is connected")
+      (alice <## "bob (Bob): contact is connected")
+    alice <##> bob
+
+    alice ##> "/rc cath"
+    alice <## "cath: contact request rejected"
+
+    alice @@@ [("@bob", "hey")]
+
+    -- bob's request to new address uses different name
     alice ##> "/ad"
     cLink' <- getContactLink alice True
+
     bob ##> ("/c " <> cLink')
-    -- same names are used here, as they were released at /da
-    alice <#? bob
+    bob <## "connection request sent!"
+    alice <## "bob_1 (Bob) wants to connect to you!"
+    alice <## "to accept: /ac bob_1"
+    alice <## "to reject: /rc bob_1 (the sender will NOT be notified)"
+
+    alice ##> "/ac bob_1"
+    alice <## "bob_1 (Bob): accepting contact request, you can send messages to contact"
+    concurrently_
+      (bob <## "alice_1 (Alice): contact is connected")
+      (alice <## "bob_1 (Bob): contact is connected")
+
+    alice #> "@bob_1 hi"
+    bob <# "alice_1> hi"
+    bob #> "@alice_1 hey"
+    alice <# "bob_1> hey"
+
     cath ##> ("/c " <> cLink')
     alice <#? cath
+
+    alice ##> "/ac cath"
+    alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
+    concurrently_
+      (cath <## "alice (Alice): contact is connected")
+      (alice <## "cath (Catherine): contact is connected")
+    alice <##> cath
+
+    alice @@@ [("@cath", "hey"), ("@bob_1", "hey"), ("@bob", "hey")]
 
 testContactLinkDeletedConnectedContactWorks :: HasCallStack => TestParams -> IO ()
 testContactLinkDeletedConnectedContactWorks = testChat2 aliceProfile bobProfile $

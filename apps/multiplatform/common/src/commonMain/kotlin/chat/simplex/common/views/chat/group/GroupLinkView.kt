@@ -33,7 +33,7 @@ fun GroupLinkView(
   creatingGroup: Boolean = false,
   close: (() -> Unit)? = null
 ) {
-  var groupLinkVar by rememberSaveable { mutableStateOf(groupLink) }
+  var groupLinkVar by rememberSaveable(stateSaver = GroupLink.nullableStateSaver) { mutableStateOf(groupLink) }
   val groupLinkMemberRole = rememberSaveable { mutableStateOf(groupLink?.acceptMemberRole) }
   var creatingLink by rememberSaveable { mutableStateOf(false) }
   fun createLink() {

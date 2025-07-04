@@ -344,8 +344,8 @@ CREATE TABLE user_contact_links(
 );
 CREATE TABLE contact_requests(
   contact_request_id INTEGER PRIMARY KEY,
-  user_contact_link_id INTEGER NOT NULL REFERENCES user_contact_links
-  ON UPDATE CASCADE ON DELETE CASCADE,
+  user_contact_link_id INTEGER REFERENCES user_contact_links
+  ON UPDATE CASCADE ON DELETE SET NULL,
   agent_invitation_id BLOB NOT NULL,
   contact_profile_id INTEGER REFERENCES contact_profiles
   ON DELETE SET NULL
