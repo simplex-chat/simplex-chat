@@ -355,7 +355,7 @@ struct ComposeView: View {
         VStack(spacing: 0) {
             Divider()
             let contact = chat.chatInfo.contact
-            if (contact?.nextConnectPrepared ?? false) || (chat.chatInfo.groupInfo?.nextConnectPrepared ?? false),
+            if (contact?.nextConnectPreparedCanPickProfile ?? false) || (chat.chatInfo.groupInfo?.nextConnectPreparedCanPickProfile ?? false),
                let user = chatModel.currentUser {
                 ContextProfilePickerView(
                     chat: chat,
