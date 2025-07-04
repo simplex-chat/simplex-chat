@@ -1820,7 +1820,12 @@ processChatCommand' vr = \case
     case preparedContact of
       Nothing -> throwCmdError "contact doesn't have link to connect"
       Just PreparedContact {connLinkToConnect = ACCL SCMInvitation ccLink} -> do
-        (_, customUserProfile) <- connectViaInvitation user incognito ccLink (Just contactId)
+        (_, customUserProfile) <- connectViaInvitation user incognito ccLink (Just contactId) `catchChatError` \e -> do
+          -- get updated contact, in case connection was started - in UI it would lock ability to change
+          -- user or incognito profile for contact, in case server received request while client got network error
+          ct' <- withFastStore $ \db -> getContact db vr user contactId
+          toView $ CEvtChatInfoUpdated user (AChatInfo SCTDirect $ DirectChat ct')
+          throwError e
         -- get updated contact with connection
         ct' <- withFastStore $ \db -> getContact db vr user contactId
         forM_ msgContent_ $ \mc -> do
@@ -1836,7 +1841,13 @@ processChatCommand' vr = \case
             smId <- getSharedMsgId
             withFastStore' $ \db -> setRequestSharedMsgIdForContact db contactId smId
             pure (smId, mc)
-        connectViaContact user (Just $ PCEContact ct) incognito ccLink welcomeSharedMsgId msg_ >>= \case
+        r <- connectViaContact user (Just $ PCEContact ct) incognito ccLink welcomeSharedMsgId msg_ `catchChatError` \e -> do
+          -- get updated contact, in case connection was started - in UI it would lock ability to change
+          -- user or incognito profile for contact, in case server received request while client got network error
+          ct' <- withFastStore $ \db -> getContact db vr user contactId
+          toView $ CEvtChatInfoUpdated user (AChatInfo SCTDirect $ DirectChat ct')
+          throwError e
+        case r of
           CVRSentInvitation _conn customUserProfile -> do
             -- get updated contact with connection
             ct' <- withFastStore $ \db -> getContact db vr user contactId
@@ -1856,7 +1867,13 @@ processChatCommand' vr = \case
             smId <- getSharedMsgId
             withFastStore' $ \db -> setRequestSharedMsgIdForGroup db groupId smId
             pure (smId, mc)
-        connectViaContact user (Just $ PCEGroup gInfo hostMember) incognito connLinkToConnect welcomeSharedMsgId msg_ >>= \case
+        r <- connectViaContact user (Just $ PCEGroup gInfo hostMember) incognito connLinkToConnect welcomeSharedMsgId msg_ `catchChatError` \e -> do
+          -- get updated group info, in case connection was started (connLinkPreparedConnection) - in UI it would lock ability to change
+          -- user or incognito profile for group or business chat, in case server received request while client got network error
+          gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
+          toView $ CEvtChatInfoUpdated user (AChatInfo SCTGroup $ GroupChat gInfo' Nothing)
+          throwError e
+        case r of
           CVRSentInvitation _conn customUserProfile -> do
             -- get updated group info (connLinkStartedConnection and incognito membership)
             gInfo' <- withFastStore $ \db -> do

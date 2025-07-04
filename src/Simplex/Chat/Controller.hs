@@ -768,6 +768,7 @@ data ChatEvent
   | CEvtGroupMemberSwitch {user :: User, groupInfo :: GroupInfo, member :: GroupMember, switchProgress :: SwitchProgress}
   | CEvtContactRatchetSync {user :: User, contact :: Contact, ratchetSyncProgress :: RatchetSyncProgress}
   | CEvtGroupMemberRatchetSync {user :: User, groupInfo :: GroupInfo, member :: GroupMember, ratchetSyncProgress :: RatchetSyncProgress}
+  | CEvtChatInfoUpdated {user :: User, chatInfo :: AChatInfo}
   | CEvtNewChatItems {user :: User, chatItems :: [AChatItem]} -- there is the same command response
   | CEvtChatItemsStatusesUpdated {user :: User, chatItems :: [AChatItem]}
   | CEvtChatItemUpdated {user :: User, chatItem :: AChatItem} -- there is the same command response

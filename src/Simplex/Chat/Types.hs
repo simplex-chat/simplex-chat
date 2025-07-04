@@ -494,6 +494,7 @@ instance ToField BusinessChatType where toField = toField . textEncode
 
 data PreparedGroup = PreparedGroup
   { connLinkToConnect :: CreatedLinkContact,
+    connLinkPreparedConnection :: Bool,
     connLinkStartedConnection :: Bool,
     welcomeSharedMsgId :: Maybe SharedMsgId, -- it is stored only for business chats, and only if welcome message is specified
     requestSharedMsgId :: Maybe SharedMsgId

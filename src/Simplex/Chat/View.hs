@@ -386,6 +386,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtGroupMemberSwitch u g m progress -> ttyUser u $ viewGroupMemberSwitch g m progress
   CEvtContactRatchetSync u ct progress -> ttyUser u $ viewContactRatchetSync ct progress
   CEvtGroupMemberRatchetSync u g m progress -> ttyUser u $ viewGroupMemberRatchetSync g m progress
+  CEvtChatInfoUpdated u chatInfo -> []
   CEvtNewChatItems u chatItems -> viewChatItems ttyUser unmuted u chatItems ts tz
   CEvtChatItemsStatusesUpdated u chatItems
     | length chatItems <= 20 ->

@@ -216,6 +216,10 @@ createConnReqConnection db userId acId preparedEntity_ cReqHash sLnk xContactId 
       Nothing -> (ConnContact, Nothing, Nothing, Nothing)
     updatePreparedGroup GroupInfo {groupId, membership} pccConnId customUserProfileId currentTs = do
       setViaGroupLinkHash db groupId pccConnId
+      DB.execute
+        db
+        "UPDATE groups SET conn_link_prepared_connection = ?, updated_at = ? WHERE group_id = ?"
+        (BI True, currentTs, groupId)
       when (isJust customUserProfileId) $
         DB.execute
           db

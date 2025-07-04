@@ -109,6 +109,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20250513_group_scope
           Simplex.Chat.Store.Postgres.Migrations.M20250526_short_links
           Simplex.Chat.Store.Postgres.Migrations.M20250702_contact_requests_remove_cascade_delete
+          Simplex.Chat.Store.Postgres.Migrations.M20250704_groups_conn_link_prepared_connection
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -243,6 +244,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20250513_group_scope
           Simplex.Chat.Store.SQLite.Migrations.M20250526_short_links
           Simplex.Chat.Store.SQLite.Migrations.M20250702_contact_requests_remove_cascade_delete
+          Simplex.Chat.Store.SQLite.Migrations.M20250704_groups_conn_link_prepared_connection
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
