@@ -38,7 +38,7 @@ struct ContextProfilePickerView: View {
 
     private func viewBody() -> some View {
         Group {
-            if !listExpanded {
+            if !listExpanded || chat.chatInfo.nextConnectPreparedProfileChangeProhibited {
                 currentSelection()
             } else {
                 profilePicker()
@@ -59,7 +59,13 @@ struct ContextProfilePickerView: View {
             .padding(.leading, 12)
             .padding(.trailing)
 
-            if incognitoDefault {
+            if chat.chatInfo.nextConnectPreparedProfileChangeProhibited {
+                if chat.chatInfo.incognito {
+                    incognitoOption()
+                } else {
+                    profilerPickerUserOption(selectedUser)
+                }
+            } else if incognitoDefault {
                 incognitoOption()
             } else {
                 profilerPickerUserOption(selectedUser)
@@ -140,15 +146,19 @@ struct ContextProfilePickerView: View {
     
     private func profilerPickerUserOption(_ user: User) -> some View {
         Button {
-            if selectedUser == user {
-                if !incognitoDefault {
-                    listExpanded.toggle()
-                } else {
-                    incognitoDefault = false
-                    listExpanded = false
+            if !chat.chatInfo.nextConnectPreparedProfileChangeProhibited {
+                if selectedUser == user {
+                    if !incognitoDefault {
+                        listExpanded.toggle()
+                    } else {
+                        incognitoDefault = false
+                        listExpanded = false
+                    }
+                } else if selectedUser != user {
+                    changeProfile(user)
                 }
-            } else if selectedUser != user {
-                changeProfile(user)
+            } else {
+                showCantChangeProfileAlert()
             }
         } label: {
             HStack {
@@ -166,7 +176,7 @@ struct ContextProfilePickerView: View {
                             .font(.system(size: 12, weight: .bold))
                             .foregroundColor(theme.colors.secondary)
                             .opacity(0.7)
-                    } else {
+                    } else if !chat.chatInfo.nextConnectPreparedProfileChangeProhibited {
                         Image(systemName: "chevron.up")
                             .font(.system(size: 12, weight: .bold))
                             .foregroundColor(theme.colors.secondary)
@@ -226,11 +236,15 @@ struct ContextProfilePickerView: View {
 
     private func incognitoOption() -> some View {
         Button {
-            if incognitoDefault {
-                listExpanded.toggle()
+            if !chat.chatInfo.nextConnectPreparedProfileChangeProhibited {
+                if incognitoDefault {
+                    listExpanded.toggle()
+                } else {
+                    incognitoDefault = true
+                    listExpanded = false
+                }
             } else {
-                incognitoDefault = true
-                listExpanded = false
+                showCantChangeProfileAlert()
             }
         } label : {
             HStack {
@@ -253,7 +267,7 @@ struct ContextProfilePickerView: View {
                             .font(.system(size: 12, weight: .bold))
                             .foregroundColor(theme.colors.secondary)
                             .opacity(0.7)
-                    } else {
+                    } else if !chat.chatInfo.nextConnectPreparedProfileChangeProhibited {
                         Image(systemName: "chevron.up")
                             .font(.system(size: 12, weight: .bold))
                             .foregroundColor(theme.colors.secondary)
@@ -273,6 +287,13 @@ struct ContextProfilePickerView: View {
             .scaledToFit()
             .frame(width: 38)
             .foregroundColor(.indigo)
+    }
+
+    private func showCantChangeProfileAlert() {
+        showAlert(
+            NSLocalizedString("Can't change profile", comment: "alert title"),
+            message: NSLocalizedString("You can't change profile after first attempt to connect.", comment: "alert message")
+        )
     }
 }
 

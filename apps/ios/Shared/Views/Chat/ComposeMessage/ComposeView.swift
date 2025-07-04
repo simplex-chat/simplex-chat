@@ -354,8 +354,8 @@ struct ComposeView: View {
     var body: some View {
         VStack(spacing: 0) {
             Divider()
-            let contact = chat.chatInfo.contact
-            if (contact?.nextConnectPreparedCanPickProfile ?? false) || (chat.chatInfo.groupInfo?.nextConnectPreparedCanPickProfile ?? false),
+
+            if chat.chatInfo.nextConnectPrepared,
                let user = chatModel.currentUser {
                 ContextProfilePickerView(
                     chat: chat,
@@ -403,6 +403,8 @@ struct ComposeView: View {
             case (true, .voicePreview): EmptyView() // ? we may allow playback when editing is allowed
             default: previewView()
             }
+
+            let contact = chat.chatInfo.contact
 
             if chat.chatInfo.groupInfo?.nextConnectPrepared == true {
                 if chat.chatInfo.groupInfo?.businessChat == nil {

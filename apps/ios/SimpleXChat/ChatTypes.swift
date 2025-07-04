@@ -1346,6 +1346,26 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public var nextConnectPrepared: Bool {
+        get {
+            switch self {
+            case let .direct(contact): return contact.nextConnectPrepared
+            case let .group(groupInfo, _): return groupInfo.nextConnectPrepared
+            default: return false
+            }
+        }
+    }
+
+    public var nextConnectPreparedProfileChangeProhibited: Bool {
+        get {
+            switch self {
+            case let .direct(contact): return contact.nextConnectPreparedProfileChangeProhibited
+            case let .group(groupInfo, _): return groupInfo.nextConnectPreparedProfileChangeProhibited
+            default: return false
+            }
+        }
+    }
+
     public var userCantSendReason: (composeLabel: LocalizedStringKey, alertMessage: LocalizedStringKey?)? {
         get {
             switch self {
@@ -1714,7 +1734,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var active: Bool { get { contactStatus == .active } }
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
     public var nextConnectPrepared: Bool { preparedContact != nil && (activeConn == nil || activeConn?.connStatus == .prepared) }
-    public var nextConnectPreparedCanPickProfile: Bool { nextConnectPrepared && activeConn == nil }
+    public var nextConnectPreparedProfileChangeProhibited: Bool { nextConnectPrepared && activeConn != nil }
     public var nextAcceptContactRequest: Bool { contactRequestId != nil && (activeConn == nil || activeConn?.connStatus == .new) }
     public var sendMsgToConnect: Bool { nextSendGrpInv || nextConnectPrepared }
     public var displayName: String { localAlias == "" ? profile.displayName : localAlias }
@@ -2070,9 +2090,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var apiId: Int64 { get { groupId } }
     public var ready: Bool { get { true } }
     public var nextConnectPrepared: Bool { if let preparedGroup { !preparedGroup.connLinkStartedConnection } else { false } }
-    public var nextConnectPreparedCanPickProfile: Bool {
-        if let preparedGroup { !preparedGroup.connLinkPreparedConnection && !preparedGroup.connLinkStartedConnection } else { false }
-    }
+    public var nextConnectPreparedProfileChangeProhibited: Bool { nextConnectPrepared && (preparedGroup?.connLinkPreparedConnection ?? false) }
     public var displayName: String { localAlias == "" ? groupProfile.displayName : localAlias }
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
