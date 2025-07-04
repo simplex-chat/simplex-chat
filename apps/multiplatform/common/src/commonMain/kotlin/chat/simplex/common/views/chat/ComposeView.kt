@@ -532,10 +532,11 @@ fun ComposeView(
   suspend fun sendConnectPreparedContact() {
     val mc = checkLinkPreview()
     sending()
+    val incognito = if (chat.chatInfo.profileChangeProhibited) chat.chatInfo.incognito else chatModel.controller.appPrefs.incognito.get()
     val contact = chatModel.controller.apiConnectPreparedContact(
       rh = chat.remoteHostId,
       contactId = chat.chatInfo.apiId,
-      incognito = chatModel.controller.appPrefs.incognito.get(),
+      incognito = incognito,
       msg = mc
     )
     if (contact != null) {
@@ -573,10 +574,11 @@ fun ComposeView(
   suspend fun connectPreparedGroup() {
     val mc = checkLinkPreview()
     sending()
+    val incognito = if (chat.chatInfo.profileChangeProhibited) chat.chatInfo.incognito else chatModel.controller.appPrefs.incognito.get()
     val groupInfo = chatModel.controller.apiConnectPreparedGroup(
       rh = chat.remoteHostId,
       groupId = chat.chatInfo.apiId,
-      incognito = chatModel.controller.appPrefs.incognito.get(),
+      incognito = incognito,
       msg = mc
     )
     if (groupInfo != null) {

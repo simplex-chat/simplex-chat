@@ -3000,6 +3000,7 @@ processChatCommand' vr = \case
               Nothing -> connect' groupLinkId cReqHash1 Nothing
       where
         joinPreparedConn' xContactId_ conn@Connection {customUserProfileId} inGroup = do
+          when (incognito /= isJust customUserProfileId) $ throwCmdError "incognito mode is different from prepared connection"
           xContactId <- mkXContactId xContactId_
           localIncognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
           let incognitoProfile = fromLocalProfile <$> localIncognitoProfile
