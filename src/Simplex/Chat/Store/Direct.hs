@@ -197,7 +197,7 @@ createConnReqConnection db userId acId preparedEntity_ cReqHash sLnk xContactId 
         customUserProfileId,
         connType,
         connStatus,
-        contactConnInitiated = True, -- should it be reset on error? or possibly set after success
+        contactConnInitiated = True,
         localAlias = "",
         entityId,
         connectionCode = Nothing,

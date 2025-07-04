@@ -273,7 +273,7 @@ createConnection_ db userId connType entityId acId connStatus connChatVersion pe
         viaContact,
         viaUserContactLink,
         viaGroupLink,
-        groupLinkId = Nothing,
+        groupLinkId = Nothing, -- should it be set to viaLinkGroupId
         xContactId = Nothing,
         customUserProfileId,
         connLevel,

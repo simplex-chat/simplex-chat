@@ -2464,7 +2464,7 @@ createMemberContact
       db
       "UPDATE group_members SET contact_id = ?, updated_at = ? WHERE contact_profile_id = ?"
       (contactId, currentTs, memberContactProfileId)
-    DB.execute
+    DB.execute -- why do we insert conn_req_inv here? how is it used?
       db
       [sql|
         INSERT INTO connections (

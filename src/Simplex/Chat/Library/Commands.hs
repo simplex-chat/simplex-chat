@@ -1852,29 +1852,13 @@ processChatCommand' vr = \case
           CVRConnectedContact _ct -> throwChatError $ CEException "contact already exists when connecting to group"
   APIConnect userId incognito acl -> withUserId userId $ \user -> case acl of
     ACCL SCMInvitation ccLink -> do
-      (Connection {connId = dbConnId}, incognitoProfile) <- connectViaInvitation user incognito ccLink Nothing
-      -- TODO make from Connection
-      pcc <- withFastStore $ \db -> getPendingContactConnection db userId dbConnId
+      (conn, incognitoProfile) <- connectViaInvitation user incognito ccLink Nothing
+      let pcc = mkPendingContactConnection conn $ Just ccLink
       pure $ CRSentConfirmation user pcc incognitoProfile
     ACCL SCMContact ccLink ->
       connectViaContact user Nothing incognito ccLink Nothing Nothing >>= \case
         CVRConnectedContact ct -> pure $ CRContactAlreadyExists user ct
-        CVRSentInvitation conn incognitoProfile -> pure $ CRSentInvitation user (toPCC conn) incognitoProfile
-          where
-            toPCC Connection {connId, agentConnId, connStatus, viaUserContactLink, groupLinkId, customUserProfileId, localAlias, createdAt} =
-              PendingContactConnection
-                { pccConnId = connId,
-                  pccAgentConnId = agentConnId,
-                  pccConnStatus = connStatus,
-                  viaContactUri = True,
-                  viaUserContactLink,
-                  groupLinkId,
-                  customUserProfileId,
-                  connLinkInv = Nothing,
-                  localAlias,
-                  createdAt,
-                  updatedAt = createdAt
-                }
+        CVRSentInvitation conn incognitoProfile -> pure $ CRSentInvitation user (mkPendingContactConnection conn Nothing) incognitoProfile
   Connect incognito (Just cLink@(ACL m cLink')) -> withUser $ \user -> do
     (ccLink, plan) <- connectPlan user cLink `catchChatError` \e -> case cLink' of CLFull cReq -> pure (ACCL m (CCLink cReq Nothing), CPInvitationLink (ILPOk Nothing)); _ -> throwError e
     connectWithPlan user incognito ccLink plan
@@ -4058,27 +4042,13 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
   where
     addEntity (cts, ucs, ms, sfts, rfts, pcs) = \case
       RcvDirectMsgConnection c (Just ct) -> let cts' = addConn c ct cts in (cts', ucs, ms, sfts, rfts, pcs)
-      RcvDirectMsgConnection c Nothing -> let pcs' = addConn c (toPCC c) pcs in (cts, ucs, ms, sfts, rfts, pcs')
+      RcvDirectMsgConnection c Nothing -> let pcs' = addConn c (mkPendingContactConnection c Nothing) pcs in (cts, ucs, ms, sfts, rfts, pcs')
       RcvGroupMsgConnection c _g m -> let ms' = addConn c (toShortMember m c) ms in (cts, ucs, ms', sfts, rfts, pcs)
       SndFileConnection c sft -> let sfts' = addConn c sft sfts in (cts, ucs, ms, sfts', rfts, pcs)
       RcvFileConnection c rft -> let rfts' = addConn c rft rfts in (cts, ucs, ms, sfts, rfts', pcs)
       UserContactConnection c uc -> let ucs' = addConn c uc ucs in (cts, ucs', ms, sfts, rfts, pcs)
     addConn :: Connection -> a -> Map ConnId a -> Map ConnId a
     addConn = M.insert . aConnId
-    toPCC Connection {connId, agentConnId, connStatus, viaUserContactLink, groupLinkId, customUserProfileId, localAlias, createdAt} =
-      PendingContactConnection
-        { pccConnId = connId,
-          pccAgentConnId = agentConnId,
-          pccConnStatus = connStatus,
-          viaContactUri = False,
-          viaUserContactLink,
-          groupLinkId,
-          customUserProfileId,
-          connLinkInv = Nothing,
-          localAlias,
-          createdAt,
-          updatedAt = createdAt
-        }
     toShortMember GroupMember {groupMemberId, groupId, localDisplayName} Connection {agentConnId} =
       ShortGroupMember
         { groupMemberId,

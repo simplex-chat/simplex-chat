@@ -1631,6 +1631,22 @@ data PendingContactConnection = PendingContactConnection
   }
   deriving (Eq, Show)
 
+mkPendingContactConnection :: Connection -> Maybe CreatedLinkInvitation -> PendingContactConnection
+mkPendingContactConnection Connection {connId, agentConnId, connStatus, xContactId, viaUserContactLink, groupLinkId, customUserProfileId, localAlias, createdAt} connLinkInv =
+  PendingContactConnection
+  { pccConnId = connId,
+    pccAgentConnId = agentConnId,
+    pccConnStatus = connStatus,
+    viaContactUri = isJust xContactId,
+    viaUserContactLink,
+    groupLinkId,
+    customUserProfileId,
+    connLinkInv,
+    localAlias,
+    createdAt,
+    updatedAt = createdAt
+  }
+
 aConnId' :: PendingContactConnection -> ConnId
 aConnId' PendingContactConnection {pccAgentConnId = AgentConnId cId} = cId
 
@@ -1713,12 +1729,6 @@ instance TextEncoding ConnType where
     ConnSndFile -> "snd_file"
     ConnRcvFile -> "rcv_file"
     ConnUserContact -> "user_contact"
-
-data NewConnection = NewConnection
-  { agentConnId :: ByteString,
-    connLevel :: Int,
-    viaConn :: Maybe Int64
-  }
 
 data GroupMemberIntro = GroupMemberIntro
   { introId :: Int64,
