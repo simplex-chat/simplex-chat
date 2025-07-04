@@ -645,7 +645,8 @@ CREATE TABLE test_chat_schema.groups (
     conn_short_link_to_connect bytea,
     conn_link_started_connection smallint DEFAULT 0 NOT NULL,
     welcome_shared_msg_id bytea,
-    request_shared_msg_id bytea
+    request_shared_msg_id bytea,
+    conn_link_prepared_connection smallint DEFAULT 0 NOT NULL
 );
 
 
