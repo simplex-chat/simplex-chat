@@ -870,6 +870,8 @@
 
   <!--  ComposeContextProfilePickerView.kt -->
   <string name="context_user_picker_your_profile">Your profile</string>
+  <string name="context_user_picker_cant_change_profile_alert_title">Can\'t change profile</string>
+  <string name="context_user_picker_cant_change_profile_alert_message">You can\'t change profile after first attempt to connect.</string>
 
   <!-- ScanCodeView.kt -->
   <string name="scan_code">Scan code</string>

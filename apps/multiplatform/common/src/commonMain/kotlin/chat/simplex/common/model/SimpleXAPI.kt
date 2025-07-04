@@ -2510,6 +2510,12 @@ object ChatController {
           chatModel.networkStatuses[s.agentConnId] = s.networkStatus
         }
       }
+      is CR.ChatInfoUpdated ->
+        if (active(r.user)) {
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateChatInfo(rhId, r.chatInfo)
+          }
+        }
       is CR.NewChatItems -> withBGApi {
         r.chatItems.forEach { chatItem ->
           val cInfo = chatItem.chatInfo
@@ -5959,6 +5965,7 @@ sealed class CR {
   // TODO remove above
   @Serializable @SerialName("networkStatus") class NetworkStatusResp(val networkStatus: NetworkStatus, val connections: List<String>): CR()
   @Serializable @SerialName("networkStatuses") class NetworkStatuses(val user_: UserRef?, val networkStatuses: List<ConnNetworkStatus>): CR()
+  @Serializable @SerialName("chatInfoUpdated") class ChatInfoUpdated(val user: UserRef, val chatInfo: ChatInfo): CR()
   @Serializable @SerialName("newChatItems") class NewChatItems(val user: UserRef, val chatItems: List<AChatItem>): CR()
   @Serializable @SerialName("chatItemsStatusesUpdated") class ChatItemsStatusesUpdated(val user: UserRef, val chatItems: List<AChatItem>): CR()
   @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: UserRef, val chatItem: AChatItem): CR()
@@ -6144,6 +6151,7 @@ sealed class CR {
     is ContactSubSummary -> "contactSubSummary"
     is NetworkStatusResp -> "networkStatus"
     is NetworkStatuses -> "networkStatuses"
+    is ChatInfoUpdated -> "chatInfoUpdated"
     is NewChatItems -> "newChatItems"
     is ChatItemsStatusesUpdated -> "chatItemsStatusesUpdated"
     is ChatItemUpdated -> "chatItemUpdated"
@@ -6321,6 +6329,7 @@ sealed class CR {
     is ContactSubSummary -> withUser(user, json.encodeToString(contactSubscriptions))
     is NetworkStatusResp -> "networkStatus $networkStatus\nconnections: $connections"
     is NetworkStatuses -> withUser(user_, json.encodeToString(networkStatuses))
+    is ChatInfoUpdated -> withUser(user, json.encodeToString(chatInfo))
     is NewChatItems -> withUser(user, chatItems.joinToString("\n") { json.encodeToString(it) })
     is ChatItemsStatusesUpdated -> withUser(user, chatItems.joinToString("\n") { json.encodeToString(it) })
     is ChatItemUpdated -> withUser(user, json.encodeToString(chatItem))

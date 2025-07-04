@@ -1328,12 +1328,7 @@ fun ComposeView(
 
   Column {
     val currentUser = chatModel.currentUser.value
-    if ((
-          (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.nextConnectPrepared)
-              || (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.nextConnectPrepared)
-        )
-      && currentUser != null
-    ) {
+    if (chat.chatInfo.nextConnectPrepared && currentUser != null) {
       ComposeContextProfilePickerView(
         rhId = rhId,
         chat = chat,
