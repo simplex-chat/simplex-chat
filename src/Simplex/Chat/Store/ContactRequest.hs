@@ -143,12 +143,11 @@ createOrUpdateContactRequest
             SELECT
               cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
               cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
-              c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
+              cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
               cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
               cr.created_at, cr.updated_at,
               cr.peer_chat_min_version, cr.peer_chat_max_version
             FROM contact_requests cr
-            JOIN connections c USING (user_contact_link_id)
             JOIN contact_profiles p USING (contact_profile_id)
             WHERE cr.user_id = ?
               AND cr.xcontact_id = ?

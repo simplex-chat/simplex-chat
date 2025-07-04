@@ -996,7 +996,11 @@ func receivedMsgNtf(_ res: NSEChatEvent) async -> (String, NSENotificationData)?
 //        case let .contactConnecting(contact):
 //            TODO profile update
     case let .receivedContactRequest(user, contactRequest):
-        return (UserContact(contactRequest: contactRequest).id, .contactRequest(user, contactRequest))
+        if let userContactLinkId = contactRequest.userContactLinkId_ {
+            return (UserContact(userContactLinkId: userContactLinkId).id, .contactRequest(user, contactRequest))
+        } else {
+            return nil
+        }
     case let .newChatItems(user, chatItems):
         // Received items are created one at a time
         if let chatItem = chatItems.first {

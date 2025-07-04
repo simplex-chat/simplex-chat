@@ -756,7 +756,7 @@ getUserContacts db vr user@User {userId} = do
   contacts <- rights <$> mapM (runExceptT . getContact db vr user) contactIds
   pure $ filter (\Contact {activeConn} -> isJust activeConn) contacts
 
-getUserContactLinkIdByCReq :: DB.Connection -> Int64 -> ExceptT StoreError IO Int64
+getUserContactLinkIdByCReq :: DB.Connection -> Int64 -> ExceptT StoreError IO (Maybe Int64)
 getUserContactLinkIdByCReq db contactRequestId =
   ExceptT . firstRow fromOnly (SEContactRequestNotFound contactRequestId) $
     DB.query db "SELECT user_contact_link_id FROM contact_requests WHERE contact_request_id = ?" (Only contactRequestId)
@@ -782,12 +782,11 @@ contactRequestQuery =
     SELECT
       cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
       cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
-      c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
+      cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
       cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
       cr.created_at, cr.updated_at,
       cr.peer_chat_min_version, cr.peer_chat_max_version
     FROM contact_requests cr
-    JOIN connections c USING (user_contact_link_id)
     JOIN contact_profiles p USING (contact_profile_id)
   |]
 
@@ -822,8 +821,8 @@ deleteContactRequest db User {userId} contactRequestId = do
     (userId, userId, contactRequestId, userId)
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
-createContactFromRequest :: DB.Connection -> User -> Int64 -> ConnId -> VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> Profile -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO (Contact, Connection)
-createContactFromRequest db user@User {userId, profile = LocalProfile {preferences}} uclId agentConnId connChatVersion cReqChatVRange localDisplayName profileId profile xContactId incognitoProfile subMode pqSup contactUsed = do
+createContactFromRequest :: DB.Connection -> User -> Maybe Int64 -> ConnId -> VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> Profile -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO (Contact, Connection)
+createContactFromRequest db user@User {userId, profile = LocalProfile {preferences}} uclId_ agentConnId connChatVersion cReqChatVRange localDisplayName profileId profile xContactId incognitoProfile subMode pqSup contactUsed = do
   currentTs <- getCurrentTime
   let userPreferences = fromMaybe emptyChatPrefs $ incognitoProfile >> preferences
   DB.execute
@@ -832,7 +831,7 @@ createContactFromRequest db user@User {userId, profile = LocalProfile {preferenc
     (userId, localDisplayName, profileId, BI True, userPreferences, currentTs, currentTs, currentTs, xContactId, BI contactUsed)
   contactId <- insertedRowId db
   DB.execute db "UPDATE contact_requests SET contact_id = ? WHERE user_id = ? AND local_display_name = ?" (contactId, userId, localDisplayName)
-  conn <- createAcceptedContactConn db user uclId contactId agentConnId connChatVersion cReqChatVRange pqSup incognitoProfile subMode currentTs
+  conn <- createAcceptedContactConn db user uclId_ contactId agentConnId connChatVersion cReqChatVRange pqSup incognitoProfile subMode currentTs
   let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
       ct =
         Contact
@@ -861,12 +860,12 @@ createContactFromRequest db user@User {userId, profile = LocalProfile {preferenc
           }
   pure (ct, conn)
 
-createAcceptedContactConn :: DB.Connection -> User -> Int64 -> ContactId -> ConnId -> VersionChat -> VersionRangeChat -> PQSupport -> Maybe IncognitoProfile -> SubscriptionMode -> UTCTime -> IO Connection
-createAcceptedContactConn db User {userId} uclId contactId agentConnId connChatVersion cReqChatVRange pqSup incognitoProfile subMode currentTs = do
+createAcceptedContactConn :: DB.Connection -> User -> Maybe Int64 -> ContactId -> ConnId -> VersionChat -> VersionRangeChat -> PQSupport -> Maybe IncognitoProfile -> SubscriptionMode -> UTCTime -> IO Connection
+createAcceptedContactConn db User {userId} uclId_ contactId agentConnId connChatVersion cReqChatVRange pqSup incognitoProfile subMode currentTs = do
   customUserProfileId <- forM incognitoProfile $ \case
     NewIncognito p -> createIncognitoProfile_ db userId currentTs p
     ExistingIncognito LocalProfile {profileId = pId} -> pure pId
-  createConnection_ db userId ConnContact (Just contactId) agentConnId ConnNew connChatVersion cReqChatVRange Nothing (Just uclId) customUserProfileId 0 currentTs subMode pqSup
+  createConnection_ db userId ConnContact (Just contactId) agentConnId ConnNew connChatVersion cReqChatVRange Nothing uclId_ customUserProfileId 0 currentTs subMode pqSup
 
 updateContactAccepted :: DB.Connection -> User -> Contact -> Bool -> IO ()
 updateContactAccepted db User {userId} Contact {contactId} contactUsed =
