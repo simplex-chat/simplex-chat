@@ -1566,28 +1566,6 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
-    var createdAt: Date {
-        switch self {
-        case let .direct(contact): return contact.createdAt
-        case let .group(groupInfo, _): return groupInfo.createdAt
-        case let .local(noteFolder): return noteFolder.createdAt
-        case let .contactRequest(contactRequest): return contactRequest.createdAt
-        case let .contactConnection(contactConnection): return contactConnection.createdAt
-        case .invalidJSON: return .now
-        }
-    }
-
-    public var updatedAt: Date {
-        switch self {
-        case let .direct(contact): return contact.updatedAt
-        case let .group(groupInfo, _): return groupInfo.updatedAt
-        case let .local(noteFolder): return noteFolder.updatedAt
-        case let .contactRequest(contactRequest): return contactRequest.updatedAt
-        case let .contactConnection(contactConnection): return contactConnection.updatedAt
-        case .invalidJSON: return .now
-        }
-    }
-
     public var chatTs: Date {
         switch self {
         case let .direct(contact): return contact.chatTs ?? contact.updatedAt
