@@ -1388,6 +1388,10 @@ swipe action</note>
         <target>Impossible d'appeler le membre</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Can't change profile" xml:space="preserve">
+        <source>Can't change profile</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
         <source>Can't invite contact!</source>
         <target>Impossible d'inviter le contact !</target>
@@ -8068,6 +8072,10 @@ Vous serez invité à confirmer l'authentification avant que cette fonction ne s
         <source>To support instant push notifications the chat database has to be migrated.</source>
         <target>Pour prendre en charge les notifications push instantanées, la base de données du chat doit être migrée.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To use another profile after connection attempt, delete the chat and use the link again." xml:space="preserve">
+        <source>To use another profile after connection attempt, delete the chat and use the link again.</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="To use the servers of **%@**, accept conditions of use." xml:space="preserve">
         <source>To use the servers of **%@**, accept conditions of use.</source>

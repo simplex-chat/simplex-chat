@@ -292,7 +292,7 @@ struct ContextProfilePickerView: View {
     private func showCantChangeProfileAlert() {
         showAlert(
             NSLocalizedString("Can't change profile", comment: "alert title"),
-            message: NSLocalizedString("You can't change profile after first attempt to connect.", comment: "alert message")
+            message: NSLocalizedString("To use another profile after connection attempt, delete the chat and use the link again.", comment: "alert message")
         )
     }
 }
