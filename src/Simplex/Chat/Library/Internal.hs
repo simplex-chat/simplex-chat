@@ -909,7 +909,7 @@ acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = 
         Just conn@Connection {customUserProfileId} -> do
           incognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
           pure (ct, conn, ExistingIncognito <$> incognitoProfile)
-  let profileToSend = profileToSendOnAccept user incognitoProfile False
+  let profileToSend = userProfileToSend' user incognitoProfile (Just ct) False
   dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
   -- TODO [certs rcv]
   (ct,conn,) . fst <$> withAgent (\a -> acceptContact a (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
@@ -922,7 +922,7 @@ acceptContactRequestAsync
   UserContactRequest {agentInvitationId = AgentInvId cReqInvId, cReqChatVRange, xContactId, pqSupport = cReqPQSup}
   incognitoProfile = do
     subMode <- chatReadVar subscriptionMode
-    let profileToSend = profileToSendOnAccept user incognitoProfile False
+    let profileToSend = userProfileToSend' user incognitoProfile (Just ct) False
     vr <- chatVersionRange
     let chatV = vr `peerConnChatVersion` cReqChatVRange
     (cmdId, acId) <- agentAcceptContactAsync user True cReqInvId (XInfo profileToSend) subMode cReqPQSup chatV
@@ -951,7 +951,7 @@ acceptGroupJoinRequestAsync
     (groupMemberId, memberId) <- withStore $ \db ->
       createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ welcomeMsgId_ gLinkMemRole initialStatus
     currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
-    let Profile {displayName} = profileToSendOnAccept user incognitoProfile True
+    let Profile {displayName} = userProfileToSend' user incognitoProfile Nothing True
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
         msg =
           XGrpLinkInv $
@@ -1010,7 +1010,7 @@ acceptBusinessJoinRequestAsync
   clientMember@GroupMember {groupMemberId, memberId}
   UserContactRequest {agentInvitationId = AgentInvId cReqInvId, cReqChatVRange, xContactId} = do
     vr <- chatVersionRange
-    let userProfile@Profile {displayName, preferences} = profileToSendOnAccept user Nothing True
+    let userProfile@Profile {displayName, preferences} = userProfileToSend' user Nothing Nothing True
         -- TODO [short links] take groupPreferences from group info
         groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
         msg =

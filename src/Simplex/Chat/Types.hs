@@ -647,10 +647,10 @@ redactedMemberProfile Profile {displayName, fullName, image} =
 
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
 
-profileToSendOnAccept :: User -> Maybe IncognitoProfile -> Bool -> Profile
-profileToSendOnAccept user ip = userProfileToSend user (getIncognitoProfile <$> ip) Nothing
+userProfileToSend' :: User -> Maybe IncognitoProfile -> Maybe Contact -> Bool -> Profile
+userProfileToSend' user ip = userProfileToSend user (fromIncognitoProfile <$> ip)
   where
-    getIncognitoProfile = \case
+    fromIncognitoProfile = \case
       NewIncognito p -> p
       ExistingIncognito lp -> fromLocalProfile lp
 

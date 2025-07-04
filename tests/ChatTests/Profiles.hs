@@ -106,15 +106,15 @@ chatProfileTests = do
       it "files & media" testGroupPrefsFilesForRole
       it "SimpleX links" testGroupPrefsSimplexLinksForRole
     it "set user, contact and group UI theme" testSetUITheme
-  fdescribe "short links" $ do
+  describe "short links" $ do
     it "should connect via one-time invitation" testShortLinkInvitation
     it "should plan and connect via one-time invitation" testPlanShortLinkInvitation
     it "should connect via contact address" testShortLinkContactAddress
     it "should join group" testShortLinkJoinGroup
   mapSubject (\params -> params {largeLinkData = True} :: TestParams) $
-    fdescribe "short links with attached data (largeLinkData = True)" $ shortLinkTests True
+    describe "short links with attached data (largeLinkData = True)" $ shortLinkTests True
   mapSubject (\params -> params {largeLinkData = False} :: TestParams) $
-    fdescribe "short links with attached data (largeLinkData = False)" $ shortLinkTests False
+    describe "short links with attached data (largeLinkData = False)" $ shortLinkTests False
 
 shortLinkTests :: Bool -> SpecWith TestParams
 shortLinkTests largeLinkData = do
