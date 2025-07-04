@@ -176,7 +176,7 @@ createConnReqConnection db userId acId preparedEntity_ cReqHash sLnk xContactId 
     )
   connId <- insertedRowId db
   case preparedEntity_ of
-    Just (PCEGroup gInfo _) -> updatePreparedGroup gInfo connId customUserProfileId currentTs
+    Just (PCEGroup gInfo _) -> updatePreparedGroup gInfo customUserProfileId currentTs
     _ -> pure ()
   pure
     Connection
@@ -214,12 +214,11 @@ createConnReqConnection db userId acId preparedEntity_ cReqHash sLnk xContactId 
       Just (PCEContact Contact {contactId}) -> (ConnContact, Just contactId, Nothing, Just contactId)
       Just (PCEGroup _ GroupMember {groupMemberId}) -> (ConnMember, Nothing, Just groupMemberId, Just groupMemberId)
       Nothing -> (ConnContact, Nothing, Nothing, Nothing)
-    updatePreparedGroup GroupInfo {groupId, membership} pccConnId customUserProfileId currentTs = do
-      setViaGroupLinkHash db groupId pccConnId
+    updatePreparedGroup GroupInfo {groupId, membership} customUserProfileId currentTs = do
       DB.execute
         db
-        "UPDATE groups SET conn_link_prepared_connection = ?, updated_at = ? WHERE group_id = ?"
-        (BI True, currentTs, groupId)
+        "UPDATE groups SET via_group_link_uri_hash = ?, conn_link_prepared_connection = ?, updated_at = ? WHERE group_id = ?"
+        (cReqHash, BI True, currentTs, groupId)
       when (isJust customUserProfileId) $
         DB.execute
           db

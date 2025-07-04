@@ -1289,7 +1289,7 @@ interface SomeChat {
   val chatDeleted: Boolean
   val nextConnect: Boolean
   val nextConnectPrepared: Boolean
-  val nextConnectPreparedProfileChangeProhibited: Boolean
+  val profileChangeProhibited: Boolean
   val incognito: Boolean
   fun featureEnabled(feature: ChatFeature): Boolean
   val timedMessagesTTL: Int?
@@ -1371,7 +1371,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val chatDeleted get() = contact.chatDeleted
     override val nextConnect get() = contact.nextConnect
     override val nextConnectPrepared get() = contact.nextConnectPrepared
-    override val nextConnectPreparedProfileChangeProhibited get() = contact.nextConnectPreparedProfileChangeProhibited
+    override val profileChangeProhibited get() = contact.profileChangeProhibited
     override val incognito get() = contact.incognito
     override fun featureEnabled(feature: ChatFeature) = contact.featureEnabled(feature)
     override val timedMessagesTTL: Int? get() = contact.timedMessagesTTL
@@ -1398,7 +1398,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val chatDeleted get() = groupInfo.chatDeleted
     override val nextConnect get() = groupInfo.nextConnect
     override val nextConnectPrepared get() = groupInfo.nextConnectPrepared
-    override val nextConnectPreparedProfileChangeProhibited get() = groupInfo.nextConnectPreparedProfileChangeProhibited
+    override val profileChangeProhibited get() = groupInfo.profileChangeProhibited
     override val incognito get() = groupInfo.incognito
     override fun featureEnabled(feature: ChatFeature) = groupInfo.featureEnabled(feature)
     override val timedMessagesTTL: Int? get() = groupInfo.timedMessagesTTL
@@ -1424,7 +1424,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val chatDeleted get() = noteFolder.chatDeleted
     override val nextConnect get() = noteFolder.nextConnect
     override val nextConnectPrepared get() = noteFolder.nextConnectPrepared
-    override val nextConnectPreparedProfileChangeProhibited get() = noteFolder.nextConnectPreparedProfileChangeProhibited
+    override val profileChangeProhibited get() = noteFolder.profileChangeProhibited
     override val incognito get() = noteFolder.incognito
     override fun featureEnabled(feature: ChatFeature) = noteFolder.featureEnabled(feature)
     override val timedMessagesTTL: Int? get() = noteFolder.timedMessagesTTL
@@ -1450,7 +1450,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val chatDeleted get() = contactRequest.chatDeleted
     override val nextConnect get() = contactRequest.nextConnect
     override val nextConnectPrepared get() = contactRequest.nextConnectPrepared
-    override val nextConnectPreparedProfileChangeProhibited get() = contactRequest.nextConnectPreparedProfileChangeProhibited
+    override val profileChangeProhibited get() = contactRequest.profileChangeProhibited
     override val incognito get() = contactRequest.incognito
     override fun featureEnabled(feature: ChatFeature) = contactRequest.featureEnabled(feature)
     override val timedMessagesTTL: Int? get() = contactRequest.timedMessagesTTL
@@ -1476,7 +1476,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val chatDeleted get() = contactConnection.chatDeleted
     override val nextConnect get() = contactConnection.nextConnect
     override val nextConnectPrepared get() = contactConnection.nextConnectPrepared
-    override val nextConnectPreparedProfileChangeProhibited get() = contactConnection.nextConnectPreparedProfileChangeProhibited
+    override val profileChangeProhibited get() = contactConnection.profileChangeProhibited
     override val incognito get() = contactConnection.incognito
     override fun featureEnabled(feature: ChatFeature) = contactConnection.featureEnabled(feature)
     override val timedMessagesTTL: Int? get() = contactConnection.timedMessagesTTL
@@ -1507,7 +1507,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val chatDeleted get() = false
     override val nextConnect get() = false
     override val nextConnectPrepared get() = false
-    override val nextConnectPreparedProfileChangeProhibited get() = false
+    override val profileChangeProhibited get() = false
     override val incognito get() = false
     override fun featureEnabled(feature: ChatFeature) = false
     override val timedMessagesTTL: Int? get() = null
@@ -1703,7 +1703,7 @@ data class Contact(
   override val nextConnect get() = sendMsgToConnect
   val nextSendGrpInv get() = contactGroupMemberId != null && !contactGrpInvSent
   override val nextConnectPrepared get() = preparedContact != null && (activeConn == null || activeConn.connStatus == ConnStatus.Prepared)
-  override val nextConnectPreparedProfileChangeProhibited get() = nextConnectPrepared && activeConn != null
+  override val profileChangeProhibited get() = activeConn != null
   val nextAcceptContactRequest get() = contactRequestId != null && (activeConn == null || activeConn.connStatus == ConnStatus.New)
   val sendMsgToConnect get() = nextSendGrpInv || nextConnectPrepared
   override val incognito get() = contactConnIncognito
@@ -1958,7 +1958,7 @@ data class GroupInfo (
   override val ready get() = membership.memberActive
   override val nextConnect get() = nextConnectPrepared
   override val nextConnectPrepared = if (preparedGroup != null) !preparedGroup.connLinkStartedConnection else false
-  override val nextConnectPreparedProfileChangeProhibited get() = nextConnectPrepared && (preparedGroup?.connLinkPreparedConnection ?: false)
+  override val profileChangeProhibited get() = preparedGroup?.connLinkPreparedConnection ?: false
   override val chatDeleted get() = false
   override val incognito get() = membership.memberIncognito
   override fun featureEnabled(feature: ChatFeature) = when (feature) {
@@ -2414,7 +2414,7 @@ class NoteFolder(
   override val ready get() = true
   override val nextConnect get() = false
   override val nextConnectPrepared get() = false
-  override val nextConnectPreparedProfileChangeProhibited get() = false
+  override val profileChangeProhibited get() = false
   override val incognito get() = false
   override fun featureEnabled(feature: ChatFeature) = feature == ChatFeature.Voice
   override val timedMessagesTTL: Int? get() = null
@@ -2452,7 +2452,7 @@ class UserContactRequest (
   override val ready get() = true
   override val nextConnect get() = false
   override val nextConnectPrepared get() = false
-  override val nextConnectPreparedProfileChangeProhibited get() = false
+  override val profileChangeProhibited get() = false
   override val incognito get() = false
   override fun featureEnabled(feature: ChatFeature) = false
   override val timedMessagesTTL: Int? get() = null
@@ -2495,7 +2495,7 @@ class PendingContactConnection(
   override val ready get() = false
   override val nextConnect get() = false
   override val nextConnectPrepared get() = false
-  override val nextConnectPreparedProfileChangeProhibited get() = false
+  override val profileChangeProhibited get() = false
   override val incognito get() = customUserProfileId != null
   override fun featureEnabled(feature: ChatFeature) = false
   override val timedMessagesTTL: Int? get() = null

@@ -38,7 +38,7 @@ struct ContextProfilePickerView: View {
 
     private func viewBody() -> some View {
         Group {
-            if !listExpanded || chat.chatInfo.nextConnectPreparedProfileChangeProhibited {
+            if !listExpanded || chat.chatInfo.profileChangeProhibited {
                 currentSelection()
             } else {
                 profilePicker()
@@ -59,7 +59,7 @@ struct ContextProfilePickerView: View {
             .padding(.leading, 12)
             .padding(.trailing)
 
-            if chat.chatInfo.nextConnectPreparedProfileChangeProhibited {
+            if chat.chatInfo.profileChangeProhibited {
                 if chat.chatInfo.incognito {
                     incognitoOption()
                 } else {
@@ -146,7 +146,7 @@ struct ContextProfilePickerView: View {
     
     private func profilerPickerUserOption(_ user: User) -> some View {
         Button {
-            if !chat.chatInfo.nextConnectPreparedProfileChangeProhibited {
+            if !chat.chatInfo.profileChangeProhibited {
                 if selectedUser == user {
                     if !incognitoDefault {
                         listExpanded.toggle()
@@ -176,7 +176,7 @@ struct ContextProfilePickerView: View {
                             .font(.system(size: 12, weight: .bold))
                             .foregroundColor(theme.colors.secondary)
                             .opacity(0.7)
-                    } else if !chat.chatInfo.nextConnectPreparedProfileChangeProhibited {
+                    } else if !chat.chatInfo.profileChangeProhibited {
                         Image(systemName: "chevron.up")
                             .font(.system(size: 12, weight: .bold))
                             .foregroundColor(theme.colors.secondary)
@@ -236,7 +236,7 @@ struct ContextProfilePickerView: View {
 
     private func incognitoOption() -> some View {
         Button {
-            if !chat.chatInfo.nextConnectPreparedProfileChangeProhibited {
+            if !chat.chatInfo.profileChangeProhibited {
                 if incognitoDefault {
                     listExpanded.toggle()
                 } else {
@@ -267,7 +267,7 @@ struct ContextProfilePickerView: View {
                             .font(.system(size: 12, weight: .bold))
                             .foregroundColor(theme.colors.secondary)
                             .opacity(0.7)
-                    } else if !chat.chatInfo.nextConnectPreparedProfileChangeProhibited {
+                    } else if !chat.chatInfo.profileChangeProhibited {
                         Image(systemName: "chevron.up")
                             .font(.system(size: 12, weight: .bold))
                             .foregroundColor(theme.colors.secondary)

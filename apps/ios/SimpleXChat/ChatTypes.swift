@@ -1356,11 +1356,11 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
-    public var nextConnectPreparedProfileChangeProhibited: Bool {
+    public var profileChangeProhibited: Bool {
         get {
             switch self {
-            case let .direct(contact): return contact.nextConnectPreparedProfileChangeProhibited
-            case let .group(groupInfo, _): return groupInfo.nextConnectPreparedProfileChangeProhibited
+            case let .direct(contact): return contact.profileChangeProhibited
+            case let .group(groupInfo, _): return groupInfo.profileChangeProhibited
             default: return false
             }
         }
@@ -1734,7 +1734,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var active: Bool { get { contactStatus == .active } }
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
     public var nextConnectPrepared: Bool { preparedContact != nil && (activeConn == nil || activeConn?.connStatus == .prepared) }
-    public var nextConnectPreparedProfileChangeProhibited: Bool { nextConnectPrepared && activeConn != nil }
+    public var profileChangeProhibited: Bool { activeConn != nil }
     public var nextAcceptContactRequest: Bool { contactRequestId != nil && (activeConn == nil || activeConn?.connStatus == .new) }
     public var sendMsgToConnect: Bool { nextSendGrpInv || nextConnectPrepared }
     public var displayName: String { localAlias == "" ? profile.displayName : localAlias }
@@ -2090,7 +2090,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var apiId: Int64 { get { groupId } }
     public var ready: Bool { get { true } }
     public var nextConnectPrepared: Bool { if let preparedGroup { !preparedGroup.connLinkStartedConnection } else { false } }
-    public var nextConnectPreparedProfileChangeProhibited: Bool { nextConnectPrepared && (preparedGroup?.connLinkPreparedConnection ?? false) }
+    public var profileChangeProhibited: Bool { preparedGroup?.connLinkPreparedConnection ?? false }
     public var displayName: String { localAlias == "" ? groupProfile.displayName : localAlias }
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }

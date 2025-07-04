@@ -65,7 +65,7 @@ fun ComposeContextProfilePickerView(
         Modifier.size(20.dp),
         tint = MaterialTheme.colors.secondary,
       )
-    } else if (!chat.chatInfo.nextConnectPreparedProfileChangeProhibited) {
+    } else if (!chat.chatInfo.profileChangeProhibited) {
       Icon(
         painterResource(
           MR.images.ic_chevron_up
@@ -125,7 +125,7 @@ fun ComposeContextProfilePickerView(
         .fillMaxWidth()
         .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp)
         .clickable(onClick = {
-          if (!chat.chatInfo.nextConnectPreparedProfileChangeProhibited) {
+          if (!chat.chatInfo.profileChangeProhibited) {
             if (selectedUser.value.userId == user.userId) {
               if (!incognitoDefault) {
                 listExpanded.value = !listExpanded.value
@@ -167,7 +167,7 @@ fun ComposeContextProfilePickerView(
         .fillMaxWidth()
         .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp)
         .clickable(onClick = {
-          if (!chat.chatInfo.nextConnectPreparedProfileChangeProhibited) {
+          if (!chat.chatInfo.profileChangeProhibited) {
             if (incognitoDefault) {
               listExpanded.value = !listExpanded.value
             } else {
@@ -280,7 +280,7 @@ fun ComposeContextProfilePickerView(
         color = MaterialTheme.colors.secondary
       )
 
-      if (chat.chatInfo.nextConnectPreparedProfileChangeProhibited) {
+      if (chat.chatInfo.profileChangeProhibited) {
         if (chat.chatInfo.incognito) {
           IncognitoOption()
         } else {
@@ -294,7 +294,7 @@ fun ComposeContextProfilePickerView(
     }
   }
 
-  if (!listExpanded.value || chat.chatInfo.nextConnectPreparedProfileChangeProhibited) {
+  if (!listExpanded.value || chat.chatInfo.profileChangeProhibited) {
     CurrentSelection()
   } else {
     ProfilePicker()
