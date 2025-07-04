@@ -1302,9 +1302,9 @@ swipe action</note>
         <target>Für bessere Privatsphäre verpixeln.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Blur media" xml:space="preserve">
+      <trans-unit id="Blur media" xml:space="preserve" approved="no">
         <source>Blur media</source>
-        <target>Medium verpixeln</target>
+        <target state="translated">Medien verpixeln</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
