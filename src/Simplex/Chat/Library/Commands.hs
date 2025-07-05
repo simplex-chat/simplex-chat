@@ -3528,7 +3528,6 @@ processChatCommand' vr = \case
       | not (memberActive membership) && not (memberRemoved membership) =
           pure $ CPGroupLink (GLPConnectingProhibit $ Just gInfo)
       | memberActive membership = pure $ CPGroupLink (GLPKnown gInfo)
-      -- TODO [short links] entity is already found - passing GroupShortLinkData doesn't make sense?
       | otherwise = pure $ CPGroupLink (GLPOk groupSLinkData_)
     contactCReqSchemas :: ConnReqUriData -> (ConnReqContact, ConnReqContact)
     contactCReqSchemas crData =
