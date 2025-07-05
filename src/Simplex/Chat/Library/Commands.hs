@@ -3398,6 +3398,7 @@ processChatCommand' vr = \case
           let inv cReq = ACCL SCMInvitation $ CCLink cReq (Just l')
           liftIO (getConnectionEntityViaShortLink db vr user l') >>= \case
             Just (cReq, ent) -> pure $ Just (inv cReq, invitationEntityPlan Nothing ent)
+            -- deleted contact is returned as known, as invitation link cannot be re-used too connect anyway
             Nothing -> bimap inv (CPInvitationLink . ILPKnown) <$$> getContactViaShortLinkToConnect db vr user l'
         invitationReqAndPlan cReq sLnk_ contactSLinkData_ = do
           plan <- invitationRequestPlan user cReq contactSLinkData_ `catchChatError` (pure . CPError)
@@ -3409,6 +3410,7 @@ processChatCommand' vr = \case
       CLShort l@(CSLContact _ ct _ _) -> do
         let l' = serverShortLink l
             con cReq = ACCL SCMContact $ CCLink cReq (Just l')
+            gPlan (cReq, g) = if memberRemoved (membership g) then Nothing else Just (con cReq, CPGroupLink (GLPKnown g))
         case ct of
           CCTContact ->
             knownLinkPlans >>= \case
@@ -3429,8 +3431,6 @@ processChatCommand' vr = \case
                     getContactViaShortLinkToConnect db vr user l' >>= \case
                       Just (cReq, ct') -> pure $ if contactDeleted ct' then Nothing else Just (con cReq, CPContactAddress (CAPKnown ct'))
                       Nothing -> (gPlan =<<) <$> getGroupViaShortLinkToConnect db vr user l'
-                        where
-                          gPlan (cReq, g) = if memberRemoved (membership g) then Nothing else Just (con cReq, CPGroupLink (GLPKnown g))
           CCTGroup ->
             knownLinkPlans >>= \case
               Just r -> pure r
@@ -3443,8 +3443,7 @@ processChatCommand' vr = \case
               knownLinkPlans = withFastStore $ \db ->
                 liftIO (getGroupInfoViaUserShortLink db vr user l') >>= \case
                   Just (cReq, g) -> pure $ Just (con cReq, CPGroupLink (GLPOwnLink g))
-                  Nothing ->
-                    bimap con (CPGroupLink . GLPKnown ) <$$> getGroupViaShortLinkToConnect db vr user l'
+                  Nothing -> (gPlan =<<) <$> getGroupViaShortLinkToConnect db vr user l'
           CCTChannel -> throwCmdError "channel links are not supported in this version"
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink plan
