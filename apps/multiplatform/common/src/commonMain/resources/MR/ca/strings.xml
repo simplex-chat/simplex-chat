@@ -1692,7 +1692,7 @@
     <string name="icon_descr_sent_msg_status_unauthorized_send">enviament no autoritzat</string>
     <string name="this_text_is_available_in_settings">Aquest text està disponible a la configuració</string>
     <string name="personal_welcome">Benvingut %1$s!</string>
-    <string name="group_preview_join_as">unir-te com a %s</string>
+    <string name="group_preview_join_as">Unir-te com a %s</string>
     <string name="member_contact_send_direct_message">enviar missatge directe</string>
     <string name="tap_to_start_new_chat">Toca per iniciar un xat nou</string>
     <string name="loading_chats">Carregant xats…</string>
@@ -2408,6 +2408,10 @@
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[Només podreu enviar missatges <b>després que la sol·licitud sigui acceptada</b>.]]></string>
     <string name="compose_view_connect">Connectar</string>
     <string name="contact_should_accept">el contacte hauria d\'acceptar…</string>
-    <string name="error_changing_contact_user">S\'ha produït un error en canviar el contacte</string>
-    <string name="error_changing_group_user">S\'ha produït un error en canviar el compte del grup</string>
+    <string name="error_changing_contact_user">Error en canviar el contacte</string>
+    <string name="error_changing_group_user">Error en canviar el compte del grup</string>
+    <string name="error_preparing_contact">Error en preparar el contacte</string>
+    <string name="error_preparing_group">Error en preparar el grup</string>
+    <string name="error_rejecting_contact_request">Error en rebutjar la sol·licitud de contacte</string>
+    <string name="compose_view_join_group">Entrar al grup</string>
 </resources>
