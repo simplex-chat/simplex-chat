@@ -313,6 +313,7 @@ testRetryConnectingClientTimeout ps = do
   withSmpServer' serverCfg' $ do
     withTestChatCfgOpts ps cfg' opts' "alice" $ \alice -> do
       withTestChatCfgOpts ps cfg' opts' "bob" $ \bob -> do
+        threadDelay 250000
         bob ##> ("/_connect plan 1 " <> inv)
         bob <## "invitation link: ok to connect"
         _sLinkData <- getTermLine bob

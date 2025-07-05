@@ -3398,6 +3398,7 @@ processChatCommand' vr = \case
           let inv cReq = ACCL SCMInvitation $ CCLink cReq (Just l')
           liftIO (getConnectionEntityViaShortLink db vr user l') >>= \case
             Just (cReq, ent) -> pure $ Just (inv cReq, invitationEntityPlan Nothing ent)
+            -- deleted contact is returned as known, as invitation link cannot be re-used too connect anyway
             Nothing -> bimap inv (CPInvitationLink . ILPKnown) <$$> getContactViaShortLinkToConnect db vr user l'
         invitationReqAndPlan cReq sLnk_ contactSLinkData_ = do
           plan <- invitationRequestPlan user cReq contactSLinkData_ `catchChatError` (pure . CPError)
@@ -3409,6 +3410,7 @@ processChatCommand' vr = \case
       CLShort l@(CSLContact _ ct _ _) -> do
         let l' = serverShortLink l
             con cReq = ACCL SCMContact $ CCLink cReq (Just l')
+            gPlan (cReq, g) = if memberRemoved (membership g) then Nothing else Just (con cReq, CPGroupLink (GLPKnown g))
         case ct of
           CCTContact ->
             knownLinkPlans >>= \case
@@ -3427,8 +3429,8 @@ processChatCommand' vr = \case
                   Just UserContactLink {connLinkContact = CCLink cReq _} -> pure $ Just (con cReq, CPContactAddress CAPOwnLink)
                   Nothing ->
                     getContactViaShortLinkToConnect db vr user l' >>= \case
-                      Just (cReq, ct') -> pure $ Just (con cReq, CPContactAddress (CAPKnown ct'))
-                      Nothing -> bimap con (CPGroupLink . GLPKnown) <$$> getGroupViaShortLinkToConnect db vr user l'
+                      Just (cReq, ct') -> pure $ if contactDeleted ct' then Nothing else Just (con cReq, CPContactAddress (CAPKnown ct'))
+                      Nothing -> (gPlan =<<) <$> getGroupViaShortLinkToConnect db vr user l'
           CCTGroup ->
             knownLinkPlans >>= \case
               Just r -> pure r
@@ -3441,8 +3443,7 @@ processChatCommand' vr = \case
               knownLinkPlans = withFastStore $ \db ->
                 liftIO (getGroupInfoViaUserShortLink db vr user l') >>= \case
                   Just (cReq, g) -> pure $ Just (con cReq, CPGroupLink (GLPOwnLink g))
-                  Nothing ->
-                    bimap con (CPGroupLink . GLPKnown ) <$$> getGroupViaShortLinkToConnect db vr user l'
+                  Nothing -> (gPlan =<<) <$> getGroupViaShortLinkToConnect db vr user l'
           CCTChannel -> throwCmdError "channel links are not supported in this version"
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink plan
@@ -3501,7 +3502,7 @@ processChatCommand' vr = \case
               | contactDeleted ct -> pure $ CPContactAddress (CAPOk contactSLinkData_)
               | otherwise -> pure $ CPContactAddress (CAPKnown ct)
             -- TODO [short links] RcvGroupMsgConnection branch is deprecated? (old group link protocol?)
-            Just (RcvGroupMsgConnection _ gInfo _) -> groupPlan gInfo
+            Just (RcvGroupMsgConnection _ gInfo _) -> groupPlan gInfo Nothing
             Just _ -> throwCmdError "found connection entity is not RcvDirectMsgConnection or RcvGroupMsgConnection"
     groupJoinRequestPlan :: User -> ConnReqContact -> Maybe GroupShortLinkData -> CM ConnectionPlan
     groupJoinRequestPlan user (CRContactUri crData) groupSLinkData_ = do
@@ -3520,15 +3521,14 @@ processChatCommand' vr = \case
               | not (contactReady ct) && contactActive ct -> pure $ CPGroupLink (GLPConnectingProhibit gInfo_)
               | otherwise -> pure $ CPGroupLink (GLPOk groupSLinkData_)
             (Nothing, Just _) -> throwCmdError "found connection entity is not RcvDirectMsgConnection"
-            (Just gInfo, _) -> groupPlan gInfo
-    groupPlan :: GroupInfo -> CM ConnectionPlan
-    groupPlan gInfo@GroupInfo {membership}
+            (Just gInfo, _) -> groupPlan gInfo groupSLinkData_
+    groupPlan :: GroupInfo -> Maybe GroupShortLinkData -> CM ConnectionPlan
+    groupPlan gInfo@GroupInfo {membership} groupSLinkData_
       | memberStatus membership == GSMemRejected = pure $ CPGroupLink (GLPKnown gInfo)
       | not (memberActive membership) && not (memberRemoved membership) =
           pure $ CPGroupLink (GLPConnectingProhibit $ Just gInfo)
       | memberActive membership = pure $ CPGroupLink (GLPKnown gInfo)
-      -- TODO [short links] entity is already found - passing GroupShortLinkData doesn't make sense?
-      | otherwise = pure $ CPGroupLink (GLPOk Nothing)
+      | otherwise = pure $ CPGroupLink (GLPOk groupSLinkData_)
     contactCReqSchemas :: ConnReqUriData -> (ConnReqContact, ConnReqContact)
     contactCReqSchemas crData =
       ( CRContactUri crData {crScheme = SSSimplex},
