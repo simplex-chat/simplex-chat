@@ -2401,7 +2401,13 @@
     <string name="group_new_support_chats">%d xats amb membres</string>
     <string name="member_criteria_all">tots(es)</string>
     <string name="add_short_link">Afegir enllaç curt</string>
-    <string name="accept_contact_request">Accepta la sol·licitud de contacte</string>
-    <string name="compose_view_add_message">Afegeix un missatge</string>
+    <string name="accept_contact_request">Acceptar la sol·licitud de contacte</string>
+    <string name="compose_view_add_message">Afegir un missatge</string>
     <string name="context_user_picker_cant_change_profile_alert_title">No es pot canviar el perfil</string>
+    <string name="e2ee_info_e2ee"><![CDATA[Els missatges estan protegits per <b>xifratge extrem a extrem</b>.]]></string>
+    <string name="compose_view_send_contact_request_alert_text"><![CDATA[Només podreu enviar missatges <b>després que la sol·licitud sigui acceptada</b>.]]></string>
+    <string name="compose_view_connect">Connectar</string>
+    <string name="contact_should_accept">el contacte hauria d\'acceptar…</string>
+    <string name="error_changing_contact_user">S\'ha produït un error en canviar el contacte</string>
+    <string name="error_changing_group_user">S\'ha produït un error en canviar el compte del grup</string>
 </resources>
