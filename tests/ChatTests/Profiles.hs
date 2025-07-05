@@ -819,7 +819,7 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
     bob <## "#biz: joining the group..."
     -- the next command can be prone to race conditions
     bob ##> ("/_connect plan 1 " <> cLink)
-    bob <## "business link: connecting to business #biz"
+    bob <## "business address: connecting to business #biz"
     biz <## "#bob: bob_1 joined the group"
     bob <## "#biz: you joined the group"
     biz #> "#bob hi"
@@ -827,7 +827,7 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
     bob #> "#biz hello"
     biz <# "#bob bob_1> hello"
     bob ##> ("/_connect plan 1 " <> cLink)
-    bob <## "business link: known business #biz"
+    bob <## "business address: known business #biz"
     bob <## "use #biz <message> to send messages"
     connectUsers biz alice
     biz <##> alice
@@ -2989,6 +2989,14 @@ testShortLinkInvitationPrepareContact ps@TestParams {largeLinkData} = testChatCf
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
       alice <##> bob
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "invitation link: known contact alice"
+      bob <## "use @alice <message> to send messages"
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "invitation link: known deleted contact alice"
 
 testShortLinkInvitationImage :: HasCallStack => TestParams -> IO ()
 testShortLinkInvitationImage ps@TestParams {largeLinkData} = testChatCfg2 testCfg {largeLinkData} aliceProfile bobProfile test ps
@@ -3117,6 +3125,15 @@ testShortLinkAddressPrepareContact ps@TestParams {largeLinkData} = testChatCfg2 
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
       alice <##> bob
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "contact address: known contact alice"
+      bob <## "use @alice <message> to send messages"
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "contact address: ok to connect"
+      void $ getTermLine bob
 
 testShortLinkDeletedInvitation :: HasCallStack => TestParams -> IO ()
 testShortLinkDeletedInvitation ps@TestParams {largeLinkData} = testChatCfg2 testCfg {largeLinkData} aliceProfile bobProfile test ps
@@ -3288,19 +3305,19 @@ testShortLinkAddressPrepareBusiness ps@TestParams {largeLinkData} = testChatCfg3
       biz ##> "/auto_accept on business"
       biz <## "auto_accept on, business"
       bob ##> ("/_connect plan 1 " <> shortLink)
-      bob <## "business link: ok to connect"
+      bob <## "business address: ok to connect"
       contactSLinkData <- getTermLine bob
       bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
       bob <## "#biz: group is prepared"
       bob ##> ("/_connect plan 1 " <> shortLink)
-      bob <## "business link: known prepared business #biz"
+      bob <## "business address: known prepared business #biz"
       bob ##> "/_connect group #1"
       bob <## "#biz: connection started"
       biz <## "#bob (Bob): accepting business address request..."
       bob <## "#biz: joining the group..."
       -- the next command can be prone to race conditions
       bob ##> ("/_connect plan 1 " <> shortLink)
-      bob <## "business link: connecting to business #biz"
+      bob <## "business address: connecting to business #biz"
       biz <## "#bob: bob_1 joined the group"
       bob <## "#biz: you joined the group"
       biz #> "#bob hi"
@@ -3333,6 +3350,18 @@ testShortLinkAddressPrepareBusiness ps@TestParams {largeLinkData} = testChatCfg3
       concurrently_
         (alice <# "#bob bob_1> hey there")
         (biz <# "#bob bob_1> hey there")
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "business address: known business #biz"
+      bob <## "use #biz <message> to send messages"
+      biz ##> "/d #bob"
+      biz <## "#bob: you deleted the group"
+      alice <## "#bob: biz deleted the group"
+      alice <## "use /d #bob to delete the local copy of the group"
+      bob <## "#biz: biz_1 deleted the group"
+      bob <## "use /d #biz to delete the local copy of the group"
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "business address: ok to connect"
+      void $ getTermLine bob
 
 testBusinessAddressRequestMessage :: HasCallStack => TestParams -> IO ()
 testBusinessAddressRequestMessage ps@TestParams {largeLinkData} = testChatCfg3 testCfg {largeLinkData} businessProfile aliceProfile {fullName = "Alice @ Biz"} bobProfile test ps
@@ -3345,7 +3374,7 @@ testBusinessAddressRequestMessage ps@TestParams {largeLinkData} = testChatCfg3 t
       biz <## "auto reply:"
       biz <## "Welcome!"
       bob ##> ("/_connect plan 1 " <> shortLink)
-      bob <## "business link: ok to connect"
+      bob <## "business address: ok to connect"
       contactSLinkData <- getTermLine bob
       bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
       bob <## "#biz: group is prepared"
@@ -3415,6 +3444,17 @@ testShortLinkPrepareGroup ps@TestParams {largeLinkData} = testChatCfg3 testCfg {
       [alice, cath] *<# "#team bob> 2"
       cath #> "#team 3"
       [alice, bob] *<# "#team cath> 3"
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "group link: known group #team"
+      bob <## "use #team <message> to send messages"
+      bob ##> "/l #team"
+      bob <## "#team: you left the group"
+      bob <## "use /d #team to delete the group"
+      alice <## "#team: bob left the group"
+      cath <## "#team: bob left the group"
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "group link: ok to connect"
+      void $ getTermLine bob
 
 testShortLinkPrepareGroupReject :: HasCallStack => TestParams -> IO ()
 testShortLinkPrepareGroupReject ps@TestParams {largeLinkData} = testChatCfg3 cfg {largeLinkData} aliceProfile bobProfile cathProfile test ps
