@@ -3427,8 +3427,10 @@ processChatCommand' vr = \case
                   Just UserContactLink {connLinkContact = CCLink cReq _} -> pure $ Just (con cReq, CPContactAddress CAPOwnLink)
                   Nothing ->
                     getContactViaShortLinkToConnect db vr user l' >>= \case
-                      Just (cReq, ct') -> pure $ Just (con cReq, CPContactAddress (CAPKnown ct'))
-                      Nothing -> bimap con (CPGroupLink . GLPKnown) <$$> getGroupViaShortLinkToConnect db vr user l'
+                      Just (cReq, ct') -> pure $ if contactDeleted ct' then Nothing else Just (con cReq, CPContactAddress (CAPKnown ct'))
+                      Nothing -> (gPlan =<<) <$> getGroupViaShortLinkToConnect db vr user l'
+                        where
+                          gPlan (cReq, g) = if memberRemoved (membership g) then Nothing else Just (con cReq, CPGroupLink (GLPKnown g))
           CCTGroup ->
             knownLinkPlans >>= \case
               Just r -> pure r
@@ -3501,7 +3503,7 @@ processChatCommand' vr = \case
               | contactDeleted ct -> pure $ CPContactAddress (CAPOk contactSLinkData_)
               | otherwise -> pure $ CPContactAddress (CAPKnown ct)
             -- TODO [short links] RcvGroupMsgConnection branch is deprecated? (old group link protocol?)
-            Just (RcvGroupMsgConnection _ gInfo _) -> groupPlan gInfo
+            Just (RcvGroupMsgConnection _ gInfo _) -> groupPlan gInfo Nothing
             Just _ -> throwCmdError "found connection entity is not RcvDirectMsgConnection or RcvGroupMsgConnection"
     groupJoinRequestPlan :: User -> ConnReqContact -> Maybe GroupShortLinkData -> CM ConnectionPlan
     groupJoinRequestPlan user (CRContactUri crData) groupSLinkData_ = do
@@ -3520,15 +3522,15 @@ processChatCommand' vr = \case
               | not (contactReady ct) && contactActive ct -> pure $ CPGroupLink (GLPConnectingProhibit gInfo_)
               | otherwise -> pure $ CPGroupLink (GLPOk groupSLinkData_)
             (Nothing, Just _) -> throwCmdError "found connection entity is not RcvDirectMsgConnection"
-            (Just gInfo, _) -> groupPlan gInfo
-    groupPlan :: GroupInfo -> CM ConnectionPlan
-    groupPlan gInfo@GroupInfo {membership}
+            (Just gInfo, _) -> groupPlan gInfo groupSLinkData_
+    groupPlan :: GroupInfo -> Maybe GroupShortLinkData -> CM ConnectionPlan
+    groupPlan gInfo@GroupInfo {membership} groupSLinkData_
       | memberStatus membership == GSMemRejected = pure $ CPGroupLink (GLPKnown gInfo)
       | not (memberActive membership) && not (memberRemoved membership) =
           pure $ CPGroupLink (GLPConnectingProhibit $ Just gInfo)
       | memberActive membership = pure $ CPGroupLink (GLPKnown gInfo)
       -- TODO [short links] entity is already found - passing GroupShortLinkData doesn't make sense?
-      | otherwise = pure $ CPGroupLink (GLPOk Nothing)
+      | otherwise = pure $ CPGroupLink (GLPOk groupSLinkData_)
     contactCReqSchemas :: ConnReqUriData -> (ConnReqContact, ConnReqContact)
     contactCReqSchemas crData =
       ( CRContactUri crData {crScheme = SSSimplex},
