@@ -1396,8 +1396,9 @@ swipe action</note>
         <target>Impossibile chiamare il membro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't change profile" xml:space="preserve">
+      <trans-unit id="Can't change profile" xml:space="preserve" approved="no">
         <source>Can't change profile</source>
+        <target state="translated">Impossibile cambiare profilo</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
@@ -8190,8 +8191,9 @@ Ti verrà chiesto di completare l'autenticazione prima di attivare questa funzio
         <target>Per supportare le notifiche push istantanee, il database della chat deve essere migrato.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To use another profile after connection attempt, delete the chat and use the link again." xml:space="preserve">
+      <trans-unit id="To use another profile after connection attempt, delete the chat and use the link again." xml:space="preserve" approved="no">
         <source>To use another profile after connection attempt, delete the chat and use the link again.</source>
+        <target state="translated">Per usare un altro profilo dopo il tentativo di connessione, elimina la chat e usa di nuovo il link.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="To use the servers of **%@**, accept conditions of use." xml:space="preserve">
