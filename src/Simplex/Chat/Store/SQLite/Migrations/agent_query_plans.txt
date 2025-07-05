@@ -1091,6 +1091,10 @@ Query: UPDATE rcv_file_chunks SET tmp_path = ?, updated_at = ? WHERE rcv_file_ch
 Plan:
 SEARCH rcv_file_chunks USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE rcv_files SET deleted = 1, updated_at = ? WHERE rcv_file_id = ?
+Plan:
+SEARCH rcv_files USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE rcv_files SET key = ?, nonce = ?, chunk_size = ?, updated_at = ? WHERE rcv_file_id = ?
 Plan:
 SEARCH rcv_files USING INTEGER PRIMARY KEY (rowid=?)
