@@ -1185,7 +1185,7 @@
     <string name="your_contacts_will_remain_connected">Els teus contactes romandran connectats.</string>
     <string name="share_address_with_contacts_question">Compartir l\'adreça amb els contactes?</string>
     <string name="share_link">Compartir enllaç</string>
-    <string name="save_auto_accept_settings">Desa la configuració d\'acceptació automàtica</string>
+    <string name="save_auto_accept_settings">Desar la configuració d\'adreça SimpleX</string>
     <string name="stop_sharing">Deixar de compartir</string>
     <string name="or_to_share_privately">O per compartir en privat</string>
     <string name="you_can_create_it_later">Podeu crear-la més tard</string>
@@ -1692,8 +1692,8 @@
     <string name="icon_descr_sent_msg_status_unauthorized_send">enviament no autoritzat</string>
     <string name="this_text_is_available_in_settings">Aquest text està disponible a la configuració</string>
     <string name="personal_welcome">Benvingut %1$s!</string>
-    <string name="group_preview_join_as">Unir-te com a %s</string>
-    <string name="member_contact_send_direct_message">enviar missatge directe</string>
+    <string name="group_preview_join_as">Entrar com a %s</string>
+    <string name="member_contact_send_direct_message">enviar per connectar</string>
     <string name="tap_to_start_new_chat">Toca per iniciar un xat nou</string>
     <string name="loading_chats">Carregant xats…</string>
     <string name="no_filtered_chats">No hi ha xats filtrats</string>
@@ -2169,7 +2169,7 @@
     <string name="simplex_link_invitation">"Invitació d\'un sol ús per  SimpleX"</string>
     <string name="file_not_approved_descr">Sense Tor o una VPN, la vostra adreça serà visible per als següents relays XFTP: %1$s.</string>
     <string name="possible_slow_function_title">Funció lenta</string>
-    <string name="group_preview_you_are_invited">heu estat convidat a un grup</string>
+    <string name="group_preview_you_are_invited">Estat convidats(des) a un grup</string>
     <string name="info_view_search_button">cerca</string>
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(escaneja o enganxa del porta-retalls)</string>
     <string name="scan_QR_code">Escaneja un codi QR</string>
@@ -2414,4 +2414,24 @@
     <string name="error_preparing_group">Error en preparar el grup</string>
     <string name="error_rejecting_contact_request">Error en rebutjar la sol·licitud de contacte</string>
     <string name="compose_view_join_group">Entrar al grup</string>
+    <string name="connect_plan_open_chat">Obrir xat</string>
+    <string name="connect_plan_open_new_chat">Obrir nou xat</string>
+    <string name="connect_plan_open_new_group">Obrir nou grup</string>
+    <string name="open_to_accept">Obrir per acceptar</string>
+    <string name="open_to_connect">Obrir per connectar</string>
+    <string name="group_preview_open_to_join">Obrir per entrar</string>
+    <string name="share_profile_via_link_alert_text">El perfil es compartirà a través de l\'enllaç d\'adreça.</string>
+    <string name="reject_contact_request">Rebutjar la sol·licitud de contacte</string>
+    <string name="cant_send_message_request_is_sent">sol·licitud enviada</string>
+    <string name="compose_view_send_contact_request_alert_question">Enviar sol·licitud de contacte?</string>
+    <string name="compose_view_send_request">Enviar sol·licitud</string>
+    <string name="compose_view_send_request_without_message">Enviar sol·licitud sense missatge</string>
+    <string name="sent_to_your_contact_after_connection">Enviat al contacte després de la connexió.</string>
+    <string name="share_group_profile_via_link">Compartir el perfil del grup mitjançant un enllaç</string>
+    <string name="share_profile_via_link_alert_confirm">Compartir el perfil</string>
+    <string name="share_profile_via_link">Compartir el perfil mitjançant un enllaç</string>
+    <string name="the_sender_will_not_be_notified">L\'emissor(a) NO serà notificat(da).</string>
+    <string name="context_user_picker_cant_change_profile_alert_message">Per utilitzar un altre perfil després d\'un intent de connexió, suprimiu el xat i torneu a utilitzar l\'enllaç.</string>
+    <string name="address_welcome_message">Missatge de benvinguda</string>
+    <string name="context_user_picker_your_profile">El vostre perfil</string>
 </resources>
