@@ -778,7 +778,8 @@ struct ChatView: View {
             }
         case let .group(groupInfo, _):
             switch (groupInfo.membership.memberStatus) {
-            case .memAccepted: "connecting…" // TODO [short links] add member status to show transition from prepared group to started connection earlier?
+            case .memUnknown: groupInfo.preparedGroup?.connLinkStartedConnection == true ? "connecting…" : nil
+            case .memAccepted: "connecting…"
             default: nil
             }
         default: nil

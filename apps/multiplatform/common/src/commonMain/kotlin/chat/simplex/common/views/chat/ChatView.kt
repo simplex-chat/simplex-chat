@@ -729,7 +729,8 @@ private fun connectingText(chatInfo: ChatInfo): String? {
 
     is ChatInfo.Group ->
       when (chatInfo.groupInfo.membership.memberStatus) {
-        GroupMemberStatus.MemAccepted -> generalGetString(MR.strings.group_connection_pending) // TODO [short links] add member status to show transition from prepared group to started connection earlier?
+        GroupMemberStatus.MemUnknown -> if (chatInfo.groupInfo.preparedGroup?.connLinkStartedConnection == true) generalGetString(MR.strings.group_connection_pending) else null
+        GroupMemberStatus.MemAccepted -> generalGetString(MR.strings.group_connection_pending)
         else -> null
       }
 
