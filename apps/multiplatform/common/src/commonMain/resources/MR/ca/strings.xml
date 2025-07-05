@@ -2401,4 +2401,7 @@
     <string name="group_new_support_chats">%d xats amb membres</string>
     <string name="member_criteria_all">tots(es)</string>
     <string name="add_short_link">Afegir enllaç curt</string>
+    <string name="accept_contact_request">Accepta la sol·licitud de contacte</string>
+    <string name="compose_view_add_message">Afegeix un missatge</string>
+    <string name="context_user_picker_cant_change_profile_alert_title">No es pot canviar el perfil</string>
 </resources>
