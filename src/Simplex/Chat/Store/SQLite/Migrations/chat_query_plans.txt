@@ -6188,10 +6188,6 @@ Query: UPDATE groups SET chat_ts = ? WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE groups SET conn_link_prepared_connection = ?, updated_at = ? WHERE group_id = ?
-Plan:
-SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
-
 Query: UPDATE groups SET conn_link_started_connection = ?, updated_at = ? WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
@@ -6229,6 +6225,10 @@ Plan:
 SEARCH groups USING INDEX idx_groups_chat_ts (user_id=?)
 
 Query: UPDATE groups SET user_member_profile_sent_at = ? WHERE user_id = ? AND group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE groups SET via_group_link_uri_hash = ?, conn_link_prepared_connection = ?, updated_at = ? WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
