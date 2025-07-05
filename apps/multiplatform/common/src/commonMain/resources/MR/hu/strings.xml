@@ -1877,7 +1877,7 @@
     <string name="upload_errors">Feltöltési hibák</string>
     <string name="acknowledged">Visszaigazolt</string>
     <string name="acknowledgement_errors">Visszaigazolási hibák</string>
-    <string name="attempts_label">próbálkozások</string>
+    <string name="attempts_label">kísérletek</string>
     <string name="chunks_deleted">Törölt töredékek</string>
     <string name="all_users">Összes profil</string>
     <string name="chunks_uploaded">Feltöltött töredékek</string>
@@ -2434,4 +2434,6 @@
     <string name="share_profile_via_link_alert_text">A profil meg lesz osztva a címhivatkozáson keresztül.</string>
     <string name="share_profile_via_link_alert_confirm">Profil megosztása</string>
     <string name="share_group_profile_via_link">Csoportprofil megosztása hivatkozáson keresztül</string>
+    <string name="context_user_picker_cant_change_profile_alert_title">Nem lehet módosítani a profilt</string>
+    <string name="context_user_picker_cant_change_profile_alert_message">Másik profil használatához a kapcsolatfelvételi kísérlet után törölje a csevegést, és használja újra a hivatkozást.</string>
 </resources>
