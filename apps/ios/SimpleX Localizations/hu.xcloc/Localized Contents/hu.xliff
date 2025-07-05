@@ -1396,8 +1396,9 @@ swipe action</note>
         <target>Nem lehet felhívni a tagot</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't change profile" xml:space="preserve">
+      <trans-unit id="Can't change profile" xml:space="preserve" approved="no">
         <source>Can't change profile</source>
+        <target state="translated">Nem lehet módosítani a profilt</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
@@ -8190,8 +8191,9 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
         <target>Az azonnali push-értesítések támogatásához a csevegési adatbázis átköltöztetése szükséges.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To use another profile after connection attempt, delete the chat and use the link again." xml:space="preserve">
+      <trans-unit id="To use another profile after connection attempt, delete the chat and use the link again." xml:space="preserve" approved="no">
         <source>To use another profile after connection attempt, delete the chat and use the link again.</source>
+        <target state="translated">Másik profil használatához a kapcsolatfelvételi kísérlet után törölje a csevegést, és használja újra a hivatkozást.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="To use the servers of **%@**, accept conditions of use." xml:space="preserve">
@@ -9405,9 +9407,9 @@ Repeat connection request?</source>
         <target>archivált jelentés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="attempts" xml:space="preserve">
+      <trans-unit id="attempts" xml:space="preserve" approved="no">
         <source>attempts</source>
-        <target>próbálkozások</target>
+        <target state="translated">kísérletek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="audio call (not e2e encrypted)" xml:space="preserve">
