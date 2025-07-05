@@ -870,6 +870,8 @@
 
   <!--  ComposeContextProfilePickerView.kt -->
   <string name="context_user_picker_your_profile">Your profile</string>
+  <string name="context_user_picker_cant_change_profile_alert_title">Can\'t change profile</string>
+  <string name="context_user_picker_cant_change_profile_alert_message">To use another profile after connection attempt, delete the chat and use the link again.</string>
 
   <!-- ScanCodeView.kt -->
   <string name="scan_code">Scan code</string>

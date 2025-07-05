@@ -133,6 +133,7 @@ import Simplex.Chat.Store.SQLite.Migrations.M20250512_member_admission
 import Simplex.Chat.Store.SQLite.Migrations.M20250513_group_scope
 import Simplex.Chat.Store.SQLite.Migrations.M20250526_short_links
 import Simplex.Chat.Store.SQLite.Migrations.M20250702_contact_requests_remove_cascade_delete
+import Simplex.Chat.Store.SQLite.Migrations.M20250704_groups_conn_link_prepared_connection
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -265,7 +266,8 @@ schemaMigrations =
     ("20250512_member_admission", m20250512_member_admission, Just down_m20250512_member_admission),
     ("20250513_group_scope", m20250513_group_scope, Just down_m20250513_group_scope),
     ("20250526_short_links", m20250526_short_links, Just down_m20250526_short_links),
-    ("20250702_contact_requests_remove_cascade_delete", m20250702_contact_requests_remove_cascade_delete, Just down_m20250702_contact_requests_remove_cascade_delete)
+    ("20250702_contact_requests_remove_cascade_delete", m20250702_contact_requests_remove_cascade_delete, Just down_m20250702_contact_requests_remove_cascade_delete),
+    ("20250704_groups_conn_link_prepared_connection", m20250704_groups_conn_link_prepared_connection, Just down_m20250704_groups_conn_link_prepared_connection)
   ]
 
 -- | The list of migrations in ascending order by date

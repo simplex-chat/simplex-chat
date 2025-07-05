@@ -494,6 +494,7 @@ instance ToField BusinessChatType where toField = toField . textEncode
 
 data PreparedGroup = PreparedGroup
   { connLinkToConnect :: CreatedLinkContact,
+    connLinkPreparedConnection :: Bool,
     connLinkStartedConnection :: Bool,
     welcomeSharedMsgId :: Maybe SharedMsgId, -- it is stored only for business chats, and only if welcome message is specified
     requestSharedMsgId :: Maybe SharedMsgId
@@ -646,10 +647,10 @@ redactedMemberProfile Profile {displayName, fullName, image} =
 
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
 
-profileToSendOnAccept :: User -> Maybe IncognitoProfile -> Bool -> Profile
-profileToSendOnAccept user ip = userProfileToSend user (getIncognitoProfile <$> ip) Nothing
+userProfileToSend' :: User -> Maybe IncognitoProfile -> Maybe Contact -> Bool -> Profile
+userProfileToSend' user ip = userProfileToSend user (fromIncognitoProfile <$> ip)
   where
-    getIncognitoProfile = \case
+    fromIncognitoProfile = \case
       NewIncognito p -> p
       ExistingIncognito lp -> fromLocalProfile lp
 

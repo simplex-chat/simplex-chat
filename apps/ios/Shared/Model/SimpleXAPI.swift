@@ -2208,6 +2208,12 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 n.networkStatuses = ns
             }
         }
+    case let .chatInfoUpdated(user, chatInfo):
+        if active(user) {
+            await MainActor.run {
+                m.updateChatInfo(chatInfo)
+            }
+        }
     case let .newChatItems(user, chatItems):
         for chatItem in chatItems {
             let cInfo = chatItem.chatInfo

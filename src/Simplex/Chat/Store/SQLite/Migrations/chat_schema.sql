@@ -145,7 +145,8 @@ CREATE TABLE groups(
   conn_short_link_to_connect BLOB,
   conn_link_started_connection INTEGER NOT NULL DEFAULT 0,
   welcome_shared_msg_id BLOB,
-  request_shared_msg_id BLOB, -- received
+  request_shared_msg_id BLOB,
+  conn_link_prepared_connection INTEGER NOT NULL DEFAULT 0, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

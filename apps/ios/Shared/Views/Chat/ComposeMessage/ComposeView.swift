@@ -350,12 +350,13 @@ struct ComposeView: View {
 
     @UserDefault(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
     @UserDefault(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
+    @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
 
     var body: some View {
         VStack(spacing: 0) {
             Divider()
-            let contact = chat.chatInfo.contact
-            if (contact?.nextConnectPrepared ?? false) || (chat.chatInfo.groupInfo?.nextConnectPrepared ?? false),
+
+            if chat.chatInfo.nextConnectPrepared,
                let user = chatModel.currentUser {
                 ContextProfilePickerView(
                     chat: chat,
@@ -403,6 +404,8 @@ struct ComposeView: View {
             case (true, .voicePreview): EmptyView() // ? we may allow playback when editing is allowed
             default: previewView()
             }
+
+            let contact = chat.chatInfo.contact
 
             if chat.chatInfo.groupInfo?.nextConnectPrepared == true {
                 if chat.chatInfo.groupInfo?.businessChat == nil {
@@ -744,7 +747,8 @@ struct ComposeView: View {
             await MainActor.run { hideKeyboard() }
             await sending()
             let mc = connectCheckLinkPreview()
-            if let contact = await apiConnectPreparedContact(contactId: chat.chatInfo.apiId, incognito: incognitoGroupDefault.get(), msg: mc) {
+            let incognito = chat.chatInfo.profileChangeProhibited ? chat.chatInfo.incognito : incognitoDefault
+            if let contact = await apiConnectPreparedContact(contactId: chat.chatInfo.apiId, incognito: incognito, msg: mc) {
                 await MainActor.run {
                     self.chatModel.updateContact(contact)
                     NetworkModel.shared.setContactNetworkStatus(contact, .connected)
@@ -761,7 +765,8 @@ struct ComposeView: View {
             await MainActor.run { hideKeyboard() }
             await sending()
             let mc = connectCheckLinkPreview()
-            if let groupInfo = await apiConnectPreparedGroup(groupId: chat.chatInfo.apiId, incognito: incognitoGroupDefault.get(), msg: mc) {
+            let incognito = chat.chatInfo.profileChangeProhibited ? chat.chatInfo.incognito : incognitoDefault
+            if let groupInfo = await apiConnectPreparedGroup(groupId: chat.chatInfo.apiId, incognito: incognito, msg: mc) {
                 await MainActor.run {
                     self.chatModel.updateGroup(groupInfo)
                     clearState()
