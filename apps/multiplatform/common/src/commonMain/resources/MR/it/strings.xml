@@ -2470,4 +2470,6 @@
     <string name="the_sender_will_not_be_notified">Il mittente NON verrà avvisato.</string>
     <string name="address_welcome_message">Messaggio di benvenuto</string>
     <string name="context_user_picker_your_profile">Il tuo profilo</string>
+    <string name="context_user_picker_cant_change_profile_alert_title">Impossibile cambiare profilo</string>
+    <string name="context_user_picker_cant_change_profile_alert_message">Per usare un altro profilo dopo il tentativo di connessione, elimina la chat e usa di nuovo il link.</string>
 </resources>
