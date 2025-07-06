@@ -222,8 +222,10 @@ struct AdvancedNetworkSettings: View {
                 }
                 
                 Section("TCP connection") {
-                    timeoutSettingPicker("TCP connection timeout", selection: $netCfg.tcpConnectTimeout, values: [10_000000, 15_000000, 20_000000, 30_000000, 45_000000, 60_000000, 90_000000], label: secondsLabel)
-                    timeoutSettingPicker("Protocol timeout", selection: $netCfg.tcpTimeout, values: [5_000000, 7_000000, 10_000000, 15_000000, 20_000000, 30_000000], label: secondsLabel)
+                    timeoutSettingPicker("TCP connection timeout", selection: $netCfg.tcpConnectTimeout.interactiveTimeout, values: [10_000000, 15_000000, 20_000000, 30_000000], label: secondsLabel)
+                    timeoutSettingPicker("TCP connection background timeout", selection: $netCfg.tcpConnectTimeout.backgroundTimeout, values: [30_000000, 45_000000, 60_000000, 90_000000], label: secondsLabel)
+                    timeoutSettingPicker("Protocol timeout", selection: $netCfg.tcpTimeout.interactiveTimeout, values: [5_000000, 7_000000, 10_000000, 15_000000, 20_000000], label: secondsLabel)
+                    timeoutSettingPicker("Protocol background timeout", selection: $netCfg.tcpTimeout.backgroundTimeout, values: [15_000000, 20_000000, 30_000000, 45_000000, 60_000000], label: secondsLabel)
                     timeoutSettingPicker("Protocol timeout per KB", selection: $netCfg.tcpTimeoutPerKb, values: [2_500, 5_000, 10_000, 15_000, 20_000, 30_000], label: secondsLabel)
                     // intSettingPicker("Receiving concurrency", selection: $netCfg.rcvConcurrency, values: [1, 2, 4, 8, 12, 16, 24], label: "")
                     timeoutSettingPicker("PING interval", selection: $netCfg.smpPingInterval, values: [120_000000, 300_000000, 600_000000, 1200_000000, 2400_000000, 3600_000000], label: secondsLabel)

@@ -41,8 +41,12 @@ let GROUP_DEFAULT_NETWORK_SESSION_MODE = "networkSessionMode"
 let GROUP_DEFAULT_NETWORK_SMP_PROXY_MODE = "networkSMPProxyMode"
 let GROUP_DEFAULT_NETWORK_SMP_PROXY_FALLBACK = "networkSMPProxyFallback"
 let GROUP_DEFAULT_NETWORK_SMP_WEB_PORT_SERVERS = "networkSMPWebPortServers"
-let GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT = "networkTCPConnectTimeout"
-let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT = "networkTCPTimeout"
+//let GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT = "networkTCPConnectTimeout"
+//let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT = "networkTCPTimeout"
+let GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT_BACKGROUND = "networkTCPConnectTimeoutBackground"
+let GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT_INTERACTIVE = "networkTCPConnectTimeoutInteractive"
+let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_BACKGROUND = "networkTCPTimeoutInteractive"
+let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_INTERACTIVE = "networkTCPTimeoutBackground"
 let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB = "networkTCPTimeoutPerKb"
 let GROUP_DEFAULT_NETWORK_RCV_CONCURRENCY = "networkRcvConcurrency"
 let GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL = "networkSMPPingInterval"
@@ -73,8 +77,10 @@ public func registerGroupDefaults() {
         GROUP_DEFAULT_NETWORK_SMP_PROXY_MODE: SMPProxyMode.unknown.rawValue,
         GROUP_DEFAULT_NETWORK_SMP_PROXY_FALLBACK: SMPProxyFallback.allowProtected.rawValue,
         GROUP_DEFAULT_NETWORK_SMP_WEB_PORT_SERVERS: SMPWebPortServers.preset.rawValue,
-        GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT: NetCfg.defaults.tcpConnectTimeout,
-        GROUP_DEFAULT_NETWORK_TCP_TIMEOUT: NetCfg.defaults.tcpTimeout,
+        GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT_BACKGROUND: NetCfg.defaults.tcpConnectTimeout.backgroundTimeout,
+        GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT_INTERACTIVE: NetCfg.defaults.tcpConnectTimeout.interactiveTimeout,
+        GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_BACKGROUND: NetCfg.defaults.tcpTimeout.backgroundTimeout,
+        GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_INTERACTIVE: NetCfg.defaults.tcpTimeout.interactiveTimeout,
         GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB: NetCfg.defaults.tcpTimeoutPerKb,
         GROUP_DEFAULT_NETWORK_RCV_CONCURRENCY: NetCfg.defaults.rcvConcurrency,
         GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL: NetCfg.defaults.smpPingInterval,
@@ -349,8 +355,14 @@ public func getNetCfg() -> NetCfg {
     let smpProxyMode = networkSMPProxyModeGroupDefault.get()
     let smpProxyFallback = networkSMPProxyFallbackGroupDefault.get()
     let smpWebPortServers = networkSMPWebPortServersDefault.get()
-    let tcpConnectTimeout = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
-    let tcpTimeout = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)
+    let tcpConnectTimeout = NetworkTimeout(
+            backgroundTimeout: groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT_BACKGROUND),
+            interactiveTimeout: groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT_INTERACTIVE)
+        )
+    let tcpTimeout = NetworkTimeout(
+            backgroundTimeout: groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_BACKGROUND),
+            interactiveTimeout: groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_INTERACTIVE)
+        )
     let tcpTimeoutPerKb = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB)
     let rcvConcurrency = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_RCV_CONCURRENCY)
     let smpPingInterval = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL)
@@ -392,8 +404,10 @@ public func setNetCfg(_ cfg: NetCfg, networkProxy: NetworkProxy?) {
     let socksProxy = networkProxy?.toProxyString()
     groupDefaults.set(socksProxy, forKey: GROUP_DEFAULT_NETWORK_SOCKS_PROXY)
     networkSMPWebPortServersDefault.set(cfg.smpWebPortServers)
-    groupDefaults.set(cfg.tcpConnectTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
-    groupDefaults.set(cfg.tcpTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)
+    groupDefaults.set(cfg.tcpConnectTimeout.backgroundTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT_BACKGROUND)
+    groupDefaults.set(cfg.tcpConnectTimeout.interactiveTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT_INTERACTIVE)
+    groupDefaults.set(cfg.tcpTimeout.backgroundTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_BACKGROUND)
+    groupDefaults.set(cfg.tcpTimeout.interactiveTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_INTERACTIVE)
     groupDefaults.set(cfg.tcpTimeoutPerKb, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB)
     groupDefaults.set(cfg.rcvConcurrency, forKey: GROUP_DEFAULT_NETWORK_RCV_CONCURRENCY)
     groupDefaults.set(cfg.smpPingInterval, forKey: GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL)

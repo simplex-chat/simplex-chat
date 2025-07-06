@@ -94,14 +94,14 @@ func chatSendCmdSync<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, 
     return try apiResult(res)
 }
 
-func chatApiSendCmdSync<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, ctrl: chat_ctrl? = nil, log: Bool = true) -> APIResult<R> {
+func chatApiSendCmdSync<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, ctrl: chat_ctrl? = nil, retryNum: Int32 = 0, log: Bool = true) -> APIResult<R> {
     if log {
         logger.debug("chatSendCmd \(cmd.cmdType)")
     }
     let start = Date.now
     let resp: APIResult<R> = bgTask
-                ? withBGTask(bgDelay: bgDelay) { sendSimpleXCmd(cmd, ctrl) }
-                : sendSimpleXCmd(cmd, ctrl)
+                ? withBGTask(bgDelay: bgDelay) { sendSimpleXCmd(cmd, ctrl, retryNum: retryNum) }
+                : sendSimpleXCmd(cmd, ctrl, retryNum: retryNum)
     if log {
         logger.debug("chatSendCmd \(cmd.cmdType): \(resp.responseType)")
         if case let .invalid(_, json) = resp {
@@ -121,9 +121,9 @@ func chatSendCmd<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDe
 }
 
 @inline(__always)
-func chatApiSendCmd<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, ctrl: chat_ctrl? = nil, log: Bool = true) async -> APIResult<R> {
+func chatApiSendCmd<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, ctrl: chat_ctrl? = nil, retryNum: Int32 = 0, log: Bool = true) async -> APIResult<R> {
     await withCheckedContinuation { cont in
-        cont.resume(returning: chatApiSendCmdSync(cmd, bgTask: bgTask, bgDelay: bgDelay, ctrl: ctrl, log: log))
+        cont.resume(returning: chatApiSendCmdSync(cmd, bgTask: bgTask, bgDelay: bgDelay, ctrl: ctrl, retryNum: retryNum, log: log))
     }
 }
 

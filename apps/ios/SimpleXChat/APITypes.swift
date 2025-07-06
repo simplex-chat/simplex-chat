@@ -241,8 +241,8 @@ public struct NetCfg: Codable, Equatable {
     public var smpProxyMode: SMPProxyMode = .always
     public var smpProxyFallback: SMPProxyFallback = .allowProtected
     public var smpWebPortServers: SMPWebPortServers = .preset
-    public var tcpConnectTimeout: Int // microseconds
-    public var tcpTimeout: Int // microseconds
+    public var tcpConnectTimeout: NetworkTimeout
+    public var tcpTimeout: NetworkTimeout
     public var tcpTimeoutPerKb: Int // microseconds
     public var rcvConcurrency: Int // pool size
     public var tcpKeepAlive: KeepAliveOpts? = KeepAliveOpts.defaults
@@ -251,16 +251,16 @@ public struct NetCfg: Codable, Equatable {
     public var logTLSErrors: Bool = false
 
     public static let defaults: NetCfg = NetCfg(
-        tcpConnectTimeout: 25_000_000,
-        tcpTimeout: 15_000_000,
+        tcpConnectTimeout: NetworkTimeout(backgroundTimeout: 45_000_000, interactiveTimeout: 15_000_000),
+        tcpTimeout: NetworkTimeout(backgroundTimeout: 30_000_000, interactiveTimeout: 10_000_000),
         tcpTimeoutPerKb: 10_000,
         rcvConcurrency: 12,
         smpPingInterval: 1200_000_000
     )
 
     static let proxyDefaults: NetCfg = NetCfg(
-        tcpConnectTimeout: 35_000_000,
-        tcpTimeout: 20_000_000,
+        tcpConnectTimeout: NetworkTimeout(backgroundTimeout: 90_000_000, interactiveTimeout: 30_000_000),
+        tcpTimeout: NetworkTimeout(backgroundTimeout: 60_000_000, interactiveTimeout: 20_000_000),
         tcpTimeoutPerKb: 15_000,
         rcvConcurrency: 8,
         smpPingInterval: 1200_000_000
@@ -285,6 +285,11 @@ public struct NetCfg: Codable, Equatable {
     }
 
     public var enableKeepAlive: Bool { tcpKeepAlive != nil }
+}
+
+public struct NetworkTimeout: Codable, Equatable {
+    public var backgroundTimeout: Int // microseconds
+    public var interactiveTimeout: Int // microseconds
 }
 
 public enum HostMode: String, Codable {
