@@ -2454,4 +2454,6 @@
     <string name="the_sender_will_not_be_notified">不会通知发送者。</string>
     <string name="address_welcome_message">欢迎消息</string>
     <string name="context_user_picker_your_profile">你的个人资料</string>
+    <string name="context_user_picker_cant_change_profile_alert_title">无法更改个人资料</string>
+    <string name="context_user_picker_cant_change_profile_alert_message">要在连接尝试后使用不同的个人资料，请删除聊天并再次使用该链接。</string>
 </resources>
