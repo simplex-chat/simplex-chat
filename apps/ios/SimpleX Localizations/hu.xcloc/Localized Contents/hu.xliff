@@ -4070,14 +4070,14 @@ Hiba: %2$@</target>
         <target>Csoportprofil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group profile is stored on members' devices, not on the servers." xml:space="preserve">
+      <trans-unit id="Group profile is stored on members' devices, not on the servers." xml:space="preserve" approved="no">
         <source>Group profile is stored on members' devices, not on the servers.</source>
-        <target>A csoport profilja a tagok eszközein tárolódik, nem a kiszolgálókon.</target>
+        <target state="translated">A csoportprofil a tagok eszközein tárolódik, nem a kiszolgálókon.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group profile was changed. If you save it, the updated profile will be sent to group members." xml:space="preserve" approved="no">
         <source>Group profile was changed. If you save it, the updated profile will be sent to group members.</source>
-        <target state="translated">A csoport profilja módosult. Ha elmenti, a frissített profil el lesz küldve a csoporttagoknak.</target>
+        <target state="translated">A csoport profilja módosult. Ha menti, akkor a frissített profil el lesz küldve a csoporttagoknak.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Group welcome message" xml:space="preserve">
@@ -6723,9 +6723,9 @@ chat item action</note>
         <target state="translated">Mentés (és a tagok értesítése)</target>
         <note>alert button</note>
       </trans-unit>
-      <trans-unit id="Save admission settings?" xml:space="preserve">
+      <trans-unit id="Save admission settings?" xml:space="preserve" approved="no">
         <source>Save admission settings?</source>
-        <target>Elmenti a befogadási beállításokat?</target>
+        <target state="translated">Menti a befogadási beállításokat?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Save and notify contact" xml:space="preserve">
@@ -6755,7 +6755,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Save group profile?" xml:space="preserve" approved="no">
         <source>Save group profile?</source>
-        <target state="translated">Elmenti a csoportprofilt?</target>
+        <target state="translated">Menti a csoportprofilt?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Save list" xml:space="preserve">
@@ -6813,9 +6813,9 @@ chat item action</note>
         <target>A mentett WebRTC ICE-kiszolgálók el lesznek távolítva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Saved from" xml:space="preserve">
+      <trans-unit id="Saved from" xml:space="preserve" approved="no">
         <source>Saved from</source>
-        <target>Elmentve innen</target>
+        <target state="translated">Mentve innen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Saved message" xml:space="preserve">
@@ -9087,9 +9087,9 @@ Repeat connection request?</source>
         <target>Az exportált adatbázist átköltöztetheti.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You may save the exported archive." xml:space="preserve">
+      <trans-unit id="You may save the exported archive." xml:space="preserve" approved="no">
         <source>You may save the exported archive.</source>
-        <target>Az exportált archívumot elmentheti.</target>
+        <target state="translated">Mentheti az exportált archívumot.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." xml:space="preserve">
@@ -9287,9 +9287,9 @@ Repeat connection request?</source>
         <target>A profilja az eszközén van tárolva és csak a partnereivel van megosztva. A SimpleX kiszolgálók nem láthatják a profilját.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your profile was changed. If you save it, the updated profile will be sent to all your contacts." xml:space="preserve">
+      <trans-unit id="Your profile was changed. If you save it, the updated profile will be sent to all your contacts." xml:space="preserve" approved="no">
         <source>Your profile was changed. If you save it, the updated profile will be sent to all your contacts.</source>
-        <target>A profilja módosult. Ha elmenti, a profilfrissítés el lesz küldve a partnerei számára.</target>
+        <target state="translated">A profilja módosult. Ha menti, akkor a profilfrissítés el lesz küldve a partnerei számára.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Your random profile" xml:space="preserve">
@@ -10142,9 +10142,9 @@ time to disappear</note>
         <target>mentett</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="saved from %@" xml:space="preserve">
+      <trans-unit id="saved from %@" xml:space="preserve" approved="no">
         <source>saved from %@</source>
-        <target>elmentve innen: %@</target>
+        <target state="translated">mentve innen: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="search" xml:space="preserve">
