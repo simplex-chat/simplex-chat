@@ -147,7 +147,9 @@
   <string name="network_error_desc">Please check your network connection with %1$s and try again.</string>
   <string name="network_error_broker_host_desc">Server address is incompatible with network settings: %1$s.</string>
   <string name="network_error_broker_version_desc">Server version is incompatible with your app: %1$s.</string>
+  <string name="private_routing_timeout">Private routing timeout</string>
   <string name="private_routing_error">Private routing error</string>
+  <string name="private_routing_no_session">No private routing session</string>
   <string name="smp_proxy_error_connecting">Error connecting to forwarding server %1$s. Please try later.</string>
   <string name="smp_proxy_error_broker_host">Forwarding server address is incompatible with network settings: %1$s.</string>
   <string name="smp_proxy_error_broker_version">Forwarding server version is incompatible with network settings: %1$s.</string>

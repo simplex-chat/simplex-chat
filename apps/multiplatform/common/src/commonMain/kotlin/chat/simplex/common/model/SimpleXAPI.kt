@@ -673,6 +673,86 @@ object ChatController {
     }
   }
 
+  private suspend fun sendCmdWithRetry(rhId: Long?, cmd: CC, retryNum: Int = 0): API? {
+    val r = sendCmd(rhId, cmd, retryNum = retryNum)
+    val alert = if (r is API.Error) retryableNetworkErrorAlert(r.err) else null
+    if (alert == null) return r
+    else return suspendCancellableCoroutine { cont ->
+      showRetryAlert(
+        alert,
+        onCancel = {
+          cont.resumeWith(Result.success(null))
+        },
+        onRetry = {
+          withLongRunningApi {
+            cont.resumeWith(
+              runCatching {
+                coroutineScope {
+                  sendCmdWithRetry(rhId, cmd, retryNum = retryNum + 1)
+                }
+              }
+            )
+          }
+        }
+      )
+
+      cont.invokeOnCancellation {
+        cont.resumeWith(Result.success(null))
+      }
+    }
+  }
+
+  private fun showRetryAlert(alert: Pair<StringResource, String>, onCancel: () -> Unit, onRetry: () -> Unit) {
+    AlertManager.shared.showAlertDialog(
+      title = generalGetString(alert.first),
+      text = alert.second,
+      confirmText = generalGetString(MR.strings.retry_verb),
+      onConfirm = onRetry,
+      onDismiss = onCancel,
+      onDismissRequest = onCancel
+    )
+  }
+
+  private fun retryableNetworkErrorAlert(err: ChatError): Pair<StringResource, String>? {
+    if (err !is ChatError.ChatErrorAgent) return null
+    val e = err.agentError
+    when (e) {
+      is AgentErrorType.BROKER -> {
+        val message = { String.format(generalGetString(MR.strings.network_error_desc), serverHostname(e.brokerAddress)) }
+        return when (e.brokerErr) {
+          is BrokerErrorType.TIMEOUT -> MR.strings.connection_timeout to message()
+          is BrokerErrorType.NETWORK -> MR.strings.connection_error to message()
+          else -> null
+        }
+      }
+      is AgentErrorType.SMP ->
+        if (e.smpErr is SMPErrorType.PROXY && e.smpErr.proxyErr is ProxyError.BROKER) {
+          val message = { String.format(generalGetString(MR.strings.smp_proxy_error_connecting), serverHostname(e.serverAddress)) }
+          return when (e.smpErr.proxyErr.brokerErr) {
+            is BrokerErrorType.TIMEOUT -> MR.strings.private_routing_timeout to message()
+            is BrokerErrorType.NETWORK -> MR.strings.private_routing_error to message()
+            else -> null
+          }
+        }
+      is AgentErrorType.PROXY ->
+        if (e.proxyErr is ProxyClientError.ProxyProtocolError && e.proxyErr.protocolErr is SMPErrorType.PROXY) {
+          val message = { String.format(generalGetString(MR.strings.proxy_destination_error_failed_to_connect), serverHostname(e.proxyServer), serverHostname(e.relayServer)) }
+          return when (e.proxyErr.protocolErr.proxyErr) {
+            is ProxyError.BROKER ->
+              when (e.proxyErr.protocolErr.proxyErr.brokerErr) {
+                is BrokerErrorType.TIMEOUT -> MR.strings.private_routing_timeout to message()
+                is BrokerErrorType.NETWORK -> MR.strings.private_routing_error to message()
+                else -> null
+              }
+            is ProxyError.NO_SESSION -> MR.strings.private_routing_no_session to message()
+            else -> null
+          }
+        }
+      else -> return null
+    }
+    return null
+  }
+
   suspend fun sendCmd(rhId: Long?, cmd: CC, otherCtrl: ChatCtrl? = null, retryNum: Int = 0, log: Boolean = true): API {
     val ctrl = otherCtrl ?: ctrl ?: throw Exception("Controller is not initialized")
 
@@ -1215,16 +1295,16 @@ object ChatController {
   }
 
   suspend fun apiContactQueueInfo(rh: Long?, contactId: Long): Pair<RcvMsgInfo?, ServerQueueInfo>? {
-    val r = sendCmd(rh, CC.APIContactQueueInfo(contactId))
+    val r = sendCmdWithRetry(rh, CC.APIContactQueueInfo(contactId))
     if (r is API.Result && r.res is CR.QueueInfoR) return r.res.rcvMsgInfo to r.res.queueInfo
-    apiErrorAlert("apiContactQueueInfo", generalGetString(MR.strings.error), r)
+    if (r != null) apiErrorAlert("apiContactQueueInfo", generalGetString(MR.strings.error), r)
     return null
   }
 
   suspend fun apiGroupMemberQueueInfo(rh: Long?, groupId: Long, groupMemberId: Long): Pair<RcvMsgInfo?, ServerQueueInfo>? {
-    val r = sendCmd(rh, CC.APIGroupMemberQueueInfo(groupId, groupMemberId))
+    val r = sendCmdWithRetry(rh, CC.APIGroupMemberQueueInfo(groupId, groupMemberId))
     if (r is API.Result && r.res is CR.QueueInfoR) return r.res.rcvMsgInfo to r.res.queueInfo
-    apiErrorAlert("apiGroupMemberQueueInfo", generalGetString(MR.strings.error), r)
+    if (r != null) apiErrorAlert("apiGroupMemberQueueInfo", generalGetString(MR.strings.error), r)
     return null
   }
 
@@ -1300,9 +1380,10 @@ object ChatController {
 
   suspend fun apiAddContact(rh: Long?, incognito: Boolean): Pair<Pair<CreatedConnLink, PendingContactConnection>?, (() -> Unit)?> {
     val userId = try { currentUserId("apiAddContact") } catch (e: Exception) { return null to null }
-    val r = sendCmd(rh, CC.APIAddContact(userId, incognito = incognito))
+    val r = sendCmdWithRetry(rh, CC.APIAddContact(userId, incognito = incognito))
     return when {
       r is API.Result && r.res is CR.Invitation -> (r.res.connLinkInvitation to r.res.connection) to null
+      r == null -> null to null
       !(networkErrorAlert(r)) -> null to { apiErrorAlert("apiAddContact", generalGetString(MR.strings.connection_error), r) }
       else -> null to null
     }
@@ -1318,8 +1399,9 @@ object ChatController {
   }
 
   suspend fun apiChangeConnectionUser(rh: Long?, connId: Long, userId: Long): PendingContactConnection? {
-    val r = sendCmd(rh, CC.ApiChangeConnectionUser(connId, userId))
+    val r = sendCmdWithRetry(rh, CC.ApiChangeConnectionUser(connId, userId))
     if (r is API.Result && r.res is CR.ConnectionUserChanged) return r.res.toConnection
+    if (r == null) return null
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiChangeConnectionUser", generalGetString(MR.strings.error_sending_message), r)
     }
@@ -1328,15 +1410,15 @@ object ChatController {
 
   suspend fun apiConnectPlan(rh: Long?, connLink: String): Pair<CreatedConnLink, ConnectionPlan>? {
     val userId = kotlin.runCatching { currentUserId("apiConnectPlan") }.getOrElse { return null }
-    val r = sendCmd(rh, CC.APIConnectPlan(userId, connLink))
+    val r = sendCmdWithRetry(rh, CC.APIConnectPlan(userId, connLink))
     if (r is API.Result && r.res is CR.CRConnectionPlan) return r.res.connLink to r.res.connectionPlan
-    apiConnectResponseAlert(r)
+    if (r != null) apiConnectResponseAlert(r)
     return null
   }
 
   suspend fun apiConnect(rh: Long?, incognito: Boolean, connLink: CreatedConnLink): PendingContactConnection?  {
     val userId = try { currentUserId("apiConnect") } catch (e: Exception) { return null }
-    val r = sendCmd(rh, CC.APIConnect(userId, incognito, connLink))
+    val r = sendCmdWithRetry(rh, CC.APIConnect(userId, incognito, connLink))
     when {
       r is API.Result && r.res is CR.SentConfirmation -> return r.res.connection
       r is API.Result && r.res is CR.SentInvitation -> return r.res.connection
@@ -1345,7 +1427,7 @@ object ChatController {
           generalGetString(MR.strings.contact_already_exists),
           String.format(generalGetString(MR.strings.you_are_already_connected_to_vName_via_this_link), r.res.contact.displayName)
         )
-      else -> apiConnectResponseAlert(r)
+      r != null -> apiConnectResponseAlert(r)
     }
     return null
   }
@@ -1433,8 +1515,9 @@ object ChatController {
   }
 
   suspend fun apiConnectPreparedContact(rh: Long?, contactId: Long, incognito: Boolean, msg: MsgContent?): Contact? {
-    val r = sendCmd(rh, CC.APIConnectPreparedContact(contactId, incognito, msg))
+    val r = sendCmdWithRetry(rh, CC.APIConnectPreparedContact(contactId, incognito, msg))
     if (r is API.Result && r.res is CR.StartedConnectionToContact) return r.res.contact
+    if (r == null) return null
     Log.e(TAG, "apiConnectPreparedContact bad response: ${r.responseType} ${r.details}")
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiConnectPreparedContact", generalGetString(MR.strings.connection_error), r)
@@ -1443,8 +1526,9 @@ object ChatController {
   }
 
   suspend fun apiConnectPreparedGroup(rh: Long?, groupId: Long, incognito: Boolean, msg: MsgContent?): GroupInfo? {
-    val r = sendCmd(rh, CC.APIConnectPreparedGroup(groupId, incognito, msg))
+    val r = sendCmdWithRetry(rh, CC.APIConnectPreparedGroup(groupId, incognito, msg))
     if (r is API.Result && r.res is CR.StartedConnectionToGroup) return r.res.groupInfo
+    if (r == null) return null
     Log.e(TAG, "apiConnectPreparedGroup bad response: ${r.responseType} ${r.details}")
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiConnectPreparedGroup", generalGetString(MR.strings.connection_error), r)
@@ -1454,8 +1538,9 @@ object ChatController {
 
   suspend fun apiConnectContactViaAddress(rh: Long?, incognito: Boolean, contactId: Long): Contact? {
     val userId = try { currentUserId("apiConnectContactViaAddress") } catch (e: Exception) { return null }
-    val r = sendCmd(rh, CC.ApiConnectContactViaAddress(userId, incognito, contactId))
+    val r = sendCmdWithRetry(rh, CC.ApiConnectContactViaAddress(userId, incognito, contactId))
     if (r is API.Result && r.res is CR.SentInvitationToContact) return r.res.contact
+    if (r == null) return null
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiConnectContactViaAddress", generalGetString(MR.strings.connection_error), r)
     }
@@ -1599,8 +1684,9 @@ object ChatController {
 
   suspend fun apiCreateUserAddress(rh: Long?): CreatedConnLink? {
     val userId = kotlin.runCatching { currentUserId("apiCreateUserAddress") }.getOrElse { return null }
-    val r = sendCmd(rh, CC.ApiCreateMyAddress(userId))
+    val r = sendCmdWithRetry(rh, CC.ApiCreateMyAddress(userId))
     if (r is API.Result && r.res is CR.UserContactLinkCreated) return r.res.connLinkContact
+    if (r == null) return null
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiCreateUserAddress", generalGetString(MR.strings.error_creating_address), r)
     }
@@ -1609,8 +1695,9 @@ object ChatController {
 
   suspend fun apiDeleteUserAddress(rh: Long?): User? {
     val userId = try { currentUserId("apiDeleteUserAddress") } catch (e: Exception) { return null }
-    val r = sendCmd(rh, CC.ApiDeleteMyAddress(userId))
+    val r = sendCmdWithRetry(rh, CC.ApiDeleteMyAddress(userId))
     if (r is API.Result && r.res is CR.UserContactLinkDeleted) return r.res.user.updateRemoteHostId(rh)
+    if (r == null) return null
     Log.e(TAG, "apiDeleteUserAddress bad response: ${r.responseType} ${r.details}")
     return null
   }
@@ -1630,8 +1717,9 @@ object ChatController {
 
   suspend fun apiAddMyAddressShortLink(rh: Long?): UserContactLinkRec? {
     val userId = kotlin.runCatching { currentUserId("apiAddMyAddressShortLink") }.getOrElse { return null }
-    val r = sendCmd(rh, CC.ApiAddMyAddressShortLink(userId))
+    val r = sendCmdWithRetry(rh, CC.ApiAddMyAddressShortLink(userId))
     if (r is API.Result && r.res is CR.UserContactLink) return r.res.contactLink
+    if (r == null) return null
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiAddMyAddressShortLink", generalGetString(MR.strings.error_creating_address), r)
     }
@@ -1640,19 +1728,20 @@ object ChatController {
 
   suspend fun apiSetUserAddressSettings(rh: Long?, settings: AddressSettings): UserContactLinkRec? {
     val userId = kotlin.runCatching { currentUserId("apiSetUserAddressSettings") }.getOrElse { return null }
-    val r = sendCmd(rh, CC.ApiSetAddressSettings(userId, settings))
+    val r = sendCmdWithRetry(rh, CC.ApiSetAddressSettings(userId, settings))
     if (r is API.Result && r.res is CR.UserContactLinkUpdated) return r.res.contactLink
     if (r is API.Error && r.err is ChatError.ChatErrorStore
       && r.err.storeError is StoreError.UserContactLinkNotFound
     ) {
       return null
     }
+    if (r == null) return null
     Log.e(TAG, "userAddressAutoAccept bad response: ${r.responseType} ${r.details}")
     return null
   }
 
   suspend fun apiAcceptContactRequest(rh: Long?, incognito: Boolean, contactReqId: Long): Contact? {
-    val r = sendCmd(rh, CC.ApiAcceptContact(incognito, contactReqId))
+    val r = sendCmdWithRetry(rh, CC.ApiAcceptContact(incognito, contactReqId))
     return when {
       r is API.Result && r.res is CR.AcceptingContactRequest -> r.res.contact
       r is API.Error && r.err is ChatError.ChatErrorAgent
@@ -1664,12 +1753,13 @@ object ChatController {
         )
         null
       }
-      else -> {
+      r != null -> {
         if (!(networkErrorAlert(r))) {
           apiErrorAlert("apiAcceptContactRequest", generalGetString(MR.strings.error_accepting_contact_request), r)
         }
         null
       }
+      else -> null
     }
   }
 
@@ -1951,7 +2041,7 @@ object ChatController {
   }
 
   suspend fun apiJoinGroup(rh: Long?, groupId: Long) {
-    val r = sendCmd(rh, CC.ApiJoinGroup(groupId))
+    val r = sendCmdWithRetry(rh, CC.ApiJoinGroup(groupId))
     when {
       r is API.Result && r.res is CR.UserAcceptedGroupSent ->
         withContext(Dispatchers.Main) {
@@ -1972,7 +2062,7 @@ object ChatController {
           apiErrorAlert("apiJoinGroup", generalGetString(MR.strings.error_joining_group), r)
         }
       }
-      else -> apiErrorAlert("apiJoinGroup", generalGetString(MR.strings.error_joining_group), r)
+      r != null -> apiErrorAlert("apiJoinGroup", generalGetString(MR.strings.error_joining_group), r)
     }
   }
 
@@ -2053,8 +2143,9 @@ object ChatController {
   }
 
   suspend fun apiCreateGroupLink(rh: Long?, groupId: Long, memberRole: GroupMemberRole = GroupMemberRole.Member): GroupLink? {
-    val r = sendCmd(rh, CC.APICreateGroupLink(groupId, memberRole))
+    val r = sendCmdWithRetry(rh, CC.APICreateGroupLink(groupId, memberRole))
     if (r is API.Result && r.res is CR.GroupLinkCreated) return r.res.groupLink
+    if (r == null) return null
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiCreateGroupLink", generalGetString(MR.strings.error_creating_link_for_group), r)
     }
@@ -2071,8 +2162,9 @@ object ChatController {
   }
 
   suspend fun apiDeleteGroupLink(rh: Long?, groupId: Long): Boolean {
-    val r = sendCmd(rh, CC.APIDeleteGroupLink(groupId))
+    val r = sendCmdWithRetry(rh, CC.APIDeleteGroupLink(groupId))
     if (r is API.Result && r.res is CR.GroupLinkDeleted) return true
+    if (r == null) return false
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiDeleteGroupLink", generalGetString(MR.strings.error_deleting_link_for_group), r)
     }
@@ -2087,8 +2179,9 @@ object ChatController {
   }
 
   suspend fun apiAddGroupShortLink(rh: Long?, groupId: Long): GroupLink? {
-    val r = sendCmd(rh, CC.ApiAddGroupShortLink(groupId))
+    val r = sendCmdWithRetry(rh, CC.ApiAddGroupShortLink(groupId))
     if (r is API.Result && r.res is CR.CRGroupLink) return r.res.groupLink
+    if (r == null) return null
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiAddGroupShortLink", generalGetString(MR.strings.error_creating_link_for_group), r)
     }
