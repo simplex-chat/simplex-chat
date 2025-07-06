@@ -1976,7 +1976,9 @@
   <string name="network_options_reset_to_defaults">Reset to defaults</string>
   <string name="network_option_seconds_label">sec</string>
   <string name="network_option_tcp_connection_timeout">TCP connection timeout</string>
+  <string name="network_option_tcp_connection_timeout_background">TCP connection bg timeout</string>
   <string name="network_option_protocol_timeout">Protocol timeout</string>
+  <string name="network_option_protocol_timeout_background">Protocol background timeout</string>
   <string name="network_option_protocol_timeout_per_kb">Protocol timeout per KB</string>
   <string name="network_option_rcv_concurrency">Receiving concurrency</string>
   <string name="network_option_ping_interval">PING interval</string>

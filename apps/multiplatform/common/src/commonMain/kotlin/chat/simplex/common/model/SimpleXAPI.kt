@@ -149,8 +149,10 @@ class AppPreferences {
   val networkHostMode: SharedPreference<HostMode> = mkSafeEnumPreference(SHARED_PREFS_NETWORK_HOST_MODE, HostMode.default)
   val networkRequiredHostMode = mkBoolPreference(SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE, false)
   val networkSMPWebPortServers: SharedPreference<SMPWebPortServers> = mkSafeEnumPreference(SHARED_PREFS_NETWORK_SMP_WEB_PORT_SERVERS, SMPWebPortServers.default)
-  val networkTCPConnectTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT, NetCfg.defaults.tcpConnectTimeout, NetCfg.proxyDefaults.tcpConnectTimeout)
-  val networkTCPTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_TIMEOUT, NetCfg.defaults.tcpTimeout, NetCfg.proxyDefaults.tcpTimeout)
+  val networkTCPConnectTimeoutBackground = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT_BACKGROUND, NetCfg.defaults.tcpConnectTimeout.backgroundTimeout, NetCfg.proxyDefaults.tcpConnectTimeout.backgroundTimeout)
+  val networkTCPConnectTimeoutInteractive = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT_INTERACTIVE, NetCfg.defaults.tcpConnectTimeout.interactiveTimeout, NetCfg.proxyDefaults.tcpConnectTimeout.interactiveTimeout)
+  val networkTCPTimeoutBackground = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_TIMEOUT_BACKGROUND, NetCfg.defaults.tcpTimeout.backgroundTimeout, NetCfg.proxyDefaults.tcpTimeout.backgroundTimeout)
+  val networkTCPTimeoutInteractive = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_TIMEOUT_INTERACTIVE, NetCfg.defaults.tcpTimeout.interactiveTimeout, NetCfg.proxyDefaults.tcpTimeout.interactiveTimeout)
   val networkTCPTimeoutPerKb = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_TIMEOUT_PER_KB, NetCfg.defaults.tcpTimeoutPerKb, NetCfg.proxyDefaults.tcpTimeoutPerKb)
   val networkRcvConcurrency = mkIntPreference(SHARED_PREFS_NETWORK_RCV_CONCURRENCY, NetCfg.defaults.rcvConcurrency)
   val networkSMPPingInterval = mkLongPreference(SHARED_PREFS_NETWORK_SMP_PING_INTERVAL, NetCfg.defaults.smpPingInterval)
@@ -271,13 +273,14 @@ class AppPreferences {
       set = fun(value) = settings.putFloat(prefName, value)
     )
 
-  private fun mkTimeoutPreference(prefName: String, default: Long, proxyDefault: Long): SharedPreference<Long> {
-    val d = if (networkUseSocksProxy.get()) proxyDefault else default
-    return SharedPreference(
-      get = fun() = settings.getLong(prefName, d),
+  private fun mkTimeoutPreference(prefName: String, default: Long, proxyDefault: Long): SharedPreference<Long> =
+    SharedPreference(
+      get = {
+        val d = if (networkUseSocksProxy.get()) proxyDefault else default
+        settings.getLong(prefName, d)
+      },
       set = fun(value) = settings.putLong(prefName, value)
     )
-  }
 
   private fun mkBoolPreference(prefName: String, default: Boolean) =
     SharedPreference(
@@ -402,8 +405,12 @@ class AppPreferences {
     private const val SHARED_PREFS_NETWORK_HOST_MODE = "NetworkHostMode"
     private const val SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE = "NetworkRequiredHostMode"
     private const val SHARED_PREFS_NETWORK_SMP_WEB_PORT_SERVERS = "NetworkSMPWebPortServers"
-    private const val SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT = "NetworkTCPConnectTimeout"
-    private const val SHARED_PREFS_NETWORK_TCP_TIMEOUT = "NetworkTCPTimeout"
+//    private const val SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT = "NetworkTCPConnectTimeout"
+//    private const val SHARED_PREFS_NETWORK_TCP_TIMEOUT = "NetworkTCPTimeout"
+    private const val SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT_BACKGROUND = "NetworkTCPConnectTimeoutBackground"
+    private const val SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT_INTERACTIVE = "NetworkTCPConnectTimeoutInteractive"
+    private const val SHARED_PREFS_NETWORK_TCP_TIMEOUT_BACKGROUND = "NetworkTCPTimeoutBackground"
+    private const val SHARED_PREFS_NETWORK_TCP_TIMEOUT_INTERACTIVE = "NetworkTCPTimeoutInteractive"
     private const val SHARED_PREFS_NETWORK_TCP_TIMEOUT_PER_KB = "networkTCPTimeoutPerKb"
     private const val SHARED_PREFS_NETWORK_RCV_CONCURRENCY = "networkRcvConcurrency"
     private const val SHARED_PREFS_NETWORK_SMP_PING_INTERVAL = "NetworkSMPPingInterval"
@@ -666,7 +673,7 @@ object ChatController {
     }
   }
 
-  suspend fun sendCmd(rhId: Long?, cmd: CC, otherCtrl: ChatCtrl? = null, log: Boolean = true): API {
+  suspend fun sendCmd(rhId: Long?, cmd: CC, otherCtrl: ChatCtrl? = null, retryNum: Int = 0, log: Boolean = true): API {
     val ctrl = otherCtrl ?: ctrl ?: throw Exception("Controller is not initialized")
 
     return withContext(Dispatchers.IO) {
@@ -675,7 +682,7 @@ object ChatController {
         chatModel.addTerminalItem(TerminalItem.cmd(rhId, cmd.obfuscated))
         Log.d(TAG, "sendCmd: ${cmd.cmdType}")
       }
-      val rStr = if (rhId == null) chatSendCmd(ctrl, c) else chatSendRemoteCmd(ctrl, rhId.toInt(), c)
+      val rStr = if (rhId == null) chatSendCmdRetry(ctrl, c, retryNum) else chatSendRemoteCmdRetry(ctrl, rhId.toInt(), c, retryNum)
       // coroutine was cancelled already, no need to process response (helps with apiListMembers - very heavy query in large groups)
       interruptIfCancelled()
       val r = json.decodeFromString<API>(rStr)
@@ -3312,8 +3319,14 @@ object ChatController {
     val smpProxyMode = appPrefs.networkSMPProxyMode.get()
     val smpProxyFallback = appPrefs.networkSMPProxyFallback.get()
     val smpWebPortServers = appPrefs.networkSMPWebPortServers.get()
-    val tcpConnectTimeout = appPrefs.networkTCPConnectTimeout.get()
-    val tcpTimeout = appPrefs.networkTCPTimeout.get()
+    val tcpConnectTimeout = NetworkTimeout(
+      backgroundTimeout = appPrefs.networkTCPConnectTimeoutBackground.get(),
+      interactiveTimeout = appPrefs.networkTCPConnectTimeoutInteractive.get()
+    )
+    val tcpTimeout = NetworkTimeout(
+      backgroundTimeout = appPrefs.networkTCPTimeoutBackground.get(),
+      interactiveTimeout = appPrefs.networkTCPTimeoutInteractive.get()
+    )
     val tcpTimeoutPerKb = appPrefs.networkTCPTimeoutPerKb.get()
     val rcvConcurrency = appPrefs.networkRcvConcurrency.get()
     val smpPingInterval = appPrefs.networkSMPPingInterval.get()
@@ -3356,8 +3369,10 @@ object ChatController {
     appPrefs.networkSMPProxyMode.set(cfg.smpProxyMode)
     appPrefs.networkSMPProxyFallback.set(cfg.smpProxyFallback)
     appPrefs.networkSMPWebPortServers.set(cfg.smpWebPortServers)
-    appPrefs.networkTCPConnectTimeout.set(cfg.tcpConnectTimeout)
-    appPrefs.networkTCPTimeout.set(cfg.tcpTimeout)
+    appPrefs.networkTCPConnectTimeoutBackground.set(cfg.tcpConnectTimeout.backgroundTimeout)
+    appPrefs.networkTCPConnectTimeoutInteractive.set(cfg.tcpConnectTimeout.interactiveTimeout)
+    appPrefs.networkTCPTimeoutBackground.set(cfg.tcpTimeout.backgroundTimeout)
+    appPrefs.networkTCPTimeoutInteractive.set(cfg.tcpTimeout.interactiveTimeout)
     appPrefs.networkTCPTimeoutPerKb.set(cfg.tcpTimeoutPerKb)
     appPrefs.networkRcvConcurrency.set(cfg.rcvConcurrency)
     appPrefs.networkSMPPingInterval.set(cfg.smpPingInterval)
@@ -4508,8 +4523,8 @@ data class NetCfg(
   val smpProxyMode: SMPProxyMode = SMPProxyMode.default,
   val smpProxyFallback: SMPProxyFallback = SMPProxyFallback.default,
   val smpWebPortServers: SMPWebPortServers = SMPWebPortServers.default,
-  val tcpConnectTimeout: Long, // microseconds
-  val tcpTimeout: Long, // microseconds
+  val tcpConnectTimeout: NetworkTimeout,
+  val tcpTimeout: NetworkTimeout,
   val tcpTimeoutPerKb: Long, // microseconds
   val rcvConcurrency: Int, // pool size
   val tcpKeepAlive: KeepAliveOpts? = KeepAliveOpts.defaults,
@@ -4528,8 +4543,8 @@ data class NetCfg(
     val defaults: NetCfg =
       NetCfg(
         socksProxy = null,
-        tcpConnectTimeout = 25_000_000,
-        tcpTimeout = 15_000_000,
+        tcpConnectTimeout = NetworkTimeout(backgroundTimeout = 45_000_000, interactiveTimeout = 15_000_000),
+        tcpTimeout = NetworkTimeout(backgroundTimeout = 30_000_000, interactiveTimeout = 10_000_000),
         tcpTimeoutPerKb = 10_000,
         rcvConcurrency = 12,
         smpPingInterval = 1200_000_000
@@ -4538,8 +4553,8 @@ data class NetCfg(
     val proxyDefaults: NetCfg =
       NetCfg(
         socksProxy = ":9050",
-        tcpConnectTimeout = 35_000_000,
-        tcpTimeout = 20_000_000,
+        tcpConnectTimeout = NetworkTimeout(backgroundTimeout = 60_000_000, interactiveTimeout = 30_000_000),
+        tcpTimeout = NetworkTimeout(backgroundTimeout = 40_000_000, interactiveTimeout = 20_000_000),
         tcpTimeoutPerKb = 15_000,
         rcvConcurrency = 8,
         smpPingInterval = 1200_000_000
@@ -4562,6 +4577,12 @@ data class NetCfg(
       this.copy(hostMode = HostMode.OnionViaSocks, requiredHostMode = true)
   }
 }
+
+@Serializable
+data class NetworkTimeout(
+  val backgroundTimeout: Long, // microseconds
+  val interactiveTimeout: Long // microseconds
+)
 
 @Serializable
 data class NetworkProxy(
