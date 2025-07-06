@@ -964,7 +964,7 @@
     <string name="rcv_group_event_open_chat">Deschide</string>
     <string name="operator_use_for_messages_private_routing">Pentru rutare privată</string>
     <string name="network_option_enable_tcp_keep_alive">Activați funcția TCP keep-alive</string>
-    <string name="muted_when_inactive">Fără sunet când aplicația e inactivă!</string>
+    <string name="muted_when_inactive">Fără sunet când este inactiv!</string>
     <string name="v5_8_chat_themes">Teme noi de chat</string>
     <string name="v6_2_network_decentralization">Descentralizarea rețelei</string>
     <string name="other_label">altul</string>
@@ -1277,7 +1277,7 @@
     <string name="group_member_status_group_deleted">grup șters</string>
     <string name="conn_event_ratchet_sync_ok">criptare ok</string>
     <string name="group_member_status_invited">invitat</string>
-    <string name="user_mute">Oprește sunetul</string>
+    <string name="user_mute">Fără sunet</string>
     <string name="icon_descr_help">ajutor</string>
     <string name="item_info_no_text">niciun text</string>
     <string name="group_members_can_send_dms">Membrii pot trimite mesaje directe.</string>
@@ -1327,7 +1327,7 @@
     <string name="info_view_message_button">mesaj</string>
     <string name="favorite_chat">Favorit</string>
     <string name="mark_read">Marchează ca citit</string>
-    <string name="mute_chat">Oprește sunetul</string>
+    <string name="mute_chat">Fără sunet</string>
     <string name="list_name_field_placeholder">Nume listă...</string>
     <string name="duplicated_list_error">Numele listei și emoji ar trebui să fie diferite pentru toate listele.</string>
     <string name="learn_more">Află mai multe</string>
@@ -1488,7 +1488,7 @@
     <string name="only_group_owners_can_enable_voice">Doar proprietarii grupului pot activa mesajele vocale.</string>
     <string name="edit_chat_list_menu_action">Editați</string>
     <string name="live_message">Mesaj live!</string>
-    <string name="mute_all_chat">Oprește sunetul pentru toate</string>
+    <string name="mute_all_chat">Fără sunet toate</string>
     <string name="ok">OK</string>
     <string name="image_descr_link_preview">Previzualizare imagine din link</string>
     <string name="new_chat">Conversație nouă</string>
@@ -1840,7 +1840,7 @@
     <string name="unblock_member_confirmation">Deblocare</string>
     <string name="migrate_from_device_upload_failed">Încărcarea a eșuat</string>
     <string name="system_restricted_background_in_call_desc">Aplicația se poate închide după 1 minut în fundal.</string>
-    <string name="unmute_chat">Activează sunetul</string>
+    <string name="unmute_chat">Cu sunet</string>
     <string name="messages_section_description">Această setare se aplică mesajelor din profilul tău de chat actual</string>
     <string name="use_simplex_chat_servers__question">Folosiți servere SimpleX Chat?</string>
     <string name="network_socks_proxy">Proxy SOCKS</string>
@@ -1926,12 +1926,12 @@
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Această acțiune nu poate fi anulată - profilul, contactele, mesajele și fișierele dvs. vor fi pierdute iremediabil.</string>
     <string name="theme_system">Sistem</string>
     <string name="unblock_member_question">Deblocați membrul?</string>
-    <string name="user_unmute">Activează sunetul</string>
+    <string name="user_unmute">Cu sunet</string>
     <string name="voice_messages">Mesaje vocale</string>
     <string name="servers_info_statistics_section_header">Statistici</string>
     <string name="stop_chat_question">Opriți chatul?</string>
     <string name="group_member_status_unknown_short">necunoscut</string>
-    <string name="you_can_hide_or_mute_user_profile">Puteți ascunde sau dezactiva un profil de utilizator - țineți apăsat pentru meniu.</string>
+    <string name="you_can_hide_or_mute_user_profile">Poți ascunde sau dezactiva notificările unui profil de utilizator – ține apăsat pentru meniu.</string>
     <string name="chat_preferences_you_allow">Ați permis</string>
     <string name="share_1_time_link_with_a_friend">Partajează link cu utilizare unică cu un prieten</string>
     <string name="v4_3_voice_messages">Mesaje vocale</string>
