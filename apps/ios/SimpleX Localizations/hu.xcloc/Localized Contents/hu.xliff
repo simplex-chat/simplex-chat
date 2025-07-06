@@ -4077,7 +4077,7 @@ Hiba: %2$@</target>
       </trans-unit>
       <trans-unit id="Group profile was changed. If you save it, the updated profile will be sent to group members." xml:space="preserve" approved="no">
         <source>Group profile was changed. If you save it, the updated profile will be sent to group members.</source>
-        <target state="translated">A csoport profilja módosult. Ha menti, akkor a frissített profil el lesz küldve a csoporttagoknak.</target>
+        <target state="translated">Csoportprofil módosítva. Ha menti, akkor a frissített profil el lesz küldve a csoporttagoknak.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Group welcome message" xml:space="preserve">
@@ -10236,9 +10236,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>nem védett</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="updated group profile" xml:space="preserve">
+      <trans-unit id="updated group profile" xml:space="preserve" approved="no">
         <source>updated group profile</source>
-        <target>frissítette a csoport profilját</target>
+        <target state="translated">frissítette a csoportprofilt</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="updated profile" xml:space="preserve">
