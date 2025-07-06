@@ -492,7 +492,7 @@
     <string name="v4_2_group_links">Csoporthivatkozások</string>
     <string name="v5_1_message_reactions_descr">Végre, megvannak! 🚀</string>
     <string name="error_starting_chat">Hiba történt a csevegés elindításakor</string>
-    <string name="group_profile_is_stored_on_members_devices">A csoport profilja a tagok eszközein tárolódik, nem a kiszolgálókon.</string>
+    <string name="group_profile_is_stored_on_members_devices">A csoportprofil a tagok eszközein tárolódik, nem a kiszolgálókon.</string>
     <string name="enter_passphrase">Adja meg a jelmondatot…</string>
     <string name="error_updating_user_privacy">Hiba történt a felhasználói adatvédelem frissítésekor</string>
     <string name="encrypt_database">Titkosít</string>
@@ -527,7 +527,7 @@
     <string name="file_with_path">Fájl: %s</string>
     <string name="icon_descr_hang_up">Hívás befejezése</string>
     <string name="error_deleting_link_for_group">Hiba történt a csoporthivatkozás törlésekor</string>
-    <string name="file_saved">Fájl elmentve</string>
+    <string name="file_saved">Fájl mentve</string>
     <string name="fix_connection_question">Kapcsolat javítása?</string>
     <string name="files_and_media">Fájlok és médiatartalmak</string>
     <string name="section_title_for_console">KONZOLHOZ</string>
@@ -613,7 +613,7 @@
     <string name="conn_event_ratchet_sync_required">a titkosítás újraegyeztetése szükséges</string>
     <string name="v4_6_hidden_chat_profiles">Rejtett csevegési profilok</string>
     <string name="files_and_media_section">Fájlok és médiatartalmak</string>
-    <string name="image_saved">A kép elmentve a „Galériába”</string>
+    <string name="image_saved">Kép mentve a galériába</string>
     <string name="hide_notification">Elrejtés</string>
     <string name="la_immediately">Azonnal</string>
     <string name="files_and_media_prohibited">A fájlok- és a médiatartalmak küldése le van tiltva!</string>
@@ -1023,7 +1023,7 @@
     <string name="paste_the_link_you_received">Kapott hivatkozás beillesztése</string>
     <string name="smp_save_servers_question">Menti a kiszolgálókat?</string>
     <string name="v4_2_security_assessment_desc">A SimpleX Chat biztonsága a Trail of Bits által lett auditálva.</string>
-    <string name="rcv_group_event_updated_group_profile">frissítette a csoport profilját</string>
+    <string name="rcv_group_event_updated_group_profile">frissítette a csoportprofilt</string>
     <string name="settings_section_title_support">SIMPLEX CHAT TÁMOGATÁSA</string>
     <string name="simplex_service_notification_title">SimpleX Chat szolgáltatás</string>
     <string name="observer_cant_send_message_title">Ön megfigyelő</string>
@@ -1695,11 +1695,11 @@
     <string name="allow_to_send_simplex_links">A SimpleX-hivatkozások küldése engedélyezve van.</string>
     <string name="feature_enabled_for">Számukra engedélyezve</string>
     <string name="saved_description">mentett</string>
-    <string name="saved_from_description">elmentve innen: %s</string>
+    <string name="saved_from_description">mentve innen: %s</string>
     <string name="forwarded_from_chat_item_info_title">Továbbítva innen</string>
     <string name="recipients_can_not_see_who_message_from">A címzett(ek) nem látja(k), hogy kitől származik ez az üzenet.</string>
     <string name="saved_chat_item_info_tab">Mentett</string>
-    <string name="saved_from_chat_item_info_title">Elmentve innen</string>
+    <string name="saved_from_chat_item_info_title">Mentve innen</string>
     <string name="download_file">Letöltés</string>
     <string name="forward_chat_item">Továbbítás</string>
     <string name="forwarded_chat_item_info_tab">Továbbított</string>
@@ -2000,7 +2000,7 @@
     <string name="v6_0_reachable_chat_toolbar_descr">Használja az alkalmazást egy kézzel.</string>
     <string name="v6_0_your_contacts_descr">A partnerek archiválása a későbbi csevegéshez.</string>
     <string name="network_option_tcp_connection">TCP-kapcsolat</string>
-    <string name="chat_database_exported_save">Az exportált archívumot elmentheti.</string>
+    <string name="chat_database_exported_save">Mentheti az exportált archívumot.</string>
     <string name="reset_all_hints">Tippek visszaállítása</string>
     <string name="one_hand_ui_card_title">Csevegési lista ki/be:</string>
     <string name="one_hand_ui_change_instruction">Ezt a „Megjelenés” menüben módosíthatja.</string>
@@ -2381,7 +2381,7 @@
     <string name="snd_group_event_user_pending_review">Várja meg, amíg a csoport moderátorai áttekintik a csoporthoz való csatlakozási kérését.</string>
     <string name="rcv_group_event_user_accepted">befogadta Önt</string>
     <string name="set_member_admission">Tagbefogadás beállítása</string>
-    <string name="save_admission_question">Elmenti a befogadási beállításokat?</string>
+    <string name="save_admission_question">Menti a befogadási beállításokat?</string>
     <string name="snd_group_event_member_accepted">Ön befogadta ezt a tagot</string>
     <string name="accept_pending_member_alert_confirmation_as_member">Befogadás tagként</string>
     <string name="rcv_group_event_member_accepted">befogadta őt: %1$s</string>
