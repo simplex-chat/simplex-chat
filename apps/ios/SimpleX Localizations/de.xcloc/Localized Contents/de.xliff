@@ -1396,8 +1396,9 @@ swipe action</note>
         <target>Mitglied kann nicht angerufen werden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't change profile" xml:space="preserve">
+      <trans-unit id="Can't change profile" xml:space="preserve" approved="no">
         <source>Can't change profile</source>
+        <target state="translated">Änderung des Profils nicht möglich</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
@@ -8190,8 +8191,9 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
         <target>Um sofortige Push-Benachrichtigungen zu unterstützen, muss die Chat-Datenbank migriert werden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To use another profile after connection attempt, delete the chat and use the link again." xml:space="preserve">
+      <trans-unit id="To use another profile after connection attempt, delete the chat and use the link again." xml:space="preserve" approved="no">
         <source>To use another profile after connection attempt, delete the chat and use the link again.</source>
+        <target state="translated">Wenn Sie nach dem Verbindungsversuch ein anderes Profil verwenden möchten, löschen Sie den Chat und verwenden Sie den Link erneut.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="To use the servers of **%@**, accept conditions of use." xml:space="preserve">
