@@ -2541,4 +2541,6 @@
     <string name="the_sender_will_not_be_notified">Der Absender wird NICHT benachrichtigt.</string>
     <string name="address_welcome_message">Begrüßungsmeldung</string>
     <string name="context_user_picker_your_profile">Ihr Profil</string>
+    <string name="context_user_picker_cant_change_profile_alert_title">Änderung des Profils nicht möglich</string>
+    <string name="context_user_picker_cant_change_profile_alert_message">Wenn Sie nach dem Verbindungsversuch ein anderes Profil verwenden möchten, löschen Sie den Chat und verwenden Sie den Link erneut.</string>
 </resources>
