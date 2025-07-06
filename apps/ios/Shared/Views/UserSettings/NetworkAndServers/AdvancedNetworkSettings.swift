@@ -353,14 +353,13 @@ struct AdvancedNetworkSettings: View {
     }
 
     private func timeoutSettingPicker(_ title: LocalizedStringKey, selection: Binding<Int>, values: [Int], label: String) -> some View {
-        Picker(title, selection: selection) {
+        WrappedPicker(title, selection: selection) {
             let v = selection.wrappedValue
             let vs = values.contains(v) ? values : values + [v]
             ForEach(vs, id: \.self) { value in
                 Text("\(String(format: "%g", (Double(value) / 1000000))) \(secondsLabel)")
             }
         }
-        .frame(height: 36)
     }
     
     private func onionHostsInfo(_ hosts: OnionHosts) -> LocalizedStringKey {

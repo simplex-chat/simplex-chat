@@ -259,8 +259,8 @@ public struct NetCfg: Codable, Equatable {
     )
 
     static let proxyDefaults: NetCfg = NetCfg(
-        tcpConnectTimeout: NetworkTimeout(backgroundTimeout: 90_000_000, interactiveTimeout: 30_000_000),
-        tcpTimeout: NetworkTimeout(backgroundTimeout: 60_000_000, interactiveTimeout: 20_000_000),
+        tcpConnectTimeout: NetworkTimeout(backgroundTimeout: 60_000_000, interactiveTimeout: 30_000_000),
+        tcpTimeout: NetworkTimeout(backgroundTimeout: 40_000_000, interactiveTimeout: 20_000_000),
         tcpTimeoutPerKb: 15_000,
         rcvConcurrency: 8,
         smpPingInterval: 1200_000_000

@@ -415,8 +415,8 @@ private struct ActiveProfilePicker: View {
                 }
                 Task {
                     do {
-                        if let contactConn = contactConnection {
-                            let conn = try await apiChangeConnectionUser(connId: contactConn.pccConnId, userId: profile.userId)
+                        if let contactConn = contactConnection,
+                           let conn = try await apiChangeConnectionUser(connId: contactConn.pccConnId, userId: profile.userId) {
                             await MainActor.run {
                                 contactConnection = conn
                                 connLinkInvitation = conn.connLinkInv ?? CreatedConnLink(connFullLink: "", connShortLink: nil)
