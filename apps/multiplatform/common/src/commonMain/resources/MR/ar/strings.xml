@@ -2451,4 +2451,6 @@
     <string name="the_sender_will_not_be_notified">لن يتم إشعار المرسل.</string>
     <string name="address_welcome_message">رسالة الترحيب</string>
     <string name="context_user_picker_your_profile">ملف تعريفك</string>
+    <string name="context_user_picker_cant_change_profile_alert_title">لا يمكن تغيير ملف التعريف</string>
+    <string name="context_user_picker_cant_change_profile_alert_message">لاستخدام ملف تعريف آخر بعد محاولة الاتصال، احذف الدردشة واستخدم الرابط مرة أخرى.</string>
 </resources>
