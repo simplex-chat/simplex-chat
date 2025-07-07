@@ -1,1 +1,19 @@
-{}
+{
+    "home": "Anasayfa",
+    "developers": "Geliştiriciler",
+    "reference": "Referans",
+    "blog": "Blog",
+    "features": "Özellikler",
+    "why-simplex": "Neden SimpleX",
+    "simplex-privacy": "SimpleX ile Gizlilik",
+    "simplex-network": "SimpleX ağı",
+    "simplex-explained": "SimpleX açıklıyor",
+    "simplex-explained-tab-1-text": "1. Kullanıcıların nasıl deneyimlediği",
+    "simplex-explained-tab-2-text": "2. Nasıl çalışır",
+    "simplex-explained-tab-3-text": "3. Sunucuların ne gördüğü",
+    "simplex-explained-tab-1-p-1": "Kişiler ve gruplar oluşturabilir ve tıpkı diğer mesajlaşma programlarında olduğu gibi iki yönlü iletişim kurabilirsiniz.",
+    "simplex-explained-tab-1-p-2": "Tek yönlü kuyruklarla ve kullanıcı profil tanımlayıcıları olmadan nasıl çalışabilir?",
+    "simplex-explained-tab-2-p-1": "Her bağlantı için, farklı sunucular üzerinden mesaj göndermek ve almak üzere iki ayrı mesaj kuyruğu kullanırsınız.",
+    "simplex-explained-tab-2-p-2": "Sunucular, kullanıcı konuşmalarının veya bağlantılarının tüm geçmişini bilmeden mesajları yalnızca tek bir yönde iletir.",
+    "simplex-explained-tab-3-p-1": "Sunucular her kuyruk için ayrı, anonim oturum açma bilgileri kullanır ve hangi kullanıcıya ait olduğunu bilmez."
+}
