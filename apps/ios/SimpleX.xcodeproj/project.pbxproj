@@ -854,6 +854,7 @@
 				CEDB245A2C9CD71800FBC5F6 /* StickyScrollView.swift */,
 				CEFB2EDE2CA1BCC7004B1ECE /* SheetRepresentable.swift */,
 				CEA6E91B2CBD21B0002B5DB4 /* UserDefault.swift */,
+				644A9AA12E1BD6D700D0E6F1 /* InProgressWindowManager.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -883,7 +884,6 @@
 				5CA059C3279559F40002BEB4 /* SimpleXApp.swift */,
 				5C36027227F47AD5009F19D9 /* AppDelegate.swift */,
 				5CA059C4279559F40002BEB4 /* ContentView.swift */,
-				644A9AA12E1BD6D700D0E6F1 /* InProgressWindowManager.swift */,
 				5C764E87279CBC8E000C6508 /* Model */,
 				5C2E260D27A30E2400F70299 /* Views */,
 				5CA059C5279559F40002BEB4 /* Assets.xcassets */,
