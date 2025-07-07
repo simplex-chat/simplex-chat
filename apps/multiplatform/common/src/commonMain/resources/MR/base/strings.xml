@@ -2542,7 +2542,6 @@
   <string name="connect_plan_you_have_already_requested_connection_via_this_address">You have already requested connection via this address!</string>
   <string name="connect_plan_join_your_group">Join your group?</string>
   <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[This is your link for group <b>%1$s</b>!]]></string>
-  <string name="connect_plan_open_group">Open group</string>
   <string name="connect_plan_repeat_join_request">Repeat join request?</string>
   <string name="connect_plan_group_already_exists">Group already exists!</string>
   <string name="connect_plan_chat_already_exists">Chat already exists!</string>
