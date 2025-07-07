@@ -748,14 +748,21 @@ struct ComposeView: View {
             await sending()
             let mc = connectCheckLinkPreview()
             let incognito = chat.chatInfo.profileChangeProhibited ? chat.chatInfo.incognito : incognitoDefault
+            await MainActor.run {
+                ChatModel.shared.connectInProgress = NSLocalizedString("Connecting to SimpleX link…", comment: "in progress text")
+            }
             if let contact = await apiConnectPreparedContact(contactId: chat.chatInfo.apiId, incognito: incognito, msg: mc) {
                 await MainActor.run {
+                    ChatModel.shared.connectInProgress = nil
                     self.chatModel.updateContact(contact)
                     NetworkModel.shared.setContactNetworkStatus(contact, .connected)
                     clearState()
                 }
             } else {
-                await MainActor.run { composeState.inProgress = false }
+                await MainActor.run {
+                    ChatModel.shared.connectInProgress = nil
+                    composeState.inProgress = false
+                }
             }
         }
     }
@@ -766,13 +773,20 @@ struct ComposeView: View {
             await sending()
             let mc = connectCheckLinkPreview()
             let incognito = chat.chatInfo.profileChangeProhibited ? chat.chatInfo.incognito : incognitoDefault
+            await MainActor.run {
+                ChatModel.shared.connectInProgress = NSLocalizedString("Connecting to SimpleX link…", comment: "in progress text")
+            }
             if let groupInfo = await apiConnectPreparedGroup(groupId: chat.chatInfo.apiId, incognito: incognito, msg: mc) {
                 await MainActor.run {
+                    ChatModel.shared.connectInProgress = nil
                     self.chatModel.updateGroup(groupInfo)
                     clearState()
                 }
             } else {
-                await MainActor.run { composeState.inProgress = false }
+                await MainActor.run {
+                    ChatModel.shared.connectInProgress = nil
+                    composeState.inProgress = false
+                }
             }
         }
     }

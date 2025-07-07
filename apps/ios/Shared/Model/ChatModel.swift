@@ -379,6 +379,8 @@ final class ChatModel: ObservableObject {
     @Published var networkInfo = UserNetworkInfo(networkType: .other, online: true)
     // usage conditions
     @Published var conditions: ServerOperatorConditions = .empty
+    // connection in progress
+    @Published var connectInProgress: String? = nil
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 

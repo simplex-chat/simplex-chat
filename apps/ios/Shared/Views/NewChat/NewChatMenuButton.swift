@@ -353,6 +353,10 @@ struct ContactsListSearchBar: View {
             .background(Color(uiColor: .secondarySystemGroupedBackground))
             .cornerRadius(10.0)
 
+            if m.connectInProgress != nil {
+                ProgressView()
+            }
+
             if searchFocussed {
                 Text("Cancel")
                     .foregroundColor(theme.colors.primary)

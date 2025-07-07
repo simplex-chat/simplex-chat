@@ -114,6 +114,9 @@ struct ChatView: View {
                         }
                     )
                 }
+                if let connectInProgressText = chatModel.connectInProgress {
+                    connectInProgressView(connectInProgressText)
+                }
                 if let connectingText {
                     Text(connectingText)
                         .font(.caption)
@@ -383,6 +386,21 @@ struct ChatView: View {
                     }
                 }
             }
+        }
+    }
+
+    private func connectInProgressView(_ s: String) -> some View {
+        VStack(spacing: 0) {
+            Divider()
+            
+            HStack(spacing: 12) {
+                ProgressView()
+                Text(s)
+            }
+            .padding(12)
+            .frame(minHeight: 54)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(ToolbarMaterial.material(toolbarMaterial))
         }
     }
 

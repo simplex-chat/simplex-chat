@@ -598,9 +598,34 @@ private struct ConnectView: View {
                 pasteLinkView()
             }
             Section(header: Text("Or scan QR code").foregroundColor(theme.colors.secondary)) {
-                ScannerInView(showQRCodeScanner: $showQRCodeScanner, processQRCode: processQRCode)
+                if ChatModel.shared.connectInProgress == nil {
+                    ScannerInView(showQRCodeScanner: $showQRCodeScanner, processQRCode: processQRCode)
+                } else {
+                    connectInProgressView()
+                }
             }
         }
+    }
+
+    private func connectInProgressView() -> some View {
+        ZStack {
+            Rectangle()
+                .aspectRatio(contentMode: .fill)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .foregroundColor(Color.white.opacity(0.4))
+            ProgressView()
+                .scaleEffect(2)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(uiColor: .secondarySystemGroupedBackground))
+        )
+        .padding(.horizontal)
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
+        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
     }
 
     @ViewBuilder private func pasteLinkView() -> some View {
@@ -624,7 +649,7 @@ private struct ConnectView: View {
             } label: {
                 Text("Tap to paste link")
             }
-            .disabled(!pasteboardHasStrings)
+            .disabled(!pasteboardHasStrings || ChatModel.shared.connectInProgress != nil)
             .frame(maxWidth: .infinity, alignment: .center)
         } else {
             linkTextView(pastedLink)
@@ -1149,7 +1174,13 @@ func planAndConnect(
     filterKnownGroup: ((GroupInfo) -> Void)? = nil
 ) {
     Task {
+        await MainActor.run {
+            ChatModel.shared.connectInProgress = NSLocalizedString("Retrieving link data…", comment: "in progress text")
+        }
         let (result, alert) = await apiConnectPlan(connLink: shortOrFullLink)
+        await MainActor.run {
+            ChatModel.shared.connectInProgress = nil
+        }
         if let (connectionLink, connectionPlan) = result {
             switch connectionPlan {
             case let .invitationLink(ilp):
@@ -1368,11 +1399,16 @@ func planAndConnect(
                     cleanup: cleanup
                 )
             }
-        } else if let alert {
+        } else {
             await MainActor.run {
-                dismissAllSheets(animated: true) {
-                    AlertManager.shared.showAlert(alert)
-                    cleanup?()
+                ChatModel.shared.connectInProgress = nil
+            }
+            if let alert {
+                await MainActor.run {
+                    dismissAllSheets(animated: true) {
+                        AlertManager.shared.showAlert(alert)
+                        cleanup?()
+                    }
                 }
             }
         }
@@ -1386,7 +1422,13 @@ private func connectContactViaAddress_(_ contact: Contact, dismiss: Bool, incogn
                 dismissAllSheets(animated: true)
             }
         }
+        await MainActor.run {
+            ChatModel.shared.connectInProgress = NSLocalizedString("Connecting to SimpleX link…", comment: "in progress text")
+        }
         let ok = await connectContactViaAddress(contact.contactId, incognito, showAlert: { AlertManager.shared.showAlert($0) })
+        await MainActor.run {
+            ChatModel.shared.connectInProgress = nil
+        }
         if ok {
             AlertManager.shared.showAlert(connReqSentAlert(.contact))
         }
@@ -1402,8 +1444,12 @@ private func connectViaLink(
     cleanup: (() -> Void)?
 ) {
     Task {
+        await MainActor.run {
+            ChatModel.shared.connectInProgress = NSLocalizedString("Connecting to SimpleX link…", comment: "in progress text")
+        }
         if let (connReqType, pcc) = await apiConnect(incognito: incognito, connLink: connectionLink) {
             await MainActor.run {
+                ChatModel.shared.connectInProgress = nil
                 ChatModel.shared.updateContactConnection(pcc)
             }
             let crt: ConnReqType
@@ -1422,6 +1468,9 @@ private func connectViaLink(
                 }
             }
         } else {
+            await MainActor.run {
+                ChatModel.shared.connectInProgress = nil
+            }
             if dismiss {
                 DispatchQueue.main.async {
                     dismissAllSheets(animated: true)

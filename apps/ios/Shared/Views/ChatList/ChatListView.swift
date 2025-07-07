@@ -330,7 +330,13 @@ struct ChatListView: View {
     
     @ViewBuilder var trailingToolbarItem: some View {
         switch chatModel.chatRunning {
-        case .some(true): NewChatMenuButton()
+        case .some(true):
+            HStack {
+                if chatModel.connectInProgress != nil {
+                    ProgressView()
+                }
+                NewChatMenuButton()
+            }
         case .some(false): chatStoppedIcon()
         case .none: EmptyView()
         }
