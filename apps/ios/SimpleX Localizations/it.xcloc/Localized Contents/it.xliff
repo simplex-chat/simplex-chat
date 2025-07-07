@@ -3919,9 +3919,9 @@ snd error text</note>
         <target>Inoltro di %lld messaggi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve">
+      <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve" approved="no">
         <source>Forwarding server %1$@ failed to connect to destination server %2$@. Please try later.</source>
-        <target>Il server di inoltro %@ non è riuscito a connettersi al server di destinazione %@. Riprova più tardi.</target>
+        <target state="needs-translation">Il server di inoltro %@ non è riuscito a connettersi al server di destinazione %@. Riprova più tardi.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Forwarding server address is incompatible with network settings: %@." xml:space="preserve">
