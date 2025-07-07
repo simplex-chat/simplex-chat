@@ -649,7 +649,7 @@ private struct ConnectView: View {
             } label: {
                 Text("Tap to paste link")
             }
-            .disabled(!pasteboardHasStrings || ChatModel.shared.connectInProgress != nil)
+            .disabled(!pasteboardHasStrings)
             .frame(maxWidth: .infinity, alignment: .center)
         } else {
             linkTextView(pastedLink)
