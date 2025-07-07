@@ -2434,4 +2434,8 @@
     <string name="context_user_picker_cant_change_profile_alert_message">Per utilitzar un altre perfil després d\'un intent de connexió, suprimiu el xat i torneu a utilitzar l\'enllaç.</string>
     <string name="address_welcome_message">Missatge de benvinguda</string>
     <string name="context_user_picker_your_profile">El vostre perfil</string>
+    <string name="v6_4_support_chat">Xatejar amb l\'administració</string>
+    <string name="v6_4_review_members_descr">Xatejar amb membres abans que s\'uneixin.</string>
+    <string name="v6_4_connect_faster">Connectar més ràpid! 🚀</string>
+    <string name="v6_4_message_delivery_descr">Menys trànsit a les xarxes mòbils.</string>
 </resources>
