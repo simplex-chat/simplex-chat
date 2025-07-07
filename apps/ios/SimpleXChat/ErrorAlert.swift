@@ -11,7 +11,6 @@ import SwiftUI
 public struct ErrorAlert: Error {
     public let title: LocalizedStringKey
     public let message: LocalizedStringKey?
-    public let actions: Optional<() -> AnyView>
 
     public init(
         title: LocalizedStringKey,
@@ -19,7 +18,6 @@ public struct ErrorAlert: Error {
     ) {
         self.title = title
         self.message = message
-        self.actions = nil
     }
 
     public init<A: View>(
@@ -29,7 +27,6 @@ public struct ErrorAlert: Error {
     ) {
         self.title = title
         self.message = message
-        self.actions = { AnyView(actions()) }
     }
 
     public init(_ title: LocalizedStringKey) {
@@ -75,11 +72,7 @@ extension View {
                 set: { if !$0 { errorAlert.wrappedValue = nil } }
             ),
             actions: {
-                if let actions_ = errorAlert.wrappedValue?.actions {
-                    actions_()
-                } else {
-                    if let alert = errorAlert.wrappedValue { actions(alert) }
-                }
+                if let alert = errorAlert.wrappedValue { actions(alert) }
             },
             message: {
                 if let message = errorAlert.wrappedValue?.message {

@@ -849,8 +849,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 when (groupFeatureAllowed SGFHistory gInfo'' && not memberIsCustomer) $ sendHistory user gInfo'' m'
             where
               sendXGrpLinkMem gInfo'' = do
-                let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo''
-                    profileToSend = profileToSendOnAccept user profileMode True
+                let incognitoProfile = ExistingIncognito <$> incognitoMembershipProfile gInfo''
+                    profileToSend = userProfileToSend' user incognitoProfile Nothing True
                 void $ sendDirectMemberMessage conn (XGrpLinkMem profileToSend) groupId
           _ -> do
             unless (memberPending m) $ withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected

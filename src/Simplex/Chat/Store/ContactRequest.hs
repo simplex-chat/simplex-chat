@@ -113,7 +113,7 @@ createOrUpdateContactRequest
                 cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
                 ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
                 -- Connection
-                c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
+                c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
                 c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
                 c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
               FROM contacts ct
@@ -143,12 +143,11 @@ createOrUpdateContactRequest
             SELECT
               cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
               cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
-              c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
+              cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
               cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
               cr.created_at, cr.updated_at,
               cr.peer_chat_min_version, cr.peer_chat_max_version
             FROM contact_requests cr
-            JOIN connections c USING (user_contact_link_id)
             JOIN contact_profiles p USING (contact_profile_id)
             WHERE cr.user_id = ?
               AND cr.xcontact_id = ?
@@ -203,7 +202,7 @@ createOrUpdateContactRequest
               ct <- getContact db vr user contactId
               pure $ RSCurrentRequest Nothing ucr (Just $ REContact ct)
             createBusinessChat = do
-              let Profile {preferences = userPreferences} = profileToSendOnAccept user Nothing True
+              let Profile {preferences = userPreferences} = userProfileToSend' user Nothing Nothing True
                   groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs userPreferences
               (gInfo@GroupInfo {groupId}, clientMember) <-
                 createBusinessRequestGroup db vr gVar user cReqChatVRange profile profileId ldn groupPreferences

@@ -1053,6 +1053,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
     case contactsMerged(user: UserRef, intoContact: Contact, mergedContact: Contact)
     case networkStatus(networkStatus: NetworkStatus, connections: [String])
     case networkStatuses(user_: UserRef?, networkStatuses: [ConnNetworkStatus])
+    case chatInfoUpdated(user: UserRef, chatInfo: ChatInfo)
     case newChatItems(user: UserRef, chatItems: [AChatItem])
     case chatItemsStatusesUpdated(user: UserRef, chatItems: [AChatItem])
     case chatItemUpdated(user: UserRef, chatItem: AChatItem)
@@ -1131,6 +1132,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case .contactsMerged: "contactsMerged"
         case .networkStatus: "networkStatus"
         case .networkStatuses: "networkStatuses"
+        case .chatInfoUpdated: "chatInfoUpdated"
         case .newChatItems: "newChatItems"
         case .chatItemsStatusesUpdated: "chatItemsStatusesUpdated"
         case .chatItemUpdated: "chatItemUpdated"
@@ -1204,6 +1206,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case let .contactsMerged(u, intoContact, mergedContact): return withUser(u, "intoContact: \(intoContact)\nmergedContact: \(mergedContact)")
         case let .networkStatus(status, conns): return "networkStatus: \(String(describing: status))\nconnections: \(String(describing: conns))"
         case let .networkStatuses(u, statuses): return withUser(u, String(describing: statuses))
+        case let .chatInfoUpdated(u, chatInfo): return withUser(u, String(describing: chatInfo))
         case let .newChatItems(u, chatItems):
             let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
             return withUser(u, itemsString)

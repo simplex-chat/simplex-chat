@@ -145,7 +145,8 @@ CREATE TABLE groups(
   conn_short_link_to_connect BLOB,
   conn_link_started_connection INTEGER NOT NULL DEFAULT 0,
   welcome_shared_msg_id BLOB,
-  request_shared_msg_id BLOB, -- received
+  request_shared_msg_id BLOB,
+  conn_link_prepared_connection INTEGER NOT NULL DEFAULT 0, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -344,8 +345,8 @@ CREATE TABLE user_contact_links(
 );
 CREATE TABLE contact_requests(
   contact_request_id INTEGER PRIMARY KEY,
-  user_contact_link_id INTEGER NOT NULL REFERENCES user_contact_links
-  ON UPDATE CASCADE ON DELETE CASCADE,
+  user_contact_link_id INTEGER REFERENCES user_contact_links
+  ON UPDATE CASCADE ON DELETE SET NULL,
   agent_invitation_id BLOB NOT NULL,
   contact_profile_id INTEGER REFERENCES contact_profiles
   ON DELETE SET NULL

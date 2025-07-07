@@ -386,6 +386,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtGroupMemberSwitch u g m progress -> ttyUser u $ viewGroupMemberSwitch g m progress
   CEvtContactRatchetSync u ct progress -> ttyUser u $ viewContactRatchetSync ct progress
   CEvtGroupMemberRatchetSync u g m progress -> ttyUser u $ viewGroupMemberRatchetSync g m progress
+  CEvtChatInfoUpdated _ _ -> []
   CEvtNewChatItems u chatItems -> viewChatItems ttyUser unmuted u chatItems ts tz
   CEvtChatItemsStatusesUpdated u chatItems
     | length chatItems <= 20 ->
@@ -1894,6 +1895,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     ILPConnecting (Just ct) -> [invLink ("connecting to contact " <> ttyContact' ct)]
     ILPKnown ct
       | nextConnectPrepared ct -> [invLink ("known prepared contact " <> ttyContact' ct)]
+      | contactDeleted ct -> [invLink ("known deleted contact " <> ttyContact' ct)]
       | otherwise ->
           [ invLink ("known contact " <> ttyContact' ct),
             "use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"
@@ -1902,7 +1904,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
       invLink = ("invitation link: " <>)
       invOrBiz = \case
         Just ContactShortLinkData {business}
-          | business -> ("business link: " <>)
+          | business -> ("business address: " <>)
         _ -> ("invitation link: " <>)
   CPContactAddress cap -> case cap of
     CAPOk contactSLinkData -> [addrOrBiz contactSLinkData "ok to connect"] <> [viewJSON contactSLinkData | testView]
@@ -1920,7 +1922,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
       ctAddr = ("contact address: " <>)
       addrOrBiz = \case
         Just ContactShortLinkData {business}
-          | business -> ("business link: " <>)
+          | business -> ("business address: " <>)
         _ -> ("contact address: " <>)
   CPGroupLink glp -> case glp of
     GLPOk groupSLinkData -> [grpLink "ok to connect"] <> [viewJSON groupSLinkData | testView]
@@ -1928,19 +1930,28 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
     GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
     GLPConnectingProhibit Nothing -> [grpLink "connecting"]
     GLPConnectingProhibit (Just g) -> connecting g
-    GLPKnown g@GroupInfo {preparedGroup} -> case preparedGroup of
-      Just PreparedGroup {connLinkStartedConnection}
-        | connLinkStartedConnection -> connecting g
-        | otherwise -> [knownGroup "prepared "]
-      Nothing ->
-        [ knownGroup "",
-          "use " <> ttyToGroup g Nothing <> highlight' "<message>" <> " to send messages"
-        ]
+    GLPKnown g@GroupInfo {preparedGroup, membership = m} -> case preparedGroup of
+      Just PreparedGroup {connLinkStartedConnection} -> case memberStatus m of
+        GSMemUnknown
+          | connLinkStartedConnection -> connecting g
+          | otherwise -> [knownGroup "prepared "]
+        GSMemAccepted -> connecting g
+        _
+          | memberRemoved m -> [knownGroup "deleted "] -- it should not get here, as this plan is returned as GLPOk
+          | otherwise -> knownActive
+      _ -> knownActive
       where
-        knownGroup prepared = grpOrBiz g <> " link: known " <> prepared <> grpOrBiz g <> " " <> ttyGroup' g
+        knownActive =
+          [ knownGroup "",
+            "use " <> ttyToGroup g Nothing <> highlight' "<message>" <> " to send messages"
+          ]
+        knownGroup prepared = grpOrBizLink g <> ": known " <> prepared <> grpOrBiz g <> " " <> ttyGroup' g
     where
-      connecting g = [grpOrBiz g <> " link: connecting to " <> grpOrBiz g <> " " <> ttyGroup' g]
+      connecting g = [grpOrBizLink g <> ": connecting to " <> grpOrBiz g <> " " <> ttyGroup' g]
       grpLink = ("group link: " <>)
+      grpOrBizLink GroupInfo {businessChat} = case businessChat of
+        Just _ -> "business address"
+        Nothing -> "group link"
       grpOrBiz GroupInfo {businessChat} = case businessChat of
         Just _ -> "business"
         Nothing -> "group"

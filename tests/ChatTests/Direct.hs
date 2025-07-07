@@ -34,6 +34,7 @@ import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificati
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Client (NetworkTimeout (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
@@ -313,6 +314,7 @@ testRetryConnectingClientTimeout ps = do
   withSmpServer' serverCfg' $ do
     withTestChatCfgOpts ps cfg' opts' "alice" $ \alice -> do
       withTestChatCfgOpts ps cfg' opts' "bob" $ \bob -> do
+        threadDelay 250000
         bob ##> ("/_connect plan 1 " <> inv)
         bob <## "invitation link: ok to connect"
         _sLinkData <- getTermLine bob
@@ -352,7 +354,7 @@ testRetryConnectingClientTimeout ps = do
               },
           presetServers =
             let def@PresetServers {netCfg} = presetServers testCfg
-             in def {netCfg = (netCfg :: NetworkConfig) {tcpTimeout = 10}}
+             in def {netCfg = (netCfg :: NetworkConfig) {tcpTimeout = NetworkTimeout 10 10}}
         }
     opts' =
       testOpts

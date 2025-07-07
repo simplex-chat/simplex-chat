@@ -167,7 +167,7 @@ struct TerminalView: View {
 func sendTerminalCmd(_ cmd: String) async {
     let start: Date = .now
     await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
-        let d = sendSimpleXCmdStr(cmd)
+        let d = sendSimpleXCmdStr(cmd, retryNum: 0)
         Task {
             guard let d else {
                 await TerminalItems.shared.addCommand(start, ChatCommand.string(cmd), APIResult<ChatResponse2>.error(.invalidJSON(json: nil)))

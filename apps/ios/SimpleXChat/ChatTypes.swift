@@ -1346,6 +1346,26 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public var nextConnectPrepared: Bool {
+        get {
+            switch self {
+            case let .direct(contact): return contact.nextConnectPrepared
+            case let .group(groupInfo, _): return groupInfo.nextConnectPrepared
+            default: return false
+            }
+        }
+    }
+
+    public var profileChangeProhibited: Bool {
+        get {
+            switch self {
+            case let .direct(contact): return contact.profileChangeProhibited
+            case let .group(groupInfo, _): return groupInfo.profileChangeProhibited
+            default: return false
+            }
+        }
+    }
+
     public var userCantSendReason: (composeLabel: LocalizedStringKey, alertMessage: LocalizedStringKey?)? {
         get {
             switch self {
@@ -1566,28 +1586,6 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
-    var createdAt: Date {
-        switch self {
-        case let .direct(contact): return contact.createdAt
-        case let .group(groupInfo, _): return groupInfo.createdAt
-        case let .local(noteFolder): return noteFolder.createdAt
-        case let .contactRequest(contactRequest): return contactRequest.createdAt
-        case let .contactConnection(contactConnection): return contactConnection.createdAt
-        case .invalidJSON: return .now
-        }
-    }
-
-    public var updatedAt: Date {
-        switch self {
-        case let .direct(contact): return contact.updatedAt
-        case let .group(groupInfo, _): return groupInfo.updatedAt
-        case let .local(noteFolder): return noteFolder.updatedAt
-        case let .contactRequest(contactRequest): return contactRequest.updatedAt
-        case let .contactConnection(contactConnection): return contactConnection.updatedAt
-        case .invalidJSON: return .now
-        }
-    }
-
     public var chatTs: Date {
         switch self {
         case let .direct(contact): return contact.chatTs ?? contact.updatedAt
@@ -1736,6 +1734,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var active: Bool { get { contactStatus == .active } }
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
     public var nextConnectPrepared: Bool { preparedContact != nil && (activeConn == nil || activeConn?.connStatus == .prepared) }
+    public var profileChangeProhibited: Bool { activeConn != nil }
     public var nextAcceptContactRequest: Bool { contactRequestId != nil && (activeConn == nil || activeConn?.connStatus == .new) }
     public var sendMsgToConnect: Bool { nextSendGrpInv || nextConnectPrepared }
     public var displayName: String { localAlias == "" ? profile.displayName : localAlias }
@@ -1908,10 +1907,6 @@ public struct UserContact: Decodable, Hashable {
         self.userContactLinkId = userContactLinkId
     }
 
-    public init(contactRequest: UserContactRequest) {
-        self.userContactLinkId = contactRequest.userContactLinkId
-    }
-
     public var id: String {
         "@>\(userContactLinkId)"
     }
@@ -1919,7 +1914,7 @@ public struct UserContact: Decodable, Hashable {
 
 public struct UserContactRequest: Decodable, NamedChat, Hashable {
     var contactRequestId: Int64
-    public var userContactLinkId: Int64
+    public var userContactLinkId_: Int64?
     public var cReqChatVRange: VersionRange
     var localDisplayName: ContactName
     var profile: Profile
@@ -1936,7 +1931,7 @@ public struct UserContactRequest: Decodable, NamedChat, Hashable {
 
     public static let sampleData = UserContactRequest(
         contactRequestId: 1,
-        userContactLinkId: 1,
+        userContactLinkId_: 1,
         cReqChatVRange: VersionRange(1, 1),
         localDisplayName: "alice",
         profile: Profile.sampleData,
@@ -2095,6 +2090,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var apiId: Int64 { get { groupId } }
     public var ready: Bool { get { true } }
     public var nextConnectPrepared: Bool { if let preparedGroup { !preparedGroup.connLinkStartedConnection } else { false } }
+    public var profileChangeProhibited: Bool { preparedGroup?.connLinkPreparedConnection ?? false }
     public var displayName: String { localAlias == "" ? groupProfile.displayName : localAlias }
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
@@ -2143,6 +2139,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
 
 public struct PreparedGroup: Decodable, Hashable {
     public var connLinkToConnect: CreatedConnLink
+    public var connLinkPreparedConnection: Bool
     public var connLinkStartedConnection: Bool
 }
 

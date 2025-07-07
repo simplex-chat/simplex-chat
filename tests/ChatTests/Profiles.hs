@@ -48,10 +48,7 @@ chatProfileTests = do
     it "deduplicate contact requests" testDeduplicateContactRequests
     it "deduplicate contact requests with profile change" testDeduplicateContactRequestsProfileChange
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
-    -- TODO [short links] fix address deletion:
-    -- TODO   - either alert user that N chats will be deleted and delete contact request contacts and business chats
-    -- TODO   - or allow to accept contact requests for deleted address (remove cascade deletes, rework agent)
-    xit "delete connection requests when contact link deleted" testDeleteConnectionRequests
+    it "keep connection requests when contact link deleted" testKeepConnectionRequests
     it "connected contact works when contact link deleted" testContactLinkDeletedConnectedContactWorks
     -- TODO [short links] test auto-reply with current version, with connecting client not preparing contact
     it "auto-reply message" testAutoReplyMessage
@@ -114,9 +111,9 @@ chatProfileTests = do
     it "should plan and connect via one-time invitation" testPlanShortLinkInvitation
     it "should connect via contact address" testShortLinkContactAddress
     it "should join group" testShortLinkJoinGroup
-  mapSubject (\params -> params {largeLinkData = True} :: TestParams) $
+  aroundWith (. (\params -> params {largeLinkData = True} :: TestParams)) $
     describe "short links with attached data (largeLinkData = True)" $ shortLinkTests True
-  mapSubject (\params -> params {largeLinkData = False} :: TestParams) $
+  aroundWith (. (\params -> params {largeLinkData = False} :: TestParams)) $
     describe "short links with attached data (largeLinkData = False)" $ shortLinkTests False
 
 shortLinkTests :: Bool -> SpecWith TestParams
@@ -673,8 +670,8 @@ testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathPr
     cath ##> ("/c " <> cLink)
     cath <## "error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
 
-testDeleteConnectionRequests :: HasCallStack => TestParams -> IO ()
-testDeleteConnectionRequests = testChat3 aliceProfile bobProfile cathProfile $
+testKeepConnectionRequests :: HasCallStack => TestParams -> IO ()
+testKeepConnectionRequests = testChat3 aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
     alice ##> "/ad"
     cLink <- getContactLink alice True
@@ -687,13 +684,51 @@ testDeleteConnectionRequests = testChat3 aliceProfile bobProfile cathProfile $
     alice <## "Your chat address is deleted - accepted contacts will remain connected."
     alice <## "To create a new chat address use /ad"
 
+    -- can accept and reject requests after address deletion
+    alice ##> "/ac bob"
+    alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+    concurrently_
+      (bob <## "alice (Alice): contact is connected")
+      (alice <## "bob (Bob): contact is connected")
+    alice <##> bob
+
+    alice ##> "/rc cath"
+    alice <## "cath: contact request rejected"
+
+    alice @@@ [("@bob", "hey")]
+
+    -- bob's request to new address uses different name
     alice ##> "/ad"
     cLink' <- getContactLink alice True
+
     bob ##> ("/c " <> cLink')
-    -- same names are used here, as they were released at /da
-    alice <#? bob
+    bob <## "connection request sent!"
+    alice <## "bob_1 (Bob) wants to connect to you!"
+    alice <## "to accept: /ac bob_1"
+    alice <## "to reject: /rc bob_1 (the sender will NOT be notified)"
+
+    alice ##> "/ac bob_1"
+    alice <## "bob_1 (Bob): accepting contact request, you can send messages to contact"
+    concurrently_
+      (bob <## "alice_1 (Alice): contact is connected")
+      (alice <## "bob_1 (Bob): contact is connected")
+
+    alice #> "@bob_1 hi"
+    bob <# "alice_1> hi"
+    bob #> "@alice_1 hey"
+    alice <# "bob_1> hey"
+
     cath ##> ("/c " <> cLink')
     alice <#? cath
+
+    alice ##> "/ac cath"
+    alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
+    concurrently_
+      (cath <## "alice (Alice): contact is connected")
+      (alice <## "cath (Catherine): contact is connected")
+    alice <##> cath
+
+    alice @@@ [("@cath", "hey"), ("@bob_1", "hey"), ("@bob", "hey")]
 
 testContactLinkDeletedConnectedContactWorks :: HasCallStack => TestParams -> IO ()
 testContactLinkDeletedConnectedContactWorks = testChat2 aliceProfile bobProfile $
@@ -784,7 +819,7 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
     bob <## "#biz: joining the group..."
     -- the next command can be prone to race conditions
     bob ##> ("/_connect plan 1 " <> cLink)
-    bob <## "business link: connecting to business #biz"
+    bob <## "business address: connecting to business #biz"
     biz <## "#bob: bob_1 joined the group"
     bob <## "#biz: you joined the group"
     biz #> "#bob hi"
@@ -792,7 +827,7 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
     bob #> "#biz hello"
     biz <# "#bob bob_1> hello"
     bob ##> ("/_connect plan 1 " <> cLink)
-    bob <## "business link: known business #biz"
+    bob <## "business address: known business #biz"
     bob <## "use #biz <message> to send messages"
     connectUsers biz alice
     biz <##> alice
@@ -2954,6 +2989,14 @@ testShortLinkInvitationPrepareContact ps@TestParams {largeLinkData} = testChatCf
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
       alice <##> bob
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "invitation link: known contact alice"
+      bob <## "use @alice <message> to send messages"
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "invitation link: known deleted contact alice"
 
 testShortLinkInvitationImage :: HasCallStack => TestParams -> IO ()
 testShortLinkInvitationImage ps@TestParams {largeLinkData} = testChatCfg2 testCfg {largeLinkData} aliceProfile bobProfile test ps
@@ -3082,6 +3125,15 @@ testShortLinkAddressPrepareContact ps@TestParams {largeLinkData} = testChatCfg2 
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
       alice <##> bob
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "contact address: known contact alice"
+      bob <## "use @alice <message> to send messages"
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "contact address: ok to connect"
+      void $ getTermLine bob
 
 testShortLinkDeletedInvitation :: HasCallStack => TestParams -> IO ()
 testShortLinkDeletedInvitation ps@TestParams {largeLinkData} = testChatCfg2 testCfg {largeLinkData} aliceProfile bobProfile test ps
@@ -3253,19 +3305,19 @@ testShortLinkAddressPrepareBusiness ps@TestParams {largeLinkData} = testChatCfg3
       biz ##> "/auto_accept on business"
       biz <## "auto_accept on, business"
       bob ##> ("/_connect plan 1 " <> shortLink)
-      bob <## "business link: ok to connect"
+      bob <## "business address: ok to connect"
       contactSLinkData <- getTermLine bob
       bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
       bob <## "#biz: group is prepared"
       bob ##> ("/_connect plan 1 " <> shortLink)
-      bob <## "business link: known prepared business #biz"
+      bob <## "business address: known prepared business #biz"
       bob ##> "/_connect group #1"
       bob <## "#biz: connection started"
       biz <## "#bob (Bob): accepting business address request..."
       bob <## "#biz: joining the group..."
       -- the next command can be prone to race conditions
       bob ##> ("/_connect plan 1 " <> shortLink)
-      bob <## "business link: connecting to business #biz"
+      bob <## "business address: connecting to business #biz"
       biz <## "#bob: bob_1 joined the group"
       bob <## "#biz: you joined the group"
       biz #> "#bob hi"
@@ -3298,6 +3350,18 @@ testShortLinkAddressPrepareBusiness ps@TestParams {largeLinkData} = testChatCfg3
       concurrently_
         (alice <# "#bob bob_1> hey there")
         (biz <# "#bob bob_1> hey there")
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "business address: known business #biz"
+      bob <## "use #biz <message> to send messages"
+      biz ##> "/d #bob"
+      biz <## "#bob: you deleted the group"
+      alice <## "#bob: biz deleted the group"
+      alice <## "use /d #bob to delete the local copy of the group"
+      bob <## "#biz: biz_1 deleted the group"
+      bob <## "use /d #biz to delete the local copy of the group"
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "business address: ok to connect"
+      void $ getTermLine bob
 
 testBusinessAddressRequestMessage :: HasCallStack => TestParams -> IO ()
 testBusinessAddressRequestMessage ps@TestParams {largeLinkData} = testChatCfg3 testCfg {largeLinkData} businessProfile aliceProfile {fullName = "Alice @ Biz"} bobProfile test ps
@@ -3310,7 +3374,7 @@ testBusinessAddressRequestMessage ps@TestParams {largeLinkData} = testChatCfg3 t
       biz <## "auto reply:"
       biz <## "Welcome!"
       bob ##> ("/_connect plan 1 " <> shortLink)
-      bob <## "business link: ok to connect"
+      bob <## "business address: ok to connect"
       contactSLinkData <- getTermLine bob
       bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
       bob <## "#biz: group is prepared"
@@ -3380,6 +3444,17 @@ testShortLinkPrepareGroup ps@TestParams {largeLinkData} = testChatCfg3 testCfg {
       [alice, cath] *<# "#team bob> 2"
       cath #> "#team 3"
       [alice, bob] *<# "#team cath> 3"
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "group link: known group #team"
+      bob <## "use #team <message> to send messages"
+      bob ##> "/l #team"
+      bob <## "#team: you left the group"
+      bob <## "use /d #team to delete the group"
+      alice <## "#team: bob left the group"
+      cath <## "#team: bob left the group"
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "group link: ok to connect"
+      void $ getTermLine bob
 
 testShortLinkPrepareGroupReject :: HasCallStack => TestParams -> IO ()
 testShortLinkPrepareGroupReject ps@TestParams {largeLinkData} = testChatCfg3 cfg {largeLinkData} aliceProfile bobProfile cathProfile test ps

@@ -65,7 +65,7 @@ fun ComposeContextProfilePickerView(
         Modifier.size(20.dp),
         tint = MaterialTheme.colors.secondary,
       )
-    } else {
+    } else if (!chat.chatInfo.profileChangeProhibited) {
       Icon(
         painterResource(
           MR.images.ic_chevron_up
@@ -103,12 +103,19 @@ fun ComposeContextProfilePickerView(
         keepingChatId = chat.id
       )
       if (chatModel.currentUser.value?.userId != newUser.userId) {
-        AlertManager.shared.showAlertMsg(generalGetString(
-          MR.strings.switching_profile_error_title),
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.switching_profile_error_title),
           String.format(generalGetString(MR.strings.switching_profile_error_message), newUser.chatViewName)
         )
       }
     }
+  }
+
+  fun showCantChangeProfileAlert() {
+    AlertManager.shared.showAlertMsg(
+      generalGetString(MR.strings.context_user_picker_cant_change_profile_alert_title),
+      generalGetString(MR.strings.context_user_picker_cant_change_profile_alert_message)
+    )
   }
 
   @Composable
@@ -118,15 +125,19 @@ fun ComposeContextProfilePickerView(
         .fillMaxWidth()
         .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp)
         .clickable(onClick = {
-          if (selectedUser.value.userId == user.userId) {
-            if (!incognitoDefault) {
-              listExpanded.value = !listExpanded.value
+          if (!chat.chatInfo.profileChangeProhibited) {
+            if (selectedUser.value.userId == user.userId) {
+              if (!incognitoDefault) {
+                listExpanded.value = !listExpanded.value
+              } else {
+                chatModel.controller.appPrefs.incognito.set(false)
+                listExpanded.value = false
+              }
             } else {
-              chatModel.controller.appPrefs.incognito.set(false)
-              listExpanded.value = false
+              changeProfile(user)
             }
           } else {
-            changeProfile(user)
+            showCantChangeProfileAlert()
           }
         })
         .padding(horizontal = DEFAULT_PADDING_HALF, vertical = 4.dp),
@@ -156,11 +167,15 @@ fun ComposeContextProfilePickerView(
         .fillMaxWidth()
         .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp)
         .clickable(onClick = {
-          if (incognitoDefault) {
-            listExpanded.value = !listExpanded.value
+          if (!chat.chatInfo.profileChangeProhibited) {
+            if (incognitoDefault) {
+              listExpanded.value = !listExpanded.value
+            } else {
+              chatModel.controller.appPrefs.incognito.set(true)
+              listExpanded.value = false
+            }
           } else {
-            chatModel.controller.appPrefs.incognito.set(true)
-            listExpanded.value = false
+            showCantChangeProfileAlert()
           }
         })
         .padding(horizontal = DEFAULT_PADDING_HALF, vertical = 4.dp),
@@ -265,7 +280,13 @@ fun ComposeContextProfilePickerView(
         color = MaterialTheme.colors.secondary
       )
 
-      if (incognitoDefault) {
+      if (chat.chatInfo.profileChangeProhibited) {
+        if (chat.chatInfo.incognito) {
+          IncognitoOption()
+        } else {
+          ProfilePickerUserOption(selectedUser.value)
+        }
+      } else if (incognitoDefault) {
         IncognitoOption()
       } else {
         ProfilePickerUserOption(selectedUser.value)
@@ -273,9 +294,9 @@ fun ComposeContextProfilePickerView(
     }
   }
 
-  if (listExpanded.value) {
-    ProfilePicker()
-  } else {
+  if (!listExpanded.value || chat.chatInfo.profileChangeProhibited) {
     CurrentSelection()
+  } else {
+    ProfilePicker()
   }
 }

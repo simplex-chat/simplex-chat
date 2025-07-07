@@ -1257,6 +1257,10 @@ swipe action</note>
         <source>Can't call member</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Can't change profile" xml:space="preserve">
+        <source>Can't change profile</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
         <source>Can't invite contact!</source>
         <target>ไม่สามารถเชิญผู้ติดต่อได้!</target>
@@ -7384,6 +7388,10 @@ You will be prompted to complete authentication before this feature is enabled.<
         <source>To support instant push notifications the chat database has to be migrated.</source>
         <target>เพื่อรองรับการแจ้งเตือนแบบทันที ฐานข้อมูลการแชทจะต้องได้รับการโยกย้าย</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To use another profile after connection attempt, delete the chat and use the link again." xml:space="preserve">
+        <source>To use another profile after connection attempt, delete the chat and use the link again.</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="To use the servers of **%@**, accept conditions of use." xml:space="preserve">
         <source>To use the servers of **%@**, accept conditions of use.</source>

@@ -13,7 +13,6 @@
 module Server where
 
 import Control.Monad
-import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Aeson (FromJSON, ToJSON (..))
 import qualified Data.Aeson as J
@@ -127,7 +126,7 @@ runChatServer ChatServerConfig {chatPort, clientQSize} cc = do
       where
         sendError corrId e = atomically $ writeTBQueue sndQ $ ACR ChatSrvResponse {corrId, resp = CSRBody $ chatCmdError e}
     processCommand (corrId, cmd) =
-      response <$> runReaderT (runExceptT $ processChatCommand cmd) cc
+      response <$> runReaderT (execChatCommand' cmd 0) cc
       where
         response r = ChatSrvResponse {corrId = Just corrId, resp = CSRBody r}
     clientDisconnected _ = pure ()
