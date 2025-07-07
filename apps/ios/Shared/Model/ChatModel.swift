@@ -314,6 +314,28 @@ class ChatItemDummyModel: ObservableObject {
     func sendUpdate() { objectWillChange.send() }
 }
 
+struct InProgressState {
+    let text: String?
+}
+
+class InProgressManager: ObservableObject {
+    @Published var inProgressState: InProgressState? = nil
+
+    static let shared = InProgressManager()
+
+    func show(with text: String? = nil) {
+        inProgressState = InProgressState(text: text)
+    }
+
+    func hide() {
+        inProgressState = nil
+    }
+
+    var isLoading: Bool {
+        inProgressState != nil
+    }
+}
+
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var setDeliveryReceipts = false

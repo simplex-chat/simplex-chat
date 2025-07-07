@@ -1149,7 +1149,9 @@ func planAndConnect(
     filterKnownGroup: ((GroupInfo) -> Void)? = nil
 ) {
     Task {
+        InProgressManager.shared.show(with: NSLocalizedString("Checking link data…", comment: "in progress text"))
         let (result, alert) = await apiConnectPlan(connLink: shortOrFullLink)
+        InProgressManager.shared.hide()
         if let (connectionLink, connectionPlan) = result {
             switch connectionPlan {
             case let .invitationLink(ilp):
@@ -1369,6 +1371,7 @@ func planAndConnect(
                 )
             }
         } else if let alert {
+            InProgressManager.shared.hide()
             await MainActor.run {
                 dismissAllSheets(animated: true) {
                     AlertManager.shared.showAlert(alert)
