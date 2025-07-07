@@ -3897,9 +3897,9 @@ snd error text</note>
         <target>正在转发 %lld 条消息</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve">
+      <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve" approved="no">
         <source>Forwarding server %1$@ failed to connect to destination server %2$@. Please try later.</source>
-        <target>转发服务器 %@ 无法连接到目标服务器 %@。请稍后尝试。</target>
+        <target state="needs-translation">转发服务器 %@ 无法连接到目标服务器 %@。请稍后尝试。</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Forwarding server address is incompatible with network settings: %@." xml:space="preserve">
