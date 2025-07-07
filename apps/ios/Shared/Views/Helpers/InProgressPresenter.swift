@@ -8,24 +8,16 @@
 
 import SwiftUI
 
-struct InProgressState {
-    let text: String?
-}
-
 final class InProgressPresenter: ObservableObject {
     static let shared = InProgressPresenter()
 
-    @Published private(set) var inProgressState: InProgressState? = nil
-
     func show(_ text: String?) {
         DispatchQueue.main.async {
-            self.inProgressState = InProgressState(text: text)
             InProgressPresenter.presentOverlay(with: text)
         }
     }
 
     func hide() async {
-        self.inProgressState = nil
         await InProgressPresenter.dismissOverlay()
     }
 
