@@ -111,9 +111,9 @@ chatProfileTests = do
     it "should plan and connect via one-time invitation" testPlanShortLinkInvitation
     it "should connect via contact address" testShortLinkContactAddress
     it "should join group" testShortLinkJoinGroup
-  mapSubject (\params -> params {largeLinkData = True} :: TestParams) $
+  aroundWith (. (\params -> params {largeLinkData = True} :: TestParams)) $
     describe "short links with attached data (largeLinkData = True)" $ shortLinkTests True
-  mapSubject (\params -> params {largeLinkData = False} :: TestParams) $
+  aroundWith (. (\params -> params {largeLinkData = False} :: TestParams)) $
     describe "short links with attached data (largeLinkData = False)" $ shortLinkTests False
 
 shortLinkTests :: Bool -> SpecWith TestParams
