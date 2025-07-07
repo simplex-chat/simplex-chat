@@ -173,7 +173,7 @@ data CIContent (d :: MsgDirection) where
 
 deriving instance Show (CIContent d)
 
-data E2EInfo = E2EInfo {pqEnabled :: PQEncryption}
+data E2EInfo = E2EInfo {pqEnabled :: Maybe PQEncryption}
   deriving (Eq, Show)
 
 ciMsgContent :: CIContent d -> Maybe MsgContent
@@ -296,11 +296,17 @@ ciContentToText = \case
 
 directE2EInfoToText :: E2EInfo -> Text
 directE2EInfoToText E2EInfo {pqEnabled} = case pqEnabled of
-  PQEncOn -> e2eInfoPQText
-  PQEncOff -> e2eInfoNoPQText
+  Just PQEncOn -> e2eInfoPQText
+  Just PQEncOff -> e2eInfoNoPQText
+  Nothing -> simpleE2EText
 
 groupE2EInfoToText :: E2EInfo -> Text
-groupE2EInfoToText _e2eeInfo = e2eInfoNoPQText
+groupE2EInfoToText E2EInfo {pqEnabled} = case pqEnabled of
+  Just _ -> e2eInfoNoPQText
+  Nothing -> simpleE2EText
+
+simpleE2EText :: Text
+simpleE2EText = "This conversation is protected by end-to-end encryption"
 
 e2eInfoNoPQText :: Text
 e2eInfoNoPQText =

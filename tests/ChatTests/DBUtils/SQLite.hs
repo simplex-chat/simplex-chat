@@ -8,5 +8,6 @@ data TestParams = TestParams
   { tmpPath :: FilePath,
     printOutput :: Bool,
     chatQueryStats :: TMap Query SlowQueryStats,
-    agentQueryStats :: TMap Query SlowQueryStats
+    agentQueryStats :: TMap Query SlowQueryStats,
+    largeLinkData :: Bool
   }

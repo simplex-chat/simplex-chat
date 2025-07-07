@@ -367,7 +367,6 @@ private struct ActiveProfilePicker: View {
             .onAppear {
                 profiles = chatModel.users
                     .map { $0.user }
-                    .sorted { u, _ in u.activeUser }
             }
             .onChange(of: incognitoEnabled) { incognito in
                 if profileSwitchStatus != .switchingIncognito {
@@ -416,8 +415,8 @@ private struct ActiveProfilePicker: View {
                 }
                 Task {
                     do {
-                        if let contactConn = contactConnection {
-                            let conn = try await apiChangeConnectionUser(connId: contactConn.pccConnId, userId: profile.userId)
+                        if let contactConn = contactConnection,
+                           let conn = try await apiChangeConnectionUser(connId: contactConn.pccConnId, userId: profile.userId) {
                             await MainActor.run {
                                 contactConnection = conn
                                 connLinkInvitation = conn.connLinkInv ?? CreatedConnLink(connFullLink: "", connShortLink: nil)
@@ -425,7 +424,7 @@ private struct ActiveProfilePicker: View {
                                 chatModel.updateContactConnection(conn)
                             }
                             do {
-                                try await changeActiveUserAsync_(profile.userId, viewPwd: profile.hidden ? trimmedSearchTextOrPassword : nil )
+                                try await changeActiveUserAsync_(profile.userId, viewPwd: profile.hidden ? trimmedSearchTextOrPassword : nil)
                                 await MainActor.run {
                                     profileSwitchStatus = .idle
                                     dismiss()
@@ -559,8 +558,10 @@ private struct ActiveProfilePicker: View {
             let activeProfile = filteredProfiles.first { u in u.activeUser }
             
             if let selectedProfile = activeProfile {
-                let otherProfiles = filteredProfiles.filter { u in u.userId != activeProfile?.userId }
-                
+                let otherProfiles = filteredProfiles
+                    .filter { u in u.userId != activeProfile?.userId }
+                    .sorted(using: KeyPathComparator<User>(\.activeOrder, order: .reverse))
+
                 if incognitoFirst {
                     incognitoOption
                     profilerPickerUserOption(selectedProfile)
@@ -654,6 +655,7 @@ private struct ConnectView: View {
     private func connect(_ link: String) {
         planAndConnect(
             link,
+            theme: theme,
             dismiss: true
         )
     }
@@ -1003,8 +1005,144 @@ private func showOwnGroupLinkConfirmConnectSheet(
     )
 }
 
+private func showPrepareContactAlert(
+    connectionLink: CreatedConnLink,
+    contactShortLinkData: ContactShortLinkData,
+    theme: AppTheme,
+    dismiss: Bool,
+    cleanup: (() -> Void)?
+) {
+    showOpenChatAlert(
+        profileName: contactShortLinkData.profile.displayName,
+        profileFullName: contactShortLinkData.profile.fullName,
+        profileImage:
+            ProfileImage(
+                imageStr: contactShortLinkData.profile.image,
+                iconName: contactShortLinkData.business ? "briefcase.circle.fill" : "person.crop.circle.fill",
+                size: alertProfileImageSize
+            ),
+        theme: theme,
+        cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
+        confirmTitle: NSLocalizedString("Open new chat", comment: "new chat action"),
+        onCancel: { cleanup?() },
+        onConfirm: {
+            Task {
+                do {
+                    let chat = try await apiPrepareContact(connLink: connectionLink, contactShortLinkData: contactShortLinkData)
+                    await MainActor.run {
+                        ChatModel.shared.addChat(Chat(chat))
+                        openKnownChat(chat.id, dismiss: dismiss, showAlreadyExistsAlert: nil)
+                        cleanup?()
+                    }
+                } catch let error {
+                    logger.error("showPrepareContactAlert apiPrepareContact error: \(error.localizedDescription)")
+                    showAlert(NSLocalizedString("Error preparing contact", comment: ""), message: responseError(error))
+                    await MainActor.run {
+                        cleanup?()
+                    }
+                }
+            }
+        }
+    )
+}
+
+private func showPrepareGroupAlert(
+    connectionLink: CreatedConnLink,
+    groupShortLinkData: GroupShortLinkData,
+    theme: AppTheme,
+    dismiss: Bool,
+    cleanup: (() -> Void)?
+) {
+    showOpenChatAlert(
+        profileName: groupShortLinkData.groupProfile.displayName,
+        profileFullName: groupShortLinkData.groupProfile.fullName,
+        profileImage: ProfileImage(imageStr: groupShortLinkData.groupProfile.image, iconName: "person.2.circle.fill", size: alertProfileImageSize),
+        theme: theme,
+        cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
+        confirmTitle: NSLocalizedString("Open new group", comment: "new chat action"),
+        onCancel: { cleanup?() },
+        onConfirm: {
+            Task {
+                do {
+                    let chat = try await apiPrepareGroup(connLink: connectionLink, groupShortLinkData: groupShortLinkData)
+                    await MainActor.run {
+                        ChatModel.shared.addChat(Chat(chat))
+                        openKnownChat(chat.id, dismiss: dismiss, showAlreadyExistsAlert: nil)
+                        cleanup?()
+                    }
+                } catch let error {
+                    logger.error("showPrepareGroupAlert apiPrepareGroup error: \(error.localizedDescription)")
+                    showAlert(NSLocalizedString("Error preparing group", comment: ""), message: responseError(error))
+                    await MainActor.run {
+                        cleanup?()
+                    }
+                }
+            }
+        }
+    )
+}
+
+private func showOpenKnownContactAlert(
+    _ contact: Contact,
+    theme: AppTheme,
+    dismiss: Bool
+) {
+    showOpenChatAlert(
+        profileName: contact.profile.displayName,
+        profileFullName: contact.profile.fullName,
+        profileImage:
+            ProfileImage(
+                imageStr: contact.profile.image,
+                iconName: "person.crop.circle.fill",
+                size: alertProfileImageSize
+            ),
+        theme: theme,
+        cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
+        confirmTitle:
+            contact.nextConnectPrepared
+            ? NSLocalizedString("Open new chat", comment: "new chat action")
+            : NSLocalizedString("Open chat", comment: "new chat action"),
+        onConfirm: {
+            openKnownContact(contact, dismiss: dismiss, showAlreadyExistsAlert: nil)
+        }
+    )
+}
+
+private func showOpenKnownGroupAlert(
+    _ groupInfo: GroupInfo,
+    theme: AppTheme,
+    dismiss: Bool
+) {
+    showOpenChatAlert(
+        profileName: groupInfo.groupProfile.displayName,
+        profileFullName: groupInfo.groupProfile.fullName,
+        profileImage:
+            ProfileImage(
+                imageStr: groupInfo.groupProfile.image,
+                iconName: groupInfo.businessChat == nil ? "person.2.circle.fill" : "briefcase.circle.fill",
+                size: alertProfileImageSize
+            ),
+        theme: theme,
+        cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
+        confirmTitle:
+            groupInfo.businessChat == nil
+            ? ( groupInfo.nextConnectPrepared
+                ? NSLocalizedString("Open new group", comment: "new chat action")
+                : NSLocalizedString("Open group", comment: "new chat action")
+              )
+            : ( groupInfo.nextConnectPrepared
+                ? NSLocalizedString("Open new chat", comment: "new chat action")
+                : NSLocalizedString("Open chat", comment: "new chat action")
+              ),
+        onConfirm: {
+            openKnownGroup(groupInfo, dismiss: dismiss, showAlreadyExistsAlert: nil)
+        }
+    )
+}
+
 func planAndConnect(
     _ shortOrFullLink: String,
+    theme: AppTheme,
     dismiss: Bool,
     cleanup: (() -> Void)? = nil,
     filterKnownContact: ((Contact) -> Void)? = nil,
@@ -1016,16 +1154,29 @@ func planAndConnect(
             switch connectionPlan {
             case let .invitationLink(ilp):
                 switch ilp {
-                case .ok:
-                    logger.debug("planAndConnect, .invitationLink, .ok")
-                    await MainActor.run {
-                        showAskCurrentOrIncognitoProfileSheet(
-                            title: NSLocalizedString("Connect via one-time link", comment: "new chat sheet title"),
-                            connectionLink: connectionLink,
-                            connectionPlan: connectionPlan,
-                            dismiss: dismiss,
-                            cleanup: cleanup
-                        )
+                case let .ok(contactSLinkData_):
+                    if let contactSLinkData = contactSLinkData_ {
+                        logger.debug("planAndConnect, .invitationLink, .ok, short link data present")
+                        await MainActor.run {
+                            showPrepareContactAlert(
+                                connectionLink: connectionLink,
+                                contactShortLinkData: contactSLinkData,
+                                theme: theme,
+                                dismiss: dismiss,
+                                cleanup: cleanup
+                            )
+                        }
+                    } else {
+                        logger.debug("planAndConnect, .invitationLink, .ok, no short link data")
+                        await MainActor.run {
+                            showAskCurrentOrIncognitoProfileSheet(
+                                title: NSLocalizedString("Connect via one-time link", comment: "new chat sheet title"),
+                                connectionLink: connectionLink,
+                                connectionPlan: connectionPlan,
+                                dismiss: dismiss,
+                                cleanup: cleanup
+                            )
+                        }
                     }
                 case .ownLink:
                     logger.debug("planAndConnect, .invitationLink, .ownLink")
@@ -1046,7 +1197,7 @@ func planAndConnect(
                             if let f = filterKnownContact {
                                 f(contact)
                             } else {
-                                openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyConnectingAlert(contact)) }
+                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss)
                             }
                         } else {
                             showInvitationLinkConnectingAlert(cleanup: cleanup)
@@ -1058,22 +1209,35 @@ func planAndConnect(
                         if let f = filterKnownContact {
                             f(contact)
                         } else {
-                            openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyExistsAlert(contact)) }
+                            showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss)
                         }
                     }
                 }
             case let .contactAddress(cap):
                 switch cap {
-                case .ok:
-                    logger.debug("planAndConnect, .contactAddress, .ok")
-                    await MainActor.run {
-                        showAskCurrentOrIncognitoProfileSheet(
-                            title: NSLocalizedString("Connect via contact address", comment: "new chat sheet title"),
-                            connectionLink: connectionLink,
-                            connectionPlan: connectionPlan,
-                            dismiss: dismiss,
-                            cleanup: cleanup
-                        )
+                case let .ok(contactSLinkData_):
+                    if let contactSLinkData = contactSLinkData_ {
+                        logger.debug("planAndConnect, .contactAddress, .ok, short link data present")
+                        await MainActor.run {
+                            showPrepareContactAlert(
+                                connectionLink: connectionLink,
+                                contactShortLinkData: contactSLinkData,
+                                theme: theme,
+                                dismiss: dismiss,
+                                cleanup: cleanup
+                            )
+                        }
+                    } else {
+                        logger.debug("planAndConnect, .contactAddress, .ok, no short link data")
+                        await MainActor.run {
+                            showAskCurrentOrIncognitoProfileSheet(
+                                title: NSLocalizedString("Connect via contact address", comment: "new chat sheet title"),
+                                connectionLink: connectionLink,
+                                connectionPlan: connectionPlan,
+                                dismiss: dismiss,
+                                cleanup: cleanup
+                            )
+                        }
                     }
                 case .ownLink:
                     logger.debug("planAndConnect, .contactAddress, .ownLink")
@@ -1105,7 +1269,7 @@ func planAndConnect(
                         if let f = filterKnownContact {
                             f(contact)
                         } else {
-                            openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyConnectingAlert(contact)) }
+                            showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss)
                         }
                     }
                 case let .known(contact):
@@ -1114,7 +1278,7 @@ func planAndConnect(
                         if let f = filterKnownContact {
                             f(contact)
                         } else {
-                            openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyExistsAlert(contact)) }
+                            showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss)
                         }
                     }
                 case let .contactViaAddress(contact):
@@ -1129,15 +1293,29 @@ func planAndConnect(
                 }
             case let .groupLink(glp):
                 switch glp {
-                case .ok:
-                    await MainActor.run {
-                        showAskCurrentOrIncognitoProfileSheet(
-                            title: NSLocalizedString("Join group", comment: "new chat sheet title"),
-                            connectionLink: connectionLink,
-                            connectionPlan: connectionPlan,
-                            dismiss: dismiss,
-                            cleanup: cleanup
-                        )
+                case let .ok(groupSLinkData_):
+                    if let groupSLinkData = groupSLinkData_ {
+                        logger.debug("planAndConnect, .groupLink, .ok, short link data present")
+                        await MainActor.run {
+                            showPrepareGroupAlert(
+                                connectionLink: connectionLink,
+                                groupShortLinkData: groupSLinkData,
+                                theme: theme,
+                                dismiss: dismiss,
+                                cleanup: cleanup
+                            )
+                        }
+                    } else {
+                        logger.debug("planAndConnect, .groupLink, .ok, no short link data")
+                        await MainActor.run {
+                            showAskCurrentOrIncognitoProfileSheet(
+                                title: NSLocalizedString("Join group", comment: "new chat sheet title"),
+                                connectionLink: connectionLink,
+                                connectionPlan: connectionPlan,
+                                dismiss: dismiss,
+                                cleanup: cleanup
+                            )
+                        }
                     }
                 case let .ownLink(groupInfo):
                     logger.debug("planAndConnect, .groupLink, .ownLink")
@@ -1176,7 +1354,7 @@ func planAndConnect(
                         if let f = filterKnownGroup {
                             f(groupInfo)
                         } else {
-                            openKnownGroup(groupInfo, dismiss: dismiss) { AlertManager.shared.showAlert(groupAlreadyExistsAlert(groupInfo)) }
+                            showOpenKnownGroupAlert(groupInfo, theme: theme, dismiss: dismiss)
                         }
                     }
                 }
@@ -1255,35 +1433,27 @@ private func connectViaLink(
 }
 
 func openKnownContact(_ contact: Contact, dismiss: Bool, showAlreadyExistsAlert: (() -> Void)?) {
-    let m = ChatModel.shared
-    if let c = m.getContactChat(contact.contactId) {
-        if dismiss {
-            dismissAllSheets(animated: true) {
-                ItemsModel.shared.loadOpenChat(c.id) {
-                    showAlreadyExistsAlert?()
-                }
-            }
-        } else {
-            ItemsModel.shared.loadOpenChat(c.id) {
-                showAlreadyExistsAlert?()
-            }
-        }
+    if let c = ChatModel.shared.getContactChat(contact.contactId) {
+        openKnownChat(c.id, dismiss: dismiss, showAlreadyExistsAlert: showAlreadyExistsAlert)
     }
 }
 
 func openKnownGroup(_ groupInfo: GroupInfo, dismiss: Bool, showAlreadyExistsAlert: (() -> Void)?) {
-    let m = ChatModel.shared
-    if let g = m.getGroupChat(groupInfo.groupId) {
-        if dismiss {
-            dismissAllSheets(animated: true) {
-                ItemsModel.shared.loadOpenChat(g.id) {
-                    showAlreadyExistsAlert?()
-                }
-            }
-        } else {
-            ItemsModel.shared.loadOpenChat(g.id) {
+    if let g = ChatModel.shared.getGroupChat(groupInfo.groupId) {
+        openKnownChat(g.id, dismiss: dismiss, showAlreadyExistsAlert: showAlreadyExistsAlert)
+    }
+}
+
+func openKnownChat(_ chatId: ChatId, dismiss: Bool, showAlreadyExistsAlert: (() -> Void)?) {
+    if dismiss {
+        dismissAllSheets(animated: true) {
+            ItemsModel.shared.loadOpenChat(chatId) {
                 showAlreadyExistsAlert?()
             }
+        }
+    } else {
+        ItemsModel.shared.loadOpenChat(chatId) {
+            showAlreadyExistsAlert?()
         }
     }
 }

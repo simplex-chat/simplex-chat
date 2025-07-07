@@ -4351,7 +4351,7 @@ SimpleX servers cannot see your profile.</source>
         <source>italic</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="join as %@" xml:space="preserve">
+      <trans-unit id="Join as %@" xml:space="preserve">
         <source>join as %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -4548,8 +4548,8 @@ SimpleX servers cannot see your profile.</source>
         <source>yes</source>
         <note>pref value</note>
       </trans-unit>
-      <trans-unit id="you are invited to group" xml:space="preserve">
-        <source>you are invited to group</source>
+      <trans-unit id="You are invited to group" xml:space="preserve">
+        <source>You are invited to group</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you are observer" xml:space="preserve">

@@ -274,8 +274,9 @@ struct ChatInfoView: View {
                             Button ("Debug delivery") {
                                 Task {
                                     do {
-                                        let info = queueInfoText(try await apiContactQueueInfo(chat.chatInfo.apiId))
-                                        await MainActor.run { alert = .queueInfo(info: info) }
+                                        if let info = try await apiContactQueueInfo(chat.chatInfo.apiId) {
+                                            await MainActor.run { alert = .queueInfo(info: queueInfoText(info)) }
+                                        }
                                     } catch let e {
                                         logger.error("apiContactQueueInfo error: \(responseError(e))")
                                         let a = getErrorAlert(e, "Error")
@@ -833,7 +834,7 @@ private struct CallButton: View {
                         ))
                     }
                 }
-            } else if contact.nextSendGrpInv {
+            } else if contact.sendMsgToConnect {
                 showAlert(SomeAlert(
                     alert: mkAlert(
                         title: "Can't call contact",

@@ -2355,7 +2355,6 @@
     <string name="link_requires_newer_app_version_please_upgrade">Đường dẫn này yêu cầu một phiên bản ứng dụng mới hơn. Vui lòng nâng cấp ứng dụng hoặc yêu cầu liên hệ của một gửi cho một đường dẫn tương thích.</string>
     <string name="simplex_link_channel">Đường dẫn kênh SimpleX</string>
     <string name="unsupported_connection_link">Đường dẫn kết nối không được hỗ trợ</string>
-    <string name="privacy_short_links">Sử dụng đường dẫn ngắn (BETA)</string>
     <string name="full_link_button_text">Toàn bộ đường dẫn</string>
     <string name="short_link_button_text">Đường dẫn ngắn</string>
     <string name="network_smp_web_port_off">Tắt</string>

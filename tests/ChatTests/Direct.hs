@@ -34,6 +34,7 @@ import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificati
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Client (NetworkTimeout (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
@@ -94,21 +95,21 @@ chatDirectTests = do
     it "get and enable operators, accept conditions" testOperators
   describe "async connection handshake" $ do
     describe "connect when initiating client goes offline" $ do
-      it "curr" $ testAsyncInitiatingOffline testCfg testCfg
-      it "v5" $ testAsyncInitiatingOffline testCfgSlow testCfgSlow
-      it "v5/curr" $ testAsyncInitiatingOffline testCfgSlow testCfg
-      it "curr/v5" $ testAsyncInitiatingOffline testCfg testCfgSlow
+      it "curr" $ testAsyncInitiatingOffline True testCfg testCfg
+      it "v5" $ testAsyncInitiatingOffline False testCfgSlow testCfgSlow
+      it "v5/curr" $ testAsyncInitiatingOffline False testCfgSlow testCfg
+      it "curr/v5" $ testAsyncInitiatingOffline True testCfg testCfgSlow
     describe "connect when accepting client goes offline" $ do
-      it "curr" $ testAsyncAcceptingOffline testCfg testCfg
-      it "v5" $ testAsyncAcceptingOffline testCfgSlow testCfgSlow
-      it "v5/curr" $ testAsyncAcceptingOffline testCfgSlow testCfg
-      it "curr/v5" $ testAsyncAcceptingOffline testCfg testCfgSlow
+      it "curr" $ testAsyncAcceptingOffline True testCfg testCfg
+      it "v5" $ testAsyncAcceptingOffline False testCfgSlow testCfgSlow
+      it "v5/curr" $ testAsyncAcceptingOffline False testCfgSlow testCfg
+      it "curr/v5" $ testAsyncAcceptingOffline True testCfg testCfgSlow
     describe "connect, fully asynchronous (when clients are never simultaneously online)" $ do
       it "curr" testFullAsyncFast
       -- fails in CI
-      xit'' "v5" $ testFullAsyncSlow testCfgSlow testCfgSlow
-      xit'' "v5/curr" $ testFullAsyncSlow testCfgSlow testCfg
-      xit'' "curr/v5" $ testFullAsyncSlow testCfg testCfgSlow
+      xit'' "v5" $ testFullAsyncSlow False testCfgSlow testCfgSlow
+      xit'' "v5/curr" $ testFullAsyncSlow False testCfgSlow testCfg
+      xit'' "curr/v5" $ testFullAsyncSlow True testCfg testCfgSlow
   describe "webrtc calls api" $ do
     it "negotiate call" testNegotiateCall
 #if !defined(dbPostgres)
@@ -183,9 +184,9 @@ chatDirectTests = do
 testAddContact :: HasCallStack => SpecWith TestParams
 testAddContact = versionTestMatrix2 runTestAddContact
   where
-    runTestAddContact pqExpected alice bob = do
+    runTestAddContact pqExpected withShortLink alice bob = do
       alice ##> "/_connect 1"
-      inv <- getInvitation alice
+      inv <- (if withShortLink then getInvitation else getInvitationNoShortLink) alice
       bob ##> ("/_connect 1 " <> inv)
       bob <## "confirmation sent!"
       concurrently_
@@ -248,6 +249,7 @@ testRetryConnecting ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile tes
       alice <## "server disconnected localhost ()"
       bob ##> ("/_connect plan 1 " <> inv)
       bob <## "invitation link: ok to connect"
+      _sLinkData <- getTermLine bob
       bob ##> ("/_connect 1 " <> inv)
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
@@ -255,6 +257,7 @@ testRetryConnecting ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile tes
         threadDelay 250000
         bob ##> ("/_connect plan 1 " <> inv)
         bob <## "invitation link: ok to connect"
+        _sLinkData <- getTermLine bob
         bob ##> ("/_connect 1 " <> inv)
         bob <## "confirmation sent!"
         concurrently_
@@ -299,6 +302,7 @@ testRetryConnectingClientTimeout ps = do
       withNewTestChatCfgOpts ps cfgZeroTimeout opts' "bob" bobProfile $ \bob -> do
         bob ##> ("/_connect plan 1 " <> inv)
         bob <## "invitation link: ok to connect"
+        _sLinkData <- getTermLine bob
         bob ##> ("/_connect 1 " <> inv)
         bob <## "smp agent error: BROKER {brokerAddress = \"smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7003\", brokerErr = TIMEOUT}"
 
@@ -310,8 +314,10 @@ testRetryConnectingClientTimeout ps = do
   withSmpServer' serverCfg' $ do
     withTestChatCfgOpts ps cfg' opts' "alice" $ \alice -> do
       withTestChatCfgOpts ps cfg' opts' "bob" $ \bob -> do
+        threadDelay 250000
         bob ##> ("/_connect plan 1 " <> inv)
         bob <## "invitation link: ok to connect"
+        _sLinkData <- getTermLine bob
         bob ##> ("/_connect 1 " <> inv)
         bob <## "confirmation sent!"
 
@@ -348,7 +354,7 @@ testRetryConnectingClientTimeout ps = do
               },
           presetServers =
             let def@PresetServers {netCfg} = presetServers testCfg
-             in def {netCfg = (netCfg :: NetworkConfig) {tcpTimeout = 10}}
+             in def {netCfg = (netCfg :: NetworkConfig) {tcpTimeout = NetworkTimeout 10 10}}
         }
     opts' =
       testOpts
@@ -478,6 +484,7 @@ testPlanInvitationLinkOk =
       inv <- getInvitation alice
       bob ##> ("/_connect plan 1 " <> inv)
       bob <## "invitation link: ok to connect"
+      _sLinkData <- getTermLine bob
 
       bob ##> ("/c " <> inv)
       bob <## "confirmation sent!"
@@ -487,6 +494,7 @@ testPlanInvitationLinkOk =
 
       bob ##> ("/_connect plan 1 " <> inv)
       bob <## "invitation link: ok to connect" -- conn_req_inv is forgotten after connection
+      _sLinkData <- getTermLine bob
       alice <##> bob
 
 testPlanInvitationLinkOwn :: HasCallStack => TestParams -> IO ()
@@ -510,6 +518,7 @@ testPlanInvitationLinkOwn ps =
 
     alice ##> ("/_connect plan 1 " <> inv)
     alice <## "invitation link: ok to connect" -- conn_req_inv is forgotten after connection
+    _sLinkData <- getTermLine alice
     threadDelay 100000
     alice @@@ [("@alice_1", lastChatFeature), ("@alice_2", lastChatFeature)]
     alice `send` "@alice_2 hi"
@@ -1211,7 +1220,7 @@ testOperators =
       alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: required"
       alice <## "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: disabled, conditions: required"
       alice <##. "The new conditions will be accepted for SimpleX Chat Ltd at "
-      -- set conditions notified 
+      -- set conditions notified
       alice ##> "/_conditions_notified 2"
       alice <## "ok"
       alice ##> "/_operators"
@@ -1230,12 +1239,12 @@ testOperators =
   where
     opts' = testOpts {coreOptions = testCoreOpts {smpServers = [], xftpServers = []}}
 
-testAsyncInitiatingOffline :: HasCallStack => ChatConfig -> ChatConfig -> TestParams -> IO ()
-testAsyncInitiatingOffline aliceCfg bobCfg ps = do
+testAsyncInitiatingOffline :: HasCallStack => Bool -> ChatConfig -> ChatConfig -> TestParams -> IO ()
+testAsyncInitiatingOffline withShortLink aliceCfg bobCfg ps = do
   inv <- withNewTestChatCfg ps aliceCfg "alice" aliceProfile $ \alice -> do
     threadDelay 250000
     alice ##> "/c"
-    getInvitation alice
+    (if withShortLink then getInvitation else getInvitationNoShortLink) alice
   withNewTestChatCfg ps bobCfg "bob" bobProfile $ \bob -> do
     threadDelay 250000
     bob ##> ("/c " <> inv)
@@ -1245,11 +1254,11 @@ testAsyncInitiatingOffline aliceCfg bobCfg ps = do
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
 
-testAsyncAcceptingOffline :: HasCallStack => ChatConfig -> ChatConfig -> TestParams -> IO ()
-testAsyncAcceptingOffline aliceCfg bobCfg ps = do
+testAsyncAcceptingOffline :: HasCallStack => Bool -> ChatConfig -> ChatConfig -> TestParams -> IO ()
+testAsyncAcceptingOffline withShortLink aliceCfg bobCfg ps = do
   inv <- withNewTestChatCfg ps aliceCfg "alice" aliceProfile $ \alice -> do
     alice ##> "/c"
-    getInvitation alice
+    (if withShortLink then getInvitation else getInvitationNoShortLink) alice
   withNewTestChatCfg ps bobCfg "bob" bobProfile $ \bob -> do
     threadDelay 250000
     bob ##> ("/c " <> inv)
@@ -1276,12 +1285,12 @@ testFullAsyncFast ps = do
   withTestChat ps "bob" $ \bob ->
     bob <## "alice (Alice): contact is connected"
 
-testFullAsyncSlow :: HasCallStack => ChatConfig -> ChatConfig -> TestParams -> IO ()
-testFullAsyncSlow aliceCfg bobCfg ps = do
+testFullAsyncSlow :: HasCallStack => Bool -> ChatConfig -> ChatConfig -> TestParams -> IO ()
+testFullAsyncSlow withShortLink aliceCfg bobCfg ps = do
   inv <- withNewTestChatCfg ps aliceCfg "alice" aliceProfile $ \alice -> do
     threadDelay 250000
     alice ##> "/c"
-    getInvitation alice
+    (if withShortLink then getInvitation else getInvitationNoShortLink) alice
   withNewTestChatCfg ps bobCfg "bob" bobProfile $ \bob -> do
     threadDelay 250000
     bob ##> ("/c " <> inv)
@@ -1755,7 +1764,7 @@ testMultipleUserAddresses =
       cLinkAlice <- getContactLink alice True
       bob ##> ("/c " <> cLinkAlice)
       alice <#? bob
-      alice @@@ [("<@bob", "")]
+      alice @@@ [("@bob", "Audio/video calls: enabled")]
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
@@ -1773,7 +1782,7 @@ testMultipleUserAddresses =
       cLinkAlisa <- getContactLink alice True
       bob ##> ("/c " <> cLinkAlisa)
       alice <#? bob
-      alice #$> ("/_get chats 2 pcc=on", chats, [("<@bob", ""), ("@SimpleX Chat team", ""), ("@SimpleX-Status", ""), ("*", "")])
+      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", "Audio/video calls: enabled"), ("@SimpleX Chat team", ""), ("@SimpleX-Status", ""), ("*", "")])
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
@@ -2559,7 +2568,7 @@ testSetDirectChatTTL =
         -- chat @3 doesn't expire since it was set to not expire
         alice #$> ("/_get chat @3 count=100", chat, chatFeatures <> [(1, "10"), (0, "11")])
         bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "1"), (1, "2"), (0, "3"), (1, "4")])
-        
+
         -- remove global ttl
         alice #$> ("/ttl none", id, "ok")
         alice #> "@bob 5"

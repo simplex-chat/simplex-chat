@@ -563,6 +563,7 @@ time interval</note>
         <target>Akceptuj</target>
         <note>accept contact request via notification
 accept incoming call via notification
+alert action
 swipe action</note>
       </trans-unit>
       <trans-unit id="Accept as member" xml:space="preserve">
@@ -583,6 +584,10 @@ swipe action</note>
         <target>Zaakceptować prośbę o połączenie?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Accept contact request" xml:space="preserve">
+        <source>Accept contact request</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Accept contact request from %@?" xml:space="preserve">
         <source>Accept contact request from %@?</source>
         <target>Zaakceptuj prośbę o kontakt od %@?</target>
@@ -591,7 +596,7 @@ swipe action</note>
       <trans-unit id="Accept incognito" xml:space="preserve">
         <source>Accept incognito</source>
         <target>Akceptuj incognito</target>
-        <note>accept contact request via notification
+        <note>alert action
 swipe action</note>
       </trans-unit>
       <trans-unit id="Accept member" xml:space="preserve">
@@ -637,6 +642,10 @@ swipe action</note>
         <source>Add list</source>
         <target>Dodaj listę</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Add message" xml:space="preserve">
+        <source>Add message</source>
+        <note>placeholder for sending contact request</note>
       </trans-unit>
       <trans-unit id="Add profile" xml:space="preserve">
         <source>Add profile</source>
@@ -1166,11 +1175,6 @@ swipe action</note>
         <target>Automatyczne akceptowanie obrazów</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Auto-accept settings" xml:space="preserve">
-        <source>Auto-accept settings</source>
-        <target>Ustawienia automatycznej akceptacji</target>
-        <note>alert title</note>
-      </trans-unit>
       <trans-unit id="Back" xml:space="preserve">
         <source>Back</source>
         <target>Wstecz</target>
@@ -1379,6 +1383,10 @@ swipe action</note>
         <source>Can't call member</source>
         <target>Nie można zadzwonić do członka</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Can't change profile" xml:space="preserve">
+        <source>Can't change profile</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
         <source>Can't invite contact!</source>
@@ -2886,6 +2894,10 @@ chat item action</note>
         <target>Edytuj profil grupy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Empty message!" xml:space="preserve">
+        <source>Empty message!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enable" xml:space="preserve">
         <source>Enable</source>
         <target>Włącz</target>
@@ -3122,6 +3134,10 @@ chat item action</note>
         <source>Error accepting member</source>
         <note>alert title</note>
       </trans-unit>
+      <trans-unit id="Error adding address short link" xml:space="preserve">
+        <source>Error adding address short link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
         <source>Error adding member(s)</source>
         <target>Błąd dodawania członka(ów)</target>
@@ -3139,6 +3155,10 @@ chat item action</note>
         <source>Error changing address</source>
         <target>Błąd zmiany adresu</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error changing chat profile" xml:space="preserve">
+        <source>Error changing chat profile</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error changing connection profile" xml:space="preserve">
         <source>Error changing connection profile</source>
@@ -3305,6 +3325,14 @@ chat item action</note>
         <target>Błąd otwierania czatu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error preparing contact" xml:space="preserve">
+        <source>Error preparing contact</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error preparing group" xml:space="preserve">
+        <source>Error preparing group</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error receiving file" xml:space="preserve">
         <source>Error receiving file</source>
         <target>Błąd odbioru pliku</target>
@@ -3322,6 +3350,10 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error registering for notifications" xml:space="preserve">
         <source>Error registering for notifications</source>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Error rejecting contact request" xml:space="preserve">
+        <source>Error rejecting contact request</source>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error removing member" xml:space="preserve">
@@ -3414,7 +3446,7 @@ chat item action</note>
       <trans-unit id="Error switching profile" xml:space="preserve">
         <source>Error switching profile</source>
         <target>Błąd zmiany profilu</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error switching profile!" xml:space="preserve">
         <source>Error switching profile!</source>
@@ -4438,6 +4470,11 @@ More improvements are coming soon!</source>
         <target>Dołącz</target>
         <note>swipe action</note>
       </trans-unit>
+      <trans-unit id="Join as %@" xml:space="preserve">
+        <source>Join as %@</source>
+        <target>dołącz jako %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Join group" xml:space="preserve">
         <source>Join group</source>
         <target>Dołącz do grupy</target>
@@ -4851,6 +4888,10 @@ To jest twój link do grupy %@!</target>
       <trans-unit id="Messages &amp; files" xml:space="preserve">
         <source>Messages &amp; files</source>
         <target>Wiadomości i pliki</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Messages are protected by **end-to-end encryption**." xml:space="preserve">
+        <source>Messages are protected by **end-to-end encryption**.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Messages from %@ will be shown!" xml:space="preserve">
@@ -5475,7 +5516,7 @@ Wymaga włączenia VPN.</target>
       <trans-unit id="Open chat" xml:space="preserve">
         <source>Open chat</source>
         <target>Otwórz czat</target>
-        <note>No comment provided by engineer.</note>
+        <note>new chat action</note>
       </trans-unit>
       <trans-unit id="Open chat console" xml:space="preserve">
         <source>Open chat console</source>
@@ -5499,6 +5540,26 @@ Wymaga włączenia VPN.</target>
         <source>Open migration to another device</source>
         <target>Otwórz migrację na innym urządzeniu</target>
         <note>authentication reason</note>
+      </trans-unit>
+      <trans-unit id="Open new chat" xml:space="preserve">
+        <source>Open new chat</source>
+        <note>new chat action</note>
+      </trans-unit>
+      <trans-unit id="Open new group" xml:space="preserve">
+        <source>Open new group</source>
+        <note>new chat action</note>
+      </trans-unit>
+      <trans-unit id="Open to accept" xml:space="preserve">
+        <source>Open to accept</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Open to connect" xml:space="preserve">
+        <source>Open to connect</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Open to join" xml:space="preserve">
+        <source>Open to join</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Opening app…" xml:space="preserve">
         <source>Opening app…</source>
@@ -5877,6 +5938,10 @@ Błąd: %@</target>
         <target>Aktualizacja profilu zostanie wysłana do Twoich kontaktów.</target>
         <note>alert message</note>
       </trans-unit>
+      <trans-unit id="Profile will be shared via the address link." xml:space="preserve">
+        <source>Profile will be shared via the address link.</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
         <source>Prohibit audio/video calls.</source>
         <target>Zabroń połączeń audio/wideo.</target>
@@ -6173,7 +6238,8 @@ Włącz w ustawianiach *Sieć i serwery* .</target>
       <trans-unit id="Reject" xml:space="preserve">
         <source>Reject</source>
         <target>Odrzuć</target>
-        <note>reject incoming call via notification
+        <note>alert action
+reject incoming call via notification
 swipe action</note>
       </trans-unit>
       <trans-unit id="Reject (sender NOT notified)" xml:space="preserve">
@@ -6184,7 +6250,7 @@ swipe action</note>
       <trans-unit id="Reject contact request" xml:space="preserve">
         <source>Reject contact request</source>
         <target>Odrzuć prośbę kontaktu</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Reject member?" xml:space="preserve">
         <source>Reject member?</source>
@@ -6693,6 +6759,10 @@ chat item action</note>
         <target>Wysyłaj wiadomości na żywo - będą one aktualizowane dla odbiorcy(ów) w trakcie ich wpisywania</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Send contact request?" xml:space="preserve">
+        <source>Send contact request?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Send delivery receipts to" xml:space="preserve">
         <source>Send delivery receipts to</source>
         <target>Wyślij potwierdzenia dostawy do</target>
@@ -6755,6 +6825,14 @@ chat item action</note>
       <trans-unit id="Send receipts" xml:space="preserve">
         <source>Send receipts</source>
         <target>Wyślij potwierdzenia</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Send request" xml:space="preserve">
+        <source>Send request</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Send request without message" xml:space="preserve">
+        <source>Send request without message</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send them from gallery or custom keyboards." xml:space="preserve">
@@ -6855,6 +6933,10 @@ chat item action</note>
       <trans-unit id="Sent reply" xml:space="preserve">
         <source>Sent reply</source>
         <target>Wyślij odpowiedź</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sent to your contact after connection." xml:space="preserve">
+        <source>Sent to your contact after connection.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sent total" xml:space="preserve">
@@ -7068,6 +7150,10 @@ chat item action</note>
         <target>Udostępnij z innych aplikacji.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Share group profile via link" xml:space="preserve">
+        <source>Share group profile via link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Share link" xml:space="preserve">
         <source>Share link</source>
         <target>Udostępnij link</target>
@@ -7076,7 +7162,11 @@ chat item action</note>
       <trans-unit id="Share profile" xml:space="preserve">
         <source>Share profile</source>
         <target>Udostępnij profil</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert button</note>
+      </trans-unit>
+      <trans-unit id="Share profile via link" xml:space="preserve">
+        <source>Share profile via link</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Share this 1-time invite link" xml:space="preserve">
         <source>Share this 1-time invite link</source>
@@ -7193,6 +7283,11 @@ chat item action</note>
       <trans-unit id="SimpleX address or 1-time link?" xml:space="preserve">
         <source>SimpleX address or 1-time link?</source>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX address settings" xml:space="preserve">
+        <source>SimpleX address settings</source>
+        <target>Ustawienia automatycznej akceptacji</target>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="SimpleX channel link" xml:space="preserve">
         <source>SimpleX channel link</source>
@@ -7667,7 +7762,7 @@ Może się to zdarzyć z powodu jakiegoś błędu lub gdy połączenie jest skom
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
         <source>The sender will NOT be notified</source>
         <target>Nadawca NIE zostanie powiadomiony</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="The servers for new connections of your current chat profile **%@**." xml:space="preserve">
         <source>The servers for new connections of your current chat profile **%@**.</source>
@@ -7857,6 +7952,10 @@ Przed włączeniem tej funkcji zostanie wyświetlony monit uwierzytelniania.</ta
         <source>To support instant push notifications the chat database has to be migrated.</source>
         <target>Aby obsługiwać natychmiastowe powiadomienia push, należy zmigrować bazę danych czatu.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To use another profile after connection attempt, delete the chat and use the link again." xml:space="preserve">
+        <source>To use another profile after connection attempt, delete the chat and use the link again.</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="To use the servers of **%@**, accept conditions of use." xml:space="preserve">
         <source>To use the servers of **%@**, accept conditions of use.</source>
@@ -8212,10 +8311,6 @@ Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połąc
       </trans-unit>
       <trans-unit id="Use servers" xml:space="preserve">
         <source>Use servers</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Use short links (BETA)" xml:space="preserve">
-        <source>Use short links (BETA)</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use the app while in the call." xml:space="preserve">
@@ -8768,6 +8863,10 @@ Powtórzyć prośbę połączenia?</target>
         <source>You should receive notifications.</source>
         <note>token info</note>
       </trans-unit>
+      <trans-unit id="You will be able to send messages **only after your request is accepted**." xml:space="preserve">
+        <source>You will be able to send messages **only after your request is accepted**.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You will be connected to group when the group host's device is online, please wait or check later!" xml:space="preserve">
         <source>You will be connected to group when the group host's device is online, please wait or check later!</source>
         <target>Zostaniesz połączony do grupy, gdy urządzenie gospodarza grupy będzie online, proszę czekać lub sprawdzić później!</target>
@@ -8856,6 +8955,10 @@ Powtórzyć prośbę połączenia?</target>
         <source>Your chat profiles</source>
         <target>Twoje profile czatu</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your chat was moved to %@ but an unexpected error occurred while redirecting you to the profile." xml:space="preserve">
+        <source>Your chat was moved to %@ but an unexpected error occurred while redirecting you to the profile.</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." xml:space="preserve">
         <source>Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile.</source>
@@ -9234,6 +9337,10 @@ marked deleted chat item preview text</note>
         <source>contact not ready</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="contact should accept…" xml:space="preserve">
+        <source>contact should accept…</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="creator" xml:space="preserve">
         <source>creator</source>
         <target>twórca</target>
@@ -9400,6 +9507,10 @@ pref value</note>
         <target>przekazane dalej</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="group" xml:space="preserve">
+        <source>group</source>
+        <note>shown on group welcome message</note>
+      </trans-unit>
       <trans-unit id="group deleted" xml:space="preserve">
         <source>group deleted</source>
         <target>grupa usunięta</target>
@@ -9502,11 +9613,6 @@ pref value</note>
       <trans-unit id="italic" xml:space="preserve">
         <source>italic</source>
         <target>kursywa</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="join as %@" xml:space="preserve">
-        <source>join as %@</source>
-        <target>dołącz jako %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="left" xml:space="preserve">
@@ -9724,6 +9830,10 @@ time to disappear</note>
         <target>usunął cię</target>
         <note>rcv group event chat item</note>
       </trans-unit>
+      <trans-unit id="request is sent" xml:space="preserve">
+        <source>request is sent</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="request to join rejected" xml:space="preserve">
         <source>request to join rejected</source>
         <note>No comment provided by engineer.</note>
@@ -9774,11 +9884,6 @@ time to disappear</note>
         <source>security code changed</source>
         <target>kod bezpieczeństwa zmieniony</target>
         <note>chat item text</note>
-      </trans-unit>
-      <trans-unit id="send direct message" xml:space="preserve">
-        <source>send direct message</source>
-        <target>wyślij wiadomość bezpośrednią</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="server queue info: %@&#10;&#10;last received msg: %@" xml:space="preserve">
         <source>server queue info: %1$@
@@ -9932,11 +10037,6 @@ ostatnia otrzymana wiadomość: %2$@</target>
       <trans-unit id="you accepted this member" xml:space="preserve">
         <source>you accepted this member</source>
         <note>snd group event chat item</note>
-      </trans-unit>
-      <trans-unit id="you are invited to group" xml:space="preserve">
-        <source>you are invited to group</source>
-        <target>jesteś zaproszony do grupy</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you are observer" xml:space="preserve">
         <source>you are observer</source>

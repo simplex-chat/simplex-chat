@@ -21,6 +21,7 @@
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 {-# HLINT ignore "Use newtype instead of data" #-}
 
@@ -38,7 +39,7 @@ import Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Lazy as LB
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.Maybe (isJust)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -51,7 +52,7 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
-import Simplex.Messaging.Agent.Protocol (ACorrId, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink, InvitationId, SAEntity (..), UserId)
+import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
@@ -188,6 +189,8 @@ data Contact = Contact
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
+    preparedContact :: Maybe PreparedContact,
+    contactRequestId :: Maybe Int64,
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
     chatTags :: [ChatTagId],
@@ -197,6 +200,35 @@ data Contact = Contact
     customData :: Maybe CustomData
   }
   deriving (Eq, Show)
+
+contactRequestId' :: Contact -> Maybe Int64
+contactRequestId' Contact {contactRequestId} = contactRequestId
+
+data PreparedContact = PreparedContact
+  { connLinkToConnect :: ACreatedConnLink,
+    uiConnLinkType :: ConnectionMode,
+    welcomeSharedMsgId :: Maybe SharedMsgId,
+    requestSharedMsgId :: Maybe SharedMsgId
+  }
+  deriving (Eq, Show)
+
+newtype SharedMsgId = SharedMsgId ByteString
+  deriving (Eq, Show)
+  deriving newtype (FromField)
+
+instance ToField SharedMsgId where toField (SharedMsgId m) = toField $ Binary m
+
+instance StrEncoding SharedMsgId where
+  strEncode (SharedMsgId m) = strEncode m
+  strDecode s = SharedMsgId <$> strDecode s
+  strP = SharedMsgId <$> strP
+
+instance FromJSON SharedMsgId where
+  parseJSON = strParseJSON "SharedMsgId"
+
+instance ToJSON SharedMsgId where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
 
 newtype CustomData = CustomData J.Object
   deriving (Eq, Show)
@@ -219,8 +251,6 @@ contactConnId :: Contact -> Maybe ConnId
 contactConnId c = aConnId <$> contactConn c
 
 type IncognitoEnabled = Bool
-
-type CreateShortLink = Bool
 
 contactConnIncognito :: Contact -> IncognitoEnabled
 contactConnIncognito = maybe False connIncognito . contactConn
@@ -316,8 +346,8 @@ data UserContactRequest = UserContactRequest
   { contactRequestId :: Int64,
     agentInvitationId :: AgentInvId,
     contactId_ :: Maybe ContactId,
-    userContactLinkId :: Int64,
-    agentContactConnId :: AgentConnId, -- connection id of user contact
+    businessGroupId_ :: Maybe GroupId,
+    userContactLinkId_ :: Maybe Int64,
     cReqChatVRange :: VersionRangeChat,
     localDisplayName :: ContactName,
     profileId :: Int64,
@@ -325,7 +355,9 @@ data UserContactRequest = UserContactRequest
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     xContactId :: Maybe XContactId,
-    pqSupport :: PQSupport
+    pqSupport :: PQSupport,
+    welcomeSharedMsgId :: Maybe SharedMsgId,
+    requestSharedMsgId :: Maybe SharedMsgId
   }
   deriving (Eq, Show)
 
@@ -365,7 +397,22 @@ instance ToJSON ConnReqUriHash where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-data ChatOrRequest = CORContact Contact | CORGroup GroupInfo | CORRequest UserContactRequest
+data RequestEntity
+  = REContact Contact
+  | REBusinessChat GroupInfo GroupMember
+
+type RepeatRequest = Bool
+
+data RequestStage
+  = RSAcceptedRequest
+      { acceptedRequest :: Maybe UserContactRequest, -- Request is optional to support deleted legacy requests
+        requestEntity :: RequestEntity
+      }
+  | RSCurrentRequest
+      { previousRequest :: Maybe UserContactRequest,
+        currentRequest :: UserContactRequest,
+        requestEntity_ :: Maybe RequestEntity -- Entity is optional to support legacy requests without entity
+      }
 
 type UserName = Text
 
@@ -418,6 +465,7 @@ data GroupInfo = GroupInfo
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
     userMemberProfileSentAt :: Maybe UTCTime,
+    preparedGroup :: Maybe PreparedGroup,
     chatTags :: [ChatTagId],
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
@@ -444,6 +492,15 @@ instance FromField BusinessChatType where fromField = fromTextField_ textDecode
 
 instance ToField BusinessChatType where toField = toField . textEncode
 
+data PreparedGroup = PreparedGroup
+  { connLinkToConnect :: CreatedLinkContact,
+    connLinkPreparedConnection :: Bool,
+    connLinkStartedConnection :: Bool,
+    welcomeSharedMsgId :: Maybe SharedMsgId, -- it is stored only for business chats, and only if welcome message is specified
+    requestSharedMsgId :: Maybe SharedMsgId
+  }
+  deriving (Eq, Show)
+
 groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
 
@@ -453,6 +510,8 @@ data GroupSummary = GroupSummary
   deriving (Show)
 
 data ContactOrGroup = CGContact Contact | CGGroup GroupInfo [GroupMember]
+
+data PreparedChatEntity = PCEContact Contact | PCEGroup {groupInfo :: GroupInfo, hostMember :: GroupMember}
 
 contactAndGroupIds :: ContactOrGroup -> (Maybe ContactId, Maybe GroupId)
 contactAndGroupIds = \case
@@ -587,6 +646,22 @@ redactedMemberProfile Profile {displayName, fullName, image} =
   Profile {displayName, fullName, image, contactLink = Nothing, preferences = Nothing}
 
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
+
+userProfileToSend' :: User -> Maybe IncognitoProfile -> Maybe Contact -> Bool -> Profile
+userProfileToSend' user ip = userProfileToSend user (fromIncognitoProfile <$> ip)
+  where
+    fromIncognitoProfile = \case
+      NewIncognito p -> p
+      ExistingIncognito lp -> fromLocalProfile lp
+
+userProfileToSend :: User -> Maybe Profile -> Maybe Contact -> Bool -> Profile
+userProfileToSend user@User {profile = p} incognitoProfile ct inGroup = do
+  let p' = fromMaybe (fromLocalProfile p) incognitoProfile
+  if inGroup
+    then redactedMemberProfile p'
+    else
+      let userPrefs = maybe (preferences' user) (const Nothing) incognitoProfile
+       in (p' :: Profile) {preferences = Just . toChatPrefs $ mergePreferences (userPreferences <$> ct) userPrefs}
 
 type LocalAlias = Text
 
@@ -1467,6 +1542,8 @@ type CreatedLinkContact = CreatedConnLink 'CMContact
 
 type ConnLinkContact = ConnectionLink 'CMContact
 
+type ShortLinkInvitation = ConnShortLink 'CMInvitation
+
 type ShortLinkContact = ConnShortLink 'CMContact
 
 data Connection = Connection
@@ -1479,6 +1556,7 @@ data Connection = Connection
     viaUserContactLink :: Maybe Int64, -- user contact link ID, if connected via "user address"
     viaGroupLink :: Bool, -- whether contact connected via group link
     groupLinkId :: Maybe GroupLinkId,
+    xContactId :: Maybe XContactId,
     customUserProfileId :: Maybe Int64,
     connType :: ConnType,
     connStatus :: ConnStatus,
@@ -1542,7 +1620,7 @@ data PendingContactConnection = PendingContactConnection
   { pccConnId :: Int64,
     pccAgentConnId :: AgentConnId,
     pccConnStatus :: ConnStatus,
-    viaContactUri :: Bool,
+    viaContactUri :: Bool, -- whether connection was created via contact request to a contact link
     viaUserContactLink :: Maybe Int64,
     groupLinkId :: Maybe GroupLinkId,
     customUserProfileId :: Maybe Int64,
@@ -1552,6 +1630,22 @@ data PendingContactConnection = PendingContactConnection
     updatedAt :: UTCTime
   }
   deriving (Eq, Show)
+
+mkPendingContactConnection :: Connection -> Maybe CreatedLinkInvitation -> PendingContactConnection
+mkPendingContactConnection Connection {connId, agentConnId, connStatus, xContactId, viaUserContactLink, groupLinkId, customUserProfileId, localAlias, createdAt} connLinkInv =
+  PendingContactConnection
+  { pccConnId = connId,
+    pccAgentConnId = agentConnId,
+    pccConnStatus = connStatus,
+    viaContactUri = isJust xContactId,
+    viaUserContactLink,
+    groupLinkId,
+    customUserProfileId,
+    connLinkInv,
+    localAlias,
+    createdAt,
+    updatedAt = createdAt
+  }
 
 aConnId' :: PendingContactConnection -> ConnId
 aConnId' PendingContactConnection {pccAgentConnId = AgentConnId cId} = cId
@@ -1635,12 +1729,6 @@ instance TextEncoding ConnType where
     ConnSndFile -> "snd_file"
     ConnRcvFile -> "rcv_file"
     ConnUserContact -> "user_contact"
-
-data NewConnection = NewConnection
-  { agentConnId :: ByteString,
-    connLevel :: Int,
-    viaConn :: Maybe Int64
-  }
 
 data GroupMemberIntro = GroupMemberIntro
   { introId :: Int64,
@@ -1906,6 +1994,8 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "BC") ''BusinessChatType)
 
 $(JQ.deriveJSON defaultJSON ''BusinessChatInfo)
 
+$(JQ.deriveJSON defaultJSON ''PreparedGroup)
+
 $(JQ.deriveJSON defaultJSON ''GroupInfo)
 
 $(JQ.deriveJSON defaultJSON ''Group)
@@ -1953,6 +2043,8 @@ $(JQ.deriveJSON defaultJSON ''RcvFileTransfer)
 $(JQ.deriveJSON defaultJSON ''XFTPSndFile)
 
 $(JQ.deriveJSON defaultJSON ''FileTransferMeta)
+
+$(JQ.deriveJSON defaultJSON ''PreparedContact)
 
 $(JQ.deriveJSON defaultJSON ''LocalFileMeta)
 

@@ -437,6 +437,7 @@ struct ContentView: View {
                     let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
                     planAndConnect(
                         link,
+                        theme: theme,
                         dismiss: false
                     )
                 } else {

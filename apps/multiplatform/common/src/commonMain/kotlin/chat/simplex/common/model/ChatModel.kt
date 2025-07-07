@@ -171,6 +171,8 @@ object ChatModel {
   // return true if you handled the click
   var centerPanelBackgroundClickHandler: (() -> Boolean)? = null
 
+  fun addressShortLinkDataSet(): Boolean = userAddress.value?.shortLinkDataSet ?: true
+
   fun getUser(userId: Long): User? = if (currentUser.value?.userId == userId) {
     currentUser.value
   } else {
@@ -396,8 +398,19 @@ object ChatModel {
       }
     }
 
-    fun updateChats(newChats: List<Chat>) {
-      chats.replaceAll(newChats)
+    fun updateChats(newChats: List<Chat>, keepingChatId: String? = null) {
+      if (keepingChatId != null) {
+        val chatToKeep = getChat(keepingChatId)
+        val indexToRemove = newChats.indexOfFirst { it.id == keepingChatId }
+        if (chatToKeep != null && indexToRemove != -1) {
+          val remainingNewChats = newChats.toMutableList().apply { removeAt(indexToRemove) }
+          chats.replaceAll(listOf(chatToKeep) + remainingNewChats)
+        } else {
+          chats.replaceAll(newChats)
+        }
+      } else {
+        chats.replaceAll(newChats)
+      }
       popChatCollector.clear()
 
       val cId = chatId.value
@@ -436,14 +449,16 @@ object ChatModel {
       chatState.itemsRemoved(listOf(removed), chatItems.value)
     }
 
-    suspend fun addChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
+    suspend fun addChatItem(rhId: Long?, chatInfo: ChatInfo, cItem: ChatItem) {
       // updates membersRequireAttention
-      updateChatInfo(rhId, cInfo)
-      // mark chat non deleted
-      if (cInfo is ChatInfo.Direct && cInfo.chatDeleted) {
-        val updatedContact = cInfo.contact.copy(chatDeleted = false)
-        updateContact(rhId, updatedContact)
+      val cInfo = if (chatInfo is ChatInfo.Direct && chatInfo.chatDeleted) {
+        // mark chat non deleted
+        val updatedContact = chatInfo.contact.copy(chatDeleted = false)
+        ChatInfo.Direct(updatedContact)
+      } else {
+        chatInfo
       }
+      updateChatInfo(rhId, cInfo)
       // update chat list
       val i = getChatIndex(rhId, cInfo.id)
       val chat: Chat
@@ -506,7 +521,7 @@ object ChatModel {
         }
       }
     }
-    
+
     private fun chatItemBelongsToScope(cInfo: ChatInfo, cItem: ChatItem): Boolean =
       when (secondaryContextFilter) {
         null ->
@@ -1272,6 +1287,9 @@ interface SomeChat {
   val apiId: Long
   val ready: Boolean
   val chatDeleted: Boolean
+  val nextConnect: Boolean
+  val nextConnectPrepared: Boolean
+  val profileChangeProhibited: Boolean
   val incognito: Boolean
   fun featureEnabled(feature: ChatFeature): Boolean
   val timedMessagesTTL: Int?
@@ -1351,6 +1369,9 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = contact.apiId
     override val ready get() = contact.ready
     override val chatDeleted get() = contact.chatDeleted
+    override val nextConnect get() = contact.nextConnect
+    override val nextConnectPrepared get() = contact.nextConnectPrepared
+    override val profileChangeProhibited get() = contact.profileChangeProhibited
     override val incognito get() = contact.incognito
     override fun featureEnabled(feature: ChatFeature) = contact.featureEnabled(feature)
     override val timedMessagesTTL: Int? get() = contact.timedMessagesTTL
@@ -1375,6 +1396,9 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = groupInfo.apiId
     override val ready get() = groupInfo.ready
     override val chatDeleted get() = groupInfo.chatDeleted
+    override val nextConnect get() = groupInfo.nextConnect
+    override val nextConnectPrepared get() = groupInfo.nextConnectPrepared
+    override val profileChangeProhibited get() = groupInfo.profileChangeProhibited
     override val incognito get() = groupInfo.incognito
     override fun featureEnabled(feature: ChatFeature) = groupInfo.featureEnabled(feature)
     override val timedMessagesTTL: Int? get() = groupInfo.timedMessagesTTL
@@ -1398,6 +1422,9 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = noteFolder.apiId
     override val ready get() = noteFolder.ready
     override val chatDeleted get() = noteFolder.chatDeleted
+    override val nextConnect get() = noteFolder.nextConnect
+    override val nextConnectPrepared get() = noteFolder.nextConnectPrepared
+    override val profileChangeProhibited get() = noteFolder.profileChangeProhibited
     override val incognito get() = noteFolder.incognito
     override fun featureEnabled(feature: ChatFeature) = noteFolder.featureEnabled(feature)
     override val timedMessagesTTL: Int? get() = noteFolder.timedMessagesTTL
@@ -1421,6 +1448,9 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = contactRequest.apiId
     override val ready get() = contactRequest.ready
     override val chatDeleted get() = contactRequest.chatDeleted
+    override val nextConnect get() = contactRequest.nextConnect
+    override val nextConnectPrepared get() = contactRequest.nextConnectPrepared
+    override val profileChangeProhibited get() = contactRequest.profileChangeProhibited
     override val incognito get() = contactRequest.incognito
     override fun featureEnabled(feature: ChatFeature) = contactRequest.featureEnabled(feature)
     override val timedMessagesTTL: Int? get() = contactRequest.timedMessagesTTL
@@ -1444,6 +1474,9 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = contactConnection.apiId
     override val ready get() = contactConnection.ready
     override val chatDeleted get() = contactConnection.chatDeleted
+    override val nextConnect get() = contactConnection.nextConnect
+    override val nextConnectPrepared get() = contactConnection.nextConnectPrepared
+    override val profileChangeProhibited get() = contactConnection.profileChangeProhibited
     override val incognito get() = contactConnection.incognito
     override fun featureEnabled(feature: ChatFeature) = contactConnection.featureEnabled(feature)
     override val timedMessagesTTL: Int? get() = contactConnection.timedMessagesTTL
@@ -1472,6 +1505,9 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val id get() = "?$apiId"
     override val ready get() = false
     override val chatDeleted get() = false
+    override val nextConnect get() = false
+    override val nextConnectPrepared get() = false
+    override val profileChangeProhibited get() = false
     override val incognito get() = false
     override fun featureEnabled(feature: ChatFeature) = false
     override val timedMessagesTTL: Int? get() = null
@@ -1490,10 +1526,16 @@ sealed class ChatInfo: SomeChat, NamedChat {
     get() {
       when (this) {
         is Direct -> {
-          // TODO [short links] this will have additional statuses for pending contact requests before they are accepted
-          if (contact.nextSendGrpInv) return null
+          if (contact.sendMsgToConnect) return null
+          if (contact.nextAcceptContactRequest) { return generalGetString(MR.strings.cant_send_message_generic) to null }
           if (!contact.active) return generalGetString(MR.strings.cant_send_message_contact_deleted) to null
-          if (!contact.sndReady) return generalGetString(MR.strings.cant_send_message_contact_not_ready) to null
+          if (!contact.sndReady) {
+            return if (contact.preparedContact?.uiConnLinkType == ConnectionMode.Con) {
+              generalGetString(MR.strings.cant_send_message_request_is_sent) to null
+            } else {
+              generalGetString(MR.strings.cant_send_message_contact_not_ready) to null
+            }
+          }
           if (contact.activeConn?.connectionStats?.ratchetSyncSendProhibited == true) return generalGetString(MR.strings.cant_send_message_contact_not_synchronized) to null
           if (contact.activeConn?.connDisabled == true) return generalGetString(MR.strings.cant_send_message_contact_disabled) to null
           return null
@@ -1523,6 +1565,8 @@ sealed class ChatInfo: SomeChat, NamedChat {
                   return null
                 }
             }
+          } else if (groupInfo.nextConnectPrepared) {
+            return null
           } else {
             return when (groupInfo.membership.memberStatus) {
               GroupMemberStatus.MemRejected -> generalGetString(MR.strings.cant_send_message_rejected) to null
@@ -1591,7 +1635,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
 
   val contactCard: Boolean
     get() = when (this) {
-      is Direct -> contact.activeConn == null && contact.profile.contactLink != null && contact.active
+      is Direct -> contact.isContactCard
       else -> false
     }
 
@@ -1641,6 +1685,8 @@ data class Contact(
   override val createdAt: Instant,
   override val updatedAt: Instant,
   val chatTs: Instant?,
+  val preparedContact: PreparedContact?,
+  val contactRequestId: Long?,
   val contactGroupMemberId: Long? = null,
   val contactGrpInvSent: Boolean,
   val chatTags: List<Long>,
@@ -1654,7 +1700,12 @@ data class Contact(
   override val ready get() = activeConn?.connStatus == ConnStatus.Ready
   val sndReady get() = ready || activeConn?.connStatus == ConnStatus.SndReady
   val active get() = contactStatus == ContactStatus.Active
+  override val nextConnect get() = sendMsgToConnect
   val nextSendGrpInv get() = contactGroupMemberId != null && !contactGrpInvSent
+  override val nextConnectPrepared get() = preparedContact != null && (activeConn == null || activeConn.connStatus == ConnStatus.Prepared)
+  override val profileChangeProhibited get() = activeConn != null
+  val nextAcceptContactRequest get() = contactRequestId != null && (activeConn == null || activeConn.connStatus == ConnStatus.New)
+  val sendMsgToConnect get() = nextSendGrpInv || nextConnectPrepared
   override val incognito get() = contactConnIncognito
   override fun featureEnabled(feature: ChatFeature) = when (feature) {
     ChatFeature.TimedMessages -> mergedPreferences.timedMessages.enabled.forUser
@@ -1683,6 +1734,9 @@ data class Contact(
     } else {
       true
     }
+
+  val isContactCard: Boolean =
+    activeConn == null && profile.contactLink != null && active && preparedContact == null && contactRequestId == null
 
   val contactConnIncognito =
     activeConn?.customUserProfileId != null
@@ -1717,6 +1771,8 @@ data class Contact(
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now(),
       chatTs = Clock.System.now(),
+      preparedContact = null,
+      contactRequestId = null,
       contactGrpInvSent = false,
       chatDeleted = false,
       uiThemes = null,
@@ -1731,6 +1787,18 @@ data class NavigationInfo(
   val afterUnread: Int = 0,
   val afterTotal: Int = 0
 )
+
+@Serializable
+data class PreparedContact (
+  val connLinkToConnect: CreatedConnLink,
+  val uiConnLinkType: ConnectionMode
+)
+
+@Serializable
+enum class ConnectionMode {
+  @SerialName("inv") Inv,
+  @SerialName("con") Con
+}
 
 @Serializable
 enum class ContactStatus {
@@ -1877,6 +1945,7 @@ data class GroupInfo (
   override val createdAt: Instant,
   override val updatedAt: Instant,
   val chatTs: Instant?,
+  val preparedGroup: PreparedGroup?,
   val uiThemes: ThemeModeOverrides? = null,
   val membersRequireAttention: Int,
   val chatTags: List<Long>,
@@ -1887,6 +1956,9 @@ data class GroupInfo (
   override val id get() = "#$groupId"
   override val apiId get() = groupId
   override val ready get() = membership.memberActive
+  override val nextConnect get() = nextConnectPrepared
+  override val nextConnectPrepared = if (preparedGroup != null) !preparedGroup.connLinkStartedConnection else false
+  override val profileChangeProhibited get() = preparedGroup?.connLinkPreparedConnection ?: false
   override val chatDeleted get() = false
   override val incognito get() = membership.memberIncognito
   override fun featureEnabled(feature: ChatFeature) = when (feature) {
@@ -1912,6 +1984,13 @@ data class GroupInfo (
 
   val canModerate: Boolean
     get() = membership.memberRole >= GroupMemberRole.Moderator && membership.memberActive
+
+  val chatIconName: ImageResource
+    get() = when (businessChat?.chatType) {
+      null -> MR.images.ic_supervised_user_circle_filled
+      BusinessChatType.Business -> MR.images.ic_work_filled_padded
+      BusinessChatType.Customer -> MR.images.ic_account_circle_filled
+    }
 
   fun groupFeatureEnabled(feature: GroupFeature): Boolean {
     val p = fullGroupPreferences
@@ -1939,6 +2018,7 @@ data class GroupInfo (
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now(),
       chatTs = Clock.System.now(),
+      preparedGroup = null,
       uiThemes = null,
       membersRequireAttention = 0,
       chatTags = emptyList(),
@@ -1947,6 +2027,13 @@ data class GroupInfo (
     )
   }
 }
+
+@Serializable
+data class PreparedGroup (
+  val connLinkToConnect: CreatedConnLink,
+  val connLinkPreparedConnection: Boolean,
+  val connLinkStartedConnection: Boolean
+)
 
 @Serializable
 data class GroupRef(val groupId: Long, val localDisplayName: String)
@@ -1989,6 +2076,18 @@ enum class MemberCriteria {
       MemberCriteria.All -> generalGetString(MR.strings.member_criteria_all)
     }
 }
+
+@Serializable
+data class ContactShortLinkData (
+  val profile: Profile,
+  val message: MsgContent?,
+  val business: Boolean
+)
+
+@Serializable
+data class GroupShortLinkData (
+  val groupProfile: GroupProfile
+)
 
 @Serializable
 data class BusinessChatInfo (
@@ -2313,6 +2412,9 @@ class NoteFolder(
   override val apiId get() = noteFolderId
   override val chatDeleted get() = false
   override val ready get() = true
+  override val nextConnect get() = false
+  override val nextConnectPrepared get() = false
+  override val profileChangeProhibited get() = false
   override val incognito get() = false
   override fun featureEnabled(feature: ChatFeature) = feature == ChatFeature.Voice
   override val timedMessagesTTL: Int? get() = null
@@ -2344,10 +2446,13 @@ class UserContactRequest (
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.ContactRequest
-  override val id get() = "<@$contactRequestId"
+  override val id get() = contactRequestChatId(contactRequestId)
   override val apiId get() = contactRequestId
   override val chatDeleted get() = false
   override val ready get() = true
+  override val nextConnect get() = false
+  override val nextConnectPrepared get() = false
+  override val profileChangeProhibited get() = false
   override val incognito get() = false
   override fun featureEnabled(feature: ChatFeature) = false
   override val timedMessagesTTL: Int? get() = null
@@ -2368,6 +2473,8 @@ class UserContactRequest (
   }
 }
 
+fun contactRequestChatId(contactRequestId: Long): String = "<@$contactRequestId"
+
 @Serializable
 class PendingContactConnection(
   val pccConnId: Long,
@@ -2386,6 +2493,9 @@ class PendingContactConnection(
   override val apiId get() = pccConnId
   override val chatDeleted get() = false
   override val ready get() = false
+  override val nextConnect get() = false
+  override val nextConnectPrepared get() = false
+  override val profileChangeProhibited get() = false
   override val incognito get() = customUserProfileId != null
   override fun featureEnabled(feature: ChatFeature) = false
   override val timedMessagesTTL: Int? get() = null
@@ -2834,6 +2944,7 @@ data class ChatItem (
           deletable = false,
           editable = false,
           userMention = false,
+          showGroupAsSender = false,
         ),
         content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast),
         quotedItem = null,
@@ -2859,6 +2970,7 @@ data class ChatItem (
           deletable = false,
           editable = false,
           userMention = false,
+          showGroupAsSender = false
         ),
         content = CIContent.SndMsgContent(MsgContent.MCText("")),
         quotedItem = null,
@@ -3004,7 +3116,8 @@ data class CIMeta (
   val itemLive: Boolean?,
   val userMention: Boolean,
   val deletable: Boolean,
-  val editable: Boolean
+  val editable: Boolean,
+  val showGroupAsSender: Boolean
 ) {
   val timestampText: String get() = getTimestampText(itemTs, true)
 
@@ -3043,6 +3156,7 @@ data class CIMeta (
         deletable = deletable,
         editable = editable,
         userMention = false,
+        showGroupAsSender = false
       )
 
     fun invalidJSON(): CIMeta =
@@ -3062,7 +3176,8 @@ data class CIMeta (
         itemLive = false,
         deletable = false,
         editable = false,
-        userMention = false
+        userMention = false,
+        showGroupAsSender = false
       )
   }
 }
@@ -3417,6 +3532,13 @@ sealed class CIContent: ItemContent {
       is InvalidJSON -> "invalid data"
     }
 
+  val hasMsgContent: Boolean get() =
+    if (msgContent != null) {
+      (msgContent as MsgContent).text.trim().isNotEmpty()
+    } else {
+      false
+    }
+
   val showMemberName: Boolean get() =
     when (this) {
       is RcvMsgContent -> true
@@ -3433,7 +3555,7 @@ sealed class CIContent: ItemContent {
 
   companion object {
     fun directE2EEInfoStr(e2EEInfo: E2EEInfo): String =
-      if (e2EEInfo.pqEnabled) {
+      if (e2EEInfo.pqEnabled == true) {
         generalGetString(MR.strings.e2ee_info_pq_short)
       } else {
         e2eeInfoNoPQStr
@@ -3912,6 +4034,7 @@ sealed class MsgContent {
   @Serializable(with = MsgContentSerializer::class) class MCVoice(override val text: String, val duration: Int): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCFile(override val text: String): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCReport(override val text: String, val reason: ReportReason): MsgContent()
+  @Serializable(with = MsgContentSerializer::class) class MCChat(override val text: String, val chatLink: MsgChatLink): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
 
   val isVoice: Boolean get() =
@@ -3965,7 +4088,7 @@ enum class CIGroupInvitationStatus {
 }
 
 @Serializable
-class E2EEInfo (val pqEnabled: Boolean) {}
+class E2EEInfo (val pqEnabled: Boolean?) {}
 
 object MsgContentSerializer : KSerializer<MsgContent> {
   override val descriptor: SerialDescriptor = buildSerialDescriptor("MsgContent", PolymorphicKind.SEALED) {
@@ -3991,6 +4114,10 @@ object MsgContentSerializer : KSerializer<MsgContent> {
     element("MCReport", buildClassSerialDescriptor("MCReport") {
       element<String>("text")
       element<ReportReason>("reason")
+    })
+    element("MCChat", buildClassSerialDescriptor("MCChat") {
+      element<String>("text")
+      element<MsgChatLink>("chatLink")
     })
     element("MCUnknown", buildClassSerialDescriptor("MCUnknown"))
   }
@@ -4025,6 +4152,10 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           "report" -> {
             val reason = Json.decodeFromString<ReportReason>(json["reason"].toString())
             MsgContent.MCReport(text, reason)
+          }
+          "chat" -> {
+            val chatLink = Json.decodeFromString<MsgChatLink>(json["chatLink"].toString())
+            MsgContent.MCChat(text, chatLink)
           }
           else -> MsgContent.MCUnknown(t, text, json)
         }
@@ -4080,6 +4211,12 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           put("text", value.text)
           put("reason", json.encodeToJsonElement(value.reason))
         }
+      is MsgContent.MCChat ->
+        buildJsonObject {
+          put("type", "chat")
+          put("text", value.text)
+          put("chatLink", json.encodeToJsonElement(value.chatLink))
+        }
       is MsgContent.MCUnknown -> value.json
     }
     encoder.encodeJsonElement(json)
@@ -4095,6 +4232,14 @@ enum class MsgContentTag {
   @SerialName("voice") Voice,
   @SerialName("file") File,
   @SerialName("report") Report,
+  @SerialName("chat") Chat,
+}
+
+@Serializable
+sealed class MsgChatLink {
+  @Serializable @SerialName("contact") data class Contact(val connLink: String, val profile: Profile, val business: Boolean) : MsgChatLink()
+  @Serializable @SerialName("invitation") data class Invitation(val invLink: String, val profile: Profile) : MsgChatLink()
+  @Serializable @SerialName("group") data class Group(val connLink: String, val groupProfile: GroupProfile) : MsgChatLink()
 }
 
 @Serializable

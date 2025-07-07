@@ -54,12 +54,11 @@ fun ModalData.GroupChatInfoView(
   chatsCtx: ChatModel.ChatsContext,
   rhId: Long?,
   chatId: String,
-  groupLink: CreatedConnLink?,
-  groupLinkMemberRole: GroupMemberRole?,
+  groupLink: GroupLink?,
   selectedItems: MutableState<Set<Long>?>,
   appBar: MutableState<@Composable (BoxScope.() -> Unit)?>,
   scrollToItemId: MutableState<Long?>,
-  onGroupLinkUpdated: (Pair<CreatedConnLink, GroupMemberRole>?) -> Unit,
+  onGroupLinkUpdated: (GroupLink?) -> Unit,
   close: () -> Unit,
   onSearchClicked: () -> Unit
 ) {
@@ -166,7 +165,7 @@ fun ModalData.GroupChatInfoView(
       clearChat = { clearChatDialog(chat, close) },
       leaveGroup = { leaveGroupDialog(rhId, groupInfo, chatModel, close) },
       manageGroupLink = {
-          ModalManager.end.showModal { GroupLinkView(chatModel, rhId, groupInfo, groupLink, groupLinkMemberRole, onGroupLinkUpdated) }
+          ModalManager.end.showModal { GroupLinkView(chatModel, rhId, groupInfo, groupLink, onGroupLinkUpdated) }
       },
       onSearchClicked = onSearchClicked,
       deletingItems = deletingItems
@@ -375,7 +374,7 @@ fun ModalData.GroupChatInfoLayout(
   activeSortedMembers: List<GroupMember>,
   developerTools: Boolean,
   onLocalAliasChanged: (String) -> Unit,
-  groupLink: CreatedConnLink?,
+  groupLink: GroupLink?,
   selectedItems: MutableState<Set<Long>?>,
   appBar: MutableState<@Composable (BoxScope.() -> Unit)?>,
   scrollToItemId: MutableState<Long?>,
@@ -537,59 +536,65 @@ fun ModalData.GroupChatInfoLayout(
       }
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = true)
 
-      SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), activeSortedMembers.count() + 1)) {
-        if (groupInfo.canAddMembers) {
-          val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
-          val tint = if (chat.chatInfo.incognito) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
-          val addMembersTitleId = when (groupInfo.businessChat?.chatType) {
-            BusinessChatType.Customer -> MR.strings.button_add_team_members
-            BusinessChatType.Business -> MR.strings.button_add_friends
-            null -> MR.strings.button_add_members
+      if (!groupInfo.nextConnectPrepared) {
+        SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), activeSortedMembers.count() + 1)) {
+          if (groupInfo.canAddMembers) {
+            val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
+            val tint = if (chat.chatInfo.incognito) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+            val addMembersTitleId = when (groupInfo.businessChat?.chatType) {
+              BusinessChatType.Customer -> MR.strings.button_add_team_members
+              BusinessChatType.Business -> MR.strings.button_add_friends
+              null -> MR.strings.button_add_members
+            }
+            AddMembersButton(addMembersTitleId, tint, onAddMembersClick)
           }
-          AddMembersButton(addMembersTitleId, tint, onAddMembersClick)
-        }
-        if (activeSortedMembers.size > 8) {
-          SectionItemView(padding = PaddingValues(start = 14.dp, end = DEFAULT_PADDING_HALF)) {
-            MemberListSearchRowView(searchText)
+          if (activeSortedMembers.size > 8) {
+            SectionItemView(padding = PaddingValues(start = 14.dp, end = DEFAULT_PADDING_HALF)) {
+              MemberListSearchRowView(searchText)
+            }
           }
-        }
-        SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-          MemberRow(groupInfo.membership, user = true)
+          SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+            MemberRow(groupInfo.membership, user = true)
+          }
         }
       }
     }
-    items(filteredMembers.value, key = { it.groupMemberId }) { member ->
-      Divider()
-      val showMenu = remember { mutableStateOf(false) }
-      val canBeSelected = groupInfo.membership.memberRole >= member.memberRole && member.memberRole < GroupMemberRole.Moderator
-      SectionItemViewLongClickable(
-        click = {
-          if (selectedItems.value != null) {
-            if (canBeSelected) {
-              toggleItemSelection(member.groupMemberId, selectedItems)
+    if (!groupInfo.nextConnectPrepared) {
+      items(filteredMembers.value, key = { it.groupMemberId }) { member ->
+        Divider()
+        val showMenu = remember { mutableStateOf(false) }
+        val canBeSelected = groupInfo.membership.memberRole >= member.memberRole && member.memberRole < GroupMemberRole.Moderator
+        SectionItemViewLongClickable(
+          click = {
+            if (selectedItems.value != null) {
+              if (canBeSelected) {
+                toggleItemSelection(member.groupMemberId, selectedItems)
+              }
+            } else {
+              showMemberInfo(member)
             }
-          } else {
-            showMemberInfo(member)
-          }
-        },
-        longClick = { showMenu.value = true },
-        minHeight = 54.dp,
-        padding = PaddingValues(horizontal = DEFAULT_PADDING)
-      ) {
-        Box(contentAlignment = Alignment.CenterStart) {
-          androidx.compose.animation.AnimatedVisibility(selectedItems.value != null, enter = fadeIn(), exit = fadeOut()) {
-            SelectedListItem(Modifier.alpha(if (canBeSelected) 1f else 0f).padding(start = 2.dp), member.groupMemberId, selectedItems)
-          }
-          val selectionOffset by animateDpAsState(if (selectedItems.value != null) 20.dp + 22.dp * fontSizeMultiplier else 0.dp)
-          DropDownMenuForMember(chat.remoteHostId, member, groupInfo, selectedItems, showMenu)
-          Box(Modifier.padding(start = selectionOffset)) {
-            MemberRow(member)
+          },
+          longClick = { showMenu.value = true },
+          minHeight = 54.dp,
+          padding = PaddingValues(horizontal = DEFAULT_PADDING)
+        ) {
+          Box(contentAlignment = Alignment.CenterStart) {
+            androidx.compose.animation.AnimatedVisibility(selectedItems.value != null, enter = fadeIn(), exit = fadeOut()) {
+              SelectedListItem(Modifier.alpha(if (canBeSelected) 1f else 0f).padding(start = 2.dp), member.groupMemberId, selectedItems)
+            }
+            val selectionOffset by animateDpAsState(if (selectedItems.value != null) 20.dp + 22.dp * fontSizeMultiplier else 0.dp)
+            DropDownMenuForMember(chat.remoteHostId, member, groupInfo, selectedItems, showMenu)
+            Box(Modifier.padding(start = selectionOffset)) {
+              MemberRow(member)
+            }
           }
         }
       }
     }
     item {
-      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+      if (!groupInfo.nextConnectPrepared) {
+        SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+      }
       SectionView {
         ClearChatButton(clearChat)
         if (groupInfo.canDelete) {

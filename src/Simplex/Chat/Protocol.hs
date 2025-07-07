@@ -54,7 +54,6 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
-import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
@@ -78,12 +77,13 @@ import Simplex.Messaging.Version hiding (version)
 -- 12 - support sending and receiving content reports (2025-01-03)
 -- 14 - support sending and receiving group join rejection (2025-02-24)
 -- 15 - support specifying message scopes for group messages (2025-03-12)
+-- 16 - support short link data (2025-06-10)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 15
+currentChatVersion = VersionChat 16
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -141,6 +141,10 @@ groupJoinRejectVersion = VersionChat 14
 -- support group knocking (MsgScope)
 groupKnockingVersion :: VersionChat
 groupKnockingVersion = VersionChat 15
+
+-- support short link data in invitation, contact and group links
+shortLinkDataVersion :: VersionChat
+shortLinkDataVersion = VersionChat 16
 
 agentToChatVersion :: VersionSMPA -> VersionChat
 agentToChatVersion v
@@ -229,24 +233,6 @@ instance StrEncoding AppMessageBinary where
     (tag, msgId', Tail body) <- smpP
     let msgId = if B.null msgId' then Nothing else Just (SharedMsgId msgId')
     pure AppMessageBinary {tag, msgId, body}
-
-newtype SharedMsgId = SharedMsgId ByteString
-  deriving (Eq, Show)
-  deriving newtype (FromField)
-
-instance ToField SharedMsgId where toField (SharedMsgId m) = toField $ DB.Binary m
-
-instance StrEncoding SharedMsgId where
-  strEncode (SharedMsgId m) = strEncode m
-  strDecode s = SharedMsgId <$> strDecode s
-  strP = SharedMsgId <$> strP
-
-instance FromJSON SharedMsgId where
-  parseJSON = strParseJSON "SharedMsgId"
-
-instance ToJSON SharedMsgId where
-  toJSON = strToJSON
-  toEncoding = strToJEncoding
 
 data MsgScope
   = MSMember {memberId :: MemberId} -- Admins can use any member id; members can use only their own id
@@ -339,7 +325,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XFileAcptInv :: SharedMsgId -> Maybe ConnReqInvitation -> String -> ChatMsgEvent 'Json
   XFileCancel :: SharedMsgId -> ChatMsgEvent 'Json
   XInfo :: Profile -> ChatMsgEvent 'Json
-  XContact :: Profile -> Maybe XContactId -> ChatMsgEvent 'Json
+  XContact :: {profile :: Profile, contactReqId :: Maybe XContactId, welcomeMsgId :: Maybe SharedMsgId, requestMsg :: Maybe (SharedMsgId, MsgContent)} -> ChatMsgEvent 'Json
   XDirectDel :: ChatMsgEvent 'Json
   XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
   XGrpAcpt :: MemberId -> ChatMsgEvent 'Json
@@ -528,7 +514,16 @@ cmToQuotedMsg = \case
   ACME _ (XMsgNew (MCQuote quotedMsg _)) -> Just quotedMsg
   _ -> Nothing
 
-data MsgContentTag = MCText_ | MCLink_ | MCImage_ | MCVideo_ | MCVoice_ | MCFile_ | MCReport_ | MCUnknown_ Text
+data MsgContentTag
+  = MCText_
+  | MCLink_
+  | MCImage_
+  | MCVideo_
+  | MCVoice_
+  | MCFile_
+  | MCReport_
+  | MCChat_
+  | MCUnknown_ Text
   deriving (Eq, Show)
 
 instance StrEncoding MsgContentTag where
@@ -540,6 +535,7 @@ instance StrEncoding MsgContentTag where
     MCFile_ -> "file"
     MCVoice_ -> "voice"
     MCReport_ -> "report"
+    MCChat_ -> "chat"
     MCUnknown_ t -> encodeUtf8 t
   strDecode = \case
     "text" -> Right MCText_
@@ -549,6 +545,7 @@ instance StrEncoding MsgContentTag where
     "voice" -> Right MCVoice_
     "file" -> Right MCFile_
     "report" -> Right MCReport_
+    "chat" -> Right MCChat_
     t -> Right . MCUnknown_ $ safeDecodeUtf8 t
   strP = strDecode <$?> A.takeTill (== ' ')
 
@@ -588,7 +585,14 @@ data MsgContent
   | MCVoice {text :: Text, duration :: Int}
   | MCFile {text :: Text}
   | MCReport {text :: Text, reason :: ReportReason}
+  | MCChat {text :: Text, chatLink :: MsgChatLink}
   | MCUnknown {tag :: Text, text :: Text, json :: J.Object}
+  deriving (Eq, Show)
+
+data MsgChatLink
+  = MCLContact {connLink :: ShortLinkContact, profile :: Profile, business :: Bool}
+  | MCLInvitation {invLink :: ShortLinkInvitation, profile :: Profile}
+  | MCLGroup {connLink :: ShortLinkContact, groupProfile :: GroupProfile}
   deriving (Eq, Show)
 
 msgContentText :: MsgContent -> Text
@@ -606,6 +610,7 @@ msgContentText = \case
     if T.null text then msg else msg <> ": " <> text
     where
       msg = "report " <> safeDecodeUtf8 (strEncode reason)
+  MCChat {text} -> text
   MCUnknown {text} -> text
 
 durationText :: Int -> Text
@@ -641,6 +646,7 @@ msgContentTag = \case
   MCVoice {} -> MCVoice_
   MCFile {} -> MCFile_
   MCReport {} -> MCReport_
+  MCChat {} -> MCChat_
   MCUnknown {tag} -> MCUnknown_ tag
 
 data ExtMsgContent = ExtMsgContent
@@ -658,6 +664,8 @@ data ExtMsgContent = ExtMsgContent
 
 data MsgMention = MsgMention {memberId :: MemberId}
   deriving (Eq, Show)
+
+$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "MCL") ''MsgChatLink)
 
 $(JQ.deriveJSON defaultJSON ''MsgMention)
 
@@ -768,6 +776,10 @@ instance FromJSON MsgContent where
         text <- v .: "text"
         reason <- v .: "reason"
         pure MCReport {text, reason}
+      MCChat_ -> do
+        text <- v .: "text"
+        chatLink <- v .: "chatLink"
+        pure MCChat {text, chatLink}
       MCUnknown_ tag -> do
         text <- fromMaybe unknownMsgType <$> v .:? "text"
         pure MCUnknown {tag, text, json = v}
@@ -802,6 +814,7 @@ instance ToJSON MsgContent where
     MCVoice {text, duration} -> J.object ["type" .= MCVoice_, "text" .= text, "duration" .= duration]
     MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
     MCReport {text, reason} -> J.object ["type" .= MCReport_, "text" .= text, "reason" .= reason]
+    MCChat {text, chatLink} -> J.object ["type" .= MCChat_, "text" .= text, "chatLink" .= chatLink]
   toEncoding = \case
     MCUnknown {json} -> JE.value $ J.Object json
     MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
@@ -811,6 +824,7 @@ instance ToJSON MsgContent where
     MCVoice {text, duration} -> J.pairs $ "type" .= MCVoice_ <> "text" .= text <> "duration" .= duration
     MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
     MCReport {text, reason} -> J.pairs $ "type" .= MCReport_ <> "text" .= text <> "reason" .= reason
+    MCChat {text, chatLink} -> J.pairs $ "type" .= MCChat_ <> "text" .= text <> "chatLink" .= chatLink
 
 instance ToField MsgContent where
   toField = toField . encodeJSON
@@ -989,7 +1003,7 @@ toCMEventTag msg = case msg of
   XFileAcptInv {} -> XFileAcptInv_
   XFileCancel _ -> XFileCancel_
   XInfo _ -> XInfo_
-  XContact _ _ -> XContact_
+  XContact {} -> XContact_
   XDirectDel -> XDirectDel_
   XGrpInv _ -> XGrpInv_
   XGrpAcpt _ -> XGrpAcpt_
@@ -1099,7 +1113,14 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XFileAcptInv_ -> XFileAcptInv <$> p "msgId" <*> opt "fileConnReq" <*> p "fileName"
       XFileCancel_ -> XFileCancel <$> p "msgId"
       XInfo_ -> XInfo <$> p "profile"
-      XContact_ -> XContact <$> p "profile" <*> opt "contactReqId"
+      XContact_ -> do
+        profile <- p "profile"
+        contactReqId <- opt "contactReqId"
+        welcomeMsgId <- opt "welcomeMsgId"
+        reqMsgId <- opt "msgId"
+        reqContent <- opt "content"
+        let requestMsg = (,) <$> reqMsgId <*> reqContent
+        pure XContact {profile, contactReqId, welcomeMsgId, requestMsg}
       XDirectDel_ -> pure XDirectDel
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
       XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
@@ -1163,7 +1184,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XFileAcptInv sharedMsgId fileConnReq fileName -> o $ ("fileConnReq" .=? fileConnReq) ["msgId" .= sharedMsgId, "fileName" .= fileName]
       XFileCancel sharedMsgId -> o ["msgId" .= sharedMsgId]
       XInfo profile -> o ["profile" .= profile]
-      XContact profile xContactId -> o $ ("contactReqId" .=? xContactId) ["profile" .= profile]
+      XContact {profile, contactReqId, welcomeMsgId, requestMsg} -> o $ ("contactReqId" .=? contactReqId) $ ("welcomeMsgId" .=? welcomeMsgId) $ ("msgId" .=? (fst <$> requestMsg)) $ ("content" .=? (snd <$> requestMsg)) $ ["profile" .= profile]
       XDirectDel -> JM.empty
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId -> o ["memberId" .= memId]
@@ -1203,3 +1224,19 @@ instance ToJSON (ChatMessage 'Json) where
 
 instance FromJSON (ChatMessage 'Json) where
   parseJSON v = appJsonToCM <$?> parseJSON v
+
+data ContactShortLinkData = ContactShortLinkData
+  { profile :: Profile,
+    message :: Maybe MsgContent,
+    business :: Bool
+  }
+  deriving (Show)
+
+data GroupShortLinkData = GroupShortLinkData
+  { groupProfile :: GroupProfile
+  }
+  deriving (Show)
+
+$(JQ.deriveJSON defaultJSON ''ContactShortLinkData)
+
+$(JQ.deriveJSON defaultJSON ''GroupShortLinkData)

@@ -590,7 +590,7 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
     chatModel.appOpenUrl.value = rhId to uri
   } else {
     withBGApi {
-      planAndConnect(rhId, uri, incognito = null, close = null)
+      planAndConnect(rhId, uri, close = null)
     }
   }
 }
@@ -677,7 +677,6 @@ private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<
     planAndConnect(
       chatModel.remoteHostId(),
       link,
-      incognito = null,
       filterKnownContact = { searchChatFilteredBySimplexLink.value = it.id },
       filterKnownGroup = { searchChatFilteredBySimplexLink.value = it.id },
       close = null,
@@ -1212,7 +1211,7 @@ fun presetTagMatchesChat(tag: PresetTagKind, chatInfo: ChatInfo, chatStats: Chat
     PresetTagKind.GROUP_REPORTS -> chatStats.reportsCount > 0
     PresetTagKind.FAVORITES -> chatInfo.chatSettings?.favorite == true
     PresetTagKind.CONTACTS -> when (chatInfo) {
-      is ChatInfo.Direct -> !(chatInfo.contact.activeConn == null && chatInfo.contact.profile.contactLink != null && chatInfo.contact.active) && !chatInfo.contact.chatDeleted
+      is ChatInfo.Direct -> !chatInfo.contact.isContactCard && !chatInfo.contact.chatDeleted
       is ChatInfo.ContactRequest -> true
       is ChatInfo.ContactConnection -> true
       is ChatInfo.Group -> chatInfo.groupInfo.businessChat?.chatType == BusinessChatType.Customer

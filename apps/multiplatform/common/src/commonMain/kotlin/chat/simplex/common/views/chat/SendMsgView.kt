@@ -41,7 +41,9 @@ fun SendMsgView(
   sendMsgEnabled: Boolean,
   userCantSendReason: Pair<String, String?>?,
   sendButtonEnabled: Boolean,
-  nextSendGrpInv: Boolean,
+  sendToConnect: (() -> Unit)? = null,
+  hideSendButton: Boolean = false,
+  nextConnect: Boolean,
   needToAllowVoiceToContact: Boolean,
   allowedVoiceByPrefs: Boolean,
   sendButtonColor: Color = MaterialTheme.colors.primary,
@@ -72,7 +74,7 @@ fun SendMsgView(
         false
       }
     }
-    val showVoiceButton = !nextSendGrpInv && cs.message.text.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
+    val showVoiceButton = !nextConnect && cs.message.text.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         !composeState.value.forwarding && cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started) && (cs.contextItem !is ComposeContextItem.ReportedItem)
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
     val sendMsgButtonDisabled = !sendMsgEnabled || !cs.sendEnabled() ||
@@ -95,7 +97,11 @@ fun SendMsgView(
       focusRequester
     ) {
       if (!cs.inProgress) {
-        sendMessage(null)
+        if (sendToConnect != null) {
+          sendToConnect()
+        } else {
+          sendMessage(null)
+        }
       }
     }
     if (clicksOnTextFieldDisabled) {
@@ -133,7 +139,7 @@ fun SendMsgView(
       when {
         progressByTimeout -> ProgressIndicator()
         cs.contextItem is ComposeContextItem.ReportedItem -> {
-          SendMsgButton(painterResource(MR.images.ic_check_filled), sendButtonSize, sendButtonAlpha, sendButtonColor, !sendMsgButtonDisabled, sendMessage)
+          SendMsgButton(painterResource(MR.images.ic_check_filled), sendButtonSize, sendButtonAlpha, sendButtonColor, !sendMsgButtonDisabled, sendToConnect, sendMessage)
         }
         showVoiceButton && sendMsgEnabled -> {
           Row(verticalAlignment = Alignment.CenterVertically) {
@@ -181,7 +187,7 @@ fun SendMsgView(
           fun MenuItems(): List<@Composable () -> Unit> {
             val menuItems = mutableListOf<@Composable () -> Unit>()
 
-            if (cs.liveMessage == null && !cs.editing && !nextSendGrpInv || sendMsgEnabled) {
+            if (cs.liveMessage == null && !cs.editing && !nextConnect || sendMsgEnabled) {
               if (
                 cs.preview !is ComposePreview.VoicePreview &&
                 cs.contextItem is ComposeContextItem.NoContextItem &&
@@ -215,19 +221,21 @@ fun SendMsgView(
             return menuItems
           }
 
-          val menuItems = MenuItems()
-          if (menuItems.isNotEmpty()) {
-            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, sendButtonColor, !sendMsgButtonDisabled, sendMessage) { showDropdown.value = true }
-            DefaultDropdownMenu(showDropdown) {
-              menuItems.forEach { composable -> composable() }
+          if (!hideSendButton) {
+            val menuItems = MenuItems()
+            if (menuItems.isNotEmpty()) {
+              SendMsgButton(icon, sendButtonSize, sendButtonAlpha, sendButtonColor, !sendMsgButtonDisabled, sendToConnect, sendMessage) { showDropdown.value = true }
+              DefaultDropdownMenu(showDropdown) {
+                menuItems.forEach { composable -> composable() }
+              }
+              CustomDisappearingMessageDialog(
+                showCustomDisappearingMessageDialog,
+                sendMessage = sendMessage,
+                customDisappearingMessageTimePref = customDisappearingMessageTimePref
+              )
+            } else {
+              SendMsgButton(icon, sendButtonSize, sendButtonAlpha, sendButtonColor, !sendMsgButtonDisabled, sendToConnect, sendMessage)
             }
-            CustomDisappearingMessageDialog(
-              showCustomDisappearingMessageDialog,
-              sendMessage = sendMessage,
-              customDisappearingMessageTimePref = customDisappearingMessageTimePref
-            )
-          } else {
-            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, sendButtonColor, !sendMsgButtonDisabled, sendMessage)
           }
         }
       }
@@ -430,6 +438,7 @@ private fun SendMsgButton(
   alpha: Animatable<Float, AnimationVector1D>,
   sendButtonColor: Color,
   enabled: Boolean,
+  sendToConnect: (() -> Unit)?,
   sendMessage: (Int?) -> Unit,
   onLongClick: (() -> Unit)? = null
 ) {
@@ -438,7 +447,13 @@ private fun SendMsgButton(
   Box(
     modifier = Modifier.requiredSize(36.dp)
       .combinedClickable(
-        onClick = { sendMessage(null) },
+        onClick = {
+          if (sendToConnect != null) {
+            sendToConnect()
+          } else {
+            sendMessage(null)
+          }
+        },
         onLongClick = onLongClick,
         enabled = enabled,
         role = Role.Button,
@@ -581,7 +596,7 @@ fun PreviewSendMsgView() {
       sendMsgEnabled = true,
       userCantSendReason = null,
       sendButtonEnabled = true,
-      nextSendGrpInv = false,
+      nextConnect = false,
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
       allowVoiceToContact = {},
@@ -616,7 +631,7 @@ fun PreviewSendMsgViewEditing() {
       sendMsgEnabled = true,
       userCantSendReason = null,
       sendButtonEnabled = true,
-      nextSendGrpInv = false,
+      nextConnect = false,
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
       allowVoiceToContact = {},
@@ -651,7 +666,7 @@ fun PreviewSendMsgViewInProgress() {
       sendMsgEnabled = true,
       userCantSendReason = null,
       sendButtonEnabled = true,
-      nextSendGrpInv = false,
+      nextConnect = false,
       needToAllowVoiceToContact = false,
       allowedVoiceByPrefs = true,
       allowVoiceToContact = {},

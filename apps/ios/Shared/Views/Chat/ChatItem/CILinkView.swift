@@ -49,11 +49,7 @@ func openBrowserAlert(uri: URL) {
         NSLocalizedString("Open link?", comment: "alert title"),
         message: uri.absoluteString,
         actions: {[
-            UIAlertAction(
-                title: NSLocalizedString("Cancel", comment: "alert action"),
-                style: .default,
-                handler: { _ in }
-            ),
+            cancelAlertAction,
             UIAlertAction(
                 title: NSLocalizedString("Open", comment: "alert action"),
                 style: .default,

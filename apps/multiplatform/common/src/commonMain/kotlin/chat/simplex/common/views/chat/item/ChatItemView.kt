@@ -33,6 +33,7 @@ import chat.simplex.common.views.chatlist.openChat
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
+import dev.icerock.moko.resources.StringResource
 import kotlinx.datetime.Clock
 import kotlin.math.*
 
@@ -667,26 +668,30 @@ fun ChatItemView(
             }
 
             @Composable
-            fun E2EEInfoNoPQText() {
+            fun e2eeInfoText(sId: StringResource) {
               Text(
                 buildAnnotatedString {
-                  withStyle(chatEventStyle) { append(annotatedStringResource(MR.strings.e2ee_info_no_pq)) }
+                  withStyle(chatEventStyle) { append(annotatedStringResource(sId)) }
                 },
                 Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
               )
             }
 
             @Composable
+            fun E2EEInfoNoPQText() {
+              e2eeInfoText(MR.strings.e2ee_info_no_pq)
+            }
+
+            @Composable
             fun DirectE2EEInfoText(e2EEInfo: E2EEInfo) {
-              if (e2EEInfo.pqEnabled) {
-                Text(
-                  buildAnnotatedString {
-                    withStyle(chatEventStyle) { append(annotatedStringResource(MR.strings.e2ee_info_pq)) }
-                  },
-                  Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
-                )
+              if (e2EEInfo.pqEnabled != null) {
+                if (e2EEInfo.pqEnabled) {
+                  e2eeInfoText(MR.strings.e2ee_info_pq)
+                } else {
+                  E2EEInfoNoPQText()
+                }
               } else {
-                E2EEInfoNoPQText()
+                e2eeInfoText(MR.strings.e2ee_info_e2ee)
               }
             }
 

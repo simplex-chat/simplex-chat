@@ -15,7 +15,6 @@ import Control.Concurrent (ThreadId)
 import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Catch (MonadMask)
-import Control.Monad.Except
 import Control.Monad.Reader
 import Data.List (intercalate)
 import Data.Text (Text)
@@ -23,7 +22,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import Simplex.Chat.Controller
-import Simplex.Chat.Library.Commands (execChatCommand, processChatCommand)
+import Simplex.Chat.Library.Commands (execChatCommand, execChatCommand')
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent (CIContent (..), SMsgDirection (..))
@@ -166,11 +165,11 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} Cha
         (True, CISRcvNew) -> do
           let itemId = chatItemId' ci
               chatRef = chatInfoToRef chat
-          void $ runReaderT (runExceptT $ processChatCommand (APIChatItemsRead chatRef [itemId])) cc
+          void $ runReaderT (execChatCommand' (APIChatItemsRead chatRef [itemId]) 0) cc
         _ -> pure ()
     logResponse path s = withFile path AppendMode $ \h -> mapM_ (hPutStrLn h . unStyle) s
     getRemoteUser rhId =
-      runReaderT (execChatCommand (Just rhId) "/user") cc >>= \case
+      runReaderT (execChatCommand (Just rhId) "/user" 0) cc >>= \case
         Right CRActiveUser {user} -> updateRemoteUser ct user rhId
         cr -> logError $ "Unexpected reply while getting remote user: " <> tshow cr
     removeRemoteUser rhId = atomically $ TM.delete rhId (currentRemoteUsers ct)
@@ -211,7 +210,7 @@ chatEventNotification t@ChatTerminal {sendNotification} cc = \case
     when (groupNtf u g False) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is pending review")
   CEvtConnectedToGroupMember u g m _ ->
     when (groupNtf u g False) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
-  CEvtReceivedContactRequest u UserContactRequest {localDisplayName = n} ->
+  CEvtReceivedContactRequest u UserContactRequest {localDisplayName = n} _ ->
     when (userNtf u) $ sendNtf (viewName n <> ">", "wants to connect to you")
   _ -> pure ()
   where

@@ -1,10 +1,3 @@
-//
-//  ComposeView.swift
-//  SimpleX
-//
-//  Created by Evgeny on 13/03/2022.
-//  Copyright © 2022 SimpleX Chat. All rights reserved.
-//
 
 import SwiftUI
 import SimpleXChat
@@ -114,7 +107,7 @@ struct ComposeState {
             mentions: mentions ?? self.mentions
         )
     }
-    
+
     func mentionMemberName(_ name: String) -> String {
         var n = 0
         var tryName = name
@@ -124,11 +117,11 @@ struct ComposeState {
         }
         return tryName
     }
-    
+
     var memberMentions: [String: Int64] {
         self.mentions.compactMapValues { $0.memberRef?.groupMemberId }
     }
-    
+
     var editing: Bool {
         switch contextItem {
         case .editingItem: return true
@@ -149,14 +142,14 @@ struct ComposeState {
         default: return false
         }
     }
-    
+
     var reporting: Bool {
         switch contextItem {
         case .reportedItem: return true
         default: return false
         }
     }
-    
+
     var submittingValidReport: Bool {
         switch contextItem {
         case let .reportedItem(_, reason):
@@ -167,13 +160,13 @@ struct ComposeState {
         default: return false
         }
     }
-    
+
     var sendEnabled: Bool {
         switch preview {
         case let .mediaPreviews(media): return !media.isEmpty
         case .voicePreview: return voiceMessageRecordingState == .finished
         case .filePreview: return true
-        default: return !message.isEmpty || forwarding || liveMessage != nil || submittingValidReport
+        default: return !whitespaceOnly || forwarding || liveMessage != nil || submittingValidReport
         }
     }
 
@@ -254,7 +247,11 @@ struct ComposeState {
     }
 
     var empty: Bool {
-        message == "" && noPreview
+        whitespaceOnly && noPreview
+    }
+
+    var whitespaceOnly: Bool {
+        message.allSatisfy { $0.isWhitespace }
     }
 }
 
@@ -353,10 +350,21 @@ struct ComposeView: View {
 
     @UserDefault(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
     @UserDefault(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
+    @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
 
     var body: some View {
         VStack(spacing: 0) {
             Divider()
+
+            if chat.chatInfo.nextConnectPrepared,
+               let user = chatModel.currentUser {
+                ContextProfilePickerView(
+                    chat: chat,
+                    selectedUser: user
+                )
+                Divider()
+            }
+
             if let groupInfo = chat.chatInfo.groupInfo,
                case let .groupChatScopeContext(groupScopeInfo) = im.secondaryIMFilter,
                case let .memberSupport(member) = groupScopeInfo,
@@ -371,11 +379,6 @@ struct ComposeView: View {
                 Divider()
             }
 
-            if chat.chatInfo.contact?.nextSendGrpInv ?? false {
-                ContextInvitingContactMemberView()
-                Divider()
-            }
-            
             if case let .reportedItem(_, reason) = composeState.contextItem {
                 reportReasonView(reason)
                 Divider()
@@ -384,6 +387,7 @@ struct ComposeView: View {
             let simplexLinkProhibited = im.secondaryIMFilter == nil && hasSimplexLink && !chat.groupFeatureEnabled(.simplexLinks)
             let fileProhibited = im.secondaryIMFilter == nil && composeState.attachmentPreview && !chat.groupFeatureEnabled(.files)
             let voiceProhibited = composeState.voicePreview && !chat.chatInfo.featureEnabled(.voice)
+            let disableSendButton = simplexLinkProhibited || fileProhibited || voiceProhibited
             if simplexLinkProhibited {
                 msgNotAllowedView("SimpleX links not allowed", icon: "link")
                 Divider()
@@ -400,73 +404,46 @@ struct ComposeView: View {
             case (true, .voicePreview): EmptyView() // ? we may allow playback when editing is allowed
             default: previewView()
             }
-            HStack (alignment: .bottom) {
-                let b = Button {
-                    showChooseSource = true
-                } label: {
-                    Image(systemName: "paperclip")
-                        .resizable()
-                }
-                .disabled(composeState.attachmentDisabled || !chat.chatInfo.sendMsgEnabled || (chat.chatInfo.contact?.nextSendGrpInv ?? false))
-                .frame(width: 25, height: 25)
-                .padding(.bottom, 16)
-                .padding(.leading, 12)
-                .tint(theme.colors.primary)
-                if im.secondaryIMFilter == nil,
-                   case let .group(g, _) = chat.chatInfo,
-                   !g.fullGroupPreferences.files.on(for: g.membership) {
-                    b.disabled(true).onTapGesture {
-                        AlertManager.shared.showAlertMsg(
-                            title: "Files and media prohibited!",
-                            message: "Only group owners can enable files and media."
-                        )
-                    }
-                } else {
-                    b
-                }
-                ZStack(alignment: .leading) {
-                    SendMessageView(
-                        composeState: $composeState,
-                        selectedRange: $selectedRange,
-                        sendMessage: { ttl in
-                            sendMessage(ttl: ttl)
-                            resetLinkPreview()
-                        },
-                        sendLiveMessage: chat.chatInfo.chatType != .local ? sendLiveMessage : nil,
-                        updateLiveMessage: updateLiveMessage,
-                        cancelLiveMessage: {
-                            composeState.liveMessage = nil
-                            chatModel.removeLiveDummy()
-                        },
-                        nextSendGrpInv: chat.chatInfo.contact?.nextSendGrpInv ?? false,
-                        voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
-                        disableSendButton: simplexLinkProhibited || fileProhibited || voiceProhibited,
-                        showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
-                        startVoiceMessageRecording: {
-                            Task {
-                                await startVoiceMessageRecording()
-                            }
-                        },
-                        finishVoiceMessageRecording: finishVoiceMessageRecording,
-                        allowVoiceMessagesToContact: allowVoiceMessagesToContact,
-                        timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
-                        onMediaAdded: { media in if !media.isEmpty { chosenMedia = media }},
-                        keyboardVisible: $keyboardVisible,
-                        keyboardHiddenDate: $keyboardHiddenDate,
-                        sendButtonColor: chat.chatInfo.incognito
-                        ? .indigo.opacity(colorScheme == .dark ? 1 : 0.7)
-                        : theme.colors.primary
-                    )
-                    .padding(.trailing, 12)
-                    .disabled(!chat.chatInfo.sendMsgEnabled)
 
-                    if let disabledText {
-                        Text(disabledText)
-                            .italic()
-                            .foregroundColor(theme.colors.secondary)
-                            .padding(.horizontal, 12)
+            let contact = chat.chatInfo.contact
+
+            if chat.chatInfo.groupInfo?.nextConnectPrepared == true {
+                if chat.chatInfo.groupInfo?.businessChat == nil {
+                    Button(action: connectPreparedGroup) {
+                        Label("Join group", systemImage: "person.2.fill")
                     }
+                    .frame(height: 60)
+                    .disabled(composeState.inProgress)
+                } else {
+                    sendContactRequestView(disableSendButton, icon: "briefcase.fill", sendRequest: connectPreparedGroup)
                 }
+            } else if contact?.nextSendGrpInv == true {
+                contextSendMessageToConnect("Send direct message to connect")
+                Divider()
+                HStack (alignment: .center) {
+                    attachmentButton().disabled(true)
+                    sendMessageView(disableSendButton, sendToConnect: sendMemberContactInvitation)
+                }
+                .padding(.horizontal, 12)
+            } else if contact?.nextConnectPrepared == true, let linkType = contact?.preparedContact?.uiConnLinkType {
+                switch linkType {
+                case .inv:
+                    Button(action: sendConnectPreparedContact) {
+                        Label("Connect", systemImage: "person.fill.badge.plus")
+                    }
+                    .frame(height: 60)
+                    .disabled(composeState.inProgress)
+                case .con:
+                    sendContactRequestView(disableSendButton, icon: "person.fill.badge.plus", sendRequest: sendConnectPreparedContactRequest)
+                }
+            } else if contact?.nextAcceptContactRequest == true, let crId = contact?.contactRequestId {
+                ContextContactRequestActionsView(contactRequestId: crId)
+            } else {
+                HStack (alignment: .center) {
+                    attachmentButton()
+                    sendMessageView(disableSendButton)
+                }
+                .padding(.horizontal, 12)
             }
         }
         .background {
@@ -632,6 +609,201 @@ struct ComposeView: View {
         }
     }
 
+    private func sendContactRequestView(_ disableSendButton: Bool, icon: String, sendRequest: @escaping () -> Void) -> some View {
+        HStack (alignment: .center) {
+            sendMessageView(
+                disableSendButton,
+                placeholder: NSLocalizedString("Add message", comment: "placeholder for sending contact request"),
+                sendToConnect: sendRequest
+            )
+            if composeState.whitespaceOnly {
+                Button(action: sendRequest) {
+                    HStack {
+                        Text("Connect").fontWeight(.medium)
+                        Image(systemName: icon)
+                    }
+                }
+                .padding(.horizontal, 8)
+                .disabled(composeState.inProgress)
+            }
+        }
+        .padding(.horizontal, 12)
+    }
+
+    private func sendMessageView(_ disableSendButton: Bool, placeholder: String? = nil, sendToConnect: (() -> Void)? = nil) -> some View {
+        ZStack(alignment: .leading) {
+            SendMessageView(
+                placeholder: placeholder,
+                composeState: $composeState,
+                selectedRange: $selectedRange,
+                sendMessage: { ttl in
+                    sendMessage(ttl: ttl)
+                    resetLinkPreview()
+                },
+                sendLiveMessage: chat.chatInfo.chatType != .local ? sendLiveMessage : nil,
+                updateLiveMessage: updateLiveMessage,
+                cancelLiveMessage: {
+                    composeState.liveMessage = nil
+                    chatModel.removeLiveDummy()
+                },
+                sendToConnect: sendToConnect,
+                hideSendButton: chat.chatInfo.nextConnect && chat.chatInfo.contact?.nextSendGrpInv != true && composeState.whitespaceOnly,
+                voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
+                disableSendButton: disableSendButton,
+                showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
+                startVoiceMessageRecording: {
+                    Task {
+                        await startVoiceMessageRecording()
+                    }
+                },
+                finishVoiceMessageRecording: finishVoiceMessageRecording,
+                allowVoiceMessagesToContact: allowVoiceMessagesToContact,
+                timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
+                onMediaAdded: { media in if !media.isEmpty { chosenMedia = media }},
+                keyboardVisible: $keyboardVisible,
+                keyboardHiddenDate: $keyboardHiddenDate,
+                sendButtonColor: chat.chatInfo.incognito
+                ? .indigo.opacity(colorScheme == .dark ? 1 : 0.7)
+                : theme.colors.primary
+            )
+            .disabled(!chat.chatInfo.sendMsgEnabled)
+
+            if let disabledText {
+                Text(disabledText)
+                    .italic()
+                    .foregroundColor(theme.colors.secondary)
+                    .padding(.horizontal, 12)
+            }
+        }
+    }
+
+    @ViewBuilder private func attachmentButton() -> some View {
+        let b = Button {
+            showChooseSource = true
+        } label: {
+            Image(systemName: "paperclip")
+                .resizable()
+        }
+            .disabled(composeState.attachmentDisabled || !chat.chatInfo.sendMsgEnabled)
+            .frame(width: 25, height: 25)
+            .tint(theme.colors.primary)
+        if im.secondaryIMFilter == nil,
+           case let .group(g, _) = chat.chatInfo,
+           !g.fullGroupPreferences.files.on(for: g.membership) {
+            b.disabled(true).onTapGesture {
+                AlertManager.shared.showAlertMsg(
+                    title: "Files and media prohibited!",
+                    message: "Only group owners can enable files and media."
+                )
+            }
+        } else {
+            b
+        }
+    }
+
+    private func sendMemberContactInvitation() {
+        Task {
+            do {
+                await MainActor.run { hideKeyboard() }
+                if let mc = connectCheckLinkPreview() {
+                    await sending()
+                    let contact = try await apiSendMemberContactInvitation(chat.chatInfo.apiId, mc)
+                    await MainActor.run {
+                        self.chatModel.updateContact(contact)
+                        clearState()
+                        NetworkModel.shared.setContactNetworkStatus(contact, .connected)
+                    }
+                } else {
+                    AlertManager.shared.showAlertMsg(title: "Empty message!")
+                }
+            } catch {
+                await MainActor.run { composeState.inProgress = false }
+                logger.error("ChatView.sendMemberContactInvitation error: \(error.localizedDescription)")
+                AlertManager.shared.showAlertMsg(title: "Error sending member contact invitation", message: "Error: \(responseError(error))")
+            }
+        }
+    }
+
+    // TODO [short links] different messages for business
+    private func sendConnectPreparedContactRequest() {
+        hideKeyboard()
+        let empty = composeState.whitespaceOnly
+        AlertManager.shared.showAlert(Alert(
+            title: Text("Send contact request?"),
+            message: Text("You will be able to send messages **only after your request is accepted**."),
+            primaryButton: .default(
+                Text(empty ? "Send request without message" : "Send request"),
+                action: sendConnectPreparedContact
+            ),
+            secondaryButton:
+                empty
+                ? .cancel(Text("Add message"), action: hideKeyboard)
+                : .cancel()
+        ))
+    }
+
+    private func sendConnectPreparedContact() {
+        Task {
+            await MainActor.run { hideKeyboard() }
+            await sending()
+            let mc = connectCheckLinkPreview()
+            let incognito = chat.chatInfo.profileChangeProhibited ? chat.chatInfo.incognito : incognitoDefault
+            if let contact = await apiConnectPreparedContact(contactId: chat.chatInfo.apiId, incognito: incognito, msg: mc) {
+                await MainActor.run {
+                    self.chatModel.updateContact(contact)
+                    NetworkModel.shared.setContactNetworkStatus(contact, .connected)
+                    clearState()
+                }
+            } else {
+                await MainActor.run { composeState.inProgress = false }
+            }
+        }
+    }
+
+    private func connectPreparedGroup() {
+        Task {
+            await MainActor.run { hideKeyboard() }
+            await sending()
+            let mc = connectCheckLinkPreview()
+            let incognito = chat.chatInfo.profileChangeProhibited ? chat.chatInfo.incognito : incognitoDefault
+            if let groupInfo = await apiConnectPreparedGroup(groupId: chat.chatInfo.apiId, incognito: incognito, msg: mc) {
+                await MainActor.run {
+                    self.chatModel.updateGroup(groupInfo)
+                    clearState()
+                }
+            } else {
+                await MainActor.run { composeState.inProgress = false }
+            }
+        }
+    }
+
+    @inline(__always)
+    private func connectCheckLinkPreview() -> MsgContent? {
+        let msgText = composeState.message.trimmingCharacters(in: .whitespacesAndNewlines)
+        return msgText.isEmpty ? nil : checkLinkPreview_(msgText)
+    }
+
+    @inline(__always)
+    private func checkLinkPreview() -> MsgContent {
+        checkLinkPreview_(composeState.message.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    private func checkLinkPreview_(_ msgText: String) -> MsgContent {
+        switch (composeState.preview) {
+        case let .linkPreview(linkPreview: linkPreview):
+            if let parsedMsg = parseSimpleXMarkdown(msgText),
+               let url = getSimplexLink(parsedMsg).url,
+               let linkPreview = linkPreview,
+               url == linkPreview.uri {
+                return .link(text: msgText, preview: linkPreview)
+            } else {
+                return .text(msgText)
+            }
+        default:
+            return .text(msgText)
+        }
+    }
+
     private func addMediaContent(_ content: UploadContent) async {
         if let img = await resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
             var newMedia: [(String, UploadContent?)] = []
@@ -768,8 +940,19 @@ struct ComposeView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.thinMaterial)
     }
-    
-    
+
+    private func contextSendMessageToConnect(_ s: LocalizedStringKey) -> some View {
+        HStack {
+            Image(systemName: "message")
+                .foregroundColor(theme.colors.secondary)
+            Text(s)
+        }
+        .padding(12)
+        .frame(minHeight: 54)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(ToolbarMaterial.material(toolbarMaterial))
+    }
+
     private func reportReasonView(_ reason: ReportReason) -> some View {
         let reportText = switch reason {
         case .spam: NSLocalizedString("Report spam: only group moderators will see it.", comment: "report reason")
@@ -847,9 +1030,7 @@ struct ComposeView: View {
             if liveMessage != nil { composeState = composeState.copy(liveMessage: nil) }
             await sending()
         }
-        if chat.chatInfo.contact?.nextSendGrpInv ?? false {
-            await sendMemberContactInvitation()
-        } else if case let .forwardingItems(chatItems, fromChatInfo) = composeState.contextItem {
+        if case let .forwardingItems(chatItems, fromChatInfo) = composeState.contextItem {
             // Composed text is send as a reply to the last forwarded item
             sent = await forwardItems(chatItems, fromChatInfo, ttl).last
             if !composeState.message.isEmpty {
@@ -929,23 +1110,6 @@ struct ComposeView: View {
                 nil
             }
         }
-        
-        func sending() async {
-            await MainActor.run { composeState.inProgress = true }
-        }
-
-        func sendMemberContactInvitation() async {
-            do {
-                let mc = checkLinkPreview()
-                let contact = try await apiSendMemberContactInvitation(chat.chatInfo.apiId, mc)
-                await MainActor.run {
-                    self.chatModel.updateContact(contact)
-                }
-            } catch {
-                logger.error("ChatView.sendMemberContactInvitation error: \(error.localizedDescription)")
-                AlertManager.shared.showAlertMsg(title: "Error sending member contact invitation", message: "Error: \(responseError(error))")
-            }
-        }
 
         func updateMessage(_ ei: ChatItem, live: Bool) async -> ChatItem? {
             if let oldMsgContent = ei.content.msgContent {
@@ -991,6 +1155,9 @@ struct ComposeView: View {
                 return .file(msgText)
             case .report(_, let reason):
                 return .report(text: msgText, reason: reason)
+            // TODO [short links] update chat link
+            case let .chat(_, chatLink):
+                return .chat(text: msgText, chatLink: chatLink)
             case .unknown(let type, _):
                 return .unknown(type: type, text: msgText)
             }
@@ -1010,7 +1177,7 @@ struct ComposeView: View {
                 return nil
             }
         }
-        
+
         func send(_ reportReason: ReportReason, chatItemId: Int64) async -> ChatItem? {
             if let chatItems = await apiReportMessage(
                 groupId: chat.chatInfo.apiId,
@@ -1025,7 +1192,7 @@ struct ComposeView: View {
                 }
                 return chatItems.first
             }
-            
+
             return nil
         }
 
@@ -1114,22 +1281,10 @@ struct ComposeView: View {
                 return []
             }
         }
+    }
 
-        func checkLinkPreview() -> MsgContent {
-            switch (composeState.preview) {
-            case let .linkPreview(linkPreview: linkPreview):
-                if let parsedMsg = parseSimpleXMarkdown(msgText),
-                   let url = getSimplexLink(parsedMsg).url,
-                   let linkPreview = linkPreview,
-                   url == linkPreview.uri {
-                    return .link(text: msgText, preview: linkPreview)
-                } else {
-                    return .text(msgText)
-                }
-            default:
-                return .text(msgText)
-            }
-        }
+    func sending() async {
+        await MainActor.run { composeState.inProgress = true }
     }
 
     private func startVoiceMessageRecording() async {

@@ -97,19 +97,22 @@ ifCI xrun run d t = do
   ci <- runIO $ lookupEnv "CI"
   (if ci == Just "true" then xrun else run) d t
 
+envCI :: IO Bool
+envCI = (Just "true" ==) <$> lookupEnv "CI"
+
 skip :: String -> SpecWith a -> SpecWith a
 skip = before_ . pendingWith
 
 -- Bool is pqExpected - see testAddContact
-versionTestMatrix2 :: (HasCallStack => Bool -> TestCC -> TestCC -> IO ()) -> SpecWith TestParams
+versionTestMatrix2 :: (HasCallStack => Bool -> Bool -> TestCC -> TestCC -> IO ()) -> SpecWith TestParams
 versionTestMatrix2 runTest = do
-  it "current" $ testChat2 aliceProfile bobProfile (runTest True)
-  it "prev" $ testChatCfg2 testCfgVPrev aliceProfile bobProfile (runTest False)
-  it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev (runTest False)
-  it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg (runTest False)
-  it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile (runTest False)
-  it "old to curr" $ runTestCfg2 testCfg testCfgV1 (runTest False)
-  it "curr to old" $ runTestCfg2 testCfgV1 testCfg (runTest False)
+  it "current" $ testChat2 aliceProfile bobProfile (runTest True True)
+  it "prev" $ testChatCfg2 testCfgVPrev aliceProfile bobProfile (runTest False True)
+  it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev (runTest False True)
+  it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg (runTest False True)
+  it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile (runTest False False)
+  it "old to curr" $ runTestCfg2 testCfg testCfgV1 (runTest False True)
+  it "curr to old" $ runTestCfg2 testCfgV1 testCfg (runTest False False)
 
 versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith TestParams
 versionTestMatrix3 runTest = do
@@ -293,6 +296,9 @@ lastChatFeature = snd $ last chatFeatures
 groupFeatures :: [(Int, String)]
 groupFeatures = map (\(a, _, _) -> a) $ groupFeatures'' 0
 
+groupFeaturesNoE2E :: [(Int, String)]
+groupFeaturesNoE2E = map (\(a, _, _) -> a) $ groupFeatures_ 0
+
 sndGroupFeatures :: [(Int, String)]
 sndGroupFeatures = map (\(a, _, _) -> a) $ groupFeatures'' 1
 
@@ -300,9 +306,11 @@ groupFeatureStrs :: [String]
 groupFeatureStrs = map (\(a, _, _) -> snd a) $ groupFeatures'' 0
 
 groupFeatures'' :: Int -> [((Int, String), Maybe (Int, String), Maybe String)]
-groupFeatures'' dir =
-  [ ((dir, e2eeInfoNoPQStr), Nothing, Nothing),
-    ((dir, "Disappearing messages: off"), Nothing, Nothing),
+groupFeatures'' dir = ((dir, e2eeInfoNoPQStr), Nothing, Nothing) : groupFeatures_ dir
+
+groupFeatures_ :: Int -> [((Int, String), Maybe (Int, String), Maybe String)]
+groupFeatures_ dir =
+  [ ((dir, "Disappearing messages: off"), Nothing, Nothing),
     ((dir, "Direct messages: on"), Nothing, Nothing),
     ((dir, "Full deletion: off"), Nothing, Nothing),
     ((dir, "Message reactions: on"), Nothing, Nothing),
@@ -310,6 +318,23 @@ groupFeatures'' dir =
     ((dir, "Files and media: on"), Nothing, Nothing),
     ((dir, "SimpleX links: on"), Nothing, Nothing),
     ((dir, "Member reports: on"), Nothing, Nothing),
+    ((dir, "Recent history: on"), Nothing, Nothing)
+  ]
+
+businessGroupFeatures :: [(Int, String)]
+businessGroupFeatures = map (\(a, _, _) -> a) $ businessGroupFeatures'' 0
+
+businessGroupFeatures'' :: Int -> [((Int, String), Maybe (Int, String), Maybe String)]
+businessGroupFeatures'' dir =
+  -- [ ((dir, e2eeInfoNoPQStr), Nothing, Nothing),
+  [ ((dir, "Disappearing messages: on"), Nothing, Nothing),
+    ((dir, "Direct messages: off"), Nothing, Nothing),
+    ((dir, "Full deletion: off"), Nothing, Nothing),
+    ((dir, "Message reactions: on"), Nothing, Nothing),
+    ((dir, "Voice messages: on"), Nothing, Nothing),
+    ((dir, "Files and media: on"), Nothing, Nothing),
+    ((dir, "SimpleX links: on"), Nothing, Nothing),
+    ((dir, "Member reports: off"), Nothing, Nothing),
     ((dir, "Recent history: on"), Nothing, Nothing)
   ]
 
@@ -505,29 +530,45 @@ dropPartialReceipt_ msg = case splitAt 2 msg of
   _ -> Nothing
 
 getInvitation :: HasCallStack => TestCC -> IO String
-getInvitation = getInvitation_ False
+getInvitation cc = do
+  (_, fullInv) <- getInvitations cc
+  pure fullInv
 
-getShortInvitation :: HasCallStack => TestCC -> IO String
-getShortInvitation = getInvitation_ True
+getInvitations :: HasCallStack => TestCC -> IO (String, String)
+getInvitations cc = do
+  shortInv <- getInvitation_ cc
+  cc <##. "The invitation link for old clients:"
+  fullInv <- getTermLine cc
+  pure (shortInv, fullInv)
 
-getInvitation_ :: HasCallStack => Bool -> TestCC -> IO String
-getInvitation_ short cc = do
+getInvitationNoShortLink :: HasCallStack => TestCC -> IO String
+getInvitationNoShortLink = getInvitation_
+
+getInvitation_ :: HasCallStack => TestCC -> IO String
+getInvitation_ cc = do
   cc <## "pass this invitation link to your contact (via another channel):"
   cc <## ""
   inv <- getTermLine cc
   cc <## ""
   cc <## "and ask them to connect: /c <invitation_link_above>"
-  when short $ cc <##. "The invitation link for old clients: https://simplex.chat/invitation#"
   pure inv
-
-getShortContactLink :: HasCallStack => TestCC -> Bool -> IO (String, String)
-getShortContactLink cc created = do
-  shortLink <- getContactLink cc created
-  fullLink <- dropLinePrefix "The contact link for old clients: " =<< getTermLine cc
-  pure (shortLink, fullLink)
 
 getContactLink :: HasCallStack => TestCC -> Bool -> IO String
 getContactLink cc created = do
+  (_shortLink, fullLink) <- getContactLinks cc created
+  pure fullLink
+
+getContactLinks :: HasCallStack => TestCC -> Bool -> IO (String, String)
+getContactLinks cc created = do
+  shortLink <- getContactLink_ cc created
+  fullLink <- dropLinePrefix "The contact link for old clients: " =<< getTermLine cc
+  pure (shortLink, fullLink)
+
+getContactLinkNoShortLink :: HasCallStack => TestCC -> Bool -> IO String
+getContactLinkNoShortLink = getContactLink_
+
+getContactLink_ :: HasCallStack => TestCC -> Bool -> IO String
+getContactLink_ cc created = do
   cc <## if created then "Your new chat address is created!" else "Your chat address:"
   cc <## ""
   link <- getTermLine cc
@@ -543,14 +584,22 @@ dropLinePrefix line s
   | line `isPrefixOf` s = pure $ drop (length line) s
   | otherwise = error $ "expected to start from: " <> line <> ", got: " <> s
 
-getShortGroupLink :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO (String, String)
-getShortGroupLink cc gName mRole created = do
-  shortLink <- getGroupLink cc gName mRole created
+getGroupLink :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO String
+getGroupLink cc gName mRole created = do
+  (_shortLink, fullLink) <- getGroupLinks cc gName mRole created
+  pure fullLink
+
+getGroupLinks :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO (String, String)
+getGroupLinks cc gName mRole created = do
+  shortLink <- getGroupLink_ cc gName mRole created
   fullLink <- dropLinePrefix "The group link for old clients: " =<< getTermLine cc
   pure (shortLink, fullLink)
 
-getGroupLink :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO String
-getGroupLink cc gName mRole created = do
+getGroupLinkNoShortLink :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO String
+getGroupLinkNoShortLink = getGroupLink_
+
+getGroupLink_ :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO String
+getGroupLink_ cc gName mRole created = do
   cc <## if created then "Group link is created!" else "Group link:"
   cc <## ""
   link <- getTermLine cc
@@ -639,12 +688,20 @@ showActiveUser cc name = do
   cc <## "use /p <display name> to change it"
   cc <## "(the updated profile will be sent to all your contacts)"
 
+connectUsersNoShortLink :: HasCallStack => TestCC -> TestCC -> IO ()
+connectUsersNoShortLink cc1 cc2 = connectUsers_ cc1 cc2 True
+
 connectUsers :: HasCallStack => TestCC -> TestCC -> IO ()
-connectUsers cc1 cc2 = do
+connectUsers cc1 cc2 = connectUsers_ cc1 cc2 False
+
+connectUsers_ :: HasCallStack => TestCC -> TestCC -> Bool -> IO ()
+connectUsers_ cc1 cc2 noShortLink = do
   name1 <- showName cc1
   name2 <- showName cc2
   cc1 ##> "/c"
-  inv <- getInvitation cc1
+  inv <- if noShortLink
+    then getInvitationNoShortLink cc1
+    else getInvitation cc1
   cc2 ##> ("/c " <> inv)
   cc2 <## "confirmation sent!"
   concurrently_

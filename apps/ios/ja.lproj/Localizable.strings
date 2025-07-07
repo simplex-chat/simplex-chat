@@ -1962,7 +1962,7 @@ snd error text */
 "Join" = "参加";
 
 /* No comment provided by engineer. */
-"join as %@" = "%@ として参加";
+"Join as %@" = "%@ として参加";
 
 /* new chat sheet title */
 "Join group" = "グループに参加";
@@ -3413,7 +3413,7 @@ chat item action */
 "You are connected to the server used to receive messages from this contact." = "この連絡先から受信するメッセージのサーバに既に接続してます。";
 
 /* No comment provided by engineer. */
-"you are invited to group" = "グループ招待が届きました";
+"You are invited to group" = "グループ招待が届きました";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "グループ招待が届きました";
@@ -3603,4 +3603,3 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "あなたのSimpleXアドレス";
-

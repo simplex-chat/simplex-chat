@@ -65,10 +65,10 @@ runSimplexChat ChatOpts {maintenance} u cc chat
       waitEither_ a1 a2
 
 sendChatCmdStr :: ChatController -> String -> IO (Either ChatError ChatResponse)
-sendChatCmdStr cc s = runReaderT (execChatCommand Nothing . encodeUtf8 $ T.pack s) cc
+sendChatCmdStr cc s = runReaderT (execChatCommand Nothing (encodeUtf8 $ T.pack s) 0) cc
 
 sendChatCmd :: ChatController -> ChatCommand -> IO (Either ChatError ChatResponse)
-sendChatCmd cc cmd = runReaderT (execChatCommand' cmd) cc
+sendChatCmd cc cmd = runReaderT (execChatCommand' cmd 0) cc
 
 getSelectActiveUser :: DBStore -> IO (Maybe User)
 getSelectActiveUser st = do
@@ -108,7 +108,7 @@ createActiveUser cc = do
     loop = do
       displayName <- T.pack <$> getWithPrompt "display name"
       let profile = Just Profile {displayName, fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing}
-      execChatCommand' (CreateActiveUser NewUser {profile, pastTimestamp = False}) `runReaderT` cc >>= \case
+      execChatCommand' (CreateActiveUser NewUser {profile, pastTimestamp = False}) 0 `runReaderT` cc >>= \case
         Right (CRActiveUser user) -> pure user
         r -> printResponseEvent (Nothing, Nothing) (config cc) r >> loop
 

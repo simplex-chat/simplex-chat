@@ -728,7 +728,7 @@ swipe action */
 "Auto-accept images" = "Images auto-acceptées";
 
 /* alert title */
-"Auto-accept settings" = "Paramètres de réception automatique";
+"SimpleX address settings" = "Paramètres de réception automatique";
 
 /* No comment provided by engineer. */
 "Back" = "Retour";
@@ -2924,7 +2924,7 @@ snd error text */
 "Join" = "Rejoindre";
 
 /* No comment provided by engineer. */
-"join as %@" = "rejoindre entant que %@";
+"Join as %@" = "rejoindre entant que %@";
 
 /* new chat sheet title */
 "Join group" = "Rejoindre le groupe";
@@ -4284,7 +4284,7 @@ chat item action */
 "Send delivery receipts to" = "Envoyer les accusés de réception à";
 
 /* No comment provided by engineer. */
-"send direct message" = "envoyer un message direct";
+"send to connect" = "envoyer un message direct";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Envoyer un message direct pour vous connecter";
@@ -5473,7 +5473,7 @@ chat item action */
 "You are connected to the server used to receive messages from this contact." = "Vous êtes connecté·e au serveur utilisé pour recevoir les messages de ce contact.";
 
 /* No comment provided by engineer. */
-"you are invited to group" = "vous êtes invité·e au groupe";
+"You are invited to group" = "vous êtes invité·e au groupe";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Vous êtes invité·e au groupe";
@@ -5729,4 +5729,3 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Votre adresse SimpleX";
-

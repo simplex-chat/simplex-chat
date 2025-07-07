@@ -75,11 +75,11 @@ remoteFilesFolder = "simplex_v1_files"
 
 -- when acting as host
 minRemoteCtrlVersion :: AppVersion
-minRemoteCtrlVersion = AppVersion [6, 4, 0, 3]
+minRemoteCtrlVersion = AppVersion [6, 4, 0, 5, 1]
 
 -- when acting as controller
 minRemoteHostVersion :: AppVersion
-minRemoteHostVersion = AppVersion [6, 4, 0, 3]
+minRemoteHostVersion = AppVersion [6, 4, 0, 5, 1]
 
 currentAppVersion :: AppVersion
 currentAppVersion = AppVersion SC.version
@@ -366,8 +366,8 @@ getRemoteFile rhId rf = do
   createDirectoryIfMissing True dir
   liftRH rhId $ remoteGetFile c dir rf
 
-processRemoteCommand :: RemoteHostId -> RemoteHostClient -> ChatCommand -> ByteString -> CM ChatResponse
-processRemoteCommand remoteHostId c cmd s = case cmd of
+processRemoteCommand :: RemoteHostId -> RemoteHostClient -> ChatCommand -> ByteString -> Int -> CM ChatResponse
+processRemoteCommand remoteHostId c cmd s retryNum = case cmd of
   SendFile chatName f -> sendFile "/f" chatName f
   SendImage chatName f -> sendFile "/img" chatName f
   _ -> chatRemoteSend s
@@ -380,7 +380,7 @@ processRemoteCommand remoteHostId c cmd s = case cmd of
     cryptoFileStr CryptoFile {filePath, cryptoArgs} =
       maybe "" (\(CFArgs key nonce) -> "key=" <> strEncode key <> " nonce=" <> strEncode nonce <> " ") cryptoArgs
         <> encodeUtf8 (T.pack filePath)
-    chatRemoteSend = either throwError pure <=< liftRH remoteHostId . remoteSend c
+    chatRemoteSend cmd' = either throwError pure =<< liftRH remoteHostId (remoteSend c cmd' retryNum)
 
 liftRH :: RemoteHostId -> ExceptT RemoteProtocolError IO a -> CM a
 liftRH rhId = liftError (ChatErrorRemoteHost (RHId rhId) . RHEProtocolError)
@@ -497,8 +497,8 @@ parseCtrlAppInfo :: JT.Value -> CM CtrlAppInfo
 parseCtrlAppInfo ctrlAppInfo = do
   liftEitherWith (const $ ChatErrorRemoteCtrl RCEBadInvitation) $ JT.parseEither J.parseJSON ctrlAppInfo
 
-handleRemoteCommand :: (ByteString -> CM' (Either ChatError ChatResponse)) -> RemoteCrypto -> TBQueue (Either ChatError ChatEvent) -> HTTP2Request -> CM' ()
-handleRemoteCommand execChatCommand encryption remoteOutputQ HTTP2Request {request, reqBody, sendResponse} = do
+handleRemoteCommand :: (ByteString -> Int -> CM' (Either ChatError ChatResponse)) -> RemoteCrypto -> TBQueue (Either ChatError ChatEvent) -> HTTP2Request -> CM' ()
+handleRemoteCommand execCC encryption remoteOutputQ HTTP2Request {request, reqBody, sendResponse} = do
   logDebug "handleRemoteCommand"
   liftIO (tryRemoteError' parseRequest) >>= \case
     Right (rfKN, getNext, rc) -> do
@@ -514,7 +514,7 @@ handleRemoteCommand execChatCommand encryption remoteOutputQ HTTP2Request {reque
     replyError = reply . RRChatResponse . RRError
     processCommand :: User -> C.SbKeyNonce -> GetChunk -> RemoteCommand -> CM ()
     processCommand user rfKN getNext = \case
-      RCSend {command} -> lift $ handleSend execChatCommand command >>= reply
+      RCSend {command, retryNumber} -> lift $ handleSend execCC command retryNumber >>= reply
       RCRecv {wait = time} -> lift $ liftIO (handleRecv time remoteOutputQ) >>= reply
       RCStoreFile {fileName, fileSize, fileDigest} -> lift $ handleStoreFile rfKN fileName fileSize fileDigest getNext >>= reply
       RCGetFile {file} -> handleGetFile user file replyWith
@@ -550,12 +550,12 @@ tryRemoteError' :: ExceptT RemoteProtocolError IO a -> IO (Either RemoteProtocol
 tryRemoteError' = tryAllErrors' (RPEException . tshow)
 {-# INLINE tryRemoteError' #-}
 
-handleSend :: (ByteString -> CM' (Either ChatError ChatResponse)) -> Text -> CM' RemoteResponse
-handleSend execChatCommand command = do
+handleSend :: (ByteString -> Int -> CM' (Either ChatError ChatResponse)) -> Text -> Int -> CM' RemoteResponse
+handleSend execCC command retryNum = do
   logDebug $ "Send: " <> tshow command
-  -- execChatCommand checks for remote-allowed commands
-  -- convert errors thrown in execChatCommand into error responses to prevent aborting the protocol wrapper
-  RRChatResponse . eitherToResult <$> execChatCommand (encodeUtf8 command)
+  -- execCC checks for remote-allowed commands
+  -- convert errors thrown in execCC into error responses to prevent aborting the protocol wrapper
+  RRChatResponse . eitherToResult <$> execCC (encodeUtf8 command) retryNum
 
 handleRecv :: Int -> TBQueue (Either ChatError ChatEvent) -> IO RemoteResponse
 handleRecv time events = do
@@ -615,8 +615,8 @@ remoteCtrlInfo RemoteCtrl {remoteCtrlId, ctrlDeviceName} sessionState =
   RemoteCtrlInfo {remoteCtrlId, ctrlDeviceName, sessionState}
 
 -- | Take a look at emoji of tlsunique, commit pairing, and start session server
-verifyRemoteCtrlSession :: (ByteString -> CM' (Either ChatError ChatResponse)) -> Text -> CM RemoteCtrlInfo
-verifyRemoteCtrlSession execChatCommand sessCode' = do
+verifyRemoteCtrlSession :: (ByteString -> Int -> CM' (Either ChatError ChatResponse)) -> Text -> CM RemoteCtrlInfo
+verifyRemoteCtrlSession execCC sessCode' = do
   (sseq, client, ctrlName, sessionCode, vars) <-
     chatReadVar remoteCtrlSession >>= \case
       Nothing -> throwError $ ChatErrorRemoteCtrl RCEInactive
@@ -631,7 +631,7 @@ verifyRemoteCtrlSession execChatCommand sessCode' = do
     remoteOutputQ <- asks (tbqSize . config) >>= newTBQueueIO
     encryption <- mkCtrlRemoteCrypto sessionKeys $ tlsUniq tls
     cc <- ask
-    http2Server <- liftIO . async $ attachHTTP2Server tls $ \req -> handleRemoteCommand execChatCommand encryption remoteOutputQ req `runReaderT` cc
+    http2Server <- liftIO . async $ attachHTTP2Server tls $ \req -> handleRemoteCommand execCC encryption remoteOutputQ req `runReaderT` cc
     void . forkIO $ monitor sseq http2Server
     updateRemoteCtrlSession sseq $ \case
       RCSessionPendingConfirmation {} -> Right RCSessionConnected {remoteCtrlId, rcsClient = client, rcsSession, tls, http2Server, remoteOutputQ}
