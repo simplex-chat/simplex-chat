@@ -342,6 +342,7 @@ time interval */
 
 /* accept contact request via notification
 accept incoming call via notification
+alert action
 swipe action */
 "Accept" = "Aceptar";
 
@@ -360,7 +361,7 @@ swipe action */
 /* notification body */
 "Accept contact request from %@?" = "¿Aceptar solicitud de contacto de %@?";
 
-/* accept contact request via notification
+/* alert action
 swipe action */
 "Accept incognito" = "Aceptar incógnito";
 
@@ -411,6 +412,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Add servers by scanning QR codes." = "Añadir servidores mediante el escaneo de códigos QR.";
+
+/* No comment provided by engineer. */
+"Add short link" = "Añadir enlace corto";
 
 /* No comment provided by engineer. */
 "Add team members" = "Añadir miembros del equipo";
@@ -753,9 +757,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Auto-accept images" = "Aceptar imágenes automáticamente";
-
-/* alert title */
-"SimpleX address settings" = "Auto aceptar configuración";
 
 /* No comment provided by engineer. */
 "Back" = "Volver";
@@ -1307,7 +1308,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection blocked" = "Conexión bloqueada";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection error" = "Error conexión";
 
 /* No comment provided by engineer. */
@@ -1337,7 +1338,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection terminated" = "Conexión finalizada";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection timeout" = "Tiempo de conexión agotado";
 
 /* No comment provided by engineer. */
@@ -2160,6 +2161,9 @@ chat item action */
 "Error adding server" = "Error al añadir servidor";
 
 /* No comment provided by engineer. */
+"Error adding short link" = "Error al añadir enlace corto";
+
+/* No comment provided by engineer. */
 "Error changing address" = "Error al cambiar servidor";
 
 /* No comment provided by engineer. */
@@ -2177,7 +2181,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error checking token status" = "Error al verificar el estado del token";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Error connecting to forwarding server %@. Please try later." = "Error al conectar con el servidor de reenvío %@. Por favor, inténtalo más tarde.";
 
 /* No comment provided by engineer. */
@@ -2330,7 +2334,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error stopping chat" = "Error al parar SimpleX";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error switching profile" = "Error al cambiar perfil";
 
 /* alertTitle */
@@ -2676,6 +2680,9 @@ snd error text */
 
 /* snd group event chat item */
 "group profile updated" = "perfil de grupo actualizado";
+
+/* alert message */
+"Group profile was changed. If you save it, the updated profile will be sent to group members." = "El perfil del grupo ha cambiado. Si lo guardas, el perfil actualizado se enviará a los miembros del grupo.";
 
 /* No comment provided by engineer. */
 "Group welcome message" = "Mensaje de bienvenida en grupos";
@@ -3741,7 +3748,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Open changes" = "Abrir cambios";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Open chat" = "Abrir chat";
 
 /* authentication reason */
@@ -3891,7 +3898,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Comprueba que has usado el enlace correcto o pide a tu contacto que te envíe otro.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Please check your network connection with %@ and try again." = "Comprueba tu conexión de red con %@ e inténtalo de nuevo.";
 
 /* No comment provided by engineer. */
@@ -3996,7 +4003,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Private routing" = "Enrutamiento privado";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Private routing error" = "Error de enrutamiento privado";
 
 /* No comment provided by engineer. */
@@ -4203,14 +4210,15 @@ new chat action */
 /* token status text */
 "Registered" = "Registrado";
 
-/* reject incoming call via notification
+/* alert action
+reject incoming call via notification
 swipe action */
 "Reject" = "Rechazar";
 
 /* No comment provided by engineer. */
 "Reject (sender NOT notified)" = "Rechazar contacto (NO se notifica al remitente)";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Reject contact request" = "Rechazar solicitud de contacto";
 
 /* alert title */
@@ -4369,7 +4377,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Restore database error" = "Error al restaurar base de datos";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Retry" = "Reintentar";
 
 /* chat item action */
@@ -4418,6 +4426,9 @@ chat item action */
 /* alert button */
 "Save (and notify contacts)" = "Guardar (y notificar contactos)";
 
+/* alert button */
+"Save (and notify members)" = "Guardar (y notificar miembros)";
+
 /* alert title */
 "Save admission settings?" = "¿Guardar configuración?";
 
@@ -4435,6 +4446,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Save group profile" = "Guardar perfil de grupo";
+
+/* alert title */
+"Save group profile?" = "¿Guardar perfil del grupo?";
 
 /* No comment provided by engineer. */
 "Save list" = "Guardar lista";
@@ -4576,9 +4590,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Send delivery receipts to" = "Enviar confirmaciones de entrega a";
-
-/* No comment provided by engineer. */
-"send to connect" = "Enviar mensaje directo";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Envía un mensaje para conectar";
@@ -4818,7 +4829,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Share link" = "Compartir enlace";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Share profile" = "Perfil a compartir";
 
 /* No comment provided by engineer. */
@@ -4877,6 +4888,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "SimpleX address or 1-time link?" = "¿Dirección SimpleX o enlace de un uso?";
+
+/* alert title */
+"SimpleX address settings" = "Auto aceptar configuración";
 
 /* simplex link type */
 "SimpleX channel link" = "Enlace de canal SimpleX";
@@ -5200,7 +5214,7 @@ report reason */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "¡El doble check que nos faltaba! ✅";
 
-/* No comment provided by engineer. */
+/* alert message */
 "The sender will NOT be notified" = "El remitente NO será notificado";
 
 /* No comment provided by engineer. */
@@ -5828,9 +5842,6 @@ report reason */
 "You are connected to the server used to receive messages from this contact." = "Estás conectado al servidor usado para recibir mensajes de este contacto.";
 
 /* No comment provided by engineer. */
-"You are invited to group" = "has sido invitado a un grupo";
-
-/* No comment provided by engineer. */
 "You are invited to group" = "Has sido invitado a un grupo";
 
 /* No comment provided by engineer. */
@@ -6090,3 +6101,4 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Mi dirección SimpleX";
+

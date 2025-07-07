@@ -205,7 +205,7 @@ func proxyErrorAlertMessage(_ addr: String) -> String {
 }
 
 func proxyDestinationErrorAlertMessage(proxyServer: String, destServer: String) -> String {
-    String.localizedStringWithFormat(NSLocalizedString("Forwarding server %1$@ failed to connect to destination server %2$@. Please try later.", comment: "alert message"), serverHostname(proxyServer), serverHostname(destServer))
+    String.localizedStringWithFormat(NSLocalizedString("Forwarding server %@ failed to connect to destination server %@. Please try later.", comment: "alert message"), serverHostname(proxyServer), serverHostname(destServer))
 }
 
 @inline(__always)

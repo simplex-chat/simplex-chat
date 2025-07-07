@@ -342,6 +342,7 @@ time interval */
 
 /* accept contact request via notification
 accept incoming call via notification
+alert action
 swipe action */
 "Accept" = "Kabul et";
 
@@ -360,7 +361,7 @@ swipe action */
 /* notification body */
 "Accept contact request from %@?" = "%@ 'den gelen iletişim isteği kabul edilsin mi?";
 
-/* accept contact request via notification
+/* alert action
 swipe action */
 "Accept incognito" = "Takma adla kabul et";
 
@@ -702,9 +703,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Auto-accept images" = "Fotoğrafları otomatik kabul et";
-
-/* alert title */
-"SimpleX address settings" = "Ayarları otomatik olarak kabul et";
 
 /* No comment provided by engineer. */
 "Back" = "Geri";
@@ -1211,7 +1209,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection and servers status." = "Bağlantı ve sunucuların durumu.";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection error" = "Bağlantı hatası";
 
 /* No comment provided by engineer. */
@@ -1232,7 +1230,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection terminated" = "Bağlantı sonlandırılmış";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection timeout" = "Bağlantı süresi geçmiş";
 
 /* No comment provided by engineer. */
@@ -2015,7 +2013,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error changing to incognito!" = "Gizli moduna geçerken hata oluştu!";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Error connecting to forwarding server %@. Please try later." = "Yönlendirme sunucusu %@'ya bağlanırken hata oluştu. Lütfen daha sonra deneyin.";
 
 /* No comment provided by engineer. */
@@ -2150,7 +2148,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error stopping chat" = "Sohbet durdurulurken hata oluştu";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error switching profile" = "Profil değiştirme sırasında hata oluştu";
 
 /* alertTitle */
@@ -3372,7 +3370,7 @@ new chat action */
 /* alert action */
 "Open" = "Aç";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Open chat" = "Sohbeti aç";
 
 /* authentication reason */
@@ -3492,7 +3490,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Lütfen doğru bağlantıyı kullandığınızı kontrol edin veya kişiden size başka bir bağlantı göndermesini isteyin.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Please check your network connection with %@ and try again." = "Lütfen ağ bağlantınızı %@ ile kontrol edin ve tekrar deneyin.";
 
 /* No comment provided by engineer. */
@@ -3570,7 +3568,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Private routing" = "Gizli yönlendirme";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Private routing error" = "Gizli yönlendirme hatası";
 
 /* No comment provided by engineer. */
@@ -3765,14 +3763,15 @@ new chat action */
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Azaltılmış pil kullanımı";
 
-/* reject incoming call via notification
+/* alert action
+reject incoming call via notification
 swipe action */
 "Reject" = "Reddet";
 
 /* No comment provided by engineer. */
 "Reject (sender NOT notified)" = "Reddet (göndericiye bildirim GİTMEYECEKTİR)";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Reject contact request" = "Bağlanma isteğini reddet";
 
 /* call status */
@@ -3883,7 +3882,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Restore database error" = "Veritabanını geri yüklerken hata oluştu";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Retry" = "Yeniden dene";
 
 /* chat item action */
@@ -4069,9 +4068,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Send delivery receipts to" = "Görüldü bilgilerini şuraya gönder";
-
-/* No comment provided by engineer. */
-"send to connect" = "doğrudan mesaj gönder";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Bağlanmak için doğrudan mesaj gönder";
@@ -4281,7 +4277,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Share link" = "Bağlantıyı paylaş";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Share profile" = "Profil paylaş";
 
 /* No comment provided by engineer. */
@@ -4328,6 +4324,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "SimpleX Address" = "SimpleX Adresi";
+
+/* alert title */
+"SimpleX address settings" = "Ayarları otomatik olarak kabul et";
 
 /* No comment provided by engineer. */
 "SimpleX Chat security was audited by Trail of Bits." = "SimpleX Chat güvenliği Trails of Bits tarafından denetlenmiştir.";
@@ -4614,7 +4613,7 @@ chat item action */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Özlediğimiz ikinci tik! ✅";
 
-/* No comment provided by engineer. */
+/* alert message */
 "The sender will NOT be notified" = "Gönderene BİLDİRİLMEYECEKTİR";
 
 /* No comment provided by engineer. */
@@ -5167,9 +5166,6 @@ chat item action */
 "You are connected to the server used to receive messages from this contact." = "Bu kişiden mesaj almak için kullanılan sunucuya bağlısınız.";
 
 /* No comment provided by engineer. */
-"You are invited to group" = "gruba davet edildiniz";
-
-/* No comment provided by engineer. */
 "You are invited to group" = "Gruba davet edildiniz";
 
 /* No comment provided by engineer. */
@@ -5411,3 +5407,4 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "SimpleX adresin";
+

@@ -2423,7 +2423,7 @@
     <string name="accept_contact_request">اقبل طلب جهة الاتصال</string>
     <string name="compose_view_add_message">أضف رسالة</string>
     <string name="e2ee_info_e2ee"><![CDATA[الرسائل محمية بواسطة <b>التعمية بين الطرفين</b>.]]></string>
-    <string name="compose_view_send_contact_request_alert_text"><![CDATA[لن تتمكن من إرسال الرسائل <b> <b>إلا بعد قبول طلبك</b>.]]>.</string>
+    <string name="compose_view_send_contact_request_alert_text"><![CDATA[لن تتمكن من إرسال الرسائل <b>إلا بعد قبول طلبك</b>.]]></string>
     <string name="compose_view_connect">اتصل</string>
     <string name="contact_should_accept">يجب أن يقبل جهة الاتصال…</string>
     <string name="error_changing_contact_user">خطأ في تغيير مستخدم جهة الاتصال</string>
