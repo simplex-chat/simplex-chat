@@ -5287,9 +5287,9 @@ This is your link for group %@!</target>
         <target>New events</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="New group role: moderator" xml:space="preserve">
-        <source>New group role: moderator</source>
-        <target>New group role: moderator</target>
+      <trans-unit id="New group role: Moderator" xml:space="preserve">
+        <source>New group role: Moderator</source>
+        <target>New group role: Moderator</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New in %@" xml:space="preserve">

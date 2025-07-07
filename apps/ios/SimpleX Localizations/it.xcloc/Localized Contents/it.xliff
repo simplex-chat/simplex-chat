@@ -5283,8 +5283,8 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Nuovi eventi</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="New group role: moderator" xml:space="preserve">
-        <source>New group role: moderator</source>
+      <trans-unit id="New group role: Moderator" xml:space="preserve">
+        <source>New group role: Moderator</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New in %@" xml:space="preserve">

@@ -600,7 +600,7 @@ private let versionDescriptions: [VersionDescription] = [
             )),
             .feature(Description(
                 icon: "flag",
-                title: "New group role: moderator",
+                title: "New group role: Moderator",
                 description: "Removes messages and blocks members."
             )),
             .feature(Description(
