@@ -755,9 +755,7 @@ struct ComposeView: View {
                     clearState()
                 }
             } else {
-                await MainActor.run {
-                    composeState.inProgress = false
-                }
+                await MainActor.run { composeState.inProgress = false }
             }
         }
     }
@@ -774,9 +772,7 @@ struct ComposeView: View {
                     clearState()
                 }
             } else {
-                await MainActor.run {
-                    composeState.inProgress = false
-                }
+                await MainActor.run { composeState.inProgress = false }
             }
         }
     }
