@@ -817,7 +817,39 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         )
       ),
     )
+  ),
+  VersionDescription(
+    version = "v6.4",
+    post = "https://simplex.chat/blog/20250703-simplex-network-protocol-extension-for-securely-connecting-people.html",
+    features = listOf(
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_person,
+        titleId = MR.strings.v6_4_connect_faster,
+        descrId = MR.strings.v6_4_connect_faster_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_chat_person,
+        titleId = MR.strings.v6_4_review_members,
+        descrId = MR.strings.v6_4_review_members_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_contact_support,
+        titleId = MR.strings.v6_4_support_chat,
+        descrId = MR.strings.v6_4_support_chat_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_flag,
+        titleId = MR.strings.v6_4_role_moderator,
+        descrId = MR.strings.v6_4_role_moderator_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_battery_3_bar,
+        titleId = MR.strings.v5_8_message_delivery,
+        descrId = MR.strings.v6_4_message_delivery_descr
+      ),
+    )
   )
+
 )
 
 private val lastVersion = versionDescriptions.last().version

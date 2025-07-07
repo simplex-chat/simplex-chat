@@ -493,14 +493,13 @@ struct ChatInfoView: View {
     }
     
     private func sendReceiptsOption() -> some View {
-        Picker(selection: $sendReceipts) {
+        WrappedPicker(selection: $sendReceipts) {
             ForEach([.yes, .no, .userDefault(sendReceiptsUserDefault)]) { (opt: SendReceipts) in
                 Text(opt.text)
             }
         } label: {
             Label("Send receipts", systemImage: "checkmark.message")
         }
-        .frame(height: 36)
         .onChange(of: sendReceipts) { _ in
             setSendReceipts()
         }
@@ -663,7 +662,7 @@ struct ChatTTLOption: View {
     @State private var chatItemTTL: ChatTTL = ChatTTL.chat(.seconds(0))
 
     var body: some View {
-        Picker("Delete messages after", selection: $chatItemTTL) {
+        WrappedPicker("Delete messages after", selection: $chatItemTTL) {
             ForEach(ChatItemTTL.values) { ttl in
                 Text(ttl.deleteAfterText).tag(ChatTTL.chat(ttl))
             }
@@ -675,7 +674,6 @@ struct ChatTTLOption: View {
             }
         }
         .disabled(progressIndicator)
-        .frame(height: 36)
         .onChange(of: chatItemTTL) { ttl in
             if ttl == currentChatItemTTL { return }
             setChatTTL(

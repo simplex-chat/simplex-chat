@@ -195,13 +195,12 @@ struct AdvancedNetworkSettings: View {
 
                 if developerTools {
                     Section {
-                        Picker("Transport isolation", selection: $netCfg.sessionMode) {
+                        WrappedPicker("Transport isolation", selection: $netCfg.sessionMode) {
                             let modes = TransportSessionMode.values.contains(netCfg.sessionMode)
                                 ? TransportSessionMode.values
                                 : TransportSessionMode.values + [netCfg.sessionMode]
                             ForEach(modes, id: \.self) { Text($0.text) }
                         }
-                        .frame(height: 36)
                     } footer: {
                         sessionModeInfo(netCfg.sessionMode)
                             .foregroundColor(theme.colors.secondary)
@@ -209,10 +208,9 @@ struct AdvancedNetworkSettings: View {
                 }
 
                 Section {
-                    Picker("Use web port", selection: $netCfg.smpWebPortServers) {
+                    WrappedPicker("Use web port", selection: $netCfg.smpWebPortServers) {
                         ForEach(SMPWebPortServers.allCases, id: \.self) { Text($0.text) }
                     }
-                    .frame(height: 36)
                 } header: {
                     Text("TCP port for messaging")
                 } footer: {
