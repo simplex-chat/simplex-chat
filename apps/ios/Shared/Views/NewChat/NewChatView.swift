@@ -681,7 +681,10 @@ private struct ConnectView: View {
         planAndConnect(
             link,
             theme: theme,
-            dismiss: true
+            dismiss: true,
+            cleanup: {
+                pastedLink = ""
+            }
         )
     }
 }
@@ -1422,13 +1425,7 @@ private func connectContactViaAddress_(_ contact: Contact, dismiss: Bool, incogn
                 dismissAllSheets(animated: true)
             }
         }
-        await MainActor.run {
-            ChatModel.shared.connectInProgress = NSLocalizedString("Connecting to SimpleX link…", comment: "in progress text")
-        }
         let ok = await connectContactViaAddress(contact.contactId, incognito, showAlert: { AlertManager.shared.showAlert($0) })
-        await MainActor.run {
-            ChatModel.shared.connectInProgress = nil
-        }
         if ok {
             AlertManager.shared.showAlert(connReqSentAlert(.contact))
         }
@@ -1444,12 +1441,8 @@ private func connectViaLink(
     cleanup: (() -> Void)?
 ) {
     Task {
-        await MainActor.run {
-            ChatModel.shared.connectInProgress = NSLocalizedString("Connecting to SimpleX link…", comment: "in progress text")
-        }
         if let (connReqType, pcc) = await apiConnect(incognito: incognito, connLink: connectionLink) {
             await MainActor.run {
-                ChatModel.shared.connectInProgress = nil
                 ChatModel.shared.updateContactConnection(pcc)
             }
             let crt: ConnReqType
@@ -1468,9 +1461,6 @@ private func connectViaLink(
                 }
             }
         } else {
-            await MainActor.run {
-                ChatModel.shared.connectInProgress = nil
-            }
             if dismiss {
                 DispatchQueue.main.async {
                     dismissAllSheets(animated: true)
