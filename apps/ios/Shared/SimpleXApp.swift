@@ -15,7 +15,6 @@ let logger = Logger()
 struct SimpleXApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var chatModel = ChatModel.shared
-    @StateObject private var inProgressManager = InProgressManager.shared
     @ObservedObject var alertManager = AlertManager.shared
 
     @Environment(\.scenePhase) var scenePhase
@@ -37,91 +36,86 @@ struct SimpleXApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ZStack {
-                // contentAccessAuthenticationExtended has to be passed to ContentView on view initialization,
-                // so that it's computed by the time view renders, and not on event after rendering
-                ContentView(contentAccessAuthenticationExtended: !authenticationExpired())
-                    .environmentObject(chatModel)
-                    .environmentObject(AppTheme.shared)
-                    .onOpenURL { url in
-                        logger.debug("ContentView.onOpenURL: \(url)")
-                        if AppChatState.shared.value == .active {
-                            chatModel.appOpenUrl = url
+            // contentAccessAuthenticationExtended has to be passed to ContentView on view initialization,
+            // so that it's computed by the time view renders, and not on event after rendering
+            ContentView(contentAccessAuthenticationExtended: !authenticationExpired())
+                .environmentObject(chatModel)
+                .environmentObject(AppTheme.shared)
+                .onOpenURL { url in
+                    logger.debug("ContentView.onOpenURL: \(url)")
+                    if AppChatState.shared.value == .active {
+                        chatModel.appOpenUrl = url
+                    } else {
+                        appOpenUrlLater = url
+                    }
+                }
+                .onAppear() {
+                    // Present screen for continue migration if it wasn't finished yet
+                    if chatModel.migrationState != nil {
+                        // It's important, otherwise, user may be locked in undefined state
+                        onboardingStageDefault.set(.step1_SimpleXInfo)
+                        chatModel.onboardingStage = onboardingStageDefault.get()
+                    } else if kcAppPassword.get() == nil || kcSelfDestructPassword.get() == nil {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                            initChatAndMigrate()
+                        }
+                    }
+                }
+                .onChange(of: scenePhase) { phase in
+                    logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
+                    AppSheetState.shared.scenePhaseActive = phase == .active
+                    switch (phase) {
+                    case .background:
+                        // --- authentication
+                        // see ContentView .onChange(of: scenePhase) for remaining authentication logic
+                        if chatModel.contentViewAccessAuthenticated {
+                            enteredBackgroundAuthenticated = ProcessInfo.processInfo.systemUptime
+                        }
+                        chatModel.contentViewAccessAuthenticated = false
+                        // authentication ---
+                        
+                        if CallController.useCallKit() && chatModel.activeCall != nil {
+                            CallController.shared.shouldSuspendChat = true
                         } else {
-                            appOpenUrlLater = url
+                            suspendChat()
+                            BGManager.shared.schedule()
                         }
-                    }
-                    .onAppear() {
-                        // Present screen for continue migration if it wasn't finished yet
-                        if chatModel.migrationState != nil {
-                            // It's important, otherwise, user may be locked in undefined state
-                            onboardingStageDefault.set(.step1_SimpleXInfo)
-                            chatModel.onboardingStage = onboardingStageDefault.get()
-                        } else if kcAppPassword.get() == nil || kcSelfDestructPassword.get() == nil {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                                initChatAndMigrate()
-                            }
-                        }
-                    }
-                    .onChange(of: scenePhase) { phase in
-                        logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
-                        AppSheetState.shared.scenePhaseActive = phase == .active
-                        switch (phase) {
-                        case .background:
-                            // --- authentication
-                            // see ContentView .onChange(of: scenePhase) for remaining authentication logic
-                            if chatModel.contentViewAccessAuthenticated {
-                                enteredBackgroundAuthenticated = ProcessInfo.processInfo.systemUptime
-                            }
-                            chatModel.contentViewAccessAuthenticated = false
-                            // authentication ---
-
-                            if CallController.useCallKit() && chatModel.activeCall != nil {
-                                CallController.shared.shouldSuspendChat = true
-                            } else {
-                                suspendChat()
-                                BGManager.shared.schedule()
-                            }
-                            NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
-                        case .active:
-                            CallController.shared.shouldSuspendChat = false
-                            let appState = AppChatState.shared.value
-
-                            if appState != .stopped {
-                                startChatAndActivate {
-                                    if chatModel.chatRunning == true {
-                                        if let ntfResponse = chatModel.notificationResponse {
-                                            chatModel.notificationResponse = nil
-                                            NtfManager.shared.processNotificationResponse(ntfResponse)
-                                        }
-                                        if appState.inactive {
-                                            Task {
-                                                await updateChats()
-                                                if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
-                                                    await updateCallInvitations()
-                                                }
-                                                if let url = appOpenUrlLater {
-                                                    await MainActor.run {
-                                                        appOpenUrlLater = nil
-                                                        chatModel.appOpenUrl = url
-                                                    }
+                        NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
+                    case .active:
+                        CallController.shared.shouldSuspendChat = false
+                        let appState = AppChatState.shared.value
+                        
+                        if appState != .stopped {
+                            startChatAndActivate {
+                                if chatModel.chatRunning == true {
+                                    if let ntfResponse = chatModel.notificationResponse {
+                                        chatModel.notificationResponse = nil
+                                        NtfManager.shared.processNotificationResponse(ntfResponse)
+                                    }
+                                    if appState.inactive {
+                                        Task {
+                                            await updateChats()
+                                            if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
+                                                await updateCallInvitations()
+                                            }
+                                            if let url = appOpenUrlLater {
+                                                await MainActor.run {
+                                                    appOpenUrlLater = nil
+                                                    chatModel.appOpenUrl = url
                                                 }
                                             }
-                                        } else if let url = appOpenUrlLater {
-                                            appOpenUrlLater = nil
-                                            chatModel.appOpenUrl = url
                                         }
+                                    } else if let url = appOpenUrlLater {
+                                        appOpenUrlLater = nil
+                                        chatModel.appOpenUrl = url
                                     }
                                 }
                             }
-                        default:
-                            break
                         }
+                    default:
+                        break
                     }
-
-                InProgressOverlayView()
-                    .environmentObject(inProgressManager)
-            }
+                }
         }
     }
 
