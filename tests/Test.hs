@@ -9,7 +9,6 @@ import ChatClient
 import ChatTests
 import ChatTests.DBUtils
 import ChatTests.Utils (xdescribe'')
-import Control.Exception (bracket_)
 import Control.Logger.Simple
 import Data.Time.Clock.System
 import JSONTests
@@ -24,6 +23,7 @@ import UnliftIO.Temporary (withTempDirectory)
 import ValidNames
 import ViewTests
 #if defined(dbPostgres)
+import Control.Exception (bracket_)
 import PostgresSchemaDump
 import Simplex.Chat.Store.Postgres.Migrations (migrations)
 import Simplex.Messaging.Agent.Store.Postgres.Util (createDBAndUserIfNotExists, dropAllSchemasExceptSystem, dropDatabaseAndUser)

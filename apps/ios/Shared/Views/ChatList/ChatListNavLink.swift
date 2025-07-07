@@ -702,16 +702,17 @@ func joinGroup(_ groupId: Int64, _ onComplete: @escaping () async -> Void) {
     Task {
         logger.debug("joinGroup")
         do {
-            let r = try await apiJoinGroup(groupId)
-            switch r {
-            case let .joined(groupInfo):
-                await MainActor.run { ChatModel.shared.updateGroup(groupInfo) }
-            case .invitationRemoved:
-                AlertManager.shared.showAlertMsg(title: "Invitation expired!", message: "Group invitation is no longer valid, it was removed by sender.")
-                await deleteGroup()
-            case .groupNotFound:
-                AlertManager.shared.showAlertMsg(title: "No group!", message: "This group no longer exists.")
-                await deleteGroup()
+            if let r = try await apiJoinGroup(groupId) {
+                switch r {
+                case let .joined(groupInfo):
+                    await MainActor.run { ChatModel.shared.updateGroup(groupInfo) }
+                case .invitationRemoved:
+                    AlertManager.shared.showAlertMsg(title: "Invitation expired!", message: "Group invitation is no longer valid, it was removed by sender.")
+                    await deleteGroup()
+                case .groupNotFound:
+                    AlertManager.shared.showAlertMsg(title: "No group!", message: "This group no longer exists.")
+                    await deleteGroup()
+                }
             }
             await onComplete()
         } catch let error {

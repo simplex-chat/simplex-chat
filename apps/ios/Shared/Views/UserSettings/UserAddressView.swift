@@ -198,11 +198,12 @@ struct UserAddressView: View {
         progressIndicator = true
         Task {
             do {
-                let connLinkContact = try await apiCreateUserAddress()
-                DispatchQueue.main.async {
-                    chatModel.userAddress = UserContactLink(connLinkContact: connLinkContact, shortLinkDataSet: connLinkContact.connShortLink != nil, addressSettings: AddressSettings(businessAddress: false))
-                    alert = .shareOnCreate
-                    progressIndicator = false
+                if let connLinkContact = try await apiCreateUserAddress() {
+                    DispatchQueue.main.async {
+                        chatModel.userAddress = UserContactLink(connLinkContact: connLinkContact, shortLinkDataSet: connLinkContact.connShortLink != nil, addressSettings: AddressSettings(businessAddress: false))
+                        alert = .shareOnCreate
+                        progressIndicator = false
+                    }
                 }
             } catch let error {
                 logger.error("UserAddressView apiCreateUserAddress: \(responseError(error))")
@@ -488,7 +489,7 @@ struct UserAddressSettingsView: View {
                                 actions: {[
                                     UIAlertAction(
                                         title: NSLocalizedString("Cancel", comment: "alert action"),
-                                        style: .default,
+                                        style: .cancel,
                                         handler: { _ in
                                             ignoreShareViaProfileChange = true
                                             shareViaProfile = !on
@@ -510,7 +511,7 @@ struct UserAddressSettingsView: View {
                                 actions: {[
                                     UIAlertAction(
                                         title: NSLocalizedString("Cancel", comment: "alert action"),
-                                        style: .default,
+                                        style: .cancel,
                                         handler: { _ in
                                             ignoreShareViaProfileChange = true
                                             shareViaProfile = !on

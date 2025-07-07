@@ -72,10 +72,7 @@ func showAcceptMemberAlert(_ groupInfo: GroupInfo, _ member: GroupMember, dismis
                     acceptMember(groupInfo, member, .observer, dismiss: dismiss)
                 }
             ),
-            UIAlertAction(
-                title: NSLocalizedString("Cancel", comment: "alert action"),
-                style: .default
-            )
+            cancelAlertAction
         ]}
     )
 }

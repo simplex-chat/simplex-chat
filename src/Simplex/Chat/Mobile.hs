@@ -97,7 +97,11 @@ foreign export ccall "chat_reopen_store" cChatReopenStore :: StablePtr ChatContr
 
 foreign export ccall "chat_send_cmd" cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
 
+foreign export ccall "chat_send_cmd_retry" cChatSendCmdRetry :: StablePtr ChatController -> CString -> CInt -> IO CJSONString
+
 foreign export ccall "chat_send_remote_cmd" cChatSendRemoteCmd :: StablePtr ChatController -> CInt -> CString -> IO CJSONString
+
+foreign export ccall "chat_send_remote_cmd_retry" cChatSendRemoteCmdRetry :: StablePtr ChatController -> CInt -> CString -> CInt -> IO CJSONString
 
 foreign export ccall "chat_recv_msg" cChatRecvMsg :: StablePtr ChatController -> IO CJSONString
 
@@ -155,20 +159,30 @@ cChatReopenStore cPtr = do
   c <- deRefStablePtr cPtr
   newCAString =<< chatReopenStore c
 
--- | send command to chat (same syntax as in terminal for now)
+-- | send command to chat
 cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
-cChatSendCmd cPtr cCmd = do
+cChatSendCmd cPtr cCmd = cChatSendCmdRetry cPtr cCmd 0
+
+-- | send command to chat with retry count
+cChatSendCmdRetry :: StablePtr ChatController -> CString -> CInt -> IO CJSONString
+cChatSendCmdRetry cPtr cCmd cRetryNum = do
   c <- deRefStablePtr cPtr
   cmd <- B.packCString cCmd
-  newCStringFromLazyBS =<< chatSendCmd c cmd
+  newCStringFromLazyBS =<< chatSendRemoteCmdRetry c Nothing cmd (fromIntegral cRetryNum)
+{-# INLINE cChatSendCmdRetry #-}
 
--- | send command to chat (same syntax as in terminal for now)
+-- | send remote command to chat
 cChatSendRemoteCmd :: StablePtr ChatController -> CInt -> CString -> IO CJSONString
-cChatSendRemoteCmd cPtr cRemoteHostId cCmd = do
+cChatSendRemoteCmd cPtr cRhId cCmd = cChatSendRemoteCmdRetry cPtr cRhId cCmd 0
+
+-- | send remote command to chat with retry count
+cChatSendRemoteCmdRetry :: StablePtr ChatController -> CInt -> CString -> CInt -> IO CJSONString
+cChatSendRemoteCmdRetry cPtr cRemoteHostId cCmd cRetryNum = do
   c <- deRefStablePtr cPtr
   cmd <- B.packCString cCmd
   let rhId = Just $ fromIntegral cRemoteHostId
-  newCStringFromLazyBS =<< chatSendRemoteCmd c rhId cmd
+  newCStringFromLazyBS =<< chatSendRemoteCmdRetry c rhId cmd (fromIntegral cRetryNum)
+{-# INLINE cChatSendRemoteCmdRetry #-}
 
 -- | receive message from chat (blocking)
 cChatRecvMsg :: StablePtr ChatController -> IO CJSONString
@@ -294,10 +308,11 @@ handleErr :: IO () -> IO String
 handleErr a = (a $> "") `catch` (pure . show @SomeException)
 
 chatSendCmd :: ChatController -> B.ByteString -> IO JSONByteString
-chatSendCmd cc = chatSendRemoteCmd cc Nothing
+chatSendCmd cc cmd = chatSendRemoteCmdRetry cc Nothing cmd 0
+{-# INLINE chatSendCmd #-}
 
-chatSendRemoteCmd :: ChatController -> Maybe RemoteHostId -> B.ByteString -> IO JSONByteString
-chatSendRemoteCmd cc rh s = J.encode . eitherToResult rh <$> runReaderT (execChatCommand rh s) cc
+chatSendRemoteCmdRetry :: ChatController -> Maybe RemoteHostId -> B.ByteString -> Int -> IO JSONByteString
+chatSendRemoteCmdRetry cc rh s retryNum = J.encode . eitherToResult rh <$> runReaderT (execChatCommand rh s retryNum) cc
 
 chatRecvMsg :: ChatController -> IO JSONByteString
 chatRecvMsg ChatController {outputQ} = J.encode . uncurry eitherToResult <$> readChatResponse
@@ -312,6 +327,7 @@ chatRecvMsgWait cc time = fromMaybe "" <$> timeout time (chatRecvMsg cc)
 
 chatParseMarkdown :: ByteString -> JSONByteString
 chatParseMarkdown = J.encode . ParsedMarkdown . parseMaybeMarkdownList . safeDecodeUtf8
+{-# INLINE chatParseMarkdown #-}
 
 chatParseServer :: ByteString -> JSONByteString
 chatParseServer = J.encode . toServerAddress . strDecode

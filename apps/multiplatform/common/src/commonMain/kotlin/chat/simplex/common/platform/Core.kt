@@ -22,8 +22,8 @@ external fun pipeStdOutToSocket(socketName: String) : Int
 typealias ChatCtrl = Long
 external fun chatMigrateInit(dbPath: String, dbKey: String, confirm: String): Array<Any>
 external fun chatCloseStore(ctrl: ChatCtrl): String
-external fun chatSendCmd(ctrl: ChatCtrl, msg: String): String
-external fun chatSendRemoteCmd(ctrl: ChatCtrl, rhId: Int, msg: String): String
+external fun chatSendCmdRetry(ctrl: ChatCtrl, msg: String, retryNum: Int): String
+external fun chatSendRemoteCmdRetry(ctrl: ChatCtrl, rhId: Int, msg: String, retryNum: Int): String
 external fun chatRecvMsg(ctrl: ChatCtrl): String
 external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
 external fun chatParseMarkdown(str: String): String

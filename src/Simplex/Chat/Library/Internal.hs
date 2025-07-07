@@ -84,7 +84,7 @@ import Simplex.Messaging.Agent.Lock (withLock)
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Client (NetworkConfig (..))
+import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
@@ -881,8 +881,8 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
 -- - xContactId is set on the contact at the first acceptance attempt, not after accept success, which prevents profile updates after such attempt.
 --   It may be reasonable to set it when contact is first prepared, but then we can't use it to ignore requests after acceptance,
 --   and it may lead to race conditions with XInfo events.
-acceptContactRequest :: User -> UserContactRequest -> IncognitoEnabled -> CM (Contact, Connection, SndQueueSecured)
-acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = AgentInvId invId, contactId_, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId_, xContactId, pqSupport} incognito = do
+acceptContactRequest :: NetworkRequestMode -> User -> UserContactRequest -> IncognitoEnabled -> CM (Contact, Connection, SndQueueSecured)
+acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId = AgentInvId invId, contactId_, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId_, xContactId, pqSupport} incognito = do
   subMode <- chatReadVar subscriptionMode
   let pqSup = PQSupportOn
       pqSup' = pqSup `CR.pqSupportAnd` pqSupport
@@ -912,7 +912,7 @@ acceptContactRequest user@User {userId} UserContactRequest {agentInvitationId = 
   let profileToSend = userProfileToSend' user incognitoProfile (Just ct) False
   dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
   -- TODO [certs rcv]
-  (ct,conn,) . fst <$> withAgent (\a -> acceptContact a (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
+  (ct,conn,) . fst <$> withAgent (\a -> acceptContact a nm (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
 
 acceptContactRequestAsync :: User -> Int64 -> Contact -> UserContactRequest -> Maybe IncognitoProfile -> CM Contact
 acceptContactRequestAsync
