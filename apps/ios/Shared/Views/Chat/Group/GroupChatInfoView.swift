@@ -746,14 +746,13 @@ struct GroupChatInfoView: View {
     }
 
     private func sendReceiptsOption() -> some View {
-        Picker(selection: $sendReceipts) {
+        WrappedPicker(selection: $sendReceipts) {
             ForEach([.yes, .no, .userDefault(sendReceiptsUserDefault)]) { (opt: SendReceipts) in
                 Text(opt.text)
             }
         } label: {
             Label("Send receipts", systemImage: "checkmark.message")
         }
-        .frame(height: 36)
         .onChange(of: sendReceipts) { _ in
             setSendReceipts()
         }

@@ -1615,6 +1615,10 @@ set passcode view</note>
         <source>Chat with member</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Chat with members before they join." xml:space="preserve">
+        <source>Chat with members before they join.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
         <source>Chats</source>
         <target>聊天</target>
@@ -1847,6 +1851,10 @@ set passcode view</note>
       <trans-unit id="Connect automatically" xml:space="preserve">
         <source>Connect automatically</source>
         <target>自动连接</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connect faster! 🚀" xml:space="preserve">
+        <source>Connect faster! 🚀</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect to desktop" xml:space="preserve">
@@ -4659,6 +4667,10 @@ This is your link for group %@!</source>
         <target>离开群组？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Less traffic on mobile networks." xml:space="preserve">
+        <source>Less traffic on mobile networks.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Let's talk in SimpleX Chat" xml:space="preserve">
         <source>Let's talk in SimpleX Chat</source>
         <target>让我们一起在 SimpleX Chat 里聊天</target>
@@ -4906,6 +4918,10 @@ This is your link for group %@!</source>
         <source>Message forwarded</source>
         <target>消息已转发</target>
         <note>item status text</note>
+      </trans-unit>
+      <trans-unit id="Message instantly once you tap Connect." xml:space="preserve">
+        <source>Message instantly once you tap Connect.</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message may be delivered later if member becomes active." xml:space="preserve">
         <source>Message may be delivered later if member becomes active.</source>
@@ -5240,6 +5256,10 @@ This is your link for group %@!</source>
         <source>New events</source>
         <target>新事件</target>
         <note>notification</note>
+      </trans-unit>
+      <trans-unit id="New group role: moderator" xml:space="preserve">
+        <source>New group role: moderator</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New in %@" xml:space="preserve">
         <source>New in %@</source>
@@ -6432,6 +6452,10 @@ swipe action</note>
         <target>从钥匙串中删除密码？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Removes messages and blocks members." xml:space="preserve">
+        <source>Removes messages and blocks members.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Renegotiate" xml:space="preserve">
         <source>Renegotiate</source>
         <target>重新协商</target>
@@ -6599,6 +6623,10 @@ swipe action</note>
       <trans-unit id="Review conditions" xml:space="preserve">
         <source>Review conditions</source>
         <target>审阅条款</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Review group members" xml:space="preserve">
+        <source>Review group members</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Review members" xml:space="preserve">
@@ -6979,6 +7007,10 @@ chat item action</note>
       <trans-unit id="Send up to 100 last messages to new members." xml:space="preserve">
         <source>Send up to 100 last messages to new members.</source>
         <target>给新成员发送最多 100 条历史消息。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Send your private feedback to groups." xml:space="preserve">
+        <source>Send your private feedback to groups.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">

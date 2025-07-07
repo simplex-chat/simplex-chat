@@ -2418,6 +2418,15 @@
   <string name="v6_3_better_groups_performance">Better groups performance</string>
   <string name="v6_3_faster_sending_messages">Faster sending messages.</string>
   <string name="v6_3_faster_deletion_of_groups">Faster deletion of groups.</string>
+  <string name="v6_4_connect_faster">Connect faster! 🚀</string>
+  <string name="v6_4_connect_faster_descr">Message instantly once you tap Connect.</string>
+  <string name="v6_4_review_members">Review group members</string>
+  <string name="v6_4_review_members_descr">Chat with members before they join.</string>
+  <string name="v6_4_support_chat">Chat with admins</string>
+  <string name="v6_4_support_chat_descr">Send your private feedback to groups.</string>
+  <string name="v6_4_role_moderator">New group role: moderator</string>
+  <string name="v6_4_role_moderator_descr">Removes messages and blocks members.</string>
+  <string name="v6_4_message_delivery_descr">Less traffic on mobile networks.</string>
   <string name="view_updated_conditions">View updated conditions</string>
 
   <!-- CustomTimePicker -->

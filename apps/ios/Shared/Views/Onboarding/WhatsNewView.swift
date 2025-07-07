@@ -579,6 +579,37 @@ private let versionDescriptions: [VersionDescription] = [
             )),
         ]
     ),
+    VersionDescription(
+        version: "v6.4",
+        post: URL(string: "https://simplex.chat/blog/20250703-simplex-network-protocol-extension-for-securely-connecting-people.html"),
+        features: [
+            .feature(Description(
+                icon: "person",
+                title: "Connect faster! 🚀",
+                description: "Message instantly once you tap Connect."
+            )),
+            .feature(Description(
+                icon: { if #available(iOS 17, *) {"person.bubble"} else  {"person.crop.square"} }(),
+                title: "Review group members",
+                description: "Chat with members before they join."
+            )),
+            .feature(Description(
+                icon: { if #available(iOS 16, *) {"questionmark.bubble"} else {"questionmark.square"} }(),
+                title: "Chat with admins",
+                description: "Send your private feedback to groups."
+            )),
+            .feature(Description(
+                icon: "flag",
+                title: "New group role: moderator",
+                description: "Removes messages and blocks members."
+            )),
+            .feature(Description(
+                icon: "battery.50",
+                title: "Improved message delivery",
+                description: "Less traffic on mobile networks."
+            )),
+        ]
+    ),
 ]
 
 private let lastVersion = versionDescriptions.last!.version
