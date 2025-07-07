@@ -12,9 +12,13 @@ func getTopViewController() -> UIViewController? {
     let keyWindowScene = UIApplication.shared.connectedScenes.first { $0.activationState == .foregroundActive } as? UIWindowScene
     if let keyWindow = keyWindowScene?.windows.filter(\.isKeyWindow).first,
        let rootViewController = keyWindow.rootViewController {
-        // Find the top-most presented view controller
+        // Find the top-most presented view controller,
+        // excluding InProgressOverlayView controller - this avoids attempting to present alerts and other views from a view controller that’s already dismissing
         var topController = rootViewController
         while let presentedViewController = topController.presentedViewController {
+//            if !(presentedViewController is UIHostingController<InProgressOverlayView>) {
+//                topController = presentedViewController
+//            }
             topController = presentedViewController
         }
         return topController

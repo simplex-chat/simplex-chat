@@ -73,7 +73,7 @@ struct SimpleXApp: App {
                         }
                         chatModel.contentViewAccessAuthenticated = false
                         // authentication ---
-                        
+
                         if CallController.useCallKit() && chatModel.activeCall != nil {
                             CallController.shared.shouldSuspendChat = true
                         } else {
@@ -84,7 +84,7 @@ struct SimpleXApp: App {
                     case .active:
                         CallController.shared.shouldSuspendChat = false
                         let appState = AppChatState.shared.value
-                        
+
                         if appState != .stopped {
                             startChatAndActivate {
                                 if chatModel.chatRunning == true {

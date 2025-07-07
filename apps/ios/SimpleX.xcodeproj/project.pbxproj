@@ -155,7 +155,7 @@
 		6442E0BE2880182D00CEC0F9 /* GroupChatInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6442E0BD2880182D00CEC0F9 /* GroupChatInfoView.swift */; };
 		64466DCC29FFE3E800E3D48D /* MailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64466DCB29FFE3E800E3D48D /* MailView.swift */; };
 		6448BBB628FA9D56000D2AB9 /* GroupLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6448BBB528FA9D56000D2AB9 /* GroupLinkView.swift */; };
-		644A9AA22E1BD6DD00D0E6F1 /* InProgressWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 644A9AA12E1BD6D700D0E6F1 /* InProgressWindowManager.swift */; };
+		644A9AA62E1BDED200D0E6F1 /* InProgressPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 644A9AA52E1BDECE00D0E6F1 /* InProgressPresenter.swift */; };
 		644EFFDE292BCD9D00525D5B /* ComposeVoiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 644EFFDD292BCD9D00525D5B /* ComposeVoiceView.swift */; };
 		644EFFE0292CFD7F00525D5B /* CIVoiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 644EFFDF292CFD7F00525D5B /* CIVoiceView.swift */; };
 		644EFFE2292D089800525D5B /* FramedCIVoiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 644EFFE1292D089800525D5B /* FramedCIVoiceView.swift */; };
@@ -520,7 +520,7 @@
 		6442E0BD2880182D00CEC0F9 /* GroupChatInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupChatInfoView.swift; sourceTree = "<group>"; };
 		64466DCB29FFE3E800E3D48D /* MailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MailView.swift; sourceTree = "<group>"; };
 		6448BBB528FA9D56000D2AB9 /* GroupLinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupLinkView.swift; sourceTree = "<group>"; };
-		644A9AA12E1BD6D700D0E6F1 /* InProgressWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InProgressWindowManager.swift; sourceTree = "<group>"; };
+		644A9AA52E1BDECE00D0E6F1 /* InProgressPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InProgressPresenter.swift; sourceTree = "<group>"; };
 		644EFFDD292BCD9D00525D5B /* ComposeVoiceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeVoiceView.swift; sourceTree = "<group>"; };
 		644EFFDF292CFD7F00525D5B /* CIVoiceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIVoiceView.swift; sourceTree = "<group>"; };
 		644EFFE1292D089800525D5B /* FramedCIVoiceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FramedCIVoiceView.swift; sourceTree = "<group>"; };
@@ -853,8 +853,8 @@
 				CE176F1F2C87014C00145DBC /* InvertedForegroundStyle.swift */,
 				CEDB245A2C9CD71800FBC5F6 /* StickyScrollView.swift */,
 				CEFB2EDE2CA1BCC7004B1ECE /* SheetRepresentable.swift */,
+				644A9AA52E1BDECE00D0E6F1 /* InProgressPresenter.swift */,
 				CEA6E91B2CBD21B0002B5DB4 /* UserDefault.swift */,
-				644A9AA12E1BD6D700D0E6F1 /* InProgressWindowManager.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -1472,7 +1472,6 @@
 				5C93293129239BED0090FFF9 /* ProtocolServerView.swift in Sources */,
 				5C9CC7AD28C55D7800BEF955 /* DatabaseEncryptionView.swift in Sources */,
 				8C74C3EC2C1B92A900039E77 /* Theme.swift in Sources */,
-				644A9AA22E1BD6DD00D0E6F1 /* InProgressWindowManager.swift in Sources */,
 				5CE4407927ADB701007B033A /* EmojiItemView.swift in Sources */,
 				8C7D949A2B88952700B7B9E1 /* MigrateToDevice.swift in Sources */,
 				5C3F1D562842B68D00EC8A82 /* IntegrityErrorItemView.swift in Sources */,
@@ -1502,6 +1501,7 @@
 				CE984D4B2C36C5D500E3AEFF /* ChatItemClipShape.swift in Sources */,
 				64D0C2C629FAC1EC00B38D5F /* AddContactLearnMore.swift in Sources */,
 				5C3A88D127DF57800060F1C2 /* FramedItemView.swift in Sources */,
+				644A9AA62E1BDED200D0E6F1 /* InProgressPresenter.swift in Sources */,
 				5C65F343297D45E100B67AF3 /* VersionView.swift in Sources */,
 				64F1CC3B28B39D8600CD1FB1 /* IncognitoHelp.swift in Sources */,
 				5CB0BA90282713D900B3292C /* SimpleXInfo.swift in Sources */,
