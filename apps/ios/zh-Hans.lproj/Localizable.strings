@@ -342,6 +342,7 @@ time interval */
 
 /* accept contact request via notification
 accept incoming call via notification
+alert action
 swipe action */
 "Accept" = "接受";
 
@@ -354,7 +355,7 @@ swipe action */
 /* notification body */
 "Accept contact request from %@?" = "接受来自 %@ 的联系人请求？";
 
-/* accept contact request via notification
+/* alert action
 swipe action */
 "Accept incognito" = "接受隐身聊天";
 
@@ -729,9 +730,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Auto-accept images" = "自动接受图片";
-
-/* alert title */
-"SimpleX address settings" = "自动接受设置";
 
 /* No comment provided by engineer. */
 "Back" = "返回";
@@ -1271,7 +1269,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection blocked" = "连接被阻止";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection error" = "连接错误";
 
 /* No comment provided by engineer. */
@@ -1301,7 +1299,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection terminated" = "连接被终止";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection timeout" = "连接超时";
 
 /* No comment provided by engineer. */
@@ -2123,7 +2121,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error changing to incognito!" = "切换至隐身聊天出错！";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Error connecting to forwarding server %@. Please try later." = "连接到转发服务器 %@ 时出错。请稍后尝试。";
 
 /* No comment provided by engineer. */
@@ -2273,7 +2271,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error stopping chat" = "停止聊天错误";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error switching profile" = "切换配置文件出错";
 
 /* alertTitle */
@@ -3660,7 +3658,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Open changes" = "打开更改";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Open chat" = "打开聊天";
 
 /* authentication reason */
@@ -3795,7 +3793,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "请检查您使用的链接是否正确，或者让您的联系人给您发送另一个链接。";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Please check your network connection with %@ and try again." = "请检查您与%@的网络连接，然后重试。";
 
 /* No comment provided by engineer. */
@@ -3876,7 +3874,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Private routing" = "专用路由";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Private routing error" = "专用路由错误";
 
 /* No comment provided by engineer. */
@@ -4068,14 +4066,15 @@ new chat action */
 /* No comment provided by engineer. */
 "Reduced battery usage" = "减少电池使用量";
 
-/* reject incoming call via notification
+/* alert action
+reject incoming call via notification
 swipe action */
 "Reject" = "拒绝";
 
 /* No comment provided by engineer. */
 "Reject (sender NOT notified)" = "拒绝联系人（发送者不会被通知)";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Reject contact request" = "拒绝联系人请求";
 
 /* call status */
@@ -4183,7 +4182,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Restore database error" = "恢复数据库错误";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Retry" = "重试";
 
 /* chat item action */
@@ -4372,9 +4371,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Send delivery receipts to" = "将送达回执发送给";
-
-/* No comment provided by engineer. */
-"send to connect" = "发送私信";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "发送私信来连接";
@@ -4628,6 +4624,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "SimpleX address or 1-time link?" = "SimpleX 地址或一次性链接？";
+
+/* alert title */
+"SimpleX address settings" = "自动接受设置";
 
 /* simplex link type */
 "SimpleX channel link" = "SimpleX 频道链接";
@@ -4908,7 +4907,7 @@ chat item action */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "我们错过的第二个\"√\"！✅";
 
-/* No comment provided by engineer. */
+/* alert message */
 "The sender will NOT be notified" = "发送者将不会收到通知";
 
 /* No comment provided by engineer. */
@@ -5449,9 +5448,6 @@ chat item action */
 "You are invited to group" = "您被邀请加入群组";
 
 /* No comment provided by engineer. */
-"You are invited to group" = "您被邀请加入群组";
-
-/* No comment provided by engineer. */
 "You are not connected to these servers. Private routing is used to deliver messages to them." = "您未连接到这些服务器。私有路由用于向他们发送消息。";
 
 /* No comment provided by engineer. */
@@ -5678,3 +5674,4 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "您的 SimpleX 地址";
+

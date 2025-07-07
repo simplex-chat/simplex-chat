@@ -342,6 +342,7 @@ time interval */
 
 /* accept contact request via notification
 accept incoming call via notification
+alert action
 swipe action */
 "Accept" = "Прийняти";
 
@@ -360,7 +361,7 @@ swipe action */
 /* notification body */
 "Accept contact request from %@?" = "Прийняти запит на контакт від %@?";
 
-/* accept contact request via notification
+/* alert action
 swipe action */
 "Accept incognito" = "Прийняти інкогніто";
 
@@ -741,9 +742,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Auto-accept images" = "Автоматичне прийняття зображень";
-
-/* alert title */
-"SimpleX address settings" = "Автоприйняття налаштувань";
 
 /* No comment provided by engineer. */
 "Back" = "Назад";
@@ -1292,7 +1290,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection blocked" = "Підключення заблоковано";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection error" = "Помилка підключення";
 
 /* No comment provided by engineer. */
@@ -1322,7 +1320,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection terminated" = "З'єднання розірвано";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection timeout" = "Тайм-аут з'єднання";
 
 /* No comment provided by engineer. */
@@ -2153,7 +2151,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error checking token status" = "Помилка перевірки статусу токена";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Error connecting to forwarding server %@. Please try later." = "Помилка підключення до сервера переадресації %@. Спробуйте пізніше.";
 
 /* No comment provided by engineer. */
@@ -2306,7 +2304,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error stopping chat" = "Помилка зупинки чату";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error switching profile" = "Помилка перемикання профілю";
 
 /* alertTitle */
@@ -3633,7 +3631,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Open changes" = "Відкриті зміни";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Open chat" = "Відкритий чат";
 
 /* authentication reason */
@@ -3768,7 +3766,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Будь ласка, перевірте, чи ви скористалися правильним посиланням, або попросіть контактну особу надіслати вам інше.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Please check your network connection with %@ and try again." = "Будь ласка, перевірте підключення до мережі за допомогою %@ і спробуйте ще раз.";
 
 /* No comment provided by engineer. */
@@ -3852,7 +3850,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Private routing" = "Приватна маршрутизація";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Private routing error" = "Помилка приватної маршрутизації";
 
 /* No comment provided by engineer. */
@@ -4047,14 +4045,15 @@ new chat action */
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Зменшення використання акумулятора";
 
-/* reject incoming call via notification
+/* alert action
+reject incoming call via notification
 swipe action */
 "Reject" = "Відхилити";
 
 /* No comment provided by engineer. */
 "Reject (sender NOT notified)" = "Відхилити (відправника НЕ повідомлено)";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Reject contact request" = "Відхилити запит на контакт";
 
 /* call status */
@@ -4168,7 +4167,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Restore database error" = "Відновлення помилки бази даних";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Retry" = "Спробуйте ще раз";
 
 /* chat item action */
@@ -4357,9 +4356,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Send delivery receipts to" = "Надсилання звітів про доставку";
-
-/* No comment provided by engineer. */
-"send to connect" = "надіслати пряме повідомлення";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Надішліть пряме повідомлення, щоб підключитися";
@@ -4587,7 +4583,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Share link" = "Поділіться посиланням";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Share profile" = "Поділіться профілем";
 
 /* No comment provided by engineer. */
@@ -4643,6 +4639,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "SimpleX address or 1-time link?" = "SimpleX адреса або одноразове посилання?";
+
+/* alert title */
+"SimpleX address settings" = "Автоприйняття налаштувань";
 
 /* No comment provided by engineer. */
 "SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." = "SimpleX Chat і Flux уклали угоду про включення серверів, керованих Flux, у додаток.";
@@ -4950,7 +4949,7 @@ chat item action */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Другу галочку ми пропустили! ✅";
 
-/* No comment provided by engineer. */
+/* alert message */
 "The sender will NOT be notified" = "Відправник НЕ буде повідомлений";
 
 /* No comment provided by engineer. */
@@ -5548,9 +5547,6 @@ chat item action */
 "You are connected to the server used to receive messages from this contact." = "Ви підключені до сервера, який використовується для отримання повідомлень від цього контакту.";
 
 /* No comment provided by engineer. */
-"You are invited to group" = "вас запрошують до групи";
-
-/* No comment provided by engineer. */
 "You are invited to group" = "Запрошуємо вас до групи";
 
 /* No comment provided by engineer. */
@@ -5804,3 +5800,4 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Ваша адреса SimpleX";
+

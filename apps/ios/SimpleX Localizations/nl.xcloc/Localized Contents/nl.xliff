@@ -1962,7 +1962,7 @@ Dit is uw eigen eenmalige link!</target>
       <trans-unit id="Connection error" xml:space="preserve">
         <source>Connection error</source>
         <target>Verbindingsfout</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Connection error (AUTH)" xml:space="preserve">
         <source>Connection error (AUTH)</source>
@@ -2009,7 +2009,7 @@ Dit is uw eigen eenmalige link!</target>
       <trans-unit id="Connection timeout" xml:space="preserve">
         <source>Connection timeout</source>
         <target>Timeout verbinding</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Connection with desktop stopped" xml:space="preserve">
         <source>Connection with desktop stopped</source>
@@ -3240,7 +3240,7 @@ chat item action</note>
       <trans-unit id="Error connecting to forwarding server %@. Please try later." xml:space="preserve">
         <source>Error connecting to forwarding server %@. Please try later.</source>
         <target>Fout bij het verbinden met doorstuurserver %@. Probeer het later opnieuw.</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Error creating address" xml:space="preserve">
         <source>Error creating address</source>
@@ -3901,9 +3901,9 @@ snd error text</note>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve">
-        <source>Forwarding server %@ failed to connect to destination server %@. Please try later.</source>
+        <source>Forwarding server %1$@ failed to connect to destination server %2$@. Please try later.</source>
         <target>De doorstuurserver %@ kon geen verbinding maken met de bestemmingsserver %@. Probeer het later opnieuw.</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Forwarding server address is incompatible with network settings: %@." xml:space="preserve">
         <source>Forwarding server address is incompatible with network settings: %@.</source>
@@ -5399,6 +5399,10 @@ Dit is jouw link voor groep %@!</target>
         <target>Geen toestemming om spraakbericht op te nemen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="No private routing session" xml:space="preserve">
+        <source>No private routing session</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="No push server" xml:space="preserve">
         <source>No push server</source>
         <target>Lokaal</target>
@@ -5881,7 +5885,7 @@ Deel eventuele andere problemen met de ontwikkelaars.</target>
       <trans-unit id="Please check your network connection with %@ and try again." xml:space="preserve">
         <source>Please check your network connection with %@ and try again.</source>
         <target>Controleer uw netwerkverbinding met %@ en probeer het opnieuw.</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Please check yours and your contact preferences." xml:space="preserve">
         <source>Please check yours and your contact preferences.</source>
@@ -6058,7 +6062,11 @@ Fout: %@</target>
       <trans-unit id="Private routing error" xml:space="preserve">
         <source>Private routing error</source>
         <target>Fout in privéroutering</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Private routing timeout" xml:space="preserve">
+        <source>Private routing timeout</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
         <source>Profile and server connections</source>
@@ -6164,6 +6172,10 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
       <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve">
         <source>Protect your chat profiles with a password!</source>
         <target>Bescherm je chatprofielen met een wachtwoord!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Protocol background timeout" xml:space="preserve">
+        <source>Protocol background timeout</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol timeout" xml:space="preserve">
@@ -6621,7 +6633,7 @@ swipe action</note>
       <trans-unit id="Retry" xml:space="preserve">
         <source>Retry</source>
         <target>Opnieuw proberen</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert action</note>
       </trans-unit>
       <trans-unit id="Reveal" xml:space="preserve">
         <source>Reveal</source>
@@ -7733,6 +7745,10 @@ report reason</note>
       <trans-unit id="TCP connection" xml:space="preserve">
         <source>TCP connection</source>
         <target>TCP verbinding</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="TCP connection bg timeout" xml:space="preserve">
+        <source>TCP connection bg timeout</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="TCP connection timeout" xml:space="preserve">

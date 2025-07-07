@@ -291,6 +291,7 @@ time interval */
 
 /* accept contact request via notification
 accept incoming call via notification
+alert action
 swipe action */
 "Accept" = "Přijmout";
 
@@ -300,7 +301,7 @@ swipe action */
 /* notification body */
 "Accept contact request from %@?" = "Přijmout žádost o kontakt od %@?";
 
-/* accept contact request via notification
+/* alert action
 swipe action */
 "Accept incognito" = "Přijmout inkognito";
 
@@ -754,7 +755,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection" = "Připojení";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection error" = "Chyba připojení";
 
 /* No comment provided by engineer. */
@@ -766,7 +767,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection request sent!" = "Požadavek na připojení byl odeslán!";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection timeout" = "Časový limit připojení";
 
 /* connection information */
@@ -2227,7 +2228,7 @@ new chat action */
 /* alert action */
 "Open" = "Otevřít";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Open chat" = "Otevřete chat";
 
 /* authentication reason */
@@ -2281,7 +2282,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Zkontrolujte, zda jste použili správný odkaz, nebo požádejte kontakt, aby vám poslal jiný.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Please check your network connection with %@ and try again." = "Zkontrolujte síťové připojení pomocí %@ a zkuste to znovu.";
 
 /* No comment provided by engineer. */
@@ -2455,14 +2456,15 @@ new chat action */
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Snížení spotřeby baterie";
 
-/* reject incoming call via notification
+/* alert action
+reject incoming call via notification
 swipe action */
 "Reject" = "Odmítnout";
 
 /* No comment provided by engineer. */
 "Reject (sender NOT notified)" = "Odmítnout kontakt (odesílatel NEBUDE upozorněn)";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Reject contact request" = "Odmítnout žádost o kontakt";
 
 /* call status */
@@ -2657,9 +2659,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Send delivery receipts to" = "Potvrzení o doručení zasílat na";
-
-/* No comment provided by engineer. */
-"send to connect" = "odeslat přímou zprávu";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Odeslat přímou zprávu pro připojení";
@@ -2995,7 +2994,7 @@ chat item action */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Druhé zaškrtnutí jsme přehlédli! ✅";
 
-/* No comment provided by engineer. */
+/* alert message */
 "The sender will NOT be notified" = "Odesílatel NEBUDE informován";
 
 /* No comment provided by engineer. */
@@ -3302,9 +3301,6 @@ chat item action */
 "You are connected to the server used to receive messages from this contact." = "Jste připojeni k serveru, který se používá k přijímání zpráv od tohoto kontaktu.";
 
 /* No comment provided by engineer. */
-"You are invited to group" = "jste pozváni do skupiny";
-
-/* No comment provided by engineer. */
 "You are invited to group" = "Jste pozváni do skupiny";
 
 /* No comment provided by engineer. */
@@ -3489,3 +3485,4 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Vaše SimpleX adresa";
+

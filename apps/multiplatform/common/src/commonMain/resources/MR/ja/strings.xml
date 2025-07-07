@@ -1989,7 +1989,7 @@
     <string name="create_list">リストを作成</string>
     <string name="onboarding_choose_server_operators">サーバオペレータ</string>
     <string name="operator_open_conditions">利用条件を開く</string>
-    <string name="onboarding_notifications_mode_off_desc_short">バックグラウンドサービスを使用しない</string>
+    <string name="onboarding_notifications_mode_off_desc_short">バックグラウンドサービスを使用しません</string>
     <string name="accept_conditions">利用条件の承諾</string>
     <string name="operator_conditions_accepted_for_some"><![CDATA[Conditions are already accepted for following operator(s):既にオペレータ <b>%s</b> の利用条件に承諾しています。]]></string>
     <string name="address_creation_instruction">後で作成する場合はメニューから「SimpleXのアドレスを作成」を選択してください。</string>
@@ -2012,4 +2012,10 @@
     <string name="v6_3_better_groups_performance">グループのパフォーマンス向上</string>
     <string name="select_verb">選択</string>
     <string name="v6_3_better_privacy_and_security">プライバシーとセキュリティの向上</string>
+    <string name="accept_pending_member_button">承諾</string>
+    <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">プライバシーポリシーと利用条件</string>
+    <string name="onboarding_conditions_configure_server_operators">サーバオペレータの設定</string>
+    <string name="onboarding_conditions_accept">承諾</string>
+    <string name="onboarding_conditions_private_chats_not_accessible">サーバオペレータは、プライベートチャット・グループ・連絡先にはアクセスできません。</string>
+    <string name="onboarding_conditions_by_using_you_agree">SimpleX Chat を利用することで、以下の事項に同意したものと見なされます：\n- パブリックグループでは合法なコンテンツのみを送信すること。\n- 他のユーザを尊重すること、またスパムメッセージを送信しないこと。</string>
 </resources>

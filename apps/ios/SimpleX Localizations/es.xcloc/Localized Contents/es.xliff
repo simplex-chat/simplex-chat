@@ -667,6 +667,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Add short link" xml:space="preserve">
         <source>Add short link</source>
+        <target>Añadir enlace corto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add team members" xml:space="preserve">
@@ -1962,7 +1963,7 @@ This is your own one-time link!</source>
       <trans-unit id="Connection error" xml:space="preserve">
         <source>Connection error</source>
         <target>Error conexión</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Connection error (AUTH)" xml:space="preserve">
         <source>Connection error (AUTH)</source>
@@ -2009,7 +2010,7 @@ This is your own one-time link!</source>
       <trans-unit id="Connection timeout" xml:space="preserve">
         <source>Connection timeout</source>
         <target>Tiempo de conexión agotado</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Connection with desktop stopped" xml:space="preserve">
         <source>Connection with desktop stopped</source>
@@ -3201,6 +3202,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error adding short link" xml:space="preserve">
         <source>Error adding short link</source>
+        <target>Error al añadir enlace corto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error changing address" xml:space="preserve">
@@ -3240,7 +3242,7 @@ chat item action</note>
       <trans-unit id="Error connecting to forwarding server %@. Please try later." xml:space="preserve">
         <source>Error connecting to forwarding server %@. Please try later.</source>
         <target>Error al conectar con el servidor de reenvío %@. Por favor, inténtalo más tarde.</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Error creating address" xml:space="preserve">
         <source>Error creating address</source>
@@ -3901,9 +3903,9 @@ snd error text</note>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve">
-        <source>Forwarding server %@ failed to connect to destination server %@. Please try later.</source>
+        <source>Forwarding server %1$@ failed to connect to destination server %2$@. Please try later.</source>
         <target>El servidor de reenvío %@ no ha podido conectarse al servidor de destino %@. Por favor, intentalo más tarde.</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Forwarding server address is incompatible with network settings: %@." xml:space="preserve">
         <source>Forwarding server address is incompatible with network settings: %@.</source>
@@ -4066,6 +4068,7 @@ Error: %2$@</target>
       </trans-unit>
       <trans-unit id="Group profile was changed. If you save it, the updated profile will be sent to group members." xml:space="preserve">
         <source>Group profile was changed. If you save it, the updated profile will be sent to group members.</source>
+        <target>El perfil del grupo ha cambiado. Si lo guardas, el perfil actualizado se enviará a los miembros del grupo.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Group welcome message" xml:space="preserve">
@@ -5399,6 +5402,10 @@ This is your link for group %@!</source>
         <target>Sin permiso para grabar mensajes de voz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="No private routing session" xml:space="preserve">
+        <source>No private routing session</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="No push server" xml:space="preserve">
         <source>No push server</source>
         <target>Sin servidores push</target>
@@ -5881,7 +5888,7 @@ Por favor, comparte cualquier otro problema con los desarrolladores.</target>
       <trans-unit id="Please check your network connection with %@ and try again." xml:space="preserve">
         <source>Please check your network connection with %@ and try again.</source>
         <target>Comprueba tu conexión de red con %@ e inténtalo de nuevo.</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Please check yours and your contact preferences." xml:space="preserve">
         <source>Please check yours and your contact preferences.</source>
@@ -6058,7 +6065,11 @@ Error: %@</target>
       <trans-unit id="Private routing error" xml:space="preserve">
         <source>Private routing error</source>
         <target>Error de enrutamiento privado</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Private routing timeout" xml:space="preserve">
+        <source>Private routing timeout</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
         <source>Profile and server connections</source>
@@ -6164,6 +6175,10 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
       <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve">
         <source>Protect your chat profiles with a password!</source>
         <target>¡Protege tus perfiles con contraseña!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Protocol background timeout" xml:space="preserve">
+        <source>Protocol background timeout</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol timeout" xml:space="preserve">
@@ -6621,7 +6636,7 @@ swipe action</note>
       <trans-unit id="Retry" xml:space="preserve">
         <source>Retry</source>
         <target>Reintentar</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert action</note>
       </trans-unit>
       <trans-unit id="Reveal" xml:space="preserve">
         <source>Reveal</source>
@@ -6701,6 +6716,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Save (and notify members)" xml:space="preserve">
         <source>Save (and notify members)</source>
+        <target>Guardar (y notificar miembros)</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Save admission settings?" xml:space="preserve">
@@ -6735,6 +6751,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Save group profile?" xml:space="preserve">
         <source>Save group profile?</source>
+        <target>¿Guardar perfil del grupo?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Save list" xml:space="preserve">
@@ -7733,6 +7750,10 @@ report reason</note>
       <trans-unit id="TCP connection" xml:space="preserve">
         <source>TCP connection</source>
         <target>Conexión TCP</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="TCP connection bg timeout" xml:space="preserve">
+        <source>TCP connection bg timeout</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="TCP connection timeout" xml:space="preserve">

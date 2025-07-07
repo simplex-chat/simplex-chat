@@ -342,6 +342,7 @@ time interval */
 
 /* accept contact request via notification
 accept incoming call via notification
+alert action
 swipe action */
 "Accept" = "Accepteer";
 
@@ -360,7 +361,7 @@ swipe action */
 /* notification body */
 "Accept contact request from %@?" = "Accepteer contactverzoek van %@?";
 
-/* accept contact request via notification
+/* alert action
 swipe action */
 "Accept incognito" = "Accepteer incognito";
 
@@ -753,9 +754,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Auto-accept images" = "Afbeeldingen automatisch accepteren";
-
-/* alert title */
-"SimpleX address settings" = "Instellingen automatisch accepteren";
 
 /* No comment provided by engineer. */
 "Back" = "Terug";
@@ -1307,7 +1305,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection blocked" = "Verbinding geblokkeerd";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection error" = "Verbindingsfout";
 
 /* No comment provided by engineer. */
@@ -1337,7 +1335,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection terminated" = "Verbinding beëindigd";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection timeout" = "Timeout verbinding";
 
 /* No comment provided by engineer. */
@@ -2177,7 +2175,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error checking token status" = "Fout bij het controleren van de tokenstatus";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Error connecting to forwarding server %@. Please try later." = "Fout bij het verbinden met doorstuurserver %@. Probeer het later opnieuw.";
 
 /* No comment provided by engineer. */
@@ -2330,7 +2328,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error stopping chat" = "Fout bij het stoppen van de chat";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error switching profile" = "Fout bij wisselen van profiel";
 
 /* alertTitle */
@@ -3741,7 +3739,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Open changes" = "Wijzigingen openen";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Open chat" = "Chat openen";
 
 /* authentication reason */
@@ -3891,7 +3889,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Controleer of u de juiste link heeft gebruikt of vraag uw contact om u een andere te sturen.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Please check your network connection with %@ and try again." = "Controleer uw netwerkverbinding met %@ en probeer het opnieuw.";
 
 /* No comment provided by engineer. */
@@ -3996,7 +3994,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Private routing" = "Privéroutering";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Private routing error" = "Fout in privéroutering";
 
 /* No comment provided by engineer. */
@@ -4203,14 +4201,15 @@ new chat action */
 /* token status text */
 "Registered" = "Geregistreerd";
 
-/* reject incoming call via notification
+/* alert action
+reject incoming call via notification
 swipe action */
 "Reject" = "Afwijzen";
 
 /* No comment provided by engineer. */
 "Reject (sender NOT notified)" = "Contact afwijzen (afzender NIET op de hoogte)";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Reject contact request" = "Contactverzoek afwijzen";
 
 /* alert title */
@@ -4369,7 +4368,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Restore database error" = "Database fout herstellen";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Retry" = "Opnieuw proberen";
 
 /* chat item action */
@@ -4576,9 +4575,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Send delivery receipts to" = "Stuur ontvangstbewijzen naar";
-
-/* No comment provided by engineer. */
-"send to connect" = "stuur een direct bericht";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Stuur een direct bericht om verbinding te maken";
@@ -4818,7 +4814,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Share link" = "Deel link";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Share profile" = "Profiel delen";
 
 /* No comment provided by engineer. */
@@ -4877,6 +4873,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "SimpleX address or 1-time link?" = "SimpleX adres of eenmalige link?";
+
+/* alert title */
+"SimpleX address settings" = "Instellingen automatisch accepteren";
 
 /* simplex link type */
 "SimpleX channel link" = "SimpleX channel link";
@@ -5200,7 +5199,7 @@ report reason */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "De tweede vink die we gemist hebben! ✅";
 
-/* No comment provided by engineer. */
+/* alert message */
 "The sender will NOT be notified" = "De afzender wordt NIET op de hoogte gebracht";
 
 /* No comment provided by engineer. */
@@ -5828,9 +5827,6 @@ report reason */
 "You are connected to the server used to receive messages from this contact." = "U bent verbonden met de server die wordt gebruikt om berichten van dit contact te ontvangen.";
 
 /* No comment provided by engineer. */
-"You are invited to group" = "je bent uitgenodigd voor de groep";
-
-/* No comment provided by engineer. */
 "You are invited to group" = "Je bent uitgenodigd voor de groep";
 
 /* No comment provided by engineer. */
@@ -6090,3 +6086,4 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Uw SimpleX adres";
+
