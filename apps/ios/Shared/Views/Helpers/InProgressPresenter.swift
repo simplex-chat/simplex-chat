@@ -8,36 +8,28 @@
 
 import SwiftUI
 
+@MainActor
 final class InProgressPresenter: ObservableObject {
     static let shared = InProgressPresenter()
+    private var overlayVC: UIViewController?
 
-    func show(_ text: String?) {
-        DispatchQueue.main.async {
-            InProgressPresenter.presentOverlay(with: text)
+    func show(_ text: String?) async {
+        guard overlayVC == nil else { return }
+        
+        if let topVC = getTopViewController() {
+            let overlay = UIHostingController(rootView: InProgressOverlayView(text: text))
+            overlay.view.backgroundColor = .clear
+            overlay.modalPresentationStyle = .overFullScreen
+            overlay.modalTransitionStyle = .crossDissolve
+            overlay.view.isUserInteractionEnabled = true
+            
+            topVC.present(overlay, animated: false) {
+                self.overlayVC = overlay
+            }
         }
     }
 
     func hide() async {
-        await InProgressPresenter.dismissOverlay()
-    }
-
-    private static var overlayVC: UIViewController?
-
-    private static func presentOverlay(with text: String?) {
-        guard overlayVC == nil, let topVC = getTopViewController() else { return }
-
-        let overlayView = InProgressOverlayView(text: text)
-        let hosting = UIHostingController(rootView: overlayView)
-        hosting.view.backgroundColor = .clear
-        hosting.modalPresentationStyle = .overFullScreen
-        hosting.modalTransitionStyle = .crossDissolve
-        hosting.view.isUserInteractionEnabled = true
-
-        topVC.present(hosting, animated: false)
-        overlayVC = hosting
-    }
-
-    private static func dismissOverlay() async {
         guard let overlayVC = overlayVC else { return }
 
         await withCheckedContinuation { continuation in

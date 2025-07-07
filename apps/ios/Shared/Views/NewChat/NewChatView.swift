@@ -1149,7 +1149,7 @@ func planAndConnect(
     filterKnownGroup: ((GroupInfo) -> Void)? = nil
 ) {
     Task {
-        InProgressPresenter.shared.show(NSLocalizedString("Retrieving link data…", comment: "in progress text"))
+        await InProgressPresenter.shared.show(NSLocalizedString("Retrieving link data…", comment: "in progress text"))
         let (result, alert) = await apiConnectPlan(connLink: shortOrFullLink)
         await InProgressPresenter.shared.hide()
         if let (connectionLink, connectionPlan) = result {
