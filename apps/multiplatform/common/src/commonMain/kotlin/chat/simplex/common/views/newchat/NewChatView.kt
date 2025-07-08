@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -582,15 +583,35 @@ private fun ConnectView(rhId: Long?, showQRCodeScanner: MutableState<Boolean>, p
     Spacer(Modifier.height(10.dp))
 
     SectionView(stringResource(MR.strings.or_scan_qr_code).uppercase(), headerBottomPadding = 5.dp) {
-      QRCodeScanner(showQRCodeScanner) { text ->
-        val linkVerified = verifyOnly(text)
-        if (!linkVerified) {
-          AlertManager.shared.showAlertMsg(
-            title = generalGetString(MR.strings.invalid_qr_code),
-            text = generalGetString(MR.strings.code_you_scanned_is_not_simplex_link_qr_code)
-          )
+      Box(
+        contentAlignment = Alignment.Center
+      ) {
+        QRCodeScanner(showQRCodeScanner) { text ->
+          val linkVerified = verifyOnly(text)
+          if (!linkVerified) {
+            AlertManager.shared.showAlertMsg(
+              title = generalGetString(MR.strings.invalid_qr_code),
+              text = generalGetString(MR.strings.code_you_scanned_is_not_simplex_link_qr_code)
+            )
+          }
+          verifyAndConnect(rhId, text, close)
         }
-        verifyAndConnect(rhId, text, close)
+
+        if (connectInProgressManager.showConnectInProgress != null) {
+          Box(
+            Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+          ) {
+            Surface(Modifier.size(50.dp), color = MaterialTheme.colors.background.copy(0.4f), contentColor = LocalContentColor.current, shape = RoundedCornerShape(50)){}
+            CircularProgressIndicator(
+              Modifier
+                .padding(horizontal = 2.dp)
+                .size(30.dp),
+              color = MaterialTheme.colors.secondary,
+              strokeWidth = 3.dp
+            )
+          }
+        }
       }
     }
   }
