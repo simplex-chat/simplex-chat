@@ -599,34 +599,17 @@ private struct ConnectView: View {
                 pasteLinkView()
             }
             Section(header: Text("Or scan QR code").foregroundColor(theme.colors.secondary)) {
-                if connectInProgressManager.showConnectInProgress == nil {
-                    ScannerInView(showQRCodeScanner: $showQRCodeScanner, processQRCode: processQRCode)
-                } else {
-                    connectInProgressView()
-                }
+                ScannerInView(showQRCodeScanner: $showQRCodeScanner, processQRCode: processQRCode)
+                    .if(connectInProgressManager.showConnectInProgress == nil) { v in
+                        v.overlay {
+                            ProgressView()
+                                .padding(4)
+                                .background(Circle().foregroundColor(.white.opacity(0.3)))
+                                .scaleEffect(2)
+                        }
+                    }
             }
         }
-    }
-
-    private func connectInProgressView() -> some View {
-        ZStack {
-            Rectangle()
-                .aspectRatio(contentMode: .fill)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .foregroundColor(Color.white.opacity(0.4))
-            ProgressView()
-                .scaleEffect(2)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color(uiColor: .secondarySystemGroupedBackground))
-        )
-        .padding(.horizontal)
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
-        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
     }
 
     @ViewBuilder private func pasteLinkView() -> some View {
