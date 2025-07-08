@@ -448,7 +448,7 @@ struct ComposeView: View {
                     sendContactRequestView(disableSendButton, icon: "person.fill.badge.plus", sendRequest: sendConnectPreparedContactRequest)
                 }
             } else if contact?.nextAcceptContactRequest == true, let crId = contact?.contactRequestId {
-                ContextContactRequestActionsView(contactRequestId: crId) // TODO in progress
+                ContextContactRequestActionsView(contactRequestId: crId)
             } else {
                 HStack (alignment: .center) {
                     attachmentButton()

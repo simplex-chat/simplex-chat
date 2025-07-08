@@ -14,6 +14,7 @@ struct ContextContactRequestActionsView: View {
     var contactRequestId: Int64
     @UserDefault(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
     @State private var inProgress = false
+    @State private var progressByTimeout = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -21,7 +22,7 @@ struct ContextContactRequestActionsView: View {
                 Label("Reject", systemImage: "multiply")
             }
             .frame(maxWidth: .infinity, minHeight: 60)
-
+            
             Button {
                 if ChatModel.shared.addressShortLinkDataSet {
                     acceptRequest()
@@ -36,6 +37,22 @@ struct ContextContactRequestActionsView: View {
         .disabled(inProgress)
         .frame(maxWidth: .infinity)
         .background(ToolbarMaterial.material(toolbarMaterial))
+        .opacity(progressByTimeout ? 0.4 : 1)
+        .overlay {
+            if progressByTimeout {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .onChange(of: inProgress) { inPrgrs in
+            if inPrgrs {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    progressByTimeout = inProgress
+                }
+            } else {
+                progressByTimeout = false
+            }
+        }
     }
 
     private func showRejectRequestAlert() {
