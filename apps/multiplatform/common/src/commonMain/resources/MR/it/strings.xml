@@ -2400,7 +2400,7 @@
     <string name="snd_group_event_user_pending_review">Attendi che i moderatori del gruppo revisionino la tua richiesta di entrare nel gruppo.</string>
     <string name="snd_group_event_member_accepted">hai accettato questo membro</string>
     <string name="group_member_status_pending_review_short">revisiona</string>
-    <string name="member_admission">Ammissione del membro</string>
+    <string name="member_admission">Ammissione dei membri</string>
     <string name="no_support_chats">Nessuna chat con membri</string>
     <string name="member_criteria_off">off</string>
     <string name="admission_stage_review">Revisiona i membri</string>
@@ -2480,9 +2480,9 @@
     <string name="v6_4_role_moderator">Nuovo ruolo nei gruppi: Moderatore</string>
     <string name="private_routing_no_session">Nessuna sessione di instradamento privato</string>
     <string name="private_routing_timeout">Scadenza dell\'instradamento privato</string>
-    <string name="network_option_protocol_timeout_background">Scadenza in secondo piano del protocollo</string>
+    <string name="network_option_protocol_timeout_background">Scadenza del protocollo in sec. piano</string>
     <string name="v6_4_role_moderator_descr">Rimuove i messaggi e blocca i membri.</string>
     <string name="v6_4_review_members">Revisiona i membri del gruppo</string>
-    <string name="v6_4_support_chat_descr">Invia il tuo feedback privato ai gruppi.</string>
-    <string name="network_option_tcp_connection_timeout_background">Scadenza sec. piano connessione TCP</string>
+    <string name="v6_4_support_chat_descr">Invia i tuoi commenti privati ai gruppi.</string>
+    <string name="network_option_tcp_connection_timeout_background">Scadenza conness. TCP in sec. piano</string>
 </resources>
