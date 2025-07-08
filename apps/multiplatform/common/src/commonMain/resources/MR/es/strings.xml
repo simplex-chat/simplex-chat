@@ -2454,6 +2454,9 @@
     <string name="v6_4_role_moderator">Nuevo rol de grupo: Moderador</string>
     <string name="private_routing_no_session">Ninguna sesión con enrutamiento privado</string>
     <string name="connect_plan_open_chat">Abrir chat</string>
-    <string name="connect_plan_open_new_chat">Nuevo chat</string>
-    <string name="connect_plan_open_new_group">Nuevo grupo</string>
+    <string name="connect_plan_open_new_chat">Abrir chat nuevo</string>
+    <string name="connect_plan_open_new_group">Abrir grupo nuevo</string>
+    <string name="open_to_accept">Abrir para aceptar</string>
+    <string name="open_to_connect">Abrir para conectar</string>
+    <string name="group_preview_open_to_join">Abrir para unirse</string>
 </resources>
