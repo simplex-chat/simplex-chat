@@ -586,8 +586,9 @@ swipe action</note>
         <target>¿Aceptar solicitud de conexión?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Accept contact request" xml:space="preserve">
+      <trans-unit id="Accept contact request" xml:space="preserve" approved="no">
         <source>Accept contact request</source>
+        <target state="translated">Aceptar petición de contacto</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Accept contact request from %@?" xml:space="preserve">
@@ -646,8 +647,9 @@ swipe action</note>
         <target>Añadir lista</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add message" xml:space="preserve">
+      <trans-unit id="Add message" xml:space="preserve" approved="no">
         <source>Add message</source>
+        <target state="translated">Añadir mensaje</target>
         <note>placeholder for sending contact request</note>
       </trans-unit>
       <trans-unit id="Add profile" xml:space="preserve">
@@ -1394,8 +1396,9 @@ swipe action</note>
         <target>No se puede llamar al miembro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't change profile" xml:space="preserve">
+      <trans-unit id="Can't change profile" xml:space="preserve" approved="no">
         <source>Can't change profile</source>
+        <target state="translated">No se puede cambiar el perfil</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
@@ -1621,8 +1624,9 @@ set passcode view</note>
         <target>Chat con miembro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat with members before they join." xml:space="preserve">
+      <trans-unit id="Chat with members before they join." xml:space="preserve" approved="no">
         <source>Chat with members before they join.</source>
+        <target state="translated">Chat con miembros antes de unirse.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
@@ -1860,8 +1864,9 @@ set passcode view</note>
         <target>Conectar automáticamente</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect faster! 🚀" xml:space="preserve">
+      <trans-unit id="Connect faster! 🚀" xml:space="preserve" approved="no">
         <source>Connect faster! 🚀</source>
+        <target state="translated">Conecta más rápido! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect to desktop" xml:space="preserve">
