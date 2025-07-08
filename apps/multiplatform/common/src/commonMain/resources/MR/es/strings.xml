@@ -2435,4 +2435,14 @@
     <string name="accept_pending_member_alert_confirmation_as_member">Aceptar como miembro</string>
     <string name="accept_pending_member_alert_question">El miembro se unirá al grupo, ¿aceptas al miembro?</string>
     <string name="add_short_link">Añadir enlace corto</string>
+    <string name="accept_contact_request">Aceptar petición de contacto</string>
+    <string name="compose_view_add_message">Añadir mensaje</string>
+    <string name="compose_view_send_contact_request_alert_text"><![CDATA[Podrás enviar mensajes <b>cuando tu petición sea aceptada</b>.]]></string>
+    <string name="v6_4_support_chat">Chat con administradores</string>
+    <string name="v6_4_review_members_descr">Chat con miembros antes de unirse.</string>
+    <string name="compose_view_connect">Conectar</string>
+    <string name="v6_4_connect_faster">Conecta más rápido! 🚀</string>
+    <string name="contact_should_accept">el contacto debe aceptar…</string>
+    <string name="error_changing_contact_user">Error al cambiar el contacto</string>
+    <string name="error_changing_group_user">Error al cambiar el usuaro del grupo</string>
 </resources>
