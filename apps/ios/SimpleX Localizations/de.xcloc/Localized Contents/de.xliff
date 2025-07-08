@@ -4585,9 +4585,9 @@ Weitere Verbesserungen sind bald verfügbar!</target>
         <target>Beitreten</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Join as %@" xml:space="preserve">
+      <trans-unit id="Join as %@" xml:space="preserve" approved="no">
         <source>Join as %@</source>
-        <target>beitreten als %@</target>
+        <target state="translated">Als %@ beitreten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Join group" xml:space="preserve">
@@ -4867,9 +4867,9 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Das Mitglied wird aus der Gruppe entfernt. Dies kann nicht rückgängig gemacht werden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member will join the group, accept member?" xml:space="preserve">
+      <trans-unit id="Member will join the group, accept member?" xml:space="preserve" approved="no">
         <source>Member will join the group, accept member?</source>
-        <target>Ein Mitglied wird der Gruppe beitreten. Übernehmen?</target>
+        <target state="translated">Mitglied wird der Gruppe beitreten. Übernehmen?</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Members can add message reactions." xml:space="preserve">
@@ -5722,14 +5722,14 @@ Dies erfordert die Aktivierung eines VPNs.</target>
         <target>Migration auf ein anderes Gerät öffnen</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Open new chat" xml:space="preserve">
+      <trans-unit id="Open new chat" xml:space="preserve" approved="no">
         <source>Open new chat</source>
-        <target>Neuen Chat eröffnen</target>
+        <target state="translated">Neuen Chat öffnen</target>
         <note>new chat action</note>
       </trans-unit>
-      <trans-unit id="Open new group" xml:space="preserve">
+      <trans-unit id="Open new group" xml:space="preserve" approved="no">
         <source>Open new group</source>
-        <target>Neue Gruppe eröffnen</target>
+        <target state="translated">Neue Gruppe öffnen</target>
         <note>new chat action</note>
       </trans-unit>
       <trans-unit id="Open to accept" xml:space="preserve">
@@ -9849,9 +9849,9 @@ pref value</note>
         <target>Gruppe gelöscht</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="group is deleted" xml:space="preserve">
+      <trans-unit id="group is deleted" xml:space="preserve" approved="no">
         <source>group is deleted</source>
-        <target>Gruppe wird gelöscht</target>
+        <target state="translated">Gruppe wurde gelöscht</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="group profile updated" xml:space="preserve">
@@ -10157,9 +10157,9 @@ time to disappear</note>
         <target>Die Kontaktadresse wurde entfernt</target>
         <note>profile update event chat item</note>
       </trans-unit>
-      <trans-unit id="removed from group" xml:space="preserve">
+      <trans-unit id="removed from group" xml:space="preserve" approved="no">
         <source>removed from group</source>
-        <target>Von der Gruppe entfernt</target>
+        <target state="translated">Aus der Gruppe entfernt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="removed profile picture" xml:space="preserve">
