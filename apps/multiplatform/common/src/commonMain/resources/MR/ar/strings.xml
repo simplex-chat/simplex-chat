@@ -2457,5 +2457,13 @@
     <string name="v6_4_review_members_descr">الدردشة مع الأعضاء قبل انضمامهم.</string>
     <string name="v6_4_connect_faster">اتصل بشكل أسرع! 🚀</string>
     <string name="v6_4_message_delivery_descr">تقليل حركة البيانات على شبكات الجوّال.</string>
-    <string name="v6_4_connect_faster_descr">راسل فورًا بمجرد النقر على \"اتصال\".</string>
+    <string name="v6_4_connect_faster_descr">راسل فورًا بمجرد النقر على \"اتصل\".</string>
+    <string name="v6_4_role_moderator">دور جديد للمجموعة: مشرف</string>
+    <string name="private_routing_no_session">لا توجد جلسة توجيه خاصة</string>
+    <string name="private_routing_timeout">انتهت مهلة التوجيه الخاص</string>
+    <string name="network_option_protocol_timeout_background">انتهت مهلة خلفية البروتوكول</string>
+    <string name="v6_4_role_moderator_descr">يزيل الرسائل ويحظر الأعضاء.</string>
+    <string name="v6_4_review_members">مراجعة أعضاء المجموعة</string>
+    <string name="v6_4_support_chat_descr">أرسل ملاحظاتك الخاصة إلى المجموعات.</string>
+    <string name="network_option_tcp_connection_timeout_background">مهلة اتصال TCP في الخلفية</string>
 </resources>
