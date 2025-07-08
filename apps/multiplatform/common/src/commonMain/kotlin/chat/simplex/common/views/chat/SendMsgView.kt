@@ -128,7 +128,7 @@ fun SendMsgView(
         }
       }
       when {
-        cs.progressByTimeout -> ProgressIndicator()
+        cs.progressByTimeout -> ComposeProgressIndicator()
         cs.contextItem is ComposeContextItem.ReportedItem -> {
           SendMsgButton(painterResource(MR.images.ic_check_filled), sendButtonSize, sendButtonAlpha, sendButtonColor, !sendMsgButtonDisabled, sendToConnect, sendMessage)
         }
@@ -402,8 +402,8 @@ private fun RecordVoiceButton(interactionSource: MutableInteractionSource) {
 }
 
 @Composable
-private fun ProgressIndicator() {
-  CircularProgressIndicator(Modifier.size(36.dp).padding(4.dp), color = MaterialTheme.colors.secondary, strokeWidth = 3.dp)
+fun ComposeProgressIndicator() {
+  CircularProgressIndicator(Modifier.size(36.dp).padding(4.dp), color = MaterialTheme.colors.secondary, strokeWidth = 2.5.dp)
 }
 
 @Composable

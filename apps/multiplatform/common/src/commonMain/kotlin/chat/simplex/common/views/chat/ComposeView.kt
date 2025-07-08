@@ -1255,11 +1255,6 @@ fun ComposeView(
   }
 
   @Composable
-  fun ProgressIndicator() {
-    CircularProgressIndicator(Modifier.size(36.dp).padding(4.dp), color = MaterialTheme.colors.secondary, strokeWidth = 3.dp)
-  }
-
-  @Composable
   fun ConnectButtonView(
     text: String,
     icon: ImageResource,
@@ -1286,7 +1281,7 @@ fun ComposeView(
           color = if (composeState.value.inProgress) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
         )
         if (composeState.value.progressByTimeout) {
-          ProgressIndicator()
+          ComposeProgressIndicator()
         }
       }
     }
@@ -1341,7 +1336,7 @@ fun ComposeView(
 
   LaunchedEffect(composeState.value.inProgress) {
     val newProgressByTimeout = if (composeState.value.inProgress) {
-      delay(500)
+      delay(1000)
       composeState.value.inProgress
     } else {
       false
