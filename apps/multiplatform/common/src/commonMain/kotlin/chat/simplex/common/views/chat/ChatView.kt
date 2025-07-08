@@ -54,6 +54,24 @@ import kotlin.math.*
 data class ItemSeparation(val timestamp: Boolean, val largeGap: Boolean, val date: Instant?)
 
 @Composable
+fun ConnectInProgressView(s: String) {
+  Surface(color = MaterialTheme.colors.background) {
+    Divider()
+    Row(
+      Modifier
+        .height(60.dp)
+        .fillMaxWidth()
+        .padding(horizontal = DEFAULT_PADDING),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+      ComposeProgressIndicator()
+      Text(s)
+    }
+  }
+}
+
+@Composable
 // staleChatId means the id that was before chatModel.chatId becomes null. It's needed for Android only to make transition from chat
 // to chat list smooth. Otherwise, chat view will become blank right before the transition starts
 fun ChatView(
@@ -177,6 +195,10 @@ fun ChatView(
                   Modifier.fillMaxWidth(),
                   horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                  val connectInProgressText = connectInProgressManager.showConnectInProgress
+                  if (appPlatform.isAndroid && connectInProgressText != null) {
+                    ConnectInProgressView(connectInProgressText)
+                  }
                   val connectingText = connectingText(chatInfo)
                   if (connectingText != null) {
                     Text(
