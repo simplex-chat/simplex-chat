@@ -15,6 +15,7 @@ private let memberImageSize: CGFloat = 34
 
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @StateObject private var connectInProgressManager = ConnectInProgressManager.shared
     @State var revealedItems: Set<Int64> = Set()
     @State var theme: AppTheme = buildTheme()
     @Environment(\.dismiss) var dismiss
@@ -114,7 +115,7 @@ struct ChatView: View {
                         }
                     )
                 }
-                if let connectInProgressText = ConnectInProgressManager.shared.showConnectInProgress {
+                if let connectInProgressText = connectInProgressManager.showConnectInProgress {
                     connectInProgressView(connectInProgressText)
                 }
                 if let connectingText {

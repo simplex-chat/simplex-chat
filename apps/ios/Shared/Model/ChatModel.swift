@@ -315,8 +315,8 @@ class ChatItemDummyModel: ObservableObject {
 }
 
 class ConnectInProgressManager: ObservableObject {
-    @Published var connectInProgress: String? = nil
-    @Published var connectProgressByTimeout: Bool = false
+    @Published private var connectInProgress: String? = nil
+    @Published private var connectProgressByTimeout: Bool = false
 
     static let shared = ConnectInProgressManager()
 
@@ -325,6 +325,11 @@ class ConnectInProgressManager: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             self.connectProgressByTimeout = self.connectInProgress != nil
         }
+    }
+
+    func stopConnectInProgress() {
+        connectInProgress = nil
+        connectProgressByTimeout = false
     }
 
     var showConnectInProgress: String? {

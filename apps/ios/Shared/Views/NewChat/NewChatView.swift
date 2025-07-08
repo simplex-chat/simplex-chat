@@ -585,6 +585,7 @@ private struct ActiveProfilePicker: View {
 }
 
 private struct ConnectView: View {
+    @StateObject private var connectInProgressManager = ConnectInProgressManager.shared
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
     @Binding var showQRCodeScanner: Bool
@@ -598,7 +599,7 @@ private struct ConnectView: View {
                 pasteLinkView()
             }
             Section(header: Text("Or scan QR code").foregroundColor(theme.colors.secondary)) {
-                if ConnectInProgressManager.shared.showConnectInProgress == nil {
+                if connectInProgressManager.showConnectInProgress == nil {
                     ScannerInView(showQRCodeScanner: $showQRCodeScanner, processQRCode: processQRCode)
                 } else {
                     connectInProgressView()
@@ -1182,7 +1183,7 @@ func planAndConnect(
         }
         let (result, alert) = await apiConnectPlan(connLink: shortOrFullLink)
         await MainActor.run {
-            ConnectInProgressManager.shared.connectInProgress = nil
+            ConnectInProgressManager.shared.stopConnectInProgress()
         }
         if let (connectionLink, connectionPlan) = result {
             switch connectionPlan {
@@ -1404,7 +1405,7 @@ func planAndConnect(
             }
         } else {
             await MainActor.run {
-                ConnectInProgressManager.shared.connectInProgress = nil
+                ConnectInProgressManager.shared.stopConnectInProgress()
             }
             if let alert {
                 await MainActor.run {

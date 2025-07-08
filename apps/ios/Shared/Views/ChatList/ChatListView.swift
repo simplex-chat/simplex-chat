@@ -137,6 +137,7 @@ struct UserPickerSheetView: View {
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @StateObject private var connectInProgressManager = ConnectInProgressManager.shared
     @EnvironmentObject var theme: AppTheme
     @Binding var activeUserPickerSheet: UserPickerSheet?
     @State private var searchMode = false
@@ -332,7 +333,7 @@ struct ChatListView: View {
         switch chatModel.chatRunning {
         case .some(true):
             HStack {
-                if ConnectInProgressManager.shared.showConnectInProgress != nil {
+                if connectInProgressManager.showConnectInProgress != nil {
                     ProgressView()
                 }
                 NewChatMenuButton()

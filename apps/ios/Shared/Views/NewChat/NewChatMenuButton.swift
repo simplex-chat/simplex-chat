@@ -315,6 +315,7 @@ struct ContactsList: View {
 
 struct ContactsListSearchBar: View {
     @EnvironmentObject var m: ChatModel
+    @StateObject private var connectInProgressManager = ConnectInProgressManager.shared
     @EnvironmentObject var theme: AppTheme
     @Binding var searchMode: Bool
     @FocusState.Binding var searchFocussed: Bool
@@ -353,7 +354,7 @@ struct ContactsListSearchBar: View {
             .background(Color(uiColor: .secondarySystemGroupedBackground))
             .cornerRadius(10.0)
 
-            if ConnectInProgressManager.shared.showConnectInProgress != nil {
+            if connectInProgressManager.showConnectInProgress != nil {
                 ProgressView()
             }
 
