@@ -2550,10 +2550,10 @@
     <string name="v6_4_connect_faster_descr">Sobald Sie auf Verbinden tippen, erhalten Sie sofort eine Nachricht.</string>
     <string name="v6_4_role_moderator">Neue Gruppen-Rolle: Moderator</string>
     <string name="private_routing_no_session">Keine private Routing-Sitzung</string>
-    <string name="private_routing_timeout">Timeout der privaten Routing-Sitzung</string>
-    <string name="network_option_protocol_timeout_background">Protokoll-Hintergrund-Zeitüberschreitung</string>
-    <string name="v6_4_role_moderator_descr">Nachrichten entfernen und Mitglieder blocken.</string>
+    <string name="private_routing_timeout">Zeitüberschreitung der privaten Routing-Sitzung</string>
+    <string name="network_option_protocol_timeout_background">Protokoll Hintergrund-Zeitüberschreitung</string>
+    <string name="v6_4_role_moderator_descr">Entfernt Nachrichten und blockiert Mitglieder.</string>
     <string name="v6_4_review_members">Gruppenmitglieder überprüfen</string>
     <string name="v6_4_support_chat_descr">Senden Sie Ihr privates Feedback an Gruppen.</string>
-    <string name="network_option_tcp_connection_timeout_background">Hintergrund-Timeout der TCP-Verbindung</string>
+    <string name="network_option_tcp_connection_timeout_background">TCP-Verbindung Hintergrund-Zeitüberschreitung</string>
 </resources>
