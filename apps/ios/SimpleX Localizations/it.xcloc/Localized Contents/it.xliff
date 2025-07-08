@@ -4827,9 +4827,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Membro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member admission" xml:space="preserve">
+      <trans-unit id="Member admission" xml:space="preserve" approved="no">
         <source>Member admission</source>
-        <target>Ammissione del membro</target>
+        <target state="translated">Ammissione dei membri</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member inactive" xml:space="preserve">
@@ -6222,7 +6222,7 @@ Attivalo nelle impostazioni *Rete e server*.</target>
       </trans-unit>
       <trans-unit id="Protocol background timeout" xml:space="preserve" approved="no">
         <source>Protocol background timeout</source>
-        <target state="translated">Scadenza in secondo piano del protocollo</target>
+        <target state="translated">Scadenza del protocollo in sec. piano</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol timeout" xml:space="preserve">
@@ -7095,7 +7095,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Send your private feedback to groups." xml:space="preserve" approved="no">
         <source>Send your private feedback to groups.</source>
-        <target state="translated">Invia il tuo feedback privato ai gruppi.</target>
+        <target state="translated">Invia i tuoi commenti privati ai gruppi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
@@ -7323,9 +7323,9 @@ chat item action</note>
         <target>Impostalo al posto dell'autenticazione di sistema.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set member admission" xml:space="preserve">
+      <trans-unit id="Set member admission" xml:space="preserve" approved="no">
         <source>Set member admission</source>
-        <target>Imposta l'ammissione del membro</target>
+        <target state="translated">Imposta l'ammissione dei membri</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set message expiration in chats." xml:space="preserve">
@@ -7819,7 +7819,7 @@ report reason</note>
       </trans-unit>
       <trans-unit id="TCP connection bg timeout" xml:space="preserve" approved="no">
         <source>TCP connection bg timeout</source>
-        <target state="translated">Scadenza sec. piano connessione TCP</target>
+        <target state="translated">Scadenza conness. TCP in sec. piano</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="TCP connection timeout" xml:space="preserve">
