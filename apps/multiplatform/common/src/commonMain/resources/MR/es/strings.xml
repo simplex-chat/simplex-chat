@@ -2471,6 +2471,7 @@
     <string name="compose_view_send_request_without_message">Enviar solicitud sin mensaje</string>
     <string name="v6_4_support_chat_descr">Envía tu comentario privado a los grupos.</string>
     <string name="sent_to_your_contact_after_connection">Envía a tu contacto tras la conexión.</string>
-    <string name="share_group_profile_via_link">Comparte el perfil del grupo mediante enlace</string>
+    <string name="share_group_profile_via_link">Compartir perfil del grupo mediante enlace</string>
     <string name="share_profile_via_link_alert_confirm">Compartir perfil</string>
+    <string name="share_profile_via_link">Compartir perfil mediante enlace</string>
 </resources>
