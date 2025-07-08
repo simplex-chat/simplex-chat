@@ -643,21 +643,25 @@ private struct ConnectView: View {
     private func processQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r):
-            let link = r.string
-            if strIsSimplexLink(r.string) {
-                connect(link)
-            } else {
-                alert = .newChatSomeAlert(alert: SomeAlert(
-                    alert: mkAlert(title: "Invalid QR code", message: "The code you scanned is not a SimpleX link QR code."),
-                    id: "processQRCode: code is not a SimpleX link"
-                ))
+            if !connectInProgressManager.isInProgress {
+                let link = r.string
+                if strIsSimplexLink(r.string) {
+                    connect(link)
+                } else {
+                    alert = .newChatSomeAlert(alert: SomeAlert(
+                        alert: mkAlert(title: "Invalid QR code", message: "The code you scanned is not a SimpleX link QR code."),
+                        id: "processQRCode: code is not a SimpleX link"
+                    ))
+                }
             }
         case let .failure(e):
-            logger.error("processQRCode QR code error: \(e.localizedDescription)")
-            alert = .newChatSomeAlert(alert: SomeAlert(
-                alert: mkAlert(title: "Invalid QR code", message: "Error scanning code: \(e.localizedDescription)"),
-                id: "processQRCode: failure"
-            ))
+            if !connectInProgressManager.isInProgress {
+                logger.error("processQRCode QR code error: \(e.localizedDescription)")
+                alert = .newChatSomeAlert(alert: SomeAlert(
+                    alert: mkAlert(title: "Invalid QR code", message: "Error scanning code: \(e.localizedDescription)"),
+                    id: "processQRCode: failure"
+                ))
+            }
         }
     }
 

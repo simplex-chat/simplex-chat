@@ -335,6 +335,10 @@ class ConnectInProgressManager: ObservableObject {
     var showConnectInProgress: String? {
         connectProgressByTimeout ? connectInProgress : nil
     }
+
+    var isInProgress: Bool {
+        connectInProgress != nil
+    }
 }
 
 final class ChatModel: ObservableObject {
