@@ -6145,7 +6145,7 @@ Error: %@</target>
       </trans-unit>
       <trans-unit id="Profile will be shared via the address link." xml:space="preserve" approved="no">
         <source>Profile will be shared via the address link.</source>
-        <target state="translated">El perfil será compartido mediante la dirección de contacto</target>
+        <target state="translated">El perfil será compartido mediante la dirección de contacto.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
@@ -6220,8 +6220,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>¡Protege tus perfiles con contraseña!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protocol background timeout" xml:space="preserve">
+      <trans-unit id="Protocol background timeout" xml:space="preserve" approved="no">
         <source>Protocol background timeout</source>
+        <target state="translated">Timeout protocolo en segundo plano</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol timeout" xml:space="preserve">
@@ -6511,8 +6512,9 @@ swipe action</note>
         <target>¿Eliminar contraseña de Keychain?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Removes messages and blocks members." xml:space="preserve">
+      <trans-unit id="Removes messages and blocks members." xml:space="preserve" approved="no">
         <source>Removes messages and blocks members.</source>
+        <target state="translated">Eliminar mensajes y bloquear miembros.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Renegotiate" xml:space="preserve">
@@ -6695,8 +6697,9 @@ swipe action</note>
         <target>Revisar condiciones</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Review group members" xml:space="preserve">
+      <trans-unit id="Review group members" xml:space="preserve" approved="no">
         <source>Review group members</source>
+        <target state="translated">Revisar miembros del grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Review members" xml:space="preserve">
@@ -7000,8 +7003,9 @@ chat item action</note>
         <target>Envía un mensaje en vivo: se actualizará para el (los) destinatario(s) a medida que se escribe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send contact request?" xml:space="preserve">
+      <trans-unit id="Send contact request?" xml:space="preserve" approved="no">
         <source>Send contact request?</source>
+        <target state="translated">¿Enviar solicitud de contacto?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send delivery receipts to" xml:space="preserve">
@@ -7069,12 +7073,14 @@ chat item action</note>
         <target>Enviar confirmaciones</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send request" xml:space="preserve">
+      <trans-unit id="Send request" xml:space="preserve" approved="no">
         <source>Send request</source>
+        <target state="translated">Enviar solicitud</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send request without message" xml:space="preserve">
+      <trans-unit id="Send request without message" xml:space="preserve" approved="no">
         <source>Send request without message</source>
+        <target state="translated">Enviar solicitud sin mensaje</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send them from gallery or custom keyboards." xml:space="preserve">
@@ -7087,8 +7093,9 @@ chat item action</note>
         <target>Se envían hasta 100 mensajes más recientes a los miembros nuevos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send your private feedback to groups." xml:space="preserve">
+      <trans-unit id="Send your private feedback to groups." xml:space="preserve" approved="no">
         <source>Send your private feedback to groups.</source>
+        <target state="translated">Envía tu comentario privado a los grupos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
@@ -7181,8 +7188,9 @@ chat item action</note>
         <target>Respuesta enviada</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sent to your contact after connection." xml:space="preserve">
+      <trans-unit id="Sent to your contact after connection." xml:space="preserve" approved="no">
         <source>Sent to your contact after connection.</source>
+        <target state="translated">Envía a tu contacto tras la conexión.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sent total" xml:space="preserve">
