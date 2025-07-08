@@ -120,24 +120,17 @@ func chatSendCmd<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDe
     return try apiResult(res)
 }
 
-func chatApiSendCmdWithRetry<R: ChatAPIResult>(
-    _ cmd: ChatCommand,
-    bgTask: Bool = true,
-    bgDelay: Double? = nil,
-    retryNum: Int32 = 0,
-    cleanupOnCancel: (() -> Void)? = nil
-) async -> APIResult<R>? {
+func chatApiSendCmdWithRetry<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, retryNum: Int32 = 0) async -> APIResult<R>? {
     let r: APIResult<R> = await chatApiSendCmd(cmd, bgTask: bgTask, bgDelay: bgDelay, retryNum: retryNum)
     if case let .error(e) = r, let alert = retryableNetworkErrorAlert(e) {
         return await withCheckedContinuation { cont in
             showRetryAlert(
                 alert,
                 onCancel: { _ in
-                    cleanupOnCancel?()
                     cont.resume(returning: nil)
                 },
                 onRetry: {
-                    let r1: APIResult<R>? = await chatApiSendCmdWithRetry(cmd, bgTask: bgTask, bgDelay: bgDelay, retryNum: retryNum + 1, cleanupOnCancel: cleanupOnCancel)
+                    let r1: APIResult<R>? = await chatApiSendCmdWithRetry(cmd, bgTask: bgTask, bgDelay: bgDelay, retryNum: retryNum + 1)
                     cont.resume(returning: r1)
                 }
             )
@@ -987,12 +980,12 @@ func apiChangeConnectionUser(connId: Int64, userId: Int64) async throws -> Pendi
     if let r { throw r.unexpected } else { return nil }
 }
 
-func apiConnectPlan(connLink: String, cleanupOnCancel: (() -> Void)?) async -> ((CreatedConnLink, ConnectionPlan)?, Alert?) {
+func apiConnectPlan(connLink: String) async -> ((CreatedConnLink, ConnectionPlan)?, Alert?) {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiConnectPlan: no current user")
         return (nil, nil)
     }
-    let r: APIResult<ChatResponse1>? = await chatApiSendCmdWithRetry(.apiConnectPlan(userId: userId, connLink: connLink), cleanupOnCancel: cleanupOnCancel)
+    let r: APIResult<ChatResponse1>? = await chatApiSendCmdWithRetry(.apiConnectPlan(userId: userId, connLink: connLink))
     if case let .result(.connectionPlan(_, connLink, connPlan)) = r { return ((connLink, connPlan), nil) }
     let alert: Alert? = if let r { apiConnectResponseAlert(r) } else { nil }
     return (nil, alert)

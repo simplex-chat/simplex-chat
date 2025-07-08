@@ -1164,7 +1164,7 @@ func planAndConnect(
         await MainActor.run {
             ConnectInProgressManager.shared.startConnectInProgress(NSLocalizedString("Loading profile…", comment: "in progress text"))
         }
-        let (result, alert) = await apiConnectPlan(connLink: shortOrFullLink, cleanupOnCancel: cleanup)
+        let (result, alert) = await apiConnectPlan(connLink: shortOrFullLink)
         await MainActor.run {
             ConnectInProgressManager.shared.stopConnectInProgress()
         }
@@ -1388,14 +1388,13 @@ func planAndConnect(
             }
         } else {
             await MainActor.run {
-                ConnectInProgressManager.shared.stopConnectInProgress()
-            }
-            if let alert {
-                await MainActor.run {
+                if let alert {
                     dismissAllSheets(animated: true) {
                         AlertManager.shared.showAlert(alert)
                         cleanup?()
                     }
+                } else {
+                    cleanup?()
                 }
             }
         }
