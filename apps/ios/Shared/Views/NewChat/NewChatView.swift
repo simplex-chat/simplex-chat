@@ -600,7 +600,7 @@ private struct ConnectView: View {
             }
             Section(header: Text("Or scan QR code").foregroundColor(theme.colors.secondary)) {
                 ScannerInView(showQRCodeScanner: $showQRCodeScanner, processQRCode: processQRCode)
-                    .if(connectInProgressManager.showConnectInProgress == nil) { v in
+                    .if(connectInProgressManager.showConnectInProgress != nil) { v in
                         v.overlay {
                             ProgressView()
                                 .padding(4)
