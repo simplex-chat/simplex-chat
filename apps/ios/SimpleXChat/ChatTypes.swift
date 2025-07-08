@@ -2447,7 +2447,7 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Cod
 
     public var id: Self { self }
 
-    public static var supportedRoles: [GroupMemberRole] = [.observer, .member, .admin, .owner]
+    public static var supportedRoles: [GroupMemberRole] = [.observer, .member, .moderator, .admin, .owner]
 
     public var text: String {
         switch self {

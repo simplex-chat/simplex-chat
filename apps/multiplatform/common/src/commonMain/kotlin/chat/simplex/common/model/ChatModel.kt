@@ -2291,7 +2291,7 @@ enum class GroupMemberRole(val memberRole: String) {
   @SerialName("owner") Owner("owner");
 
   companion object {
-    val selectableRoles: List<GroupMemberRole> = listOf(Observer, Member, Admin, Owner)
+    val selectableRoles: List<GroupMemberRole> = listOf(Observer, Member, Moderator, Admin, Owner)
   }
 
   val text: String get() = when (this) {
