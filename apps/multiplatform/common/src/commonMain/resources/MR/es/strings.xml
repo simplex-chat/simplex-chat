@@ -871,7 +871,7 @@
     <string name="simplex_link_connection">mediante %1$s</string>
     <string name="simplex_service_notification_title">Servicio SimpleX Chat</string>
     <string name="personal_welcome">¡Bienvenido %1$s!</string>
-    <string name="group_preview_you_are_invited">has sido invitado al grupo</string>
+    <string name="group_preview_you_are_invited">Has sido invitado al grupo</string>
     <string name="waiting_for_file">Esperando archivo</string>
     <string name="icon_descr_waiting_for_image">Esperando imagen</string>
     <string name="voice_message_with_duration">Mensaje de voz (%1$s )</string>
@@ -2036,7 +2036,7 @@
     <string name="you_need_to_allow_calls">Debes permitir que tus contacto te llamen para poder llamarles.</string>
     <string name="smp_proxy_error_connecting">Error al conectar con el servidor de reenvío %1$s. Por favor, inténtalo más tarde.</string>
     <string name="smp_proxy_error_broker_host">La dirección del servidor de reenvío es incompatible con la configuración de red: %1$s.</string>
-    <string name="proxy_destination_error_failed_to_connect">El servidor de reenvío %1$s no ha podido conectarse al servidor de destino %2$s. Por favor, intentalo más tarde.</string>
+    <string name="proxy_destination_error_failed_to_connect">El servidor de reenvío %1$s no ha podido conectarse al servidor de destino %2$s. Por favor, inténtalo más tarde.</string>
     <string name="smp_proxy_error_broker_version">La versión del servidor de reenvío es incompatible con la configuración de red: %1$s.</string>
     <string name="no_filtered_contacts">Ningún contacto filtrado</string>
     <string name="v6_0_privacy_blur">Difumina para mayor privacidad</string>
@@ -2437,11 +2437,11 @@
     <string name="add_short_link">Añadir enlace corto</string>
     <string name="accept_contact_request">Aceptar petición de contacto</string>
     <string name="compose_view_add_message">Añadir mensaje</string>
-    <string name="compose_view_send_contact_request_alert_text"><![CDATA[Podrás enviar mensajes <b>cuando tu petición sea aceptada</b>.]]></string>
+    <string name="compose_view_send_contact_request_alert_text"><![CDATA[Podrás enviar mensajes <b>después de que tu petición sea aceptada</b>.]]></string>
     <string name="v6_4_support_chat">Chat con administradores</string>
     <string name="v6_4_review_members_descr">Chat con miembros antes de unirse.</string>
     <string name="compose_view_connect">Conectar</string>
-    <string name="v6_4_connect_faster">Conecta más rápido! 🚀</string>
+    <string name="v6_4_connect_faster">¡Conecta más rápido! 🚀</string>
     <string name="contact_should_accept">el contacto debe aceptar…</string>
     <string name="error_changing_contact_user">Error al cambiar el usuario del contacto</string>
     <string name="error_changing_group_user">Error al cambiar el usuaro del grupo</string>
@@ -2470,8 +2470,15 @@
     <string name="compose_view_send_request">Enviar solicitud</string>
     <string name="compose_view_send_request_without_message">Enviar solicitud sin mensaje</string>
     <string name="v6_4_support_chat_descr">Envía tu comentario privado a los grupos.</string>
-    <string name="sent_to_your_contact_after_connection">Envía a tu contacto tras la conexión.</string>
-    <string name="share_group_profile_via_link">Compartir perfil del grupo mediante enlace</string>
+    <string name="sent_to_your_contact_after_connection">Enviadp a tu contacto tras la conexión.</string>
+    <string name="share_group_profile_via_link">Compartir perfil de grupo mediante enlace</string>
     <string name="share_profile_via_link_alert_confirm">Compartir perfil</string>
     <string name="share_profile_via_link">Compartir perfil mediante enlace</string>
+    <string name="network_option_tcp_connection_timeout_background">Timeout conexión TCP sp</string>
+    <string name="the_sender_will_not_be_notified">El remitente NO será notificado.</string>
+    <string name="context_user_picker_cant_change_profile_alert_message">Para usar otro perfil tras el intento de conexión, elimina el chat y usa el enlace de nuevo.</string>
+    <string name="address_welcome_message">Mensaje de bienvenida</string>
+    <string name="context_user_picker_your_profile">Tu perfil</string>
+    <string name="e2ee_info_e2ee"><![CDATA[Los mensajes están protegidos mediante<b>cifrado de extremo a extremo</b>.]]></string>
+    <string name="context_user_picker_cant_change_profile_alert_title">No se puede cambiar el perfil</string>
 </resources>
