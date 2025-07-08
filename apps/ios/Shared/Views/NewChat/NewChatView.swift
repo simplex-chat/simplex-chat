@@ -1179,7 +1179,7 @@ func planAndConnect(
 ) {
     Task {
         await MainActor.run {
-            ConnectInProgressManager.shared.startConnectInProgress(NSLocalizedString("Retrieving link data…", comment: "in progress text"))
+            ConnectInProgressManager.shared.startConnectInProgress(NSLocalizedString("Loading profile…", comment: "in progress text"))
         }
         let (result, alert) = await apiConnectPlan(connLink: shortOrFullLink, cleanupOnCancel: cleanup)
         await MainActor.run {

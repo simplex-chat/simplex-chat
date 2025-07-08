@@ -1517,10 +1517,9 @@ object ChatController {
   suspend fun apiConnectPreparedContact(rh: Long?, contactId: Long, incognito: Boolean, msg: MsgContent?): Contact? {
     val r = sendCmdWithRetry(rh, CC.APIConnectPreparedContact(contactId, incognito, msg))
     if (r is API.Result && r.res is CR.StartedConnectionToContact) return r.res.contact
-    if (r == null) return null
-    Log.e(TAG, "apiConnectPreparedContact bad response: ${r.responseType} ${r.details}")
-    if (!(networkErrorAlert(r))) {
-      apiErrorAlert("apiConnectPreparedContact", generalGetString(MR.strings.connection_error), r)
+    if (r != null) {
+      Log.e(TAG, "apiConnectPreparedContact bad response: ${r.responseType} ${r.details}")
+      apiConnectResponseAlert(r)
     }
     return null
   }
@@ -1528,10 +1527,9 @@ object ChatController {
   suspend fun apiConnectPreparedGroup(rh: Long?, groupId: Long, incognito: Boolean, msg: MsgContent?): GroupInfo? {
     val r = sendCmdWithRetry(rh, CC.APIConnectPreparedGroup(groupId, incognito, msg))
     if (r is API.Result && r.res is CR.StartedConnectionToGroup) return r.res.groupInfo
-    if (r == null) return null
-    Log.e(TAG, "apiConnectPreparedGroup bad response: ${r.responseType} ${r.details}")
-    if (!(networkErrorAlert(r))) {
-      apiErrorAlert("apiConnectPreparedGroup", generalGetString(MR.strings.connection_error), r)
+    if (r != null) {
+      Log.e(TAG, "apiConnectPreparedGroup bad response: ${r.responseType} ${r.details}")
+      apiConnectResponseAlert(r)
     }
     return null
   }

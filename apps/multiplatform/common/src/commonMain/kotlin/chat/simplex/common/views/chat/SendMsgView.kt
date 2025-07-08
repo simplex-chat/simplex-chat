@@ -65,15 +65,6 @@ fun SendMsgView(
   val padding = if (appPlatform.isAndroid) PaddingValues(vertical = 8.dp) else PaddingValues(top = 3.dp, bottom = 4.dp)
   Box(Modifier.padding(padding)) {
     val cs = composeState.value
-    var progressByTimeout by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(composeState.value.inProgress) {
-      progressByTimeout = if (composeState.value.inProgress) {
-        delay(500)
-        composeState.value.inProgress
-      } else {
-        false
-      }
-    }
     val showVoiceButton = !nextConnect && cs.message.text.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         !composeState.value.forwarding && cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started) && (cs.contextItem !is ComposeContextItem.ReportedItem)
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
@@ -137,7 +128,7 @@ fun SendMsgView(
         }
       }
       when {
-        progressByTimeout -> ProgressIndicator()
+        cs.progressByTimeout -> ProgressIndicator()
         cs.contextItem is ComposeContextItem.ReportedItem -> {
           SendMsgButton(painterResource(MR.images.ic_check_filled), sendButtonSize, sendButtonAlpha, sendButtonColor, !sendMsgButtonDisabled, sendToConnect, sendMessage)
         }
