@@ -353,7 +353,7 @@ struct ContactsListSearchBar: View {
             .background(Color(uiColor: .secondarySystemGroupedBackground))
             .cornerRadius(10.0)
 
-            if m.connectInProgress != nil {
+            if ConnectInProgressManager.shared.showConnectInProgress != nil {
                 ProgressView()
             }
 

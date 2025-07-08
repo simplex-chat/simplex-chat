@@ -598,7 +598,7 @@ private struct ConnectView: View {
                 pasteLinkView()
             }
             Section(header: Text("Or scan QR code").foregroundColor(theme.colors.secondary)) {
-                if ChatModel.shared.connectInProgress == nil {
+                if ConnectInProgressManager.shared.showConnectInProgress == nil {
                     ScannerInView(showQRCodeScanner: $showQRCodeScanner, processQRCode: processQRCode)
                 } else {
                     connectInProgressView()
@@ -1178,11 +1178,11 @@ func planAndConnect(
 ) {
     Task {
         await MainActor.run {
-            ChatModel.shared.connectInProgress = NSLocalizedString("Retrieving link data…", comment: "in progress text")
+            ConnectInProgressManager.shared.startConnectInProgress(NSLocalizedString("Retrieving link data…", comment: "in progress text"))
         }
         let (result, alert) = await apiConnectPlan(connLink: shortOrFullLink)
         await MainActor.run {
-            ChatModel.shared.connectInProgress = nil
+            ConnectInProgressManager.shared.connectInProgress = nil
         }
         if let (connectionLink, connectionPlan) = result {
             switch connectionPlan {
@@ -1404,7 +1404,7 @@ func planAndConnect(
             }
         } else {
             await MainActor.run {
-                ChatModel.shared.connectInProgress = nil
+                ConnectInProgressManager.shared.connectInProgress = nil
             }
             if let alert {
                 await MainActor.run {

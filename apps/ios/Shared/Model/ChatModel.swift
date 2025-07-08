@@ -314,6 +314,24 @@ class ChatItemDummyModel: ObservableObject {
     func sendUpdate() { objectWillChange.send() }
 }
 
+class ConnectInProgressManager: ObservableObject {
+    @Published var connectInProgress: String? = nil
+    @Published var connectProgressByTimeout: Bool = false
+
+    static let shared = ConnectInProgressManager()
+
+    func startConnectInProgress(_ text: String) {
+        connectInProgress = text
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            self.connectProgressByTimeout = self.connectInProgress != nil
+        }
+    }
+
+    var showConnectInProgress: String? {
+        connectProgressByTimeout ? connectInProgress : nil
+    }
+}
+
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var setDeliveryReceipts = false
@@ -379,8 +397,6 @@ final class ChatModel: ObservableObject {
     @Published var networkInfo = UserNetworkInfo(networkType: .other, online: true)
     // usage conditions
     @Published var conditions: ServerOperatorConditions = .empty
-    // connection in progress
-    @Published var connectInProgress: String? = nil
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 

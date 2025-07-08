@@ -332,7 +332,7 @@ struct ChatListView: View {
         switch chatModel.chatRunning {
         case .some(true):
             HStack {
-                if chatModel.connectInProgress != nil {
+                if ConnectInProgressManager.shared.showConnectInProgress != nil {
                     ProgressView()
                 }
                 NewChatMenuButton()

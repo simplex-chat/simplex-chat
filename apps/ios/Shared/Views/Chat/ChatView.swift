@@ -114,7 +114,7 @@ struct ChatView: View {
                         }
                     )
                 }
-                if let connectInProgressText = chatModel.connectInProgress {
+                if let connectInProgressText = ConnectInProgressManager.shared.showConnectInProgress {
                     connectInProgressView(connectInProgressText)
                 }
                 if let connectingText {
