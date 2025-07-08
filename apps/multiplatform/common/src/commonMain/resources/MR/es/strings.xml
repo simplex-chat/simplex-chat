@@ -356,7 +356,7 @@
     <string name="encrypted_database">Base de datos cifrada</string>
     <string name="error_removing_member">Error al expulsar miembro</string>
     <string name="group_members_can_send_voice">Los miembros pueden enviar mensajes de voz.</string>
-    <string name="description_via_contact_address_link_incognito">en modo incógnito mediante enlace de dirección del contacto</string>
+    <string name="description_via_contact_address_link_incognito">en modo incógnito mediante dirección de contacto</string>
     <string name="failed_to_create_user_title">¡Error al crear perfil!</string>
     <string name="failed_to_parse_chat_title">No se pudo cargar el chat</string>
     <string name="failed_to_parse_chats_title">Fallo en la carga de chats</string>
@@ -917,7 +917,7 @@
     <string name="you_will_join_group">Te conectarás con todos los miembros del grupo.</string>
     <string name="sender_you_pronoun">tu</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Estás conectado al servidor usado para recibir mensajes de este contacto.</string>
-    <string name="description_via_contact_address_link">mediante enlace de dirección de contacto</string>
+    <string name="description_via_contact_address_link">mediante dirección de contacto</string>
     <string name="description_via_group_link">mediante enlace de grupo</string>
     <string name="description_you_shared_one_time_link">enlace de un solo uso</string>
     <string name="description_you_shared_one_time_link_incognito">has compartido enlace de un solo uso en módo incógnito</string>
@@ -1136,7 +1136,7 @@
     <string name="import_theme_error_desc">Asegúrate de que el archivo tiene la sintaxis YAML correcta. Exporta el tema para tener un ejemplo de la estructura del archivo de tema.</string>
     <string name="profile_update_will_be_sent_to_contacts">La actualización del perfil se enviará a tus contactos.</string>
     <string name="color_received_message">Mensaje recibido</string>
-    <string name="save_auto_accept_settings">Guardar configuración de auto aceptar</string>
+    <string name="save_auto_accept_settings">Guardar configuración de dirección SimpleX</string>
     <string name="you_can_share_your_address">Puedes compartir tu dirección como enlace o código QR para que cualquiera pueda conectarse contigo.</string>
     <string name="save_settings_question">¿Guardar configuración\?</string>
     <string name="color_secondary">Secundario</string>
@@ -1379,7 +1379,7 @@
     <string name="v5_3_discover_join_groups_descr">- conexión al servicio de directorio (BETA)!
 \n- confirmaciones de entrega (hasta 20 miembros).
 \n- mayor rapidez y estabilidad.</string>
-    <string name="member_contact_send_direct_message">Enviar mensaje directo</string>
+    <string name="member_contact_send_direct_message">enviar para conectar</string>
     <string name="rcv_group_event_member_created_contact">conectado directamente</string>
     <string name="expand_verb">Expandir</string>
     <string name="encryption_renegotiation_error">Error de renegociación de cifrado</string>
@@ -2458,5 +2458,15 @@
     <string name="connect_plan_open_new_group">Abrir grupo nuevo</string>
     <string name="open_to_accept">Abrir para aceptar</string>
     <string name="open_to_connect">Abrir para conectar</string>
-    <string name="group_preview_open_to_join">Abrir para unirse</string>
+    <string name="group_preview_open_to_join">Abrir para unirte</string>
+    <string name="private_routing_timeout">Timeout enrutamiento privado</string>
+    <string name="share_profile_via_link_alert_text">El perfil será compartido mediante la dirección de contacto</string>
+    <string name="network_option_protocol_timeout_background">Timeout protocolo en segundo plano</string>
+    <string name="reject_contact_request">Rechazar solicitud del contacto</string>
+    <string name="v6_4_role_moderator_descr">Eliminar mensajes y bloquear miembros.</string>
+    <string name="cant_send_message_request_is_sent">petición enviada</string>
+    <string name="v6_4_review_members">Revisar miembros del grupo</string>
+    <string name="compose_view_send_contact_request_alert_question">¿Enviar solicitud de contacto?</string>
+    <string name="compose_view_send_request">Enviar solicitud</string>
+    <string name="compose_view_send_request_without_message">Enviar solicitud sin mensaje</string>
 </resources>
