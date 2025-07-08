@@ -487,7 +487,7 @@ struct ComposeView: View {
         }
         .onChange(of: composeState.inProgress) { inProgress in
             if inProgress {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                     composeState.progressByTimeout = composeState.inProgress
                 }
             } else {
