@@ -261,6 +261,8 @@ suspend fun planAndConnect(
         )
       }
     }
+  } else {
+    cleanup()
   }
   return completable
 }
