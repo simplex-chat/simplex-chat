@@ -2472,4 +2472,10 @@
     <string name="context_user_picker_your_profile">Il tuo profilo</string>
     <string name="context_user_picker_cant_change_profile_alert_title">Impossibile cambiare profilo</string>
     <string name="context_user_picker_cant_change_profile_alert_message">Per usare un altro profilo dopo il tentativo di connessione, elimina la chat e usa di nuovo il link.</string>
+    <string name="v6_4_support_chat">Chatta con gli amministratori</string>
+    <string name="v6_4_review_members_descr">Chatta con i membri prima che si uniscano.</string>
+    <string name="v6_4_connect_faster">Connettiti più velocemente! 🚀</string>
+    <string name="v6_4_message_delivery_descr">Meno traffico sulle reti mobili.</string>
+    <string name="v6_4_connect_faster_descr">Parla immediatamente appena tocchi \"Connetti\".</string>
+    <string name="v6_4_role_moderator">Nuovo ruolo di gruppo: Moderatore</string>
 </resources>
