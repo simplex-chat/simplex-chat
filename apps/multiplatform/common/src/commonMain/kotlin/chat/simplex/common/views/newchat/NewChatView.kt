@@ -35,6 +35,7 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -577,6 +578,15 @@ fun AddContactLearnMoreButton() {
 private fun ConnectView(rhId: Long?, showQRCodeScanner: MutableState<Boolean>, pastedLink: MutableState<String>, close: () -> Unit) {
   SectionView(stringResource(MR.strings.paste_the_link_you_received).uppercase(), headerBottomPadding = 5.dp) {
     PasteLinkView(rhId, pastedLink, showQRCodeScanner, close)
+  }
+
+  if (appPlatform.isDesktop && connectInProgressManager.showConnectInProgress != null) {
+    Box(
+      Modifier.fillMaxSize(),
+      contentAlignment = Alignment.Center
+    ) {
+      CIFileViewScope.progressIndicator()
+    }
   }
 
   if (appPlatform.isAndroid) {
