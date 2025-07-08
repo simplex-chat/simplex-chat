@@ -596,18 +596,15 @@ private struct ConnectView: View {
     var body: some View {
         List {
             Section(header: Text("Paste the link you received").foregroundColor(theme.colors.secondary)) {
-                pasteLinkView()
+                HStack {
+                    pasteLinkView()
+                    if connectInProgressManager.showConnectInProgress != nil {
+                        ProgressView()
+                    }
+                }
             }
             Section(header: Text("Or scan QR code").foregroundColor(theme.colors.secondary)) {
                 ScannerInView(showQRCodeScanner: $showQRCodeScanner, processQRCode: processQRCode)
-                    .if(connectInProgressManager.showConnectInProgress != nil) { v in
-                        v.overlay {
-                            ProgressView()
-                                .padding(4)
-                                .background(Circle().foregroundColor(.white.opacity(0.3)))
-                                .scaleEffect(2)
-                        }
-                    }
             }
         }
     }
