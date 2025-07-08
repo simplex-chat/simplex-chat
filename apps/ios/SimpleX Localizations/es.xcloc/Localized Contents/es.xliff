@@ -1866,7 +1866,7 @@ set passcode view</note>
       </trans-unit>
       <trans-unit id="Connect faster! 🚀" xml:space="preserve" approved="no">
         <source>Connect faster! 🚀</source>
-        <target state="translated">Conecta más rápido! 🚀</target>
+        <target state="translated">¡Conecta más rápido! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect to desktop" xml:space="preserve">
@@ -2955,8 +2955,9 @@ chat item action</note>
         <target>Editar perfil de grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Empty message!" xml:space="preserve">
+      <trans-unit id="Empty message!" xml:space="preserve" approved="no">
         <source>Empty message!</source>
+        <target state="translated">¡Mensaje vacío!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable" xml:space="preserve">
@@ -3199,8 +3200,9 @@ chat item action</note>
         <target>Error al aceptar el miembro</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error adding address short link" xml:space="preserve">
+      <trans-unit id="Error adding address short link" xml:space="preserve" approved="no">
         <source>Error adding address short link</source>
+        <target state="translated">Error al añadir dirección de enlace corto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
@@ -3223,8 +3225,9 @@ chat item action</note>
         <target>Error al cambiar servidor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error changing chat profile" xml:space="preserve">
+      <trans-unit id="Error changing chat profile" xml:space="preserve" approved="no">
         <source>Error changing chat profile</source>
+        <target state="translated">Error al cambiar perfil de chat</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error changing connection profile" xml:space="preserve">
@@ -3397,12 +3400,14 @@ chat item action</note>
         <target>Error al abrir chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error preparing contact" xml:space="preserve">
+      <trans-unit id="Error preparing contact" xml:space="preserve" approved="no">
         <source>Error preparing contact</source>
+        <target state="translated">Error al preparar el contacto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error preparing group" xml:space="preserve">
+      <trans-unit id="Error preparing group" xml:space="preserve" approved="no">
         <source>Error preparing group</source>
+        <target state="translated">Error al preparar el grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error receiving file" xml:space="preserve">
@@ -3425,8 +3430,9 @@ chat item action</note>
         <target>Error al registrarse para notificaciones</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error rejecting contact request" xml:space="preserve">
+      <trans-unit id="Error rejecting contact request" xml:space="preserve" approved="no">
         <source>Error rejecting contact request</source>
+        <target state="translated">Error al rechazar la solicitud del contacto</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error removing member" xml:space="preserve">
@@ -3917,7 +3923,7 @@ snd error text</note>
       </trans-unit>
       <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve" approved="no">
         <source>Forwarding server %1$@ failed to connect to destination server %2$@. Please try later.</source>
-        <target state="needs-translation">El servidor de reenvío %@ no ha podido conectarse al servidor de destino %@. Por favor, intentalo más tarde.</target>
+        <target state="translated">El servidor de reenvío %@ no ha podido conectarse al servidor de destino %@. Por favor, inténtalo más tarde.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Forwarding server address is incompatible with network settings: %@." xml:space="preserve">
