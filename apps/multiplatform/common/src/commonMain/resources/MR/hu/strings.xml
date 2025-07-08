@@ -327,7 +327,7 @@
     <string name="rcv_conn_event_switch_queue_phase_changing">cím módosítása…</string>
     <string name="connected_to_mobile">Társítva a hordozható eszközhöz</string>
     <string name="current_passphrase">Jelenlegi jelmondat…</string>
-    <string name="choose_file_title">Fájl kiválasztása</string>
+    <string name="choose_file_title">Egy fájl kiválasztása</string>
     <string name="delete_image">Kép törlése</string>
     <string name="smp_server_test_create_file">Fájl létrehozása</string>
     <string name="create_secret_group_title">Tikos csoport létrehozása</string>
@@ -2436,4 +2436,17 @@
     <string name="share_group_profile_via_link">Csoportprofil megosztása hivatkozáson keresztül</string>
     <string name="context_user_picker_cant_change_profile_alert_title">Nem lehet módosítani a profilt</string>
     <string name="context_user_picker_cant_change_profile_alert_message">Másik profil használatához a kapcsolatfelvételi kísérlet után törölje a csevegést, és használja újra a hivatkozást.</string>
+    <string name="v6_4_support_chat">Csevegés az adminisztrátorokkal</string>
+    <string name="v6_4_review_members_descr">Csevegés a tagokkal mielőtt csatlakoznának.</string>
+    <string name="v6_4_connect_faster">Gyorsabb csatlakozás! 🚀</string>
+    <string name="v6_4_message_delivery_descr">Kevesebb adatforgalom a mobilhálózatokon.</string>
+    <string name="v6_4_connect_faster_descr">Az üzenet azonnal megjelenik, amint a Csatlakozás gombra koppint.</string>
+    <string name="v6_4_role_moderator">Új szerepkör: Moderátor</string>
+    <string name="private_routing_no_session">Nincs privát útválasztási munkamenet</string>
+    <string name="private_routing_timeout">Privát útválasztás időtúllépése</string>
+    <string name="network_option_protocol_timeout_background">Háttérprotokoll időtúllépése</string>
+    <string name="v6_4_role_moderator_descr">Üzenetek eltávolítása, valamint tagok tiltása.</string>
+    <string name="v6_4_review_members">Csoporttagok áttekintése</string>
+    <string name="v6_4_support_chat_descr">Küldjön privát visszajelzést a csoportoknak.</string>
+    <string name="network_option_tcp_connection_timeout_background">TCP-kapcsolat háttéridő-túllépése</string>
 </resources>
