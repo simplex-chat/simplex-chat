@@ -2453,4 +2453,9 @@
     <string name="context_user_picker_your_profile">ملف تعريفك</string>
     <string name="context_user_picker_cant_change_profile_alert_title">لا يمكن تغيير ملف التعريف</string>
     <string name="context_user_picker_cant_change_profile_alert_message">لاستخدام ملف تعريف آخر بعد محاولة الاتصال، احذف الدردشة واستخدم الرابط مرة أخرى.</string>
+    <string name="v6_4_support_chat">الدردشة مع الالمُدراء</string>
+    <string name="v6_4_review_members_descr">الدردشة مع الأعضاء قبل انضمامهم.</string>
+    <string name="v6_4_connect_faster">اتصل بشكل أسرع! 🚀</string>
+    <string name="v6_4_message_delivery_descr">تقليل حركة البيانات على شبكات الجوّال.</string>
+    <string name="v6_4_connect_faster_descr">راسل فورًا بمجرد النقر على \"اتصال\".</string>
 </resources>
