@@ -495,7 +495,7 @@
     <string name="message_delivery_error_title">Error en la entrega del mensaje</string>
     <string name="message_delivery_error_desc">Lo más probable es que este contacto haya eliminado la conexión contigo.</string>
     <string name="moderate_verb">Moderar</string>
-    <string name="group_preview_join_as">unirte como %s</string>
+    <string name="group_preview_join_as">Unirte como %s</string>
     <string name="images_limit_desc">Sólo se pueden enviar 10 imágenes al mismo tiempo</string>
     <string name="large_file">¡Archivo grande!</string>
     <string name="mute_chat">Silenciar</string>
@@ -2443,6 +2443,17 @@
     <string name="compose_view_connect">Conectar</string>
     <string name="v6_4_connect_faster">Conecta más rápido! 🚀</string>
     <string name="contact_should_accept">el contacto debe aceptar…</string>
-    <string name="error_changing_contact_user">Error al cambiar el contacto</string>
+    <string name="error_changing_contact_user">Error al cambiar el usuario del contacto</string>
     <string name="error_changing_group_user">Error al cambiar el usuaro del grupo</string>
+    <string name="error_preparing_contact">Error al preparar el contacto</string>
+    <string name="error_preparing_group">Error al preparar el grupo</string>
+    <string name="error_rejecting_contact_request">Error al rechazar la solicitud del contacto</string>
+    <string name="compose_view_join_group">Unirte al grupo</string>
+    <string name="v6_4_message_delivery_descr">Menos tráfico en redes móviles.</string>
+    <string name="v6_4_connect_faster_descr">Mensajea ya tras pulsar Contactar.</string>
+    <string name="v6_4_role_moderator">Nuevo rol de grupo: Moderador</string>
+    <string name="private_routing_no_session">Ninguna sesión con enrutamiento privado</string>
+    <string name="connect_plan_open_chat">Abrir chat</string>
+    <string name="connect_plan_open_new_chat">Nuevo chat</string>
+    <string name="connect_plan_open_new_group">Nuevo grupo</string>
 </resources>
