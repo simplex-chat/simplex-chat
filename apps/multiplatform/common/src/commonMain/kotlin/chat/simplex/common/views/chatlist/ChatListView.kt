@@ -348,22 +348,64 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
   val updatingProgress = remember { chatModel.updatingProgress }.value
   val oneHandUI = remember { appPrefs.oneHandUI.state }
 
-  if (oneHandUI.value) {
-    val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
-
-    if (appPlatform.isDesktop && oneHandUI.value) {
-      val call = remember { chatModel.activeCall }
-      if (call.value != null) {
-        barButtons.add {
-          val c = call.value
-          if (c != null) {
-            ActiveCallInteractiveArea(c)
-            Spacer(Modifier.width(5.dp))
-          }
+  if (updatingProgress != null) {
+    barButtons.add {
+      val interactionSource = remember { MutableInteractionSource() }
+      val hovered = interactionSource.collectIsHoveredAsState().value
+      IconButton(onClick = {
+        chatModel.updatingRequest?.close()
+      }, Modifier.hoverable(interactionSource)) {
+        if (hovered) {
+          Icon(painterResource(MR.images.ic_close), null, tint = WarningOrange)
+        } else if (updatingProgress == -1f) {
+          CIFileViewScope.progressIndicator()
+        } else {
+          CIFileViewScope.progressCircle((updatingProgress * 100).toLong(), 100)
         }
       }
     }
-    if (!stopped) {
+  }
+
+  if (stopped) {
+    barButtons.add {
+      IconButton(onClick = {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.chat_is_stopped_indication),
+          generalGetString(MR.strings.you_can_start_chat_via_setting_or_by_restarting_the_app)
+        )
+      }) {
+        Icon(
+          painterResource(MR.images.ic_report_filled),
+          generalGetString(MR.strings.chat_is_stopped_indication),
+          tint = Color.Red,
+        )
+      }
+    }
+  } else {
+    if (connectInProgressManager.showConnectInProgress != null) {
+      barButtons.add {
+        Box(Modifier.padding(horizontal = DEFAULT_PADDING_HALF)) {
+          CIFileViewScope.progressIndicator()
+        }
+      }
+    }
+
+    if (oneHandUI.value) {
+      val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
+
+      if (appPlatform.isDesktop && oneHandUI.value) {
+        val call = remember { chatModel.activeCall }
+        if (call.value != null) {
+          barButtons.add {
+            val c = call.value
+            if (c != null) {
+              ActiveCallInteractiveArea(c)
+              Spacer(Modifier.width(5.dp))
+            }
+          }
+        }
+      }
+
       barButtons.add {
         IconButton(
           onClick = {
@@ -388,38 +430,6 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
     }
   }
 
-  if (updatingProgress != null) {
-    barButtons.add {
-      val interactionSource = remember { MutableInteractionSource() }
-      val hovered = interactionSource.collectIsHoveredAsState().value
-      IconButton(onClick = {
-        chatModel.updatingRequest?.close()
-      }, Modifier.hoverable(interactionSource)) {
-        if (hovered) {
-          Icon(painterResource(MR.images.ic_close), null, tint = WarningOrange)
-        } else if (updatingProgress == -1f) {
-          CIFileViewScope.progressIndicator()
-        } else {
-          CIFileViewScope.progressCircle((updatingProgress * 100).toLong(), 100)
-        }
-      }
-    }
-  } else if (stopped) {
-    barButtons.add {
-      IconButton(onClick = {
-        AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.chat_is_stopped_indication),
-          generalGetString(MR.strings.you_can_start_chat_via_setting_or_by_restarting_the_app)
-        )
-      }) {
-        Icon(
-          painterResource(MR.images.ic_report_filled),
-          generalGetString(MR.strings.chat_is_stopped_indication),
-          tint = Color.Red,
-        )
-      }
-    }
-  }
   val clipboard = LocalClipboardManager.current
   val scope = rememberCoroutineScope()
   val canScrollToZero = remember { derivedStateOf { listState.firstVisibleItemIndex != 0 || listState.firstVisibleItemScrollOffset != 0 } }

@@ -36,7 +36,9 @@ suspend fun planAndConnect(
     cleanup?.invoke()
     completable.complete(!completable.isActive)
   }
+  connectInProgressManager.startConnectInProgress(generalGetString(MR.strings.loading_profile))
   val result = chatModel.controller.apiConnectPlan(rhId, shortOrFullLink)
+  connectInProgressManager.stopConnectInProgress()
   if (result != null) {
     val (connectionLink, connectionPlan) = result
     val link = strHasSingleSimplexLink(shortOrFullLink.trim())
