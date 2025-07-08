@@ -1379,7 +1379,7 @@
     <string name="v5_3_discover_join_groups_descr">- conexión al servicio de directorio (BETA)!
 \n- confirmaciones de entrega (hasta 20 miembros).
 \n- mayor rapidez y estabilidad.</string>
-    <string name="member_contact_send_direct_message">enviar para conectar</string>
+    <string name="member_contact_send_direct_message">envia para conectar</string>
     <string name="rcv_group_event_member_created_contact">conectado directamente</string>
     <string name="expand_verb">Expandir</string>
     <string name="encryption_renegotiation_error">Error de renegociación de cifrado</string>
@@ -2469,4 +2469,8 @@
     <string name="compose_view_send_contact_request_alert_question">¿Enviar solicitud de contacto?</string>
     <string name="compose_view_send_request">Enviar solicitud</string>
     <string name="compose_view_send_request_without_message">Enviar solicitud sin mensaje</string>
+    <string name="v6_4_support_chat_descr">Envía tu comentario privado a los grupos.</string>
+    <string name="sent_to_your_contact_after_connection">Envía a tu contacto tras la conexión.</string>
+    <string name="share_group_profile_via_link">Comparte el perfil del grupo mediante enlace</string>
+    <string name="share_profile_via_link_alert_confirm">Compartir perfil</string>
 </resources>
