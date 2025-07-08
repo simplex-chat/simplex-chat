@@ -2477,5 +2477,12 @@
     <string name="v6_4_connect_faster">Connettiti più velocemente! 🚀</string>
     <string name="v6_4_message_delivery_descr">Meno traffico sulle reti mobili.</string>
     <string name="v6_4_connect_faster_descr">Parla immediatamente appena tocchi \"Connetti\".</string>
-    <string name="v6_4_role_moderator">Nuovo ruolo di gruppo: Moderatore</string>
+    <string name="v6_4_role_moderator">Nuovo ruolo nei gruppi: Moderatore</string>
+    <string name="private_routing_no_session">Nessuna sessione di instradamento privato</string>
+    <string name="private_routing_timeout">Scadenza dell\'instradamento privato</string>
+    <string name="network_option_protocol_timeout_background">Scadenza in secondo piano del protocollo</string>
+    <string name="v6_4_role_moderator_descr">Rimuove i messaggi e blocca i membri.</string>
+    <string name="v6_4_review_members">Revisiona i membri del gruppo</string>
+    <string name="v6_4_support_chat_descr">Invia il tuo feedback privato ai gruppi.</string>
+    <string name="network_option_tcp_connection_timeout_background">Scadenza sec. piano connessione TCP</string>
 </resources>
