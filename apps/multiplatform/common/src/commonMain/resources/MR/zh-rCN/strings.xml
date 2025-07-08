@@ -2456,4 +2456,17 @@
     <string name="context_user_picker_your_profile">你的个人资料</string>
     <string name="context_user_picker_cant_change_profile_alert_title">无法更改个人资料</string>
     <string name="context_user_picker_cant_change_profile_alert_message">要在连接尝试后使用不同的个人资料，请删除聊天并再次使用该链接。</string>
+    <string name="v6_4_support_chat">和管理员聊天</string>
+    <string name="v6_4_review_members_descr">在成员加入前和这些人聊天</string>
+    <string name="v6_4_connect_faster">更快地连接！🚀</string>
+    <string name="v6_4_message_delivery_descr">消耗更少的移动网络数据。</string>
+    <string name="v6_4_connect_faster_descr">轻按连接后即刻发消息。</string>
+    <string name="v6_4_role_moderator">新的群角色：协管</string>
+    <string name="private_routing_no_session">无私密路由会话</string>
+    <string name="private_routing_timeout">私密路由超时</string>
+    <string name="network_option_protocol_timeout_background">协议后台超时</string>
+    <string name="v6_4_role_moderator_descr">删除消息并封禁成员。</string>
+    <string name="v6_4_review_members">审核群成员</string>
+    <string name="v6_4_support_chat_descr">向群发送私密反馈。</string>
+    <string name="network_option_tcp_connection_timeout_background">TCP 连接后台超时</string>
 </resources>
