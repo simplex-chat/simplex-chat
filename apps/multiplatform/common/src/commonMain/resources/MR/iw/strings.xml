@@ -2134,4 +2134,8 @@
     <string name="network_options_save_and_reconnect">שמור וחבר מחדש</string>
     <string name="appearance_in_app_bars_alpha">שקיפות</string>
     <string name="error_parsing_uri_desc">אנא בדוק שקישור SimpleX תקין.</string>
+    <string name="connect_plan_open_chat">פתח שיחה</string>
+    <string name="connect_plan_open_new_chat">פתח שיחה חדשה</string>
+    <string name="connect_plan_open_new_group">פתח קבוצה חדשה</string>
+    <string name="v6_4_support_chat_descr">שלח את המשוב הפרטי שלך לקבוצות.</string>
 </resources>
