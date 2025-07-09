@@ -3553,7 +3553,7 @@ processChatCommand vr nm = \case
           business = maybe False businessAddress settings
           contactData
             | large = ContactShortLinkData p msg business
-            | otherwise = ContactShortLinkData p {fullName = "", image = Nothing, contactLink = Nothing} Nothing business
+            | otherwise = ContactShortLinkData p {fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing} Nothing business
       pure $ encodeShortLinkData large contactData
     groupShortLinkData :: GroupProfile -> CM UserLinkData
     groupShortLinkData gp = do
@@ -4724,7 +4724,7 @@ chatCommandP =
     profileNames = (,) <$> displayNameP <*> fullNameP
     newUserP = do
       (cName, fullName) <- profileNames
-      let profile = Just Profile {displayName = cName, fullName, image = Nothing, contactLink = Nothing, preferences = Nothing}
+      let profile = Just Profile {displayName = cName, fullName, shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing}
       pure NewUser {profile, pastTimestamp = False}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString
@@ -4736,7 +4736,7 @@ chatCommandP =
                 { directMessages = Just DirectMessagesGroupPreference {enable = FEOn, role = Nothing},
                   history = Just HistoryGroupPreference {enable = FEOn}
                 }
-      pure GroupProfile {displayName = gName, fullName, description = Nothing, image = Nothing, groupPreferences, memberAdmission = Nothing}
+      pure GroupProfile {displayName = gName, fullName, shortDescr = Nothing, description = Nothing, image = Nothing, groupPreferences, memberAdmission = Nothing}
     memberCriteriaP = ("all" $> Just MCAll) <|> ("off" $> Nothing)
     fullNameP = A.space *> textP <|> pure ""
     textP = safeDecodeUtf8 <$> A.takeByteString

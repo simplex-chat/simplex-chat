@@ -72,7 +72,7 @@ createOrUpdateContactRequest
   isSimplexTeam
   invId
   cReqChatVRange@(VersionRange minV maxV)
-  profile@Profile {displayName, fullName, image, contactLink, preferences}
+  profile@Profile {displayName, fullName, shortDescr, image, contactLink, preferences}
   xContactId_
   welcomeMsgId_
   requestMsg_
@@ -109,7 +109,7 @@ createOrUpdateContactRequest
             [sql|
               SELECT
                 -- Contact
-                ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
+                ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.short_descr, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
                 cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
                 ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
                 -- Connection
@@ -143,7 +143,7 @@ createOrUpdateContactRequest
             SELECT
               cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
               cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
-              cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
+              cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, cr.xcontact_id,
               cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
               cr.created_at, cr.updated_at,
               cr.peer_chat_min_version, cr.peer_chat_max_version
@@ -161,8 +161,8 @@ createOrUpdateContactRequest
         liftIO $
           DB.execute
             db
-            "INSERT INTO contact_profiles (display_name, full_name, image, contact_link, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-            (displayName, fullName, image, contactLink, userId, preferences, currentTs, currentTs)
+            "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+            (displayName, fullName, shortDescr, image, contactLink, userId, preferences, currentTs, currentTs)
         profileId <- liftIO $ insertedRowId db
         liftIO $
           DB.execute
@@ -229,6 +229,7 @@ createOrUpdateContactRequest
               UPDATE contact_profiles
               SET display_name = ?,
                   full_name = ?,
+                  short_descr = ?,
                   image = ?,
                   contact_link = ?,
                   updated_at = ?
@@ -239,7 +240,7 @@ createOrUpdateContactRequest
                   AND contact_request_id = ?
               )
             |]
-            (displayName, fullName, image, contactLink, currentTs, userId, contactRequestId)
+            (displayName, fullName, shortDescr, image, contactLink, currentTs, userId, contactRequestId)
         updateRequest currentTs =
           if displayName == oldDisplayName
             then

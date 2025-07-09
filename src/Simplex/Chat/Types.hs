@@ -620,6 +620,7 @@ contactUserPreferences user userPreferences contactPreferences connectedIncognit
 data Profile = Profile
   { displayName :: ContactName,
     fullName :: Text,
+    shortDescr :: Maybe Text, -- short description limited to 160 characters
     image :: Maybe ImageData,
     contactLink :: Maybe ConnLinkContact,
     preferences :: Maybe Preferences
@@ -632,7 +633,7 @@ data Profile = Profile
 
 profileFromName :: ContactName -> Profile
 profileFromName displayName =
-  Profile {displayName, fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing}
+  Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing}
 
 -- check if profiles match ignoring preferences
 profilesMatch :: LocalProfile -> LocalProfile -> Bool
@@ -642,8 +643,8 @@ profilesMatch
     n1 == n2 && fn1 == fn2 && i1 == i2
 
 redactedMemberProfile :: Profile -> Profile
-redactedMemberProfile Profile {displayName, fullName, image} =
-  Profile {displayName, fullName, image, contactLink = Nothing, preferences = Nothing}
+redactedMemberProfile Profile {displayName, fullName, shortDescr, image} =
+  Profile {displayName, fullName, shortDescr, image, contactLink = Nothing, preferences = Nothing}
 
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
 
@@ -669,6 +670,7 @@ data LocalProfile = LocalProfile
   { profileId :: ProfileId,
     displayName :: ContactName,
     fullName :: Text,
+    shortDescr :: Maybe Text,
     image :: Maybe ImageData,
     contactLink :: Maybe ConnLinkContact,
     preferences :: Maybe Preferences,
@@ -680,17 +682,18 @@ localProfileId :: LocalProfile -> ProfileId
 localProfileId LocalProfile {profileId} = profileId
 
 toLocalProfile :: ProfileId -> Profile -> LocalAlias -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, image, contactLink, preferences} localAlias =
-  LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
+toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences} localAlias =
+  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, localAlias}
 
 fromLocalProfile :: LocalProfile -> Profile
-fromLocalProfile LocalProfile {displayName, fullName, image, contactLink, preferences} =
-  Profile {displayName, fullName, image, contactLink, preferences}
+fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences} =
+  Profile {displayName, fullName, shortDescr, image, contactLink, preferences}
 
 data GroupProfile = GroupProfile
   { displayName :: GroupName,
     fullName :: Text,
-    description :: Maybe Text,
+    shortDescr :: Maybe Text, -- short description limited to 160 characters
+    description :: Maybe Text, -- this has been repurposed as welcome message
     image :: Maybe ImageData,
     groupPreferences :: Maybe GroupPreferences,
     memberAdmission :: Maybe GroupMemberAdmission

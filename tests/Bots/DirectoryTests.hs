@@ -75,7 +75,7 @@ directoryServiceTests = do
     it "should accept some incorrect spellings" testCaptcha
 
 directoryProfile :: Profile
-directoryProfile = Profile {displayName = "SimpleX-Directory", fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing}
+directoryProfile = Profile {displayName = "SimpleX-Directory", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing}
 
 mkDirectoryOpts :: TestParams -> [KnownContact] -> Maybe KnownGroup -> DirectoryOpts
 mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup =
