@@ -586,48 +586,19 @@ private fun ConnectView(rhId: Long?, showQRCodeScanner: MutableState<Boolean>, p
     PasteLinkView(rhId, pastedLink, showQRCodeScanner, close)
   }
 
-  if (appPlatform.isDesktop && connectProgressManager.showConnectProgress != null) {
-    Box(
-      Modifier.fillMaxSize(),
-      contentAlignment = Alignment.Center
-    ) {
-      CIFileViewScope.progressIndicator()
-    }
-  }
-
   if (appPlatform.isAndroid) {
     Spacer(Modifier.height(10.dp))
 
     SectionView(stringResource(MR.strings.or_scan_qr_code).uppercase(), headerBottomPadding = 5.dp) {
-      Box(
-        contentAlignment = Alignment.Center
-      ) {
-        QRCodeScanner(showQRCodeScanner) { text ->
-          val linkVerified = verifyOnly(text)
-          if (!linkVerified) {
-            AlertManager.shared.showAlertMsg(
-              title = generalGetString(MR.strings.invalid_qr_code),
-              text = generalGetString(MR.strings.code_you_scanned_is_not_simplex_link_qr_code)
-            )
-          }
-          verifyAndConnect(rhId, text, close)
+      QRCodeScanner(showQRCodeScanner) { text ->
+        val linkVerified = verifyOnly(text)
+        if (!linkVerified) {
+          AlertManager.shared.showAlertMsg(
+            title = generalGetString(MR.strings.invalid_qr_code),
+            text = generalGetString(MR.strings.code_you_scanned_is_not_simplex_link_qr_code)
+          )
         }
-
-        if (connectProgressManager.showConnectProgress != null) {
-          Box(
-            Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-          ) {
-            Surface(Modifier.size(50.dp), color = MaterialTheme.colors.background.copy(0.4f), contentColor = LocalContentColor.current, shape = RoundedCornerShape(50)){}
-            CircularProgressIndicator(
-              Modifier
-                .padding(horizontal = 2.dp)
-                .size(30.dp),
-              color = MaterialTheme.colors.secondary,
-              strokeWidth = 3.dp
-            )
-          }
-        }
+        verifyAndConnect(rhId, text, close)
       }
     }
   }
@@ -651,10 +622,25 @@ private fun PasteLinkView(rhId: Long?, pastedLink: MutableState<String>, showQRC
         )
       }
     }) {
-      Text(stringResource(MR.strings.tap_to_paste_link))
+      Box(Modifier.weight(1f)) {
+        Text(stringResource(MR.strings.tap_to_paste_link))
+      }
+      if (connectProgressManager.showConnectProgress != null) {
+        CIFileViewScope.progressIndicator(sizeMultiplier = 0.6f)
+      }
     }
   } else {
-    LinkTextView(pastedLink.value, false)
+    Row(
+      Modifier.padding(end = DEFAULT_PADDING),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Box(Modifier.weight(1f)) {
+        LinkTextView(pastedLink.value, false)
+      }
+      if (connectProgressManager.showConnectProgress != null) {
+        CIFileViewScope.progressIndicator(sizeMultiplier = 0.6f)
+      }
+    }
   }
 }
 
