@@ -398,6 +398,8 @@ final class ChatModel: ObservableObject {
     @Published var remoteCtrlSession: RemoteCtrlSession?
     // currently showing invitation
     @Published var showingInvitation: ShowingInvitation?
+    // currently showing connect alert
+    @Published var showingConnectAlert = false
     @Published var migrationState: MigrationToState? = MigrationToDeviceState.makeMigrationState()
     // audio recording and playback
     @Published var stopPreviousRecPlay: URL? = nil // coordinates currently playing source

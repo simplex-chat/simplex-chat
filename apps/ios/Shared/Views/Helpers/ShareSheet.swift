@@ -296,6 +296,8 @@ func showOpenChatAlert<Content: View>(
     onCancel: @escaping () -> Void = {},
     onConfirm: @escaping () -> Void
 ) {
+    ChatModel.shared.showingConnectAlert = true
+
     let themedView = profileImage.environmentObject(theme)
     let hostingController = UIHostingController(rootView: themedView)
     let hostedView = hostingController.view!
@@ -308,8 +310,14 @@ func showOpenChatAlert<Content: View>(
             profileImage: hostedView,
             cancelTitle: cancelTitle,
             confirmTitle: confirmTitle,
-            onCancel: onCancel,
-            onConfirm: onConfirm
+            onCancel: {
+                onCancel()
+                ChatModel.shared.showingConnectAlert = false
+            },
+            onConfirm: {
+                onConfirm()
+                ChatModel.shared.showingConnectAlert = false
+            }
         )
         topVC.present(alertVC, animated: true)
     }

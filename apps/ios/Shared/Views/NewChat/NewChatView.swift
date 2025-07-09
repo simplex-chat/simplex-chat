@@ -640,7 +640,7 @@ private struct ConnectView: View {
     private func processQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r):
-            if !connectInProgressManager.isInProgress {
+            if !ChatModel.shared.showingConnectAlert && !connectInProgressManager.isInProgress {
                 let link = r.string
                 if strIsSimplexLink(r.string) {
                     connect(link)
@@ -652,7 +652,7 @@ private struct ConnectView: View {
                 }
             }
         case let .failure(e):
-            if !connectInProgressManager.isInProgress {
+            if !ChatModel.shared.showingConnectAlert && !connectInProgressManager.isInProgress {
                 logger.error("processQRCode QR code error: \(e.localizedDescription)")
                 alert = .newChatSomeAlert(alert: SomeAlert(
                     alert: mkAlert(title: "Invalid QR code", message: "Error scanning code: \(e.localizedDescription)"),
