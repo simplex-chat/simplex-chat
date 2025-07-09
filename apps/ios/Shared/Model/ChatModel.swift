@@ -318,12 +318,13 @@ class ConnectProgressManager: ObservableObject {
     @Published private var connectInProgress: String? = nil
     @Published private var connectProgressByTimeout: Bool = false
     private var taskInProgress: Task<Void, Never>?
+    private var onCancel: (() -> Void)?
 
     static let shared = ConnectProgressManager()
 
-    func startConnectProgress(_ task: Task<Void, Never>, _ text: String) {
+    func startConnectProgress(_ text: String, onCancel: (() -> Void)? = nil) {
         connectInProgress = text
-        taskInProgress = task
+        self.onCancel = onCancel
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             self.connectProgressByTimeout = self.connectInProgress != nil
         }
@@ -332,11 +333,10 @@ class ConnectProgressManager: ObservableObject {
     func stopConnectProgress() {
         connectInProgress = nil
         connectProgressByTimeout = false
-        taskInProgress = nil
     }
 
     func cancelConnectProgress() {
-        taskInProgress?.cancel()
+        onCancel?()
         stopConnectProgress()
     }
 
