@@ -1171,20 +1171,19 @@ func planAndConnect(
 ) {
     ConnectProgressManager.shared.cancelConnectProgress()
     let inProgress = BoxedValue(true)
-    let task = connectTask(inProgress)
+    connectTask(inProgress)
     ConnectProgressManager.shared.startConnectProgress(NSLocalizedString("Loading profile…", comment: "in progress text")) {
-        task.cancel()
         inProgress.boxedValue = false
         cleanup?()
     }
 
-    func connectTask(_ inProgress: BoxedValue<Bool>) -> Task<Void, Never> {
+    func connectTask(_ inProgress: BoxedValue<Bool>) {
         Task {
             let (result, alert) = await apiConnectPlan(connLink: shortOrFullLink, inProgress: inProgress)
             await MainActor.run {
                 ConnectProgressManager.shared.stopConnectProgress()
             }
-            if Task.isCancelled { return }
+            if !inProgress.boxedValue { return }
             if let (connectionLink, connectionPlan) = result {
                 switch connectionPlan {
                 case let .invitationLink(ilp):
