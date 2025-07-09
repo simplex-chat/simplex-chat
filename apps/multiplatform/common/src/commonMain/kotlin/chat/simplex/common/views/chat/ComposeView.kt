@@ -1280,7 +1280,12 @@ fun ComposeView(
           style = MaterialTheme.typography.caption,
           color = if (composeState.value.inProgress) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
         )
-        if (composeState.value.progressByTimeout) {
+      }
+      if (composeState.value.progressByTimeout) {
+        Box(
+          Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING_HALF),
+          contentAlignment = Alignment.CenterEnd
+        ) {
           ComposeProgressIndicator()
         }
       }
