@@ -314,25 +314,33 @@ class ChatItemDummyModel: ObservableObject {
     func sendUpdate() { objectWillChange.send() }
 }
 
-class ConnectInProgressManager: ObservableObject {
+class ConnectProgressManager: ObservableObject {
     @Published private var connectInProgress: String? = nil
     @Published private var connectProgressByTimeout: Bool = false
+    private var taskInProgress: Task<Void, Never>?
 
-    static let shared = ConnectInProgressManager()
+    static let shared = ConnectProgressManager()
 
-    func startConnectInProgress(_ text: String) {
+    func startConnectProgress(_ task: Task<Void, Never>, _ text: String) {
         connectInProgress = text
+        taskInProgress = task
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             self.connectProgressByTimeout = self.connectInProgress != nil
         }
     }
 
-    func stopConnectInProgress() {
+    func stopConnectProgress() {
         connectInProgress = nil
         connectProgressByTimeout = false
+        taskInProgress = nil
     }
 
-    var showConnectInProgress: String? {
+    func cancelConnectProgress() {
+        taskInProgress?.cancel()
+        stopConnectProgress()
+    }
+
+    var showConnectProgress: String? {
         connectProgressByTimeout ? connectInProgress : nil
     }
 

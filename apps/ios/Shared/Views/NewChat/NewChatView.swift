@@ -585,7 +585,7 @@ private struct ActiveProfilePicker: View {
 }
 
 private struct ConnectView: View {
-    @StateObject private var connectInProgressManager = ConnectInProgressManager.shared
+    @StateObject private var connectProgressManager = ConnectProgressManager.shared
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
     @Binding var showQRCodeScanner: Bool
@@ -598,7 +598,7 @@ private struct ConnectView: View {
             Section(header: Text("Paste the link you received").foregroundColor(theme.colors.secondary)) {
                 HStack {
                     pasteLinkView()
-                    if connectInProgressManager.showConnectInProgress != nil {
+                    if connectProgressManager.showConnectProgress != nil {
                         ProgressView()
                     }
                 }
@@ -606,6 +606,9 @@ private struct ConnectView: View {
             Section(header: Text("Or scan QR code").foregroundColor(theme.colors.secondary)) {
                 ScannerInView(showQRCodeScanner: $showQRCodeScanner, processQRCode: processQRCode)
             }
+        }
+        .onDisappear {
+            connectProgressManager.cancelConnectProgress()
         }
     }
 
@@ -640,7 +643,7 @@ private struct ConnectView: View {
     private func processQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r):
-            if !connectInProgressManager.isInProgress {
+            if !connectProgressManager.isInProgress {
                 let link = r.string
                 if strIsSimplexLink(r.string) {
                     connect(link)
@@ -652,7 +655,7 @@ private struct ConnectView: View {
                 }
             }
         case let .failure(e):
-            if !connectInProgressManager.isInProgress {
+            if !connectProgressManager.isInProgress {
                 logger.error("processQRCode QR code error: \(e.localizedDescription)")
                 alert = .newChatSomeAlert(alert: SomeAlert(
                     alert: mkAlert(title: "Invalid QR code", message: "Error scanning code: \(e.localizedDescription)"),
@@ -1161,13 +1164,15 @@ func planAndConnect(
     filterKnownContact: ((Contact) -> Void)? = nil,
     filterKnownGroup: ((GroupInfo) -> Void)? = nil
 ) {
-    Task {
-        await MainActor.run {
-            ConnectInProgressManager.shared.startConnectInProgress(NSLocalizedString("Loading profile…", comment: "in progress text"))
-        }
+    ConnectProgressManager.shared.cancelConnectProgress()
+    let task = Task {
         let (result, alert) = await apiConnectPlan(connLink: shortOrFullLink)
         await MainActor.run {
-            ConnectInProgressManager.shared.stopConnectInProgress()
+            ConnectProgressManager.shared.stopConnectProgress()
+        }
+        if Task.isCancelled {
+            cleanup?()
+            return
         }
         if let (connectionLink, connectionPlan) = result {
             switch connectionPlan {
@@ -1400,6 +1405,7 @@ func planAndConnect(
             }
         }
     }
+    ConnectProgressManager.shared.startConnectProgress(task, NSLocalizedString("Loading profile…", comment: "in progress text"))
 }
 
 private func connectContactViaAddress_(_ contact: Contact, dismiss: Bool, incognito: Bool, cleanup: (() -> Void)? = nil) {

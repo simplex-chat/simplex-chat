@@ -315,7 +315,7 @@ struct ContactsList: View {
 
 struct ContactsListSearchBar: View {
     @EnvironmentObject var m: ChatModel
-    @StateObject private var connectInProgressManager = ConnectInProgressManager.shared
+    @StateObject private var connectProgressManager = ConnectProgressManager.shared
     @EnvironmentObject var theme: AppTheme
     @Binding var searchMode: Bool
     @FocusState.Binding var searchFocussed: Bool
@@ -348,15 +348,15 @@ struct ContactsListSearchBar: View {
                             searchText = ""
                         }
                 }
+
+                if connectProgressManager.showConnectProgress != nil {
+                    ProgressView()
+                }
             }
             .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
             .foregroundColor(theme.colors.secondary)
             .background(Color(uiColor: .secondarySystemGroupedBackground))
             .cornerRadius(10.0)
-
-            if connectInProgressManager.showConnectInProgress != nil {
-                ProgressView()
-            }
 
             if searchFocussed {
                 Text("Cancel")
@@ -389,6 +389,8 @@ struct ContactsListSearchBar: View {
                 } else {
                     if t != "" { // if some other text is pasted, enter search mode
                         searchFocussed = true
+                    } else {
+                        connectProgressManager.cancelConnectProgress()
                     }
                     searchShowingSimplexLink = false
                     searchChatFilteredBySimplexLink = nil
