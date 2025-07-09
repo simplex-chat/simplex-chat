@@ -411,10 +411,12 @@ struct ComposeView: View {
             if chat.chatInfo.groupInfo?.nextConnectPrepared == true {
                 if chat.chatInfo.groupInfo?.businessChat == nil {
                     Button(action: connectPreparedGroup) {
-                        HStack(spacing: 12) {
+                        ZStack(alignment: .trailing) {
                             Label("Join group", systemImage: "person.2.fill")
+                                .frame(maxWidth: .infinity)
                             if composeState.progressByTimeout {
                                 ProgressView()
+                                    .padding()
                             }
                         }
                     }
@@ -435,10 +437,12 @@ struct ComposeView: View {
                 switch linkType {
                 case .inv:
                     Button(action: sendConnectPreparedContact) {
-                        HStack(spacing: 12) {
+                        ZStack(alignment: .trailing) {
                             Label("Connect", systemImage: "person.fill.badge.plus")
+                                .frame(maxWidth: .infinity)
                             if composeState.progressByTimeout {
                                 ProgressView()
+                                    .padding()
                             }
                         }
                     }
