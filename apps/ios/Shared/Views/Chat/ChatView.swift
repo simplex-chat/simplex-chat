@@ -266,6 +266,7 @@ struct ChatView: View {
             }
         }
         .onAppear {
+            ConnectProgressManager.shared.cancelConnectProgress()
             scrollView.listState.onUpdateListener = onChatItemsUpdated
             selectedChatItems = nil
             revealedItems = Set()
@@ -290,6 +291,7 @@ struct ChatView: View {
             }
         }
         .onChange(of: chatModel.chatId) { cId in
+            ConnectProgressManager.shared.cancelConnectProgress()
             showChatInfoSheet = false
             selectedChatItems = nil
             revealedItems = Set()
@@ -345,6 +347,7 @@ struct ChatView: View {
             }
         }
         .onDisappear {
+            ConnectProgressManager.shared.cancelConnectProgress()
             VideoPlayerView.players.removeAll()
             stopAudioPlayer()
             if chatModel.chatId == cInfo.id && !presentationMode.wrappedValue.isPresented {
@@ -397,6 +400,15 @@ struct ChatView: View {
             HStack(spacing: 12) {
                 ProgressView()
                 Text(s)
+
+                Spacer()
+
+                Button {
+                    ConnectProgressManager.shared.cancelConnectProgress()
+                } label: {
+                    Image(systemName: "multiply")
+                }
+                .tint(theme.colors.primary)
             }
             .padding(12)
             .frame(minHeight: 54)

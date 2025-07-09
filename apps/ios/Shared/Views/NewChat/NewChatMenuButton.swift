@@ -16,7 +16,8 @@ struct NewChatMenuButton: View {
     @State private var alert: SomeAlert? = nil
 
     var body: some View {
-            Button {
+        Button {
+            ConnectProgressManager.shared.cancelConnectProgress()
             showNewChatSheet = true
         } label: {
             Image(systemName: "square.and.pencil")
