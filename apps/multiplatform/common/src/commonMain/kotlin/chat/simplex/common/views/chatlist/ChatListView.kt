@@ -55,6 +55,7 @@ sealed class ActiveFilter {
 }
 
 private fun showNewChatSheet(oneHandUI: State<Boolean>) {
+  connectProgressManager.cancelConnectProgress()
   ModalManager.start.closeModals()
   ModalManager.end.closeModals()
   chatModel.newChatSheetVisible.value = true
@@ -382,7 +383,7 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
       }
     }
   } else {
-    if (connectInProgressManager.showConnectInProgress != null) {
+    if (connectProgressManager.showConnectProgress != null) {
       barButtons.add {
         Box(Modifier.padding(horizontal = DEFAULT_PADDING_HALF)) {
           CIFileViewScope.progressIndicator()
@@ -668,8 +669,11 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
               if (it.isNotEmpty()) {
                 // if some other text is pasted, enter search mode
                 focusRequester.requestFocus()
-              } else if (listState.layoutInfo.totalItemsCount > 0) {
-                listState.scrollToItem(0)
+              } else {
+                connectProgressManager.cancelConnectProgress()
+                if (listState.layoutInfo.totalItemsCount > 0) {
+                  listState.scrollToItem(0)
+                }
               }
               searchShowingSimplexLink.value = false
               searchChatFilteredBySimplexLink.value = null

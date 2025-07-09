@@ -474,7 +474,7 @@ private fun ContactsSearchBar(
       searchText.value = searchText.value.copy(it)
     }
 
-    if (connectInProgressManager.showConnectInProgress != null) {
+    if (connectProgressManager.showConnectProgress != null) {
       Box(Modifier.padding(end = DEFAULT_PADDING_HALF)) {
         CIFileViewScope.progressIndicator(sizeMultiplier = 0.75f)
       }
@@ -530,8 +530,11 @@ private fun ContactsSearchBar(
             if (it.isNotEmpty()) {
               // if some other text is pasted, enter search mode
               focusRequester.requestFocus()
-            } else if (listState.layoutInfo.totalItemsCount > 0) {
-              listState.scrollToItem(0)
+            } else {
+              connectProgressManager.cancelConnectProgress()
+              if (listState.layoutInfo.totalItemsCount > 0) {
+                listState.scrollToItem(0)
+              }
             }
             searchShowingSimplexLink.value = false
             searchChatFilteredBySimplexLink.value = null

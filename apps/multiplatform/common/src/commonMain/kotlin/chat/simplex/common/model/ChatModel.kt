@@ -43,30 +43,38 @@ import kotlin.collections.ArrayList
 import kotlin.random.Random
 import kotlin.time.*
 
-object ConnectInProgressManager {
+object ConnectProgressManager {
   private val connectInProgress = mutableStateOf<String?>(null)
   private val connectProgressByTimeout = mutableStateOf(false)
+  private var onCancel: (() -> Unit)? = null
 
   private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-  fun startConnectInProgress(text: String) {
+  fun startConnectProgress(text: String, onCancel: (() -> Unit)? = null) {
     connectInProgress.value = text
+    this.onCancel = onCancel
     coroutineScope.launch {
       delay(1000)
       connectProgressByTimeout.value = connectInProgress.value != null
     }
   }
 
-  fun stopConnectInProgress() {
+  fun stopConnectProgress() {
     connectInProgress.value = null
+    onCancel = null
     connectProgressByTimeout.value = false
   }
 
-  val showConnectInProgress: String? get() =
+  fun cancelConnectProgress() {
+    onCancel?.invoke()
+    stopConnectProgress()
+  }
+
+  val showConnectProgress: String? get() =
     if (connectProgressByTimeout.value) connectInProgress.value else null
 }
 
-val connectInProgressManager = ConnectInProgressManager
+val connectProgressManager = ConnectProgressManager
 
 /*
  * Without this annotation an animation from ChatList to ChatView has 1 frame per the whole animation. Don't delete it

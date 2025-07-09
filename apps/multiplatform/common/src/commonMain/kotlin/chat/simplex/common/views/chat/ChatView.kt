@@ -60,13 +60,29 @@ fun ConnectInProgressView(s: String) {
     Row(
       Modifier
         .height(60.dp)
-        .fillMaxWidth()
-        .padding(horizontal = DEFAULT_PADDING),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(12.dp)
+        .fillMaxWidth(),
+      verticalAlignment = Alignment.CenterVertically
     ) {
-      ComposeProgressIndicator()
-      Text(s)
+      Row(
+        Modifier
+          .padding(start = 10.dp)
+          .fillMaxWidth()
+          .weight(1F),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+      ) {
+        ComposeProgressIndicator()
+        Text(s)
+      }
+
+      IconButton(onClick = { connectProgressManager.cancelConnectProgress() }) {
+        Icon(
+          painterResource(MR.images.ic_close),
+          contentDescription = stringResource(MR.strings.cancel_verb),
+          tint = MaterialTheme.colors.primary,
+          modifier = Modifier.padding(10.dp)
+        )
+      }
     }
   }
 }
@@ -120,6 +136,13 @@ fun ChatView(
     val attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
     val scope = rememberCoroutineScope()
     val selectedChatItems = rememberSaveable { mutableStateOf(null as Set<Long>?) }
+    if (appPlatform.isAndroid) {
+      DisposableEffect(Unit) {
+        onDispose {
+          connectProgressManager.cancelConnectProgress()
+        }
+      }
+    }
     LaunchedEffect(Unit) {
       // snapshotFlow here is because it reacts much faster on changes in chatModel.chatId.value.
       // With LaunchedEffect(chatModel.chatId.value) there is a noticeable delay before reconstruction of the view
@@ -128,6 +151,9 @@ fun ChatView(
           .distinctUntilChanged()
           .filterNotNull()
           .collect { chatId ->
+            if (appPlatform.isAndroid) {
+              connectProgressManager.cancelConnectProgress()
+            }
             if (chatsCtx.secondaryContextFilter == null) {
               markUnreadChatAsRead(chatId)
             }
@@ -195,7 +221,7 @@ fun ChatView(
                   Modifier.fillMaxWidth(),
                   horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                  val connectInProgressText = connectInProgressManager.showConnectInProgress
+                  val connectInProgressText = connectProgressManager.showConnectProgress
                   if (appPlatform.isAndroid && connectInProgressText != null) {
                     ConnectInProgressView(connectInProgressText)
                   }

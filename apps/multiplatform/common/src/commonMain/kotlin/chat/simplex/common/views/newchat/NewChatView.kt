@@ -580,7 +580,7 @@ private fun ConnectView(rhId: Long?, showQRCodeScanner: MutableState<Boolean>, p
     PasteLinkView(rhId, pastedLink, showQRCodeScanner, close)
   }
 
-  if (appPlatform.isDesktop && connectInProgressManager.showConnectInProgress != null) {
+  if (appPlatform.isDesktop && connectProgressManager.showConnectProgress != null) {
     Box(
       Modifier.fillMaxSize(),
       contentAlignment = Alignment.Center
@@ -607,7 +607,7 @@ private fun ConnectView(rhId: Long?, showQRCodeScanner: MutableState<Boolean>, p
           verifyAndConnect(rhId, text, close)
         }
 
-        if (connectInProgressManager.showConnectInProgress != null) {
+        if (connectProgressManager.showConnectProgress != null) {
           Box(
             Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
