@@ -66,6 +66,8 @@ struct NewChatSheet: View {
                 .alert(item: $alert) { a in
                     return a.alert
                 }
+        }.onDisappear {
+            ConnectProgressManager.shared.cancelConnectProgress()
         }
         if #available(iOS 16.0, *), oneHandUI {
             let sheetHeight: CGFloat = showArchive ? 575 : 500

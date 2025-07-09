@@ -41,6 +41,12 @@ import kotlinx.coroutines.flow.filter
 
 @Composable
 fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
+  DisposableEffect(Unit) {
+    onDispose {
+      connectProgressManager.cancelConnectProgress()
+    }
+  }
+
   val oneHandUI = remember { appPrefs.oneHandUI.state }
 
   Box {

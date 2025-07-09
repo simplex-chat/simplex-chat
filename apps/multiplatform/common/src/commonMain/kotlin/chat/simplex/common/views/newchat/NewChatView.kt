@@ -576,6 +576,12 @@ fun AddContactLearnMoreButton() {
 
 @Composable
 private fun ConnectView(rhId: Long?, showQRCodeScanner: MutableState<Boolean>, pastedLink: MutableState<String>, close: () -> Unit) {
+  DisposableEffect(Unit) {
+    onDispose {
+      connectProgressManager.cancelConnectProgress()
+    }
+  }
+
   SectionView(stringResource(MR.strings.paste_the_link_you_received).uppercase(), headerBottomPadding = 5.dp) {
     PasteLinkView(rhId, pastedLink, showQRCodeScanner, close)
   }
