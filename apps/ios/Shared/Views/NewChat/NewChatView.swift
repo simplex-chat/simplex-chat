@@ -591,6 +591,7 @@ private struct ConnectView: View {
     @Binding var showQRCodeScanner: Bool
     @Binding var pastedLink: String
     @Binding var alert: NewChatViewAlert?
+    @State var scannerPaused: Bool = false
     @State private var pasteboardHasStrings = UIPasteboard.general.hasStrings
 
     var body: some View {
@@ -599,7 +600,7 @@ private struct ConnectView: View {
                 pasteLinkView()
             }
             Section(header: Text("Or scan QR code").foregroundColor(theme.colors.secondary)) {
-                ScannerInView(showQRCodeScanner: $showQRCodeScanner, processQRCode: processQRCode)
+                ScannerInView(showQRCodeScanner: $showQRCodeScanner, scannerPaused: $scannerPaused, processQRCode: processQRCode)
             }
         }
         .onDisappear {
@@ -671,12 +672,14 @@ private struct ConnectView: View {
     }
 
     private func connect(_ link: String) {
+        scannerPaused = true
         planAndConnect(
             link,
             theme: theme,
             dismiss: true,
             cleanup: {
                 pastedLink = ""
+                scannerPaused = false
             }
         )
     }
@@ -684,6 +687,7 @@ private struct ConnectView: View {
 
 struct ScannerInView: View {
     @Binding var showQRCodeScanner: Bool
+    var scannerPaused: Binding<Bool>? = nil
     let processQRCode: (_ resp: Result<ScanResult, ScanError>) -> Void
     @State private var cameraAuthorizationStatus: AVAuthorizationStatus?
     var scanMode: ScanMode = .continuous
@@ -691,7 +695,7 @@ struct ScannerInView: View {
     var body: some View {
         Group {
             if showQRCodeScanner, case .authorized = cameraAuthorizationStatus {
-                CodeScannerView(codeTypes: [.qr], scanMode: scanMode, completion: processQRCode)
+                CodeScannerView(codeTypes: [.qr], scanMode: scanMode, isPaused: scannerPaused?.wrappedValue ?? false, completion: processQRCode)
                     .aspectRatio(1, contentMode: .fit)
                     .cornerRadius(12)
                     .listRowBackground(Color.clear)
