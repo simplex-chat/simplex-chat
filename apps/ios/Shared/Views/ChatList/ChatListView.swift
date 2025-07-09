@@ -331,13 +331,7 @@ struct ChatListView: View {
     
     @ViewBuilder var trailingToolbarItem: some View {
         switch chatModel.chatRunning {
-        case .some(true):
-            HStack {
-                if connectProgressManager.showConnectProgress != nil {
-                    ProgressView()
-                }
-                NewChatMenuButton()
-            }
+        case .some(true): NewChatMenuButton()
         case .some(false): chatStoppedIcon()
         case .none: EmptyView()
         }
@@ -599,6 +593,9 @@ struct ChatListSearchBar: View {
                         .disabled(searchShowingSimplexLink)
                         .focused($searchFocussed)
                         .frame(maxWidth: .infinity)
+                    if connectProgressManager.showConnectProgress != nil {
+                        ProgressView()
+                    }
                     if !searchText.isEmpty {
                         Image(systemName: "xmark.circle.fill")
                             .onTapGesture {

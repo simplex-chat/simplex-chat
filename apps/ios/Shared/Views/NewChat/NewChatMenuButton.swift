@@ -340,6 +340,9 @@ struct ContactsListSearchBar: View {
                     .disabled(searchShowingSimplexLink)
                     .focused($searchFocussed)
                     .frame(maxWidth: .infinity)
+                if connectProgressManager.showConnectProgress != nil {
+                    ProgressView()
+                }
                 if !searchText.isEmpty {
                     Image(systemName: "xmark.circle.fill")
                         .resizable()
@@ -348,10 +351,6 @@ struct ContactsListSearchBar: View {
                         .onTapGesture {
                             searchText = ""
                         }
-                }
-
-                if connectProgressManager.showConnectProgress != nil {
-                    ProgressView()
                 }
             }
             .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))

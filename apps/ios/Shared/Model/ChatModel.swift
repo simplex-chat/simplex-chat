@@ -317,7 +317,6 @@ class ChatItemDummyModel: ObservableObject {
 class ConnectProgressManager: ObservableObject {
     @Published private var connectInProgress: String? = nil
     @Published private var connectProgressByTimeout: Bool = false
-    private var taskInProgress: Task<Void, Never>?
     private var onCancel: (() -> Void)?
 
     static let shared = ConnectProgressManager()
@@ -332,6 +331,7 @@ class ConnectProgressManager: ObservableObject {
 
     func stopConnectProgress() {
         connectInProgress = nil
+        onCancel = nil
         connectProgressByTimeout = false
     }
 
