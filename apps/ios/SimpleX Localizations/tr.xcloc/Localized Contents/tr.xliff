@@ -2876,7 +2876,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Done" xml:space="preserve" approved="no">
         <source>Done</source>
-        <target state="translated">Tamamlandı</target>
+        <target state="translated">Tamam</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Downgrade and open chat" xml:space="preserve">
@@ -6310,9 +6310,9 @@ Enable in *Network &amp; servers* settings.</source>
         <target>[GitHub deposu]nda daha fazlasını okuyun(https://github.com/simplex-chat/simplex-chat#readme).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Receipts are disabled" xml:space="preserve">
+      <trans-unit id="Receipts are disabled" xml:space="preserve" approved="no">
         <source>Receipts are disabled</source>
-        <target>Alıcılar devre dışı bırakıldı</target>
+        <target state="translated">Alındı onayları devre dışı bırakıldı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receive errors" xml:space="preserve">
@@ -7113,9 +7113,9 @@ chat item action</note>
         <target>Görüldü bilgisi, tüm görünür sohbet profillerindeki tüm kişiler için etkinleştirilecektir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending delivery receipts will be enabled for all contacts." xml:space="preserve">
+      <trans-unit id="Sending delivery receipts will be enabled for all contacts." xml:space="preserve" approved="no">
         <source>Sending delivery receipts will be enabled for all contacts.</source>
-        <target>Tüm kişiler için iletim bilgisi gönderme özelliği etkinleştirilecek.</target>
+        <target state="translated">Tüm kişiler için alındı bilgisi gönderme özelliği etkinleştirilecek.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending file will be stopped." xml:space="preserve">
@@ -9829,9 +9829,9 @@ pref value</note>
         <target>hata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="expired" xml:space="preserve">
+      <trans-unit id="expired" xml:space="preserve" approved="no">
         <source>expired</source>
-        <target>Süresi dolmuş</target>
+        <target state="translated">süresi dolmuş</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="forwarded" xml:space="preserve">
@@ -10011,7 +10011,7 @@ pref value</note>
       </trans-unit>
       <trans-unit id="moderator" xml:space="preserve" approved="no">
         <source>moderator</source>
-        <target state="translated">moderator</target>
+        <target state="translated">moderatör</target>
         <note>member role</note>
       </trans-unit>
       <trans-unit id="months" xml:space="preserve">
