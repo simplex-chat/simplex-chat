@@ -606,8 +606,8 @@ viewUsersList us =
    in if null ss then ["no users"] else ss
   where
     ldn (UserInfo User {localDisplayName = n} _) = T.toLower n
-    userInfo (UserInfo User {localDisplayName = n, profile = LocalProfile {fullName}, activeUser, showNtfs, viewPwdHash} count)
-      | activeUser || isNothing viewPwdHash = Just $ ttyFullName n fullName <> infoStr
+    userInfo (UserInfo User {localDisplayName = n, profile = LocalProfile {fullName, shortDescr}, activeUser, showNtfs, viewPwdHash} count)
+      | activeUser || isNothing viewPwdHash = Just $ ttyFullName n fullName shortDescr <> infoStr
       | otherwise = Nothing
       where
         infoStr = if null info then "" else " (" <> mconcat (intersperse ", " info) <> ")"
@@ -1158,8 +1158,8 @@ viewAcceptingBusinessRequest :: GroupInfo -> [StyledString]
 viewAcceptingBusinessRequest g = [ttyFullGroup g <> ": accepting business address request..."]
 
 viewReceivedContactRequest :: ContactName -> Profile -> [StyledString]
-viewReceivedContactRequest c Profile {fullName} =
-  [ ttyFullName c fullName <> " wants to connect to you!",
+viewReceivedContactRequest c Profile {fullName, shortDescr} =
+  [ ttyFullName c fullName shortDescr <> " wants to connect to you!",
     "to accept: " <> highlight ("/ac " <> viewName c),
     "to reject: " <> highlight ("/rc " <> viewName c) <> " (the sender will NOT be notified)"
   ]
@@ -1380,9 +1380,9 @@ viewSentGroupInvitation g c = case contactConn c of
   Nothing -> []
 
 groupInvitation' :: GroupInfo -> StyledString
-groupInvitation' g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} =
+groupInvitation' g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName, shortDescr}} =
   highlight ("#" <> viewName ldn)
-    <> optFullName ldn fullName
+    <> optFullName ldn fullName shortDescr
     <> " - you are invited ("
     <> highlight ("/j " <> viewName ldn)
     <> joinText
@@ -1415,9 +1415,9 @@ viewContactAndMemberAssociated ct g m ct' =
   ]
 
 viewUserProfile :: Profile -> [StyledString]
-viewUserProfile Profile {displayName, fullName} =
-  [ "user profile: " <> ttyFullName displayName fullName,
-    "use " <> highlight' "/p <display name>" <> " to change it",
+viewUserProfile Profile {displayName, fullName, shortDescr} =
+  [ "user profile: " <> ttyFullName displayName fullName shortDescr,
+    "use " <> highlight' "/p <name> [<bio>]" <> " to change it",
     "(the updated profile will be sent to all your contacts)"
   ]
 
@@ -1703,16 +1703,17 @@ viewSwitchPhase = \case
   SPCompleted -> "changed address"
 
 viewUserProfileUpdated :: Profile -> Profile -> UserProfileUpdateSummary -> [StyledString]
-viewUserProfileUpdated Profile {displayName = n, fullName, image, contactLink, preferences} Profile {displayName = n', fullName = fullName', image = image', contactLink = contactLink', preferences = prefs'} summary =
+viewUserProfileUpdated Profile {displayName = n, fullName, shortDescr, image, contactLink, preferences} Profile {displayName = n', fullName = fullName', shortDescr = shortDescr', image = image', contactLink = contactLink', preferences = prefs'} summary =
   profileUpdated <> viewPrefsUpdated preferences prefs'
   where
     UserProfileUpdateSummary {updateSuccesses = s, updateFailures = f} = summary
     profileUpdated
-      | n == n' && fullName == fullName' && image == image' && contactLink == contactLink' = []
-      | n == n' && fullName == fullName' && image == image' = [if isNothing contactLink' then "contact address removed" else "new contact address set"]
-      | n == n' && fullName == fullName' = [if isNothing image' then "profile image removed" else "profile image updated"]
+      | n == n' && fullName == fullName' && shortDescr == shortDescr' && image == image' && contactLink == contactLink' = []
+      | n == n' && fullName == fullName' && shortDescr == shortDescr' && image == image' = [if isNothing contactLink' then "contact address removed" else "new contact address set"]
+      | n == n' && fullName == fullName' && shortDescr == shortDescr' = [if isNothing image' then "profile image removed" else "profile image updated"]
+      | n == n' && fullName == fullName' = ["user bio " <> (if maybe True T.null shortDescr' then "removed" else "changed to " <> maybe "" plain shortDescr') <> notified]
       | n == n' = ["user full name " <> (if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName') <> notified]
-      | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
+      | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' shortDescr' <> notified]
     notified = " (your " <> sShow s <> " contacts are notified" <> failures <> ")"
     failures
       | f > 0 = ", " <> sShow f <> " failures"
@@ -1770,8 +1771,8 @@ countactUserPrefText cup = case cup of
 
 viewGroupUpdated :: GroupInfo -> GroupInfo -> Maybe GroupMember -> [StyledString]
 viewGroupUpdated
-  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, description, image, groupPreferences = gps, memberAdmission = ma}}
-  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', description = description', image = image', groupPreferences = gps', memberAdmission = ma'}}
+  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, shortDescr, description, image, groupPreferences = gps, memberAdmission = ma}}
+  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', shortDescr = shortDescr', description = description', image = image', groupPreferences = gps', memberAdmission = ma'}}
   m = do
     let update = groupProfileUpdated <> groupPrefsUpdated <> memberAdmissionUpdated
     if null update
@@ -1782,8 +1783,9 @@ viewGroupUpdated
       groupProfileUpdated =
         ["changed to " <> ttyFullGroup g' | n /= n']
           <> ["full name " <> if T.null fullName' || fullName' == n' then "removed" else "changed to: " <> plain fullName' | n == n' && fullName /= fullName']
+          <> ["description " <> if maybe True T.null shortDescr' then "removed" else "changed to: " <> maybe "" plain shortDescr' | n == n' && fullName == fullName' && shortDescr /= shortDescr']
           <> ["profile image " <> maybe "removed" (const "updated") image' | image /= image']
-          <> (if description == description' then [] else maybe ["description removed"] ((bold' "description changed to:" :) . map plain . T.lines) description')
+          <> (if description == description' then [] else maybe ["welcome message removed"] ((bold' "welcome message changed to:" :) . map plain . T.lines) description')
       groupPrefsUpdated
         | null prefs = []
         | otherwise = bold' "updated group preferences:" : prefs
@@ -1799,10 +1801,11 @@ viewGroupUpdated
         | otherwise = ["changed member admission rules"]
 
 viewGroupProfile :: GroupInfo -> [StyledString]
-viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {description, image, groupPreferences = gps}} =
+viewGroupProfile g@GroupInfo {groupProfile = GroupProfile {shortDescr, description, image, groupPreferences = gps}} =
   [ttyFullGroup g]
+    <> maybe [] (\sd -> ["description: " <> plain sd]) shortDescr
     <> maybe [] (const ["has profile image"]) image
-    <> maybe [] ((bold' "description:" :) . map plain . T.lines) description
+    <> maybe [] ((bold' "welcome message:" :) . map plain . T.lines) description
     <> (bold' "group preferences:" : map viewPref allGroupFeatures)
   where
     viewPref (AGF f) = plain $ groupPreferenceText (pref gps)
@@ -1963,16 +1966,20 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated
-  Contact {localDisplayName = n, profile = LocalProfile {fullName, contactLink}}
-  Contact {localDisplayName = n', profile = LocalProfile {fullName = fullName', contactLink = contactLink'}}
-    | n == n' && fullName == fullName' && contactLink == contactLink' = []
-    | n == n' && fullName == fullName' =
+  Contact {localDisplayName = n, profile = LocalProfile {fullName, shortDescr, contactLink}}
+  Contact {localDisplayName = n', profile = LocalProfile {fullName = fullName', shortDescr = shortDescr', contactLink = contactLink'}}
+    | n == n' && fullName == fullName' && shortDescr == shortDescr' && contactLink == contactLink' = []
+    | n == n' && fullName == fullName' && shortDescr == shortDescr' =
         if isNothing contactLink'
           then [ttyContact n <> " removed contact address"]
           else [ttyContact n <> " set new contact address, use " <> highlight ("/info " <> n) <> " to view"]
+    | n == n' && fullName == fullName' =
+        if maybe True T.null shortDescr'
+          then [ttyContact n <> " removed bio"]
+          else [ttyContact n <> " changed bio to: " <> maybe "" plain shortDescr']
     | n == n' = ["contact " <> ttyContact n <> fullNameUpdate]
     | otherwise =
-        [ "contact " <> ttyContact n <> " changed to " <> ttyFullName n' fullName',
+        [ "contact " <> ttyContact n <> " changed to " <> ttyFullName n' fullName' shortDescr',
           "use " <> ttyToContact n' <> highlight' "<message>" <> " to send messages"
         ]
     where
@@ -2566,18 +2573,18 @@ ttyContact' :: Contact -> StyledString
 ttyContact' Contact {localDisplayName = c} = ttyContact c
 
 ttyFullContact :: Contact -> StyledString
-ttyFullContact Contact {localDisplayName, profile = LocalProfile {fullName}} =
-  ttyFullName localDisplayName fullName
+ttyFullContact Contact {localDisplayName, profile = LocalProfile {fullName, shortDescr}} =
+  ttyFullName localDisplayName fullName shortDescr
 
 ttyMember :: GroupMember -> StyledString
 ttyMember GroupMember {localDisplayName} = ttyContact localDisplayName
 
 ttyFullMember :: GroupMember -> StyledString
-ttyFullMember GroupMember {localDisplayName, memberProfile = LocalProfile {fullName}} =
-  ttyFullName localDisplayName fullName
+ttyFullMember GroupMember {localDisplayName, memberProfile = LocalProfile {fullName, shortDescr}} =
+  ttyFullName localDisplayName fullName shortDescr
 
-ttyFullName :: ContactName -> Text -> StyledString
-ttyFullName c fullName = ttyContact c <> optFullName c fullName
+ttyFullName :: ContactName -> Text -> Maybe Text -> StyledString
+ttyFullName c fullName shortDescr = ttyContact c <> optFullName c fullName shortDescr
 
 ttyToContact :: ContactName -> StyledString
 ttyToContact c = ttyTo $ "@" <> viewName c <> " "
@@ -2626,8 +2633,8 @@ ttyGroups [g] = ttyGroup g
 ttyGroups (g : gs) = ttyGroup g <> ", " <> ttyGroups gs
 
 ttyFullGroup :: GroupInfo -> StyledString
-ttyFullGroup GroupInfo {localDisplayName = g, groupProfile = GroupProfile {fullName}} =
-  ttyGroup g <> optFullName g fullName
+ttyFullGroup GroupInfo {localDisplayName = g, groupProfile = GroupProfile {fullName, shortDescr}} =
+  ttyGroup g <> optFullName g fullName shortDescr
 
 ttyFromGroup :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> StyledString
 ttyFromGroup g scopeInfo m = ttyFromGroupAttention g scopeInfo m False
@@ -2672,8 +2679,8 @@ groupScopeInfoStr = \case
 ttyFilePath :: FilePath -> StyledString
 ttyFilePath = plain
 
-optFullName :: ContactName -> Text -> StyledString
-optFullName localDisplayName fullName = plain $ optionalFullName localDisplayName fullName
+optFullName :: ContactName -> Text -> Maybe Text -> StyledString
+optFullName localDisplayName fullName shortDescr = plain $ optionalFullName localDisplayName fullName shortDescr
 
 ctIncognito :: Contact -> StyledString
 ctIncognito ct = if contactConnIncognito ct then incognitoPrefix else ""

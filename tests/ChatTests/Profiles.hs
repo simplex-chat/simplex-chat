@@ -156,7 +156,7 @@ testUpdateProfile =
       connectUsers bob cath
       alice ##> "/p"
       alice <## "user profile: alice (Alice)"
-      alice <## "use /p <display name> to change it"
+      alice <## "use /p <name> [<bio>] to change it"
       alice <## "(the updated profile will be sent to all your contacts)"
       alice ##> "/p alice"
       concurrentlyN_
@@ -586,7 +586,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     alice @@@ [("@bob", "Audio/video calls: enabled")]
 
     bob ##> "/p bob Bob Ross"
-    bob <## "user full name changed to Bob Ross (your 0 contacts are notified)"
+    bob <## "user bio changed to Bob Ross (your 0 contacts are notified)"
     bob ##> ("/c " <> cLink)
     alice <#? bob
     alice @@@ [("@bob", "Audio/video calls: enabled")]
@@ -2786,7 +2786,7 @@ testSetUITheme =
     theme cm = T.unpack $ encodeJSON UIThemeEntityOverrides {light = Nothing, dark = Just $ UIThemeEntityOverride cm Nothing defaultUIColors}
     userInfo a name = do
       a <## ("user profile: " <> name)
-      a <## "use /p <display name> to change it"
+      a <## "use /p <name> [<bio>] to change it"
       a <## "(the updated profile will be sent to all your contacts)"
     contactInfo a = do
       a <## "contact ID: 2"
@@ -3492,7 +3492,7 @@ testGroupShortLinkWelcome ps@TestParams {largeLinkData} = testChatCfg2 testCfg {
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
       alice ##> "/set welcome #team Welcome!"
-      alice <## "description changed to:"
+      alice <## "welcome message changed to:"
       alice <## "Welcome!"
       alice ##> "/create link #team"
       (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True

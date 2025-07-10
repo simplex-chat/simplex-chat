@@ -422,9 +422,9 @@ type MemberName = Text
 
 type GroupName = Text
 
-optionalFullName :: ContactName -> Text -> Text
-optionalFullName displayName fullName
-  | T.null fullName || displayName == fullName = ""
+optionalFullName :: ContactName -> Text -> Maybe Text -> Text
+optionalFullName displayName fullName shortDescr
+  | T.null fullName || displayName == fullName = maybe "" (\sd -> " (" <> sd <> ")") shortDescr
   | otherwise = " (" <> fullName <> ")"
 
 data ShortGroup = ShortGroup

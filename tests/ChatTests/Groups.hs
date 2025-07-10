@@ -1525,15 +1525,15 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
   alice ##> "/group_profile team"
   alice <## "#team"
   groupInfo' alice
-  alice ##> "/group_descr team Welcome to the team!"
-  alice <## "description changed to:"
+  alice ##> "/set welcome team Welcome to the team!"
+  alice <## "welcome message changed to:"
   alice <## "Welcome to the team!"
   bob <## "alice updated group #team:"
-  bob <## "description changed to:"
+  bob <## "welcome message changed to:"
   bob <## "Welcome to the team!"
   alice ##> "/group_profile team"
   alice <## "#team"
-  alice <## "description:"
+  alice <## "welcome message:"
   alice <## "Welcome to the team!"
   groupInfo' alice
   connectUsers alice cath
@@ -5564,11 +5564,11 @@ testGroupHistoryWelcomeMessage =
       createGroup2 "team" alice bob
 
       alice ##> "/set welcome #team welcome to team"
-      alice <## "description changed to:"
+      alice <## "welcome message changed to:"
       alice <## "welcome to team"
 
       bob <## "alice updated group #team:"
-      bob <## "description changed to:"
+      bob <## "welcome message changed to:"
       bob <## "welcome to team"
 
       threadDelay 1000000
