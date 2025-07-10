@@ -202,6 +202,7 @@ chatGroupTests = do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
     it "should send scoped messages to support (many moderators)" testScopedSupportManyModerators
     fit "should forward messages inside support scope" testScopedSupportForward
+    fit "should forward messages inside support scope while member is in review" testScopedSupportForwardWhileReview
     fit "should not forward messages from support to main scope" testScopedSupportDontForward
     it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
@@ -7000,7 +7001,7 @@ testScopedSupportManyModerators =
     cath ##> "/member support chats #team"
     cath <## "bob (Bob) (id 3): unread: 0, require attention: 0, mentions: 0"
 
--- TODO test forwarding while knocking
+-- TODO refactor set up - pass 3 members, also replace setupGroupForwarding3 with new function
 testScopedSupportForward :: HasCallStack => TestParams -> IO ()
 testScopedSupportForward =
   testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
@@ -7049,6 +7050,82 @@ testScopedSupportForward =
     dan #> "#team (support: bob) 4"
     alice <# "#team (support: bob) dan> 4"
     bob <# "#team (support) dan> 4 [>>]"
+
+testScopedSupportForwardWhileReview :: HasCallStack => TestParams -> IO ()
+testScopedSupportForwardWhileReview =
+  testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $
+    \alice bob cath dan eve -> do
+      createGroup4 "team" alice (bob, GRMember) (cath, GRModerator) (dan, GRModerator)
+
+      alice ##> "/set admission review #team all"
+      alice <## "changed member admission rules"
+      concurrentlyN_
+        [ do
+            bob <## "alice updated group #team:"
+            bob <## "changed member admission rules",
+          do
+            cath <## "alice updated group #team:"
+            cath <## "changed member admission rules",
+          do
+            dan <## "alice updated group #team:"
+            dan <## "changed member admission rules"
+        ]
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      eve ##> ("/c " <> gLink)
+      eve <## "connection request sent!"
+      alice <## "eve (Eve): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: eve connected and pending review",
+          eve
+            <### [ "#team: alice accepted you to the group, pending review",
+                   "#team: joining the group...",
+                   "#team: you joined the group, connecting to group moderators for admission to group",
+                   "#team: member cath (Catherine) is connected",
+                   "#team: member dan (Daniel) is connected"
+                 ],
+          do
+            cath <## "#team: alice added eve (Eve) to the group (connecting and pending review...), use /_accept member #1 5 <role> to accept member"
+            cath <## "#team: new member eve is connected and pending review, use /_accept member #1 5 <role> to accept member",
+          do
+            dan <## "#team: alice added eve (Eve) to the group (connecting and pending review...), use /_accept member #1 5 <role> to accept member"
+            dan <## "#team: new member eve is connected and pending review, use /_accept member #1 5 <role> to accept member"
+        ]
+
+      -- vvv set up test: break connections between cath and eve to enable group forwarding
+      threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
+      void $ withCCTransaction cath $ \db ->
+        DB.execute_
+          db
+          [sql|
+            UPDATE connections SET conn_status='deleted'
+            WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'eve')
+          |]
+      void $ withCCTransaction eve $ \db ->
+        DB.execute_
+          db
+          [sql|
+            UPDATE connections SET conn_status='deleted'
+            WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'cath')
+          |]
+      void $ withCCTransaction alice $ \db ->
+        DB.execute_
+          db
+          [sql|
+            UPDATE group_member_intros SET intro_status='fwd'
+            WHERE re_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'cath')
+              AND to_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'eve')
+          |]
+      -- ^^^
+
+      eve #> "#team (support) 1"
+      [alice, dan] *<# "#team (support: eve) eve> 1"
+      cath <# "#team (support: eve) eve> 1 [>>]"
+
+      cath #> "#team (support: eve) 2"
+      [alice, dan] *<# "#team (support: eve) cath> 2"
+      eve <# "#team (support) cath> 2 [>>]"
 
 testScopedSupportDontForward :: HasCallStack => TestParams -> IO ()
 testScopedSupportDontForward =
