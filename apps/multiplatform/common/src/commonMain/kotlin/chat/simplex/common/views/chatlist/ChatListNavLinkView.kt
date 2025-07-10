@@ -695,9 +695,19 @@ fun contactRequestAlertDialog(rhId: Long?, contactRequest: ChatInfo.ContactReque
   )
 }
 
-fun acceptContactRequest(rhId: Long?, incognito: Boolean, contactRequestId: Long, isCurrentUser: Boolean, chatModel: ChatModel, close: ((chat: Chat) -> Unit)? = null ) {
+fun acceptContactRequest(
+  rhId: Long?,
+  incognito: Boolean,
+  contactRequestId: Long,
+  isCurrentUser: Boolean,
+  chatModel: ChatModel,
+  close: ((chat: Chat) -> Unit)? = null,
+  inProgress: MutableState<Boolean>? = null
+) {
   withBGApi {
+    inProgress?.value = true
     val contact = chatModel.controller.apiAcceptContactRequest(rhId, incognito, contactRequestId)
+    inProgress?.value = false
     if (contact != null && isCurrentUser) {
       val chat = Chat(remoteHostId = rhId, ChatInfo.Direct(contact), listOf())
       withContext(Dispatchers.Main) {
