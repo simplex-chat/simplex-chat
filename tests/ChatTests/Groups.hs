@@ -7119,13 +7119,18 @@ testScopedSupportForwardWhileReview =
           |]
       -- ^^^
 
-      eve #> "#team (support) 1"
-      [alice, dan] *<# "#team (support: eve) eve> 1"
-      cath <# "#team (support: eve) eve> 1 [>>]"
+      -- message from cath is not forwarded to eve in group scope
+      cath #> "#team 1"
+      [alice, bob, dan] *<# "#team cath> 1"
 
-      cath #> "#team (support: eve) 2"
-      [alice, dan] *<# "#team (support: eve) cath> 2"
-      eve <# "#team (support) cath> 2 [>>]"
+      -- messages are forwarded in support scope
+      eve #> "#team (support) 2"
+      [alice, dan] *<# "#team (support: eve) eve> 2"
+      cath <# "#team (support: eve) eve> 2 [>>]"
+
+      cath #> "#team (support: eve) 3"
+      [alice, dan] *<# "#team (support: eve) cath> 3"
+      eve <# "#team (support) cath> 3 [>>]"
 
 testScopedSupportDontForward :: HasCallStack => TestParams -> IO ()
 testScopedSupportDontForward =
