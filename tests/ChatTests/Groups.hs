@@ -3,6 +3,7 @@
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
@@ -37,8 +38,10 @@ import Simplex.Messaging.Version
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
+import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
 import Database.SQLite.Simple (Only (..))
+import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Options.DB
 import System.Directory (copyFile)
 import System.FilePath ((</>))
@@ -198,6 +201,7 @@ chatGroupTests = do
   describe "group scoped messages" $ do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
     it "should send scoped messages to support (many moderators)" testScopedSupportManyModerators
+    fit "should not forward from support to main scope" testScopedSupportDontForward
     it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
@@ -6994,6 +6998,53 @@ testScopedSupportManyModerators =
     bob <## "support: unread: 0, require attention: 0, mentions: 0"
     cath ##> "/member support chats #team"
     cath <## "bob (Bob) (id 3): unread: 0, require attention: 0, mentions: 0"
+
+testScopedSupportDontForward :: HasCallStack => TestParams -> IO ()
+testScopedSupportDontForward =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
+    createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRModerator)
+
+    -- vvv set up test: break connections to enable group forwarding
+    threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
+    void $ withCCTransaction bob $ \db ->
+      DB.execute_
+        db
+        [sql|
+          UPDATE connections SET conn_status='deleted'
+          WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'cath')
+        |]
+    void $ withCCTransaction cath $ \db ->
+      DB.execute_
+        db
+        [sql|
+          UPDATE connections SET conn_status='deleted'
+          WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'bob')
+        |]
+    void $ withCCTransaction alice $ \db ->
+      DB.execute_
+        db
+        [sql|
+          UPDATE group_member_intros SET intro_status='fwd'
+          WHERE re_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'bob')
+            AND to_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'cath')
+        |]
+    -- ^^^
+
+    -- messages are forwarded in main scope
+    bob #> "#team 1"
+    [alice, dan] *<# "#team bob> 1"
+    cath <# "#team bob> 1 [>>]"
+
+    cath #> "#team 2"
+    [alice, dan] *<# "#team cath> 2"
+    bob <# "#team cath> 2 [>>]"
+
+    -- messages are not forwarded from support to main scope
+    bob #> "#team (support) 3"
+    [alice, dan] *<# "#team (support: bob) bob> 3"
+
+    cath #> "#team (support) 4"
+    [alice, dan] *<# "#team (support: cath) cath> 4"
 
 testSupportCLISendCommand :: HasCallStack => TestParams -> IO ()
 testSupportCLISendCommand =
