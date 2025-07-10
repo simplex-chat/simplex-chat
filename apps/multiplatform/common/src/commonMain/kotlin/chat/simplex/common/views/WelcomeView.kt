@@ -46,6 +46,7 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
         .padding(top = 20.dp)
     ) {
       val displayName = rememberSaveable { mutableStateOf("") }
+      val shortDescr = rememberSaveable { mutableStateOf("") }
       val focusRequester = remember { FocusRequester() }
 
       ColumnWithScrollBar {
@@ -66,6 +67,11 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
             }
           }
           ProfileNameField(displayName, "", { it.trim() == mkValidName(it) }, focusRequester)
+          Text(
+            stringResource(MR.strings.short_descr),
+            fontSize = 16.sp
+          )
+          ProfileNameField(shortDescr, "")
         }
         SettingsActionItem(
           painterResource(MR.images.ic_check),
@@ -75,7 +81,7 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
           iconColor = MaterialTheme.colors.primary,
           click = {
             if (chatModel.localUserCreated.value == true) {
-              createProfileInProfiles(chatModel, displayName.value, close)
+              createProfileInProfiles(chatModel, displayName.value, shortDescr.value, close)
             } else {
               createProfileInNoProfileSetup(displayName.value, close)
             }
@@ -162,7 +168,7 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
 
 fun createProfileInNoProfileSetup(displayName: String, close: () -> Unit) {
   withBGApi {
-    val user = controller.apiCreateActiveUser(null, Profile(displayName.trim(), "", null)) ?: return@withBGApi
+    val user = controller.apiCreateActiveUser(null, Profile(displayName.trim(), "", null, null)) ?: return@withBGApi
     if (!chatModel.connectedToRemote()) {
       chatModel.localUserCreated.value = true
     }
@@ -173,11 +179,11 @@ fun createProfileInNoProfileSetup(displayName: String, close: () -> Unit) {
   }
 }
 
-fun createProfileInProfiles(chatModel: ChatModel, displayName: String, close: () -> Unit) {
+fun createProfileInProfiles(chatModel: ChatModel, displayName: String, shortDescr: String, close: () -> Unit) {
   withBGApi {
     val rhId = chatModel.remoteHostId()
     val user = chatModel.controller.apiCreateActiveUser(
-      rhId, Profile(displayName.trim(), "", null)
+      rhId, Profile(displayName.trim(), "", shortDescr.trim().ifEmpty { null }, null)
     ) ?: return@withBGApi
     chatModel.currentUser.value = user
     if (chatModel.users.isEmpty()) {
@@ -196,7 +202,7 @@ fun createProfileInProfiles(chatModel: ChatModel, displayName: String, close: ()
 fun createProfileOnboarding(chatModel: ChatModel, displayName: String, close: () -> Unit) {
   withBGApi {
     chatModel.currentUser.value = chatModel.controller.apiCreateActiveUser(
-      null, Profile(displayName.trim(), "", null)
+      null, Profile(displayName.trim(), "", null, null)
     ) ?: return@withBGApi
     chatModel.localUserCreated.value = true
     val onboardingStage = chatModel.controller.appPrefs.onboardingStage

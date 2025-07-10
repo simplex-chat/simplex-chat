@@ -742,6 +742,17 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
         cInfo.fullName, style = MaterialTheme.typography.h2,
         color = MaterialTheme.colors.onBackground,
         textAlign = TextAlign.Center,
+        maxLines = 3,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
+      )
+    }
+    val descr = cInfo.shortDescr
+    if (descr != null) {
+      Text(
+        descr, // style = MaterialTheme.typography.h2,
+        color = MaterialTheme.colors.onBackground,
+        textAlign = TextAlign.Center,
         maxLines = 4,
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)

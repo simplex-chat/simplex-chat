@@ -737,7 +737,7 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
       groupInfo.groupProfile.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       color = MaterialTheme.colors.onBackground,
       textAlign = TextAlign.Center,
-      maxLines = 4,
+      maxLines = 3,
       overflow = TextOverflow.Ellipsis,
       modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
     )
@@ -746,7 +746,18 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
         cInfo.fullName, style = MaterialTheme.typography.h2,
         color = MaterialTheme.colors.onBackground,
         textAlign = TextAlign.Center,
-        maxLines = 8,
+        maxLines = 3,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
+      )
+    }
+    val descr = cInfo.shortDescr
+    if (descr != null) {
+      Text(
+        descr, // style = MaterialTheme.typography.h2,
+        color = MaterialTheme.colors.onBackground,
+        textAlign = TextAlign.Center,
+        maxLines = 4,
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
       )

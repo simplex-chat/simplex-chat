@@ -194,7 +194,7 @@ fun CIGroupInvitationViewLongNamePreview() {
     CIGroupInvitationView(
       ci = ChatItem.getGroupInvitationSample(),
       groupInvitation = CIGroupInvitation.getSample(
-        groupProfile = GroupProfile("group_with_a_really_really_really_long_name", "Group With A Really Really Really Long Name"),
+        groupProfile = GroupProfile("group_with_a_really_really_really_long_name", "Group With A Really Really Really Long Name", shortDescr = null),
         status = CIGroupInvitationStatus.Accepted
       ),
       memberRole = GroupMemberRole.Admin,

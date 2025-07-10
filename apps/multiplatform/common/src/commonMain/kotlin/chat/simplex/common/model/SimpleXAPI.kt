@@ -573,7 +573,7 @@ object ChatController {
 
   suspend fun startChatWithTemporaryDatabase(ctrl: ChatCtrl, netCfg: NetCfg): User? {
     Log.d(TAG, "startChatWithTemporaryDatabase")
-    val migrationActiveUser = apiGetActiveUser(null, ctrl) ?: apiCreateActiveUser(null, Profile(displayName = "Temp", fullName = ""), ctrl = ctrl)
+    val migrationActiveUser = apiGetActiveUser(null, ctrl) ?: apiCreateActiveUser(null, Profile(displayName = "Temp", fullName = "", shortDescr = null), ctrl = ctrl)
     if (!apiSetNetworkConfig(netCfg, ctrl = ctrl)) {
       Log.e(TAG, "Error setting network config, stopping migration")
       return null
