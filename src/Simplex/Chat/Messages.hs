@@ -120,6 +120,11 @@ data GroupChatScopeInfo
   = GCSIMemberSupport {groupMember_ :: Maybe GroupMember}
   deriving (Show)
 
+data GroupForwardScope
+  = GFSAll -- message should be forwarded to all group members, even pending (e.g. XGrpDel, XGrpInfo)
+  | GFSMain -- message should be forwarded to current group members only (e.g. regular messages in group)
+  | GFSMemberSupport {groupMember_ :: Maybe GroupMember}
+
 toChatScope :: GroupChatScopeInfo -> GroupChatScope
 toChatScope = \case
   GCSIMemberSupport {groupMember_} -> GCSMemberSupport $ groupMemberId' <$> groupMember_

@@ -201,7 +201,8 @@ chatGroupTests = do
   describe "group scoped messages" $ do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
     it "should send scoped messages to support (many moderators)" testScopedSupportManyModerators
-    fit "should not forward from support to main scope" testScopedSupportDontForward
+    fit "should forward messages inside support scope" testScopedSupportForward
+    fit "should not forward messages from support to main scope" testScopedSupportDontForward
     it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
@@ -6999,12 +7000,62 @@ testScopedSupportManyModerators =
     cath ##> "/member support chats #team"
     cath <## "bob (Bob) (id 3): unread: 0, require attention: 0, mentions: 0"
 
+-- TODO test forwarding while knocking
+testScopedSupportForward :: HasCallStack => TestParams -> IO ()
+testScopedSupportForward =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
+    createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRModerator)
+
+    -- vvv set up test: break connections between bob and dan to enable group forwarding
+    threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
+    void $ withCCTransaction bob $ \db ->
+      DB.execute_
+        db
+        [sql|
+          UPDATE connections SET conn_status='deleted'
+          WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'dan')
+        |]
+    void $ withCCTransaction dan $ \db ->
+      DB.execute_
+        db
+        [sql|
+          UPDATE connections SET conn_status='deleted'
+          WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'bob')
+        |]
+    void $ withCCTransaction alice $ \db ->
+      DB.execute_
+        db
+        [sql|
+          UPDATE group_member_intros SET intro_status='fwd'
+          WHERE re_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'bob')
+            AND to_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'dan')
+        |]
+    -- ^^^
+
+    -- messages are forwarded in main scope
+    bob #> "#team 1"
+    [alice, cath] *<# "#team bob> 1"
+    dan <# "#team bob> 1 [>>]"
+
+    dan #> "#team 2"
+    [alice, cath] *<# "#team dan> 2"
+    bob <# "#team dan> 2 [>>]"
+
+    -- messages are forwarded inside support scope
+    bob #> "#team (support) 3"
+    alice <# "#team (support: bob) bob> 3"
+    dan <# "#team (support: bob) bob> 3 [>>]"
+
+    dan #> "#team (support: bob) 4"
+    alice <# "#team (support: bob) dan> 4"
+    bob <# "#team (support) dan> 4 [>>]"
+
 testScopedSupportDontForward :: HasCallStack => TestParams -> IO ()
 testScopedSupportDontForward =
   testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
     createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRModerator)
 
-    -- vvv set up test: break connections to enable group forwarding
+    -- vvv set up test: break connections between bob and cath to enable group forwarding
     threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
     void $ withCCTransaction bob $ \db ->
       DB.execute_
