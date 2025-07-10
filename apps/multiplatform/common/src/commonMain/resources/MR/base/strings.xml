@@ -862,6 +862,7 @@
   <string name="paste_the_link_you_received">Paste the link you received</string>
   <string name="the_text_you_pasted_is_not_a_link">The text you pasted is not a SimpleX link.</string>
   <string name="tap_to_paste_link">Tap to paste link</string>
+  <string name="loading_profile">Loading profile…</string>
 
   <string name="invalid_qr_code">Invalid QR code</string>
   <string name="code_you_scanned_is_not_simplex_link_qr_code">The code you scanned is not a SimpleX link QR code.</string>

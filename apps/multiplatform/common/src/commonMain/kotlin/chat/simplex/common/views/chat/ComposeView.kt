@@ -97,6 +97,7 @@ data class ComposeState(
   val preview: ComposePreview = ComposePreview.NoPreview,
   val contextItem: ComposeContextItem = ComposeContextItem.NoContextItem,
   val inProgress: Boolean = false,
+  val progressByTimeout: Boolean = false,
   val useLinkPreviews: Boolean,
   val mentions: MentionedMembers = emptyMap()
 ) {
@@ -427,7 +428,7 @@ fun ComposeView(
 
   fun clearState(live: Boolean = false) {
     if (live) {
-      composeState.value = composeState.value.copy(inProgress = false)
+      composeState.value = composeState.value.copy(inProgress = false, progressByTimeout = false)
     } else {
       composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
       resetLinkPreview()
@@ -1245,6 +1246,7 @@ fun ComposeView(
         SimpleButtonIconEnded(
           text = stringResource(MR.strings.compose_view_connect),
           icon = painterResource(icon),
+          color = if (composeState.value.inProgress) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
           disabled = composeState.value.inProgress,
           click = { withApi { sendRequest() } }
         )
@@ -1265,18 +1267,27 @@ fun ComposeView(
       contentAlignment = Alignment.Center
     ) {
       Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
       ) {
         Icon(
           painterResource(icon),
           contentDescription = null,
-          tint = MaterialTheme.colors.primary,
+          tint = if (composeState.value.inProgress) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
         )
         Text(
           text,
           style = MaterialTheme.typography.caption,
-          color = MaterialTheme.colors.primary
+          color = if (composeState.value.inProgress) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
         )
+      }
+      if (composeState.value.progressByTimeout) {
+        Box(
+          Modifier.fillMaxWidth().padding(end = DEFAULT_PADDING_HALF),
+          contentAlignment = Alignment.CenterEnd
+        ) {
+          ComposeProgressIndicator()
+        }
       }
     }
   }
@@ -1326,6 +1337,16 @@ fun ComposeView(
       null -> {}
     }
     chatModel.sharedContent.value = null
+  }
+
+  LaunchedEffect(composeState.value.inProgress) {
+    val newProgressByTimeout = if (composeState.value.inProgress) {
+      delay(1000)
+      composeState.value.inProgress
+    } else {
+      false
+    }
+    composeState.value = composeState.value.copy(progressByTimeout = newProgressByTimeout)
   }
 
   Column {

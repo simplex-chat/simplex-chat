@@ -44,6 +44,7 @@ struct ComposeState {
     var contextItem: ComposeContextItem
     var voiceMessageRecordingState: VoiceMessageRecordingState
     var inProgress = false
+    var progressByTimeout = false
     var useLinkPreviews: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
     var mentions: MentionedMembers = [:]
 
@@ -410,7 +411,14 @@ struct ComposeView: View {
             if chat.chatInfo.groupInfo?.nextConnectPrepared == true {
                 if chat.chatInfo.groupInfo?.businessChat == nil {
                     Button(action: connectPreparedGroup) {
-                        Label("Join group", systemImage: "person.2.fill")
+                        ZStack(alignment: .trailing) {
+                            Label("Join group", systemImage: "person.2.fill")
+                                .frame(maxWidth: .infinity)
+                            if composeState.progressByTimeout {
+                                ProgressView()
+                                    .padding()
+                            }
+                        }
                     }
                     .frame(height: 60)
                     .disabled(composeState.inProgress)
@@ -429,7 +437,14 @@ struct ComposeView: View {
                 switch linkType {
                 case .inv:
                     Button(action: sendConnectPreparedContact) {
-                        Label("Connect", systemImage: "person.fill.badge.plus")
+                        ZStack(alignment: .trailing) {
+                            Label("Connect", systemImage: "person.fill.badge.plus")
+                                .frame(maxWidth: .infinity)
+                            if composeState.progressByTimeout {
+                                ProgressView()
+                                    .padding()
+                            }
+                        }
                     }
                     .frame(height: 60)
                     .disabled(composeState.inProgress)
@@ -472,6 +487,15 @@ struct ComposeView: View {
                 cancelCurrentVoiceRecording()
                 clearCurrentDraft()
                 clearState()
+            }
+        }
+        .onChange(of: composeState.inProgress) { inProgress in
+            if inProgress {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    composeState.progressByTimeout = composeState.inProgress
+                }
+            } else {
+                composeState.progressByTimeout = false
             }
         }
         .confirmationDialog("Attach", isPresented: $showChooseSource, titleVisibility: .visible) {

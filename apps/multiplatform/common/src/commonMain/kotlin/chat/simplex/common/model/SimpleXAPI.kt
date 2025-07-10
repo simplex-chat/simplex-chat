@@ -673,32 +673,35 @@ object ChatController {
     }
   }
 
-  private suspend fun sendCmdWithRetry(rhId: Long?, cmd: CC, retryNum: Int = 0): API? {
+  private suspend fun sendCmdWithRetry(rhId: Long?, cmd: CC, inProgress: MutableState<Boolean>? = null, retryNum: Int = 0): API? {
     val r = sendCmd(rhId, cmd, retryNum = retryNum)
     val alert = if (r is API.Error) retryableNetworkErrorAlert(r.err) else null
-    if (alert == null) return r
-    else return suspendCancellableCoroutine { cont ->
-      showRetryAlert(
-        alert,
-        onCancel = {
-          cont.resumeWith(Result.success(null))
-        },
-        onRetry = {
-          withLongRunningApi {
-            cont.resumeWith(
-              runCatching {
-                coroutineScope {
-                  sendCmdWithRetry(rhId, cmd, retryNum = retryNum + 1)
+    if ((inProgress == null || inProgress.value) && alert != null) {
+      return suspendCancellableCoroutine { cont ->
+        showRetryAlert(
+          alert,
+          onCancel = {
+            cont.resumeWith(Result.success(null))
+          },
+          onRetry = {
+            withLongRunningApi {
+              cont.resumeWith(
+                runCatching {
+                  coroutineScope {
+                    sendCmdWithRetry(rhId, cmd, inProgress = inProgress, retryNum = retryNum + 1)
+                  }
                 }
-              }
-            )
+              )
+            }
           }
-        }
-      )
+        )
 
-      cont.invokeOnCancellation {
-        cont.resumeWith(Result.success(null))
+        cont.invokeOnCancellation {
+          cont.resumeWith(Result.success(null))
+        }
       }
+    } else {
+      return r
     }
   }
 
@@ -1408,11 +1411,11 @@ object ChatController {
     return null
   }
 
-  suspend fun apiConnectPlan(rh: Long?, connLink: String): Pair<CreatedConnLink, ConnectionPlan>? {
+  suspend fun apiConnectPlan(rh: Long?, connLink: String, inProgress: MutableState<Boolean>): Pair<CreatedConnLink, ConnectionPlan>? {
     val userId = kotlin.runCatching { currentUserId("apiConnectPlan") }.getOrElse { return null }
-    val r = sendCmdWithRetry(rh, CC.APIConnectPlan(userId, connLink))
+    val r = sendCmdWithRetry(rh, CC.APIConnectPlan(userId, connLink), inProgress = inProgress)
     if (r is API.Result && r.res is CR.CRConnectionPlan) return r.res.connLink to r.res.connectionPlan
-    if (r != null) apiConnectResponseAlert(r)
+    if (inProgress.value && r != null) apiConnectResponseAlert(r)
     return null
   }
 
@@ -1517,10 +1520,9 @@ object ChatController {
   suspend fun apiConnectPreparedContact(rh: Long?, contactId: Long, incognito: Boolean, msg: MsgContent?): Contact? {
     val r = sendCmdWithRetry(rh, CC.APIConnectPreparedContact(contactId, incognito, msg))
     if (r is API.Result && r.res is CR.StartedConnectionToContact) return r.res.contact
-    if (r == null) return null
-    Log.e(TAG, "apiConnectPreparedContact bad response: ${r.responseType} ${r.details}")
-    if (!(networkErrorAlert(r))) {
-      apiErrorAlert("apiConnectPreparedContact", generalGetString(MR.strings.connection_error), r)
+    if (r != null) {
+      Log.e(TAG, "apiConnectPreparedContact bad response: ${r.responseType} ${r.details}")
+      apiConnectResponseAlert(r)
     }
     return null
   }
@@ -1528,10 +1530,9 @@ object ChatController {
   suspend fun apiConnectPreparedGroup(rh: Long?, groupId: Long, incognito: Boolean, msg: MsgContent?): GroupInfo? {
     val r = sendCmdWithRetry(rh, CC.APIConnectPreparedGroup(groupId, incognito, msg))
     if (r is API.Result && r.res is CR.StartedConnectionToGroup) return r.res.groupInfo
-    if (r == null) return null
-    Log.e(TAG, "apiConnectPreparedGroup bad response: ${r.responseType} ${r.details}")
-    if (!(networkErrorAlert(r))) {
-      apiErrorAlert("apiConnectPreparedGroup", generalGetString(MR.strings.connection_error), r)
+    if (r != null) {
+      Log.e(TAG, "apiConnectPreparedGroup bad response: ${r.responseType} ${r.details}")
+      apiConnectResponseAlert(r)
     }
     return null
   }
