@@ -1975,8 +1975,8 @@ viewContactUpdated
           else [ttyContact n <> " set new contact address, use " <> highlight ("/info " <> n) <> " to view"]
     | n == n' && fullName == fullName' =
         if maybe True T.null shortDescr'
-          then [ttyContact n <> " removed bio"]
-          else [ttyContact n <> " changed bio to: " <> maybe "" plain shortDescr']
+          then ["contact " <> ttyContact n <> " removed bio"]
+          else ["contact " <> ttyContact n <> " updated bio: " <> maybe "" plain shortDescr']
     | n == n' = ["contact " <> ttyContact n <> fullNameUpdate]
     | otherwise =
         [ "contact " <> ttyContact n <> " changed to " <> ttyFullName n' fullName' shortDescr',

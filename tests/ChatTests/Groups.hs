@@ -1466,6 +1466,26 @@ testUpdateGroupProfile =
       concurrently_
         (alice <# "#my_team bob> hi")
         (cath <# "#my_team bob> hi")
+      alice ##> "/gp my_team my_team My team"
+      alice <## "description changed to: My team"
+      concurrentlyN_
+        [ do
+            bob <## "alice updated group #my_team:"
+            bob <## "description changed to: My team",
+          do
+            cath <## "alice updated group #my_team:"
+            cath <## "description changed to: My team"
+        ]
+      alice ##> "/gp my_team my_team My team updated"
+      alice <## "description changed to: My team updated"
+      concurrentlyN_
+        [ do
+            bob <## "alice updated group #my_team:"
+            bob <## "description changed to: My team updated",
+          do
+            cath <## "alice updated group #my_team:"
+            cath <## "description changed to: My team updated"
+        ]
 
 testUpdateMemberRole :: HasCallStack => TestParams -> IO ()
 testUpdateMemberRole =

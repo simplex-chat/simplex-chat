@@ -2507,8 +2507,8 @@ processChatCommand vr nm = \case
   APIUpdateGroupProfile groupId p' -> withUser $ \user -> do
     g <- withFastStore $ \db -> getGroup db vr user groupId
     runUpdateGroupProfile user g p'
-  UpdateGroupNames gName GroupProfile {displayName, fullName} ->
-    updateGroupProfileByName gName $ \p -> p {displayName, fullName}
+  UpdateGroupNames gName p'@GroupProfile {displayName, fullName, shortDescr} ->
+    updateGroupProfileByName gName $ \p -> p {displayName, fullName, shortDescr}
   ShowGroupProfile gName -> withUser $ \user ->
     CRGroupProfile user <$> withFastStore (\db -> getGroupInfoByName db vr user gName)
   UpdateGroupDescription gName description ->
@@ -3151,9 +3151,9 @@ processChatCommand vr nm = \case
           let (newMs, oldMs) = partition (\m -> maxVersion (memberChatVRange m) >= businessChatPrefsVersion) ms
           -- this is a fallback to send the members with the old version correct profile of the business when preferences change
           unless (null oldMs) $ do
-            GroupMember {memberProfile = LocalProfile {displayName, fullName, image}} <-
+            GroupMember {memberProfile = LocalProfile {displayName, fullName, shortDescr, image}} <-
               withStore $ \db -> getGroupMemberByMemberId db vr user g businessId
-            let p'' = p' {displayName, fullName, image} :: GroupProfile
+            let p'' = p' {displayName, fullName, shortDescr, image} :: GroupProfile
                 recipients = filter memberCurrentOrPending oldMs
             void $ sendGroupMessage user g' Nothing recipients (XGrpInfo p'')
           let ps' = fromMaybe defaultBusinessGroupPrefs $ groupPreferences p'
@@ -3162,6 +3162,7 @@ processChatCommand vr nm = \case
         Nothing -> do
           setGroupLinkData'
           let recipients = filter memberCurrentOrPending ms
+          liftIO $ putStrLn $ "about to sendGroupMessage to " <> show (length recipients)
           sendGroupMessage user g' Nothing recipients (XGrpInfo p')
           where
             setGroupLinkData' :: CM ()

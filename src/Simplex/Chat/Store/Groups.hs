@@ -1934,10 +1934,10 @@ updateGroupPreferences db User {userId} g@GroupInfo {groupId, groupProfile = p} 
   pure (g :: GroupInfo) {groupProfile = p {groupPreferences = Just ps}, fullGroupPreferences = mergeGroupPreferences $ Just ps}
 
 updateGroupProfileFromMember :: DB.Connection -> User -> GroupInfo -> Profile -> ExceptT StoreError IO GroupInfo
-updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName = n, fullName = fn, image = img} = do
+updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName = n, fullName = fn, shortDescr = sd, image = img} = do
   p <- getGroupProfile -- to avoid any race conditions with UI
   let g' = g {groupProfile = p} :: GroupInfo
-      p' = p {displayName = n, fullName = fn, image = img} :: GroupProfile
+      p' = p {displayName = n, fullName = fn, shortDescr = sd, image = img} :: GroupProfile
   updateGroupProfile db user g' p'
   where
     getGroupProfile =

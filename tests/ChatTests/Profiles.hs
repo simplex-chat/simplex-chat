@@ -160,15 +160,15 @@ testUpdateProfile =
       alice <## "(the updated profile will be sent to all your contacts)"
       alice ##> "/p alice"
       concurrentlyN_
-        [ alice <## "user full name removed (your 2 contacts are notified)",
-          bob <## "contact alice removed full name",
-          cath <## "contact alice removed full name"
+        [ alice <## "user bio removed (your 2 contacts are notified)",
+          bob <## "contact alice removed bio",
+          cath <## "contact alice removed bio"
         ]
       alice ##> "/p alice Alice Jones"
       concurrentlyN_
-        [ alice <## "user full name changed to Alice Jones (your 2 contacts are notified)",
-          bob <## "contact alice updated full name: Alice Jones",
-          cath <## "contact alice updated full name: Alice Jones"
+        [ alice <## "user bio changed to Alice Jones (your 2 contacts are notified)",
+          bob <## "contact alice updated bio: Alice Jones",
+          cath <## "contact alice updated bio: Alice Jones"
         ]
       cath ##> "/p cate"
       concurrentlyN_
@@ -577,7 +577,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     alice @@@ [("@bob", "Audio/video calls: enabled")]
 
     bob ##> "/p bob"
-    bob <## "user full name removed (your 0 contacts are notified)"
+    bob <## "user bio removed (your 0 contacts are notified)"
     bob ##> ("/c " <> cLink)
     bob <## "connection request sent!"
     alice <## "bob wants to connect to you!"
@@ -1362,8 +1362,8 @@ testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfi
     -- bob is not notified on profile change
     alice ##> "/p alice"
     concurrentlyN_
-      [ alice <## "user full name removed (your 1 contacts are notified)",
-        cath <## "contact alice removed full name"
+      [ alice <## "user bio removed (your 1 contacts are notified)",
+        cath <## "contact alice removed bio"
       ]
     alice ?#> ("@" <> bobIncognito <> " do you see that I've changed profile?")
     bob ?<# (aliceIncognito <> "> do you see that I've changed profile?")
@@ -1852,13 +1852,13 @@ testCantSeeGlobalPrefsUpdateIncognito = testChat3 aliceProfile bobProfile cathPr
       ]
     alice <## "cath (Catherine): contact is connected"
     alice ##> "/_profile 1 {\"displayName\": \"alice\", \"fullName\": \"\", \"preferences\": {\"fullDelete\": {\"allow\": \"always\"}, \"receipts\": {\"allow\": \"yes\", \"activated\": true}}}"
-    alice <## "user full name removed (your 1 contacts are notified)"
+    alice <## "user bio removed (your 1 contacts are notified)"
     alice <## "updated preferences:"
     alice <## "Full deletion allowed: always"
     (alice </)
     -- bob doesn't receive profile update
     (bob </)
-    cath <## "contact alice removed full name"
+    cath <## "contact alice removed bio"
     cath <## "alice updated preferences for you:"
     cath <## "Full deletion: enabled for you (you allow: default (no), contact allows: always)"
     (cath </)
@@ -2210,7 +2210,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     createDirectoryIfMissing True "./tests/tmp/bob"
     copyFile "./tests/fixtures/test.txt" "./tests/tmp/alice/test.txt"
     copyFile "./tests/fixtures/test.txt" "./tests/tmp/bob/test.txt"
-    bob ##> "/_profile 1 {\"displayName\": \"bob\", \"fullName\": \"Bob\", \"preferences\": {\"voice\": {\"allow\": \"no\"}, \"receipts\": {\"allow\": \"yes\", \"activated\": true}}}"
+    bob ##> "/_profile 1 {\"displayName\": \"bob\", \"fullName\": \"\", \"shortDescr\": \"Bob\", \"preferences\": {\"voice\": {\"allow\": \"no\"}, \"receipts\": {\"allow\": \"yes\", \"activated\": true}}}"
     bob <## "profile image removed"
     bob <## "updated preferences:"
     bob <## "Voice messages allowed: no"
@@ -2270,12 +2270,12 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "Voice messages: off")])
     (bob </)
     bob ##> "/_profile 1 {\"displayName\": \"bob\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"allow\": \"yes\"}, \"receipts\": {\"allow\": \"yes\", \"activated\": true}}}"
-    bob <## "user full name removed (your 1 contacts are notified)"
+    bob <## "user bio removed (your 1 contacts are notified)"
     bob <## "updated preferences:"
     bob <## "Voice messages allowed: yes"
     bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "Voice messages: off"), (1, "Voice messages: enabled")])
     (bob </)
-    alice <## "contact bob removed full name"
+    alice <## "contact bob removed bio"
     alice <## "bob updated preferences for you:"
     alice <## "Voice messages: enabled (you allow: yes, contact allows: yes)"
     alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact"), (0, "voice message (00:10)"), (1, "Voice messages: off"), (0, "updated profile"), (0, "Voice messages: enabled")])
@@ -2596,7 +2596,7 @@ testUpdateMultipleUserPrefs = testChat3 aliceProfile bobProfile cathProfile $
     alice #> "@cath hi cath"
     cath <# "alice> hi cath"
 
-    alice ##> "/_profile 1 {\"displayName\": \"alice\", \"fullName\": \"Alice\", \"preferences\": {\"fullDelete\": {\"allow\": \"always\"}, \"reactions\": {\"allow\": \"no\"}, \"receipts\": {\"allow\": \"yes\", \"activated\": true}}}"
+    alice ##> "/_profile 1 {\"displayName\": \"alice\", \"fullName\": \"\", \"shortDescr\": \"Alice\", \"preferences\": {\"fullDelete\": {\"allow\": \"always\"}, \"reactions\": {\"allow\": \"no\"}, \"receipts\": {\"allow\": \"yes\", \"activated\": true}}}"
     alice <## "updated preferences:"
     alice <## "Full deletion allowed: always"
     alice <## "Message reactions allowed: no"
@@ -2984,7 +2984,7 @@ testShortLinkInvitationPrepareContact ps@TestParams {largeLinkData} = testChatCf
              ]
       alice <# "bob> hello"
       unless largeLinkData $
-        bob <## "contact alice updated full name: Alice"
+        bob <## "contact alice updated bio: Alice"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -3035,9 +3035,12 @@ testShortLinkInvitationLongName = testChatCfg2 testCfg {largeLinkData = False} a
            WithTime ("@" <> longName <> " hello")
          ]
   bob <# "alice> hello"
-  concurrently_
-    (alice <## (longName <> ": contact is connected"))
-    (bob <## "alice (Alice): contact is connected")
+  concurrentlyN_
+    [ do
+        alice <## ("contact " <> longName <> " updated bio: Bob")
+        alice <## (longName <> " (Bob): contact is connected"),
+      (bob <## "alice (Alice): contact is connected")
+    ]
   bob <##> alice
   where
     longName = "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"
@@ -3070,7 +3073,7 @@ testShortLinkInvitationConnectRetry ps@TestParams {largeLinkData} = testChatCfgO
               ]
         alice <# "bob> hello"
         unless largeLinkData $
-          bob <## "contact alice updated full name: Alice"
+          bob <## "contact alice updated bio: Alice"
         concurrently_
           (bob <## "alice (Alice): contact is connected")
           (alice <## "bob (Bob): contact is connected")
@@ -3120,7 +3123,7 @@ testShortLinkAddressPrepareContact ps@TestParams {largeLinkData} = testChatCfg2 
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       unless largeLinkData $
-        bob <## "contact alice updated full name: Alice"
+        bob <## "contact alice updated bio: Alice"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -3208,7 +3211,7 @@ testShortLinkAddressConnectRetry ps@TestParams {largeLinkData} =
         alice ##> "/ac bob"
         alice <## "bob (Bob): accepting contact request, you can send messages to contact"
         unless largeLinkData $
-          bob <## "contact alice updated full name: Alice"
+          bob <## "contact alice updated bio: Alice"
         concurrently_
           (bob <## "alice (Alice): contact is connected")
           (alice <## "bob (Bob): contact is connected")
@@ -3266,7 +3269,7 @@ testShortLinkAddressConnectRetryIncognito ps@TestParams {largeLinkData} =
         alice ##> ("/ac " <> bobIncognito)
         alice <## (bobIncognito <> ": accepting contact request, you can send messages to contact")
         unless largeLinkData $
-          bob <## "contact alice updated full name: Alice"
+          bob <## "contact alice updated bio: Alice"
         concurrentlyN_
           [ do
               _ <- getTermLine bob
@@ -3593,7 +3596,7 @@ testShortLinkInvitationConnectPreparedContactIncognito ps@TestParams {largeLinkD
       bobIncognito <- getTermLine bob
       bob <## "alice: connection started incognito"
       unless largeLinkData $
-        bob <## "contact alice updated full name: Alice"
+        bob <## "contact alice updated bio: Alice"
       _ <- getTermLine bob
       concurrentlyN_
         [ alice <## (bobIncognito <> ": contact is connected"),
@@ -3626,7 +3629,7 @@ testShortLinkAddressConnectPreparedContactIncognito ps@TestParams {largeLinkData
       alice ##> ("/ac " <> bobIncognito)
       alice <## (bobIncognito <> ": accepting contact request, you can send messages to contact")
       unless largeLinkData $
-        bob <## "contact alice updated full name: Alice"
+        bob <## "contact alice updated bio: Alice"
       _ <- getTermLine bob
       concurrentlyN_
         [ alice <## (bobIncognito <> ": contact is connected"),
@@ -3670,7 +3673,7 @@ testShortLinkChangePreparedContactUser ps@TestParams {largeLinkData} = testChatC
              ]
       alice <# "robert> hello"
       unless largeLinkData $
-        bob <## "contact alice updated full name: Alice"
+        bob <## "contact alice updated bio: Alice"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "robert: contact is connected")
@@ -3724,7 +3727,7 @@ testShortLinkChangePreparedContactUserDuplicate ps@TestParams {largeLinkData} = 
              ]
       alice <# "robert_1> hello"
       unless largeLinkData $
-        bob <## "contact alice_1 updated full name: Alice"
+        bob <## "contact alice_1 updated bio: Alice"
       concurrently_
         (bob <## "alice_1 (Alice): contact is connected")
         (alice <## "robert_1: contact is connected")
@@ -4087,7 +4090,7 @@ testShortLinkAddressChangeAutoReply ps@TestParams {largeLinkData} = testChatCfg3
       alice <## "bob (Bob): accepting contact request..."
       alice <## "bob (Bob): you can send messages to contact"
       unless largeLinkData $
-        bob <## "contact alice updated full name: Alice"
+        bob <## "contact alice updated bio: Alice"
       concurrently_
         (bob <### (["alice (Alice): contact is connected"] <> [WithTime "alice> welcome!" | not largeLinkData]))
         (alice <### (["bob (Bob): contact is connected"] <> [WithTime "@bob welcome!" | not largeLinkData]))
@@ -4109,7 +4112,7 @@ testShortLinkAddressChangeAutoReply ps@TestParams {largeLinkData} = testChatCfg3
       alice <## "cath (Catherine): accepting contact request..."
       alice <## "cath (Catherine): you can send messages to contact"
       unless largeLinkData $
-        cath <## "contact alice updated full name: Alice"
+        cath <## "contact alice updated bio: Alice"
       concurrently_
         (cath <## "alice (Alice): contact is connected")
         (alice <## "cath (Catherine): contact is connected")
