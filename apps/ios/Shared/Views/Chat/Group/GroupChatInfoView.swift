@@ -75,12 +75,12 @@ struct GroupChatInfoView: View {
                 List {
                     groupInfoHeader()
                         .listRowBackground(Color.clear)
-                    
+
                     localAliasTextEdit()
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .padding(.bottom, 18)
-                    
+
                     infoActionButtons()
                         .padding(.horizontal)
                         .frame(maxWidth: .infinity)
@@ -124,7 +124,7 @@ struct GroupChatInfoView: View {
                         Text(label)
                             .foregroundColor(theme.colors.secondary)
                     }
-                    
+
                     Section {
                         if members.filter({ $0.wrapped.memberCurrent }).count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
                             sendReceiptsOption()
@@ -181,7 +181,7 @@ struct GroupChatInfoView: View {
                             leaveGroupButton()
                         }
                     }
-                    
+
                     if developerTools {
                         Section(header: Text("For console").foregroundColor(theme.colors.secondary)) {
                             infoRow("Local name", chat.chatInfo.localDisplayName)
@@ -193,7 +193,7 @@ struct GroupChatInfoView: View {
                 .navigationBarHidden(true)
                 .disabled(progressIndicator)
                 .opacity(progressIndicator ? 0.6 : 1)
-                
+
                 if progressIndicator {
                     ProgressView().scaleEffect(2)
                 }
@@ -248,6 +248,11 @@ struct GroupChatInfoView: View {
                     .multilineTextAlignment(.center)
                     .lineLimit(8)
             }
+            if let descr = cInfo.shortDescr {
+                Text(descr)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(4)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .center)
     }
@@ -268,7 +273,7 @@ struct GroupChatInfoView: View {
             .multilineTextAlignment(.center)
             .foregroundColor(theme.colors.secondary)
     }
-    
+
     private func setGroupAlias() {
         Task {
             do {
@@ -282,7 +287,7 @@ struct GroupChatInfoView: View {
             }
         }
     }
-    
+
     func infoActionButtons() -> some View {
         GeometryReader { g in
             let buttonWidth = g.size.width / 4
@@ -829,11 +834,11 @@ struct GroupPreferencesButton: View {
     @State var preferences: FullGroupPreferences
     @State var currentPreferences: FullGroupPreferences
     var creatingGroup: Bool = false
-    
+
     private var label: LocalizedStringKey {
         groupInfo.businessChat == nil ? "Group preferences" : "Chat preferences"
     }
-    
+
     var body: some View {
         NavigationLink {
             GroupPreferencesView(
@@ -851,7 +856,7 @@ struct GroupPreferencesButton: View {
                     creatingGroup ? "Save" : "Save and notify group members",
                     comment: "alert button"
                 )
-                
+
                 if groupInfo.fullGroupPreferences != preferences {
                     showAlert(
                         title: NSLocalizedString("Save preferences?", comment: "alert title"),
@@ -869,7 +874,7 @@ struct GroupPreferencesButton: View {
             }
         }
     }
-    
+
     private func savePreferences() {
         Task {
             do {

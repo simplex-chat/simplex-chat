@@ -29,6 +29,7 @@ struct CreateProfile: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var theme: AppTheme
     @State private var displayName: String = ""
+    @State private var profileBio: String = ""
     @FocusState private var focusDisplayName
     @State private var alert: UserProfileAlert?
 
@@ -37,6 +38,8 @@ struct CreateProfile: View {
             Section {
                 TextField("Enter your name…", text: $displayName)
                     .focused($focusDisplayName)
+                // TODO limit to 160 characters
+                TextField("Bio", text: $profileBio)
                 Button {
                     createProfile()
                 } label: {
@@ -80,9 +83,11 @@ struct CreateProfile: View {
 
     private func createProfile() {
         hideKeyboard()
+        let shortDescr: String? = if profileBio.isEmpty { nil } else { profileBio }
         let profile = Profile(
             displayName: displayName.trimmingCharacters(in: .whitespaces),
-            fullName: ""
+            fullName: "",
+            shortDescr: shortDescr
         )
         let m = ChatModel.shared
         do {
