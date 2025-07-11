@@ -202,10 +202,10 @@ chatGroupTests = do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
     it "should send scoped messages to support (many moderators)" testScopedSupportManyModerators
     fit "should forward messages inside support scope" testScopedSupportForward
-    fit "should forward messages inside support scope while member is in review" testScopedSupportForwardWhileReview
+    it "should forward messages inside support scope while member is in review" testScopedSupportForwardWhileReview
     -- TODO test messages are not forwarded between support scopes
     -- TODO test messages are not forwarded from support to main scope while member is in review
-    fit "should not forward messages from support to main scope" testScopedSupportDontForward
+    it "should not forward messages from support to main scope" testScopedSupportDontForward
     it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
