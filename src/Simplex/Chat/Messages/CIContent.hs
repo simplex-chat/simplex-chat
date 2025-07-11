@@ -317,8 +317,8 @@ e2eInfoPQText =
   "This conversation is protected by quantum resistant end-to-end encryption. It has perfect forward secrecy, repudiation and quantum resistant break-in recovery."
 
 ciGroupInvitationToText :: CIGroupInvitation -> GroupMemberRole -> Text
-ciGroupInvitationToText CIGroupInvitation {groupProfile = GroupProfile {displayName, fullName, shortDescr}} role =
-  "invitation to join group " <> displayName <> optionalFullName displayName fullName shortDescr <> " as " <> (decodeLatin1 . strEncode $ role)
+ciGroupInvitationToText CIGroupInvitation {groupProfile = GroupProfile {displayName, fullName}} role =
+  "invitation to join group " <> displayName <> optionalFullName displayName fullName Nothing <> " as " <> (decodeLatin1 . strEncode $ role)
 
 rcvDirectEventToText :: RcvDirectEvent -> Text
 rcvDirectEventToText = \case
@@ -402,7 +402,7 @@ sndConnEventToText = \case
       maybe "" (\GroupMemberRef {profile = Profile {displayName}} -> " for " <> displayName) member_
 
 profileToText :: Profile -> Text
-profileToText Profile {displayName, fullName, shortDescr} = displayName <> optionalFullName displayName fullName shortDescr
+profileToText Profile {displayName, fullName} = displayName <> optionalFullName displayName fullName Nothing
 
 msgIntegrityError :: MsgErrorType -> Text
 msgIntegrityError = \case

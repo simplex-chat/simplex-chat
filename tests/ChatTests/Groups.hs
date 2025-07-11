@@ -353,7 +353,7 @@ testGroupShared alice bob cath checkMessages = do
       alice #$> ("/_get chat #1 around=" <> msgItem1 <> " count=2", chat, [(0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there"), (0, "hey team")])
       alice #$> ("/_get chat #1 count=100 search=team", chat, [(0, "hey team")])
       bob @@@ [("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
-      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "added cath (Catherine)"), (0, "connected"), (0, "hello"), (1, "hi there"), (0, "hey team")])
+      bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "added cath"), (0, "connected"), (0, "hello"), (1, "hi there"), (0, "hey team")])
       cath @@@ [("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
       cath #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "connected"), (0, "hello"), (0, "hi there"), (1, "hey team")])
       alice #$> ("/_read chat #1", id, "ok")
@@ -586,7 +586,7 @@ testGroup2 =
               <>
                 [ "#club bob> connected",
                   "#club cath> connected",
-                  "#club bob> added dan (Daniel)",
+                  "#club bob> added dan",
                   "#club dan> connected",
                   "#club hello",
                   "#club bob> hi there",
@@ -1865,9 +1865,9 @@ testDeleteMemberWithMessages =
       bob <## "#team: alice removed you from the group with all messages"
       bob <## "use /d #team to delete the group"
       cath <## "#team: alice removed bob from the group with all messages"
-      alice #$> ("/_get chat #1 count=2", chat, [(0, "moderated [deleted by you]"), (1, "removed bob (Bob)")])
+      alice #$> ("/_get chat #1 count=2", chat, [(0, "moderated [deleted by you]"), (1, "removed bob")])
       bob #$> ("/_get chat #1 count=2", chat, [(1, "moderated [deleted by alice]"), (0, "removed you")])
-      cath #$> ("/_get chat #1 count=2", chat, [(0, "moderated [deleted by alice]"), (0, "removed bob (Bob)")])
+      cath #$> ("/_get chat #1 count=2", chat, [(0, "moderated [deleted by alice]"), (0, "removed bob")])
 
 testDeleteMemberMarkMessagesDeleted :: HasCallStack => TestParams -> IO ()
 testDeleteMemberMarkMessagesDeleted =
@@ -1888,9 +1888,9 @@ testDeleteMemberMarkMessagesDeleted =
       bob <## "#team: alice removed you from the group with all messages"
       bob <## "use /d #team to delete the group"
       cath <## "#team: alice removed bob from the group with all messages"
-      alice #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted by you]"), (1, "removed bob (Bob)")])
+      alice #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted by you]"), (1, "removed bob")])
       bob #$> ("/_get chat #1 count=2", chat, [(1, "hello [marked deleted by alice]"), (0, "removed you")])
-      cath #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted by alice]"), (0, "removed bob (Bob)")])
+      cath #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted by alice]"), (0, "removed bob")])
 
 testSendMulti :: HasCallStack => TestParams -> IO ()
 testSendMulti =
@@ -6212,10 +6212,10 @@ testBlockForAllMarkedBlocked =
         #$> ( "/_get chat #1 count=6",
               chat,
               [ (0, "1"),
-                (1, "blocked bob (Bob)"),
+                (1, "blocked bob"),
                 (0, "2 [blocked by admin]"),
                 (0, "3 [blocked by admin]"),
-                (1, "unblocked bob (Bob)"),
+                (1, "unblocked bob"),
                 (0, "4")
               ]
             )
@@ -6223,10 +6223,10 @@ testBlockForAllMarkedBlocked =
         #$> ( "/_get chat #1 count=6",
               chat,
               [ (0, "1"),
-                (0, "blocked bob (Bob)"),
+                (0, "blocked bob"),
                 (0, "2 [blocked by admin]"),
                 (0, "3 [blocked by admin]"),
-                (0, "unblocked bob (Bob)"),
+                (0, "unblocked bob"),
                 (0, "4")
               ]
             )
@@ -6293,10 +6293,10 @@ testBlockForAllFullDelete =
         #$> ( "/_get chat #1 count=6",
               chat,
               [ (0, "1"),
-                (1, "blocked bob (Bob)"),
+                (1, "blocked bob"),
                 (0, "blocked [blocked by admin]"),
                 (0, "blocked [blocked by admin]"),
-                (1, "unblocked bob (Bob)"),
+                (1, "unblocked bob"),
                 (0, "4")
               ]
             )
@@ -6304,10 +6304,10 @@ testBlockForAllFullDelete =
         #$> ( "/_get chat #1 count=6",
               chat,
               [ (0, "1"),
-                (0, "blocked bob (Bob)"),
+                (0, "blocked bob"),
                 (0, "blocked [blocked by admin]"),
                 (0, "blocked [blocked by admin]"),
-                (0, "unblocked bob (Bob)"),
+                (0, "unblocked bob"),
                 (0, "4")
               ]
             )
@@ -6400,7 +6400,7 @@ testBlockForAllBeforeJoining =
 
       dan ##> "/_get chat #1 count=100"
       r <- chat <$> getTermLine dan
-      r `shouldContain` [(0, "3 [blocked by admin]"), (0, "4 [blocked by admin]"), (0, "unblocked bob (Bob)"), (0, "5")]
+      r `shouldContain` [(0, "3 [blocked by admin]"), (0, "4 [blocked by admin]"), (0, "unblocked bob"), (0, "5")]
       r `shouldNotContain` [(0, "1")]
       r `shouldNotContain` [(0, "1 [blocked by admin]")]
       r `shouldNotContain` [(0, "2")]
