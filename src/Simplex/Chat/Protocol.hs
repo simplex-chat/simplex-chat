@@ -369,6 +369,8 @@ data AChatMsgEvent = forall e. MsgEncodingI e => ACME (SMsgEncoding e) (ChatMsgE
 
 deriving instance Show AChatMsgEvent
 
+-- when sending, used for deciding whether message will be forwarded by host or not (memberSendAction);
+-- actual filtering on forwarding is done in processEvent
 isForwardedGroupMsg :: ChatMsgEvent e -> Bool
 isForwardedGroupMsg ev = case ev of
   XMsgNew mc -> case mcExtMsgContent mc of
@@ -390,12 +392,7 @@ isForwardedGroupMsg ev = case ev of
   XGrpPrefs _ -> True
   _ -> False
 
-forwardedGroupMsg :: forall e. MsgEncodingI e => ChatMessage e -> Maybe (ChatMessage 'Json)
-forwardedGroupMsg msg@ChatMessage {chatMsgEvent} = case encoding @e of
-  SJson | isForwardedGroupMsg chatMsgEvent -> Just msg
-  _ -> Nothing
-
--- applied after checking forwardedGroupMsg and building list of group members to forward to, see Chat;
+-- applied after building list of messages to forward and building list of group members to forward to, see Chat;
 --
 -- this filters out members if any of forwarded events in batch is an XGrpMemRestrict event referring to them,
 -- but practically XGrpMemRestrict is not batched with other events so it wouldn't prevent forwarding of other events
@@ -403,7 +400,7 @@ forwardedGroupMsg msg@ChatMessage {chatMsgEvent} = case encoding @e of
 --
 -- same for reports (MCReport) - they are not batched with other events, so we can safely filter out
 -- members with role less than moderator when forwarding
-forwardedToGroupMembers :: forall e. MsgEncodingI e => [GroupMember] -> NonEmpty (ChatMessage e) -> [GroupMember]
+forwardedToGroupMembers :: [GroupMember] -> NonEmpty (ChatMessage 'Json) -> [GroupMember]
 forwardedToGroupMembers ms forwardedMsgs =
   filter forwardToMember ms
   where
@@ -411,19 +408,18 @@ forwardedToGroupMembers ms forwardedMsgs =
       (memberId `notElem` restrictMemberIds)
         && (not hasReport || memberRole >= GRModerator)
     restrictMemberIds = mapMaybe restrictMemberId $ L.toList forwardedMsgs
-    restrictMemberId ChatMessage {chatMsgEvent} = case encoding @e of
-      SJson -> case chatMsgEvent of
+    restrictMemberId :: ChatMessage 'Json -> Maybe MemberId
+    restrictMemberId ChatMessage {chatMsgEvent} =
+      case chatMsgEvent of
         XGrpMemRestrict mId _ -> Just mId
         _ -> Nothing
-      _ -> Nothing
     hasReport = any isReportEvent forwardedMsgs
-    isReportEvent ChatMessage {chatMsgEvent} = case encoding @e of
-      SJson -> case chatMsgEvent of
+    isReportEvent ChatMessage {chatMsgEvent} =
+      case chatMsgEvent of
         XMsgNew mc -> case mcExtMsgContent mc of
           ExtMsgContent {content = MCReport {}} -> True
           _ -> False
         _ -> False
-      _ -> False
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
   deriving (Eq, Show)

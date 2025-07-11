@@ -120,11 +120,6 @@ data GroupChatScopeInfo
   = GCSIMemberSupport {groupMember_ :: Maybe GroupMember}
   deriving (Show)
 
-data GroupForwardScope
-  = GFSAll -- message should be forwarded to all group members, even pending (e.g. XGrpDel, XGrpInfo)
-  | GFSMain -- message should be forwarded to current group members only (e.g. regular messages in group)
-  | GFSMemberSupport {groupMember_ :: Maybe GroupMember}
-
 toChatScope :: GroupChatScopeInfo -> GroupChatScope
 toChatScope = \case
   GCSIMemberSupport {groupMember_} -> GCSMemberSupport $ groupMemberId' <$> groupMember_
@@ -132,6 +127,23 @@ toChatScope = \case
 toMsgScope :: GroupInfo -> GroupChatScopeInfo -> MsgScope
 toMsgScope GroupInfo {membership} = \case
   GCSIMemberSupport {groupMember_} -> MSMember $ memberId' $ fromMaybe membership groupMember_
+
+data GroupForwardScope
+  = GFSAll -- message should be forwarded to all group members, even pending (e.g. XGrpDel, XGrpInfo)
+  | GFSMain -- message should be forwarded to current group members only (e.g. regular messages in group)
+  | GFSMemberSupport {groupMemberId_ :: Maybe GroupMemberId}
+  deriving (Eq, Ord, Show)
+
+toGroupForwardScope :: Maybe GroupChatScopeInfo -> GroupForwardScope
+toGroupForwardScope = \case
+  Nothing -> GFSMain
+  Just GCSIMemberSupport {groupMember_} -> GFSMemberSupport $ groupMemberId' <$> groupMember_
+
+memberEventForwardScope :: GroupMember -> GroupForwardScope
+memberEventForwardScope m@GroupMember {memberRole}
+  | memberPending m = GFSMemberSupport (Just $ groupMemberId' m)
+  | memberRole >= GRModerator = GFSAll
+  | otherwise = GFSMain
 
 chatInfoToRef :: ChatInfo c -> ChatRef
 chatInfoToRef = \case
