@@ -2232,9 +2232,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             createInternalChatItem user (CDDirectRcv c') ciContent Nothing
           where
             visibleProfileUpdated =
-              n' /= n || fn' /= fn || i' /= i || cl' /= cl
-            Profile {displayName = n, fullName = fn, image = i, contactLink = cl} = p
-            Profile {displayName = n', fullName = fn', image = i', contactLink = cl'} = p'
+              n' /= n || fn' /= fn || sd /= sd' || i' /= i || cl' /= cl
+            Profile {displayName = n, fullName = fn, shortDescr = sd, image = i, contactLink = cl} = p
+            Profile {displayName = n', fullName = fn', shortDescr = sd', image = i', contactLink = cl'} = p'
 
     xInfoMember :: GroupInfo -> GroupMember -> Profile -> UTCTime -> CM ()
     xInfoMember gInfo m p' brokerTs = void $ processMemberProfileUpdate gInfo m p' True (Just brokerTs)

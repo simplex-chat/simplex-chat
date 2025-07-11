@@ -144,6 +144,7 @@ import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG)
 import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
+import Data.Char (toLower)
 import Data.Either (fromRight, rights)
 import Data.Int (Int64)
 import Data.List (foldl', sortBy)
@@ -646,7 +647,7 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
               -- GroupMember
               m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
               m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
-              p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
+              p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.local_alias, p.preferences,
               m.created_at, m.updated_at,
               m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts
             FROM group_members m
@@ -789,13 +790,15 @@ findDirectChatPreviews_ db User {userId} pagination clq =
                       JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
                       WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
                         AND (
-                          LOWER(ct.local_display_name) LIKE '%' || LOWER(?) || '%'
-                          OR LOWER(cp.display_name) LIKE '%' || LOWER(?) || '%'
-                          OR LOWER(cp.full_name) LIKE '%' || LOWER(?) || '%'
-                          OR LOWER(cp.local_alias) LIKE '%' || LOWER(?) || '%'
+                          LOWER(ct.local_display_name) LIKE '%' || ? || '%'
+                          OR LOWER(cp.display_name) LIKE '%' || ? || '%'
+                          OR LOWER(cp.full_name) LIKE '%' || ? || '%'
+                          OR LOWER(cp.short_descr) LIKE '%' || ? || '%'
+                          OR LOWER(cp.local_alias) LIKE '%' || ? || '%'
                         )
                    |]
-            p = baseParams :. (userId, search, search, search, search)
+            s = map toLower search
+            p = baseParams :. (userId, s, s, s, s, s)
         queryWithPagination q p
     queryWithPagination :: ToRow p => Query -> p -> IO [(ContactId, UTCTime, Maybe ChatItemId) :. ChatStatsRow]
     queryWithPagination query params = case pagination of
@@ -895,13 +898,15 @@ findGroupChatPreviews_ db User {userId} pagination clq =
                       JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
                       WHERE g.user_id = ?
                         AND (
-                          LOWER(g.local_display_name) LIKE '%' || LOWER(?) || '%'
-                          OR LOWER(gp.display_name) LIKE '%' || LOWER(?) || '%'
-                          OR LOWER(gp.full_name) LIKE '%' || LOWER(?) || '%'
-                          OR LOWER(gp.description) LIKE '%' || LOWER(?) || '%'
+                          LOWER(g.local_display_name) LIKE '%' || ? || '%'
+                          OR LOWER(gp.display_name) LIKE '%' || ? || '%'
+                          OR LOWER(gp.full_name) LIKE '%' || ? || '%'
+                          OR LOWER(gp.short_descr) LIKE '%' || ? || '%'
+                          OR LOWER(gp.description) LIKE '%' || ? || '%'
                         )
                    |]
-            p = baseParams :. (userId, search, search, search, search)
+            s = map toLower search
+            p = baseParams :. (userId, s, s, s, s, s)
         queryWithPagination q p
     queryWithPagination :: ToRow p => Query -> p -> IO [(GroupId, UTCTime, Maybe ChatItemId) :. GroupStatsRow]
     queryWithPagination query params = case pagination of
@@ -1051,7 +1056,7 @@ getContactRequestChatPreviews_ db User {userId} pagination clq = case clq of
         SELECT
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
           cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
-          cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id,
+          cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, cr.xcontact_id,
           cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
           cr.created_at, cr.updated_at,
           cr.peer_chat_min_version, cr.peer_chat_max_version
@@ -1065,12 +1070,13 @@ getContactRequestChatPreviews_ db User {userId} pagination clq = case clq of
           AND cr.contact_id IS NULL
           AND cr.business_group_id IS NULL
           AND (
-            LOWER(cr.local_display_name) LIKE '%' || LOWER(?) || '%'
-            OR LOWER(p.display_name) LIKE '%' || LOWER(?) || '%'
-            OR LOWER(p.full_name) LIKE '%' || LOWER(?) || '%'
+            LOWER(cr.local_display_name) LIKE '%' || ? || '%'
+            OR LOWER(p.display_name) LIKE '%' || ? || '%'
+            OR LOWER(p.full_name) LIKE '%' || ? || '%'
+            OR LOWER(p.short_descr) LIKE '%' || ? || '%'
           )
       |]
-    params search = (userId, userId, search, search, search)
+    params search = let s = map toLower search in (userId, userId, s, s, s, s)
     getPreviews search = case pagination of
       PTLast count -> DB.query db (query <> " ORDER BY cr.updated_at DESC LIMIT ?") (params search :. Only count)
       PTAfter ts count -> DB.query db (query <> " AND cr.updated_at > ? ORDER BY cr.updated_at ASC LIMIT ?") (params search :. (ts, count))
@@ -2896,7 +2902,7 @@ getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do
             -- GroupMember
             m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
             m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
-            p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
+            p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.local_alias, p.preferences,
             m.created_at, m.updated_at,
             m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
             -- quoted ChatItem
@@ -2904,13 +2910,13 @@ getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do
             -- quoted GroupMember
             rm.group_member_id, rm.group_id, rm.member_id, rm.peer_chat_min_version, rm.peer_chat_max_version, rm.member_role, rm.member_category,
             rm.member_status, rm.show_messages, rm.member_restriction, rm.invited_by, rm.invited_by_group_member_id, rm.local_display_name, rm.contact_id, rm.contact_profile_id, rp.contact_profile_id,
-            rp.display_name, rp.full_name, rp.image, rp.contact_link, rp.local_alias, rp.preferences,
+            rp.display_name, rp.full_name, rp.short_descr, rp.image, rp.contact_link, rp.local_alias, rp.preferences,
             rm.created_at, rm.updated_at,
             rm.support_chat_ts, rm.support_chat_items_unread, rm.support_chat_items_member_attention, rm.support_chat_items_mentions, rm.support_chat_last_msg_from_member_ts,
             -- deleted by GroupMember
             dbm.group_member_id, dbm.group_id, dbm.member_id, dbm.peer_chat_min_version, dbm.peer_chat_max_version, dbm.member_role, dbm.member_category,
             dbm.member_status, dbm.show_messages, dbm.member_restriction, dbm.invited_by, dbm.invited_by_group_member_id, dbm.local_display_name, dbm.contact_id, dbm.contact_profile_id, dbp.contact_profile_id,
-            dbp.display_name, dbp.full_name, dbp.image, dbp.contact_link, dbp.local_alias, dbp.preferences,
+            dbp.display_name, dbp.full_name, dbp.short_descr, dbp.image, dbp.contact_link, dbp.local_alias, dbp.preferences,
             dbm.created_at, dbm.updated_at,
             dbm.support_chat_ts, dbm.support_chat_items_unread, dbm.support_chat_items_member_attention, dbm.support_chat_items_mentions, dbm.support_chat_last_msg_from_member_ts
           FROM chat_items i

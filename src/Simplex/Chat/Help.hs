@@ -122,7 +122,7 @@ groupsHelpInfo =
   map
     styleMarkdown
     [ green "Group commands:",
-      indent <> highlight "/group <group> [<full_name>]       " <> " - create group",
+      indent <> highlight "/group <group> [<description>]     " <> " - create group",
       indent <> highlight "/add <group> <contact> [<role>]    " <> " - add contact to group, roles: " <> highlight "owner" <> ", " <> highlight "admin" <> " (default), " <> highlight "member",
       indent <> highlight "/join <group>                      " <> " - accept group invitation",
       indent <> highlight "/members <group>                   " <> " - list group members",
@@ -131,8 +131,10 @@ groupsHelpInfo =
       indent <> highlight "/clear #<group>                    " <> " - clear all messages in the group locally",
       indent <> highlight "/delete #<group>                   " <> " - delete group and all messages",
       indent <> highlight "/gp <group>                        " <> " - view group profile",
-      indent <> highlight "/gp <group> <name> [<full_name>]   " <> " - update group profile names",
-      indent <> highlight "/group_descr <group> [<descr>]     " <> " - update/remove group description",
+      indent <> highlight "/gp <group> <name> [<description>] " <> " - update group profile names",
+      indent <> highlight "/set welcome <group> <welcome>     " <> " - set group welcome message",
+      indent <> highlight "/delete welcome <group>            " <> " - delete group welcome message",
+      indent <> highlight "/show welcome <group>              " <> " - show group welcome message",
       indent <> highlight "/groups                            " <> " - list groups",
       indent <> highlight "#<group> <message>                 " <> " - send message to group",
       "",

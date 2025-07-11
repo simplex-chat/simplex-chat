@@ -1108,6 +1108,7 @@
   <!-- User profile details - UserProfileView.kt -->
   <string name="display_name__field">Profile name:</string>
   <string name="full_name__field">Full name:</string>
+  <string name="short_descr__field">Bio:</string>
   <string name="your_current_profile">Your current profile</string>
   <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</string>
   <string name="edit_image">Edit image</string>
@@ -1137,6 +1138,7 @@
   <string name="profile_is_only_shared_with_your_contacts">The profile is only shared with your contacts.</string>
   <string name="display_name_cannot_contain_whitespace">Display name cannot contain whitespace.</string>
   <string name="display_name">Enter your name:</string>
+  <string name="short_descr">Your bio:</string>
   <string name="create_profile_button">Create</string>
   <string name="create_another_profile_button">Create profile</string>
   <string name="create_address_button">Create</string>
@@ -1914,6 +1916,7 @@
   <string name="group_is_decentralized">Fully decentralized – visible only to members.</string>
   <string name="group_display_name_field">Enter group name:</string>
   <string name="group_full_name_field">Group full name:</string>
+  <string name="group_short_descr_field">Short description:</string>
   <string name="group_main_profile_sent">Your chat profile will be sent to group members</string>
   <string name="chat_main_profile_sent">Your chat profile will be sent to chat members</string>
   <string name="create_group_button">Create group</string>

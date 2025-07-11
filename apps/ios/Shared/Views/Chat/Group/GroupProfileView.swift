@@ -55,6 +55,8 @@ struct GroupProfileView: View {
                 if fullName != "" && fullName != groupProfile.displayName {
                     TextField("Group full name (optional)", text: $groupProfile.fullName)
                 }
+                // TODO enable in v6.4.1, limit to 160 characters
+                // TextField("Short description", text: Binding(get: {groupProfile.shortDescr ?? ""}, set: {groupProfile.shortDescr = $0}))
             } footer: {
                 Text("Group profile is stored on members' devices, not on the servers.")
             }
