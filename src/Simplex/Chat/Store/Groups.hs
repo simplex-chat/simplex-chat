@@ -1782,7 +1782,7 @@ getForwardInvitedModerators db vr user@User {userContactId} forwardMember = do
         [sql|
           SELECT i.to_group_member_id
           FROM group_member_intros i
-          JOIN group_members m ON m.group_member_id = i.re_group_member_id
+          JOIN group_members m ON m.group_member_id = i.to_group_member_id
           WHERE i.re_group_member_id = ? AND i.intro_status NOT IN (?,?,?)
             AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)
         |]

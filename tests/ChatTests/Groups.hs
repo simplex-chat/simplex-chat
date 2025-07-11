@@ -201,11 +201,12 @@ chatGroupTests = do
   describe "group scoped messages" $ do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
     it "should send scoped messages to support (many moderators)" testScopedSupportManyModerators
-    fit "should forward messages inside support scope" testScopedSupportForward
+    it "should forward messages inside support scope" testScopedSupportForward
     it "should forward messages inside support scope while member is in review" testScopedSupportForwardWhileReview
-    -- TODO test messages are not forwarded between support scopes
-    -- TODO test messages are not forwarded from support to main scope while member is in review
     it "should not forward messages from support to main scope" testScopedSupportDontForward
+    -- TODO test messages are not forwarded between support scopes (1 in review, 1 not? combinations?)
+    -- TODO test files are forwarded inside support scope
+    -- TODO test files are forwarded inside support scope while member is in review
     it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
@@ -7103,17 +7104,21 @@ testScopedSupportForwardWhileReview =
       setupGroupForwarding alice cath eve
 
       -- message from cath is not forwarded to eve in group scope
-      cath #> "#team 1"
-      [alice, bob, dan] *<# "#team cath> 1"
+      bob #> "#team 1"
+      [alice, cath, dan] *<# "#team bob> 1"
+
+      -- message from cath is not forwarded to eve in group scope
+      cath #> "#team 2"
+      [alice, bob, dan] *<# "#team cath> 2"
 
       -- messages are forwarded in support scope
-      eve #> "#team (support) 2"
-      [alice, dan] *<# "#team (support: eve) eve> 2"
-      cath <# "#team (support: eve) eve> 2 [>>]"
+      eve #> "#team (support) 3"
+      [alice, dan] *<# "#team (support: eve) eve> 3"
+      cath <# "#team (support: eve) eve> 3 [>>]"
 
-      cath #> "#team (support: eve) 3"
-      [alice, dan] *<# "#team (support: eve) cath> 3"
-      eve <# "#team (support) cath> 3 [>>]"
+      cath #> "#team (support: eve) 4"
+      [alice, dan] *<# "#team (support: eve) cath> 4"
+      eve <# "#team (support) cath> 4 [>>]"
 
 testScopedSupportDontForward :: HasCallStack => TestParams -> IO ()
 testScopedSupportDontForward =
