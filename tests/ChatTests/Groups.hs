@@ -4553,7 +4553,8 @@ testGroupMsgForward :: HasCallStack => TestParams -> IO ()
 testGroupMsgForward =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      setupGroupForwarding3 "team" alice bob cath
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
 
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
@@ -4581,7 +4582,8 @@ testGroupMsgForwardReport :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardReport =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      setupGroupForwarding3 "team" alice bob cath
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
 
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
@@ -4635,17 +4637,39 @@ testGroupMsgForwardReport =
       alice <# "#team cath> hey team"
       bob <# "#team cath> hey team [>>]"
 
-setupGroupForwarding3 :: String -> TestCC -> TestCC -> TestCC -> IO ()
-setupGroupForwarding3 gName alice bob cath = do
-  createGroup3 gName alice bob cath
-
+setupGroupForwarding :: TestCC -> TestCC -> TestCC -> IO ()
+setupGroupForwarding host invitee1 invitee2 = do
   threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
-  void $ withCCTransaction bob $ \db ->
-    DB.execute_ db "UPDATE connections SET conn_status='deleted' WHERE group_member_id = 3"
-  void $ withCCTransaction cath $ \db ->
-    DB.execute_ db "UPDATE connections SET conn_status='deleted' WHERE group_member_id = 3"
-  void $ withCCTransaction alice $ \db ->
-    DB.execute_ db "UPDATE group_member_intros SET intro_status='fwd'"
+
+  invitee1Name <- userName invitee1
+  invitee2Name <- userName invitee2
+
+  -- set up test: break connections between invitee1 and invitee2 to enable group forwarding
+  void $ withCCTransaction invitee1 $ \db ->
+    DB.execute
+      db
+      [sql|
+        UPDATE connections SET conn_status='deleted'
+        WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = ?)
+      |]
+      (Only invitee2Name)
+  void $ withCCTransaction invitee2 $ \db ->
+    DB.execute
+      db
+      [sql|
+        UPDATE connections SET conn_status='deleted'
+        WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = ?)
+      |]
+      (Only invitee1Name)
+  void $ withCCTransaction host $ \db ->
+    DB.execute
+      db
+      [sql|
+        UPDATE group_member_intros SET intro_status='fwd'
+        WHERE re_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = ?)
+          AND to_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = ?)
+      |]
+      (invitee1Name, invitee2Name)
 
 testGroupMsgForwardDeduplicate :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardDeduplicate =
@@ -4688,7 +4712,8 @@ testGroupMsgForwardEdit :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardEdit =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      setupGroupForwarding3 "team" alice bob cath
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
 
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
@@ -4711,7 +4736,8 @@ testGroupMsgForwardReaction :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardReaction =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      setupGroupForwarding3 "team" alice bob cath
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
 
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
@@ -4728,7 +4754,8 @@ testGroupMsgForwardDeletion :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardDeletion =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      setupGroupForwarding3 "team" alice bob cath
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
       -- disableFullDeletion3 "team" alice bob cath
 
       bob #> "#team hi there"
@@ -4744,7 +4771,8 @@ testGroupMsgForwardFile :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardFile =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> withXFTPServer $ do
-      setupGroupForwarding3 "team" alice bob cath
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
 
       bob #> "/f #team ./tests/fixtures/test.jpg"
       bob <## "use /fc 1 to cancel sending"
@@ -4769,7 +4797,8 @@ testGroupMsgForwardChangeRole :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardChangeRole =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      setupGroupForwarding3 "team" alice bob cath
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
 
       cath ##> "/mr #team bob member"
       cath <## "#team: you changed the role of bob to member"
@@ -4780,7 +4809,8 @@ testGroupMsgForwardNewMember :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardNewMember =
   testChat4 aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
-      setupGroupForwarding3 "team" alice bob cath
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
 
       connectUsers cath dan
       cath ##> "/a #team dan"
@@ -4821,7 +4851,8 @@ testGroupMsgForwardLeave :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardLeave =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      setupGroupForwarding3 "team" alice bob cath
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
 
       bob ##> "/leave #team"
       bob <## "#team: you left the group"
@@ -7003,37 +7034,11 @@ testScopedSupportManyModerators =
     cath ##> "/member support chats #team"
     cath <## "bob (Bob) (id 3): unread: 0, require attention: 0, mentions: 0"
 
--- TODO refactor set up - pass 3 members, also replace setupGroupForwarding3 with new function
 testScopedSupportForward :: HasCallStack => TestParams -> IO ()
 testScopedSupportForward =
   testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
     createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRModerator)
-
-    -- vvv set up test: break connections between bob and dan to enable group forwarding
-    threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
-    void $ withCCTransaction bob $ \db ->
-      DB.execute_
-        db
-        [sql|
-          UPDATE connections SET conn_status='deleted'
-          WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'dan')
-        |]
-    void $ withCCTransaction dan $ \db ->
-      DB.execute_
-        db
-        [sql|
-          UPDATE connections SET conn_status='deleted'
-          WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'bob')
-        |]
-    void $ withCCTransaction alice $ \db ->
-      DB.execute_
-        db
-        [sql|
-          UPDATE group_member_intros SET intro_status='fwd'
-          WHERE re_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'bob')
-            AND to_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'dan')
-        |]
-    -- ^^^
+    setupGroupForwarding alice bob dan
 
     -- messages are forwarded in main scope
     bob #> "#team 1"
@@ -7095,31 +7100,7 @@ testScopedSupportForwardWhileReview =
             dan <## "#team: new member eve is connected and pending review, use /_accept member #1 5 <role> to accept member"
         ]
 
-      -- vvv set up test: break connections between cath and eve to enable group forwarding
-      threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
-      void $ withCCTransaction cath $ \db ->
-        DB.execute_
-          db
-          [sql|
-            UPDATE connections SET conn_status='deleted'
-            WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'eve')
-          |]
-      void $ withCCTransaction eve $ \db ->
-        DB.execute_
-          db
-          [sql|
-            UPDATE connections SET conn_status='deleted'
-            WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'cath')
-          |]
-      void $ withCCTransaction alice $ \db ->
-        DB.execute_
-          db
-          [sql|
-            UPDATE group_member_intros SET intro_status='fwd'
-            WHERE re_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'cath')
-              AND to_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'eve')
-          |]
-      -- ^^^
+      setupGroupForwarding alice cath eve
 
       -- message from cath is not forwarded to eve in group scope
       cath #> "#team 1"
@@ -7138,32 +7119,7 @@ testScopedSupportDontForward :: HasCallStack => TestParams -> IO ()
 testScopedSupportDontForward =
   testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
     createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRModerator)
-
-    -- vvv set up test: break connections between bob and cath to enable group forwarding
-    threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
-    void $ withCCTransaction bob $ \db ->
-      DB.execute_
-        db
-        [sql|
-          UPDATE connections SET conn_status='deleted'
-          WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'cath')
-        |]
-    void $ withCCTransaction cath $ \db ->
-      DB.execute_
-        db
-        [sql|
-          UPDATE connections SET conn_status='deleted'
-          WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'bob')
-        |]
-    void $ withCCTransaction alice $ \db ->
-      DB.execute_
-        db
-        [sql|
-          UPDATE group_member_intros SET intro_status='fwd'
-          WHERE re_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'bob')
-            AND to_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = 'cath')
-        |]
-    -- ^^^
+    setupGroupForwarding alice bob cath
 
     -- messages are forwarded in main scope
     bob #> "#team 1"
