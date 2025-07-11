@@ -139,11 +139,12 @@ toGroupForwardScope = \case
   Nothing -> GFSMain
   Just GCSIMemberSupport {groupMember_} -> GFSMemberSupport $ groupMemberId' <$> groupMember_
 
-memberEventForwardScope :: GroupMember -> GroupForwardScope
-memberEventForwardScope m@GroupMember {memberRole}
-  | memberPending m = GFSMemberSupport (Just $ groupMemberId' m)
-  | memberRole >= GRModerator = GFSAll
-  | otherwise = GFSMain
+memberEventForwardScope :: GroupMember -> Maybe GroupForwardScope
+memberEventForwardScope m@GroupMember {memberRole, memberStatus}
+  | memberStatus == GSMemPendingApproval = Nothing
+  | memberStatus == GSMemPendingReview = Just $ GFSMemberSupport (Just $ groupMemberId' m)
+  | memberRole >= GRModerator = Just GFSAll
+  | otherwise = Just GFSMain
 
 chatInfoToRef :: ChatInfo c -> ChatRef
 chatInfoToRef = \case

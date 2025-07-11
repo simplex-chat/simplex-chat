@@ -940,7 +940,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XFile fInv -> Nothing <$ processGroupFileInvitation' gInfo' m'' fInv msg brokerTs
               XFileCancel sharedMsgId -> xFileCancelGroup gInfo' m'' sharedMsgId
               XFileAcptInv sharedMsgId fileConnReq_ fName -> Nothing <$ xFileAcptInvGroup gInfo' m'' sharedMsgId fileConnReq_ fName
-              XInfo p -> Just <$> xInfoMember gInfo' m'' p brokerTs
+              XInfo p -> xInfoMember gInfo' m'' p brokerTs
               XGrpLinkMem p -> Nothing <$ xGrpLinkMem gInfo' m'' conn' p
               XGrpLinkAcpt acceptance role memberId -> Nothing <$ xGrpLinkAcpt gInfo' m'' acceptance role memberId msg brokerTs
               XGrpMemNew memInfo msgScope -> xGrpMemNew gInfo' m'' memInfo msgScope msg brokerTs
@@ -952,7 +952,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpMemCon memId -> Nothing <$ xGrpMemCon gInfo' m'' memId
               -- TODO there should be a special logic when deleting host member (e.g., host forwards it before deleting connections)
               XGrpMemDel memId withMessages -> xGrpMemDel gInfo' m'' memId withMessages msg brokerTs
-              XGrpLeave -> Just <$> xGrpLeave gInfo' m'' msg brokerTs
+              XGrpLeave -> xGrpLeave gInfo' m'' msg brokerTs
               -- TODO there should be a special logic - host should forward before deleting connections
               XGrpDel -> Just <$> xGrpDel gInfo' m'' msg brokerTs
               XGrpInfo p' -> xGrpInfo gInfo' m'' p' msg brokerTs
@@ -2302,7 +2302,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Profile {displayName = n, fullName = fn, image = i, contactLink = cl} = p
             Profile {displayName = n', fullName = fn', image = i', contactLink = cl'} = p'
 
-    xInfoMember :: GroupInfo -> GroupMember -> Profile -> UTCTime -> CM GroupForwardScope
+    xInfoMember :: GroupInfo -> GroupMember -> Profile -> UTCTime -> CM (Maybe GroupForwardScope)
     xInfoMember gInfo m p' brokerTs = do
       void $ processMemberProfileUpdate gInfo m p' True (Just brokerTs)
       pure $ memberEventForwardScope m
@@ -2699,7 +2699,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 pure (updatedMember, gInfo')
               toView $ CEvtUnknownMemberAnnounced user gInfo' m unknownMember updatedMember
               memberAnnouncedToView updatedMember gInfo'
-              pure $ Just (forwardScope updatedMember)
+              pure $ forwardScope updatedMember
             Right _ -> messageError "x.grp.mem.new error: member already exists" $> Nothing
             Left _ -> do
               (newMember, gInfo') <- withStore $ \db -> do
@@ -2709,14 +2709,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   else pure gInfo
                 pure (newMember, gInfo')
               memberAnnouncedToView newMember gInfo'
-              pure $ Just (forwardScope newMember)
+              pure $ forwardScope newMember
       where
         initialStatus = case msgScope_ of
           Just (MSMember _) -> GSMemPendingReview
           _ -> GSMemAnnounced
-        forwardScope member
-          | memberPending member = GFSMemberSupport (Just $ groupMemberId' member)
-          | otherwise = GFSMain
+        forwardScope GroupMember {groupMemberId, memberStatus}
+          | memberStatus == GSMemPendingApproval = Nothing
+          | memberStatus == GSMemPendingReview = Just $ GFSMemberSupport (Just groupMemberId)
+          | otherwise = Just GFSMain
         memberAnnouncedToView announcedMember@GroupMember {groupMemberId, memberProfile} gInfo' = do
           (announcedMember', scopeInfo) <- getMemNewChatScope announcedMember
           let event = RGEMemberAdded groupMemberId (fromLocalProfile memberProfile)
@@ -2824,7 +2825,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo'' scopeInfo m') msg brokerTs (CIRcvGroupEvent gEvent)
               groupMsgToView cInfo ci
               toView CEvtMemberRole {user, groupInfo = gInfo'', byMember = m', member = member {memberRole = memRole}, fromRole, toRole = memRole}
-              pure $ Just (memberEventForwardScope member)
+              pure $ memberEventForwardScope member
 
     checkHostRole :: GroupMember -> GroupMemberRole -> CM ()
     checkHostRole GroupMember {memberRole, localDisplayName} memRole =
@@ -2855,7 +2856,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo' scopeInfo m') msg brokerTs ciContent
                     groupMsgToView cInfo ci
                     toView CEvtMemberBlockedForAll {user, groupInfo = gInfo', byMember = m', member = bm', blocked}
-                    pure $ Just (memberEventForwardScope bm)
+                    pure $ memberEventForwardScope bm
               Left (SEGroupMemberNotFoundByMemberId _) -> do
                 bm <- createUnknownMember gInfo memId
                 bm' <- setMemberBlocked bm
@@ -2933,7 +2934,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 when withMessages $ deleteMessages member SMDRcv
                 deleteMemberItem $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
                 toView $ CEvtDeletedMember user gInfo' m member {memberStatus = GSMemRemoved} withMessages
-                pure $ Just (memberEventForwardScope member)
+                pure $ memberEventForwardScope member
       where
         checkRole GroupMember {memberRole} a
           | senderRole < GRAdmin || senderRole < memberRole =
@@ -2948,7 +2949,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           | groupFeatureMemberAllowed SGFFullDelete m gInfo = deleteGroupMemberCIs user gInfo delMem m msgDir
           | otherwise = markGroupMemberCIsDeleted user gInfo delMem m
 
-    xGrpLeave :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> CM GroupForwardScope
+    xGrpLeave :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> CM (Maybe GroupForwardScope)
     xGrpLeave gInfo m msg brokerTs = do
       deleteMemberConnection m
       -- member record is not deleted to allow creation of "member left" chat item
