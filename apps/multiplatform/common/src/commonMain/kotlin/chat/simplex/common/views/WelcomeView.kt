@@ -67,11 +67,14 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
             }
           }
           ProfileNameField(displayName, "", { it.trim() == mkValidName(it) }, focusRequester)
-          Text(
-            stringResource(MR.strings.short_descr),
-            fontSize = 16.sp
-          )
-          ProfileNameField(shortDescr, "")
+
+// TODO enable in v6.4.1, limit to 160 characters
+
+//          Text(
+//            stringResource(MR.strings.short_descr),
+//            fontSize = 16.sp
+//          )
+//          ProfileNameField(shortDescr, "")
         }
         SettingsActionItem(
           painterResource(MR.images.ic_check),

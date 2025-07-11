@@ -38,8 +38,8 @@ struct CreateProfile: View {
             Section {
                 TextField("Enter your name…", text: $displayName)
                     .focused($focusDisplayName)
-                // TODO limit to 160 characters
-                TextField("Bio", text: $profileBio)
+                // TODO enable in v6.4.1, limit to 160 characters
+                // TextField("Bio", text: $profileBio)
                 Button {
                     createProfile()
                 } label: {

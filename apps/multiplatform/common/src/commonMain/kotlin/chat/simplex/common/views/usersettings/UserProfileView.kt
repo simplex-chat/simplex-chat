@@ -148,13 +148,15 @@ fun UserProfileLayout(
               ProfileNameField(fullName)
             }
 
-            Spacer(Modifier.height(DEFAULT_PADDING))
-            Text(
-              stringResource(MR.strings.short_descr__field),
-              fontSize = 16.sp,
-              modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
-            )
-            ProfileNameField(shortDescr)
+// TODO enable in v6.4.1, limit to 160 characters
+
+//            Spacer(Modifier.height(DEFAULT_PADDING))
+//            Text(
+//              stringResource(MR.strings.short_descr__field),
+//              fontSize = 16.sp,
+//              modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
+//            )
+//            ProfileNameField(shortDescr)
 
             Spacer(Modifier.height(DEFAULT_PADDING))
             val enabled = !dataUnchanged && canSaveProfile(displayName.value, profile)

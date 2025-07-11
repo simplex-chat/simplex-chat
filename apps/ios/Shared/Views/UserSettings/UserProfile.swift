@@ -43,8 +43,8 @@ struct UserProfile: View {
                 if let user = chatModel.currentUser, showFullName(user) {
                     TextField("Full name (optional)", text: $profile.fullName)
                 }
-                // TODO limit to 160 characters
-                TextField("Bio", text: Binding(get: {profile.shortDescr ?? ""}, set: {profile.shortDescr = $0}))
+                // TODO enable in v6.4.1, limit to 160 characters
+                // TextField("Bio", text: Binding(get: {profile.shortDescr ?? ""}, set: {profile.shortDescr = $0}))
             } footer: {
                 Text("Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.")
             }

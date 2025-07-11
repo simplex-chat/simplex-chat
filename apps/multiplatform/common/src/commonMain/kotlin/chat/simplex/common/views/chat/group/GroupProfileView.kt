@@ -143,13 +143,15 @@ fun GroupProfileLayout(
               ProfileNameField(fullName)
             }
 
-            Spacer(Modifier.height(DEFAULT_PADDING))
-            Text(
-              stringResource(MR.strings.group_short_descr_field),
-              fontSize = 16.sp,
-              modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
-            )
-            ProfileNameField(shortDescr)
+// TODO enable in v6.4.1, limit to 160 characters
+
+//            Spacer(Modifier.height(DEFAULT_PADDING))
+//            Text(
+//              stringResource(MR.strings.group_short_descr_field),
+//              fontSize = 16.sp,
+//              modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
+//            )
+//            ProfileNameField(shortDescr)
 
             Spacer(Modifier.height(DEFAULT_PADDING))
             val enabled = !dataUnchanged && canUpdateProfile(displayName.value, groupProfile)
