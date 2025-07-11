@@ -205,7 +205,7 @@ chatGroupTests = do
     it "should forward messages inside support scope while member is in review" testScopedSupportForwardWhileReview
     it "should not forward messages from support to main scope" testScopedSupportDontForward
     -- TODO test messages are not forwarded between support scopes (1 in review, 1 not? combinations?)
-    -- TODO test files are forwarded inside support scope
+    it "should forward file inside support scope" testScopedSupportForwardFile
     -- TODO test files are forwarded inside support scope while member is in review
     it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
@@ -7141,6 +7141,38 @@ testScopedSupportDontForward =
 
     cath #> "#team (support) 4"
     [alice, dan] *<# "#team (support: cath) cath> 4"
+
+testScopedSupportForwardFile :: HasCallStack => TestParams -> IO ()
+testScopedSupportForwardFile =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> withXFTPServer $ do
+    createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRModerator)
+    setupGroupForwarding alice bob dan
+
+    -- files are forwarded inside support scope
+    bob ##> "/_send #1(_support) json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi, sending a file\"}}]"
+    bob <# "#team (support) hi, sending a file"
+    bob <# "/f #team (support) ./tests/fixtures/test.jpg"
+    bob <## "use /fc 1 to cancel sending"
+
+    concurrentlyN_
+        [ do
+            alice <# "#team (support: bob) bob> hi, sending a file"
+            alice <# "#team (support: bob) bob> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            alice <## "use /fr 1 [<dir>/ | <path>] to receive it",
+          do
+            dan <# "#team (support: bob) bob> hi, sending a file [>>]"
+            dan <# "#team (support: bob) bob> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+            dan <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]"
+        ]
+
+    bob <## "completed uploading file 1 (test.jpg) for #team"
+
+    dan ##> "/fr 1 ./tests/tmp"
+    dan
+      <### [ "saving file 1 from bob to ./tests/tmp/test.jpg",
+              "started receiving file 1 (test.jpg) from bob"
+            ]
+    dan <## "completed receiving file 1 (test.jpg) from bob"
 
 testSupportCLISendCommand :: HasCallStack => TestParams -> IO ()
 testSupportCLISendCommand =
