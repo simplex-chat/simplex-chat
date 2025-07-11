@@ -400,20 +400,17 @@ isForwardedGroupMsg ev = case ev of
 --
 -- same for reports (MCReport) - they are not batched with other events, so we can safely filter out
 -- members with role less than moderator when forwarding
-forwardedToGroupMembers :: [GroupMember] -> NonEmpty (ChatMessage 'Json) -> [GroupMember]
-forwardedToGroupMembers ms forwardedMsgs =
-  filter forwardToMember ms
+msgsForwardedToMember :: NonEmpty (ChatMessage 'Json) -> GroupMember -> Bool
+msgsForwardedToMember fwdMsgs GroupMember {memberId, memberRole} =
+  (memberId `notElem` restrictMemberIds) && (not hasReport || memberRole >= GRModerator)
   where
-    forwardToMember GroupMember {memberId, memberRole} =
-      (memberId `notElem` restrictMemberIds)
-        && (not hasReport || memberRole >= GRModerator)
-    restrictMemberIds = mapMaybe restrictMemberId $ L.toList forwardedMsgs
+    restrictMemberIds = mapMaybe restrictMemberId $ L.toList fwdMsgs
     restrictMemberId :: ChatMessage 'Json -> Maybe MemberId
     restrictMemberId ChatMessage {chatMsgEvent} =
       case chatMsgEvent of
         XGrpMemRestrict mId _ -> Just mId
         _ -> Nothing
-    hasReport = any isReportEvent forwardedMsgs
+    hasReport = any isReportEvent fwdMsgs
     isReportEvent ChatMessage {chatMsgEvent} =
       case chatMsgEvent of
         XMsgNew mc -> case mcExtMsgContent mc of

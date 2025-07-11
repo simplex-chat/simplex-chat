@@ -103,7 +103,9 @@ module Simplex.Chat.Store.Groups
     getIntroduction,
     getIntroducedGroupMemberIds,
     getForwardIntroducedMembers,
+    getForwardIntroducedModerators,
     getForwardInvitedMembers,
+    getForwardInvitedModerators,
     createIntroReMember,
     createIntroToMemberContact,
     saveMemberInvitation,
@@ -1708,7 +1710,7 @@ getIntroducedGroupMemberIds db invitee =
 getForwardIntroducedMembers :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> Bool -> IO [GroupMember]
 getForwardIntroducedMembers db vr user invitee highlyAvailable = do
   memberIds <- map fromOnly <$> query
-  filter memberCurrent . rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
+  rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
   where
     mId = groupMemberId' invitee
     query
@@ -1725,10 +1727,30 @@ getForwardIntroducedMembers db vr user invitee highlyAvailable = do
         WHERE to_group_member_id = ? AND intro_status NOT IN (?,?,?)
       |]
 
+-- for support scope we don't need to filter by intro_chat_protocol_version for non highly available client,
+-- as we will filter moderators supporting this feature by a higher version (as opposed to getForwardIntroducedMembers)
+getForwardIntroducedModerators :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> IO [GroupMember]
+getForwardIntroducedModerators db vr user@User {userContactId} invitee = do
+  memberIds <- map fromOnly <$> query
+  rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
+  where
+    mId = groupMemberId' invitee
+    query =
+      DB.query
+        db
+        [sql|
+          SELECT i.re_group_member_id
+          FROM group_member_intros i
+          JOIN group_members m ON m.group_member_id = i.re_group_member_id
+          WHERE i.to_group_member_id = ? AND i.intro_status NOT IN (?,?,?)
+            AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)
+        |]
+        (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected, userContactId, GRModerator, GRAdmin, GROwner)
+
 getForwardInvitedMembers :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> Bool -> IO [GroupMember]
 getForwardInvitedMembers db vr user forwardMember highlyAvailable = do
   memberIds <- map fromOnly <$> query
-  filter memberCurrent . rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
+  rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
   where
     mId = groupMemberId' forwardMember
     query
@@ -1744,6 +1766,30 @@ getForwardInvitedMembers db vr user forwardMember highlyAvailable = do
         FROM group_member_intros
         WHERE re_group_member_id = ? AND intro_status NOT IN (?,?,?)
       |]
+
+-- for support scope we don't need to filter by intro_chat_protocol_version for non highly available client,
+-- as we will filter moderators supporting this feature by a higher version (as opposed to getForwardInvitedMembers)
+getForwardInvitedModerators :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> IO [GroupMember]
+getForwardInvitedModerators db vr user@User {userContactId} forwardMember = do
+  memberIds <- map fromOnly <$> query
+  rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
+  where
+    mId = groupMemberId' forwardMember
+    query =
+      DB.query
+        db
+        [sql|
+          SELECT i.to_group_member_id
+          FROM group_member_intros i
+          JOIN group_members m ON m.group_member_id = i.re_group_member_id
+          WHERE i.re_group_member_id = ? AND i.intro_status NOT IN (?,?,?)
+            AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)
+        |]
+        (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected, userContactId, GRModerator, GRAdmin, GROwner)
+
+shouldForwardToMember :: DB.Connection -> GroupMember -> GroupMember -> IO Bool
+shouldForwardToMember db fromMember toMember = do
+  
 
 createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> VersionChat -> MemberInfo -> Maybe MemberRestrictions -> (CommandId, ConnId) -> SubscriptionMode -> ExceptT StoreError IO GroupMember
 createIntroReMember

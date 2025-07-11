@@ -976,26 +976,58 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             where
               aChatMsgHasReceipt (ACMsg _ ChatMessage {chatMsgEvent}) =
                 hasDeliveryReceipt (toCMEventTag chatMsgEvent)
-          -- TODO:
-          -- filter members based on forward scope:
-          --   getForwardIntroducedMembers, getForwardIntroducedMembers apply memberCurrent predicate - it should vary:
-          --   All - currentOrPending
-          --   Main - current
-          --   Support - only admins + scope member
+          -- TODO forwardMsgs member retrieval can be further optimized:
+          -- - move remaining filters to SQL (memberCurrentOrPending, memberCurrent)
+          -- - create new GroupForwardScope for reports to avoid post-filtering moderators in msgsForwardedToMember
+          --   as an additional step, instead initially retrieve only moderators
+          --   (reuse getForwardIntroducedModerators, getForwardInvitedModerators + filters)
+          -- - new GroupForwardScope for excluding members on XGrpMemRestrict
           forwardMsgs :: GroupForwardScope -> NonEmpty (ChatMessage 'Json) -> CM ()
           forwardMsgs groupForwardScope fwdMsgs = do
-            ChatConfig {highlyAvailable} <- asks config
-            -- members introduced to this invited member
-            introducedMembers <-
-              if memberCategory m == GCInviteeMember
-                then withStore' $ \db -> getForwardIntroducedMembers db vr user m highlyAvailable
-                else pure []
-            -- invited members to which this member was introduced
-            invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db vr user m highlyAvailable
+            ms <- buildMemberList
             let GroupMember {memberId} = m
-                ms = forwardedToGroupMembers (introducedMembers <> invitedMembers) fwdMsgs
                 events = L.map (\cm -> XGrpMsgForward memberId cm brokerTs) fwdMsgs
             unless (null ms) $ void $ sendGroupMessages_ user gInfo ms events
+            where
+              buildMemberList = case groupForwardScope of
+                GFSAll -> do
+                  ms <- getAllIntroducedAndInvited
+                  pure $ filter (\mem -> memberCurrentOrPending mem && msgsForwardedToMember fwdMsgs mem) ms
+                GFSMain -> do
+                  ms <- getAllIntroducedAndInvited
+                  pure $ filter (\mem -> memberCurrent mem && msgsForwardedToMember fwdMsgs mem) ms
+                GFSMemberSupport scopeGMId_ -> do
+                  -- moderators introduced to this invited member
+                  introducedModMs <-
+                    if memberCategory m == GCInviteeMember
+                      then withStore' $ \db -> getForwardIntroducedModerators db vr user m
+                      else pure []
+                  -- invited moderators to which this member was introduced
+                  invitedModMs <- withStore' $ \db -> getForwardInvitedModerators db vr user m
+                  let modMs = introducedModMs <> invitedModMs
+                      moderatorFilter mem =
+                        memberCurrent mem
+                        && maxVersion (memberChatVRange mem) >= groupKnockingVersion
+                        && msgsForwardedToMember fwdMsgs mem
+                      modMs' = filter moderatorFilter modMs
+                  case scopeGMId_ of
+                    Nothing -> pure modMs'
+                    Just scopeGMId -> do
+                      supportMem <- withFastStore $ \db -> getGroupMemberById db vr user scopeGMId
+                      if msgsForwardedToMember fwdMsgs supportMem
+                        then pure $ supportMem : modMs'
+                        else pure modMs'
+                where
+                  getAllIntroducedAndInvited = do
+                    ChatConfig {highlyAvailable} <- asks config
+                    -- members introduced to this invited member
+                    introducedMembers <-
+                      if memberCategory m == GCInviteeMember
+                        then withStore' $ \db -> getForwardIntroducedMembers db vr user m highlyAvailable
+                        else pure []
+                    -- invited members to which this member was introduced
+                    invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db vr user m highlyAvailable
+                    pure $ introducedMembers <> invitedMembers
       RCVD msgMeta msgRcpt ->
         withAckMessage' "group rcvd" agentConnId msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
