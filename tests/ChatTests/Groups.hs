@@ -207,6 +207,7 @@ chatGroupTests = do
     -- TODO test messages are not forwarded between support scopes (1 in review, 1 not? combinations?)
     it "should forward file inside support scope" testScopedSupportForwardFile
     -- TODO test files are forwarded inside support scope while member is in review
+    -- TODO test group events directed to all (e.g. XGrpInfo) are forwarded to support scope member while in review
     it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
