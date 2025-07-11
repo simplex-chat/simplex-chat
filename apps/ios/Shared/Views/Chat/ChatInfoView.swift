@@ -367,33 +367,38 @@ struct ChatInfoView: View {
             let cInfo = chat.chatInfo
             ChatInfoImage(chat: chat, size: 192, color: Color(uiColor: .tertiarySystemFill))
                 .padding(.vertical, 12)
+            // show actual display name, alias can be edited in this view
+            let displayName = contact.profile.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+            let fullName = cInfo.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
             if contact.verified {
                 (
                     Text(Image(systemName: "checkmark.shield"))
                         .foregroundColor(theme.colors.secondary)
                         .font(.title2)
                     + textSpace
-                    + Text(contact.profile.displayName)
+                    + Text(displayName)
                         .font(.largeTitle)
                 )
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
                 .padding(.bottom, 2)
             } else {
-                Text(contact.profile.displayName)
+                Text(displayName)
                     .font(.largeTitle)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
                     .padding(.bottom, 2)
             }
-            if cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.fullName != contact.profile.displayName {
+            if fullName != "" && fullName != displayName && fullName != cInfo.displayName.trimmingCharacters(in: .whitespacesAndNewlines)  {
                 Text(cInfo.fullName)
                     .font(.title2)
                     .multilineTextAlignment(.center)
-                    .lineLimit(4)
+                    .lineLimit(3)
+                    .padding(.bottom, 2)
             }
-            if let descr = cInfo.shortDescr {
+            if let descr = cInfo.shortDescr?.trimmingCharacters(in: .whitespacesAndNewlines), descr != "" {
                 Text(descr)
+                    .font(.subheadline)
                     .multilineTextAlignment(.center)
                     .lineLimit(4)
             }

@@ -234,22 +234,27 @@ struct GroupChatInfoView: View {
     private func groupInfoHeader() -> some View {
         VStack {
             let cInfo = chat.chatInfo
+            // show actual display name, alias can be edited in this view
+            let displayName = (cInfo.groupInfo?.groupProfile.displayName ?? cInfo.displayName).trimmingCharacters(in: .whitespacesAndNewlines)
+            let fullName = cInfo.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
             ChatInfoImage(chat: chat, size: 192, color: Color(uiColor: .tertiarySystemFill))
                 .padding(.top, 12)
                 .padding()
-            Text(cInfo.groupInfo?.groupProfile.displayName ?? cInfo.displayName)
+            Text(displayName)
                 .font(.largeTitle)
                 .multilineTextAlignment(.center)
                 .lineLimit(4)
                 .padding(.bottom, 2)
-            if cInfo.fullName != "" && cInfo.fullName != cInfo.displayName {
+            if fullName != "" && fullName != displayName && fullName != cInfo.displayName.trimmingCharacters(in: .whitespacesAndNewlines) {
                 Text(cInfo.fullName)
                     .font(.title2)
                     .multilineTextAlignment(.center)
-                    .lineLimit(8)
+                    .lineLimit(3)
+                    .padding(.bottom, 2)
             }
-            if let descr = cInfo.shortDescr {
+            if let descr = cInfo.shortDescr?.trimmingCharacters(in: .whitespacesAndNewlines), descr != "" {
                 Text(descr)
+                    .font(.subheadline)
                     .multilineTextAlignment(.center)
                     .lineLimit(4)
             }

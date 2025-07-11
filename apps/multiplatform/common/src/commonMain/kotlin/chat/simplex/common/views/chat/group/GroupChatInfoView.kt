@@ -724,44 +724,27 @@ fun ChatTTLOption(chatItemTTL: State<ChatItemTTL?>, setChatItemTTL: (ChatItemTTL
 @Composable
 private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
   Column(
-    Modifier.padding(horizontal = 8.dp),
+    Modifier.padding(horizontal = DEFAULT_PADDING),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
     val clipboard = LocalClipboardManager.current
-    val copyNameToClipboard = {
-      clipboard.setText(AnnotatedString(groupInfo.groupProfile.displayName))
+    val copyNameToClipboard = fun(name: String) {
+      clipboard.setText(AnnotatedString(name))
       showToast(generalGetString(MR.strings.copied))
     }
+    val displayName = groupInfo.groupProfile.displayName.trim()
+    val copyDisplayName = { copyNameToClipboard(displayName) }
     Text(
-      groupInfo.groupProfile.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
+      displayName,
+      style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       color = MaterialTheme.colors.onBackground,
       textAlign = TextAlign.Center,
       maxLines = 3,
       overflow = TextOverflow.Ellipsis,
-      modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
+      modifier = Modifier.combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName).onRightClick(copyDisplayName)
     )
-    if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.fullName != groupInfo.groupProfile.displayName) {
-      Text(
-        cInfo.fullName, style = MaterialTheme.typography.h2,
-        color = MaterialTheme.colors.onBackground,
-        textAlign = TextAlign.Center,
-        maxLines = 3,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
-      )
-    }
-    val descr = cInfo.shortDescr
-    if (descr != null) {
-      Text(
-        descr, // style = MaterialTheme.typography.h2,
-        color = MaterialTheme.colors.onBackground,
-        textAlign = TextAlign.Center,
-        maxLines = 4,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
-      )
-    }
+    ChatInfoDescription(cInfo, displayName, copyNameToClipboard)
   }
 }
 
