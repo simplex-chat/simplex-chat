@@ -1665,15 +1665,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       when (sz > fileSize) $ receiveFileEvt' user ft False Nothing Nothing >>= toView
 
     messageFileDescription :: Contact -> SharedMsgId -> FileDescr -> CM ()
-    messageFileDescription ct@Contact {contactId} sharedMsgId fileDescr = do
+    messageFileDescription Contact {contactId} sharedMsgId fileDescr = do
       (fileId, aci) <- withStore $ \db -> do
         fileId <- getFileIdBySharedMsgId db userId contactId sharedMsgId
         aci <- getChatItemByFileId db vr user fileId
         pure (fileId, aci)
-      processFDMessage (CDDirectRcv ct) sharedMsgId fileId aci fileDescr
+      processFDMessage fileId aci fileDescr
 
     groupMessageFileDescription :: GroupInfo -> GroupMember -> SharedMsgId -> FileDescr -> CM (Maybe GroupForwardScope)
-    groupMessageFileDescription g@GroupInfo {groupId} GroupMember {memberId} sharedMsgId fileDescr = do
+    groupMessageFileDescription GroupInfo {groupId} GroupMember {memberId} sharedMsgId fileDescr = do
       (fileId, aci) <- withStore $ \db -> do
         fileId <- getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
         aci <- getChatItemByFileId db vr user fileId
@@ -1685,14 +1685,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               -- in processFDMessage some paths are programmed as errors,
               -- for example failure on not approved relays (CEFileNotApproved).
               -- we catch error, so that even if processFDMessage fails, message can still be forwarded.
-              processFDMessage (CDGroupRcv g scopeInfo m) sharedMsgId fileId aci fileDescr `catchChatError` \_ -> pure ()
+              processFDMessage fileId aci fileDescr `catchChatError` \_ -> pure ()
               pure $ Just (toGroupForwardScope scopeInfo)
             else
               messageError "x.msg.file.descr: file of another member" $> Nothing
         _ -> messageError "x.msg.file.descr: invalid file description part" $> Nothing
 
-    processFDMessage :: ChatTypeQuotable c => ChatDirection c 'MDRcv -> SharedMsgId -> FileTransferId -> AChatItem -> FileDescr -> CM ()
-    processFDMessage cd sharedMsgId fileId aci fileDescr = do
+    processFDMessage :: FileTransferId -> AChatItem -> FileDescr -> CM ()
+    processFDMessage fileId aci fileDescr = do
       ft <- withStore $ \db -> getRcvFileTransfer db user fileId
       unless (rcvFileCompleteOrCancelled ft) $ do
         (rfd@RcvFileDescr {fileDescrComplete}, ft'@RcvFileTransfer {fileStatus, xftpRcvFile, cryptoArgs}) <- withStore $ \db -> do
@@ -2147,7 +2147,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       receiveFileChunk ft Nothing meta chunk
 
     xFileCancelGroup :: GroupInfo -> GroupMember -> SharedMsgId -> CM (Maybe GroupForwardScope)
-    xFileCancelGroup g@GroupInfo {groupId} GroupMember {memberId} sharedMsgId = do
+    xFileCancelGroup GroupInfo {groupId} GroupMember {memberId} sharedMsgId = do
       (fileId, aci) <- withStore $ \db -> do
         fileId <- getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
         aci <- getChatItemByFileId db vr user fileId
@@ -2687,7 +2687,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ _) msgScope_ msg brokerTs = do
       checkHostRole m memRole
       if sameMemberId memId (membership gInfo)
-        then messageError "x.grp.mem.new error: membership member id" $> Nothing
+        then pure Nothing
         else do
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
             Right unknownMember@GroupMember {memberStatus = GSMemUnknown} -> do
@@ -2714,8 +2714,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         initialStatus = case msgScope_ of
           Just (MSMember _) -> GSMemPendingReview
           _ -> GSMemAnnounced
-        forwardScope m
-          | memberPending m = GFSMemberSupport (Just $ groupMemberId' m)
+        forwardScope member
+          | memberPending member = GFSMemberSupport (Just $ groupMemberId' member)
           | otherwise = GFSMain
         memberAnnouncedToView announcedMember@GroupMember {groupMemberId, memberProfile} gInfo' = do
           (announcedMember', scopeInfo) <- getMemNewChatScope announcedMember
