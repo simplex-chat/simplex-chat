@@ -106,6 +106,7 @@ module Simplex.Chat.Store.Groups
     getForwardIntroducedModerators,
     getForwardInvitedMembers,
     getForwardInvitedModerators,
+    checkForwardToScopeMember,
     createIntroReMember,
     createIntroToMemberContact,
     saveMemberInvitation,
@@ -1787,9 +1788,25 @@ getForwardInvitedModerators db vr user@User {userContactId} forwardMember = do
         |]
         (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected, userContactId, GRModerator, GRAdmin, GROwner)
 
-shouldForwardToMember :: DB.Connection -> GroupMember -> GroupMember -> IO Bool
-shouldForwardToMember db fromMember toMember = do
-  
+checkForwardToScopeMember :: DB.Connection -> GroupMember -> GroupMemberId -> IO Bool
+checkForwardToScopeMember db GroupMember {groupMemberId = sendingGMId} scopeGMId = do
+  (introExists_ :: Maybe Int64) <-
+    maybeFirstRow fromOnly $
+      DB.query
+        db
+        [sql|
+          SELECT 1
+          FROM group_member_intros
+          WHERE
+            (
+              (re_group_member_id = ? AND to_group_member_id = ?) OR
+              (re_group_member_id = ? AND to_group_member_id = ?)
+            )
+            AND intro_status NOT IN (?,?,?)
+          LIMIT 1
+        |]
+        (sendingGMId, scopeGMId, scopeGMId, sendingGMId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
+  pure $ isJust introExists_
 
 createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> VersionChat -> MemberInfo -> Maybe MemberRestrictions -> (CommandId, ConnId) -> SubscriptionMode -> ExceptT StoreError IO GroupMember
 createIntroReMember

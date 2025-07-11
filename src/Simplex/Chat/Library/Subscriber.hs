@@ -1011,12 +1011,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         && msgsForwardedToMember fwdMsgs mem
                       modMs' = filter moderatorFilter modMs
                   case scopeGMId_ of
-                    Nothing -> pure modMs'
-                    Just scopeGMId -> do
-                      supportMem <- withFastStore $ \db -> getGroupMemberById db vr user scopeGMId
-                      if msgsForwardedToMember fwdMsgs supportMem
-                        then pure $ supportMem : modMs'
+                    Just scopeGMId | scopeGMId /= groupMemberId' m -> do
+                      shouldFwdToScopeMem <- withStore' $ \db -> checkForwardToScopeMember db m scopeGMId
+                      if shouldFwdToScopeMem
+                        then do
+                          scopeMem <- withFastStore $ \db -> getGroupMemberById db vr user scopeGMId
+                          if msgsForwardedToMember fwdMsgs scopeMem
+                            then pure $ scopeMem : modMs'
+                            else pure modMs'
                         else pure modMs'
+                    _ -> pure modMs'
                 where
                   getAllIntroducedAndInvited = do
                     ChatConfig {highlyAvailable} <- asks config
@@ -1849,7 +1853,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 withStore' $ \db -> setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
                 -- possible improvement is to send reaction scope in protocol message,
                 -- it would allow to decide its forwarding scope in case item is not found
-                pure Nothing
+                pure $ Just GFSMain
             else pure Nothing
       | otherwise = pure Nothing
       where
@@ -2019,7 +2023,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               withStore' $ \db -> createCIModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
               -- possible improvement is to send deletion scope in protocol message,
               -- it would allow to decide its forwarding scope in case item is not found
-              pure Nothing
+              pure $ Just GFSMain
       where
         moderate :: GroupMember -> CChatItem 'CTGroup -> CM (Maybe GroupForwardScope)
         moderate mem cci = case sndMemberId_ of
