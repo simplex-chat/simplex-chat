@@ -15,6 +15,7 @@ private let memberImageSize: CGFloat = 34
 
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @StateObject private var connectProgressManager = ConnectProgressManager.shared
     @State var revealedItems: Set<Int64> = Set()
     @State var theme: AppTheme = buildTheme()
     @Environment(\.dismiss) var dismiss
@@ -113,6 +114,9 @@ struct ChatView: View {
                             scrollView.updateItems(mergedItems.boxedValue.items)
                         }
                     )
+                }
+                if let connectInProgressText = connectProgressManager.showConnectProgress {
+                    connectInProgressView(connectInProgressText)
                 }
                 if let connectingText {
                     Text(connectingText)
@@ -262,6 +266,7 @@ struct ChatView: View {
             }
         }
         .onAppear {
+            ConnectProgressManager.shared.cancelConnectProgress()
             scrollView.listState.onUpdateListener = onChatItemsUpdated
             selectedChatItems = nil
             revealedItems = Set()
@@ -286,6 +291,7 @@ struct ChatView: View {
             }
         }
         .onChange(of: chatModel.chatId) { cId in
+            ConnectProgressManager.shared.cancelConnectProgress()
             showChatInfoSheet = false
             selectedChatItems = nil
             revealedItems = Set()
@@ -341,6 +347,7 @@ struct ChatView: View {
             }
         }
         .onDisappear {
+            ConnectProgressManager.shared.cancelConnectProgress()
             VideoPlayerView.players.removeAll()
             stopAudioPlayer()
             if chatModel.chatId == cInfo.id && !presentationMode.wrappedValue.isPresented {
@@ -383,6 +390,30 @@ struct ChatView: View {
                     }
                 }
             }
+        }
+    }
+
+    private func connectInProgressView(_ s: String) -> some View {
+        VStack(spacing: 0) {
+            Divider()
+            
+            HStack(spacing: 12) {
+                ProgressView()
+                Text(s)
+
+                Spacer()
+
+                Button {
+                    ConnectProgressManager.shared.cancelConnectProgress()
+                } label: {
+                    Image(systemName: "multiply")
+                }
+                .tint(theme.colors.primary)
+            }
+            .padding(12)
+            .frame(minHeight: 54)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(ToolbarMaterial.material(toolbarMaterial))
         }
     }
 

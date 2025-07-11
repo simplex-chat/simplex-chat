@@ -137,6 +137,7 @@ struct UserPickerSheetView: View {
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @StateObject private var connectProgressManager = ConnectProgressManager.shared
     @EnvironmentObject var theme: AppTheme
     @Binding var activeUserPickerSheet: UserPickerSheet?
     @State private var searchMode = false
@@ -572,6 +573,7 @@ struct ChatListSearchBar: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatTagsModel: ChatTagsModel
+    @StateObject private var connectProgressManager = ConnectProgressManager.shared
     @Binding var searchMode: Bool
     @FocusState.Binding var searchFocussed: Bool
     @Binding var searchText: String
@@ -591,6 +593,9 @@ struct ChatListSearchBar: View {
                         .disabled(searchShowingSimplexLink)
                         .focused($searchFocussed)
                         .frame(maxWidth: .infinity)
+                    if connectProgressManager.showConnectProgress != nil {
+                        ProgressView()
+                    }
                     if !searchText.isEmpty {
                         Image(systemName: "xmark.circle.fill")
                             .onTapGesture {
@@ -634,6 +639,8 @@ struct ChatListSearchBar: View {
                 } else {
                     if t != "" { // if some other text is pasted, enter search mode
                         searchFocussed = true
+                    } else {
+                        ConnectProgressManager.shared.cancelConnectProgress()
                     }
                     searchShowingSimplexLink = false
                     searchChatFilteredBySimplexLink = nil

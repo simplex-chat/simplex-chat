@@ -75,7 +75,7 @@ directoryServiceTests = do
     it "should accept some incorrect spellings" testCaptcha
 
 directoryProfile :: Profile
-directoryProfile = Profile {displayName = "SimpleX-Directory", fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing}
+directoryProfile = Profile {displayName = "SimpleX-Directory", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing}
 
 mkDirectoryOpts :: TestParams -> [KnownContact] -> Maybe KnownGroup -> DirectoryOpts
 mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup =
@@ -219,7 +219,7 @@ testDirectoryService ps =
       u <## "2 members"
     updateGroupProfile u welcome = do
       u ##> ("/set welcome #PSA " <> welcome)
-      u <## "description changed to:"
+      u <## "welcome message changed to:"
       u <## welcome
     approvalRequested su welcome grId = do
       su <# "SimpleX-Directory> bob submitted the group ID 1:"
@@ -738,11 +738,11 @@ testRegOwnerChangedProfile ps =
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
         bob ##> "/gp privacy privacy Privacy and Security"
-        bob <## "full name changed to: Privacy and Security"
+        bob <## "description changed to: Privacy and Security"
         bob <# "SimpleX-Directory> The group ID 1 (privacy) is updated!"
         bob <## "It is hidden from the directory until approved."
         cath <## "bob updated group #privacy:"
-        cath <## "full name changed to: Privacy and Security"
+        cath <## "description changed to: Privacy and Security"
         cath `connectVia` dsLink
         cath <## "contact and member are merged: SimpleX-Directory_1, #privacy SimpleX-Directory"
         cath <## "use @SimpleX-Directory <message> to send messages"
@@ -763,9 +763,9 @@ testAnotherOwnerChangedProfile ps =
         cath <## "contact and member are merged: SimpleX-Directory_1, #privacy SimpleX-Directory"
         cath <## "use @SimpleX-Directory <message> to send messages"
         cath ##> "/gp privacy privacy Privacy and Security"
-        cath <## "full name changed to: Privacy and Security"
+        cath <## "description changed to: Privacy and Security"
         bob <## "cath updated group #privacy:"
-        bob <## "full name changed to: Privacy and Security"
+        bob <## "description changed to: Privacy and Security"
         bob <# "SimpleX-Directory> The group ID 1 (privacy) is updated by cath!"
         bob <## "It is hidden from the directory until approved."
         groupNotFound cath "privacy"
@@ -784,9 +784,9 @@ testNotConnectedOwnerChangedProfile ps =
           registerGroup superUser bob "privacy" "Privacy"
           addCathAsOwner bob cath
           cath ##> "/gp privacy privacy Privacy and Security"
-          cath <## "full name changed to: Privacy and Security"
+          cath <## "description changed to: Privacy and Security"
           bob <## "cath updated group #privacy:"
-          bob <## "full name changed to: Privacy and Security"
+          bob <## "description changed to: Privacy and Security"
           bob <# "SimpleX-Directory> The group ID 1 (privacy) is updated by cath!"
           bob <## "It is hidden from the directory until approved."
           groupNotFound dan "privacy"
@@ -806,13 +806,13 @@ testRegOwnerRemovedLink ps =
         bob <## "Welcome message:"
         welcomeWithLink <- getTermLine bob
         bob ##> "/set welcome #privacy Welcome!"
-        bob <## "description changed to:"
+        bob <## "welcome message changed to:"
         bob <## "Welcome!"
         bob <# "SimpleX-Directory> The group link for ID 1 (privacy) is removed from the welcome message."
         bob <## ""
         bob <## "The group is hidden from the directory until the group link is added and the group is re-approved."
         cath <## "bob updated group #privacy:"
-        cath <## "description changed to:"
+        cath <## "welcome message changed to:"
         cath <## "Welcome!"
         superUser <# "SimpleX-Directory> The group link is removed from ID 1 (privacy), de-listed."
         cath `connectVia` dsLink
@@ -821,12 +821,12 @@ testRegOwnerRemovedLink ps =
         groupNotFound cath "privacy"
         let withChangedLink = T.unpack $ T.replace "contact#/?v=2-7&" "contact#/?v=3-7&" $ T.pack welcomeWithLink
         bob ##> ("/set welcome #privacy " <> withChangedLink)
-        bob <## "description changed to:"
+        bob <## "welcome message changed to:"
         bob <## withChangedLink
         bob <# "SimpleX-Directory> Thank you! The group link for ID 1 (privacy) is added to the welcome message."
         bob <## "You will be notified once the group is added to the directory - it may take up to 48 hours."
         cath <## "bob updated group #privacy:"
-        cath <## "description changed to:"
+        cath <## "welcome message changed to:"
         cath <## withChangedLink
         reapproveGroup 3 superUser bob
         groupFoundN 3 cath "privacy"
@@ -846,10 +846,10 @@ testAnotherOwnerRemovedLink ps =
         bob <## "Welcome message:"
         welcomeWithLink <- getTermLine bob
         cath ##> "/set welcome #privacy Welcome!"
-        cath <## "description changed to:"
+        cath <## "welcome message changed to:"
         cath <## "Welcome!"
         bob <## "cath updated group #privacy:"
-        bob <## "description changed to:"
+        bob <## "welcome message changed to:"
         bob <## "Welcome!"
         bob <# "SimpleX-Directory> The group link for ID 1 (privacy) is removed from the welcome message by cath."
         bob <## ""
@@ -857,10 +857,10 @@ testAnotherOwnerRemovedLink ps =
         superUser <# "SimpleX-Directory> The group link is removed from ID 1 (privacy), de-listed."
         groupNotFound cath "privacy"
         cath ##> ("/set welcome #privacy " <> welcomeWithLink)
-        cath <## "description changed to:"
+        cath <## "welcome message changed to:"
         cath <## welcomeWithLink
         bob <## "cath updated group #privacy:"
-        bob <## "description changed to:"
+        bob <## "welcome message changed to:"
         bob <## welcomeWithLink
         bob <# "SimpleX-Directory> Thank you! The group link for ID 1 (privacy) is added to the welcome message by cath."
         bob <## "You will be notified once the group is added to the directory - it may take up to 48 hours."
@@ -881,10 +881,10 @@ testNotConnectedOwnerRemovedLink ps =
           bob <## "Welcome message:"
           welcomeWithLink <- getTermLine bob
           cath ##> "/set welcome #privacy Welcome!"
-          cath <## "description changed to:"
+          cath <## "welcome message changed to:"
           cath <## "Welcome!"
           bob <## "cath updated group #privacy:"
-          bob <## "description changed to:"
+          bob <## "welcome message changed to:"
           bob <## "Welcome!"
           bob <# "SimpleX-Directory> The group link for ID 1 (privacy) is removed from the welcome message by cath."
           bob <## ""
@@ -892,21 +892,21 @@ testNotConnectedOwnerRemovedLink ps =
           superUser <# "SimpleX-Directory> The group link is removed from ID 1 (privacy), de-listed."
           groupNotFound dan "privacy"
           cath ##> ("/set welcome #privacy " <> welcomeWithLink)
-          cath <## "description changed to:"
+          cath <## "welcome message changed to:"
           cath <## welcomeWithLink
           bob <## "cath updated group #privacy:"
-          bob <## "description changed to:"
+          bob <## "welcome message changed to:"
           bob <## welcomeWithLink
           -- bob <# "SimpleX-Directory> The group link is added by another group member, your registration will not be processed."
           -- bob <## ""
           -- bob <## "Please update the group profile yourself."
           -- bob ##> ("/set welcome #privacy " <> welcomeWithLink <> " - welcome!")
-          -- bob <## "description changed to:"
+          -- bob <## "welcome message changed to:"
           -- bob <## (welcomeWithLink <> " - welcome!")
           bob <# "SimpleX-Directory> Thank you! The group link for ID 1 (privacy) is added to the welcome message by cath."
           bob <## "You will be notified once the group is added to the directory - it may take up to 48 hours."
           -- cath <## "bob updated group #privacy:"
-          -- cath <## "description changed to:"
+          -- cath <## "welcome message changed to:"
           -- cath <## (welcomeWithLink <> " - welcome!")
           reapproveGroup 3 superUser bob
           groupFoundN 3 dan "privacy"
@@ -980,7 +980,7 @@ testDuplicateProhibitWhenUpdated ps =
         completeRegistration superUser bob "privacy" "Privacy" welcomeWithLink 1
         groupFound cath "privacy"
         cath ##> ("/set welcome privacy " <> welcomeWithLink')
-        cath <## "description changed to:"
+        cath <## "welcome message changed to:"
         cath <## welcomeWithLink'
         cath <# "SimpleX-Directory> The group privacy (Privacy) is already listed in the directory, please choose another name."
         cath ##> "/gp privacy security Security"
@@ -1352,7 +1352,7 @@ completeRegistrationId su u n fn welcomeWithLink gId ugId = do
 updateProfileWithLink :: TestCC -> String -> String -> Int -> IO ()
 updateProfileWithLink u n welcomeWithLink ugId = do
   u ##> ("/set welcome " <> viewName n <> " " <> welcomeWithLink)
-  u <## "description changed to:"
+  u <## "welcome message changed to:"
   u <## welcomeWithLink
   u <# ("SimpleX-Directory> Thank you! The group link for ID " <> show ugId <> " (" <> n <> ") is added to the welcome message.")
   u <## "You will be notified once the group is added to the directory - it may take up to 48 hours."

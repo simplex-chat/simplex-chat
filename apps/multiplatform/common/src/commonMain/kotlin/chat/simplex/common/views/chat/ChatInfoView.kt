@@ -706,15 +706,16 @@ fun ChatInfoLayout(
 @Composable
 fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
   Column(
-    Modifier.padding(horizontal = 8.dp),
+    Modifier.padding(horizontal = DEFAULT_PADDING),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
+    val displayName = contact.profile.displayName.trim()
     val text = buildAnnotatedString {
       if (contact.verified) {
         appendInlineContent(id = "shieldIcon")
       }
-      append(contact.profile.displayName)
+      append(displayName)
     }
     val inlineContent: Map<String, InlineTextContent> = mapOf(
       "shieldIcon" to InlineTextContent(
@@ -724,10 +725,11 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
       }
     )
     val clipboard = LocalClipboardManager.current
-    val copyNameToClipboard = {
-      clipboard.setText(AnnotatedString(contact.profile.displayName))
+    val copyNameToClipboard = fun (name: String) {
+      clipboard.setText(AnnotatedString(name))
       showToast(generalGetString(MR.strings.copied))
     }
+    val copyDisplayName = { copyNameToClipboard(displayName) }
     Text(
       text,
       inlineContent = inlineContent,
@@ -735,18 +737,39 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
       textAlign = TextAlign.Center,
       maxLines = 3,
       overflow = TextOverflow.Ellipsis,
-      modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
+      modifier = Modifier.combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName).onRightClick(copyDisplayName)
     )
-    if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.fullName != contact.profile.displayName) {
-      Text(
-        cInfo.fullName, style = MaterialTheme.typography.h2,
-        color = MaterialTheme.colors.onBackground,
-        textAlign = TextAlign.Center,
-        maxLines = 4,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
-      )
-    }
+    ChatInfoDescription(cInfo, displayName, copyNameToClipboard)
+  }
+}
+
+@Composable
+fun ChatInfoDescription(c: NamedChat, displayName: String, copyNameToClipboard: (String) -> Unit) {
+  val fullName = c.fullName.trim()
+  if (fullName != "" && fullName != displayName && fullName != c.displayName.trim()) {
+    val copyFullName = { copyNameToClipboard(fullName) }
+    Text(
+      fullName, style = MaterialTheme.typography.h2,
+      color = MaterialTheme.colors.onBackground,
+      textAlign = TextAlign.Center,
+      maxLines = 3,
+      overflow = TextOverflow.Ellipsis,
+      modifier = Modifier.padding(top = DEFAULT_PADDING_HALF).combinedClickable(onClick = copyFullName, onLongClick = copyFullName).onRightClick(copyFullName)
+    )
+  }
+  val descr = c.shortDescr?.trim()
+  if (descr != null && descr != "") {
+    val copyDescr = { copyNameToClipboard(descr) }
+    Text(
+      descr,
+      style = MaterialTheme.typography.body2,
+      color = MaterialTheme.colors.onBackground,
+      textAlign = TextAlign.Center,
+      maxLines = 4,
+      overflow = TextOverflow.Ellipsis,
+      lineHeight = 21.sp,
+      modifier = Modifier.padding(top = DEFAULT_PADDING_HALF).combinedClickable(onClick = copyDescr, onLongClick = copyDescr).onRightClick(copyDescr)
+    )
   }
 }
 

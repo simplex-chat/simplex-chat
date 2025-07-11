@@ -75,12 +75,12 @@ struct GroupChatInfoView: View {
                 List {
                     groupInfoHeader()
                         .listRowBackground(Color.clear)
-                    
+
                     localAliasTextEdit()
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .padding(.bottom, 18)
-                    
+
                     infoActionButtons()
                         .padding(.horizontal)
                         .frame(maxWidth: .infinity)
@@ -124,7 +124,7 @@ struct GroupChatInfoView: View {
                         Text(label)
                             .foregroundColor(theme.colors.secondary)
                     }
-                    
+
                     Section {
                         if members.filter({ $0.wrapped.memberCurrent }).count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
                             sendReceiptsOption()
@@ -181,7 +181,7 @@ struct GroupChatInfoView: View {
                             leaveGroupButton()
                         }
                     }
-                    
+
                     if developerTools {
                         Section(header: Text("For console").foregroundColor(theme.colors.secondary)) {
                             infoRow("Local name", chat.chatInfo.localDisplayName)
@@ -193,7 +193,7 @@ struct GroupChatInfoView: View {
                 .navigationBarHidden(true)
                 .disabled(progressIndicator)
                 .opacity(progressIndicator ? 0.6 : 1)
-                
+
                 if progressIndicator {
                     ProgressView().scaleEffect(2)
                 }
@@ -234,19 +234,29 @@ struct GroupChatInfoView: View {
     private func groupInfoHeader() -> some View {
         VStack {
             let cInfo = chat.chatInfo
+            // show actual display name, alias can be edited in this view
+            let displayName = (cInfo.groupInfo?.groupProfile.displayName ?? cInfo.displayName).trimmingCharacters(in: .whitespacesAndNewlines)
+            let fullName = cInfo.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
             ChatInfoImage(chat: chat, size: 192, color: Color(uiColor: .tertiarySystemFill))
                 .padding(.top, 12)
                 .padding()
-            Text(cInfo.groupInfo?.groupProfile.displayName ?? cInfo.displayName)
+            Text(displayName)
                 .font(.largeTitle)
                 .multilineTextAlignment(.center)
                 .lineLimit(4)
                 .padding(.bottom, 2)
-            if cInfo.fullName != "" && cInfo.fullName != cInfo.displayName {
+            if fullName != "" && fullName != displayName && fullName != cInfo.displayName.trimmingCharacters(in: .whitespacesAndNewlines) {
                 Text(cInfo.fullName)
                     .font(.title2)
                     .multilineTextAlignment(.center)
-                    .lineLimit(8)
+                    .lineLimit(3)
+                    .padding(.bottom, 2)
+            }
+            if let descr = cInfo.shortDescr?.trimmingCharacters(in: .whitespacesAndNewlines), descr != "" {
+                Text(descr)
+                    .font(.subheadline)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(4)
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
@@ -268,7 +278,7 @@ struct GroupChatInfoView: View {
             .multilineTextAlignment(.center)
             .foregroundColor(theme.colors.secondary)
     }
-    
+
     private func setGroupAlias() {
         Task {
             do {
@@ -282,7 +292,7 @@ struct GroupChatInfoView: View {
             }
         }
     }
-    
+
     func infoActionButtons() -> some View {
         GeometryReader { g in
             let buttonWidth = g.size.width / 4
@@ -829,11 +839,11 @@ struct GroupPreferencesButton: View {
     @State var preferences: FullGroupPreferences
     @State var currentPreferences: FullGroupPreferences
     var creatingGroup: Bool = false
-    
+
     private var label: LocalizedStringKey {
         groupInfo.businessChat == nil ? "Group preferences" : "Chat preferences"
     }
-    
+
     var body: some View {
         NavigationLink {
             GroupPreferencesView(
@@ -851,7 +861,7 @@ struct GroupPreferencesButton: View {
                     creatingGroup ? "Save" : "Save and notify group members",
                     comment: "alert button"
                 )
-                
+
                 if groupInfo.fullGroupPreferences != preferences {
                     showAlert(
                         title: NSLocalizedString("Save preferences?", comment: "alert title"),
@@ -869,7 +879,7 @@ struct GroupPreferencesButton: View {
             }
         }
     }
-    
+
     private func savePreferences() {
         Task {
             do {

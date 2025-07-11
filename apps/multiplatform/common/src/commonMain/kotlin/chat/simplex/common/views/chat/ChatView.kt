@@ -54,6 +54,40 @@ import kotlin.math.*
 data class ItemSeparation(val timestamp: Boolean, val largeGap: Boolean, val date: Instant?)
 
 @Composable
+fun ConnectInProgressView(s: String) {
+  Surface(color = MaterialTheme.colors.background) {
+    Divider()
+    Row(
+      Modifier
+        .height(60.dp)
+        .fillMaxWidth(),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Row(
+        Modifier
+          .padding(start = 10.dp)
+          .fillMaxWidth()
+          .weight(1F),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+      ) {
+        ComposeProgressIndicator()
+        Text(s)
+      }
+
+      IconButton(onClick = { connectProgressManager.cancelConnectProgress() }) {
+        Icon(
+          painterResource(MR.images.ic_close),
+          contentDescription = stringResource(MR.strings.cancel_verb),
+          tint = MaterialTheme.colors.primary,
+          modifier = Modifier.padding(10.dp)
+        )
+      }
+    }
+  }
+}
+
+@Composable
 // staleChatId means the id that was before chatModel.chatId becomes null. It's needed for Android only to make transition from chat
 // to chat list smooth. Otherwise, chat view will become blank right before the transition starts
 fun ChatView(
@@ -102,6 +136,13 @@ fun ChatView(
     val attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
     val scope = rememberCoroutineScope()
     val selectedChatItems = rememberSaveable { mutableStateOf(null as Set<Long>?) }
+    if (appPlatform.isAndroid) {
+      DisposableEffect(Unit) {
+        onDispose {
+          connectProgressManager.cancelConnectProgress()
+        }
+      }
+    }
     LaunchedEffect(Unit) {
       // snapshotFlow here is because it reacts much faster on changes in chatModel.chatId.value.
       // With LaunchedEffect(chatModel.chatId.value) there is a noticeable delay before reconstruction of the view
@@ -110,6 +151,9 @@ fun ChatView(
           .distinctUntilChanged()
           .filterNotNull()
           .collect { chatId ->
+            if (appPlatform.isAndroid) {
+              connectProgressManager.cancelConnectProgress()
+            }
             if (chatsCtx.secondaryContextFilter == null) {
               markUnreadChatAsRead(chatId)
             }
@@ -177,6 +221,10 @@ fun ChatView(
                   Modifier.fillMaxWidth(),
                   horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                  val connectInProgressText = connectProgressManager.showConnectProgress
+                  if (appPlatform.isAndroid && connectInProgressText != null) {
+                    ConnectInProgressView(connectInProgressText)
+                  }
                   val connectingText = connectingText(chatInfo)
                   if (connectingText != null) {
                     Text(

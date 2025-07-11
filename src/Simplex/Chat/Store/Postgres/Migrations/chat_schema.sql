@@ -331,7 +331,8 @@ CREATE TABLE test_chat_schema.contact_profiles (
     incognito smallint,
     local_alias text DEFAULT ''::text NOT NULL,
     preferences text,
-    contact_link bytea
+    contact_link bytea,
+    short_descr text
 );
 
 
@@ -577,7 +578,8 @@ CREATE TABLE test_chat_schema.group_profiles (
     user_id bigint,
     preferences text,
     description text,
-    member_admission text
+    member_admission text,
+    short_descr text
 );
 
 

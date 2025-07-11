@@ -16,7 +16,8 @@ struct NewChatMenuButton: View {
     @State private var alert: SomeAlert? = nil
 
     var body: some View {
-            Button {
+        Button {
+            ConnectProgressManager.shared.cancelConnectProgress()
             showNewChatSheet = true
         } label: {
             Image(systemName: "square.and.pencil")
@@ -65,6 +66,8 @@ struct NewChatSheet: View {
                 .alert(item: $alert) { a in
                     return a.alert
                 }
+        }.onDisappear {
+            ConnectProgressManager.shared.cancelConnectProgress()
         }
         if #available(iOS 16.0, *), oneHandUI {
             let sheetHeight: CGFloat = showArchive ? 575 : 500
@@ -315,6 +318,7 @@ struct ContactsList: View {
 
 struct ContactsListSearchBar: View {
     @EnvironmentObject var m: ChatModel
+    @StateObject private var connectProgressManager = ConnectProgressManager.shared
     @EnvironmentObject var theme: AppTheme
     @Binding var searchMode: Bool
     @FocusState.Binding var searchFocussed: Bool
@@ -338,6 +342,9 @@ struct ContactsListSearchBar: View {
                     .disabled(searchShowingSimplexLink)
                     .focused($searchFocussed)
                     .frame(maxWidth: .infinity)
+                if connectProgressManager.showConnectProgress != nil {
+                    ProgressView()
+                }
                 if !searchText.isEmpty {
                     Image(systemName: "xmark.circle.fill")
                         .resizable()
@@ -384,6 +391,8 @@ struct ContactsListSearchBar: View {
                 } else {
                     if t != "" { // if some other text is pasted, enter search mode
                         searchFocussed = true
+                    } else {
+                        connectProgressManager.cancelConnectProgress()
                     }
                     searchShowingSimplexLink = false
                     searchChatFilteredBySimplexLink = nil

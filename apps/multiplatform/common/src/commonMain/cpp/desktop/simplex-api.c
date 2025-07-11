@@ -115,7 +115,7 @@ Java_chat_simplex_common_platform_CoreKt_chatCloseStore(JNIEnv *env, jclass claz
 }
 
 JNIEXPORT jstring JNICALL
-Java_chat_simplex_common_platform_CoreKt_chatSendCmdRetry(JNIEnv *env, __unused jclass clazz, jlong controller, jstring msg, jint retryNum) {
+Java_chat_simplex_common_platform_CoreKt_chatSendCmdRetry(JNIEnv *env, jclass clazz, jlong controller, jstring msg, jint retryNum) {
     const char *_msg = encode_to_utf8_chars(env, msg);
     jstring res = decode_to_utf8_string(env, chat_send_cmd_retry((void*)controller, _msg, retryNum));
     (*env)->ReleaseStringUTFChars(env, msg, _msg);
@@ -123,7 +123,7 @@ Java_chat_simplex_common_platform_CoreKt_chatSendCmdRetry(JNIEnv *env, __unused 
 }
 
 JNIEXPORT jstring JNICALL
-Java_chat_simplex_common_platform_CoreKt_chatSendRemoteCmdRetry(JNIEnv *env, __unused jclass clazz, jlong controller, jint rhId, jstring msg, jint retryNum) {
+Java_chat_simplex_common_platform_CoreKt_chatSendRemoteCmdRetry(JNIEnv *env, jclass clazz, jlong controller, jint rhId, jstring msg, jint retryNum) {
     const char *_msg = encode_to_utf8_chars(env, msg);
     jstring res = decode_to_utf8_string(env, chat_send_remote_cmd_retry((void*)controller, rhId, _msg, retryNum));
     (*env)->ReleaseStringUTFChars(env, msg, _msg);
