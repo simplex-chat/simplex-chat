@@ -2521,4 +2521,6 @@
     <string name="group_new_support_chat_one">1 чат с членом группы</string>
     <string name="simplex_link_channel">SimpleX ссылка канала</string>
     <string name="add_short_link">добавить короткую ссылку</string>
+    <string name="accept_contact_request">Принять запрос на соединение</string>
+    <string name="compose_view_add_message">Добавить соощение</string>
 </resources>
