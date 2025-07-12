@@ -3392,11 +3392,6 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error opening chat" xml:space="preserve">
         <source>Error opening chat</source>
-        <target>Sohbeti açarken sorun oluştu</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Error opening chat" xml:space="preserve">
-        <source>Error opening chat</source>
         <target>Kişiyi hazırlama hatası</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

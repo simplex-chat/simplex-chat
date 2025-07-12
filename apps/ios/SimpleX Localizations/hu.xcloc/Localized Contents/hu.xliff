@@ -3395,11 +3395,6 @@ chat item action</note>
         <target>Hiba történt a csevegés megnyitásakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error opening chat" xml:space="preserve">
-        <source>Error opening chat</source>
-        <target>Hiba a kapcsolat előkészítésekor</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Error opening group" xml:space="preserve">
         <source>Error opening group</source>
         <target>Hiba a csoport előkészítésekor</target>

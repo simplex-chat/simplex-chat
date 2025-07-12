@@ -2293,9 +2293,6 @@ chat item action */
 "Error opening chat" = "Errore di apertura della chat";
 
 /* No comment provided by engineer. */
-"Error opening chat" = "Errore di preparazione del contatto";
-
-/* No comment provided by engineer. */
 "Error opening group" = "Errore di preparazione del gruppo";
 
 /* alert title */
@@ -6218,3 +6215,4 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Il tuo indirizzo SimpleX";
+

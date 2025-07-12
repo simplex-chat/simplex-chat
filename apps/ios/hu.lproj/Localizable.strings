@@ -2293,9 +2293,6 @@ chat item action */
 "Error opening chat" = "Hiba történt a csevegés megnyitásakor";
 
 /* No comment provided by engineer. */
-"Error opening chat" = "Hiba a kapcsolat előkészítésekor";
-
-/* No comment provided by engineer. */
 "Error opening group" = "Hiba a csoport előkészítésekor";
 
 /* alert title */
@@ -6218,3 +6215,4 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Profil SimpleX-címe";
+

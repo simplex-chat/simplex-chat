@@ -2290,9 +2290,6 @@ chat item action */
 "Error migrating settings" = "Ошибка миграции настроек";
 
 /* No comment provided by engineer. */
-"Error opening chat" = "Ошибка доступа к чату";
-
-/* No comment provided by engineer. */
 "Error opening chat" = "Ошибка при открытии чата";
 
 /* No comment provided by engineer. */
@@ -6215,3 +6212,4 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Ваш адрес SimpleX";
+

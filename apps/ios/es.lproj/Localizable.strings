@@ -2293,10 +2293,7 @@ chat item action */
 "Error opening chat" = "Error al abrir chat";
 
 /* No comment provided by engineer. */
-"Error opening chat" = "Error al preparar el contacto";
-
-/* No comment provided by engineer. */
-"Error opening group" = "Error al preparar el grupo";
+"Error opening group" = "Error al abrir el grupo";
 
 /* alert title */
 "Error receiving file" = "Error al recibir archivo";
@@ -6218,3 +6215,4 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Mi dirección SimpleX";
+

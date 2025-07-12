@@ -2290,10 +2290,7 @@ chat item action */
 "Error migrating settings" = "Fehler beim Migrieren der Einstellungen";
 
 /* No comment provided by engineer. */
-"Error opening chat" = "Fehler beim Öffnen des Chats";
-
-/* No comment provided by engineer. */
-"Error opening chat" = "Fehler bei der Kontaktaufnahme";
+"Error opening chat" = "Fehler beim Öffnen des Chat";
 
 /* No comment provided by engineer. */
 "Error opening group" = "Fehler beim Vorbereiten der Gruppe";
@@ -6218,3 +6215,4 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Ihre SimpleX-Adresse";
+

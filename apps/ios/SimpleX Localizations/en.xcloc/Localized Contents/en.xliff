@@ -3395,11 +3395,6 @@ chat item action</note>
         <target>Error opening chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error opening chat" xml:space="preserve">
-        <source>Error opening chat</source>
-        <target>Error opening chat</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Error opening group" xml:space="preserve">
         <source>Error opening group</source>
         <target>Error opening group</target>
