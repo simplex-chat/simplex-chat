@@ -2522,5 +2522,8 @@
     <string name="simplex_link_channel">SimpleX ссылка канала</string>
     <string name="add_short_link">добавить короткую ссылку</string>
     <string name="accept_contact_request">Принять запрос на соединение</string>
-    <string name="compose_view_add_message">Добавить соощение</string>
+    <string name="compose_view_add_message">Добавить сообщение</string>
+    <string name="short_descr__field">О себе:</string>
+    <string name="context_user_picker_cant_change_profile_alert_title">Нельзя поменять профиль</string>
+    <string name="e2ee_info_e2ee"><![CDATA[Сообщения защищены <b>сквозным (end-to-end) шифрованием</b>.]]></string>
 </resources>
