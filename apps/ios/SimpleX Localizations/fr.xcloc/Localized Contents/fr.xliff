@@ -3895,9 +3895,9 @@ snd error text</note>
         <target>Transfert des %lld messages</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve" approved="no">
+      <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve">
         <source>Forwarding server %1$@ failed to connect to destination server %2$@. Please try later.</source>
-        <target state="needs-translation">Le serveur de redirection %@ n'a pas réussi à se connecter au serveur de destination %@. Veuillez réessayer plus tard.</target>
+        <target>Le serveur de redirection %1$@ n'a pas réussi à se connecter au serveur de destination %2$@. Veuillez réessayer plus tard.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Forwarding server address is incompatible with network settings: %@." xml:space="preserve">
@@ -4709,6 +4709,10 @@ Voici votre lien pour le groupe %@ !</target>
         <source>Live messages</source>
         <target>Messages dynamiques</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Loading profile…" xml:space="preserve">
+        <source>Loading profile…</source>
+        <note>in progress text</note>
       </trans-unit>
       <trans-unit id="Local name" xml:space="preserve">
         <source>Local name</source>

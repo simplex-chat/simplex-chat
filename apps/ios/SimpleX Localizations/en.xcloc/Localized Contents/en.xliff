@@ -4752,6 +4752,11 @@ This is your link for group %@!</target>
         <target>Live messages</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Loading profile…" xml:space="preserve">
+        <source>Loading profile…</source>
+        <target>Loading profile…</target>
+        <note>in progress text</note>
+      </trans-unit>
       <trans-unit id="Local name" xml:space="preserve">
         <source>Local name</source>
         <target>Local name</target>

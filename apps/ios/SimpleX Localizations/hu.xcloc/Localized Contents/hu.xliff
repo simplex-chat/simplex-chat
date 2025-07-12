@@ -1624,9 +1624,9 @@ set passcode view</note>
         <target>Csevegés a taggal</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat with members before they join." xml:space="preserve" approved="no">
+      <trans-unit id="Chat with members before they join." xml:space="preserve">
         <source>Chat with members before they join.</source>
-        <target state="translated">Csevegés a tagokkal mielőtt csatlakoznának.</target>
+        <target>Csevegés a tagokkal mielőtt csatlakoznának.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
@@ -1864,9 +1864,9 @@ set passcode view</note>
         <target>Kapcsolódás automatikusan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect faster! 🚀" xml:space="preserve" approved="no">
+      <trans-unit id="Connect faster! 🚀" xml:space="preserve">
         <source>Connect faster! 🚀</source>
-        <target state="translated">Gyorsabb kapcsolódás! 🚀</target>
+        <target>Gyorsabb kapcsolódás! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect to desktop" xml:space="preserve">
@@ -3921,9 +3921,9 @@ snd error text</note>
         <target>%lld üzenet továbbítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve" approved="no">
+      <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve">
         <source>Forwarding server %1$@ failed to connect to destination server %2$@. Please try later.</source>
-        <target state="needs-translation">A(z) %@ továbbítókiszolgáló nem tudott kapcsolódni a(z) %@ célkiszolgálóhoz. Próbálja meg később.</target>
+        <target>A(z) %1$@ továbbítókiszolgáló nem tudott kapcsolódni a(z) %2$@ célkiszolgálóhoz. Próbálja meg később.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Forwarding server address is incompatible with network settings: %@." xml:space="preserve">
@@ -4692,9 +4692,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Elhagyja a csoportot?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Less traffic on mobile networks." xml:space="preserve" approved="no">
+      <trans-unit id="Less traffic on mobile networks." xml:space="preserve">
         <source>Less traffic on mobile networks.</source>
-        <target state="translated">Kevesebb adatforgalom a mobilhálózatokon.</target>
+        <target>Kevesebb adatforgalom a mobilhálózatokon.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Let's talk in SimpleX Chat" xml:space="preserve">
@@ -4751,6 +4751,10 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <source>Live messages</source>
         <target>Élő üzenetek</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Loading profile…" xml:space="preserve">
+        <source>Loading profile…</source>
+        <note>in progress text</note>
       </trans-unit>
       <trans-unit id="Local name" xml:space="preserve">
         <source>Local name</source>
@@ -4947,9 +4951,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Továbbított üzenet</target>
         <note>item status text</note>
       </trans-unit>
-      <trans-unit id="Message instantly once you tap Connect." xml:space="preserve" approved="no">
+      <trans-unit id="Message instantly once you tap Connect." xml:space="preserve">
         <source>Message instantly once you tap Connect.</source>
-        <target state="translated">Az üzenet azonnal megjelenik, amint a kapcsolódás gombra koppint.</target>
+        <target>Az üzenet azonnal megjelenik, amint a kapcsolódás gombra koppint.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message may be delivered later if member becomes active." xml:space="preserve">
@@ -5287,9 +5291,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Új események</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="New group role: Moderator" xml:space="preserve" approved="no">
+      <trans-unit id="New group role: Moderator" xml:space="preserve">
         <source>New group role: Moderator</source>
-        <target state="translated">Új szerepkör: Moderátor</target>
+        <target>Új szerepkör: Moderátor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New in %@" xml:space="preserve">
@@ -5437,9 +5441,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Nincs engedély a hangüzenet rögzítésére</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No private routing session" xml:space="preserve" approved="no">
+      <trans-unit id="No private routing session" xml:space="preserve">
         <source>No private routing session</source>
-        <target state="translated">Nincs privát útválasztási munkamenet</target>
+        <target>Nincs privát útválasztási munkamenet</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="No push server" xml:space="preserve">
@@ -6108,9 +6112,9 @@ Hiba: %@</target>
         <target>Privát útválasztási hiba</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Private routing timeout" xml:space="preserve" approved="no">
+      <trans-unit id="Private routing timeout" xml:space="preserve">
         <source>Private routing timeout</source>
-        <target state="translated">Privát útválasztás időtúllépése</target>
+        <target>Privát útválasztás időtúllépése</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
@@ -6220,9 +6224,9 @@ Engedélyezze a *Hálózat és kiszolgálók* menüben.</target>
         <target>Védje meg a csevegési profiljait egy jelszóval!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protocol background timeout" xml:space="preserve" approved="no">
+      <trans-unit id="Protocol background timeout" xml:space="preserve">
         <source>Protocol background timeout</source>
-        <target state="translated">Protokoll időtúllépése a háttérben</target>
+        <target>Protokoll időtúllépése a háttérben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol timeout" xml:space="preserve">
@@ -6512,9 +6516,9 @@ swipe action</note>
         <target>Eltávolítja a jelmondatot a kulcstartóból?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Removes messages and blocks members." xml:space="preserve" approved="no">
+      <trans-unit id="Removes messages and blocks members." xml:space="preserve">
         <source>Removes messages and blocks members.</source>
-        <target state="translated">Üzenetek eltávolítása és a tagok tiltása.</target>
+        <target>Üzenetek eltávolítása és a tagok tiltása.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Renegotiate" xml:space="preserve">
@@ -6697,9 +6701,9 @@ swipe action</note>
         <target>Feltételek felülvizsgálata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Review group members" xml:space="preserve" approved="no">
+      <trans-unit id="Review group members" xml:space="preserve">
         <source>Review group members</source>
-        <target state="translated">Csoporttagok áttekintése</target>
+        <target>Csoporttagok áttekintése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Review members" xml:space="preserve">
@@ -7093,9 +7097,9 @@ chat item action</note>
         <target>Legfeljebb az utolsó 100 üzenet elküldése az új tagok számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send your private feedback to groups." xml:space="preserve" approved="no">
+      <trans-unit id="Send your private feedback to groups." xml:space="preserve">
         <source>Send your private feedback to groups.</source>
-        <target state="translated">Küldjön privát visszajelzést a csoportoknak.</target>
+        <target>Küldjön privát visszajelzést a csoportoknak.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
@@ -7817,9 +7821,9 @@ report reason</note>
         <target>TCP-kapcsolat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="TCP connection bg timeout" xml:space="preserve" approved="no">
+      <trans-unit id="TCP connection bg timeout" xml:space="preserve">
         <source>TCP connection bg timeout</source>
-        <target state="translated">TCP-kapcsolat időtúllépése a háttérben</target>
+        <target>TCP-kapcsolat időtúllépése a háttérben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="TCP connection timeout" xml:space="preserve">

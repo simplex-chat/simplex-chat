@@ -4298,6 +4298,10 @@ This is your link for group %@!</source>
         <target>ข้อความสด</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Loading profile…" xml:space="preserve">
+        <source>Loading profile…</source>
+        <note>in progress text</note>
+      </trans-unit>
       <trans-unit id="Local name" xml:space="preserve">
         <source>Local name</source>
         <target>ชื่อภายในเครื่องเท่านั้น</target>

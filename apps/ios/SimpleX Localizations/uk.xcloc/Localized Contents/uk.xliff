@@ -1876,14 +1876,14 @@ set passcode view</note>
       <trans-unit id="Connect to yourself?&#10;This is your own SimpleX address!" xml:space="preserve">
         <source>Connect to yourself?
 This is your own SimpleX address!</source>
-        <target>З'єднатися з самим собою? 
+        <target>З'єднатися з самим собою?
 Це ваша власна SimpleX-адреса!</target>
         <note>new chat sheet title</note>
       </trans-unit>
       <trans-unit id="Connect to yourself?&#10;This is your own one-time link!" xml:space="preserve">
         <source>Connect to yourself?
 This is your own one-time link!</source>
-        <target>Підключитися до себе? 
+        <target>Підключитися до себе?
 Це ваше власне одноразове посилання!</target>
         <note>new chat sheet title</note>
       </trans-unit>
@@ -3906,9 +3906,9 @@ snd error text</note>
         <target>Пересилання повідомлень %lld</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve" approved="no">
+      <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve">
         <source>Forwarding server %1$@ failed to connect to destination server %2$@. Please try later.</source>
-        <target state="needs-translation">Серверу переадресації %@ не вдалося з'єднатися з сервером призначення %@. Спробуйте пізніше.</target>
+        <target>Серверу переадресації %1$@ не вдалося з'єднатися з сервером призначення %2$@. Спробуйте пізніше.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Forwarding server address is incompatible with network settings: %@." xml:space="preserve">
@@ -4733,6 +4733,10 @@ This is your link for group %@!</source>
         <source>Live messages</source>
         <target>Живі повідомлення</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Loading profile…" xml:space="preserve">
+        <source>Loading profile…</source>
+        <note>in progress text</note>
       </trans-unit>
       <trans-unit id="Local name" xml:space="preserve">
         <source>Local name</source>

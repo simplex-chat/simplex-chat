@@ -696,7 +696,7 @@
     <string name="whats_new_read_more">Daha fazla bilgi edinin</string>
     <string name="v4_3_voice_messages">Sesli mesajlar</string>
     <string name="v5_1_better_messages_descr">- 5 dakikaya kadar sesli mesajlar.
-\n- özel mesaj kaybolma süreleri ayarlama 
+\n- özel mesaj kaybolma süreleri ayarlama
 \n- mesag düzenleme geçmişi.</string>
     <string name="custom_time_unit_weeks">hafta</string>
     <string name="contact_already_exists">Kişi zaten mevcut</string>
@@ -2444,7 +2444,7 @@
     <string name="accept_contact_request">İletişim isteğini kabul et</string>
     <string name="compose_view_add_message">Mesaj ekle</string>
     <string name="context_user_picker_cant_change_profile_alert_title">Profil değiştirilemiyor</string>
-    <string name="e2ee_info_e2ee"><![CDATA[Mesajlar <b>uçtan uca şifreleme</b> ile korunmaktadır</b>.]]></string>
+    <string name="e2ee_info_e2ee"><![CDATA[Mesajlar <b>uçtan uca şifreleme</b> ile korunmaktadır.]]></string>
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[İsteğiniz kabul edildikten <b>sonra mesaj gönderebileceksiniz</b>.]]></string>
     <string name="v6_4_support_chat">Yöneticilerle sohbet edin</string>
     <string name="v6_4_review_members_descr">Üyeler katılmadan önce onlarla sohbet edin.</string>

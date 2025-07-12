@@ -1210,10 +1210,10 @@ set passcode view */
 "Connect to your friends faster." = "Швидше спілкуйтеся з друзями.";
 
 /* new chat sheet title */
-"Connect to yourself?\nThis is your own one-time link!" = "Підключитися до себе? \nЦе ваше власне одноразове посилання!";
+"Connect to yourself?\nThis is your own one-time link!" = "Підключитися до себе?\nЦе ваше власне одноразове посилання!";
 
 /* new chat sheet title */
-"Connect to yourself?\nThis is your own SimpleX address!" = "З'єднатися з самим собою? \nЦе ваша власна SimpleX-адреса!";
+"Connect to yourself?\nThis is your own SimpleX address!" = "З'єднатися з самим собою?\nЦе ваша власна SimpleX-адреса!";
 
 /* new chat sheet title */
 "Connect via contact address" = "Підключіться за контактною адресою";
@@ -2543,8 +2543,8 @@ snd error text */
 /* No comment provided by engineer. */
 "Forwarding %lld messages" = "Пересилання повідомлень %lld";
 
-/* No comment provided by engineer. */
-"Forwarding server %@ failed to connect to destination server %@. Please try later." = "Серверу переадресації %@ не вдалося з'єднатися з сервером призначення %@. Спробуйте пізніше.";
+/* alert message */
+"Forwarding server %@ failed to connect to destination server %@. Please try later." = "Серверу переадресації %1$@ не вдалося з'єднатися з сервером призначення %2$@. Спробуйте пізніше.";
 
 /* No comment provided by engineer. */
 "Forwarding server address is incompatible with network settings: %@." = "Адреса сервера переадресації несумісна з налаштуваннями мережі: %@.";

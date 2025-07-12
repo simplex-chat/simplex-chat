@@ -2324,8 +2324,8 @@ snd error text */
 /* No comment provided by engineer. */
 "Forwarding %lld messages" = "Przekazywanie %lld wiadomości";
 
-/* No comment provided by engineer. */
-"Forwarding server %@ failed to connect to destination server %@. Please try later." = "Serwer przekazujący %@ nie mógł połączyć się z serwerem docelowym %@. Spróbuj ponownie później.";
+/* alert message */
+"Forwarding server %@ failed to connect to destination server %@. Please try later." = "Serwer przekazujący %1$@ nie mógł połączyć się z serwerem docelowym %2$@. Spróbuj ponownie później.";
 
 /* No comment provided by engineer. */
 "Forwarding server address is incompatible with network settings: %@." = "Adres serwera przekierowującego jest niekompatybilny z ustawieniami sieciowymi: %@.";

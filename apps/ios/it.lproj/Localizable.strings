@@ -1081,6 +1081,9 @@ set passcode view */
 "Chat with member" = "Chatta con il membro";
 
 /* No comment provided by engineer. */
+"Chat with members before they join." = "Chatta con i membri prima che si uniscano.";
+
+/* No comment provided by engineer. */
 "Chats" = "Chat";
 
 /* No comment provided by engineer. */
@@ -1226,6 +1229,9 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Connect automatically" = "Connetti automaticamente";
+
+/* No comment provided by engineer. */
+"Connect faster! 🚀" = "Connettiti più velocemente! 🚀";
 
 /* No comment provided by engineer. */
 "Connect to desktop" = "Connetti al desktop";
@@ -2606,8 +2612,8 @@ snd error text */
 /* No comment provided by engineer. */
 "Forwarding %lld messages" = "Inoltro di %lld messaggi";
 
-/* No comment provided by engineer. */
-"Forwarding server %@ failed to connect to destination server %@. Please try later." = "Il server di inoltro %@ non è riuscito a connettersi al server di destinazione %@. Riprova più tardi.";
+/* alert message */
+"Forwarding server %@ failed to connect to destination server %@. Please try later." = "Il server di inoltro %1$@ non è riuscito a connettersi al server di destinazione %2$@. Riprova più tardi.";
 
 /* No comment provided by engineer. */
 "Forwarding server address is incompatible with network settings: %@." = "L'indirizzo del server di inoltro è incompatibile con le impostazioni di rete: %@.";
@@ -3125,6 +3131,9 @@ snd error text */
 /* rcv group event chat item */
 "left" = "è uscito/a";
 
+/* No comment provided by engineer. */
+"Less traffic on mobile networks." = "Meno traffico sulle reti mobili.";
+
 /* email subject */
 "Let's talk in SimpleX Chat" = "Parliamo in SimpleX Chat";
 
@@ -3216,7 +3225,7 @@ snd error text */
 "member %@ changed to %@" = "il membro %1$@ è diventato %2$@";
 
 /* No comment provided by engineer. */
-"Member admission" = "Ammissione del membro";
+"Member admission" = "Ammissione dei membri";
 
 /* rcv group event chat item */
 "member connected" = "si è connesso/a";
@@ -3295,6 +3304,9 @@ snd error text */
 
 /* item status text */
 "Message forwarded" = "Messaggio inoltrato";
+
+/* No comment provided by engineer. */
+"Message instantly once you tap Connect." = "Parla immediatamente appena tocchi \"Connetti\".";
 
 /* item status description */
 "Message may be delivered later if member becomes active." = "Il messaggio può essere consegnato più tardi se il membro diventa attivo.";
@@ -3513,6 +3525,9 @@ snd error text */
 "New events" = "Nuovi eventi";
 
 /* No comment provided by engineer. */
+"New group role: Moderator" = "Nuovo ruolo nei gruppi: Moderatore";
+
+/* No comment provided by engineer. */
 "New in %@" = "Novità nella %@";
 
 /* No comment provided by engineer. */
@@ -3616,6 +3631,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "No permission to record voice message" = "Nessuna autorizzazione per registrare messaggi vocali";
+
+/* alert title */
+"No private routing session" = "Nessuna sessione di instradamento privato";
 
 /* No comment provided by engineer. */
 "No push server" = "Locale";
@@ -4057,6 +4075,9 @@ new chat action */
 /* alert title */
 "Private routing error" = "Errore di instradamento privato";
 
+/* alert title */
+"Private routing timeout" = "Scadenza dell'instradamento privato";
+
 /* No comment provided by engineer. */
 "Profile and server connections" = "Profilo e connessioni al server";
 
@@ -4119,6 +4140,9 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "Proteggi il tuo indirizzo IP dai relay di messaggistica scelti dai tuoi contatti.\nAttivalo nelle impostazioni *Rete e server*.";
+
+/* No comment provided by engineer. */
+"Protocol background timeout" = "Scadenza del protocollo in sec. piano";
 
 /* No comment provided by engineer. */
 "Protocol timeout" = "Scadenza del protocollo";
@@ -4327,6 +4351,9 @@ swipe action */
 "removed you" = "ti ha rimosso/a";
 
 /* No comment provided by engineer. */
+"Removes messages and blocks members." = "Rimuove i messaggi e blocca i membri.";
+
+/* No comment provided by engineer. */
 "Renegotiate" = "Rinegoziare";
 
 /* No comment provided by engineer. */
@@ -4445,6 +4472,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Review conditions" = "Leggi le condizioni";
+
+/* No comment provided by engineer. */
+"Review group members" = "Revisiona i membri del gruppo";
 
 /* admission stage */
 "Review members" = "Revisiona i membri";
@@ -4699,6 +4729,9 @@ chat item action */
 /* No comment provided by engineer. */
 "Send up to 100 last messages to new members." = "Invia fino a 100 ultimi messaggi ai nuovi membri.";
 
+/* No comment provided by engineer. */
+"Send your private feedback to groups." = "Invia i tuoi commenti privati ai gruppi.";
+
 /* alert message */
 "Sender cancelled file transfer." = "Il mittente ha annullato il trasferimento del file.";
 
@@ -4838,7 +4871,7 @@ chat item action */
 "Set it instead of system authentication." = "Impostalo al posto dell'autenticazione di sistema.";
 
 /* No comment provided by engineer. */
-"Set member admission" = "Imposta l'ammissione del membro";
+"Set member admission" = "Imposta l'ammissione dei membri";
 
 /* No comment provided by engineer. */
 "Set message expiration in chats." = "Imposta la scadenza dei messaggi nelle chat.";
@@ -5183,6 +5216,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "TCP connection" = "Connessione TCP";
+
+/* No comment provided by engineer. */
+"TCP connection bg timeout" = "Scadenza conness. TCP in sec. piano";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "Scadenza connessione TCP";
