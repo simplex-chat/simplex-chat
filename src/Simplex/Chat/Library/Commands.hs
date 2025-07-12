@@ -691,7 +691,7 @@ processChatCommand vr nm = \case
           assertDeletable items
           assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
           let msgIds = itemsMsgIds items
-              events = L.nonEmpty $ map (\msgId -> XMsgDel msgId Nothing Nothing) msgIds
+              events = L.nonEmpty $ map (\msgId -> XMsgDel msgId Nothing $ toMsgScope gInfo <$> chatScopeInfo) msgIds
           mapM_ (sendGroupMessages user gInfo Nothing recipients) events
           delGroupChatItems user gInfo chatScopeInfo items False
       pure $ CRChatItemsDeleted user deletions True False
