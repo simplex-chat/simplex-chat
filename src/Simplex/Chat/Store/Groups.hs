@@ -106,7 +106,7 @@ module Simplex.Chat.Store.Groups
     getForwardIntroducedModerators,
     getForwardInvitedMembers,
     getForwardInvitedModerators,
-    checkForwardToScopeMember,
+    getForwardScopeMember,
     createIntroReMember,
     createIntroToMemberContact,
     saveMemberInvitation,
@@ -185,7 +185,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff, pattern PQSupportOff)
 import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
-import Simplex.Messaging.Util (eitherToMaybe, firstRow', ($>>=), (<$$>))
+import Simplex.Messaging.Util (eitherToMaybe, firstRow', ($>>), ($>>=), (<$$>))
 import Simplex.Messaging.Version
 import UnliftIO.STM
 #if defined(dbPostgres)
@@ -1790,10 +1790,10 @@ getForwardInvitedModerators db vr user@User {userContactId} forwardMember = do
         |]
         (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected, userContactId, GRModerator, GRAdmin, GROwner)
 
-checkForwardToScopeMember :: DB.Connection -> GroupMember -> GroupMemberId -> IO Bool
-checkForwardToScopeMember db GroupMember {groupMemberId = sendingGMId} scopeGMId = do
+getForwardScopeMember :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> GroupMemberId -> IO (Maybe GroupMember)
+getForwardScopeMember db vr user GroupMember {groupMemberId = sendingGMId} scopeGMId = do
   (introExists_ :: Maybe Int64) <-
-    maybeFirstRow fromOnly $
+    liftIO $ maybeFirstRow fromOnly $
       DB.query
         db
         [sql|
@@ -1808,7 +1808,7 @@ checkForwardToScopeMember db GroupMember {groupMemberId = sendingGMId} scopeGMId
           LIMIT 1
         |]
         (sendingGMId, scopeGMId, scopeGMId, sendingGMId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
-  pure $ isJust introExists_
+  pure introExists_ $>> (eitherToMaybe <$> runExceptT (getGroupMemberById db vr user scopeGMId))
 
 createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> VersionChat -> MemberInfo -> Maybe MemberRestrictions -> (CommandId, ConnId) -> SubscriptionMode -> ExceptT StoreError IO GroupMember
 createIntroReMember

@@ -490,8 +490,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 XMsgNew mc -> newContentMessage ct'' mc msg msgMeta
                 XMsgFileDescr sharedMsgId fileDescr -> messageFileDescription ct'' sharedMsgId fileDescr
                 XMsgUpdate sharedMsgId mContent _ ttl live _msgScope -> messageUpdate ct'' sharedMsgId mContent msg msgMeta ttl live
-                XMsgDel sharedMsgId _ -> messageDelete ct'' sharedMsgId msg msgMeta
-                XMsgReact sharedMsgId _ reaction add -> directMsgReaction ct'' sharedMsgId reaction add msg msgMeta
+                XMsgDel sharedMsgId _ _ -> messageDelete ct'' sharedMsgId msg msgMeta
+                XMsgReact sharedMsgId _ _ reaction add -> directMsgReaction ct'' sharedMsgId reaction add msg msgMeta
                 -- TODO discontinue XFile
                 XFile fInv -> processFileInvitation' ct'' fInv msg msgMeta
                 XFileCancel sharedMsgId -> xFileCancel ct'' sharedMsgId
@@ -934,8 +934,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               -- file description is always allowed, to allow sending files to support scope
               XMsgFileDescr sharedMsgId fileDescr -> groupMessageFileDescription gInfo' m'' sharedMsgId fileDescr
               XMsgUpdate sharedMsgId mContent mentions ttl live msgScope -> memberCanSend m'' msgScope $ groupMessageUpdate gInfo' m'' sharedMsgId mContent mentions msgScope msg brokerTs ttl live
-              XMsgDel sharedMsgId memberId -> groupMessageDelete gInfo' m'' sharedMsgId memberId msg brokerTs
-              XMsgReact sharedMsgId (Just memberId) reaction add -> groupMsgReaction gInfo' m'' sharedMsgId memberId reaction add msg brokerTs
+              XMsgDel sharedMsgId memberId scope_ -> groupMessageDelete gInfo' m'' sharedMsgId memberId scope_ msg brokerTs
+              XMsgReact sharedMsgId (Just memberId) scope_ reaction add -> groupMsgReaction gInfo' m'' sharedMsgId memberId scope_ reaction add msg brokerTs
               -- TODO discontinue XFile
               XFile fInv -> Nothing <$ processGroupFileInvitation' gInfo' m'' fInv msg brokerTs
               XFileCancel sharedMsgId -> xFileCancelGroup gInfo' m'' sharedMsgId
@@ -1011,15 +1011,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         && msgsForwardedToMember fwdMsgs mem
                       modMs' = filter moderatorFilter modMs
                   case scopeGMId_ of
-                    Just scopeGMId | scopeGMId /= groupMemberId' m -> do
-                      shouldFwdToScopeMem <- withStore' $ \db -> checkForwardToScopeMember db m scopeGMId
-                      if shouldFwdToScopeMem
-                        then do
-                          scopeMem <- withFastStore $ \db -> getGroupMemberById db vr user scopeGMId
-                          if msgsForwardedToMember fwdMsgs scopeMem
-                            then pure $ scopeMem : modMs'
-                            else pure modMs'
-                        else pure modMs'
+                    Just scopeGMId | scopeGMId /= groupMemberId' m ->
+                      withStore' (\db -> getForwardScopeMember db vr user m scopeGMId) >>= \case
+                        Just scopeMem | msgsForwardedToMember fwdMsgs scopeMem -> pure $ scopeMem : modMs'
+                        _ -> pure modMs'
                     _ -> pure modMs'
                 where
                   getAllIntroducedAndInvited = do
@@ -1843,17 +1838,26 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               else pure Nothing
           mapM_ toView cEvt_
 
-    groupMsgReaction :: GroupInfo -> GroupMember -> SharedMsgId -> MemberId -> MsgReaction -> Bool -> RcvMessage -> UTCTime -> CM (Maybe GroupForwardScope)
-    groupMsgReaction g m sharedMsgId itemMemberId reaction add RcvMessage {msgId} brokerTs
+    groupMsgReaction :: GroupInfo -> GroupMember -> SharedMsgId -> MemberId -> Maybe MsgScope -> MsgReaction -> Bool -> RcvMessage -> UTCTime -> CM (Maybe GroupForwardScope)
+    groupMsgReaction g m@GroupMember {memberRole} sharedMsgId itemMemberId scope_ reaction add RcvMessage {msgId} brokerTs
       | groupFeatureAllowed SGFReactions g = do
           rs <- withStore' $ \db -> getGroupReactions db g m itemMemberId sharedMsgId False
-          if (reactionAllowed add reaction rs)
+          if reactionAllowed add reaction rs
             then
-              updateChatItemReaction `catchCINotFound` \_ -> do
-                withStore' $ \db -> setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
-                -- possible improvement is to send reaction scope in protocol message,
-                -- it would allow to decide its forwarding scope in case item is not found
-                pure $ Just GFSMain
+              updateChatItemReaction `catchCINotFound` \_ -> case scope_ of
+                Just (MSMember scopeMemberId)
+                  | memberRole >= GRModerator || scopeMemberId == memberId' m ->
+                      withStore $ \db -> do
+                        liftIO $ setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
+                        scopeGMId_ <-
+                          if memberRole >= GRModerator
+                            then Just . groupMemberId' <$> getGroupMemberByMemberId db vr user g scopeMemberId
+                            else pure Nothing
+                        pure $ Just $ GFSMemberSupport scopeGMId_
+                  | otherwise -> pure Nothing
+                Nothing -> do
+                  withStore' $ \db -> setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
+                  pure $ Just GFSAll
             else pure Nothing
       | otherwise = pure Nothing
       where
@@ -1994,8 +1998,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 else messageError "x.msg.update: group member attempted to update a message of another member" $> Nothing
             _ -> messageError "x.msg.update: group member attempted invalid message update" $> Nothing
 
-    groupMessageDelete :: GroupInfo -> GroupMember -> SharedMsgId -> Maybe MemberId -> RcvMessage -> UTCTime -> CM (Maybe GroupForwardScope)
-    groupMessageDelete gInfo@GroupInfo {membership} m@GroupMember {memberId, memberRole = senderRole} sharedMsgId sndMemberId_ RcvMessage {msgId} brokerTs = do
+    groupMessageDelete :: GroupInfo -> GroupMember -> SharedMsgId -> Maybe MemberId -> Maybe MsgScope -> RcvMessage -> UTCTime -> CM (Maybe GroupForwardScope)
+    groupMessageDelete gInfo@GroupInfo {membership} m@GroupMember {memberId, memberRole = senderRole} sharedMsgId sndMemberId_ scope_ RcvMessage {msgId} brokerTs = do
       let msgMemberId = fromMaybe memberId sndMemberId_
       withStore' (\db -> runExceptT $ getGroupMemberCIBySharedMsgId db user gInfo msgMemberId sharedMsgId) >>= \case
         Right cci@(CChatItem _ ci@ChatItem {chatDir}) -> case chatDir of
@@ -2019,11 +2023,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           | senderRole < GRModerator -> do
               messageError $ "x.msg.del: message not found, message of another member with insufficient member permissions, " <> tshow e
               pure Nothing
-          | otherwise -> do
-              withStore' $ \db -> createCIModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
-              -- possible improvement is to send deletion scope in protocol message,
-              -- it would allow to decide its forwarding scope in case item is not found
-              pure $ Just GFSMain
+          | otherwise -> case scope_ of
+              Just (MSMember scopeMemberId) ->
+                withStore $ \db -> do
+                  liftIO $ createCIModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
+                  scopeMem <- getGroupMemberByMemberId db vr user gInfo scopeMemberId
+                  pure $ Just $ GFSMemberSupport $ Just $ groupMemberId' scopeMem
+              Nothing -> do
+                withStore' $ \db -> createCIModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
+                pure $ Just GFSAll
       where
         moderate :: GroupMember -> CChatItem 'CTGroup -> CM (Maybe GroupForwardScope)
         moderate mem cci = case sndMemberId_ of
@@ -3118,8 +3126,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             -- file description is always allowed, to allow sending files to support scope
             XMsgFileDescr sharedMsgId fileDescr -> void $ groupMessageFileDescription gInfo author sharedMsgId fileDescr
             XMsgUpdate sharedMsgId mContent mentions ttl live msgScope -> void $ memberCanSend author msgScope $ groupMessageUpdate gInfo author sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live
-            XMsgDel sharedMsgId memId -> void $ groupMessageDelete gInfo author sharedMsgId memId rcvMsg msgTs
-            XMsgReact sharedMsgId (Just memId) reaction add -> void $ groupMsgReaction gInfo author sharedMsgId memId reaction add rcvMsg msgTs
+            XMsgDel sharedMsgId memId scope_ -> void $ groupMessageDelete gInfo author sharedMsgId memId scope_ rcvMsg msgTs
+            XMsgReact sharedMsgId (Just memId) scope_ reaction add -> void $ groupMsgReaction gInfo author sharedMsgId memId scope_ reaction add rcvMsg msgTs
             XFileCancel sharedMsgId -> void $ xFileCancelGroup gInfo author sharedMsgId
             XInfo p -> void $ xInfoMember gInfo author p msgTs
             XGrpMemNew memInfo msgScope -> void $ xGrpMemNew gInfo author memInfo msgScope rcvMsg msgTs
