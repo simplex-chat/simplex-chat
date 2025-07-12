@@ -2408,8 +2408,7 @@
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[Només podreu enviar missatges <b>després que la sol·licitud sigui acceptada</b>.]]></string>
     <string name="compose_view_connect">Connectar</string>
     <string name="contact_should_accept">el contacte hauria d\'acceptar…</string>
-    <string name="error_changing_contact_user">Error en canviar el contacte</string>
-    <string name="error_changing_group_user">Error en canviar el compte del grup</string>
+    <string name="error_changing_user">Error en canviar el perfil</string>
     <string name="error_preparing_contact">Error en preparar el contacte</string>
     <string name="error_preparing_group">Error en preparar el grup</string>
     <string name="error_rejecting_contact_request">Error en rebutjar la sol·licitud de contacte</string>
@@ -2434,4 +2433,17 @@
     <string name="context_user_picker_cant_change_profile_alert_message">Per utilitzar un altre perfil després d\'un intent de connexió, suprimiu el xat i torneu a utilitzar l\'enllaç.</string>
     <string name="address_welcome_message">Missatge de benvinguda</string>
     <string name="context_user_picker_your_profile">El vostre perfil</string>
+    <string name="v6_4_support_chat">Xatejar amb l\'administració</string>
+    <string name="v6_4_review_members_descr">Xatejar amb membres abans que s\'uneixin.</string>
+    <string name="v6_4_connect_faster">Connexió més ràpida! 🚀</string>
+    <string name="v6_4_message_delivery_descr">Menys trànsit a les xarxes mòbils.</string>
+    <string name="v6_4_connect_faster_descr">Enviar missatges a l\'instant en tocar Connectar.</string>
+    <string name="v6_4_role_moderator">Nou rol de grup: Moderador(a)</string>
+    <string name="private_routing_no_session">Sense sessió d\'encaminament privada</string>
+    <string name="private_routing_timeout">Temps d\'espera d\'encaminament privat</string>
+    <string name="network_option_protocol_timeout_background">Temps d\'espera del protocol en segon pla</string>
+    <string name="v6_4_role_moderator_descr">Elimina missatges i bloca membres.</string>
+    <string name="v6_4_review_members">Revisió de membres del grup</string>
+    <string name="v6_4_support_chat_descr">Envieu comentaris privats a grups.</string>
+    <string name="network_option_tcp_connection_timeout_background">Temps d\'espera de la connexió TCP en segon pla</string>
 </resources>

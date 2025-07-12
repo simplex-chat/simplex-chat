@@ -2426,8 +2426,7 @@
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[لن تتمكن من إرسال الرسائل <b>إلا بعد قبول طلبك</b>.]]></string>
     <string name="compose_view_connect">اتصل</string>
     <string name="contact_should_accept">يجب أن يقبل جهة الاتصال…</string>
-    <string name="error_changing_contact_user">خطأ في تغيير مستخدم جهة الاتصال</string>
-    <string name="error_changing_group_user">خطأ في تغيير مستخدم المجموعة</string>
+    <string name="error_changing_user">خطأ في تغيير مستخدم جهة الاتصال</string>
     <string name="error_preparing_contact">خطأ في إعداد جهة الاتصال</string>
     <string name="error_preparing_group">خطأ في إعداد المجموعة</string>
     <string name="error_rejecting_contact_request">خطأ في رفض طلب جهة الاتصال</string>
@@ -2453,4 +2452,18 @@
     <string name="context_user_picker_your_profile">ملف تعريفك</string>
     <string name="context_user_picker_cant_change_profile_alert_title">لا يمكن تغيير ملف التعريف</string>
     <string name="context_user_picker_cant_change_profile_alert_message">لاستخدام ملف تعريف آخر بعد محاولة الاتصال، احذف الدردشة واستخدم الرابط مرة أخرى.</string>
+    <string name="v6_4_support_chat">الدردشة مع الالمُدراء</string>
+    <string name="v6_4_review_members_descr">الدردشة مع الأعضاء قبل انضمامهم.</string>
+    <string name="v6_4_connect_faster">اتصل بشكل أسرع! 🚀</string>
+    <string name="v6_4_message_delivery_descr">تقليل حركة البيانات على شبكات الجوّال.</string>
+    <string name="v6_4_connect_faster_descr">راسل فورًا بمجرد النقر على \"اتصل\".</string>
+    <string name="v6_4_role_moderator">دور جديد للمجموعة: مشرف</string>
+    <string name="private_routing_no_session">لا توجد جلسة توجيه خاصة</string>
+    <string name="private_routing_timeout">انتهت مهلة التوجيه الخاص</string>
+    <string name="network_option_protocol_timeout_background">انتهت مهلة خلفية البروتوكول</string>
+    <string name="v6_4_role_moderator_descr">يزيل الرسائل ويحظر الأعضاء.</string>
+    <string name="v6_4_review_members">مراجعة أعضاء المجموعة</string>
+    <string name="v6_4_support_chat_descr">أرسل ملاحظاتك الخاصة إلى المجموعات.</string>
+    <string name="network_option_tcp_connection_timeout_background">مهلة اتصال TCP في الخلفية</string>
+    <string name="loading_profile">جارِ تحميل ملف التعريف…</string>
 </resources>

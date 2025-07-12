@@ -1081,6 +1081,9 @@ set passcode view */
 "Chat with member" = "Csevegés a taggal";
 
 /* No comment provided by engineer. */
+"Chat with members before they join." = "Csevegés a tagokkal mielőtt csatlakoznának.";
+
+/* No comment provided by engineer. */
 "Chats" = "Csevegések";
 
 /* No comment provided by engineer. */
@@ -1226,6 +1229,9 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Connect automatically" = "Kapcsolódás automatikusan";
+
+/* No comment provided by engineer. */
+"Connect faster! 🚀" = "Gyorsabb kapcsolódás! 🚀";
 
 /* No comment provided by engineer. */
 "Connect to desktop" = "Társítás számítógéppel";
@@ -2170,9 +2176,6 @@ chat item action */
 "Error accepting member" = "Hiba a tag befogadásakor";
 
 /* No comment provided by engineer. */
-"Error adding address short link" = "Hiba a rövid címhivatkozás hozzáadásakor";
-
-/* No comment provided by engineer. */
 "Error adding member(s)" = "Hiba történt a tag(ok) hozzáadásakor";
 
 /* alert title */
@@ -2290,10 +2293,7 @@ chat item action */
 "Error opening chat" = "Hiba történt a csevegés megnyitásakor";
 
 /* No comment provided by engineer. */
-"Error preparing contact" = "Hiba a kapcsolat előkészítésekor";
-
-/* No comment provided by engineer. */
-"Error preparing group" = "Hiba a csoport előkészítésekor";
+"Error opening group" = "Hiba a csoport előkészítésekor";
 
 /* alert title */
 "Error receiving file" = "Hiba történt a fájl fogadásakor";
@@ -2606,8 +2606,8 @@ snd error text */
 /* No comment provided by engineer. */
 "Forwarding %lld messages" = "%lld üzenet továbbítása";
 
-/* No comment provided by engineer. */
-"Forwarding server %@ failed to connect to destination server %@. Please try later." = "A(z) %@ továbbítókiszolgáló nem tudott kapcsolódni a(z) %@ célkiszolgálóhoz. Próbálja meg később.";
+/* alert message */
+"Forwarding server %@ failed to connect to destination server %@. Please try later." = "A(z) %1$@ továbbítókiszolgáló nem tudott kapcsolódni a(z) %2$@ célkiszolgálóhoz. Próbálja meg később.";
 
 /* No comment provided by engineer. */
 "Forwarding server address is incompatible with network settings: %@." = "A továbbítókiszolgáló címe nem kompatibilis a hálózati beállításokkal: %@.";
@@ -3125,6 +3125,9 @@ snd error text */
 /* rcv group event chat item */
 "left" = "elhagyta a csoportot";
 
+/* No comment provided by engineer. */
+"Less traffic on mobile networks." = "Kevesebb adatforgalom a mobilhálózatokon.";
+
 /* email subject */
 "Let's talk in SimpleX Chat" = "Beszélgessünk a SimpleX Chatben";
 
@@ -3295,6 +3298,9 @@ snd error text */
 
 /* item status text */
 "Message forwarded" = "Továbbított üzenet";
+
+/* No comment provided by engineer. */
+"Message instantly once you tap Connect." = "Az üzenet azonnal megjelenik, amint a kapcsolódás gombra koppint.";
 
 /* item status description */
 "Message may be delivered later if member becomes active." = "Az üzenet később is kézbesíthető, ha a tag aktívvá válik.";
@@ -3513,6 +3519,9 @@ snd error text */
 "New events" = "Új események";
 
 /* No comment provided by engineer. */
+"New group role: Moderator" = "Új szerepkör: Moderátor";
+
+/* No comment provided by engineer. */
 "New in %@" = "Újdonságok a(z) %@ verzióban";
 
 /* No comment provided by engineer. */
@@ -3616,6 +3625,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "No permission to record voice message" = "Nincs engedély a hangüzenet rögzítésére";
+
+/* alert title */
+"No private routing session" = "Nincs privát útválasztási munkamenet";
 
 /* No comment provided by engineer. */
 "No push server" = "Helyi";
@@ -4057,6 +4069,9 @@ new chat action */
 /* alert title */
 "Private routing error" = "Privát útválasztási hiba";
 
+/* alert title */
+"Private routing timeout" = "Privát útválasztás időtúllépése";
+
 /* No comment provided by engineer. */
 "Profile and server connections" = "Profil és kiszolgálókapcsolatok";
 
@@ -4076,7 +4091,7 @@ new chat action */
 "Profile update will be sent to your contacts." = "A profilfrissítés el lesz küldve a partnerei számára.";
 
 /* alert message */
-"Profile will be shared via the address link." = "A profil meg lesz osztva a címhivatkozáson keresztül.";
+"Profile will be shared with the address." = "A profil meg lesz osztva a címhivatkozáson keresztül.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "A hívások kezdeményezése le van tiltva.";
@@ -4119,6 +4134,9 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "Védje az IP-címét a partnerei által kiválasztott üzenetváltási továbbítókiszolgálókkal szemben.\nEngedélyezze a *Hálózat és kiszolgálók* menüben.";
+
+/* No comment provided by engineer. */
+"Protocol background timeout" = "Protokoll időtúllépése a háttérben";
 
 /* No comment provided by engineer. */
 "Protocol timeout" = "Protokoll időtúllépése";
@@ -4327,6 +4345,9 @@ swipe action */
 "removed you" = "eltávolította Önt";
 
 /* No comment provided by engineer. */
+"Removes messages and blocks members." = "Üzenetek eltávolítása és a tagok tiltása.";
+
+/* No comment provided by engineer. */
 "Renegotiate" = "Újraegyeztetés";
 
 /* No comment provided by engineer. */
@@ -4445,6 +4466,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Review conditions" = "Feltételek felülvizsgálata";
+
+/* No comment provided by engineer. */
+"Review group members" = "Csoporttagok áttekintése";
 
 /* admission stage */
 "Review members" = "Tagok áttekintése";
@@ -4699,6 +4723,9 @@ chat item action */
 /* No comment provided by engineer. */
 "Send up to 100 last messages to new members." = "Legfeljebb az utolsó 100 üzenet elküldése az új tagok számára.";
 
+/* No comment provided by engineer. */
+"Send your private feedback to groups." = "Küldjön privát visszajelzést a csoportoknak.";
+
 /* alert message */
 "Sender cancelled file transfer." = "A fájl küldője visszavonta az átvitelt.";
 
@@ -4905,7 +4932,7 @@ chat item action */
 "Share profile" = "Profil megosztása";
 
 /* alert title */
-"Share profile via link" = "Profil megosztása hivatkozáson keresztül";
+"Share profile with address" = "Profil megosztása hivatkozáson keresztül";
 
 /* No comment provided by engineer. */
 "Share SimpleX address on social media." = "SimpleX-cím megosztása a közösségi médiában.";
@@ -5183,6 +5210,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "TCP connection" = "TCP-kapcsolat";
+
+/* No comment provided by engineer. */
+"TCP connection bg timeout" = "TCP-kapcsolat időtúllépése a háttérben";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "TCP-kapcsolat időtúllépése";
@@ -6127,7 +6157,7 @@ report reason */
 "Your chat was moved to %@ but an unexpected error occurred while redirecting you to the profile." = "A csevegés át lett helyezve ide: %@, de egy váratlan hiba történt a profilra való átirányításkor.";
 
 /* No comment provided by engineer. */
-"Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." = "A kapcsolata át lett helyezve ide: %@, de egy váratlan hiba történt a profilra való átirányításkor.";
+"Your connection was moved to %@ but an error happened when switching profile." = "A kapcsolata át lett helyezve ide: %@, de egy váratlan hiba történt a profilra való átirányításkor.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "A partnere a jelenleg megengedett maximális méretű (%@) fájlnál nagyobbat küldött.";

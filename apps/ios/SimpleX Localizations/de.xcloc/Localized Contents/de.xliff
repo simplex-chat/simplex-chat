@@ -1626,6 +1626,7 @@ set passcode view</note>
       </trans-unit>
       <trans-unit id="Chat with members before they join." xml:space="preserve">
         <source>Chat with members before they join.</source>
+        <target>Chat mit Mitgliedern bevor sie beitreten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
@@ -1865,6 +1866,7 @@ set passcode view</note>
       </trans-unit>
       <trans-unit id="Connect faster! 🚀" xml:space="preserve">
         <source>Connect faster! 🚀</source>
+        <target>Schneller miteinander verbinden! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect to desktop" xml:space="preserve">
@@ -3198,11 +3200,6 @@ chat item action</note>
         <target>Fehler beim Übernehmen des Mitglieds</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error adding address short link" xml:space="preserve">
-        <source>Error adding address short link</source>
-        <target>Fehler beim Hinzufügen eines verkürzten Adresslinks</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
         <source>Error adding member(s)</source>
         <target>Fehler beim Hinzufügen von Mitgliedern</target>
@@ -3395,16 +3392,11 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error opening chat" xml:space="preserve">
         <source>Error opening chat</source>
-        <target>Fehler beim Öffnen des Chats</target>
+        <target>Fehler beim Öffnen des Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error preparing contact" xml:space="preserve">
-        <source>Error preparing contact</source>
-        <target>Fehler bei der Kontaktaufnahme</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Error preparing group" xml:space="preserve">
-        <source>Error preparing group</source>
+      <trans-unit id="Error opening group" xml:space="preserve">
+        <source>Error opening group</source>
         <target>Fehler beim Vorbereiten der Gruppe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3921,7 +3913,7 @@ snd error text</note>
       </trans-unit>
       <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve">
         <source>Forwarding server %1$@ failed to connect to destination server %2$@. Please try later.</source>
-        <target>Weiterleitungsserver %@ konnte sich nicht mit dem Zielserver %@ verbinden. Bitte versuchen Sie es später erneut.</target>
+        <target>Weiterleitungsserver %1$@ konnte sich nicht mit dem Zielserver %2$@ verbinden. Bitte versuchen Sie es später erneut.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Forwarding server address is incompatible with network settings: %@." xml:space="preserve">
@@ -4585,7 +4577,7 @@ Weitere Verbesserungen sind bald verfügbar!</target>
       </trans-unit>
       <trans-unit id="Join as %@" xml:space="preserve">
         <source>Join as %@</source>
-        <target>beitreten als %@</target>
+        <target>Als %@ beitreten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Join group" xml:space="preserve">
@@ -4692,6 +4684,7 @@ Das ist Ihr Link für die Gruppe %@!</target>
       </trans-unit>
       <trans-unit id="Less traffic on mobile networks." xml:space="preserve">
         <source>Less traffic on mobile networks.</source>
+        <target>Weniger Datenverkehr in mobilen Netzen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Let's talk in SimpleX Chat" xml:space="preserve">
@@ -4748,6 +4741,10 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <source>Live messages</source>
         <target>Live Nachrichten</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Loading profile…" xml:space="preserve">
+        <source>Loading profile…</source>
+        <note>in progress text</note>
       </trans-unit>
       <trans-unit id="Local name" xml:space="preserve">
         <source>Local name</source>
@@ -4866,7 +4863,7 @@ Das ist Ihr Link für die Gruppe %@!</target>
       </trans-unit>
       <trans-unit id="Member will join the group, accept member?" xml:space="preserve">
         <source>Member will join the group, accept member?</source>
-        <target>Ein Mitglied wird der Gruppe beitreten. Übernehmen?</target>
+        <target>Mitglied wird der Gruppe beitreten. Übernehmen?</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Members can add message reactions." xml:space="preserve">
@@ -4946,6 +4943,7 @@ Das ist Ihr Link für die Gruppe %@!</target>
       </trans-unit>
       <trans-unit id="Message instantly once you tap Connect." xml:space="preserve">
         <source>Message instantly once you tap Connect.</source>
+        <target>Sobald Sie auf Verbinden tippen, erhalten Sie sofort eine Nachricht.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message may be delivered later if member becomes active." xml:space="preserve">
@@ -5285,6 +5283,7 @@ Das ist Ihr Link für die Gruppe %@!</target>
       </trans-unit>
       <trans-unit id="New group role: Moderator" xml:space="preserve">
         <source>New group role: Moderator</source>
+        <target>Neue Gruppen-Rolle: Moderator</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New in %@" xml:space="preserve">
@@ -5434,6 +5433,7 @@ Das ist Ihr Link für die Gruppe %@!</target>
       </trans-unit>
       <trans-unit id="No private routing session" xml:space="preserve">
         <source>No private routing session</source>
+        <target>Keine private Routing-Sitzung</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="No push server" xml:space="preserve">
@@ -5718,12 +5718,12 @@ Dies erfordert die Aktivierung eines VPNs.</target>
       </trans-unit>
       <trans-unit id="Open new chat" xml:space="preserve">
         <source>Open new chat</source>
-        <target>Neuen Chat eröffnen</target>
+        <target>Neuen Chat öffnen</target>
         <note>new chat action</note>
       </trans-unit>
       <trans-unit id="Open new group" xml:space="preserve">
         <source>Open new group</source>
-        <target>Neue Gruppe eröffnen</target>
+        <target>Neue Gruppe öffnen</target>
         <note>new chat action</note>
       </trans-unit>
       <trans-unit id="Open to accept" xml:space="preserve">
@@ -6104,6 +6104,7 @@ Fehler: %@</target>
       </trans-unit>
       <trans-unit id="Private routing timeout" xml:space="preserve">
         <source>Private routing timeout</source>
+        <target>Zeitüberschreitung der privaten Routing-Sitzung</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
@@ -6136,8 +6137,8 @@ Fehler: %@</target>
         <target>Profil-Aktualisierung wird an Ihre Kontakte gesendet.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Profile will be shared via the address link." xml:space="preserve">
-        <source>Profile will be shared via the address link.</source>
+      <trans-unit id="Profile will be shared with the address." xml:space="preserve">
+        <source>Profile will be shared with the address.</source>
         <target>Das Profil wird über den Adress-Link geteilt.</target>
         <note>alert message</note>
       </trans-unit>
@@ -6215,6 +6216,7 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
       </trans-unit>
       <trans-unit id="Protocol background timeout" xml:space="preserve">
         <source>Protocol background timeout</source>
+        <target>Protokoll Hintergrund-Zeitüberschreitung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol timeout" xml:space="preserve">
@@ -6506,6 +6508,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Removes messages and blocks members." xml:space="preserve">
         <source>Removes messages and blocks members.</source>
+        <target>Entfernt Nachrichten und blockiert Mitglieder.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Renegotiate" xml:space="preserve">
@@ -6690,6 +6693,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Review group members" xml:space="preserve">
         <source>Review group members</source>
+        <target>Gruppenmitglieder überprüfen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Review members" xml:space="preserve">
@@ -7085,6 +7089,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Send your private feedback to groups." xml:space="preserve">
         <source>Send your private feedback to groups.</source>
+        <target>Senden Sie Ihr privates Feedback an Gruppen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
@@ -7418,8 +7423,8 @@ chat item action</note>
         <target>Profil teilen</target>
         <note>alert button</note>
       </trans-unit>
-      <trans-unit id="Share profile via link" xml:space="preserve">
-        <source>Share profile via link</source>
+      <trans-unit id="Share profile with address" xml:space="preserve">
+        <source>Share profile with address</source>
         <target>Profil über einen Link teilen</target>
         <note>alert title</note>
       </trans-unit>
@@ -7808,6 +7813,7 @@ report reason</note>
       </trans-unit>
       <trans-unit id="TCP connection bg timeout" xml:space="preserve">
         <source>TCP connection bg timeout</source>
+        <target>TCP-Verbindung Hintergrund-Zeitüberschreitung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="TCP connection timeout" xml:space="preserve">
@@ -9270,8 +9276,8 @@ Verbindungsanfrage wiederholen?</target>
         <target>Ihr Chat wurde nach %@ verschoben, aber es ist ein unerwarteter Fehler aufgetreten, als Sie zum Profil weitergeleitet wurden.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." xml:space="preserve">
-        <source>Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile.</source>
+      <trans-unit id="Your connection was moved to %@ but an error happened when switching profile." xml:space="preserve">
+        <source>Your connection was moved to %@ but an error happened when switching profile.</source>
         <target>Ihre Verbindung wurde auf %@ verschoben. Während Sie auf das Profil weitergeleitet wurden trat aber ein unerwarteter Fehler auf.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -9839,7 +9845,7 @@ pref value</note>
       </trans-unit>
       <trans-unit id="group is deleted" xml:space="preserve">
         <source>group is deleted</source>
-        <target>Gruppe wird gelöscht</target>
+        <target>Gruppe wurde gelöscht</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="group profile updated" xml:space="preserve">
@@ -10147,7 +10153,7 @@ time to disappear</note>
       </trans-unit>
       <trans-unit id="removed from group" xml:space="preserve">
         <source>removed from group</source>
-        <target>Von der Gruppe entfernt</target>
+        <target>Aus der Gruppe entfernt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="removed profile picture" xml:space="preserve">

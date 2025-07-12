@@ -2507,8 +2507,8 @@ snd error text */
 /* No comment provided by engineer. */
 "Forwarding %lld messages" = "Transfert des %lld messages";
 
-/* No comment provided by engineer. */
-"Forwarding server %@ failed to connect to destination server %@. Please try later." = "Le serveur de redirection %@ n'a pas réussi à se connecter au serveur de destination %@. Veuillez réessayer plus tard.";
+/* alert message */
+"Forwarding server %@ failed to connect to destination server %@. Please try later." = "Le serveur de redirection %1$@ n'a pas réussi à se connecter au serveur de destination %2$@. Veuillez réessayer plus tard.";
 
 /* No comment provided by engineer. */
 "Forwarding server address is incompatible with network settings: %@." = "L'adresse du serveur de redirection est incompatible avec les paramètres du réseau : %@.";
@@ -5667,7 +5667,7 @@ chat item action */
 "Your chat profiles" = "Vos profils de chat";
 
 /* No comment provided by engineer. */
-"Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." = "Votre connexion a été déplacée vers %@ mais une erreur inattendue s'est produite lors de la redirection vers le profil.";
+"Your connection was moved to %@ but an error happened when switching profile." = "Votre connexion a été déplacée vers %@ mais une erreur inattendue s'est produite lors de la redirection vers le profil.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Votre contact a envoyé un fichier plus grand que la taille maximale supportée actuellement(%@).";

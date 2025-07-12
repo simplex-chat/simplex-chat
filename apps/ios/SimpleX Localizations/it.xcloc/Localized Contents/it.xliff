@@ -1626,6 +1626,7 @@ set passcode view</note>
       </trans-unit>
       <trans-unit id="Chat with members before they join." xml:space="preserve">
         <source>Chat with members before they join.</source>
+        <target>Chatta con i membri prima che si uniscano.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
@@ -1865,6 +1866,7 @@ set passcode view</note>
       </trans-unit>
       <trans-unit id="Connect faster! 🚀" xml:space="preserve">
         <source>Connect faster! 🚀</source>
+        <target>Connettiti più velocemente! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect to desktop" xml:space="preserve">
@@ -3198,11 +3200,6 @@ chat item action</note>
         <target>Errore di accettazione del membro</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error adding address short link" xml:space="preserve">
-        <source>Error adding address short link</source>
-        <target>Errore di aggiunta del link breve dell'indirizzo</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
         <source>Error adding member(s)</source>
         <target>Errore di aggiunta membro/i</target>
@@ -3398,13 +3395,8 @@ chat item action</note>
         <target>Errore di apertura della chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error preparing contact" xml:space="preserve">
-        <source>Error preparing contact</source>
-        <target>Errore di preparazione del contatto</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Error preparing group" xml:space="preserve">
-        <source>Error preparing group</source>
+      <trans-unit id="Error opening group" xml:space="preserve">
+        <source>Error opening group</source>
         <target>Errore di preparazione del gruppo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3921,7 +3913,7 @@ snd error text</note>
       </trans-unit>
       <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve">
         <source>Forwarding server %1$@ failed to connect to destination server %2$@. Please try later.</source>
-        <target>Il server di inoltro %@ non è riuscito a connettersi al server di destinazione %@. Riprova più tardi.</target>
+        <target>Il server di inoltro %1$@ non è riuscito a connettersi al server di destinazione %2$@. Riprova più tardi.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Forwarding server address is incompatible with network settings: %@." xml:space="preserve">
@@ -4692,6 +4684,7 @@ Questo è il tuo link per il gruppo %@!</target>
       </trans-unit>
       <trans-unit id="Less traffic on mobile networks." xml:space="preserve">
         <source>Less traffic on mobile networks.</source>
+        <target>Meno traffico sulle reti mobili.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Let's talk in SimpleX Chat" xml:space="preserve">
@@ -4748,6 +4741,10 @@ Questo è il tuo link per il gruppo %@!</target>
         <source>Live messages</source>
         <target>Messaggi in diretta</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Loading profile…" xml:space="preserve">
+        <source>Loading profile…</source>
+        <note>in progress text</note>
       </trans-unit>
       <trans-unit id="Local name" xml:space="preserve">
         <source>Local name</source>
@@ -4826,7 +4823,7 @@ Questo è il tuo link per il gruppo %@!</target>
       </trans-unit>
       <trans-unit id="Member admission" xml:space="preserve">
         <source>Member admission</source>
-        <target>Ammissione del membro</target>
+        <target>Ammissione dei membri</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member inactive" xml:space="preserve">
@@ -4946,6 +4943,7 @@ Questo è il tuo link per il gruppo %@!</target>
       </trans-unit>
       <trans-unit id="Message instantly once you tap Connect." xml:space="preserve">
         <source>Message instantly once you tap Connect.</source>
+        <target>Parla immediatamente appena tocchi "Connetti".</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message may be delivered later if member becomes active." xml:space="preserve">
@@ -5285,6 +5283,7 @@ Questo è il tuo link per il gruppo %@!</target>
       </trans-unit>
       <trans-unit id="New group role: Moderator" xml:space="preserve">
         <source>New group role: Moderator</source>
+        <target>Nuovo ruolo nei gruppi: Moderatore</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New in %@" xml:space="preserve">
@@ -5434,6 +5433,7 @@ Questo è il tuo link per il gruppo %@!</target>
       </trans-unit>
       <trans-unit id="No private routing session" xml:space="preserve">
         <source>No private routing session</source>
+        <target>Nessuna sessione di instradamento privato</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="No push server" xml:space="preserve">
@@ -6104,6 +6104,7 @@ Errore: %@</target>
       </trans-unit>
       <trans-unit id="Private routing timeout" xml:space="preserve">
         <source>Private routing timeout</source>
+        <target>Scadenza dell'instradamento privato</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
@@ -6136,8 +6137,8 @@ Errore: %@</target>
         <target>L'aggiornamento del profilo verrà inviato ai tuoi contatti.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Profile will be shared via the address link." xml:space="preserve">
-        <source>Profile will be shared via the address link.</source>
+      <trans-unit id="Profile will be shared with the address." xml:space="preserve">
+        <source>Profile will be shared with the address.</source>
         <target>Il profilo verrà condiviso tramite il link dell'indirizzo.</target>
         <note>alert message</note>
       </trans-unit>
@@ -6215,6 +6216,7 @@ Attivalo nelle impostazioni *Rete e server*.</target>
       </trans-unit>
       <trans-unit id="Protocol background timeout" xml:space="preserve">
         <source>Protocol background timeout</source>
+        <target>Scadenza del protocollo in sec. piano</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol timeout" xml:space="preserve">
@@ -6506,6 +6508,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Removes messages and blocks members." xml:space="preserve">
         <source>Removes messages and blocks members.</source>
+        <target>Rimuove i messaggi e blocca i membri.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Renegotiate" xml:space="preserve">
@@ -6690,6 +6693,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Review group members" xml:space="preserve">
         <source>Review group members</source>
+        <target>Revisiona i membri del gruppo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Review members" xml:space="preserve">
@@ -7085,6 +7089,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Send your private feedback to groups." xml:space="preserve">
         <source>Send your private feedback to groups.</source>
+        <target>Invia i tuoi commenti privati ai gruppi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
@@ -7314,7 +7319,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Set member admission" xml:space="preserve">
         <source>Set member admission</source>
-        <target>Imposta l'ammissione del membro</target>
+        <target>Imposta l'ammissione dei membri</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set message expiration in chats." xml:space="preserve">
@@ -7418,8 +7423,8 @@ chat item action</note>
         <target>Condividi il profilo</target>
         <note>alert button</note>
       </trans-unit>
-      <trans-unit id="Share profile via link" xml:space="preserve">
-        <source>Share profile via link</source>
+      <trans-unit id="Share profile with address" xml:space="preserve">
+        <source>Share profile with address</source>
         <target>Condividi il profilo via link</target>
         <note>alert title</note>
       </trans-unit>
@@ -7808,6 +7813,7 @@ report reason</note>
       </trans-unit>
       <trans-unit id="TCP connection bg timeout" xml:space="preserve">
         <source>TCP connection bg timeout</source>
+        <target>Scadenza conness. TCP in sec. piano</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="TCP connection timeout" xml:space="preserve">
@@ -9270,8 +9276,8 @@ Ripetere la richiesta di connessione?</target>
         <target>La tua chat è stata spostata su %@ , ma si è verificato un errore imprevisto mentre venivi reindirizzato/a al profilo.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." xml:space="preserve">
-        <source>Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile.</source>
+      <trans-unit id="Your connection was moved to %@ but an error happened when switching profile." xml:space="preserve">
+        <source>Your connection was moved to %@ but an error happened when switching profile.</source>
         <target>La tua connessione è stata spostata a %@, ma si è verificato un errore imprevisto durante il reindirizzamento al profilo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

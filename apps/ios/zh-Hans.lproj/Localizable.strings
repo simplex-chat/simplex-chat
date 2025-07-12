@@ -2513,8 +2513,8 @@ snd error text */
 /* No comment provided by engineer. */
 "Forwarding %lld messages" = "正在转发 %lld 条消息";
 
-/* No comment provided by engineer. */
-"Forwarding server %@ failed to connect to destination server %@. Please try later." = "转发服务器 %@ 无法连接到目标服务器 %@。请稍后尝试。";
+/* alert message */
+"Forwarding server %@ failed to connect to destination server %@. Please try later." = "转发服务器 %1$@ 无法连接到目标服务器 %2$@。请稍后尝试。";
 
 /* No comment provided by engineer. */
 "Forwarding server address is incompatible with network settings: %@." = "转发服务器地址与网络设置不兼容：%@。";

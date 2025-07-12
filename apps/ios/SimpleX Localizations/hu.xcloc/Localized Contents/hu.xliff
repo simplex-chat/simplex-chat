@@ -1626,6 +1626,7 @@ set passcode view</note>
       </trans-unit>
       <trans-unit id="Chat with members before they join." xml:space="preserve">
         <source>Chat with members before they join.</source>
+        <target>Csevegés a tagokkal mielőtt csatlakoznának.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
@@ -1865,6 +1866,7 @@ set passcode view</note>
       </trans-unit>
       <trans-unit id="Connect faster! 🚀" xml:space="preserve">
         <source>Connect faster! 🚀</source>
+        <target>Gyorsabb kapcsolódás! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect to desktop" xml:space="preserve">
@@ -3198,11 +3200,6 @@ chat item action</note>
         <target>Hiba a tag befogadásakor</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error adding address short link" xml:space="preserve">
-        <source>Error adding address short link</source>
-        <target>Hiba a rövid címhivatkozás hozzáadásakor</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
         <source>Error adding member(s)</source>
         <target>Hiba történt a tag(ok) hozzáadásakor</target>
@@ -3398,13 +3395,8 @@ chat item action</note>
         <target>Hiba történt a csevegés megnyitásakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error preparing contact" xml:space="preserve">
-        <source>Error preparing contact</source>
-        <target>Hiba a kapcsolat előkészítésekor</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Error preparing group" xml:space="preserve">
-        <source>Error preparing group</source>
+      <trans-unit id="Error opening group" xml:space="preserve">
+        <source>Error opening group</source>
         <target>Hiba a csoport előkészítésekor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3921,7 +3913,7 @@ snd error text</note>
       </trans-unit>
       <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve">
         <source>Forwarding server %1$@ failed to connect to destination server %2$@. Please try later.</source>
-        <target>A(z) %@ továbbítókiszolgáló nem tudott kapcsolódni a(z) %@ célkiszolgálóhoz. Próbálja meg később.</target>
+        <target>A(z) %1$@ továbbítókiszolgáló nem tudott kapcsolódni a(z) %2$@ célkiszolgálóhoz. Próbálja meg később.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Forwarding server address is incompatible with network settings: %@." xml:space="preserve">
@@ -4692,6 +4684,7 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
       </trans-unit>
       <trans-unit id="Less traffic on mobile networks." xml:space="preserve">
         <source>Less traffic on mobile networks.</source>
+        <target>Kevesebb adatforgalom a mobilhálózatokon.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Let's talk in SimpleX Chat" xml:space="preserve">
@@ -4748,6 +4741,10 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <source>Live messages</source>
         <target>Élő üzenetek</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Loading profile…" xml:space="preserve">
+        <source>Loading profile…</source>
+        <note>in progress text</note>
       </trans-unit>
       <trans-unit id="Local name" xml:space="preserve">
         <source>Local name</source>
@@ -4946,6 +4943,7 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
       </trans-unit>
       <trans-unit id="Message instantly once you tap Connect." xml:space="preserve">
         <source>Message instantly once you tap Connect.</source>
+        <target>Az üzenet azonnal megjelenik, amint a kapcsolódás gombra koppint.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message may be delivered later if member becomes active." xml:space="preserve">
@@ -5285,6 +5283,7 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
       </trans-unit>
       <trans-unit id="New group role: Moderator" xml:space="preserve">
         <source>New group role: Moderator</source>
+        <target>Új szerepkör: Moderátor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New in %@" xml:space="preserve">
@@ -5434,6 +5433,7 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
       </trans-unit>
       <trans-unit id="No private routing session" xml:space="preserve">
         <source>No private routing session</source>
+        <target>Nincs privát útválasztási munkamenet</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="No push server" xml:space="preserve">
@@ -6104,6 +6104,7 @@ Hiba: %@</target>
       </trans-unit>
       <trans-unit id="Private routing timeout" xml:space="preserve">
         <source>Private routing timeout</source>
+        <target>Privát útválasztás időtúllépése</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
@@ -6136,8 +6137,8 @@ Hiba: %@</target>
         <target>A profilfrissítés el lesz küldve a partnerei számára.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Profile will be shared via the address link." xml:space="preserve">
-        <source>Profile will be shared via the address link.</source>
+      <trans-unit id="Profile will be shared with the address." xml:space="preserve">
+        <source>Profile will be shared with the address.</source>
         <target>A profil meg lesz osztva a címhivatkozáson keresztül.</target>
         <note>alert message</note>
       </trans-unit>
@@ -6215,6 +6216,7 @@ Engedélyezze a *Hálózat és kiszolgálók* menüben.</target>
       </trans-unit>
       <trans-unit id="Protocol background timeout" xml:space="preserve">
         <source>Protocol background timeout</source>
+        <target>Protokoll időtúllépése a háttérben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol timeout" xml:space="preserve">
@@ -6506,6 +6508,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Removes messages and blocks members." xml:space="preserve">
         <source>Removes messages and blocks members.</source>
+        <target>Üzenetek eltávolítása és a tagok tiltása.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Renegotiate" xml:space="preserve">
@@ -6690,6 +6693,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Review group members" xml:space="preserve">
         <source>Review group members</source>
+        <target>Csoporttagok áttekintése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Review members" xml:space="preserve">
@@ -7085,6 +7089,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Send your private feedback to groups." xml:space="preserve">
         <source>Send your private feedback to groups.</source>
+        <target>Küldjön privát visszajelzést a csoportoknak.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
@@ -7418,8 +7423,8 @@ chat item action</note>
         <target>Profil megosztása</target>
         <note>alert button</note>
       </trans-unit>
-      <trans-unit id="Share profile via link" xml:space="preserve">
-        <source>Share profile via link</source>
+      <trans-unit id="Share profile with address" xml:space="preserve">
+        <source>Share profile with address</source>
         <target>Profil megosztása hivatkozáson keresztül</target>
         <note>alert title</note>
       </trans-unit>
@@ -7808,6 +7813,7 @@ report reason</note>
       </trans-unit>
       <trans-unit id="TCP connection bg timeout" xml:space="preserve">
         <source>TCP connection bg timeout</source>
+        <target>TCP-kapcsolat időtúllépése a háttérben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="TCP connection timeout" xml:space="preserve">
@@ -9270,8 +9276,8 @@ Repeat connection request?</source>
         <target>A csevegés át lett helyezve ide: %@, de egy váratlan hiba történt a profilra való átirányításkor.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." xml:space="preserve">
-        <source>Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile.</source>
+      <trans-unit id="Your connection was moved to %@ but an error happened when switching profile." xml:space="preserve">
+        <source>Your connection was moved to %@ but an error happened when switching profile.</source>
         <target>A kapcsolata át lett helyezve ide: %@, de egy váratlan hiba történt a profilra való átirányításkor.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
