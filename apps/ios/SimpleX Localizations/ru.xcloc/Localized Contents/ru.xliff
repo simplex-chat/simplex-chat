@@ -586,8 +586,9 @@ swipe action</note>
         <target>Принять запрос?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Accept contact request" xml:space="preserve">
+      <trans-unit id="Accept contact request" xml:space="preserve" approved="no">
         <source>Accept contact request</source>
+        <target state="translated">Принять запрос на соединение</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Accept contact request from %@?" xml:space="preserve">
@@ -666,8 +667,9 @@ swipe action</note>
         <target>Добавить серверы через QR код.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add short link" xml:space="preserve">
+      <trans-unit id="Add short link" xml:space="preserve" approved="no">
         <source>Add short link</source>
+        <target state="translated">Добавить короткую ссылку</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add team members" xml:space="preserve">
@@ -1394,8 +1396,9 @@ swipe action</note>
         <target>Не удаётся позвонить члену группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't change profile" xml:space="preserve">
+      <trans-unit id="Can't change profile" xml:space="preserve" approved="no">
         <source>Can't change profile</source>
+        <target state="translated">Нельзя поменять профиль</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
@@ -1621,8 +1624,9 @@ set passcode view</note>
         <target>Чат с членом группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat with members before they join." xml:space="preserve">
+      <trans-unit id="Chat with members before they join." xml:space="preserve" approved="no">
         <source>Chat with members before they join.</source>
+        <target state="translated">Общайтесь с членами до того как принять их.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
@@ -1860,8 +1864,9 @@ set passcode view</note>
         <target>Соединяться автоматически</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect faster! 🚀" xml:space="preserve">
+      <trans-unit id="Connect faster! 🚀" xml:space="preserve" approved="no">
         <source>Connect faster! 🚀</source>
+        <target state="translated">Соединяйтесь быстрее! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect to desktop" xml:space="preserve">
@@ -2950,8 +2955,9 @@ chat item action</note>
         <target>Редактировать профиль группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Empty message!" xml:space="preserve">
+      <trans-unit id="Empty message!" xml:space="preserve" approved="no">
         <source>Empty message!</source>
+        <target state="translated">Пустое сообщение1</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable" xml:space="preserve">
