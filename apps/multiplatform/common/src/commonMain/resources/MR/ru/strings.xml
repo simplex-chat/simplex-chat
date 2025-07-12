@@ -2550,7 +2550,7 @@
     <string name="open_to_connect">Откройте чтобы соединиться</string>
     <string name="group_preview_open_to_join">Откройте чтобы вступить</string>
     <string name="private_routing_timeout">Превышено время конфиденциальной доставки</string>
-    <string name="share_profile_via_link_alert_text">Профиль будет включен в адрес.</string>
+    <string name="share_profile_via_link_alert_text">Профиль будет добавлен в адрес.</string>
     <string name="network_option_protocol_timeout_background">Фоновый таймаут протокола</string>
     <string name="reject_contact_request">Отклонить запрос на соединение</string>
     <string name="v6_4_role_moderator_descr">Может удалять сообщения и блокировать членов.</string>
@@ -2562,4 +2562,9 @@
     <string name="v6_4_support_chat_descr">Отправляйте Ваши конфиденциальные предложения группе.</string>
     <string name="sent_to_your_contact_after_connection">Отправляется Вашему контакту после соединения.</string>
     <string name="share_group_profile_via_link">Добавить профиль группы в ссылку</string>
+    <string name="share_profile_via_link_alert_confirm">Добавить профиль</string>
+    <string name="share_profile_via_link">Добавить профиль к адресу</string>
+    <string name="group_short_descr_field">Цель:</string>
+    <string name="network_option_tcp_connection_timeout_background">Фоновый таймаут TCP-соединения</string>
+    <string name="the_sender_will_not_be_notified">Отправитель не будет уведомлен.</string>
 </resources>
