@@ -119,7 +119,7 @@ struct PrivacySettings: View {
                             }
                     }
                     settingsRow("circle.filled.pattern.diagonalline.rectangle", color: theme.colors.secondary) {
-                        Picker("Blur media", selection: $privacyMediaBlurRadius) {
+                        WrappedPicker("Blur media", selection: $privacyMediaBlurRadius) {
                             let values = [0, 12, 24, 48] + ([0, 12, 24, 48].contains(privacyMediaBlurRadius) ? [] : [privacyMediaBlurRadius])
                             ForEach(values, id: \.self) { radius in
                                 let text: String = switch radius {
@@ -133,7 +133,6 @@ struct PrivacySettings: View {
                             }
                         }
                     }
-                    .frame(height: 36)
                     settingsRow("network.badge.shield.half.filled", color: theme.colors.secondary) {
                         Toggle("Protect IP address", isOn: $askToApproveRelays)
                     }

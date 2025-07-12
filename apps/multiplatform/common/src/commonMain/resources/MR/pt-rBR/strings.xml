@@ -2268,7 +2268,7 @@
     <string name="v6_2_improved_chat_navigation">Aprimorada a navegação de bate-papo</string>
     <string name="v6_2_improved_chat_navigation_descr">- Abra o chat na primeira mensagem não lida.\n- Pule para mensagens citadas.</string>
     <string name="members_will_be_removed_from_chat_cannot_be_undone">Os membros serão removidos do chat. Essa ação não pode ser desfeita!</string>
-    <string name="button_leave_chat">Said do chat</string>
+    <string name="button_leave_chat">Sair do chat</string>
     <string name="members_will_be_removed_from_group_cannot_be_undone">Os membros serão removidos do grupo. Essa ação não pode ser desfeita!</string>
     <string name="smp_servers_new_server">Nove servidor</string>
     <string name="no_chats_found">Nenhum chat encontrado</string>
@@ -2382,4 +2382,16 @@
     <string name="onboarding_conditions_accept">Aceitar</string>
     <string name="onboarding_conditions_by_using_you_agree">Ao usar o SimpleX Chat, você concorda em:\n- enviar apenas conteúdo legal em grupos públicos.\n- respeitar outros usuários – sem spam.</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Política de privacidade e condições de uso.</string>
+    <string name="accept_pending_member_alert_confirmation_as_member">Aceitar como membro</string>
+    <string name="add_short_link">Adicionar link curto</string>
+    <string name="group_new_support_chat_one">1 conversa com um membro</string>
+    <string name="network_smp_web_port_all">Todos servidores</string>
+    <string name="rcv_group_event_member_accepted">%1$s aceito</string>
+    <string name="rcv_group_event_user_accepted">aceitou você</string>
+    <string name="accept_pending_member_button">Aceitar</string>
+    <string name="cant_send_message_generic">não pode enviar mensagens</string>
+    <string name="accept_pending_member_alert_confirmation_as_observer">Aceitar como observador</string>
+    <string name="accept_pending_member_alert_title">Aceitar membro</string>
+    <string name="member_criteria_all">todos</string>
+    <string name="member_support">Conversas com membros</string>
 </resources>

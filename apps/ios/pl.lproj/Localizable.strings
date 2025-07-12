@@ -342,6 +342,7 @@ time interval */
 
 /* accept contact request via notification
 accept incoming call via notification
+alert action
 swipe action */
 "Accept" = "Akceptuj";
 
@@ -354,7 +355,7 @@ swipe action */
 /* notification body */
 "Accept contact request from %@?" = "Zaakceptuj prośbę o kontakt od %@?";
 
-/* accept contact request via notification
+/* alert action
 swipe action */
 "Accept incognito" = "Akceptuj incognito";
 
@@ -726,9 +727,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Auto-accept images" = "Automatyczne akceptowanie obrazów";
-
-/* alert title */
-"SimpleX address settings" = "Ustawienia automatycznej akceptacji";
 
 /* No comment provided by engineer. */
 "Back" = "Wstecz";
@@ -1229,7 +1227,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection and servers status." = "Stan połączenia i serwerów.";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection error" = "Błąd połączenia";
 
 /* No comment provided by engineer. */
@@ -1247,7 +1245,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection terminated" = "Połączenie zakończone";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection timeout" = "Czas połączenia minął";
 
 /* No comment provided by engineer. */
@@ -2000,7 +1998,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error changing to incognito!" = "Błąd zmiany na incognito!";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Error connecting to forwarding server %@. Please try later." = "Błąd połączenia z serwerem przekierowania %@. Spróbuj ponownie później.";
 
 /* No comment provided by engineer. */
@@ -2129,7 +2127,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error stopping chat" = "Błąd zatrzymania czatu";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error switching profile" = "Błąd zmiany profilu";
 
 /* alertTitle */
@@ -2326,8 +2324,8 @@ snd error text */
 /* No comment provided by engineer. */
 "Forwarding %lld messages" = "Przekazywanie %lld wiadomości";
 
-/* No comment provided by engineer. */
-"Forwarding server %@ failed to connect to destination server %@. Please try later." = "Serwer przekazujący %@ nie mógł połączyć się z serwerem docelowym %@. Spróbuj ponownie później.";
+/* alert message */
+"Forwarding server %@ failed to connect to destination server %@. Please try later." = "Serwer przekazujący %1$@ nie mógł połączyć się z serwerem docelowym %2$@. Spróbuj ponownie później.";
 
 /* No comment provided by engineer. */
 "Forwarding server address is incompatible with network settings: %@." = "Adres serwera przekierowującego jest niekompatybilny z ustawieniami sieciowymi: %@.";
@@ -3309,7 +3307,7 @@ new chat action */
 /* alert action */
 "Open" = "Otwórz";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Open chat" = "Otwórz czat";
 
 /* authentication reason */
@@ -3429,7 +3427,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Sprawdź, czy użyłeś prawidłowego linku lub poproś Twój kontakt o przesłanie innego.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Please check your network connection with %@ and try again." = "Sprawdzić połączenie sieciowe z %@ i spróbować ponownie.";
 
 /* No comment provided by engineer. */
@@ -3507,7 +3505,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Private routing" = "Prywatne trasowanie";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Private routing error" = "Błąd prywatnego trasowania";
 
 /* No comment provided by engineer. */
@@ -3702,14 +3700,15 @@ new chat action */
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Zmniejszone zużycie baterii";
 
-/* reject incoming call via notification
+/* alert action
+reject incoming call via notification
 swipe action */
 "Reject" = "Odrzuć";
 
 /* No comment provided by engineer. */
 "Reject (sender NOT notified)" = "Odrzuć kontakt (nadawca NIE został powiadomiony)";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Reject contact request" = "Odrzuć prośbę kontaktu";
 
 /* call status */
@@ -3820,7 +3819,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Restore database error" = "Błąd przywracania bazy danych";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Retry" = "Ponów";
 
 /* chat item action */
@@ -4006,9 +4005,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Send delivery receipts to" = "Wyślij potwierdzenia dostawy do";
-
-/* No comment provided by engineer. */
-"send to connect" = "wyślij wiadomość bezpośrednią";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Wyślij wiadomość bezpośrednią aby połączyć";
@@ -4218,7 +4214,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Share link" = "Udostępnij link";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Share profile" = "Udostępnij profil";
 
 /* No comment provided by engineer. */
@@ -4265,6 +4261,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "SimpleX Address" = "Adres SimpleX";
+
+/* alert title */
+"SimpleX address settings" = "Ustawienia automatycznej akceptacji";
 
 /* No comment provided by engineer. */
 "SimpleX Chat security was audited by Trail of Bits." = "Bezpieczeństwo SimpleX Chat zostało zaudytowane przez Trail of Bits.";
@@ -4542,7 +4541,7 @@ chat item action */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Drugi tik, który przegapiliśmy! ✅";
 
-/* No comment provided by engineer. */
+/* alert message */
 "The sender will NOT be notified" = "Nadawca NIE zostanie powiadomiony";
 
 /* No comment provided by engineer. */
@@ -5095,9 +5094,6 @@ chat item action */
 "You are connected to the server used to receive messages from this contact." = "Jesteś połączony z serwerem używanym do odbierania wiadomości od tego kontaktu.";
 
 /* No comment provided by engineer. */
-"You are invited to group" = "jesteś zaproszony do grupy";
-
-/* No comment provided by engineer. */
 "You are invited to group" = "Jesteś zaproszony do grupy";
 
 /* No comment provided by engineer. */
@@ -5284,7 +5280,7 @@ chat item action */
 "Your chat profiles" = "Twoje profile czatu";
 
 /* No comment provided by engineer. */
-"Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." = "Twoje połączenie zostało przeniesione do %@, ale podczas przekierowywania do profilu wystąpił nieoczekiwany błąd.";
+"Your connection was moved to %@ but an error happened when switching profile." = "Twoje połączenie zostało przeniesione do %@, ale podczas przekierowywania do profilu wystąpił nieoczekiwany błąd.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Twój kontakt wysłał plik, który jest większy niż obecnie obsługiwany maksymalny rozmiar (%@).";
@@ -5342,3 +5338,4 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Twój adres SimpleX";
+

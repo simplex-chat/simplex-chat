@@ -220,10 +220,9 @@
   <string name="error_updating_chat_tags">Error updating chat list</string>
   <string name="error_creating_chat_tags">Error creating chat list</string>
   <string name="error_loading_chat_tags">Error loading chat lists</string>
-  <string name="error_preparing_contact">Error preparing contact</string>
-  <string name="error_preparing_group">Error preparing group</string>
-  <string name="error_changing_contact_user">Error changing contact user</string>
-  <string name="error_changing_group_user">Error changing group user</string>
+  <string name="error_preparing_contact">Error opening chat</string>
+  <string name="error_preparing_group">Error opening group</string>
+  <string name="error_changing_user">Error changing profile</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="icon_descr_instant_notifications">Instant notifications</string>
@@ -851,7 +850,7 @@
   <string name="new_chat_share_profile">Share profile</string>
   <string name="select_chat_profile">Select chat profile</string>
   <string name="switching_profile_error_title">Error switching profile</string>
-  <string name="switching_profile_error_message">Your connection was moved to %s but an unexpected error occurred while redirecting you to the profile.</string>
+  <string name="switching_profile_error_message">Your connection was moved to %s but an error happened when switchig profile.</string>
   <string name="or_scan_qr_code">Or scan QR code</string>
   <string name="keep_unused_invitation_question">Keep unused invitation?</string>
   <string name="you_can_view_invitation_link_again">You can view invitation link again in connection details.</string>
@@ -862,6 +861,7 @@
   <string name="paste_the_link_you_received">Paste the link you received</string>
   <string name="the_text_you_pasted_is_not_a_link">The text you pasted is not a SimpleX link.</string>
   <string name="tap_to_paste_link">Tap to paste link</string>
+  <string name="loading_profile">Loading profile…</string>
 
   <string name="invalid_qr_code">Invalid QR code</string>
   <string name="code_you_scanned_is_not_simplex_link_qr_code">The code you scanned is not a SimpleX link QR code.</string>
@@ -1092,8 +1092,8 @@
   <string name="business_address">Business address</string>
   <string name="add_your_team_members_to_conversations">Add your team members to the conversations.</string>
   <string name="add_short_link">Add short link</string>
-  <string name="share_profile_via_link">Share profile via link</string>
-  <string name="share_profile_via_link_alert_text">Profile will be shared via the address link.</string>
+  <string name="share_profile_via_link">Share profile with address</string>
+  <string name="share_profile_via_link_alert_text">Profile will be shared with the address.</string>
   <string name="share_profile_via_link_alert_confirm">Share profile</string>
   <string name="share_group_profile_via_link">Share group profile via link</string>
 
@@ -1107,6 +1107,7 @@
   <!-- User profile details - UserProfileView.kt -->
   <string name="display_name__field">Profile name:</string>
   <string name="full_name__field">Full name:</string>
+  <string name="short_descr__field">Bio:</string>
   <string name="your_current_profile">Your current profile</string>
   <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</string>
   <string name="edit_image">Edit image</string>
@@ -1136,6 +1137,7 @@
   <string name="profile_is_only_shared_with_your_contacts">The profile is only shared with your contacts.</string>
   <string name="display_name_cannot_contain_whitespace">Display name cannot contain whitespace.</string>
   <string name="display_name">Enter your name:</string>
+  <string name="short_descr">Your bio:</string>
   <string name="create_profile_button">Create</string>
   <string name="create_another_profile_button">Create profile</string>
   <string name="create_address_button">Create</string>
@@ -1913,6 +1915,7 @@
   <string name="group_is_decentralized">Fully decentralized – visible only to members.</string>
   <string name="group_display_name_field">Enter group name:</string>
   <string name="group_full_name_field">Group full name:</string>
+  <string name="group_short_descr_field">Short description:</string>
   <string name="group_main_profile_sent">Your chat profile will be sent to group members</string>
   <string name="chat_main_profile_sent">Your chat profile will be sent to chat members</string>
   <string name="create_group_button">Create group</string>
@@ -2418,6 +2421,15 @@
   <string name="v6_3_better_groups_performance">Better groups performance</string>
   <string name="v6_3_faster_sending_messages">Faster sending messages.</string>
   <string name="v6_3_faster_deletion_of_groups">Faster deletion of groups.</string>
+  <string name="v6_4_connect_faster">Connect faster! 🚀</string>
+  <string name="v6_4_connect_faster_descr">Message instantly once you tap Connect.</string>
+  <string name="v6_4_review_members">Review group members</string>
+  <string name="v6_4_review_members_descr">Chat with members before they join.</string>
+  <string name="v6_4_support_chat">Chat with admins</string>
+  <string name="v6_4_support_chat_descr">Send your private feedback to groups.</string>
+  <string name="v6_4_role_moderator">New group role: Moderator</string>
+  <string name="v6_4_role_moderator_descr">Removes messages and blocks members.</string>
+  <string name="v6_4_message_delivery_descr">Less traffic on mobile networks.</string>
   <string name="view_updated_conditions">View updated conditions</string>
 
   <!-- CustomTimePicker -->
@@ -2533,7 +2545,6 @@
   <string name="connect_plan_you_have_already_requested_connection_via_this_address">You have already requested connection via this address!</string>
   <string name="connect_plan_join_your_group">Join your group?</string>
   <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[This is your link for group <b>%1$s</b>!]]></string>
-  <string name="connect_plan_open_group">Open group</string>
   <string name="connect_plan_repeat_join_request">Repeat join request?</string>
   <string name="connect_plan_group_already_exists">Group already exists!</string>
   <string name="connect_plan_chat_already_exists">Chat already exists!</string>

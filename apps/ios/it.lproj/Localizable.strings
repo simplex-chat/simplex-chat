@@ -342,6 +342,7 @@ time interval */
 
 /* accept contact request via notification
 accept incoming call via notification
+alert action
 swipe action */
 "Accept" = "Accetta";
 
@@ -357,10 +358,13 @@ swipe action */
 /* No comment provided by engineer. */
 "Accept connection request?" = "Accettare la richiesta di connessione?";
 
+/* alert title */
+"Accept contact request" = "Accetta la richiesta di contatto";
+
 /* notification body */
 "Accept contact request from %@?" = "Accettare la richiesta di contatto da %@?";
 
-/* accept contact request via notification
+/* alert action
 swipe action */
 "Accept incognito" = "Accetta in incognito";
 
@@ -403,6 +407,9 @@ swipe action */
 /* No comment provided by engineer. */
 "Add list" = "Aggiungi elenco";
 
+/* placeholder for sending contact request */
+"Add message" = "Aggiungi un messaggio";
+
 /* No comment provided by engineer. */
 "Add profile" = "Aggiungi profilo";
 
@@ -411,6 +418,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Add servers by scanning QR codes." = "Aggiungi server scansionando codici QR.";
+
+/* No comment provided by engineer. */
+"Add short link" = "Aggiungi link breve";
 
 /* No comment provided by engineer. */
 "Add team members" = "Aggiungi membri del team";
@@ -754,9 +764,6 @@ swipe action */
 /* No comment provided by engineer. */
 "Auto-accept images" = "Auto-accetta le immagini";
 
-/* alert title */
-"SimpleX address settings" = "Accetta automaticamente le impostazioni";
-
 /* No comment provided by engineer. */
 "Back" = "Indietro";
 
@@ -913,6 +920,9 @@ marked deleted chat item preview text */
 
 /* No comment provided by engineer. */
 "Can't call member" = "Impossibile chiamare il membro";
+
+/* alert title */
+"Can't change profile" = "Impossibile cambiare profilo";
 
 /* No comment provided by engineer. */
 "Can't invite contact!" = "Impossibile invitare il contatto!";
@@ -1071,6 +1081,9 @@ set passcode view */
 "Chat with member" = "Chatta con il membro";
 
 /* No comment provided by engineer. */
+"Chat with members before they join." = "Chatta con i membri prima che si uniscano.";
+
+/* No comment provided by engineer. */
 "Chats" = "Chat";
 
 /* No comment provided by engineer. */
@@ -1218,6 +1231,9 @@ set passcode view */
 "Connect automatically" = "Connetti automaticamente";
 
 /* No comment provided by engineer. */
+"Connect faster! 🚀" = "Connettiti più velocemente! 🚀";
+
+/* No comment provided by engineer. */
 "Connect to desktop" = "Connetti al desktop";
 
 /* No comment provided by engineer. */
@@ -1307,7 +1323,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection blocked" = "Connessione bloccata";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection error" = "Errore di connessione";
 
 /* No comment provided by engineer. */
@@ -1337,7 +1353,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection terminated" = "Connessione terminata";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection timeout" = "Connessione scaduta";
 
 /* No comment provided by engineer. */
@@ -1390,6 +1406,9 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Contact preferences" = "Preferenze del contatto";
+
+/* No comment provided by engineer. */
+"contact should accept…" = "il contatto dovrebbe accettare…";
 
 /* No comment provided by engineer. */
 "Contact will be deleted - this cannot be undone!" = "Il contatto verrà eliminato - non è reversibile!";
@@ -1968,6 +1987,9 @@ chat item action */
 "Edit group profile" = "Modifica il profilo del gruppo";
 
 /* No comment provided by engineer. */
+"Empty message!" = "Messaggio vuoto!";
+
+/* No comment provided by engineer. */
 "Enable" = "Attiva";
 
 /* No comment provided by engineer. */
@@ -2160,7 +2182,13 @@ chat item action */
 "Error adding server" = "Errore di aggiunta del server";
 
 /* No comment provided by engineer. */
+"Error adding short link" = "Errore di aggiunta link breve";
+
+/* No comment provided by engineer. */
 "Error changing address" = "Errore nella modifica dell'indirizzo";
+
+/* alert title */
+"Error changing chat profile" = "Errore cambiando il profilo di chat";
 
 /* No comment provided by engineer. */
 "Error changing connection profile" = "Errore nel cambio di profilo di connessione";
@@ -2177,7 +2205,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error checking token status" = "Errore di controllo dello stato del token";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Error connecting to forwarding server %@. Please try later." = "Errore di connessione al server di inoltro %@. Riprova più tardi.";
 
 /* No comment provided by engineer. */
@@ -2264,6 +2292,9 @@ chat item action */
 /* No comment provided by engineer. */
 "Error opening chat" = "Errore di apertura della chat";
 
+/* No comment provided by engineer. */
+"Error opening group" = "Errore di preparazione del gruppo";
+
 /* alert title */
 "Error receiving file" = "Errore nella ricezione del file";
 
@@ -2275,6 +2306,9 @@ chat item action */
 
 /* alert title */
 "Error registering for notifications" = "Errore di registrazione per le notifiche";
+
+/* alert title */
+"Error rejecting contact request" = "Errore nel rifiuto della richiesta di contatto";
 
 /* alert title */
 "Error removing member" = "Errore nella rimozione del membro";
@@ -2330,7 +2364,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Error stopping chat" = "Errore nell'interruzione della chat";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error switching profile" = "Errore nel cambio di profilo";
 
 /* alertTitle */
@@ -2572,8 +2606,8 @@ snd error text */
 /* No comment provided by engineer. */
 "Forwarding %lld messages" = "Inoltro di %lld messaggi";
 
-/* No comment provided by engineer. */
-"Forwarding server %@ failed to connect to destination server %@. Please try later." = "Il server di inoltro %@ non è riuscito a connettersi al server di destinazione %@. Riprova più tardi.";
+/* alert message */
+"Forwarding server %@ failed to connect to destination server %@. Please try later." = "Il server di inoltro %1$@ non è riuscito a connettersi al server di destinazione %2$@. Riprova più tardi.";
 
 /* No comment provided by engineer. */
 "Forwarding server address is incompatible with network settings: %@." = "L'indirizzo del server di inoltro è incompatibile con le impostazioni di rete: %@.";
@@ -2619,6 +2653,9 @@ snd error text */
 
 /* message preview */
 "Good morning!" = "Buongiorno!";
+
+/* shown on group welcome message */
+"group" = "gruppo";
 
 /* No comment provided by engineer. */
 "Group" = "Gruppo";
@@ -2676,6 +2713,9 @@ snd error text */
 
 /* snd group event chat item */
 "group profile updated" = "profilo del gruppo aggiornato";
+
+/* alert message */
+"Group profile was changed. If you save it, the updated profile will be sent to group members." = "Il profilo del gruppo è stato cambiato. Se lo salvi, il profilo aggiornato verrà inviato ai membri del gruppo.";
 
 /* No comment provided by engineer. */
 "Group welcome message" = "Messaggio di benvenuto del gruppo";
@@ -3085,6 +3125,9 @@ snd error text */
 /* rcv group event chat item */
 "left" = "è uscito/a";
 
+/* No comment provided by engineer. */
+"Less traffic on mobile networks." = "Meno traffico sulle reti mobili.";
+
 /* email subject */
 "Let's talk in SimpleX Chat" = "Parliamo in SimpleX Chat";
 
@@ -3176,7 +3219,7 @@ snd error text */
 "member %@ changed to %@" = "il membro %1$@ è diventato %2$@";
 
 /* No comment provided by engineer. */
-"Member admission" = "Ammissione del membro";
+"Member admission" = "Ammissione dei membri";
 
 /* rcv group event chat item */
 "member connected" = "si è connesso/a";
@@ -3256,6 +3299,9 @@ snd error text */
 /* item status text */
 "Message forwarded" = "Messaggio inoltrato";
 
+/* No comment provided by engineer. */
+"Message instantly once you tap Connect." = "Parla immediatamente appena tocchi \"Connetti\".";
+
 /* item status description */
 "Message may be delivered later if member becomes active." = "Il messaggio può essere consegnato più tardi se il membro diventa attivo.";
 
@@ -3303,6 +3349,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Messages & files" = "Messaggi";
+
+/* No comment provided by engineer. */
+"Messages are protected by **end-to-end encryption**." = "I messaggi sono protetti da **crittografia end-to-end**.";
 
 /* No comment provided by engineer. */
 "Messages from %@ will be shown!" = "I messaggi da %@ verranno mostrati!";
@@ -3470,6 +3519,9 @@ snd error text */
 "New events" = "Nuovi eventi";
 
 /* No comment provided by engineer. */
+"New group role: Moderator" = "Nuovo ruolo nei gruppi: Moderatore";
+
+/* No comment provided by engineer. */
 "New in %@" = "Novità nella %@";
 
 /* No comment provided by engineer. */
@@ -3573,6 +3625,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "No permission to record voice message" = "Nessuna autorizzazione per registrare messaggi vocali";
+
+/* alert title */
+"No private routing session" = "Nessuna sessione di instradamento privato";
 
 /* No comment provided by engineer. */
 "No push server" = "Locale";
@@ -3741,7 +3796,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Open changes" = "Apri le modifiche";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Open chat" = "Apri chat";
 
 /* authentication reason */
@@ -3759,8 +3814,23 @@ new chat action */
 /* authentication reason */
 "Open migration to another device" = "Apri migrazione ad un altro dispositivo";
 
+/* new chat action */
+"Open new chat" = "Apri una chat nuova";
+
+/* new chat action */
+"Open new group" = "Apri un gruppo nuovo";
+
 /* No comment provided by engineer. */
 "Open Settings" = "Apri le impostazioni";
+
+/* No comment provided by engineer. */
+"Open to accept" = "Apri per accettare";
+
+/* No comment provided by engineer. */
+"Open to connect" = "Apri per connettere";
+
+/* No comment provided by engineer. */
+"Open to join" = "Apri per entrare";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Apertura dell'app…";
@@ -3891,7 +3961,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Controlla di aver usato il link giusto o chiedi al tuo contatto di inviartene un altro.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Please check your network connection with %@ and try again." = "Controlla la tua connessione di rete con %@ e riprova.";
 
 /* No comment provided by engineer. */
@@ -3996,8 +4066,11 @@ new chat action */
 /* No comment provided by engineer. */
 "Private routing" = "Instradamento privato";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Private routing error" = "Errore di instradamento privato";
+
+/* alert title */
+"Private routing timeout" = "Scadenza dell'instradamento privato";
 
 /* No comment provided by engineer. */
 "Profile and server connections" = "Profilo e connessioni al server";
@@ -4016,6 +4089,9 @@ new chat action */
 
 /* alert message */
 "Profile update will be sent to your contacts." = "L'aggiornamento del profilo verrà inviato ai tuoi contatti.";
+
+/* alert message */
+"Profile will be shared with the address." = "Il profilo verrà condiviso tramite il link dell'indirizzo.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Proibisci le chiamate audio/video.";
@@ -4058,6 +4134,9 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "Proteggi il tuo indirizzo IP dai relay di messaggistica scelti dai tuoi contatti.\nAttivalo nelle impostazioni *Rete e server*.";
+
+/* No comment provided by engineer. */
+"Protocol background timeout" = "Scadenza del protocollo in sec. piano";
 
 /* No comment provided by engineer. */
 "Protocol timeout" = "Scadenza del protocollo";
@@ -4203,14 +4282,15 @@ new chat action */
 /* token status text */
 "Registered" = "Registrato";
 
-/* reject incoming call via notification
+/* alert action
+reject incoming call via notification
 swipe action */
 "Reject" = "Rifiuta";
 
 /* No comment provided by engineer. */
 "Reject (sender NOT notified)" = "Rifiuta contatto (mittente NON avvisato)";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Reject contact request" = "Rifiuta la richiesta di contatto";
 
 /* alert title */
@@ -4263,6 +4343,9 @@ swipe action */
 
 /* rcv group event chat item */
 "removed you" = "ti ha rimosso/a";
+
+/* No comment provided by engineer. */
+"Removes messages and blocks members." = "Rimuove i messaggi e blocca i membri.";
 
 /* No comment provided by engineer. */
 "Renegotiate" = "Rinegoziare";
@@ -4319,6 +4402,9 @@ swipe action */
 "Reports" = "Segnalazioni";
 
 /* No comment provided by engineer. */
+"request is sent" = "richiesta inviata";
+
+/* No comment provided by engineer. */
 "request to join rejected" = "richiesta di entrare rifiutata";
 
 /* chat list item title */
@@ -4369,7 +4455,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Restore database error" = "Errore di ripristino del database";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Retry" = "Riprova";
 
 /* chat item action */
@@ -4380,6 +4466,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Review conditions" = "Leggi le condizioni";
+
+/* No comment provided by engineer. */
+"Review group members" = "Revisiona i membri del gruppo";
 
 /* admission stage */
 "Review members" = "Revisiona i membri";
@@ -4418,6 +4507,9 @@ chat item action */
 /* alert button */
 "Save (and notify contacts)" = "Salva (e avvisa i contatti)";
 
+/* alert button */
+"Save (and notify members)" = "Salva (e informa i membri)";
+
 /* alert title */
 "Save admission settings?" = "Salvare le impostazioni di ammissione?";
 
@@ -4435,6 +4527,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Save group profile" = "Salva il profilo del gruppo";
+
+/* alert title */
+"Save group profile?" = "Salvare il profilo del gruppo?";
 
 /* No comment provided by engineer. */
 "Save list" = "Salva elenco";
@@ -4575,10 +4670,10 @@ chat item action */
 "Send a live message - it will update for the recipient(s) as you type it" = "Invia un messaggio in diretta: si aggiornerà per i destinatari mentre lo digiti";
 
 /* No comment provided by engineer. */
-"Send delivery receipts to" = "Invia ricevute di consegna a";
+"Send contact request?" = "Inviare una richiesta di contatto?";
 
 /* No comment provided by engineer. */
-"send to connect" = "invia messaggio diretto";
+"Send delivery receipts to" = "Invia ricevute di consegna a";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Invia messaggio diretto per connetterti";
@@ -4617,10 +4712,19 @@ chat item action */
 "Send receipts" = "Invia ricevute";
 
 /* No comment provided by engineer. */
+"Send request" = "Invia richiesta";
+
+/* No comment provided by engineer. */
+"Send request without message" = "Invia richiesta senza messaggio";
+
+/* No comment provided by engineer. */
 "Send them from gallery or custom keyboards." = "Inviali dalla galleria o dalle tastiere personalizzate.";
 
 /* No comment provided by engineer. */
 "Send up to 100 last messages to new members." = "Invia fino a 100 ultimi messaggi ai nuovi membri.";
+
+/* No comment provided by engineer. */
+"Send your private feedback to groups." = "Invia i tuoi commenti privati ai gruppi.";
 
 /* alert message */
 "Sender cancelled file transfer." = "Il mittente ha annullato il trasferimento del file.";
@@ -4675,6 +4779,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Sent reply" = "Risposta inviata";
+
+/* No comment provided by engineer. */
+"Sent to your contact after connection." = "Inviato al tuo contatto dopo la connessione.";
 
 /* No comment provided by engineer. */
 "Sent total" = "Totale inviato";
@@ -4758,7 +4865,7 @@ chat item action */
 "Set it instead of system authentication." = "Impostalo al posto dell'autenticazione di sistema.";
 
 /* No comment provided by engineer. */
-"Set member admission" = "Imposta l'ammissione del membro";
+"Set member admission" = "Imposta l'ammissione dei membri";
 
 /* No comment provided by engineer. */
 "Set message expiration in chats." = "Imposta la scadenza dei messaggi nelle chat.";
@@ -4816,10 +4923,16 @@ chat item action */
 "Share from other apps." = "Condividi da altre app.";
 
 /* No comment provided by engineer. */
-"Share link" = "Condividi link";
+"Share group profile via link" = "Condividi il profilo del gruppo via link";
 
 /* No comment provided by engineer. */
+"Share link" = "Condividi link";
+
+/* alert button */
 "Share profile" = "Condividi il profilo";
+
+/* alert title */
+"Share profile with address" = "Condividi il profilo via link";
 
 /* No comment provided by engineer. */
 "Share SimpleX address on social media." = "Condividi l'indirizzo SimpleX sui social media.";
@@ -4877,6 +4990,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "SimpleX address or 1-time link?" = "Indirizzo SimpleX o link una tantum?";
+
+/* alert title */
+"SimpleX address settings" = "Accetta automaticamente le impostazioni";
 
 /* simplex link type */
 "SimpleX channel link" = "Link del canale SimpleX";
@@ -5096,6 +5212,9 @@ report reason */
 "TCP connection" = "Connessione TCP";
 
 /* No comment provided by engineer. */
+"TCP connection bg timeout" = "Scadenza conness. TCP in sec. piano";
+
+/* No comment provided by engineer. */
 "TCP connection timeout" = "Scadenza connessione TCP";
 
 /* No comment provided by engineer. */
@@ -5200,7 +5319,7 @@ report reason */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Il secondo segno di spunta che ci mancava! ✅";
 
-/* No comment provided by engineer. */
+/* alert message */
 "The sender will NOT be notified" = "Il mittente NON verrà avvisato";
 
 /* No comment provided by engineer. */
@@ -5322,6 +5441,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "To support instant push notifications the chat database has to be migrated." = "Per supportare le notifiche push istantanee, il database della chat deve essere migrato.";
+
+/* alert message */
+"To use another profile after connection attempt, delete the chat and use the link again." = "Per usare un altro profilo dopo il tentativo di connessione, elimina la chat e usa di nuovo il link.";
 
 /* No comment provided by engineer. */
 "To use the servers of **%@**, accept conditions of use." = "Per usare i server di **%@**, accetta le condizioni d'uso.";
@@ -5828,9 +5950,6 @@ report reason */
 "You are connected to the server used to receive messages from this contact." = "Sei connesso/a al server usato per ricevere messaggi da questo contatto.";
 
 /* No comment provided by engineer. */
-"You are invited to group" = "sei stato/a invitato/a al gruppo";
-
-/* No comment provided by engineer. */
 "You are invited to group" = "Sei stato/a invitato/a al gruppo";
 
 /* No comment provided by engineer. */
@@ -5981,6 +6100,9 @@ report reason */
 "you unblocked %@" = "hai sbloccato %@";
 
 /* No comment provided by engineer. */
+"You will be able to send messages **only after your request is accepted**." = "Potrai inviare messaggi **solo dopo che la tua richiesta verrà accettata**.";
+
+/* No comment provided by engineer. */
 "You will be connected to group when the group host's device is online, please wait or check later!" = "Verrai connesso/a al gruppo quando il dispositivo dell'host del gruppo sarà in linea, attendi o controlla più tardi!";
 
 /* No comment provided by engineer. */
@@ -6031,8 +6153,11 @@ report reason */
 /* No comment provided by engineer. */
 "Your chat profiles" = "I tuoi profili di chat";
 
+/* alert message */
+"Your chat was moved to %@ but an unexpected error occurred while redirecting you to the profile." = "La tua chat è stata spostata su %@ , ma si è verificato un errore imprevisto mentre venivi reindirizzato/a al profilo.";
+
 /* No comment provided by engineer. */
-"Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." = "La tua connessione è stata spostata a %@, ma si è verificato un errore imprevisto durante il reindirizzamento al profilo.";
+"Your connection was moved to %@ but an error happened when switching profile." = "La tua connessione è stata spostata a %@, ma si è verificato un errore imprevisto durante il reindirizzamento al profilo.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Il tuo contatto ha inviato un file più grande della dimensione massima attualmente supportata (%@).";
@@ -6090,3 +6215,4 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Il tuo indirizzo SimpleX";
+

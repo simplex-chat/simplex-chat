@@ -44,7 +44,6 @@ struct SendMessageView: View {
     @State private var showCustomDisappearingMessageDialogue = false
     @State private var showCustomTimePicker = false
     @State private var selectedDisappearingMessageTime: Int? = customDisappearingMessageTimeDefault.get()
-    @State private var progressByTimeout = false
     @UserDefault(DEFAULT_LIVE_MESSAGE_ALERT_SHOWN) private var liveMessageAlertShown = false
 
     var body: some View {
@@ -76,12 +75,12 @@ struct SendMessageView: View {
             }
         }
         .overlay(alignment: .topTrailing, content: {
-            if !progressByTimeout && teHeight > 100 && !composeState.inProgress {
+            if !composeState.progressByTimeout && teHeight > 100 && !composeState.inProgress {
                 deleteTextButton()
             }
         })
         .overlay(alignment: .bottomTrailing) {
-            if progressByTimeout {
+            if composeState.progressByTimeout {
                 ProgressView()
                     .scaleEffect(1.4)
                     .frame(width: 31, height: 31, alignment: .center)
@@ -97,15 +96,6 @@ struct SendMessageView: View {
         .clipShape(composeShape)
         .overlay(composeShape.strokeBorder(.secondary, lineWidth: 0.5).opacity(0.7))
         .onChange(of: composeState.message, perform: { text in updateFont(text) })
-        .onChange(of: composeState.inProgress) { inProgress in
-            if inProgress {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                    progressByTimeout = composeState.inProgress
-                }
-            } else {
-                progressByTimeout = false
-            }
-        }
         .padding(.vertical, 8)
     }
 

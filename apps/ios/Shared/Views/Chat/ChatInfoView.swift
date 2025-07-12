@@ -111,7 +111,7 @@ struct ChatInfoView: View {
     @State private var sendReceiptsUserDefault = true
     @State private var progressIndicator = false
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
-    
+
     enum ChatInfoViewAlert: Identifiable {
         case clearChatAlert
         case networkStatusAlert
@@ -135,7 +135,7 @@ struct ChatInfoView: View {
             }
         }
     }
-    
+
     var body: some View {
         NavigationView {
             ZStack {
@@ -146,12 +146,12 @@ struct ChatInfoView: View {
                         .onTapGesture {
                             aliasTextFieldFocused = false
                         }
-                    
+
                     localAliasTextEdit()
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .padding(.bottom, 18)
-                    
+
                     GeometryReader { g in
                         HStack(alignment: .center, spacing: 8) {
                             let buttonWidth = g.size.width / 4
@@ -169,7 +169,7 @@ struct ChatInfoView: View {
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 8))
-                    
+
                     if let customUserProfile = customUserProfile {
                         Section(header: Text("Incognito").foregroundColor(theme.colors.secondary)) {
                             HStack {
@@ -180,7 +180,7 @@ struct ChatInfoView: View {
                             }
                         }
                     }
-                    
+
                     Section {
                         if let code = connectionCode { verifyCodeButton(code) }
                         contactPreferencesButton()
@@ -203,19 +203,19 @@ struct ChatInfoView: View {
                         //                    }
                     }
                     .disabled(!contact.ready || !contact.active)
-                    
+
                     Section {
                         ChatTTLOption(chat: chat, progressIndicator: $progressIndicator)
                     } footer: {
                         Text("Delete chat messages from your device.")
                     }
-                    
+
                     if let conn = contact.activeConn {
                         Section {
                             infoRow(Text(String("E2E encryption")), conn.connPQEnabled ? "Quantum resistant" : "Standard")
                         }
                     }
-                    
+
                     if let contactLink = contact.contactLink {
                         Section {
                             SimpleXLinkQRCode(uri: contactLink)
@@ -232,7 +232,7 @@ struct ChatInfoView: View {
                                 .foregroundColor(theme.colors.secondary)
                         }
                     }
-                    
+
                     if contact.ready && contact.active {
                         Section(header: Text("Servers").foregroundColor(theme.colors.secondary)) {
                             networkStatusRow()
@@ -261,12 +261,12 @@ struct ChatInfoView: View {
                             }
                         }
                     }
-                    
+
                     Section {
                         clearChatButton()
                         deleteContactButton()
                     }
-                    
+
                     if developerTools {
                         Section(header: Text("For console").foregroundColor(theme.colors.secondary)) {
                             infoRow("Local name", chat.chatInfo.localDisplayName)
@@ -291,7 +291,7 @@ struct ChatInfoView: View {
                 .navigationBarHidden(true)
                 .disabled(progressIndicator)
                 .opacity(progressIndicator ? 0.6 : 1)
-                
+
                 if progressIndicator {
                     ProgressView().scaleEffect(2)
                 }
@@ -303,7 +303,7 @@ struct ChatInfoView: View {
                 sendReceiptsUserDefault = currentUser.sendRcptsContacts
             }
             sendReceipts = SendReceipts.fromBool(contact.chatSettings.sendRcpts, userDefault: sendReceiptsUserDefault)
-            
+
             Task {
                 do {
                     let (stats, profile) = try await apiContactInfo(chat.chatInfo.apiId)
@@ -342,7 +342,7 @@ struct ChatInfoView: View {
             }
         }
         .actionSheet(item: $actionSheet) { $0.actionSheet }
-        .sheet(item: $sheet) { 
+        .sheet(item: $sheet) {
             if #available(iOS 16.0, *) {
                 $0.content
                     .presentationDetents([.fraction($0.fraction)])
@@ -361,41 +361,51 @@ struct ChatInfoView: View {
             }
         }
     }
-    
+
     private func contactInfoHeader() -> some View {
         VStack(spacing: 8) {
             let cInfo = chat.chatInfo
             ChatInfoImage(chat: chat, size: 192, color: Color(uiColor: .tertiarySystemFill))
                 .padding(.vertical, 12)
+            // show actual display name, alias can be edited in this view
+            let displayName = contact.profile.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+            let fullName = cInfo.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
             if contact.verified {
                 (
                     Text(Image(systemName: "checkmark.shield"))
                         .foregroundColor(theme.colors.secondary)
                         .font(.title2)
                     + textSpace
-                    + Text(contact.profile.displayName)
+                    + Text(displayName)
                         .font(.largeTitle)
                 )
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
                 .padding(.bottom, 2)
             } else {
-                Text(contact.profile.displayName)
+                Text(displayName)
                     .font(.largeTitle)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
                     .padding(.bottom, 2)
             }
-            if cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.fullName != contact.profile.displayName {
+            if fullName != "" && fullName != displayName && fullName != cInfo.displayName.trimmingCharacters(in: .whitespacesAndNewlines)  {
                 Text(cInfo.fullName)
                     .font(.title2)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(3)
+                    .padding(.bottom, 2)
+            }
+            if let descr = cInfo.shortDescr?.trimmingCharacters(in: .whitespacesAndNewlines), descr != "" {
+                Text(descr)
+                    .font(.subheadline)
                     .multilineTextAlignment(.center)
                     .lineLimit(4)
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
     }
-    
+
     private func localAliasTextEdit() -> some View {
         TextField("Set contact name…", text: $localAlias)
             .disableAutocorrection(true)
@@ -412,7 +422,7 @@ struct ChatInfoView: View {
             .multilineTextAlignment(.center)
             .foregroundColor(theme.colors.secondary)
     }
-    
+
     private func setContactAlias() {
         Task {
             do {
@@ -475,7 +485,7 @@ struct ChatInfoView: View {
             )
         }
     }
-    
+
     private func contactPreferencesButton() -> some View {
         NavigationLink {
             ContactPreferencesView(
@@ -491,21 +501,20 @@ struct ChatInfoView: View {
             Label("Contact preferences", systemImage: "switch.2")
         }
     }
-    
+
     private func sendReceiptsOption() -> some View {
-        Picker(selection: $sendReceipts) {
+        WrappedPicker(selection: $sendReceipts) {
             ForEach([.yes, .no, .userDefault(sendReceiptsUserDefault)]) { (opt: SendReceipts) in
                 Text(opt.text)
             }
         } label: {
             Label("Send receipts", systemImage: "checkmark.message")
         }
-        .frame(height: 36)
         .onChange(of: sendReceipts) { _ in
             setSendReceipts()
         }
     }
-    
+
     private func setSendReceipts() {
         var chatSettings = chat.chatInfo.chatSettings ?? ChatSettings.defaults
         chatSettings.sendRcpts = sendReceipts.bool()
@@ -525,7 +534,7 @@ struct ChatInfoView: View {
                 .foregroundColor(.orange)
         }
     }
-    
+
     private func synchronizeConnectionButtonForce() -> some View {
         Button {
             alert = .syncConnectionForceAlert
@@ -534,7 +543,7 @@ struct ChatInfoView: View {
                 .foregroundColor(.red)
         }
     }
-    
+
     private func networkStatusRow() -> some View {
         HStack {
             Text("Network status")
@@ -547,14 +556,14 @@ struct ChatInfoView: View {
             serverImage()
         }
     }
-    
+
     private func serverImage() -> some View {
         let status = networkModel.contactNetworkStatus(contact)
         return Image(systemName: status.imageName)
             .foregroundColor(status == .connected ? .green : theme.colors.secondary)
             .font(.system(size: 12))
     }
-    
+
     private func deleteContactButton() -> some View {
         Button(role: .destructive) {
             deleteContactDialog(
@@ -570,7 +579,7 @@ struct ChatInfoView: View {
                 .foregroundColor(Color.red)
         }
     }
-    
+
     private func clearChatButton() -> some View {
         Button() {
             alert = .clearChatAlert
@@ -579,7 +588,7 @@ struct ChatInfoView: View {
                 .foregroundColor(Color.orange)
         }
     }
-    
+
     private func clearChatAlert() -> Alert {
         Alert(
             title: Text("Clear conversation?"),
@@ -593,14 +602,14 @@ struct ChatInfoView: View {
             secondaryButton: .cancel()
         )
     }
-    
+
     private func networkStatusAlert() -> Alert {
         Alert(
             title: Text("Network status"),
             message: Text(networkModel.contactNetworkStatus(contact).statusExplanation)
         )
     }
-    
+
     private func switchContactAddress() {
         Task {
             do {
@@ -619,7 +628,7 @@ struct ChatInfoView: View {
             }
         }
     }
-    
+
     private func abortSwitchContactAddress() {
         Task {
             do {
@@ -637,7 +646,7 @@ struct ChatInfoView: View {
             }
         }
     }
-    
+
     private func savePreferences() {
         Task {
             do {
@@ -663,19 +672,18 @@ struct ChatTTLOption: View {
     @State private var chatItemTTL: ChatTTL = ChatTTL.chat(.seconds(0))
 
     var body: some View {
-        Picker("Delete messages after", selection: $chatItemTTL) {
+        WrappedPicker("Delete messages after", selection: $chatItemTTL) {
             ForEach(ChatItemTTL.values) { ttl in
                 Text(ttl.deleteAfterText).tag(ChatTTL.chat(ttl))
             }
             let defaultTTL = ChatTTL.userDefault(ChatModel.shared.chatItemTTL)
             Text(defaultTTL.text).tag(defaultTTL)
-            
+
             if case .chat(let ttl) = chatItemTTL, case .seconds = ttl {
                 Text(ttl.deleteAfterText).tag(chatItemTTL)
             }
         }
         .disabled(progressIndicator)
-        .frame(height: 36)
         .onChange(of: chatItemTTL) { ttl in
             if ttl == currentChatItemTTL { return }
             setChatTTL(
@@ -1138,13 +1146,13 @@ func setChatTTL(_ ttl: ChatTTL, hasPreviousTTL: Bool, onCancel: @escaping () -> 
     } else {
         NSLocalizedString("Enable automatic message deletion?", comment: "alert title")
     }
-    
+
     let message = if ttl.neverExpires {
         NSLocalizedString("Messages in this chat will never be deleted.", comment: "alert message")
     } else {
         NSLocalizedString("This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted.", comment: "alert message")
     }
-    
+
     showAlert(title, message: message) {
         [
             UIAlertAction(

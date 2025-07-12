@@ -309,6 +309,7 @@ time interval */
 
 /* accept contact request via notification
 accept incoming call via notification
+alert action
 swipe action */
 "Accept" = "Приеми";
 
@@ -321,7 +322,7 @@ swipe action */
 /* notification body */
 "Accept contact request from %@?" = "Приемане на заявка за контакт от %@?";
 
-/* accept contact request via notification
+/* alert action
 swipe action */
 "Accept incognito" = "Приеми инкогнито";
 
@@ -642,9 +643,6 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Auto-accept images" = "Автоматично приемане на изображения";
-
-/* alert title */
-"SimpleX address settings" = "Автоматично приемане на настройки";
 
 /* No comment provided by engineer. */
 "Back" = "Назад";
@@ -1043,7 +1041,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection" = "Връзка";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection error" = "Грешка при свързване";
 
 /* No comment provided by engineer. */
@@ -1058,7 +1056,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection terminated" = "Връзката е прекратена";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection timeout" = "Времето на изчакване за установяване на връзката изтече";
 
 /* connection information */
@@ -2817,7 +2815,7 @@ new chat action */
 /* alert action */
 "Open" = "Отвори";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Open chat" = "Отвори чат";
 
 /* authentication reason */
@@ -2913,7 +2911,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Моля, проверете дали сте използвали правилния линк или поискайте вашия контакт, за да ви изпрати друг.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Please check your network connection with %@ and try again." = "Моля, проверете мрежовата си връзка с %@ и опитайте отново.";
 
 /* No comment provided by engineer. */
@@ -3120,14 +3118,15 @@ new chat action */
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Намалена консумация на батерията";
 
-/* reject incoming call via notification
+/* alert action
+reject incoming call via notification
 swipe action */
 "Reject" = "Отхвърляне";
 
 /* No comment provided by engineer. */
 "Reject (sender NOT notified)" = "Отхвърляне (подателят НЕ бива уведомен)";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Reject contact request" = "Отхвърли заявката за контакт";
 
 /* call status */
@@ -3217,7 +3216,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Restore database error" = "Грешка при възстановяване на базата данни";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Retry" = "Опитай отново";
 
 /* chat item action */
@@ -3367,9 +3366,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Send delivery receipts to" = "Изпращайте потвърждениe за доставка на";
-
-/* No comment provided by engineer. */
-"send to connect" = "изпрати лично съобщение";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Изпрати лично съобщение за свързване";
@@ -3542,6 +3538,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "SimpleX Address" = "SimpleX Адрес";
+
+/* alert title */
+"SimpleX address settings" = "Автоматично приемане на настройки";
 
 /* No comment provided by engineer. */
 "SimpleX Chat security was audited by Trail of Bits." = "Сигурността на SimpleX Chat беше одитирана от Trail of Bits.";
@@ -3762,7 +3761,7 @@ chat item action */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Втората отметка, която пропуснахме! ✅";
 
-/* No comment provided by engineer. */
+/* alert message */
 "The sender will NOT be notified" = "Подателят НЯМА да бъде уведомен";
 
 /* No comment provided by engineer. */
@@ -4216,9 +4215,6 @@ chat item action */
 "You are connected to the server used to receive messages from this contact." = "Вие сте свързани към сървъра, използван за получаване на съобщения от този контакт.";
 
 /* No comment provided by engineer. */
-"You are invited to group" = "вие сте поканени в групата";
-
-/* No comment provided by engineer. */
 "You are invited to group" = "Поканени сте в групата";
 
 /* No comment provided by engineer. */
@@ -4427,3 +4423,4 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Вашият адрес в SimpleX";
+

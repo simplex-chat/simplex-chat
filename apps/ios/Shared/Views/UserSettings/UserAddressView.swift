@@ -229,15 +229,15 @@ struct UserAddressView: View {
             showAddShortLinkAlert()
         } label: {
             settingsRow("plus", color: theme.colors.primary) {
-                Text("Share profile via link")
+                Text("Share profile with address")
             }
         }
     }
 
     private func showAddShortLinkAlert() {
         showAlert(
-            title: NSLocalizedString("Share profile via link", comment: "alert title"),
-            message: NSLocalizedString("Profile will be shared via the address link.", comment: "alert message"),
+            title: NSLocalizedString("Share profile with address", comment: "alert title"),
+            message: NSLocalizedString("Profile will be shared with the address.", comment: "alert message"),
             buttonTitle: NSLocalizedString("Share profile", comment: "alert button"),
             buttonAction: { addShortLink() },
             cancelButton: true
@@ -255,7 +255,7 @@ struct UserAddressView: View {
                 await MainActor.run { progressIndicator = false }
             } catch let error {
                 logger.error("apiAddMyAddressShortLink: \(responseError(error))")
-                let a = getErrorAlert(error, "Error adding address short link")
+                let a = getErrorAlert(error, "Error adding short link")
                 alert = .error(title: a.title, error: a.message)
                 await MainActor.run { progressIndicator = false }
             }

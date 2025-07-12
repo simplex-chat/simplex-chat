@@ -18,7 +18,8 @@ CREATE TABLE contact_profiles(
   incognito INTEGER,
   local_alias TEXT DEFAULT '' CHECK(local_alias NOT NULL),
   preferences TEXT,
-  contact_link BLOB
+  contact_link BLOB,
+  short_descr TEXT
 );
 CREATE TABLE users(
   user_id INTEGER PRIMARY KEY,
@@ -114,7 +115,8 @@ CREATE TABLE group_profiles(
   user_id INTEGER DEFAULT NULL REFERENCES users ON DELETE CASCADE,
   preferences TEXT,
   description TEXT NULL,
-  member_admission TEXT
+  member_admission TEXT,
+  short_descr TEXT
 );
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID

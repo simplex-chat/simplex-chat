@@ -29,6 +29,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.contacts.*
@@ -40,6 +41,12 @@ import kotlinx.coroutines.flow.filter
 
 @Composable
 fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
+  DisposableEffect(Unit) {
+    onDispose {
+      connectProgressManager.cancelConnectProgress()
+    }
+  }
+
   val oneHandUI = remember { appPrefs.oneHandUI.state }
 
   Box {
@@ -472,6 +479,13 @@ private fun ContactsSearchBar(
     ) {
       searchText.value = searchText.value.copy(it)
     }
+
+    if (connectProgressManager.showConnectProgress != null) {
+      Box(Modifier.padding(end = DEFAULT_PADDING_HALF)) {
+        CIFileViewScope.progressIndicator(sizeMultiplier = 0.75f)
+      }
+    }
+
     val hasText = remember { derivedStateOf { searchText.value.text.isNotEmpty() } }
     if (hasText.value) {
       val hideSearchOnBack: () -> Unit = { searchText.value = TextFieldValue() }
@@ -522,8 +536,11 @@ private fun ContactsSearchBar(
             if (it.isNotEmpty()) {
               // if some other text is pasted, enter search mode
               focusRequester.requestFocus()
-            } else if (listState.layoutInfo.totalItemsCount > 0) {
-              listState.scrollToItem(0)
+            } else {
+              connectProgressManager.cancelConnectProgress()
+              if (listState.layoutInfo.totalItemsCount > 0) {
+                listState.scrollToItem(0)
+              }
             }
             searchShowingSimplexLink.value = false
             searchChatFilteredBySimplexLink.value = null

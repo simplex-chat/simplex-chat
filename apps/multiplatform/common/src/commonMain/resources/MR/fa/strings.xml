@@ -626,7 +626,7 @@
     <string name="network_session_mode_user">نمایه گپ</string>
     <string name="network_session_mode_entity">اتصال</string>
     <string name="app_version_code">ساختار برنامه: %s</string>
-    <string name="network_settings_title">تنظیمات شبکه</string>
+    <string name="network_settings_title">تنظیمات پیشرفته</string>
     <string name="show_dev_options">نمایش:</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>لطفا توجه داشته باشید</b>: واسطه‌های پیام و پرونده از طریق پروکسی SOCKS متصل می‌شوند. تماس‌ها و ارسال پیش‌نمایش‌های لینک از اتصال مستقیم استفاده می‌کنند.]]></string>
     <string name="developer_options_section">گزینه‌های توسعه‌دهنده</string>
@@ -917,7 +917,7 @@
     <string name="permissions_grant_in_settings">اعطای اجازه‌ها در تنظیمات</string>
     <string name="permissions_find_in_settings_and_grant">این مجوز را در تنظیمات اندروید پیدا و به صورت دستی آن را اعطا کنید.</string>
     <string name="permissions_open_settings">باز کردن تنظیمات</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">پروتکل و کد متن‌باز - هر کسی می‌تواند سرورها را راه‌اندازی کند.</string>
+    <string name="opensource_protocol_and_code_anybody_can_run_servers">هر کسی می‌تواند سرویس‌دهنده میزبانی کند.</string>
     <string name="receipts_contacts_title_disable">رسیدها غیرفعال شوند؟</string>
     <string name="receipts_contacts_enable_keep_overrides">فعال کردن (نگه‌داشتن مقدارهای جایگزین شده)</string>
     <string name="permissions_required">اعطای اجازه‌ها</string>
@@ -1851,4 +1851,137 @@
     <string name="remote_ctrl_connection_stopped_identity_desc">این لینک توسط موبایل دیگری استفاده شده است، لطفا لینک جدیدی در کامپیوتر بسازید.</string>
     <string name="file_error_relay">خطای سرور پرونده:%1$s</string>
     <string name="n_file_errors">%1$d خطای پرونده:\n%2$s</string>
+    <string name="forward_files_failed_to_receive_desc">%1$d پرونده هنوز در حال بارگیری هستند</string>
+    <string name="forward_files_missing_desc">%1$d پرونده پاک شدند.</string>
+    <string name="forward_files_not_accepted_desc">%1$d پرونده بارگیری نشدند.</string>
+    <string name="n_other_file_errors">%1$d خطای دیگر در پرونده.</string>
+    <string name="forward_files_messages_deleted_after_selection_title">%1$s پیام باز ارسال نشدند.</string>
+    <string name="group_new_support_chat_one">گفتگو با یک عضو</string>
+    <string name="group_reports_active_one">یک گزارش</string>
+    <string name="chat_item_ttl_year">یک سال</string>
+    <string name="a_plus_b">a + b</string>
+    <string name="onboarding_network_about_operators">درباره عملگرها</string>
+    <string name="onboarding_conditions_accept">پذیرفتن</string>
+    <string name="accept_pending_member_button">پذیرفتن</string>
+    <string name="accept_pending_member_alert_confirmation_as_member">پذیرفتن به عنوان عضو</string>
+    <string name="accept_pending_member_alert_confirmation_as_observer">پذیرفتن به عنوان ناظر</string>
+    <string name="accept_conditions">پذیرفتن شرایط</string>
+    <string name="rcv_group_event_member_accepted">%1$s پذیرفته شد</string>
+    <string name="display_name_accepted_invitation">دعوت پذیرفته شد</string>
+    <string name="rcv_group_event_user_accepted">شما پذیرفته شدید</string>
+    <string name="accept_pending_member_alert_title">پذیرفتن عضو</string>
+    <string name="acknowledged">تأیید شد</string>
+    <string name="acknowledgement_errors">خطاهای تأیید</string>
+    <string name="servers_info_subscriptions_connections_subscribed">ارتباطات فعال</string>
+    <string name="operator_added_xftp_servers">سرویس‌دهنده‌های رسانه و پرونده اضافه شدند</string>
+    <string name="operator_added_message_servers">سرویس‌دهنده‌های پیام اضافه شدند</string>
+    <string name="forward_files_in_progress_desc">%1$d پرونده هنوز در حال بارگیری هستند.</string>
+    <string name="operator_conditions_accepted">شرایط پذیرفته شد</string>
+    <string name="button_add_friends">افزودن دوستان</string>
+    <string name="chat_list_add_list">افزودن فهرست</string>
+    <string name="address_or_1_time_link">نشانی یا پیوند یک‌بار مصرف؟</string>
+    <string name="address_settings">تنظیمات نشانی</string>
+    <string name="add_short_link">افزودن پیوند کوتاه</string>
+    <string name="button_add_team_members">اضافه کردن اعضای تیم</string>
+    <string name="add_to_list">افزودن به فهرست</string>
+    <string name="add_your_team_members_to_conversations">اعضای تیم خود را به گفتگوها اضافه کنید.</string>
+    <string name="member_criteria_all">همه</string>
+    <string name="chat_list_all">همه</string>
+    <string name="delete_chat_list_warning">همه گفتگوها از فهرست %s پاک خواهند شد و فهرست حذف می‌شود.</string>
+    <string name="block_members_desc">همه پیام‌های جدید از این اعضا پنهان خواهند شد!</string>
+    <string name="allow_calls_question">اجازه تماس‌ها؟</string>
+    <string name="enable_sending_member_reports">اجازه گزارش پیام‌ها به ناظران.</string>
+    <string name="all_users">همه نمایه‌ها</string>
+    <string name="report_archive_alert_desc_all">همه گزارش‌ها برای شما بایگانی خواهند شد.</string>
+    <string name="network_smp_web_port_all">همه سرویس‌دهنده‌ها</string>
+    <string name="report_reason_other">دلیلی دیگر</string>
+    <string name="onboarding_notifications_mode_service_desc_short">برنامه همیشه در پس‌زمینه اجرا می‌شود</string>
+    <string name="network_session_mode_session">نشست برنامه</string>
+    <string name="appearance_app_toolbars">نوارهای ابزار برنامه</string>
+    <string name="app_check_for_updates_download_completed_title">به‌روزرسانی برنامه بارگیری شد</string>
+    <string name="archive_verb">بایگانی</string>
+    <string name="report_archive_alert_title_all">همه گزارش‌ها بایگانی شوند؟</string>
+    <string name="v6_0_your_contacts_descr">بایگانی کردن گفتگوها برای چت بعدی.</string>
+    <string name="deleted_chats">مخاطبین بایگانی شده</string>
+    <string name="report_item_archived">گزارش بایگانی شده</string>
+    <string name="report_item_archived_by">گزارش بایگانی شده توسط %s</string>
+    <string name="report_archive_alert_title_nth">بایگانی %d گزارش؟</string>
+    <string name="archive_report">بایگانی گزارش</string>
+    <string name="report_archive_alert_title">گزارش بایگانی شود؟</string>
+    <string name="error_parsing_uri_title">پیوند نامعتبر</string>
+    <string name="error_parsing_uri_desc">لطفاً بررسی کنید که پیوند سیمپلکس درست است.</string>
+    <string name="report_item_visibility_submitter">فقط شما و ناظران آن را می‌بینید</string>
+    <string name="report_item_visibility_moderators">فقط فرستنده و ناظران آن را می‌بینند</string>
+    <string name="display_name_requested_to_connect">درخواست اتصال</string>
+    <string name="simplex_link_channel">پیوند کانال سیمپلکس</string>
+    <string name="report_reason_spam">هرزنامه</string>
+    <string name="report_reason_illegal">محتوای نامناسب</string>
+    <string name="report_reason_community">نقض دستورالعمل‌های انجمن</string>
+    <string name="report_reason_profile">نمایه نامناسب</string>
+    <string name="failed_to_save_servers">خطا در ذخیره سرویس‌دهنده‌ها</string>
+    <string name="no_message_servers_configured">بدون سرویس‌دهنده پیام.</string>
+    <string name="no_message_servers_configured_for_receiving">هیچ سرویس‌دهنده‌ای برای دریافت پیام وجود ندارد.</string>
+    <string name="no_message_servers_configured_for_private_routing">هیچ سرویس‌دهنده‌ای برای مسیردهی پیام خصوصی وجود ندارد.</string>
+    <string name="no_media_servers_configured">بدون سرویس‌دهنده رسانه و پرونده.</string>
+    <string name="no_media_servers_configured_for_sending">هیچ سرویس‌دهنده‌ای برای ارسال پرونده وجود ندارد.</string>
+    <string name="no_media_servers_configured_for_private_routing">هیچ سرویس‌دهنده‌ای برای دریافت پرونده وجود ندارد.</string>
+    <string name="for_chat_profile">برای نمایه گفتگو %s:</string>
+    <string name="errors_in_servers_configuration">خطاها در پیکربندی سرویس‌دهنده‌ها.</string>
+    <string name="error_accepting_operator_conditions">خطا در پذیرفتن شرایط</string>
+    <string name="blocking_reason_spam">هرزنامه</string>
+    <string name="blocking_reason_content">محتوا شرایط استفاده را نقض می‌کند</string>
+    <string name="network_error_broker_host_desc">نشانی سرویس‌دهنده با تنظیمات شبکه سازگار نیست: %1$s.</string>
+    <string name="network_error_broker_version_desc">نسخه سرویس‌دهنده با برنامه شما سازگار نیست: %1$s.</string>
+    <string name="private_routing_error">خطای مسیردهی خصوصی</string>
+    <string name="smp_proxy_error_connecting">خطا در اتصال به سرویس‌دهنده فورواردینگ %1$s. لطفاً بعداً تلاش کنید.</string>
+    <string name="smp_proxy_error_broker_host">نشانی سرویس‌دهنده فورواردینگ با تنظیمات شبکه سازگار نیست: %1$s.</string>
+    <string name="smp_proxy_error_broker_version">نسخه سرویس‌دهنده فورواردینگ با تنظیمات شبکه سازگار نیست: %1$s.</string>
+    <string name="proxy_destination_error_failed_to_connect">سرویس‌دهنده فورواردینگ %1$s نتوانست به سرویس‌دهنده مقصد %2$s متصل شود. لطفاً بعداً تلاش کنید.</string>
+    <string name="proxy_destination_error_broker_host">نشانی سرویس‌دهنده مقصد %1$s با تنظیمات سرویس‌دهنده فورواردینگ %2$s سازگار نیست.</string>
+    <string name="proxy_destination_error_broker_version">نسخه سرویس‌دهنده مقصد %1$s با سرویس‌دهنده فورواردینگ %2$s سازگار نیست.</string>
+    <string name="please_try_later">لطفاً بعداً تلاش کنید.</string>
+    <string name="error_forwarding_messages">خطا در فوروارد کردن پیام‌ها</string>
+    <string name="error_creating_report">خطا در ایجاد گزارش</string>
+    <string name="error_accepting_member">خطا در پذیرفتن عضو</string>
+    <string name="error_deleting_member_support_chat">خطا در پاک کردن گفتگوی با عضو</string>
+    <string name="unsupported_connection_link">پیوند اتصال پشتیبانی‌نشده</string>
+    <string name="link_requires_newer_app_version_please_upgrade">این پیوند به نسخه جدیدتری از برنامه نیاز دارد. لطفاً برنامه را به‌روزرسانی کنید یا از مخاطب خود بخواهید پیوند سازگاری بفرستد.</string>
+    <string name="connection_error_blocked">اتصال مسدود شد</string>
+    <string name="connection_error_blocked_desc">اتصال توسط گرداننده سرویس‌دهنده مسدود شده است:\n%1$s.</string>
+    <string name="connection_error_quota">پیام‌های نرسیده</string>
+    <string name="connection_error_quota_desc">ارتباط به حد نصاب پیام‌های نرسیده رسید، ممکن است مخاطب شما آفلاین باشد.</string>
+    <string name="error_updating_chat_tags">خطا در به‌روزرسانی فهرست گفتگو</string>
+    <string name="compose_view_add_message">افزودن پیام</string>
+    <string name="calls_prohibited_alert_title">امکان تماس وجود ندارد!</string>
+    <string name="cannot_share_message_alert_title">خطا در ارسال پیام</string>
+    <string name="cant_call_contact_alert_title">تماس با مخاطب امکان پذیر نیست</string>
+    <string name="cant_call_member_alert_title">تماس با عضو گروه ممکن نیست</string>
+    <string name="context_user_picker_cant_change_profile_alert_title">تغییر پروفایل امکان پذیر نیست</string>
+    <string name="cant_send_message_to_member_alert_title">ارسال پیام به عضو گروه امکان پذیر نیست</string>
+    <string name="cant_send_message_generic">ارسال پیام امکان پذیر نیست</string>
+    <string name="archive_reports">بایگانی گزارش ها</string>
+    <string name="v6_1_better_calls">تماس های با کیفیت تر</string>
+    <string name="v6_3_better_groups_performance">عملکرد بهتر گروه ها</string>
+    <string name="v6_3_better_privacy_and_security">امنیت و حریم خصوصی قوی تر</string>
+    <string name="change_list">تغییر لیست</string>
+    <string name="change_order_chat_list_menu_action">تغییر ترتیب</string>
+    <string name="info_row_chat">چت</string>
+    <string name="connect_plan_chat_already_exists">این چت از قبل وجود دارد!</string>
+    <string name="member_support">گفتگو با اعضا</string>
+    <string name="delete_chat_for_all_members_cannot_undo_warning">پیام برای همه اعضا حذف خواهد شد - این عمل قابل بازگشت نیست!</string>
+    <string name="chunks_deleted">بخش های حذف شده</string>
+    <string name="chunks_downloaded">بخش های دانلود شده</string>
+    <string name="call_desktop_permission_denied_chrome">برای مجوز میکروفون، روی آیکون اطلاعات کنار نوار آدرس کلیک کنید</string>
+    <string name="completed">تکمیل شد</string>
+    <string name="confirm_delete_contact_question">تایید حذف مخاطب؟</string>
+    <string name="info_view_connect_button">اتصال</string>
+    <string name="compose_view_connect">اتصال</string>
+    <string name="servers_info_sessions_connected">متصل</string>
+    <string name="v6_4_connect_faster">اتصال سریع تر! 🚀</string>
+    <string name="servers_info_sessions_connecting">درحال اتصال</string>
+    <string name="cant_call_contact_connecting_wait_alert_text">درحال اتصال به مخاطب، لطفا منتظر بمانید یا بعداً بررسی کنید!</string>
+    <string name="v6_0_connection_servers_status_descr">وضعیت اتصال و سرور ها</string>
+    <string name="connection_not_ready">اتصال آماده نیست</string>
+    <string name="cant_call_contact_deleted_alert_text">مخاطب حذف شد.</string>
+    <string name="chat_list_contacts">مخاطبین</string>
 </resources>

@@ -32,6 +32,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
 
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
+    public var shortDescr: String? { profile.shortDescr }
     public var image: String? { get { profile.image } }
     public var localAlias: String { get { "" } }
 
@@ -109,12 +110,14 @@ public struct Profile: Codable, NamedChat, Hashable {
     public init(
         displayName: String,
         fullName: String,
+        shortDescr: String? = nil,
         image: String? = nil,
         contactLink: String? = nil,
         preferences: Preferences? = nil
     ) {
         self.displayName = displayName
         self.fullName = fullName
+        self.shortDescr = shortDescr
         self.image = image
         self.contactLink = contactLink
         self.preferences = preferences
@@ -122,6 +125,7 @@ public struct Profile: Codable, NamedChat, Hashable {
 
     public var displayName: String
     public var fullName: String
+    public var shortDescr: String?
     public var image: String?
     public var contactLink: String?
     public var preferences: Preferences?
@@ -142,6 +146,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         profileId: Int64,
         displayName: String,
         fullName: String,
+        shortDescr: String? = nil,
         image: String? = nil,
         contactLink: String? = nil,
         preferences: Preferences? = nil,
@@ -150,6 +155,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         self.profileId = profileId
         self.displayName = displayName
         self.fullName = fullName
+        self.shortDescr = shortDescr
         self.image = image
         self.contactLink = contactLink
         self.preferences = preferences
@@ -159,6 +165,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     public var profileId: Int64
     public var displayName: String
     public var fullName: String
+    public var shortDescr: String?
     public var image: String?
     public var contactLink: String?
     public var preferences: Preferences?
@@ -180,11 +187,27 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
 }
 
 public func toLocalProfile (_ profileId: Int64, _ profile: Profile, _ localAlias: String) -> LocalProfile {
-    LocalProfile(profileId: profileId, displayName: profile.displayName, fullName: profile.fullName, image: profile.image, contactLink: profile.contactLink, preferences: profile.preferences, localAlias: localAlias)
+    LocalProfile(
+        profileId: profileId,
+        displayName: profile.displayName,
+        fullName: profile.fullName,
+        shortDescr: profile.shortDescr,
+        image: profile.image,
+        contactLink: profile.contactLink,
+        preferences: profile.preferences,
+        localAlias: localAlias
+    )
 }
 
 public func fromLocalProfile (_ profile: LocalProfile) -> Profile {
-    Profile(displayName: profile.displayName, fullName: profile.fullName, image: profile.image, contactLink: profile.contactLink, preferences: profile.preferences)
+    Profile(
+        displayName: profile.displayName,
+        fullName: profile.fullName,
+        shortDescr: profile.shortDescr,
+        image: profile.image,
+        contactLink: profile.contactLink,
+        preferences: profile.preferences
+    )
 }
 
 public struct UserProfileUpdateSummary: Decodable, Hashable {
@@ -204,6 +227,7 @@ public enum ChatType: String, Hashable {
 public protocol NamedChat {
     var displayName: String { get }
     var fullName: String { get }
+    var shortDescr: String? { get }
     var image: String? { get }
     var localAlias: String { get }
 }
@@ -1249,6 +1273,17 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public var shortDescr: String? {
+        switch self {
+        case let .direct(contact): contact.profile.shortDescr
+        case let .group(groupInfo, _): groupInfo.groupProfile.shortDescr
+        case .local: nil
+        case let .contactRequest(contactRequest): contactRequest.profile.shortDescr
+        case let .contactConnection(contactConnection): nil
+        case .invalidJSON: nil
+        }
+    }
+
     public var image: String? {
         get {
             switch self {
@@ -1739,6 +1774,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var sendMsgToConnect: Bool { nextSendGrpInv || nextConnectPrepared }
     public var displayName: String { localAlias == "" ? profile.displayName : localAlias }
     public var fullName: String { get { profile.fullName } }
+    public var shortDescr: String? { profile.shortDescr }
     public var image: String? { get { profile.image } }
     public var contactLink: String? { get { profile.contactLink } }
     public var localAlias: String { profile.localAlias }
@@ -1925,6 +1961,7 @@ public struct UserContactRequest: Decodable, NamedChat, Hashable {
     public var apiId: Int64 { get { contactRequestId } }
     var ready: Bool { get { true } }
     public var displayName: String { get { profile.displayName } }
+    public var shortDescr: String? { profile.shortDescr }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
     public var localAlias: String { "" }
@@ -1977,6 +2014,7 @@ public struct PendingContactConnection: Decodable, NamedChat, Hashable {
         }
     }
     public var fullName: String { get { "" } }
+    public var shortDescr: String? { nil }
     public var image: String? { get { nil } }
     public var initiated: Bool { get { (pccConnStatus.initiated ?? false) && !viaContactUri } }
 
@@ -2093,6 +2131,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var profileChangeProhibited: Bool { preparedGroup?.connLinkPreparedConnection ?? false }
     public var displayName: String { localAlias == "" ? groupProfile.displayName : localAlias }
     public var fullName: String { get { groupProfile.fullName } }
+    public var shortDescr: String? { groupProfile.shortDescr }
     public var image: String? { get { groupProfile.image } }
     public var chatTags: [Int64]
     public var chatItemTTL: Int64?
@@ -2152,6 +2191,7 @@ public struct GroupProfile: Codable, NamedChat, Hashable {
     public init(
         displayName: String,
         fullName: String,
+        shortDescr: String? = nil,
         description: String? = nil,
         image: String? = nil,
         groupPreferences: GroupPreferences? = nil,
@@ -2159,6 +2199,7 @@ public struct GroupProfile: Codable, NamedChat, Hashable {
     ) {
         self.displayName = displayName
         self.fullName = fullName
+        self.shortDescr = shortDescr
         self.description = description
         self.image = image
         self.groupPreferences = groupPreferences
@@ -2167,6 +2208,7 @@ public struct GroupProfile: Codable, NamedChat, Hashable {
 
     public var displayName: String
     public var fullName: String
+    public var shortDescr: String?
     public var description: String?
     public var image: String?
     public var groupPreferences: GroupPreferences?
@@ -2447,7 +2489,7 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Cod
 
     public var id: Self { self }
 
-    public static var supportedRoles: [GroupMemberRole] = [.observer, .member, .admin, .owner]
+    public static var supportedRoles: [GroupMemberRole] = [.observer, .member, .moderator, .admin, .owner]
 
     public var text: String {
         switch self {
@@ -2555,6 +2597,7 @@ public struct NoteFolder: Identifiable, Decodable, NamedChat, Hashable {
     public var ready: Bool { get { true } }
     public var displayName: String { get { ChatInfo.privateNotesChatName } }
     public var fullName: String { get { "" } }
+    public var shortDescr: String? { nil }
     public var image: String? { get { nil } }
     public var localAlias: String { get { "" } }
 

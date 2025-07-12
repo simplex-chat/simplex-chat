@@ -971,4 +971,8 @@
     <string name="all_users">Todos os perfis</string>
     <string name="connect_plan_already_connecting">Já conectando!</string>
     <string name="connect_plan_already_joining_the_group">Já entrando no grupo!</string>
+    <string name="forward_files_failed_to_receive_desc">%1$d arquivo(s) falharam o download.</string>
+    <string name="n_file_errors">%1$d erro(s) no arquivo:\n%2$s</string>
+    <string name="forward_files_in_progress_desc">%1$d arquivo(s) estão sendo baixados.</string>
+    <string name="forward_files_missing_desc">%1$d arquivo(s) foram deletados.</string>
 </resources>

@@ -317,9 +317,9 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
   XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr} -> ChatMsgEvent 'Json
   XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: Map MemberName MsgMention, ttl :: Maybe Int, live :: Maybe Bool, scope :: Maybe MsgScope} -> ChatMsgEvent 'Json
-  XMsgDel :: SharedMsgId -> Maybe MemberId -> ChatMsgEvent 'Json
+  XMsgDel :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope} -> ChatMsgEvent 'Json
   XMsgDeleted :: ChatMsgEvent 'Json
-  XMsgReact :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, reaction :: MsgReaction, add :: Bool} -> ChatMsgEvent 'Json
+  XMsgReact :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope, reaction :: MsgReaction, add :: Bool} -> ChatMsgEvent 'Json
   XFile :: FileInvitation -> ChatMsgEvent 'Json -- TODO discontinue
   XFileAcpt :: String -> ChatMsgEvent 'Json -- direct file protocol
   XFileAcptInv :: SharedMsgId -> Maybe ConnReqInvitation -> String -> ChatMsgEvent 'Json
@@ -369,6 +369,8 @@ data AChatMsgEvent = forall e. MsgEncodingI e => ACME (SMsgEncoding e) (ChatMsgE
 
 deriving instance Show AChatMsgEvent
 
+-- when sending, used for deciding whether message will be forwarded by host or not (memberSendAction);
+-- actual filtering on forwarding is done in processEvent
 isForwardedGroupMsg :: ChatMsgEvent e -> Bool
 isForwardedGroupMsg ev = case ev of
   XMsgNew mc -> case mcExtMsgContent mc of
@@ -376,7 +378,7 @@ isForwardedGroupMsg ev = case ev of
     _ -> True
   XMsgFileDescr _ _ -> True
   XMsgUpdate {} -> True
-  XMsgDel _ _ -> True
+  XMsgDel {} -> True
   XMsgReact {} -> True
   XFileCancel _ -> True
   XInfo _ -> True
@@ -390,12 +392,7 @@ isForwardedGroupMsg ev = case ev of
   XGrpPrefs _ -> True
   _ -> False
 
-forwardedGroupMsg :: forall e. MsgEncodingI e => ChatMessage e -> Maybe (ChatMessage 'Json)
-forwardedGroupMsg msg@ChatMessage {chatMsgEvent} = case encoding @e of
-  SJson | isForwardedGroupMsg chatMsgEvent -> Just msg
-  _ -> Nothing
-
--- applied after checking forwardedGroupMsg and building list of group members to forward to, see Chat;
+-- applied after building list of messages to forward and building list of group members to forward to, see Chat;
 --
 -- this filters out members if any of forwarded events in batch is an XGrpMemRestrict event referring to them,
 -- but practically XGrpMemRestrict is not batched with other events so it wouldn't prevent forwarding of other events
@@ -403,27 +400,23 @@ forwardedGroupMsg msg@ChatMessage {chatMsgEvent} = case encoding @e of
 --
 -- same for reports (MCReport) - they are not batched with other events, so we can safely filter out
 -- members with role less than moderator when forwarding
-forwardedToGroupMembers :: forall e. MsgEncodingI e => [GroupMember] -> NonEmpty (ChatMessage e) -> [GroupMember]
-forwardedToGroupMembers ms forwardedMsgs =
-  filter forwardToMember ms
+msgsForwardedToMember :: NonEmpty (ChatMessage 'Json) -> GroupMember -> Bool
+msgsForwardedToMember fwdMsgs GroupMember {memberId, memberRole} =
+  (memberId `notElem` restrictMemberIds) && (not hasReport || memberRole >= GRModerator)
   where
-    forwardToMember GroupMember {memberId, memberRole} =
-      (memberId `notElem` restrictMemberIds)
-        && (not hasReport || memberRole >= GRModerator)
-    restrictMemberIds = mapMaybe restrictMemberId $ L.toList forwardedMsgs
-    restrictMemberId ChatMessage {chatMsgEvent} = case encoding @e of
-      SJson -> case chatMsgEvent of
+    restrictMemberIds = mapMaybe restrictMemberId $ L.toList fwdMsgs
+    restrictMemberId :: ChatMessage 'Json -> Maybe MemberId
+    restrictMemberId ChatMessage {chatMsgEvent} =
+      case chatMsgEvent of
         XGrpMemRestrict mId _ -> Just mId
         _ -> Nothing
-      _ -> Nothing
-    hasReport = any isReportEvent forwardedMsgs
-    isReportEvent ChatMessage {chatMsgEvent} = case encoding @e of
-      SJson -> case chatMsgEvent of
+    hasReport = any isReportEvent fwdMsgs
+    isReportEvent ChatMessage {chatMsgEvent} =
+      case chatMsgEvent of
         XMsgNew mc -> case mcExtMsgContent mc of
           ExtMsgContent {content = MCReport {}} -> True
           _ -> False
         _ -> False
-      _ -> False
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
   deriving (Eq, Show)
@@ -1105,9 +1098,9 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
         live <- opt "live"
         scope <- opt "scope"
         pure XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope}
-      XMsgDel_ -> XMsgDel <$> p "msgId" <*> opt "memberId"
+      XMsgDel_ -> XMsgDel <$> p "msgId" <*> opt "memberId" <*> opt "scope"
       XMsgDeleted_ -> pure XMsgDeleted
-      XMsgReact_ -> XMsgReact <$> p "msgId" <*> opt "memberId" <*> p "reaction" <*> p "add"
+      XMsgReact_ -> XMsgReact <$> p "msgId" <*> opt "memberId" <*> opt "scope" <*> p "reaction" <*> p "add"
       XFile_ -> XFile <$> p "file"
       XFileAcpt_ -> XFileAcpt <$> p "fileName"
       XFileAcptInv_ -> XFileAcptInv <$> p "msgId" <*> opt "fileConnReq" <*> p "fileName"
@@ -1176,9 +1169,9 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XMsgNew container -> msgContainerJSON container
       XMsgFileDescr msgId' fileDescr -> o ["msgId" .= msgId', "fileDescr" .= fileDescr]
       XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope} -> o $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
-      XMsgDel msgId' memberId -> o $ ("memberId" .=? memberId) ["msgId" .= msgId']
+      XMsgDel msgId' memberId scope -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
-      XMsgReact msgId' memberId reaction add -> o $ ("memberId" .=? memberId) ["msgId" .= msgId', "reaction" .= reaction, "add" .= add]
+      XMsgReact msgId' memberId scope reaction add -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) ["msgId" .= msgId', "reaction" .= reaction, "add" .= add]
       XFile fileInv -> o ["file" .= fileInv]
       XFileAcpt fileName -> o ["fileName" .= fileName]
       XFileAcptInv sharedMsgId fileConnReq fileName -> o $ ("fileConnReq" .=? fileConnReq) ["msgId" .= sharedMsgId, "fileName" .= fileName]

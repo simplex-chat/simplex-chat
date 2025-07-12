@@ -240,6 +240,7 @@ time interval */
 
 /* accept contact request via notification
 accept incoming call via notification
+alert action
 swipe action */
 "Accept" = "Hyväksy";
 
@@ -249,7 +250,7 @@ swipe action */
 /* notification body */
 "Accept contact request from %@?" = "Hyväksy kontaktipyyntö %@:ltä?";
 
-/* accept contact request via notification
+/* alert action
 swipe action */
 "Accept incognito" = "Hyväksy tuntematon";
 
@@ -694,7 +695,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection" = "Yhteys";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection error" = "Yhteysvirhe";
 
 /* No comment provided by engineer. */
@@ -706,7 +707,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection request sent!" = "Yhteyspyyntö lähetetty!";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection timeout" = "Yhteyden aikakatkaisu";
 
 /* connection information */
@@ -2152,7 +2153,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Vain kontaktisi voi lähettää ääniviestejä.";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Open chat" = "Avaa keskustelu";
 
 /* authentication reason */
@@ -2206,7 +2207,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Tarkista, että käytit oikeaa linkkiä tai pyydä kontaktiasi lähettämään sinulle uusi linkki.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Please check your network connection with %@ and try again." = "Tarkista verkkoyhteytesi %@:lla ja yritä uudelleen.";
 
 /* No comment provided by engineer. */
@@ -2380,14 +2381,15 @@ new chat action */
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Pienempi akun käyttö";
 
-/* reject incoming call via notification
+/* alert action
+reject incoming call via notification
 swipe action */
 "Reject" = "Hylkää";
 
 /* No comment provided by engineer. */
 "Reject (sender NOT notified)" = "Hylkää (lähettäjälle EI ilmoiteta)";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Reject contact request" = "Hylkää yhteyspyyntö";
 
 /* call status */
@@ -2911,7 +2913,7 @@ chat item action */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Toinen kuittaus, joka uupui! ✅";
 
-/* No comment provided by engineer. */
+/* alert message */
 "The sender will NOT be notified" = "Lähettäjälle EI ilmoiteta";
 
 /* No comment provided by engineer. */
@@ -3215,9 +3217,6 @@ chat item action */
 "You are connected to the server used to receive messages from this contact." = "Olet yhteydessä palvelimeen, jota käytetään vastaanottamaan viestejä tältä kontaktilta.";
 
 /* No comment provided by engineer. */
-"You are invited to group" = "sinut on kutsuttu ryhmään";
-
-/* No comment provided by engineer. */
 "You are invited to group" = "Sinut on kutsuttu ryhmään";
 
 /* No comment provided by engineer. */
@@ -3402,3 +3401,4 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "SimpleX-osoitteesi";
+

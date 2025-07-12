@@ -330,6 +330,7 @@ time interval */
 
 /* accept contact request via notification
 accept incoming call via notification
+alert action
 swipe action */
 "Accept" = "承諾";
 
@@ -339,7 +340,7 @@ swipe action */
 /* notification body */
 "Accept contact request from %@?" = "%@ からの連絡要求を受け入れますか?";
 
-/* accept contact request via notification
+/* alert action
 swipe action */
 "Accept incognito" = "シークレットモードで承諾";
 
@@ -880,7 +881,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection and servers status." = "接続とサーバーのステータス。";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection error" = "接続エラー";
 
 /* No comment provided by engineer. */
@@ -895,7 +896,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection terminated" = "接続停止";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection timeout" = "接続タイムアウト";
 
 /* connection information */
@@ -2371,7 +2372,7 @@ new chat action */
 /* alert action */
 "Open" = "開く";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Open chat" = "チャットを開く";
 
 /* authentication reason */
@@ -2425,7 +2426,7 @@ new chat action */
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "リンクが正しいかどうかご確認ください。または、連絡相手にもう一度リンクをお求めください。";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Please check your network connection with %@ and try again." = "%@ を使用してネットワーク接続を確認し、再試行してください。";
 
 /* No comment provided by engineer. */
@@ -2599,14 +2600,15 @@ new chat action */
 /* No comment provided by engineer. */
 "Reduced battery usage" = "電池使用量低減";
 
-/* reject incoming call via notification
+/* alert action
+reject incoming call via notification
 swipe action */
 "Reject" = "拒否";
 
 /* No comment provided by engineer. */
 "Reject (sender NOT notified)" = "連絡を拒否（送信者には通知されません）";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Reject contact request" = "連絡要求を拒否する";
 
 /* call status */
@@ -3112,7 +3114,7 @@ chat item action */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "長らくお待たせしました！ ✅";
 
-/* No comment provided by engineer. */
+/* alert message */
 "The sender will NOT be notified" = "送信者には通知されません";
 
 /* No comment provided by engineer. */
@@ -3416,9 +3418,6 @@ chat item action */
 "You are invited to group" = "グループ招待が届きました";
 
 /* No comment provided by engineer. */
-"You are invited to group" = "グループ招待が届きました";
-
-/* No comment provided by engineer. */
 "you are observer" = "あなたはオブザーバーです";
 
 /* No comment provided by engineer. */
@@ -3603,3 +3602,4 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "あなたのSimpleXアドレス";
+
