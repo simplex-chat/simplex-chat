@@ -131,18 +131,18 @@ toMsgScope GroupInfo {membership} = \case
 data GroupForwardScope
   = GFSAll -- message should be forwarded to all group members, even pending (e.g. XGrpDel, XGrpInfo)
   | GFSMain -- message should be forwarded to current group members only (e.g. regular messages in group)
-  | GFSMemberSupport {groupMemberId_ :: Maybe GroupMemberId}
+  | GFSMemberSupport GroupMemberId
   deriving (Eq, Ord, Show)
 
-toGroupForwardScope :: Maybe GroupChatScopeInfo -> GroupForwardScope
-toGroupForwardScope = \case
+toGroupForwardScope :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupForwardScope
+toGroupForwardScope GroupInfo {membership} = \case
   Nothing -> GFSMain
-  Just GCSIMemberSupport {groupMember_} -> GFSMemberSupport $ groupMemberId' <$> groupMember_
+  Just GCSIMemberSupport {groupMember_} -> GFSMemberSupport $ groupMemberId' $ fromMaybe membership groupMember_
 
 memberEventForwardScope :: GroupMember -> Maybe GroupForwardScope
 memberEventForwardScope m@GroupMember {memberRole, memberStatus}
   | memberStatus == GSMemPendingApproval = Nothing
-  | memberStatus == GSMemPendingReview = Just $ GFSMemberSupport (Just $ groupMemberId' m)
+  | memberStatus == GSMemPendingReview = Just $ GFSMemberSupport $ groupMemberId' m
   | memberRole >= GRModerator = Just GFSAll
   | otherwise = Just GFSMain
 

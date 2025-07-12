@@ -60,6 +60,8 @@ module Simplex.Chat.Store.Groups
     getMentionedMemberByMemberId,
     getGroupMemberById,
     getGroupMemberByMemberId,
+    getGroupMemberIdViaMemberId,
+    getScopeMemberIdViaMemberId,
     getGroupMembers,
     getGroupModerators,
     getGroupMembersForExpiration,
@@ -1094,6 +1096,20 @@ getGroupMemberByMemberId db vr user@User {userId} GroupInfo {groupId} memberId =
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.member_id = ?")
       (userId, groupId, memberId)
 
+getScopeMemberIdViaMemberId :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberId -> ExceptT StoreError IO GroupMemberId
+getScopeMemberIdViaMemberId db user g@GroupInfo {membership} sender scopeMemberId
+  | scopeMemberId == memberId' membership = pure $ groupMemberId' membership
+  | scopeMemberId == memberId' sender = pure $ groupMemberId' sender
+  | otherwise = getGroupMemberIdViaMemberId db user g scopeMemberId
+
+getGroupMemberIdViaMemberId :: DB.Connection -> User -> GroupInfo -> MemberId -> ExceptT StoreError IO GroupMemberId
+getGroupMemberIdViaMemberId db User {userId} GroupInfo {groupId} memberId =
+  ExceptT . firstRow fromOnly (SEGroupMemberNotFoundByMemberId memberId) $
+    DB.query
+      db
+      "SELECT group_member_id FROM group_members WHERE user_id = ? AND group_id = ? AND member_id = ?"
+      (userId, groupId, memberId)
+
 getGroupMembers :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
 getGroupMembers db vr user@User {userId, userContactId} GroupInfo {groupId} = do
   map (toContactMember vr user)
@@ -1713,7 +1729,7 @@ getIntroducedGroupMemberIds db invitee =
 getForwardIntroducedMembers :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> Bool -> IO [GroupMember]
 getForwardIntroducedMembers db vr user invitee highlyAvailable = do
   memberIds <- map fromOnly <$> query
-  rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
+  filter memberCurrent . rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
   where
     mId = groupMemberId' invitee
     query
@@ -1753,7 +1769,7 @@ getForwardIntroducedModerators db vr user@User {userContactId} invitee = do
 getForwardInvitedMembers :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> Bool -> IO [GroupMember]
 getForwardInvitedMembers db vr user forwardMember highlyAvailable = do
   memberIds <- map fromOnly <$> query
-  rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
+  filter memberCurrent . rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
   where
     mId = groupMemberId' forwardMember
     query

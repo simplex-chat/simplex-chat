@@ -4,6 +4,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -996,7 +997,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 GFSMain -> do
                   ms <- getAllIntroducedAndInvited
                   pure $ filter (\mem -> memberCurrent mem && msgsForwardedToMember fwdMsgs mem) ms
-                GFSMemberSupport scopeGMId_ -> do
+                GFSMemberSupport scopeGMId -> do
                   -- moderators introduced to this invited member
                   introducedModMs <-
                     if memberCategory m == GCInviteeMember
@@ -1010,12 +1011,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         && maxVersion (memberChatVRange mem) >= groupKnockingVersion
                         && msgsForwardedToMember fwdMsgs mem
                       modMs' = filter moderatorFilter modMs
-                  case scopeGMId_ of
-                    Just scopeGMId | scopeGMId /= groupMemberId' m ->
+                  if scopeGMId == groupMemberId' m
+                    then pure modMs'
+                    else
                       withStore' (\db -> getForwardScopeMember db vr user m scopeGMId) >>= \case
                         Just scopeMem | msgsForwardedToMember fwdMsgs scopeMem -> pure $ scopeMem : modMs'
                         _ -> pure modMs'
-                    _ -> pure modMs'
                 where
                   getAllIntroducedAndInvited = do
                     ChatConfig {highlyAvailable} <- asks config
@@ -1704,7 +1705,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       processFDMessage fileId aci fileDescr
 
     groupMessageFileDescription :: GroupInfo -> GroupMember -> SharedMsgId -> FileDescr -> CM (Maybe GroupForwardScope)
-    groupMessageFileDescription GroupInfo {groupId} GroupMember {memberId} sharedMsgId fileDescr = do
+    groupMessageFileDescription g@GroupInfo {groupId} GroupMember {memberId} sharedMsgId fileDescr = do
       (fileId, aci) <- withStore $ \db -> do
         fileId <- getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
         aci <- getChatItemByFileId db vr user fileId
@@ -1717,7 +1718,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               -- for example failure on not approved relays (CEFileNotApproved).
               -- we catch error, so that even if processFDMessage fails, message can still be forwarded.
               processFDMessage fileId aci fileDescr `catchChatError` \_ -> pure ()
-              pure $ Just (toGroupForwardScope scopeInfo)
+              pure $ Just $ toGroupForwardScope g scopeInfo
             else
               messageError "x.msg.file.descr: file of another member" $> Nothing
         _ -> messageError "x.msg.file.descr: invalid file description part" $> Nothing
@@ -1849,15 +1850,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   | memberRole >= GRModerator || scopeMemberId == memberId' m ->
                       withStore $ \db -> do
                         liftIO $ setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
-                        scopeGMId_ <-
-                          if memberRole >= GRModerator
-                            then Just . groupMemberId' <$> getGroupMemberByMemberId db vr user g scopeMemberId
-                            else pure Nothing
-                        pure $ Just $ GFSMemberSupport scopeGMId_
+                        Just . GFSMemberSupport <$> getScopeMemberIdViaMemberId db user g m scopeMemberId
                   | otherwise -> pure Nothing
                 Nothing -> do
                   withStore' $ \db -> setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
-                  pure $ Just GFSAll
+                  pure $ Just GFSMain
             else pure Nothing
       | otherwise = pure Nothing
       where
@@ -1874,7 +1871,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               let ci' = CChatItem md ci {reactions}
                   r = ACIReaction SCTGroup SMDRcv (GroupChat g scopeInfo) $ CIReaction (CIGroupRcv m) ci' brokerTs reaction
               toView $ CEvtChatItemReaction user add r
-              pure $ Just (toGroupForwardScope scopeInfo)
+              pure $ Just $ toGroupForwardScope g scopeInfo
             else pure Nothing
 
     reactionAllowed :: Bool -> MsgReaction -> [MsgReaction] -> Bool
@@ -1902,7 +1899,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   pure Nothing
                 Nothing -> do
                   createContentItem gInfo' m' scopeInfo
-                  pure $ Just (toGroupForwardScope scopeInfo)
+                  pure $ Just $ toGroupForwardScope gInfo scopeInfo
       where
         rejected gInfo' m' scopeInfo f = newChatItem gInfo' m' scopeInfo (ciContentNoParse $ CIRcvGroupFeatureRejected f) Nothing Nothing False
         timed' gInfo' = if forwarded then rcvCITimed_ (Just Nothing) itemTTL else rcvGroupCITimed gInfo' itemTTL
@@ -1966,7 +1963,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               ci' <- updateGroupChatItem db user groupId ci content True live Nothing
               blockedMember m' ci' $ markGroupChatItemBlocked db user gInfo' ci'
             toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci')
-            pure $ Just (toGroupForwardScope scopeInfo)
+            pure $ Just $ toGroupForwardScope gInfo scopeInfo
       where
         content = CIRcvMsgContent mc
         ts@(_, ft_) = msgContentTexts mc
@@ -1991,7 +1988,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         updateGroupCIMentions db gInfo ci' ciMentions
                       toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci')
                       startUpdatedTimedItemThread user (ChatRef CTGroup groupId $ toChatScope <$> scopeInfo) ci ci'
-                      pure $ Just (toGroupForwardScope scopeInfo)
+                      pure $ Just $ toGroupForwardScope gInfo scopeInfo
                     else do
                       toView $ CEvtChatItemNotChanged user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci)
                       pure Nothing
@@ -2027,11 +2024,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               Just (MSMember scopeMemberId) ->
                 withStore $ \db -> do
                   liftIO $ createCIModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
-                  scopeMem <- getGroupMemberByMemberId db vr user gInfo scopeMemberId
-                  pure $ Just $ GFSMemberSupport $ Just $ groupMemberId' scopeMem
+                  Just . GFSMemberSupport <$> getScopeMemberIdViaMemberId db user gInfo m scopeMemberId
               Nothing -> do
                 withStore' $ \db -> createCIModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
-                pure $ Just GFSAll
+                pure $ Just GFSMain
       where
         moderate :: GroupMember -> CChatItem 'CTGroup -> CM (Maybe GroupForwardScope)
         moderate mem cci = case sndMemberId_ of
@@ -2053,7 +2049,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             then deleteGroupCIs user gInfo scopeInfo [cci] byGroupMember brokerTs
             else markGroupCIsDeleted user gInfo scopeInfo [cci] byGroupMember brokerTs
           toView $ CEvtChatItemsDeleted user deletions False False
-          pure $ toGroupForwardScope scopeInfo
+          pure $ toGroupForwardScope gInfo scopeInfo
         archiveMessageReports :: CChatItem 'CTGroup -> GroupMember -> CM ()
         archiveMessageReports (CChatItem _ ci) byMember = do
           ciIds <- withStore' $ \db -> markMessageReportsDeleted db user gInfo ci byMember brokerTs
@@ -2191,7 +2187,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       receiveFileChunk ft Nothing meta chunk
 
     xFileCancelGroup :: GroupInfo -> GroupMember -> SharedMsgId -> CM (Maybe GroupForwardScope)
-    xFileCancelGroup GroupInfo {groupId} GroupMember {memberId} sharedMsgId = do
+    xFileCancelGroup g@GroupInfo {groupId} GroupMember {memberId} sharedMsgId = do
       (fileId, aci) <- withStore $ \db -> do
         fileId <- getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
         aci <- getChatItemByFileId db vr user fileId
@@ -2204,7 +2200,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               unless (rcvFileCompleteOrCancelled ft) $ do
                 cancelRcvFileTransfer user ft >>= mapM_ deleteAgentConnectionAsync
                 toView $ CEvtRcvFileSndCancelled user aci ft
-              pure $ Just (toGroupForwardScope scopeInfo)
+              pure $ Just $ toGroupForwardScope g scopeInfo
             else
               -- shouldn't happen now that query includes group member id
               messageError "x.file.cancel: group member attempted to cancel file of another member" $> Nothing
@@ -2760,7 +2756,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           _ -> GSMemAnnounced
         forwardScope GroupMember {groupMemberId, memberStatus}
           | memberStatus == GSMemPendingApproval = Nothing
-          | memberStatus == GSMemPendingReview = Just $ GFSMemberSupport (Just groupMemberId)
+          | memberStatus == GSMemPendingReview = Just $ GFSMemberSupport groupMemberId
           | otherwise = Just GFSMain
         memberAnnouncedToView announcedMember@GroupMember {groupMemberId, memberProfile} gInfo' = do
           (announcedMember', scopeInfo) <- getMemNewChatScope announcedMember
