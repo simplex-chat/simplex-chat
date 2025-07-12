@@ -2176,9 +2176,6 @@ chat item action */
 "Error accepting member" = "Error al aceptar el miembro";
 
 /* No comment provided by engineer. */
-"Error adding address short link" = "Error al añadir dirección de enlace corto";
-
-/* No comment provided by engineer. */
 "Error adding member(s)" = "Error al añadir miembro(s)";
 
 /* alert title */
@@ -2296,10 +2293,10 @@ chat item action */
 "Error opening chat" = "Error al abrir chat";
 
 /* No comment provided by engineer. */
-"Error preparing contact" = "Error al preparar el contacto";
+"Error opening chat" = "Error al preparar el contacto";
 
 /* No comment provided by engineer. */
-"Error preparing group" = "Error al preparar el grupo";
+"Error opening group" = "Error al preparar el grupo";
 
 /* alert title */
 "Error receiving file" = "Error al recibir archivo";
@@ -4097,7 +4094,7 @@ new chat action */
 "Profile update will be sent to your contacts." = "La actualización del perfil se enviará a tus contactos.";
 
 /* alert message */
-"Profile will be shared via the address link." = "El perfil será compartido mediante la dirección de contacto.";
+"Profile will be shared with the address." = "El perfil será compartido mediante la dirección de contacto.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "No se permiten llamadas y videollamadas.";
@@ -4938,7 +4935,7 @@ chat item action */
 "Share profile" = "Perfil a compartir";
 
 /* alert title */
-"Share profile via link" = "Compartir perfil mediante enlace";
+"Share profile with address" = "Compartir perfil mediante enlace";
 
 /* No comment provided by engineer. */
 "Share SimpleX address on social media." = "Comparte tu dirección SimpleX en redes sociales.";
@@ -6163,7 +6160,7 @@ report reason */
 "Your chat was moved to %@ but an unexpected error occurred while redirecting you to the profile." = "Tu chat ha sido movido a %@ pero ha ocurrido un error inesperado mientras se te redirigía al perfil.";
 
 /* No comment provided by engineer. */
-"Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." = "Tu conexión ha sido trasladada a %@ pero ha ocurrido un error inesperado al redirigirte al perfil.";
+"Your connection was moved to %@ but an error happened when switching profile." = "Tu conexión ha sido trasladada a %@ pero ha ocurrido un error inesperado al redirigirte al perfil.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "El contacto ha enviado un archivo mayor al máximo admitido (%@).";
@@ -6221,4 +6218,3 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Mi dirección SimpleX";
-

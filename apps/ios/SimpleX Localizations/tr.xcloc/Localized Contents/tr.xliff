@@ -3200,11 +3200,6 @@ chat item action</note>
         <target>Üyeyi kabul etme hatası</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error adding address short link" xml:space="preserve">
-        <source>Error adding address short link</source>
-        <target>Adres kısa bağlantısı ekleme hatası</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
         <source>Error adding member(s)</source>
         <target>Üye(ler) eklenirken hata oluştu</target>
@@ -3400,13 +3395,13 @@ chat item action</note>
         <target>Sohbeti açarken sorun oluştu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error preparing contact" xml:space="preserve">
-        <source>Error preparing contact</source>
+      <trans-unit id="Error opening chat" xml:space="preserve">
+        <source>Error opening chat</source>
         <target>Kişiyi hazırlama hatası</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error preparing group" xml:space="preserve">
-        <source>Error preparing group</source>
+      <trans-unit id="Error opening group" xml:space="preserve">
+        <source>Error opening group</source>
         <target>Grubu hazırlama hatası</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -6147,8 +6142,8 @@ Hata: %@</target>
         <target>Profil güncellemesi kişilerinize gönderilecektir.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Profile will be shared via the address link." xml:space="preserve">
-        <source>Profile will be shared via the address link.</source>
+      <trans-unit id="Profile will be shared with the address." xml:space="preserve">
+        <source>Profile will be shared with the address.</source>
         <target>Profil adres bağlantısı aracılığıyla paylaşılacaktır.</target>
         <note>alert message</note>
       </trans-unit>
@@ -7433,8 +7428,8 @@ chat item action</note>
         <target>Profil paylaş</target>
         <note>alert button</note>
       </trans-unit>
-      <trans-unit id="Share profile via link" xml:space="preserve">
-        <source>Share profile via link</source>
+      <trans-unit id="Share profile with address" xml:space="preserve">
+        <source>Share profile with address</source>
         <target>Profili bağlantı aracılığıyla paylaş</target>
         <note>alert title</note>
       </trans-unit>
@@ -9286,8 +9281,8 @@ Bağlantı isteği tekrarlansın mı?</target>
         <target>Sohbetiniz %@'ya taşındı ancak sizi profile yönlendirirken beklenmedik bir hata oluştu.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." xml:space="preserve">
-        <source>Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile.</source>
+      <trans-unit id="Your connection was moved to %@ but an error happened when switching profile." xml:space="preserve">
+        <source>Your connection was moved to %@ but an error happened when switching profile.</source>
         <target>Bağlantınız %@ adresine taşındı ancak sizi profile yönlendirirken beklenmedik bir hata oluştu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

@@ -2429,8 +2429,7 @@
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[You will be able to send messages <b>仅在你的请求被接收后</b>.]]></string>
     <string name="compose_view_connect">连接</string>
     <string name="contact_should_accept">联系人应当接受…</string>
-    <string name="error_changing_contact_user">更改联系用户出错</string>
-    <string name="error_changing_group_user">更改群用户出错</string>
+    <string name="error_changing_user">更改户出错</string>
     <string name="error_preparing_contact">准备联系时出错</string>
     <string name="error_preparing_group">准备群时出错</string>
     <string name="error_rejecting_contact_request">拒绝联络请求出错</string>

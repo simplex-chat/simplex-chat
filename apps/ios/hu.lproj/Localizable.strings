@@ -2176,9 +2176,6 @@ chat item action */
 "Error accepting member" = "Hiba a tag befogadásakor";
 
 /* No comment provided by engineer. */
-"Error adding address short link" = "Hiba a rövid címhivatkozás hozzáadásakor";
-
-/* No comment provided by engineer. */
 "Error adding member(s)" = "Hiba történt a tag(ok) hozzáadásakor";
 
 /* alert title */
@@ -2296,10 +2293,10 @@ chat item action */
 "Error opening chat" = "Hiba történt a csevegés megnyitásakor";
 
 /* No comment provided by engineer. */
-"Error preparing contact" = "Hiba a kapcsolat előkészítésekor";
+"Error opening chat" = "Hiba a kapcsolat előkészítésekor";
 
 /* No comment provided by engineer. */
-"Error preparing group" = "Hiba a csoport előkészítésekor";
+"Error opening group" = "Hiba a csoport előkészítésekor";
 
 /* alert title */
 "Error receiving file" = "Hiba történt a fájl fogadásakor";
@@ -4097,7 +4094,7 @@ new chat action */
 "Profile update will be sent to your contacts." = "A profilfrissítés el lesz küldve a partnerei számára.";
 
 /* alert message */
-"Profile will be shared via the address link." = "A profil meg lesz osztva a címhivatkozáson keresztül.";
+"Profile will be shared with the address." = "A profil meg lesz osztva a címhivatkozáson keresztül.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "A hívások kezdeményezése le van tiltva.";
@@ -4938,7 +4935,7 @@ chat item action */
 "Share profile" = "Profil megosztása";
 
 /* alert title */
-"Share profile via link" = "Profil megosztása hivatkozáson keresztül";
+"Share profile with address" = "Profil megosztása hivatkozáson keresztül";
 
 /* No comment provided by engineer. */
 "Share SimpleX address on social media." = "SimpleX-cím megosztása a közösségi médiában.";
@@ -6163,7 +6160,7 @@ report reason */
 "Your chat was moved to %@ but an unexpected error occurred while redirecting you to the profile." = "A csevegés át lett helyezve ide: %@, de egy váratlan hiba történt a profilra való átirányításkor.";
 
 /* No comment provided by engineer. */
-"Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." = "A kapcsolata át lett helyezve ide: %@, de egy váratlan hiba történt a profilra való átirányításkor.";
+"Your connection was moved to %@ but an error happened when switching profile." = "A kapcsolata át lett helyezve ide: %@, de egy váratlan hiba történt a profilra való átirányításkor.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "A partnere a jelenleg megengedett maximális méretű (%@) fájlnál nagyobbat küldött.";
@@ -6221,4 +6218,3 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Profil SimpleX-címe";
-

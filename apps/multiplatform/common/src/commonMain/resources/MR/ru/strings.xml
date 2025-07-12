@@ -2532,8 +2532,7 @@
     <string name="compose_view_connect">Соединиться</string>
     <string name="v6_4_connect_faster">Соединяйтесь быстрее! 🚀</string>
     <string name="contact_should_accept">контакт должен принять…</string>
-    <string name="error_changing_contact_user">Ошибка изменения пользователя</string>
-    <string name="error_changing_group_user">Ошибка изменения пользователя</string>
+    <string name="error_changing_user">Ошибка изменения профиля</string>
     <string name="error_preparing_contact">Ошибка при открытии чата</string>
     <string name="error_preparing_group">Ошибка при открытии группы</string>
     <string name="error_rejecting_contact_request">Ошибка отклонения запроса</string>

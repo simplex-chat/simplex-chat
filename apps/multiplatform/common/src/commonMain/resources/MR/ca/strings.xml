@@ -2408,8 +2408,7 @@
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[Només podreu enviar missatges <b>després que la sol·licitud sigui acceptada</b>.]]></string>
     <string name="compose_view_connect">Connectar</string>
     <string name="contact_should_accept">el contacte hauria d\'acceptar…</string>
-    <string name="error_changing_contact_user">Error en canviar el contacte</string>
-    <string name="error_changing_group_user">Error en canviar el compte del grup</string>
+    <string name="error_changing_user">Error en canviar el perfil</string>
     <string name="error_preparing_contact">Error en preparar el contacte</string>
     <string name="error_preparing_group">Error en preparar el grup</string>
     <string name="error_rejecting_contact_request">Error en rebutjar la sol·licitud de contacte</string>

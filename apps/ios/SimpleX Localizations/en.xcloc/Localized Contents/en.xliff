@@ -3200,11 +3200,6 @@ chat item action</note>
         <target>Error accepting member</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error adding address short link" xml:space="preserve">
-        <source>Error adding address short link</source>
-        <target>Error adding address short link</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
         <source>Error adding member(s)</source>
         <target>Error adding member(s)</target>
@@ -3400,14 +3395,14 @@ chat item action</note>
         <target>Error opening chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error preparing contact" xml:space="preserve">
-        <source>Error preparing contact</source>
-        <target>Error preparing contact</target>
+      <trans-unit id="Error opening chat" xml:space="preserve">
+        <source>Error opening chat</source>
+        <target>Error opening chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error preparing group" xml:space="preserve">
-        <source>Error preparing group</source>
-        <target>Error preparing group</target>
+      <trans-unit id="Error opening group" xml:space="preserve">
+        <source>Error opening group</source>
+        <target>Error opening group</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error receiving file" xml:space="preserve">
@@ -6148,9 +6143,9 @@ Error: %@</target>
         <target>Profile update will be sent to your contacts.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Profile will be shared via the address link." xml:space="preserve">
-        <source>Profile will be shared via the address link.</source>
-        <target>Profile will be shared via the address link.</target>
+      <trans-unit id="Profile will be shared with the address." xml:space="preserve">
+        <source>Profile will be shared with the address.</source>
+        <target>Profile will be shared with the address.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
@@ -7434,9 +7429,9 @@ chat item action</note>
         <target>Share profile</target>
         <note>alert button</note>
       </trans-unit>
-      <trans-unit id="Share profile via link" xml:space="preserve">
-        <source>Share profile via link</source>
-        <target>Share profile via link</target>
+      <trans-unit id="Share profile with address" xml:space="preserve">
+        <source>Share profile with address</source>
+        <target>Share profile with address</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Share this 1-time invite link" xml:space="preserve">
@@ -9287,9 +9282,9 @@ Repeat connection request?</target>
         <target>Your chat was moved to %@ but an unexpected error occurred while redirecting you to the profile.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." xml:space="preserve">
-        <source>Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile.</source>
-        <target>Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile.</target>
+      <trans-unit id="Your connection was moved to %@ but an error happened when switching profile." xml:space="preserve">
+        <source>Your connection was moved to %@ but an error happened when switching profile.</source>
+        <target>Your connection was moved to %@ but an error happened when switching profile.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">

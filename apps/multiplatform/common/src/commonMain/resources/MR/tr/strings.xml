@@ -2451,8 +2451,7 @@
     <string name="compose_view_connect">Bağlan</string>
     <string name="v6_4_connect_faster">Daha hızlı bağlanın! 🚀</string>
     <string name="contact_should_accept">iletişim kabul etmelidir…</string>
-    <string name="error_changing_contact_user">Kişi kullanıcısını değiştirirken hata oluştu</string>
-    <string name="error_changing_group_user">Grup kullanıcısını değiştirirken hata oluştu</string>
+    <string name="error_changing_user">Kullanıcısını değiştirirken hata oluştu</string>
     <string name="error_preparing_contact">Kişi hazırlanırken hata oluştu</string>
     <string name="error_preparing_group">Grup hazırlanırken hata oluştu</string>
     <string name="error_rejecting_contact_request">İletişim isteği reddedildi</string>

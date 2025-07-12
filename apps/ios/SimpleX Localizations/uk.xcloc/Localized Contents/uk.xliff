@@ -3193,10 +3193,6 @@ chat item action</note>
         <target>Помилка при прийомі учасника</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error adding address short link" xml:space="preserve">
-        <source>Error adding address short link</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
         <source>Error adding member(s)</source>
         <target>Помилка додавання користувача(ів)</target>
@@ -3390,12 +3386,12 @@ chat item action</note>
         <target>Помилка відкриття чату</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error preparing contact" xml:space="preserve">
-        <source>Error preparing contact</source>
+      <trans-unit id="Error opening chat" xml:space="preserve">
+        <source>Error opening chat</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error preparing group" xml:space="preserve">
-        <source>Error preparing group</source>
+      <trans-unit id="Error opening group" xml:space="preserve">
+        <source>Error opening group</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error receiving file" xml:space="preserve">
@@ -6088,8 +6084,8 @@ Error: %@</source>
         <target>Оновлення профілю буде надіслано вашим контактам.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Profile will be shared via the address link." xml:space="preserve">
-        <source>Profile will be shared via the address link.</source>
+      <trans-unit id="Profile will be shared with the address." xml:space="preserve">
+        <source>Profile will be shared with the address.</source>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
@@ -7338,8 +7334,8 @@ chat item action</note>
         <target>Поділіться профілем</target>
         <note>alert button</note>
       </trans-unit>
-      <trans-unit id="Share profile via link" xml:space="preserve">
-        <source>Share profile via link</source>
+      <trans-unit id="Share profile with address" xml:space="preserve">
+        <source>Share profile with address</source>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Share this 1-time invite link" xml:space="preserve">
@@ -9169,8 +9165,8 @@ Repeat connection request?</source>
         <source>Your chat was moved to %@ but an unexpected error occurred while redirecting you to the profile.</source>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." xml:space="preserve">
-        <source>Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile.</source>
+      <trans-unit id="Your connection was moved to %@ but an error happened when switching profile." xml:space="preserve">
+        <source>Your connection was moved to %@ but an error happened when switching profile.</source>
         <target>Ваше з'єднання було переміщено на %@, але під час перенаправлення на профіль сталася несподівана помилка.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

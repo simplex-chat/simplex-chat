@@ -5667,7 +5667,7 @@ chat item action */
 "Your chat profiles" = "Vos profils de chat";
 
 /* No comment provided by engineer. */
-"Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." = "Votre connexion a été déplacée vers %@ mais une erreur inattendue s'est produite lors de la redirection vers le profil.";
+"Your connection was moved to %@ but an error happened when switching profile." = "Votre connexion a été déplacée vers %@ mais une erreur inattendue s'est produite lors de la redirection vers le profil.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Votre contact a envoyé un fichier plus grand que la taille maximale supportée actuellement(%@).";
@@ -5725,4 +5725,3 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Votre adresse SimpleX";
-

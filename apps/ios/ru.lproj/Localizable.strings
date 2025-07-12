@@ -2176,9 +2176,6 @@ chat item action */
 "Error accepting member" = "Ошибка вступления члена группы";
 
 /* No comment provided by engineer. */
-"Error adding address short link" = "Ошибка создания короткой ссылки";
-
-/* No comment provided by engineer. */
 "Error adding member(s)" = "Ошибка при добавлении членов группы";
 
 /* alert title */
@@ -2296,10 +2293,10 @@ chat item action */
 "Error opening chat" = "Ошибка доступа к чату";
 
 /* No comment provided by engineer. */
-"Error preparing contact" = "Ошибка при открытии чата";
+"Error opening chat" = "Ошибка при открытии чата";
 
 /* No comment provided by engineer. */
-"Error preparing group" = "Ошибка при открытии группы";
+"Error opening group" = "Ошибка при открытии группы";
 
 /* alert title */
 "Error receiving file" = "Ошибка при получении файла";
@@ -4097,7 +4094,7 @@ new chat action */
 "Profile update will be sent to your contacts." = "Обновлённый профиль будет отправлен Вашим контактам.";
 
 /* alert message */
-"Profile will be shared via the address link." = "Профиль будет добавлен в адрес.";
+"Profile will be shared with the address." = "Профиль будет добавлен в адрес.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Запретить аудио/видео звонки.";
@@ -4938,7 +4935,7 @@ chat item action */
 "Share profile" = "Поделиться профилем";
 
 /* alert title */
-"Share profile via link" = "Добавить профиль к адресу";
+"Share profile with address" = "Добавить профиль к адресу";
 
 /* No comment provided by engineer. */
 "Share SimpleX address on social media." = "Поделитесь SimpleX адресом в социальных сетях.";
@@ -6160,7 +6157,7 @@ report reason */
 "Your chat profiles" = "Ваши профили чата";
 
 /* No comment provided by engineer. */
-"Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." = "Соединение было перемещено на %@, но при смене профиля произошла неожиданная ошибка.";
+"Your connection was moved to %@ but an error happened when switching profile." = "Соединение было перемещено на %@, но при смене профиля произошла неожиданная ошибка.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Ваш контакт отправил файл, размер которого превышает максимальный размер (%@).";
@@ -6218,4 +6215,3 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Ваш адрес SimpleX";
-

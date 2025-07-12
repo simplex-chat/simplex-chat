@@ -2516,8 +2516,7 @@
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[Sie können erst dann Nachrichten versenden, <b>sobald Ihre Anfrage akzeptiert wurde</b>.]]></string>
     <string name="compose_view_connect">Verbinden</string>
     <string name="contact_should_accept">Kontakt sollte akzeptieren…</string>
-    <string name="error_changing_contact_user">Fehler beim Ändern des Benutzer-Kontakts</string>
-    <string name="error_changing_group_user">Fehler beim Wechseln der Benutzer-Gruppe</string>
+    <string name="error_changing_user">Fehler beim Ändern des Profils</string>
     <string name="error_preparing_contact">Fehler bei der Kontaktaufnahme</string>
     <string name="error_preparing_group">Fehler beim Vorbereiten der Gruppe</string>
     <string name="error_rejecting_contact_request">Fehler bei der Ablehnung der Kontaktanfrage</string>

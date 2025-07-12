@@ -2443,8 +2443,7 @@
     <string name="compose_view_connect">Conectar</string>
     <string name="v6_4_connect_faster">¡Conecta más rápido! 🚀</string>
     <string name="contact_should_accept">el contacto debe aceptar…</string>
-    <string name="error_changing_contact_user">Error al cambiar el usuario del contacto</string>
-    <string name="error_changing_group_user">Error al cambiar el usuaro del grupo</string>
+    <string name="error_changing_user">Error al cambiar el perfil</string>
     <string name="error_preparing_contact">Error al preparar el contacto</string>
     <string name="error_preparing_group">Error al preparar el grupo</string>
     <string name="error_rejecting_contact_request">Error al rechazar la solicitud del contacto</string>

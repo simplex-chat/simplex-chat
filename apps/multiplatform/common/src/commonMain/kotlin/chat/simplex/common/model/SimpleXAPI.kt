@@ -1505,7 +1505,7 @@ object ChatController {
     val r = sendCmd(rh, CC.APIChangePreparedContactUser(contactId, newUserId))
     if (r is API.Result && r.res is CR.ContactUserChanged) return r.res.toContact
     Log.e(TAG, "apiChangePreparedContactUser bad response: ${r.responseType} ${r.details}")
-    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_contact_user), "${r.responseType}: ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_user), "${r.responseType}: ${r.details}")
     return null
   }
 
@@ -1513,7 +1513,7 @@ object ChatController {
     val r = sendCmd(rh, CC.APIChangePreparedGroupUser(groupId, newUserId))
     if (r is API.Result && r.res is CR.GroupUserChanged) return r.res.toGroup
     Log.e(TAG, "apiChangePreparedGroupUser bad response: ${r.responseType} ${r.details}")
-    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_group_user), "${r.responseType}: ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_user), "${r.responseType}: ${r.details}")
     return null
   }
 

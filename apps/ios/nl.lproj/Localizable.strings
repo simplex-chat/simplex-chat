@@ -6028,7 +6028,7 @@ report reason */
 "Your chat profiles" = "Uw chat profielen";
 
 /* No comment provided by engineer. */
-"Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." = "Uw verbinding is verplaatst naar %@, maar er is een onverwachte fout opgetreden tijdens het omleiden naar het profiel.";
+"Your connection was moved to %@ but an error happened when switching profile." = "Uw verbinding is verplaatst naar %@, maar er is een onverwachte fout opgetreden tijdens het omleiden naar het profiel.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Uw contact heeft een bestand verzonden dat groter is dan de momenteel ondersteunde maximale grootte (%@).";
@@ -6086,4 +6086,3 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Uw SimpleX adres";
-

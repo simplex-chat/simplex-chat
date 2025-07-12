@@ -2445,8 +2445,7 @@
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[Potrai inviare messaggi <b>solo dopo che la tua richiesta verrà accettata</b>.]]></string>
     <string name="compose_view_connect">Connetti</string>
     <string name="contact_should_accept">il contatto dovrebbe accettare…</string>
-    <string name="error_changing_contact_user">Errore cambiando il contatto</string>
-    <string name="error_changing_group_user">Errore cambiando l\'utente del gruppo</string>
+    <string name="error_changing_user">Errore cambiando l\'profilo</string>
     <string name="error_preparing_contact">Errore di preparazione del contatto</string>
     <string name="error_preparing_group">Errore di preparazione del gruppo</string>
     <string name="error_rejecting_contact_request">Errore nel rifiuto della richiesta di contatto</string>

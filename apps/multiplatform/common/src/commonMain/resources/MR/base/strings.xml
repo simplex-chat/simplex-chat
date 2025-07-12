@@ -220,10 +220,9 @@
   <string name="error_updating_chat_tags">Error updating chat list</string>
   <string name="error_creating_chat_tags">Error creating chat list</string>
   <string name="error_loading_chat_tags">Error loading chat lists</string>
-  <string name="error_preparing_contact">Error preparing contact</string>
-  <string name="error_preparing_group">Error preparing group</string>
-  <string name="error_changing_contact_user">Error changing contact user</string>
-  <string name="error_changing_group_user">Error changing group user</string>
+  <string name="error_preparing_contact">Error opening chat</string>
+  <string name="error_preparing_group">Error opening group</string>
+  <string name="error_changing_user">Error changing profile</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="icon_descr_instant_notifications">Instant notifications</string>
@@ -851,7 +850,7 @@
   <string name="new_chat_share_profile">Share profile</string>
   <string name="select_chat_profile">Select chat profile</string>
   <string name="switching_profile_error_title">Error switching profile</string>
-  <string name="switching_profile_error_message">Your connection was moved to %s but an unexpected error occurred while redirecting you to the profile.</string>
+  <string name="switching_profile_error_message">Your connection was moved to %s but an error happened when switchig profile.</string>
   <string name="or_scan_qr_code">Or scan QR code</string>
   <string name="keep_unused_invitation_question">Keep unused invitation?</string>
   <string name="you_can_view_invitation_link_again">You can view invitation link again in connection details.</string>
@@ -1093,8 +1092,8 @@
   <string name="business_address">Business address</string>
   <string name="add_your_team_members_to_conversations">Add your team members to the conversations.</string>
   <string name="add_short_link">Add short link</string>
-  <string name="share_profile_via_link">Share profile via link</string>
-  <string name="share_profile_via_link_alert_text">Profile will be shared via the address link.</string>
+  <string name="share_profile_via_link">Share profile with address</string>
+  <string name="share_profile_via_link_alert_text">Profile will be shared with the address.</string>
   <string name="share_profile_via_link_alert_confirm">Share profile</string>
   <string name="share_group_profile_via_link">Share group profile via link</string>
 

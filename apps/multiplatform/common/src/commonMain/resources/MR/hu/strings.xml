@@ -2410,8 +2410,7 @@
     <string name="error_rejecting_contact_request">Hiba történt a meghívó elutasításakor</string>
     <string name="error_preparing_contact">Hiba a kapcsolat előkészítésekor</string>
     <string name="error_preparing_group">Hiba a csoport előkészítésekor</string>
-    <string name="error_changing_contact_user">Hiba a partner módosításakor</string>
-    <string name="error_changing_group_user">Hiba a csoportfelhasználó módosításakor</string>
+    <string name="error_changing_user">Hiba a profil módosításakor</string>
     <string name="group_preview_open_to_join">Megnyitás a csatlakozáshoz</string>
     <string name="open_to_connect">Megnyitás a kapcsolódáshoz</string>
     <string name="open_to_accept">Megnyitás az elfogadáshoz</string>

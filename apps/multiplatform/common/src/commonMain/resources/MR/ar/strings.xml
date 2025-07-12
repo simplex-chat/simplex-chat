@@ -2426,8 +2426,7 @@
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[لن تتمكن من إرسال الرسائل <b>إلا بعد قبول طلبك</b>.]]></string>
     <string name="compose_view_connect">اتصل</string>
     <string name="contact_should_accept">يجب أن يقبل جهة الاتصال…</string>
-    <string name="error_changing_contact_user">خطأ في تغيير مستخدم جهة الاتصال</string>
-    <string name="error_changing_group_user">خطأ في تغيير مستخدم المجموعة</string>
+    <string name="error_changing_user">خطأ في تغيير مستخدم جهة الاتصال</string>
     <string name="error_preparing_contact">خطأ في إعداد جهة الاتصال</string>
     <string name="error_preparing_group">خطأ في إعداد المجموعة</string>
     <string name="error_rejecting_contact_request">خطأ في رفض طلب جهة الاتصال</string>

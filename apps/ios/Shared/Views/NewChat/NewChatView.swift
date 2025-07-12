@@ -435,7 +435,7 @@ private struct ActiveProfilePicker: View {
                                     alert = SomeAlert(
                                         alert: Alert(
                                             title: Text("Error switching profile"),
-                                            message: Text("Your connection was moved to \(profile.chatViewName) but an unexpected error occurred while redirecting you to the profile.")
+                                            message: Text("Your connection was moved to \(profile.chatViewName) but an error happened when switching profile.")
                                         ),
                                         id: "switchingProfileError"
                                     )
@@ -474,8 +474,8 @@ private struct ActiveProfilePicker: View {
                 IncognitoHelp()
             }
     }
-    
-    
+
+
     @ViewBuilder private func viewBody() -> some View {
         profilePicker()
             .allowsHitTesting(!switchingProfileByTimeout)
@@ -488,11 +488,11 @@ private struct ActiveProfilePicker: View {
                 }
             }
     }
-    
+
     private func filteredProfiles() -> [User] {
         let s = trimmedSearchTextOrPassword
         let lower = s.localizedLowercase
-        
+
         return profiles.filter { u in
             if (u.activeUser || !u.hidden) && (s == "" || u.chatViewName.localizedLowercase.contains(lower)) {
                 return true
@@ -500,7 +500,7 @@ private struct ActiveProfilePicker: View {
             return correctPassword(u, s)
         }
     }
-    
+
     private func profilerPickerUserOption(_ user: User) -> some View {
         Button {
             if selectedProfile == user && incognitoEnabled {
@@ -526,7 +526,7 @@ private struct ActiveProfilePicker: View {
             }
         }
     }
-        
+
     @ViewBuilder private func profilePicker() -> some View {
         let incognitoOption = Button {
             if !incognitoEnabled {
@@ -552,11 +552,11 @@ private struct ActiveProfilePicker: View {
                 }
             }
         }
-        
+
         List {
             let filteredProfiles = filteredProfiles()
             let activeProfile = filteredProfiles.first { u in u.activeUser }
-            
+
             if let selectedProfile = activeProfile {
                 let otherProfiles = filteredProfiles
                     .filter { u in u.userId != activeProfile?.userId }
@@ -569,7 +569,7 @@ private struct ActiveProfilePicker: View {
                     profilerPickerUserOption(selectedProfile)
                     incognitoOption
                 }
-                
+
                 ForEach(otherProfiles) { p in
                     profilerPickerUserOption(p)
                 }
@@ -1057,7 +1057,7 @@ private func showPrepareContactAlert(
                     }
                 } catch let error {
                     logger.error("showPrepareContactAlert apiPrepareContact error: \(error.localizedDescription)")
-                    showAlert(NSLocalizedString("Error preparing contact", comment: ""), message: responseError(error))
+                    showAlert(NSLocalizedString("Error opening chat", comment: ""), message: responseError(error))
                     await MainActor.run {
                         cleanup?()
                     }
@@ -1093,7 +1093,7 @@ private func showPrepareGroupAlert(
                     }
                 } catch let error {
                     logger.error("showPrepareGroupAlert apiPrepareGroup error: \(error.localizedDescription)")
-                    showAlert(NSLocalizedString("Error preparing group", comment: ""), message: responseError(error))
+                    showAlert(NSLocalizedString("Error opening group", comment: ""), message: responseError(error))
                     await MainActor.run {
                         cleanup?()
                     }
