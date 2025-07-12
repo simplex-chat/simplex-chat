@@ -2485,4 +2485,5 @@
     <string name="v6_4_support_chat_descr">Invia i tuoi commenti privati ai gruppi.</string>
     <string name="network_option_tcp_connection_timeout_background">Scadenza conness. TCP in sec. piano</string>
     <string name="loading_profile">Caricamento del profilo…</string>
+    <string name="short_descr__field">Bio:</string>
 </resources>
