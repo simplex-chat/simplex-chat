@@ -5,7 +5,7 @@ revision: 12.10.2024
 
 # Hosting your own SMP Server
 
-| Updated 12.10.2024 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md), [PL](/docs/lang/pl/SERVER.md) |
+| Updated 12.10.2024 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md), [PL](/docs/lang/pl/SERVER.md), [TR](/docs/lang/tr/SERVER.md) |
 
 ## Table of Contents
 
@@ -1127,7 +1127,7 @@ _Please note:_ this configuration is supported since `v6.1.0-beta.2`.
       sudo apt update && sudo apt install caddy
       ```
 
-   [Full Caddy instllation instructions](https://caddyserver.com/docs/install)
+   [Full Caddy installation instructions](https://caddyserver.com/docs/install)
 
 3. Replace Caddy configuration with the following:
 

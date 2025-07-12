@@ -23,7 +23,6 @@ revision: 31.01.2023
   - [Jak używać czatu SimpleX](#jak-używać-czatu-simplex)
   - [Grupy](#grupy)
   - [Wysyłanie plików](#wysyłanie-plików)
-  - [Adresy kontaktowe użytkowników](#adresy-kontaktowe-użytkowników)
 
 ## Funkcje czatu w terminalu
 
