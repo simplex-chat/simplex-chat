@@ -299,9 +299,7 @@ export interface CRUserContactLink extends CR {
 export interface CRUserContactLinkUpdated extends CR {
   type: "userContactLinkUpdated"
   user: User
-  connReqContact: string
-  autoAccept: boolean
-  autoReply?: MsgContent
+  contactLink: UserContactLink
 }
 
 export interface CRContactRequestRejected extends CR {
@@ -337,7 +335,7 @@ export interface CRContactAliasUpdated extends CR {
 export interface CRInvitation extends CR {
   type: "invitation"
   user: User
-  connReqInvitation: string
+  connLinkInvitation: CreatedConnLink
 }
 
 export interface CRSentConfirmation extends CR {
@@ -379,7 +377,7 @@ export interface CRChatCleared extends CR {
 export interface CRUserContactLinkCreated extends CR {
   type: "userContactLinkCreated"
   user: User
-  connReqContact: string
+  connLinkContact: CreatedConnLink
 }
 
 export interface CRUserContactLinkDeleted extends CR {
@@ -994,8 +992,13 @@ interface FileTransferMeta {
 }
 
 interface UserContactLink {
-  connReqContact: string
+  connLinkContact: CreatedConnLink
   autoAccept?: AutoAccept
+}
+
+interface CreatedConnLink {
+  connFullLink: string
+  connShortLink?: string
 }
 
 interface AutoAccept {

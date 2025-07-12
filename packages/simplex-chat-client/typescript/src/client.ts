@@ -79,8 +79,9 @@ export class ChatClient {
   sendChatCmdStr(cmd: string): Promise<ChatResponse> {
     const corrId = `${++this.clientCorrId}`
     const t: ChatSrvRequest = {corrId, cmd}
+    const p = new Promise<ChatResponse>((resolve, reject) => this.sentCommands.set(corrId, {resolve, reject}))
     this.transport.write(t).then(noop, noop)
-    return new Promise((resolve, reject) => this.sentCommands.set(corrId, {resolve, reject}))
+    return p
   }
 
   sendChatCommand(command: ChatCommand): Promise<ChatResponse> {
@@ -189,7 +190,10 @@ export class ChatClient {
 
   async apiCreateLink(): Promise<string> {
     const r = await this.sendChatCommand({type: "addContact"})
-    if (r.type === "invitation") return r.connReqInvitation
+    if (r.type === "invitation") {
+      const link = r.connLinkInvitation
+      return link.connShortLink || link.connFullLink
+    }
     throw new ChatCommandError("error creating link", r)
   }
 
@@ -247,7 +251,10 @@ export class ChatClient {
 
   async apiCreateUserAddress(): Promise<string> {
     const r = await this.sendChatCommand({type: "createMyAddress"})
-    if (r.type === "userContactLinkCreated") return r.connReqContact
+    if (r.type === "userContactLinkCreated") {
+      const link = r.connLinkContact
+      return link.connShortLink || link.connFullLink
+    }
     throw new ChatCommandError("error creating user address", r)
   }
 
@@ -260,8 +267,10 @@ export class ChatClient {
   async apiGetUserAddress(): Promise<string | undefined> {
     const r = await this.sendChatCommand({type: "showMyAddress"})
     switch (r.type) {
-      case "userContactLink":
-        return r.contactLink.connReqContact
+      case "userContactLink": {
+        const link = r.contactLink.connLinkContact
+        return link.connShortLink || link.connFullLink
+      }
       default:
         if (r.type === "chatCmdError" && r.chatError.type === "errorStore" && r.chatError.storeError.type === "userContactLinkNotFound") {
           return undefined

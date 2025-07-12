@@ -2507,8 +2507,8 @@ processChatCommand vr nm = \case
   APIUpdateGroupProfile groupId p' -> withUser $ \user -> do
     g <- withFastStore $ \db -> getGroup db vr user groupId
     runUpdateGroupProfile user g p'
-  UpdateGroupNames gName GroupProfile {displayName, fullName} ->
-    updateGroupProfileByName gName $ \p -> p {displayName, fullName}
+  UpdateGroupNames gName p'@GroupProfile {displayName, fullName, shortDescr} ->
+    updateGroupProfileByName gName $ \p -> p {displayName, fullName, shortDescr}
   ShowGroupProfile gName -> withUser $ \user ->
     CRGroupProfile user <$> withFastStore (\db -> getGroupInfoByName db vr user gName)
   UpdateGroupDescription gName description ->
@@ -2729,8 +2729,8 @@ processChatCommand vr nm = \case
           fileStatus <- withFastStore $ \db -> getFileTransferProgress db user fileId
           pure $ CRFileTransferStatus user fileStatus
   ShowProfile -> withUser $ \user@User {profile} -> pure $ CRUserProfile user (fromLocalProfile profile)
-  UpdateProfile displayName fullName -> withUser $ \user@User {profile} -> do
-    let p = (fromLocalProfile profile :: Profile) {displayName = displayName, fullName = fullName}
+  UpdateProfile displayName shortDescr -> withUser $ \user@User {profile} -> do
+    let p = (fromLocalProfile profile :: Profile) {displayName, shortDescr, fullName = ""}
     updateProfile user p
   UpdateProfileImage image -> withUser $ \user@User {profile} -> do
     let p = (fromLocalProfile profile :: Profile) {image}
@@ -3151,9 +3151,9 @@ processChatCommand vr nm = \case
           let (newMs, oldMs) = partition (\m -> maxVersion (memberChatVRange m) >= businessChatPrefsVersion) ms
           -- this is a fallback to send the members with the old version correct profile of the business when preferences change
           unless (null oldMs) $ do
-            GroupMember {memberProfile = LocalProfile {displayName, fullName, image}} <-
+            GroupMember {memberProfile = LocalProfile {displayName, fullName, shortDescr, image}} <-
               withStore $ \db -> getGroupMemberByMemberId db vr user g businessId
-            let p'' = p' {displayName, fullName, image} :: GroupProfile
+            let p'' = p' {displayName, fullName, shortDescr, image} :: GroupProfile
                 recipients = filter memberCurrentOrPending oldMs
             void $ sendGroupMessage user g' Nothing recipients (XGrpInfo p'')
           let ps' = fromMaybe defaultBusinessGroupPrefs $ groupPreferences p'
@@ -3162,6 +3162,7 @@ processChatCommand vr nm = \case
         Nothing -> do
           setGroupLinkData'
           let recipients = filter memberCurrentOrPending ms
+          liftIO $ putStrLn $ "about to sendGroupMessage to " <> show (length recipients)
           sendGroupMessage user g' Nothing recipients (XGrpInfo p')
           where
             setGroupLinkData' :: CM ()
@@ -3553,14 +3554,14 @@ processChatCommand vr nm = \case
           business = maybe False businessAddress settings
           contactData
             | large = ContactShortLinkData p msg business
-            | otherwise = ContactShortLinkData p {fullName = "", image = Nothing, contactLink = Nothing} Nothing business
+            | otherwise = ContactShortLinkData p {fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing} Nothing business
       pure $ encodeShortLinkData large contactData
     groupShortLinkData :: GroupProfile -> CM UserLinkData
     groupShortLinkData gp = do
       large <- chatReadVar useLargeLinkData
       let gp'
             | large = gp
-            | otherwise = gp {fullName = "", description = Nothing, image = Nothing, memberAdmission = Nothing}
+            | otherwise = gp {fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, memberAdmission = Nothing}
       pure $ encodeShortLinkData large $ GroupShortLinkData gp'
     encodeShortLinkData :: J.ToJSON a => Bool -> a -> UserLinkData
     encodeShortLinkData large d =
@@ -4609,7 +4610,7 @@ chatCommandP =
       "/set profile image " *> (UpdateProfileImage . Just . ImageData <$> imageP),
       "/delete profile image" $> UpdateProfileImage Nothing,
       "/show profile image" $> ShowProfileImage,
-      ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> profileNames),
+      ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> profileNameDescr),
       ("/profile" <|> "/p") $> ShowProfile,
       "/set voice #" *> (SetGroupFeatureRole (AGFR SGFVoice) <$> displayNameP <*> _strP <*> optional memberRole),
       "/set voice @" *> (SetContactFeature (ACF SCFVoice) <$> displayNameP <*> optional (A.space *> strP)),
@@ -4721,24 +4722,26 @@ chatCommandP =
       clearOverrides <- (" clear_overrides=" *> onOffP) <|> pure False
       pure UserMsgReceiptSettings {enable, clearOverrides}
     onOffP = ("on" $> True) <|> ("off" $> False)
-    profileNames = (,) <$> displayNameP <*> fullNameP
+    profileNameDescr = (,) <$> displayNameP <*> shortDescrP
     newUserP = do
-      (cName, fullName) <- profileNames
-      let profile = Just Profile {displayName = cName, fullName, image = Nothing, contactLink = Nothing, preferences = Nothing}
+      (cName, shortDescr) <- profileNameDescr
+      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, preferences = Nothing}
       pure NewUser {profile, pastTimestamp = False}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString
     groupProfile = do
-      (gName, fullName) <- profileNames
+      (gName, shortDescr) <- profileNameDescr
       let groupPreferences =
             Just
               (emptyGroupPrefs :: GroupPreferences)
                 { directMessages = Just DirectMessagesGroupPreference {enable = FEOn, role = Nothing},
                   history = Just HistoryGroupPreference {enable = FEOn}
                 }
-      pure GroupProfile {displayName = gName, fullName, description = Nothing, image = Nothing, groupPreferences, memberAdmission = Nothing}
+      pure GroupProfile {displayName = gName, fullName = "", shortDescr, description = Nothing, image = Nothing, groupPreferences, memberAdmission = Nothing}
     memberCriteriaP = ("all" $> Just MCAll) <|> ("off" $> Nothing)
-    fullNameP = A.space *> textP <|> pure ""
+    shortDescrP = do
+      descr <- A.takeWhile1 isSpace *> (T.dropWhileEnd isSpace <$> textP) <|> pure ""
+      pure $ if T.null descr then Nothing else Just $ T.take 160 descr
     textP = safeDecodeUtf8 <$> A.takeByteString
     pwdP = jsonP <|> (UserPwd . safeDecodeUtf8 <$> A.takeTill (== ' '))
     verifyCodeP = safeDecodeUtf8 <$> A.takeWhile (\c -> isDigit c || c == ' ')

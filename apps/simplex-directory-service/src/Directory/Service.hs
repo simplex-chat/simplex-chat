@@ -234,14 +234,19 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       getGroupReg st groupId >>= \case
         Just gr -> action gr
         Nothing -> logError $ "Error: " <> err <> ", group: " <> localDisplayName <> ", can't find group registration ID " <> tshow groupId
-    groupInfoText GroupProfile {displayName = n, fullName = fn, description = d} =
-      n <> (if n == fn || T.null fn then "" else " (" <> fn <> ")") <> maybe "" ("\nWelcome message:\n" <>) d
+    groupInfoText p@GroupProfile {description = d} = groupNameDescr p <> maybe "" ("\nWelcome message:\n" <>) d
+    groupNameDescr GroupProfile {displayName = n, fullName = fn, shortDescr = sd_} =
+      n <> maybe "" (\d' -> " (" <> d' <> ")") descr
+      where
+        descr
+          | n == fn || T.null fn = if sd_ == Just "" then Nothing else sd_
+          | otherwise = Just fn
     userGroupReference gr GroupInfo {groupProfile = GroupProfile {displayName}} = userGroupReference' gr displayName
     userGroupReference' GroupReg {userGroupRegId} displayName = groupReference' userGroupRegId displayName
     groupReference GroupInfo {groupId, groupProfile = GroupProfile {displayName}} = groupReference' groupId displayName
     groupReference' groupId displayName = "ID " <> tshow groupId <> " (" <> displayName <> ")"
-    groupAlreadyListed GroupInfo {groupProfile = GroupProfile {displayName, fullName}} =
-      "The group " <> displayName <> " (" <> fullName <> ") is already listed in the directory, please choose another name."
+    groupAlreadyListed GroupInfo {groupProfile = p} =
+      "The group " <> groupNameDescr p <> " is already listed in the directory, please choose another name."
 
     getGroups :: Text -> IO (Maybe [(GroupInfo, GroupSummary)])
     getGroups = getGroups_ . Just
@@ -295,7 +300,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
              \Content and privacy policy: https://simplex.chat/docs/directory.html"
 
     deGroupInvitation :: Contact -> GroupInfo -> GroupMemberRole -> GroupMemberRole -> IO ()
-    deGroupInvitation ct g@GroupInfo {groupProfile = GroupProfile {displayName, fullName}} fromMemberRole memberRole = do
+    deGroupInvitation ct g@GroupInfo {groupProfile = p@GroupProfile {displayName}} fromMemberRole memberRole = do
       logInfo $ "invited to group " <> viewGroupName g <> " by " <> viewContactName ct
       case badRolesMsg $ groupRolesStatus fromMemberRole memberRole of
         Just msg -> sendMessage cc ct msg
@@ -308,7 +313,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       where
         askConfirmation = do
           ugrId <- addGroupReg st ct g GRSPendingConfirmation
-          sendMessage cc ct $ "The group " <> displayName <> " (" <> fullName <> ") is already submitted to the directory.\nTo confirm the registration, please send:"
+          sendMessage cc ct $ "The group " <> groupNameDescr p <> " is already submitted to the directory.\nTo confirm the registration, please send:"
           sendMessage cc ct $ "/confirm " <> tshow ugrId <> ":" <> viewName displayName
 
     badRolesMsg :: GroupRolesStatus -> Maybe Text
@@ -400,9 +405,9 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         GroupInfo {groupId, groupProfile = p} = fromGroup
         GroupInfo {groupProfile = p'} = toGroup
         sameProfile
-          GroupProfile {displayName = n, fullName = fn, image = i, description = d}
-          GroupProfile {displayName = n', fullName = fn', image = i', description = d'} =
-            n == n' && fn == fn' && i == i' && d == d'
+          GroupProfile {displayName = n, fullName = fn, shortDescr = sd, image = i, description = d}
+          GroupProfile {displayName = n', fullName = fn', shortDescr = sd', image = i', description = d'} =
+            n == n' && fn == fn' && i == i' && sd == sd' && d == d'
         groupLinkAdded gr byMember = do
           getDuplicateGroup toGroup >>= \case
             Nothing -> notifyOwner gr "Error: getDuplicateGroup. Please notify the developers."

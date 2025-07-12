@@ -318,7 +318,7 @@ e2eInfoPQText =
 
 ciGroupInvitationToText :: CIGroupInvitation -> GroupMemberRole -> Text
 ciGroupInvitationToText CIGroupInvitation {groupProfile = GroupProfile {displayName, fullName}} role =
-  "invitation to join group " <> displayName <> optionalFullName displayName fullName <> " as " <> (decodeLatin1 . strEncode $ role)
+  "invitation to join group " <> displayName <> optionalFullName displayName fullName Nothing <> " as " <> (decodeLatin1 . strEncode $ role)
 
 rcvDirectEventToText :: RcvDirectEvent -> Text
 rcvDirectEventToText = \case
@@ -402,7 +402,7 @@ sndConnEventToText = \case
       maybe "" (\GroupMemberRef {profile = Profile {displayName}} -> " for " <> displayName) member_
 
 profileToText :: Profile -> Text
-profileToText Profile {displayName, fullName} = displayName <> optionalFullName displayName fullName
+profileToText Profile {displayName, fullName} = displayName <> optionalFullName displayName fullName Nothing
 
 msgIntegrityError :: MsgErrorType -> Text
 msgIntegrityError = \case

@@ -3,6 +3,8 @@ package chat.simplex.common.views.newchat
 import SectionItemView
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -26,6 +28,24 @@ suspend fun planAndConnect(
   filterKnownContact: ((Contact) -> Unit)? = null,
   filterKnownGroup: ((GroupInfo) -> Unit)? = null,
 ): CompletableDeferred<Boolean> {
+  connectProgressManager.cancelConnectProgress()
+  val inProgress = mutableStateOf(true)
+  connectProgressManager.startConnectProgress(generalGetString(MR.strings.loading_profile)) {
+    inProgress.value = false
+    cleanup?.invoke()
+  }
+  return planAndConnectTask(rhId, shortOrFullLink, close, cleanup, filterKnownContact, filterKnownGroup, inProgress)
+}
+
+private suspend fun planAndConnectTask(
+  rhId: Long?,
+  shortOrFullLink: String,
+  close: (() -> Unit)?,
+  cleanup: (() -> Unit)? = null,
+  filterKnownContact: ((Contact) -> Unit)? = null,
+  filterKnownGroup: ((GroupInfo) -> Unit)? = null,
+  inProgress: MutableState<Boolean>
+): CompletableDeferred<Boolean> {
   val completable = CompletableDeferred<Boolean>()
   val close: (() -> Unit) = {
     close?.invoke()
@@ -36,7 +56,9 @@ suspend fun planAndConnect(
     cleanup?.invoke()
     completable.complete(!completable.isActive)
   }
-  val result = chatModel.controller.apiConnectPlan(rhId, shortOrFullLink)
+  val result = chatModel.controller.apiConnectPlan(rhId, shortOrFullLink, inProgress = inProgress)
+  connectProgressManager.stopConnectProgress()
+  if (!inProgress.value) { return completable }
   if (result != null) {
     val (connectionLink, connectionPlan) = result
     val link = strHasSingleSimplexLink(shortOrFullLink.trim())
@@ -259,6 +281,8 @@ suspend fun planAndConnect(
         )
       }
     }
+  } else {
+    cleanup()
   }
   return completable
 }

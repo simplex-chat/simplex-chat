@@ -43,6 +43,39 @@ import kotlin.collections.ArrayList
 import kotlin.random.Random
 import kotlin.time.*
 
+object ConnectProgressManager {
+  private val connectInProgress = mutableStateOf<String?>(null)
+  private val connectProgressByTimeout = mutableStateOf(false)
+  private var onCancel: (() -> Unit)? = null
+
+  private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
+  fun startConnectProgress(text: String, onCancel: (() -> Unit)? = null) {
+    connectInProgress.value = text
+    this.onCancel = onCancel
+    coroutineScope.launch {
+      delay(1000)
+      connectProgressByTimeout.value = connectInProgress.value != null
+    }
+  }
+
+  fun stopConnectProgress() {
+    connectInProgress.value = null
+    onCancel = null
+    connectProgressByTimeout.value = false
+  }
+
+  fun cancelConnectProgress() {
+    onCancel?.invoke()
+    stopConnectProgress()
+  }
+
+  val showConnectProgress: String? get() =
+    if (connectProgressByTimeout.value) connectInProgress.value else null
+}
+
+val connectProgressManager = ConnectProgressManager
+
 /*
  * Without this annotation an animation from ChatList to ChatView has 1 frame per the whole animation. Don't delete it
  * */
@@ -1200,6 +1233,7 @@ data class User(
 ): NamedChat, UserLike {
   override val displayName: String get() = profile.displayName
   override val fullName: String get() = profile.fullName
+  override val shortDescr: String? get() = profile.shortDescr
   override val image: String? get() = profile.image
   override val localAlias: String = ""
 
@@ -1269,6 +1303,7 @@ typealias ChatId = String
 interface NamedChat {
   val displayName: String
   val fullName: String
+  val shortDescr: String?
   val image: String?
   val localAlias: String
   val chatViewName: String
@@ -1379,6 +1414,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val updatedAt get() = contact.updatedAt
     override val displayName get() = contact.displayName
     override val fullName get() = contact.fullName
+    override val shortDescr get() = contact.profile.shortDescr
     override val image get() = contact.image
     override val localAlias: String get() = contact.localAlias
     override fun anyNameContains(searchAnyCase: String): Boolean = contact.anyNameContains(searchAnyCase)
@@ -1406,6 +1442,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val updatedAt get() = groupInfo.updatedAt
     override val displayName get() = groupInfo.displayName
     override val fullName get() = groupInfo.fullName
+    override val shortDescr get() = groupInfo.groupProfile.shortDescr
     override val image get() = groupInfo.image
     override val localAlias get() = groupInfo.localAlias
 
@@ -1432,6 +1469,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val updatedAt get() = noteFolder.updatedAt
     override val displayName get() = noteFolder.displayName
     override val fullName get() = noteFolder.fullName
+    override val shortDescr get() = null
     override val image get() = noteFolder.image
     override val localAlias get() = noteFolder.localAlias
 
@@ -1458,6 +1496,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val updatedAt get() = contactRequest.updatedAt
     override val displayName get() = contactRequest.displayName
     override val fullName get() = contactRequest.fullName
+    override val shortDescr get() = contactRequest.profile.shortDescr
     override val image get() = contactRequest.image
     override val localAlias get() = contactRequest.localAlias
 
@@ -1484,6 +1523,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val updatedAt get() = contactConnection.updatedAt
     override val displayName get() = contactConnection.displayName
     override val fullName get() = contactConnection.fullName
+    override val shortDescr get() = null
     override val image get() = contactConnection.image
     override val localAlias get() = contactConnection.localAlias
 
@@ -1513,6 +1553,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val timedMessagesTTL: Int? get() = null
     override val displayName get() = invalidChatName
     override val fullName get() = invalidChatName
+    override val shortDescr get() = null
     override val image get() = null
     override val localAlias get() = ""
 
@@ -1717,6 +1758,7 @@ data class Contact(
   override val timedMessagesTTL: Int? get() = with(mergedPreferences.timedMessages) { if (enabled.forUser) userPreference.pref.ttl else null }
   override val displayName get() = localAlias.ifEmpty { profile.displayName }
   override val fullName get() = profile.fullName
+  override val shortDescr get() = profile.shortDescr
   override val image get() = profile.image
   val contactLink: String? = profile.contactLink
   override val localAlias get() = profile.localAlias
@@ -1867,6 +1909,7 @@ data class SecurityCode(val securityCode: String, val verifiedAt: Instant)
 data class Profile(
   override val displayName: String,
   override val fullName: String,
+  override val shortDescr: String?,
   override val image: String? = null,
   override val localAlias : String = "",
   val contactLink: String? = null,
@@ -1877,12 +1920,13 @@ data class Profile(
       return if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)"
     }
 
-  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, image, localAlias, contactLink, preferences)
+  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, shortDescr, image, localAlias, contactLink, preferences)
 
   companion object {
     val sampleData = Profile(
       displayName = "alice",
-      fullName = "Alice"
+      fullName = "Alice",
+      shortDescr = null,
     )
   }
 }
@@ -1892,6 +1936,7 @@ data class LocalProfile(
   val profileId: Long,
   override val displayName: String,
   override val fullName: String,
+  override val shortDescr: String?,
   override val image: String? = null,
   override val localAlias: String,
   val contactLink: String? = null,
@@ -1899,13 +1944,14 @@ data class LocalProfile(
 ): NamedChat {
   val profileViewName: String = localAlias.ifEmpty { if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)" }
 
-  fun toProfile(): Profile = Profile(displayName, fullName, image, localAlias, contactLink, preferences)
+  fun toProfile(): Profile = Profile(displayName, fullName, shortDescr, image, localAlias, contactLink, preferences)
 
   companion object {
     val sampleData = LocalProfile(
       profileId = 1L,
       displayName = "alice",
       fullName = "Alice",
+      shortDescr = null,
       preferences = ChatPreferences.sampleData,
       localAlias = ""
     )
@@ -1971,6 +2017,7 @@ data class GroupInfo (
   override val timedMessagesTTL: Int? get() = with(fullGroupPreferences.timedMessages) { if (on) ttl else null }
   override val displayName get() = localAlias.ifEmpty { groupProfile.displayName }
   override val fullName get() = groupProfile.fullName
+  override val shortDescr get() = groupProfile.shortDescr
   override val image get() = groupProfile.image
 
   val isOwner: Boolean
@@ -2042,6 +2089,7 @@ data class GroupRef(val groupId: Long, val localDisplayName: String)
 data class GroupProfile (
   override val displayName: String,
   override val fullName: String,
+  override val shortDescr: String?,
   val description: String? = null,
   override val image: String? = null,
   override val localAlias: String = "",
@@ -2051,7 +2099,8 @@ data class GroupProfile (
   companion object {
     val sampleData = GroupProfile(
       displayName = "team",
-      fullName = "My Team"
+      fullName = "My Team",
+      shortDescr = null,
     )
   }
 }
@@ -2136,6 +2185,7 @@ data class GroupMember (
       return pastMember(name)
     }
   override val fullName: String get() = memberProfile.fullName
+  override val shortDescr: String? get() = memberProfile.shortDescr
   override val image: String? get() = memberProfile.image
   val contactLink: String? = memberProfile.contactLink
   val verified get() = activeConn?.connectionCode != null
@@ -2420,6 +2470,7 @@ class NoteFolder(
   override val timedMessagesTTL: Int? get() = null
   override val displayName get() = generalGetString(MR.strings.note_folder_local_display_name)
   override val fullName get() = ""
+  override val shortDescr get() = null
   override val image get() = null
   override val localAlias get() = ""
   override val localDisplayName: String get() = ""
@@ -2458,6 +2509,7 @@ class UserContactRequest (
   override val timedMessagesTTL: Int? get() = null
   override val displayName get() = profile.displayName
   override val fullName get() = profile.fullName
+  override val shortDescr get() = profile.shortDescr
   override val image get() = profile.image
   override val localAlias get() = ""
 
@@ -2515,6 +2567,7 @@ class PendingContactConnection(
     }
   }
   override val fullName get() = ""
+  override val shortDescr get() = null
   override val image get() = null
 
   val initiated get() = (pccConnStatus.initiated ?: false) && !viaContactUri
