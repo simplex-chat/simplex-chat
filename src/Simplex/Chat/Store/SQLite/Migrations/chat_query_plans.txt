@@ -1042,6 +1042,24 @@ SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+          SELECT 1
+          FROM group_member_intros
+          WHERE
+            (
+              (re_group_member_id = ? AND to_group_member_id = ?) OR
+              (re_group_member_id = ? AND to_group_member_id = ?)
+            )
+            AND intro_status NOT IN (?,?,?)
+          LIMIT 1
+        
+Plan:
+MULTI-INDEX OR
+INDEX 1
+SEARCH group_member_intros USING INDEX sqlite_autoindex_group_member_intros_1 (re_group_member_id=? AND to_group_member_id=?)
+INDEX 2
+SEARCH group_member_intros USING INDEX sqlite_autoindex_group_member_intros_1 (re_group_member_id=? AND to_group_member_id=?)
+
+Query: 
           SELECT 1 FROM users
           WHERE (user_id = ? AND local_display_name = ?)
              OR contact_id = ?
@@ -1333,6 +1351,28 @@ Query:
 Plan:
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH i USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+          SELECT i.re_group_member_id
+          FROM group_member_intros i
+          JOIN group_members m ON m.group_member_id = i.re_group_member_id
+          WHERE i.to_group_member_id = ? AND i.intro_status NOT IN (?,?,?)
+            AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)
+        
+Plan:
+SEARCH i USING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
+SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+          SELECT i.to_group_member_id
+          FROM group_member_intros i
+          JOIN group_members m ON m.group_member_id = i.to_group_member_id
+          WHERE i.re_group_member_id = ? AND i.intro_status NOT IN (?,?,?)
+            AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)
+        
+Plan:
+SEARCH i USING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
           SELECT member_status
@@ -3566,6 +3606,15 @@ Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+        UPDATE connections SET conn_status='deleted'
+        WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = ?)
+      
+Plan:
+SEARCH connections USING INDEX idx_connections_group_member_id (group_member_id=?)
+LIST SUBQUERY 1
+SCAN group_members USING COVERING INDEX idx_group_members_user_id_local_display_name
+
+Query: 
         UPDATE group_member_intros
         SET intro_status = ?,
             group_queue_info = ?,
@@ -3575,6 +3624,18 @@ Query:
       
 Plan:
 SEARCH group_member_intros USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+        UPDATE group_member_intros SET intro_status='fwd'
+        WHERE re_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = ?)
+          AND to_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = ?)
+      
+Plan:
+SEARCH group_member_intros USING INDEX sqlite_autoindex_group_member_intros_1 (re_group_member_id=? AND to_group_member_id=?)
+LIST SUBQUERY 1
+SCAN group_members USING COVERING INDEX idx_group_members_user_id_local_display_name
+LIST SUBQUERY 2
+SCAN group_members USING COVERING INDEX idx_group_members_user_id_local_display_name
 
 Query: 
         UPDATE group_members
@@ -5996,10 +6057,6 @@ SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE connections SET conn_status = ?, updated_at = ?, conn_req_inv = NULL, short_link_inv = NULL WHERE connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: UPDATE connections SET conn_status='deleted' WHERE group_member_id = 3
-Plan:
-SEARCH connections USING INDEX idx_connections_group_member_id (group_member_id=?)
 
 Query: UPDATE connections SET conn_type = ?, group_member_id = ?, updated_at = ? WHERE connection_id = ?
 Plan:
