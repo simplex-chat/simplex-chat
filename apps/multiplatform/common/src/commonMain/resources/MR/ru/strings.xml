@@ -2549,7 +2549,7 @@
     <string name="open_to_accept">Откройте чтобы принять</string>
     <string name="open_to_connect">Откройте чтобы соединиться</string>
     <string name="group_preview_open_to_join">Откройте чтобы вступить</string>
-    <string name="private_routing_timeout">Превышено время конфиденциальной доставки</string>
+    <string name="private_routing_timeout">Таймаут конфиденциальной доставки</string>
     <string name="share_profile_via_link_alert_text">Профиль будет добавлен в адрес.</string>
     <string name="network_option_protocol_timeout_background">Фоновый таймаут протокола</string>
     <string name="reject_contact_request">Отклонить запрос на соединение</string>
@@ -2566,5 +2566,9 @@
     <string name="share_profile_via_link">Добавить профиль к адресу</string>
     <string name="group_short_descr_field">Цель:</string>
     <string name="network_option_tcp_connection_timeout_background">Фоновый таймаут TCP-соединения</string>
-    <string name="the_sender_will_not_be_notified">Отправитель не будет уведомлен.</string>
+    <string name="the_sender_will_not_be_notified">Отправитель не будет уведомлён.</string>
+    <string name="context_user_picker_cant_change_profile_alert_message">Чтобы использовать другой профиль после попытки соединения, удалите чат и используйте ссылку снова.</string>
+    <string name="address_welcome_message">Приветственное сообщение</string>
+    <string name="short_descr">О Вас:</string>
+    <string name="context_user_picker_your_profile">Ваш профиль</string>
 </resources>
