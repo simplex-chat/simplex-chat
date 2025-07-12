@@ -1952,4 +1952,36 @@
     <string name="connection_error_quota_desc">ارتباط به حد نصاب پیام‌های نرسیده رسید، ممکن است مخاطب شما آفلاین باشد.</string>
     <string name="error_updating_chat_tags">خطا در به‌روزرسانی فهرست گفتگو</string>
     <string name="compose_view_add_message">افزودن پیام</string>
+    <string name="calls_prohibited_alert_title">امکان تماس وجود ندارد!</string>
+    <string name="cannot_share_message_alert_title">خطا در ارسال پیام</string>
+    <string name="cant_call_contact_alert_title">تماس با مخاطب امکان پذیر نیست</string>
+    <string name="cant_call_member_alert_title">تماس با عضو گروه ممکن نیست</string>
+    <string name="context_user_picker_cant_change_profile_alert_title">تغییر پروفایل امکان پذیر نیست</string>
+    <string name="cant_send_message_to_member_alert_title">ارسال پیام به عضو گروه امکان پذیر نیست</string>
+    <string name="cant_send_message_generic">ارسال پیام امکان پذیر نیست</string>
+    <string name="archive_reports">بایگانی گزارش ها</string>
+    <string name="v6_1_better_calls">تماس های با کیفیت تر</string>
+    <string name="v6_3_better_groups_performance">عملکرد بهتر گروه ها</string>
+    <string name="v6_3_better_privacy_and_security">امنیت و حریم خصوصی قوی تر</string>
+    <string name="change_list">تغییر لیست</string>
+    <string name="change_order_chat_list_menu_action">تغییر ترتیب</string>
+    <string name="info_row_chat">چت</string>
+    <string name="connect_plan_chat_already_exists">این چت از قبل وجود دارد!</string>
+    <string name="member_support">گفتگو با اعضا</string>
+    <string name="delete_chat_for_all_members_cannot_undo_warning">پیام برای همه اعضا حذف خواهد شد - این عمل قابل بازگشت نیست!</string>
+    <string name="chunks_deleted">بخش های حذف شده</string>
+    <string name="chunks_downloaded">بخش های دانلود شده</string>
+    <string name="call_desktop_permission_denied_chrome">برای مجوز میکروفون، روی آیکون اطلاعات کنار نوار آدرس کلیک کنید</string>
+    <string name="completed">تکمیل شد</string>
+    <string name="confirm_delete_contact_question">تایید حذف مخاطب؟</string>
+    <string name="info_view_connect_button">اتصال</string>
+    <string name="compose_view_connect">اتصال</string>
+    <string name="servers_info_sessions_connected">متصل</string>
+    <string name="v6_4_connect_faster">اتصال سریع تر! 🚀</string>
+    <string name="servers_info_sessions_connecting">درحال اتصال</string>
+    <string name="cant_call_contact_connecting_wait_alert_text">درحال اتصال به مخاطب، لطفا منتظر بمانید یا بعداً بررسی کنید!</string>
+    <string name="v6_0_connection_servers_status_descr">وضعیت اتصال و سرور ها</string>
+    <string name="connection_not_ready">اتصال آماده نیست</string>
+    <string name="cant_call_contact_deleted_alert_text">مخاطب حذف شد.</string>
+    <string name="chat_list_contacts">مخاطبین</string>
 </resources>

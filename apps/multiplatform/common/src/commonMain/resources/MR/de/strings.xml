@@ -2474,11 +2474,11 @@
     <string name="member_support">Chats mit Mitgliedern</string>
     <string name="support_chat">Chat mit Administratoren</string>
     <string name="no_support_chats">Keine Chats mit Mitgliedern</string>
-    <string name="reject_pending_member_button">Entfernen</string>
+    <string name="reject_pending_member_button">Ablehnen</string>
     <string name="rcv_group_event_user_accepted">hat Sie übernommen</string>
     <string name="button_support_chat_member">Chat mit einem Mitglied</string>
     <string name="group_new_support_messages">%d Nachrichten</string>
-    <string name="accept_pending_member_alert_question">Ein Mitglied wird der Gruppe beitreten. Übernehmen?</string>
+    <string name="accept_pending_member_alert_question">Mitglied wird der Gruppe beitreten. Übernehmen?</string>
     <string name="rcv_group_event_new_member_pending_review">Ein neues Mitglied will der Gruppe beitreten.</string>
     <string name="group_member_status_pending_review_short">Überprüfung</string>
     <string name="reviewed_by_admins">Von Administratoren überprüft</string>
@@ -2494,9 +2494,9 @@
     <string name="group_new_support_chat_one">Chat mit einem Mitglied</string>
     <string name="accept_pending_member_button">Übernehmen</string>
     <string name="snd_group_event_user_pending_review">Bitte warten Sie auf die Überprüfung Ihrer Anfrage durch die Gruppen-Moderatoren, um der Gruppe beitreten zu können.</string>
-    <string name="cant_send_message_group_deleted">Gruppe wird gelöscht</string>
+    <string name="cant_send_message_group_deleted">Gruppe wurde gelöscht</string>
     <string name="cant_send_message_rejected">Beitrittsanfrage abgelehnt</string>
-    <string name="cant_send_message_mem_removed">Von der Gruppe entfernt</string>
+    <string name="cant_send_message_mem_removed">Aus der Gruppe entfernt</string>
     <string name="cant_send_message_you_left">Sie haben die Gruppe verlassen</string>
     <string name="cant_send_message_contact_disabled">Kontakt deaktiviert</string>
     <string name="cant_send_message_contact_not_synchronized">Nicht synchronisiert</string>
@@ -2523,8 +2523,8 @@
     <string name="error_rejecting_contact_request">Fehler bei der Ablehnung der Kontaktanfrage</string>
     <string name="compose_view_join_group">Der Gruppe beitreten</string>
     <string name="connect_plan_open_chat">Chat öffnen</string>
-    <string name="connect_plan_open_new_chat">Neuen Chat eröffnen</string>
-    <string name="connect_plan_open_new_group">Neue Gruppe eröffnen</string>
+    <string name="connect_plan_open_new_chat">Neuen Chat öffnen</string>
+    <string name="connect_plan_open_new_group">Neue Gruppe öffnen</string>
     <string name="open_to_accept">Zum Akzeptieren öffnen</string>
     <string name="open_to_connect">Zum Verbinden öffnen</string>
     <string name="group_preview_open_to_join">Zum Beitreten öffnen</string>
@@ -2543,4 +2543,18 @@
     <string name="context_user_picker_your_profile">Ihr Profil</string>
     <string name="context_user_picker_cant_change_profile_alert_title">Änderung des Profils nicht möglich</string>
     <string name="context_user_picker_cant_change_profile_alert_message">Wenn Sie nach dem Verbindungsversuch ein anderes Profil verwenden möchten, löschen Sie den Chat und verwenden Sie den Link erneut.</string>
+    <string name="v6_4_support_chat">Chat mit Administratoren</string>
+    <string name="v6_4_review_members_descr">Chat mit Mitgliedern bevor sie beitreten.</string>
+    <string name="v6_4_connect_faster">Schneller miteinander verbinden! 🚀</string>
+    <string name="v6_4_message_delivery_descr">Weniger Datenverkehr in mobilen Netzen.</string>
+    <string name="v6_4_connect_faster_descr">Sobald Sie auf Verbinden tippen, erhalten Sie sofort eine Nachricht.</string>
+    <string name="v6_4_role_moderator">Neue Gruppen-Rolle: Moderator</string>
+    <string name="private_routing_no_session">Keine private Routing-Sitzung</string>
+    <string name="private_routing_timeout">Zeitüberschreitung der privaten Routing-Sitzung</string>
+    <string name="network_option_protocol_timeout_background">Protokoll Hintergrund-Zeitüberschreitung</string>
+    <string name="v6_4_role_moderator_descr">Entfernt Nachrichten und blockiert Mitglieder.</string>
+    <string name="v6_4_review_members">Gruppenmitglieder überprüfen</string>
+    <string name="v6_4_support_chat_descr">Senden Sie Ihr privates Feedback an Gruppen.</string>
+    <string name="network_option_tcp_connection_timeout_background">TCP-Verbindung Hintergrund-Zeitüberschreitung</string>
+    <string name="loading_profile">Profil wird geladen…</string>
 </resources>
