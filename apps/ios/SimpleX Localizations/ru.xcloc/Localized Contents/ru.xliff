@@ -6109,7 +6109,7 @@ Error: %@</source>
       </trans-unit>
       <trans-unit id="Private routing timeout" xml:space="preserve" approved="no">
         <source>Private routing timeout</source>
-        <target state="translated">Превышено время конфиденциальной доставки</target>
+        <target state="translated">Таймаут конфиденциальной доставки</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
@@ -6142,8 +6142,9 @@ Error: %@</source>
         <target>Обновлённый профиль будет отправлен Вашим контактам.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Profile will be shared via the address link." xml:space="preserve">
+      <trans-unit id="Profile will be shared via the address link." xml:space="preserve" approved="no">
         <source>Profile will be shared via the address link.</source>
+        <target state="translated">Профиль будет добавлен в адрес.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
@@ -6218,8 +6219,9 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Защитите Ваши профили чата паролем!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protocol background timeout" xml:space="preserve">
+      <trans-unit id="Protocol background timeout" xml:space="preserve" approved="no">
         <source>Protocol background timeout</source>
+        <target state="translated">Фоновый таймаут протокола</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protocol timeout" xml:space="preserve">
@@ -6509,8 +6511,9 @@ swipe action</note>
         <target>Удалить пароль из Keychain?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Removes messages and blocks members." xml:space="preserve">
+      <trans-unit id="Removes messages and blocks members." xml:space="preserve" approved="no">
         <source>Removes messages and blocks members.</source>
+        <target state="translated">Может удалять сообщения и блокировать членов.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Renegotiate" xml:space="preserve">
@@ -6693,8 +6696,9 @@ swipe action</note>
         <target>Посмотреть условия</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Review group members" xml:space="preserve">
+      <trans-unit id="Review group members" xml:space="preserve" approved="no">
         <source>Review group members</source>
+        <target state="translated">Одобрять членов группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Review members" xml:space="preserve">
@@ -6763,8 +6767,9 @@ chat item action</note>
         <target>Сохранить (и уведомить контакты)</target>
         <note>alert button</note>
       </trans-unit>
-      <trans-unit id="Save (and notify members)" xml:space="preserve">
+      <trans-unit id="Save (and notify members)" xml:space="preserve" approved="no">
         <source>Save (and notify members)</source>
+        <target state="translated">Сохранить (и уведомить членов)</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Save admission settings?" xml:space="preserve">
@@ -6797,8 +6802,9 @@ chat item action</note>
         <target>Сохранить профиль группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save group profile?" xml:space="preserve">
+      <trans-unit id="Save group profile?" xml:space="preserve" approved="no">
         <source>Save group profile?</source>
+        <target state="translated">Сохранить профиль группы</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Save list" xml:space="preserve">
