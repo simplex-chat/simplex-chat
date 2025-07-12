@@ -669,7 +669,7 @@ processChatCommand vr nm = \case
           assertDeletable items
           assertDirectAllowed user MDSnd ct XMsgDel_
           let msgIds = itemsMsgIds items
-              events = map (\msgId -> XMsgDel msgId Nothing) msgIds
+              events = map (\msgId -> XMsgDel msgId Nothing Nothing) msgIds
           forM_ (L.nonEmpty events) $ \events' ->
             sendDirectContactMessages user ct events'
           if featureAllowed SCFFullDelete forUser ct
@@ -691,7 +691,7 @@ processChatCommand vr nm = \case
           assertDeletable items
           assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
           let msgIds = itemsMsgIds items
-              events = L.nonEmpty $ map (`XMsgDel` Nothing) msgIds
+              events = L.nonEmpty $ map (\msgId -> XMsgDel msgId Nothing $ toMsgScope gInfo <$> chatScopeInfo) msgIds
           mapM_ (sendGroupMessages user gInfo Nothing recipients) events
           delGroupChatItems user gInfo chatScopeInfo items False
       pure $ CRChatItemsDeleted user deletions True False
@@ -754,7 +754,7 @@ processChatCommand vr nm = \case
               throwCmdError "reaction not allowed - chat item has no content"
             rs <- withFastStore' $ \db -> getDirectReactions db ct itemSharedMId True
             checkReactionAllowed rs
-            (SndMessage {msgId}, _) <- sendDirectContactMessage user ct $ XMsgReact itemSharedMId Nothing reaction add
+            (SndMessage {msgId}, _) <- sendDirectContactMessage user ct $ XMsgReact itemSharedMId Nothing Nothing reaction add
             createdAt <- liftIO getCurrentTime
             reactions <- withFastStore' $ \db -> do
               setDirectReaction db ct itemSharedMId True reaction add msgId createdAt
@@ -779,7 +779,7 @@ processChatCommand vr nm = \case
             let GroupMember {memberId = itemMemberId} = chatItemMember g ci
             rs <- withFastStore' $ \db -> getGroupReactions db g membership itemMemberId itemSharedMId True
             checkReactionAllowed rs
-            SndMessage {msgId} <- sendGroupMessage user g scope recipients (XMsgReact itemSharedMId (Just itemMemberId) reaction add)
+            SndMessage {msgId} <- sendGroupMessage user g scope recipients (XMsgReact itemSharedMId (Just itemMemberId) (toMsgScope g <$> chatScopeInfo) reaction add)
             createdAt <- liftIO getCurrentTime
             reactions <- withFastStore' $ \db -> do
               setGroupReaction db g membership itemMemberId itemSharedMId True reaction add msgId createdAt
@@ -2507,7 +2507,7 @@ processChatCommand vr nm = \case
   APIUpdateGroupProfile groupId p' -> withUser $ \user -> do
     g <- withFastStore $ \db -> getGroup db vr user groupId
     runUpdateGroupProfile user g p'
-  UpdateGroupNames gName p'@GroupProfile {displayName, fullName, shortDescr} ->
+  UpdateGroupNames gName GroupProfile {displayName, fullName, shortDescr} ->
     updateGroupProfileByName gName $ \p -> p {displayName, fullName, shortDescr}
   ShowGroupProfile gName -> withUser $ \user ->
     CRGroupProfile user <$> withFastStore (\db -> getGroupInfoByName db vr user gName)
@@ -3202,7 +3202,7 @@ processChatCommand vr nm = \case
       assertDeletable gInfo items
       assertUserGroupRole gInfo GRAdmin -- TODO GRModerator when most users migrate
       let msgMemIds = itemsMsgMemIds gInfo items
-          events = L.nonEmpty $ map (\(msgId, memId) -> XMsgDel msgId (Just memId)) msgMemIds
+          events = L.nonEmpty $ map (\(msgId, memId) -> XMsgDel msgId (Just memId) $ toMsgScope gInfo <$> chatScopeInfo) msgMemIds
       mapM_ (sendGroupMessages_ user gInfo ms) events
       delGroupChatItems user gInfo chatScopeInfo items True
       where

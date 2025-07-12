@@ -3,6 +3,7 @@
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
@@ -37,8 +38,10 @@ import Simplex.Messaging.Version
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
+import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
 import Database.SQLite.Simple (Only (..))
+import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Options.DB
 import System.Directory (copyFile)
 import System.FilePath ((</>))
@@ -198,6 +201,13 @@ chatGroupTests = do
   describe "group scoped messages" $ do
     it "should send scoped messages to support (single moderator)" testScopedSupportSingleModerator
     it "should send scoped messages to support (many moderators)" testScopedSupportManyModerators
+    it "should forward messages inside support scope" testScopedSupportForward
+    it "should forward messages inside support scope while member is in review" testScopedSupportForwardWhileReview
+    it "should not forward messages from support to main scope" testScopedSupportDontForward
+    -- TODO test messages are not forwarded between support scopes (1 in review, 1 not? combinations?)
+    it "should forward file inside support scope" testScopedSupportForwardFile
+    -- TODO test files are forwarded inside support scope while member is in review
+    -- TODO test group events directed to all (e.g. XGrpInfo) are forwarded to support scope member while in review
     it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
@@ -4565,7 +4575,8 @@ testGroupMsgForward :: HasCallStack => TestParams -> IO ()
 testGroupMsgForward =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      setupGroupForwarding3 "team" alice bob cath
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
 
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
@@ -4593,7 +4604,8 @@ testGroupMsgForwardReport :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardReport =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      setupGroupForwarding3 "team" alice bob cath
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
 
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
@@ -4647,17 +4659,39 @@ testGroupMsgForwardReport =
       alice <# "#team cath> hey team"
       bob <# "#team cath> hey team [>>]"
 
-setupGroupForwarding3 :: String -> TestCC -> TestCC -> TestCC -> IO ()
-setupGroupForwarding3 gName alice bob cath = do
-  createGroup3 gName alice bob cath
-
+setupGroupForwarding :: TestCC -> TestCC -> TestCC -> IO ()
+setupGroupForwarding host invitee1 invitee2 = do
   threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
-  void $ withCCTransaction bob $ \db ->
-    DB.execute_ db "UPDATE connections SET conn_status='deleted' WHERE group_member_id = 3"
-  void $ withCCTransaction cath $ \db ->
-    DB.execute_ db "UPDATE connections SET conn_status='deleted' WHERE group_member_id = 3"
-  void $ withCCTransaction alice $ \db ->
-    DB.execute_ db "UPDATE group_member_intros SET intro_status='fwd'"
+
+  invitee1Name <- userName invitee1
+  invitee2Name <- userName invitee2
+
+  -- set up test: break connections between invitee1 and invitee2 to enable group forwarding
+  void $ withCCTransaction invitee1 $ \db ->
+    DB.execute
+      db
+      [sql|
+        UPDATE connections SET conn_status='deleted'
+        WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = ?)
+      |]
+      (Only invitee2Name)
+  void $ withCCTransaction invitee2 $ \db ->
+    DB.execute
+      db
+      [sql|
+        UPDATE connections SET conn_status='deleted'
+        WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = ?)
+      |]
+      (Only invitee1Name)
+  void $ withCCTransaction host $ \db ->
+    DB.execute
+      db
+      [sql|
+        UPDATE group_member_intros SET intro_status='fwd'
+        WHERE re_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = ?)
+          AND to_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = ?)
+      |]
+      (invitee1Name, invitee2Name)
 
 testGroupMsgForwardDeduplicate :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardDeduplicate =
@@ -4700,7 +4734,8 @@ testGroupMsgForwardEdit :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardEdit =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      setupGroupForwarding3 "team" alice bob cath
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
 
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
@@ -4723,7 +4758,8 @@ testGroupMsgForwardReaction :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardReaction =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      setupGroupForwarding3 "team" alice bob cath
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
 
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
@@ -4740,7 +4776,8 @@ testGroupMsgForwardDeletion :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardDeletion =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      setupGroupForwarding3 "team" alice bob cath
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
       -- disableFullDeletion3 "team" alice bob cath
 
       bob #> "#team hi there"
@@ -4756,7 +4793,8 @@ testGroupMsgForwardFile :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardFile =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> withXFTPServer $ do
-      setupGroupForwarding3 "team" alice bob cath
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
 
       bob #> "/f #team ./tests/fixtures/test.jpg"
       bob <## "use /fc 1 to cancel sending"
@@ -4781,7 +4819,8 @@ testGroupMsgForwardChangeRole :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardChangeRole =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      setupGroupForwarding3 "team" alice bob cath
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
 
       cath ##> "/mr #team bob member"
       cath <## "#team: you changed the role of bob to member"
@@ -4792,7 +4831,8 @@ testGroupMsgForwardNewMember :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardNewMember =
   testChat4 aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
-      setupGroupForwarding3 "team" alice bob cath
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
 
       connectUsers cath dan
       cath ##> "/a #team dan"
@@ -4833,7 +4873,8 @@ testGroupMsgForwardLeave :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardLeave =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      setupGroupForwarding3 "team" alice bob cath
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
 
       bob ##> "/leave #team"
       bob <## "#team: you left the group"
@@ -7014,6 +7055,145 @@ testScopedSupportManyModerators =
     bob <## "support: unread: 0, require attention: 0, mentions: 0"
     cath ##> "/member support chats #team"
     cath <## "bob (Bob) (id 3): unread: 0, require attention: 0, mentions: 0"
+
+testScopedSupportForward :: HasCallStack => TestParams -> IO ()
+testScopedSupportForward =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
+    createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRModerator)
+    setupGroupForwarding alice bob dan
+
+    -- messages are forwarded in main scope
+    bob #> "#team 1"
+    [alice, cath] *<# "#team bob> 1"
+    dan <# "#team bob> 1 [>>]"
+
+    dan #> "#team 2"
+    [alice, cath] *<# "#team dan> 2"
+    bob <# "#team dan> 2 [>>]"
+
+    -- messages are forwarded inside support scope
+    bob #> "#team (support) 3"
+    alice <# "#team (support: bob) bob> 3"
+    dan <# "#team (support: bob) bob> 3 [>>]"
+
+    dan #> "#team (support: bob) 4"
+    alice <# "#team (support: bob) dan> 4"
+    bob <# "#team (support) dan> 4 [>>]"
+
+testScopedSupportForwardWhileReview :: HasCallStack => TestParams -> IO ()
+testScopedSupportForwardWhileReview =
+  testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $
+    \alice bob cath dan eve -> do
+      createGroup4 "team" alice (bob, GRMember) (cath, GRModerator) (dan, GRModerator)
+
+      alice ##> "/set admission review #team all"
+      alice <## "changed member admission rules"
+      concurrentlyN_
+        [ do
+            bob <## "alice updated group #team:"
+            bob <## "changed member admission rules",
+          do
+            cath <## "alice updated group #team:"
+            cath <## "changed member admission rules",
+          do
+            dan <## "alice updated group #team:"
+            dan <## "changed member admission rules"
+        ]
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      eve ##> ("/c " <> gLink)
+      eve <## "connection request sent!"
+      alice <## "eve (Eve): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: eve connected and pending review",
+          eve
+            <### [ "#team: alice accepted you to the group, pending review",
+                   "#team: joining the group...",
+                   "#team: you joined the group, connecting to group moderators for admission to group",
+                   "#team: member cath (Catherine) is connected",
+                   "#team: member dan (Daniel) is connected"
+                 ],
+          do
+            cath <## "#team: alice added eve (Eve) to the group (connecting and pending review...), use /_accept member #1 5 <role> to accept member"
+            cath <## "#team: new member eve is connected and pending review, use /_accept member #1 5 <role> to accept member",
+          do
+            dan <## "#team: alice added eve (Eve) to the group (connecting and pending review...), use /_accept member #1 5 <role> to accept member"
+            dan <## "#team: new member eve is connected and pending review, use /_accept member #1 5 <role> to accept member"
+        ]
+
+      setupGroupForwarding alice cath eve
+
+      -- message from cath is not forwarded to eve in group scope
+      bob #> "#team 1"
+      [alice, cath, dan] *<# "#team bob> 1"
+
+      -- message from cath is not forwarded to eve in group scope
+      cath #> "#team 2"
+      [alice, bob, dan] *<# "#team cath> 2"
+
+      -- messages are forwarded in support scope
+      eve #> "#team (support) 3"
+      [alice, dan] *<# "#team (support: eve) eve> 3"
+      cath <# "#team (support: eve) eve> 3 [>>]"
+
+      cath #> "#team (support: eve) 4"
+      [alice, dan] *<# "#team (support: eve) cath> 4"
+      eve <# "#team (support) cath> 4 [>>]"
+
+testScopedSupportDontForward :: HasCallStack => TestParams -> IO ()
+testScopedSupportDontForward =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
+    createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRModerator)
+    setupGroupForwarding alice bob cath
+
+    -- messages are forwarded in main scope
+    bob #> "#team 1"
+    [alice, dan] *<# "#team bob> 1"
+    cath <# "#team bob> 1 [>>]"
+
+    cath #> "#team 2"
+    [alice, dan] *<# "#team cath> 2"
+    bob <# "#team cath> 2 [>>]"
+
+    -- messages are not forwarded from support to main scope
+    bob #> "#team (support) 3"
+    [alice, dan] *<# "#team (support: bob) bob> 3"
+
+    cath #> "#team (support) 4"
+    [alice, dan] *<# "#team (support: cath) cath> 4"
+
+testScopedSupportForwardFile :: HasCallStack => TestParams -> IO ()
+testScopedSupportForwardFile =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> withXFTPServer $ do
+    createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRModerator)
+    setupGroupForwarding alice bob dan
+
+    -- files are forwarded inside support scope
+    bob ##> "/_send #1(_support) json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi, sending a file\"}}]"
+    bob <# "#team (support) hi, sending a file"
+    bob <# "/f #team (support) ./tests/fixtures/test.jpg"
+    bob <## "use /fc 1 to cancel sending"
+
+    concurrentlyN_
+        [ do
+            alice <# "#team (support: bob) bob> hi, sending a file"
+            alice <# "#team (support: bob) bob> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            alice <## "use /fr 1 [<dir>/ | <path>] to receive it",
+          do
+            dan <# "#team (support: bob) bob> hi, sending a file [>>]"
+            dan <# "#team (support: bob) bob> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+            dan <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]"
+        ]
+
+    bob <## "completed uploading file 1 (test.jpg) for #team"
+
+    dan ##> "/fr 1 ./tests/tmp"
+    dan
+      <### [ "saving file 1 from bob to ./tests/tmp/test.jpg",
+              "started receiving file 1 (test.jpg) from bob"
+            ]
+    dan <## "completed receiving file 1 (test.jpg) from bob"
 
 testSupportCLISendCommand :: HasCallStack => TestParams -> IO ()
 testSupportCLISendCommand =
