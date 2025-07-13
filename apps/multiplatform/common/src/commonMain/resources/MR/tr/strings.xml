@@ -2032,7 +2032,7 @@
     <string name="file_error_auth">Yanlış anahtar veya bilinmeyen dosya yığın adresi - büyük olasılıkla dosya silinmiştir.</string>
     <string name="toolbar_settings">Ayarlar</string>
     <string name="new_chat_share_profile">Profil paylaş</string>
-    <string name="switching_profile_error_message">Bağlantınız %s\'ye taşındı ancak sizi profile yönlendirirken beklenmedik bir hata oluştu.</string>
+    <string name="switching_profile_error_message">Bağlantınız %s\'e taşındı, ancak geçiş profilinde bir hata gerçekleşti.</string>
     <string name="network_proxy_auth">Proxy kimlik doğrulaması</string>
     <string name="network_proxy_random_credentials">Rastgele kimlik bilgileri kullan</string>
     <string name="network_proxy_auth_mode_isolate_by_auth_entity">Her bağlantı için farklı proxy kimlik bilgileri kullan.</string>
