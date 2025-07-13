@@ -2452,8 +2452,8 @@
     <string name="v6_4_connect_faster">Daha hızlı bağlanın! 🚀</string>
     <string name="contact_should_accept">iletişim kabul etmelidir…</string>
     <string name="error_changing_user">Kullanıcısını değiştirirken hata oluştu</string>
-    <string name="error_preparing_contact">Kişi hazırlanırken hata oluştu</string>
-    <string name="error_preparing_group">Grup hazırlanırken hata oluştu</string>
+    <string name="error_preparing_contact">Sohbeti açarken sorun oluştu</string>
+    <string name="error_preparing_group">Grup açarken hata oluştu</string>
     <string name="error_rejecting_contact_request">İletişim isteği reddedildi</string>
     <string name="compose_view_join_group">Gruba katıl</string>
     <string name="v6_4_message_delivery_descr">Mobil ağlarda daha az trafik.</string>
