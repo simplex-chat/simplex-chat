@@ -426,7 +426,7 @@ struct GroupChatInfoView: View {
 
             if user {
                 v
-            } else if groupInfo.membership.memberRole >= .admin {
+            } else if groupInfo.membership.memberRole >= .moderator {
                 // TODO if there are more actions, refactor with lists of swipeActions
                 let canBlockForAll = member.canBlockForAll(groupInfo: groupInfo)
                 let canRemove = member.canBeRemoved(groupInfo: groupInfo)
@@ -469,7 +469,7 @@ struct GroupChatInfoView: View {
                     .foregroundColor(theme.colors.secondary)
             } else {
                 let role = member.memberRole
-                if [.owner, .admin, .observer].contains(role) {
+                if [.owner, .admin, .moderator, .observer].contains(role) {
                     Text(member.memberRole.text)
                         .foregroundColor(theme.colors.secondary)
                 }
