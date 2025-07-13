@@ -2032,7 +2032,7 @@
     <string name="file_error_auth">Yanlış anahtar veya bilinmeyen dosya yığın adresi - büyük olasılıkla dosya silinmiştir.</string>
     <string name="toolbar_settings">Ayarlar</string>
     <string name="new_chat_share_profile">Profil paylaş</string>
-    <string name="switching_profile_error_message">Bağlantınız %s\'e taşındı, ancak geçiş profilinde bir hata gerçekleşti.</string>
+    <string name="switching_profile_error_message">Bağlantınız %s\'e taşındı, ancak profil geçişinde bir hata gerçekleşti.</string>
     <string name="network_proxy_auth">Proxy kimlik doğrulaması</string>
     <string name="network_proxy_random_credentials">Rastgele kimlik bilgileri kullan</string>
     <string name="network_proxy_auth_mode_isolate_by_auth_entity">Her bağlantı için farklı proxy kimlik bilgileri kullan.</string>
@@ -2467,7 +2467,7 @@
     <string name="open_to_connect">Bağlanmak için açık</string>
     <string name="group_preview_open_to_join">Katılmak için açık</string>
     <string name="private_routing_timeout">Özel yönlendirme zaman aşımı</string>
-    <string name="share_profile_via_link_alert_text">Profil, adres bağlantısı aracılığıyla paylaşılacaktır.</string>
+    <string name="share_profile_via_link_alert_text">Profil, adres aracılığıyla paylaşılacaktır.</string>
     <string name="network_option_protocol_timeout_background">Protokol arka plan zaman aşımı</string>
     <string name="reject_contact_request">İletişim isteğini reddet</string>
     <string name="v6_4_role_moderator_descr">Mesajları siler ve üyeleri engeller.</string>
@@ -2480,10 +2480,14 @@
     <string name="sent_to_your_contact_after_connection">Bağlantı kurulduktan sonra kişinize gönderilir.</string>
     <string name="share_group_profile_via_link">Grup profilini bağlantı yoluyla paylaş</string>
     <string name="share_profile_via_link_alert_confirm">Profil paylaş</string>
-    <string name="share_profile_via_link">Profilinizi bağlantı yoluyla paylaşın</string>
+    <string name="share_profile_via_link">Profilinizi adres yoluyla paylaşın</string>
     <string name="network_option_tcp_connection_timeout_background">TCP bağlantısı arka plan zaman aşımı</string>
     <string name="the_sender_will_not_be_notified">Gönderen bilgilendirilmeyecektir.</string>
     <string name="context_user_picker_cant_change_profile_alert_message">Bağlantı denemesinden sonra başka bir profil kullanmak için sohbeti silin ve bağlantıyı tekrar kullanın.</string>
     <string name="address_welcome_message">Hoş geldiniz mesajı</string>
     <string name="context_user_picker_your_profile">Profiliniz</string>
+    <string name="loading_profile">Profil yükleniyor…</string>
+    <string name="short_descr__field">Bio:</string>
+    <string name="short_descr">Biyografiniz:</string>
+    <string name="group_short_descr_field">Kısa açıklama:</string>
 </resources>
