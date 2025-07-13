@@ -2440,7 +2440,7 @@
     <string name="open_to_accept">打开以接受</string>
     <string name="open_to_connect">打开以连接</string>
     <string name="group_preview_open_to_join">打开以加入</string>
-    <string name="share_profile_via_link_alert_text">个人资料将和地址一起分享。</string>
+    <string name="share_profile_via_link_alert_text">将通过该地址分享个人资料。</string>
     <string name="reject_contact_request">拒绝联络请求</string>
     <string name="cant_send_message_request_is_sent">发送了请求</string>
     <string name="compose_view_send_contact_request_alert_question">发送联络请求？</string>
