@@ -944,6 +944,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <p><a href="#privacy-and-security">Privacy and security</a></p>
 <ul>
 <li><a href="#does-simplex-support-post-quantum-cryptography">Does SimpleX support post quantum cryptography?</a></li>
+<li><a href="#why-cant-I-use-the-same-profile-on-different-devices">Why can't I use the same profile on different devices?</a></li>
 <li><a href="#what-user-data-can-be-provided-on-request">What user data can be provided on request?</a></li>
 <li><a href="#does-simplex-protect-my-ip-address">Does SimpleX protect my IP address?</a></li>
 <li><a href="#doesnt-private-message-routing-reinvent-tor">Doesn't private message routing reinvent Tor?</a></li>
@@ -1103,6 +1104,29 @@ If interested, please read more: <a href="/docs/guide/making-connections.html">A
 <h2 id="privacy-and-security" tabindex="-1">Privacy and security</h2>
 <h3 id="does-simplex-support-post-quantum-cryptography" tabindex="-1">Does SimpleX support post quantum cryptography?</h3>
 <p>Yes! Please read more about quantum resistant encryption is added to SimpleX Chat and about various properties of end-to-end encryption in <a href="/blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.html">this post</a>.</p>
+<h3 id="why-cant-i-use-the-same-profile-on-different-devices" tabindex="-1">Why can't I use the same profile on different devices?</h3>
+<p>SimpleX Chat apps support <a href="https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html#link-mobile-and-desktop-apps-via-secure-quantum-resistant-protocol">linking of mobile and desktop apps</a> via secure quantum-resistant protocol. It allows using the profile on your mobile device from desktop clients.</p>
+<p>Seamlessly and securely using the same profile from two or more devices is a complex and unsolved problem. All apps that provide multi-device support do so at a cost of compromising security of end-to-end encryption. E.g., Session removed the Double Ratchet algorithm entirely to enable multi-device support, sacrificing forward secrecy. Signal provides multi-device support with Double Ratchet algorithm, but by <a href="https://eprint.iacr.org/2021/626.pdf">compromising its &quot;break-in recovery&quot; property</a> (aka post-compromise security).</p>
+<p>To the best of our knowledge there is no end-to-end encrypted messenger that solved this problem without compromising security, but we believe that the solution is possible. We have considered several approaches:</p>
+<ol>
+<li>
+<p>Convert each direct conversation into a group, where each device participates as a member. This is the approach that Signal and WhatsApp use, and while Signal implementation does not protect from a temporary compromise of long-term identity key (break-in recovery), such protection is possible. The downside of this approach is that the contacts and groups you participate in would know which device you use. Another possible attack is to send different messages to different devices, or to send messages to some devices but not to the others. This could lead to message history inconsistency or enable targeted attacks.</p>
+</li>
+<li>
+<p>Store the state of the Double Ratchet algorithm for each conversation in an encrypted container on the server, allowing concurrent access and modification by each device for encrypting and decrypting messages. We did not see this approach used in any of the messaging apps, but it is technically viable. This approach has no downsides of the first, but it would increase the time it takes to send and to receive messages, as each message would require additional access to the server.</p>
+</li>
+<li>
+<p>&quot;Thin client&quot; approach when user profile is stored on the server. The main challenge with this approach is to prevent the server knowing who connects to whom.</p>
+</li>
+</ol>
+<p>Whichever approach we choose for multi-device support, it requires careful design and implementation, and there is no existing secure solution to copy from. While we value usability very highly, we will not be improving usability in a way that compromises users' security. We will take a slower path of designing and implementing a solution for multi-device that achieves a better trade-off between usability and security than currently offered.</p>
+<p>In the meantime, here are several secure options to enhance usability:</p>
+<ul>
+<li>link mobile profiles with desktop app. It does not compromise security in any way.</li>
+<li>create small groups with trusted contacts. These contacts would still know which device you use when you send the message, but it won't be shared with all contacts and groups you participate in. This approach is also secure, and it prevents devices being added to the conversation without user noticing.</li>
+<li>use &quot;<a href="https://simplex.chat/blog/20241210-simplex-network-v6-2-servers-by-flux-business-chats.html#business-chats">business address</a>&quot; - the app would create a new small group with everybody who connects to you via your address, and you will be able to add your other devices to these groups.</li>
+</ul>
+<p>While these approaches are not as convenient as seamless multi-device support offered by other apps, they also do not compromise security to achieve that convenience.</p>
 <h3 id="what-user-data-can-be-provided-on-request" tabindex="-1">What user data can be provided on request?</h3>
 <p>Our objective is to consistently ensure that no user data and absolute minimum of the metadata required for the network to function is available for disclosure by any infrastructure operators, under any circumstances.</p>
 <p>Please see our <a href="https%3A//github.com/simplex-chat/simplex-chat/blob/stable/simplex-chat/PRIVACY.md">Privacy Policy</a> and <a href="/transparency/index.html">Transparency Reports</a>.</p>
