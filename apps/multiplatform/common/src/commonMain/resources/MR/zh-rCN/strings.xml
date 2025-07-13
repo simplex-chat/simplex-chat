@@ -2469,4 +2469,5 @@
     <string name="v6_4_support_chat_descr">向群发送私密反馈。</string>
     <string name="network_option_tcp_connection_timeout_background">TCP 连接后台超时</string>
     <string name="loading_profile">正加载个人资料…</string>
+    <string name="short_descr__field">自我介绍：</string>
 </resources>
