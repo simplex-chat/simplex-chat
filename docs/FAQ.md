@@ -32,7 +32,7 @@ revision: 23.04.2024
 
 [Privacy and security](#privacy-and-security)
 - [Does SimpleX support post quantum cryptography?](#does-simplex-support-post-quantum-cryptography)
-- [Why can't I use the same profile on different devices?](#why-cant-I-use-the-same-profile-on-different-devices)
+- [Why can't I use the same profile on different devices?](#why-cant-i-use-the-same-profile-on-different-devices)
 - [What user data can be provided on request?](#what-user-data-can-be-provided-on-request)
 - [Does SimpleX protect my IP address?](#does-simplex-protect-my-ip-address)
 - [Doesn't private message routing reinvent Tor?](#doesnt-private-message-routing-reinvent-tor)
