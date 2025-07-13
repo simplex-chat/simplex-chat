@@ -2556,4 +2556,5 @@
     <string name="v6_4_support_chat_descr">Senden Sie Ihr privates Feedback an Gruppen.</string>
     <string name="network_option_tcp_connection_timeout_background">TCP-Verbindung Hintergrund-Zeitüberschreitung</string>
     <string name="loading_profile">Profil wird geladen…</string>
+    <string name="short_descr__field">Bio:</string>
 </resources>
