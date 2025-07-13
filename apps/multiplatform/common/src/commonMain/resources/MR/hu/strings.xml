@@ -1397,7 +1397,7 @@
     <string name="unknown_database_error_with_info">Ismeretlen adatbázishiba: %s</string>
     <string name="you_can_hide_or_mute_user_profile">Elrejtheti vagy lenémíthatja a felhasználóprofiljait – koppintson (vagy számítógép-alkalmazásban kattintson) hosszan a profilra a felugró menühöz.</string>
     <string name="v5_3_simpler_incognito_mode_descr">Inkognitó profil használata kapcsolódáskor ki/be.</string>
-    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Megoszthat egy hivatkozást vagy QR-kódot – így bárki csatlakozhat a csoporthoz. Ha a csoporthivatkozást Ön később törli, akkor nem fogja elveszíteni a csoport tagjait.</string>
+    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Megoszthat egy hivatkozást vagy QR-kódot – így bárki csatlakozhat a csoporthoz. Ha a csoporthivatkozást Ön később törli, akkor nem fogja elveszíteni a csoport meglévő tagjait.</string>
     <string name="you_joined_this_group">Ön csatlakozott ehhez a csoporthoz</string>
     <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Ez a saját hivatkozása a(z) <b>%1$s</b> nevű csoporthoz!]]></string>
     <string name="voice_prohibited_in_this_chat">A hangüzenetek küldése le van tiltva ebben a csevegésben.</string>
@@ -1405,7 +1405,7 @@
     <string name="verify_code_with_desktop">Kód hitelesítése a számítógépen</string>
     <string name="v4_5_private_filenames_descr">Az időzóna védelmének érdekében a kép-/hangfájlok UTC-t használnak.</string>
     <string name="connect_via_member_address_alert_desc">A csatlakozási kérése el lesz küldve ennek a csoporttagnak.</string>
-    <string name="incognito_info_share">Inkognitóprofil megosztása esetén a rendszer azt a profilt fogja használni azokhoz a csoportokhoz, amelyekbe meghívást kapott.</string>
+    <string name="incognito_info_share">Ha egy inkognitóprofilt oszt meg valakivel, akkor ez a profil lesz használva azokban a csoportokban, ahová meghívják Önt azok, akikkel megosztatta.</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">Már kért egy csatlakozási kérést ezen a címen keresztül!</string>
     <string name="you_can_share_this_address_with_your_contacts">Megoszthatja ezt a SimpleX-címet a partnereivel, hogy kapcsolatba léphessenek vele: %s.</string>
     <string name="you_can_accept_or_reject_connection">Amikor az emberek meghívót küldenek, Ön elfogadhatja vagy elutasíthatja azokat.</string>
@@ -2429,7 +2429,7 @@
     <string name="context_user_picker_your_profile">Saját profil</string>
     <string name="sent_to_your_contact_after_connection">Elküldés a partnernek a kapcsolódást követően.</string>
     <string name="address_welcome_message">Üdvözlőüzenet</string>
-    <string name="share_profile_via_link">Profil megosztása címmel együtt</string>
+    <string name="share_profile_via_link">Profil megosztása a címmel együtt</string>
     <string name="share_profile_via_link_alert_text">A profil meg lesz osztva a címmel együtt.</string>
     <string name="share_profile_via_link_alert_confirm">Profil megosztása</string>
     <string name="share_group_profile_via_link">Csoportprofil megosztása a hivatkozáson keresztül</string>
