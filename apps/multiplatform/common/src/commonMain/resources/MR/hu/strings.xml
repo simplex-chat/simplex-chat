@@ -1405,7 +1405,7 @@
     <string name="verify_code_with_desktop">Kód hitelesítése a számítógépen</string>
     <string name="v4_5_private_filenames_descr">Az időzóna védelmének érdekében a kép-/hangfájlok UTC-t használnak.</string>
     <string name="connect_via_member_address_alert_desc">A csatlakozási kérése el lesz küldve ennek a csoporttagnak.</string>
-    <string name="incognito_info_share">Amikor egy inkognitóprofilt megoszt valakivel, ez a profil kerül felhasználásra azokban a csoportokban, amelyekbe meghívják Önt az adott személyek.</string>
+    <string name="incognito_info_share">Amikor egy inkognitóprofilt megoszt valakivel, ez a profil lesz felhasználva azokban a csoportokban, amelyekbe meghívják Önt az adott személyek.</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">Már kért egy csatlakozási kérést ezen a címen keresztül!</string>
     <string name="you_can_share_this_address_with_your_contacts">Megoszthatja ezt a SimpleX-címet a partnereivel, hogy kapcsolatba léphessenek vele: %s.</string>
     <string name="you_can_accept_or_reject_connection">Amikor az emberek meghívót küldenek, Ön elfogadhatja vagy elutasíthatja azokat.</string>
