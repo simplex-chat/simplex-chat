@@ -3412,8 +3412,8 @@ processChatCommand vr nm = \case
               Nothing -> do
                 (cReq, cData) <- getShortLinkConnReq user l'
                 withFastStore' (\db -> getContactWithoutConnViaShortAddress db vr user l') >>= \case
-                  Just ct' -> pure (con cReq, CPContactAddress (CAPContactViaAddress ct'))
-                  Nothing -> do
+                  Just ct' | not (contactDeleted ct') -> pure (con cReq, CPContactAddress (CAPContactViaAddress ct'))
+                  _ -> do
                     contactSLinkData_ <- liftIO $ decodeShortLinkData cData
                     plan <- contactRequestPlan user cReq contactSLinkData_
                     pure (con cReq, plan)
@@ -3486,8 +3486,8 @@ processChatCommand vr nm = \case
           withFastStore' (\db -> getContactConnEntityByConnReqHash db vr user cReqHashes) >>= \case
             Nothing ->
               withFastStore' (\db -> getContactWithoutConnViaAddress db vr user cReqSchemas) >>= \case
-                Nothing -> pure $ CPContactAddress (CAPOk contactSLinkData_)
-                Just ct -> pure $ CPContactAddress (CAPContactViaAddress ct)
+                Just ct | not (contactDeleted ct) -> pure $ CPContactAddress (CAPContactViaAddress ct)
+                _ -> pure $ CPContactAddress (CAPOk contactSLinkData_)
             Just (RcvDirectMsgConnection Connection {connStatus} Nothing)
               | connStatus == ConnPrepared -> pure $ CPContactAddress (CAPOk contactSLinkData_)
               | otherwise -> pure $ CPContactAddress CAPConnectingConfirmReconnect

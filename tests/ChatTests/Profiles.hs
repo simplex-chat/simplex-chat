@@ -124,6 +124,7 @@ shortLinkTests largeLinkData = do
     else it "prepare contact with a long name in profile" testShortLinkInvitationLongName
   it "prepare contact via invitation and retry connecting" testShortLinkInvitationConnectRetry
   it "prepare contact using address short link data and connect" testShortLinkAddressPrepareContact
+  it "address connect plan after contact is deleted but conversation kept" testShortLinkAddressDeleteContact
   it "prepare contact via invitation and connect after it is deleted" testShortLinkDeletedInvitation
   it "prepare contact via address and connect after it is deleted" testShortLinkDeletedAddress
   it "prepare contact via address and connect with retry after error" testShortLinkAddressConnectRetry
@@ -3134,6 +3135,46 @@ testShortLinkAddressPrepareContact ps@TestParams {largeLinkData} = testChatCfg2 
       alice ##> "/d bob"
       alice <## "bob: contact is deleted"
       bob <## "alice (Alice) deleted contact with you"
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "contact address: ok to connect"
+      void $ getTermLine bob
+
+testShortLinkAddressDeleteContact :: HasCallStack => TestParams -> IO ()
+testShortLinkAddressDeleteContact ps@TestParams {largeLinkData} = testChatCfg2 testCfg {largeLinkData} aliceProfile bobProfile test ps
+  where
+    test alice bob = do
+      alice ##> "/ad"
+      (shortLink, fullLink) <- getContactLinks alice True
+      alice ##> "/pa on"
+      alice <## "new contact address set"
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "contact address: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+      bob <## "alice: contact is prepared"
+      bob ##> "/_connect contact @2 text hello"
+      bob
+        <### [ "alice: connection started",
+               WithTime "@alice hello"
+             ]
+      alice
+        <### [ "bob (Bob) wants to connect to you!",
+               WithTime "bob> hello"
+             ]
+      alice <## "to accept: /ac bob"
+      alice <## "to reject: /rc bob (the sender will NOT be notified)"
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+      unless largeLinkData $
+        bob <## "contact alice updated bio: Alice"
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice <##> bob
+      threadDelay 250000
+      bob ##> "/d alice entity"
+      bob <## "alice: contact is deleted"
+      alice <## "bob (Bob) deleted contact with you"
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "contact address: ok to connect"
       void $ getTermLine bob
