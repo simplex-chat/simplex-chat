@@ -204,10 +204,9 @@ chatGroupTests = do
     it "should forward messages inside support scope" testScopedSupportForward
     it "should forward messages inside support scope while member is in review" testScopedSupportForwardWhileReview
     it "should not forward messages from support to main scope" testScopedSupportDontForward
-    -- TODO test messages are not forwarded between support scopes (1 in review, 1 not? combinations?)
+    it "should forward group wide message (x.grp.info) to all members, including in review" testScopedSupportForwardAll
+    it "should not forward messages between support scopes" testScopedSupportDontForwardBetweenScopes
     it "should forward file inside support scope" testScopedSupportForwardFile
-    -- TODO test files are forwarded inside support scope while member is in review
-    -- TODO test group events directed to all (e.g. XGrpInfo) are forwarded to support scope member while in review
     it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
@@ -7162,6 +7161,111 @@ testScopedSupportDontForward =
 
     cath #> "#team (support) 4"
     [alice, dan] *<# "#team (support: cath) cath> 4"
+
+testScopedSupportForwardAll :: HasCallStack => TestParams -> IO ()
+testScopedSupportForwardAll =
+  testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $
+    \alice bob cath dan eve -> do
+      createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GROwner)
+
+      alice ##> "/set admission review #team all"
+      alice <## "changed member admission rules"
+      concurrentlyN_
+        [ do
+            bob <## "alice updated group #team:"
+            bob <## "changed member admission rules",
+          do
+            cath <## "alice updated group #team:"
+            cath <## "changed member admission rules",
+          do
+            dan <## "alice updated group #team:"
+            dan <## "changed member admission rules"
+        ]
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      eve ##> ("/c " <> gLink)
+      eve <## "connection request sent!"
+      alice <## "eve (Eve): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: eve connected and pending review",
+          eve
+            <### [ "#team: alice accepted you to the group, pending review",
+                   "#team: joining the group...",
+                   "#team: you joined the group, connecting to group moderators for admission to group",
+                   "#team: member dan (Daniel) is connected"
+                 ],
+          do
+            dan <## "#team: alice added eve (Eve) to the group (connecting and pending review...), use /_accept member #1 5 <role> to accept member"
+            dan <## "#team: new member eve is connected and pending review, use /_accept member #1 5 <role> to accept member"
+        ]
+
+      setupGroupForwarding alice bob dan
+      setupGroupForwarding alice dan eve
+
+      -- messages are forwarded in main scope between bob and dan
+      bob #> "#team 1"
+      [alice, cath] *<# "#team bob> 1"
+      dan <# "#team bob> 1 [>>]"
+
+      dan #> "#team 2"
+      [alice, cath] *<# "#team dan> 2"
+      bob <# "#team dan> 2 [>>]"
+
+      -- messages are forwarded in support scope between dan and eve
+      eve #> "#team (support) 3"
+      alice <# "#team (support: eve) eve> 3"
+      dan <# "#team (support: eve) eve> 3 [>>]"
+
+      dan #> "#team (support: eve) 4"
+      alice <# "#team (support: eve) dan> 4"
+      eve <# "#team (support) dan> 4 [>>]"
+
+      -- x.grp.info is forwarded from dan to both bob and eve
+      dan ##> "/gp team my_team"
+      dan <## "changed to #my_team"
+      concurrentlyN_
+        [ do
+            alice <## "dan updated group #team:"
+            alice <## "changed to #my_team",
+          do
+            bob <## "dan updated group #team:"
+            bob <## "changed to #my_team",
+          do
+            cath <## "dan updated group #team:"
+            cath <## "changed to #my_team",
+          do
+            eve <## "dan updated group #team:"
+            eve <## "changed to #my_team"
+        ]
+
+testScopedSupportDontForwardBetweenScopes :: HasCallStack => TestParams -> IO ()
+testScopedSupportDontForwardBetweenScopes =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
+    createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRModerator)
+    setupGroupForwarding alice bob cath
+
+    -- messages are forwarded in main scope
+    bob #> "#team 1"
+    [alice, dan] *<# "#team bob> 1"
+    cath <# "#team bob> 1 [>>]"
+
+    cath #> "#team 2"
+    [alice, dan] *<# "#team cath> 2"
+    bob <# "#team cath> 2 [>>]"
+
+    -- messages not forwarded between support scopes
+    bob #> "#team (support) 3"
+    alice <# "#team (support: bob) bob> 3"
+    dan <# "#team (support: bob) bob> 3"
+
+    cath #> "#team (support) 4"
+    alice <# "#team (support: cath) cath> 4"
+    dan <# "#team (support: cath) cath> 4"
+
+    bob #> "#team (support) 5"
+    alice <# "#team (support: bob) bob> 5"
+    dan <# "#team (support: bob) bob> 5"
 
 testScopedSupportForwardFile :: HasCallStack => TestParams -> IO ()
 testScopedSupportForwardFile =
