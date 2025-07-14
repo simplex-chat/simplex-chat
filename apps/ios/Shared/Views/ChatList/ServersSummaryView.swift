@@ -435,12 +435,11 @@ struct SubscriptionStatusPercentageView: View {
     var hasSess: Bool
 
     var body: some View {
-        if subs.total > 0 || hasSess {
-            let statusPercent = subscriptionStatusPercent(online: m.networkInfo.online, subs: subs, hasSess: hasSess)
-            Text(verbatim: "\(Int(floor(statusPercent * 100)))%")
-                .foregroundColor(.secondary)
-                .font(.caption)
-        }
+        let statusPercent = subscriptionStatusPercent(online: m.networkInfo.online, subs: subs, hasSess: hasSess)
+        let percentText: String = subs.total > 0 || hasSess ? "\(Int(floor(statusPercent * 100)))%" : "%"
+        Text(percentText)
+            .foregroundColor(.secondary)
+            .font(.caption)
     }
 }
 
