@@ -4742,8 +4742,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Élő üzenetek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Loading profile…" xml:space="preserve">
+      <trans-unit id="Loading profile…" xml:space="preserve" approved="no">
         <source>Loading profile…</source>
+        <target state="translated">Profil betöltése…</target>
         <note>in progress text</note>
       </trans-unit>
       <trans-unit id="Local name" xml:space="preserve">
@@ -8844,7 +8845,7 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
       </trans-unit>
       <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve" approved="no">
         <source>When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.</source>
-        <target state="translated">Ha egy inkognitóprofilt oszt meg valakivel, akkor ez a profil lesz használva azokban a csoportokban, ahová meghívják Önt azok, akikkel megosztatta.</target>
+        <target state="translated">Amikor egy inkognitóprofilt megoszt valakivel, ez a profil kerül felhasználásra azokban a csoportokban, amelyekbe meghívják Önt az adott személyek.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="WiFi" xml:space="preserve">
