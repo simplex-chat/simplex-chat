@@ -3161,7 +3161,6 @@ processChatCommand vr nm = \case
         Nothing -> do
           setGroupLinkData'
           let recipients = filter memberCurrentOrPending ms
-          liftIO $ putStrLn $ "about to sendGroupMessage to " <> show (length recipients)
           sendGroupMessage user g' Nothing recipients (XGrpInfo p')
           where
             setGroupLinkData' :: CM ()
