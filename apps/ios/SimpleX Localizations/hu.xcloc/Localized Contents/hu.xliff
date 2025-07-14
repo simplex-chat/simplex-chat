@@ -8845,7 +8845,7 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
       </trans-unit>
       <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve" approved="no">
         <source>When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.</source>
-        <target state="translated">Amikor egy inkognitóprofilt megoszt valakivel, ez a profil lesz felhasználva azokban a csoportokban, amelyekbe meghívják Önt az adott személyek.</target>
+        <target state="translated">Ha egy inkognitóprofilt oszt meg valamelyik partnerével, a rendszer ezt a profilt fogja használni azokban a csoportokban, ahová az adott partnere meghívja Önt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="WiFi" xml:space="preserve">
@@ -9057,7 +9057,7 @@ Megismétli a csatlakozási kérést?</target>
       </trans-unit>
       <trans-unit id="You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." xml:space="preserve" approved="no">
         <source>You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.</source>
-        <target state="translated">Megoszthat egy hivatkozást vagy QR-kódot – így bárki csatlakozhat a csoporthoz. Ha a csoporthivatkozást Ön később törli, akkor nem fogja elveszíteni a csoport tagjait.</target>
+        <target state="translated">Megoszthat egy hivatkozást vagy QR-kódot – így bárki csatlakozhat a csoporthoz. Ha a csoporthivatkozást Ön később törli, akkor nem fogja elveszíteni a csoport meglévő tagjait.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can share this address with your contacts to let them connect with **%@**." xml:space="preserve">
