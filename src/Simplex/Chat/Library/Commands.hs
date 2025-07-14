@@ -1672,8 +1672,7 @@ processChatCommand vr nm = \case
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user gId
     m <- withFastStore $ \db -> getGroupMember db vr user gId mId
     let GroupInfo {membership = GroupMember {memberRole = membershipRole}} = gInfo
-    -- TODO GRModerator when most users migrate
-    when (membershipRole >= GRAdmin) $ throwChatError $ CECantBlockMemberForSelf gInfo m showMessages
+    when (membershipRole >= GRModerator) $ throwChatError $ CECantBlockMemberForSelf gInfo m showMessages
     let settings = (memberSettings m) {showMessages}
     processChatCommand vr nm $ APISetMemberSettings gId mId settings
   ContactInfo cName -> withContactName cName APIContactInfo
@@ -3200,7 +3199,7 @@ processChatCommand vr nm = \case
     delGroupChatItemsForMembers :: User -> GroupInfo -> Maybe GroupChatScopeInfo -> [GroupMember] -> [CChatItem 'CTGroup] -> CM [ChatItemDeletion]
     delGroupChatItemsForMembers user gInfo chatScopeInfo ms items = do
       assertDeletable gInfo items
-      assertUserGroupRole gInfo GRAdmin -- TODO GRModerator when most users migrate
+      assertUserGroupRole gInfo GRModerator
       let msgMemIds = itemsMsgMemIds gInfo items
           events = L.nonEmpty $ map (\(msgId, memId) -> XMsgDel msgId (Just memId) $ toMsgScope gInfo <$> chatScopeInfo) msgMemIds
       mapM_ (sendGroupMessages_ user gInfo ms) events

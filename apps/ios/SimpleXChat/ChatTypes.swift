@@ -2419,8 +2419,8 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
 
     public func canBlockForAll(groupInfo: GroupInfo) -> Bool {
         let userRole = groupInfo.membership.memberRole
-        return memberStatus != .memRemoved && memberStatus != .memLeft && memberRole < .admin
-            && userRole >= .admin && userRole >= memberRole && groupInfo.membership.memberActive
+        return memberStatus != .memRemoved && memberStatus != .memLeft && memberRole < .moderator
+            && userRole >= .moderator && userRole >= memberRole && groupInfo.membership.memberActive
     }
 
     public var canReceiveReports: Bool {
@@ -2980,12 +2980,12 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         switch (chatInfo, chatDir) {
         case let (.group(groupInfo, _), .groupRcv(groupMember)):
             let m = groupInfo.membership
-            return m.memberRole >= .admin && m.memberRole >= groupMember.memberRole && meta.itemDeleted == nil
+            return m.memberRole >= .moderator && m.memberRole >= groupMember.memberRole && meta.itemDeleted == nil
                     ? (groupInfo, groupMember)
                     : nil
         case let (.group(groupInfo, _), .groupSnd):
             let m = groupInfo.membership
-            return m.memberRole >= .admin ? (groupInfo, nil) : nil
+            return m.memberRole >= .moderator ? (groupInfo, nil) : nil
         default: return nil
         }
     }

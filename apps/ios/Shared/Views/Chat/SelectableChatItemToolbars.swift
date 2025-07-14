@@ -146,7 +146,7 @@ struct SelectedItemsBottomToolbar: View {
     private func possibleToModerate(_ chatInfo: ChatInfo) -> Bool {
         return switch chatInfo {
         case let .group(groupInfo, _):
-            groupInfo.membership.memberRole >= .admin
+            groupInfo.membership.memberRole >= .moderator
         default: false
         }
     }
