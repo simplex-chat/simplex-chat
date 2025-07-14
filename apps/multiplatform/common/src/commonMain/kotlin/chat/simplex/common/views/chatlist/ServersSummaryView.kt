@@ -126,7 +126,7 @@ fun SubscriptionStatusIndicatorView(subs: SMPServerSubs, hasSess: Boolean, leadi
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON)
   ) {
-    if (pref.state.value && leadingPercentage) SubscriptionStatusIndicatorPercentage(percentageText)
+    if (pref.state.value && leadingPercentage && (subs.total > 0 || hasSess)) SubscriptionStatusIndicatorPercentage(percentageText)
     val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
     SubscriptionStatusIcon(
       color = when(statusColorAndPercentage.color) {
@@ -137,7 +137,7 @@ fun SubscriptionStatusIndicatorView(subs: SMPServerSubs, hasSess: Boolean, leadi
       },
       modifier = Modifier.size(sp16),
       variableValue = statusColorAndPercentage.variableValue)
-    if (pref.state.value && !leadingPercentage) SubscriptionStatusIndicatorPercentage(percentageText)
+    if (pref.state.value && !leadingPercentage && (subs.total > 0 || hasSess)) SubscriptionStatusIndicatorPercentage(percentageText)
   }
 }
 
