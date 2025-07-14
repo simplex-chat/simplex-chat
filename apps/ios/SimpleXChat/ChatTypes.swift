@@ -1768,9 +1768,9 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var sndReady: Bool { get { ready || activeConn?.connStatus == .sndReady } }
     public var active: Bool { get { contactStatus == .active } }
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
-    public var nextConnectPrepared: Bool { preparedContact != nil && (activeConn == nil || activeConn?.connStatus == .prepared) }
+    public var nextConnectPrepared: Bool { active && preparedContact != nil && (activeConn == nil || activeConn?.connStatus == .prepared) }
     public var profileChangeProhibited: Bool { activeConn != nil }
-    public var nextAcceptContactRequest: Bool { contactRequestId != nil && (activeConn == nil || activeConn?.connStatus == .new) }
+    public var nextAcceptContactRequest: Bool { active && contactRequestId != nil && (activeConn == nil || activeConn?.connStatus == .new) }
     public var sendMsgToConnect: Bool { nextSendGrpInv || nextConnectPrepared }
     public var displayName: String { localAlias == "" ? profile.displayName : localAlias }
     public var fullName: String { get { profile.fullName } }
