@@ -1143,44 +1143,6 @@ fun ComposeView(
       }
     }
 
-    KeyChangeEffect(chatModel.chatId.value) { prevChatId ->
-      val cs = composeState.value
-      if (cs.liveMessage != null && (cs.message.text.isNotEmpty() || cs.liveMessage.sent)) {
-        sendMessage(null)
-        resetLinkPreview()
-        clearPrevDraft(prevChatId)
-        deleteUnusedFiles()
-      } else if (cs.inProgress) {
-        clearPrevDraft(prevChatId)
-      } else if (!cs.empty) {
-        if (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished) {
-          composeState.value = cs.copy(preview = cs.preview.copy(finished = true))
-        }
-        if (saveLastDraft) {
-          chatModel.draft.value = composeState.value
-          chatModel.draftChatId.value = prevChatId
-        }
-        composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
-      } else if (chatModel.draftChatId.value == chatModel.chatId.value && chatModel.draft.value != null) {
-        composeState.value = chatModel.draft.value ?: ComposeState(useLinkPreviews = useLinkPreviews)
-      } else {
-        clearPrevDraft(prevChatId)
-        deleteUnusedFiles()
-      }
-      chatModel.removeLiveDummy()
-      CIFile.cachedRemoteFileRequests.clear()
-    }
-    if (appPlatform.isDesktop) {
-      // Don't enable this on Android, it breaks it, This method only works on desktop. For Android there is a `KeyChangeEffect(chatModel.chatId.value)`
-      DisposableEffect(Unit) {
-        onDispose {
-          if (chatModel.sharedContent.value is SharedContent.Forward && saveLastDraft && !composeState.value.empty) {
-            chatModel.draft.value = composeState.value
-            chatModel.draftChatId.value = chat.id
-          }
-        }
-      }
-    }
     val timedMessageAllowed = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.TimedMessages) }
     val sendButtonColor =
       if (chat.chatInfo.incognito)
@@ -1311,6 +1273,45 @@ fun ComposeView(
         tint = MaterialTheme.colors.secondary
       )
       Text(s)
+    }
+  }
+
+  KeyChangeEffect(chatModel.chatId.value) { prevChatId ->
+    val cs = composeState.value
+    if (cs.liveMessage != null && (cs.message.text.isNotEmpty() || cs.liveMessage.sent)) {
+      sendMessage(null)
+      resetLinkPreview()
+      clearPrevDraft(prevChatId)
+      deleteUnusedFiles()
+    } else if (cs.inProgress) {
+      clearPrevDraft(prevChatId)
+    } else if (!cs.empty) {
+      if (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished) {
+        composeState.value = cs.copy(preview = cs.preview.copy(finished = true))
+      }
+      if (saveLastDraft) {
+        chatModel.draft.value = composeState.value
+        chatModel.draftChatId.value = prevChatId
+      }
+      composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
+    } else if (chatModel.draftChatId.value == chatModel.chatId.value && chatModel.draft.value != null) {
+      composeState.value = chatModel.draft.value ?: ComposeState(useLinkPreviews = useLinkPreviews)
+    } else {
+      clearPrevDraft(prevChatId)
+      deleteUnusedFiles()
+    }
+    chatModel.removeLiveDummy()
+    CIFile.cachedRemoteFileRequests.clear()
+  }
+  if (appPlatform.isDesktop) {
+    // Don't enable this on Android, it breaks it, This method only works on desktop. For Android there is a `KeyChangeEffect(chatModel.chatId.value)`
+    DisposableEffect(Unit) {
+      onDispose {
+        if (chatModel.sharedContent.value is SharedContent.Forward && saveLastDraft && !composeState.value.empty) {
+          chatModel.draft.value = composeState.value
+          chatModel.draftChatId.value = chat.id
+        }
+      }
     }
   }
 
