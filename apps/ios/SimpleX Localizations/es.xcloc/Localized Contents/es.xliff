@@ -4742,8 +4742,9 @@ This is your link for group %@!</source>
         <target>Mensajes en vivo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Loading profile…" xml:space="preserve">
+      <trans-unit id="Loading profile…" xml:space="preserve" approved="no">
         <source>Loading profile…</source>
+        <target state="translated">Cargando perfil. . .</target>
         <note>in progress text</note>
       </trans-unit>
       <trans-unit id="Local name" xml:space="preserve">
