@@ -2389,7 +2389,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             let gInfo' = gInfo {membership = membership'}
                 cd = CDGroupRcv gInfo' Nothing m
             createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
-            createGroupFeatureItems user cd CIRcvGroupFeature gInfo'
+            let prepared = preparedGroup gInfo'
+            unless (isJust prepared) $ createGroupFeatureItems user cd CIRcvGroupFeature gInfo'
             let welcomeMsgId_ = (\PreparedGroup {welcomeSharedMsgId = mId} -> mId) <$> preparedGroup gInfo'
             unless (isJust welcomeMsgId_) $ maybeCreateGroupDescrLocal gInfo' m
             createInternalChatItem user cd (CIRcvGroupEvent RGEUserAccepted) Nothing
