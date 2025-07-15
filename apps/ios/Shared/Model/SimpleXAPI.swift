@@ -2481,10 +2481,15 @@ func processReceivedMsg(_ res: ChatEvent) async {
             await MainActor.run {
                 m.updateGroup(groupInfo)
             }
-            if m.chatId == groupInfo.id,
-               case .memberSupport(nil) = m.secondaryIM?.groupScopeInfo {
-                await MainActor.run {
-                    m.secondaryPendingInviteeChatOpened = false
+            if m.chatId == groupInfo.id {
+                if groupInfo.membership.memberPending {
+                    await MainActor.run {
+                        m.secondaryPendingInviteeChatOpened = true
+                    }
+                } else if case .memberSupport(nil) = m.secondaryIM?.groupScopeInfo {
+                    await MainActor.run {
+                        m.secondaryPendingInviteeChatOpened = false
+                    }
                 }
             }
         }

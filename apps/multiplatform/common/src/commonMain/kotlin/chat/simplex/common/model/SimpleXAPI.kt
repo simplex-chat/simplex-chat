@@ -2872,6 +2872,7 @@ object ChatController {
           }
           if (
             chatModel.chatId.value == r.groupInfo.id
+            && !r.groupInfo.membership.memberPending
             && ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)
             && chatModel.secondaryChatsContext.value?.secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext
           ) {
