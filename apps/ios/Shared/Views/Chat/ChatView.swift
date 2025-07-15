@@ -2032,7 +2032,7 @@ struct ChatView: View {
             } label: {
                 Label(
                     NSLocalizedString("Save", comment: "chat item action"),
-                    systemImage: file.cryptoArgs == nil ? "square.and.arrow.down" : "lock.open"
+                    systemImage: "square.and.arrow.down"
                 )
             }
         }
