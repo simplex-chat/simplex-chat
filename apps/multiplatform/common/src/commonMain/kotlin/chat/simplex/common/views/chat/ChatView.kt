@@ -989,7 +989,7 @@ fun ChatLayout(
                 if (oneHandUI.value) {
                   StatusBarBackground()
                 }
-                Column(if (oneHandUI.value) Modifier.align(Alignment.BottomStart).imePadding() else Modifier) {
+                Column(if (oneHandUI.value && chatBottomBar.value) Modifier.align(Alignment.BottomStart).imePadding() else Modifier) {
                   Box {
                     if (selectedChatItems.value == null) {
                       MemberSupportChatAppBar(chatsCtx, chatsCtx.secondaryContextFilter.groupScopeInfo.groupMember_, { ModalManager.end.closeModal() }, onSearchValueChanged)

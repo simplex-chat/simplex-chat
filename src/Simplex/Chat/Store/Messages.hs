@@ -809,8 +809,11 @@ findDirectChatPreviews_ db User {userId} pagination clq =
 getDirectChatPreview_ :: DB.Connection -> VersionRangeChat -> User -> ChatPreviewData 'CTDirect -> ExceptT StoreError IO AChat
 getDirectChatPreview_ db vr user (DirectChatPD _ contactId lastItemId_ stats) = do
   contact <- getContact db vr user contactId
+  ts <- liftIO getCurrentTime
   lastItem <- case lastItemId_ of
-    Just lastItemId -> (: []) <$> getDirectChatItem db user contactId lastItemId
+    Just lastItemId -> do
+      previewItem <- liftIO $ safeGetDirectItem db user contact ts lastItemId
+      pure [previewItem]
     Nothing -> pure []
   pure $ AChat SCTDirect (Chat (DirectChat contact) lastItem stats)
 
@@ -917,8 +920,11 @@ findGroupChatPreviews_ db User {userId} pagination clq =
 getGroupChatPreview_ :: DB.Connection -> VersionRangeChat -> User -> ChatPreviewData 'CTGroup -> ExceptT StoreError IO AChat
 getGroupChatPreview_ db vr user (GroupChatPD _ groupId lastItemId_ stats) = do
   groupInfo <- getGroupInfo db vr user groupId
+  ts <- liftIO getCurrentTime
   lastItem <- case lastItemId_ of
-    Just lastItemId -> (: []) <$> getGroupCIWithReactions db user groupInfo lastItemId
+    Just lastItemId -> do
+      previewItem <- liftIO $ safeGetGroupItem db user groupInfo ts lastItemId
+      pure [previewItem]
     Nothing -> pure []
   pure $ AChat SCTGroup (Chat (GroupChat groupInfo Nothing) lastItem stats)
 
@@ -999,8 +1005,11 @@ findLocalChatPreviews_ db User {userId} pagination clq =
 getLocalChatPreview_ :: DB.Connection -> User -> ChatPreviewData 'CTLocal -> ExceptT StoreError IO AChat
 getLocalChatPreview_ db user (LocalChatPD _ noteFolderId lastItemId_ stats) = do
   nf <- getNoteFolder db user noteFolderId
+  ts <- liftIO getCurrentTime
   lastItem <- case lastItemId_ of
-    Just lastItemId -> (: []) <$> getLocalChatItem db user noteFolderId lastItemId
+    Just lastItemId -> do
+      previewItem <- liftIO $ safeGetLocalItem db user nf ts lastItemId
+      pure [previewItem]
     Nothing -> pure []
   pure $ AChat SCTLocal (Chat (LocalChat nf) lastItem stats)
 

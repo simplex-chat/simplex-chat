@@ -998,7 +998,7 @@ private func showOwnGroupLinkConfirmConnectSheet(
                 title: NSLocalizedString("Open group", comment: "new chat action"),
                 style: .default,
                 handler: { _ in
-                    openKnownGroup(groupInfo, dismiss: dismiss, showAlreadyExistsAlert: nil)
+                    openKnownGroup(groupInfo, dismiss: dismiss, cleanup: cleanup)
                 }
             ),
             UIAlertAction(
@@ -1052,8 +1052,7 @@ private func showPrepareContactAlert(
                     let chat = try await apiPrepareContact(connLink: connectionLink, contactShortLinkData: contactShortLinkData)
                     await MainActor.run {
                         ChatModel.shared.addChat(Chat(chat))
-                        openKnownChat(chat.id, dismiss: dismiss, showAlreadyExistsAlert: nil)
-                        cleanup?()
+                        openKnownChat(chat.id, dismiss: dismiss, cleanup: cleanup)
                     }
                 } catch let error {
                     logger.error("showPrepareContactAlert apiPrepareContact error: \(error.localizedDescription)")
@@ -1088,8 +1087,7 @@ private func showPrepareGroupAlert(
                     let chat = try await apiPrepareGroup(connLink: connectionLink, groupShortLinkData: groupShortLinkData)
                     await MainActor.run {
                         ChatModel.shared.addChat(Chat(chat))
-                        openKnownChat(chat.id, dismiss: dismiss, showAlreadyExistsAlert: nil)
-                        cleanup?()
+                        openKnownChat(chat.id, dismiss: dismiss, cleanup: cleanup)
                     }
                 } catch let error {
                     logger.error("showPrepareGroupAlert apiPrepareGroup error: \(error.localizedDescription)")
@@ -1124,7 +1122,7 @@ private func showOpenKnownContactAlert(
             ? NSLocalizedString("Open new chat", comment: "new chat action")
             : NSLocalizedString("Open chat", comment: "new chat action"),
         onConfirm: {
-            openKnownContact(contact, dismiss: dismiss, showAlreadyExistsAlert: nil)
+            openKnownContact(contact, dismiss: dismiss, cleanup: nil)
         }
     )
 }
@@ -1156,7 +1154,7 @@ private func showOpenKnownGroupAlert(
                 : NSLocalizedString("Open chat", comment: "new chat action")
               ),
         onConfirm: {
-            openKnownGroup(groupInfo, dismiss: dismiss, showAlreadyExistsAlert: nil)
+            openKnownGroup(groupInfo, dismiss: dismiss, cleanup: nil)
         }
     )
 }
@@ -1471,28 +1469,28 @@ private func connectViaLink(
     }
 }
 
-func openKnownContact(_ contact: Contact, dismiss: Bool, showAlreadyExistsAlert: (() -> Void)?) {
+func openKnownContact(_ contact: Contact, dismiss: Bool, cleanup: (() -> Void)?) {
     if let c = ChatModel.shared.getContactChat(contact.contactId) {
-        openKnownChat(c.id, dismiss: dismiss, showAlreadyExistsAlert: showAlreadyExistsAlert)
+        openKnownChat(c.id, dismiss: dismiss, cleanup: cleanup)
     }
 }
 
-func openKnownGroup(_ groupInfo: GroupInfo, dismiss: Bool, showAlreadyExistsAlert: (() -> Void)?) {
+func openKnownGroup(_ groupInfo: GroupInfo, dismiss: Bool, cleanup: (() -> Void)?) {
     if let g = ChatModel.shared.getGroupChat(groupInfo.groupId) {
-        openKnownChat(g.id, dismiss: dismiss, showAlreadyExistsAlert: showAlreadyExistsAlert)
+        openKnownChat(g.id, dismiss: dismiss, cleanup: cleanup)
     }
 }
 
-func openKnownChat(_ chatId: ChatId, dismiss: Bool, showAlreadyExistsAlert: (() -> Void)?) {
+func openKnownChat(_ chatId: ChatId, dismiss: Bool, cleanup: (() -> Void)?) {
     if dismiss {
         dismissAllSheets(animated: true) {
             ItemsModel.shared.loadOpenChat(chatId) {
-                showAlreadyExistsAlert?()
+                cleanup?()
             }
         }
     } else {
         ItemsModel.shared.loadOpenChat(chatId) {
-            showAlreadyExistsAlert?()
+            cleanup?()
         }
     }
 }

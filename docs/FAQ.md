@@ -32,6 +32,7 @@ revision: 23.04.2024
 
 [Privacy and security](#privacy-and-security)
 - [Does SimpleX support post quantum cryptography?](#does-simplex-support-post-quantum-cryptography)
+- [Why can't I use the same profile on different devices?](#why-cant-i-use-the-same-profile-on-different-devices)
 - [What user data can be provided on request?](#what-user-data-can-be-provided-on-request)
 - [Does SimpleX protect my IP address?](#does-simplex-protect-my-ip-address)
 - [Doesn't private message routing reinvent Tor?](#doesnt-private-message-routing-reinvent-tor)
@@ -53,15 +54,15 @@ Please check our [Groups Directory](./DIRECTORY.md) in the first place. You migh
 
 Database is essential for SimpleX Chat to function properly. In comparison to centralized messaging providers, it is _the user_ who is responsible for taking care of their data. On the other hand, user is sure that _nobody but them_ has access to it. Please read more about it: [Database](./guide/managing-data.md).
 
-### Can I send files over SimpleX? 
+### Can I send files over SimpleX?
 
 Of course! While doing so, you are using a _state-of-the-art_ protocol that greatly reduces metadata leaks. Please read more about it: [XFTP Protocol](../blog/20230301-simplex-file-transfer-protocol.md).
 
 ### What’s incognito profile?
 
-This feature is unique to SimpleX Chat – it is independent from chat profiles. 
+This feature is unique to SimpleX Chat – it is independent from chat profiles.
 
-When "Incognito Mode” is turned on, your currently chosen profile name and image are hidden from your new contacts. It allows anonymous connections with other people without any shared data – when you make new connections or join groups via a link a new random profile name will be generated for each connection. 
+When "Incognito Mode” is turned on, your currently chosen profile name and image are hidden from your new contacts. It allows anonymous connections with other people without any shared data – when you make new connections or join groups via a link a new random profile name will be generated for each connection.
 
 ### How do invitations work?
 
@@ -255,6 +256,29 @@ You can resolve it by deleting the app's database: (WARNING: this results in del
 ### Does SimpleX support post quantum cryptography?
 
 Yes! Please read more about quantum resistant encryption is added to SimpleX Chat and about various properties of end-to-end encryption in [this post](../blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md).
+
+### Why can't I use the same profile on different devices?
+
+SimpleX Chat apps support [linking of mobile and desktop apps](https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html#link-mobile-and-desktop-apps-via-secure-quantum-resistant-protocol) via secure quantum-resistant protocol. It allows using the profile on your mobile device from desktop clients.
+
+Seamlessly and securely using the same profile from two or more devices is a complex and unsolved problem. All apps that provide multi-device support do so at a cost of compromising security of end-to-end encryption. E.g., Session removed the Double Ratchet algorithm entirely to enable multi-device support, sacrificing forward secrecy. Signal provides multi-device support with Double Ratchet algorithm, but by [compromising its "break-in recovery" property](https://eprint.iacr.org/2021/626.pdf) (aka post-compromise security).
+
+To the best of our knowledge there is no end-to-end encrypted messenger that solved this problem without compromising security, but we believe that the solution is possible. We have considered several approaches:
+
+1. Convert each direct conversation into a group, where each device participates as a member. This is the approach that Signal and WhatsApp use, and while Signal implementation does not protect from a temporary compromise of long-term identity key (break-in recovery), such protection is possible. The downside of this approach is that the contacts and groups you participate in would know which device you use. Another possible attack is to send different messages to different devices, or to send messages to some devices but not to the others. This could lead to message history inconsistency or enable targeted attacks.
+
+2. Store the state of the Double Ratchet algorithm for each conversation in an encrypted container on the server, allowing concurrent access and modification by each device for encrypting and decrypting messages. We did not see this approach used in any of the messaging apps, but it is technically viable. This approach has no downsides of the first, but it would increase the time it takes to send and to receive messages, as each message would require additional access to the server.
+
+3. "Thin client" approach when user profile is stored on the server. The main challenge with this approach is to prevent the server knowing who connects to whom.
+
+Whichever approach we choose for multi-device support, it requires careful design and implementation, and there is no existing secure solution to copy from. While we value usability very highly, we will not be improving usability in a way that compromises users' security. We will take a slower path of designing and implementing a solution for multi-device that achieves a better trade-off between usability and security than currently offered.
+
+In the meantime, here are several secure options to enhance usability:
+- link mobile profiles with desktop app. It does not compromise security in any way.
+- create small groups with trusted contacts. These contacts would still know which device you use when you send the message, but it won't be shared with all contacts and groups you participate in. This approach is also secure, and it prevents devices being added to the conversation without user noticing.
+- use "[business address](https://simplex.chat/blog/20241210-simplex-network-v6-2-servers-by-flux-business-chats.html#business-chats)" - the app would create a new small group with everybody who connects to you via your address, and you will be able to add your other devices to these groups.
+
+While these approaches are not as convenient as seamless multi-device support offered by other apps, they also do not compromise security to achieve that convenience.
 
 ### What user data can be provided on request?
 

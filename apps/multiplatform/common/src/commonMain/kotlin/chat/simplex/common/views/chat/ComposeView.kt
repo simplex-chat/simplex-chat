@@ -1101,86 +1101,87 @@ fun ComposeView(
     }
   }
 
+  val allowedVoiceByPrefs = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.Voice) }
+  LaunchedEffect(allowedVoiceByPrefs) {
+    if (!allowedVoiceByPrefs && composeState.value.preview is ComposePreview.VoicePreview) {
+      // Voice was disabled right when this user records it, just cancel it
+      cancelVoice()
+    }
+  }
+  val needToAllowVoiceToContact = remember(chat.chatInfo) {
+    chat.chatInfo is ChatInfo.Direct && with(chat.chatInfo.contact.mergedPreferences.voice) {
+      ((userPreference as? ContactUserPref.User)?.preference?.allow == FeatureAllowed.NO || (userPreference as? ContactUserPref.Contact)?.preference?.allow == FeatureAllowed.NO) &&
+          contactPreference.allow == FeatureAllowed.YES
+    }
+  }
+  LaunchedEffect(Unit) {
+    snapshotFlow { recState.value }
+      .distinctUntilChanged()
+      .collect {
+        when (it) {
+          is RecordingState.Started -> onAudioAdded(it.filePath, it.progressMs, false)
+          is RecordingState.Finished -> if (it.durationMs > 300) {
+            onAudioAdded(it.filePath, it.durationMs, true)
+          } else {
+            cancelVoice()
+          }
+          is RecordingState.NotStarted -> {}
+        }
+      }
+  }
+
+  LaunchedEffect(rememberUpdatedState(chat.chatInfo.sendMsgEnabled).value) {
+    if (!chat.chatInfo.sendMsgEnabled) {
+      clearCurrentDraft()
+      clearState()
+    }
+  }
+
+  KeyChangeEffect(chatModel.chatId.value) { prevChatId ->
+    val cs = composeState.value
+    if (cs.liveMessage != null && (cs.message.text.isNotEmpty() || cs.liveMessage.sent)) {
+      sendMessage(null)
+      resetLinkPreview()
+      clearPrevDraft(prevChatId)
+      deleteUnusedFiles()
+    } else if (cs.inProgress) {
+      clearPrevDraft(prevChatId)
+    } else if (!cs.empty) {
+      if (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished) {
+        composeState.value = cs.copy(preview = cs.preview.copy(finished = true))
+      }
+      if (saveLastDraft) {
+        chatModel.draft.value = composeState.value
+        chatModel.draftChatId.value = prevChatId
+      }
+      composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
+    } else if (chatModel.draftChatId.value == chatModel.chatId.value && chatModel.draft.value != null) {
+      composeState.value = chatModel.draft.value ?: ComposeState(useLinkPreviews = useLinkPreviews)
+    } else {
+      clearPrevDraft(prevChatId)
+      deleteUnusedFiles()
+    }
+    chatModel.removeLiveDummy()
+    CIFile.cachedRemoteFileRequests.clear()
+  }
+  if (appPlatform.isDesktop) {
+    // Don't enable this on Android, it breaks it, This method only works on desktop. For Android there is a `KeyChangeEffect(chatModel.chatId.value)`
+    DisposableEffect(Unit) {
+      onDispose {
+        if (chatModel.sharedContent.value is SharedContent.Forward && saveLastDraft && !composeState.value.empty) {
+          chatModel.draft.value = composeState.value
+          chatModel.draftChatId.value = chat.id
+        }
+      }
+    }
+  }
+
   @Composable
   fun SendMsgView_(
     disableSendButton: Boolean,
     placeholder: String? = null,
     sendToConnect: (() -> Unit)? = null
   ) {
-    val allowedVoiceByPrefs = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.Voice) }
-    LaunchedEffect(allowedVoiceByPrefs) {
-      if (!allowedVoiceByPrefs && composeState.value.preview is ComposePreview.VoicePreview) {
-        // Voice was disabled right when this user records it, just cancel it
-        cancelVoice()
-      }
-    }
-    val needToAllowVoiceToContact = remember(chat.chatInfo) {
-      chat.chatInfo is ChatInfo.Direct && with(chat.chatInfo.contact.mergedPreferences.voice) {
-        ((userPreference as? ContactUserPref.User)?.preference?.allow == FeatureAllowed.NO || (userPreference as? ContactUserPref.Contact)?.preference?.allow == FeatureAllowed.NO) &&
-            contactPreference.allow == FeatureAllowed.YES
-      }
-    }
-    LaunchedEffect(Unit) {
-      snapshotFlow { recState.value }
-        .distinctUntilChanged()
-        .collect {
-          when (it) {
-            is RecordingState.Started -> onAudioAdded(it.filePath, it.progressMs, false)
-            is RecordingState.Finished -> if (it.durationMs > 300) {
-              onAudioAdded(it.filePath, it.durationMs, true)
-            } else {
-              cancelVoice()
-            }
-            is RecordingState.NotStarted -> {}
-          }
-        }
-    }
-
-    LaunchedEffect(rememberUpdatedState(chat.chatInfo.sendMsgEnabled).value) {
-      if (!chat.chatInfo.sendMsgEnabled) {
-        clearCurrentDraft()
-        clearState()
-      }
-    }
-
-    KeyChangeEffect(chatModel.chatId.value) { prevChatId ->
-      val cs = composeState.value
-      if (cs.liveMessage != null && (cs.message.text.isNotEmpty() || cs.liveMessage.sent)) {
-        sendMessage(null)
-        resetLinkPreview()
-        clearPrevDraft(prevChatId)
-        deleteUnusedFiles()
-      } else if (cs.inProgress) {
-        clearPrevDraft(prevChatId)
-      } else if (!cs.empty) {
-        if (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished) {
-          composeState.value = cs.copy(preview = cs.preview.copy(finished = true))
-        }
-        if (saveLastDraft) {
-          chatModel.draft.value = composeState.value
-          chatModel.draftChatId.value = prevChatId
-        }
-        composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
-      } else if (chatModel.draftChatId.value == chatModel.chatId.value && chatModel.draft.value != null) {
-        composeState.value = chatModel.draft.value ?: ComposeState(useLinkPreviews = useLinkPreviews)
-      } else {
-        clearPrevDraft(prevChatId)
-        deleteUnusedFiles()
-      }
-      chatModel.removeLiveDummy()
-      CIFile.cachedRemoteFileRequests.clear()
-    }
-    if (appPlatform.isDesktop) {
-      // Don't enable this on Android, it breaks it, This method only works on desktop. For Android there is a `KeyChangeEffect(chatModel.chatId.value)`
-      DisposableEffect(Unit) {
-        onDispose {
-          if (chatModel.sharedContent.value is SharedContent.Forward && saveLastDraft && !composeState.value.empty) {
-            chatModel.draft.value = composeState.value
-            chatModel.draftChatId.value = chat.id
-          }
-        }
-      }
-    }
     val timedMessageAllowed = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.TimedMessages) }
     val sendButtonColor =
       if (chat.chatInfo.incognito)

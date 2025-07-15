@@ -1672,8 +1672,7 @@ processChatCommand vr nm = \case
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user gId
     m <- withFastStore $ \db -> getGroupMember db vr user gId mId
     let GroupInfo {membership = GroupMember {memberRole = membershipRole}} = gInfo
-    -- TODO GRModerator when most users migrate
-    when (membershipRole >= GRAdmin) $ throwChatError $ CECantBlockMemberForSelf gInfo m showMessages
+    when (membershipRole >= GRModerator) $ throwChatError $ CECantBlockMemberForSelf gInfo m showMessages
     let settings = (memberSettings m) {showMessages}
     processChatCommand vr nm $ APISetMemberSettings gId mId settings
   ContactInfo cName -> withContactName cName APIContactInfo
@@ -3162,7 +3161,6 @@ processChatCommand vr nm = \case
         Nothing -> do
           setGroupLinkData'
           let recipients = filter memberCurrentOrPending ms
-          liftIO $ putStrLn $ "about to sendGroupMessage to " <> show (length recipients)
           sendGroupMessage user g' Nothing recipients (XGrpInfo p')
           where
             setGroupLinkData' :: CM ()
@@ -3200,7 +3198,7 @@ processChatCommand vr nm = \case
     delGroupChatItemsForMembers :: User -> GroupInfo -> Maybe GroupChatScopeInfo -> [GroupMember] -> [CChatItem 'CTGroup] -> CM [ChatItemDeletion]
     delGroupChatItemsForMembers user gInfo chatScopeInfo ms items = do
       assertDeletable gInfo items
-      assertUserGroupRole gInfo GRAdmin -- TODO GRModerator when most users migrate
+      assertUserGroupRole gInfo GRModerator
       let msgMemIds = itemsMsgMemIds gInfo items
           events = L.nonEmpty $ map (\(msgId, memId) -> XMsgDel msgId (Just memId) $ toMsgScope gInfo <$> chatScopeInfo) msgMemIds
       mapM_ (sendGroupMessages_ user gInfo ms) events
@@ -3414,8 +3412,8 @@ processChatCommand vr nm = \case
               Nothing -> do
                 (cReq, cData) <- getShortLinkConnReq user l'
                 withFastStore' (\db -> getContactWithoutConnViaShortAddress db vr user l') >>= \case
-                  Just ct' -> pure (con cReq, CPContactAddress (CAPContactViaAddress ct'))
-                  Nothing -> do
+                  Just ct' | not (contactDeleted ct') -> pure (con cReq, CPContactAddress (CAPContactViaAddress ct'))
+                  _ -> do
                     contactSLinkData_ <- liftIO $ decodeShortLinkData cData
                     plan <- contactRequestPlan user cReq contactSLinkData_
                     pure (con cReq, plan)
@@ -3488,8 +3486,8 @@ processChatCommand vr nm = \case
           withFastStore' (\db -> getContactConnEntityByConnReqHash db vr user cReqHashes) >>= \case
             Nothing ->
               withFastStore' (\db -> getContactWithoutConnViaAddress db vr user cReqSchemas) >>= \case
-                Nothing -> pure $ CPContactAddress (CAPOk contactSLinkData_)
-                Just ct -> pure $ CPContactAddress (CAPContactViaAddress ct)
+                Just ct | not (contactDeleted ct) -> pure $ CPContactAddress (CAPContactViaAddress ct)
+                _ -> pure $ CPContactAddress (CAPOk contactSLinkData_)
             Just (RcvDirectMsgConnection Connection {connStatus} Nothing)
               | connStatus == ConnPrepared -> pure $ CPContactAddress (CAPOk contactSLinkData_)
               | otherwise -> pure $ CPContactAddress CAPConnectingConfirmReconnect

@@ -1729,7 +1729,7 @@ getIntroducedGroupMemberIds db invitee =
 getForwardIntroducedMembers :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> Bool -> IO [GroupMember]
 getForwardIntroducedMembers db vr user invitee highlyAvailable = do
   memberIds <- map fromOnly <$> query
-  filter memberCurrent . rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
+  rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
   where
     mId = groupMemberId' invitee
     query
@@ -1769,7 +1769,7 @@ getForwardIntroducedModerators db vr user@User {userContactId} invitee = do
 getForwardInvitedMembers :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> Bool -> IO [GroupMember]
 getForwardInvitedMembers db vr user forwardMember highlyAvailable = do
   memberIds <- map fromOnly <$> query
-  filter memberCurrent . rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
+  rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
   where
     mId = groupMemberId' forwardMember
     query
