@@ -4744,6 +4744,7 @@ Das ist Ihr Link für die Gruppe %@!</target>
       </trans-unit>
       <trans-unit id="Loading profile…" xml:space="preserve">
         <source>Loading profile…</source>
+        <target>Profil wird geladen…</target>
         <note>in progress text</note>
       </trans-unit>
       <trans-unit id="Local name" xml:space="preserve">

@@ -2046,7 +2046,7 @@
     <string name="migrate_from_device_uploaded_archive_will_be_removed">上传的数据库存档将永久性从服务器被删除。</string>
     <string name="network_proxy_incorrect_config_desc">确保代理配置正确</string>
     <string name="delete_messages_cannot_be_undone_warning">消息将被删除 - 此操作无法撤销！</string>
-    <string name="switching_profile_error_message">你的连接被移动到 %s，但在将你重定向到配置文件时发生了意料之外的错误。</string>
+    <string name="switching_profile_error_message">你的连接被移动到 %s，但在切换配置文件时发生了错误。</string>
     <string name="network_proxy_auth_mode_no_auth">代理不使用身份验证凭据</string>
     <string name="switching_profile_error_title">切换配置文件出错</string>
     <string name="network_proxy_auth">代理身份验证</string>
@@ -2430,8 +2430,8 @@
     <string name="compose_view_connect">连接</string>
     <string name="contact_should_accept">联系人应当接受…</string>
     <string name="error_changing_user">更改户出错</string>
-    <string name="error_preparing_contact">准备联系时出错</string>
-    <string name="error_preparing_group">准备群时出错</string>
+    <string name="error_preparing_contact">打开聊天时出错</string>
+    <string name="error_preparing_group">打开群时出错</string>
     <string name="error_rejecting_contact_request">拒绝联络请求出错</string>
     <string name="compose_view_join_group">加群</string>
     <string name="connect_plan_open_chat">打开聊天</string>
@@ -2440,7 +2440,7 @@
     <string name="open_to_accept">打开以接受</string>
     <string name="open_to_connect">打开以连接</string>
     <string name="group_preview_open_to_join">打开以加入</string>
-    <string name="share_profile_via_link_alert_text">个人资料将通过地址链接分享。</string>
+    <string name="share_profile_via_link_alert_text">将通过该地址分享个人资料。</string>
     <string name="reject_contact_request">拒绝联络请求</string>
     <string name="cant_send_message_request_is_sent">发送了请求</string>
     <string name="compose_view_send_contact_request_alert_question">发送联络请求？</string>
@@ -2449,7 +2449,7 @@
     <string name="sent_to_your_contact_after_connection">连接后发送给你的联系人。</string>
     <string name="share_group_profile_via_link">通过链接分享群资料</string>
     <string name="share_profile_via_link_alert_confirm">分享资料</string>
-    <string name="share_profile_via_link">通过链接分享资料</string>
+    <string name="share_profile_via_link">通过地址分享个人资料</string>
     <string name="the_sender_will_not_be_notified">不会通知发送者。</string>
     <string name="address_welcome_message">欢迎消息</string>
     <string name="context_user_picker_your_profile">你的个人资料</string>
@@ -2469,4 +2469,7 @@
     <string name="v6_4_support_chat_descr">向群发送私密反馈。</string>
     <string name="network_option_tcp_connection_timeout_background">TCP 连接后台超时</string>
     <string name="loading_profile">正加载个人资料…</string>
+    <string name="short_descr__field">自我介绍：</string>
+    <string name="group_short_descr_field">简短描述：</string>
+    <string name="short_descr">自我介绍：</string>
 </resources>
