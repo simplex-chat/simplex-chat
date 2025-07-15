@@ -2492,7 +2492,6 @@ func processReceivedMsg(_ res: ChatEvent) async {
                     }
                 }
             }
-
         }
     case let .joinedGroupMember(user, groupInfo, member):
         if active(user) {
