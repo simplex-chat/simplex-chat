@@ -626,11 +626,10 @@ fun <T> KeyChangeEffect(
   var prevKey by remember { mutableStateOf(key1) }
   var anyChange by remember { mutableStateOf(false) }
   LaunchedEffect(key1) {
-    val prev = prevKey
-    prevKey = key1
-    val prevAnyChange = anyChange
-    anyChange = true
-    if (prevAnyChange || key1 != prev) {
+    if (anyChange || key1 != prevKey) {
+      val prev = prevKey
+      prevKey = key1
+      anyChange = true
       // Call it as the last statement because the coroutine can be cancelled earlier
       block(prev)
     }
