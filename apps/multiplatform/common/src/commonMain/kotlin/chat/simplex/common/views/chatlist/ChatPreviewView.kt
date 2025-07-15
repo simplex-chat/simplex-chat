@@ -212,61 +212,75 @@ fun ChatPreviewView(
   fun chatPreviewText() {
     val previewText = chatPreviewInfoText()
     val ci = chat.chatItems.lastOrNull()
-    if (ci?.content?.hasMsgContent != true && previewText != null) {
+    if (chatModelDraftChatId == chat.id && chatModelDraft != null) {
+      val sp20 = with(LocalDensity.current) { 20.sp.toDp() }
+      val (text: CharSequence, inlineTextContent) = remember(chatModelDraft) { chatModelDraft.message.text to messageDraft(chatModelDraft, sp20) }
+      val formattedText = null
+      MarkdownText(
+        text,
+        formattedText,
+        toggleSecrets = false,
+        linkMode = linkMode,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        style = TextStyle(
+          fontFamily = Inter,
+          fontSize = 15.sp,
+          color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight,
+          lineHeight = 21.sp
+        ),
+        inlineContent = inlineTextContent,
+        modifier = Modifier.fillMaxWidth()
+      )
+    } else if (ci?.content?.hasMsgContent != true && previewText != null) {
       Text(previewText.first, color = previewText.second)
-    } else if (ci != null) {
-      if (showChatPreviews || (chatModelDraftChatId == chat.id && chatModelDraft != null)) {
-        val sp20 = with(LocalDensity.current) { 20.sp.toDp() }
-        val (text: CharSequence, inlineTextContent) = when {
-          chatModelDraftChatId == chat.id && chatModelDraft != null -> remember(chatModelDraft) { chatModelDraft.message.text to messageDraft(chatModelDraft, sp20) }
-          ci.meta.itemDeleted == null -> ci.text to null
-          else -> markedDeletedText(ci, chat.chatInfo) to null
-        }
-        val formattedText = when {
-          chatModelDraftChatId == chat.id && chatModelDraft != null -> null
-          ci.meta.itemDeleted == null -> ci.formattedText
-          else -> null
-        }
-        val prefix = when (val mc = ci.content.msgContent) {
-          is MsgContent.MCReport ->
-            buildAnnotatedString {
-              withStyle(SpanStyle(color = Color.Red, fontStyle = FontStyle.Italic)) {
-                append(if (text.isEmpty()) mc.reason.text else "${mc.reason.text}: ")
-              }
-            }
-
-          else -> null
-        }
-
-        MarkdownText(
-          text,
-          formattedText,
-          sender = when {
-            chatModelDraftChatId == chat.id && chatModelDraft != null -> null
-            cInfo is ChatInfo.Group && !ci.chatDir.sent && !ci.meta.showGroupAsSender -> ci.memberDisplayName
-            else -> null
-          },
-          mentions = ci.mentions,
-          userMemberId = when {
-            cInfo is ChatInfo.Group -> cInfo.groupInfo.membership.memberId
-            else -> null
-          },
-          toggleSecrets = false,
-          linkMode = linkMode,
-          senderBold = true,
-          maxLines = 2,
-          overflow = TextOverflow.Ellipsis,
-          style = TextStyle(
-            fontFamily = Inter,
-            fontSize = 15.sp,
-            color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight,
-            lineHeight = 21.sp
-          ),
-          inlineContent = inlineTextContent,
-          modifier = Modifier.fillMaxWidth(),
-          prefix = prefix
-        )
+    } else if (ci != null && showChatPreviews) {
+      val (text: CharSequence, inlineTextContent) = when {
+        ci.meta.itemDeleted == null -> ci.text to null
+        else -> markedDeletedText(ci, chat.chatInfo) to null
       }
+      val formattedText = when {
+        ci.meta.itemDeleted == null -> ci.formattedText
+        else -> null
+      }
+      val prefix = when (val mc = ci.content.msgContent) {
+        is MsgContent.MCReport ->
+          buildAnnotatedString {
+            withStyle(SpanStyle(color = Color.Red, fontStyle = FontStyle.Italic)) {
+              append(if (text.isEmpty()) mc.reason.text else "${mc.reason.text}: ")
+            }
+          }
+
+        else -> null
+      }
+
+      MarkdownText(
+        text,
+        formattedText,
+        sender = when {
+          cInfo is ChatInfo.Group && !ci.chatDir.sent && !ci.meta.showGroupAsSender -> ci.memberDisplayName
+          else -> null
+        },
+        mentions = ci.mentions,
+        userMemberId = when {
+          cInfo is ChatInfo.Group -> cInfo.groupInfo.membership.memberId
+          else -> null
+        },
+        toggleSecrets = false,
+        linkMode = linkMode,
+        senderBold = true,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        style = TextStyle(
+          fontFamily = Inter,
+          fontSize = 15.sp,
+          color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight,
+          lineHeight = 21.sp
+        ),
+        inlineContent = inlineTextContent,
+        modifier = Modifier.fillMaxWidth(),
+        prefix = prefix
+      )
     }
   }
 
