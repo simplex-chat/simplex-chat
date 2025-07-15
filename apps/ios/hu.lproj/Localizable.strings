@@ -359,7 +359,7 @@ swipe action */
 "Accept connection request?" = "Elfogadja a meghívót?";
 
 /* alert title */
-"Accept contact request" = "Meghívó elfogadása";
+"Accept contact request" = "Elfogadás";
 
 /* notification body */
 "Accept contact request from %@?" = "Elfogadja %@ meghívóját?";
@@ -1342,7 +1342,7 @@ set passcode view */
 "Connection notifications" = "Kapcsolódási értesítések";
 
 /* No comment provided by engineer. */
-"Connection request sent!" = "Meghívó elküldve!";
+"Connection request sent!" = "Csatlakozási kérés elküldve!";
 
 /* No comment provided by engineer. */
 "Connection requires encryption renegotiation." = "A kapcsolat titkosítása újraegyeztetést igényel.";
@@ -1764,7 +1764,7 @@ swipe action */
 "deleted contact" = "törölt partner";
 
 /* rcv group event chat item */
-"deleted group" = "törölt csoport";
+"deleted group" = "törölte a csoportot";
 
 /* No comment provided by engineer. */
 "Deletion errors" = "Törlési hibák";
@@ -1999,7 +1999,7 @@ chat item action */
 "Enable automatic message deletion?" = "Engedélyezi az automatikus üzenettörlést?";
 
 /* No comment provided by engineer. */
-"Enable camera access" = "Kamera hozzáférés engedélyezése";
+"Enable camera access" = "Kamera-hozzáférés engedélyezése";
 
 /* No comment provided by engineer. */
 "Enable Flux in Network & servers settings for better metadata privacy." = "A Flux kiszolgálókat engedélyezheti a beállításokban, a „Hálózat és kiszolgálók” menüben, a metaadatok jobb védelme érdekében.";
@@ -3164,6 +3164,9 @@ snd error text */
 /* No comment provided by engineer. */
 "Live messages" = "Élő üzenetek";
 
+/* in progress text */
+"Loading profile…" = "Profil betöltése…";
+
 /* No comment provided by engineer. */
 "Local name" = "Helyi név";
 
@@ -4046,7 +4049,7 @@ new chat action */
 "Privacy redefined" = "Újraértelmezett adatvédelem";
 
 /* No comment provided by engineer. */
-"Private chats, groups and your contacts are not accessible to server operators." = "A privát csevegések, a csoportok és a partnerek nem érhetők el a szerver üzemeltetői számára.";
+"Private chats, groups and your contacts are not accessible to server operators." = "A privát csevegések, a csoportok és a partnerek nem érhetők el a kiszolgálók üzemeltetői számára.";
 
 /* No comment provided by engineer. */
 "Private filenames" = "Privát fájlnevek";
@@ -4291,7 +4294,7 @@ swipe action */
 "Reject (sender NOT notified)" = "Elutasítás (a feladó NEM kap értesítést)";
 
 /* alert title */
-"Reject contact request" = "Meghívó elutasítása";
+"Reject contact request" = "Elutasítás";
 
 /* alert title */
 "Reject member?" = "Elutasítja a tagot?";
@@ -4408,7 +4411,7 @@ swipe action */
 "request to join rejected" = "csatlakozási kérés elutasítva";
 
 /* chat list item title */
-"requested to connect" = "Függőben lévő meghívó";
+"requested to connect" = "függőben lévő kapcsolat";
 
 /* No comment provided by engineer. */
 "Required" = "Szükséges";
@@ -4923,7 +4926,7 @@ chat item action */
 "Share from other apps." = "Megosztás más alkalmazásokból.";
 
 /* No comment provided by engineer. */
-"Share group profile via link" = "Csoportprofil megosztása hivatkozáson keresztül";
+"Share group profile via link" = "Csoportprofil megosztása a hivatkozáson keresztül";
 
 /* No comment provided by engineer. */
 "Share link" = "Megosztás";
@@ -4932,7 +4935,7 @@ chat item action */
 "Share profile" = "Profil megosztása";
 
 /* alert title */
-"Share profile with address" = "Profil megosztása hivatkozáson keresztül";
+"Share profile with address" = "Profil megosztása a címmel együtt";
 
 /* No comment provided by engineer. */
 "Share SimpleX address on social media." = "SimpleX-cím megosztása a közösségi médiában.";
@@ -5860,7 +5863,7 @@ report reason */
 "When more than one operator is enabled, none of them has metadata to learn who communicates with whom." = "Amikor egynél több üzemeltető van engedélyezve, akkor egyik sem rendelkezik olyan metaadatokkal, amelyekből megtudható, hogy ki kivel kommunikál.";
 
 /* No comment provided by engineer. */
-"When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Inkognitóprofil megosztása esetén a rendszer azt a profilt fogja használni azokhoz a csoportokhoz, amelyekbe meghívást kapott.";
+"When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Ha egy inkognitóprofilt oszt meg valamelyik partnerével, a rendszer ezt az inkognitóprofilt fogja használni azokban a csoportokban, ahová az adott partnere meghívja Önt.";
 
 /* No comment provided by engineer. */
 "WiFi" = "Wi-Fi";
@@ -6001,7 +6004,7 @@ report reason */
 "You can set lock screen notification preview via settings." = "A lezárási képernyő értesítési előnézetét az „Értesítések” menüben állíthatja be.";
 
 /* No comment provided by engineer. */
-"You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "Megoszthat egy hivatkozást vagy QR-kódot – így bárki csatlakozhat a csoporthoz. Ha a csoportot Ön később törli, akkor nem fogja elveszíteni annak tagjait.";
+"You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "Megoszthat egy hivatkozást vagy QR-kódot – így bárki csatlakozhat a csoporthoz. Ha a csoporthivatkozást Ön később törli, akkor nem fogja elveszíteni a csoport meglévő tagjait.";
 
 /* No comment provided by engineer. */
 "You can share this address with your contacts to let them connect with **%@**." = "Megoszthatja ezt a SimpleX-címet a partnereivel, hogy kapcsolatba léphessenek vele: **%@**.";
@@ -6109,7 +6112,7 @@ report reason */
 "You will be connected when group link host's device is online, please wait or check later!" = "Akkor lesz kapcsolódva, amikor a csoporthivatkozás tulajdonosának eszköze online lesz, várjon, vagy ellenőrizze később!";
 
 /* No comment provided by engineer. */
-"You will be connected when your connection request is accepted, please wait or check later!" = "Akkor lesz kapcsolódva, ha a meghívóját a partnere elfogadja, várjon, vagy ellenőrizze később!";
+"You will be connected when your connection request is accepted, please wait or check later!" = "Akkor lesz kapcsolódva, ha a csatlakozási kérését elfogadják, várjon, vagy ellenőrizze később!";
 
 /* No comment provided by engineer. */
 "You will be connected when your contact's device is online, please wait or check later!" = "Akkor lesz kapcsolódva, amikor a partnerének az eszköze online lesz, várjon, vagy ellenőrizze később!";

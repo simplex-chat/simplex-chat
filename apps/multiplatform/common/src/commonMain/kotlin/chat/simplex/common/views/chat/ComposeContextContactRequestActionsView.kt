@@ -31,6 +31,13 @@ fun ComposeContextContactRequestActionsView(
   val inProgress = rememberSaveable { mutableStateOf(false) }
   var progressByTimeout by rememberSaveable { mutableStateOf(false) }
 
+  KeyChangeEffect(chatModel.chatId.value) {
+    if (inProgress.value) {
+      inProgress.value = false
+      progressByTimeout = false
+    }
+  }
+
   LaunchedEffect(inProgress.value) {
     progressByTimeout = if (inProgress.value) {
       delay(1000)

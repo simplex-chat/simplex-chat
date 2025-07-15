@@ -3164,6 +3164,9 @@ snd error text */
 /* No comment provided by engineer. */
 "Live messages" = "Canlı mesajlar";
 
+/* in progress text */
+"Loading profile…" = "Profil yükleniyor…";
+
 /* No comment provided by engineer. */
 "Local name" = "Yerel isim";
 

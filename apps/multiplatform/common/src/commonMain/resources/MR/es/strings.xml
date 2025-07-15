@@ -2087,7 +2087,7 @@
     <string name="switching_profile_error_title">Error al cambiar perfil</string>
     <string name="select_chat_profile">Selecciona perfil de chat</string>
     <string name="new_chat_share_profile">Perfil a compartir</string>
-    <string name="switching_profile_error_message">Tu conexión ha sido trasladada a %s pero ha ocurrido un error inesperado al redirigirte al perfil.</string>
+    <string name="switching_profile_error_message">Tu conexión ha sido trasladada a %s pero ha ocurrido un error al cambiar de perfil.</string>
     <string name="icon_descr_sound_muted">Sonido silenciado</string>
     <string name="error_initializing_web_view_wrong_arch">Error al iniciar WebView. Asegúrate de tener WebView instalado y que sea compatible con la arquitectura amr64.\nError: %s</string>
     <string name="settings_section_title_message_shape">Forma del mensaje</string>
@@ -2444,8 +2444,8 @@
     <string name="v6_4_connect_faster">¡Conecta más rápido! 🚀</string>
     <string name="contact_should_accept">el contacto debe aceptar…</string>
     <string name="error_changing_user">Error al cambiar el perfil</string>
-    <string name="error_preparing_contact">Error al preparar el contacto</string>
-    <string name="error_preparing_group">Error al preparar el grupo</string>
+    <string name="error_preparing_contact">Error al abrir el chat</string>
+    <string name="error_preparing_group">Error al abrir el grupo</string>
     <string name="error_rejecting_contact_request">Error al rechazar la solicitud del contacto</string>
     <string name="compose_view_join_group">Unirte al grupo</string>
     <string name="v6_4_message_delivery_descr">Menos tráfico en redes móviles.</string>
@@ -2459,7 +2459,7 @@
     <string name="open_to_connect">Abrir para conectar</string>
     <string name="group_preview_open_to_join">Abrir para unirte</string>
     <string name="private_routing_timeout">Timeout enrutamiento privado</string>
-    <string name="share_profile_via_link_alert_text">El perfil será compartido mediante la dirección de contacto</string>
+    <string name="share_profile_via_link_alert_text">El perfil será compartido con la dirección</string>
     <string name="network_option_protocol_timeout_background">Timeout protocolo en segundo plano</string>
     <string name="reject_contact_request">Rechazar solicitud del contacto</string>
     <string name="v6_4_role_moderator_descr">Eliminar mensajes y bloquear miembros.</string>
@@ -2472,7 +2472,7 @@
     <string name="sent_to_your_contact_after_connection">Enviadp a tu contacto tras la conexión.</string>
     <string name="share_group_profile_via_link">Compartir perfil de grupo mediante enlace</string>
     <string name="share_profile_via_link_alert_confirm">Compartir perfil</string>
-    <string name="share_profile_via_link">Compartir perfil mediante enlace</string>
+    <string name="share_profile_via_link">Compartir perfil con la dirección</string>
     <string name="network_option_tcp_connection_timeout_background">Timeout conexión TCP sp</string>
     <string name="the_sender_will_not_be_notified">El remitente NO será notificado.</string>
     <string name="context_user_picker_cant_change_profile_alert_message">Para usar otro perfil tras el intento de conexión, elimina el chat y usa el enlace de nuevo.</string>
@@ -2480,4 +2480,8 @@
     <string name="context_user_picker_your_profile">Tu perfil</string>
     <string name="e2ee_info_e2ee"><![CDATA[Los mensajes están protegidos mediante<b>cifrado de extremo a extremo</b>.]]></string>
     <string name="context_user_picker_cant_change_profile_alert_title">No se puede cambiar el perfil</string>
+    <string name="short_descr__field">Bio:</string>
+    <string name="loading_profile">Cargando perfil. . .</string>
+    <string name="group_short_descr_field">Descripción corta:</string>
+    <string name="short_descr">Tu biografía:</string>
 </resources>
