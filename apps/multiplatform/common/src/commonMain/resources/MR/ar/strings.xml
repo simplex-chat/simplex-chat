@@ -2058,7 +2058,7 @@
     <string name="error_forwarding_messages">خطأ في تحويل الرسائل</string>
     <string name="switching_profile_error_title">خطأ في تبديل ملف التعريف</string>
     <string name="select_chat_profile">حدد ملف تعريف الدردشة</string>
-    <string name="switching_profile_error_message">نُقلت اتصالك إلى %s ولكن حدث خطأ غير متوقع أثناء إعادة توجيهك إلى ملف التعريف.</string>
+    <string name="switching_profile_error_message">نُقل اتصالك إلى %s ولكن حدث خطأ عند تبديل ملف التعريف.</string>
     <string name="forward_alert_title_messages_to_forward">تحويل %1$s رسالة؟</string>
     <string name="forward_files_messages_deleted_after_selection_title">لم يحوّل %1$s من الرسائل</string>
     <string name="compose_forward_messages_n">جارِ تحويل %1$s رسالة</string>
@@ -2427,8 +2427,8 @@
     <string name="compose_view_connect">اتصل</string>
     <string name="contact_should_accept">يجب أن يقبل جهة الاتصال…</string>
     <string name="error_changing_user">خطأ في تغيير مستخدم جهة الاتصال</string>
-    <string name="error_preparing_contact">خطأ في إعداد جهة الاتصال</string>
-    <string name="error_preparing_group">خطأ في إعداد المجموعة</string>
+    <string name="error_preparing_contact">خطأ في فتح الدردشة</string>
+    <string name="error_preparing_group">خطأ في فتح المجموعة</string>
     <string name="error_rejecting_contact_request">خطأ في رفض طلب جهة الاتصال</string>
     <string name="compose_view_join_group">انضم للمجموعة</string>
     <string name="connect_plan_open_chat">افتح الدردشة</string>
@@ -2437,7 +2437,7 @@
     <string name="open_to_accept">افتح للقبول</string>
     <string name="open_to_connect">افتح لاتصال</string>
     <string name="group_preview_open_to_join">افتح لانضمام</string>
-    <string name="share_profile_via_link_alert_text">سيتم مشاركة الملف التعريف عبر رابط العنوان.</string>
+    <string name="share_profile_via_link_alert_text">سيتم مشاركة ملف التعريف مع العنوان.</string>
     <string name="reject_contact_request">ارفض طلب جهة الاتصال</string>
     <string name="cant_send_message_request_is_sent">أُرسل الطلب</string>
     <string name="compose_view_send_contact_request_alert_question">إرسال طلب جهة اتصال؟</string>
@@ -2446,7 +2446,7 @@
     <string name="sent_to_your_contact_after_connection">أُرسل إلى جهة اتصالك بعد الاتصال.</string>
     <string name="share_group_profile_via_link">شارك ملف تعريف المجموعة عبر الرابط</string>
     <string name="share_profile_via_link_alert_confirm">شارك ملف التعريف</string>
-    <string name="share_profile_via_link">شارك ملف التعريف عبر رابط</string>
+    <string name="share_profile_via_link">شارك ملف التعريف مع العنوان</string>
     <string name="the_sender_will_not_be_notified">لن يتم إشعار المرسل.</string>
     <string name="address_welcome_message">رسالة الترحيب</string>
     <string name="context_user_picker_your_profile">ملف تعريفك</string>
@@ -2466,4 +2466,7 @@
     <string name="v6_4_support_chat_descr">أرسل ملاحظاتك الخاصة إلى المجموعات.</string>
     <string name="network_option_tcp_connection_timeout_background">مهلة اتصال TCP في الخلفية</string>
     <string name="loading_profile">جارِ تحميل ملف التعريف…</string>
+    <string name="short_descr__field">السيرة الذاتية:</string>
+    <string name="group_short_descr_field">وصف قصير:</string>
+    <string name="short_descr">سيرتك الذاتية:</string>
 </resources>

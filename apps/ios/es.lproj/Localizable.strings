@@ -3164,6 +3164,9 @@ snd error text */
 /* No comment provided by engineer. */
 "Live messages" = "Mensajes en vivo";
 
+/* in progress text */
+"Loading profile…" = "Cargando perfil. . .";
+
 /* No comment provided by engineer. */
 "Local name" = "Nombre local";
 

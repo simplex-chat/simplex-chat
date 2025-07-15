@@ -2138,7 +2138,7 @@
     <string name="migrate_from_device_remove_archive_question">Archiv entfernen?</string>
     <string name="network_proxy_auth_mode_username_password">Ihre Anmeldeinformationen können unverschlüsselt versendet werden.</string>
     <string name="network_proxy_auth_mode_no_auth">Verwenden Sie keine Anmeldeinformationen mit einem Proxy.</string>
-    <string name="switching_profile_error_message">Ihre Verbindung wurde auf %s verschoben, aber während der Weiterleitung auf das Profil trat ein unerwarteter Fehler auf.</string>
+    <string name="switching_profile_error_message">Ihre Verbindung wurde auf %s verschoben, aber während des Profil-Wechsels trat ein Fehler auf.</string>
     <string name="network_proxy_incorrect_config_desc">Stellen Sie sicher, dass die Proxy-Konfiguration richtig ist.</string>
     <string name="network_proxy_incorrect_config_title">Fehler beim Speichern des Proxys</string>
     <string name="network_proxy_password">Passwort</string>
@@ -2517,8 +2517,8 @@
     <string name="compose_view_connect">Verbinden</string>
     <string name="contact_should_accept">Kontakt sollte akzeptieren…</string>
     <string name="error_changing_user">Fehler beim Ändern des Profils</string>
-    <string name="error_preparing_contact">Fehler bei der Kontaktaufnahme</string>
-    <string name="error_preparing_group">Fehler beim Vorbereiten der Gruppe</string>
+    <string name="error_preparing_contact">Fehler beim Öffnen des Chats</string>
+    <string name="error_preparing_group">Fehler beim Öffnen der Gruppe</string>
     <string name="error_rejecting_contact_request">Fehler bei der Ablehnung der Kontaktanfrage</string>
     <string name="compose_view_join_group">Der Gruppe beitreten</string>
     <string name="connect_plan_open_chat">Chat öffnen</string>
@@ -2527,7 +2527,7 @@
     <string name="open_to_accept">Zum Akzeptieren öffnen</string>
     <string name="open_to_connect">Zum Verbinden öffnen</string>
     <string name="group_preview_open_to_join">Zum Beitreten öffnen</string>
-    <string name="share_profile_via_link_alert_text">Das Profil wird über den Adress-Link geteilt.</string>
+    <string name="share_profile_via_link_alert_text">Das Profil wird mit der Adresse geteilt.</string>
     <string name="reject_contact_request">Kontakt-Anfrage ablehnen</string>
     <string name="cant_send_message_request_is_sent">Anfrage wurde gesendet</string>
     <string name="compose_view_send_contact_request_alert_question">Kontakt-Anfrage senden?</string>
@@ -2536,7 +2536,7 @@
     <string name="sent_to_your_contact_after_connection">Wird nach der Verbindung an Ihren Kontakt gesendet.</string>
     <string name="share_group_profile_via_link">Gruppenprofil über einen Link teilen</string>
     <string name="share_profile_via_link_alert_confirm">Profil teilen</string>
-    <string name="share_profile_via_link">Profil über einen Link teilen</string>
+    <string name="share_profile_via_link">Profil mit der Adresse teilen</string>
     <string name="the_sender_will_not_be_notified">Der Absender wird NICHT benachrichtigt.</string>
     <string name="address_welcome_message">Begrüßungsmeldung</string>
     <string name="context_user_picker_your_profile">Ihr Profil</string>
@@ -2556,4 +2556,7 @@
     <string name="v6_4_support_chat_descr">Senden Sie Ihr privates Feedback an Gruppen.</string>
     <string name="network_option_tcp_connection_timeout_background">TCP-Verbindung Hintergrund-Zeitüberschreitung</string>
     <string name="loading_profile">Profil wird geladen…</string>
+    <string name="short_descr__field">Bio:</string>
+    <string name="group_short_descr_field">Kurze Beschreibung:</string>
+    <string name="short_descr">Ihre Biografie:</string>
 </resources>

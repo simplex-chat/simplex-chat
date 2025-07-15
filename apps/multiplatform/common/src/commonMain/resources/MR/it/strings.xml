@@ -2063,7 +2063,7 @@
     <string name="migrate_from_device_remove_archive_question">Rimuovere l\'archivio?</string>
     <string name="delete_messages_cannot_be_undone_warning">I messaggi verranno eliminati. Non è reversibile!</string>
     <string name="migrate_from_device_uploaded_archive_will_be_removed">L\'archivio del database caricato verrà rimosso definitivamente dai server.</string>
-    <string name="switching_profile_error_message">La tua connessione è stata spostata a %s, ma si è verificato un errore imprevisto durante il reindirizzamento al profilo.</string>
+    <string name="switching_profile_error_message">La tua connessione è stata spostata a %s, ma si è verificato un errore cambiando il profilo.</string>
     <string name="network_proxy_auth_mode_no_auth">Non usare credenziali con proxy.</string>
     <string name="network_proxy_incorrect_config_desc">Assicurati che la configurazione del proxy sia corretta.</string>
     <string name="network_proxy_auth">Autenticazione del proxy</string>
@@ -2446,8 +2446,8 @@
     <string name="compose_view_connect">Connetti</string>
     <string name="contact_should_accept">il contatto dovrebbe accettare…</string>
     <string name="error_changing_user">Errore cambiando l\'profilo</string>
-    <string name="error_preparing_contact">Errore di preparazione del contatto</string>
-    <string name="error_preparing_group">Errore di preparazione del gruppo</string>
+    <string name="error_preparing_contact">Errore di apertura della chat</string>
+    <string name="error_preparing_group">Errore di apertura del gruppo</string>
     <string name="error_rejecting_contact_request">Errore nel rifiuto della richiesta di contatto</string>
     <string name="compose_view_join_group">Entra nel gruppo</string>
     <string name="connect_plan_open_chat">Apri la chat</string>
@@ -2456,7 +2456,7 @@
     <string name="open_to_accept">Apri per accettare</string>
     <string name="open_to_connect">Apri per connettere</string>
     <string name="group_preview_open_to_join">Apri per entrare</string>
-    <string name="share_profile_via_link_alert_text">Il profilo verrà condiviso tramite il link dell\'indirizzo.</string>
+    <string name="share_profile_via_link_alert_text">Il profilo verrà condiviso con l\'indirizzo.</string>
     <string name="reject_contact_request">Rifiuta la richiesta di contatto</string>
     <string name="cant_send_message_request_is_sent">richiesta inviata</string>
     <string name="compose_view_send_contact_request_alert_question">Inviare una richiesta di contatto?</string>
@@ -2465,7 +2465,7 @@
     <string name="sent_to_your_contact_after_connection">Inviato al tuo contatto dopo la connessione.</string>
     <string name="share_group_profile_via_link">Condividi il profilo del gruppo via link</string>
     <string name="share_profile_via_link_alert_confirm">Condividi il profilo</string>
-    <string name="share_profile_via_link">Condividi il profilo via link</string>
+    <string name="share_profile_via_link">Condividi il profilo con l\'indirizzo</string>
     <string name="the_sender_will_not_be_notified">Il mittente NON verrà avvisato.</string>
     <string name="address_welcome_message">Messaggio di benvenuto</string>
     <string name="context_user_picker_your_profile">Il tuo profilo</string>
@@ -2485,4 +2485,7 @@
     <string name="v6_4_support_chat_descr">Invia i tuoi commenti privati ai gruppi.</string>
     <string name="network_option_tcp_connection_timeout_background">Scadenza conness. TCP in sec. piano</string>
     <string name="loading_profile">Caricamento del profilo…</string>
+    <string name="short_descr__field">Bio:</string>
+    <string name="group_short_descr_field">Descrizione breve:</string>
+    <string name="short_descr">La tua bio:</string>
 </resources>
