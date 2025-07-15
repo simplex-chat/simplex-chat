@@ -290,6 +290,13 @@ struct ChatView: View {
                 }
             }
         }
+        .onChange(of: chatModel.secondaryPendingInviteeChatOpened) { secondaryChatOpened in
+            if secondaryChatOpened {
+                ItemsModel.loadSecondaryChat(chat.id, chatFilter: .groupChatScopeContext(groupScopeInfo: userSupportScopeInfo)) {
+                    showUserSupportChatSheet = true
+                }
+            }
+        }
         .onChange(of: chatModel.chatId) { cId in
             ConnectProgressManager.shared.cancelConnectProgress()
             showChatInfoSheet = false
