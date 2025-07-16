@@ -26,7 +26,7 @@ struct GroupProfileView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var groupInfo: GroupInfo
     @State var groupProfile: GroupProfile
-    @State var shortDescr: String
+    @State private var shortDescr: String = ""
     @State private var currentProfileHash: Int?
     @State private var showChooseSource = false
     @State private var showImagePicker = false
@@ -122,6 +122,7 @@ struct GroupProfileView: View {
         }
         .onAppear {
             currentProfileHash = groupProfile.hashValue
+            shortDescr = groupInfo.groupProfile.shortDescr ?? ""
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 withAnimation { focusDisplayName = true }
             }
@@ -198,8 +199,7 @@ struct GroupProfileView_Previews: PreviewProvider {
     static var previews: some View {
         GroupProfileView(
             groupInfo: Binding.constant(GroupInfo.sampleData),
-            groupProfile: GroupProfile.sampleData,
-            shortDescr: GroupProfile.sampleData.shortDescr ?? ""
+            groupProfile: GroupProfile.sampleData
         )
     }
 }
