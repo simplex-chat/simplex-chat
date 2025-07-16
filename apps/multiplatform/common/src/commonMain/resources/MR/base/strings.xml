@@ -1108,6 +1108,7 @@
   <string name="display_name__field">Profile name:</string>
   <string name="full_name__field">Full name:</string>
   <string name="short_descr__field">Bio:</string>
+  <string name="bio_too_large">Bio too large</string>
   <string name="your_current_profile">Your current profile</string>
   <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</string>
   <string name="edit_image">Edit image</string>
@@ -1144,7 +1145,6 @@
   <string name="invalid_name">Invalid name!</string>
   <string name="correct_name_to">Correct name to %s?</string>
   <string name="about_simplex">About SimpleX</string>
-  <string name="bio_too_large">Bio too large</string>
 
   <!-- markdown demo - MarkdownHelpView.kt -->
   <string name="how_to_use_markdown">How to use markdown</string>
