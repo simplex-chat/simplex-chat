@@ -1280,7 +1280,11 @@ sealed class ShapeStyle {
   data class RoundRect(val radius: Dp) : ShapeStyle()
 }
 
-fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Boolean, revealed: Boolean): ShapeStyle {
+val shapeStyle: (chatItem: ChatItem?, tailEnabled: Boolean, tailVisible: Boolean, revealed: Boolean) -> ShapeStyle =
+  if (appPlatform.isDesktop || (platform.androidApiLevel ?: 0) > 27) ::shapeStyleWithTail
+  else { _, _, _, _ -> ShapeStyle.RoundRect(msgRectMaxRadius) }
+
+fun shapeStyleWithTail(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Boolean, revealed: Boolean): ShapeStyle {
   if (chatItem == null) {
     return ShapeStyle.RoundRect(msgRectMaxRadius)
   }

@@ -195,7 +195,9 @@ object AppearanceScope {
             )
           )
         }
-        SettingsPreferenceItem(icon = null, stringResource(MR.strings.settings_message_shape_tail), appPreferences.chatItemTail)
+        if (appPlatform.isDesktop || (platform.androidApiLevel ?: 0) > 27) {
+          SettingsPreferenceItem(icon = null, stringResource(MR.strings.settings_message_shape_tail), appPreferences.chatItemTail)
+        }
       }
     }
   }
