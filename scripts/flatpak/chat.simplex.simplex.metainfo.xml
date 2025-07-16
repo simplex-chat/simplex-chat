@@ -38,6 +38,19 @@
   </description>
 
   <releases>
+    <release version="6.4.0" date="2025-07-16">
+      <url type="details">https://simplex.chat/blog/20250703-simplex-network-protocol-extension-for-securely-connecting-people.html</url>
+      <description>
+        <p>New in v6.4.0:</p>
+        <ul>
+          <li>Connect faster: message instantly once you tap Connect.</li>
+          <li>Review group members: chat with new members before they join.</li>
+          <li>Chat with admins: send your private feedback to group owners.</li>
+          <li>New group role: Moderator - can remove messages and block members.</li>
+          <li>Improved message delivery - less traffic on mobile networks.</li>
+        </ul>
+      </description>
+    </release>
     <release version="6.3.7" date="2025-07-01">
       <url type="details">https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html</url>
       <description>
