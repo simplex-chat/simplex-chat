@@ -157,6 +157,10 @@ struct GroupWelcomeView: View {
 
 struct GroupWelcomeView_Previews: PreviewProvider {
     static var previews: some View {
-        GroupProfileView(groupInfo: Binding.constant(GroupInfo.sampleData), groupProfile: GroupProfile.sampleData)
+        GroupProfileView(
+            groupInfo: Binding.constant(GroupInfo.sampleData),
+            groupProfile: GroupProfile.sampleData,
+            shortDescr: GroupProfile.sampleData.shortDescr ?? ""
+        )
     }
 }

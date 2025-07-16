@@ -26,6 +26,7 @@ struct GroupProfileView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var groupInfo: GroupInfo
     @State var groupProfile: GroupProfile
+    @State var shortDescr: String
     @State private var currentProfileHash: Int?
     @State private var showChooseSource = false
     @State private var showImagePicker = false
@@ -56,7 +57,7 @@ struct GroupProfileView: View {
                     TextField("Group full name (optional)", text: $groupProfile.fullName)
                 }
                 HStack {
-                    TextField("Short description", text: Binding(get: {groupProfile.shortDescr ?? ""}, set: {groupProfile.shortDescr = $0}))
+                    TextField("Short description", text: $shortDescr)
                     if !shortDescrFitsLimit() {
                         Button {
                             showAlert(NSLocalizedString("Description too large", comment: "alert title"))
@@ -72,9 +73,13 @@ struct GroupProfileView: View {
             Section {
                 Button("Reset") {
                     groupProfile = groupInfo.groupProfile
+                    shortDescr = groupInfo.groupProfile.shortDescr ?? ""
                     currentProfileHash = groupProfile.hashValue
                 }
-                .disabled(currentProfileHash == groupProfile.hashValue)
+                .disabled(
+                    currentProfileHash == groupProfile.hashValue &&
+                    (groupInfo.groupProfile.shortDescr ?? "") == shortDescr.trimmingCharacters(in: .whitespaces)
+                )
                 Button("Save group profile", action: saveProfile)
                 .disabled(!canUpdateProfile)
             }
@@ -149,7 +154,10 @@ struct GroupProfileView: View {
     }
 
     private var canUpdateProfile: Bool {
-        currentProfileHash != groupProfile.hashValue &&
+        (
+            currentProfileHash != groupProfile.hashValue ||
+            (groupProfile.shortDescr ?? "") != shortDescr.trimmingCharacters(in: .whitespaces)
+        ) &&
         groupProfile.displayName.trimmingCharacters(in: .whitespaces) != "" &&
         validNewProfileName &&
         shortDescrFitsLimit()
@@ -161,7 +169,7 @@ struct GroupProfileView: View {
     }
 
     private func shortDescrFitsLimit() -> Bool {
-        chatJsonLength(groupProfile.shortDescr ?? "") <= MAX_BIO_LENGTH_BYTES
+        chatJsonLength(shortDescr) <= MAX_BIO_LENGTH_BYTES
     }
 
     func saveProfile() {
@@ -169,6 +177,7 @@ struct GroupProfileView: View {
             do {
                 groupProfile.displayName = groupProfile.displayName.trimmingCharacters(in: .whitespaces)
                 groupProfile.fullName = groupProfile.fullName.trimmingCharacters(in: .whitespaces)
+                groupProfile.shortDescr = shortDescr.trimmingCharacters(in: .whitespaces)
                 let gInfo = try await apiUpdateGroup(groupInfo.groupId, groupProfile)
                 await MainActor.run {
                     currentProfileHash = groupProfile.hashValue
@@ -187,6 +196,10 @@ struct GroupProfileView: View {
 
 struct GroupProfileView_Previews: PreviewProvider {
     static var previews: some View {
-        GroupProfileView(groupInfo: Binding.constant(GroupInfo.sampleData), groupProfile: GroupProfile.sampleData)
+        GroupProfileView(
+            groupInfo: Binding.constant(GroupInfo.sampleData),
+            groupProfile: GroupProfile.sampleData,
+            shortDescr: GroupProfile.sampleData.shortDescr ?? ""
+        )
     }
 }

@@ -644,7 +644,8 @@ struct GroupChatInfoView: View {
         NavigationLink {
             GroupProfileView(
                 groupInfo: $groupInfo,
-                groupProfile: groupInfo.groupProfile
+                groupProfile: groupInfo.groupProfile,
+                shortDescr: groupInfo.groupProfile.shortDescr ?? ""
             )
         } label: {
             Label("Edit group profile", systemImage: "pencil")
