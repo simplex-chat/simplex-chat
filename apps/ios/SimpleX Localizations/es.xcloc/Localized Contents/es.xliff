@@ -1626,9 +1626,9 @@ set passcode view</note>
         <target>El chat será eliminado para tí. ¡No puede deshacerse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat with admins" xml:space="preserve">
+      <trans-unit id="Chat with admins" xml:space="preserve" approved="no">
         <source>Chat with admins</source>
-        <target>Chat con administradores</target>
+        <target state="translated">Chatea con los administradores</target>
         <note>chat toolbar</note>
       </trans-unit>
       <trans-unit id="Chat with member" xml:space="preserve">
@@ -1636,9 +1636,9 @@ set passcode view</note>
         <target>Chat con miembro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat with members before they join." xml:space="preserve">
+      <trans-unit id="Chat with members before they join." xml:space="preserve" approved="no">
         <source>Chat with members before they join.</source>
-        <target>Chat con miembros antes de unirse.</target>
+        <target state="translated">Chatea con el miembro antes de unirse.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
@@ -1876,9 +1876,9 @@ set passcode view</note>
         <target>Conectar automáticamente</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect faster! 🚀" xml:space="preserve">
+      <trans-unit id="Connect faster! 🚀" xml:space="preserve" approved="no">
         <source>Connect faster! 🚀</source>
-        <target>¡Conecta más rápido! 🚀</target>
+        <target state="translated">¡Conéctate más rápido! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect to desktop" xml:space="preserve">
@@ -1886,9 +1886,9 @@ set passcode view</note>
         <target>Conectar con ordenador</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect to your friends faster." xml:space="preserve">
+      <trans-unit id="Connect to your friends faster." xml:space="preserve" approved="no">
         <source>Connect to your friends faster.</source>
-        <target>Conecta más rápido con tus amigos.</target>
+        <target state="translated">Conéctate más rápido con tus amigos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect to yourself?&#10;This is your own SimpleX address!" xml:space="preserve">
@@ -4638,9 +4638,9 @@ This is your link for group %@!</source>
         <target>Mantén la aplicación abierta para usarla desde el ordenador</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Keep unused invitation?" xml:space="preserve">
+      <trans-unit id="Keep unused invitation?" xml:space="preserve" approved="no">
         <source>Keep unused invitation?</source>
-        <target>¿Guardar invitación no usada?</target>
+        <target state="translated">¿Guardar enlace no usado?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Keep your connections" xml:space="preserve">
@@ -4958,9 +4958,9 @@ This is your link for group %@!</source>
         <target>Mensaje reenviado</target>
         <note>item status text</note>
       </trans-unit>
-      <trans-unit id="Message instantly once you tap Connect." xml:space="preserve">
+      <trans-unit id="Message instantly once you tap Connect." xml:space="preserve" approved="no">
         <source>Message instantly once you tap Connect.</source>
-        <target>Mensajea ya tras pulsar Contactar.</target>
+        <target state="translated">Tras pulsar Contactar, mensajea ya.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message may be delivered later if member becomes active." xml:space="preserve">
@@ -6523,9 +6523,9 @@ swipe action</note>
         <target>¿Eliminar contraseña de Keychain?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Removes messages and blocks members." xml:space="preserve">
+      <trans-unit id="Removes messages and blocks members." xml:space="preserve" approved="no">
         <source>Removes messages and blocks members.</source>
-        <target>Eliminar mensajes y bloquear miembros.</target>
+        <target state="translated">Elimina mensajes y bloquea miembros.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Renegotiate" xml:space="preserve">
@@ -6708,9 +6708,9 @@ swipe action</note>
         <target>Revisar condiciones</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Review group members" xml:space="preserve">
+      <trans-unit id="Review group members" xml:space="preserve" approved="no">
         <source>Review group members</source>
-        <target>Revisar miembros del grupo</target>
+        <target state="translated">Revisa los miembros del grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Review members" xml:space="preserve">
@@ -9112,14 +9112,14 @@ Repeat join request?</source>
         <target>Puedes usar la sintaxis markdown para dar formato a tus mensajes:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can view invitation link again in connection details." xml:space="preserve">
+      <trans-unit id="You can view invitation link again in connection details." xml:space="preserve" approved="no">
         <source>You can view invitation link again in connection details.</source>
-        <target>Podrás ver el enlace de invitación en detalles de conexión.</target>
+        <target state="translated">Puedes ver el enlace de invitación de nuevo en los detalles de la conexión.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="You can view your reports in Chat with admins." xml:space="preserve">
+      <trans-unit id="You can view your reports in Chat with admins." xml:space="preserve" approved="no">
         <source>You can view your reports in Chat with admins.</source>
-        <target>Puedes ver tus informes en Chat con administradores.</target>
+        <target state="translated">Puedes ver tus informes en Chat con los administradores.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="You can't send messages!" xml:space="preserve">
