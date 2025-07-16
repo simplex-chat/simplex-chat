@@ -43,8 +43,16 @@ struct UserProfile: View {
                 if let user = chatModel.currentUser, showFullName(user) {
                     TextField("Full name (optional)", text: $profile.fullName)
                 }
-                // TODO enable in v6.4.1, limit to 160 characters
-                // TextField("Bio", text: Binding(get: {profile.shortDescr ?? ""}, set: {profile.shortDescr = $0}))
+                HStack {
+                    TextField("Bio", text: Binding(get: {profile.shortDescr ?? ""}, set: {profile.shortDescr = $0}))
+                    if !bioFitsLimit() {
+                        Button {
+                            showAlert(NSLocalizedString("Bio too large", comment: "alert title"))
+                        } label: {
+                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                        }
+                    }
+                }
             } footer: {
                 Text("Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.")
             }
@@ -118,11 +126,16 @@ struct UserProfile: View {
     private func showFullName(_ user: User) -> Bool {
         user.profile.fullName != "" && user.profile.fullName != user.profile.displayName
     }
-    
+
+    private func bioFitsLimit() -> Bool {
+        chatJsonLength(profile.shortDescr ?? "") <= MAX_BIO_LENGTH_BYTES
+    }
+
     private var canSaveProfile: Bool {
         currentProfileHash != profile.hashValue &&
         profile.displayName.trimmingCharacters(in: .whitespaces) != "" &&
-        validDisplayName(profile.displayName)
+        validDisplayName(profile.displayName) &&
+        bioFitsLimit()
     }
 
     private func saveProfile() {

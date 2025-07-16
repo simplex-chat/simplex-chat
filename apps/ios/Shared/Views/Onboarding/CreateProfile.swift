@@ -25,6 +25,8 @@ enum UserProfileAlert: Identifiable {
     }
 }
 
+let MAX_BIO_LENGTH_BYTES = 160
+
 struct CreateProfile: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var theme: AppTheme
@@ -38,14 +40,13 @@ struct CreateProfile: View {
             Section {
                 TextField("Enter your name…", text: $displayName)
                     .focused($focusDisplayName)
-                // TODO enable in v6.4.1, limit to 160 characters
-                // TextField("Bio", text: $profileBio)
+                TextField("Bio", text: $profileBio)
                 Button {
                     createProfile()
                 } label: {
                     Label("Create profile", systemImage: "checkmark")
                 }
-                .disabled(!canCreateProfile(displayName))
+                .disabled(!canCreateProfile(displayName) || !bioFitsLimit())
             } header: {
                 HStack {
                     Text("Your profile")
@@ -55,11 +56,14 @@ struct CreateProfile: View {
                     let validName = mkValidName(name)
                     if name != validName {
                         Spacer()
-                        Image(systemName: "exclamationmark.circle")
-                            .foregroundColor(.red)
-                            .onTapGesture {
-                                alert = .invalidNameError(validName: validName)
-                            }
+                        validationErrorIndicator {
+                            alert = .invalidNameError(validName: validName)
+                        }
+                    } else if !bioFitsLimit() {
+                        Spacer()
+                        validationErrorIndicator {
+                            showAlert(NSLocalizedString("Bio too large", comment: "alert title"))
+                        }
                     }
                 }
                 .frame(height: 20)
@@ -79,6 +83,18 @@ struct CreateProfile: View {
                 focusDisplayName = true
             }
         }
+    }
+
+    private func validationErrorIndicator(_ onTap: @escaping () -> Void) -> some View {
+        Image(systemName: "exclamationmark.circle")
+            .foregroundColor(.red)
+            .onTapGesture {
+                onTap()
+            }
+    }
+
+    private func bioFitsLimit() -> Bool {
+        chatJsonLength(profileBio) <= MAX_BIO_LENGTH_BYTES
     }
 
     private func createProfile() {

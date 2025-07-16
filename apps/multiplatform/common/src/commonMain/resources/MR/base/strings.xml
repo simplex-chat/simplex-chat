@@ -1144,6 +1144,7 @@
   <string name="invalid_name">Invalid name!</string>
   <string name="correct_name_to">Correct name to %s?</string>
   <string name="about_simplex">About SimpleX</string>
+  <string name="bio_too_large">Bio too large</string>
 
   <!-- markdown demo - MarkdownHelpView.kt -->
   <string name="how_to_use_markdown">How to use markdown</string>
@@ -1916,6 +1917,7 @@
   <string name="group_display_name_field">Enter group name:</string>
   <string name="group_full_name_field">Group full name:</string>
   <string name="group_short_descr_field">Short description:</string>
+  <string name="group_descr_too_large">Description too large</string>
   <string name="group_main_profile_sent">Your chat profile will be sent to group members</string>
   <string name="chat_main_profile_sent">Your chat profile will be sent to chat members</string>
   <string name="create_group_button">Create group</string>

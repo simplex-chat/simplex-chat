@@ -55,8 +55,16 @@ struct GroupProfileView: View {
                 if fullName != "" && fullName != groupProfile.displayName {
                     TextField("Group full name (optional)", text: $groupProfile.fullName)
                 }
-                // TODO enable in v6.4.1, limit to 160 characters
-                // TextField("Short description", text: Binding(get: {groupProfile.shortDescr ?? ""}, set: {groupProfile.shortDescr = $0}))
+                HStack {
+                    TextField("Short description", text: Binding(get: {groupProfile.shortDescr ?? ""}, set: {groupProfile.shortDescr = $0}))
+                    if !shortDescrFitsLimit() {
+                        Button {
+                            showAlert(NSLocalizedString("Description too large", comment: "alert title"))
+                        } label: {
+                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                        }
+                    }
+                }
             } footer: {
                 Text("Group profile is stored on members' devices, not on the servers.")
             }
@@ -143,12 +151,17 @@ struct GroupProfileView: View {
     private var canUpdateProfile: Bool {
         currentProfileHash != groupProfile.hashValue &&
         groupProfile.displayName.trimmingCharacters(in: .whitespaces) != "" &&
-        validNewProfileName
+        validNewProfileName &&
+        shortDescrFitsLimit()
     }
 
     private var validNewProfileName: Bool {
         groupProfile.displayName == groupInfo.groupProfile.displayName
             || validDisplayName(groupProfile.displayName.trimmingCharacters(in: .whitespaces))
+    }
+
+    private func shortDescrFitsLimit() -> Bool {
+        chatJsonLength(groupProfile.shortDescr ?? "") <= MAX_BIO_LENGTH_BYTES
     }
 
     func saveProfile() {
