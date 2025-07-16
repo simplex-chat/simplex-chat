@@ -8625,14 +8625,14 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
         <target>Csak helyi értesítések használata?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use private routing with unknown servers when IP address is not protected." xml:space="preserve">
+      <trans-unit id="Use private routing with unknown servers when IP address is not protected." xml:space="preserve" approved="no">
         <source>Use private routing with unknown servers when IP address is not protected.</source>
-        <target>Használjon privát útválasztást az ismeretlen kiszolgálókkal, ha az IP-cím nem védett.</target>
+        <target state="translated">Privát útválasztás használata az ismeretlen kiszolgálókkal, ha az IP-cím nem védett.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use private routing with unknown servers." xml:space="preserve">
+      <trans-unit id="Use private routing with unknown servers." xml:space="preserve" approved="no">
         <source>Use private routing with unknown servers.</source>
-        <target>Használjon privát útválasztást ismeretlen kiszolgálókkal.</target>
+        <target state="translated">Privát útválasztás használata ismeretlen kiszolgálókkal.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
@@ -8645,14 +8645,14 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
         <target>Kiszolgálók használata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use the app while in the call." xml:space="preserve">
+      <trans-unit id="Use the app while in the call." xml:space="preserve" approved="no">
         <source>Use the app while in the call.</source>
-        <target>Használja az alkalmazást hívás közben.</target>
+        <target state="translated">Alkalmazás használata hívás közben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use the app with one hand." xml:space="preserve">
+      <trans-unit id="Use the app with one hand." xml:space="preserve" approved="no">
         <source>Use the app with one hand.</source>
-        <target>Használja az alkalmazást egy kézzel.</target>
+        <target state="translated">Alkalmazás egy kézzel való használata.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use web port" xml:space="preserve">
@@ -9082,9 +9082,9 @@ Megismétli a csatlakozási kérést?</target>
         <target>A lezárási képernyő értesítési előnézetét az „Értesítések” menüben állíthatja be.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." xml:space="preserve">
+      <trans-unit id="You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." xml:space="preserve" approved="no">
         <source>You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.</source>
-        <target>Megoszthat egy hivatkozást vagy QR-kódot – így bárki csatlakozhat a csoporthoz. Ha a csoporthivatkozást Ön később törli, akkor nem fogja elveszíteni a csoport meglévő tagjait.</target>
+        <target state="translated">Megoszthat egy hivatkozást vagy QR-kódot – így bárki csatlakozhat a csoporthoz. Ha a csoporthivatkozást később törli, akkor nem fogja elveszíteni a csoport meglévő tagjait.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can share this address with your contacts to let them connect with **%@**." xml:space="preserve">
@@ -10216,9 +10216,9 @@ time to disappear</note>
         <target>csatlakozási kérés elutasítva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="requested to connect" xml:space="preserve">
+      <trans-unit id="requested to connect" xml:space="preserve" approved="no">
         <source>requested to connect</source>
-        <target>függőben lévő kapcsolat</target>
+        <target state="translated">Függőben lévő kapcsolat</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="review" xml:space="preserve">
