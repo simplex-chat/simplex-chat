@@ -309,7 +309,7 @@ groupFeatureStrs :: [String]
 groupFeatureStrs = map (\(a, _, _) -> snd a) $ groupFeatures'' 0
 
 groupFeatures'' :: Int -> [((Int, String), Maybe (Int, String), Maybe String)]
-groupFeatures'' dir = ((dir, e2eeInfoNoPQStr), Nothing, Nothing) : groupFeatures_ dir
+groupFeatures'' dir = ((1, "chat banner"), Nothing, Nothing) : ((dir, e2eeInfoNoPQStr), Nothing, Nothing) : groupFeatures_ dir
 
 groupFeatures_ :: Int -> [((Int, String), Maybe (Int, String), Maybe String)]
 groupFeatures_ dir =
@@ -505,6 +505,8 @@ dropTime_ :: String -> Maybe String
 dropTime_ msg = case splitAt 6 msg of
   ([m, m', ':', s, s', ' '], text) ->
     if all isDigit [m, m', s, s'] then Just text else Nothing
+  ([month, month', '-', d, d', ' '], text) ->
+    if all isDigit [month, month', d, d'] then Just text else Nothing
   _ -> Nothing
 
 dropStrPrefix :: HasCallStack => String -> String -> String
