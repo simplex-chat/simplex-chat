@@ -2249,9 +2249,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         when (fromRole < GRAdmin || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
         when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
         -- [incognito] if direct connection with host is incognito, create membership using the same incognito profile
-        (gInfo, hostMember) <- withStore $ \db -> createGroupInvitation db vr user ct inv customUserProfileId
-        let GroupInfo {groupId, localDisplayName, groupProfile, membership} = gInfo
-            GroupMember {groupMemberId = hostGMId} = hostMember
+        (gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership}, hostId) <- withStore $ \db -> createGroupInvitation db vr user ct inv customUserProfileId
         void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
         let GroupMember {groupMemberId, memberId = membershipMemId} = membership
         if sameGroupLinkId groupLinkId groupLinkId'
@@ -2261,8 +2259,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             connIds <- joinAgentConnectionAsync user True connRequest dm subMode
             withStore' $ \db -> do
               setViaGroupLinkHash db groupId connId
-              createMemberConnectionAsync db user hostGMId connIds connChatVersion peerChatVRange subMode
-              updateGroupMemberStatusById db userId hostGMId GSMemAccepted
+              createMemberConnectionAsync db user hostId connIds connChatVersion peerChatVRange subMode
+              updateGroupMemberStatusById db userId hostId GSMemAccepted
               updateGroupMemberStatus db userId membership GSMemAccepted
             toView $ CEvtUserAcceptedGroupSent user gInfo {membership = membership {memberStatus = GSMemAccepted}} (Just ct)
           else do
