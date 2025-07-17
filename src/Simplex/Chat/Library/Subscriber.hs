@@ -1337,6 +1337,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         -- they will be updated after connection is accepted.
                         upsertDirectRequestItem cd (requestMsg_, prevSharedMsgId_)
                       Nothing -> do
+                        createInternalChatItem user (CDDirectSnd ct) CIChatBanner (Just epochStart)
                         let e2eContent = CIRcvDirectE2EEInfo $ E2EInfo $ Just $ CR.pqSupportToEnc $ reqPQSup
                         void $ createChatItem user cd False e2eContent Nothing Nothing
                         void $ createFeatureEnabledItems_ user ct
@@ -2248,7 +2249,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         when (fromRole < GRAdmin || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
         when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
         -- [incognito] if direct connection with host is incognito, create membership using the same incognito profile
-        (gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership}, hostId) <- withStore $ \db -> createGroupInvitation db vr user ct inv customUserProfileId
+        (gInfo, hostMember) <- withStore $ \db -> createGroupInvitation db vr user ct inv customUserProfileId
+        let GroupInfo {groupId, localDisplayName, groupProfile, membership} = gInfo
+            GroupMember {groupMemberId = hostGMId} = hostMember
+        createInternalChatItem user (CDGroupSnd gInfo Nothing) CIChatBanner (Just epochStart)
         let GroupMember {groupMemberId, memberId = membershipMemId} = membership
         if sameGroupLinkId groupLinkId groupLinkId'
           then do
@@ -2257,8 +2261,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             connIds <- joinAgentConnectionAsync user True connRequest dm subMode
             withStore' $ \db -> do
               setViaGroupLinkHash db groupId connId
-              createMemberConnectionAsync db user hostId connIds connChatVersion peerChatVRange subMode
-              updateGroupMemberStatusById db userId hostId GSMemAccepted
+              createMemberConnectionAsync db user hostGMId connIds connChatVersion peerChatVRange subMode
+              updateGroupMemberStatusById db userId hostGMId GSMemAccepted
               updateGroupMemberStatus db userId membership GSMemAccepted
             toView $ CEvtUserAcceptedGroupSent user gInfo {membership = membership {memberStatus = GSMemAccepted}} (Just ct)
           else do
@@ -2710,6 +2714,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       case chatMsgEvent of
         XInfo p -> do
           ct <- withStore $ \db -> createDirectContact db user conn' p
+          -- TODO create banner
           toView $ CEvtContactConnecting user ct
           pure (conn', False)
         XGrpLinkInv glInv -> do
@@ -3089,6 +3094,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           dm <- encodeConnInfo $ XInfo p
           joinAgentConnectionAsync user True connReq dm subMode
         createItems mCt' m' = do
+          createInternalChatItem user (CDDirectSnd mCt') CIChatBanner (Just epochStart)
           (g', m'', scopeInfo) <- mkGroupChatScope g m'
           createInternalChatItem user (CDGroupRcv g' scopeInfo m'') (CIRcvGroupEvent RGEMemberCreatedContact) Nothing
           toView $ CEvtNewMemberContactReceivedInv user mCt' g' m''
