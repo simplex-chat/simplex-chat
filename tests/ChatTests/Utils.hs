@@ -300,7 +300,7 @@ groupFeatures :: [(Int, String)]
 groupFeatures = map (\(a, _, _) -> a) $ groupFeatures'' 0
 
 groupFeaturesNoE2E :: [(Int, String)]
-groupFeaturesNoE2E = map (\(a, _, _) -> a) $ groupFeatures_ 0
+groupFeaturesNoE2E = map (\(a, _, _) -> a) $ ((1, "chat banner"), Nothing, Nothing) : groupFeatures_ 0
 
 sndGroupFeatures :: [(Int, String)]
 sndGroupFeatures = map (\(a, _, _) -> a) $ groupFeatures'' 1
@@ -330,7 +330,8 @@ businessGroupFeatures = map (\(a, _, _) -> a) $ businessGroupFeatures'' 0
 businessGroupFeatures'' :: Int -> [((Int, String), Maybe (Int, String), Maybe String)]
 businessGroupFeatures'' dir =
   -- [ ((dir, e2eeInfoNoPQStr), Nothing, Nothing),
-  [ ((dir, "Disappearing messages: on"), Nothing, Nothing),
+  [ ((1, "chat banner"), Nothing, Nothing),
+    ((dir, "Disappearing messages: on"), Nothing, Nothing),
     ((dir, "Direct messages: off"), Nothing, Nothing),
     ((dir, "Full deletion: off"), Nothing, Nothing),
     ((dir, "Message reactions: on"), Nothing, Nothing),
