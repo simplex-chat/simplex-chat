@@ -812,6 +812,8 @@ struct ChatView: View {
 
     private func chatBannerView() -> some View {
         VStack {
+            Spacer().frame(height: 60)
+
             ChatInfoImage(chat: chat, size: 103, backgroundColor: theme.colors.background)
             Text(chat.chatInfo.chatViewName)
                 .font(.title3)
