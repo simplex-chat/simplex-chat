@@ -730,18 +730,18 @@ struct ChatView: View {
                 case let .single(item, _, _): item.item
                 case let .grouped(items, _, _, _, _, _, _, _): items.boxedValue.last!.item
                 }
-                let voiceNoFrame = voiceWithoutFrame(ci)
-                let maxWidth = cInfo.chatType == .group
-                ? voiceNoFrame
-                ? (g.size.width - 28) - 42
-                : (g.size.width - 28) * 0.84 - 42
-                : voiceNoFrame
-                ? (g.size.width - 32)
-                : (g.size.width - 32) * 0.84
                 return Group {
                     if case .chatBanner = ci.content {
                         chatBannerView()
                     } else {
+                        let voiceNoFrame = voiceWithoutFrame(ci)
+                        let maxWidth = cInfo.chatType == .group
+                        ? voiceNoFrame
+                        ? (g.size.width - 28) - 42
+                        : (g.size.width - 28) * 0.84 - 42
+                        : voiceNoFrame
+                        ? (g.size.width - 32)
+                        : (g.size.width - 32) * 0.84
                         ChatItemWithMenu(
                             im: im,
                             chat: $chat,
