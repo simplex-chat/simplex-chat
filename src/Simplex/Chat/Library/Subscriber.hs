@@ -2714,7 +2714,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       case chatMsgEvent of
         XInfo p -> do
           ct <- withStore $ \db -> createDirectContact db user conn' p
-          -- TODO create banner
           toView $ CEvtContactConnecting user ct
           pure (conn', False)
         XGrpLinkInv glInv -> do
