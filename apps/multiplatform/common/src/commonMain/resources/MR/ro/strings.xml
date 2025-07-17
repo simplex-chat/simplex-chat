@@ -286,7 +286,7 @@
     <string name="text_field_set_contact_placeholder">Nume contact…</string>
     <string name="icon_descr_send_message">Trimite mesaj</string>
     <string name="send_disappearing_message">Trimiteți un mesaj care dispare</string>
-    <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(scanează sau lipește din clipboard)</string>
+    <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(scanează sau lipește din Copiate)</string>
     <string name="show_QR_code">Afișează codul QR</string>
     <string name="smp_servers_test_failed">Testul serverului a eșuat!</string>
     <string name="show_dev_options">Afișează:</string>
@@ -476,7 +476,7 @@
     <string name="notifications_mode_periodic_desc">Verifică mesajele noi la fiecare 10 minute timp de până la 1 minut</string>
     <string name="you_have_no_chats">Nu aveți conversații</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contactul și toate mesajele vor fi șterse - acest lucru nu poate fi anulat!</string>
-    <string name="copied">Copiat în clipboard</string>
+    <string name="copied">Copiat</string>
     <string name="use_camera_button">Camera</string>
     <string name="you_invited_a_contact">Ați invitat un contact</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Profilul tău de chat va fi trimis\ncontactului tău</string>
@@ -1562,7 +1562,7 @@
     <string name="delete_message_mark_deleted_warning">Mesajul va fi marcat pentru ștergere. Destinatarul (destinatarii) va (vor) putea dezvălui acest mesaj.</string>
     <string name="only_owners_can_enable_files_and_media">Doar proprietarii grupului pot activa fișiere și media.</string>
     <string name="image_descr">Imagine</string>
-    <string name="enable_camera_access">Activați accesul la cameră</string>
+    <string name="enable_camera_access">Permite accesul la cameră</string>
     <string name="how_to">Cum să</string>
     <string name="ignore">Ignoră</string>
     <string name="message_queue_info">Informații despre coada de mesaje</string>
