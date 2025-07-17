@@ -14,6 +14,7 @@ struct ChatInfoImage: View {
     @ObservedObject var chat: Chat
     var size: CGFloat
     var color = Color(uiColor: .tertiarySystemGroupedBackground)
+    var backgroundColor: Color? = nil
 
     var body: some View {
         let iconColor = if case .local = chat.chatInfo { theme.appColors.primaryVariant2 } else { color }
@@ -21,7 +22,8 @@ struct ChatInfoImage: View {
             imageStr: chat.chatInfo.image,
             iconName: chatIconName(chat.chatInfo),
             size: size,
-            color: iconColor
+            color: iconColor,
+            backgroundColor: backgroundColor
         )
     }
 }

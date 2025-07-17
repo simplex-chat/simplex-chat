@@ -738,25 +738,31 @@ struct ChatView: View {
                 : voiceNoFrame
                 ? (g.size.width - 32)
                 : (g.size.width - 32) * 0.84
-                return ChatItemWithMenu(
-                    im: im,
-                    chat: $chat,
-                    index: index,
-                    isLastItem: index == mergedItems.boxedValue.items.count - 1,
-                    chatItem: ci,
-                    scrollToItem: scrollToItem,
-                    scrollToItemId: $scrollToItemId,
-                    merged: mergedItem,
-                    maxWidth: maxWidth,
-                    composeState: $composeState,
-                    selectedMember: $selectedMember,
-                    showChatInfoSheet: $showChatInfoSheet,
-                    revealedItems: $revealedItems,
-                    selectedChatItems: $selectedChatItems,
-                    forwardedChatItems: $forwardedChatItems,
-                    searchText: $searchText,
-                    closeKeyboardAndRun: closeKeyboardAndRun
-                )
+                return Group {
+                    if case .chatBanner = ci.content {
+                        chatBannerView()
+                    } else {
+                        ChatItemWithMenu(
+                            im: im,
+                            chat: $chat,
+                            index: index,
+                            isLastItem: index == mergedItems.boxedValue.items.count - 1,
+                            chatItem: ci,
+                            scrollToItem: scrollToItem,
+                            scrollToItemId: $scrollToItemId,
+                            merged: mergedItem,
+                            maxWidth: maxWidth,
+                            composeState: $composeState,
+                            selectedMember: $selectedMember,
+                            showChatInfoSheet: $showChatInfoSheet,
+                            revealedItems: $revealedItems,
+                            selectedChatItems: $selectedChatItems,
+                            forwardedChatItems: $forwardedChatItems,
+                            searchText: $searchText,
+                            closeKeyboardAndRun: closeKeyboardAndRun
+                        )
+                    }
+                }
                 // crashes on Cell size calculation without this line
                 .environmentObject(ChatModel.shared)
                 .environmentObject(theme) // crashes without this line when scrolling to the first unread in EndlessScrollVIew
@@ -802,6 +808,26 @@ struct ChatView: View {
                 }
             }
         }
+    }
+
+    private func chatBannerView() -> some View {
+        VStack {
+            ChatInfoImage(chat: chat, size: 103, backgroundColor: theme.colors.background)
+            Text(chat.chatInfo.chatViewName)
+                .font(.title3)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+            let fullName = chat.chatInfo.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
+            if fullName != "" && fullName != chat.chatInfo.chatViewName && fullName != chat.chatInfo.chatViewName.trimmingCharacters(in: .whitespacesAndNewlines)  {
+                Text(chat.chatInfo.fullName)
+                    .font(.headline)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(3)
+            }
+
+            Spacer().frame(height: 60)
+        }
+        .frame(maxWidth: 160)
     }
 
     private var connectingText: LocalizedStringKey? {

@@ -279,7 +279,8 @@ chatFeaturesF = map (\(a, _, c) -> (a, c)) chatFeatures''
 
 chatFeatures'' :: [((Int, String), Maybe (Int, String), Maybe String)]
 chatFeatures'' =
-  [ ((0, e2eeInfoPQStr), Nothing, Nothing),
+  [ ((1, "chat banner"), Nothing, Nothing),
+    ((0, e2eeInfoPQStr), Nothing, Nothing),
     ((0, "Disappearing messages: allowed"), Nothing, Nothing),
     ((0, "Full deletion: off"), Nothing, Nothing),
     ((0, "Message reactions: enabled"), Nothing, Nothing),
@@ -309,7 +310,7 @@ groupFeatureStrs :: [String]
 groupFeatureStrs = map (\(a, _, _) -> snd a) $ groupFeatures'' 0
 
 groupFeatures'' :: Int -> [((Int, String), Maybe (Int, String), Maybe String)]
-groupFeatures'' dir = ((dir, e2eeInfoNoPQStr), Nothing, Nothing) : groupFeatures_ dir
+groupFeatures'' dir = ((1, "chat banner"), Nothing, Nothing) : ((dir, e2eeInfoNoPQStr), Nothing, Nothing) : groupFeatures_ dir
 
 groupFeatures_ :: Int -> [((Int, String), Maybe (Int, String), Maybe String)]
 groupFeatures_ dir =
