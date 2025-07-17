@@ -3744,6 +3744,24 @@ Query:
         SELECT connection_id
         FROM connections c
         JOIN user_contact_links uc USING (user_contact_link_id)
+        WHERE uc.user_id = ? AND uc.group_id = ?
+      )
+    
+Plan:
+SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
+LIST SUBQUERY 1
+SEARCH uc USING INDEX idx_user_contact_links_group_id (group_id=?)
+SEARCH c USING COVERING INDEX idx_connections_user_contact_link_id (user_contact_link_id=?)
+SEARCH msg_deliveries USING COVERING INDEX idx_msg_deliveries_agent_msg_id (connection_id=?)
+SEARCH commands USING COVERING INDEX idx_commands_connection_id (connection_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_connection_id (connection_id=?)
+SEARCH snd_files USING COVERING INDEX idx_snd_files_connection_id (connection_id=?)
+
+Query: 
+      DELETE FROM connections WHERE connection_id IN (
+        SELECT connection_id
+        FROM connections c
+        JOIN user_contact_links uc USING (user_contact_link_id)
         WHERE uc.user_id = ? AND uc.local_display_name = '' AND uc.group_id IS NULL
       )
     
@@ -3816,6 +3834,26 @@ Plan:
 SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 LIST SUBQUERY 1
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_profile_id (contact_profile_id=?)
+SEARCH connections USING COVERING INDEX idx_connections_custom_user_profile_id (custom_user_profile_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_member_profile_id (member_profile_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_contact_profile_id (contact_profile_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_contact_profile_id (contact_profile_id=?)
+
+Query: 
+      DELETE FROM contact_profiles
+      WHERE contact_profile_id in (
+        SELECT cr.contact_profile_id
+        FROM contact_requests cr
+        JOIN user_contact_links uc USING (user_contact_link_id)
+        WHERE uc.user_id = ? AND uc.group_id = ?
+      )
+    
+Plan:
+SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
+LIST SUBQUERY 1
+SEARCH uc USING INDEX idx_user_contact_links_group_id (group_id=?)
+SEARCH cr USING INDEX idx_contact_requests_user_contact_link_id (user_contact_link_id=?)
 SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_profile_id (contact_profile_id=?)
 SEARCH connections USING COVERING INDEX idx_connections_custom_user_profile_id (custom_user_profile_id=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_member_profile_id (member_profile_id=?)
@@ -3923,6 +3961,30 @@ LIST SUBQUERY 6
 SCAN user_contact_links USING COVERING INDEX sqlite_autoindex_user_contact_links_1
 LIST SUBQUERY 7
 SCAN contact_requests USING COVERING INDEX sqlite_autoindex_contact_requests_1
+SEARCH contact_requests USING COVERING INDEX sqlite_autoindex_contact_requests_1 (user_id=? AND local_display_name=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_user_id_local_display_name (user_id=? AND local_display_name=?)
+SEARCH groups USING COVERING INDEX sqlite_autoindex_groups_1 (user_id=? AND local_display_name=?)
+SEARCH contacts USING COVERING INDEX sqlite_autoindex_contacts_1 (user_id=? AND local_display_name=?)
+SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+      DELETE FROM display_names
+      WHERE user_id = ?
+        AND local_display_name in (
+          SELECT cr.local_display_name
+          FROM contact_requests cr
+          JOIN user_contact_links uc USING (user_contact_link_id)
+          WHERE uc.user_id = ? AND uc.group_id = ?
+        )
+        AND local_display_name NOT IN (SELECT local_display_name FROM users WHERE user_id = ?)
+    
+Plan:
+SEARCH display_names USING PRIMARY KEY (user_id=? AND local_display_name=?)
+LIST SUBQUERY 1
+SEARCH uc USING INDEX idx_user_contact_links_group_id (group_id=?)
+SEARCH cr USING INDEX idx_contact_requests_user_contact_link_id (user_contact_link_id=?)
+LIST SUBQUERY 2
+SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH contact_requests USING COVERING INDEX sqlite_autoindex_contact_requests_1 (user_id=? AND local_display_name=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_user_id_local_display_name (user_id=? AND local_display_name=?)
 SEARCH groups USING COVERING INDEX sqlite_autoindex_groups_1 (user_id=? AND local_display_name=?)
@@ -5227,6 +5289,10 @@ Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ? 
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
 
+Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL  AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
+
 Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
@@ -5574,6 +5640,13 @@ SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_sent_probe_i
 Query: DELETE FROM snd_file_chunks WHERE file_id = ? AND connection_id = ?
 Plan:
 SEARCH snd_file_chunks USING COVERING INDEX idx_snd_file_chunks_file_id_connection_id (file_id=? AND connection_id=?)
+
+Query: DELETE FROM user_contact_links WHERE user_id = ? AND group_id = ?
+Plan:
+SEARCH user_contact_links USING INDEX idx_user_contact_links_group_id (group_id=?)
+SEARCH contact_requests USING COVERING INDEX idx_contact_requests_user_contact_link_id (user_contact_link_id=?)
+SEARCH connections USING COVERING INDEX idx_connections_via_user_contact_link (via_user_contact_link=?)
+SEARCH connections USING COVERING INDEX idx_connections_user_contact_link_id (user_contact_link_id=?)
 
 Query: DELETE FROM user_contact_links WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
 Plan:
@@ -6197,11 +6270,19 @@ Query: UPDATE groups SET local_display_name = ?, updated_at = ? WHERE user_id = 
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE groups SET request_shared_msg_id = ? WHERE group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE groups SET send_rcpts = NULL
 Plan:
 SCAN groups
 
 Query: UPDATE groups SET ui_themes = ?, updated_at = ? WHERE user_id = ? AND group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE groups SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
