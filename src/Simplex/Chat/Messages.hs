@@ -392,12 +392,13 @@ data ChatStats = ChatStats
     unreadMentions :: Int, -- returned both in /_get chat initial API and in /_get chats API
     reportsCount :: Int, -- returned both in /_get chat initial API and in /_get chats API
     minUnreadItemId :: ChatItemId,
-    unreadChat :: Bool
+    unreadChat :: Bool,
+    firstItemId_ :: Maybe ChatItemId
   }
   deriving (Show)
 
 emptyChatStats :: ChatStats
-emptyChatStats = ChatStats 0 0 0 0 False
+emptyChatStats = ChatStats 0 0 0 0 False Nothing
 
 data NavigationInfo = NavigationInfo
   { afterUnread :: Int,

@@ -707,13 +707,13 @@ type ChatStatsRow = (Int, ChatItemId, BoolInt)
 
 toChatStats :: ChatStatsRow -> ChatStats
 toChatStats (unreadCount, minUnreadItemId, BI unreadChat) =
-  ChatStats {unreadCount, unreadMentions = 0, reportsCount = 0, minUnreadItemId, unreadChat}
+  ChatStats {unreadCount, unreadMentions = 0, reportsCount = 0, minUnreadItemId, unreadChat, firstItemId_ = Nothing}
 
 type GroupStatsRow = (Int, Int, Int, ChatItemId, BoolInt)
 
 toGroupStats :: GroupStatsRow -> ChatStats
 toGroupStats (unreadCount, unreadMentions, reportsCount, minUnreadItemId, BI unreadChat) =
-  ChatStats {unreadCount, unreadMentions, reportsCount, minUnreadItemId, unreadChat}
+  ChatStats {unreadCount, unreadMentions, reportsCount, minUnreadItemId, unreadChat, firstItemId_ = Nothing}
 
 findDirectChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
 findDirectChatPreviews_ db User {userId} pagination clq =
@@ -1135,7 +1135,7 @@ getDirectChat db vr user contactId pagination search_ = do
   let search = fromMaybe "" search_
   ct <- getContact db vr user contactId
   case pagination of
-    CPLast count -> liftIO $ (,Nothing) <$> getDirectChatLast_ db user ct count search
+    CPLast count -> liftIO $ (,Nothing) <$> getDirectChatLast_ db user ct count search emptyChatStats
     CPAfter afterId count -> (,Nothing) <$> getDirectChatAfter_ db user ct afterId count search
     CPBefore beforeId count -> (,Nothing) <$> getDirectChatBefore_ db user ct beforeId count search
     CPAround aroundId count -> getDirectChatAround_ db user ct aroundId count search
@@ -1144,12 +1144,12 @@ getDirectChat db vr user contactId pagination search_ = do
       getDirectChatInitial_ db user ct count
 
 -- the last items in reverse order (the last item in the conversation is the first in the returned list)
-getDirectChatLast_ :: DB.Connection -> User -> Contact -> Int -> String -> IO (Chat 'CTDirect)
-getDirectChatLast_ db user ct count search = do
+getDirectChatLast_ :: DB.Connection -> User -> Contact -> Int -> String -> ChatStats -> IO (Chat 'CTDirect)
+getDirectChatLast_ db user ct count search stats = do
   ciIds <- getDirectChatItemIdsLast_ db user ct count search
   ts <- getCurrentTime
   cis <- mapM (safeGetDirectItem db user ct ts) ciIds
-  pure $ Chat (DirectChat ct) (reverse cis) emptyChatStats
+  pure $ Chat (DirectChat ct) (reverse cis) stats
 
 getDirectChatItemIdsLast_ :: DB.Connection -> User -> Contact -> Int -> String -> IO [ChatItemId]
 getDirectChatItemIdsLast_ db User {userId} Contact {contactId} count search =
@@ -1280,15 +1280,34 @@ getDirectChatInitial_ db user ct count = do
   liftIO (getContactMinUnreadId_ db user ct) >>= \case
     Just minUnreadItemId -> do
       unreadCount <- liftIO $ getContactUnreadCount_ db user ct
-      let stats = emptyChatStats {unreadCount, minUnreadItemId}
+      firstItemId_ <- liftIO $ getDirectChatFirstItemId_ db user ct
+      let stats = emptyChatStats {unreadCount, minUnreadItemId, firstItemId_}
       getDirectChatAround' db user ct minUnreadItemId count "" stats
-    Nothing -> liftIO $ (,Just $ NavigationInfo 0 0) <$> getDirectChatLast_ db user ct count ""
+    Nothing -> do
+      firstItemId_ <- liftIO $ getDirectChatFirstItemId_ db user ct
+      let stats = emptyChatStats {firstItemId_}
+      liftIO $ (,Just $ NavigationInfo 0 0) <$> getDirectChatLast_ db user ct count "" stats
 
 getContactStats_ :: DB.Connection -> User -> Contact -> IO ChatStats
 getContactStats_ db user ct = do
   minUnreadItemId <- fromMaybe 0 <$> getContactMinUnreadId_ db user ct
   unreadCount <- getContactUnreadCount_ db user ct
-  pure emptyChatStats {unreadCount, minUnreadItemId}
+  firstItemId_ <- liftIO $ getDirectChatFirstItemId_ db user ct
+  pure emptyChatStats {unreadCount, minUnreadItemId, firstItemId_}
+
+getDirectChatFirstItemId_ :: DB.Connection -> User -> Contact -> IO (Maybe ChatItemId)
+getDirectChatFirstItemId_ db User {userId} Contact {contactId} =
+  maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        SELECT chat_item_id
+        FROM chat_items
+        WHERE user_id = ? AND contact_id = ?
+        ORDER BY created_at ASC, chat_item_id ASC
+        LIMIT 1
+      |]
+      (userId, contactId)
 
 getContactMinUnreadId_ :: DB.Connection -> User -> Contact -> IO (Maybe ChatItemId)
 getContactMinUnreadId_ db User {userId} Contact {contactId} =
@@ -1587,14 +1606,34 @@ getGroupChatInitial_ db user g scopeInfo_ contentFilter count = do
   where
     getStats minUnreadItemId (unreadCount, unreadMentions) = do
       reportsCount <- getGroupReportsCount_ db user g False
-      pure ChatStats {unreadCount, unreadMentions, reportsCount, minUnreadItemId, unreadChat = False}
+      firstItemId_ <- case scopeInfo_ of
+        Nothing -> liftIO $ getGroupChatFirstItemId_ db user g
+        Just _ -> pure Nothing
+      pure ChatStats {unreadCount, unreadMentions, reportsCount, minUnreadItemId, unreadChat = False, firstItemId_}
 
 getGroupStats_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> ExceptT StoreError IO ChatStats
 getGroupStats_ db user g scopeInfo_ = do
   minUnreadItemId <- fromMaybe 0 <$> getGroupMinUnreadId_ db user g scopeInfo_ Nothing
   (unreadCount, unreadMentions) <- getGroupUnreadCount_ db user g scopeInfo_ Nothing
   reportsCount <- liftIO $ getGroupReportsCount_ db user g False
-  pure ChatStats {unreadCount, unreadMentions, reportsCount, minUnreadItemId, unreadChat = False}
+  firstItemId_ <- case scopeInfo_ of
+    Nothing -> liftIO $ getGroupChatFirstItemId_ db user g
+    Just _ -> pure Nothing
+  pure ChatStats {unreadCount, unreadMentions, reportsCount, minUnreadItemId, unreadChat = False, firstItemId_}
+
+getGroupChatFirstItemId_ :: DB.Connection -> User -> GroupInfo -> IO (Maybe ChatItemId)
+getGroupChatFirstItemId_ db User {userId} GroupInfo {groupId} =
+  maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        SELECT chat_item_id
+        FROM chat_items
+        WHERE user_id = ? AND group_id = ? AND group_scope_tag IS NULL
+        ORDER BY item_ts ASC, chat_item_id ASC
+        LIMIT 1
+      |]
+      (userId, groupId)
 
 getGroupMinUnreadId_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> Maybe MsgContentTag -> ExceptT StoreError IO (Maybe ChatItemId)
 getGroupMinUnreadId_ db user g scopeInfo_ contentFilter =
