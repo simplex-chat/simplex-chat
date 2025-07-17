@@ -951,10 +951,6 @@ Plan:
 Query: INSERT INTO xftp_servers (xftp_host, xftp_port, xftp_key_hash) VALUES (?,?,?)
 Plan:
 
-Query: SELECT 1 FROM connections WHERE conn_id = ? AND deleted_at_wait_delivery < ? LIMIT 1
-Plan:
-SEARCH connections USING PRIMARY KEY (conn_id=?)
-
 Query: SELECT 1 FROM encrypted_rcv_message_hashes WHERE conn_id = ? AND hash = ? LIMIT 1
 Plan:
 SEARCH encrypted_rcv_message_hashes USING COVERING INDEX idx_encrypted_rcv_message_hashes_hash (conn_id=? AND hash=?)
@@ -1138,10 +1134,6 @@ SEARCH servers_stats USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE snd_file_chunk_replicas SET replica_status = ?, updated_at = ? WHERE snd_file_chunk_replica_id = ?
 Plan:
 SEARCH snd_file_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: UPDATE snd_files SET deleted = 1, updated_at = ? WHERE snd_file_id = ?
-Plan:
-SEARCH snd_files USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE snd_files SET prefix_path = NULL, status = ?, updated_at = ? WHERE snd_file_id = ?
 Plan:

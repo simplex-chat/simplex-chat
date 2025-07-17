@@ -1337,7 +1337,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         -- they will be updated after connection is accepted.
                         upsertDirectRequestItem cd (requestMsg_, prevSharedMsgId_)
                       Nothing -> do
-                        createInternalChatItem user (CDDirectSnd ct) CIChatBanner (Just epochStart)
+                        void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
                         let e2eContent = CIRcvDirectE2EEInfo $ E2EInfo $ Just $ CR.pqSupportToEnc $ reqPQSup
                         void $ createChatItem user cd False e2eContent Nothing Nothing
                         void $ createFeatureEnabledItems_ user ct
@@ -2252,7 +2252,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         (gInfo, hostMember) <- withStore $ \db -> createGroupInvitation db vr user ct inv customUserProfileId
         let GroupInfo {groupId, localDisplayName, groupProfile, membership} = gInfo
             GroupMember {groupMemberId = hostGMId} = hostMember
-        createInternalChatItem user (CDGroupSnd gInfo Nothing) CIChatBanner (Just epochStart)
+        void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
         let GroupMember {groupMemberId, memberId = membershipMemId} = membership
         if sameGroupLinkId groupLinkId groupLinkId'
           then do
