@@ -2360,8 +2360,9 @@ processChatCommand vr nm = \case
   APIRemoveMembers {groupId, groupMemberIds, withMessages} -> withUser $ \user ->
     withGroupLock "removeMembers" groupId $ do
       Group gInfo members <- withFastStore $ \db -> getGroup db vr user groupId
-      let (count, invitedMems, pendingApprvMems, pendingRvwMems, currentMems, maxRole, anyAdmin) = selectMembers members
-          memCount = S.size groupMemberIds
+      let (count, invitedMems, pendingApprvMems, pendingRvwMems, currentMems, maxRole, anyAdmin) = selectMembers gmIds members
+          gmIds = S.fromList $ L.toList groupMemberIds
+          memCount = length groupMemberIds
       when (count /= memCount) $ throwChatError CEGroupMemberNotFound
       when (memCount > 1 && anyAdmin) $ throwCmdError "can't remove multiple members when admins selected"
       assertUserGroupRole gInfo $ max GRAdmin maxRole
@@ -2384,11 +2385,11 @@ processChatCommand vr nm = \case
       when withMessages $ deleteMessages user gInfo' deleted
       pure $ CRUserDeletedMembers user gInfo' deleted withMessages -- same order is not guaranteed
     where
-      selectMembers :: [GroupMember] -> (Int, [GroupMember], [GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool)
-      selectMembers = foldl' addMember (0, [], [], [], [], GRObserver, False)
+      selectMembers :: S.Set GroupMemberId -> [GroupMember] -> (Int, [GroupMember], [GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool)
+      selectMembers gmIds = foldl' addMember (0, [], [], [], [], GRObserver, False)
         where
           addMember acc@(n, invited, pendingApprv, pendingRvw, current, maxRole, anyAdmin) m@GroupMember {groupMemberId, memberStatus, memberRole}
-            | groupMemberId `S.member` groupMemberIds =
+            | groupMemberId `S.member` gmIds =
                 let maxRole' = max maxRole memberRole
                     anyAdmin' = anyAdmin || memberRole >= GRAdmin
                     n' = n + 1
@@ -2478,7 +2479,7 @@ processChatCommand vr nm = \case
   RemoveMembers gName gMemberNames withMessages -> withUser $ \user -> do
     (gId, gMemberIds) <- withStore $ \db -> do
       gId <- getGroupIdByName db user gName
-      gMemberIds <- S.fromList <$> mapM (getGroupMemberIdByName db user gId) (S.toList gMemberNames)
+      gMemberIds <- mapM (getGroupMemberIdByName db user gId) gMemberNames
       pure (gId, gMemberIds)
     processChatCommand vr nm $ APIRemoveMembers gId gMemberIds withMessages
   LeaveGroup gName -> withUser $ \user -> do
@@ -4512,7 +4513,7 @@ chatCommandP =
       ("/member role " <|> "/mr ") *> char_ '#' *> (MemberRole <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> memberRole),
       "/block for all #" *> (BlockForAll <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure True),
       "/unblock for all #" *> (BlockForAll <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure False),
-      ("/remove " <|> "/rm ") *> char_ '#' *> (RemoveMembers <$> displayNameP <* A.space <*> (S.fromList <$> (char_ '@' *> displayNameP) `A.sepBy1'` A.char ',') <*> (" messages=" *> onOffP <|> pure False)),
+      ("/remove " <|> "/rm ") *> char_ '#' *> (RemoveMembers <$> displayNameP <* A.space <*> (L.fromList <$> (char_ '@' *> displayNameP) `A.sepBy1'` A.char ',') <*> (" messages=" *> onOffP <|> pure False)),
       ("/leave " <|> "/l ") *> char_ '#' *> (LeaveGroup <$> displayNameP),
       ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayNameP),
       ("/delete " <|> "/d ") *> char_ '@' *> (DeleteContact <$> displayNameP <*> chatDeleteMode),
