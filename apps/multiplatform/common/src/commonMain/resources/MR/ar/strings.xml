@@ -2469,4 +2469,6 @@
     <string name="short_descr__field">السيرة الذاتية:</string>
     <string name="group_short_descr_field">وصف قصير:</string>
     <string name="short_descr">سيرتك الذاتية:</string>
+    <string name="bio_too_large">السيرة الذاتية كبيرة جدًا</string>
+    <string name="group_descr_too_large">الوصف كبير جدًا</string>
 </resources>
