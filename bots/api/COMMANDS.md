@@ -28,8 +28,8 @@ Create bot address.
 
 **Response**: User contact address created.
 - type: "userContactLinkCreated"
-- user: User
-- connLinkContact: CreatedConnLink 'CMContact
+- user: [User](./TYPES.md#user)
+- connLinkContact: [CreatedConnLink](./TYPES.md#createdconnlink)
 
 
 ### APIDeleteMyAddress
@@ -41,7 +41,7 @@ Delete bot address.
 
 **Response**: User contact address deleted.
 - type: "userContactLinkDeleted"
-- user: User
+- user: [User](./TYPES.md#user)
 
 
 ### APIShowMyAddress
@@ -53,8 +53,8 @@ Get bot address and settings.
 
 **Response**: User contact address.
 - type: "userContactLink"
-- user: User
-- contactLink: UserContactLink
+- user: [User](./TYPES.md#user)
+- contactLink: [UserContactLink](./TYPES.md#usercontactlink)
 
 
 ### APISetProfileAddress
@@ -67,10 +67,10 @@ Add address to bot profile.
 
 **Response**: User profile updated.
 - type: "userProfileUpdated"
-- user: User
-- fromProfile: Profile
-- toProfile: Profile
-- updateSummary: UserProfileUpdateSummary
+- user: [User](./TYPES.md#user)
+- fromProfile: [Profile](./TYPES.md#profile)
+- toProfile: [Profile](./TYPES.md#profile)
+- updateSummary: [UserProfileUpdateSummary](./TYPES.md#userprofileupdatesummary)
 
 
 ### APISetAddressSettings
@@ -79,12 +79,12 @@ Set bot address settings.
 
 **Parameters**:
 - userId: Int64
-- settings: AddressSettings
+- settings: [AddressSettings](./TYPES.md#addresssettings)
 
 **Response**: User contact address updated.
 - type: "userContactLinkUpdated"
-- user: User
-- contactLink: UserContactLink
+- user: [User](./TYPES.md#user)
+- contactLink: [UserContactLink](./TYPES.md#usercontactlink)
 
 ## Message commands
 
@@ -96,15 +96,15 @@ Commands to send, update, delete, moderate messages and set message reactions
 Send messages.
 
 **Parameters**:
-- sendRef: SendRef
+- sendRef: [SendRef](./TYPES.md#sendref)
 - liveMessage: Bool
 - ttl: Int?
-- composedMessages: [ComposedMessage] // (non-empty)
+- composedMessages: [[ComposedMessage](./TYPES.md#composedmessage)]
 
 **Response**: New messages.
 - type: "newChatItems"
-- user: User
-- chatItems: [AChatItem]
+- user: [User](./TYPES.md#user)
+- chatItems: [[AChatItem](./TYPES.md#achatitem)]
 
 
 ### APIReportMessage
@@ -114,13 +114,13 @@ Report message.
 **Parameters**:
 - groupId: Int64
 - chatItemId: Int64
-- reportReason: ReportReason
+- reportReason: [ReportReason](./TYPES.md#reportreason)
 - reportText: String
 
 **Response**: New messages.
 - type: "newChatItems"
-- user: User
-- chatItems: [AChatItem]
+- user: [User](./TYPES.md#user)
+- chatItems: [[AChatItem](./TYPES.md#achatitem)]
 
 
 ### APIUpdateChatItem
@@ -128,22 +128,22 @@ Report message.
 Update message.
 
 **Parameters**:
-- chatRef: ChatRef
+- chatRef: [ChatRef](./TYPES.md#chatref)
 - chatItemId: Int64
 - liveMessage: Bool
-- updatedMessage: UpdatedMessage
+- updatedMessage: [UpdatedMessage](./TYPES.md#updatedmessage)
 
 **Responses**:
 
 Message updated.
 - type: "chatItemUpdated"
-- user: User
-- chatItem: AChatItem
+- user: [User](./TYPES.md#user)
+- chatItem: [AChatItem](./TYPES.md#achatitem)
 
 Message not changed.
 - type: "chatItemNotChanged"
-- user: User
-- chatItem: AChatItem
+- user: [User](./TYPES.md#user)
+- chatItem: [AChatItem](./TYPES.md#achatitem)
 
 
 ### APIDeleteChatItem
@@ -151,14 +151,14 @@ Message not changed.
 Delete message.
 
 **Parameters**:
-- chatRef: ChatRef
-- chatItemIds: [Int64] // (non-empty)
-- deleteMode: CIDeleteMode
+- chatRef: [ChatRef](./TYPES.md#chatref)
+- chatItemIds: [Int64]
+- deleteMode: [CIDeleteMode](./TYPES.md#cideletemode)
 
 **Response**: Messages deleted.
 - type: "chatItemsDeleted"
-- user: User
-- chatItemDeletions: [ChatItemDeletion]
+- user: [User](./TYPES.md#user)
+- chatItemDeletions: [[ChatItemDeletion](./TYPES.md#chatitemdeletion)]
 - byUser: Bool
 - timed: Bool
 
@@ -169,12 +169,12 @@ Moderate message.
 
 **Parameters**:
 - groupId: Int64
-- chatItemIds: [Int64] // (non-empty)
+- chatItemIds: [Int64]
 
 **Response**: Messages deleted.
 - type: "chatItemsDeleted"
-- user: User
-- chatItemDeletions: [ChatItemDeletion]
+- user: [User](./TYPES.md#user)
+- chatItemDeletions: [[ChatItemDeletion](./TYPES.md#chatitemdeletion)]
 - byUser: Bool
 - timed: Bool
 
@@ -184,16 +184,16 @@ Moderate message.
 Add/remove message reaction.
 
 **Parameters**:
-- chatRef: ChatRef
+- chatRef: [ChatRef](./TYPES.md#chatref)
 - chatItemId: Int64
 - add: Bool
-- reaction: MsgReaction
+- reaction: [MsgReaction](./TYPES.md#msgreaction)
 
 **Response**: Message reaction.
 - type: "chatItemReaction"
-- user: User
+- user: [User](./TYPES.md#user)
 - added: Bool
-- reaction: ACIReaction
+- reaction: [ACIReaction](./TYPES.md#acireaction)
 
 
 ### APIGetReactionMembers
@@ -204,12 +204,12 @@ Get reaction members.
 - userId: Int64
 - groupId: Int64
 - chatItemId: Int64
-- reaction: MsgReaction
+- reaction: [MsgReaction](./TYPES.md#msgreaction)
 
 **Response**: Members who set reaction on the message.
 - type: "reactionMembers"
-- user: User
-- memberReactions: [MemberReaction]
+- user: [User](./TYPES.md#user)
+- memberReactions: [[MemberReaction](./TYPES.md#memberreaction)]
 
 ## File commands
 
@@ -231,13 +231,13 @@ Receive file.
 
 File accepted to be received.
 - type: "rcvFileAccepted"
-- user: User
-- chatItem: AChatItem
+- user: [User](./TYPES.md#user)
+- chatItem: [AChatItem](./TYPES.md#achatitem)
 
 File accepted, but no longer sent.
 - type: "rcvFileAcceptedSndCancelled"
-- user: User
-- rcvFileTransfer: RcvFileTransfer
+- user: [User](./TYPES.md#user)
+- rcvFileTransfer: [RcvFileTransfer](./TYPES.md#rcvfiletransfer)
 
 
 ### CancelFile
@@ -251,16 +251,16 @@ Cancel file.
 
 Cancelled sending file.
 - type: "sndFileCancelled"
-- user: User
-- chatItem_: AChatItem?
-- fileTransferMeta: FileTransferMeta
-- sndFileTransfers: [SndFileTransfer]
+- user: [User](./TYPES.md#user)
+- chatItem_: [AChatItem](./TYPES.md#achatitem)?
+- fileTransferMeta: [FileTransferMeta](./TYPES.md#filetransfermeta)
+- sndFileTransfers: [[SndFileTransfer](./TYPES.md#sndfiletransfer)]
 
 Cancelled receiving file.
 - type: "rcvFileCancelled"
-- user: User
-- chatItem_: AChatItem?
-- rcvFileTransfer: RcvFileTransfer
+- user: [User](./TYPES.md#user)
+- chatItem_: [AChatItem](./TYPES.md#achatitem)?
+- rcvFileTransfer: [RcvFileTransfer](./TYPES.md#rcvfiletransfer)
 
 ## Group commands
 
@@ -274,12 +274,12 @@ Create group.
 **Parameters**:
 - userId: Int64
 - incognito: Bool
-- groupProfile: GroupProfile
+- groupProfile: [GroupProfile](./TYPES.md#groupprofile)
 
 **Response**: Group created.
 - type: "groupCreated"
-- user: User
-- groupInfo: GroupInfo
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 
 
 ### APIAddMember
@@ -289,14 +289,14 @@ Add contact to group.
 **Parameters**:
 - groupId: Int64
 - contactId: Int64
-- memberRole: GroupMemberRole
+- memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
 
 **Response**: Group invitation sent.
 - type: "sentGroupInvitation"
-- user: User
-- groupInfo: GroupInfo
-- contact: Contact
-- member: GroupMember
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- contact: [Contact](./TYPES.md#contact)
+- member: [GroupMember](./TYPES.md#groupmember)
 
 
 ### APIJoinGroup
@@ -305,13 +305,13 @@ Join group.
 
 **Parameters**:
 - groupId: Int64
-- enableNtfs: MsgFilter
+- enableNtfs: [MsgFilter](./TYPES.md#msgfilter)
 
 **Response**: User accepted group invitation.
 - type: "userAcceptedGroupSent"
-- user: User
-- groupInfo: GroupInfo
-- hostContact: Contact?
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- hostContact: [Contact](./TYPES.md#contact)?
 
 
 ### APIAcceptMember
@@ -321,13 +321,13 @@ Accept group member.
 **Parameters**:
 - groupId: Int64
 - groupMemberId: Int64
-- memberRole: GroupMemberRole
+- memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
 
 **Response**: Member accepted to group.
 - type: "memberAccepted"
-- user: User
-- groupInfo: GroupInfo
-- member: GroupMember
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- member: [GroupMember](./TYPES.md#groupmember)
 
 
 ### APIMembersRole
@@ -336,15 +336,15 @@ Set members role.
 
 **Parameters**:
 - groupId: Int64
-- groupMemberIds: [Int64] // (non-empty)
-- memberRole: GroupMemberRole
+- groupMemberIds: [Int64]
+- memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
 
 **Response**: Members role changed by user.
 - type: "membersRoleUser"
-- user: User
-- groupInfo: GroupInfo
-- members: [GroupMember]
-- toRole: GroupMemberRole
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- members: [[GroupMember](./TYPES.md#groupmember)]
+- toRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
 
 
 ### APIBlockMembersForAll
@@ -353,14 +353,14 @@ Block members.
 
 **Parameters**:
 - groupId: Int64
-- groupMemberIds: [Int64] // (non-empty)
+- groupMemberIds: [Int64]
 - blocked: Bool
 
 **Response**: Members blocked for all by admin.
 - type: "membersBlockedForAllUser"
-- user: User
-- groupInfo: GroupInfo
-- members: [GroupMember]
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- members: [[GroupMember](./TYPES.md#groupmember)]
 - blocked: Bool
 
 
@@ -370,14 +370,14 @@ Remove members.
 
 **Parameters**:
 - groupId: Int64
-- groupMemberIds: [Int64] // (non-empty)
+- groupMemberIds: [Int64]
 - withMessages: Bool
 
 **Response**: Members deleted.
 - type: "userDeletedMembers"
-- user: User
-- groupInfo: GroupInfo
-- members: [GroupMember]
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- members: [[GroupMember](./TYPES.md#groupmember)]
 - withMessages: Bool
 
 
@@ -390,8 +390,8 @@ Leave group.
 
 **Response**: User left group.
 - type: "leftMemberUser"
-- user: User
-- groupInfo: GroupInfo
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 
 
 ### APIListMembers
@@ -403,8 +403,8 @@ Get group members.
 
 **Response**: Group members.
 - type: "groupMembers"
-- user: User
-- group: Group
+- user: [User](./TYPES.md#user)
+- group: [Group](./TYPES.md#group)
 
 
 ### APIUpdateGroupProfile
@@ -413,14 +413,14 @@ Update group profile.
 
 **Parameters**:
 - groupId: Int64
-- groupProfile: GroupProfile
+- groupProfile: [GroupProfile](./TYPES.md#groupprofile)
 
 **Response**: Group updated.
 - type: "groupUpdated"
-- user: User
-- fromGroup: GroupInfo
-- toGroup: GroupInfo
-- member_: GroupMember?
+- user: [User](./TYPES.md#user)
+- fromGroup: [GroupInfo](./TYPES.md#groupinfo)
+- toGroup: [GroupInfo](./TYPES.md#groupinfo)
+- member_: [GroupMember](./TYPES.md#groupmember)?
 
 ## Group link commands
 
@@ -433,13 +433,13 @@ Create group link.
 
 **Parameters**:
 - groupId: Int64
-- memberRole: GroupMemberRole
+- memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
 
 **Response**: Group link created.
 - type: "groupLinkCreated"
-- user: User
-- groupInfo: GroupInfo
-- groupLink: GroupLink
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- groupLink: [GroupLink](./TYPES.md#grouplink)
 
 
 ### APIGroupLinkMemberRole
@@ -448,13 +448,13 @@ Set member role for group link.
 
 **Parameters**:
 - groupId: Int64
-- memberRole: GroupMemberRole
+- memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
 
 **Response**: Group link.
 - type: "groupLink"
-- user: User
-- groupInfo: GroupInfo
-- groupLink: GroupLink
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- groupLink: [GroupLink](./TYPES.md#grouplink)
 
 
 ### APIDeleteGroupLink
@@ -466,8 +466,8 @@ Delete group link.
 
 **Response**: Group link deleted.
 - type: "groupLinkDeleted"
-- user: User
-- groupInfo: GroupInfo
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 
 
 ### APIGetGroupLink
@@ -479,9 +479,9 @@ Get group link.
 
 **Response**: Group link.
 - type: "groupLink"
-- user: User
-- groupInfo: GroupInfo
-- groupLink: GroupLink
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- groupLink: [GroupLink](./TYPES.md#grouplink)
 
 ## Connection commands
 
@@ -498,9 +498,9 @@ Create 1-time invitation link.
 
 **Response**: One-time invitation.
 - type: "invitation"
-- user: User
-- connLinkInvitation: CreatedConnLink 'CMInvitation
-- connection: PendingContactConnection
+- user: [User](./TYPES.md#user)
+- connLinkInvitation: [CreatedConnLink](./TYPES.md#createdconnlink)
+- connection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
 
 
 ### APIConnectPlan
@@ -509,13 +509,13 @@ Determine SimpleX link type and if the bot is already connected via this link.
 
 **Parameters**:
 - userId: Int64
-- connectionLink: AConnectionLink?
+- connectionLink: String?
 
 **Response**: Connection link information.
 - type: "connectionPlan"
-- user: User
-- connLink: ACreatedConnLink
-- connectionPlan: ConnectionPlan
+- user: [User](./TYPES.md#user)
+- connLink: [ACreatedConnLink](./TYPES.md#acreatedconnlink)
+- connectionPlan: [ConnectionPlan](./TYPES.md#connectionplan)
 
 
 ### APIConnect
@@ -525,26 +525,26 @@ Connect via SimpleX link. The link can be 1-time invitation link, contact addres
 **Parameters**:
 - userId: Int64
 - incognito: Bool
-- connLink_: ACreatedConnLink?
+- connLink_: [ACreatedConnLink](./TYPES.md#acreatedconnlink)?
 
 **Responses**:
 
 Confirmation sent to one-time invitation.
 - type: "sentConfirmation"
-- user: User
-- connection: PendingContactConnection
-- customUserProfile: Profile?
+- user: [User](./TYPES.md#user)
+- connection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
+- customUserProfile: [Profile](./TYPES.md#profile)?
 
 Contact already exists.
 - type: "contactAlreadyExists"
-- user: User
-- contact: Contact
+- user: [User](./TYPES.md#user)
+- contact: [Contact](./TYPES.md#contact)
 
 Invitation sent to contact address.
 - type: "sentInvitation"
-- user: User
-- connection: PendingContactConnection
-- customUserProfile: Profile?
+- user: [User](./TYPES.md#user)
+- connection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
+- customUserProfile: [Profile](./TYPES.md#profile)?
 
 
 ### APIAcceptContact
@@ -557,8 +557,8 @@ Accept contact request.
 
 **Response**: Contact request accepted.
 - type: "acceptingContactRequest"
-- user: User
-- contact: Contact
+- user: [User](./TYPES.md#user)
+- contact: [Contact](./TYPES.md#contact)
 
 
 ### APIRejectContact
@@ -570,9 +570,9 @@ Reject contact request. The user who sent the request is **not notified**.
 
 **Response**: Contact request rejected.
 - type: "contactRequestRejected"
-- user: User
-- contactRequest: UserContactRequest
-- contact_: Contact?
+- user: [User](./TYPES.md#user)
+- contactRequest: [UserContactRequest](./TYPES.md#usercontactrequest)
+- contact_: [Contact](./TYPES.md#contact)?
 
 ## User profile commands
 
@@ -585,7 +585,7 @@ Get active user profile
 
 **Response**: Active user profile.
 - type: "activeUser"
-- user: User
+- user: [User](./TYPES.md#user)
 
 
 ### CreateActiveUser
@@ -593,11 +593,11 @@ Get active user profile
 Create new user profile
 
 **Parameters**:
-- newUser: NewUser
+- newUser: [NewUser](./TYPES.md#newuser)
 
 **Response**: Active user profile.
 - type: "activeUser"
-- user: User
+- user: [User](./TYPES.md#user)
 
 
 ### ListUsers
@@ -606,7 +606,7 @@ Get all user profiles
 
 **Response**: Users.
 - type: "usersList"
-- users: [UserInfo]
+- users: [[UserInfo](./TYPES.md#userinfo)]
 
 
 ### APISetActiveUser
@@ -619,7 +619,7 @@ Set active user profile
 
 **Response**: Active user profile.
 - type: "activeUser"
-- user: User
+- user: [User](./TYPES.md#user)
 
 
 ### APIDeleteUser
@@ -633,7 +633,7 @@ Delete user profile.
 
 **Response**: Ok.
 - type: "cmdOk"
-- user_: User?
+- user_: [User](./TYPES.md#user)?
 
 
 ### APIUpdateProfile
@@ -642,14 +642,14 @@ Update user profile.
 
 **Parameters**:
 - userId: Int64
-- profile: Profile
+- profile: [Profile](./TYPES.md#profile)
 
 **Response**: User profile updated.
 - type: "userProfileUpdated"
-- user: User
-- fromProfile: Profile
-- toProfile: Profile
-- updateSummary: UserProfileUpdateSummary
+- user: [User](./TYPES.md#user)
+- fromProfile: [Profile](./TYPES.md#profile)
+- toProfile: [Profile](./TYPES.md#profile)
+- updateSummary: [UserProfileUpdateSummary](./TYPES.md#userprofileupdatesummary)
 
 ## Chat commands
 
@@ -663,13 +663,13 @@ Get chats.
 **Parameters**:
 - userId: Int64
 - pendingConnections: Bool
-- pagination: PaginationByTime
-- query: ChatListQuery
+- pagination: [PaginationByTime](./TYPES.md#paginationbytime)
+- query: [ChatListQuery](./TYPES.md#chatlistquery)
 
 **Response**: Chats with the most recent messages.
 - type: "apiChats"
-- user: User
-- chats: [AChat]
+- user: [User](./TYPES.md#user)
+- chats: [[AChat](./TYPES.md#achat)]
 
 
 ### APIGetChat
@@ -677,16 +677,16 @@ Get chats.
 Get chat.
 
 **Parameters**:
-- chatRef: ChatRef
-- contentTag: MsgContentTag?
-- chatPagination: ChatPagination
+- chatRef: [ChatRef](./TYPES.md#chatref)
+- contentTag: [MsgContentTag](./TYPES.md#msgcontenttag)?
+- chatPagination: [ChatPagination](./TYPES.md#chatpagination)
 - search: String?
 
 **Response**: Chat and messages.
 - type: "apiChat"
-- user: User
-- chat: AChat
-- navInfo: NavigationInfo?
+- user: [User](./TYPES.md#user)
+- chat: [AChat](./TYPES.md#achat)
+- navInfo: [NavigationInfo](./TYPES.md#navigationinfo)?
 
 
 ### APIGetChatItems
@@ -694,14 +694,14 @@ Get chat.
 Get the most recent messages from all chats.
 
 **Parameters**:
-- chatPagination: ChatPagination
+- chatPagination: [ChatPagination](./TYPES.md#chatpagination)
 - search: String?
 
 **Response**: The most recent messages.
 - type: "chatItems"
-- user: User
-- chatName_: ChatName?
-- chatItems: [AChatItem]
+- user: [User](./TYPES.md#user)
+- chatName_: [ChatName](./TYPES.md#chatname)?
+- chatItems: [[AChatItem](./TYPES.md#achatitem)]
 
 
 ### APIGetChatItemInfo
@@ -709,14 +709,14 @@ Get the most recent messages from all chats.
 Get message information.
 
 **Parameters**:
-- chatRef: ChatRef
+- chatRef: [ChatRef](./TYPES.md#chatref)
 - chatItemId: Int64
 
 **Response**: Message information.
 - type: "chatItemInfo"
-- user: User
-- chatItem: AChatItem
-- chatItemInfo: ChatItemInfo
+- user: [User](./TYPES.md#user)
+- chatItem: [AChatItem](./TYPES.md#achatitem)
+- chatItemInfo: [ChatItemInfo](./TYPES.md#chatiteminfo)
 
 
 ### APIChatRead
@@ -724,11 +724,11 @@ Get message information.
 Mark chat as read.
 
 **Parameters**:
-- chatRef: ChatRef
+- chatRef: [ChatRef](./TYPES.md#chatref)
 
 **Response**: Ok.
 - type: "cmdOk"
-- user_: User?
+- user_: [User](./TYPES.md#user)?
 
 
 ### APIChatItemsRead
@@ -736,13 +736,13 @@ Mark chat as read.
 Mark items as read.
 
 **Parameters**:
-- chatRef: ChatRef
-- chatItemIds: [Int64] // (non-empty)
+- chatRef: [ChatRef](./TYPES.md#chatref)
+- chatItemIds: [Int64]
 
 **Response**: Messages marked as read.
 - type: "itemsReadForChat"
-- user: User
-- chatInfo: AChatInfo
+- user: [User](./TYPES.md#user)
+- chatInfo: [AChatInfo](./TYPES.md#achatinfo)
 
 
 ### APIChatUnread
@@ -750,12 +750,12 @@ Mark items as read.
 Mark chat as unread.
 
 **Parameters**:
-- chatRef: ChatRef
+- chatRef: [ChatRef](./TYPES.md#chatref)
 - unreadChat: Bool
 
 **Response**: Ok.
 - type: "cmdOk"
-- user_: User?
+- user_: [User](./TYPES.md#user)?
 
 
 ### APIDeleteChat
@@ -763,25 +763,25 @@ Mark chat as unread.
 Delete chat.
 
 **Parameters**:
-- chatRef: ChatRef
-- chatDeleteMode: ChatDeleteMode
+- chatRef: [ChatRef](./TYPES.md#chatref)
+- chatDeleteMode: [ChatDeleteMode](./TYPES.md#chatdeletemode)
 
 **Responses**:
 
 Contact deleted.
 - type: "contactDeleted"
-- user: User
-- contact: Contact
+- user: [User](./TYPES.md#user)
+- contact: [Contact](./TYPES.md#contact)
 
 Connection deleted.
 - type: "contactConnectionDeleted"
-- user: User
-- connection: PendingContactConnection
+- user: [User](./TYPES.md#user)
+- connection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
 
 User deleted group.
 - type: "groupDeletedUser"
-- user: User
-- groupInfo: GroupInfo
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 
 
 ### APIClearChat
@@ -789,12 +789,12 @@ User deleted group.
 Clear chat.
 
 **Parameters**:
-- chatRef: ChatRef
+- chatRef: [ChatRef](./TYPES.md#chatref)
 
 **Response**: Chat cleared.
 - type: "chatCleared"
-- user: User
-- chatInfo: AChatInfo
+- user: [User](./TYPES.md#user)
+- chatInfo: [AChatInfo](./TYPES.md#achatinfo)
 
 
 ### APISetContactPrefs
@@ -803,13 +803,13 @@ Set contact preferences.
 
 **Parameters**:
 - contactId: Int64
-- preferences: Preferences
+- preferences: [Preferences](./TYPES.md#preferences)
 
 **Response**: Contact preferences updated.
 - type: "contactPrefsUpdated"
-- user: User
-- fromContact: Contact
-- toContact: Contact
+- user: [User](./TYPES.md#user)
+- fromContact: [Contact](./TYPES.md#contact)
+- toContact: [Contact](./TYPES.md#contact)
 
 
 ### APISetContactAlias
@@ -822,8 +822,8 @@ Set contact alias.
 
 **Response**: Contact alias updated.
 - type: "contactAliasUpdated"
-- user: User
-- toContact: Contact
+- user: [User](./TYPES.md#user)
+- toContact: [Contact](./TYPES.md#contact)
 
 
 ### APISetGroupAlias
@@ -836,8 +836,8 @@ Set group alias.
 
 **Response**: Group alias updated.
 - type: "groupAliasUpdated"
-- user: User
-- toGroup: GroupInfo
+- user: [User](./TYPES.md#user)
+- toGroup: [GroupInfo](./TYPES.md#groupinfo)
 
 
 ### APISetConnectionAlias
@@ -850,8 +850,8 @@ Set connection alias.
 
 **Response**: Connection alias updated.
 - type: "connectionAliasUpdated"
-- user: User
-- toConnection: PendingContactConnection
+- user: [User](./TYPES.md#user)
+- toConnection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
 
 
 ### APISetChatTTL
@@ -860,12 +860,12 @@ Set TTL for chat messages.
 
 **Parameters**:
 - userId: Int64
-- chatRef: ChatRef
+- chatRef: [ChatRef](./TYPES.md#chatref)
 - seconds: Int64?
 
 **Response**: Ok.
 - type: "cmdOk"
-- user_: User?
+- user_: [User](./TYPES.md#user)?
 
 
 ### APISetChatSettings
@@ -873,12 +873,12 @@ Set TTL for chat messages.
 Set chat settings.
 
 **Parameters**:
-- chatRef: ChatRef
-- chatSettings: ChatSettings
+- chatRef: [ChatRef](./TYPES.md#chatref)
+- chatSettings: [ChatSettings](./TYPES.md#chatsettings)
 
 **Response**: Ok.
 - type: "cmdOk"
-- user_: User?
+- user_: [User](./TYPES.md#user)?
 
 
 ### APISyncContactRatchet
@@ -891,9 +891,9 @@ Synchronize encryption with contact.
 
 **Response**: Contact encryption synchronization started.
 - type: "contactRatchetSyncStarted"
-- user: User
-- contact: Contact
-- connectionStats: ConnectionStats
+- user: [User](./TYPES.md#user)
+- contact: [Contact](./TYPES.md#contact)
+- connectionStats: [ConnectionStats](./TYPES.md#connectionstats)
 
 
 ### APISyncGroupMemberRatchet
@@ -907,10 +907,10 @@ Synchronize encryption with member.
 
 **Response**: Member encryption synchronization started.
 - type: "groupMemberRatchetSyncStarted"
-- user: User
-- groupInfo: GroupInfo
-- member: GroupMember
-- connectionStats: ConnectionStats
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- member: [GroupMember](./TYPES.md#groupmember)
+- connectionStats: [ConnectionStats](./TYPES.md#connectionstats)
 
 
 ### APIListContacts
@@ -922,8 +922,8 @@ Get contacts.
 
 **Response**: Contacts.
 - type: "contactsList"
-- user: User
-- contacts: [Contact]
+- user: [User](./TYPES.md#user)
+- contacts: [[Contact](./TYPES.md#contact)]
 
 
 ### APIListGroups
@@ -937,5 +937,5 @@ Get groups.
 
 **Response**: Group.
 - type: "groupsList"
-- user: User
-- groups: [GroupInfoSummary]
+- user: [User](./TYPES.md#user)
+- groups: [[GroupInfoSummary](./TYPES.md#groupinfosummary)]

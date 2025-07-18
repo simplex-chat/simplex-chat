@@ -1,5 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE KindSignatures #-}
@@ -17,6 +19,19 @@ import Data.Kind (Type)
 import Data.Typeable
 import GHC.Generics
 
+data SumTypeInfo = SumTypeInfo {typeName :: String, recordTypes :: [RecordTypeInfo]}
+
+sumTypeInfo :: forall t. (GTypeInfo (Rep t), GetDatatypeName (Rep t)) => SumTypeInfo
+sumTypeInfo = SumTypeInfo {typeName = getDatatypeName @(Rep t), recordTypes = gTypeInfo @(Rep t)}
+
+class GetDatatypeName (f :: Type -> Type) where getDatatypeName :: String
+
+instance (Datatype d) => GetDatatypeName (D1 d g) where
+  getDatatypeName = datatypeName (undefined :: D1 d g p)
+
+recordTypesInfo :: forall t. (GTypeInfo (Rep t)) => [RecordTypeInfo]
+recordTypesInfo = gTypeInfo @(Rep t)
+
 data RecordTypeInfo = RecordTypeInfo {consName :: ConsName, fieldInfos :: [FieldInfo]}
 
 class ConstructorName t where consName' :: t -> ConsName
@@ -29,14 +44,19 @@ data FieldInfo = FieldInfo
   { fieldName :: String,
     typeInfo :: TypeInfo
   }
-  deriving (Show)
+
+data SimpleTypeInfo = STI {consName :: ConsName, typeParams :: [String]}
+
+instance ConstructorName SimpleTypeInfo where consName' STI {consName} = consName
 
 data TypeInfo
-  = TIType String -- for simple types
+  = TIType SimpleTypeInfo -- for simple types
   | TIOptional TypeInfo -- for Maybe
   | TIArray {elemType :: TypeInfo, nonEmpty :: Bool} -- for [] and NonEmpty
-  | TIMap {keyType :: String, valueType :: TypeInfo} -- keys are only base types
-  deriving (Show)
+  | TIMap {keyType :: SimpleTypeInfo, valueType :: TypeInfo} -- keys are only base types
+
+ti :: ConsName -> TypeInfo
+ti n = TIType $ STI n []
 
 class GTypeInfo (f :: Type -> Type) where
   gTypeInfo :: [RecordTypeInfo]
@@ -79,21 +99,66 @@ toTypeInfo tr =
    in case name of
         "List" -> case args of
           [elemTr]
-            | elemTr == typeRep (Proxy @Char) -> TIType "String"
+            | elemTr == typeRep (Proxy @Char) -> TIType string
             | otherwise -> TIArray {elemType = toTypeInfo elemTr, nonEmpty = False}
-          _ -> TIType (typeName tr)
+          _ -> TIType (simpleType tr)
         "NonEmpty" -> case args of
           [elemTr] -> TIArray {elemType = toTypeInfo elemTr, nonEmpty = True}
-          _ -> TIType (typeName tr)
+          _ -> TIType (simpleType tr)
         "Maybe" -> case args of
           [innerTr] -> TIOptional (toTypeInfo innerTr)
-          _ -> TIType (typeName tr)
+          _ -> TIType (simpleType tr)
         "Map" -> case args of
-          [keyTr, valTr] -> TIMap {keyType = typeName keyTr, valueType = toTypeInfo valTr}
-          _ -> TIType (typeName tr)
-        _ -> TIType (typeName tr)
+          [keyTr, valTr] -> TIMap {keyType = simpleType keyTr, valueType = toTypeInfo valTr}
+          _ -> TIType (simpleType tr)
+        _ -> TIType (simpleType tr)
   where
-    typeName tr' = case tyConName (typeRepTyCon tr') of
-      "Text" -> "String"
-      "UserPwd" -> "String"
-      _ -> show tr'
+    string = STI "String" []
+    simpleType tr' = case tyConName (typeRepTyCon tr') of
+      "AgentUserId" -> STI "Int64" []
+      "Integer" -> STI "Int64" []
+      "Version" -> STI "Int" []
+      "PQEncryption" -> STI "Bool" []
+      "PQSupport" -> STI "Bool" []
+      "AConnectionLink" -> string
+      "AgentConnId" -> string
+      "AgentInvId" -> string
+      "AgentRcvFileId" -> string
+      "AgentSndFileId" -> string
+      "B64UrlByteString" -> string
+      "CbNonce" -> string
+      "ConnectionLink" -> string
+      "ConnShortLink" -> string
+      "ConnectionRequestUri" -> string
+      "FileDigest" -> string
+      "GroupLinkId" -> string
+      "ImageData" -> string
+      "MemberId" -> string
+      "Text" -> string
+      "MREmojiChar" -> string
+      "ProtocolServer" -> string
+      "SbKey" -> string
+      "SharedMsgId" -> string
+      "UIColor" -> string
+      "UserPwd" -> string
+      "XContactId" -> string
+      "CallsPreference" -> simplePreference
+      "FullDeletePreference" -> simplePreference
+      "ReactionsPreference" -> simplePreference
+      "VoicePreference" -> simplePreference
+      "DirectMessagesGroupPreference" -> roleGroupPreference
+      "FullDeleteGroupPreference" -> groupPreference
+      "ReactionsGroupPreference" -> groupPreference
+      "VoiceGroupPreference" -> roleGroupPreference
+      "FilesGroupPreference" -> roleGroupPreference
+      "SimplexLinksGroupPreference" -> roleGroupPreference
+      "ReportsGroupPreference" -> groupPreference
+      "HistoryGroupPreference" -> groupPreference
+      "CustomData" -> STI "JSONObject" []
+      "KeyMap" -> STI "JSONObject" []
+      _ -> case words $ show tr' of
+        (consName : typeParams) -> STI {consName, typeParams}
+        _ -> STI "" []
+    simplePreference = STI "SimplePreference" []
+    groupPreference = STI "GroupPreference" []
+    roleGroupPreference = STI "RoleGroupPreference" []

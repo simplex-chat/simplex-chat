@@ -27,7 +27,7 @@ chatCommandsDocs = map toCategory chatCommandsDocsData
 deriving instance Generic ChatCommand
 
 chatCommandsTypeInfo :: [RecordTypeInfo]
-chatCommandsTypeInfo = gTypeInfo @(Rep ChatCommand)
+chatCommandsTypeInfo = recordTypesInfo @ChatCommand
 
 data CCCategory = CCCategory
   { categoryName :: Text,

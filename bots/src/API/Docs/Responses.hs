@@ -25,7 +25,7 @@ chatResponsesDocs = map toResp chatResponsesDocsData
 deriving instance Generic ChatResponse
 
 chatResponsesTypeInfo :: [RecordTypeInfo]
-chatResponsesTypeInfo = gTypeInfo @(Rep ChatResponse)
+chatResponsesTypeInfo = recordTypesInfo @ChatResponse
 
 chatResponsesDocsData :: [(ConsName, Text)]
 chatResponsesDocsData =

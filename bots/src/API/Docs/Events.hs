@@ -12,4 +12,4 @@ import Simplex.Chat.Controller
 deriving instance Generic ChatEvent
 
 chatEventConsInfo :: [RecordTypeInfo]
-chatEventConsInfo = gTypeInfo @(Rep ChatEvent)
+chatEventConsInfo = recordTypesInfo @ChatEvent

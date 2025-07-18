@@ -12,7 +12,8 @@ import API.Docs.Types
 import API.TypeInfo
 import Control.Monad
 import Data.List (foldl', intercalate, sort, (\\))
-import Data.Containers.ListUtils
+import qualified Data.Map.Strict as M
+import Data.Maybe (mapMaybe)
 import qualified Data.Set as S
 import qualified Data.Text.IO as T
 import Simplex.Messaging.Util (ifM)
@@ -25,11 +26,12 @@ apiDocsTest = do
     it "should be documented" testCommandsHaveDocs
     it "should have field names" testCommandsHaveNamedFields
     it "should have defined responses" testCommandsHaveResponses
-    it "generate docs" generateAPIDocs
+    it "generate markdown" testGenerateCommandsMD
   fdescribe "API responses" $ do
     it "should be documented" testResponsesHaveDocs
   fdescribe "API types" $ do
     it "should be documented" testTypesHaveDocs
+    it "generate markdown" testGenerateTypesMD
 
 
 documentedCmds :: [String]
@@ -39,7 +41,7 @@ documentedResps :: [String]
 documentedResps = map consName' chatResponsesDocs
 
 documentedTypes :: [String]
-documentedTypes = map consName' chatTypesDocs
+documentedTypes = map docTypeName chatTypesDocs
 
 testCommandsHaveDocs :: IO ()
 testCommandsHaveDocs = do
@@ -70,17 +72,18 @@ testTypesHaveDocs = do
       docResps = S.fromList documentedResps
       cmds = filter ((`S.member` docCmds) . consName') chatCommandsTypeInfo
       resps = filter ((`S.member` docResps) . consName') chatResponsesTypeInfo
-      rts = sort $ nubOrd $ concatMap respTypes $ cmds ++ resps
+      fieldTypes = concatMap (\CTDoc {typeInfo = SumTypeInfo {recordTypes}} -> recordTypes) chatTypesDocs
+      rts = M.unions $ map recTypes $ cmds ++ resps ++ fieldTypes
       allTypes = sort $ documentedTypes ++ primitiveTypes
-      missingTypes = rts \\ allTypes
-  unless (null missingTypes) $ expectationFailure $ "Undocumented types: " <> intercalate ", " missingTypes
+      missingTypes = sort (M.keys rts) \\ allTypes
+  unless (null missingTypes) $ expectationFailure $ "Undocumented types: " <> intercalate ", " (mapMaybe (\t -> (((t <> ": ") <>) . show . S.toList) <$> M.lookup t rts) missingTypes)
   where
-    respTypes RecordTypeInfo {fieldInfos} = concatMap (\FieldInfo {typeInfo} -> types typeInfo) fieldInfos
+    recTypes RecordTypeInfo {consName, fieldInfos} = foldl' (\m FieldInfo {typeInfo} -> foldl' (\m' t -> M.alter (Just . maybe (S.singleton consName) (S.insert consName)) t m')  m $ types typeInfo) M.empty fieldInfos
     types = \case
-      TIType t -> [t]
+      TIType t -> [consName' t]
       TIOptional t -> types t
       TIArray {elemType} -> types elemType
-      TIMap {keyType, valueType} -> keyType : types valueType
+      TIMap {keyType, valueType} -> consName' keyType : types valueType
 
 testCommandsHaveResponses :: IO ()
 testCommandsHaveResponses = do
@@ -95,9 +98,16 @@ testCommandsHaveResponses = do
   unless (null undefinedResps) $ expectationFailure $ "Undefined command reponses: " <> intercalate ", " undefinedResps
   unless (null undocResps) $ expectationFailure $ "Undocumented command responses: " <> intercalate ", " undocResps
 
-generateAPIDocs :: IO ()
-generateAPIDocs = do
+testGenerateCommandsMD :: IO ()
+testGenerateCommandsMD = do
   cmdsDoc <- ifM (doesFileExist commandsDocFile) (T.readFile commandsDocFile) (pure "")
   generateCommandsDoc
   newCmdsDoc <- T.readFile commandsDocFile
   newCmdsDoc `shouldBe` cmdsDoc
+
+testGenerateTypesMD :: IO ()
+testGenerateTypesMD = do
+  typesDoc <- ifM (doesFileExist typesDocFile) (T.readFile typesDocFile) (pure "")
+  generateTypesDoc
+  newTypesDoc <- T.readFile typesDocFile
+  newTypesDoc `shouldBe` typesDoc
