@@ -34,6 +34,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
+const val MAX_BIO_LENGTH_BYTES = 160
+
+fun bioFitsLimit(bio: String): Boolean {
+  return chatJsonLength(bio) <= MAX_BIO_LENGTH_BYTES
+}
+
 @Composable
 fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
   val scope = rememberCoroutineScope()
@@ -68,18 +74,28 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
           }
           ProfileNameField(displayName, "", { it.trim() == mkValidName(it) }, focusRequester)
 
-// TODO enable in v6.4.1, limit to 160 characters
+          Spacer(Modifier.height(DEFAULT_PADDING))
 
-//          Text(
-//            stringResource(MR.strings.short_descr),
-//            fontSize = 16.sp
-//          )
-//          ProfileNameField(shortDescr, "")
+          Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(
+              stringResource(MR.strings.short_descr),
+              fontSize = 16.sp
+            )
+            Spacer(Modifier.height(20.dp))
+            if (!bioFitsLimit(shortDescr.value)) {
+              IconButton(
+                onClick = { AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.bio_too_large)) },
+                Modifier.size(20.dp)) {
+                Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
+              }
+            }
+          }
+          ProfileNameField(shortDescr, "", isValid = { bioFitsLimit(it) })
         }
         SettingsActionItem(
           painterResource(MR.images.ic_check),
           stringResource(MR.strings.create_another_profile_button),
-          disabled = !canCreateProfile(displayName.value),
+          disabled = !canCreateProfile(displayName.value) || !bioFitsLimit(shortDescr.value),
           textColor = MaterialTheme.colors.primary,
           iconColor = MaterialTheme.colors.primary,
           click = {

@@ -396,19 +396,16 @@ private fun ModalData.UserAddressSettings(
         SectionView {
           ShareWithContactsButton(shareViaProfile, setProfileAddress)
           AutoAcceptToggle(addressSettingsState) { saveAddressSettings(addressSettingsState.value, savedAddressSettingsState) }
+          if (addressSettingsState.value.autoAccept && !chatModel.addressShortLinkDataSet() && !addressSettingsState.value.businessAddress) {
+            AcceptIncognitoToggle(addressSettingsState)
+          }
         }
         SectionDividerSpaced()
 
-        // TODO v6.4.1 move auto-reply editor here
-        // SectionView(stringResource(MR.strings.address_welcome_message).uppercase()) {
-        //   AutoReplyEditor(addressSettingsState)
-        // }
-        // SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
-
-        if (addressSettingsState.value.autoAccept) {
-          AutoAcceptSection(addressSettingsState = addressSettingsState)
-          SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+        SectionView(stringResource(MR.strings.address_welcome_message).uppercase()) {
+          AutoReplyEditor(addressSettingsState)
         }
+        SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
 
         saveAddressSettingsButton(addressSettingsState.value == savedAddressSettingsState.value) {
           saveAddressSettings(addressSettingsState.value, savedAddressSettingsState)
@@ -569,18 +566,6 @@ private class AddressSettingsState {
     result = 31 * result + autoAcceptIncognito.hashCode()
     result = 31 * result + autoReply.hashCode()
     return result
-  }
-}
-
-@Composable
-private fun AutoAcceptSection(addressSettingsState: MutableState<AddressSettingsState>) {
-  SectionView(stringResource(MR.strings.auto_accept_contact).uppercase()) {
-    if (!chatModel.addressShortLinkDataSet() && !addressSettingsState.value.businessAddress) {
-      AcceptIncognitoToggle(addressSettingsState)
-    }
-    // TODO v6.4.1 show this message editor even with auto-accept disabled
-    AutoReplyEditor(addressSettingsState)
-    SectionTextFooter(stringResource(MR.strings.sent_to_your_contact_after_connection))
   }
 }
 
