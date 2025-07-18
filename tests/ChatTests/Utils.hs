@@ -271,6 +271,11 @@ chat'' = read
 chatFeatures :: [(Int, String)]
 chatFeatures = map (\(a, _, _) -> a) chatFeatures''
 
+chatFeaturesNoPQ :: [(Int, String)]
+chatFeaturesNoPQ =
+  map (\(a, _, _) -> a) $
+    ((1, "chat banner"), Nothing, Nothing) : ((0, e2eeInfoNoPQStr), Nothing, Nothing) : chatFeatures_
+
 chatFeatures' :: [((Int, String), Maybe (Int, String))]
 chatFeatures' = map (\(a, b, _) -> (a, b)) chatFeatures''
 
@@ -278,9 +283,11 @@ chatFeaturesF :: [((Int, String), Maybe String)]
 chatFeaturesF = map (\(a, _, c) -> (a, c)) chatFeatures''
 
 chatFeatures'' :: [((Int, String), Maybe (Int, String), Maybe String)]
-chatFeatures'' =
-  [ ((0, e2eeInfoPQStr), Nothing, Nothing),
-    ((0, "Disappearing messages: allowed"), Nothing, Nothing),
+chatFeatures'' = ((1, "chat banner"), Nothing, Nothing) : ((0, e2eeInfoPQStr), Nothing, Nothing) : chatFeatures_
+
+chatFeatures_ :: [((Int, String), Maybe (Int, String), Maybe String)]
+chatFeatures_ =
+  [ ((0, "Disappearing messages: allowed"), Nothing, Nothing),
     ((0, "Full deletion: off"), Nothing, Nothing),
     ((0, "Message reactions: enabled"), Nothing, Nothing),
     ((0, "Voice messages: enabled"), Nothing, Nothing),

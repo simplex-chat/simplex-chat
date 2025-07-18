@@ -835,7 +835,7 @@ struct ChatView: View {
                             .fontWeight(.regular)
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
-                            .lineLimit(2)
+                            .lineLimit(3)
                             .frame(maxWidth: 260)
                     }
                     if let shortDescr = chat.chatInfo.shortDescr {
@@ -843,6 +843,7 @@ struct ChatView: View {
                             .font(.subheadline)
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
+                            .lineLimit(4)
                             .padding(.horizontal)
                     }
 
