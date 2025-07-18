@@ -1814,10 +1814,13 @@ fun BoxScope.ChatItemsList(
       ) {
         val bannerModifier = if (appPlatform.isDesktop) Modifier.width(400.dp) else Modifier.fillMaxWidth()
         Column(
-          verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF),
           horizontalAlignment = Alignment.CenterHorizontally,
           modifier = bannerModifier
-            .padding(DEFAULT_PADDING)
+            .padding(horizontal = DEFAULT_PADDING)
+            .padding(bottom = DEFAULT_PADDING)
+            // ChatInfoImage has its own additional padding somewhere,
+            // also not doing verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF) because of it
+            .padding(top = DEFAULT_PADDING_HALF)
         ) {
           ChatInfoImage(chatInfo, size = 96.dp)
 
@@ -1847,6 +1850,7 @@ fun BoxScope.ChatItemsList(
               overflow = TextOverflow.Ellipsis,
               modifier = Modifier
                 .widthIn(max = 260.dp)
+                .padding(top = DEFAULT_PADDING_HALF)
                 .combinedClickable(onClick = copyFullName, onLongClick = copyFullName)
                 .onRightClick(copyFullName)
             )
@@ -1864,6 +1868,7 @@ fun BoxScope.ChatItemsList(
               overflow = TextOverflow.Ellipsis,
               lineHeight = 21.sp,
               modifier = Modifier
+                .padding(top = DEFAULT_PADDING_HALF)
                 .combinedClickable(onClick = copyDescr, onLongClick = copyDescr)
                 .onRightClick(copyDescr)
             )
@@ -1871,11 +1876,11 @@ fun BoxScope.ChatItemsList(
 
           val contextStr = chatContext()
           if (contextStr != null) {
-            Spacer(modifier = Modifier.height(0.dp))
-
             Row(
               verticalAlignment = Alignment.CenterVertically,
               horizontalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF, Alignment.CenterHorizontally),
+              modifier = Modifier
+                .padding(top = DEFAULT_PADDING)
             ) {
               Icon(
                 painterResource(MR.images.ic_info),
