@@ -2452,4 +2452,6 @@
     <string name="group_short_descr_field">Rövid leírás:</string>
     <string name="short_descr">Bemutatkozás:</string>
     <string name="short_descr__field">Bemutatkozás:</string>
+    <string name="bio_too_large">A bemutatkozás túl hosszú</string>
+    <string name="group_descr_too_large">A leírás túl hosszú</string>
 </resources>
