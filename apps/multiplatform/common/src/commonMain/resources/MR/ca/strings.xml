@@ -1832,7 +1832,7 @@
     <string name="the_text_you_pasted_is_not_a_link">El text enganxat no és un enllaç SimpleX.</string>
     <string name="this_string_is_not_a_connection_link">Aquesta cadena no és un enllaç de connexió!</string>
     <string name="you_can_view_invitation_link_again">Podeu tornar a veure l\'enllaç d\'invitació als detalls de connexió.</string>
-    <string name="switching_profile_error_message">La teva connexió s\'ha mogut a %s, però s\'ha produït un error inesperat en redirigir-te al perfil.</string>
+    <string name="switching_profile_error_message">La connexió s\'ha mogut a %s però s\'ha produït un error en canviar de perfil.</string>
     <string name="mark_code_verified">Marcar com a verificat</string>
     <string name="scan_code_from_contacts_app">Escaneja el codi de seguretat des de l\'aplicació del teu contacte.</string>
     <string name="contact_list_header_title">Contactes</string>
@@ -2409,8 +2409,8 @@
     <string name="compose_view_connect">Connectar</string>
     <string name="contact_should_accept">el contacte hauria d\'acceptar…</string>
     <string name="error_changing_user">Error en canviar el perfil</string>
-    <string name="error_preparing_contact">Error en preparar el contacte</string>
-    <string name="error_preparing_group">Error en preparar el grup</string>
+    <string name="error_preparing_contact">Error en obrir el xat</string>
+    <string name="error_preparing_group">Error en obrir el grup</string>
     <string name="error_rejecting_contact_request">Error en rebutjar la sol·licitud de contacte</string>
     <string name="compose_view_join_group">Entrar al grup</string>
     <string name="connect_plan_open_chat">Obrir xat</string>
@@ -2419,7 +2419,7 @@
     <string name="open_to_accept">Obrir per acceptar</string>
     <string name="open_to_connect">Obrir per connectar</string>
     <string name="group_preview_open_to_join">Obrir per entrar</string>
-    <string name="share_profile_via_link_alert_text">El perfil es compartirà a través de l\'enllaç d\'adreça.</string>
+    <string name="share_profile_via_link_alert_text">El perfil es compartirà amb l\'adreça.</string>
     <string name="reject_contact_request">Rebutjar la sol·licitud de contacte</string>
     <string name="cant_send_message_request_is_sent">sol·licitud enviada</string>
     <string name="compose_view_send_contact_request_alert_question">Enviar sol·licitud de contacte?</string>
@@ -2428,7 +2428,7 @@
     <string name="sent_to_your_contact_after_connection">Enviat al contacte després de la connexió.</string>
     <string name="share_group_profile_via_link">Compartir el perfil del grup mitjançant un enllaç</string>
     <string name="share_profile_via_link_alert_confirm">Compartir el perfil</string>
-    <string name="share_profile_via_link">Compartir el perfil mitjançant un enllaç</string>
+    <string name="share_profile_via_link">Compartir el perfil amb l\'adreça</string>
     <string name="the_sender_will_not_be_notified">L\'emissor(a) NO serà notificat(da).</string>
     <string name="context_user_picker_cant_change_profile_alert_message">Per utilitzar un altre perfil després d\'un intent de connexió, suprimiu el xat i torneu a utilitzar l\'enllaç.</string>
     <string name="address_welcome_message">Missatge de benvinguda</string>
@@ -2446,4 +2446,10 @@
     <string name="v6_4_review_members">Revisió de membres del grup</string>
     <string name="v6_4_support_chat_descr">Envieu comentaris privats a grups.</string>
     <string name="network_option_tcp_connection_timeout_background">Temps d\'espera de la connexió TCP en segon pla</string>
+    <string name="short_descr__field">Bio:</string>
+    <string name="bio_too_large">Bio massa llarga</string>
+    <string name="group_descr_too_large">Descripció massa llarga</string>
+    <string name="loading_profile">Carregant el perfil…</string>
+    <string name="group_short_descr_field">Descripció breu:</string>
+    <string name="short_descr">La vostra bio:</string>
 </resources>
