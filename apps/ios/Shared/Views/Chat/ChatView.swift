@@ -824,6 +824,7 @@ struct ChatView: View {
                     Text(chat.chatInfo.displayName)
                         .font(.title3)
                         .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
                         .lineLimit(2)
                         .frame(maxWidth: 240)
                     let fullName = chat.chatInfo.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -832,6 +833,7 @@ struct ChatView: View {
                             .font(.headline)
                             .fontWeight(.regular)
                             .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
                             .lineLimit(2)
                             .frame(maxWidth: 260)
                     }
@@ -839,6 +841,7 @@ struct ChatView: View {
                         Text(shortDescr)
                             .font(.subheadline)
                             .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
                             .lineLimit(3)
                             .padding(.horizontal)
                     }
