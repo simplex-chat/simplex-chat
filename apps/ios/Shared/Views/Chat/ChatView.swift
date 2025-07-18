@@ -811,6 +811,7 @@ struct ChatView: View {
     }
 
     struct ChatBannerView: View {
+        @EnvironmentObject var theme: AppTheme
         @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
         @UserDefault(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
         @ObservedObject var chat: Chat
@@ -844,6 +845,14 @@ struct ChatView: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.horizontal)
                     }
+
+                    if let chatContext = chatContext() {
+                        Spacer().frame(height: 0)
+
+                        Label(chatContext, systemImage: "info.circle")
+                            .font(.subheadline)
+                            .foregroundColor(theme.colors.secondary)
+                    }
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
@@ -855,6 +864,19 @@ struct ChatView: View {
                 .padding(.horizontal)
 
                 Spacer().frame(height: 60)
+            }
+        }
+
+        func chatContext() -> String? {
+            switch chat.chatInfo {
+            case .direct: NSLocalizedString("Contact", comment: "chat context")
+            case let .group(groupInfo, _):
+                switch groupInfo.businessChat?.chatType {
+                case .none: NSLocalizedString("Group", comment: "chat context")
+                case .business: NSLocalizedString("Business", comment: "chat context")
+                case .customer: NSLocalizedString("Client", comment: "chat context")
+                }
+            default: nil
             }
         }
     }
