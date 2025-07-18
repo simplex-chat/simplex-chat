@@ -563,6 +563,18 @@ Query:
             SELECT chat_item_id, contact_id, group_id, group_scope_tag, group_scope_group_member_id, note_folder_id
             FROM chat_items
             WHERE user_id = ? AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'
+              AND (item_ts < ? OR (item_ts = ? AND chat_item_id < ?))
+            ORDER BY item_ts DESC, chat_item_id DESC
+            LIMIT ?
+          
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_ts (user_id=?)
+USE TEMP B-TREE FOR ORDER BY
+
+Query: 
+            SELECT chat_item_id, contact_id, group_id, group_scope_tag, group_scope_group_member_id, note_folder_id
+            FROM chat_items
+            WHERE user_id = ? AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'
             ORDER BY item_ts DESC, chat_item_id DESC
             LIMIT ?
           
@@ -1151,6 +1163,26 @@ Query:
         
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_group_id (group_id=?)
+
+Query: 
+          SELECT chat_item_id, contact_id, group_id, group_scope_tag, group_scope_group_member_id, note_folder_id
+          FROM chat_items
+          WHERE chat_item_id = ?
+        
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+          SELECT chat_item_id, contact_id, group_id, group_scope_tag, group_scope_group_member_id, note_folder_id
+          FROM chat_items
+          WHERE user_id = ? AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'
+            AND (item_ts > ? OR (item_ts = ? AND chat_item_id > ?))
+          ORDER BY item_ts ASC, chat_item_id ASC
+          LIMIT ?
+        
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_ts (user_id=?)
+USE TEMP B-TREE FOR ORDER BY
 
 Query: 
           SELECT chat_item_moderation_id, moderator_member_id, created_by_msg_id, moderated_at
@@ -4656,6 +4688,14 @@ Plan:
 SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+      UPDATE users
+      SET view_pwd_hash = ?, view_pwd_salt = ?, show_ntfs = ?
+      WHERE user_id = ?
+    
+Plan:
+SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
       UPDATE xftp_file_descriptions
       SET file_descr_text = ?, file_descr_part_no = ?, file_descr_complete = ?, updated_at = ?
       WHERE user_id = ? AND file_descr_id = ?
@@ -5885,6 +5925,10 @@ SEARCH group_members USING COVERING INDEX idx_group_members_contact_id (contact_
 Query: SELECT contact_id, conn_full_link_to_connect FROM contacts WHERE user_id = ? AND conn_short_link_to_connect = ?
 Plan:
 SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
+
+Query: SELECT contact_id, group_id FROM chat_items WHERE user_id = ? AND chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: SELECT contact_request_id FROM contact_requests WHERE user_id = ? AND local_display_name = ?
 Plan:
