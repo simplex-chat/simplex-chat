@@ -459,13 +459,16 @@ struct UserAddressSettingsView: View {
             Section {
                 shareWithContactsButton()
                 autoAcceptToggle().disabled(settings.businessAddress)
+                if settings.autoAccept && !ChatModel.shared.addressShortLinkDataSet && !settings.businessAddress {
+                    acceptIncognitoToggle()
+                }
             }
 
-            // TODO v6.4.1 move auto-reply editor here
-            // messageEditor(placeholder: NSLocalizedString("Enter welcome message… (optional)", comment: "placeholder"), text: $settings.autoReply)
-
-            if settings.autoAccept {
-                autoAcceptSection()
+            Section {
+                messageEditor(placeholder: NSLocalizedString("Enter welcome message… (optional)", comment: "placeholder"), text: $settings.autoReply)
+            } header: {
+                Text("Welcome message")
+                    .foregroundColor(theme.colors.secondary)
             }
 
             Section {
@@ -538,21 +541,6 @@ struct UserAddressSettingsView: View {
                 .onChange(of: settings.autoAccept) { _ in
                     saveAddressSettings(settings, $savedSettings)
                 }
-        }
-    }
-
-    private func autoAcceptSection() -> some View {
-        Section {
-            if !ChatModel.shared.addressShortLinkDataSet && !settings.businessAddress {
-                acceptIncognitoToggle()
-            }
-            // TODO v6.4.1 show this message editor even with auto-accept disabled
-            messageEditor(placeholder: NSLocalizedString("Enter welcome message… (optional)", comment: "placeholder"), text: $settings.autoReply)
-        } header: {
-            Text("Auto-accept")
-                .foregroundColor(theme.colors.secondary)
-        } footer: {
-            Text("Sent to your contact after connection.")
         }
     }
 

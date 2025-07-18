@@ -26,6 +26,7 @@ struct GroupProfileView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var groupInfo: GroupInfo
     @State var groupProfile: GroupProfile
+    @State private var shortDescr: String = ""
     @State private var currentProfileHash: Int?
     @State private var showChooseSource = false
     @State private var showImagePicker = false
@@ -55,8 +56,16 @@ struct GroupProfileView: View {
                 if fullName != "" && fullName != groupProfile.displayName {
                     TextField("Group full name (optional)", text: $groupProfile.fullName)
                 }
-                // TODO enable in v6.4.1, limit to 160 characters
-                // TextField("Short description", text: Binding(get: {groupProfile.shortDescr ?? ""}, set: {groupProfile.shortDescr = $0}))
+                HStack {
+                    TextField("Short description", text: $shortDescr)
+                    if !shortDescrFitsLimit() {
+                        Button {
+                            showAlert(NSLocalizedString("Description too large", comment: "alert title"))
+                        } label: {
+                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                        }
+                    }
+                }
             } footer: {
                 Text("Group profile is stored on members' devices, not on the servers.")
             }
@@ -64,9 +73,13 @@ struct GroupProfileView: View {
             Section {
                 Button("Reset") {
                     groupProfile = groupInfo.groupProfile
+                    shortDescr = groupInfo.groupProfile.shortDescr ?? ""
                     currentProfileHash = groupProfile.hashValue
                 }
-                .disabled(currentProfileHash == groupProfile.hashValue)
+                .disabled(
+                    currentProfileHash == groupProfile.hashValue &&
+                    (groupInfo.groupProfile.shortDescr ?? "") == shortDescr.trimmingCharacters(in: .whitespaces)
+                )
                 Button("Save group profile", action: saveProfile)
                 .disabled(!canUpdateProfile)
             }
@@ -109,6 +122,7 @@ struct GroupProfileView: View {
         }
         .onAppear {
             currentProfileHash = groupProfile.hashValue
+            shortDescr = groupInfo.groupProfile.shortDescr ?? ""
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 withAnimation { focusDisplayName = true }
             }
@@ -141,9 +155,13 @@ struct GroupProfileView: View {
     }
 
     private var canUpdateProfile: Bool {
-        currentProfileHash != groupProfile.hashValue &&
+        (
+            currentProfileHash != groupProfile.hashValue ||
+            (groupProfile.shortDescr ?? "") != shortDescr.trimmingCharacters(in: .whitespaces)
+        ) &&
         groupProfile.displayName.trimmingCharacters(in: .whitespaces) != "" &&
-        validNewProfileName
+        validNewProfileName &&
+        shortDescrFitsLimit()
     }
 
     private var validNewProfileName: Bool {
@@ -151,11 +169,16 @@ struct GroupProfileView: View {
             || validDisplayName(groupProfile.displayName.trimmingCharacters(in: .whitespaces))
     }
 
+    private func shortDescrFitsLimit() -> Bool {
+        chatJsonLength(shortDescr) <= MAX_BIO_LENGTH_BYTES
+    }
+
     func saveProfile() {
         Task {
             do {
                 groupProfile.displayName = groupProfile.displayName.trimmingCharacters(in: .whitespaces)
                 groupProfile.fullName = groupProfile.fullName.trimmingCharacters(in: .whitespaces)
+                groupProfile.shortDescr = shortDescr.trimmingCharacters(in: .whitespaces)
                 let gInfo = try await apiUpdateGroup(groupInfo.groupId, groupProfile)
                 await MainActor.run {
                     currentProfileHash = groupProfile.hashValue
@@ -174,6 +197,9 @@ struct GroupProfileView: View {
 
 struct GroupProfileView_Previews: PreviewProvider {
     static var previews: some View {
-        GroupProfileView(groupInfo: Binding.constant(GroupInfo.sampleData), groupProfile: GroupProfile.sampleData)
+        GroupProfileView(
+            groupInfo: Binding.constant(GroupInfo.sampleData),
+            groupProfile: GroupProfile.sampleData
+        )
     }
 }
