@@ -869,12 +869,31 @@ struct ChatView: View {
 
         func chatContext() -> String? {
             switch chat.chatInfo {
-            case .direct: NSLocalizedString("Contact", comment: "chat context")
+            case let .direct(contact):
+                if contact.nextConnectPrepared, let linkType = contact.preparedContact?.uiConnLinkType {
+                    switch linkType {
+                    case .inv:
+                        NSLocalizedString("1-time invitation", comment: "chat context")
+                    case .con:
+                        NSLocalizedString("Contact address", comment: "chat context")
+                    }
+                } else if contact.nextAcceptContactRequest {
+                    NSLocalizedString("Contact request", comment: "chat context")
+                } else {
+                    NSLocalizedString("Contact", comment: "chat context")
+                }
             case let .group(groupInfo, _):
                 switch groupInfo.businessChat?.chatType {
-                case .none: NSLocalizedString("Group", comment: "chat context")
-                case .business: NSLocalizedString("Business", comment: "chat context")
-                case .customer: NSLocalizedString("Customer", comment: "chat context")
+                case .none:
+                    if groupInfo.membership.memberStatus == .memCreator {
+                        NSLocalizedString("Your group", comment: "chat context")
+                    } else {
+                        NSLocalizedString("Group", comment: "chat context")
+                    }
+                case .business:
+                    NSLocalizedString("Business", comment: "chat context")
+                case .customer:
+                    NSLocalizedString("Customer", comment: "chat context")
                 }
             default: nil
             }
