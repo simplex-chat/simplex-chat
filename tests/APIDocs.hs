@@ -1,20 +1,25 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module APIDocs where
 
 import API.Docs.Commands
+import API.Docs.Generate
 import API.TypeInfo
 import Control.Monad
 import Data.List (intercalate, sort)
 import qualified Data.Set as S
+import qualified Data.Text.IO as T
+import Simplex.Messaging.Util (ifM)
+import System.Directory (doesFileExist)
 import Test.Hspec
 
 apiDocsTest :: Spec
 apiDocsTest = do
   fit "should document commands" testCommandsHaveDocs
   fit "should have field names in documented commands" testCommandsHaveNamedFields
-  it "generate API docs" generateAPIDocs
+  fit "generate API docs" generateAPIDocs
 
 documentedCmds :: [String]
 documentedCmds = concatMap (\CCCategory {commands} -> map (\CCDoc {consName} -> consName) commands) chatCommandsDocs
@@ -34,4 +39,7 @@ testCommandsHaveNamedFields = do
 
 generateAPIDocs :: IO ()
 generateAPIDocs = do
-  pure ()
+  cmdsDoc <- ifM (doesFileExist commandsDocFile) (T.readFile commandsDocFile) (pure "")
+  generateCommandsDoc
+  newCmdsDoc <- T.readFile commandsDocFile
+  cmdsDoc `shouldBe` newCmdsDoc

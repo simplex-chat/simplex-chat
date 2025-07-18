@@ -513,6 +513,7 @@ test-suite simplex-chat-test
       ValidNames
       ViewTests
       API.Docs.Commands
+      API.Docs.Generate
       API.TypeInfo
       Broadcast.Bot
       Broadcast.Options
