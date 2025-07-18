@@ -812,6 +812,7 @@ struct ChatView: View {
 
     struct ChatBannerView: View {
         @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
+        @UserDefault(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
         @ObservedObject var chat: Chat
 
         var body: some View {
@@ -844,10 +845,11 @@ struct ChatView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(
-                    RoundedRectangle(cornerRadius: 18)
-                        .fill(Color(uiColor: .tertiarySystemGroupedBackground))
-                )
+                .background {
+                    Color.clear
+                        .overlay(ToolbarMaterial.material(toolbarMaterial))
+                        .clipShape(RoundedRectangle(cornerRadius: 18))
+                }
                 .padding(.horizontal)
 
                 Spacer().frame(height: 60)
