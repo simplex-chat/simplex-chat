@@ -1878,14 +1878,15 @@ fun BoxScope.ChatItemsList(
           if (contextStr != null) {
             Row(
               verticalAlignment = Alignment.CenterVertically,
-              horizontalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF, Alignment.CenterHorizontally),
+              horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
               modifier = Modifier
                 .padding(top = DEFAULT_PADDING)
             ) {
               Icon(
                 painterResource(MR.images.ic_info),
                 contentDescription = null,
-                tint = MaterialTheme.colors.secondary
+                tint = MaterialTheme.colors.secondary,
+                modifier = Modifier.size(18.dp)
               )
               Text(
                 contextStr,
