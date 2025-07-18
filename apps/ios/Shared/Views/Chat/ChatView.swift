@@ -874,7 +874,7 @@ struct ChatView: View {
                 switch groupInfo.businessChat?.chatType {
                 case .none: NSLocalizedString("Group", comment: "chat context")
                 case .business: NSLocalizedString("Business", comment: "chat context")
-                case .customer: NSLocalizedString("Client", comment: "chat context")
+                case .customer: NSLocalizedString("Customer", comment: "chat context")
                 }
             default: nil
             }
