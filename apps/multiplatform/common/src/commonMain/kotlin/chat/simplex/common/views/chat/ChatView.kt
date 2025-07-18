@@ -1794,6 +1794,12 @@ fun BoxScope.ChatItemsList(
       }
     }
 
+    val clipboard = LocalClipboardManager.current
+    val copyNameToClipboard = fun (name: String) {
+      clipboard.setText(AnnotatedString(name))
+      showToast(generalGetString(MR.strings.copied))
+    }
+
     Column(
       horizontalAlignment = Alignment.CenterHorizontally,
       modifier = Modifier
@@ -1815,6 +1821,7 @@ fun BoxScope.ChatItemsList(
         ) {
           ChatInfoImage(chatInfo, size = 96.dp)
 
+          val copyDisplayName = { copyNameToClipboard(chatInfo.displayName) }
           Text(
             chatInfo.displayName,
             style = MaterialTheme.typography.h3,
@@ -1822,11 +1829,15 @@ fun BoxScope.ChatItemsList(
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.widthIn(max = 240.dp)
+            modifier = Modifier
+              .widthIn(max = 240.dp)
+              .combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName)
+              .onRightClick(copyDisplayName)
           )
 
           val fullName = chatInfo.fullName.trim()
           if (fullName.isNotEmpty() && fullName != chatInfo.displayName && fullName != chatInfo.displayName.trim()) {
+            val copyFullName = { copyNameToClipboard(fullName) }
             Text(
               fullName,
               style = MaterialTheme.typography.h4,
@@ -1834,12 +1845,16 @@ fun BoxScope.ChatItemsList(
               textAlign = TextAlign.Center,
               maxLines = 3,
               overflow = TextOverflow.Ellipsis,
-              modifier = Modifier.widthIn(max = 260.dp)
+              modifier = Modifier
+                .widthIn(max = 260.dp)
+                .combinedClickable(onClick = copyFullName, onLongClick = copyFullName)
+                .onRightClick(copyFullName)
             )
           }
 
           val descr = chatInfo.shortDescr?.trim()
           if (descr != null && descr != "") {
+            val copyDescr = { copyNameToClipboard(descr) }
             Text(
               descr,
               style = MaterialTheme.typography.body2,
@@ -1847,7 +1862,10 @@ fun BoxScope.ChatItemsList(
               textAlign = TextAlign.Center,
               maxLines = 4,
               overflow = TextOverflow.Ellipsis,
-              lineHeight = 21.sp
+              lineHeight = 21.sp,
+              modifier = Modifier
+                .combinedClickable(onClick = copyDescr, onLongClick = copyDescr)
+                .onRightClick(copyDescr)
             )
           }
 
