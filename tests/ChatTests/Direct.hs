@@ -233,10 +233,7 @@ testAddContact = versionTestMatrix2 runTestAddContact
           bob #$> ("/_read chat @2", id, "ok")
           alice #$> ("/read user", id, "ok")
           alice #$> ("/_read user 1", id, "ok")
-        features =
-          if pqExpected
-            then chatFeatures
-            else (0, e2eeInfoNoPQStr) : tail chatFeatures
+        features = if pqExpected then chatFeatures else chatFeaturesNoPQ
 
 testRetryConnecting :: HasCallStack => TestParams -> IO ()
 testRetryConnecting ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile test ps
@@ -557,9 +554,9 @@ testContactClear =
       alice <##> bob
       threadDelay 500000
       alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY")
-      alice #$> ("/_get chat @2 count=100", chat, [])
+      alice #$> ("/_get chat @2 count=100", chat, [(1,"chat banner")])
       bob #$> ("/clear alice", id, "alice: all messages are removed locally ONLY")
-      bob #$> ("/_get chat @2 count=100", chat, [])
+      bob #$> ("/_get chat @2 count=100", chat, [(1,"chat banner")])
 
 testDeleteContactDeletesProfile :: HasCallStack => TestParams -> IO ()
 testDeleteContactDeletesProfile =
@@ -611,7 +608,7 @@ testDeleteConversationKeepContact =
       alice ##> "/_delete @2 messages"
       alice <## "bob: contact is deleted"
 
-      alice @@@ [("@bob", "")] -- UI would filter
+      alice @@@ [("@bob", "chat banner")] -- UI would filter
       bob @@@ [("@alice", "hey")]
       bob #> "@alice hi"
       alice <# "bob> hi"
@@ -916,13 +913,13 @@ testDirectLiveMessage =
     connectUsers alice bob
     -- non-empty live message is sent instantly
     alice `send` "/live @bob hello"
-    bob <# "alice> [LIVE started] use /show [on/off/7] hello"
+    bob <# "alice> [LIVE started] use /show [on/off/8] hello"
     alice ##> ("/_update item @2 " <> itemId 1 <> " text hello there")
     alice <# "@bob [LIVE] hello there"
     bob <# "alice> [LIVE ended] hello there"
     -- empty live message is also sent instantly
     alice `send` "/live @bob"
-    bob <# "alice> [LIVE started] use /show [on/off/8]"
+    bob <# "alice> [LIVE started] use /show [on/off/9]"
     alice ##> ("/_update item @2 " <> itemId 2 <> " text hello 2")
     alice <# "@bob [LIVE] hello 2"
     bob <# "alice> [LIVE ended] hello 2"
@@ -2002,7 +1999,7 @@ testUsersDifferentCIExpirationTTL ps = do
       -- first user messages
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/_get chat @2 count=100", chat, [])
+      alice #$> ("/_get chat @2 count=100", chat, [(1,"chat banner")])
 
       -- second user messages
       alice ##> "/user alisa"
@@ -2011,7 +2008,7 @@ testUsersDifferentCIExpirationTTL ps = do
 
       threadDelay 2000000
 
-      alice #$> ("/_get chat @6 count=100", chat, [])
+      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
   where
     cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
@@ -2085,7 +2082,7 @@ testUsersRestartCIExpiration ps = do
       -- first user messages
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/_get chat @2 count=100", chat, [])
+      alice #$> ("/_get chat @2 count=100", chat, [(1,"chat banner")])
 
       -- second user messages
       alice ##> "/user alisa"
@@ -2094,7 +2091,7 @@ testUsersRestartCIExpiration ps = do
 
       threadDelay 4000000
 
-      alice #$> ("/_get chat @6 count=100", chat, [])
+      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
   where
     cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
@@ -2143,7 +2140,7 @@ testEnableCIExpirationOnlyForOneUser ps = do
       -- messages are deleted for first user
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/_get chat @2 count=100", chat, [])
+      alice #$> ("/_get chat @2 count=100", chat, [(1,"chat banner")])
 
       -- messages are not deleted for second user
       alice ##> "/user alisa"
@@ -2204,7 +2201,7 @@ testDisableCIExpirationOnlyForOneUser ps = do
       threadDelay 2000000
 
       -- second user messages are deleted
-      alice #$> ("/_get chat @6 count=100", chat, [])
+      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
 
     withTestChatCfg ps cfg "alice" $ \alice -> do
       alice <## "1 contacts connected (use /cs for the list)"
@@ -2218,12 +2215,12 @@ testDisableCIExpirationOnlyForOneUser ps = do
       bob #> "@alisa alisa 4"
       alice <# "bob> alisa 4"
 
-      alice #$> ("/_get chat @6 count=100", chat, [(1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
 
       threadDelay 2000000
 
       -- second user messages are deleted
-      alice #$> ("/_get chat @6 count=100", chat, [])
+      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
   where
     cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
@@ -2263,11 +2260,11 @@ testUsersTimedMessages ps = do
 
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/_get chat @2 count=100", chat, [(1, "alice 1"), (0, "alice 2")])
+      alice #$> ("/_get chat @2 count=100", chat, [(1,"chat banner"), (1, "alice 1"), (0, "alice 2")])
 
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @6 count=100", chat, [(1, "alisa 1"), (0, "alisa 2")])
+      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner"), (1, "alisa 1"), (0, "alisa 2")])
 
       threadDelay 1000000
 
@@ -2278,11 +2275,11 @@ testUsersTimedMessages ps = do
 
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/_get chat @2 count=100", chat, [])
+      alice #$> ("/_get chat @2 count=100", chat, [(1,"chat banner")])
 
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @6 count=100", chat, [(1, "alisa 1"), (0, "alisa 2")])
+      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner"), (1, "alisa 1"), (0, "alisa 2")])
 
       threadDelay 1000000
 
@@ -2293,7 +2290,7 @@ testUsersTimedMessages ps = do
 
       alice ##> "/user"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @6 count=100", chat, [])
+      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
 
       -- first user messages
       alice ##> "/user alice"
@@ -2319,11 +2316,11 @@ testUsersTimedMessages ps = do
 
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/_get chat @2 count=100", chat, [(1, "alice 3"), (0, "alice 4")])
+      alice #$> ("/_get chat @2 count=100", chat, [(1,"chat banner"), (1, "alice 3"), (0, "alice 4")])
 
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @6 count=100", chat, [(1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
 
       -- messages are deleted after restart
       threadDelay 1000000
@@ -2335,11 +2332,11 @@ testUsersTimedMessages ps = do
 
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/_get chat @2 count=100", chat, [])
+      alice #$> ("/_get chat @2 count=100", chat, [(1,"chat banner")])
 
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @6 count=100", chat, [(1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
 
       threadDelay 1000000
 
@@ -2350,7 +2347,7 @@ testUsersTimedMessages ps = do
 
       alice ##> "/user"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @6 count=100", chat, [])
+      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
   where
     configureTimedMessages :: HasCallStack => TestCC -> TestCC -> String -> String -> IO ()
     configureTimedMessages alice bob bobId ttl = do
@@ -2406,20 +2403,21 @@ testUserPrivacy =
       alice <## "alice (Alice)"
       alice <## "alisa (active, hidden, muted, unread: 1)"
       -- hidden message is saved
-      alice ##> "/tail"
+      alice ##> "/tail 11"
       alice <##? chatHistory
-      alice ##> "/_get items count=10"
+      alice ##> "/_get items count=11"
       alice <##? chatHistory
-      alice ##> "/_get items before=13 count=10"
+      alice ##> "/_get items before=15 count=10"
       alice
-        <##? [ ConsoleString ("bob> " <> e2eeInfoPQStr),
+        <##? [ "@bob chat banner",
+               ConsoleString ("bob> " <> e2eeInfoPQStr),
                "bob> Disappearing messages: allowed",
                "bob> Full deletion: off",
                "bob> Message reactions: enabled",
                "bob> Voice messages: enabled",
                "bob> Audio/video calls: enabled"
              ]
-      alice ##> "/_get items around=11 count=2"
+      alice ##> "/_get items around=13 count=2"
       alice
         <##? [ "bob> Full deletion: off",
                "bob> Message reactions: enabled",
@@ -2427,7 +2425,7 @@ testUserPrivacy =
                "bob> Audio/video calls: enabled",
                "@bob hello"
              ]
-      alice ##> "/_get items after=12 count=10"
+      alice ##> "/_get items after=14 count=10"
       alice
         <##? [ "@bob hello",
                "bob> hey",
@@ -2491,7 +2489,8 @@ testUserPrivacy =
       alice <## "messages are shown"
       alice <## "profile is visible"
     chatHistory =
-      [ ConsoleString ("bob> " <> e2eeInfoPQStr),
+      [ "@bob chat banner",
+        ConsoleString ("bob> " <> e2eeInfoPQStr),
         "bob> Disappearing messages: allowed",
         "bob> Full deletion: off",
         "bob> Message reactions: enabled",
@@ -2529,7 +2528,7 @@ testSetChatItemTTL =
       alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, "1"), Nothing), ((0, "2"), Nothing), ((1, ""), Just "test.jpg"), ((1, "3"), Nothing), ((0, "4"), Nothing)])
       checkActionDeletesFile "./tests/tmp/app_files/test.jpg" $
         alice #$> ("/_ttl 1 2", id, "ok")
-      alice #$> ("/_get chat @2 count=100", chat, [(1, "3"), (0, "4")]) -- when expiration is turned on, first cycle is synchronous
+      alice #$> ("/_get chat @2 count=100", chat, [(1, "chat banner"), (1, "3"), (0, "4")]) -- when expiration is turned on, first cycle is synchronous
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "1"), (1, "2"), (0, ""), (0, "3"), (1, "4")])
       alice #$> ("/_ttl 1", id, "old messages are set to be deleted after: 2 second(s)")
       alice #$> ("/ttl week", id, "ok")
@@ -2563,7 +2562,7 @@ testSetDirectChatTTL =
         alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, "1"), Nothing), ((0, "2"), Nothing), ((1, "3"), Nothing), ((0, "4"), Nothing)])
         alice #$> ("/_ttl 1 2", id, "ok")
          -- when expiration is turned on, first cycle is synchronous
-        alice #$> ("/_get chat @2 count=100", chat, [(1, "3"), (0, "4")])
+        alice #$> ("/_get chat @2 count=100", chat, [(1, "chat banner"), (1, "3"), (0, "4")])
 
         -- chat @3 doesn't expire since it was set to not expire
         alice #$> ("/_get chat @3 count=100", chat, chatFeatures <> [(1, "10"), (0, "11")])
@@ -2576,14 +2575,14 @@ testSetDirectChatTTL =
         bob #> "@alice 6"
         alice <# "bob> 6"
         alice #$> ("/_get chat @3 count=100", chat, chatFeatures <> [(1, "10"), (0, "11")])
-        alice #$> ("/_get chat @2 count=100", chat, [(1, "3"), (0, "4"), (1, "5"), (0, "6")])
+        alice #$> ("/_get chat @2 count=100", chat, [(1, "chat banner"), (1, "3"), (0, "4"), (1, "5"), (0, "6")])
 
         -- set ttl for chat @3, only chat @3 is affected since global ttl is disabled
         alice #$> ("/_ttl 1 @3 1", id, "ok")
         alice #$> ("/ttl @cath", id, "old messages are set to be deleted after: 1 second(s)")
         threadDelay 3000000
-        alice #$> ("/_get chat @3 count=100", chat, [])
-        alice #$> ("/_get chat @2 count=100", chat, [(1, "3"), (0, "4"), (1, "5"), (0, "6")])
+        alice #$> ("/_get chat @3 count=100", chat, [(1, "chat banner")])
+        alice #$> ("/_get chat @2 count=100", chat, [(1, "chat banner"), (1, "3"), (0, "4"), (1, "5"), (0, "6")])
         bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "1"), (1, "2"), (0, "3"), (1, "4"), (0, "5"), (1, "6")])
 
         -- set ttl to never expire again
@@ -2593,16 +2592,16 @@ testSetDirectChatTTL =
         cath #> "@alice 13"
         alice <# "cath> 13"
         threadDelay 3000000
-        alice #$> ("/_get chat @3 count=100", chat, [(1, "12"), (0, "13")])
-        alice #$> ("/_get chat @2 count=100", chat, [(1, "3"), (0, "4"), (1, "5"), (0, "6")])
+        alice #$> ("/_get chat @3 count=100", chat, [(1, "chat banner"), (1, "12"), (0, "13")])
+        alice #$> ("/_get chat @2 count=100", chat, [(1, "chat banner"), (1, "3"), (0, "4"), (1, "5"), (0, "6")])
         bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "1"), (1, "2"), (0, "3"), (1, "4"), (0, "5"), (1, "6")])
 
         -- set ttl back to default
         alice #$> ("/ttl @cath default", id, "ok")
         alice #$> ("/ttl @cath", id, "old messages are set to delete according to default user config")
         alice #$> ("/_ttl 1 2", id, "ok")
-        alice #$> ("/_get chat @3 count=100", chat, [])
-        alice #$> ("/_get chat @2 count=100", chat, [])
+        alice #$> ("/_get chat @3 count=100", chat, [(1, "chat banner")])
+        alice #$> ("/_get chat @2 count=100", chat, [(1, "chat banner")])
 
         alice #$> ("/ttl @cath day", id, "ok")
         alice #$> ("/ttl @cath", id, "old messages are set to be deleted after: one day")

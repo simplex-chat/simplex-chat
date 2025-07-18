@@ -48,7 +48,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time (addUTCTime)
-import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds)
+import Data.Time.Calendar (fromGregorian)
+import Data.Time.Clock (UTCTime (..), diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds, secondsToDiffTime)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
@@ -2529,3 +2530,6 @@ timeItToView s action = do
   let diff = diffToMilliseconds $ diffUTCTime t2 t1
   toView' $ CEvtTimedAction s diff
   pure a
+
+epochStart :: UTCTime
+epochStart = UTCTime (fromGregorian 1970 1 1) (secondsToDiffTime 0)

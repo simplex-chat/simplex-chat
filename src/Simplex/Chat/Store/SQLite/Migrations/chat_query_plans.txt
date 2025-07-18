@@ -5358,9 +5358,21 @@ SEARCH chat_items USING COVERING INDEX idx_chat_items_fwd_from_chat_item_id (fwd
 SEARCH files USING COVERING INDEX idx_files_chat_item_id (chat_item_id=?)
 SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
 
-Query: DELETE FROM chat_items WHERE user_id = ? AND contact_id = ? AND created_at <= ?
+Query: DELETE FROM chat_items WHERE user_id = ? AND contact_id = ? AND created_at <= ? AND item_content_tag != 'chatBanner'
 Plan:
-SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=? AND created_at<?)
+SEARCH chat_items USING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=? AND created_at<?)
+SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
+SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
+SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
+SEARCH calls USING COVERING INDEX idx_calls_chat_item_id (chat_item_id=?)
+SEARCH chat_item_messages USING COVERING INDEX sqlite_autoindex_chat_item_messages_2 (chat_item_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_fwd_from_chat_item_id (fwd_from_chat_item_id=?)
+SEARCH files USING COVERING INDEX idx_files_chat_item_id (chat_item_id=?)
+SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
+
+Query: DELETE FROM chat_items WHERE user_id = ? AND contact_id = ? AND item_content_tag != 'chatBanner'
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -5385,6 +5397,18 @@ SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
 Query: DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND group_member_id = ?
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_shared_msg_id (user_id=? AND group_id=? AND group_member_id=?)
+SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
+SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
+SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
+SEARCH calls USING COVERING INDEX idx_calls_chat_item_id (chat_item_id=?)
+SEARCH chat_item_messages USING COVERING INDEX sqlite_autoindex_chat_item_messages_2 (chat_item_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_fwd_from_chat_item_id (fwd_from_chat_item_id=?)
+SEARCH files USING COVERING INDEX idx_files_chat_item_id (chat_item_id=?)
+SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
+
+Query: DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND item_content_tag != 'chatBanner'
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)

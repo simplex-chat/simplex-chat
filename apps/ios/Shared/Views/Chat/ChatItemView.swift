@@ -172,6 +172,7 @@ struct ChatItemContentView<Content: View>: View {
         case let .rcvDirectE2EEInfo(e2eeInfo): CIEventView(eventText: directE2EEInfoText(e2eeInfo))
         case .sndGroupE2EEInfo: CIEventView(eventText: e2eeInfoNoPQText())
         case .rcvGroupE2EEInfo: CIEventView(eventText: e2eeInfoNoPQText())
+        case .chatBanner: EmptyView()
         case let .invalidJSON(json): CIInvalidJSONView(json: json)
         }
     }

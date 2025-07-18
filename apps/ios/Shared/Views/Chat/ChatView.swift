@@ -730,33 +730,39 @@ struct ChatView: View {
                 case let .single(item, _, _): item.item
                 case let .grouped(items, _, _, _, _, _, _, _): items.boxedValue.last!.item
                 }
-                let voiceNoFrame = voiceWithoutFrame(ci)
-                let maxWidth = cInfo.chatType == .group
-                ? voiceNoFrame
-                ? (g.size.width - 28) - 42
-                : (g.size.width - 28) * 0.84 - 42
-                : voiceNoFrame
-                ? (g.size.width - 32)
-                : (g.size.width - 32) * 0.84
-                return ChatItemWithMenu(
-                    im: im,
-                    chat: $chat,
-                    index: index,
-                    isLastItem: index == mergedItems.boxedValue.items.count - 1,
-                    chatItem: ci,
-                    scrollToItem: scrollToItem,
-                    scrollToItemId: $scrollToItemId,
-                    merged: mergedItem,
-                    maxWidth: maxWidth,
-                    composeState: $composeState,
-                    selectedMember: $selectedMember,
-                    showChatInfoSheet: $showChatInfoSheet,
-                    revealedItems: $revealedItems,
-                    selectedChatItems: $selectedChatItems,
-                    forwardedChatItems: $forwardedChatItems,
-                    searchText: $searchText,
-                    closeKeyboardAndRun: closeKeyboardAndRun
-                )
+                return Group {
+                    if case .chatBanner = ci.content {
+                        ChatBannerView(chat: chat)
+                    } else {
+                        let voiceNoFrame = voiceWithoutFrame(ci)
+                        let maxWidth = cInfo.chatType == .group
+                        ? voiceNoFrame
+                        ? (g.size.width - 28) - 42
+                        : (g.size.width - 28) * 0.84 - 42
+                        : voiceNoFrame
+                        ? (g.size.width - 32)
+                        : (g.size.width - 32) * 0.84
+                        ChatItemWithMenu(
+                            im: im,
+                            chat: $chat,
+                            index: index,
+                            isLastItem: index == mergedItems.boxedValue.items.count - 1,
+                            chatItem: ci,
+                            scrollToItem: scrollToItem,
+                            scrollToItemId: $scrollToItemId,
+                            merged: mergedItem,
+                            maxWidth: maxWidth,
+                            composeState: $composeState,
+                            selectedMember: $selectedMember,
+                            showChatInfoSheet: $showChatInfoSheet,
+                            revealedItems: $revealedItems,
+                            selectedChatItems: $selectedChatItems,
+                            forwardedChatItems: $forwardedChatItems,
+                            searchText: $searchText,
+                            closeKeyboardAndRun: closeKeyboardAndRun
+                        )
+                    }
+                }
                 // crashes on Cell size calculation without this line
                 .environmentObject(ChatModel.shared)
                 .environmentObject(theme) // crashes without this line when scrolling to the first unread in EndlessScrollVIew
@@ -800,6 +806,99 @@ struct ChatView: View {
                 if showSearch {
                     searchTextChanged(s)
                 }
+            }
+        }
+    }
+
+    struct ChatBannerView: View {
+        @EnvironmentObject var theme: AppTheme
+        @UserDefault(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
+        @ObservedObject var chat: Chat
+
+        var body: some View {
+            VStack {
+                Spacer().frame(height: 60)
+
+                VStack(spacing: 8) {
+                    ChatInfoImage(chat: chat, size: 80)
+
+                    Text(chat.chatInfo.displayName)
+                        .font(.title3)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: 240)
+
+                    let fullName = chat.chatInfo.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if fullName != "" && fullName != chat.chatInfo.displayName && fullName != chat.chatInfo.displayName.trimmingCharacters(in: .whitespacesAndNewlines) {
+                        Text(chat.chatInfo.fullName)
+                            .font(.headline)
+                            .fontWeight(.regular)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: 260)
+                    }
+
+                    if let shortDescr = chat.chatInfo.shortDescr {
+                        Text(shortDescr)
+                            .font(.subheadline)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(4)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.horizontal)
+                    }
+
+                    if let chatContext = chatContext() {
+                        Spacer().frame(height: 0)
+
+                        Label(chatContext, systemImage: "info.circle")
+                            .font(.subheadline)
+                            .foregroundColor(theme.colors.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background {
+                    Color.clear
+                        .overlay(ToolbarMaterial.material(toolbarMaterial))
+                        .clipShape(RoundedRectangle(cornerRadius: 18))
+                }
+                .padding(.horizontal)
+
+                Spacer().frame(height: 60)
+            }
+        }
+
+        func chatContext() -> String? {
+            switch chat.chatInfo {
+            case let .direct(contact):
+                if contact.nextConnectPrepared, let linkType = contact.preparedContact?.uiConnLinkType {
+                    switch linkType {
+                    case .inv:
+                        NSLocalizedString("1-time invitation", comment: "chat context")
+                    case .con:
+                        NSLocalizedString("Contact address", comment: "chat context")
+                    }
+                } else if contact.nextAcceptContactRequest {
+                    NSLocalizedString("Contact request", comment: "chat context")
+                } else {
+                    NSLocalizedString("Contact", comment: "chat context")
+                }
+            case let .group(groupInfo, _):
+                switch groupInfo.businessChat?.chatType {
+                case .none:
+                    if groupInfo.membership.memberStatus == .memCreator {
+                        NSLocalizedString("Your group", comment: "chat context")
+                    } else {
+                        NSLocalizedString("Group", comment: "chat context")
+                    }
+                case .business:
+                    NSLocalizedString("Business", comment: "chat context")
+                case .customer:
+                    NSLocalizedString("Customer", comment: "chat context")
+                }
+            default: nil
             }
         }
     }

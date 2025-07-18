@@ -2929,6 +2929,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         case .rcvDirectE2EEInfo: return false
         case .sndGroupE2EEInfo: return false
         case .rcvGroupE2EEInfo: return false
+        case .chatBanner: return false
         case .invalidJSON: return false
         }
     }
@@ -2996,6 +2997,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         case .rcvDirectE2EEInfo: return false
         case .sndGroupE2EEInfo: return false
         case .rcvGroupE2EEInfo: return false
+        case .chatBanner: return false
         default: return true
         }
     }
@@ -3656,6 +3658,7 @@ public enum CIContent: Decodable, ItemContent, Hashable {
     case rcvDirectE2EEInfo(e2eeInfo: E2EEInfo)
     case sndGroupE2EEInfo(e2eeInfo: E2EEInfo)
     case rcvGroupE2EEInfo(e2eeInfo: E2EEInfo)
+    case chatBanner
     case invalidJSON(json: Data?)
 
     public var text: String {
@@ -3691,6 +3694,7 @@ public enum CIContent: Decodable, ItemContent, Hashable {
             case let .rcvDirectE2EEInfo(e2eeInfo): return directE2EEInfoStr(e2eeInfo)
             case .sndGroupE2EEInfo: return e2eeInfoNoPQStr
             case .rcvGroupE2EEInfo: return e2eeInfoNoPQStr
+            case .chatBanner: return ""
             case .invalidJSON: return NSLocalizedString("invalid data", comment: "invalid chat item")
             }
         }

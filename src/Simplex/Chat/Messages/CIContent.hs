@@ -165,6 +165,7 @@ data CIContent (d :: MsgDirection) where
   CIRcvDirectE2EEInfo :: E2EInfo -> CIContent 'MDRcv
   CISndGroupE2EEInfo :: E2EInfo -> CIContent 'MDSnd -- when new group is created
   CIRcvGroupE2EEInfo :: E2EInfo -> CIContent 'MDRcv -- when enabled with some member
+  CIChatBanner :: CIContent 'MDSnd
   CIInvalidJSON :: Text -> CIContent d -- this is also used for logical database errors, e.g. SEBadChatItem
 
 -- ^ This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
@@ -292,6 +293,7 @@ ciContentToText = \case
   CIRcvDirectE2EEInfo e2eeInfo -> directE2EInfoToText e2eeInfo
   CISndGroupE2EEInfo e2eeInfo -> groupE2EInfoToText e2eeInfo
   CIRcvGroupE2EEInfo e2eeInfo -> groupE2EInfoToText e2eeInfo
+  CIChatBanner -> "chat banner"
   CIInvalidJSON _ -> "invalid content JSON"
 
 directE2EInfoToText :: E2EInfo -> Text
@@ -471,6 +473,7 @@ data JSONCIContent
   | JCIRcvDirectE2EEInfo {e2eeInfo :: E2EInfo}
   | JCISndGroupE2EEInfo {e2eeInfo :: E2EInfo}
   | JCIRcvGroupE2EEInfo {e2eeInfo :: E2EInfo}
+  | JCIChatBanner
   | JCIInvalidJSON {direction :: MsgDirection, json :: Text}
 
 jsonCIContent :: forall d. MsgDirectionI d => CIContent d -> JSONCIContent
@@ -505,6 +508,7 @@ jsonCIContent = \case
   CIRcvDirectE2EEInfo e2eeInfo -> JCIRcvDirectE2EEInfo e2eeInfo
   CISndGroupE2EEInfo e2eeInfo -> JCISndGroupE2EEInfo e2eeInfo
   CIRcvGroupE2EEInfo e2eeInfo -> JCIRcvGroupE2EEInfo e2eeInfo
+  CIChatBanner -> JCIChatBanner
   CIInvalidJSON json -> JCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentJSON :: JSONCIContent -> ACIContent
@@ -539,6 +543,7 @@ aciContentJSON = \case
   JCIRcvDirectE2EEInfo {e2eeInfo} -> ACIContent SMDRcv $ CIRcvDirectE2EEInfo e2eeInfo
   JCISndGroupE2EEInfo {e2eeInfo} -> ACIContent SMDSnd $ CISndGroupE2EEInfo e2eeInfo
   JCIRcvGroupE2EEInfo {e2eeInfo} -> ACIContent SMDRcv $ CIRcvGroupE2EEInfo e2eeInfo
+  JCIChatBanner -> ACIContent SMDSnd CIChatBanner
   JCIInvalidJSON dir json -> case fromMsgDirection dir of
     AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
@@ -574,6 +579,7 @@ data DBJSONCIContent
   | DBJCIRcvDirectE2EEInfo {e2eeInfo :: E2EInfo}
   | DBJCISndGroupE2EEInfo {e2eeInfo :: E2EInfo}
   | DBJCIRcvGroupE2EEInfo {e2eeInfo :: E2EInfo}
+  | DBJCIChatBanner
   | DBJCIInvalidJSON {direction :: MsgDirection, json :: Text}
 
 dbJsonCIContent :: forall d. MsgDirectionI d => CIContent d -> DBJSONCIContent
@@ -608,6 +614,7 @@ dbJsonCIContent = \case
   CIRcvDirectE2EEInfo e2eeInfo -> DBJCIRcvDirectE2EEInfo e2eeInfo
   CISndGroupE2EEInfo e2eeInfo -> DBJCISndGroupE2EEInfo e2eeInfo
   CIRcvGroupE2EEInfo e2eeInfo -> DBJCIRcvGroupE2EEInfo e2eeInfo
+  CIChatBanner -> DBJCIChatBanner
   CIInvalidJSON json -> DBJCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentDBJSON :: DBJSONCIContent -> ACIContent
@@ -642,6 +649,7 @@ aciContentDBJSON = \case
   DBJCIRcvDirectE2EEInfo e2eeInfo -> ACIContent SMDRcv $ CIRcvDirectE2EEInfo e2eeInfo
   DBJCISndGroupE2EEInfo e2eeInfo -> ACIContent SMDSnd $ CISndGroupE2EEInfo e2eeInfo
   DBJCIRcvGroupE2EEInfo e2eeInfo -> ACIContent SMDRcv $ CIRcvGroupE2EEInfo e2eeInfo
+  DBJCIChatBanner -> ACIContent SMDSnd CIChatBanner
   DBJCIInvalidJSON dir json -> case fromMsgDirection dir of
     AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
@@ -749,4 +757,5 @@ toCIContentTag ciContent = case ciContent of
   CIRcvDirectE2EEInfo _ -> "rcvDirectE2EEInfo"
   CISndGroupE2EEInfo _ -> "sndGroupE2EEInfo"
   CIRcvGroupE2EEInfo _ -> "rcvGroupE2EEInfo"
+  CIChatBanner -> "chatBanner"
   CIInvalidJSON _ -> "invalidJSON"

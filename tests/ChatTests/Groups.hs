@@ -345,11 +345,11 @@ testGroupShared alice bob cath checkMessages = do
   -- test clearing chat
   threadDelay 1000000
   alice #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
-  alice #$> ("/_get chat #1 count=100", chat, [])
+  alice #$> ("/_get chat #1 count=100", chat, [(1,"chat banner")])
   bob #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
-  bob #$> ("/_get chat #1 count=100", chat, [])
+  bob #$> ("/_get chat #1 count=100", chat, [(1,"chat banner")])
   cath #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
-  cath #$> ("/_get chat #1 count=100", chat, [])
+  cath #$> ("/_get chat #1 count=100", chat, [(1,"chat banner")])
   where
     getReadChats :: HasCallStack => String -> String -> IO ()
     getReadChats msgItem1 msgItem2 = do
@@ -588,7 +588,7 @@ testGroup2 =
         ]
       dan <##> alice
       -- show last messages
-      alice ##> "/t #club 19"
+      alice ##> "/t #club 20"
       alice -- these strings are expected in any order because of sorting by time and rounding of time for sent
         <##?
           ( map (ConsoleString . ("#club " <> )) groupFeatureStrs
