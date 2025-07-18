@@ -33,8 +33,8 @@ generateCommandsDoc =
       T.hPutStrLn h $ "\n## " <> categoryName <> "\n\n" <> categoryDescr
       forM_ commands $ \CCDoc {consName, commandDescr, responses} -> do
         T.hPutStrLn h $ "\n\n### " <> T.pack consName <> "\n\n" <> commandDescr
-        case find (\(name', _) -> name' == consName) chatCommandsTypeInfo of
-          Just (_, params)
+        case find ((consName ==) . consName') chatCommandsTypeInfo of
+          Just RecordTypeInfo {fieldInfos = params}
             | length params == 0 -> pure ()
             | otherwise -> do
                 hPutStrLn h "\n**Parameters**:"
@@ -44,14 +44,14 @@ generateCommandsDoc =
           then hPutStrLn h "\n**Responses**:"
           else hPutStr h "\n**Response**: "
         forM_ responses $ \name ->
-          case (find (\(name', _) -> name' == name) chatResponsesTypeInfo, find (\CRDoc {consName = name'} -> name' == name) chatResponsesDocs) of
-            (Just (_, fields), Just CRDoc {responseDescr}) -> do
+          case (find ((name ==) . consName') chatResponsesTypeInfo, find ((name ==) . consName') chatResponsesDocs) of
+            (Just RecordTypeInfo {fieldInfos}, Just CRDoc {responseDescr}) -> do
               let respType = dropPrefix "CR" name
                   respDescr = if T.null responseDescr then camelToSpace respType else T.unpack responseDescr
               when (length responses > 1) $ hPutStrLn h ""
               hPutStrLn h $ respDescr <> "."
               hPutStrLn h $ "- type: \"" <> respType <> "\""
-              printFields h fields
+              printFields h fieldInfos
             _ -> error "Missing type info or response description"
   where
     printFields h =

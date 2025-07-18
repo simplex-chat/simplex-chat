@@ -509,6 +509,9 @@ data GroupSummary = GroupSummary
   }
   deriving (Show)
 
+data GroupInfoSummary = GIS {groupInfo :: GroupInfo, groupSummary :: GroupSummary}
+  deriving (Show)
+
 data ContactOrGroup = CGContact Contact | CGGroup GroupInfo [GroupMember]
 
 data PreparedChatEntity = PCEContact Contact | PCEGroup {groupInfo :: GroupInfo, hostMember :: GroupMember}
@@ -2004,6 +2007,8 @@ $(JQ.deriveJSON defaultJSON ''GroupInfo)
 $(JQ.deriveJSON defaultJSON ''Group)
 
 $(JQ.deriveJSON defaultJSON ''GroupSummary)
+
+$(JQ.deriveJSON defaultJSON ''GroupInfoSummary)
 
 instance FromField MsgFilter where fromField = fromIntField_ msgFilterIntP
 

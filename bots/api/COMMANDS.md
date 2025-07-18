@@ -938,4 +938,4 @@ Get groups.
 **Response**: Group.
 - type: "groupsList"
 - user: User
-- groups: [(GroupInfo,GroupSummary)]
+- groups: [GroupInfoSummary]

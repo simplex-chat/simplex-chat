@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeOperators #-}
@@ -15,7 +16,12 @@ module API.TypeInfo where
 import Data.Kind (Type)
 import Data.Typeable
 import GHC.Generics
-import Simplex.Chat.Controller
+
+data RecordTypeInfo = RecordTypeInfo {consName :: ConsName, fieldInfos :: [FieldInfo]}
+
+class ConstructorName t where consName' :: t -> ConsName
+
+instance ConstructorName RecordTypeInfo where consName' RecordTypeInfo {consName} = consName
 
 type ConsName = String
 
@@ -33,7 +39,7 @@ data TypeInfo
   deriving (Show)
 
 class GTypeInfo (f :: Type -> Type) where
-  gTypeInfo :: [(ConsName, [FieldInfo])]
+  gTypeInfo :: [RecordTypeInfo]
 
 instance GTypeInfo U1 where
   gTypeInfo = []
@@ -45,7 +51,7 @@ instance (GTypeInfo f) => GTypeInfo (D1 d f) where
   gTypeInfo = gTypeInfo @f
 
 instance (Constructor c, GFieldsInfo f) => GTypeInfo (C1 c f) where
-  gTypeInfo = [(conName (undefined :: M1 C c f p), gfieldsInfo @f)]
+  gTypeInfo = [RecordTypeInfo {consName = conName (undefined :: M1 C c f p), fieldInfos = gfieldsInfo @f}]
 
 instance (GTypeInfo l, GTypeInfo r) => GTypeInfo (l :+: r) where
   gTypeInfo = gTypeInfo @l ++ gTypeInfo @r
@@ -91,18 +97,3 @@ toTypeInfo tr =
       "Text" -> "String"
       "UserPwd" -> "String"
       _ -> show tr'
-
-deriving instance Generic ChatCommand
-
-deriving instance Generic ChatResponse
-
-deriving instance Generic ChatEvent
-
-chatCommandsTypeInfo :: [(ConsName, [FieldInfo])]
-chatCommandsTypeInfo = gTypeInfo @(Rep ChatCommand)
-
-chatResponsesTypeInfo :: [(ConsName, [FieldInfo])]
-chatResponsesTypeInfo = gTypeInfo @(Rep ChatResponse)
-
-chatEventConsInfo :: [(ConsName, [FieldInfo])]
-chatEventConsInfo = gTypeInfo @(Rep ChatEvent)

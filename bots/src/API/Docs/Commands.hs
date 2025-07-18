@@ -1,7 +1,11 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module API.Docs.Commands where
 
@@ -9,6 +13,8 @@ import API.TypeInfo
 import Data.ByteString.Char8 (ByteString)
 import Data.String
 import Data.Text (Text)
+import GHC.Generics
+import Simplex.Chat.Controller
 
 chatCommandsDocs :: [CCCategory]
 chatCommandsDocs = map toCategory chatCommandsDocsData
@@ -17,6 +23,11 @@ chatCommandsDocs = map toCategory chatCommandsDocsData
       CCCategory {categoryName, categoryDescr, commands = map toCmd commandsData}
     toCmd (consName, commandDescr, syntax, responses, errors, network) =
       CCDoc {consName, commandDescr, syntax, responses, errors, network}
+
+deriving instance Generic ChatCommand
+
+chatCommandsTypeInfo :: [RecordTypeInfo]
+chatCommandsTypeInfo = gTypeInfo @(Rep ChatCommand)
 
 data CCCategory = CCCategory
   { categoryName :: Text,
@@ -32,6 +43,8 @@ data CCDoc = CCDoc
     errors :: [TypeDoc],
     network :: Maybe UsesNetwork
   }
+
+instance ConstructorName CCDoc where consName' CCDoc {consName} = consName
 
 data TypeDoc = TD
   { consName :: ConsName,

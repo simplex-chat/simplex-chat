@@ -248,10 +248,10 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     groupAlreadyListed GroupInfo {groupProfile = p} =
       "The group " <> groupNameDescr p <> " is already listed in the directory, please choose another name."
 
-    getGroups :: Text -> IO (Maybe [(GroupInfo, GroupSummary)])
+    getGroups :: Text -> IO (Maybe [GroupInfoSummary])
     getGroups = getGroups_ . Just
 
-    getGroups_ :: Maybe Text -> IO (Maybe [(GroupInfo, GroupSummary)])
+    getGroups_ :: Maybe Text -> IO (Maybe [GroupInfoSummary])
     getGroups_ search_ =
       sendChatCmd cc (APIListGroups userId Nothing $ T.unpack <$> search_) >>= \case
         Right CRGroupsList {groups} -> pure $ Just groups
@@ -261,7 +261,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     getDuplicateGroup GroupInfo {groupId, groupProfile = GroupProfile {displayName, fullName}} =
       getGroups fullName >>= mapM duplicateGroup
       where
-        sameGroupNotRemoved (g@GroupInfo {groupId = gId, groupProfile = GroupProfile {displayName = n, fullName = fn}}, _) =
+        sameGroupNotRemoved (GIS g@GroupInfo {groupId = gId, groupProfile = GroupProfile {displayName = n, fullName = fn}} _) =
           gId /= groupId && n == displayName && fn == fullName && not (memberRemoved $ membership g)
         duplicateGroup [] = pure DGUnique
         duplicateGroup groups = do
@@ -270,13 +270,13 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             then pure DGUnique
             else do
               (lgs, rgs) <- atomically $ (,) <$> readTVar (listedGroups st) <*> readTVar (reservedGroups st)
-              let reserved = any (\(GroupInfo {groupId = gId}, _) -> gId `S.member` lgs || gId `S.member` rgs) gs
+              let reserved = any (\(GIS GroupInfo {groupId = gId} _) -> gId `S.member` lgs || gId `S.member` rgs) gs
               if reserved
                 then pure DGReserved
                 else do
                   removed <- foldM (\r -> fmap (r &&) . isGroupRemoved) True gs
                   pure $ if removed then DGUnique else DGRegistered
-        isGroupRemoved (GroupInfo {groupId = gId}, _) =
+        isGroupRemoved (GIS GroupInfo {groupId = gId} _) =
           getGroupReg st gId >>= \case
             Just GroupReg {groupRegStatus} -> groupRemoved <$> readTVarIO groupRegStatus
             Nothing -> pure True
@@ -819,7 +819,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           where
             msgs = replyMsg :| map foundGroup gs <> [moreMsg | moreGroups > 0]
             replyMsg = (Just ciId, MCText reply)
-            foundGroup (GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_}}, GroupSummary {currentMembers}) =
+            foundGroup (GIS GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_}} GroupSummary {currentMembers}) =
               let membersStr = "_" <> tshow currentMembers <> " members_"
                   showId = if isAdmin then tshow groupId <> ". " else ""
                   text = showId <> groupInfoText p <> "\n" <> membersStr
