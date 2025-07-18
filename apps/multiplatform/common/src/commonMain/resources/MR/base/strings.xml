@@ -485,6 +485,16 @@
   <string name="group_new_support_chat_one">1 chat with a member</string>
   <string name="group_new_support_chats_short">%d chat(s)</string>
 
+  <!-- ChatBannerView -->
+  <string name="chat_banner_1_time_invitation">1-time invitation</string>
+  <string name="chat_banner_contact_address">Contact address</string>
+  <string name="chat_banner_contact_request">Contact request</string>
+  <string name="chat_banner_contact">Contact</string>
+  <string name="chat_banner_your_group">Your group</string>
+  <string name="chat_banner_group">Group</string>
+  <string name="chat_banner_business">Business</string>
+  <string name="chat_banner_customer">Customer</string>
+
   <!-- ShareListView.kt -->
   <string name="share_message">Share message…</string>
   <string name="share_image">Share media…</string>

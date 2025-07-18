@@ -1754,6 +1754,130 @@ fun BoxScope.ChatItemsList(
       ChatItemView(cItem, range, itemSeparation, previousItemSeparationLargeGap)
     }
   }
+
+  @Composable
+  fun ChatBannerView() {
+    fun chatContext(): String? {
+      return when (chatInfo) {
+        is ChatInfo.Direct -> {
+          val contact = chatInfo.contact
+          val preparedLinkType = contact.preparedContact?.uiConnLinkType
+          if (contact.nextConnectPrepared && preparedLinkType != null) {
+            when (preparedLinkType) {
+              ConnectionMode.Inv -> generalGetString(MR.strings.chat_banner_1_time_invitation)
+              ConnectionMode.Con -> generalGetString(MR.strings.chat_banner_contact_address)
+            }
+          } else if (contact.nextAcceptContactRequest) {
+            generalGetString(MR.strings.chat_banner_contact_request)
+          } else {
+            generalGetString(MR.strings.chat_banner_contact)
+          }
+        }
+
+        is ChatInfo.Group -> {
+          val groupInfo = chatInfo.groupInfo
+          when (groupInfo.businessChat?.chatType) {
+            null -> {
+              if (groupInfo.membership.memberStatus == GroupMemberStatus.MemCreator) {
+                generalGetString(MR.strings.chat_banner_your_group)
+              } else {
+                generalGetString(MR.strings.chat_banner_group)
+              }
+            }
+
+            BusinessChatType.Business -> generalGetString(MR.strings.chat_banner_business)
+            BusinessChatType.Customer -> generalGetString(MR.strings.chat_banner_customer)
+          }
+        }
+
+        else -> null
+      }
+    }
+
+    Column(
+      horizontalAlignment = Alignment.CenterHorizontally,
+      modifier = Modifier
+        .fillMaxSize()
+        .padding(horizontal = DEFAULT_PADDING)
+    ) {
+      Spacer(modifier = Modifier.height(60.dp))
+
+      Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colors.background
+      ) {
+        val bannerModifier = if (appPlatform.isDesktop) Modifier.width(400.dp) else Modifier.fillMaxWidth()
+        Column(
+          verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF),
+          horizontalAlignment = Alignment.CenterHorizontally,
+          modifier = bannerModifier
+            .padding(DEFAULT_PADDING)
+        ) {
+          ChatInfoImage(chatInfo, size = 96.dp)
+
+          Text(
+            chatInfo.displayName,
+            style = MaterialTheme.typography.h3,
+            color = MaterialTheme.colors.onBackground,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.widthIn(max = 240.dp)
+          )
+
+          val fullName = chatInfo.fullName.trim()
+          if (fullName.isNotEmpty() && fullName != chatInfo.displayName && fullName != chatInfo.displayName.trim()) {
+            Text(
+              fullName,
+              style = MaterialTheme.typography.h4,
+              color = MaterialTheme.colors.onBackground,
+              textAlign = TextAlign.Center,
+              maxLines = 3,
+              overflow = TextOverflow.Ellipsis,
+              modifier = Modifier.widthIn(max = 260.dp)
+            )
+          }
+
+          val descr = chatInfo.shortDescr?.trim()
+          if (descr != null && descr != "") {
+            Text(
+              descr,
+              style = MaterialTheme.typography.body2,
+              color = MaterialTheme.colors.onBackground,
+              textAlign = TextAlign.Center,
+              maxLines = 4,
+              overflow = TextOverflow.Ellipsis,
+              lineHeight = 21.sp
+            )
+          }
+
+          val contextStr = chatContext()
+          if (contextStr != null) {
+            Spacer(modifier = Modifier.height(0.dp))
+
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF, Alignment.CenterHorizontally),
+            ) {
+              Icon(
+                painterResource(MR.images.ic_info),
+                contentDescription = null,
+                tint = MaterialTheme.colors.secondary
+              )
+              Text(
+                contextStr,
+                style = MaterialTheme.typography.body2,
+                color = MaterialTheme.colors.secondary
+              )
+            }
+          }
+        }
+      }
+
+      Spacer(modifier = Modifier.height(60.dp))
+    }
+  }
+
   LazyColumnWithScrollBar(
     Modifier.align(Alignment.BottomCenter),
     state = listState.value,
@@ -1768,42 +1892,47 @@ fun BoxScope.ChatItemsList(
   ) {
     val mergedItemsValue = mergedItems.value
     itemsIndexed(mergedItemsValue.items, key = { _, merged -> keyForItem(merged.newest().item) }) { index, merged ->
-      val isLastItem = index == mergedItemsValue.items.lastIndex
-      val last = if (isLastItem) reversedChatItems.value.lastOrNull() else null
       val listItem = merged.newest()
       val item = listItem.item
-      val range = if (merged is MergedItem.Grouped) {
-        merged.rangeInReversed.value
-      } else {
-        null
-      }
-      val showAvatar = shouldShowAvatar(item, merged.oldest().nextItem)
-      val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
-      val itemSeparation: ItemSeparation
-      val prevItemSeparationLargeGap: Boolean
-      if (merged is MergedItem.Single || isRevealed.value) {
-        val prev = listItem.prevItem
-        itemSeparation = getItemSeparation(item, prev)
-        val nextForGap = if ((item.mergeCategory != null && item.mergeCategory == prev?.mergeCategory) || isLastItem) null else listItem.nextItem
-        prevItemSeparationLargeGap = if (nextForGap == null) false else getItemSeparationLargeGap(nextForGap, item)
-      } else {
-        itemSeparation = getItemSeparation(item, null)
-        prevItemSeparationLargeGap = false
-      }
-      ChatViewListItem(index == 0, rememberUpdatedState(range), showAvatar, item, itemSeparation, prevItemSeparationLargeGap, isRevealed) {
-        if (merged is MergedItem.Grouped) merged.reveal(it, revealedItems)
-      }
 
-      if (last != null) {
-        // no using separate item(){} block in order to have total number of items in LazyColumn match number of merged items
-        DateSeparator(last.meta.itemTs)
-      }
-      if (item.isRcvNew) {
-        val itemIds = when (merged) {
-          is MergedItem.Single -> listOf(merged.item.item.id)
-          is MergedItem.Grouped -> merged.items.map { it.item.id }
+      if (item.content is CIContent.ChatBanner) {
+        ChatBannerView()
+      } else {
+        val isLastItem = index == mergedItemsValue.items.lastIndex
+        val last = if (isLastItem) reversedChatItems.value.lastOrNull() else null
+        val range = if (merged is MergedItem.Grouped) {
+          merged.rangeInReversed.value
+        } else {
+          null
         }
-        MarkItemsReadAfterDelay(keyForItem(item), itemIds, finishedInitialComposition, chatInfo.id, listState, markItemsRead)
+        val showAvatar = shouldShowAvatar(item, merged.oldest().nextItem)
+        val isRevealed = remember { derivedStateOf { revealedItems.value.contains(item.id) } }
+        val itemSeparation: ItemSeparation
+        val prevItemSeparationLargeGap: Boolean
+        if (merged is MergedItem.Single || isRevealed.value) {
+          val prev = listItem.prevItem
+          itemSeparation = getItemSeparation(item, prev)
+          val nextForGap = if ((item.mergeCategory != null && item.mergeCategory == prev?.mergeCategory) || isLastItem) null else listItem.nextItem
+          prevItemSeparationLargeGap = if (nextForGap == null) false else getItemSeparationLargeGap(nextForGap, item)
+        } else {
+          itemSeparation = getItemSeparation(item, null)
+          prevItemSeparationLargeGap = false
+        }
+        ChatViewListItem(index == 0, rememberUpdatedState(range), showAvatar, item, itemSeparation, prevItemSeparationLargeGap, isRevealed) {
+          if (merged is MergedItem.Grouped) merged.reveal(it, revealedItems)
+        }
+
+        if (last != null) {
+          // no using separate item(){} block in order to have total number of items in LazyColumn match number of merged items
+          DateSeparator(last.meta.itemTs)
+        }
+        if (item.isRcvNew) {
+          val itemIds = when (merged) {
+            is MergedItem.Single -> listOf(merged.item.item.id)
+            is MergedItem.Grouped -> merged.items.map { it.item.id }
+          }
+          MarkItemsReadAfterDelay(keyForItem(item), itemIds, finishedInitialComposition, chatInfo.id, listState, markItemsRead)
+        }
       }
     }
   }
