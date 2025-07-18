@@ -812,7 +812,6 @@ struct ChatView: View {
 
     struct ChatBannerView: View {
         @EnvironmentObject var theme: AppTheme
-        @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
         @UserDefault(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
         @ObservedObject var chat: Chat
 
@@ -821,13 +820,15 @@ struct ChatView: View {
                 Spacer().frame(height: 60)
 
                 VStack(spacing: 8) {
-                    ChatInfoImage(chat: chat, size: dynamicSize(userFont).profileImageSize)
+                    ChatInfoImage(chat: chat, size: 80)
+
                     Text(chat.chatInfo.displayName)
                         .font(.title3)
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: 240)
+
                     let fullName = chat.chatInfo.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
                     if fullName != "" && fullName != chat.chatInfo.displayName && fullName != chat.chatInfo.displayName.trimmingCharacters(in: .whitespacesAndNewlines) {
                         Text(chat.chatInfo.fullName)
@@ -838,6 +839,7 @@ struct ChatView: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: 260)
                     }
+
                     if let shortDescr = chat.chatInfo.shortDescr {
                         Text(shortDescr)
                             .font(.subheadline)
