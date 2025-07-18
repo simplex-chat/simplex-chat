@@ -1818,7 +1818,7 @@ fun BoxScope.ChatItemsList(
           modifier = bannerModifier
             .padding(horizontal = DEFAULT_PADDING)
             .padding(bottom = DEFAULT_PADDING)
-            // ChatInfoImage has its own additional padding somewhere,
+            // ChatInfoImage has its own padding somewhere,
             // also not doing verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF) because of it
             .padding(top = DEFAULT_PADDING_HALF)
         ) {
