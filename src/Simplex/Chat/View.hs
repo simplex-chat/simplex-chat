@@ -135,9 +135,9 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
       "server queue info: " <> viewJSON qInfo
     ]
   CRContactSwitchStarted {} -> ["switch started"]
-  CEvtGroupMemberSwitchStarted {} -> ["switch started"]
+  CRGroupMemberSwitchStarted {} -> ["switch started"]
   CRContactSwitchAborted {} -> ["switch aborted"]
-  CEvtGroupMemberSwitchAborted {} -> ["switch aborted"]
+  CRGroupMemberSwitchAborted {} -> ["switch aborted"]
   CRContactRatchetSyncStarted {} -> ["connection synchronization started"]
   CRGroupMemberRatchetSyncStarted {} -> ["connection synchronization started"]
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]

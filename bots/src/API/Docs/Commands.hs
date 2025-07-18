@@ -28,9 +28,9 @@ data CCDoc = CCDoc
   { consName :: ConsName,
     commandDescr :: Text,
     syntax :: ByteString,
-    responses :: [TypeDoc],
+    responses :: [String],
     errors :: [TypeDoc],
-    network :: UsesNetwork
+    network :: Maybe UsesNetwork
   }
 
 data TypeDoc = TD
@@ -40,103 +40,103 @@ data TypeDoc = TD
 
 type TypeDocTuple = (ConsName, Text)
 
-type UsesNetwork = Bool
+data UsesNetwork = UNBackground | UNInteractive
 
 instance IsString TypeDoc where fromString s = TD s ""
 
 
 -- category name, category description, commands
 -- inner: constructor, syntax, description, responses, errors (ChatErrorType constructors)
-chatCommandsDocsData :: [(Text, Text, [(ConsName, Text, ByteString, [TypeDoc], [TypeDoc], UsesNetwork)])]
+chatCommandsDocsData :: [(Text, Text, [(ConsName, Text, ByteString, [String], [TypeDoc], Maybe UsesNetwork)])]
 chatCommandsDocsData =
   [ ( "Address commands",
       "Bots can use these commands to automatically check and create address when initialized",
-      [ ("APICreateMyAddress", "Create bot address.", "", [], [], False),
-        ("APIDeleteMyAddress", "Delete bot address.", "", [], [], False),
-        ("APIShowMyAddress", "Get bot address and settings.", "", [], [], False),
-        ("APISetProfileAddress", "Add address to bot profile.", "", [], [], False),
-        ("APISetAddressSettings", "Set bot address settings.", "", [], [], False)
+      [ ("APICreateMyAddress", "Create bot address.", "", ["CRUserContactLinkCreated"], [], Just UNInteractive),
+        ("APIDeleteMyAddress", "Delete bot address.", "", ["CRUserContactLinkDeleted"], [], Just UNBackground),
+        ("APIShowMyAddress", "Get bot address and settings.", "", ["CRUserContactLink"], [], Nothing),
+        ("APISetProfileAddress", "Add address to bot profile.", "", ["CRUserProfileUpdated"], [], Just UNInteractive),
+        ("APISetAddressSettings", "Set bot address settings.", "", ["CRUserContactLinkUpdated"], [], Just UNInteractive)
       ]
     ),
     ( "Message commands",
       "Commands to send, update, delete, moderate messages and set message reactions",
-      [ ("APISendMessages", "Send messages.", "", [], [], False),
-        ("APIReportMessage", "Report message.", "", [], [], False),
-        ("APIUpdateChatItem", "Update message.", "", [], [], False),
-        ("APIDeleteChatItem", "Delete message.", "", [], [], False),
-        ("APIDeleteMemberChatItem", "Moderate message.", "", [], [], False),
-        ("APIChatItemReaction", "Add/remove message reaction.", "", [], [], False),
-        ("APIGetReactionMembers", "Get reaction members.", "", [], [], False)
+      [ ("APISendMessages", "Send messages.", "", ["CRNewChatItems"], [], Just UNBackground),
+        ("APIReportMessage", "Report message.", "", ["CRNewChatItems"], [], Just UNBackground),
+        ("APIUpdateChatItem", "Update message.", "", ["CRChatItemUpdated", "CRChatItemNotChanged"], ["CEInvalidChatItemUpdate"], Just UNBackground),
+        ("APIDeleteChatItem", "Delete message.", "", ["CRChatItemsDeleted"], [], Just UNBackground),
+        ("APIDeleteMemberChatItem", "Moderate message.", "", ["CRChatItemsDeleted"], [], Just UNBackground),
+        ("APIChatItemReaction", "Add/remove message reaction.", "", ["CRChatItemReaction"], [], Just UNBackground),
+        ("APIGetReactionMembers", "Get reaction members.", "", ["CRReactionMembers"], [], Nothing)
       ]
     ),
     ( "File commands",
       "Commands to receive and to cancel files. Files are sent as part of the message, there are no separate commands to send files.",
-      [ ("ReceiveFile", "Receive file.", "", [], [], False),
-        ("CancelFile", "Cancel file.", "", [], [], False)
+      [ ("ReceiveFile", "Receive file.", "", ["CRRcvFileAccepted", "CRRcvFileAcceptedSndCancelled"], [], Nothing),
+        ("CancelFile", "Cancel file.", "", ["CRSndFileCancelled", "CRRcvFileCancelled"], ["CEFileCancel"], Just UNBackground)
       ]
     ),
     ( "Group commands",
       "Commands to create and manage groups. These commands have to be used to manage business chats as well - they are groups. E.g., a common scenario would be to add human agents to business chat with the customer who connected via business address.",
-      [ ("APINewGroup", "Create group.", "", [], [], False),
-        ("APIAddMember", "Add contact to group.", "", [], [], False),
-        ("APIJoinGroup", "Join group.", "", [], [], False),
-        ("APIAcceptMember", "Accept group member.", "", [], [], False),
-        ("APIMembersRole", "Set members role.", "", [], [], False),
-        ("APIBlockMembersForAll", "Block members.", "", [], [], False),
-        ("APIRemoveMembers", "Remove members.", "", [], [], False),
-        ("APILeaveGroup", "Leave group.", "", [], [], False),
-        ("APIListMembers", "Get group members.", "", [], [], False),
-        ("APIUpdateGroupProfile", "Update group profile.", "", [], [], False)
+      [ ("APINewGroup", "Create group.", "", ["CRGroupCreated"], [], Nothing),
+        ("APIAddMember", "Add contact to group.", "", ["CRSentGroupInvitation"], [], Just UNInteractive),
+        ("APIJoinGroup", "Join group.", "", ["CRUserAcceptedGroupSent"], [], Just UNInteractive),
+        ("APIAcceptMember", "Accept group member.", "", ["CRMemberAccepted"], ["CEGroupMemberNotActive"], Just UNBackground),
+        ("APIMembersRole", "Set members role.", "", ["CRMembersRoleUser"], [], Just UNBackground),
+        ("APIBlockMembersForAll", "Block members.", "", ["CRMembersBlockedForAllUser"], [], Just UNBackground),
+        ("APIRemoveMembers", "Remove members.", "", ["CRUserDeletedMembers"], ["CEGroupMemberNotFound"], Just UNBackground),
+        ("APILeaveGroup", "Leave group.", "", ["CRLeftMemberUser"], [], Just UNBackground),
+        ("APIListMembers", "Get group members.", "", ["CRGroupMembers"], [], Nothing),
+        ("APIUpdateGroupProfile", "Update group profile.", "", ["CRGroupUpdated"], [], Just UNBackground)
       ]
     ),
     ( "Group link commands",
       "These commands can be used by bots that manage multiple public groups",
-      [ ("APICreateGroupLink", "Create group link.", "", [], [], False),
-        ("APIGroupLinkMemberRole", "Set member role for group link.", "", [], [], False),
-        ("APIDeleteGroupLink", "Delete group link.", "", [], [], False),
-        ("APIGetGroupLink", "Get group link.", "", [], [], False)
+      [ ("APICreateGroupLink", "Create group link.", "", ["CRGroupLinkCreated"], [], Just UNInteractive),
+        ("APIGroupLinkMemberRole", "Set member role for group link.", "", ["CRGroupLink"], [], Nothing),
+        ("APIDeleteGroupLink", "Delete group link.", "", ["CRGroupLinkDeleted"], [], Just UNBackground),
+        ("APIGetGroupLink", "Get group link.", "", ["CRGroupLink"], [], Nothing)
       ]
     ),
     ( "Connection commands",
       "These commands may be used to establish connections. Most bots do not need to use them - bot users will connect via bot address with auto-accept enabled.",
-      [ ("APIAddContact", "Create 1-time invitation link.", "", [], [], False),
-        ("APIConnectPlan", "Determine SimpleX link type and if the bot is already connected via this link.", "", [], [], True),
-        ("APIConnect", "Connect via SimpleX link. The link can be 1-time invitation link, contact address or group link", "", [], [], False),
-        ("APIAcceptContact", "Accept contact request.", "", [], [], False),
-        ("APIRejectContact", "Reject contact request.", "", [], [], False)
+      [ ("APIAddContact", "Create 1-time invitation link.", "", ["CRInvitation"], [], Just UNInteractive),
+        ("APIConnectPlan", "Determine SimpleX link type and if the bot is already connected via this link.", "", ["CRConnectionPlan"], [], Just UNInteractive),
+        ("APIConnect", "Connect via SimpleX link. The link can be 1-time invitation link, contact address or group link", "", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation"], [], Just UNInteractive),
+        ("APIAcceptContact", "Accept contact request.", "", ["CRAcceptingContactRequest"], [], Just UNInteractive),
+        ("APIRejectContact", "Reject contact request. The user who sent the request is **not notified**.", "", ["CRContactRequestRejected"], [], Nothing)
       ]
     ),
     ( "User profile commands",
       "Most bots don't need to use these commands, as bot profile can be configured manually via CLI or desktop client. These commands can be used by bots that need to manage multiple user profiles (e.g., the profiles of support agents).",
-      [ ("ShowActiveUser", "Get active user profile", "/user", ["CRActiveUser"], [], False),
-        ("CreateActiveUser", "Create new user profile", "/_create user <json(NewUser)>", ["CRActiveUser"], ["CEUserExists", "CEInvalidDisplayName"], False),
-        ("ListUsers", "Get all user profiles", "/users", ["CRUsersList"], [], False),
-        ("APISetActiveUser", "Set active user profile", "/_user <UserId>[ <quoted(UserPwd)>]", ["CRActiveUser"], ["CEChatNotStarted"], False),
-        ("APIDeleteUser", "Delete user profile.", "", [], [], True),
-        ("APIUpdateProfile", "Update user profile.", "", [], [], False)
+      [ ("ShowActiveUser", "Get active user profile", "/user", ["CRActiveUser"], [], Nothing),
+        ("CreateActiveUser", "Create new user profile", "/_create user <json(NewUser)>", ["CRActiveUser"], ["CEUserExists", "CEInvalidDisplayName"], Nothing),
+        ("ListUsers", "Get all user profiles", "/users", ["CRUsersList"], [], Nothing),
+        ("APISetActiveUser", "Set active user profile", "/_user <UserId>[ <quoted(UserPwd)>]", ["CRActiveUser"], ["CEChatNotStarted"], Nothing),
+        ("APIDeleteUser", "Delete user profile.", "", ["CRCmdOk"], [], Just UNBackground),
+        ("APIUpdateProfile", "Update user profile.", "", ["CRUserProfileUpdated"], [], Just UNBackground)
       ]
     ),
     ( "Chat commands",
       "Commands to get and to manage coversations.",
-      [ ("APIGetChats", "Get chats.", "", [], [], False),
-        ("APIGetChat", "Get chat.", "", [], [], False),
-        ("APIGetChatItems", "Get messages.", "", [], [], False),
-        ("APIGetChatItemInfo", "Get message information.", "", [], [], False),
-        ("APIChatRead", "Mark chat as read.", "", [], [], False),
-        ("APIChatItemsRead", "Mark items as read.", "", [], [], False),
-        ("APIChatUnread", "Mark chat as unread.", "", [], [], False),
-        ("APIDeleteChat", "Delete chat.", "", [], [], False),
-        ("APIClearChat", "Clear chat.", "", [], [], False),
-        ("APISetContactPrefs", "Set contact preferences.", "", [], [], False),
-        ("APISetContactAlias", "Set contact alias.", "", [], [], False),
-        ("APISetGroupAlias", "Set group alias.", "", [], [], False),
-        ("APISetConnectionAlias", "Set connection alias.", "", [], [], False),
-        ("APISetChatTTL", "Set TTL for chat messages.", "", [], [], False),
-        ("APISetChatSettings", "Set chat settings.", "", [], [], False),
-        ("APISyncContactRatchet", "Synchronize encryption with contact.", "", [], [], False),
-        ("APISyncGroupMemberRatchet", "Synchronize encryption with member.", "", [], [], False),
-        ("APIListContacts", "Get contacts.", "", [], [], False),
-        ("APIListGroups", "Get groups.", "", ["CRGroupsList"], [], False)
+      [ ("APIGetChats", "Get chats.", "", ["CRApiChats"], [], Nothing),
+        ("APIGetChat", "Get chat.", "", ["CRApiChat"], [], Nothing),
+        ("APIGetChatItems", "Get the most recent messages from all chats.", "", ["CRChatItems"], [], Nothing),
+        ("APIGetChatItemInfo", "Get message information.", "", ["CRChatItemInfo"], [], Nothing),
+        ("APIChatRead", "Mark chat as read.", "", ["CRCmdOk"], [], Nothing),
+        ("APIChatItemsRead", "Mark items as read.", "", ["CRItemsReadForChat"], [], Nothing),
+        ("APIChatUnread", "Mark chat as unread.", "", ["CRCmdOk"], [], Nothing),
+        ("APIDeleteChat", "Delete chat.", "", ["CRContactDeleted", "CRContactConnectionDeleted", "CRGroupDeletedUser"], [], Just UNBackground),
+        ("APIClearChat", "Clear chat.", "", ["CRChatCleared"], [], Nothing),
+        ("APISetContactPrefs", "Set contact preferences.", "", ["CRContactPrefsUpdated"], [], Just UNBackground),
+        ("APISetContactAlias", "Set contact alias.", "", ["CRContactAliasUpdated"], [], Nothing),
+        ("APISetGroupAlias", "Set group alias.", "", ["CRGroupAliasUpdated"], [], Nothing),
+        ("APISetConnectionAlias", "Set connection alias.", "", ["CRConnectionAliasUpdated"], [], Nothing),
+        ("APISetChatTTL", "Set TTL for chat messages.", "", ["CRCmdOk"], [], Nothing),
+        ("APISetChatSettings", "Set chat settings.", "", ["CRCmdOk"], [], Nothing),
+        ("APISyncContactRatchet", "Synchronize encryption with contact.", "", ["CRContactRatchetSyncStarted"], [], Just UNBackground),
+        ("APISyncGroupMemberRatchet", "Synchronize encryption with member.", "", ["CRGroupMemberRatchetSyncStarted"], [], Just UNBackground),
+        ("APIListContacts", "Get contacts.", "", ["CRContactsList"], [], Nothing),
+        ("APIListGroups", "Get groups.", "", ["CRGroupsList"], [], Nothing)
       ]
     )
   ]
@@ -256,8 +256,8 @@ cliCommands =
     "ShowVersion"
   ]
 
-undocdCommands :: [ConsName]
-undocdCommands =
+undocumentedCommands :: [ConsName]
+undocumentedCommands =
   [ "SetAllContactReceipts",
     "APISetUserContactReceipts",
     "APISetUserGroupReceipts",

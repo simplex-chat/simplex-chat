@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -26,10 +27,9 @@ data FieldInfo = FieldInfo
 
 data TypeInfo
   = TIType String -- for simple types
-  | TIOptional String -- for Maybe
+  | TIOptional TypeInfo -- for Maybe
   | TIArray {elemType :: TypeInfo, nonEmpty :: Bool} -- for [] and NonEmpty
   | TIMap {keyType :: String, valueType :: TypeInfo} -- keys are only base types
-  | TIOther String String
   deriving (Show)
 
 class GTypeInfo (f :: Type -> Type) where
@@ -75,17 +75,22 @@ toTypeInfo tr =
           [elemTr]
             | elemTr == typeRep (Proxy @Char) -> TIType "String"
             | otherwise -> TIArray {elemType = toTypeInfo elemTr, nonEmpty = False}
-          _ -> TIType (show tr)
+          _ -> TIType (typeName tr)
         "NonEmpty" -> case args of
           [elemTr] -> TIArray {elemType = toTypeInfo elemTr, nonEmpty = True}
-          _ -> TIType (show tr)
+          _ -> TIType (typeName tr)
         "Maybe" -> case args of
-          [innerTr] -> TIOptional (show innerTr)
-          _ -> TIType (show tr)
+          [innerTr] -> TIOptional (toTypeInfo innerTr)
+          _ -> TIType (typeName tr)
         "Map" -> case args of
-          [keyTr, valTr] -> TIMap {keyType = show keyTr, valueType = toTypeInfo valTr}
-          _ -> TIType (show tr)
-        _ -> TIType (show tr)
+          [keyTr, valTr] -> TIMap {keyType = typeName keyTr, valueType = toTypeInfo valTr}
+          _ -> TIType (typeName tr)
+        _ -> TIType (typeName tr)
+  where
+    typeName tr' = case tyConName (typeRepTyCon tr') of
+      "Text" -> "String"
+      "UserPwd" -> "String"
+      _ -> show tr'
 
 deriving instance Generic ChatCommand
 
@@ -93,67 +98,11 @@ deriving instance Generic ChatResponse
 
 deriving instance Generic ChatEvent
 
-chatCommandTypeInfo :: [(ConsName, [FieldInfo])]
-chatCommandTypeInfo = gTypeInfo @(Rep ChatCommand)
+chatCommandsTypeInfo :: [(ConsName, [FieldInfo])]
+chatCommandsTypeInfo = gTypeInfo @(Rep ChatCommand)
 
-chatResponseTypeInfo :: [(ConsName, [FieldInfo])]
-chatResponseTypeInfo = gTypeInfo @(Rep ChatResponse)
+chatResponsesTypeInfo :: [(ConsName, [FieldInfo])]
+chatResponsesTypeInfo = gTypeInfo @(Rep ChatResponse)
 
 chatEventConsInfo :: [(ConsName, [FieldInfo])]
 chatEventConsInfo = gTypeInfo @(Rep ChatEvent)
-
-
--- class GExamples f where
---   gexamples :: [f p]
-
--- instance GExamples U1 where
---   gexamples = [U1]
-
--- instance (Default c) => GExamples (K1 i c) where
---   gexamples = [K1 def]
-
--- instance (GExamples f) => GExamples (M1 i t f) where
---   gexamples = map M1 gexamples
-
--- instance (GExamples l, GExamples r) => GExamples (l :*: r) where
---   gexamples = [l :*: r | l <- take 1 gexamples, r <- take 1 gexamples]
-
--- instance (GExamples l, GExamples r) => GExamples (l :+: r) where
---   gexamples = map L1 gexamples ++ map R1 gexamples
-
--- class Examples a where
---   examples :: [a]
---   default examples :: forall a k. (GenericK a, GExamplesK (RepK a)) => [a (LoT0 :: LoT k)]
---   examples = map toK gexamplesK
-
--- class GDefault f where
---   gdef :: f p
-
--- instance GDefault U1 where
---   gdef = U1
-
--- instance (Default c) => GDefault (K1 i c) where
---   gdef = K1 def
-
--- instance (GDefault f) => GDefault (M1 i t f) where
---   gdef = M1 gdef
-
--- instance (GDefault l, GDefault r) => GDefault (l :*: r) where
---   gdef = gdef :*: gdef
-
--- -- For sums (multiple constructors: pick the leftmost as canonical default)
--- instance GDefault l => GDefault (l :+: r) where
---   gdef = L1 gdef
-
--- genericDef :: (Generic a, GDefault (Rep a)) => a
--- genericDef = to gdef
-
--- instance Examples ChatResponse
-
--- instance Default (CreatedConnLink c) where def = genericDef
-
--- deriving instance Generic (CreatedConnLink c)
-
--- instance Default (ConnectionRequestUri c) where def = genericDef
-
--- deriving instance Generic (ConnectionRequestUri c)

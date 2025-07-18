@@ -514,6 +514,7 @@ test-suite simplex-chat-test
       ViewTests
       API.Docs.Commands
       API.Docs.Generate
+      API.Docs.Responses
       API.TypeInfo
       Broadcast.Bot
       Broadcast.Options

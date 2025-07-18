@@ -693,6 +693,7 @@ processChatCommand vr nm = \case
           let msgIds = itemsMsgIds items
               events = L.nonEmpty $ map (\msgId -> XMsgDel msgId Nothing $ toMsgScope gInfo <$> chatScopeInfo) msgIds
           mapM_ (sendGroupMessages user gInfo Nothing recipients) events
+          -- TODO delGroupChatItems sends deletion events too. Are they needed?
           delGroupChatItems user gInfo chatScopeInfo items False
       pure $ CRChatItemsDeleted user deletions True False
     CTLocal -> do
@@ -1580,7 +1581,7 @@ processChatCommand vr nm = \case
     case memberConnId m of
       Just connId -> do
         connectionStats <- withAgent (\a -> switchConnectionAsync a "" connId)
-        pure $ CEvtGroupMemberSwitchStarted user g m connectionStats
+        pure $ CRGroupMemberSwitchStarted user g m connectionStats
       _ -> throwChatError CEGroupMemberNotActive
   APIAbortSwitchContact contactId -> withUser $ \user -> do
     ct <- withFastStore $ \db -> getContact db vr user contactId
@@ -1594,7 +1595,7 @@ processChatCommand vr nm = \case
     case memberConnId m of
       Just connId -> do
         connectionStats <- withAgent $ \a -> abortConnectionSwitch a connId
-        pure $ CEvtGroupMemberSwitchAborted user g m connectionStats
+        pure $ CRGroupMemberSwitchAborted user g m connectionStats
       _ -> throwChatError CEGroupMemberNotActive
   APISyncContactRatchet contactId force -> withUser $ \user -> withContactLock "syncContactRatchet" contactId $ do
     ct <- withFastStore $ \db -> getContact db vr user contactId
@@ -1916,6 +1917,10 @@ processChatCommand vr nm = \case
   ListContacts -> withUser $ \User {userId} ->
     processChatCommand vr nm $ APIListContacts userId
   APICreateMyAddress userId -> withUserId userId $ \user -> do
+    withFastStore' (\db -> runExceptT $ getUserAddress db user) >>= \case
+      Left SEUserContactLinkNotFound -> pure ()
+      Left e -> throwError $ ChatErrorStore e
+      Right _ -> throwError $ ChatErrorStore SEDuplicateContactLink
     subMode <- chatReadVar subscriptionMode
     userData <- contactShortLinkData (userProfileToSend user Nothing Nothing False) Nothing
     -- TODO [certs rcv]
