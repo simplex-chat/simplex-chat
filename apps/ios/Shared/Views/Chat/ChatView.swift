@@ -842,7 +842,6 @@ struct ChatView: View {
                             .font(.subheadline)
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
-                            .lineLimit(3)
                             .padding(.horizontal)
                     }
                 }
