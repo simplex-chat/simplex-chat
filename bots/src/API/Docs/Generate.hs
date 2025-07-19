@@ -79,7 +79,7 @@ printFields h docPath docTypes =
       TIOptional t -> fieldType t <> "?"
       TIArray {elemType, nonEmpty = _} -> "[" <> fieldType elemType <> "]" -- <> (if nonEmpty then " // (non-empty)" else "") -- removed because it has to "pop" out of maybe
       TIMap {keyType, valueType} -> "{" <> simpleType keyType <> " : " <> fieldType valueType <> "}"
-    simpleType (STI t _ps)
+    simpleType (ST t _ps)
       | t `S.member` docTypes = "[" <> t' <> "](" <> docPath <> "#" <> headerAnchor t' <> ")"
       | otherwise = t'
       where
@@ -94,7 +94,7 @@ generateTypesDoc = do
     forM_ ctds $ \t -> do
       let name = T.pack $ docTypeName t
       T.hPutStrLn h $ "- [" <> name <> "](#" <> headerAnchor name <> ")"
-    forM_ ctds $ \CTDoc {typeInfo = SumTypeInfo name records, jsonEncoding, consPrefix, typeDescr} -> do
+    forM_ ctds $ \CTDoc {typeInfo = STI name records, jsonEncoding, consPrefix, typeDescr} -> do
       T.hPutStrLn h $ "\n\n## " <> T.pack name
       unless (T.null typeDescr) $ T.hPutStrLn h $ "\n" <> typeDescr
       case records of

@@ -19,11 +19,11 @@ import Data.Kind (Type)
 import Data.Typeable
 import GHC.Generics
 
-data SumTypeInfo = SumTypeInfo {typeName :: String, recordTypes :: [RecordTypeInfo]}
+data SumTypeInfo = STI {typeName :: String, recordTypes :: [RecordTypeInfo]}
   deriving (Show)
 
-sumTypeInfo :: forall t. (GTypeInfo (Rep t), GetDatatypeName (Rep t)) => SumTypeInfo
-sumTypeInfo = SumTypeInfo {typeName = getDatatypeName @(Rep t), recordTypes = gTypeInfo @(Rep t)}
+sti :: forall t. (GTypeInfo (Rep t), GetDatatypeName (Rep t)) => SumTypeInfo
+sti = STI {typeName = getDatatypeName @(Rep t), recordTypes = gTypeInfo @(Rep t)}
 
 class GetDatatypeName (f :: Type -> Type) where getDatatypeName :: String
 
@@ -45,20 +45,20 @@ type ConsName = String
 data FieldInfo = FieldInfo {fieldName :: String, typeInfo :: TypeInfo}
   deriving (Show)
 
-data SimpleTypeInfo = STI {consName :: ConsName, typeParams :: [String]}
+data SimpleType = ST {consName :: ConsName, typeParams :: [String]}
   deriving (Show)
 
-instance ConstructorName SimpleTypeInfo where consName' STI {consName} = consName
+instance ConstructorName SimpleType where consName' ST {consName} = consName
 
 data TypeInfo
-  = TIType SimpleTypeInfo -- for simple types
+  = TIType SimpleType -- for simple types
   | TIOptional TypeInfo -- for Maybe
   | TIArray {elemType :: TypeInfo, nonEmpty :: Bool} -- for [] and NonEmpty
-  | TIMap {keyType :: SimpleTypeInfo, valueType :: TypeInfo} -- keys are only base types
+  | TIMap {keyType :: SimpleType, valueType :: TypeInfo} -- keys are only base types
   deriving (Show)
 
 ti :: ConsName -> TypeInfo
-ti n = TIType $ STI n []
+ti n = TIType $ ST n []
 
 class GTypeInfo (f :: Type -> Type) where
   gTypeInfo :: [RecordTypeInfo]
@@ -115,25 +115,25 @@ toTypeInfo tr =
           _ -> TIType (simpleType tr)
         _ -> TIType (simpleType tr)
   where
-    string = STI "String" []
+    string = ST "String" []
     simpleType tr' = case tyConName (typeRepTyCon tr') of
-      "AgentUserId" -> STI "Int64" []
-      "Integer" -> STI "Int64" []
-      "Version" -> STI "Int" []
-      "PQEncryption" -> STI "Bool" []
-      "PQSupport" -> STI "Bool" []
-      "ACreatedConnLink" -> STI "CreatedConnLink" []
-      "CChatItem" -> STI "ChatItem" []
-      "CustomData" -> STI "JSONObject" []
-      "KeyMap" -> STI "JSONObject" []
+      "AgentUserId" -> ST "Int64" []
+      "Integer" -> ST "Int64" []
+      "Version" -> ST "Int" []
+      "PQEncryption" -> ST "Bool" []
+      "PQSupport" -> ST "Bool" []
+      "ACreatedConnLink" -> ST "CreatedConnLink" []
+      "CChatItem" -> ST "ChatItem" []
+      "CustomData" -> ST "JSONObject" []
+      "KeyMap" -> ST "JSONObject" []
       t
-        | t `elem` stringTypes -> STI "String" []
-        | t `elem` simplePrefTypes -> STI "SimplePreference" []
-        | t `elem` groupPrefTypes -> STI "GroupPreference" []
-        | t `elem` roleGroupPrefTypes -> STI "RoleGroupPreference" []
+        | t `elem` stringTypes -> ST "String" []
+        | t `elem` simplePrefTypes -> ST "SimplePreference" []
+        | t `elem` groupPrefTypes -> ST "GroupPreference" []
+        | t `elem` roleGroupPrefTypes -> ST "RoleGroupPreference" []
         | otherwise -> case words $ show tr' of
-            (consName : typeParams) -> STI {consName, typeParams}
-            _ -> STI "" []
+            (consName : typeParams) -> ST {consName, typeParams}
+            _ -> ST "" []
     stringTypes =
       [ "AConnectionLink",
         "AgentConnId",

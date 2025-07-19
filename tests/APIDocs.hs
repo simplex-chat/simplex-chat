@@ -98,7 +98,7 @@ testTypesHaveDocs = do
         missing'' = S.union missing missing'
         fts = nubOrd $ concatMap childTypeNames ds
         childTypeNames = concatMap (\RecordTypeInfo {fieldInfos} -> concatMap (\FieldInfo {typeInfo} -> types typeInfo) fieldInfos) . docTypeConstructors
-    docTypeConstructors CTDoc {typeInfo = SumTypeInfo {recordTypes}} = recordTypes
+    docTypeConstructors CTDoc {typeInfo = STI {recordTypes}} = recordTypes
     getTypeDocs :: [ConsName] -> (S.Set ConsName, [CTDoc]) -- (not found types and their parents, found types)
     getTypeDocs = foldl' (\acc@(s, ds) t -> if t `elem` primitiveTypes then acc else maybe (S.insert t s, ds) (\d -> (s, d : ds)) $ find ((t ==) . docTypeName) chatTypesDocs) (S.empty, [])
     types = \case
