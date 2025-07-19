@@ -9,11 +9,10 @@
 module API.Docs.Responses where
 
 import API.TypeInfo
-import Data.Text (Text)
 import GHC.Generics
 import Simplex.Chat.Controller
 
-data CRDoc = CRDoc {consName :: ConsName, responseDescr :: Text}
+data CRDoc = CRDoc {consName :: ConsName, responseDescr :: String}
 
 instance ConstructorName CRDoc where consName' CRDoc {consName} = consName
 
@@ -27,7 +26,7 @@ deriving instance Generic ChatResponse
 chatResponsesTypeInfo :: [RecordTypeInfo]
 chatResponsesTypeInfo = recordTypesInfo @ChatResponse
 
-chatResponsesDocsData :: [(ConsName, Text)]
+chatResponsesDocsData :: [(ConsName, String)]
 chatResponsesDocsData =
   [ ("CRAcceptingContactRequest", "Contact request accepted"),
     ("CRActiveUser", "Active user profile"),
@@ -46,7 +45,7 @@ chatResponsesDocsData =
     ("CRGroupLink", ""),
     ("CRGroupLinkCreated", ""),
     ("CRGroupLinkDeleted", ""),
-    ("CRGroupsList", "Group"),
+    ("CRGroupsList", "Groups"),
     ("CRInvitation", "One-time invitation"),
     ("CRLeftMemberUser", "User left group"),
     ("CRMemberAccepted", "Member accepted to group"),

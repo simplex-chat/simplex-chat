@@ -68,7 +68,9 @@ Create bot address.
 **Parameters**:
 - userId: Int64
 
-**Response**: User contact address created.
+**Response**:
+
+UserContactLinkCreated: User contact address created.
 - type: "userContactLinkCreated"
 - user: [User](./TYPES.md#user)
 - connLinkContact: [CreatedConnLink](./TYPES.md#createdconnlink)
@@ -81,7 +83,9 @@ Delete bot address.
 **Parameters**:
 - userId: Int64
 
-**Response**: User contact address deleted.
+**Response**:
+
+UserContactLinkDeleted: User contact address deleted.
 - type: "userContactLinkDeleted"
 - user: [User](./TYPES.md#user)
 
@@ -93,7 +97,9 @@ Get bot address and settings.
 **Parameters**:
 - userId: Int64
 
-**Response**: User contact address.
+**Response**:
+
+UserContactLink: User contact address.
 - type: "userContactLink"
 - user: [User](./TYPES.md#user)
 - contactLink: [UserContactLink](./TYPES.md#usercontactlink)
@@ -107,7 +113,9 @@ Add address to bot profile.
 - userId: Int64
 - enable: Bool
 
-**Response**: User profile updated.
+**Response**:
+
+UserProfileUpdated: User profile updated.
 - type: "userProfileUpdated"
 - user: [User](./TYPES.md#user)
 - fromProfile: [Profile](./TYPES.md#profile)
@@ -123,10 +131,13 @@ Set bot address settings.
 - userId: Int64
 - settings: [AddressSettings](./TYPES.md#addresssettings)
 
-**Response**: User contact address updated.
+**Response**:
+
+UserContactLinkUpdated: User contact address updated.
 - type: "userContactLinkUpdated"
 - user: [User](./TYPES.md#user)
 - contactLink: [UserContactLink](./TYPES.md#usercontactlink)
+
 
 ## Message commands
 
@@ -143,7 +154,9 @@ Send messages.
 - ttl: Int?
 - composedMessages: [[ComposedMessage](./TYPES.md#composedmessage)]
 
-**Response**: New messages.
+**Response**:
+
+NewChatItems: New messages.
 - type: "newChatItems"
 - user: [User](./TYPES.md#user)
 - chatItems: [[AChatItem](./TYPES.md#achatitem)]
@@ -161,12 +174,12 @@ Update message.
 
 **Responses**:
 
-Message updated.
+ChatItemUpdated: Message updated.
 - type: "chatItemUpdated"
 - user: [User](./TYPES.md#user)
 - chatItem: [AChatItem](./TYPES.md#achatitem)
 
-Message not changed.
+ChatItemNotChanged: Message not changed.
 - type: "chatItemNotChanged"
 - user: [User](./TYPES.md#user)
 - chatItem: [AChatItem](./TYPES.md#achatitem)
@@ -181,7 +194,9 @@ Delete message.
 - chatItemIds: [Int64]
 - deleteMode: [CIDeleteMode](./TYPES.md#cideletemode)
 
-**Response**: Messages deleted.
+**Response**:
+
+ChatItemsDeleted: Messages deleted.
 - type: "chatItemsDeleted"
 - user: [User](./TYPES.md#user)
 - chatItemDeletions: [[ChatItemDeletion](./TYPES.md#chatitemdeletion)]
@@ -197,7 +212,9 @@ Moderate message. Requires Moderator role (and higher than message author's).
 - groupId: Int64
 - chatItemIds: [Int64]
 
-**Response**: Messages deleted.
+**Response**:
+
+ChatItemsDeleted: Messages deleted.
 - type: "chatItemsDeleted"
 - user: [User](./TYPES.md#user)
 - chatItemDeletions: [[ChatItemDeletion](./TYPES.md#chatitemdeletion)]
@@ -215,11 +232,14 @@ Add/remove message reaction.
 - add: Bool
 - reaction: [MsgReaction](./TYPES.md#msgreaction)
 
-**Response**: Message reaction.
+**Response**:
+
+ChatItemReaction: Message reaction.
 - type: "chatItemReaction"
 - user: [User](./TYPES.md#user)
 - added: Bool
 - reaction: [ACIReaction](./TYPES.md#acireaction)
+
 
 ## File commands
 
@@ -239,12 +259,12 @@ Receive file.
 
 **Responses**:
 
-File accepted to be received.
+RcvFileAccepted: File accepted to be received.
 - type: "rcvFileAccepted"
 - user: [User](./TYPES.md#user)
 - chatItem: [AChatItem](./TYPES.md#achatitem)
 
-File accepted, but no longer sent.
+RcvFileAcceptedSndCancelled: File accepted, but no longer sent.
 - type: "rcvFileAcceptedSndCancelled"
 - user: [User](./TYPES.md#user)
 - rcvFileTransfer: [RcvFileTransfer](./TYPES.md#rcvfiletransfer)
@@ -259,18 +279,19 @@ Cancel file.
 
 **Responses**:
 
-Cancelled sending file.
+SndFileCancelled: Cancelled sending file.
 - type: "sndFileCancelled"
 - user: [User](./TYPES.md#user)
 - chatItem_: [AChatItem](./TYPES.md#achatitem)?
 - fileTransferMeta: [FileTransferMeta](./TYPES.md#filetransfermeta)
 - sndFileTransfers: [[SndFileTransfer](./TYPES.md#sndfiletransfer)]
 
-Cancelled receiving file.
+RcvFileCancelled: Cancelled receiving file.
 - type: "rcvFileCancelled"
 - user: [User](./TYPES.md#user)
 - chatItem_: [AChatItem](./TYPES.md#achatitem)?
 - rcvFileTransfer: [RcvFileTransfer](./TYPES.md#rcvfiletransfer)
+
 
 ## Group commands
 
@@ -286,7 +307,9 @@ Add contact to group. Requires bot to have Admin role.
 - contactId: Int64
 - memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
 
-**Response**: Group invitation sent.
+**Response**:
+
+SentGroupInvitation: Group invitation sent.
 - type: "sentGroupInvitation"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
@@ -302,7 +325,9 @@ Join group.
 - groupId: Int64
 - enableNtfs: [MsgFilter](./TYPES.md#msgfilter)
 
-**Response**: User accepted group invitation.
+**Response**:
+
+UserAcceptedGroupSent: User accepted group invitation.
 - type: "userAcceptedGroupSent"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
@@ -318,7 +343,9 @@ Accept group member. Requires Admin role.
 - groupMemberId: Int64
 - memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
 
-**Response**: Member accepted to group.
+**Response**:
+
+MemberAccepted: Member accepted to group.
 - type: "memberAccepted"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
@@ -334,7 +361,9 @@ Set members role. Requires Admin role.
 - groupMemberIds: [Int64]
 - memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
 
-**Response**: Members role changed by user.
+**Response**:
+
+MembersRoleUser: Members role changed by user.
 - type: "membersRoleUser"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
@@ -351,7 +380,9 @@ Block members. Requires Moderator role.
 - groupMemberIds: [Int64]
 - blocked: Bool
 
-**Response**: Members blocked for all by admin.
+**Response**:
+
+MembersBlockedForAllUser: Members blocked for all by admin.
 - type: "membersBlockedForAllUser"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
@@ -368,7 +399,9 @@ Remove members. Requires Admin role.
 - groupMemberIds: [Int64]
 - withMessages: Bool
 
-**Response**: Members deleted.
+**Response**:
+
+UserDeletedMembers: Members deleted.
 - type: "userDeletedMembers"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
@@ -383,10 +416,13 @@ Leave group.
 **Parameters**:
 - groupId: Int64
 
-**Response**: User left group.
+**Response**:
+
+LeftMemberUser: User left group.
 - type: "leftMemberUser"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+
 
 ## Group link commands
 
@@ -401,7 +437,9 @@ Create group link.
 - groupId: Int64
 - memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
 
-**Response**: Group link created.
+**Response**:
+
+GroupLinkCreated: Group link created.
 - type: "groupLinkCreated"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
@@ -416,7 +454,9 @@ Set member role for group link.
 - groupId: Int64
 - memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
 
-**Response**: Group link.
+**Response**:
+
+GroupLink: Group link.
 - type: "groupLink"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
@@ -430,7 +470,9 @@ Delete group link.
 **Parameters**:
 - groupId: Int64
 
-**Response**: Group link deleted.
+**Response**:
+
+GroupLinkDeleted: Group link deleted.
 - type: "groupLinkDeleted"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
@@ -443,11 +485,14 @@ Get group link.
 **Parameters**:
 - groupId: Int64
 
-**Response**: Group link.
+**Response**:
+
+GroupLink: Group link.
 - type: "groupLink"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - groupLink: [GroupLink](./TYPES.md#grouplink)
+
 
 ## Connection commands
 
@@ -462,7 +507,9 @@ Create 1-time invitation link.
 - userId: Int64
 - incognito: Bool
 
-**Response**: One-time invitation.
+**Response**:
+
+Invitation: One-time invitation.
 - type: "invitation"
 - user: [User](./TYPES.md#user)
 - connLinkInvitation: [CreatedConnLink](./TYPES.md#createdconnlink)
@@ -477,7 +524,9 @@ Determine SimpleX link type and if the bot is already connected via this link.
 - userId: Int64
 - connectionLink: String?
 
-**Response**: Connection link information.
+**Response**:
+
+ConnectionPlan: Connection link information.
 - type: "connectionPlan"
 - user: [User](./TYPES.md#user)
 - connLink: [CreatedConnLink](./TYPES.md#createdconnlink)
@@ -495,18 +544,18 @@ Connect via SimpleX link. The link can be 1-time invitation link, contact addres
 
 **Responses**:
 
-Confirmation sent to one-time invitation.
+SentConfirmation: Confirmation sent to one-time invitation.
 - type: "sentConfirmation"
 - user: [User](./TYPES.md#user)
 - connection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
 - customUserProfile: [Profile](./TYPES.md#profile)?
 
-Contact already exists.
+ContactAlreadyExists: Contact already exists.
 - type: "contactAlreadyExists"
 - user: [User](./TYPES.md#user)
 - contact: [Contact](./TYPES.md#contact)
 
-Invitation sent to contact address.
+SentInvitation: Invitation sent to contact address.
 - type: "sentInvitation"
 - user: [User](./TYPES.md#user)
 - connection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
@@ -521,7 +570,9 @@ Accept contact request.
 - incognito: Bool
 - contactReqId: Int64
 
-**Response**: Contact request accepted.
+**Response**:
+
+AcceptingContactRequest: Contact request accepted.
 - type: "acceptingContactRequest"
 - user: [User](./TYPES.md#user)
 - contact: [Contact](./TYPES.md#contact)
@@ -534,11 +585,14 @@ Reject contact request. The user who sent the request is **not notified**.
 **Parameters**:
 - contactReqId: Int64
 
-**Response**: Contact request rejected.
+**Response**:
+
+ContactRequestRejected: Contact request rejected.
 - type: "contactRequestRejected"
 - user: [User](./TYPES.md#user)
 - contactRequest: [UserContactRequest](./TYPES.md#usercontactrequest)
 - contact_: [Contact](./TYPES.md#contact)?
+
 
 ## Chat commands
 
@@ -552,7 +606,9 @@ Get contacts.
 **Parameters**:
 - userId: Int64
 
-**Response**: Contacts.
+**Response**:
+
+ContactsList: Contacts.
 - type: "contactsList"
 - user: [User](./TYPES.md#user)
 - contacts: [[Contact](./TYPES.md#contact)]
@@ -567,7 +623,9 @@ Get groups.
 - contactId_: Int64?
 - search: String?
 
-**Response**: Group.
+**Response**:
+
+GroupsList: Groups.
 - type: "groupsList"
 - user: [User](./TYPES.md#user)
 - groups: [[GroupInfoSummary](./TYPES.md#groupinfosummary)]
@@ -583,20 +641,21 @@ Delete chat.
 
 **Responses**:
 
-Contact deleted.
+ContactDeleted: Contact deleted.
 - type: "contactDeleted"
 - user: [User](./TYPES.md#user)
 - contact: [Contact](./TYPES.md#contact)
 
-Connection deleted.
+ContactConnectionDeleted: Connection deleted.
 - type: "contactConnectionDeleted"
 - user: [User](./TYPES.md#user)
 - connection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
 
-User deleted group.
+GroupDeletedUser: User deleted group.
 - type: "groupDeletedUser"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+
 
 ## User profile commands
 
@@ -607,7 +666,9 @@ Most bots don't need to use these commands, as bot profile can be configured man
 
 Get active user profile
 
-**Response**: Active user profile.
+**Response**:
+
+ActiveUser: Active user profile.
 - type: "activeUser"
 - user: [User](./TYPES.md#user)
 
@@ -619,7 +680,9 @@ Create new user profile
 **Parameters**:
 - newUser: [NewUser](./TYPES.md#newuser)
 
-**Response**: Active user profile.
+**Response**:
+
+ActiveUser: Active user profile.
 - type: "activeUser"
 - user: [User](./TYPES.md#user)
 
@@ -628,7 +691,9 @@ Create new user profile
 
 Get all user profiles
 
-**Response**: Users.
+**Response**:
+
+UsersList: Users.
 - type: "usersList"
 - users: [[UserInfo](./TYPES.md#userinfo)]
 
@@ -641,7 +706,9 @@ Set active user profile
 - userId: Int64
 - viewPwd: String?
 
-**Response**: Active user profile.
+**Response**:
+
+ActiveUser: Active user profile.
 - type: "activeUser"
 - user: [User](./TYPES.md#user)
 
@@ -655,7 +722,9 @@ Delete user profile.
 - delSMPQueues: Bool
 - viewPwd: String?
 
-**Response**: Ok.
+**Response**:
+
+CmdOk: Ok.
 - type: "cmdOk"
 - user_: [User](./TYPES.md#user)?
 
@@ -668,7 +737,9 @@ Update user profile.
 - userId: Int64
 - profile: [Profile](./TYPES.md#profile)
 
-**Response**: User profile updated.
+**Response**:
+
+UserProfileUpdated: User profile updated.
 - type: "userProfileUpdated"
 - user: [User](./TYPES.md#user)
 - fromProfile: [Profile](./TYPES.md#profile)

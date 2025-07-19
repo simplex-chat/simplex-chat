@@ -30,8 +30,8 @@ chatCommandsTypeInfo :: [RecordTypeInfo]
 chatCommandsTypeInfo = recordTypesInfo @ChatCommand
 
 data CCCategory = CCCategory
-  { categoryName :: Text,
-    categoryDescr :: Text,
+  { categoryName :: String,
+    categoryDescr :: String,
     commands :: [CCDoc]
   }
 
@@ -60,7 +60,7 @@ instance IsString TypeDoc where fromString s = TD s ""
 
 -- category name, category description, commands
 -- inner: constructor, description, syntax, responses, errors (ChatErrorType constructors), network usage
-chatCommandsDocsData :: [(Text, Text, [(ConsName, Text, ByteString, [String], [TypeDoc], Maybe UsesNetwork)])]
+chatCommandsDocsData :: [(String, String, [(ConsName, Text, ByteString, [String], [TypeDoc], Maybe UsesNetwork)])]
 chatCommandsDocsData =
   [ ( "Address commands",
       "Bots can use these commands to automatically check and create address when initialized",

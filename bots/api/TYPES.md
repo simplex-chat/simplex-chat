@@ -225,143 +225,143 @@ This file is generated automatically.
 
 **Discriminated union type**:
 
-Record SndMsgContent:
+SndMsgContent:
 - type: "sndMsgContent"
 - msgContent: [MsgContent](#msgcontent)
 
-Record RcvMsgContent:
+RcvMsgContent:
 - type: "rcvMsgContent"
 - msgContent: [MsgContent](#msgcontent)
 
-Record SndDeleted:
+SndDeleted:
 - type: "sndDeleted"
 - deleteMode: [CIDeleteMode](#cideletemode)
 
-Record RcvDeleted:
+RcvDeleted:
 - type: "rcvDeleted"
 - deleteMode: [CIDeleteMode](#cideletemode)
 
-Record SndCall:
+SndCall:
 - type: "sndCall"
 - status: [CICallStatus](#cicallstatus)
 - duration: Int
 
-Record RcvCall:
+RcvCall:
 - type: "rcvCall"
 - status: [CICallStatus](#cicallstatus)
 - duration: Int
 
-Record RcvIntegrityError:
+RcvIntegrityError:
 - type: "rcvIntegrityError"
 - msgError: [MsgErrorType](#msgerrortype)
 
-Record RcvDecryptionError:
+RcvDecryptionError:
 - type: "rcvDecryptionError"
 - msgDecryptError: [MsgDecryptError](#msgdecrypterror)
 - msgCount: Word32
 
-Record RcvGroupInvitation:
+RcvGroupInvitation:
 - type: "rcvGroupInvitation"
 - groupInvitation: [CIGroupInvitation](#cigroupinvitation)
 - memberRole: [GroupMemberRole](#groupmemberrole)
 
-Record SndGroupInvitation:
+SndGroupInvitation:
 - type: "sndGroupInvitation"
 - groupInvitation: [CIGroupInvitation](#cigroupinvitation)
 - memberRole: [GroupMemberRole](#groupmemberrole)
 
-Record RcvDirectEvent:
+RcvDirectEvent:
 - type: "rcvDirectEvent"
 - rcvDirectEvent: [RcvDirectEvent](#rcvdirectevent)
 
-Record RcvGroupEvent:
+RcvGroupEvent:
 - type: "rcvGroupEvent"
 - rcvGroupEvent: [RcvGroupEvent](#rcvgroupevent)
 
-Record SndGroupEvent:
+SndGroupEvent:
 - type: "sndGroupEvent"
 - sndGroupEvent: [SndGroupEvent](#sndgroupevent)
 
-Record RcvConnEvent:
+RcvConnEvent:
 - type: "rcvConnEvent"
 - rcvConnEvent: [RcvConnEvent](#rcvconnevent)
 
-Record SndConnEvent:
+SndConnEvent:
 - type: "sndConnEvent"
 - sndConnEvent: [SndConnEvent](#sndconnevent)
 
-Record RcvChatFeature:
+RcvChatFeature:
 - type: "rcvChatFeature"
 - feature: [ChatFeature](#chatfeature)
 - enabled: [PrefEnabled](#prefenabled)
 - param: Int?
 
-Record SndChatFeature:
+SndChatFeature:
 - type: "sndChatFeature"
 - feature: [ChatFeature](#chatfeature)
 - enabled: [PrefEnabled](#prefenabled)
 - param: Int?
 
-Record RcvChatPreference:
+RcvChatPreference:
 - type: "rcvChatPreference"
 - feature: [ChatFeature](#chatfeature)
 - allowed: [FeatureAllowed](#featureallowed)
 - param: Int?
 
-Record SndChatPreference:
+SndChatPreference:
 - type: "sndChatPreference"
 - feature: [ChatFeature](#chatfeature)
 - allowed: [FeatureAllowed](#featureallowed)
 - param: Int?
 
-Record RcvGroupFeature:
+RcvGroupFeature:
 - type: "rcvGroupFeature"
 - groupFeature: [GroupFeature](#groupfeature)
 - preference: [GroupPreference](#grouppreference)
 - param: Int?
 - memberRole_: [GroupMemberRole](#groupmemberrole)?
 
-Record SndGroupFeature:
+SndGroupFeature:
 - type: "sndGroupFeature"
 - groupFeature: [GroupFeature](#groupfeature)
 - preference: [GroupPreference](#grouppreference)
 - param: Int?
 - memberRole_: [GroupMemberRole](#groupmemberrole)?
 
-Record RcvChatFeatureRejected:
+RcvChatFeatureRejected:
 - type: "rcvChatFeatureRejected"
 - feature: [ChatFeature](#chatfeature)
 
-Record RcvGroupFeatureRejected:
+RcvGroupFeatureRejected:
 - type: "rcvGroupFeatureRejected"
 - groupFeature: [GroupFeature](#groupfeature)
 
-Record SndModerated:
+SndModerated:
 - type: "sndModerated"
 
-Record RcvModerated:
+RcvModerated:
 - type: "rcvModerated"
 
-Record RcvBlocked:
+RcvBlocked:
 - type: "rcvBlocked"
 
-Record SndDirectE2EEInfo:
+SndDirectE2EEInfo:
 - type: "sndDirectE2EEInfo"
 - e2eeInfo: [E2EInfo](#e2einfo)
 
-Record RcvDirectE2EEInfo:
+RcvDirectE2EEInfo:
 - type: "rcvDirectE2EEInfo"
 - e2eeInfo: [E2EInfo](#e2einfo)
 
-Record SndGroupE2EEInfo:
+SndGroupE2EEInfo:
 - type: "sndGroupE2EEInfo"
 - e2eeInfo: [E2EInfo](#e2einfo)
 
-Record RcvGroupE2EEInfo:
+RcvGroupE2EEInfo:
 - type: "rcvGroupE2EEInfo"
 - e2eeInfo: [E2EInfo](#e2einfo)
 
-Record InvalidJSON:
+InvalidJSON:
 - type: "invalidJSON"
 - direction: [MsgDirection](#msgdirection)
 - json: String
@@ -379,20 +379,20 @@ Record InvalidJSON:
 
 **Discriminated union type**:
 
-Record Deleted:
+Deleted:
 - type: "deleted"
 - deletedTs: UTCTime?
 - chatType: [ChatType](#chattype)
 
-Record Blocked:
+Blocked:
 - type: "blocked"
 - deletedTs: UTCTime?
 
-Record BlockedByAdmin:
+BlockedByAdmin:
 - type: "blockedByAdmin"
 - deletedTs: UTCTime?
 
-Record Moderated:
+Moderated:
 - type: "moderated"
 - deletedTs: UTCTime?
 - byGroupMember: [GroupMember](#groupmember)
@@ -402,23 +402,23 @@ Record Moderated:
 
 **Discriminated union type**:
 
-Record DirectSnd:
+DirectSnd:
 - type: "directSnd"
 
-Record DirectRcv:
+DirectRcv:
 - type: "directRcv"
 
-Record GroupSnd:
+GroupSnd:
 - type: "groupSnd"
 
-Record GroupRcv:
+GroupRcv:
 - type: "groupRcv"
 - groupMember: [GroupMember](#groupmember)
 
-Record LocalSnd:
+LocalSnd:
 - type: "localSnd"
 
-Record LocalRcv:
+LocalRcv:
 - type: "localRcv"
 
 
@@ -437,57 +437,57 @@ Record LocalRcv:
 
 **Discriminated union type**:
 
-Record SndStored:
+SndStored:
 - type: "sndStored"
 
-Record SndTransfer:
+SndTransfer:
 - type: "sndTransfer"
 - sndProgress: Int64
 - sndTotal: Int64
 
-Record SndCancelled:
+SndCancelled:
 - type: "sndCancelled"
 
-Record SndComplete:
+SndComplete:
 - type: "sndComplete"
 
-Record SndError:
+SndError:
 - type: "sndError"
 - sndFileError: [FileError](#fileerror)
 
-Record SndWarning:
+SndWarning:
 - type: "sndWarning"
 - sndFileError: [FileError](#fileerror)
 
-Record RcvInvitation:
+RcvInvitation:
 - type: "rcvInvitation"
 
-Record RcvAccepted:
+RcvAccepted:
 - type: "rcvAccepted"
 
-Record RcvTransfer:
+RcvTransfer:
 - type: "rcvTransfer"
 - rcvProgress: Int64
 - rcvTotal: Int64
 
-Record RcvAborted:
+RcvAborted:
 - type: "rcvAborted"
 
-Record RcvComplete:
+RcvComplete:
 - type: "rcvComplete"
 
-Record RcvCancelled:
+RcvCancelled:
 - type: "rcvCancelled"
 
-Record RcvError:
+RcvError:
 - type: "rcvError"
 - rcvFileError: [FileError](#fileerror)
 
-Record RcvWarning:
+RcvWarning:
 - type: "rcvWarning"
 - rcvFileError: [FileError](#fileerror)
 
-Record Invalid:
+Invalid:
 - type: "invalid"
 - text: String
 
@@ -496,17 +496,17 @@ Record Invalid:
 
 **Discriminated union type**:
 
-Record Unknown:
+Unknown:
 - type: "unknown"
 
-Record Contact:
+Contact:
 - type: "contact"
 - chatName: String
 - msgDir: [MsgDirection](#msgdirection)
 - contactId: Int64?
 - chatItemId: Int64?
 
-Record Group:
+Group:
 - type: "group"
 - chatName: String
 - msgDir: [MsgDirection](#msgdirection)
@@ -576,23 +576,23 @@ Record Group:
 
 **Discriminated union type**:
 
-Record DirectSnd:
+DirectSnd:
 - type: "directSnd"
 
-Record DirectRcv:
+DirectRcv:
 - type: "directRcv"
 
-Record GroupSnd:
+GroupSnd:
 - type: "groupSnd"
 
-Record GroupRcv:
+GroupRcv:
 - type: "groupRcv"
 - groupMember: [GroupMember](#groupmember)
 
-Record LocalSnd:
+LocalSnd:
 - type: "localSnd"
 
-Record LocalRcv:
+LocalRcv:
 - type: "localRcv"
 
 
@@ -628,36 +628,36 @@ Record LocalRcv:
 
 **Discriminated union type**:
 
-Record SndNew:
+SndNew:
 - type: "sndNew"
 
-Record SndSent:
+SndSent:
 - type: "sndSent"
 - sndProgress: [SndCIStatusProgress](#sndcistatusprogress)
 
-Record SndRcvd:
+SndRcvd:
 - type: "sndRcvd"
 - msgRcptStatus: [MsgReceiptStatus](#msgreceiptstatus)
 - sndProgress: [SndCIStatusProgress](#sndcistatusprogress)
 
-Record SndErrorAuth:
+SndErrorAuth:
 - type: "sndErrorAuth"
 
-Record SndError:
+SndError:
 - type: "sndError"
 - agentError: [SndError](#snderror)
 
-Record SndWarning:
+SndWarning:
 - type: "sndWarning"
 - agentError: [SndError](#snderror)
 
-Record RcvNew:
+RcvNew:
 - type: "rcvNew"
 
-Record RcvRead:
+RcvRead:
 - type: "rcvRead"
 
-Record Invalid:
+Invalid:
 - type: "invalid"
 - text: String
 
@@ -673,15 +673,15 @@ Record Invalid:
 
 **Discriminated union type**:
 
-Record Full:
+Full:
 - type: "full"
 - notify: Bool
 
-Record Entity:
+Entity:
 - type: "entity"
 - notify: Bool
 
-Record Messages:
+Messages:
 - type: "messages"
 
 
@@ -702,24 +702,24 @@ Record Messages:
 
 **Discriminated union type**:
 
-Record Direct:
+Direct:
 - type: "direct"
 - contact: [Contact](#contact)
 
-Record Group:
+Group:
 - type: "group"
 - groupInfo: [GroupInfo](#groupinfo)
 - groupChatScope: [GroupChatScopeInfo](#groupchatscopeinfo)?
 
-Record Local:
+Local:
 - type: "local"
 - noteFolder: [NoteFolder](#notefolder)
 
-Record ContactRequest:
+ContactRequest:
 - type: "contactRequest"
 - contactRequest: [UserContactRequest](#usercontactrequest)
 
-Record ContactConnection:
+ContactConnection:
 - type: "contactConnection"
 - contactConnection: [PendingContactConnection](#pendingcontactconnection)
 
@@ -848,19 +848,19 @@ Message deletion result.
 
 **Discriminated union type**:
 
-Record InvitationLink:
+InvitationLink:
 - type: "invitationLink"
 - invitationLinkPlan: [InvitationLinkPlan](#invitationlinkplan)
 
-Record ContactAddress:
+ContactAddress:
 - type: "contactAddress"
 - contactAddressPlan: [ContactAddressPlan](#contactaddressplan)
 
-Record GroupLink:
+GroupLink:
 - type: "groupLink"
 - groupLinkPlan: [GroupLinkPlan](#grouplinkplan)
 
-Record Error:
+Error:
 - type: "error"
 - chatError: [ChatError](#chaterror)
 
@@ -896,25 +896,25 @@ Record Error:
 
 **Discriminated union type**:
 
-Record Ok:
+Ok:
 - type: "ok"
 - contactSLinkData_: [ContactShortLinkData](#contactshortlinkdata)?
 
-Record OwnLink:
+OwnLink:
 - type: "ownLink"
 
-Record ConnectingConfirmReconnect:
+ConnectingConfirmReconnect:
 - type: "connectingConfirmReconnect"
 
-Record ConnectingProhibit:
+ConnectingProhibit:
 - type: "connectingProhibit"
 - contact: [Contact](#contact)
 
-Record Known:
+Known:
 - type: "known"
 - contact: [Contact](#contact)
 
-Record ContactViaAddress:
+ContactViaAddress:
 - type: "contactViaAddress"
 - contact: [Contact](#contact)
 
@@ -939,11 +939,11 @@ Record ContactViaAddress:
 
 **Discriminated union type**:
 
-Record Contact:
+Contact:
 - type: "contact"
 - preference: [SimplePreference](#simplepreference)
 
-Record User:
+User:
 - type: "user"
 - preference: [SimplePreference](#simplepreference)
 
@@ -1013,22 +1013,22 @@ Record User:
 
 **Discriminated union type**:
 
-Record Auth:
+Auth:
 - type: "auth"
 
-Record Blocked:
+Blocked:
 - type: "blocked"
 - server: String
 - blockInfo: [BlockingInfo](#blockinginfo)
 
-Record NoFile:
+NoFile:
 - type: "noFile"
 
-Record Relay:
+Relay:
 - type: "relay"
 - srvError: [SrvError](#srverror)
 
-Record Other:
+Other:
 - type: "other"
 - fileError: String
 
@@ -1080,42 +1080,42 @@ Record Other:
 
 **Discriminated union type**:
 
-Record Bold:
+Bold:
 - type: "bold"
 
-Record Italic:
+Italic:
 - type: "italic"
 
-Record StrikeThrough:
+StrikeThrough:
 - type: "strikeThrough"
 
-Record Snippet:
+Snippet:
 - type: "snippet"
 
-Record Secret:
+Secret:
 - type: "secret"
 
-Record Colored:
+Colored:
 - type: "colored"
 - color: [FormatColor](#formatcolor)
 
-Record Uri:
+Uri:
 - type: "uri"
 
-Record SimplexLink:
+SimplexLink:
 - type: "simplexLink"
 - linkType: [SimplexLinkType](#simplexlinktype)
 - simplexUri: String
 - smpHosts: [String]
 
-Record Mention:
+Mention:
 - type: "mention"
 - memberName: String
 
-Record Email:
+Email:
 - type: "email"
 
-Record Phone:
+Phone:
 - type: "phone"
 
 
@@ -1157,7 +1157,7 @@ Record Phone:
 
 **Discriminated union type**:
 
-Record MemberSupport:
+MemberSupport:
 - type: "memberSupport"
 - groupMemberId_: Int64?
 
@@ -1166,7 +1166,7 @@ Record MemberSupport:
 
 **Discriminated union type**:
 
-Record MemberSupport:
+MemberSupport:
 - type: "memberSupport"
 - groupMember_: [GroupMember](#groupmember)?
 
@@ -1236,22 +1236,22 @@ Record MemberSupport:
 
 **Discriminated union type**:
 
-Record Ok:
+Ok:
 - type: "ok"
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 
-Record OwnLink:
+OwnLink:
 - type: "ownLink"
 - groupInfo: [GroupInfo](#groupinfo)
 
-Record ConnectingConfirmReconnect:
+ConnectingConfirmReconnect:
 - type: "connectingConfirmReconnect"
 
-Record ConnectingProhibit:
+ConnectingProhibit:
 - type: "connectingProhibit"
 - groupInfo_: [GroupInfo](#groupinfo)?
 
-Record Known:
+Known:
 - type: "known"
 - groupInfo: [GroupInfo](#groupinfo)
 
@@ -1405,18 +1405,18 @@ Record Known:
 
 **Discriminated union type**:
 
-Record Ok:
+Ok:
 - type: "ok"
 - contactSLinkData_: [ContactShortLinkData](#contactshortlinkdata)?
 
-Record OwnLink:
+OwnLink:
 - type: "ownLink"
 
-Record Connecting:
+Connecting:
 - type: "connecting"
 - contact_: [Contact](#contact)?
 
-Record Known:
+Known:
 - type: "known"
 - contact: [Contact](#contact)
 
@@ -1425,14 +1425,14 @@ Record Known:
 
 **Discriminated union type**:
 
-Record Contact:
+Contact:
 - type: "contact"
 - byContactId: Int64
 
-Record User:
+User:
 - type: "user"
 
-Record Unknown:
+Unknown:
 - type: "unknown"
 
 
@@ -1440,17 +1440,17 @@ Record Unknown:
 
 **Discriminated union type**:
 
-Record Page:
+Page:
 - type: "page"
 
-Record Image:
+Image:
 - type: "image"
 
-Record Video:
+Video:
 - type: "video"
 - duration: Int?
 
-Record Unknown:
+Unknown:
 - type: "unknown"
 - tag: String
 - json: JSONObject
@@ -1491,18 +1491,18 @@ Connection link sent in a message - only short links are allowed.
 
 **Discriminated union type**:
 
-Record Contact:
+Contact:
 - type: "contact"
 - connLink: String
 - profile: [Profile](#profile)
 - business: Bool
 
-Record Invitation:
+Invitation:
 - type: "invitation"
 - invLink: String
 - profile: [Profile](#profile)
 
-Record Group:
+Group:
 - type: "group"
 - connLink: String
 - groupProfile: [GroupProfile](#groupprofile)
@@ -1512,46 +1512,46 @@ Record Group:
 
 **Discriminated union type**:
 
-Record Text:
+Text:
 - type: "text"
 - text: String
 
-Record Link:
+Link:
 - type: "link"
 - text: String
 - preview: [LinkPreview](#linkpreview)
 
-Record Image:
+Image:
 - type: "image"
 - text: String
 - image: String
 
-Record Video:
+Video:
 - type: "video"
 - text: String
 - image: String
 - duration: Int
 
-Record Voice:
+Voice:
 - type: "voice"
 - text: String
 - duration: Int
 
-Record File:
+File:
 - type: "file"
 - text: String
 
-Record Report:
+Report:
 - type: "report"
 - text: String
 - reason: [ReportReason](#reportreason)
 
-Record Chat:
+Chat:
 - type: "chat"
 - text: String
 - chatLink: [MsgChatLink](#msgchatlink)
 
-Record Unknown:
+Unknown:
 - type: "unknown"
 - tag: String
 - text: String
@@ -1579,19 +1579,19 @@ Record Unknown:
 
 **Discriminated union type**:
 
-Record MsgSkipped:
+MsgSkipped:
 - type: "msgSkipped"
 - fromMsgId: Int64
 - toMsgId: Int64
 
-Record MsgBadId:
+MsgBadId:
 - type: "msgBadId"
 - msgId: Int64
 
-Record MsgBadHash:
+MsgBadHash:
 - type: "msgBadHash"
 
-Record MsgDuplicate:
+MsgDuplicate:
 - type: "msgDuplicate"
 
 
@@ -1607,11 +1607,11 @@ Record MsgDuplicate:
 
 **Discriminated union type**:
 
-Record Emoji:
+Emoji:
 - type: "emoji"
 - emoji: String
 
-Record Unknown:
+Unknown:
 - type: "unknown"
 - tag: String
 - json: JSONObject
@@ -1720,18 +1720,18 @@ Record Unknown:
 
 **Discriminated union type**:
 
-Record SwitchQueue:
+SwitchQueue:
 - type: "switchQueue"
 - phase: [SwitchPhase](#switchphase)
 
-Record RatchetSync:
+RatchetSync:
 - type: "ratchetSync"
 - syncStatus: [RatchetSyncState](#ratchetsyncstate)
 
-Record VerificationCodeReset:
+VerificationCodeReset:
 - type: "verificationCodeReset"
 
-Record PqEnabled:
+PqEnabled:
 - type: "pqEnabled"
 - enabled: Bool
 
@@ -1740,10 +1740,10 @@ Record PqEnabled:
 
 **Discriminated union type**:
 
-Record ContactDeleted:
+ContactDeleted:
 - type: "contactDeleted"
 
-Record ProfileUpdated:
+ProfileUpdated:
 - type: "profileUpdated"
 - fromProfile: [Profile](#profile)
 - toProfile: [Profile](#profile)
@@ -1770,22 +1770,22 @@ Record ProfileUpdated:
 
 **Discriminated union type**:
 
-Record New:
+New:
 - type: "new"
 
-Record Accepted:
+Accepted:
 - type: "accepted"
 - fileInfo: [RcvFileInfo](#rcvfileinfo)
 
-Record Connected:
+Connected:
 - type: "connected"
 - fileInfo: [RcvFileInfo](#rcvfileinfo)
 
-Record Complete:
+Complete:
 - type: "complete"
 - fileInfo: [RcvFileInfo](#rcvfileinfo)
 
-Record Cancelled:
+Cancelled:
 - type: "cancelled"
 - fileInfo_: [RcvFileInfo](#rcvfileinfo)?
 
@@ -1809,68 +1809,68 @@ Record Cancelled:
 
 **Discriminated union type**:
 
-Record MemberAdded:
+MemberAdded:
 - type: "memberAdded"
 - groupMemberId: Int64
 - profile: [Profile](#profile)
 
-Record MemberConnected:
+MemberConnected:
 - type: "memberConnected"
 
-Record MemberAccepted:
+MemberAccepted:
 - type: "memberAccepted"
 - groupMemberId: Int64
 - profile: [Profile](#profile)
 
-Record UserAccepted:
+UserAccepted:
 - type: "userAccepted"
 
-Record MemberLeft:
+MemberLeft:
 - type: "memberLeft"
 
-Record MemberRole:
+MemberRole:
 - type: "memberRole"
 - groupMemberId: Int64
 - profile: [Profile](#profile)
 - role: [GroupMemberRole](#groupmemberrole)
 
-Record MemberBlocked:
+MemberBlocked:
 - type: "memberBlocked"
 - groupMemberId: Int64
 - profile: [Profile](#profile)
 - blocked: Bool
 
-Record UserRole:
+UserRole:
 - type: "userRole"
 - role: [GroupMemberRole](#groupmemberrole)
 
-Record MemberDeleted:
+MemberDeleted:
 - type: "memberDeleted"
 - groupMemberId: Int64
 - profile: [Profile](#profile)
 
-Record UserDeleted:
+UserDeleted:
 - type: "userDeleted"
 
-Record GroupDeleted:
+GroupDeleted:
 - type: "groupDeleted"
 
-Record GroupUpdated:
+GroupUpdated:
 - type: "groupUpdated"
 - groupProfile: [GroupProfile](#groupprofile)
 
-Record InvitedViaGroupLink:
+InvitedViaGroupLink:
 - type: "invitedViaGroupLink"
 
-Record MemberCreatedContact:
+MemberCreatedContact:
 - type: "memberCreatedContact"
 
-Record MemberProfileUpdated:
+MemberProfileUpdated:
 - type: "memberProfileUpdated"
 - fromProfile: [Profile](#profile)
 - toProfile: [Profile](#profile)
 
-Record NewMemberPendingReview:
+NewMemberPendingReview:
 - type: "newMemberPendingReview"
 
 
@@ -1927,17 +1927,17 @@ Record NewMemberPendingReview:
 
 **Discriminated union type**:
 
-Record SwitchQueue:
+SwitchQueue:
 - type: "switchQueue"
 - phase: [SwitchPhase](#switchphase)
 - member: [GroupMemberRef](#groupmemberref)?
 
-Record RatchetSync:
+RatchetSync:
 - type: "ratchetSync"
 - syncStatus: [RatchetSyncState](#ratchetsyncstate)
 - member: [GroupMemberRef](#groupmemberref)?
 
-Record PqEnabled:
+PqEnabled:
 - type: "pqEnabled"
 - enabled: Bool
 
@@ -1946,30 +1946,30 @@ Record PqEnabled:
 
 **Discriminated union type**:
 
-Record Auth:
+Auth:
 - type: "auth"
 
-Record Quota:
+Quota:
 - type: "quota"
 
-Record Expired:
+Expired:
 - type: "expired"
 
-Record Relay:
+Relay:
 - type: "relay"
 - srvError: [SrvError](#srverror)
 
-Record Proxy:
+Proxy:
 - type: "proxy"
 - proxyServer: String
 - srvError: [SrvError](#srverror)
 
-Record ProxyRelay:
+ProxyRelay:
 - type: "proxyRelay"
 - proxyServer: String
 - srvError: [SrvError](#srverror)
 
-Record Other:
+Other:
 - type: "other"
 - sndError: String
 
@@ -1995,40 +1995,40 @@ Record Other:
 
 **Discriminated union type**:
 
-Record MemberRole:
+MemberRole:
 - type: "memberRole"
 - groupMemberId: Int64
 - profile: [Profile](#profile)
 - role: [GroupMemberRole](#groupmemberrole)
 
-Record MemberBlocked:
+MemberBlocked:
 - type: "memberBlocked"
 - groupMemberId: Int64
 - profile: [Profile](#profile)
 - blocked: Bool
 
-Record UserRole:
+UserRole:
 - type: "userRole"
 - role: [GroupMemberRole](#groupmemberrole)
 
-Record MemberDeleted:
+MemberDeleted:
 - type: "memberDeleted"
 - groupMemberId: Int64
 - profile: [Profile](#profile)
 
-Record UserLeft:
+UserLeft:
 - type: "userLeft"
 
-Record GroupUpdated:
+GroupUpdated:
 - type: "groupUpdated"
 - groupProfile: [GroupProfile](#groupprofile)
 
-Record MemberAccepted:
+MemberAccepted:
 - type: "memberAccepted"
 - groupMemberId: Int64
 - profile: [Profile](#profile)
 
-Record UserPendingReview:
+UserPendingReview:
 - type: "userPendingReview"
 
 
@@ -2036,13 +2036,13 @@ Record UserPendingReview:
 
 **Discriminated union type**:
 
-Record Host:
+Host:
 - type: "host"
 
-Record Version:
+Version:
 - type: "version"
 
-Record Other:
+Other:
 - type: "other"
 - srvError: String
 
