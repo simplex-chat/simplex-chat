@@ -245,7 +245,7 @@
     <string name="sending_via">Trimitere prin</string>
     <string name="sending_files_not_yet_supported">trimiterea de fișiere nu este încă acceptată</string>
     <string name="scan_code_from_contacts_app">Scanați codul de securitate din aplicația contactului dvs.</string>
-    <string name="select_contacts">Selectați contactele</string>
+    <string name="select_contacts">Selectează contactele</string>
     <string name="self_destruct">Autodistrugere</string>
     <string name="color_sent_quote">Răspuns trimis</string>
     <string name="share_image">Partajează media…</string>
@@ -303,7 +303,7 @@
     <string name="settings_notification_preview_mode_title">Afișează previzualizare</string>
     <string name="member_contact_send_direct_message">trimiteți un mesaj direct</string>
     <string name="compose_send_direct_message_to_connect">Trimiteți mesaj direct pentru a vă conecta</string>
-    <string name="custom_time_picker_select">Selectați</string>
+    <string name="custom_time_picker_select">Selectează</string>
     <string name="stop_snd_file__message">Trimiterea fișierului va fi oprită.</string>
     <string name="send_verb">Trimite</string>
     <string name="icon_descr_settings">Setări</string>
@@ -1799,13 +1799,13 @@
     <string name="network_smp_proxy_fallback_allow_description">Trimiteți mesaje direct atunci când serverul dvs. sau serverul de destinație nu acceptă rutare privată.</string>
     <string name="cant_send_message_mem_removed">eliminat din grup</string>
     <string name="cant_send_message_rejected">cererea de înscriere a fost respinsă</string>
-    <string name="select_chat_profile">Selectați profilul de chat</string>
+    <string name="select_chat_profile">Selectează profilul de chat</string>
     <string name="save_auto_accept_settings">Salvați setările de acceptare automată</string>
     <string name="save_list">Salvați lista</string>
     <string name="settings_section_title_delivery_receipts">TRIMITEȚI CONFIRMĂRI DE LIVRARE LA</string>
     <string name="self_destruct_passcode_changed">Parola de autodistrugere a fost schimbată!</string>
     <string name="info_row_updated_at">Înregistrare actualizată la</string>
-    <string name="onboarding_select_network_operators_to_use">Selectați operatorii de rețea pe care îi veți utiliza.</string>
+    <string name="onboarding_select_network_operators_to_use">Selectează operatorii de rețea de utilizat.</string>
     <string name="remote_hosts_section">Telefoane mobile la distanță</string>
     <string name="send_receipts">Trimite confirmări de citire</string>
     <string name="accept_feature_set_1_day">Setați 1 zi</string>
@@ -1832,7 +1832,7 @@
     <string name="migrate_from_device_remove_archive_question">Eliminați arhiva?</string>
     <string name="send_errors">Trimiteți erorile</string>
     <string name="reconnect">Reconectați-vă</string>
-    <string name="select_verb">Selectați</string>
+    <string name="select_verb">Selectează</string>
     <string name="network_error_broker_host_desc">Adresa serverului este incompatibilă cu setările de rețea: %1$s.</string>
     <string name="smp_server_test_secure_queue">Coadă securizată</string>
     <string name="sender_may_have_deleted_the_connection_request">Este posibil ca expeditorul să fi șters cererea de conectare.</string>
@@ -2404,4 +2404,16 @@
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 desktop: scanați codul QR afișat din aplicație, prin intermediul opțiunii <b>Scanare cod QR</b>.]]></string>
     <string name="cant_send_message_request_is_sent">cererea a fost trimisă</string>
     <string name="compose_view_join_group">Alătură-te grupului</string>
+    <string name="accept_contact_request">Acceptă cererea de contact</string>
+    <string name="compose_view_add_message">Adaugă mesaj</string>
+    <string name="short_descr__field">Biografie:</string>
+    <string name="bio_too_large">Biografie prea mare</string>
+    <string name="context_user_picker_cant_change_profile_alert_title">Nu se poate modifica profilul</string>
+    <string name="v6_4_support_chat">Conversează cu administratorii</string>
+    <string name="v6_4_review_members_descr">Conversează cu membrii înainte să se alăture</string>
+    <string name="compose_view_connect">Conectează-te</string>
+    <string name="v6_4_connect_faster">Conectează-te mai rapid! 🚀</string>
+    <string name="contact_should_accept">contactul ar trebui să accepte…</string>
+    <string name="group_descr_too_large">Descriere prea lungă</string>
+    <string name="error_changing_user">Eroare la modificarea profilului</string>
 </resources>
