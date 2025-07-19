@@ -19,14 +19,14 @@ data SearchRequest = SearchRequest
 
 data SearchType = STAll | STRecent | STSearch Text
 
-takeTop :: Int -> [(GroupInfo, GroupSummary)] -> [(GroupInfo, GroupSummary)]
-takeTop n = take n . sortOn (Down . currentMembers . snd)
+takeTop :: Int -> [GroupInfoSummary] -> [GroupInfoSummary]
+takeTop n = take n . sortOn (\(GIS _ GroupSummary {currentMembers}) -> Down currentMembers)
 
-takeRecent :: Int -> [(GroupInfo, GroupSummary)] -> [(GroupInfo, GroupSummary)]
-takeRecent n = take n . sortOn (Down . (\GroupInfo {createdAt} -> createdAt) . fst)
+takeRecent :: Int -> [GroupInfoSummary] -> [GroupInfoSummary]
+takeRecent n = take n . sortOn (\(GIS GroupInfo {createdAt} _) -> Down createdAt)
 
-groupIds :: [(GroupInfo, GroupSummary)] -> Set GroupId
-groupIds = S.fromList . map (\(GroupInfo {groupId}, _) -> groupId)
+groupIds :: [GroupInfoSummary] -> Set GroupId
+groupIds = S.fromList . map (\(GIS GroupInfo {groupId} _) -> groupId)
 
-filterNotSent :: Set GroupId -> [(GroupInfo, GroupSummary)] -> [(GroupInfo, GroupSummary)]
-filterNotSent sentGroups = filter (\(GroupInfo {groupId}, _) -> groupId `S.notMember` sentGroups)
+filterNotSent :: Set GroupId -> [GroupInfoSummary] -> [GroupInfoSummary]
+filterNotSent sentGroups = filter (\(GIS GroupInfo {groupId} _) -> groupId `S.notMember` sentGroups)

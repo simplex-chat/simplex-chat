@@ -242,10 +242,10 @@ getUserGroupReg st ctId ugrId = find (\r -> ctId == dbContactId r && ugrId == us
 getUserGroupRegs :: DirectoryStore -> ContactId -> IO [GroupReg]
 getUserGroupRegs st ctId = filter ((ctId ==) . dbContactId) <$> readTVarIO (groupRegs st)
 
-filterListedGroups :: DirectoryStore -> [(GroupInfo, GroupSummary)] -> IO [(GroupInfo, GroupSummary)]
+filterListedGroups :: DirectoryStore -> [GroupInfoSummary] -> IO [GroupInfoSummary]
 filterListedGroups st gs = do
   lgs <- readTVarIO $ listedGroups st
-  pure $ filter (\(GroupInfo {groupId}, _) -> groupId `S.member` lgs) gs
+  pure $ filter (\(GIS GroupInfo {groupId} _) -> groupId `S.member` lgs) gs
 
 listGroup :: DirectoryStore -> GroupId -> STM ()
 listGroup st gId = do

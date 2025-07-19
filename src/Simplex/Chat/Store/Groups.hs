@@ -968,10 +968,10 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
   where
     search = maybe "" (map toLower) search_
 
-getUserGroupsWithSummary :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe String -> IO [(GroupInfo, GroupSummary)]
+getUserGroupsWithSummary :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfoSummary]
 getUserGroupsWithSummary db vr user _contactId_ search_ =
   getUserGroupDetails db vr user _contactId_ search_
-    >>= mapM (\g@GroupInfo {groupId} -> (g,) <$> getGroupSummary db user groupId)
+    >>= mapM (\g@GroupInfo {groupId} -> GIS g <$> getGroupSummary db user groupId)
 
 -- the statuses on non-current members should match memberCurrent' function
 getGroupSummary :: DB.Connection -> User -> GroupId -> IO GroupSummary

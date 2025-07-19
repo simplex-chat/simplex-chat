@@ -135,9 +135,9 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
       "server queue info: " <> viewJSON qInfo
     ]
   CRContactSwitchStarted {} -> ["switch started"]
-  CEvtGroupMemberSwitchStarted {} -> ["switch started"]
+  CRGroupMemberSwitchStarted {} -> ["switch started"]
   CRContactSwitchAborted {} -> ["switch aborted"]
-  CEvtGroupMemberSwitchAborted {} -> ["switch aborted"]
+  CRGroupMemberSwitchAborted {} -> ["switch aborted"]
   CRContactRatchetSyncStarted {} -> ["connection synchronization started"]
   CRGroupMemberRatchetSyncStarted {} -> ["connection synchronization started"]
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
@@ -1343,13 +1343,13 @@ viewContactConnected ct userIncognitoProfile testView =
     Nothing ->
       [ttyFullContact ct <> ": contact is connected"]
 
-viewGroupsList :: [(GroupInfo, GroupSummary)] -> [StyledString]
+viewGroupsList :: [GroupInfoSummary] -> [StyledString]
 viewGroupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <name>"]
-viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
+viewGroupsList gs = map groupSS $ sortOn ldn_ gs
   where
-    ldn_ :: GroupInfo -> Text
-    ldn_ GroupInfo {localDisplayName} = T.toLower localDisplayName
-    groupSS (g@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}}, GroupSummary {currentMembers}) =
+    ldn_ :: GroupInfoSummary -> Text
+    ldn_ (GIS GroupInfo {localDisplayName} _) = T.toLower localDisplayName
+    groupSS (GIS g@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}} GroupSummary {currentMembers}) =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' g
         s -> membershipIncognito g <> ttyFullGroup g <> viewMemberStatus s <> alias g
