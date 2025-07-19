@@ -4958,9 +4958,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Messaggio inoltrato</target>
         <note>item status text</note>
       </trans-unit>
-      <trans-unit id="Message instantly once you tap Connect." xml:space="preserve">
+      <trans-unit id="Message instantly once you tap Connect." xml:space="preserve" approved="no">
         <source>Message instantly once you tap Connect.</source>
-        <target>Parla immediatamente appena tocchi "Connetti".</target>
+        <target state="translated">Parla immediatamente appena tocchi Connetti.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message may be delivered later if member becomes active." xml:space="preserve">
