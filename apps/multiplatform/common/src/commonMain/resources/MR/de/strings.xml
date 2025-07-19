@@ -2559,4 +2559,6 @@
     <string name="short_descr__field">Bio:</string>
     <string name="group_short_descr_field">Kurze Beschreibung:</string>
     <string name="short_descr">Ihre Biografie:</string>
+    <string name="bio_too_large">Biografie zu lang</string>
+    <string name="group_descr_too_large">Beschreibung zu lang</string>
 </resources>
