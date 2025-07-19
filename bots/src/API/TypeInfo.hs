@@ -20,6 +20,7 @@ import Data.Typeable
 import GHC.Generics
 
 data SumTypeInfo = SumTypeInfo {typeName :: String, recordTypes :: [RecordTypeInfo]}
+  deriving (Show)
 
 sumTypeInfo :: forall t. (GTypeInfo (Rep t), GetDatatypeName (Rep t)) => SumTypeInfo
 sumTypeInfo = SumTypeInfo {typeName = getDatatypeName @(Rep t), recordTypes = gTypeInfo @(Rep t)}
@@ -33,6 +34,7 @@ recordTypesInfo :: forall t. (GTypeInfo (Rep t)) => [RecordTypeInfo]
 recordTypesInfo = gTypeInfo @(Rep t)
 
 data RecordTypeInfo = RecordTypeInfo {consName :: ConsName, fieldInfos :: [FieldInfo]}
+  deriving (Show)
 
 class ConstructorName t where consName' :: t -> ConsName
 
@@ -40,12 +42,11 @@ instance ConstructorName RecordTypeInfo where consName' RecordTypeInfo {consName
 
 type ConsName = String
 
-data FieldInfo = FieldInfo
-  { fieldName :: String,
-    typeInfo :: TypeInfo
-  }
+data FieldInfo = FieldInfo {fieldName :: String, typeInfo :: TypeInfo}
+  deriving (Show)
 
 data SimpleTypeInfo = STI {consName :: ConsName, typeParams :: [String]}
+  deriving (Show)
 
 instance ConstructorName SimpleTypeInfo where consName' STI {consName} = consName
 
@@ -54,6 +55,7 @@ data TypeInfo
   | TIOptional TypeInfo -- for Maybe
   | TIArray {elemType :: TypeInfo, nonEmpty :: Bool} -- for [] and NonEmpty
   | TIMap {keyType :: SimpleTypeInfo, valueType :: TypeInfo} -- keys are only base types
+  deriving (Show)
 
 ti :: ConsName -> TypeInfo
 ti n = TIType $ STI n []
@@ -120,45 +122,56 @@ toTypeInfo tr =
       "Version" -> STI "Int" []
       "PQEncryption" -> STI "Bool" []
       "PQSupport" -> STI "Bool" []
-      "AConnectionLink" -> string
-      "AgentConnId" -> string
-      "AgentInvId" -> string
-      "AgentRcvFileId" -> string
-      "AgentSndFileId" -> string
-      "B64UrlByteString" -> string
-      "CbNonce" -> string
-      "ConnectionLink" -> string
-      "ConnShortLink" -> string
-      "ConnectionRequestUri" -> string
-      "FileDigest" -> string
-      "GroupLinkId" -> string
-      "ImageData" -> string
-      "MemberId" -> string
-      "Text" -> string
-      "MREmojiChar" -> string
-      "ProtocolServer" -> string
-      "SbKey" -> string
-      "SharedMsgId" -> string
-      "UIColor" -> string
-      "UserPwd" -> string
-      "XContactId" -> string
-      "CallsPreference" -> simplePreference
-      "FullDeletePreference" -> simplePreference
-      "ReactionsPreference" -> simplePreference
-      "VoicePreference" -> simplePreference
-      "DirectMessagesGroupPreference" -> roleGroupPreference
-      "FullDeleteGroupPreference" -> groupPreference
-      "ReactionsGroupPreference" -> groupPreference
-      "VoiceGroupPreference" -> roleGroupPreference
-      "FilesGroupPreference" -> roleGroupPreference
-      "SimplexLinksGroupPreference" -> roleGroupPreference
-      "ReportsGroupPreference" -> groupPreference
-      "HistoryGroupPreference" -> groupPreference
+      "ACreatedConnLink" -> STI "CreatedConnLink" []
+      "CChatItem" -> STI "ChatItem" []
       "CustomData" -> STI "JSONObject" []
       "KeyMap" -> STI "JSONObject" []
-      _ -> case words $ show tr' of
-        (consName : typeParams) -> STI {consName, typeParams}
-        _ -> STI "" []
-    simplePreference = STI "SimplePreference" []
-    groupPreference = STI "GroupPreference" []
-    roleGroupPreference = STI "RoleGroupPreference" []
+      t
+        | t `elem` stringTypes -> STI "String" []
+        | t `elem` simplePrefTypes -> STI "SimplePreference" []
+        | t `elem` groupPrefTypes -> STI "GroupPreference" []
+        | t `elem` roleGroupPrefTypes -> STI "RoleGroupPreference" []
+        | otherwise -> case words $ show tr' of
+            (consName : typeParams) -> STI {consName, typeParams}
+            _ -> STI "" []
+    stringTypes =
+      [ "AConnectionLink",
+        "AgentConnId",
+        "AgentInvId",
+        "AgentRcvFileId",
+        "AgentSndFileId",
+        "B64UrlByteString",
+        "CbNonce",
+        "ConnectionLink",
+        "ConnShortLink",
+        "ConnectionRequestUri",
+        "FileDigest",
+        "GroupLinkId",
+        "ImageData",
+        "MemberId",
+        "Text",
+        "MREmojiChar",
+        "SbKey",
+        "SharedMsgId",
+        "UIColor",
+        "UserPwd",
+        "XContactId"
+      ]
+    simplePrefTypes =
+      [ "CallsPreference",
+        "FullDeletePreference",
+        "ReactionsPreference",
+        "VoicePreference"
+      ]
+    groupPrefTypes =
+      [ "FullDeleteGroupPreference",
+        "ReactionsGroupPreference",
+        "ReportsGroupPreference",
+        "HistoryGroupPreference"
+      ]
+    roleGroupPrefTypes =
+      [ "DirectMessagesGroupPreference",
+        "VoiceGroupPreference",
+        "FilesGroupPreference",
+        "SimplexLinksGroupPreference"
+      ]

@@ -2,16 +2,58 @@
 
 This file is generated automatically.
 
-## Command categories
+[Address commands](#address-commands)
+- [APICreateMyAddress](#apicreatemyaddress)
+- [APIDeleteMyAddress](#apideletemyaddress)
+- [APIShowMyAddress](#apishowmyaddress)
+- [APISetProfileAddress](#apisetprofileaddress)
+- [APISetAddressSettings](#apisetaddresssettings)
 
-- [Address commands](#address-commands)
-- [Message commands](#message-commands)
-- [File commands](#file-commands)
-- [Group commands](#group-commands)
-- [Group link commands](#group-link-commands)
-- [Connection commands](#connection-commands)
-- [User profile commands](#user-profile-commands)
-- [Chat commands](#chat-commands)
+[Message commands](#message-commands)
+- [APISendMessages](#apisendmessages)
+- [APIUpdateChatItem](#apiupdatechatitem)
+- [APIDeleteChatItem](#apideletechatitem)
+- [APIDeleteMemberChatItem](#apideletememberchatitem)
+- [APIChatItemReaction](#apichatitemreaction)
+
+[File commands](#file-commands)
+- [ReceiveFile](#receivefile)
+- [CancelFile](#cancelfile)
+
+[Group commands](#group-commands)
+- [APIAddMember](#apiaddmember)
+- [APIJoinGroup](#apijoingroup)
+- [APIAcceptMember](#apiacceptmember)
+- [APIMembersRole](#apimembersrole)
+- [APIBlockMembersForAll](#apiblockmembersforall)
+- [APIRemoveMembers](#apiremovemembers)
+- [APILeaveGroup](#apileavegroup)
+
+[Group link commands](#group-link-commands)
+- [APICreateGroupLink](#apicreategrouplink)
+- [APIGroupLinkMemberRole](#apigrouplinkmemberrole)
+- [APIDeleteGroupLink](#apideletegrouplink)
+- [APIGetGroupLink](#apigetgrouplink)
+
+[Connection commands](#connection-commands)
+- [APIAddContact](#apiaddcontact)
+- [APIConnectPlan](#apiconnectplan)
+- [APIConnect](#apiconnect)
+- [APIAcceptContact](#apiacceptcontact)
+- [APIRejectContact](#apirejectcontact)
+
+[Chat commands](#chat-commands)
+- [APIListContacts](#apilistcontacts)
+- [APIListGroups](#apilistgroups)
+- [APIDeleteChat](#apideletechat)
+
+[User profile commands](#user-profile-commands)
+- [ShowActiveUser](#showactiveuser)
+- [CreateActiveUser](#createactiveuser)
+- [ListUsers](#listusers)
+- [APISetActiveUser](#apisetactiveuser)
+- [APIDeleteUser](#apideleteuser)
+- [APIUpdateProfile](#apiupdateprofile)
 
 
 ## Address commands
@@ -107,22 +149,6 @@ Send messages.
 - chatItems: [[AChatItem](./TYPES.md#achatitem)]
 
 
-### APIReportMessage
-
-Report message.
-
-**Parameters**:
-- groupId: Int64
-- chatItemId: Int64
-- reportReason: [ReportReason](./TYPES.md#reportreason)
-- reportText: String
-
-**Response**: New messages.
-- type: "newChatItems"
-- user: [User](./TYPES.md#user)
-- chatItems: [[AChatItem](./TYPES.md#achatitem)]
-
-
 ### APIUpdateChatItem
 
 Update message.
@@ -165,7 +191,7 @@ Delete message.
 
 ### APIDeleteMemberChatItem
 
-Moderate message.
+Moderate message. Requires Moderator role (and higher than message author's).
 
 **Parameters**:
 - groupId: Int64
@@ -194,22 +220,6 @@ Add/remove message reaction.
 - user: [User](./TYPES.md#user)
 - added: Bool
 - reaction: [ACIReaction](./TYPES.md#acireaction)
-
-
-### APIGetReactionMembers
-
-Get reaction members.
-
-**Parameters**:
-- userId: Int64
-- groupId: Int64
-- chatItemId: Int64
-- reaction: [MsgReaction](./TYPES.md#msgreaction)
-
-**Response**: Members who set reaction on the message.
-- type: "reactionMembers"
-- user: [User](./TYPES.md#user)
-- memberReactions: [[MemberReaction](./TYPES.md#memberreaction)]
 
 ## File commands
 
@@ -264,27 +274,12 @@ Cancelled receiving file.
 
 ## Group commands
 
-Commands to create and manage groups. These commands have to be used to manage business chats as well - they are groups. E.g., a common scenario would be to add human agents to business chat with the customer who connected via business address.
-
-
-### APINewGroup
-
-Create group.
-
-**Parameters**:
-- userId: Int64
-- incognito: Bool
-- groupProfile: [GroupProfile](./TYPES.md#groupprofile)
-
-**Response**: Group created.
-- type: "groupCreated"
-- user: [User](./TYPES.md#user)
-- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+Commands to manage and moderate groups. These commands can be used with business chats as well - they are groups. E.g., a common scenario would be to add human agents to business chat with the customer who connected via business address.
 
 
 ### APIAddMember
 
-Add contact to group.
+Add contact to group. Requires bot to have Admin role.
 
 **Parameters**:
 - groupId: Int64
@@ -316,7 +311,7 @@ Join group.
 
 ### APIAcceptMember
 
-Accept group member.
+Accept group member. Requires Admin role.
 
 **Parameters**:
 - groupId: Int64
@@ -332,7 +327,7 @@ Accept group member.
 
 ### APIMembersRole
 
-Set members role.
+Set members role. Requires Admin role.
 
 **Parameters**:
 - groupId: Int64
@@ -349,7 +344,7 @@ Set members role.
 
 ### APIBlockMembersForAll
 
-Block members.
+Block members. Requires Moderator role.
 
 **Parameters**:
 - groupId: Int64
@@ -366,7 +361,7 @@ Block members.
 
 ### APIRemoveMembers
 
-Remove members.
+Remove members. Requires Admin role.
 
 **Parameters**:
 - groupId: Int64
@@ -392,35 +387,6 @@ Leave group.
 - type: "leftMemberUser"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
-
-
-### APIListMembers
-
-Get group members.
-
-**Parameters**:
-- groupId: Int64
-
-**Response**: Group members.
-- type: "groupMembers"
-- user: [User](./TYPES.md#user)
-- group: [Group](./TYPES.md#group)
-
-
-### APIUpdateGroupProfile
-
-Update group profile.
-
-**Parameters**:
-- groupId: Int64
-- groupProfile: [GroupProfile](./TYPES.md#groupprofile)
-
-**Response**: Group updated.
-- type: "groupUpdated"
-- user: [User](./TYPES.md#user)
-- fromGroup: [GroupInfo](./TYPES.md#groupinfo)
-- toGroup: [GroupInfo](./TYPES.md#groupinfo)
-- member_: [GroupMember](./TYPES.md#groupmember)?
 
 ## Group link commands
 
@@ -485,7 +451,7 @@ Get group link.
 
 ## Connection commands
 
-These commands may be used to establish connections. Most bots do not need to use them - bot users will connect via bot address with auto-accept enabled.
+These commands may be used to create connections. Most bots do not need to use them - bot users will connect via bot address with auto-accept enabled.
 
 
 ### APIAddContact
@@ -514,7 +480,7 @@ Determine SimpleX link type and if the bot is already connected via this link.
 **Response**: Connection link information.
 - type: "connectionPlan"
 - user: [User](./TYPES.md#user)
-- connLink: [ACreatedConnLink](./TYPES.md#acreatedconnlink)
+- connLink: [CreatedConnLink](./TYPES.md#createdconnlink)
 - connectionPlan: [ConnectionPlan](./TYPES.md#connectionplan)
 
 
@@ -525,7 +491,7 @@ Connect via SimpleX link. The link can be 1-time invitation link, contact addres
 **Parameters**:
 - userId: Int64
 - incognito: Bool
-- connLink_: [ACreatedConnLink](./TYPES.md#acreatedconnlink)?
+- connLink_: [CreatedConnLink](./TYPES.md#createdconnlink)?
 
 **Responses**:
 
@@ -573,6 +539,64 @@ Reject contact request. The user who sent the request is **not notified**.
 - user: [User](./TYPES.md#user)
 - contactRequest: [UserContactRequest](./TYPES.md#usercontactrequest)
 - contact_: [Contact](./TYPES.md#contact)?
+
+## Chat commands
+
+Commands to list and delete coversations.
+
+
+### APIListContacts
+
+Get contacts.
+
+**Parameters**:
+- userId: Int64
+
+**Response**: Contacts.
+- type: "contactsList"
+- user: [User](./TYPES.md#user)
+- contacts: [[Contact](./TYPES.md#contact)]
+
+
+### APIListGroups
+
+Get groups.
+
+**Parameters**:
+- userId: Int64
+- contactId_: Int64?
+- search: String?
+
+**Response**: Group.
+- type: "groupsList"
+- user: [User](./TYPES.md#user)
+- groups: [[GroupInfoSummary](./TYPES.md#groupinfosummary)]
+
+
+### APIDeleteChat
+
+Delete chat.
+
+**Parameters**:
+- chatRef: [ChatRef](./TYPES.md#chatref)
+- chatDeleteMode: [ChatDeleteMode](./TYPES.md#chatdeletemode)
+
+**Responses**:
+
+Contact deleted.
+- type: "contactDeleted"
+- user: [User](./TYPES.md#user)
+- contact: [Contact](./TYPES.md#contact)
+
+Connection deleted.
+- type: "contactConnectionDeleted"
+- user: [User](./TYPES.md#user)
+- connection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
+
+User deleted group.
+- type: "groupDeletedUser"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 
 ## User profile commands
 
@@ -650,292 +674,3 @@ Update user profile.
 - fromProfile: [Profile](./TYPES.md#profile)
 - toProfile: [Profile](./TYPES.md#profile)
 - updateSummary: [UserProfileUpdateSummary](./TYPES.md#userprofileupdatesummary)
-
-## Chat commands
-
-Commands to get and to manage coversations.
-
-
-### APIGetChats
-
-Get chats.
-
-**Parameters**:
-- userId: Int64
-- pendingConnections: Bool
-- pagination: [PaginationByTime](./TYPES.md#paginationbytime)
-- query: [ChatListQuery](./TYPES.md#chatlistquery)
-
-**Response**: Chats with the most recent messages.
-- type: "apiChats"
-- user: [User](./TYPES.md#user)
-- chats: [[AChat](./TYPES.md#achat)]
-
-
-### APIGetChat
-
-Get chat.
-
-**Parameters**:
-- chatRef: [ChatRef](./TYPES.md#chatref)
-- contentTag: [MsgContentTag](./TYPES.md#msgcontenttag)?
-- chatPagination: [ChatPagination](./TYPES.md#chatpagination)
-- search: String?
-
-**Response**: Chat and messages.
-- type: "apiChat"
-- user: [User](./TYPES.md#user)
-- chat: [AChat](./TYPES.md#achat)
-- navInfo: [NavigationInfo](./TYPES.md#navigationinfo)?
-
-
-### APIGetChatItems
-
-Get the most recent messages from all chats.
-
-**Parameters**:
-- chatPagination: [ChatPagination](./TYPES.md#chatpagination)
-- search: String?
-
-**Response**: The most recent messages.
-- type: "chatItems"
-- user: [User](./TYPES.md#user)
-- chatName_: [ChatName](./TYPES.md#chatname)?
-- chatItems: [[AChatItem](./TYPES.md#achatitem)]
-
-
-### APIGetChatItemInfo
-
-Get message information.
-
-**Parameters**:
-- chatRef: [ChatRef](./TYPES.md#chatref)
-- chatItemId: Int64
-
-**Response**: Message information.
-- type: "chatItemInfo"
-- user: [User](./TYPES.md#user)
-- chatItem: [AChatItem](./TYPES.md#achatitem)
-- chatItemInfo: [ChatItemInfo](./TYPES.md#chatiteminfo)
-
-
-### APIChatRead
-
-Mark chat as read.
-
-**Parameters**:
-- chatRef: [ChatRef](./TYPES.md#chatref)
-
-**Response**: Ok.
-- type: "cmdOk"
-- user_: [User](./TYPES.md#user)?
-
-
-### APIChatItemsRead
-
-Mark items as read.
-
-**Parameters**:
-- chatRef: [ChatRef](./TYPES.md#chatref)
-- chatItemIds: [Int64]
-
-**Response**: Messages marked as read.
-- type: "itemsReadForChat"
-- user: [User](./TYPES.md#user)
-- chatInfo: [AChatInfo](./TYPES.md#achatinfo)
-
-
-### APIChatUnread
-
-Mark chat as unread.
-
-**Parameters**:
-- chatRef: [ChatRef](./TYPES.md#chatref)
-- unreadChat: Bool
-
-**Response**: Ok.
-- type: "cmdOk"
-- user_: [User](./TYPES.md#user)?
-
-
-### APIDeleteChat
-
-Delete chat.
-
-**Parameters**:
-- chatRef: [ChatRef](./TYPES.md#chatref)
-- chatDeleteMode: [ChatDeleteMode](./TYPES.md#chatdeletemode)
-
-**Responses**:
-
-Contact deleted.
-- type: "contactDeleted"
-- user: [User](./TYPES.md#user)
-- contact: [Contact](./TYPES.md#contact)
-
-Connection deleted.
-- type: "contactConnectionDeleted"
-- user: [User](./TYPES.md#user)
-- connection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
-
-User deleted group.
-- type: "groupDeletedUser"
-- user: [User](./TYPES.md#user)
-- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
-
-
-### APIClearChat
-
-Clear chat.
-
-**Parameters**:
-- chatRef: [ChatRef](./TYPES.md#chatref)
-
-**Response**: Chat cleared.
-- type: "chatCleared"
-- user: [User](./TYPES.md#user)
-- chatInfo: [AChatInfo](./TYPES.md#achatinfo)
-
-
-### APISetContactPrefs
-
-Set contact preferences.
-
-**Parameters**:
-- contactId: Int64
-- preferences: [Preferences](./TYPES.md#preferences)
-
-**Response**: Contact preferences updated.
-- type: "contactPrefsUpdated"
-- user: [User](./TYPES.md#user)
-- fromContact: [Contact](./TYPES.md#contact)
-- toContact: [Contact](./TYPES.md#contact)
-
-
-### APISetContactAlias
-
-Set contact alias.
-
-**Parameters**:
-- contactId: Int64
-- localAlias: String
-
-**Response**: Contact alias updated.
-- type: "contactAliasUpdated"
-- user: [User](./TYPES.md#user)
-- toContact: [Contact](./TYPES.md#contact)
-
-
-### APISetGroupAlias
-
-Set group alias.
-
-**Parameters**:
-- groupId: Int64
-- localAlias: String
-
-**Response**: Group alias updated.
-- type: "groupAliasUpdated"
-- user: [User](./TYPES.md#user)
-- toGroup: [GroupInfo](./TYPES.md#groupinfo)
-
-
-### APISetConnectionAlias
-
-Set connection alias.
-
-**Parameters**:
-- connectionId: Int64
-- localAlias: String
-
-**Response**: Connection alias updated.
-- type: "connectionAliasUpdated"
-- user: [User](./TYPES.md#user)
-- toConnection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
-
-
-### APISetChatTTL
-
-Set TTL for chat messages.
-
-**Parameters**:
-- userId: Int64
-- chatRef: [ChatRef](./TYPES.md#chatref)
-- seconds: Int64?
-
-**Response**: Ok.
-- type: "cmdOk"
-- user_: [User](./TYPES.md#user)?
-
-
-### APISetChatSettings
-
-Set chat settings.
-
-**Parameters**:
-- chatRef: [ChatRef](./TYPES.md#chatref)
-- chatSettings: [ChatSettings](./TYPES.md#chatsettings)
-
-**Response**: Ok.
-- type: "cmdOk"
-- user_: [User](./TYPES.md#user)?
-
-
-### APISyncContactRatchet
-
-Synchronize encryption with contact.
-
-**Parameters**:
-- contactId: Int64
-- force: Bool
-
-**Response**: Contact encryption synchronization started.
-- type: "contactRatchetSyncStarted"
-- user: [User](./TYPES.md#user)
-- contact: [Contact](./TYPES.md#contact)
-- connectionStats: [ConnectionStats](./TYPES.md#connectionstats)
-
-
-### APISyncGroupMemberRatchet
-
-Synchronize encryption with member.
-
-**Parameters**:
-- groupId: Int64
-- groupMemberId: Int64
-- force: Bool
-
-**Response**: Member encryption synchronization started.
-- type: "groupMemberRatchetSyncStarted"
-- user: [User](./TYPES.md#user)
-- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
-- member: [GroupMember](./TYPES.md#groupmember)
-- connectionStats: [ConnectionStats](./TYPES.md#connectionstats)
-
-
-### APIListContacts
-
-Get contacts.
-
-**Parameters**:
-- userId: Int64
-
-**Response**: Contacts.
-- type: "contactsList"
-- user: [User](./TYPES.md#user)
-- contacts: [[Contact](./TYPES.md#contact)]
-
-
-### APIListGroups
-
-Get groups.
-
-**Parameters**:
-- userId: Int64
-- contactId_: Int64?
-- search: String?
-
-**Response**: Group.
-- type: "groupsList"
-- user: [User](./TYPES.md#user)
-- groups: [[GroupInfoSummary](./TYPES.md#groupinfosummary)]

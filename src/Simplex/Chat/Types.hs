@@ -1353,10 +1353,10 @@ data RcvFileDescr = RcvFileDescr
 
 data RcvFileStatus
   = RFSNew
-  | RFSAccepted RcvFileInfo
-  | RFSConnected RcvFileInfo
-  | RFSComplete RcvFileInfo
-  | RFSCancelled (Maybe RcvFileInfo)
+  | RFSAccepted {fileInfo :: RcvFileInfo}
+  | RFSConnected {fileInfo :: RcvFileInfo}
+  | RFSComplete {fileInfo :: RcvFileInfo}
+  | RFSCancelled {fileInfo_ :: Maybe RcvFileInfo}
   deriving (Eq, Show)
 
 rcvFileComplete :: RcvFileStatus -> Bool
