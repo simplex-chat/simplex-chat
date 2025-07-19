@@ -2472,4 +2472,6 @@
     <string name="short_descr__field">自我介绍：</string>
     <string name="group_short_descr_field">简短描述：</string>
     <string name="short_descr">自我介绍：</string>
+    <string name="bio_too_large">自我介绍过大</string>
+    <string name="group_descr_too_large">描述过大</string>
 </resources>
