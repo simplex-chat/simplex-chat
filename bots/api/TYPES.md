@@ -152,6 +152,8 @@ This file is generated automatically.
 - [XFTPSndFile](#xftpsndfile)
 
 
+---
+
 ## ACIReaction
 
 **Record type**:
@@ -159,12 +161,16 @@ This file is generated automatically.
 - chatReaction: [CIReaction](#cireaction)
 
 
+---
+
 ## AChatItem
 
 **Record type**:
 - chatInfo: [ChatInfo](#chatinfo)
 - chatItem: [ChatItem](#chatitem)
 
+
+---
 
 ## AddressSettings
 
@@ -174,11 +180,15 @@ This file is generated automatically.
 - autoReply: [MsgContent](#msgcontent)?
 
 
+---
+
 ## AutoAccept
 
 **Record type**:
 - acceptIncognito: Bool
 
+
+---
 
 ## BlockingInfo
 
@@ -186,12 +196,16 @@ This file is generated automatically.
 - reason: [BlockingReason](#blockingreason)
 
 
+---
+
 ## BlockingReason
 
 **Enum type**:
 - "spam"
 - "content"
 
+
+---
 
 ## BusinessChatInfo
 
@@ -201,12 +215,16 @@ This file is generated automatically.
 - customerId: String
 
 
+---
+
 ## BusinessChatType
 
 **Enum type**:
 - "business"
 - "customer"
 
+
+---
 
 ## CICallStatus
 
@@ -220,6 +238,8 @@ This file is generated automatically.
 - "ended"
 - "error"
 
+
+---
 
 ## CIContent
 
@@ -367,6 +387,8 @@ InvalidJSON:
 - json: String
 
 
+---
+
 ## CIDeleteMode
 
 **Enum type**:
@@ -374,6 +396,8 @@ InvalidJSON:
 - "internal"
 - "internalMark"
 
+
+---
 
 ## CIDeleted
 
@@ -397,6 +421,8 @@ Moderated:
 - deletedTs: UTCTime?
 - byGroupMember: [GroupMember](#groupmember)
 
+
+---
 
 ## CIDirection
 
@@ -422,6 +448,8 @@ LocalRcv:
 - type: "localRcv"
 
 
+---
+
 ## CIFile
 
 **Record type**:
@@ -432,6 +460,8 @@ LocalRcv:
 - fileStatus: [CIFileStatus](#cifilestatus)
 - fileProtocol: [FileProtocol](#fileprotocol)
 
+
+---
 
 ## CIFileStatus
 
@@ -492,6 +522,8 @@ Invalid:
 - text: String
 
 
+---
+
 ## CIForwardedFrom
 
 **Discriminated union type**:
@@ -514,6 +546,8 @@ Group:
 - chatItemId: Int64?
 
 
+---
+
 ## CIGroupInvitation
 
 **Record type**:
@@ -524,6 +558,8 @@ Group:
 - status: [CIGroupInvitationStatus](#cigroupinvitationstatus)
 
 
+---
+
 ## CIGroupInvitationStatus
 
 **Enum type**:
@@ -533,12 +569,16 @@ Group:
 - "expired"
 
 
+---
+
 ## CIMention
 
 **Record type**:
 - memberId: String
 - memberRef: [CIMentionMember](#cimentionmember)?
 
+
+---
 
 ## CIMentionMember
 
@@ -548,6 +588,8 @@ Group:
 - localAlias: String?
 - memberRole: [GroupMemberRole](#groupmemberrole)
 
+
+---
 
 ## CIMeta
 
@@ -571,6 +613,8 @@ Group:
 - createdAt: UTCTime
 - updatedAt: UTCTime
 
+
+---
 
 ## CIQDirection
 
@@ -596,6 +640,8 @@ LocalRcv:
 - type: "localRcv"
 
 
+---
+
 ## CIQuote
 
 **Record type**:
@@ -607,6 +653,8 @@ LocalRcv:
 - formattedText: [[FormattedText](#formattedtext)]?
 
 
+---
+
 ## CIReaction
 
 **Record type**:
@@ -616,6 +664,8 @@ LocalRcv:
 - reaction: [MsgReaction](#msgreaction)
 
 
+---
+
 ## CIReactionCount
 
 **Record type**:
@@ -623,6 +673,8 @@ LocalRcv:
 - userReacted: Bool
 - totalReacted: Int
 
+
+---
 
 ## CIStatus
 
@@ -662,12 +714,16 @@ Invalid:
 - text: String
 
 
+---
+
 ## CITimed
 
 **Record type**:
 - ttl: Int
 - deleteAt: UTCTime?
 
+
+---
 
 ## ChatDeleteMode
 
@@ -685,8 +741,12 @@ Messages:
 - type: "messages"
 
 
+---
+
 ## ChatError
 
+
+---
 
 ## ChatFeature
 
@@ -697,6 +757,8 @@ Messages:
 - "voice"
 - "calls"
 
+
+---
 
 ## ChatInfo
 
@@ -724,6 +786,8 @@ ContactConnection:
 - contactConnection: [PendingContactConnection](#pendingcontactconnection)
 
 
+---
+
 ## ChatItem
 
 **Record type**:
@@ -737,6 +801,8 @@ ContactConnection:
 - file: [CIFile](#cifile)?
 
 
+---
+
 ## ChatItemDeletion
 
 Message deletion result.
@@ -746,8 +812,12 @@ Message deletion result.
 - toChatItem: [AChatItem](#achatitem)?
 
 
+---
+
 ## ChatRef
 
+
+---
 
 ## ChatSettings
 
@@ -756,6 +826,8 @@ Message deletion result.
 - sendRcpts: Bool?
 - favorite: Bool
 
+
+---
 
 ## ChatType
 
@@ -766,6 +838,8 @@ Message deletion result.
 - "contactRequest"
 - "contactConnection"
 
+
+---
 
 ## ChatWallpaper
 
@@ -778,6 +852,8 @@ Message deletion result.
 - scale: Double?
 
 
+---
+
 ## ChatWallpaperScale
 
 **Enum type**:
@@ -785,6 +861,8 @@ Message deletion result.
 - "fit"
 - "repeat"
 
+
+---
 
 ## ComposedMessage
 
@@ -795,8 +873,12 @@ Message deletion result.
 - mentions: {String : Int64}
 
 
+---
+
 ## ConnStatus
 
+
+---
 
 ## ConnType
 
@@ -807,6 +889,8 @@ Message deletion result.
 - "connRcvFile"
 - "connUserContact"
 
+
+---
 
 ## Connection
 
@@ -837,12 +921,16 @@ Message deletion result.
 - createdAt: UTCTime
 
 
+---
+
 ## ConnectionMode
 
 **Enum type**:
 - "invitation"
 - "contact"
 
+
+---
 
 ## ConnectionPlan
 
@@ -864,6 +952,8 @@ Error:
 - type: "error"
 - chatError: [ChatError](#chaterror)
 
+
+---
 
 ## Contact
 
@@ -892,6 +982,8 @@ Error:
 - customData: JSONObject?
 
 
+---
+
 ## ContactAddressPlan
 
 **Discriminated union type**:
@@ -919,6 +1011,8 @@ ContactViaAddress:
 - contact: [Contact](#contact)
 
 
+---
+
 ## ContactShortLinkData
 
 **Record type**:
@@ -927,6 +1021,8 @@ ContactViaAddress:
 - business: Bool
 
 
+---
+
 ## ContactStatus
 
 **Enum type**:
@@ -934,6 +1030,8 @@ ContactViaAddress:
 - "deleted"
 - "deletedByUser"
 
+
+---
 
 ## ContactUserPref
 
@@ -948,6 +1046,8 @@ User:
 - preference: [SimplePreference](#simplepreference)
 
 
+---
+
 ## ContactUserPreference
 
 **Record type**:
@@ -955,6 +1055,8 @@ User:
 - userPreference: [ContactUserPref](#contactuserpref)
 - contactPreference: [SimplePreference](#simplepreference)
 
+
+---
 
 ## ContactUserPreferences
 
@@ -966,12 +1068,16 @@ User:
 - calls: [ContactUserPreference](#contactuserpreference)
 
 
+---
+
 ## CreatedConnLink
 
 **Record type**:
 - connFullLink: String
 - connShortLink: String?
 
+
+---
 
 ## CryptoFile
 
@@ -980,6 +1086,8 @@ User:
 - cryptoArgs: [CryptoFileArgs](#cryptofileargs)?
 
 
+---
+
 ## CryptoFileArgs
 
 **Record type**:
@@ -987,11 +1095,15 @@ User:
 - fileNonce: String
 
 
+---
+
 ## E2EInfo
 
 **Record type**:
 - pqEnabled: Bool?
 
+
+---
 
 ## FeatureAllowed
 
@@ -1001,6 +1113,8 @@ User:
 - "no"
 
 
+---
+
 ## FileDescr
 
 **Record type**:
@@ -1008,6 +1122,8 @@ User:
 - fileDescrPartNo: Int
 - fileDescrComplete: Bool
 
+
+---
 
 ## FileError
 
@@ -1033,6 +1149,8 @@ Other:
 - fileError: String
 
 
+---
+
 ## FileInvitation
 
 **Record type**:
@@ -1044,6 +1162,8 @@ Other:
 - fileDescr: [FileDescr](#filedescr)?
 
 
+---
+
 ## FileProtocol
 
 **Enum type**:
@@ -1051,6 +1171,8 @@ Other:
 - "xFTP"
 - "local"
 
+
+---
 
 ## FileStatus
 
@@ -1061,6 +1183,8 @@ Other:
 - "complete"
 - "cancelled"
 
+
+---
 
 ## FileTransferMeta
 
@@ -1075,6 +1199,8 @@ Other:
 - chunkSize: Int64
 - cancelled: Bool
 
+
+---
 
 ## Format
 
@@ -1119,8 +1245,12 @@ Phone:
 - type: "phone"
 
 
+---
+
 ## FormatColor
 
+
+---
 
 ## FormattedText
 
@@ -1128,6 +1258,8 @@ Phone:
 - format: [Format](#format)?
 - text: String
 
+
+---
 
 ## FullGroupPreferences
 
@@ -1143,6 +1275,8 @@ Phone:
 - history: [GroupPreference](#grouppreference)
 
 
+---
+
 ## FullPreferences
 
 **Record type**:
@@ -1153,6 +1287,8 @@ Phone:
 - calls: [SimplePreference](#simplepreference)
 
 
+---
+
 ## GroupChatScope
 
 **Discriminated union type**:
@@ -1162,6 +1298,8 @@ MemberSupport:
 - groupMemberId_: Int64?
 
 
+---
+
 ## GroupChatScopeInfo
 
 **Discriminated union type**:
@@ -1170,6 +1308,8 @@ MemberSupport:
 - type: "memberSupport"
 - groupMember_: [GroupMember](#groupmember)?
 
+
+---
 
 ## GroupFeature
 
@@ -1185,12 +1325,16 @@ MemberSupport:
 - "history"
 
 
+---
+
 ## GroupFeatureEnabled
 
 **Enum type**:
 - "on"
 - "off"
 
+
+---
 
 ## GroupInfo
 
@@ -1215,12 +1359,16 @@ MemberSupport:
 - membersRequireAttention: Int
 
 
+---
+
 ## GroupInfoSummary
 
 **Record type**:
 - groupInfo: [GroupInfo](#groupinfo)
 - groupSummary: [GroupSummary](#groupsummary)
 
+
+---
 
 ## GroupLink
 
@@ -1231,6 +1379,8 @@ MemberSupport:
 - groupLinkId: String
 - acceptMemberRole: [GroupMemberRole](#groupmemberrole)
 
+
+---
 
 ## GroupLinkPlan
 
@@ -1256,6 +1406,8 @@ Known:
 - groupInfo: [GroupInfo](#groupinfo)
 
 
+---
+
 ## GroupMember
 
 **Record type**:
@@ -1280,11 +1432,15 @@ Known:
 - supportChat: [GroupSupportChat](#groupsupportchat)?
 
 
+---
+
 ## GroupMemberAdmission
 
 **Record type**:
 - review: [MemberCriteria](#membercriteria)?
 
+
+---
 
 ## GroupMemberCategory
 
@@ -1296,12 +1452,16 @@ Known:
 - "post"
 
 
+---
+
 ## GroupMemberRef
 
 **Record type**:
 - groupMemberId: Int64
 - profile: [Profile](#profile)
 
+
+---
 
 ## GroupMemberRole
 
@@ -1314,11 +1474,15 @@ Known:
 - "owner"
 
 
+---
+
 ## GroupMemberSettings
 
 **Record type**:
 - showMessages: Bool
 
+
+---
 
 ## GroupMemberStatus
 
@@ -1340,11 +1504,15 @@ Known:
 - "gSMemCreator"
 
 
+---
+
 ## GroupPreference
 
 **Record type**:
 - enable: [GroupFeatureEnabled](#groupfeatureenabled)
 
+
+---
 
 ## GroupPreferences
 
@@ -1360,6 +1528,8 @@ Known:
 - history: [GroupPreference](#grouppreference)?
 
 
+---
+
 ## GroupProfile
 
 **Record type**:
@@ -1372,17 +1542,23 @@ Known:
 - memberAdmission: [GroupMemberAdmission](#groupmemberadmission)?
 
 
+---
+
 ## GroupShortLinkData
 
 **Record type**:
 - groupProfile: [GroupProfile](#groupprofile)
 
 
+---
+
 ## GroupSummary
 
 **Record type**:
 - currentMembers: Int
 
+
+---
 
 ## GroupSupportChat
 
@@ -1394,12 +1570,16 @@ Known:
 - lastMsgFromMemberTs: UTCTime?
 
 
+---
+
 ## InlineFileMode
 
 **Enum type**:
 - "offer"
 - "sent"
 
+
+---
 
 ## InvitationLinkPlan
 
@@ -1421,6 +1601,8 @@ Known:
 - contact: [Contact](#contact)
 
 
+---
+
 ## InvitedBy
 
 **Discriminated union type**:
@@ -1435,6 +1617,8 @@ User:
 Unknown:
 - type: "unknown"
 
+
+---
 
 ## LinkContent
 
@@ -1456,6 +1640,8 @@ Unknown:
 - json: JSONObject
 
 
+---
+
 ## LinkPreview
 
 **Record type**:
@@ -1465,6 +1651,8 @@ Unknown:
 - image: String
 - content: [LinkContent](#linkcontent)?
 
+
+---
 
 ## LocalProfile
 
@@ -1479,11 +1667,15 @@ Unknown:
 - localAlias: String
 
 
+---
+
 ## MemberCriteria
 
 **Enum type**:
 - "all"
 
+
+---
 
 ## MsgChatLink
 
@@ -1507,6 +1699,8 @@ Group:
 - connLink: String
 - groupProfile: [GroupProfile](#groupprofile)
 
+
+---
 
 ## MsgContent
 
@@ -1558,6 +1752,8 @@ Unknown:
 - json: JSONObject
 
 
+---
+
 ## MsgDecryptError
 
 **Enum type**:
@@ -1568,12 +1764,16 @@ Unknown:
 - "ratchetSync"
 
 
+---
+
 ## MsgDirection
 
 **Enum type**:
 - "rcv"
 - "snd"
 
+
+---
 
 ## MsgErrorType
 
@@ -1595,6 +1795,8 @@ MsgDuplicate:
 - type: "msgDuplicate"
 
 
+---
+
 ## MsgFilter
 
 **Enum type**:
@@ -1602,6 +1804,8 @@ MsgDuplicate:
 - "all"
 - "mentions"
 
+
+---
 
 ## MsgReaction
 
@@ -1617,6 +1821,8 @@ Unknown:
 - json: JSONObject
 
 
+---
+
 ## MsgReceiptStatus
 
 **Enum type**:
@@ -1624,12 +1830,16 @@ Unknown:
 - "badMsgHash"
 
 
+---
+
 ## NewUser
 
 **Record type**:
 - profile: [Profile](#profile)?
 - pastTimestamp: Bool
 
+
+---
 
 ## NoteFolder
 
@@ -1642,6 +1852,8 @@ Unknown:
 - favorite: Bool
 - unread: Bool
 
+
+---
 
 ## PendingContactConnection
 
@@ -1659,12 +1871,16 @@ Unknown:
 - updatedAt: UTCTime
 
 
+---
+
 ## PrefEnabled
 
 **Record type**:
 - forUser: Bool
 - forContact: Bool
 
+
+---
 
 ## Preferences
 
@@ -1676,6 +1892,8 @@ Unknown:
 - calls: [SimplePreference](#simplepreference)?
 
 
+---
+
 ## PreparedContact
 
 **Record type**:
@@ -1684,6 +1902,8 @@ Unknown:
 - welcomeSharedMsgId: String?
 - requestSharedMsgId: String?
 
+
+---
 
 ## PreparedGroup
 
@@ -1694,6 +1914,8 @@ Unknown:
 - welcomeSharedMsgId: String?
 - requestSharedMsgId: String?
 
+
+---
 
 ## Profile
 
@@ -1706,6 +1928,8 @@ Unknown:
 - preferences: [Preferences](#preferences)?
 
 
+---
+
 ## RatchetSyncState
 
 **Enum type**:
@@ -1715,6 +1939,8 @@ Unknown:
 - "started"
 - "agreed"
 
+
+---
 
 ## RcvConnEvent
 
@@ -1736,6 +1962,8 @@ PqEnabled:
 - enabled: Bool
 
 
+---
+
 ## RcvDirectEvent
 
 **Discriminated union type**:
@@ -1749,6 +1977,8 @@ ProfileUpdated:
 - toProfile: [Profile](#profile)
 
 
+---
+
 ## RcvFileDescr
 
 **Record type**:
@@ -1758,6 +1988,8 @@ ProfileUpdated:
 - fileDescrComplete: Bool
 
 
+---
+
 ## RcvFileInfo
 
 **Record type**:
@@ -1765,6 +1997,8 @@ ProfileUpdated:
 - connId: Int64?
 - agentConnId: String?
 
+
+---
 
 ## RcvFileStatus
 
@@ -1790,6 +2024,8 @@ Cancelled:
 - fileInfo_: [RcvFileInfo](#rcvfileinfo)?
 
 
+---
+
 ## RcvFileTransfer
 
 **Record type**:
@@ -1804,6 +2040,8 @@ Cancelled:
 - grpMemberId: Int64?
 - cryptoArgs: [CryptoFileArgs](#cryptofileargs)?
 
+
+---
 
 ## RcvGroupEvent
 
@@ -1874,6 +2112,8 @@ NewMemberPendingReview:
 - type: "newMemberPendingReview"
 
 
+---
+
 ## ReportReason
 
 **Enum type**:
@@ -1884,12 +2124,16 @@ NewMemberPendingReview:
 - "other"
 
 
+---
+
 ## RoleGroupPreference
 
 **Record type**:
 - enable: [GroupFeatureEnabled](#groupfeatureenabled)
 - role: [GroupMemberRole](#groupmemberrole)?
 
+
+---
 
 ## SecurityCode
 
@@ -1898,14 +2142,20 @@ NewMemberPendingReview:
 - verifiedAt: UTCTime
 
 
+---
+
 ## SendRef
 
+
+---
 
 ## SimplePreference
 
 **Record type**:
 - allow: [FeatureAllowed](#featureallowed)
 
+
+---
 
 ## SimplexLinkType
 
@@ -1916,12 +2166,16 @@ NewMemberPendingReview:
 - "channel"
 
 
+---
+
 ## SndCIStatusProgress
 
 **Enum type**:
 - "partial"
 - "complete"
 
+
+---
 
 ## SndConnEvent
 
@@ -1941,6 +2195,8 @@ PqEnabled:
 - type: "pqEnabled"
 - enabled: Bool
 
+
+---
 
 ## SndError
 
@@ -1974,6 +2230,8 @@ Other:
 - sndError: String
 
 
+---
+
 ## SndFileTransfer
 
 **Record type**:
@@ -1990,6 +2248,8 @@ Other:
 - fileDescrId: Int64?
 - fileInline: [InlineFileMode](#inlinefilemode)?
 
+
+---
 
 ## SndGroupEvent
 
@@ -2032,6 +2292,8 @@ UserPendingReview:
 - type: "userPendingReview"
 
 
+---
+
 ## SrvError
 
 **Discriminated union type**:
@@ -2047,6 +2309,8 @@ Other:
 - srvError: String
 
 
+---
+
 ## SwitchPhase
 
 **Enum type**:
@@ -2056,12 +2320,16 @@ Other:
 - "completed"
 
 
+---
+
 ## TimedMessagesGroupPreference
 
 **Record type**:
 - enable: [GroupFeatureEnabled](#groupfeatureenabled)
 - ttl: Int?
 
+
+---
 
 ## TimedMessagesPreference
 
@@ -2070,12 +2338,16 @@ Other:
 - ttl: Int?
 
 
+---
+
 ## UIColorMode
 
 **Enum type**:
 - "light"
 - "dark"
 
+
+---
 
 ## UIColors
 
@@ -2094,6 +2366,8 @@ Other:
 - receivedReply: String?
 
 
+---
+
 ## UIThemeEntityOverride
 
 **Record type**:
@@ -2102,6 +2376,8 @@ Other:
 - colors: [UIColors](#uicolors)
 
 
+---
+
 ## UIThemeEntityOverrides
 
 **Record type**:
@@ -2109,12 +2385,16 @@ Other:
 - dark: [UIThemeEntityOverride](#uithemeentityoverride)?
 
 
+---
+
 ## UpdatedMessage
 
 **Record type**:
 - msgContent: [MsgContent](#msgcontent)
 - mentions: {String : Int64}
 
+
+---
 
 ## User
 
@@ -2135,6 +2415,8 @@ Other:
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 
 
+---
+
 ## UserContactLink
 
 **Record type**:
@@ -2143,6 +2425,8 @@ Other:
 - shortLinkDataSet: Bool
 - addressSettings: [AddressSettings](#addresssettings)
 
+
+---
 
 ## UserContactRequest
 
@@ -2164,12 +2448,16 @@ Other:
 - requestSharedMsgId: String?
 
 
+---
+
 ## UserInfo
 
 **Record type**:
 - user: [User](#user)
 - unreadCount: Int
 
+
+---
 
 ## UserProfileUpdateSummary
 
@@ -2179,6 +2467,8 @@ Other:
 - changedContacts: [[Contact](#contact)]
 
 
+---
+
 ## UserPwdHash
 
 **Record type**:
@@ -2186,12 +2476,16 @@ Other:
 - salt: String
 
 
+---
+
 ## VersionRange
 
 **Record type**:
 - minVersion: Int
 - maxVersion: Int
 
+
+---
 
 ## XFTPRcvFile
 
@@ -2201,6 +2495,8 @@ Other:
 - agentRcvFileDeleted: Bool
 - userApprovedRelays: Bool
 
+
+---
 
 ## XFTPSndFile
 

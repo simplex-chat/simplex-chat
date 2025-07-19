@@ -55,6 +55,8 @@ This file is generated automatically.
 - [APIDeleteUser](#apideleteuser)
 - [APIUpdateProfile](#apiupdateprofile)
 
+---
+
 
 ## Address commands
 
@@ -75,6 +77,8 @@ UserContactLinkCreated: User contact address created.
 - user: [User](./TYPES.md#user)
 - connLinkContact: [CreatedConnLink](./TYPES.md#createdconnlink)
 
+---
+
 
 ### APIDeleteMyAddress
 
@@ -88,6 +92,8 @@ Delete bot address.
 UserContactLinkDeleted: User contact address deleted.
 - type: "userContactLinkDeleted"
 - user: [User](./TYPES.md#user)
+
+---
 
 
 ### APIShowMyAddress
@@ -103,6 +109,8 @@ UserContactLink: User contact address.
 - type: "userContactLink"
 - user: [User](./TYPES.md#user)
 - contactLink: [UserContactLink](./TYPES.md#usercontactlink)
+
+---
 
 
 ### APISetProfileAddress
@@ -122,6 +130,8 @@ UserProfileUpdated: User profile updated.
 - toProfile: [Profile](./TYPES.md#profile)
 - updateSummary: [UserProfileUpdateSummary](./TYPES.md#userprofileupdatesummary)
 
+---
+
 
 ### APISetAddressSettings
 
@@ -137,6 +147,8 @@ UserContactLinkUpdated: User contact address updated.
 - type: "userContactLinkUpdated"
 - user: [User](./TYPES.md#user)
 - contactLink: [UserContactLink](./TYPES.md#usercontactlink)
+
+---
 
 
 ## Message commands
@@ -161,6 +173,8 @@ NewChatItems: New messages.
 - user: [User](./TYPES.md#user)
 - chatItems: [[AChatItem](./TYPES.md#achatitem)]
 
+---
+
 
 ### APIUpdateChatItem
 
@@ -184,6 +198,8 @@ ChatItemNotChanged: Message not changed.
 - user: [User](./TYPES.md#user)
 - chatItem: [AChatItem](./TYPES.md#achatitem)
 
+---
+
 
 ### APIDeleteChatItem
 
@@ -203,6 +219,8 @@ ChatItemsDeleted: Messages deleted.
 - byUser: Bool
 - timed: Bool
 
+---
+
 
 ### APIDeleteMemberChatItem
 
@@ -220,6 +238,8 @@ ChatItemsDeleted: Messages deleted.
 - chatItemDeletions: [[ChatItemDeletion](./TYPES.md#chatitemdeletion)]
 - byUser: Bool
 - timed: Bool
+
+---
 
 
 ### APIChatItemReaction
@@ -239,6 +259,8 @@ ChatItemReaction: Message reaction.
 - user: [User](./TYPES.md#user)
 - added: Bool
 - reaction: [ACIReaction](./TYPES.md#acireaction)
+
+---
 
 
 ## File commands
@@ -269,6 +291,8 @@ RcvFileAcceptedSndCancelled: File accepted, but no longer sent.
 - user: [User](./TYPES.md#user)
 - rcvFileTransfer: [RcvFileTransfer](./TYPES.md#rcvfiletransfer)
 
+---
+
 
 ### CancelFile
 
@@ -291,6 +315,8 @@ RcvFileCancelled: Cancelled receiving file.
 - user: [User](./TYPES.md#user)
 - chatItem_: [AChatItem](./TYPES.md#achatitem)?
 - rcvFileTransfer: [RcvFileTransfer](./TYPES.md#rcvfiletransfer)
+
+---
 
 
 ## Group commands
@@ -316,6 +342,8 @@ SentGroupInvitation: Group invitation sent.
 - contact: [Contact](./TYPES.md#contact)
 - member: [GroupMember](./TYPES.md#groupmember)
 
+---
+
 
 ### APIJoinGroup
 
@@ -332,6 +360,8 @@ UserAcceptedGroupSent: User accepted group invitation.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - hostContact: [Contact](./TYPES.md#contact)?
+
+---
 
 
 ### APIAcceptMember
@@ -350,6 +380,8 @@ MemberAccepted: Member accepted to group.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - member: [GroupMember](./TYPES.md#groupmember)
+
+---
 
 
 ### APIMembersRole
@@ -370,6 +402,8 @@ MembersRoleUser: Members role changed by user.
 - members: [[GroupMember](./TYPES.md#groupmember)]
 - toRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
 
+---
+
 
 ### APIBlockMembersForAll
 
@@ -388,6 +422,8 @@ MembersBlockedForAllUser: Members blocked for all by admin.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - members: [[GroupMember](./TYPES.md#groupmember)]
 - blocked: Bool
+
+---
 
 
 ### APIRemoveMembers
@@ -408,6 +444,8 @@ UserDeletedMembers: Members deleted.
 - members: [[GroupMember](./TYPES.md#groupmember)]
 - withMessages: Bool
 
+---
+
 
 ### APILeaveGroup
 
@@ -422,6 +460,8 @@ LeftMemberUser: User left group.
 - type: "leftMemberUser"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+
+---
 
 
 ## Group link commands
@@ -445,6 +485,8 @@ GroupLinkCreated: Group link created.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - groupLink: [GroupLink](./TYPES.md#grouplink)
 
+---
+
 
 ### APIGroupLinkMemberRole
 
@@ -462,6 +504,8 @@ GroupLink: Group link.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - groupLink: [GroupLink](./TYPES.md#grouplink)
 
+---
+
 
 ### APIDeleteGroupLink
 
@@ -476,6 +520,8 @@ GroupLinkDeleted: Group link deleted.
 - type: "groupLinkDeleted"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+
+---
 
 
 ### APIGetGroupLink
@@ -492,6 +538,8 @@ GroupLink: Group link.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - groupLink: [GroupLink](./TYPES.md#grouplink)
+
+---
 
 
 ## Connection commands
@@ -515,6 +563,8 @@ Invitation: One-time invitation.
 - connLinkInvitation: [CreatedConnLink](./TYPES.md#createdconnlink)
 - connection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
 
+---
+
 
 ### APIConnectPlan
 
@@ -531,6 +581,8 @@ ConnectionPlan: Connection link information.
 - user: [User](./TYPES.md#user)
 - connLink: [CreatedConnLink](./TYPES.md#createdconnlink)
 - connectionPlan: [ConnectionPlan](./TYPES.md#connectionplan)
+
+---
 
 
 ### APIConnect
@@ -561,6 +613,8 @@ SentInvitation: Invitation sent to contact address.
 - connection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
 - customUserProfile: [Profile](./TYPES.md#profile)?
 
+---
+
 
 ### APIAcceptContact
 
@@ -577,6 +631,8 @@ AcceptingContactRequest: Contact request accepted.
 - user: [User](./TYPES.md#user)
 - contact: [Contact](./TYPES.md#contact)
 
+---
+
 
 ### APIRejectContact
 
@@ -592,6 +648,8 @@ ContactRequestRejected: Contact request rejected.
 - user: [User](./TYPES.md#user)
 - contactRequest: [UserContactRequest](./TYPES.md#usercontactrequest)
 - contact_: [Contact](./TYPES.md#contact)?
+
+---
 
 
 ## Chat commands
@@ -613,6 +671,8 @@ ContactsList: Contacts.
 - user: [User](./TYPES.md#user)
 - contacts: [[Contact](./TYPES.md#contact)]
 
+---
+
 
 ### APIListGroups
 
@@ -629,6 +689,8 @@ GroupsList: Groups.
 - type: "groupsList"
 - user: [User](./TYPES.md#user)
 - groups: [[GroupInfoSummary](./TYPES.md#groupinfosummary)]
+
+---
 
 
 ### APIDeleteChat
@@ -656,6 +718,8 @@ GroupDeletedUser: User deleted group.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 
+---
+
 
 ## User profile commands
 
@@ -672,6 +736,8 @@ ActiveUser: Active user profile.
 - type: "activeUser"
 - user: [User](./TYPES.md#user)
 
+---
+
 
 ### CreateActiveUser
 
@@ -686,6 +752,8 @@ ActiveUser: Active user profile.
 - type: "activeUser"
 - user: [User](./TYPES.md#user)
 
+---
+
 
 ### ListUsers
 
@@ -696,6 +764,8 @@ Get all user profiles
 UsersList: Users.
 - type: "usersList"
 - users: [[UserInfo](./TYPES.md#userinfo)]
+
+---
 
 
 ### APISetActiveUser
@@ -712,6 +782,8 @@ ActiveUser: Active user profile.
 - type: "activeUser"
 - user: [User](./TYPES.md#user)
 
+---
+
 
 ### APIDeleteUser
 
@@ -727,6 +799,8 @@ Delete user profile.
 CmdOk: Ok.
 - type: "cmdOk"
 - user_: [User](./TYPES.md#user)?
+
+---
 
 
 ### APIUpdateProfile
@@ -745,3 +819,5 @@ UserProfileUpdated: User profile updated.
 - fromProfile: [Profile](./TYPES.md#profile)
 - toProfile: [Profile](./TYPES.md#profile)
 - updateSummary: [UserProfileUpdateSummary](./TYPES.md#userprofileupdatesummary)
+
+---

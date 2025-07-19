@@ -33,6 +33,7 @@ generateCommandsDoc =
       hPutStrLn h $ "\n" <> withLink "" categoryName
       forM_ commands $ \CCDoc {consName} ->
         hPutStrLn h $ "- " <> withLink "" consName
+    hPutStrLn h "\n---"
     forM_ chatCommandsDocs $ \CCCategory {categoryName, categoryDescr, commands} -> do
       hPutStrLn h $ "\n\n## " <> categoryName <> "\n\n" <> categoryDescr
       forM_ commands $ \CCDoc {consName, commandDescr, responses} -> do
@@ -53,6 +54,7 @@ generateCommandsDoc =
               hPutStrLn h $ "\n" <> fstToUpper respType <> ": " <> respDescr <> "."
               printFields h "./TYPES.md" docTypes (Just respType) fieldInfos
             _ -> error "Missing type info or response description"
+        hPutStrLn h "\n---"
   where
     camelToSpace :: String -> String
     camelToSpace [] = []
@@ -88,7 +90,7 @@ generateTypesDoc = do
       let name = docTypeName t
       hPutStrLn h $ "- " <> withLink "" name
     forM_ ctds $ \CTDoc {typeInfo = STI name records, jsonEncoding, consPrefix, typeDescr} -> do
-      hPutStrLn h $ "\n\n## " <> name
+      hPutStrLn h $ "\n\n---\n\n## " <> name
       unless (T.null typeDescr) $ T.hPutStrLn h $ "\n" <> typeDescr
       case records of
         [] -> pure ()
