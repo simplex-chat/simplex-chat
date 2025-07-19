@@ -7,6 +7,7 @@ module API.Docs.Generate where
 
 import API.Docs.Commands
 import API.Docs.Responses
+import API.Docs.Syntax
 import API.Docs.Types
 import API.TypeInfo
 import Control.Monad
@@ -36,7 +37,7 @@ generateCommandsDoc =
     hPutStrLn h "\n---"
     forM_ chatCommandsDocs $ \CCCategory {categoryName, categoryDescr, commands} -> do
       hPutStrLn h $ "\n\n## " <> categoryName <> "\n\n" <> categoryDescr
-      forM_ commands $ \CCDoc {consName, commandDescr, responses} -> do
+      forM_ commands $ \CCDoc {consName, commandDescr, responses, syntax} -> do
         T.hPutStrLn h $ "\n\n### " <> T.pack consName <> "\n\n" <> commandDescr
         case find ((consName ==) . consName') chatCommandsTypeInfo of
           Just RecordTypeInfo {fieldInfos = params}
@@ -45,6 +46,10 @@ generateCommandsDoc =
                 hPutStrLn h "\n**Parameters**:"
                 printFields h "./TYPES.md" docTypes Nothing params
           Nothing -> error "Missing command type info"
+        unless (syntax == "") $ do
+          hPutStrLn h $ "\n**Syntax**:\n"
+          hPutStrLn h $ "```\n" <> renderDocSyntax syntax <> "\n```\n"
+          unless (isConst syntax) $ hPutStrLn h $ "```javascript\n" <> renderJSSyntax syntax <> " // JavaScript\n```\n"
         hPutStrLn h $ if length responses > 1 then "\n**Responses**:" else "\n**Response**:"
         forM_ responses $ \name ->
           case (find ((name ==) . consName') chatResponsesTypeInfo, find ((name ==) . consName') chatResponsesDocs) of

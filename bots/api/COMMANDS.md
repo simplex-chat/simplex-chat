@@ -70,6 +70,17 @@ Create bot address.
 **Parameters**:
 - userId: Int64
 
+**Syntax**:
+
+```
+/_address <userId>
+```
+
+```javascript
+'/_address  + userId // JavaScript
+```
+
+
 **Response**:
 
 UserContactLinkCreated: User contact address created.
@@ -87,6 +98,17 @@ Delete bot address.
 **Parameters**:
 - userId: Int64
 
+**Syntax**:
+
+```
+/_delete_address <userId>
+```
+
+```javascript
+'/_delete_address  + userId // JavaScript
+```
+
+
 **Response**:
 
 UserContactLinkDeleted: User contact address deleted.
@@ -102,6 +124,17 @@ Get bot address and settings.
 
 **Parameters**:
 - userId: Int64
+
+**Syntax**:
+
+```
+/_show_address <userId>
+```
+
+```javascript
+'/_show_address  + userId // JavaScript
+```
+
 
 **Response**:
 
@@ -120,6 +153,17 @@ Add address to bot profile.
 **Parameters**:
 - userId: Int64
 - enable: Bool
+
+**Syntax**:
+
+```
+/_profile_address <userId> on|off
+```
+
+```javascript
+'/_profile_address  + userId + '  + (enable ? 'on' : 'off') // JavaScript
+```
+
 
 **Response**:
 
@@ -140,6 +184,17 @@ Set bot address settings.
 **Parameters**:
 - userId: Int64
 - settings: [AddressSettings](./TYPES.md#addresssettings)
+
+**Syntax**:
+
+```
+/_address_settings <userId> <json(addressSettings)>
+```
+
+```javascript
+'/_address_settings  + userId + '  + JSON.stringify(addressSettings) // JavaScript
+```
+
 
 **Response**:
 
@@ -165,6 +220,17 @@ Send messages.
 - liveMessage: Bool
 - ttl: Int?
 - composedMessages: [[ComposedMessage](./TYPES.md#composedmessage)]
+
+**Syntax**:
+
+```
+/_send @<sendRef.contactId>|#<sendRef.groupId>[(_support[:sendRef.groupMemberId])] live=<liveMessage> ttl=default|<ttl> json <json(composedMessages)>
+```
+
+```javascript
+'/_send  + (sendRef.contactId ? '@' + sendRef.contactId : '#' + sendRef.groupId + (sendRef.scope ? '(_support' + (n.scope.groupMemberId ? ':' + n.scope.groupMemberId : '') + ')' : '')) + ' live= + liveMessage + ' ttl= + (!ttl ? 'default : ttl) + ' json  + JSON.stringify(composedMessages) // JavaScript
+```
+
 
 **Response**:
 
@@ -730,6 +796,13 @@ Most bots don't need to use these commands, as bot profile can be configured man
 
 Get active user profile
 
+**Syntax**:
+
+```
+/user
+```
+
+
 **Response**:
 
 ActiveUser: Active user profile.
@@ -746,6 +819,17 @@ Create new user profile
 **Parameters**:
 - newUser: [NewUser](./TYPES.md#newuser)
 
+**Syntax**:
+
+```
+/_create user <json(newUser)>
+```
+
+```javascript
+'/_create user  + JSON.stringify(newUser) // JavaScript
+```
+
+
 **Response**:
 
 ActiveUser: Active user profile.
@@ -758,6 +842,13 @@ ActiveUser: Active user profile.
 ### ListUsers
 
 Get all user profiles
+
+**Syntax**:
+
+```
+/users
+```
+
 
 **Response**:
 
@@ -775,6 +866,17 @@ Set active user profile
 **Parameters**:
 - userId: Int64
 - viewPwd: String?
+
+**Syntax**:
+
+```
+/_user <userId>[ <json(viewPwd)>]
+```
+
+```javascript
+'/_user  + userId + (!viewPwd || viewPwd == '' ? '' : '  + JSON.stringify(viewPwd)) // JavaScript
+```
+
 
 **Response**:
 
