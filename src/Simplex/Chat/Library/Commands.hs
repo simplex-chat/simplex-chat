@@ -2188,6 +2188,7 @@ processChatCommand vr nm = \case
         Nothing -> throwChatError $ CEContactNotActive ct
   APIAcceptMember groupId gmId role -> withUser $ \user@User {userId} -> do
     (gInfo, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user gmId
+    -- TODO check that user's role is > role, possibly restrict role to only observer and member
     assertUserGroupRole gInfo GRModerator
     case memberStatus m of
       GSMemPendingApproval | memberCategory m == GCInviteeMember -> do -- only host can approve

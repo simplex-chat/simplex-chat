@@ -77,7 +77,7 @@ Create bot address.
 ```
 
 ```javascript
-'/_address  + userId // JavaScript
+'/_address ' + userId // JavaScript
 ```
 
 
@@ -105,7 +105,7 @@ Delete bot address.
 ```
 
 ```javascript
-'/_delete_address  + userId // JavaScript
+'/_delete_address ' + userId // JavaScript
 ```
 
 
@@ -132,7 +132,7 @@ Get bot address and settings.
 ```
 
 ```javascript
-'/_show_address  + userId // JavaScript
+'/_show_address ' + userId // JavaScript
 ```
 
 
@@ -161,7 +161,7 @@ Add address to bot profile.
 ```
 
 ```javascript
-'/_profile_address  + userId + '  + (enable ? 'on' : 'off') // JavaScript
+'/_profile_address ' + userId + ' ' + (enable ? 'on' : 'off') // JavaScript
 ```
 
 
@@ -188,11 +188,11 @@ Set bot address settings.
 **Syntax**:
 
 ```
-/_address_settings <userId> <json(addressSettings)>
+/_address_settings <userId> <json(settings)>
 ```
 
 ```javascript
-'/_address_settings  + userId + '  + JSON.stringify(addressSettings) // JavaScript
+'/_address_settings ' + userId + ' ' + JSON.stringify(settings) // JavaScript
 ```
 
 
@@ -224,11 +224,13 @@ Send messages.
 **Syntax**:
 
 ```
-/_send @<sendRef.contactId>|#<sendRef.groupId>[(_support[:sendRef.groupMemberId])] live=<liveMessage> ttl=default|<ttl> json <json(composedMessages)>
+chat(r) = @<r.contactId>|#<r.groupId>[(_support[:r.groupMemberId])]
+/_send <chat(sendRef)>[ live=on][ ttl=<ttl>] json <json(composedMessages)>
 ```
 
 ```javascript
-'/_send  + (sendRef.contactId ? '@' + sendRef.contactId : '#' + sendRef.groupId + (sendRef.scope ? '(_support' + (n.scope.groupMemberId ? ':' + n.scope.groupMemberId : '') + ')' : '')) + ' live= + liveMessage + ' ttl= + (!ttl ? 'default : ttl) + ' json  + JSON.stringify(composedMessages) // JavaScript
+let chat = (r) => r.contactId ? `@${r.contactId}` : `#${r.groupId}` + (r.scope ? '(_support' + (r.scope.groupMemberId ? `:${r.scope.groupMemberId}` : '') + ')' : '')
+'/_send ' + chat(sendRef) + (liveMessage ? ' live=on' : '') + (ttl ? ' ttl=' + ttl : '') + ' json ' + JSON.stringify(composedMessages)
 ```
 
 
@@ -251,6 +253,17 @@ Update message.
 - chatItemId: Int64
 - liveMessage: Bool
 - updatedMessage: [UpdatedMessage](./TYPES.md#updatedmessage)
+
+**Syntax**:
+
+```
+/_update item <ref(chatRef)> <chatItemId>[ live=on] json <json(updatedMessage)>
+```
+
+```javascript
+'/_update item ' + ref(chatRef) + ' ' + chatItemId + (liveMessage ? ' live=on' : '') + ' json ' + JSON.stringify(updatedMessage) // JavaScript
+```
+
 
 **Responses**:
 
@@ -276,6 +289,17 @@ Delete message.
 - chatItemIds: [Int64]
 - deleteMode: [CIDeleteMode](./TYPES.md#cideletemode)
 
+**Syntax**:
+
+```
+/_delete item <ref(chatRef)> <chatItemIds[0]>[,<chatItemIds[1]>...] broadcast|internal|internalMark
+```
+
+```javascript
+'/_delete item ' + ref(chatRef) + ' ' + chatItemIds.join(',') + ' ' + deleteMode // JavaScript
+```
+
+
 **Response**:
 
 ChatItemsDeleted: Messages deleted.
@@ -295,6 +319,17 @@ Moderate message. Requires Moderator role (and higher than message author's).
 **Parameters**:
 - groupId: Int64
 - chatItemIds: [Int64]
+
+**Syntax**:
+
+```
+/_delete member item #<groupId> <chatItemIds[0]>[,<chatItemIds[1]>...]
+```
+
+```javascript
+'/_delete member item #' + groupId + ' ' + chatItemIds.join(',') // JavaScript
+```
+
 
 **Response**:
 
@@ -317,6 +352,17 @@ Add/remove message reaction.
 - chatItemId: Int64
 - add: Bool
 - reaction: [MsgReaction](./TYPES.md#msgreaction)
+
+**Syntax**:
+
+```
+/_reaction <ref(chatRef)> <chatItemId> on|off <json(reaction)>
+```
+
+```javascript
+'/_reaction ' + ref(chatRef) + ' ' + chatItemId + ' ' + (add ? 'on' : 'off') + ' ' + JSON.stringify(reaction) // JavaScript
+```
+
 
 **Response**:
 
@@ -345,6 +391,17 @@ Receive file.
 - fileInline: Bool?
 - filePath: String?
 
+**Syntax**:
+
+```
+/freceive <fileId>[ approved_relays=on][ encrypt=on|off][ inline=on|off][ <filePath>]
+```
+
+```javascript
+'/freceive ' + fileId + (userApprovedRelays ? ' approved_relays=on' : '') + (typeof storeEncrypted == 'boolean' ? ' encrypt=' + (storeEncrypted ? 'on' : 'off') : '') + (typeof fileInline == 'boolean' ? ' inline=' + (fileInline ? 'on' : 'off') : '') + (filePath ? ' ' + filePath : '') // JavaScript
+```
+
+
 **Responses**:
 
 RcvFileAccepted: File accepted to be received.
@@ -366,6 +423,17 @@ Cancel file.
 
 **Parameters**:
 - fileId: Int64
+
+**Syntax**:
+
+```
+/fcancel <fileId>
+```
+
+```javascript
+'/fcancel ' + fileId // JavaScript
+```
+
 
 **Responses**:
 
@@ -399,6 +467,17 @@ Add contact to group. Requires bot to have Admin role.
 - contactId: Int64
 - memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
 
+**Syntax**:
+
+```
+/_add #<groupId> <contactId> observer|author|member|moderator|admin|owner
+```
+
+```javascript
+'/_add #' + groupId + ' ' + contactId + ' ' + memberRole // JavaScript
+```
+
+
 **Response**:
 
 SentGroupInvitation: Group invitation sent.
@@ -418,6 +497,17 @@ Join group.
 **Parameters**:
 - groupId: Int64
 - enableNtfs: [MsgFilter](./TYPES.md#msgfilter)
+
+**Syntax**:
+
+```
+/_join #<groupId>
+```
+
+```javascript
+'/_join #' + groupId // JavaScript
+```
+
 
 **Response**:
 
@@ -439,6 +529,17 @@ Accept group member. Requires Admin role.
 - groupMemberId: Int64
 - memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
 
+**Syntax**:
+
+```
+/_accept member #<groupId> <groupMemberId> observer|author|member|moderator|admin|owner
+```
+
+```javascript
+'/_accept member #' + groupId + ' ' + groupMemberId + ' ' + memberRole // JavaScript
+```
+
+
 **Response**:
 
 MemberAccepted: Member accepted to group.
@@ -458,6 +559,17 @@ Set members role. Requires Admin role.
 - groupId: Int64
 - groupMemberIds: [Int64]
 - memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
+
+**Syntax**:
+
+```
+/_member role #<groupId> <groupMemberIds[0]>[,<groupMemberIds[1]>...] observer|author|member|moderator|admin|owner
+```
+
+```javascript
+'/_member role #' + groupId + ' ' + groupMemberIds.join(',') + ' ' + memberRole // JavaScript
+```
+
 
 **Response**:
 
@@ -480,6 +592,17 @@ Block members. Requires Moderator role.
 - groupMemberIds: [Int64]
 - blocked: Bool
 
+**Syntax**:
+
+```
+/_block #<groupId> <groupMemberIds[0]>[,<groupMemberIds[1]>...] blocked=on|off
+```
+
+```javascript
+'/_block #' + groupId + ' ' + groupMemberIds.join(',') + ' blocked=' + (blocked ? 'on' : 'off') // JavaScript
+```
+
+
 **Response**:
 
 MembersBlockedForAllUser: Members blocked for all by admin.
@@ -501,6 +624,17 @@ Remove members. Requires Admin role.
 - groupMemberIds: [Int64]
 - withMessages: Bool
 
+**Syntax**:
+
+```
+/_remove #<groupId> <groupMemberIds[0]>[,<groupMemberIds[1]>...][ messages=on]
+```
+
+```javascript
+'/_remove #' + groupId + ' ' + groupMemberIds.join(',') + (withMessages ? ' messages=on' : '') // JavaScript
+```
+
+
 **Response**:
 
 UserDeletedMembers: Members deleted.
@@ -519,6 +653,17 @@ Leave group.
 
 **Parameters**:
 - groupId: Int64
+
+**Syntax**:
+
+```
+/_leave #<groupId>
+```
+
+```javascript
+'/_leave #' + groupId // JavaScript
+```
+
 
 **Response**:
 
@@ -543,6 +688,17 @@ Create group link.
 - groupId: Int64
 - memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
 
+**Syntax**:
+
+```
+/_create link #<groupId> observer|author|member|moderator|admin|owner
+```
+
+```javascript
+'/_create link #' + groupId + ' ' + memberRole // JavaScript
+```
+
+
 **Response**:
 
 GroupLinkCreated: Group link created.
@@ -562,6 +718,17 @@ Set member role for group link.
 - groupId: Int64
 - memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
 
+**Syntax**:
+
+```
+/_set link role #<groupId> observer|author|member|moderator|admin|owner
+```
+
+```javascript
+'/_set link role #' + groupId + ' ' + memberRole // JavaScript
+```
+
+
 **Response**:
 
 GroupLink: Group link.
@@ -580,6 +747,17 @@ Delete group link.
 **Parameters**:
 - groupId: Int64
 
+**Syntax**:
+
+```
+/_delete link #<groupId>
+```
+
+```javascript
+'/_delete link #' + groupId // JavaScript
+```
+
+
 **Response**:
 
 GroupLinkDeleted: Group link deleted.
@@ -596,6 +774,17 @@ Get group link.
 
 **Parameters**:
 - groupId: Int64
+
+**Syntax**:
+
+```
+/_get link #<groupId>
+```
+
+```javascript
+'/_get link #' + groupId // JavaScript
+```
+
 
 **Response**:
 
@@ -621,6 +810,17 @@ Create 1-time invitation link.
 - userId: Int64
 - incognito: Bool
 
+**Syntax**:
+
+```
+/_connect <userId>[ incognito=on]
+```
+
+```javascript
+'/_connect ' + userId + (incognito ? ' incognito=on' : '') // JavaScript
+```
+
+
 **Response**:
 
 Invitation: One-time invitation.
@@ -639,6 +839,17 @@ Determine SimpleX link type and if the bot is already connected via this link.
 **Parameters**:
 - userId: Int64
 - connectionLink: String?
+
+**Syntax**:
+
+```
+/_connect plan <userId> <connectionLink>
+```
+
+```javascript
+'/_connect plan ' + userId + ' ' + connectionLink // JavaScript
+```
+
 
 **Response**:
 
@@ -659,6 +870,17 @@ Connect via SimpleX link. The link can be 1-time invitation link, contact addres
 - userId: Int64
 - incognito: Bool
 - connLink_: [CreatedConnLink](./TYPES.md#createdconnlink)?
+
+**Syntax**:
+
+```
+/_connect <userId> <link(connLink_)>
+```
+
+```javascript
+'/_connect ' + userId + ' ' + link(connLink_) // JavaScript
+```
+
 
 **Responses**:
 
@@ -690,6 +912,17 @@ Accept contact request.
 - incognito: Bool
 - contactReqId: Int64
 
+**Syntax**:
+
+```
+/_accept <contactReqId>
+```
+
+```javascript
+'/_accept ' + contactReqId // JavaScript
+```
+
+
 **Response**:
 
 AcceptingContactRequest: Contact request accepted.
@@ -706,6 +939,17 @@ Reject contact request. The user who sent the request is **not notified**.
 
 **Parameters**:
 - contactReqId: Int64
+
+**Syntax**:
+
+```
+/_reject <contactReqId>
+```
+
+```javascript
+'/_reject ' + contactReqId // JavaScript
+```
+
 
 **Response**:
 
@@ -730,6 +974,17 @@ Get contacts.
 **Parameters**:
 - userId: Int64
 
+**Syntax**:
+
+```
+/_contacts <userId>
+```
+
+```javascript
+'/_contacts ' + userId // JavaScript
+```
+
+
 **Response**:
 
 ContactsList: Contacts.
@@ -749,6 +1004,17 @@ Get groups.
 - contactId_: Int64?
 - search: String?
 
+**Syntax**:
+
+```
+/_groups <userId>[ @<contactId_>][ <search>]
+```
+
+```javascript
+'/_groups ' + userId + (contactId_ ? ' @' + contactId_ : '') + (search ? ' ' + search : '') // JavaScript
+```
+
+
 **Response**:
 
 GroupsList: Groups.
@@ -766,6 +1032,17 @@ Delete chat.
 **Parameters**:
 - chatRef: [ChatRef](./TYPES.md#chatref)
 - chatDeleteMode: [ChatDeleteMode](./TYPES.md#chatdeletemode)
+
+**Syntax**:
+
+```
+/_delete <ref(chatRef)> <chatDeleteMode>
+```
+
+```javascript
+'/_delete ' + ref(chatRef) + ' ' + chatDeleteMode // JavaScript
+```
+
 
 **Responses**:
 
@@ -826,7 +1103,7 @@ Create new user profile
 ```
 
 ```javascript
-'/_create user  + JSON.stringify(newUser) // JavaScript
+'/_create user ' + JSON.stringify(newUser) // JavaScript
 ```
 
 
@@ -874,7 +1151,7 @@ Set active user profile
 ```
 
 ```javascript
-'/_user  + userId + (!viewPwd || viewPwd == '' ? '' : '  + JSON.stringify(viewPwd)) // JavaScript
+'/_user ' + userId + (viewPwd ? ' ' + JSON.stringify(viewPwd) : '') // JavaScript
 ```
 
 
@@ -896,6 +1173,17 @@ Delete user profile.
 - delSMPQueues: Bool
 - viewPwd: String?
 
+**Syntax**:
+
+```
+/_delete user <userId> del_smp=on|off[ <json(viewPwd)>]
+```
+
+```javascript
+'/_delete user ' + userId + ' del_smp=' + (delSMPQueues ? 'on' : 'off') + (viewPwd ? ' ' + JSON.stringify(viewPwd) : '') // JavaScript
+```
+
+
 **Response**:
 
 CmdOk: Ok.
@@ -912,6 +1200,17 @@ Update user profile.
 **Parameters**:
 - userId: Int64
 - profile: [Profile](./TYPES.md#profile)
+
+**Syntax**:
+
+```
+/_profile <userId> <json(profile)>
+```
+
+```javascript
+'/_profile ' + userId + ' ' + JSON.stringify(profile) // JavaScript
+```
+
 
 **Response**:
 

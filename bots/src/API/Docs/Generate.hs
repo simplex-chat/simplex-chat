@@ -12,11 +12,11 @@ import API.Docs.Types
 import API.TypeInfo
 import Control.Monad
 import Data.Char (isSpace, isUpper, toLower, toUpper)
-import Data.List (find, sortOn)
+import Data.List (find, intercalate, sortOn)
 import qualified Data.Set as S
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import Simplex.Messaging.Parsers (dropPrefix, fstToLower)
+import Simplex.Messaging.Parsers (dropPrefix)
 import System.IO
 
 commandsDocFile :: FilePath
@@ -40,26 +40,25 @@ generateCommandsDoc =
       forM_ commands $ \CCDoc {consName, commandDescr, responses, syntax} -> do
         T.hPutStrLn h $ "\n\n### " <> T.pack consName <> "\n\n" <> commandDescr
         case find ((consName ==) . consName') chatCommandsTypeInfo of
-          Just RecordTypeInfo {fieldInfos = params}
-            | length params == 0 -> pure ()
-            | otherwise -> do
-                hPutStrLn h "\n**Parameters**:"
-                printFields h "./TYPES.md" docTypes Nothing params
           Nothing -> error "Missing command type info"
-        unless (syntax == "") $ do
-          hPutStrLn h $ "\n**Syntax**:\n"
-          hPutStrLn h $ "```\n" <> renderDocSyntax syntax <> "\n```\n"
-          unless (isConst syntax) $ hPutStrLn h $ "```javascript\n" <> renderJSSyntax syntax <> " // JavaScript\n```\n"
-        hPutStrLn h $ if length responses > 1 then "\n**Responses**:" else "\n**Response**:"
-        forM_ responses $ \name ->
-          case (find ((name ==) . consName') chatResponsesTypeInfo, find ((name ==) . consName') chatResponsesDocs) of
-            (Just RecordTypeInfo {fieldInfos}, Just CRDoc {responseDescr}) -> do
-              let respType = dropPrefix "CR" name
-                  respDescr = if null responseDescr then camelToSpace respType else responseDescr
-              hPutStrLn h $ "\n" <> fstToUpper respType <> ": " <> respDescr <> "."
-              printFields h "./TYPES.md" docTypes (Just respType) fieldInfos
-            _ -> error "Missing type info or response description"
-        hPutStrLn h "\n---"
+          Just cmd@RecordTypeInfo {fieldInfos = params} -> do
+            unless (null params) $ do
+              hPutStrLn h "\n**Parameters**:"
+              printFields h "./TYPES.md" docTypes Nothing params
+            unless (null syntax) $ do
+              hPutStrLn h $ "\n**Syntax**:\n"
+              hPutStrLn h $ "```\n" <> intercalate "\n" (map (renderDocSyntax cmd) syntax) <> "\n```\n"
+              unless (all isConst syntax) $ hPutStrLn h $ "```javascript\n" <> intercalate "\n" (map (renderJSSyntax cmd) syntax) <> (if length syntax == 1 then " // JavaScript" else "") <> "\n```\n"
+            hPutStrLn h $ if length responses > 1 then "\n**Responses**:" else "\n**Response**:"
+            forM_ responses $ \name ->
+              case (find ((name ==) . consName') chatResponsesTypeInfo, find ((name ==) . consName') chatResponsesDocs) of
+                (Just RecordTypeInfo {fieldInfos}, Just CRDoc {responseDescr}) -> do
+                  let respType = dropPrefix "CR" name
+                      respDescr = if null responseDescr then camelToSpace respType else responseDescr
+                  hPutStrLn h $ "\n" <> fstToUpper respType <> ": " <> respDescr <> "."
+                  printFields h "./TYPES.md" docTypes (Just respType) fieldInfos
+                _ -> error "Missing type info or response description"
+            hPutStrLn h "\n---"
   where
     camelToSpace :: String -> String
     camelToSpace [] = []
@@ -94,32 +93,31 @@ generateTypesDoc = do
     forM_ ctds $ \t -> do
       let name = docTypeName t
       hPutStrLn h $ "- " <> withLink "" name
-    forM_ ctds $ \CTDoc {typeInfo = STI name records, jsonEncoding, consPrefix, typeDescr} -> do
+    forM_ ctds $ \CTDoc {typeInfo = STI name constrs, jsonEncoding, consPrefix, typeDescr} -> do
       hPutStrLn h $ "\n\n---\n\n## " <> name
       unless (T.null typeDescr) $ T.hPutStrLn h $ "\n" <> typeDescr
-      case records of
+      case constrs of
         [] -> pure ()
         RecordTypeInfo {fieldInfos = fields} : _ -> case jsonEncoding of
           Just STRecord
-            | length records > 1 -> error $ "No sum encoding for type: " <> name
+            | length constrs > 1 -> error $ "No sum encoding for type: " <> name
             | otherwise -> do
                 hPutStrLn h $ "\n**Record type**:"
                 printFields h "" docTypes Nothing fields
           Just STUnion -> do
             hPutStrLn h $ "\n**Discriminated union type**:"
-            forM_ records $ \RecordTypeInfo {consName, fieldInfos} -> do
-              let tag = if null consPrefix then fstToLower consName else dropPrefix consPrefix consName
+            forM_ constrs $ \RecordTypeInfo {consName, fieldInfos} -> do
+              let tag = dropPrefix consPrefix consName
               hPutStrLn h $ "\n" <> fstToUpper tag <> ":"
               printFields h "" docTypes (Just tag) fieldInfos
           Just STEnum -> do
             hPutStrLn h $ "\n**Enum type**:"
-            forM_ records $ \RecordTypeInfo {consName, fieldInfos} -> do
+            forM_ constrs $ \RecordTypeInfo {consName, fieldInfos} -> do
               unless (null fieldInfos) $ error $ "Enum encoding with fields: " <> name
-              let tag = if null consPrefix then fstToLower consName else dropPrefix consPrefix consName
-              hPutStrLn h $ "- \"" <> tag <> "\""
+              hPutStrLn h $ "- \"" <> dropPrefix consPrefix consName <> "\""
           Just (STEnum' f) -> do
             hPutStrLn h $ "\n**Enum type**:"
-            forM_ records $ mapM_  (\tag -> hPutStrLn h $ "- \"" <> tag <> "\"") . f
+            forM_ constrs $ mapM_  (\tag -> hPutStrLn h $ "- \"" <> tag <> "\"") . f
           Nothing -> pure ()
 
 autoGenerated :: String
