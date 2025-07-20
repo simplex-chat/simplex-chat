@@ -43,8 +43,8 @@ documentedCmds = concatMap (map consName' . commands) chatCommandsDocs
 documentedResps :: [String]
 documentedResps = map consName' chatResponsesDocs
 
-documentedEvents :: [String]
-documentedEvents = concatMap (\cat -> map consName' $ mainEvents cat ++ otherEvents cat) chatEventsDocs
+documentedEvts :: [String]
+documentedEvts = concatMap (\cat -> map consName' $ mainEvents cat ++ otherEvents cat) chatEventsDocs
 
 documentedTypes :: [String]
 documentedTypes = map docTypeName chatTypesDocs
@@ -78,22 +78,24 @@ testResponsesHaveDocs = do
 testEventsHaveDocs :: IO ()
 testEventsHaveDocs = do
   let typeEvts = sort $ map consName' chatEventsTypeInfo
-      allEvts = sort $ documentedEvents ++ undocumentedEvents
+      allEvts = sort $ documentedEvts ++ undocumentedEvents
       missingEvts = typeEvts \\ allEvts
       extraEvts = allEvts \\ typeEvts
   unless (null missingEvts) $ expectationFailure $ "Undocumented events: " <> intercalate ", " missingEvts
   unless (null extraEvts) $ expectationFailure $ "Unused events: " <> intercalate ", " extraEvts
-  putStrLn $ "Documented events: " <> show (length documentedEvents) <> "/" <> show (length allEvts)
+  putStrLn $ "Documented events: " <> show (length documentedEvts) <> "/" <> show (length allEvts)
   allEvts `shouldBe` typeEvts -- sanity check
 
 testTypesHaveDocs :: IO ()
 testTypesHaveDocs = do
   let docCmds = S.fromList documentedCmds
       docResps = S.fromList documentedResps
+      docEvts = S.fromList documentedEvts
       cmds = filter ((`S.member` docCmds) . consName') chatCommandsTypeInfo
       resps = filter ((`S.member` docResps) . consName') chatResponsesTypeInfo
+      evts = filter ((`S.member` docEvts) . consName') chatEventsTypeInfo
       allDocTypes = sort $ documentedTypes ++ primitiveTypes
-      mainApiTypes = M.unions $ map recTypes $ cmds ++ resps
+      mainApiTypes = M.unions $ map recTypes $ cmds ++ resps ++ evts
       (mft1, fieldTypeNames) = getFieldTypes S.empty $ M.keys mainApiTypes
       (mft2, fieldTypeDocs) = getTypeDocs $ sort fieldTypeNames
       mft = S.union mft1 mft2
@@ -105,6 +107,8 @@ testTypesHaveDocs = do
   unless (null extraTypes) $ expectationFailure $ "Unused types: " <> intercalate ", " extraTypes
   unless (null missingTypes) $ expectationFailure $ "Undocumented types: " <> intercalate ", " (map (\t -> maybe t (((t <> ": ") <>) . show . S.toList) $ M.lookup t apiTypes) missingTypes)
   unless (null mft) $ expectationFailure $ "Missing field types: " <> intercalate ", " (S.toList mft) -- sanity check?
+  allTypes `shouldBe` allDocTypes -- sanity check
+  putStrLn $ "Documented types: " <> show (length allTypes)
   where
     recTypes :: RecordTypeInfo -> M.Map ConsName (S.Set ConsName)
     recTypes RecordTypeInfo {consName, fieldInfos} = foldl' (\m FieldInfo {typeInfo} -> foldl' (\m' t -> M.alter (Just . maybe (S.singleton consName) (S.insert consName)) t m') m $ types typeInfo) M.empty fieldInfos

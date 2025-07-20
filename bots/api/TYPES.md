@@ -3,11 +3,15 @@
 This file is generated automatically.
 
 - [ACIReaction](#acireaction)
+- [AChat](#achat)
 - [AChatItem](#achatitem)
 - [AddressSettings](#addresssettings)
+- [AgentCryptoError](#agentcryptoerror)
+- [AgentErrorType](#agenterrortype)
 - [AutoAccept](#autoaccept)
 - [BlockingInfo](#blockinginfo)
 - [BlockingReason](#blockingreason)
+- [BrokerErrorType](#brokererrortype)
 - [BusinessChatInfo](#businesschatinfo)
 - [BusinessChatType](#businesschattype)
 - [CICallStatus](#cicallstatus)
@@ -37,13 +41,17 @@ This file is generated automatically.
 - [ChatItemDeletion](#chatitemdeletion)
 - [ChatRef](#chatref)
 - [ChatSettings](#chatsettings)
+- [ChatStats](#chatstats)
 - [ChatType](#chattype)
 - [ChatWallpaper](#chatwallpaper)
 - [ChatWallpaperScale](#chatwallpaperscale)
+- [CommandError](#commanderror)
+- [CommandErrorType](#commanderrortype)
 - [ComposedMessage](#composedmessage)
 - [ConnStatus](#connstatus)
 - [ConnType](#conntype)
 - [Connection](#connection)
+- [ConnectionErrorType](#connectionerrortype)
 - [ConnectionMode](#connectionmode)
 - [ConnectionPlan](#connectionplan)
 - [Contact](#contact)
@@ -57,9 +65,11 @@ This file is generated automatically.
 - [CryptoFile](#cryptofile)
 - [CryptoFileArgs](#cryptofileargs)
 - [E2EInfo](#e2einfo)
+- [ErrorType](#errortype)
 - [FeatureAllowed](#featureallowed)
 - [FileDescr](#filedescr)
 - [FileError](#fileerror)
+- [FileErrorType](#fileerrortype)
 - [FileInvitation](#fileinvitation)
 - [FileProtocol](#fileprotocol)
 - [FileStatus](#filestatus)
@@ -90,6 +100,7 @@ This file is generated automatically.
 - [GroupShortLinkData](#groupshortlinkdata)
 - [GroupSummary](#groupsummary)
 - [GroupSupportChat](#groupsupportchat)
+- [HandshakeError](#handshakeerror)
 - [InlineFileMode](#inlinefilemode)
 - [InvitationLinkPlan](#invitationlinkplan)
 - [InvitedBy](#invitedby)
@@ -114,6 +125,9 @@ This file is generated automatically.
 - [PreparedContact](#preparedcontact)
 - [PreparedGroup](#preparedgroup)
 - [Profile](#profile)
+- [ProxyClientError](#proxyclienterror)
+- [ProxyError](#proxyerror)
+- [RCErrorType](#rcerrortype)
 - [RatchetSyncState](#ratchetsyncstate)
 - [RcvConnEvent](#rcvconnevent)
 - [RcvDirectEvent](#rcvdirectevent)
@@ -124,6 +138,7 @@ This file is generated automatically.
 - [RcvGroupEvent](#rcvgroupevent)
 - [ReportReason](#reportreason)
 - [RoleGroupPreference](#rolegrouppreference)
+- [SMPAgentError](#smpagenterror)
 - [SecurityCode](#securitycode)
 - [SendRef](#sendref)
 - [SimplePreference](#simplepreference)
@@ -137,6 +152,7 @@ This file is generated automatically.
 - [SwitchPhase](#switchphase)
 - [TimedMessagesGroupPreference](#timedmessagesgrouppreference)
 - [TimedMessagesPreference](#timedmessagespreference)
+- [TransportError](#transporterror)
 - [UIColorMode](#uicolormode)
 - [UIColors](#uicolors)
 - [UIThemeEntityOverride](#uithemeentityoverride)
@@ -150,6 +166,7 @@ This file is generated automatically.
 - [UserProfileUpdateSummary](#userprofileupdatesummary)
 - [UserPwdHash](#userpwdhash)
 - [VersionRange](#versionrange)
+- [XFTPErrorType](#xftperrortype)
 - [XFTPRcvFile](#xftprcvfile)
 - [XFTPSndFile](#xftpsndfile)
 
@@ -161,6 +178,16 @@ This file is generated automatically.
 **Record type**:
 - chatInfo: [ChatInfo](#chatinfo)
 - chatReaction: [CIReaction](#cireaction)
+
+
+---
+
+## AChat
+
+**Record type**:
+- chatInfo: [ChatInfo](#chatinfo)
+- chatItems: [[ChatItem](#chatitem)]
+- chatStats: [ChatStats](#chatstats)
 
 
 ---
@@ -180,6 +207,103 @@ This file is generated automatically.
 - businessAddress: bool
 - autoAccept: [AutoAccept](#autoaccept)?
 - autoReply: [MsgContent](#msgcontent)?
+
+
+---
+
+## AgentCryptoError
+
+**Discriminated union type**:
+
+DECRYPT_AES:
+- type: "DECRYPT_AES"
+
+DECRYPT_CB:
+- type: "DECRYPT_CB"
+
+RATCHET_HEADER:
+- type: "RATCHET_HEADER"
+
+RATCHET_EARLIER:
+- type: "RATCHET_EARLIER"
+- : word32
+
+RATCHET_SKIPPED:
+- type: "RATCHET_SKIPPED"
+- : word32
+
+RATCHET_SYNC:
+- type: "RATCHET_SYNC"
+
+
+---
+
+## AgentErrorType
+
+**Discriminated union type**:
+
+CMD:
+- type: "CMD"
+- cmdErr: [CommandErrorType](#commanderrortype)
+- errContext: string
+
+CONN:
+- type: "CONN"
+- connErr: [ConnectionErrorType](#connectionerrortype)
+- errContext: string
+
+NO_USER:
+- type: "NO_USER"
+
+SMP:
+- type: "SMP"
+- serverAddress: string
+- smpErr: [ErrorType](#errortype)
+
+NTF:
+- type: "NTF"
+- serverAddress: string
+- ntfErr: [ErrorType](#errortype)
+
+XFTP:
+- type: "XFTP"
+- serverAddress: string
+- xftpErr: [XFTPErrorType](#xftperrortype)
+
+FILE:
+- type: "FILE"
+- fileErr: [FileErrorType](#fileerrortype)
+
+PROXY:
+- type: "PROXY"
+- proxyServer: string
+- relayServer: string
+- proxyErr: [ProxyClientError](#proxyclienterror)
+
+RCP:
+- type: "RCP"
+- rcpErr: [RCErrorType](#rcerrortype)
+
+BROKER:
+- type: "BROKER"
+- brokerAddress: string
+- brokerErr: [BrokerErrorType](#brokererrortype)
+
+AGENT:
+- type: "AGENT"
+- agentErr: [SMPAgentError](#smpagenterror)
+
+INTERNAL:
+- type: "INTERNAL"
+- internalErr: string
+
+CRITICAL:
+- type: "CRITICAL"
+- offerRestart: bool
+- criticalErr: string
+
+INACTIVE:
+- type: "INACTIVE"
 
 
 ---
@@ -205,6 +329,37 @@ This file is generated automatically.
 **Enum type**:
 - "spam"
 - "content"
+
+
+---
+
+## BrokerErrorType
+
+**Discriminated union type**:
+
+RESPONSE:
+- type: "RESPONSE"
+- respErr: string
+
+UNEXPECTED:
+- type: "UNEXPECTED"
+- respErr: string
+
+NETWORK:
+- type: "NETWORK"
+
+HOST:
+- type: "HOST"
+
+NO_SERVICE:
+- type: "NO_SERVICE"
+
+TRANSPORT:
+- type: "TRANSPORT"
+- transportErr: [TransportError](#transporterror)
+
+TIMEOUT:
+- type: "TIMEOUT"
 
 
 ---
@@ -831,6 +986,18 @@ Message deletion result.
 
 ---
 
+## ChatStats
+
+**Record type**:
+- unreadCount: int
+- unreadMentions: int
+- reportsCount: int
+- minUnreadItemId: int64
+- unreadChat: bool
+
+
+---
+
 ## ChatType
 
 **Enum type**:
@@ -862,6 +1029,53 @@ Message deletion result.
 - "fill"
 - "fit"
 - "repeat"
+
+
+---
+
+## CommandError
+
+**Discriminated union type**:
+
+UNKNOWN:
+- type: "UNKNOWN"
+
+SYNTAX:
+- type: "SYNTAX"
+
+PROHIBITED:
+- type: "PROHIBITED"
+
+NO_AUTH:
+- type: "NO_AUTH"
+
+HAS_AUTH:
+- type: "HAS_AUTH"
+
+NO_ENTITY:
+- type: "NO_ENTITY"
+
+
+---
+
+## CommandErrorType
+
+**Discriminated union type**:
+
+PROHIBITED:
+- type: "PROHIBITED"
+
+SYNTAX:
+- type: "SYNTAX"
+
+NO_CONN:
+- type: "NO_CONN"
+
+SIZE:
+- type: "SIZE"
+
+LARGE:
+- type: "LARGE"
 
 
 ---
@@ -921,6 +1135,28 @@ Message deletion result.
 - authErrCounter: int
 - quotaErrCounter: int
 - createdAt: [UTCTime](#utctime)
+
+
+---
+
+## ConnectionErrorType
+
+**Discriminated union type**:
+
+NOT_FOUND:
+- type: "NOT_FOUND"
+
+DUPLICATE:
+- type: "DUPLICATE"
+
+SIMPLEX:
+- type: "SIMPLEX"
+
+NOT_ACCEPTED:
+- type: "NOT_ACCEPTED"
+
+NOT_AVAILABLE:
+- type: "NOT_AVAILABLE"
 
 
 ---
@@ -1107,6 +1343,62 @@ User:
 
 ---
 
+## ErrorType
+
+**Discriminated union type**:
+
+BLOCK:
+- type: "BLOCK"
+
+SESSION:
+- type: "SESSION"
+
+CMD:
+- type: "CMD"
+- cmdErr: [CommandError](#commanderror)
+
+PROXY:
+- type: "PROXY"
+- proxyErr: [ProxyError](#proxyerror)
+
+AUTH:
+- type: "AUTH"
+
+BLOCKED:
+- type: "BLOCKED"
+- blockInfo: [BlockingInfo](#blockinginfo)
+
+SERVICE:
+- type: "SERVICE"
+
+CRYPTO:
+- type: "CRYPTO"
+
+QUOTA:
+- type: "QUOTA"
+
+STORE:
+- type: "STORE"
+- storeErr: string
+
+NO_MSG:
+- type: "NO_MSG"
+
+LARGE_MSG:
+- type: "LARGE_MSG"
+
+EXPIRED:
+- type: "EXPIRED"
+
+INTERNAL:
+- type: "INTERNAL"
+
+DUPLICATE_:
+- type: "DUPLICATE_"
+
+
+---
+
 ## FeatureAllowed
 
 **Enum type**:
@@ -1153,6 +1445,30 @@ Other:
 
 ---
 
+## FileErrorType
+
+**Discriminated union type**:
+
+NOT_APPROVED:
+- type: "NOT_APPROVED"
+
+SIZE:
+- type: "SIZE"
+
+REDIRECT:
+- type: "REDIRECT"
+- redirectError: string
+
+FILE_IO:
+- type: "FILE_IO"
+- fileIOError: string
+
+NO_FILE:
+- type: "NO_FILE"
+
+
+---
+
 ## FileInvitation
 
 **Record type**:
@@ -1169,8 +1485,8 @@ Other:
 ## FileProtocol
 
 **Enum type**:
-- "sMP"
-- "xFTP"
+- "SMP"
+- "XFTP"
 - "local"
 
 
@@ -1574,6 +1890,17 @@ Known:
 
 ---
 
+## HandshakeError
+
+**Enum type**:
+- "PARSE"
+- "IDENTITY"
+- "BAD_AUTH"
+- "BAD_SERVICE"
+
+
+---
+
 ## InlineFileMode
 
 **Enum type**:
@@ -1939,6 +2266,105 @@ Unknown:
 
 ---
 
+## ProxyClientError
+
+**Discriminated union type**:
+
+ProtocolError:
+- type: "protocolError"
+- protocolErr: [ErrorType](#errortype)
+
+UnexpectedResponse:
+- type: "unexpectedResponse"
+- responseStr: string
+
+ResponseError:
+- type: "responseError"
+- responseErr: [ErrorType](#errortype)
+
+
+---
+
+## ProxyError
+
+**Discriminated union type**:
+
+PROTOCOL:
+- type: "PROTOCOL"
+- protocolErr: [ErrorType](#errortype)
+
+BROKER:
+- type: "BROKER"
+- brokerErr: [BrokerErrorType](#brokererrortype)
+
+BASIC_AUTH:
+- type: "BASIC_AUTH"
+
+NO_SESSION:
+- type: "NO_SESSION"
+
+
+---
+
+## RCErrorType
+
+**Discriminated union type**:
+
+Internal:
+- type: "internal"
+- internalErr: string
+
+Identity:
+- type: "identity"
+
+NoLocalAddress:
+- type: "noLocalAddress"
+
+NewController:
+- type: "newController"
+
+NotDiscovered:
+- type: "notDiscovered"
+
+TLSStartFailed:
+- type: "tLSStartFailed"
+
+Exception:
+- type: "exception"
+- exception: string
+
+CtrlAuth:
+- type: "ctrlAuth"
+
+CtrlNotFound:
+- type: "ctrlNotFound"
+
+CtrlError:
+- type: "ctrlError"
+- ctrlErr: string
+
+Invitation:
+- type: "invitation"
+
+Version:
+- type: "version"
+
+Encrypt:
+- type: "encrypt"
+
+Decrypt:
+- type: "decrypt"
+
+BlockSize:
+- type: "blockSize"
+
+Syntax:
+- type: "syntax"
+- syntaxErr: string
+
+
+---
+
 ## RatchetSyncState
 
 **Enum type**:
@@ -2140,6 +2566,38 @@ NewMemberPendingReview:
 **Record type**:
 - enable: [GroupFeatureEnabled](#groupfeatureenabled)
 - role: [GroupMemberRole](#groupmemberrole)?
+
+
+---
+
+## SMPAgentError
+
+**Discriminated union type**:
+
+A_MESSAGE:
+- type: "A_MESSAGE"
+
+A_PROHIBITED:
+- type: "A_PROHIBITED"
+- prohibitedErr: string
+
+A_VERSION:
+- type: "A_VERSION"
+
+A_LINK:
+- type: "A_LINK"
+- linkErr: string
+
+A_CRYPTO:
+- type: "A_CRYPTO"
+- cryptoErr: [AgentCryptoError](#agentcryptoerror)
+
+A_DUPLICATE:
+- type: "A_DUPLICATE"
+
+A_QUEUE:
+- type: "A_QUEUE"
+- queueErr: string
 
 
 ---
@@ -2349,6 +2807,32 @@ Other:
 
 ---
 
+## TransportError
+
+**Discriminated union type**:
+
+BadBlock:
+- type: "badBlock"
+
+Version:
+- type: "version"
+
+LargeMsg:
+- type: "largeMsg"
+
+BadSession:
+- type: "badSession"
+
+NoServerAuth:
+- type: "noServerAuth"
+
+Handshake:
+- type: "handshake"
+- handshakeErr: [HandshakeError](#handshakeerror)
+
+
+---
+
 ## UIColorMode
 
 **Enum type**:
@@ -2499,6 +2983,63 @@ Timestampe in ISO8601 format as string.
 **Record type**:
 - minVersion: int
 - maxVersion: int
+
+
+---
+
+## XFTPErrorType
+
+**Discriminated union type**:
+
+BLOCK:
+- type: "BLOCK"
+
+SESSION:
+- type: "SESSION"
+
+HANDSHAKE:
+- type: "HANDSHAKE"
+
+CMD:
+- type: "CMD"
+- cmdErr: [CommandError](#commanderror)
+
+AUTH:
+- type: "AUTH"
+
+BLOCKED:
+- type: "BLOCKED"
+- blockInfo: [BlockingInfo](#blockinginfo)
+
+SIZE:
+- type: "SIZE"
+
+QUOTA:
+- type: "QUOTA"
+
+DIGEST:
+- type: "DIGEST"
+
+CRYPTO:
+- type: "CRYPTO"
+
+NO_FILE:
+- type: "NO_FILE"
+
+HAS_FILE:
+- type: "HAS_FILE"
+
+FILE_IO:
+- type: "FILE_IO"
+
+TIMEOUT:
+- type: "TIMEOUT"
+
+INTERNAL:
+- type: "INTERNAL"
+
+DUPLICATE_:
+- type: "DUPLICATE_"
 
 
 ---

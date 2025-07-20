@@ -24,10 +24,15 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
+import Simplex.FileTransfer.Transport
+import Simplex.FileTransfer.Types hiding (RcvFileStatus) -- the type with the same name is used in simplex-chat.
 import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Client
 import Simplex.Messaging.Crypto.File
 import Simplex.Messaging.Parsers (dropPrefix, fstToLower)
-import Simplex.Messaging.Protocol (BlockingInfo (..), BlockingReason (..))
+import Simplex.Messaging.Protocol (BlockingInfo (..), BlockingReason (..), CommandError (..), ErrorType (..), ProxyError (..))
+import Simplex.Messaging.Transport
+import Simplex.RemoteControl.Types
 
 data CTDoc = CTDoc
   { typeInfo :: SumTypeInfo,
@@ -58,7 +63,9 @@ dropSuffix sfx s =
 
 chatTypesDocsData :: [(SumTypeInfo, Maybe SumTypeJsonEncoding, String, Text)]
 chatTypesDocsData =
-  [ ((sti @JSONChatInfo) {typeName = "ChatInfo"}, Just STUnion, "JCInfo", ""),
+  [
+    ((sti @(Chat 'CTDirect)) {typeName = "AChat"} , Just STRecord, "", ""),
+    ((sti @JSONChatInfo) {typeName = "ChatInfo"}, Just STUnion, "JCInfo", ""),
     ((sti @JSONCIContent) {typeName = "CIContent"}, Just STUnion, "JCI", ""),
     ((sti @JSONCIDeleted) {typeName = "CIDeleted"}, Just STUnion, "JCID", ""),
     ((sti @JSONCIDirection) {typeName = "CIDirection"}, Just STUnion, "JCI", ""),
@@ -82,9 +89,12 @@ chatTypesDocsData =
     (sti @(ContactUserPreference SimplePreference), Just STRecord, "", ""),
     (sti @(CreatedConnLink 'CMContact), Just STRecord, "", ""),
     (sti @AddressSettings, Just STRecord, "", ""),
+    (sti @AgentCryptoError, Just STUnion, "", ""),
+    (sti @AgentErrorType, Just STUnion, "", ""),
     (sti @AutoAccept, Just STRecord, "", ""),
     (sti @BlockingInfo, Just STRecord, "", ""),
     (sti @BlockingReason, Just STEnum, "BR", ""),
+    (sti @BrokerErrorType, Just STUnion, "", ""),
     (sti @BusinessChatInfo, Just STRecord, "", ""),
     (sti @BusinessChatType, Just STEnum, "BC", ""),
     (sti @ChatDeleteMode, Just STUnion, "CDM", ""),
@@ -92,6 +102,7 @@ chatTypesDocsData =
     (sti @ChatItemDeletion, Just STRecord, "", "Message deletion result."),
     (sti @ChatRef, Nothing, "", ""),
     (sti @ChatSettings, Just STRecord, "", ""),
+    (sti @ChatStats, Just STRecord, "", ""),
     (sti @ChatType, Just STEnum, "CT", ""),
     (sti @ChatWallpaper, Just STRecord, "", ""),
     (sti @ChatWallpaperScale, Just STEnum, "CWS", ""),
@@ -104,8 +115,11 @@ chatTypesDocsData =
     (sti @CIMentionMember, Just STRecord, "", ""),
     (sti @CIReactionCount, Just STRecord, "", ""),
     (sti @CITimed, Just STRecord, "", ""),
+    (sti @CommandError, Just STUnion, "", ""),
+    (sti @CommandErrorType, Just STUnion, "", ""),
     (sti @ComposedMessage, Just STRecord, "", ""),
     (sti @Connection, Just STRecord, "", ""),
+    (sti @ConnectionErrorType, Just STUnion, "", ""),
     (sti @ConnectionMode, Just STEnum, "CM", ""), -- incorrect, should be inv/con
     (sti @ConnectionPlan, Just STUnion, "CP", ""),
     (sti @ConnType, Just STEnum, "", ""), -- incorrect
@@ -117,9 +131,11 @@ chatTypesDocsData =
     (sti @CryptoFile, Just STRecord, "", ""),
     (sti @CryptoFileArgs, Just STRecord, "", ""),
     (sti @E2EInfo, Just STRecord, "", ""),
+    (sti @ErrorType, Just STUnion, "", ""),
     (sti @FeatureAllowed, Just STEnum, "FA", ""),
     (sti @FileDescr, Just STRecord, "", ""),
     (sti @FileError, Just STUnion, "FileErr", ""),
+    (sti @FileErrorType, Just STUnion, "", ""),
     (sti @FileInvitation, Just STRecord, "", ""),
     (sti @FileProtocol, Just STEnum, "FP", ""), -- incorrect, should be lowercase
     (sti @FileStatus, Just STEnum, "FS", ""),
@@ -149,6 +165,7 @@ chatTypesDocsData =
     (sti @GroupShortLinkData, Just STRecord, "", ""),
     (sti @GroupSummary, Just STRecord, "", ""),
     (sti @GroupSupportChat, Just STRecord, "", ""),
+    (sti @HandshakeError, Just STEnum, "", ""),
     (sti @InlineFileMode, Just STEnum, "IFM", ""),
     (sti @InvitationLinkPlan, Just STUnion, "ILP", ""),
     (sti @InvitedBy, Just STUnion, "IB", ""),
@@ -172,7 +189,10 @@ chatTypesDocsData =
     (sti @PreparedContact, Just STRecord, "", ""),
     (sti @PreparedGroup, Just STRecord, "", ""),
     (sti @Profile, Just STRecord, "", ""),
+    (sti @ProxyClientError, Just STUnion, "Proxy", ""),
+    (sti @ProxyError, Just STUnion, "", ""),
     (sti @RatchetSyncState, Just STEnum, "RS", ""),
+    (sti @RCErrorType, Just STUnion, "RCE", ""),
     (sti @RcvConnEvent, Just STUnion, "RCE", ""),
     (sti @RcvDirectEvent, Just STUnion, "RDE", ""),
     (sti @RcvFileDescr, Just STRecord, "", ""),
@@ -186,6 +206,7 @@ chatTypesDocsData =
     (sti @SendRef, Nothing, "", ""),
     (sti @SimplePreference, Just STRecord, "", ""),
     (sti @SimplexLinkType, Just STEnum, "XL", ""),
+    (sti @SMPAgentError, Just STUnion, "", ""),
     (sti @SndCIStatusProgress, Just STEnum, "SSP", ""),
     (sti @SndConnEvent, Just STUnion, "SCE", ""),
     (sti @SndError, Just STUnion, "SndErr", ""),
@@ -195,6 +216,7 @@ chatTypesDocsData =
     (sti @SwitchPhase, Just STEnum, "SP", ""),
     (sti @TimedMessagesGroupPreference, Just STRecord, "", ""),
     (sti @TimedMessagesPreference, Just STRecord, "", ""),
+    (sti @TransportError, Just STUnion, "TE", ""),
     (sti @UIColorMode, Just STEnum, "UCM", ""),
     (sti @UIColors, Just STRecord, "", ""),
     (sti @UIThemeEntityOverride, Just STRecord, "", ""),
@@ -206,16 +228,16 @@ chatTypesDocsData =
     (sti @UserInfo, Just STRecord, "", ""),
     (sti @UserProfileUpdateSummary, Just STRecord, "", ""),
     (sti @UserPwdHash, Just STRecord, "", ""),
+    (sti @XFTPErrorType, Just STUnion, "", ""),
     (sti @XFTPRcvFile, Just STRecord, "", ""),
     (sti @XFTPSndFile, Just STRecord, "", "")
-    -- ((sti @(Chat 'CTDirect)) {typeName = "AChat"} , Just STRecord, "", ""),
+
     -- (sti @ChatError, Just STUnion, "Chat", ""),
     -- (sti @ChatItemInfo, Just STRecord, "", ""),
     -- (sti @ChatItemVersion, Just STRecord, "", ""),
     -- (sti @ChatListQuery, Just STUnion, "CLQ", ""),
     -- (sti @ChatName, Just STRecord, "", ""),
     -- (sti @ChatPagination, Nothing, "CP", ""),
-    -- (sti @ChatStats, Just STRecord, "", ""),
     -- (sti @ConnectionStats, Just STRecord, "", ""),
     -- (sti @Group, Just STRecord, "", ""),
     -- (sti @GroupSndStatus, Just STUnion, "GSS", ""),
@@ -228,12 +250,15 @@ chatTypesDocsData =
     -- (sti @RcvSwitchStatus, Just STEnum, "", ""), -- incorrect
     -- (sti @SndQueueInfo, Just STRecord, "", ""),
     -- (sti @SndSwitchStatus, Just STEnum, "", ""), -- incorrect
+
+
  ]
 
 data SimplePreference = SimplePreference {allow :: FeatureAllowed} deriving (Generic)
 
 data RoleGroupPreference = RoleGroupPreference {enable :: GroupFeatureEnabled, role :: Maybe GroupMemberRole} deriving (Generic)
 
+deriving instance Generic (Chat c)
 deriving instance Generic (ChatItem c d)
 deriving instance Generic (CIFile d)
 deriving instance Generic (CIMeta c d)
@@ -243,9 +268,12 @@ deriving instance Generic (ContactUserPref p)
 deriving instance Generic (ContactUserPreference p)
 deriving instance Generic (CreatedConnLink m)
 deriving instance Generic AddressSettings
+deriving instance Generic AgentCryptoError
+deriving instance Generic AgentErrorType
 deriving instance Generic AutoAccept
 deriving instance Generic BlockingInfo
 deriving instance Generic BlockingReason
+deriving instance Generic BrokerErrorType
 deriving instance Generic BusinessChatInfo
 deriving instance Generic BusinessChatType
 deriving instance Generic ChatDeleteMode
@@ -253,6 +281,7 @@ deriving instance Generic ChatFeature
 deriving instance Generic ChatItemDeletion
 deriving instance Generic ChatRef
 deriving instance Generic ChatSettings
+deriving instance Generic ChatStats
 deriving instance Generic ChatType
 deriving instance Generic ChatWallpaper
 deriving instance Generic ChatWallpaperScale
@@ -265,8 +294,11 @@ deriving instance Generic CIMention
 deriving instance Generic CIMentionMember
 deriving instance Generic CIReactionCount
 deriving instance Generic CITimed
+deriving instance Generic CommandError
+deriving instance Generic CommandErrorType
 deriving instance Generic ComposedMessage
 deriving instance Generic Connection
+deriving instance Generic ConnectionErrorType
 deriving instance Generic ConnectionMode
 deriving instance Generic ConnectionPlan
 deriving instance Generic ConnType
@@ -278,9 +310,11 @@ deriving instance Generic ContactUserPreferences
 deriving instance Generic CryptoFile
 deriving instance Generic CryptoFileArgs
 deriving instance Generic E2EInfo
+deriving instance Generic ErrorType
 deriving instance Generic FeatureAllowed
 deriving instance Generic FileDescr
 deriving instance Generic FileError
+deriving instance Generic FileErrorType
 deriving instance Generic FileInvitation
 deriving instance Generic FileProtocol
 deriving instance Generic FileStatus
@@ -310,6 +344,7 @@ deriving instance Generic GroupProfile
 deriving instance Generic GroupShortLinkData
 deriving instance Generic GroupSummary
 deriving instance Generic GroupSupportChat
+deriving instance Generic HandshakeError
 deriving instance Generic InlineFileMode
 deriving instance Generic InvitationLinkPlan
 deriving instance Generic InvitedBy
@@ -339,7 +374,10 @@ deriving instance Generic Preferences
 deriving instance Generic PreparedContact
 deriving instance Generic PreparedGroup
 deriving instance Generic Profile
+deriving instance Generic ProxyClientError
+deriving instance Generic ProxyError
 deriving instance Generic RatchetSyncState
+deriving instance Generic RCErrorType
 deriving instance Generic RcvConnEvent
 deriving instance Generic RcvDirectEvent
 deriving instance Generic RcvFileDescr
@@ -351,6 +389,7 @@ deriving instance Generic ReportReason
 deriving instance Generic SecurityCode
 deriving instance Generic SendRef
 deriving instance Generic SimplexLinkType
+deriving instance Generic SMPAgentError
 deriving instance Generic SndCIStatusProgress
 deriving instance Generic SndConnEvent
 deriving instance Generic SndError
@@ -360,6 +399,7 @@ deriving instance Generic SrvError
 deriving instance Generic SwitchPhase
 deriving instance Generic TimedMessagesGroupPreference
 deriving instance Generic TimedMessagesPreference
+deriving instance Generic TransportError
 deriving instance Generic UIColorMode
 deriving instance Generic UIColors
 deriving instance Generic UIThemeEntityOverride
@@ -371,17 +411,16 @@ deriving instance Generic UserContactRequest
 deriving instance Generic UserInfo
 deriving instance Generic UserProfileUpdateSummary
 deriving instance Generic UserPwdHash
+deriving instance Generic XFTPErrorType
 deriving instance Generic XFTPRcvFile
 deriving instance Generic XFTPSndFile
 
--- deriving instance Generic (Chat c)
 -- deriving instance Generic ChatError
 -- deriving instance Generic ChatItemInfo
 -- deriving instance Generic ChatItemVersion
 -- deriving instance Generic ChatListQuery
 -- deriving instance Generic ChatName
 -- deriving instance Generic ChatPagination
--- deriving instance Generic ChatStats
 -- deriving instance Generic ConnectionStats
 -- deriving instance Generic Group
 -- deriving instance Generic GroupSndStatus

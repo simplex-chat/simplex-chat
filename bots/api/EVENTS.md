@@ -127,7 +127,7 @@ received - needs to be accepted
 - type: "receivedContactRequest"
 - user: [User](./TYPES.md#user)
 - contactRequest: [UserContactRequest](./TYPES.md#usercontactrequest)
-- chat_: AChat?
+- chat_: [AChat](./TYPES.md#achat)?
 
 ---
 
@@ -524,7 +524,7 @@ Rcv file error.
 - type: "rcvFileError"
 - user: [User](./TYPES.md#user)
 - chatItem_: [AChatItem](./TYPES.md#achatitem)?
-- agentError: AgentErrorType
+- agentError: [AgentErrorType](./TYPES.md#agenterrortype)
 - rcvFileTransfer: [RcvFileTransfer](./TYPES.md#rcvfiletransfer)
 
 ---
@@ -538,7 +538,7 @@ Rcv file warning.
 - type: "rcvFileWarning"
 - user: [User](./TYPES.md#user)
 - chatItem_: [AChatItem](./TYPES.md#achatitem)?
-- agentError: AgentErrorType
+- agentError: [AgentErrorType](./TYPES.md#agenterrortype)
 - rcvFileTransfer: [RcvFileTransfer](./TYPES.md#rcvfiletransfer)
 
 ---
