@@ -2755,9 +2755,9 @@ swipe action</note>
         <target>A tagok közötti közvetlen üzenetek le vannak tiltva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disable (keep overrides)" xml:space="preserve">
+      <trans-unit id="Disable (keep overrides)" xml:space="preserve" approved="no">
         <source>Disable (keep overrides)</source>
-        <target>Letiltás (felülírások megtartásával)</target>
+        <target state="translated">Letiltás (egyéni beállítások megtartása)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
@@ -2981,9 +2981,9 @@ chat item action</note>
         <target>Engedélyezés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable (keep overrides)" xml:space="preserve">
+      <trans-unit id="Enable (keep overrides)" xml:space="preserve" approved="no">
         <source>Enable (keep overrides)</source>
-        <target>Engedélyezés (felülírások megtartásával)</target>
+        <target state="translated">Engedélyezés (egyéni beállítások megtartása)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable Flux in Network &amp; servers settings for better metadata privacy." xml:space="preserve">
@@ -9516,14 +9516,14 @@ Repeat connection request?</source>
         <target>szerző</target>
         <note>member role</note>
       </trans-unit>
-      <trans-unit id="bad message ID" xml:space="preserve">
+      <trans-unit id="bad message ID" xml:space="preserve" approved="no">
         <source>bad message ID</source>
-        <target>téves üzenet ID</target>
+        <target state="translated">hibás az üzenet azonosítója</target>
         <note>integrity error chat item</note>
       </trans-unit>
-      <trans-unit id="bad message hash" xml:space="preserve">
+      <trans-unit id="bad message hash" xml:space="preserve" approved="no">
         <source>bad message hash</source>
-        <target>érvénytelen az üzenet hasítóértéke</target>
+        <target state="translated">hibás az üzenet hasítóértéke</target>
         <note>integrity error chat item</note>
       </trans-unit>
       <trans-unit id="blocked" xml:space="preserve">
@@ -9697,9 +9697,9 @@ marked deleted chat item preview text</note>
         <target>a partner nem rendelkezik e2e titkosítással</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="contact not ready" xml:space="preserve">
+      <trans-unit id="contact not ready" xml:space="preserve" approved="no">
         <source>contact not ready</source>
-        <target>a kapcsolat nem áll készen</target>
+        <target state="translated">a partner nem áll készen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="contact should accept…" xml:space="preserve">
@@ -9948,9 +9948,9 @@ pref value</note>
         <target>érvénytelen adat</target>
         <note>invalid chat item</note>
       </trans-unit>
-      <trans-unit id="invitation to group %@" xml:space="preserve">
+      <trans-unit id="invitation to group %@" xml:space="preserve" approved="no">
         <source>invitation to group %@</source>
-        <target>meghívás a(z) %@ csoportba</target>
+        <target state="translated">meghívás a(z) %@ nevű csoportba</target>
         <note>group name</note>
       </trans-unit>
       <trans-unit id="invite" xml:space="preserve">
