@@ -44,9 +44,6 @@ chatTypesDocs = map toCTDoc chatTypesDocsData
   where
     toCTDoc (typeInfo, jsonEncoding, consPrefix, typeDescr) = CTDoc {typeInfo, jsonEncoding, consPrefix, typeDescr}
 
-primitiveTypes :: [ConsName]
-primitiveTypes = ["Bool", "Int", "Int64", "Word32", "Double", "String", "UTCTime", "JSONObject"]
-
 data SumTypeJsonEncoding = STRecord | STUnion | STEnum | STEnum' (RecordTypeInfo -> Maybe String)
 
 enumEnc :: String -> String -> String -> RecordTypeInfo -> Maybe String
@@ -73,7 +70,9 @@ chatTypesDocsData =
     (STI "ChatError" [], Just STUnion, "Chat", ""),
     (STI "ConnStatus" [], Just STRecord, "", ""),
     (STI "FormatColor" [], Just STRecord, "", ""),
-    (STI "VersionRange" [RecordTypeInfo "VersionRange" [FieldInfo "minVersion" (ti "Int"), FieldInfo "maxVersion" (ti "Int")]], Just STRecord, "", ""),
+    (STI "JSONObject" [], Just STRecord, "", "Arbitrary JSON object."),
+    (STI "UTCTime" [], Just STRecord, "", "Timestampe in ISO8601 format as string."),
+    (STI "VersionRange" [RecordTypeInfo "VersionRange" [FieldInfo "minVersion" (ti TInt), FieldInfo "maxVersion" (ti TInt)]], Just STRecord, "", ""),
     (sti @(ChatItem 'CTDirect 'MDSnd), Just STRecord, "", ""),
     (sti @(CIFile 'MDSnd), Just STRecord, "", ""),
     (sti @(CIMeta 'CTDirect 'MDSnd), Just STRecord, "", ""),

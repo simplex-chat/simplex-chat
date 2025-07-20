@@ -93,6 +93,7 @@ This file is generated automatically.
 - [InlineFileMode](#inlinefilemode)
 - [InvitationLinkPlan](#invitationlinkplan)
 - [InvitedBy](#invitedby)
+- [JSONObject](#jsonobject)
 - [LinkContent](#linkcontent)
 - [LinkPreview](#linkpreview)
 - [LocalProfile](#localprofile)
@@ -140,6 +141,7 @@ This file is generated automatically.
 - [UIColors](#uicolors)
 - [UIThemeEntityOverride](#uithemeentityoverride)
 - [UIThemeEntityOverrides](#uithemeentityoverrides)
+- [UTCTime](#utctime)
 - [UpdatedMessage](#updatedmessage)
 - [User](#user)
 - [UserContactLink](#usercontactlink)
@@ -175,7 +177,7 @@ This file is generated automatically.
 ## AddressSettings
 
 **Record type**:
-- businessAddress: Bool
+- businessAddress: bool
 - autoAccept: [AutoAccept](#autoaccept)?
 - autoReply: [MsgContent](#msgcontent)?
 
@@ -185,7 +187,7 @@ This file is generated automatically.
 ## AutoAccept
 
 **Record type**:
-- acceptIncognito: Bool
+- acceptIncognito: bool
 
 
 ---
@@ -211,8 +213,8 @@ This file is generated automatically.
 
 **Record type**:
 - chatType: [BusinessChatType](#businesschattype)
-- businessId: String
-- customerId: String
+- businessId: string
+- customerId: string
 
 
 ---
@@ -264,12 +266,12 @@ RcvDeleted:
 SndCall:
 - type: "sndCall"
 - status: [CICallStatus](#cicallstatus)
-- duration: Int
+- duration: int
 
 RcvCall:
 - type: "rcvCall"
 - status: [CICallStatus](#cicallstatus)
-- duration: Int
+- duration: int
 
 RcvIntegrityError:
 - type: "rcvIntegrityError"
@@ -278,7 +280,7 @@ RcvIntegrityError:
 RcvDecryptionError:
 - type: "rcvDecryptionError"
 - msgDecryptError: [MsgDecryptError](#msgdecrypterror)
-- msgCount: Word32
+- msgCount: word32
 
 RcvGroupInvitation:
 - type: "rcvGroupInvitation"
@@ -314,38 +316,38 @@ RcvChatFeature:
 - type: "rcvChatFeature"
 - feature: [ChatFeature](#chatfeature)
 - enabled: [PrefEnabled](#prefenabled)
-- param: Int?
+- param: int?
 
 SndChatFeature:
 - type: "sndChatFeature"
 - feature: [ChatFeature](#chatfeature)
 - enabled: [PrefEnabled](#prefenabled)
-- param: Int?
+- param: int?
 
 RcvChatPreference:
 - type: "rcvChatPreference"
 - feature: [ChatFeature](#chatfeature)
 - allowed: [FeatureAllowed](#featureallowed)
-- param: Int?
+- param: int?
 
 SndChatPreference:
 - type: "sndChatPreference"
 - feature: [ChatFeature](#chatfeature)
 - allowed: [FeatureAllowed](#featureallowed)
-- param: Int?
+- param: int?
 
 RcvGroupFeature:
 - type: "rcvGroupFeature"
 - groupFeature: [GroupFeature](#groupfeature)
 - preference: [GroupPreference](#grouppreference)
-- param: Int?
+- param: int?
 - memberRole_: [GroupMemberRole](#groupmemberrole)?
 
 SndGroupFeature:
 - type: "sndGroupFeature"
 - groupFeature: [GroupFeature](#groupfeature)
 - preference: [GroupPreference](#grouppreference)
-- param: Int?
+- param: int?
 - memberRole_: [GroupMemberRole](#groupmemberrole)?
 
 RcvChatFeatureRejected:
@@ -384,7 +386,7 @@ RcvGroupE2EEInfo:
 InvalidJSON:
 - type: "invalidJSON"
 - direction: [MsgDirection](#msgdirection)
-- json: String
+- json: string
 
 
 ---
@@ -405,20 +407,20 @@ InvalidJSON:
 
 Deleted:
 - type: "deleted"
-- deletedTs: UTCTime?
+- deletedTs: [UTCTime](#utctime)?
 - chatType: [ChatType](#chattype)
 
 Blocked:
 - type: "blocked"
-- deletedTs: UTCTime?
+- deletedTs: [UTCTime](#utctime)?
 
 BlockedByAdmin:
 - type: "blockedByAdmin"
-- deletedTs: UTCTime?
+- deletedTs: [UTCTime](#utctime)?
 
 Moderated:
 - type: "moderated"
-- deletedTs: UTCTime?
+- deletedTs: [UTCTime](#utctime)?
 - byGroupMember: [GroupMember](#groupmember)
 
 
@@ -453,9 +455,9 @@ LocalRcv:
 ## CIFile
 
 **Record type**:
-- fileId: Int64
-- fileName: String
-- fileSize: Int64
+- fileId: int64
+- fileName: string
+- fileSize: int64
 - fileSource: [CryptoFile](#cryptofile)?
 - fileStatus: [CIFileStatus](#cifilestatus)
 - fileProtocol: [FileProtocol](#fileprotocol)
@@ -472,8 +474,8 @@ SndStored:
 
 SndTransfer:
 - type: "sndTransfer"
-- sndProgress: Int64
-- sndTotal: Int64
+- sndProgress: int64
+- sndTotal: int64
 
 SndCancelled:
 - type: "sndCancelled"
@@ -497,8 +499,8 @@ RcvAccepted:
 
 RcvTransfer:
 - type: "rcvTransfer"
-- rcvProgress: Int64
-- rcvTotal: Int64
+- rcvProgress: int64
+- rcvTotal: int64
 
 RcvAborted:
 - type: "rcvAborted"
@@ -519,7 +521,7 @@ RcvWarning:
 
 Invalid:
 - type: "invalid"
-- text: String
+- text: string
 
 
 ---
@@ -533,17 +535,17 @@ Unknown:
 
 Contact:
 - type: "contact"
-- chatName: String
+- chatName: string
 - msgDir: [MsgDirection](#msgdirection)
-- contactId: Int64?
-- chatItemId: Int64?
+- contactId: int64?
+- chatItemId: int64?
 
 Group:
 - type: "group"
-- chatName: String
+- chatName: string
 - msgDir: [MsgDirection](#msgdirection)
-- groupId: Int64?
-- chatItemId: Int64?
+- groupId: int64?
+- chatItemId: int64?
 
 
 ---
@@ -551,9 +553,9 @@ Group:
 ## CIGroupInvitation
 
 **Record type**:
-- groupId: Int64
-- groupMemberId: Int64
-- localDisplayName: String
+- groupId: int64
+- groupMemberId: int64
+- localDisplayName: string
 - groupProfile: [GroupProfile](#groupprofile)
 - status: [CIGroupInvitationStatus](#cigroupinvitationstatus)
 
@@ -574,7 +576,7 @@ Group:
 ## CIMention
 
 **Record type**:
-- memberId: String
+- memberId: string
 - memberRef: [CIMentionMember](#cimentionmember)?
 
 
@@ -583,9 +585,9 @@ Group:
 ## CIMentionMember
 
 **Record type**:
-- groupMemberId: Int64
-- displayName: String
-- localAlias: String?
+- groupMemberId: int64
+- displayName: string
+- localAlias: string?
 - memberRole: [GroupMemberRole](#groupmemberrole)
 
 
@@ -594,24 +596,24 @@ Group:
 ## CIMeta
 
 **Record type**:
-- itemId: Int64
-- itemTs: UTCTime
-- itemText: String
+- itemId: int64
+- itemTs: [UTCTime](#utctime)
+- itemText: string
 - itemStatus: [CIStatus](#cistatus)
-- sentViaProxy: Bool?
-- itemSharedMsgId: String?
+- sentViaProxy: bool?
+- itemSharedMsgId: string?
 - itemForwarded: [CIForwardedFrom](#ciforwardedfrom)?
 - itemDeleted: [CIDeleted](#cideleted)?
-- itemEdited: Bool
+- itemEdited: bool
 - itemTimed: [CITimed](#citimed)?
-- itemLive: Bool?
-- userMention: Bool
-- deletable: Bool
-- editable: Bool
-- forwardedByMember: Int64?
-- showGroupAsSender: Bool
-- createdAt: UTCTime
-- updatedAt: UTCTime
+- itemLive: bool?
+- userMention: bool
+- deletable: bool
+- editable: bool
+- forwardedByMember: int64?
+- showGroupAsSender: bool
+- createdAt: [UTCTime](#utctime)
+- updatedAt: [UTCTime](#utctime)
 
 
 ---
@@ -646,9 +648,9 @@ LocalRcv:
 
 **Record type**:
 - chatDir: [CIQDirection](#ciqdirection)
-- itemId: Int64?
-- sharedMsgId: String?
-- sentAt: UTCTime
+- itemId: int64?
+- sharedMsgId: string?
+- sentAt: [UTCTime](#utctime)
 - content: [MsgContent](#msgcontent)
 - formattedText: [[FormattedText](#formattedtext)]?
 
@@ -660,7 +662,7 @@ LocalRcv:
 **Record type**:
 - chatDir: [CIDirection](#cidirection)
 - chatItem: [ChatItem](#chatitem)
-- sentAt: UTCTime
+- sentAt: [UTCTime](#utctime)
 - reaction: [MsgReaction](#msgreaction)
 
 
@@ -670,8 +672,8 @@ LocalRcv:
 
 **Record type**:
 - reaction: [MsgReaction](#msgreaction)
-- userReacted: Bool
-- totalReacted: Int
+- userReacted: bool
+- totalReacted: int
 
 
 ---
@@ -711,7 +713,7 @@ RcvRead:
 
 Invalid:
 - type: "invalid"
-- text: String
+- text: string
 
 
 ---
@@ -719,8 +721,8 @@ Invalid:
 ## CITimed
 
 **Record type**:
-- ttl: Int
-- deleteAt: UTCTime?
+- ttl: int
+- deleteAt: [UTCTime](#utctime)?
 
 
 ---
@@ -731,11 +733,11 @@ Invalid:
 
 Full:
 - type: "full"
-- notify: Bool
+- notify: bool
 
 Entity:
 - type: "entity"
-- notify: Bool
+- notify: bool
 
 Messages:
 - type: "messages"
@@ -794,7 +796,7 @@ ContactConnection:
 - chatDir: [CIDirection](#cidirection)
 - meta: [CIMeta](#cimeta)
 - content: [CIContent](#cicontent)
-- mentions: {String : [CIMention](#cimention)}
+- mentions: {string : [CIMention](#cimention)}
 - formattedText: [[FormattedText](#formattedtext)]?
 - quotedItem: [CIQuote](#ciquote)?
 - reactions: [[CIReactionCount](#cireactioncount)]
@@ -823,8 +825,8 @@ Message deletion result.
 
 **Record type**:
 - enableNtfs: [MsgFilter](#msgfilter)
-- sendRcpts: Bool?
-- favorite: Bool
+- sendRcpts: bool?
+- favorite: bool
 
 
 ---
@@ -844,12 +846,12 @@ Message deletion result.
 ## ChatWallpaper
 
 **Record type**:
-- preset: String?
-- imageFile: String?
-- background: String?
-- tint: String?
+- preset: string?
+- imageFile: string?
+- background: string?
+- tint: string?
 - scaleType: [ChatWallpaperScale](#chatwallpaperscale)?
-- scale: Double?
+- scale: double?
 
 
 ---
@@ -868,9 +870,9 @@ Message deletion result.
 
 **Record type**:
 - fileSource: [CryptoFile](#cryptofile)?
-- quotedItemId: Int64?
+- quotedItemId: int64?
 - msgContent: [MsgContent](#msgcontent)
-- mentions: {String : Int64}
+- mentions: {string : int64}
 
 
 ---
@@ -895,30 +897,30 @@ Message deletion result.
 ## Connection
 
 **Record type**:
-- connId: Int64
-- agentConnId: String
-- connChatVersion: Int
+- connId: int64
+- agentConnId: string
+- connChatVersion: int
 - peerChatVRange: [VersionRange](#versionrange)
-- connLevel: Int
-- viaContact: Int64?
-- viaUserContactLink: Int64?
-- viaGroupLink: Bool
-- groupLinkId: String?
-- xContactId: String?
-- customUserProfileId: Int64?
+- connLevel: int
+- viaContact: int64?
+- viaUserContactLink: int64?
+- viaGroupLink: bool
+- groupLinkId: string?
+- xContactId: string?
+- customUserProfileId: int64?
 - connType: [ConnType](#conntype)
 - connStatus: [ConnStatus](#connstatus)
-- contactConnInitiated: Bool
-- localAlias: String
-- entityId: Int64?
+- contactConnInitiated: bool
+- localAlias: string
+- entityId: int64?
 - connectionCode: [SecurityCode](#securitycode)?
-- pqSupport: Bool
-- pqEncryption: Bool
-- pqSndEnabled: Bool?
-- pqRcvEnabled: Bool?
-- authErrCounter: Int
-- quotaErrCounter: Int
-- createdAt: UTCTime
+- pqSupport: bool
+- pqEncryption: bool
+- pqSndEnabled: bool?
+- pqRcvEnabled: bool?
+- authErrCounter: int
+- quotaErrCounter: int
+- createdAt: [UTCTime](#utctime)
 
 
 ---
@@ -958,28 +960,28 @@ Error:
 ## Contact
 
 **Record type**:
-- contactId: Int64
-- localDisplayName: String
+- contactId: int64
+- localDisplayName: string
 - profile: [LocalProfile](#localprofile)
 - activeConn: [Connection](#connection)?
-- viaGroup: Int64?
-- contactUsed: Bool
+- viaGroup: int64?
+- contactUsed: bool
 - contactStatus: [ContactStatus](#contactstatus)
 - chatSettings: [ChatSettings](#chatsettings)
 - userPreferences: [Preferences](#preferences)
 - mergedPreferences: [ContactUserPreferences](#contactuserpreferences)
-- createdAt: UTCTime
-- updatedAt: UTCTime
-- chatTs: UTCTime?
+- createdAt: [UTCTime](#utctime)
+- updatedAt: [UTCTime](#utctime)
+- chatTs: [UTCTime](#utctime)?
 - preparedContact: [PreparedContact](#preparedcontact)?
-- contactRequestId: Int64?
-- contactGroupMemberId: Int64?
-- contactGrpInvSent: Bool
-- chatTags: [Int64]
-- chatItemTTL: Int64?
+- contactRequestId: int64?
+- contactGroupMemberId: int64?
+- contactGrpInvSent: bool
+- chatTags: [int64]
+- chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
-- chatDeleted: Bool
-- customData: JSONObject?
+- chatDeleted: bool
+- customData: [JSONObject](#jsonobject)?
 
 
 ---
@@ -1018,7 +1020,7 @@ ContactViaAddress:
 **Record type**:
 - profile: [Profile](#profile)
 - message: [MsgContent](#msgcontent)?
-- business: Bool
+- business: bool
 
 
 ---
@@ -1073,8 +1075,8 @@ User:
 ## CreatedConnLink
 
 **Record type**:
-- connFullLink: String
-- connShortLink: String?
+- connFullLink: string
+- connShortLink: string?
 
 
 ---
@@ -1082,7 +1084,7 @@ User:
 ## CryptoFile
 
 **Record type**:
-- filePath: String
+- filePath: string
 - cryptoArgs: [CryptoFileArgs](#cryptofileargs)?
 
 
@@ -1091,8 +1093,8 @@ User:
 ## CryptoFileArgs
 
 **Record type**:
-- fileKey: String
-- fileNonce: String
+- fileKey: string
+- fileNonce: string
 
 
 ---
@@ -1100,7 +1102,7 @@ User:
 ## E2EInfo
 
 **Record type**:
-- pqEnabled: Bool?
+- pqEnabled: bool?
 
 
 ---
@@ -1118,9 +1120,9 @@ User:
 ## FileDescr
 
 **Record type**:
-- fileDescrText: String
-- fileDescrPartNo: Int
-- fileDescrComplete: Bool
+- fileDescrText: string
+- fileDescrPartNo: int
+- fileDescrComplete: bool
 
 
 ---
@@ -1134,7 +1136,7 @@ Auth:
 
 Blocked:
 - type: "blocked"
-- server: String
+- server: string
 - blockInfo: [BlockingInfo](#blockinginfo)
 
 NoFile:
@@ -1146,7 +1148,7 @@ Relay:
 
 Other:
 - type: "other"
-- fileError: String
+- fileError: string
 
 
 ---
@@ -1154,10 +1156,10 @@ Other:
 ## FileInvitation
 
 **Record type**:
-- fileName: String
-- fileSize: Int64
-- fileDigest: String?
-- fileConnReq: String?
+- fileName: string
+- fileSize: int64
+- fileDigest: string?
+- fileConnReq: string?
 - fileInline: [InlineFileMode](#inlinefilemode)?
 - fileDescr: [FileDescr](#filedescr)?
 
@@ -1189,15 +1191,15 @@ Other:
 ## FileTransferMeta
 
 **Record type**:
-- fileId: Int64
+- fileId: int64
 - xftpSndFile: [XFTPSndFile](#xftpsndfile)?
-- xftpRedirectFor: Int64?
-- fileName: String
-- filePath: String
-- fileSize: Int64
+- xftpRedirectFor: int64?
+- fileName: string
+- filePath: string
+- fileSize: int64
 - fileInline: [InlineFileMode](#inlinefilemode)?
-- chunkSize: Int64
-- cancelled: Bool
+- chunkSize: int64
+- cancelled: bool
 
 
 ---
@@ -1231,12 +1233,12 @@ Uri:
 SimplexLink:
 - type: "simplexLink"
 - linkType: [SimplexLinkType](#simplexlinktype)
-- simplexUri: String
-- smpHosts: [String]
+- simplexUri: string
+- smpHosts: [string]
 
 Mention:
 - type: "mention"
-- memberName: String
+- memberName: string
 
 Email:
 - type: "email"
@@ -1256,7 +1258,7 @@ Phone:
 
 **Record type**:
 - format: [Format](#format)?
-- text: String
+- text: string
 
 
 ---
@@ -1295,7 +1297,7 @@ Phone:
 
 MemberSupport:
 - type: "memberSupport"
-- groupMemberId_: Int64?
+- groupMemberId_: int64?
 
 
 ---
@@ -1339,24 +1341,24 @@ MemberSupport:
 ## GroupInfo
 
 **Record type**:
-- groupId: Int64
-- localDisplayName: String
+- groupId: int64
+- localDisplayName: string
 - groupProfile: [GroupProfile](#groupprofile)
-- localAlias: String
+- localAlias: string
 - businessChat: [BusinessChatInfo](#businesschatinfo)?
 - fullGroupPreferences: [FullGroupPreferences](#fullgrouppreferences)
 - membership: [GroupMember](#groupmember)
 - chatSettings: [ChatSettings](#chatsettings)
-- createdAt: UTCTime
-- updatedAt: UTCTime
-- chatTs: UTCTime?
-- userMemberProfileSentAt: UTCTime?
+- createdAt: [UTCTime](#utctime)
+- updatedAt: [UTCTime](#utctime)
+- chatTs: [UTCTime](#utctime)?
+- userMemberProfileSentAt: [UTCTime](#utctime)?
 - preparedGroup: [PreparedGroup](#preparedgroup)?
-- chatTags: [Int64]
-- chatItemTTL: Int64?
+- chatTags: [int64]
+- chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
-- customData: JSONObject?
-- membersRequireAttention: Int
+- customData: [JSONObject](#jsonobject)?
+- membersRequireAttention: int
 
 
 ---
@@ -1373,10 +1375,10 @@ MemberSupport:
 ## GroupLink
 
 **Record type**:
-- userContactLinkId: Int64
+- userContactLinkId: int64
 - connLinkContact: [CreatedConnLink](#createdconnlink)
-- shortLinkDataSet: Bool
-- groupLinkId: String
+- shortLinkDataSet: bool
+- groupLinkId: string
 - acceptMemberRole: [GroupMemberRole](#groupmemberrole)
 
 
@@ -1411,24 +1413,24 @@ Known:
 ## GroupMember
 
 **Record type**:
-- groupMemberId: Int64
-- groupId: Int64
-- memberId: String
+- groupMemberId: int64
+- groupId: int64
+- memberId: string
 - memberRole: [GroupMemberRole](#groupmemberrole)
 - memberCategory: [GroupMemberCategory](#groupmembercategory)
 - memberStatus: [GroupMemberStatus](#groupmemberstatus)
 - memberSettings: [GroupMemberSettings](#groupmembersettings)
-- blockedByAdmin: Bool
+- blockedByAdmin: bool
 - invitedBy: [InvitedBy](#invitedby)
-- invitedByGroupMemberId: Int64?
-- localDisplayName: String
+- invitedByGroupMemberId: int64?
+- localDisplayName: string
 - memberProfile: [LocalProfile](#localprofile)
-- memberContactId: Int64?
-- memberContactProfileId: Int64
+- memberContactId: int64?
+- memberContactProfileId: int64
 - activeConn: [Connection](#connection)?
 - memberChatVRange: [VersionRange](#versionrange)
-- createdAt: UTCTime
-- updatedAt: UTCTime
+- createdAt: [UTCTime](#utctime)
+- updatedAt: [UTCTime](#utctime)
 - supportChat: [GroupSupportChat](#groupsupportchat)?
 
 
@@ -1457,7 +1459,7 @@ Known:
 ## GroupMemberRef
 
 **Record type**:
-- groupMemberId: Int64
+- groupMemberId: int64
 - profile: [Profile](#profile)
 
 
@@ -1479,7 +1481,7 @@ Known:
 ## GroupMemberSettings
 
 **Record type**:
-- showMessages: Bool
+- showMessages: bool
 
 
 ---
@@ -1533,11 +1535,11 @@ Known:
 ## GroupProfile
 
 **Record type**:
-- displayName: String
-- fullName: String
-- shortDescr: String?
-- description: String?
-- image: String?
+- displayName: string
+- fullName: string
+- shortDescr: string?
+- description: string?
+- image: string?
 - groupPreferences: [GroupPreferences](#grouppreferences)?
 - memberAdmission: [GroupMemberAdmission](#groupmemberadmission)?
 
@@ -1555,7 +1557,7 @@ Known:
 ## GroupSummary
 
 **Record type**:
-- currentMembers: Int
+- currentMembers: int
 
 
 ---
@@ -1563,11 +1565,11 @@ Known:
 ## GroupSupportChat
 
 **Record type**:
-- chatTs: UTCTime
-- unread: Int64
-- memberAttention: Int64
-- mentions: Int64
-- lastMsgFromMemberTs: UTCTime?
+- chatTs: [UTCTime](#utctime)
+- unread: int64
+- memberAttention: int64
+- mentions: int64
+- lastMsgFromMemberTs: [UTCTime](#utctime)?
 
 
 ---
@@ -1609,13 +1611,20 @@ Known:
 
 Contact:
 - type: "contact"
-- byContactId: Int64
+- byContactId: int64
 
 User:
 - type: "user"
 
 Unknown:
 - type: "unknown"
+
+
+---
+
+## JSONObject
+
+Arbitrary JSON object.
 
 
 ---
@@ -1632,12 +1641,12 @@ Image:
 
 Video:
 - type: "video"
-- duration: Int?
+- duration: int?
 
 Unknown:
 - type: "unknown"
-- tag: String
-- json: JSONObject
+- tag: string
+- json: [JSONObject](#jsonobject)
 
 
 ---
@@ -1645,10 +1654,10 @@ Unknown:
 ## LinkPreview
 
 **Record type**:
-- uri: String
-- title: String
-- description: String
-- image: String
+- uri: string
+- title: string
+- description: string
+- image: string
 - content: [LinkContent](#linkcontent)?
 
 
@@ -1657,14 +1666,14 @@ Unknown:
 ## LocalProfile
 
 **Record type**:
-- profileId: Int64
-- displayName: String
-- fullName: String
-- shortDescr: String?
-- image: String?
-- contactLink: String?
+- profileId: int64
+- displayName: string
+- fullName: string
+- shortDescr: string?
+- image: string?
+- contactLink: string?
 - preferences: [Preferences](#preferences)?
-- localAlias: String
+- localAlias: string
 
 
 ---
@@ -1685,18 +1694,18 @@ Connection link sent in a message - only short links are allowed.
 
 Contact:
 - type: "contact"
-- connLink: String
+- connLink: string
 - profile: [Profile](#profile)
-- business: Bool
+- business: bool
 
 Invitation:
 - type: "invitation"
-- invLink: String
+- invLink: string
 - profile: [Profile](#profile)
 
 Group:
 - type: "group"
-- connLink: String
+- connLink: string
 - groupProfile: [GroupProfile](#groupprofile)
 
 
@@ -1708,48 +1717,48 @@ Group:
 
 Text:
 - type: "text"
-- text: String
+- text: string
 
 Link:
 - type: "link"
-- text: String
+- text: string
 - preview: [LinkPreview](#linkpreview)
 
 Image:
 - type: "image"
-- text: String
-- image: String
+- text: string
+- image: string
 
 Video:
 - type: "video"
-- text: String
-- image: String
-- duration: Int
+- text: string
+- image: string
+- duration: int
 
 Voice:
 - type: "voice"
-- text: String
-- duration: Int
+- text: string
+- duration: int
 
 File:
 - type: "file"
-- text: String
+- text: string
 
 Report:
 - type: "report"
-- text: String
+- text: string
 - reason: [ReportReason](#reportreason)
 
 Chat:
 - type: "chat"
-- text: String
+- text: string
 - chatLink: [MsgChatLink](#msgchatlink)
 
 Unknown:
 - type: "unknown"
-- tag: String
-- text: String
-- json: JSONObject
+- tag: string
+- text: string
+- json: [JSONObject](#jsonobject)
 
 
 ---
@@ -1781,12 +1790,12 @@ Unknown:
 
 MsgSkipped:
 - type: "msgSkipped"
-- fromMsgId: Int64
-- toMsgId: Int64
+- fromMsgId: int64
+- toMsgId: int64
 
 MsgBadId:
 - type: "msgBadId"
-- msgId: Int64
+- msgId: int64
 
 MsgBadHash:
 - type: "msgBadHash"
@@ -1813,12 +1822,12 @@ MsgDuplicate:
 
 Emoji:
 - type: "emoji"
-- emoji: String
+- emoji: string
 
 Unknown:
 - type: "unknown"
-- tag: String
-- json: JSONObject
+- tag: string
+- json: [JSONObject](#jsonobject)
 
 
 ---
@@ -1836,7 +1845,7 @@ Unknown:
 
 **Record type**:
 - profile: [Profile](#profile)?
-- pastTimestamp: Bool
+- pastTimestamp: bool
 
 
 ---
@@ -1844,13 +1853,13 @@ Unknown:
 ## NoteFolder
 
 **Record type**:
-- noteFolderId: Int64
-- userId: Int64
-- createdAt: UTCTime
-- updatedAt: UTCTime
-- chatTs: UTCTime
-- favorite: Bool
-- unread: Bool
+- noteFolderId: int64
+- userId: int64
+- createdAt: [UTCTime](#utctime)
+- updatedAt: [UTCTime](#utctime)
+- chatTs: [UTCTime](#utctime)
+- favorite: bool
+- unread: bool
 
 
 ---
@@ -1858,17 +1867,17 @@ Unknown:
 ## PendingContactConnection
 
 **Record type**:
-- pccConnId: Int64
-- pccAgentConnId: String
+- pccConnId: int64
+- pccAgentConnId: string
 - pccConnStatus: [ConnStatus](#connstatus)
-- viaContactUri: Bool
-- viaUserContactLink: Int64?
-- groupLinkId: String?
-- customUserProfileId: Int64?
+- viaContactUri: bool
+- viaUserContactLink: int64?
+- groupLinkId: string?
+- customUserProfileId: int64?
 - connLinkInv: [CreatedConnLink](#createdconnlink)?
-- localAlias: String
-- createdAt: UTCTime
-- updatedAt: UTCTime
+- localAlias: string
+- createdAt: [UTCTime](#utctime)
+- updatedAt: [UTCTime](#utctime)
 
 
 ---
@@ -1876,8 +1885,8 @@ Unknown:
 ## PrefEnabled
 
 **Record type**:
-- forUser: Bool
-- forContact: Bool
+- forUser: bool
+- forContact: bool
 
 
 ---
@@ -1899,8 +1908,8 @@ Unknown:
 **Record type**:
 - connLinkToConnect: [CreatedConnLink](#createdconnlink)
 - uiConnLinkType: [ConnectionMode](#connectionmode)
-- welcomeSharedMsgId: String?
-- requestSharedMsgId: String?
+- welcomeSharedMsgId: string?
+- requestSharedMsgId: string?
 
 
 ---
@@ -1909,10 +1918,10 @@ Unknown:
 
 **Record type**:
 - connLinkToConnect: [CreatedConnLink](#createdconnlink)
-- connLinkPreparedConnection: Bool
-- connLinkStartedConnection: Bool
-- welcomeSharedMsgId: String?
-- requestSharedMsgId: String?
+- connLinkPreparedConnection: bool
+- connLinkStartedConnection: bool
+- welcomeSharedMsgId: string?
+- requestSharedMsgId: string?
 
 
 ---
@@ -1920,11 +1929,11 @@ Unknown:
 ## Profile
 
 **Record type**:
-- displayName: String
-- fullName: String
-- shortDescr: String?
-- image: String?
-- contactLink: String?
+- displayName: string
+- fullName: string
+- shortDescr: string?
+- image: string?
+- contactLink: string?
 - preferences: [Preferences](#preferences)?
 
 
@@ -1959,7 +1968,7 @@ VerificationCodeReset:
 
 PqEnabled:
 - type: "pqEnabled"
-- enabled: Bool
+- enabled: bool
 
 
 ---
@@ -1982,10 +1991,10 @@ ProfileUpdated:
 ## RcvFileDescr
 
 **Record type**:
-- fileDescrId: Int64
-- fileDescrText: String
-- fileDescrPartNo: Int
-- fileDescrComplete: Bool
+- fileDescrId: int64
+- fileDescrText: string
+- fileDescrPartNo: int
+- fileDescrComplete: bool
 
 
 ---
@@ -1993,9 +2002,9 @@ ProfileUpdated:
 ## RcvFileInfo
 
 **Record type**:
-- filePath: String
-- connId: Int64?
-- agentConnId: String?
+- filePath: string
+- connId: int64?
+- agentConnId: string?
 
 
 ---
@@ -2029,15 +2038,15 @@ Cancelled:
 ## RcvFileTransfer
 
 **Record type**:
-- fileId: Int64
+- fileId: int64
 - xftpRcvFile: [XFTPRcvFile](#xftprcvfile)?
 - fileInvitation: [FileInvitation](#fileinvitation)
 - fileStatus: [RcvFileStatus](#rcvfilestatus)
 - rcvFileInline: [InlineFileMode](#inlinefilemode)?
-- senderDisplayName: String
-- chunkSize: Int64
-- cancelled: Bool
-- grpMemberId: Int64?
+- senderDisplayName: string
+- chunkSize: int64
+- cancelled: bool
+- grpMemberId: int64?
 - cryptoArgs: [CryptoFileArgs](#cryptofileargs)?
 
 
@@ -2049,7 +2058,7 @@ Cancelled:
 
 MemberAdded:
 - type: "memberAdded"
-- groupMemberId: Int64
+- groupMemberId: int64
 - profile: [Profile](#profile)
 
 MemberConnected:
@@ -2057,7 +2066,7 @@ MemberConnected:
 
 MemberAccepted:
 - type: "memberAccepted"
-- groupMemberId: Int64
+- groupMemberId: int64
 - profile: [Profile](#profile)
 
 UserAccepted:
@@ -2068,15 +2077,15 @@ MemberLeft:
 
 MemberRole:
 - type: "memberRole"
-- groupMemberId: Int64
+- groupMemberId: int64
 - profile: [Profile](#profile)
 - role: [GroupMemberRole](#groupmemberrole)
 
 MemberBlocked:
 - type: "memberBlocked"
-- groupMemberId: Int64
+- groupMemberId: int64
 - profile: [Profile](#profile)
-- blocked: Bool
+- blocked: bool
 
 UserRole:
 - type: "userRole"
@@ -2084,7 +2093,7 @@ UserRole:
 
 MemberDeleted:
 - type: "memberDeleted"
-- groupMemberId: Int64
+- groupMemberId: int64
 - profile: [Profile](#profile)
 
 UserDeleted:
@@ -2138,8 +2147,8 @@ NewMemberPendingReview:
 ## SecurityCode
 
 **Record type**:
-- securityCode: String
-- verifiedAt: UTCTime
+- securityCode: string
+- verifiedAt: [UTCTime](#utctime)
 
 
 ---
@@ -2193,7 +2202,7 @@ RatchetSync:
 
 PqEnabled:
 - type: "pqEnabled"
-- enabled: Bool
+- enabled: bool
 
 
 ---
@@ -2217,17 +2226,17 @@ Relay:
 
 Proxy:
 - type: "proxy"
-- proxyServer: String
+- proxyServer: string
 - srvError: [SrvError](#srverror)
 
 ProxyRelay:
 - type: "proxyRelay"
-- proxyServer: String
+- proxyServer: string
 - srvError: [SrvError](#srverror)
 
 Other:
 - type: "other"
-- sndError: String
+- sndError: string
 
 
 ---
@@ -2235,17 +2244,17 @@ Other:
 ## SndFileTransfer
 
 **Record type**:
-- fileId: Int64
-- fileName: String
-- filePath: String
-- fileSize: Int64
-- chunkSize: Int64
-- recipientDisplayName: String
-- connId: Int64
-- agentConnId: String
-- groupMemberId: Int64?
+- fileId: int64
+- fileName: string
+- filePath: string
+- fileSize: int64
+- chunkSize: int64
+- recipientDisplayName: string
+- connId: int64
+- agentConnId: string
+- groupMemberId: int64?
 - fileStatus: [FileStatus](#filestatus)
-- fileDescrId: Int64?
+- fileDescrId: int64?
 - fileInline: [InlineFileMode](#inlinefilemode)?
 
 
@@ -2257,15 +2266,15 @@ Other:
 
 MemberRole:
 - type: "memberRole"
-- groupMemberId: Int64
+- groupMemberId: int64
 - profile: [Profile](#profile)
 - role: [GroupMemberRole](#groupmemberrole)
 
 MemberBlocked:
 - type: "memberBlocked"
-- groupMemberId: Int64
+- groupMemberId: int64
 - profile: [Profile](#profile)
-- blocked: Bool
+- blocked: bool
 
 UserRole:
 - type: "userRole"
@@ -2273,7 +2282,7 @@ UserRole:
 
 MemberDeleted:
 - type: "memberDeleted"
-- groupMemberId: Int64
+- groupMemberId: int64
 - profile: [Profile](#profile)
 
 UserLeft:
@@ -2285,7 +2294,7 @@ GroupUpdated:
 
 MemberAccepted:
 - type: "memberAccepted"
-- groupMemberId: Int64
+- groupMemberId: int64
 - profile: [Profile](#profile)
 
 UserPendingReview:
@@ -2306,7 +2315,7 @@ Version:
 
 Other:
 - type: "other"
-- srvError: String
+- srvError: string
 
 
 ---
@@ -2326,7 +2335,7 @@ Other:
 
 **Record type**:
 - enable: [GroupFeatureEnabled](#groupfeatureenabled)
-- ttl: Int?
+- ttl: int?
 
 
 ---
@@ -2335,7 +2344,7 @@ Other:
 
 **Record type**:
 - allow: [FeatureAllowed](#featureallowed)
-- ttl: Int?
+- ttl: int?
 
 
 ---
@@ -2352,18 +2361,18 @@ Other:
 ## UIColors
 
 **Record type**:
-- accent: String?
-- accentVariant: String?
-- secondary: String?
-- secondaryVariant: String?
-- background: String?
-- menus: String?
-- title: String?
-- accentVariant2: String?
-- sentMessage: String?
-- sentReply: String?
-- receivedMessage: String?
-- receivedReply: String?
+- accent: string?
+- accentVariant: string?
+- secondary: string?
+- secondaryVariant: string?
+- background: string?
+- menus: string?
+- title: string?
+- accentVariant2: string?
+- sentMessage: string?
+- sentReply: string?
+- receivedMessage: string?
+- receivedReply: string?
 
 
 ---
@@ -2387,11 +2396,18 @@ Other:
 
 ---
 
+## UTCTime
+
+Timestampe in ISO8601 format as string.
+
+
+---
+
 ## UpdatedMessage
 
 **Record type**:
 - msgContent: [MsgContent](#msgcontent)
-- mentions: {String : Int64}
+- mentions: {string : int64}
 
 
 ---
@@ -2399,19 +2415,19 @@ Other:
 ## User
 
 **Record type**:
-- userId: Int64
-- agentUserId: Int64
-- userContactId: Int64
-- localDisplayName: String
+- userId: int64
+- agentUserId: int64
+- userContactId: int64
+- localDisplayName: string
 - profile: [LocalProfile](#localprofile)
 - fullPreferences: [FullPreferences](#fullpreferences)
-- activeUser: Bool
-- activeOrder: Int64
+- activeUser: bool
+- activeOrder: int64
 - viewPwdHash: [UserPwdHash](#userpwdhash)?
-- showNtfs: Bool
-- sendRcptsContacts: Bool
-- sendRcptsSmallGroups: Bool
-- userMemberProfileUpdatedAt: UTCTime?
+- showNtfs: bool
+- sendRcptsContacts: bool
+- sendRcptsSmallGroups: bool
+- userMemberProfileUpdatedAt: [UTCTime](#utctime)?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 
 
@@ -2420,9 +2436,9 @@ Other:
 ## UserContactLink
 
 **Record type**:
-- userContactLinkId: Int64
+- userContactLinkId: int64
 - connLinkContact: [CreatedConnLink](#createdconnlink)
-- shortLinkDataSet: Bool
+- shortLinkDataSet: bool
 - addressSettings: [AddressSettings](#addresssettings)
 
 
@@ -2431,21 +2447,21 @@ Other:
 ## UserContactRequest
 
 **Record type**:
-- contactRequestId: Int64
-- agentInvitationId: String
-- contactId_: Int64?
-- businessGroupId_: Int64?
-- userContactLinkId_: Int64?
+- contactRequestId: int64
+- agentInvitationId: string
+- contactId_: int64?
+- businessGroupId_: int64?
+- userContactLinkId_: int64?
 - cReqChatVRange: [VersionRange](#versionrange)
-- localDisplayName: String
-- profileId: Int64
+- localDisplayName: string
+- profileId: int64
 - profile: [Profile](#profile)
-- createdAt: UTCTime
-- updatedAt: UTCTime
-- xContactId: String?
-- pqSupport: Bool
-- welcomeSharedMsgId: String?
-- requestSharedMsgId: String?
+- createdAt: [UTCTime](#utctime)
+- updatedAt: [UTCTime](#utctime)
+- xContactId: string?
+- pqSupport: bool
+- welcomeSharedMsgId: string?
+- requestSharedMsgId: string?
 
 
 ---
@@ -2454,7 +2470,7 @@ Other:
 
 **Record type**:
 - user: [User](#user)
-- unreadCount: Int
+- unreadCount: int
 
 
 ---
@@ -2462,8 +2478,8 @@ Other:
 ## UserProfileUpdateSummary
 
 **Record type**:
-- updateSuccesses: Int
-- updateFailures: Int
+- updateSuccesses: int
+- updateFailures: int
 - changedContacts: [[Contact](#contact)]
 
 
@@ -2472,8 +2488,8 @@ Other:
 ## UserPwdHash
 
 **Record type**:
-- hash: String
-- salt: String
+- hash: string
+- salt: string
 
 
 ---
@@ -2481,8 +2497,8 @@ Other:
 ## VersionRange
 
 **Record type**:
-- minVersion: Int
-- maxVersion: Int
+- minVersion: int
+- maxVersion: int
 
 
 ---
@@ -2491,9 +2507,9 @@ Other:
 
 **Record type**:
 - rcvFileDescription: [RcvFileDescr](#rcvfiledescr)
-- agentRcvFileId: String?
-- agentRcvFileDeleted: Bool
-- userApprovedRelays: Bool
+- agentRcvFileId: string?
+- agentRcvFileDeleted: bool
+- userApprovedRelays: bool
 
 
 ---
@@ -2501,7 +2517,7 @@ Other:
 ## XFTPSndFile
 
 **Record type**:
-- agentSndFileId: String
-- privateSndFileDescr: String?
-- agentSndFileDeleted: Bool
+- agentSndFileId: string
+- privateSndFileDescr: string?
+- agentSndFileDeleted: bool
 - cryptoArgs: [CryptoFileArgs](#cryptofileargs)?

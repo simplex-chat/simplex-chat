@@ -6,6 +6,7 @@
 module APIDocs where
 
 import API.Docs.Commands
+import API.Docs.Events
 import API.Docs.Generate
 import API.Docs.Responses
 import API.Docs.Types
@@ -29,6 +30,9 @@ apiDocsTest = do
     it "generate markdown" testGenerateCommandsMD
   fdescribe "API responses" $ do
     it "should be documented" testResponsesHaveDocs
+  fdescribe "API events" $ do
+    it "should be documented" testEventsHaveDocs
+    it "generate markdown" testGenerateEventsMD
   fdescribe "API types" $ do
     it "should be documented" testTypesHaveDocs
     it "generate markdown" testGenerateTypesMD
@@ -38,6 +42,9 @@ documentedCmds = concatMap (map consName' . commands) chatCommandsDocs
 
 documentedResps :: [String]
 documentedResps = map consName' chatResponsesDocs
+
+documentedEvents :: [String]
+documentedEvents = concatMap (\cat -> map consName' $ mainEvents cat ++ otherEvents cat) chatEventsDocs
 
 documentedTypes :: [String]
 documentedTypes = map docTypeName chatTypesDocs
@@ -61,9 +68,23 @@ testResponsesHaveDocs :: IO ()
 testResponsesHaveDocs = do
   let typeResps = sort $ map consName' chatResponsesTypeInfo
       allResps = sort $ documentedResps ++ undocumentedResponses
-      missingResponses = typeResps \\ allResps
-  unless (null missingResponses) $ expectationFailure $ "Undocumented responses: " <> intercalate ", " missingResponses
+      missingResps = typeResps \\ allResps
+      extraResps = allResps \\ typeResps
+  unless (null missingResps) $ expectationFailure $ "Undocumented responses: " <> intercalate ", " missingResps
+  unless (null extraResps) $ expectationFailure $ "Unused responses: " <> intercalate ", " extraResps
+  putStrLn $ "Documented responses: " <> show (length documentedResps) <> "/" <> show (length allResps)
   allResps `shouldBe` typeResps -- sanity check
+
+testEventsHaveDocs :: IO ()
+testEventsHaveDocs = do
+  let typeEvts = sort $ map consName' chatEventsTypeInfo
+      allEvts = sort $ documentedEvents ++ undocumentedEvents
+      missingEvts = typeEvts \\ allEvts
+      extraEvts = allEvts \\ typeEvts
+  unless (null missingEvts) $ expectationFailure $ "Undocumented events: " <> intercalate ", " missingEvts
+  unless (null extraEvts) $ expectationFailure $ "Unused events: " <> intercalate ", " extraEvts
+  putStrLn $ "Documented events: " <> show (length documentedEvents) <> "/" <> show (length allEvts)
+  allEvts `shouldBe` typeEvts -- sanity check
 
 testTypesHaveDocs :: IO ()
 testTypesHaveDocs = do
@@ -128,6 +149,13 @@ testGenerateCommandsMD = do
   generateCommandsDoc
   newCmdsDoc <- T.readFile commandsDocFile
   newCmdsDoc `shouldBe` cmdsDoc
+
+testGenerateEventsMD :: IO ()
+testGenerateEventsMD = do
+  evtsDoc <- ifM (doesFileExist eventsDocFile) (T.readFile eventsDocFile) (pure "")
+  generateEventsDoc
+  newEvtsDoc <- T.readFile eventsDocFile
+  newEvtsDoc `shouldBe` evtsDoc
 
 testGenerateTypesMD :: IO ()
 testGenerateTypesMD = do

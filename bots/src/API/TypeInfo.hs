@@ -6,6 +6,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeOperators #-}
@@ -18,6 +19,22 @@ module API.TypeInfo where
 import Data.Kind (Type)
 import Data.Typeable
 import GHC.Generics
+import Simplex.Messaging.Parsers (fstToLower)
+
+pattern TBool :: String
+pattern TBool = "bool"
+
+pattern TString :: String
+pattern TString = "string"
+
+pattern TInt :: String
+pattern TInt = "int"
+
+pattern TInt64 :: String
+pattern TInt64 = "int64"
+
+primitiveTypes :: [ConsName]
+primitiveTypes = [TBool, TString, TInt, "int64", "word32", "double"]
 
 data SumTypeInfo = STI {typeName :: String, recordTypes :: [RecordTypeInfo]}
   deriving (Show)
@@ -101,7 +118,7 @@ toTypeInfo tr =
    in case name of
         "List" -> case args of
           [elemTr]
-            | elemTr == typeRep (Proxy @Char) -> TIType string
+            | elemTr == typeRep (Proxy @Char) -> TIType (ST TString [])
             | otherwise -> TIArray {elemType = toTypeInfo elemTr, nonEmpty = False}
           _ -> TIType (simpleType tr)
         "NonEmpty" -> case args of
@@ -115,25 +132,25 @@ toTypeInfo tr =
           _ -> TIType (simpleType tr)
         _ -> TIType (simpleType tr)
   where
-    string = ST "String" []
-    simpleType tr' = case tyConName (typeRepTyCon tr') of
-      "AgentUserId" -> ST "Int64" []
-      "Integer" -> ST "Int64" []
-      "Version" -> ST "Int" []
-      "PQEncryption" -> ST "Bool" []
-      "PQSupport" -> ST "Bool" []
+    simpleType tr' = primitiveToLower $ case tyConName (typeRepTyCon tr') of
+      "AgentUserId" -> ST TInt64 []
+      "Integer" -> ST TInt64 []
+      "Version" -> ST TInt []
+      "PQEncryption" -> ST TBool []
+      "PQSupport" -> ST TBool []
       "ACreatedConnLink" -> ST "CreatedConnLink" []
       "CChatItem" -> ST "ChatItem" []
       "CustomData" -> ST "JSONObject" []
       "KeyMap" -> ST "JSONObject" []
       t
-        | t `elem` stringTypes -> ST "String" []
+        | t `elem` stringTypes -> ST TString []
         | t `elem` simplePrefTypes -> ST "SimplePreference" []
         | t `elem` groupPrefTypes -> ST "GroupPreference" []
         | t `elem` roleGroupPrefTypes -> ST "RoleGroupPreference" []
         | otherwise -> case words $ show tr' of
             (consName : typeParams) -> ST {consName, typeParams}
             _ -> ST "" []
+    primitiveToLower st@(ST t ps) = let t' = fstToLower t in if t' `elem` primitiveTypes then ST t' ps else st
     stringTypes =
       [ "AConnectionLink",
         "AgentConnId",

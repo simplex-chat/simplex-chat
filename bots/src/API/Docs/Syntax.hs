@@ -78,36 +78,39 @@ renderDocSyntax cmd = go Nothing
       Join c p ->
         withParamType cmd param p $ \case
           (TIArray {}, _) -> let n = paramName param p in "<" <> n <> "[0]>[" <> [c] <> "<" <> n <> "[1]>...]"
-          _ -> error $ consName' cmd <> ": " <> paramName param p <> " is not array"
+          _ -> paramError cmd param p "is not array"
       Optional exN exJ p ->
         withParamType cmd param p $ \case
           (TIOptional {}, _)
             | exN == "" -> "[" <> go (Just p) exJ <> "]"
             | otherwise -> go param exN <> "|" <> go (Just p) exJ
-          _ -> error $ consName' cmd <> ": " <> paramName param p <> " is not optional"
+          _ -> paramError cmd param p "is not optional"
       Const s -> s
+
+paramError :: RecordTypeInfo -> Maybe ExprParam -> ExprParam -> String -> String
+paramError cmd param p err = error $ consName' cmd <> ": " <> paramName param p <> " " <> err
 
 withParamType :: RecordTypeInfo -> Maybe ExprParam -> ExprParam -> ((TypeInfo, Maybe CTDoc) -> String) -> String
 withParamType cmd@RecordTypeInfo {fieldInfos = params} param p f = case getParamType (paramName param p) params of
-  Left e -> error $ consName' cmd <> ": " <> e
+  Left err -> paramError cmd param p err
   Right t -> f t
 
 withBoolParam :: RecordTypeInfo -> Maybe ExprParam -> ExprParam -> String -> String
-withBoolParam cmd@RecordTypeInfo {consName} param p s =
+withBoolParam cmd param p s =
   withParamType cmd param p $ \case
-    (TIType (ST "Bool" _), _) -> s
-    _ -> error $ consName <> ": " <> paramName param p <> " is not boolean"
+    (TIType (ST TBool _), _) -> s
+    _ -> paramError cmd param p "is not boolean"
 
 withOptBoolParam :: RecordTypeInfo -> Maybe ExprParam -> ExprParam -> (Bool -> String) -> String
-withOptBoolParam cmd@RecordTypeInfo {consName} param p f =
+withOptBoolParam cmd param p f =
   withParamType cmd param p $ \case
-    (TIType (ST "Bool" _), _) -> f False
-    (TIOptional (TIType (ST "Bool" _)), _) -> f True
-    _ -> error $ consName <> ": " <> paramName param p <> " is not [optional] boolean"
+    (TIType (ST TBool _), _) -> f False
+    (TIOptional (TIType (ST TBool _)), _) -> f True
+    _ -> paramError cmd param p "is not [optional] boolean"
 
 getParamType :: ExprParam -> [FieldInfo] -> Either String (TypeInfo, Maybe CTDoc)
 getParamType p params = case find ((p ==) . fieldName) params of
-  Nothing -> Left $ "unknown parameter " <> p
+  Nothing -> Left "is unknown"
   Just FieldInfo {typeInfo} -> getTypeInfoDoc typeInfo
   where
     getTypeInfoDoc tInfo = case tInfo of
@@ -119,7 +122,7 @@ getParamType p params = case find ((p ==) . fieldName) params of
     getTypeDoc tInfo t
       | t `elem` primitiveTypes = Right (tInfo, Nothing)
       | otherwise = case find ((t ==) . docTypeName) chatTypesDocs of
-          Nothing -> Left $ "unknown type " <> t <> " of parameter " <> p
+          Nothing -> Left $ "has unknown type " <> t
           Just d -> Right (tInfo, Just d)
 
 renderJSSyntax :: RecordTypeInfo -> Expr -> String

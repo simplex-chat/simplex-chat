@@ -432,12 +432,10 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtRcvFileWarning u Nothing e ft -> ttyUser u $ receivingFileStandalone "warning: " ft <> [sShow e]
   CEvtSndFileStart u _ ft -> ttyUser u $ sendingFile_ "started" ft
   CEvtSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
-  CEvtSndFileStartXFTP {} -> []
   CEvtSndFileProgressXFTP {} -> []
   CEvtSndFileRedirectStartXFTP u ft ftRedirect -> ttyUser u $ standaloneUploadRedirect ft ftRedirect
   CEvtSndStandaloneFileComplete u ft uris -> ttyUser u $ standaloneUploadComplete ft uris
   CEvtSndFileCompleteXFTP u ci _ -> ttyUser u $ uploadingFile "completed" ci
-  CEvtSndFileCancelledXFTP {} -> []
   CEvtSndFileError u Nothing ft e -> ttyUser u $ uploadingFileStandalone "error" ft <> [plain e]
   CEvtSndFileError u (Just ci) _ e -> ttyUser u $ uploadingFile "error" ci <> [plain e]
   CEvtSndFileWarning u Nothing ft e -> ttyUser u $ uploadingFileStandalone "warning: " ft <> [plain e]
