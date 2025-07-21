@@ -7874,7 +7874,7 @@ report reason</note>
       </trans-unit>
       <trans-unit id="Tap Connect to chat" xml:space="preserve" approved="no">
         <source>Tap Connect to chat</source>
-        <target state="translated">Koppintson a „Kapcsolódás a csevegéshez” gombra</target>
+        <target state="translated">Koppintson a „Kapcsolódás” gombra a csevegéshez</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap Connect to send request" xml:space="preserve" approved="no">
@@ -7902,9 +7902,9 @@ report reason</note>
         <target>Koppintson ide a kapcsolódáshoz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap to activate profile." xml:space="preserve">
+      <trans-unit id="Tap to activate profile." xml:space="preserve" approved="no">
         <source>Tap to activate profile.</source>
-        <target>A profil aktiválásához koppintson az ikonra.</target>
+        <target state="translated">Koppintson ide a profil aktiválásához.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to join" xml:space="preserve">
