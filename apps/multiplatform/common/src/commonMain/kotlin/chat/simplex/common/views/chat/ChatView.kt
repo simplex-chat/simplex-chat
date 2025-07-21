@@ -1833,7 +1833,7 @@ fun BoxScope.ChatItemsList(
           .padding(top = DEFAULT_PADDING_HALF)
           .background(MaterialTheme.appColors.receivedMessage)
       ) {
-        ChatInfoImage(chatInfo, size = alertProfileImageSize)
+        ChatInfoImage(chatInfo, size = alertProfileImageSize, iconColor = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f))
         val copyDisplayName = { copyNameToClipboard(chatInfo.displayName) }
         Text(
           chatInfo.displayName,
