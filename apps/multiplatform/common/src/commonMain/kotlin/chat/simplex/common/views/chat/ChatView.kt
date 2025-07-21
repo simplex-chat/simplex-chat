@@ -1817,9 +1817,10 @@ fun BoxScope.ChatItemsList(
       showToast(generalGetString(MR.strings.copied))
     }
 
-    Surface(
-      shape = RoundedCornerShape(18.dp),
-      color = MaterialTheme.colors.background
+    Box(
+      Modifier
+        .clipChatItem()
+        .background(MaterialTheme.appColors.receivedMessage)
     ) {
       val bannerModifier = if (appPlatform.isDesktop) Modifier.width(400.dp) else Modifier.fillMaxWidth()
       Column(
@@ -1830,6 +1831,7 @@ fun BoxScope.ChatItemsList(
           // ChatInfoImage has its own padding somewhere,
           // also not doing verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF) because of it
           .padding(top = DEFAULT_PADDING_HALF)
+          .background(MaterialTheme.appColors.receivedMessage)
       ) {
         ChatInfoImage(chatInfo, size = alertProfileImageSize)
         val copyDisplayName = { copyNameToClipboard(chatInfo.displayName) }
