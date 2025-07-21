@@ -732,9 +732,16 @@ struct ChatView: View {
                 }
                 return Group {
                     if case .chatBanner = ci.content {
-                        ChatBannerView(chat: chat)
-                            .padding(.bottom, 90)
-                            .padding(.top, 8)
+                        VStack {
+                            ChatBannerView(chat: chat)
+                                .padding(.bottom, 90)
+                                .padding(.top, 8)
+
+                            let listItem = mergedItem.newest()
+                            if let prevItem = listItem.prevItem {
+                                DateSeparator(date: prevItem.meta.itemTs).padding(8)
+                            }
+                        }
                     } else {
                         let voiceNoFrame = voiceWithoutFrame(ci)
                         let maxWidth = cInfo.chatType == .group
