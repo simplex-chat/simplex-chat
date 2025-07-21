@@ -247,6 +247,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20250702_contact_requests_remove_cascade_delete
           Simplex.Chat.Store.SQLite.Migrations.M20250704_groups_conn_link_prepared_connection
           Simplex.Chat.Store.SQLite.Migrations.M20250709_profile_short_descr
+          Simplex.Chat.Store.SQLite.Migrations.M20250721_indexes
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:

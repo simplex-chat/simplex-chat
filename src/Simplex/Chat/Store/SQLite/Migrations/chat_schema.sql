@@ -687,7 +687,6 @@ CREATE INDEX contact_profiles_index ON contact_profiles(
   full_name
 );
 CREATE INDEX idx_groups_inv_queue_info ON groups(inv_queue_info);
-CREATE INDEX idx_contact_requests_xcontact_id ON contact_requests(xcontact_id);
 CREATE INDEX idx_contacts_xcontact_id ON contacts(xcontact_id);
 CREATE INDEX idx_messages_shared_msg_id ON messages(shared_msg_id);
 CREATE UNIQUE INDEX idx_chat_items_direct_shared_msg_id ON chat_items(
@@ -1072,4 +1071,8 @@ CREATE INDEX idx_chat_items_group_scope_item_status ON chat_items(
 CREATE INDEX idx_contacts_contact_request_id ON contacts(contact_request_id);
 CREATE INDEX idx_contact_requests_business_group_id ON contact_requests(
   business_group_id
+);
+CREATE INDEX idx_contact_requests_xcontact_id ON contact_requests(
+  user_id,
+  xcontact_id
 );
