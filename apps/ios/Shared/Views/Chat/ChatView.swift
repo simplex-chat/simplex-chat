@@ -733,6 +733,8 @@ struct ChatView: View {
                 return Group {
                     if case .chatBanner = ci.content {
                         ChatBannerView(chat: chat)
+                            .padding(.bottom, 90)
+                            .padding(.top, 8)
                     } else {
                         let voiceNoFrame = voiceWithoutFrame(ci)
                         let maxWidth = cInfo.chatType == .group
@@ -816,58 +818,51 @@ struct ChatView: View {
         @ObservedObject var chat: Chat
 
         var body: some View {
-            VStack {
-                Spacer().frame(height: 60)
+            VStack(spacing: 8) {
+                ChatInfoImage(chat: chat, size: alertProfileImageSize)
 
-                VStack(spacing: 8) {
-                    ChatInfoImage(chat: chat, size: 80)
+                Text(chat.chatInfo.displayName)
+                    .font(.title3)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: 240)
 
-                    Text(chat.chatInfo.displayName)
-                        .font(.title3)
+                let fullName = chat.chatInfo.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
+                if fullName != "" && fullName != chat.chatInfo.displayName && fullName != chat.chatInfo.displayName.trimmingCharacters(in: .whitespacesAndNewlines) {
+                    Text(chat.chatInfo.fullName)
+                        .font(.headline)
+                        .fontWeight(.regular)
                         .multilineTextAlignment(.center)
-                        .lineLimit(2)
+                        .lineLimit(3)
                         .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: 240)
-
-                    let fullName = chat.chatInfo.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if fullName != "" && fullName != chat.chatInfo.displayName && fullName != chat.chatInfo.displayName.trimmingCharacters(in: .whitespacesAndNewlines) {
-                        Text(chat.chatInfo.fullName)
-                            .font(.headline)
-                            .fontWeight(.regular)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(3)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(maxWidth: 260)
-                    }
-
-                    if let shortDescr = chat.chatInfo.shortDescr {
-                        Text(shortDescr)
-                            .font(.subheadline)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(4)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(.horizontal)
-                    }
-
-                    if let chatContext = chatContext() {
-                        Spacer().frame(height: 0)
-
-                        Label(chatContext, systemImage: "info.circle")
-                            .font(.subheadline)
-                            .foregroundColor(theme.colors.secondary)
-                    }
+                        .frame(maxWidth: 260)
                 }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background {
-                    Color.clear
-                        .overlay(ToolbarMaterial.material(toolbarMaterial))
-                        .clipShape(RoundedRectangle(cornerRadius: 18))
-                }
-                .padding(.horizontal)
 
-                Spacer().frame(height: 60)
+                if let shortDescr = chat.chatInfo.shortDescr {
+                    Text(shortDescr)
+                        .font(.subheadline)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(4)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal)
+                }
+
+                if let chatContext = chatContext() {
+                    Label(chatContext, systemImage: "info.circle")
+                        .font(.subheadline)
+                        .foregroundColor(theme.colors.secondary)
+                        .padding(.top, 8)
+                }
             }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background {
+                Color.clear
+                    .overlay(ToolbarMaterial.material(toolbarMaterial))
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
+            }
+            .padding(.horizontal)
         }
 
         func chatContext() -> String? {
@@ -876,14 +871,14 @@ struct ChatView: View {
                 if contact.nextConnectPrepared, let linkType = contact.preparedContact?.uiConnLinkType {
                     switch linkType {
                     case .inv:
-                        NSLocalizedString("1-time invitation", comment: "chat context")
+                        NSLocalizedString("Connect to chat", comment: "chat context")
                     case .con:
-                        NSLocalizedString("Contact address", comment: "chat context")
+                        NSLocalizedString("Send request to connect", comment: "chat context")
                     }
                 } else if contact.nextAcceptContactRequest {
-                    NSLocalizedString("Contact request", comment: "chat context")
+                    NSLocalizedString("Accept contact request", comment: "chat context")
                 } else {
-                    NSLocalizedString("Contact", comment: "chat context")
+                    NSLocalizedString("Your contact", comment: "chat context")
                 }
             case let .group(groupInfo, _):
                 switch groupInfo.businessChat?.chatType {
@@ -891,12 +886,12 @@ struct ChatView: View {
                     if groupInfo.membership.memberStatus == .memCreator {
                         NSLocalizedString("Your group", comment: "chat context")
                     } else {
-                        NSLocalizedString("Group", comment: "chat context")
+                        NSLocalizedString("Join group", comment: "chat context")
                     }
                 case .business:
-                    NSLocalizedString("Business", comment: "chat context")
+                    NSLocalizedString("Connect to business", comment: "chat context")
                 case .customer:
-                    NSLocalizedString("Customer", comment: "chat context")
+                    NSLocalizedString("Your customer", comment: "chat context")
                 }
             default: nil
             }
