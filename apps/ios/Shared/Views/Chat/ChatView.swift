@@ -731,7 +731,7 @@ struct ChatView: View {
                 case let .grouped(items, _, _, _, _, _, _, _): items.boxedValue.last!.item
                 }
                 return Group {
-                    if case .chatBanner = ci.content {
+                    if ci.isChatBanner {
                         ChatBannerView(chat: chat)
                             .padding(.bottom, 90)
                             .padding(.top, 8)
@@ -1494,8 +1494,14 @@ struct ChatView: View {
         }
 
         var body: some View {
-            let last = isLastItem ? im.reversedChatItems.last : nil
             let listItem = merged.newest()
+            let last = (
+                (listItem.nextItem?.isChatBanner ?? false)
+                ? listItem.item
+                : isLastItem
+                ? im.reversedChatItems.last
+                : nil
+            )
             let item = listItem.item
             let range: ClosedRange<Int>? = if case let .grouped(_, _, _, rangeInReversed, _, _, _, _) = merged {
                 rangeInReversed.boxedValue

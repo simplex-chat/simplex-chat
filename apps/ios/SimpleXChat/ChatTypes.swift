@@ -3021,6 +3021,13 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         (content.msgContent != nil && !meta.isLive) || meta.itemDeleted != nil || isDeletedContent || mergeCategory != nil || showLocalDelete
     }
 
+    public var isChatBanner: Bool {
+        switch content {
+        case .chatBanner: true
+        default: false
+        }
+    }
+
     public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> ChatItem {
         ChatItem(
             chatDir: dir,
