@@ -4838,9 +4838,9 @@ This is your link for group %@!</source>
         <target>Miembro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member admission" xml:space="preserve">
+      <trans-unit id="Member admission" xml:space="preserve" approved="no">
         <source>Member admission</source>
-        <target>Admisión del miembro</target>
+        <target state="translated">Admisión de miembros</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member inactive" xml:space="preserve">
@@ -5989,14 +5989,14 @@ Error: %@</target>
         <target>Reinicia la aplicación y migra la base de datos para activar las notificaciones automáticas.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please store passphrase securely, you will NOT be able to access chat if you lose it." xml:space="preserve">
+      <trans-unit id="Please store passphrase securely, you will NOT be able to access chat if you lose it." xml:space="preserve" approved="no">
         <source>Please store passphrase securely, you will NOT be able to access chat if you lose it.</source>
-        <target>Guarda la contraseña de forma segura, NO podrás acceder al chat si la pierdes.</target>
+        <target state="translated">Guarda la contraseña de forma segura, NO podrás acceder al chat si se pierde.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please store passphrase securely, you will NOT be able to change it if you lose it." xml:space="preserve">
+      <trans-unit id="Please store passphrase securely, you will NOT be able to change it if you lose it." xml:space="preserve" approved="no">
         <source>Please store passphrase securely, you will NOT be able to change it if you lose it.</source>
-        <target>Guarda la contraseña de forma segura, NO podrás cambiarla si la pierdes.</target>
+        <target state="translated">Guarda la contraseña de forma segura, NO podrás cambiarla si se pierde.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please try to disable and re-enable notfications." xml:space="preserve">
@@ -6718,9 +6718,9 @@ swipe action</note>
         <target>Revisar miembros</target>
         <note>admission stage</note>
       </trans-unit>
-      <trans-unit id="Review members before admitting (&quot;knocking&quot;)." xml:space="preserve">
+      <trans-unit id="Review members before admitting (&quot;knocking&quot;)." xml:space="preserve" approved="no">
         <source>Review members before admitting ("knocking").</source>
-        <target>Revisar miembros antes de admitir.</target>
+        <target state="translated">Revisa a los miembros antes de admitirles en el grupo.</target>
         <note>admission stage description</note>
       </trans-unit>
       <trans-unit id="Revoke" xml:space="preserve">
@@ -10226,9 +10226,9 @@ time to disappear</note>
         <target>por revisar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="reviewed by admins" xml:space="preserve">
+      <trans-unit id="reviewed by admins" xml:space="preserve" approved="no">
         <source>reviewed by admins</source>
-        <target>revisado por los administradores</target>
+        <target state="translated">en revisión por los administradores</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="saved" xml:space="preserve">
