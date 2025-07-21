@@ -1451,7 +1451,7 @@
     <string name="member_role_will_be_changed_with_notification">A tag szerepköre a következőre fog módosulni: „%s”. A csoport összes tagja értesítést fog kapni.</string>
     <string name="users_delete_with_connections">Profil és kiszolgálókapcsolatok</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Egy üzenetváltó- és alkalmazásplatform, amely védi az adatait és biztonságát.</string>
-    <string name="tap_to_activate_profile">A profil aktiválásához koppintson az ikonra.</string>
+    <string name="tap_to_activate_profile">Koppintson ide a profil aktiválásához.</string>
     <string name="receipts_contacts_override_disabled">A kézbesítési jelentések le vannak tiltva %d partnernél</string>
     <string name="session_code">Munkamenet kód</string>
     <string name="v4_4_french_interface_descr">Köszönet a felhasználóknak a Weblate-en való közreműködésért!</string>
@@ -2457,6 +2457,10 @@
     <string name="chat_banner_accept_contact_request">Meghívó elfogadása</string>
     <string name="chat_banner_business_connection">Üzleti kapcsolat</string>
     <string name="chat_banner_group">Csoport</string>
-    <string name="chat_banner_join_group">Koppintson ide a csoporthoz történő csatlakozáshoz</string>
+    <string name="chat_banner_join_group">Koppintson a „Csatlakozás a csoporthoz” gombra</string>
     <string name="chat_banner_your_group">Saját csoport</string>
+    <string name="chat_banner_your_business_contact">Saját üzleti partner</string>
+    <string name="chat_banner_your_contact">Saját partner</string>
+    <string name="chat_banner_connect_to_chat">Koppintson a „Kapcsolódás” gombra a csevegéshez</string>
+    <string name="chat_banner_send_request_to_connect">Koppintson a „Kapcsolódás” gombra a meghívó elküldéséhez</string>
 </resources>
