@@ -883,7 +883,7 @@ object ChatController {
   }
 
   suspend fun apiStartChat(ctrl: ChatCtrl? = null): Boolean {
-    val r = sendCmd(null, CC.StartChat(mainApp = true, largeLinkData = false), ctrl)
+    val r = sendCmd(null, CC.StartChat(mainApp = true, largeLinkData = true), ctrl)
     when (r.result) {
       is CR.ChatStarted -> return true
       is CR.ChatRunning -> return false

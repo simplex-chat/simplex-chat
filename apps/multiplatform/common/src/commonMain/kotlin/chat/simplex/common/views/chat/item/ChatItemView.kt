@@ -787,6 +787,7 @@ fun ChatItemView(
               is CIContent.RcvDirectE2EEInfo -> DirectE2EEInfoText(c.e2eeInfo)
               is CIContent.SndGroupE2EEInfo -> E2EEInfoNoPQText()
               is CIContent.RcvGroupE2EEInfo -> E2EEInfoNoPQText()
+              is CIContent.ChatBanner -> Spacer(modifier = Modifier.size(0.dp))
               is CIContent.InvalidJSON -> {
                 CIInvalidJSONView(c.json)
                 DeleteItemMenu()

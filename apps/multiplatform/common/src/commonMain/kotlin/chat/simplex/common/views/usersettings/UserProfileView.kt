@@ -92,7 +92,7 @@ fun UserProfileLayout(
             shortDescr.value.trim() == (profile.shortDescr ?: "") &&
             profile.image == profileImage.value
       val closeWithAlert = {
-        if (dataUnchanged || !canSaveProfile(displayName.value, profile)) {
+        if (dataUnchanged || !canSaveProfile(displayName.value, shortDescr.value, profile)) {
           close()
         } else {
           showUnsavedChangesAlert({ saveProfile(displayName.value, fullName.value, shortDescr.value, profileImage.value) }, close)
@@ -148,18 +148,27 @@ fun UserProfileLayout(
               ProfileNameField(fullName)
             }
 
-// TODO enable in v6.4.1, limit to 160 characters
+            Spacer(Modifier.height(DEFAULT_PADDING))
 
-//            Spacer(Modifier.height(DEFAULT_PADDING))
-//            Text(
-//              stringResource(MR.strings.short_descr__field),
-//              fontSize = 16.sp,
-//              modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
-//            )
-//            ProfileNameField(shortDescr)
+            Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+              Text(
+                stringResource(MR.strings.short_descr__field),
+                fontSize = 16.sp,
+              )
+              if (!bioFitsLimit(shortDescr.value)) {
+                Spacer(Modifier.size(DEFAULT_PADDING_HALF))
+                IconButton(
+                  onClick = { AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.bio_too_large)) },
+                  Modifier.size(20.dp)
+                ) {
+                  Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
+                }
+              }
+            }
+            ProfileNameField(shortDescr)
 
             Spacer(Modifier.height(DEFAULT_PADDING))
-            val enabled = !dataUnchanged && canSaveProfile(displayName.value, profile)
+            val enabled = !dataUnchanged && canSaveProfile(displayName.value, shortDescr.value, profile)
             val saveModifier: Modifier = Modifier.clickable(enabled) { saveProfile(displayName.value, fullName.value, shortDescr.value, profileImage.value) }
             val saveColor: Color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
             Text(
@@ -225,8 +234,8 @@ private fun isValidNewProfileName(displayName: String, profile: Profile): Boolea
 private fun showFullName(profile: Profile): Boolean =
   profile.fullName.trim().isNotEmpty() && profile.fullName.trim() != profile.displayName.trim()
 
-private fun canSaveProfile(displayName: String, profile: Profile): Boolean =
-  displayName.trim().isNotEmpty() && isValidNewProfileName(displayName, profile)
+private fun canSaveProfile(displayName: String, shortDescr: String, profile: Profile): Boolean =
+  displayName.trim().isNotEmpty() && isValidNewProfileName(displayName, profile) && bioFitsLimit(shortDescr)
 
 @Preview/*(
   uiMode = Configuration.UI_MODE_NIGHT_YES,

@@ -730,33 +730,48 @@ struct ChatView: View {
                 case let .single(item, _, _): item.item
                 case let .grouped(items, _, _, _, _, _, _, _): items.boxedValue.last!.item
                 }
-                let voiceNoFrame = voiceWithoutFrame(ci)
-                let maxWidth = cInfo.chatType == .group
-                ? voiceNoFrame
-                ? (g.size.width - 28) - 42
-                : (g.size.width - 28) * 0.84 - 42
-                : voiceNoFrame
-                ? (g.size.width - 32)
-                : (g.size.width - 32) * 0.84
-                return ChatItemWithMenu(
-                    im: im,
-                    chat: $chat,
-                    index: index,
-                    isLastItem: index == mergedItems.boxedValue.items.count - 1,
-                    chatItem: ci,
-                    scrollToItem: scrollToItem,
-                    scrollToItemId: $scrollToItemId,
-                    merged: mergedItem,
-                    maxWidth: maxWidth,
-                    composeState: $composeState,
-                    selectedMember: $selectedMember,
-                    showChatInfoSheet: $showChatInfoSheet,
-                    revealedItems: $revealedItems,
-                    selectedChatItems: $selectedChatItems,
-                    forwardedChatItems: $forwardedChatItems,
-                    searchText: $searchText,
-                    closeKeyboardAndRun: closeKeyboardAndRun
-                )
+                return Group {
+                    if case .chatBanner = ci.content {
+                        VStack {
+                            ChatBannerView(chat: chat)
+                                .padding(.bottom, 90)
+                                .padding(.top, 8)
+
+                            let listItem = mergedItem.newest()
+                            if let prevItem = listItem.prevItem {
+                                DateSeparator(date: prevItem.meta.itemTs).padding(8)
+                            }
+                        }
+                    } else {
+                        let voiceNoFrame = voiceWithoutFrame(ci)
+                        let maxWidth = cInfo.chatType == .group
+                        ? voiceNoFrame
+                        ? (g.size.width - 28) - 42
+                        : (g.size.width - 28) * 0.84 - 42
+                        : voiceNoFrame
+                        ? (g.size.width - 32)
+                        : (g.size.width - 32) * 0.84
+                        ChatItemWithMenu(
+                            im: im,
+                            chat: $chat,
+                            index: index,
+                            isLastItem: index == mergedItems.boxedValue.items.count - 1,
+                            chatItem: ci,
+                            scrollToItem: scrollToItem,
+                            scrollToItemId: $scrollToItemId,
+                            merged: mergedItem,
+                            maxWidth: maxWidth,
+                            composeState: $composeState,
+                            selectedMember: $selectedMember,
+                            showChatInfoSheet: $showChatInfoSheet,
+                            revealedItems: $revealedItems,
+                            selectedChatItems: $selectedChatItems,
+                            forwardedChatItems: $forwardedChatItems,
+                            searchText: $searchText,
+                            closeKeyboardAndRun: closeKeyboardAndRun
+                        )
+                    }
+                }
                 // crashes on Cell size calculation without this line
                 .environmentObject(ChatModel.shared)
                 .environmentObject(theme) // crashes without this line when scrolling to the first unread in EndlessScrollVIew
@@ -800,6 +815,138 @@ struct ChatView: View {
                 if showSearch {
                     searchTextChanged(s)
                 }
+            }
+        }
+    }
+
+    struct ChatBannerView: View {
+        @EnvironmentObject var theme: AppTheme
+        @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var roundness = defaultChatItemRoundness
+        @ObservedObject var chat: Chat
+
+        var body: some View {
+            let v = VStack(spacing: 8) {
+                ChatInfoImage(chat: chat, size: alertProfileImageSize)
+
+                Text(chat.chatInfo.displayName)
+                    .font(.title3)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: 240)
+
+                let fullName = chat.chatInfo.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
+                if fullName != "" && fullName != chat.chatInfo.displayName && fullName != chat.chatInfo.displayName.trimmingCharacters(in: .whitespacesAndNewlines) {
+                    Text(chat.chatInfo.fullName)
+                        .font(.subheadline)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: 260)
+                }
+
+                if let shortDescr = chat.chatInfo.shortDescr {
+                    Text(shortDescr)
+                        .font(.subheadline)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(4)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal)
+                }
+
+                if let chatContext {
+                    Text(chatContext)
+                        .font(.callout)
+                        .foregroundColor(theme.colors.secondary)
+                        .padding(.top, 8)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(theme.appColors.receivedMessage)
+            .clipShape(RoundedRectangle(cornerRadius: msgRectMaxRadius * roundness))
+            if let (label, connLink) = chatAddress() {
+                v.contextMenu {
+                    Button {
+                        let shareItems: [Any] = [connLink]
+                        showShareSheet(items: shareItems)
+                    } label: {
+                        Label(label, systemImage: "square.and.arrow.up")
+                    }
+                }
+                .padding(.horizontal)
+            } else {
+                v.padding(.horizontal)
+            }
+
+        }
+
+        func chatAddress() -> (label: LocalizedStringKey, connLink: String)? {
+            switch chat.chatInfo {
+            case let .direct(contact):
+                if !contact.nextConnectPrepared && !contact.nextAcceptContactRequest {
+                    let connLink: String? = if let pct = contact.preparedContact, case .con = pct.uiConnLinkType {
+                        pct.connLinkToConnect.simplexChatUri()
+                    } else {
+                        contact.profile.contactLink
+                    }
+                    if let connLink {
+                        return ("SimpleX address", connLink)
+                    }
+                }
+            case let .group(groupInfo, _):
+                if !groupInfo.nextConnectPrepared {
+                    if let pg = groupInfo.preparedGroup {
+                        let connLink = pg.connLinkToConnect.simplexChatUri()
+                        switch groupInfo.businessChat?.chatType {
+                        case .none: return ("Group link", connLink)
+                        case .business: return ("Business address", connLink)
+                        default: ()
+                        }
+                    }
+                }
+            default: ()
+            }
+            return nil
+        }
+
+        var chatContext: LocalizedStringKey? {
+            switch chat.chatInfo {
+            case let .direct(contact):
+                if contact.nextConnectPrepared, let linkType = contact.preparedContact?.uiConnLinkType {
+                    switch linkType {
+                    case .inv:
+                        "Tap Connect to chat"
+                    case .con:
+                        "Tap Connect to send request"
+                    }
+                } else if contact.nextAcceptContactRequest {
+                    "Accept contact request"
+                } else {
+                    "Your contact"
+                }
+            case let .group(groupInfo, _):
+                switch groupInfo.businessChat?.chatType {
+                case .none:
+                    if groupInfo.nextConnectPrepared {
+                        "Tap Join group"
+                    } else {
+                        switch (groupInfo.membership.memberStatus) {
+                        case .memInvited: "Join group"
+                        case .memCreator: "Your group"
+                        default: "Group"
+                        }
+                    }
+                case .business:
+                    if groupInfo.nextConnectPrepared {
+                        "Tap Connect to chat"
+                    } else {
+                        "Business connection"
+                    }
+                case .customer:
+                    "Your business contact"
+                }
+            default: nil
             }
         }
     }
@@ -879,7 +1026,7 @@ struct ChatView: View {
 
         var body: some View {
             ZStack(alignment: .top) {
-                if let date = model.date {
+                if let date = model.date, date.timeIntervalSince1970 > 0 {
                      DateSeparator(date: date)
                          .padding(.vertical, 4).padding(.horizontal, 8)
                          .background(.thinMaterial)

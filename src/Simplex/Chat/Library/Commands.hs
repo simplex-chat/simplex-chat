@@ -1768,6 +1768,7 @@ processChatCommand vr nm = \case
                 groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
                 groupProfile = businessGroupProfile profile groupPreferences
             (gInfo, hostMember) <- withStore $ \db -> createPreparedGroup db vr user groupProfile True ccLink welcomeSharedMsgId
+            void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
             let cd = CDGroupRcv gInfo Nothing hostMember
                 createItem sharedMsgId content = createChatItem user cd True content sharedMsgId Nothing
                 cInfo = GroupChat gInfo Nothing
@@ -1779,7 +1780,9 @@ processChatCommand vr nm = \case
             pure $ CRNewPreparedChat user $ AChat SCTGroup chat
       ACCL _ (CCLink cReq _) -> do
         ct <- withStore $ \db -> createPreparedContact db user profile accLink welcomeSharedMsgId
-        let createItem sharedMsgId content = createChatItem user (CDDirectRcv ct) False content sharedMsgId Nothing
+        void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
+        let cd = CDDirectRcv ct
+            createItem sharedMsgId content = createChatItem user cd False content sharedMsgId Nothing
             cInfo = DirectChat ct
         void $ createItem Nothing $ CIRcvDirectE2EEInfo $ E2EInfo $ connRequestPQEncryption cReq
         void $ createFeatureEnabledItems_ user ct
@@ -1792,6 +1795,7 @@ processChatCommand vr nm = \case
     let GroupShortLinkData {groupProfile = gp@GroupProfile {description}} = groupSLinkData
     welcomeSharedMsgId <- forM description $ \_ -> getSharedMsgId
     (gInfo, hostMember) <- withStore $ \db -> createPreparedGroup db vr user gp False ccLink welcomeSharedMsgId
+    void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
     let cd = CDGroupRcv gInfo Nothing hostMember
         cInfo = GroupChat gInfo Nothing
     void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
@@ -2118,6 +2122,7 @@ processChatCommand vr nm = \case
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     gInfo <- withFastStore $ \db -> createNewGroup db vr gVar user gProfile incognitoProfile
     let cd = CDGroupSnd gInfo Nothing
+    createInternalChatItem user cd CIChatBanner (Just epochStart)
     createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
     createGroupFeatureItems user cd CISndGroupFeature gInfo
     pure $ CRGroupCreated user gInfo
@@ -2574,6 +2579,7 @@ processChatCommand vr nm = \case
         (connId, (CCLink cReq _, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True SCMInvitation Nothing Nothing IKPQOff subMode
         -- [incognito] reuse membership incognito profile
         ct <- withFastStore' $ \db -> createMemberContact db user connId cReq g m mConn subMode
+        void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
         -- TODO not sure it is correct to set connections status here?
         lift $ setContactNetworkStatus ct NSConnected
         pure $ CRNewMemberContact user ct g m
