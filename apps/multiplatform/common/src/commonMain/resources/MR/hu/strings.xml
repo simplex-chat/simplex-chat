@@ -2454,4 +2454,9 @@
     <string name="short_descr__field">Bemutatkozás:</string>
     <string name="bio_too_large">A bemutatkozás túl hosszú</string>
     <string name="group_descr_too_large">A leírás túl hosszú</string>
+    <string name="chat_banner_accept_contact_request">Meghívó elfogadása</string>
+    <string name="chat_banner_business_connection">Üzleti kapcsolat</string>
+    <string name="chat_banner_group">Csoport</string>
+    <string name="chat_banner_join_group">Koppintson ide a csoporthoz történő csatlakozáshoz</string>
+    <string name="chat_banner_your_group">Saját csoport</string>
 </resources>
