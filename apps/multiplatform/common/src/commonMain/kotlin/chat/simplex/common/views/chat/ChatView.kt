@@ -1925,14 +1925,21 @@ fun BoxScope.ChatItemsList(
       val item = listItem.item
 
       if (item.content is CIContent.ChatBanner) {
-        Box(
-          contentAlignment = Alignment.Center,
-          modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = DEFAULT_PADDING)
-            .padding(bottom = 90.dp, top = DEFAULT_PADDING)
-        ) {
-          ChatBannerView()
+        Column {
+          Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+              .fillMaxSize()
+              .padding(horizontal = DEFAULT_PADDING)
+              .padding(bottom = 90.dp, top = DEFAULT_PADDING)
+          ) {
+            ChatBannerView()
+          }
+
+          val prevItem = listItem.prevItem
+          if (prevItem != null) {
+            DateSeparator(prevItem.meta.itemTs)
+          }
         }
       } else {
         val isLastItem = index == mergedItemsValue.items.lastIndex
