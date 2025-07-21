@@ -410,7 +410,7 @@ Query:
             LIMIT 1
           
 Plan:
-SEARCH cr USING INDEX idx_contact_requests_updated_at (user_id=?)
+SEARCH cr USING INDEX idx_contact_requests_xcontact_id (user_id=? AND xcontact_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
@@ -4786,7 +4786,7 @@ Query:
     JOIN contact_profiles p USING (contact_profile_id)
    WHERE cr.user_id = ? AND cr.business_group_id = ?
 Plan:
-SEARCH cr USING INDEX idx_contact_requests_business_group_id (business_group_id=?)
+SEARCH cr USING INDEX idx_contact_requests_xcontact_id (user_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
