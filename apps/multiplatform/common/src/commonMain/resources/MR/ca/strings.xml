@@ -2452,4 +2452,13 @@
     <string name="loading_profile">Carregant el perfil…</string>
     <string name="group_short_descr_field">Descripció breu:</string>
     <string name="short_descr">La vostra bio:</string>
+    <string name="chat_banner_accept_contact_request">Acceptar la sol·licitud de contacte</string>
+    <string name="chat_banner_business_connection">Connexió empresarial</string>
+    <string name="chat_banner_group">Grup</string>
+    <string name="chat_banner_connect_to_chat">Toqueu Connectar per xatejar</string>
+    <string name="chat_banner_send_request_to_connect">Toqueu Connectar per enviar la sol·licitud</string>
+    <string name="chat_banner_join_group">Toqueu Unir-vos al grup</string>
+    <string name="chat_banner_your_business_contact">El vostre contacte empresarial</string>
+    <string name="chat_banner_your_contact">El vostre contacte</string>
+    <string name="chat_banner_your_group">El vostre grup</string>
 </resources>
