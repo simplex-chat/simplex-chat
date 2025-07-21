@@ -2471,4 +2471,13 @@
     <string name="short_descr">سيرتك الذاتية:</string>
     <string name="bio_too_large">السيرة الذاتية كبيرة جدًا</string>
     <string name="group_descr_too_large">الوصف كبير جدًا</string>
+    <string name="chat_banner_accept_contact_request">اقبل طلب جهة الاتصال</string>
+    <string name="chat_banner_business_connection">اتصال عمل</string>
+    <string name="chat_banner_group">مجموعة</string>
+    <string name="chat_banner_connect_to_chat">انقر على \"اتصل\" للدردشة</string>
+    <string name="chat_banner_send_request_to_connect">انقر على \"اتصل\" لإرسال الطلب</string>
+    <string name="chat_banner_join_group">انقر على \"انضم للمجموعة\"</string>
+    <string name="chat_banner_your_business_contact">جهة عمل اتصالك</string>
+    <string name="chat_banner_your_contact">جهة اتصالك</string>
+    <string name="chat_banner_your_group">مجموعتك</string>
 </resources>
