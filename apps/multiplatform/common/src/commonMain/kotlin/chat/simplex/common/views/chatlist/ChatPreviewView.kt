@@ -192,7 +192,10 @@ fun ChatPreviewView(
 
       is ChatInfo.Group ->
         if (cInfo.groupInfo.nextConnectPrepared) {
-          stringResource(MR.strings.group_preview_open_to_join) to Color.Unspecified
+          stringResource(
+            if (cInfo.groupInfo.businessChat?.chatType == BusinessChatType.Business) MR.strings.open_to_connect
+            else MR.strings.group_preview_open_to_join
+          ) to Color.Unspecified
         } else {
           when (cInfo.groupInfo.membership.memberStatus) {
             GroupMemberStatus.MemRejected -> stringResource(MR.strings.group_preview_rejected) to Color.Unspecified
