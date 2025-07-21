@@ -831,8 +831,7 @@ struct ChatView: View {
                 let fullName = chat.chatInfo.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
                 if fullName != "" && fullName != chat.chatInfo.displayName && fullName != chat.chatInfo.displayName.trimmingCharacters(in: .whitespacesAndNewlines) {
                     Text(chat.chatInfo.fullName)
-                        .font(.headline)
-                        .fontWeight(.regular)
+                        .font(.subheadline)
                         .multilineTextAlignment(.center)
                         .lineLimit(3)
                         .fixedSize(horizontal: false, vertical: true)
@@ -850,7 +849,7 @@ struct ChatView: View {
 
                 if let chatContext = chatContext() {
                     Label(chatContext, systemImage: "info.circle")
-                        .font(.subheadline)
+                        .font(.callout)
                         .foregroundColor(theme.colors.secondary)
                         .padding(.top, 8)
                 }
