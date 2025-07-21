@@ -44,6 +44,7 @@ import chat.simplex.common.platform.AudioPlayer
 import chat.simplex.common.views.newchat.ContactConnectionInfoView
 import chat.simplex.common.views.newchat.alertProfileImageSize
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.ImageResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.*
@@ -1758,20 +1759,22 @@ fun BoxScope.ChatItemsList(
 
   @Composable
   fun ChatBannerView() {
-    fun chatContext(): String? {
+    fun chatContext(): Pair<String, ImageResource>? {
       return when (chatInfo) {
         is ChatInfo.Direct -> {
           val contact = chatInfo.contact
           val preparedLinkType = contact.preparedContact?.uiConnLinkType
           if (contact.nextConnectPrepared && preparedLinkType != null) {
             when (preparedLinkType) {
-              ConnectionMode.Inv -> generalGetString(MR.strings.chat_banner_1_time_invitation)
-              ConnectionMode.Con -> generalGetString(MR.strings.chat_banner_contact_address)
+              ConnectionMode.Inv ->
+                generalGetString(MR.strings.chat_banner_connect_to_chat) to MR.images.ic_arrow_circle_right
+              ConnectionMode.Con ->
+                generalGetString(MR.strings.chat_banner_send_request_to_connect) to MR.images.ic_arrow_circle_right
             }
           } else if (contact.nextAcceptContactRequest) {
-            generalGetString(MR.strings.chat_banner_contact_request)
+            generalGetString(MR.strings.chat_banner_accept_contact_request) to MR.images.ic_arrow_circle_right
           } else {
-            generalGetString(MR.strings.chat_banner_contact)
+            generalGetString(MR.strings.chat_banner_your_contact) to MR.images.ic_info
           }
         }
 
@@ -1779,15 +1782,28 @@ fun BoxScope.ChatItemsList(
           val groupInfo = chatInfo.groupInfo
           when (groupInfo.businessChat?.chatType) {
             null -> {
-              if (groupInfo.membership.memberStatus == GroupMemberStatus.MemCreator) {
-                generalGetString(MR.strings.chat_banner_your_group)
+              if (groupInfo.nextConnectPrepared) {
+                generalGetString(MR.strings.chat_banner_join_group) to MR.images.ic_arrow_circle_right
               } else {
-                generalGetString(MR.strings.chat_banner_group)
+                when (groupInfo.membership.memberStatus) {
+                  GroupMemberStatus.MemInvited ->
+                    generalGetString(MR.strings.chat_banner_join_group) to MR.images.ic_arrow_circle_right
+                  GroupMemberStatus.MemCreator ->
+                    generalGetString(MR.strings.chat_banner_your_group) to MR.images.ic_info
+                  else ->
+                    generalGetString(MR.strings.chat_banner_group) to MR.images.ic_info
+                }
               }
             }
 
-            BusinessChatType.Business -> generalGetString(MR.strings.chat_banner_business)
-            BusinessChatType.Customer -> generalGetString(MR.strings.chat_banner_customer)
+            BusinessChatType.Business ->
+              if (groupInfo.nextConnectPrepared) {
+                generalGetString(MR.strings.chat_banner_connect_to_business) to MR.images.ic_arrow_circle_right
+              } else {
+                generalGetString(MR.strings.chat_banner_business_connection) to MR.images.ic_info
+              }
+            BusinessChatType.Customer ->
+              generalGetString(MR.strings.chat_banner_your_customer) to MR.images.ic_info
           }
         }
 
@@ -1866,8 +1882,8 @@ fun BoxScope.ChatItemsList(
           )
         }
 
-        val contextStr = chatContext()
-        if (contextStr != null) {
+        val contextStrImage = chatContext()
+        if (contextStrImage != null) {
           Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
@@ -1875,13 +1891,13 @@ fun BoxScope.ChatItemsList(
               .padding(top = DEFAULT_PADDING)
           ) {
             Icon(
-              painterResource(MR.images.ic_info),
+              painterResource(contextStrImage.second),
               contentDescription = null,
               tint = MaterialTheme.colors.secondary,
               modifier = Modifier.size(18.dp)
             )
             Text(
-              contextStr,
+              contextStrImage.first,
               style = MaterialTheme.typography.body2,
               color = MaterialTheme.colors.secondary
             )
