@@ -1254,6 +1254,14 @@ swipe action</note>
         <target>Покращений користувацький досвід</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Bio" xml:space="preserve">
+        <source>Bio</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Bio too large" xml:space="preserve">
+        <source>Bio too large</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Black" xml:space="preserve">
         <source>Black</source>
         <target>Чорний</target>
@@ -1342,6 +1350,10 @@ swipe action</note>
       <trans-unit id="Business chats" xml:space="preserve">
         <source>Business chats</source>
         <target>Ділові чати</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Business connection" xml:space="preserve">
+        <source>Business connection</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Businesses" xml:space="preserve">
@@ -1886,6 +1898,10 @@ This is your own one-time link!</source>
         <target>Підключитися до себе?
 Це ваше власне одноразове посилання!</target>
         <note>new chat sheet title</note>
+      </trans-unit>
+      <trans-unit id="Connect via business address" xml:space="preserve">
+        <source>Connect via business address</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect via contact address" xml:space="preserve">
         <source>Connect via contact address</source>
@@ -2642,6 +2658,10 @@ swipe action</note>
         <source>Description</source>
         <target>Опис</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Description too large" xml:space="preserve">
+        <source>Description too large</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Desktop address" xml:space="preserve">
         <source>Desktop address</source>
@@ -6986,6 +7006,10 @@ chat item action</note>
         <source>Send request</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Send request to connect" xml:space="preserve">
+        <source>Send request to connect</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Send request without message" xml:space="preserve">
         <source>Send request without message</source>
         <note>No comment provided by engineer.</note>
@@ -7092,10 +7116,6 @@ chat item action</note>
       <trans-unit id="Sent reply" xml:space="preserve">
         <source>Sent reply</source>
         <target>Надіслано відповідь</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Sent to your contact after connection." xml:space="preserve">
-        <source>Sent to your contact after connection.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sent total" xml:space="preserve">
@@ -7347,6 +7367,10 @@ chat item action</note>
       <trans-unit id="Share with contacts" xml:space="preserve">
         <source>Share with contacts</source>
         <target>Поділіться з контактами</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Short description" xml:space="preserve">
+        <source>Short description</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Short link" xml:space="preserve">
@@ -7749,6 +7773,10 @@ report reason</note>
       <trans-unit id="Take picture" xml:space="preserve">
         <source>Take picture</source>
         <target>Сфотографуйте</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Tap Connect to chat" xml:space="preserve">
+        <source>Tap Connect to chat</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve">
@@ -9132,6 +9160,10 @@ Repeat connection request?</source>
         <target>Ваша адреса SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your business contact" xml:space="preserve">
+        <source>Your business contact</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your calls" xml:space="preserve">
         <source>Your calls</source>
         <target>Твої дзвінки</target>
@@ -9166,6 +9198,10 @@ Repeat connection request?</source>
         <target>Ваше з'єднання було переміщено на %@, але під час перенаправлення на профіль сталася несподівана помилка.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your contact" xml:space="preserve">
+        <source>Your contact</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
         <source>Your contact sent a file that is larger than currently supported maximum size (%@).</source>
         <target>Ваш контакт надіслав файл, розмір якого перевищує підтримуваний на цей момент максимальний розмір (%@).</target>
@@ -9194,6 +9230,10 @@ Repeat connection request?</source>
       <trans-unit id="Your current profile" xml:space="preserve">
         <source>Your current profile</source>
         <target>Ваш поточний профіль</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your group" xml:space="preserve">
+        <source>Your group</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your preferences" xml:space="preserve">

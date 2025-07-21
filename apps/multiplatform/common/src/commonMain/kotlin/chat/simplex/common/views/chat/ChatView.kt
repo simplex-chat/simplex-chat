@@ -1759,22 +1759,20 @@ fun BoxScope.ChatItemsList(
 
   @Composable
   fun ChatBannerView() {
-    fun chatContext(): Pair<String, ImageResource>? {
+    fun chatContext(): String? {
       return when (chatInfo) {
         is ChatInfo.Direct -> {
           val contact = chatInfo.contact
           val preparedLinkType = contact.preparedContact?.uiConnLinkType
           if (contact.nextConnectPrepared && preparedLinkType != null) {
             when (preparedLinkType) {
-              ConnectionMode.Inv ->
-                generalGetString(MR.strings.chat_banner_connect_to_chat) to MR.images.ic_arrow_circle_right
-              ConnectionMode.Con ->
-                generalGetString(MR.strings.chat_banner_send_request_to_connect) to MR.images.ic_arrow_circle_right
+              ConnectionMode.Inv -> generalGetString(MR.strings.chat_banner_connect_to_chat)
+              ConnectionMode.Con -> generalGetString(MR.strings.chat_banner_send_request_to_connect)
             }
           } else if (contact.nextAcceptContactRequest) {
-            generalGetString(MR.strings.chat_banner_accept_contact_request) to MR.images.ic_arrow_circle_right
+            generalGetString(MR.strings.chat_banner_accept_contact_request)
           } else {
-            generalGetString(MR.strings.chat_banner_your_contact) to MR.images.ic_info
+            generalGetString(MR.strings.chat_banner_your_contact)
           }
         }
 
@@ -1783,38 +1781,29 @@ fun BoxScope.ChatItemsList(
           when (groupInfo.businessChat?.chatType) {
             null -> {
               if (groupInfo.nextConnectPrepared) {
-                generalGetString(MR.strings.chat_banner_join_group) to MR.images.ic_arrow_circle_right
+                generalGetString(MR.strings.chat_banner_join_group)
               } else {
                 when (groupInfo.membership.memberStatus) {
-                  GroupMemberStatus.MemInvited ->
-                    generalGetString(MR.strings.chat_banner_join_group) to MR.images.ic_arrow_circle_right
-                  GroupMemberStatus.MemCreator ->
-                    generalGetString(MR.strings.chat_banner_your_group) to MR.images.ic_info
-                  else ->
-                    generalGetString(MR.strings.chat_banner_group) to MR.images.ic_info
+                  GroupMemberStatus.MemInvited -> generalGetString(MR.strings.chat_banner_join_group)
+                  GroupMemberStatus.MemCreator -> generalGetString(MR.strings.chat_banner_your_group)
+                  else -> generalGetString(MR.strings.chat_banner_group)
                 }
               }
             }
 
             BusinessChatType.Business ->
               if (groupInfo.nextConnectPrepared) {
-                generalGetString(MR.strings.chat_banner_connect_via_business_address) to MR.images.ic_arrow_circle_right
+                generalGetString(MR.strings.chat_banner_connect_via_business_address)
               } else {
-                generalGetString(MR.strings.chat_banner_business_connection) to MR.images.ic_info
+                generalGetString(MR.strings.chat_banner_business_connection)
               }
             BusinessChatType.Customer ->
-              generalGetString(MR.strings.chat_banner_your_business_contact) to MR.images.ic_info
+              generalGetString(MR.strings.chat_banner_your_business_contact)
           }
         }
 
         else -> null
       }
-    }
-
-    val clipboard = LocalClipboardManager.current
-    val copyNameToClipboard = fun (name: String) {
-      clipboard.setText(AnnotatedString(name))
-      showToast(generalGetString(MR.strings.copied))
     }
 
     Box(
@@ -1834,7 +1823,6 @@ fun BoxScope.ChatItemsList(
           .background(MaterialTheme.appColors.receivedMessage)
       ) {
         ChatInfoImage(chatInfo, size = alertProfileImageSize, iconColor = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f))
-        val copyDisplayName = { copyNameToClipboard(chatInfo.displayName) }
         Text(
           chatInfo.displayName,
           style = MaterialTheme.typography.h3,
@@ -1844,13 +1832,10 @@ fun BoxScope.ChatItemsList(
           overflow = TextOverflow.Ellipsis,
           modifier = Modifier
             .widthIn(max = 240.dp)
-            .combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName)
-            .onRightClick(copyDisplayName)
         )
 
         val fullName = chatInfo.fullName.trim()
         if (fullName.isNotEmpty() && fullName != chatInfo.displayName && fullName != chatInfo.displayName.trim()) {
-          val copyFullName = { copyNameToClipboard(fullName) }
           Text(
             fullName,
             style = MaterialTheme.typography.h4,
@@ -1861,14 +1846,11 @@ fun BoxScope.ChatItemsList(
             modifier = Modifier
               .widthIn(max = 260.dp)
               .padding(top = DEFAULT_PADDING_HALF)
-              .combinedClickable(onClick = copyFullName, onLongClick = copyFullName)
-              .onRightClick(copyFullName)
           )
         }
 
         val descr = chatInfo.shortDescr?.trim()
         if (descr != null && descr != "") {
-          val copyDescr = { copyNameToClipboard(descr) }
           Text(
             descr,
             style = MaterialTheme.typography.body2,
@@ -1879,31 +1861,17 @@ fun BoxScope.ChatItemsList(
             lineHeight = 21.sp,
             modifier = Modifier
               .padding(top = DEFAULT_PADDING_HALF)
-              .combinedClickable(onClick = copyDescr, onLongClick = copyDescr)
-              .onRightClick(copyDescr)
           )
         }
 
-        val contextStrImage = chatContext()
-        if (contextStrImage != null) {
-          Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-            modifier = Modifier
-              .padding(top = DEFAULT_PADDING)
-          ) {
-            Icon(
-              painterResource(contextStrImage.second),
-              contentDescription = null,
-              tint = MaterialTheme.colors.secondary,
-              modifier = Modifier.size(18.dp)
-            )
-            Text(
-              contextStrImage.first,
-              style = MaterialTheme.typography.body2,
-              color = MaterialTheme.colors.secondary
-            )
-          }
+        val contextStr = chatContext()
+        if (contextStr != null) {
+          Text(
+            contextStr,
+            style = MaterialTheme.typography.body2,
+            color = MaterialTheme.colors.secondary,
+            modifier = Modifier.padding(top = DEFAULT_PADDING)
+          )
         }
       }
     }

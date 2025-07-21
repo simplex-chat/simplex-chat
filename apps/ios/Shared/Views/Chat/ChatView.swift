@@ -825,7 +825,7 @@ struct ChatView: View {
         @ObservedObject var chat: Chat
 
         var body: some View {
-            VStack(spacing: 8) {
+            let v = VStack(spacing: 8) {
                 ChatInfoImage(chat: chat, size: alertProfileImageSize)
 
                 Text(chat.chatInfo.displayName)
@@ -854,8 +854,8 @@ struct ChatView: View {
                         .padding(.horizontal)
                 }
 
-                if let (chatContext, image) = chatContext() {
-                    Label(chatContext, systemImage: image)
+                if let chatContext {
+                    Text(chatContext)
                         .font(.callout)
                         .foregroundColor(theme.colors.secondary)
                         .padding(.top, 8)
@@ -865,44 +865,86 @@ struct ChatView: View {
             .padding()
             .background(theme.appColors.receivedMessage)
             .clipShape(RoundedRectangle(cornerRadius: msgRectMaxRadius * roundness))
-            .padding(.horizontal)
+            if let (label, connLink) = chatAddress() {
+                v.contextMenu {
+                    Button {
+                        let shareItems: [Any] = [connLink]
+                        showShareSheet(items: shareItems)
+                    } label: {
+                        Label(label, systemImage: "square.and.arrow.up")
+                    }
+                }
+                .padding(.horizontal)
+            } else {
+                v.padding(.horizontal)
+            }
+
         }
 
-        func chatContext() -> (String, String)? {
+        func chatAddress() -> (label: LocalizedStringKey, connLink: String)? {
+            switch chat.chatInfo {
+            case let .direct(contact):
+                if !contact.nextConnectPrepared && !contact.nextAcceptContactRequest {
+                    let connLink: String? = if let pct = contact.preparedContact, case .con = pct.uiConnLinkType {
+                        pct.connLinkToConnect.simplexChatUri()
+                    } else {
+                        contact.profile.contactLink
+                    }
+                    if let connLink {
+                        return ("SimpleX address", connLink)
+                    }
+                }
+            case let .group(groupInfo, _):
+                if !groupInfo.nextConnectPrepared {
+                    if let pg = groupInfo.preparedGroup {
+                        let connLink = pg.connLinkToConnect.simplexChatUri()
+                        switch groupInfo.businessChat?.chatType {
+                        case .none: return ("Group link", connLink)
+                        case .business: return ("Business address", connLink)
+                        default: ()
+                        }
+                    }
+                }
+            default: ()
+            }
+            return nil
+        }
+
+        var chatContext: LocalizedStringKey? {
             switch chat.chatInfo {
             case let .direct(contact):
                 if contact.nextConnectPrepared, let linkType = contact.preparedContact?.uiConnLinkType {
                     switch linkType {
                     case .inv:
-                        (NSLocalizedString("Connect to chat", comment: "chat context"), "arrow.forward.circle")
+                        "Tap Connect to chat"
                     case .con:
-                        (NSLocalizedString("Send request to connect", comment: "chat context"), "arrow.forward.circle")
+                        "Send request to connect"
                     }
                 } else if contact.nextAcceptContactRequest {
-                    (NSLocalizedString("Accept contact request", comment: "chat context"), "arrow.forward.circle")
+                    "Accept contact request"
                 } else {
-                    (NSLocalizedString("Your contact", comment: "chat context"), "info.circle")
+                    "Your contact"
                 }
             case let .group(groupInfo, _):
                 switch groupInfo.businessChat?.chatType {
                 case .none:
                     if groupInfo.nextConnectPrepared {
-                        (NSLocalizedString("Join group", comment: "chat context"), "arrow.forward.circle")
+                        "Join group"
                     } else {
                         switch (groupInfo.membership.memberStatus) {
-                        case .memInvited: (NSLocalizedString("Join group", comment: "chat context"), "arrow.forward.circle")
-                        case .memCreator: (NSLocalizedString("Your group", comment: "chat context"), "info.circle")
-                        default: (NSLocalizedString("Group", comment: "chat context"), "info.circle")
+                        case .memInvited: "Join group"
+                        case .memCreator: "Your group"
+                        default: "Group"
                         }
                     }
                 case .business:
                     if groupInfo.nextConnectPrepared {
-                        (NSLocalizedString("Connect via business address", comment: "chat context"), "arrow.forward.circle")
+                        "Connect via business address"
                     } else {
-                        (NSLocalizedString("Business connection", comment: "chat context"), "info.circle")
+                        "Business connection"
                     }
                 case .customer:
-                    (NSLocalizedString("Your business contact", comment: "chat context"), "info.circle")
+                    "Your business contact"
                 }
             default: nil
             }

@@ -1251,6 +1251,14 @@ swipe action</note>
         <target>更佳的使用体验</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Bio" xml:space="preserve">
+        <source>Bio</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Bio too large" xml:space="preserve">
+        <source>Bio too large</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Black" xml:space="preserve">
         <source>Black</source>
         <target>黑色</target>
@@ -1339,6 +1347,10 @@ swipe action</note>
       <trans-unit id="Business chats" xml:space="preserve">
         <source>Business chats</source>
         <target>企业聊天</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Business connection" xml:space="preserve">
+        <source>Business connection</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Businesses" xml:space="preserve">
@@ -1880,6 +1892,10 @@ This is your own one-time link!</source>
         <target>与自己建立联系？
 这是您自己的一次性链接！</target>
         <note>new chat sheet title</note>
+      </trans-unit>
+      <trans-unit id="Connect via business address" xml:space="preserve">
+        <source>Connect via business address</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect via contact address" xml:space="preserve">
         <source>Connect via contact address</source>
@@ -2634,6 +2650,10 @@ swipe action</note>
         <source>Description</source>
         <target>描述</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Description too large" xml:space="preserve">
+        <source>Description too large</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Desktop address" xml:space="preserve">
         <source>Desktop address</source>
@@ -6991,6 +7011,10 @@ chat item action</note>
         <source>Send request</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Send request to connect" xml:space="preserve">
+        <source>Send request to connect</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Send request without message" xml:space="preserve">
         <source>Send request without message</source>
         <note>No comment provided by engineer.</note>
@@ -7097,10 +7121,6 @@ chat item action</note>
       <trans-unit id="Sent reply" xml:space="preserve">
         <source>Sent reply</source>
         <target>已发送回复</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Sent to your contact after connection." xml:space="preserve">
-        <source>Sent to your contact after connection.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sent total" xml:space="preserve">
@@ -7342,6 +7362,10 @@ chat item action</note>
       <trans-unit id="Share with contacts" xml:space="preserve">
         <source>Share with contacts</source>
         <target>与联系人分享</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Short description" xml:space="preserve">
+        <source>Short description</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Short link" xml:space="preserve">
@@ -7740,6 +7764,10 @@ report reason</note>
       <trans-unit id="Take picture" xml:space="preserve">
         <source>Take picture</source>
         <target>拍照</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Tap Connect to chat" xml:space="preserve">
+        <source>Tap Connect to chat</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve">
@@ -9095,6 +9123,10 @@ Repeat connection request?</source>
         <target>您的 SimpleX 地址</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your business contact" xml:space="preserve">
+        <source>Your business contact</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your calls" xml:space="preserve">
         <source>Your calls</source>
         <target>您的通话</target>
@@ -9127,6 +9159,10 @@ Repeat connection request?</source>
         <source>Your connection was moved to %@ but an error happened when switching profile.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your contact" xml:space="preserve">
+        <source>Your contact</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
         <source>Your contact sent a file that is larger than currently supported maximum size (%@).</source>
         <target>您的联系人发送的文件大于当前支持的最大大小 (%@)。</target>
@@ -9154,6 +9190,10 @@ Repeat connection request?</source>
       <trans-unit id="Your current profile" xml:space="preserve">
         <source>Your current profile</source>
         <target>您当前的资料</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your group" xml:space="preserve">
+        <source>Your group</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your preferences" xml:space="preserve">
