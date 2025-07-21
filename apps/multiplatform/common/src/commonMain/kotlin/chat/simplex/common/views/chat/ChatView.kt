@@ -42,6 +42,7 @@ import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.platform.AudioPlayer
 import chat.simplex.common.views.newchat.ContactConnectionInfoView
+import chat.simplex.common.views.newchat.alertProfileImageSize
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -1800,105 +1801,93 @@ fun BoxScope.ChatItemsList(
       showToast(generalGetString(MR.strings.copied))
     }
 
-    Column(
-      horizontalAlignment = Alignment.CenterHorizontally,
-      modifier = Modifier
-        .fillMaxSize()
-        .padding(horizontal = DEFAULT_PADDING)
+    Surface(
+      shape = RoundedCornerShape(18.dp),
+      color = MaterialTheme.colors.background
     ) {
-      Spacer(modifier = Modifier.height(60.dp))
-
-      Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colors.background
+      val bannerModifier = if (appPlatform.isDesktop) Modifier.width(400.dp) else Modifier.fillMaxWidth()
+      Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = bannerModifier
+          .padding(horizontal = DEFAULT_PADDING)
+          .padding(bottom = DEFAULT_PADDING)
+          // ChatInfoImage has its own padding somewhere,
+          // also not doing verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF) because of it
+          .padding(top = DEFAULT_PADDING_HALF)
       ) {
-        val bannerModifier = if (appPlatform.isDesktop) Modifier.width(400.dp) else Modifier.fillMaxWidth()
-        Column(
-          horizontalAlignment = Alignment.CenterHorizontally,
-          modifier = bannerModifier
-            .padding(horizontal = DEFAULT_PADDING)
-            .padding(bottom = DEFAULT_PADDING)
-            // ChatInfoImage has its own padding somewhere,
-            // also not doing verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF) because of it
-            .padding(top = DEFAULT_PADDING_HALF)
-        ) {
-          ChatInfoImage(chatInfo, size = 96.dp)
+        ChatInfoImage(chatInfo, size = alertProfileImageSize)
+        val copyDisplayName = { copyNameToClipboard(chatInfo.displayName) }
+        Text(
+          chatInfo.displayName,
+          style = MaterialTheme.typography.h3,
+          color = MaterialTheme.colors.onBackground,
+          textAlign = TextAlign.Center,
+          maxLines = 2,
+          overflow = TextOverflow.Ellipsis,
+          modifier = Modifier
+            .widthIn(max = 240.dp)
+            .combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName)
+            .onRightClick(copyDisplayName)
+        )
 
-          val copyDisplayName = { copyNameToClipboard(chatInfo.displayName) }
+        val fullName = chatInfo.fullName.trim()
+        if (fullName.isNotEmpty() && fullName != chatInfo.displayName && fullName != chatInfo.displayName.trim()) {
+          val copyFullName = { copyNameToClipboard(fullName) }
           Text(
-            chatInfo.displayName,
-            style = MaterialTheme.typography.h3,
+            fullName,
+            style = MaterialTheme.typography.h4,
             color = MaterialTheme.colors.onBackground,
             textAlign = TextAlign.Center,
-            maxLines = 2,
+            maxLines = 3,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
-              .widthIn(max = 240.dp)
-              .combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName)
-              .onRightClick(copyDisplayName)
+              .widthIn(max = 260.dp)
+              .padding(top = DEFAULT_PADDING_HALF)
+              .combinedClickable(onClick = copyFullName, onLongClick = copyFullName)
+              .onRightClick(copyFullName)
           )
+        }
 
-          val fullName = chatInfo.fullName.trim()
-          if (fullName.isNotEmpty() && fullName != chatInfo.displayName && fullName != chatInfo.displayName.trim()) {
-            val copyFullName = { copyNameToClipboard(fullName) }
-            Text(
-              fullName,
-              style = MaterialTheme.typography.h4,
-              color = MaterialTheme.colors.onBackground,
-              textAlign = TextAlign.Center,
-              maxLines = 3,
-              overflow = TextOverflow.Ellipsis,
-              modifier = Modifier
-                .widthIn(max = 260.dp)
-                .padding(top = DEFAULT_PADDING_HALF)
-                .combinedClickable(onClick = copyFullName, onLongClick = copyFullName)
-                .onRightClick(copyFullName)
+        val descr = chatInfo.shortDescr?.trim()
+        if (descr != null && descr != "") {
+          val copyDescr = { copyNameToClipboard(descr) }
+          Text(
+            descr,
+            style = MaterialTheme.typography.body2,
+            color = MaterialTheme.colors.onBackground,
+            textAlign = TextAlign.Center,
+            maxLines = 4,
+            overflow = TextOverflow.Ellipsis,
+            lineHeight = 21.sp,
+            modifier = Modifier
+              .padding(top = DEFAULT_PADDING_HALF)
+              .combinedClickable(onClick = copyDescr, onLongClick = copyDescr)
+              .onRightClick(copyDescr)
+          )
+        }
+
+        val contextStr = chatContext()
+        if (contextStr != null) {
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            modifier = Modifier
+              .padding(top = DEFAULT_PADDING)
+          ) {
+            Icon(
+              painterResource(MR.images.ic_info),
+              contentDescription = null,
+              tint = MaterialTheme.colors.secondary,
+              modifier = Modifier.size(18.dp)
             )
-          }
-
-          val descr = chatInfo.shortDescr?.trim()
-          if (descr != null && descr != "") {
-            val copyDescr = { copyNameToClipboard(descr) }
             Text(
-              descr,
+              contextStr,
               style = MaterialTheme.typography.body2,
-              color = MaterialTheme.colors.onBackground,
-              textAlign = TextAlign.Center,
-              maxLines = 4,
-              overflow = TextOverflow.Ellipsis,
-              lineHeight = 21.sp,
-              modifier = Modifier
-                .padding(top = DEFAULT_PADDING_HALF)
-                .combinedClickable(onClick = copyDescr, onLongClick = copyDescr)
-                .onRightClick(copyDescr)
+              color = MaterialTheme.colors.secondary
             )
-          }
-
-          val contextStr = chatContext()
-          if (contextStr != null) {
-            Row(
-              verticalAlignment = Alignment.CenterVertically,
-              horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-              modifier = Modifier
-                .padding(top = DEFAULT_PADDING)
-            ) {
-              Icon(
-                painterResource(MR.images.ic_info),
-                contentDescription = null,
-                tint = MaterialTheme.colors.secondary,
-                modifier = Modifier.size(18.dp)
-              )
-              Text(
-                contextStr,
-                style = MaterialTheme.typography.body2,
-                color = MaterialTheme.colors.secondary
-              )
-            }
           }
         }
       }
-
-      Spacer(modifier = Modifier.height(60.dp))
     }
   }
 
@@ -1920,7 +1909,15 @@ fun BoxScope.ChatItemsList(
       val item = listItem.item
 
       if (item.content is CIContent.ChatBanner) {
-        ChatBannerView()
+        Box(
+          contentAlignment = Alignment.Center,
+          modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = DEFAULT_PADDING)
+            .padding(bottom = 90.dp, top = DEFAULT_PADDING)
+        ) {
+          ChatBannerView()
+        }
       } else {
         val isLastItem = index == mergedItemsValue.items.lastIndex
         val last = if (isLastItem) reversedChatItems.value.lastOrNull() else null
