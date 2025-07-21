@@ -929,7 +929,7 @@ struct ChatView: View {
                 switch groupInfo.businessChat?.chatType {
                 case .none:
                     if groupInfo.nextConnectPrepared {
-                        "Join group"
+                        "Tap Join group"
                     } else {
                         switch (groupInfo.membership.memberStatus) {
                         case .memInvited: "Join group"
@@ -1026,7 +1026,7 @@ struct ChatView: View {
 
         var body: some View {
             ZStack(alignment: .top) {
-                if let date = model.date {
+                if let date = model.date, date.timeIntervalSince1970 > 0 {
                      DateSeparator(date: date)
                          .padding(.vertical, 4).padding(.horizontal, 8)
                          .background(.thinMaterial)

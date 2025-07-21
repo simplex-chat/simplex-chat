@@ -7884,6 +7884,10 @@ report reason</note>
         <target>Koppintson a SimpleX-cím létrehozása menüpontra a későbbi létrehozáshoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Tap Join group" xml:space="preserve">
+        <source>Tap Join group</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Tap button " xml:space="preserve">
         <source>Tap button </source>
         <target>Koppintson a </target>

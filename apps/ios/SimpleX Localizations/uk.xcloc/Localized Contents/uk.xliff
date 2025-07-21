@@ -7784,6 +7784,10 @@ report reason</note>
         <target>Натисніть «Створити адресу SimpleX» у меню, щоб створити її пізніше.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Tap Join group" xml:space="preserve">
+        <source>Tap Join group</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Tap button " xml:space="preserve">
         <source>Tap button </source>
         <target>Натисніть кнопку </target>

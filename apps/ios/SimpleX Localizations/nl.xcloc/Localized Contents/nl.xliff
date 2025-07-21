@@ -7847,6 +7847,10 @@ report reason</note>
         <target>Tik op SimpleX-adres maken in het menu om het later te maken.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Tap Join group" xml:space="preserve">
+        <source>Tap Join group</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Tap button " xml:space="preserve">
         <source>Tap button </source>
         <target>Tik op de knop </target>

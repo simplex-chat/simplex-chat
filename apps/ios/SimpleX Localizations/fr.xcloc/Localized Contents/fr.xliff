@@ -7760,6 +7760,10 @@ report reason</note>
         <target>Appuyez sur Créer une adresse SimpleX dans le menu pour la créer ultérieurement.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Tap Join group" xml:space="preserve">
+        <source>Tap Join group</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Tap button " xml:space="preserve">
         <source>Tap button </source>
         <target>Appuyez sur le bouton </target>

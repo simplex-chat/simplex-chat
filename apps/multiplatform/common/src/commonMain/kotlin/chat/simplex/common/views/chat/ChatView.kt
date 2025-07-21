@@ -2399,7 +2399,12 @@ private fun FloatingDate(
       if (listState.value.layoutInfo.visibleItemsInfo.lastIndex >= 0) {
         val lastVisibleChatItem = lastFullyVisibleIemInListState(topPaddingToContentPx, density, fontSizeSqrtMultiplier, mergedItems, listState)
         val timeZone = TimeZone.currentSystemDefault()
-        lastVisibleChatItem?.meta?.itemTs?.toLocalDateTime(timeZone)?.date?.atStartOfDayIn(timeZone)
+        val itemTs = lastVisibleChatItem?.meta?.itemTs
+        if (itemTs != null && itemTs.epochSeconds > 0) {
+          itemTs.toLocalDateTime(timeZone).date.atStartOfDayIn(timeZone)
+        } else {
+          null
+        }
       } else {
         null
       }
