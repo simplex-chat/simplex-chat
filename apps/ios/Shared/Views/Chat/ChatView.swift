@@ -821,7 +821,7 @@ struct ChatView: View {
 
     struct ChatBannerView: View {
         @EnvironmentObject var theme: AppTheme
-        @UserDefault(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
+        @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var roundness = defaultChatItemRoundness
         @ObservedObject var chat: Chat
 
         var body: some View {
@@ -863,11 +863,8 @@ struct ChatView: View {
             }
             .frame(maxWidth: .infinity)
             .padding()
-            .background {
-                Color.clear
-                    .overlay(ToolbarMaterial.material(toolbarMaterial))
-                    .clipShape(RoundedRectangle(cornerRadius: 18))
-            }
+            .background(theme.appColors.receivedMessage)
+            .clipShape(RoundedRectangle(cornerRadius: msgRectMaxRadius * roundness))
             .padding(.horizontal)
         }
 
