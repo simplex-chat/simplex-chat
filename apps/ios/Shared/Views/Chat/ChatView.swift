@@ -900,12 +900,12 @@ struct ChatView: View {
                     }
                 case .business:
                     if groupInfo.nextConnectPrepared {
-                        (NSLocalizedString("Connect to business", comment: "chat context"), "arrow.forward.circle")
+                        (NSLocalizedString("Connect via business address", comment: "chat context"), "arrow.forward.circle")
                     } else {
                         (NSLocalizedString("Business connection", comment: "chat context"), "info.circle")
                     }
                 case .customer:
-                    (NSLocalizedString("Your customer", comment: "chat context"), "info.circle")
+                    (NSLocalizedString("Your business contact", comment: "chat context"), "info.circle")
                 }
             default: nil
             }

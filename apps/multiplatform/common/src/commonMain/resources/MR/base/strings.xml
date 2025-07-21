@@ -493,9 +493,9 @@
   <string name="chat_banner_join_group">Join group</string>
   <string name="chat_banner_your_group">Your group</string>
   <string name="chat_banner_group">Group</string>
-  <string name="chat_banner_connect_to_business">Connect to business</string>
+  <string name="chat_banner_connect_via_business_address">Connect via business address</string>
   <string name="chat_banner_business_connection">Business connection</string>
-  <string name="chat_banner_your_customer">Your customer</string>
+  <string name="chat_banner_your_business_contact">Your business contact</string>
 
   <!-- ShareListView.kt -->
   <string name="share_message">Share message…</string>

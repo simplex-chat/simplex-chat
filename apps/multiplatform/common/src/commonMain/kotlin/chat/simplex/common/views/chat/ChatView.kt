@@ -1798,12 +1798,12 @@ fun BoxScope.ChatItemsList(
 
             BusinessChatType.Business ->
               if (groupInfo.nextConnectPrepared) {
-                generalGetString(MR.strings.chat_banner_connect_to_business) to MR.images.ic_arrow_circle_right
+                generalGetString(MR.strings.chat_banner_connect_via_business_address) to MR.images.ic_arrow_circle_right
               } else {
                 generalGetString(MR.strings.chat_banner_business_connection) to MR.images.ic_info
               }
             BusinessChatType.Customer ->
-              generalGetString(MR.strings.chat_banner_your_customer) to MR.images.ic_info
+              generalGetString(MR.strings.chat_banner_your_business_contact) to MR.images.ic_info
           }
         }
 
